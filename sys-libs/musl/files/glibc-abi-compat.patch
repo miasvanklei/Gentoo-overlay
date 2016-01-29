@@ -1,0 +1,768 @@
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/asprintf_chk.c	2015-07-25 17:55:52.042930284 -0200
+@@ -0,0 +1,18 @@
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <stdarg.h>
++
++int __asprintf_chk(char **restrict s, int flag, const char *restrict fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vasprintf(s, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __vasprintf_chk(char **restrict s, int flag, const char *restrict fmt, va_list ap)
++{
++	return vasprintf(s, fmt, ap);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/chk_fail.c	2015-07-25 17:55:52.043930284 -0200
+@@ -0,0 +1,7 @@
++#include "atomic.h"
++
++void __chk_fail(void)
++{
++	a_crash();
++	for(;;);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/confstr_chk.c	2015-07-25 17:55:52.044930284 -0200
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include <atomic.h>
++
++size_t __confstr_chk(int name, char *buf, size_t len, size_t buflen)
++{
++	if (buflen < len) a_crash();
++	return confstr(name, buf, len);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/dprintf_chk.c	2015-07-25 17:55:52.045930284 -0200
+@@ -0,0 +1,17 @@
++#include <stdio.h>
++#include <stdarg.h>
++
++int __dprintf_chk(int fd, int flag, const char *fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vdprintf(fd, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __vdprintf(int fd, int flag, const char *fmt, va_list ap)
++{
++	return vdprintf(fd, fmt, ap);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/gnu_chk.c	2015-07-25 17:55:52.046930284 -0200
+@@ -0,0 +1,18 @@
++#define _GNU_SOURCE
++#include <string.h>
++#include <poll.h>
++#include <stddef.h>
++#include "atomic.h"
++#include "atomic.h"
++
++int __ppoll_chk(struct pollfd *fds, nfds_t n, const struct timespec *to, const sigset_t *mask, size_t fdslen)
++{
++	if (fdslen / sizeof(*fds) < n) a_crash();
++	return ppoll(fds, n, to, mask);
++}
++
++void *__mempcpy_chk(void *dest, const void *src, size_t n, size_t destlen)
++{
++	if (destlen < n) a_crash();
++	return mempcpy(dest, src, n);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/longjmp_chk.c	2015-07-25 18:03:57.913919030 -0200
+@@ -0,0 +1,7 @@
++#include <setjmp.h>
++#include <signal.h>
++
++_Noreturn void __longjmp_chk(jmp_buf buf, int ret)
++{
++	longjmp(buf, ret);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/posix_chk.c	2015-07-25 20:32:03.045713223 -0200
+@@ -0,0 +1,127 @@
++#include <poll.h>
++#include <sys/socket.h>
++#include <sys/select.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <string.h>
++#include <wchar.h>
++#include "atomic.h"
++
++ssize_t __read_chk(int fd, void *buf, size_t count, size_t buflen)
++{
++	if (count > buflen) a_crash();
++	return read(fd, buf, count);
++}
++
++ssize_t __readlink_chk(const char *path, void *buf, size_t bufsize, size_t buflen)
++{
++	if (bufsize > buflen) a_crash();
++	return readlink(path, buf, bufsize);
++}
++
++ssize_t __readlinkat_chk(int fd, const char *path, void *buf, size_t bufsize, size_t buflen)
++{
++	if (bufsize > buflen) a_crash();
++	return readlinkat(fd, path, buf, bufsize);
++}
++
++ssize_t __recv_chk(int fd, void *buf, size_t len, size_t buflen, int flags)
++{
++	if (len > buflen) a_crash();
++	return recv(fd, buf, len, flags);
++}
++
++ssize_t __recvfrom_chk(int fd, void *buf, size_t len, size_t buflen, int flags, struct sockaddr *addr, socklen_t *alen)
++{
++	if (len > buflen) a_crash();
++	return recvfrom(fd, buf, len, flags, addr, alen);
++}
++
++int __open_2(const char *path, int flag)
++{
++	if (flag & O_CREAT) a_crash();
++	return open(path, flag);
++}
++
++int __open64_2(const char *path, int flag)
++{
++	return __open_2(path, flag);
++}
++
++int __openat_2(int fd, const char *path, int flag)
++{
++	if (flag & O_CREAT) a_crash();
++	return openat(fd, path, flag);
++}
++
++int __openat64_2(int fd, const char *path, int flag)
++{
++	return __openat_2(fd, path, flag);
++}
++
++int __poll_chk(struct pollfd *fds, nfds_t n, int timeout,  size_t fdslen)
++{
++	if (fdslen / sizeof(fds[0]) < n) a_crash();
++	return poll(fds, n, timeout);
++}
++
++ssize_t __pread_chk(int fd, void *buf, size_t size, size_t ofs, size_t buflen)
++{
++	if (size > buflen) a_crash();
++	return pread(fd, buf, size, ofs);
++}
++
++ssize_t __pread64_chk(int fd, void *buf, size_t size, size_t ofs, size_t buflen)
++{
++	return __pread_chk(fd, buf, size, ofs, buflen);
++}
++
++char *__getcwd_chk(char *buf, size_t len, size_t buflen)
++{
++	if (len > buflen) a_crash();
++	return getcwd(buf, len);
++}
++
++int __gethostname_chk(char *name, size_t len, size_t namelen)
++{
++	if (len > namelen) a_crash();
++	return gethostname(name, len);
++}
++
++long __fdelt_chk(long d)
++{
++	if (d < 0 || d >= FD_SETSIZE) a_crash();
++	return d / (8 * sizeof(d));
++}
++
++char *__stpcpy_chk(char *d, const char *s, size_t dlen)
++{
++	size_t slen = strnlen(s, dlen) + 1;
++	if (slen > dlen) a_crash();
++	return stpcpy(d, s);
++}
++
++char *__stpncpy_chk(char *d, const char *s, size_t n, size_t dlen)
++{
++	if (n > dlen) a_crash();
++	return stpncpy(d, s, n);
++}
++
++wchar_t *__wcpcpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t dlen)
++{
++	size_t slen = strnlen(s, dlen) + 1;
++	if (slen > dlen) a_crash();
++	return wcpcpy(d, s);
++}
++
++wchar_t *__wcpncpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t n, size_t dlen)
++{
++	if (n > dlen) a_crash();
++	return wcpncpy(d, s, n);
++}
++
++int __getgroups_chk(int count, gid_t list[], size_t len)
++{
++	if (count > len / sizeof(list[0])) a_crash();
++	return getgroups(count, list);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/printf_chk.c	2015-07-25 17:55:52.049930284 -0200
+@@ -0,0 +1,70 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "atomic.h"
++
++int __fprintf_chk(FILE *f, int flag, const char *fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vfprintf(f, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __printf_chk(int flag, const char *fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vfprintf(stdout, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __snprintf_chk(char *s, size_t n, int flag, size_t slen, const char *fmt, ...)
++{
++	int ret;
++	va_list ap;
++	if (n > slen) a_crash();
++	ret = vsnprintf(s, slen, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __sprintf_chk(char *s, int flag, size_t slen, const char *fmt, ...)
++{
++	int ret;
++	va_list ap;
++	if (slen == 0) a_crash();
++	va_start(ap, fmt);
++	ret = vsnprintf(s, slen, fmt, ap);
++	va_end(ap);
++	if (ret > slen) a_crash();
++	return ret;
++}
++
++int __vfprintf_chk(FILE *f, int flag, const char *fmt, va_list ap)
++{
++	return vfprintf(f, fmt, ap);
++}
++
++int __vprintf_chk(int flag, const char *fmt, va_list ap)
++{
++	return vfprintf(stdout, fmt, ap);
++}
++
++int __vsnprintf_chk(char *s, size_t n, int flag, size_t slen, const char *fmt, va_list ap)
++{
++	if (n > slen) a_crash();
++	return vsnprintf(s, n, fmt, ap);
++}
++
++int __vsprintf_chk(char *s, int flag, size_t slen, const char *fmt, va_list ap)
++{
++	int ret;
++	if (slen == 0) a_crash();
++	ret = vsnprintf(s, slen, fmt, ap);
++	if (ret > slen) a_crash();
++	return ret;
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/realpath_chk.c	2015-07-25 18:07:04.753914702 -0200
+@@ -0,0 +1,9 @@
++#include <stdlib.h>
++#include <limits.h>
++#include "atomic.h"
++
++char *__realpath_chk(const char *filename, char *resolved, size_t resolved_len)
++{
++	if (resolved_len < PATH_MAX) a_crash();
++	return realpath(filename, resolved);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/stdio_chk.c	2015-07-25 17:55:52.051930284 -0200
+@@ -0,0 +1,50 @@
++#include <stdio.h>
++#include <wchar.h>
++#include "atomic.h"
++#include "libc.h"
++#include "stdio_impl.h"
++
++char *__fgets_chk(char *s, size_t size, int n, FILE *f)
++{
++	if ((size_t)n > size) a_crash();
++	return fgets(s, n, f);
++}
++
++wchar_t *__fgetws_chk(wchar_t *s, size_t size, int n, FILE *f)
++{
++	if ((size_t)n > size) a_crash();
++	return fgetws(s, n, f);
++}
++
++size_t __fread_chk(void *restrict destv, size_t destvlen, size_t size, size_t nmemb, FILE *restrict f)
++{
++	if (size != 0 && (size * nmemb) / size != nmemb) a_crash();
++	if (size * nmemb > destvlen) a_crash();
++	return fread(destv, size, nmemb, f);
++}
++
++char *__gets_chk(char *buf, size_t size)
++{
++	char *ret = buf;
++	int c;
++	FLOCK(stdin);
++	if (!size) return NULL;
++	for(;size;buf++,size--) {
++		c = getc(stdin);
++		if ((c == EOF && feof(stdin)) || c == '\n') {
++			*buf = 0;
++			FUNLOCK(stdin);
++			return ret;
++		}
++		if (c == EOF) {
++			FUNLOCK(stdin);
++			return NULL;
++		}
++		*buf = c;
++	}
++	a_crash();
++}
++
++weak_alias(__fgets_chk, __fgets_unlocked_chk);
++weak_alias(__fgetws_chk, __fgetws_unlocked_chk);
++weak_alias(__fread_chk, __fread_unlocked_chk);
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/string_chk.c	2015-07-25 20:35:45.197708077 -0200
+@@ -0,0 +1,103 @@
++#include <string.h>
++#include <wchar.h>
++#include "atomic.h"
++
++void *__memcpy_chk(void *restrict dest, const void *restrict src, size_t n, size_t destlen)
++{
++	if (n > destlen) a_crash();
++	return memcpy(dest, src, n);
++}
++
++void *__memmove_chk(void *restrict dest, const void *restrict src, size_t n, size_t destlen)
++{
++	if (n > destlen) a_crash();
++	return memmove(dest, src, n);
++}
++
++void *__memset_chk(void *dest, int c, size_t n, size_t destlen)
++{
++	if (n > destlen) a_crash();
++	return memset(dest, c, n);
++}
++
++char *__strcat_chk(char *restrict dest, const char *restrict src, size_t destlen)
++{
++	size_t tot;
++	tot = strnlen(src, destlen);
++	if (tot > SIZE_MAX - strnlen(dest, destlen) - 1) a_crash();
++	tot += strnlen(dest, destlen) + 1;
++	if (tot > destlen) a_crash();
++	return strcat(dest, src);
++}
++
++char *__strncat_chk(char *restrict dest, const char *restrict src, size_t n, size_t destlen)
++{
++	size_t tot;
++	tot = strnlen(dest, destlen);
++	if (tot > SIZE_MAX - strnlen(src, n) - 1) a_crash();
++	tot += strnlen(src, n) + 1;
++	if (tot > destlen) a_crash();
++	return strncat(dest, src, n);
++}
++
++char *__strcpy_chk(char *restrict dest, const char *restrict src, size_t destlen)
++{
++	if(strlen(src) >= destlen) a_crash();
++	return strcpy(dest ,src);
++}
++char *__strncpy_chk(char *restrict dest, const char *restrict src, size_t n, size_t destlen)
++{
++	if (n > destlen) a_crash();
++	return strncpy(dest, src, n);
++}
++
++wchar_t *__wcscat_chk(wchar_t *restrict dest, const wchar_t *src, size_t destlen)
++{
++	size_t tot;
++	tot = wcsnlen(src, destlen);
++	if (tot > SIZE_MAX - wcsnlen(dest, destlen) - 1) a_crash();
++	tot += wcsnlen(dest, destlen) + 1;
++	if (tot > destlen) a_crash();
++	return wcscat(dest, src);
++}
++
++wchar_t *__wcscpy_chk(wchar_t *restrict dest, const wchar_t *restrict src, size_t destlen)
++{
++	size_t srclen = wcsnlen(src, destlen) + 1;
++	if (srclen > destlen) a_crash();
++	return wcscpy(dest, src);
++}
++
++wchar_t *__wcsncat_chk(wchar_t *restrict dest, const wchar_t *restrict src, size_t n, size_t destlen)
++{
++	size_t tot;
++	tot = wcsnlen(dest, destlen);
++	if (tot > SIZE_MAX - wcsnlen(src, n) - 1) a_crash();
++	tot += wcsnlen(dest, destlen) + 1;
++	if (tot > destlen) a_crash();
++	return wcsncat(dest, src, n);
++}
++
++wchar_t *__wcsncpy_chk(wchar_t *restrict dest, const wchar_t *restrict src, size_t n, size_t destlen)
++{
++	if (n > destlen) a_crash();
++	return wcsncpy(dest, src, n);
++}
++
++wchar_t *__wmemcpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t n, size_t dlen)
++{
++	if (n > dlen) a_crash();
++	return wmemcpy(d, s, n);
++}
++
++wchar_t *__wmemmove_chk(wchar_t *d, const wchar_t *s, size_t n, size_t dlen)
++{
++	if (n > dlen) a_crash();
++	return wmemmove(d, s, n);
++}
++
++wchar_t *__wmemset_chk(wchar_t *d, wchar_t c, size_t n, size_t dlen)
++{
++	if (n > dlen) a_crash();
++	return wmemset(d, c, n);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/syslog_chk.c	2015-07-25 17:55:52.052930284 -0200
+@@ -0,0 +1,17 @@
++#include <syslog.h>
++#include <stdarg.h>
++
++void __vsyslog(int, const char *, va_list);
++
++void __syslog_chk(int priority, int flag, const char *message, ...)
++{
++	va_list ap;
++	va_start(ap, message);
++	__vsyslog(priority, message, ap);
++	va_end(ap);
++}
++
++void __vsyslog_chk(int priority, int flag, const char *message, va_list ap)
++{
++	__vsyslog(priority, message, ap);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/ttyname_r_chk.c	2015-07-25 18:07:23.881914259 -0200
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include <atomic.h>
++
++int __ttyname_r_chk(int fd, char *name, size_t size, size_t namelen)
++{
++	if (size > namelen) a_crash();
++	return ttyname_r(fd, name, size);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/wchar_chk.c	2015-07-25 20:36:17.093707338 -0200
+@@ -0,0 +1,45 @@
++#include <wchar.h>
++#include <stdlib.h>
++#include "atomic.h"
++
++size_t __mbsnrtowcs_chk(wchar_t *restrict wcs, const char **restrict src, size_t n, size_t wn, mbstate_t *restrict st, size_t wcslen)
++{
++	if (wn > wcslen) a_crash();
++	return mbsnrtowcs(wcs, src, n, wn, st);
++}
++
++size_t __mbsrtowcs_chk(wchar_t *restrict ws, const char **restrict src, size_t wn, mbstate_t *restrict st, size_t wslen)
++{
++	if (wn > wslen) a_crash();
++	return mbsrtowcs(ws, src, wn, st);
++}
++
++size_t __mbstowcs_chk(wchar_t *restrict ws, const char *restrict s, size_t wn, size_t wslen)
++{
++	if (wn > wslen) a_crash();
++	return mbstowcs(ws, s, wn);
++}
++
++size_t __wcrtomb_chk(char *restrict s, wchar_t wc, mbstate_t *restrict st, size_t slen)
++{
++	if (slen < MB_CUR_MAX) a_crash();
++	return wcrtomb(s, wc, st);
++}
++
++size_t __wcsnrtombs_chk(char *restrict dst, const wchar_t **restrict wcs, size_t wn, size_t n, mbstate_t *restrict st, size_t dstlen)
++{
++	if (n > dstlen) a_crash();
++	return wcsnrtombs(dst, wcs, wn, n, st);
++}
++
++size_t __wcstombs_chk(char *restrict s, const wchar_t *restrict ws, size_t n, size_t slen)
++{
++	if (n > slen) a_crash();
++	return wcstombs(s, ws, n);
++}
++
++int __wctomb_chk(char *s, wchar_t wc, size_t slen)
++{
++	if (slen < MB_CUR_MAX) a_crash();
++	return wctomb(s, wc);
++}
+--- /dev/null	2015-07-26 07:22:08.498218645 -0200
++++ src/compat/wprintf_chk.c	2015-07-25 17:55:52.055930284 -0200
+@@ -0,0 +1,51 @@
++#include <wchar.h>
++#include <stdio.h>
++#include <stdarg.h>
++#include "atomic.h"
++
++int __fwprintf_chk(FILE *restrict f, int flag, const wchar_t *restrict fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vfwprintf(f, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __swprintf_chk(wchar_t *restrict s, size_t n, int flag, size_t slen, const wchar_t *restrict fmt, ...)
++{
++	int ret;
++	va_list ap;
++	if (n > slen) a_crash();
++	va_start(ap, fmt);
++	ret = vswprintf(s, n, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __wprintf_chk(int flag, const wchar_t *restrict fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vfwprintf(stdout, fmt, ap);
++	va_end(ap);
++	return ret;
++}
++
++int __vfwprintf_chk(FILE *f, int flag, const wchar_t *restrict fmt, va_list ap)
++{
++	return vfwprintf(f, fmt, ap);
++}
++
++int __vswprintf_chk(wchar_t *restrict s, size_t n, int flag, size_t slen, const wchar_t *restrict fmt, va_list ap)
++{
++	if (n > slen) a_crash();
++	return vswprintf(s, n, fmt, ap);
++}
++
++int __vwprintf_chk(int flag, const wchar_t *restrict fmt, va_list ap)
++{
++	return vfwprintf(stdout, fmt, ap);
++}
+--- configure.bak	2015-06-04 22:08:24.000000000 -0200
++++ configure	2015-07-29 16:33:31.505325684 -0200
+@@ -418,7 +418,6 @@
+ tryflag CFLAGS_AUTO -Werror=implicit-function-declaration
+ tryflag CFLAGS_AUTO -Werror=implicit-int
+ tryflag CFLAGS_AUTO -Werror=pointer-sign
+-tryflag CFLAGS_AUTO -Werror=pointer-arith
+ 
+ if test "x$warnings" = xyes ; then
+ tryflag CFLAGS_AUTO -Wall
+--- /dev/null	2015-08-02 09:45:38.072599642 -0200
++++ src/compat/math.c	2015-08-02 16:25:34.386451697 -0200
+@@ -0,0 +1,46 @@
++#define _XOPEN_SOURCE 700
++#include <math.h>
++#include <float.h>
++
++#ifdef finitel
++#undef finitel
++#endif
++int finitel(long double x)
++{
++	return isfinite(x);
++}
++
++int __finitel(long double x)
++{
++	return isfinite(x);
++}
++
++int __isinf(double x)
++{
++	return isinf(x);
++}
++
++int isinfl(long double x)
++{
++	return isinf(x);
++}
++
++int __isinfl(long double x)
++{
++	return isinf(x);
++}
++int __isnan(double x)
++{
++	return isnan(x);
++}
++int isnanl(long double x)
++{
++	return isnan(x);
++}
++
++long double scalbl(long double x, long double exp)
++{
++	if (isnan(x) || isnan(exp))
++		return NAN;
++	return x * powl(FLT_RADIX, exp);
++}
+--- include/string.h 2012-06-25 09:02:55.000000000 +0800
++++ include/string.h 2012-07-06 12:50:20.256799602 +0800
+@@ -92,6 +92,7 @@
+ char *strsep(char **, const char *);
+ void *memrchr(const void *, int, size_t);
+ void *mempcpy(void *, const void *, size_t);
++void *rawmemchr(const void *, int);
+ #ifndef __cplusplus
+ char *basename();
+ #endif
+--- src/string/rawmemchr.c 1970-01-01 07:00:00.000000000 +0700
++++ src/string/rawmemchr.c   2012-07-06 12:49:23.956799602 +0800
+@@ -0,0 +1,14 @@
++// Taken from uClibc libc/string/rawmemchr.c
++#include <string.h>
++#include "libc.h"
++
++void *rawmemchr(const void *s, int c)
++{
++       register const unsigned char *r = s;
++
++       while (*r != ((unsigned char)c)) ++r;
++
++       return (void *) r;      /* silence the warning */
++}
++
++weak_alias(rawmemchr, __rawmemchr);
+--- src/thread/pthread_atfork.c	2015-06-04 20:08:24.000000000 +0000
++++ src/pthread_atfork.c	2015-08-21 10:31:57.714902094 +0000
+@@ -46,3 +46,10 @@
+ 	UNLOCK(lock);
+ 	return 0;
+ }
++
++int register_atfork(void (*prepare)(void), void (*parent)(void), void (*child)(void), void * __dso_handle)
++{
++	return pthread_atfork(prepare, parent, child);
++}
++
++weak_alias(register_atfork, __register_atfork);
+--- /dev/null
++++ src/math/isinf.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isinff(float arg)
++{
++    return isinf(arg);
++}
++
++weak_alias(__isinff, isinf);
+--- /dev/null
++++ src/math/isnan.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnanf(float arg)
++{
++    return isnan(arg);
++}
++
++weak_alias(__isnanf, isnan);
+--- src/stdio/tmpnam.c	2015-06-04 22:08:24.000000000 -0200
++++ src/stdio/tmpnam.c	2015-08-23 12:36:53.167030469 -0200
+@@ -27,3 +27,8 @@
+ 	}
+ 	return 0;
+ }
++
++char *tmpnam_r(char *s)
++{
++	return s ? tmpnam(s) : NULL;
++}
+--- src/math/finite.c	2015-06-04 22:08:24.000000000 -0200
++++ src/math/finite.c	2015-08-23 12:40:08.000014438 -0200
+@@ -1,7 +1,9 @@
+ #define _GNU_SOURCE
+ #include <math.h>
++#include "libc.h"
+ 
+-int finite(double x)
++int __finite(double x)
+ {
+ 	return isfinite(x);
+ }
++weak_alias(__finite, finite);
+--- /dev/null	2015-08-25 09:44:41.984259192 -0200
++++ src/compat/__cmsg_nxthdr.c	2015-08-25 19:43:37.802028470 -0200
+@@ -0,0 +1,18 @@
++#include <stddef.h>
++#include <sys/socket.h>
++
++
++struct cmsghdr *
++__cmsg_nxthdr (struct msghdr *mhdr, struct cmsghdr *cmsg)
++{
++ if ((size_t) cmsg->cmsg_len < sizeof (struct cmsghdr))
++     /* The kernel header does this so there may be a reason.  */
++     return NULL;
++
++ cmsg = (struct cmsghdr *) ((unsigned char *) cmsg + CMSG_ALIGN (cmsg->cmsg_len));
++ if ((unsigned char *) (cmsg + 1) > ((unsigned char *) mhdr->msg_control + mhdr->msg_controllen)
++    || ((unsigned char *) cmsg + CMSG_ALIGN (cmsg->cmsg_len) > ((unsigned char *) mhdr->msg_control + mhdr->msg_controllen)))
++     /* No more entries.  */
++     return NULL;
++ return cmsg;
++}

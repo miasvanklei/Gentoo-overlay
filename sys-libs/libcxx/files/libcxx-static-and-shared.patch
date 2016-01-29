@@ -1,0 +1,87 @@
+--- lib/CMakeLists.txt	2015-03-31 06:15:45.000000000 +0200
++++ lib/CMakeLists.txt	2015-10-06 12:17:45.069885643 +0200
+@@ -24,11 +24,7 @@
+   endif()
+ endif()
+ 
+-if (LIBCXX_ENABLE_SHARED)
+-  add_library(cxx SHARED ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
+-else()
+-  add_library(cxx STATIC ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
+-endif()
++add_library(cxx OBJECT ${exclude_from_all} ${LIBCXX_SOURCES} ${LIBCXX_HEADERS})
+ 
+ if (DEFINED LIBCXX_CXX_ABI_DEPS)
+   add_dependencies(cxx LIBCXX_CXX_ABI_DEPS)
+@@ -120,18 +122,39 @@
+   endif()
+ endif()
+ 
+-target_link_libraries(cxx ${LIBCXX_LIBRARIES})
+ split_list(LIBCXX_COMPILE_FLAGS)
+ split_list(LIBCXX_LINK_FLAGS)
+ 
+ set_target_properties(cxx
+   PROPERTIES
+     COMPILE_FLAGS "${LIBCXX_COMPILE_FLAGS}"
++  )
++
++set(LIBCXX_TARGETS)
++
++add_library(cxx_shared SHARED $<TARGET_OBJECTS:cxx>)
++add_library(cxx_static STATIC $<TARGET_OBJECTS:cxx>)
++
++target_link_libraries(cxx_static ${LIBCXX_LIBRARIES})
++target_link_libraries(cxx_shared ${LIBCXX_LIBRARIES})
++
++set_target_properties(cxx_shared
++  PROPERTIES
+     LINK_FLAGS    "${LIBCXX_LINK_FLAGS}"
+     OUTPUT_NAME   "c++"
+     VERSION       "${LIBCXX_ABI_VERSION}.0"
+     SOVERSION     "${LIBCXX_ABI_VERSION}"
+   )
++set_target_properties(cxx_static
++  PROPERTIES
++    LINK_FLAGS    "${LIBCXX_LINK_FLAGS}"
++    OUTPUT_NAME   "c++"
++  )
++
++list(APPEND LIBCXX_TARGETS "cxx_static")
++list(APPEND LIBCXX_TARGETS "cxx_shared")
++
++add_custom_target(allcxx DEPENDS ${LIBCXX_TARGETS})
+ 
+ # Generate a linker script inplace of a libc++.so symlink. Rerun this command
+ # after cxx builds.
+@@ -144,18 +167,18 @@
+   endif()
+   # Generate a linker script inplace of a libc++.so symlink. Rerun this command
+   # after cxx builds.
+-  add_custom_command(TARGET cxx POST_BUILD
++  add_custom_command(TARGET cxx_shared POST_BUILD
+     COMMAND
+       ${PYTHON_EXECUTABLE} ${LIBCXX_SOURCE_DIR}/utils/gen_link_script/gen_link_script.py
+     ARGS
+-      "$<TARGET_LINKER_FILE:cxx>"
++      "$<TARGET_LINKER_FILE:cxx_shared>"
+       "${SCRIPT_ABI_LIBNAME}"
+     WORKING_DIRECTORY ${LIBCXX_BUILD_DIR}
+   )
+ endif()
+ 
+ if (LIBCXX_INSTALL_LIBRARY)
+-  install(TARGETS cxx
++  install(TARGETS ${LIBCXX_TARGETS}
+     LIBRARY DESTINATION lib${LIBCXX_LIBDIR_SUFFIX} COMPONENT libcxx
+     ARCHIVE DESTINATION lib${LIBCXX_LIBDIR_SUFFIX} COMPONENT libcxx
+     )
+@@ -177,7 +177,7 @@
+ if (NOT CMAKE_CONFIGURATION_TYPES AND (LIBCXX_INSTALL_LIBRARY OR
+                                        LIBCXX_INSTALL_HEADERS))
+     if(LIBCXX_INSTALL_LIBRARY)
+-      set(deps DEPENDS cxx)
++      set(deps DEPENDS ${LIBCXX_TARGETS})
+     endif()
+     add_custom_target(install-libcxx
+                       ${deps}

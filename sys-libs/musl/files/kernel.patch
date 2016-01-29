@@ -1,0 +1,55 @@
+--- include/net/if_arp.h	2015-08-21 09:52:48.740508005 +0000
++++ include/net/if_arp.h	2015-08-20 12:01:10.000000000 +0000
+@@ -19,6 +19,8 @@
+ #define	ARPOP_InREPLY	9
+ #define	ARPOP_NAK	10
+ 
++#if !defined(HAVE_ARP_H)
++#define HAVE_ARP_H
+ struct arphdr {
+ 	uint16_t ar_hrd;
+ 	uint16_t ar_pro;
+@@ -109,6 +111,7 @@
+ 	int arp_flags;
+ 	struct sockaddr arp_netmask;
+ };
++#endif
+ 
+ #define ATF_COM		0x02
+ #define	ATF_PERM	0x04
+--- include/netinet/if_ether.h	2015-08-21 09:52:48.744507992 +0000
++++ include/netinet/if_ether.h	2015-08-20 12:01:11.000000000 +0000
+@@ -93,11 +93,14 @@
+ #define ETH_P_IEEE802154 0x00F6
+ #define ETH_P_CAIF	0x00F7
+ 
++#if !defined(HAVE_IF_ETHER)
++#define HAVE_IF_ETHER
+ struct ethhdr {
+ 	uint8_t h_dest[ETH_ALEN];
+ 	uint8_t h_source[ETH_ALEN];
+ 	uint16_t h_proto;
+ };
++#endif
+ 
+ #include <net/ethernet.h>
+ #include <net/if_arp.h>
+--- include/netinet/in.h	2015-06-04 22:08:24.000000000 -0200
++++ include/netinet/in.h	2015-08-22 15:03:58.004786139 -0200
+@@ -21,6 +21,8 @@
+ 	uint8_t sin_zero[8];
+ };
+ 
++#if !defined(HAVE_IN6_H)
++#define HAVE_IN6_H
+ struct in6_addr
+ {
+ 	union {
+@@ -47,6 +49,7 @@
+ 	struct in6_addr ipv6mr_multiaddr;
+ 	unsigned        ipv6mr_interface;
+ };
++#endif
+ 
+ #define INADDR_ANY        ((in_addr_t) 0x00000000)
+ #define INADDR_BROADCAST  ((in_addr_t) 0xffffffff)

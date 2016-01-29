@@ -1,0 +1,46 @@
+--- include/__config	2015-04-12 12:20:41.985108448 +0200
++++ include/__config	2015-04-12 12:01:01.738250865 +0200
+@@ -263,7 +263,7 @@
+ #endif
+ 
+ #if __has_feature(cxx_attributes)
+-#  define _LIBCPP_NORETURN [[noreturn]]
++#  define _LIBCPP_NORETURN //[[noreturn]]
+ #else
+ #  define _LIBCPP_NORETURN __attribute__ ((noreturn))
+ #endif
+--- include/iterator	2015-10-15 21:14:48.101957440 +0200
++++ include/iterator	2015-10-15 21:16:47.751425985 +0200
+@@ -1229,7 +1229,6 @@
+ 
+     _LIBCPP_INLINE_VISIBILITY iterator_type base() const _NOEXCEPT {return __i;}
+ 
+-private:
+ #if _LIBCPP_DEBUG_LEVEL >= 2
+     _LIBCPP_INLINE_VISIBILITY __wrap_iter(const void* __p, iterator_type __x) : __i(__x)
+     {
+@@ -1239,6 +1238,7 @@
+     _LIBCPP_INLINE_VISIBILITY __wrap_iter(iterator_type __x) _NOEXCEPT : __i(__x) {}
+ #endif
+ 
++private:
+     template <class _Up> friend class __wrap_iter;
+     template <class _CharT, class _Traits, class _Alloc> friend class basic_string;
+     template <class _Tp, class _Alloc> friend class _LIBCPP_TYPE_VIS_ONLY vector;
+--- include/wchar.h	2015-10-22 18:01:16.976102099 +0200
++++ include/wchar.h	2015-10-22 18:01:54.726112709 +0200
+@@ -119,13 +119,7 @@
+ #include_next <wchar.h>
+ 
+ // Let <cwchar> know if we have const-correct overloads for wcschr and friends.
+-#if defined(_WCHAR_H_CPLUSPLUS_98_CONFORMANCE_)
+-#  define _LIBCPP_WCHAR_H_HAS_CONST_OVERLOADS 1
+-#elif defined(__GLIBC_PREREQ)
+-#  if __GLIBC_PREREQ(2, 10)
+-#    define _LIBCPP_WCHAR_H_HAS_CONST_OVERLOADS 1
+-#  endif
+-#endif
++#define _LIBCPP_WCHAR_H_HAS_CONST_OVERLOADS 1
+ 
+ #if defined(__cplusplus) && (defined(_LIBCPP_MSVCRT) || defined(__MINGW32__))
+ extern "C++" {

@@ -1,0 +1,24 @@
+--- src/math/finitef.c	2016-01-26 11:14:43.990349718 +0100
++++ src/math/finitef.c	2016-01-26 11:14:25.302503400 +0100
+@@ -1,7 +1,9 @@
+ #define _GNU_SOURCE
+ #include <math.h>
++#include "libc.h"
+ 
+-int finitef(float x)
++int __finitef(float x)
+ {
+ 	return isfinite(x);
+ }
++weak_alias(__finitef, finitef);
+--- src/math/nan.c	2016-01-26 11:14:44.001350214 +0100
++++ src/math/nan.c	2016-01-26 11:14:35.063946748 +0100
+@@ -4,3 +4,8 @@
+ {
+ 	return NAN;
+ }
++
++int __isnanl(long double arg)
++{
++	return isnan(arg);
++}
