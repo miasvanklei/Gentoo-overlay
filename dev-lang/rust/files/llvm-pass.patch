@@ -1,0 +1,183 @@
+From d9426210b197cb0be1db9838342349f38db135e3 Mon Sep 17 00:00:00 2001
+From: Corey Farwell <coreyf@rwell.org>
+Date: Sun, 24 Jan 2016 20:22:24 -0500
+Subject: [PATCH] Register LLVM passes with the correct LLVM pass manager.
+
+LLVM was upgraded to a new version in this commit:
+
+https://github.com/rust-lang/rust/commit/f9d4149c29e8b989fa3624993be379f380e48dcf
+
+which was part of this pull request:
+
+https://github.com/rust-lang/rust/issues/26025
+
+Consider the following two lines from that commit:
+
+https://github.com/rust-lang/rust/commit/f9d4149c29e8b989fa3624993be379f380e48dcf#diff-a3b24dbe2ea7c1981f9ac79f9745f40aL462
+
+https://github.com/rust-lang/rust/commit/f9d4149c29e8b989fa3624993be379f380e48dcf#diff-a3b24dbe2ea7c1981f9ac79f9745f40aL469
+
+The purpose of these lines is to register LLVM passes. Prior to the that
+commit, the passes being handled were assumed to be ModulePasses (a
+specific type of LLVM pass) since they were being added to a ModulePass
+manager. After that commit, both lines were refactored (presumably in an
+attempt to DRY out the code), but the ModulePasses were changed to be
+registered to a FunctionPass manager. This change resulted in
+ModulePasses being run, but a Function object was being passed as a
+parameter to the pass instead of a Module, which resulted in
+segmentation faults.
+
+In this commit, I changed relevant sections of the code to check the
+type of the passes being added and register them to the appropriate pass
+manager.
+
+Closes https://github.com/rust-lang/rust/issues/31067
+---
+ src/librustc_llvm/lib.rs         | 14 +++++++++++++-
+ src/librustc_trans/back/lto.rs   |  8 ++++++--
+ src/librustc_trans/back/write.rs | 19 ++++++++++++++++---
+ src/rustllvm/PassWrapper.cpp     | 36 ++++++++++++++++++++++++++++++------
+ 4 files changed, 65 insertions(+), 12 deletions(-)
+
+diff --git a/src/librustc_llvm/lib.rs b/src/librustc_llvm/lib.rs
+index fc7fa29..0f85c45 100644
+--- a/src/librustc_llvm/lib.rs
++++ b/src/librustc_llvm/lib.rs
+@@ -461,6 +461,15 @@ pub enum ArchiveKind {
+     K_COFF,
+ }
+ 
++/// Represents the different LLVM passes Rust supports
++#[derive(Copy, Clone, PartialEq, Debug)]
++#[repr(C)]
++pub enum SupportedPassKind {
++    Function,
++    Module,
++    Unsupported,
++}
++
+ // Opaque pointer types
+ #[allow(missing_copy_implementations)]
+ pub enum Module_opaque {}
+@@ -2008,7 +2017,10 @@ extern {
+     pub fn LLVMIsAAllocaInst(value_ref: ValueRef) -> ValueRef;
+     pub fn LLVMIsAConstantInt(value_ref: ValueRef) -> ValueRef;
+ 
+-    pub fn LLVMRustAddPass(PM: PassManagerRef, Pass: *const c_char) -> bool;
++    pub fn LLVMRustPassKind(Pass: PassRef) -> SupportedPassKind;
++    pub fn LLVMRustFindAndCreatePass(Pass: *const c_char) -> PassRef;
++    pub fn LLVMRustAddPass(PM: PassManagerRef, Pass: PassRef);
++
+     pub fn LLVMRustCreateTargetMachine(Triple: *const c_char,
+                                        CPU: *const c_char,
+                                        Features: *const c_char,
+diff --git a/src/librustc_trans/back/lto.rs b/src/librustc_trans/back/lto.rs
+index 85419a0..06d32b8 100644
+--- a/src/librustc_trans/back/lto.rs
++++ b/src/librustc_trans/back/lto.rs
+@@ -145,7 +145,9 @@ pub fn run(sess: &session::Session, llmod: ModuleRef,
+     unsafe {
+         let pm = llvm::LLVMCreatePassManager();
+         llvm::LLVMRustAddAnalysisPasses(tm, pm, llmod);
+-        llvm::LLVMRustAddPass(pm, "verify\0".as_ptr() as *const _);
++        let pass = llvm::LLVMRustFindAndCreatePass("verify\0".as_ptr() as *const _);
++        assert!(!pass.is_null());
++        llvm::LLVMRustAddPass(pm, pass);
+ 
+         with_llvm_pmb(llmod, config, &mut |b| {
+             llvm::LLVMPassManagerBuilderPopulateLTOPassManager(b, pm,
+@@ -153,7 +155,9 @@ pub fn run(sess: &session::Session, llmod: ModuleRef,
+                 /* RunInliner = */ True);
+         });
+ 
+-        llvm::LLVMRustAddPass(pm, "verify\0".as_ptr() as *const _);
++        let pass = llvm::LLVMRustFindAndCreatePass("verify\0".as_ptr() as *const _);
++        assert!(!pass.is_null());
++        llvm::LLVMRustAddPass(pm, pass);
+ 
+         time(sess.time_passes(), "LTO passes", ||
+              llvm::LLVMRunPassManager(pm, llmod));
+diff --git a/src/librustc_trans/back/write.rs b/src/librustc_trans/back/write.rs
+index 544df17..bc007da 100644
+--- a/src/librustc_trans/back/write.rs
++++ b/src/librustc_trans/back/write.rs
+@@ -446,9 +446,22 @@ unsafe fn optimize_and_codegen(cgcx: &CodegenContext,
+ 
+         // If we're verifying or linting, add them to the function pass
+         // manager.
+-        let addpass = |pass: &str| {
+-            let pass = CString::new(pass).unwrap();
+-            llvm::LLVMRustAddPass(fpm, pass.as_ptr())
++        let addpass = |pass_name: &str| {
++            let pass_name = CString::new(pass_name).unwrap();
++            let pass = llvm::LLVMRustFindAndCreatePass(pass_name.as_ptr());
++            if pass.is_null() {
++                return false;
++            }
++            let pass_manager = match llvm::LLVMRustPassKind(pass) {
++                llvm::SupportedPassKind::Function => fpm,
++                llvm::SupportedPassKind::Module => mpm,
++                llvm::SupportedPassKind::Unsupported => {
++                    cgcx.handler.err("Encountered LLVM pass kind we can't handle");
++                    return true
++                },
++            };
++            llvm::LLVMRustAddPass(pass_manager, pass);
++            true
+         };
+ 
+         if !config.no_verify { assert!(addpass("verify")); }
+diff --git a/src/rustllvm/PassWrapper.cpp b/src/rustllvm/PassWrapper.cpp
+index 3009667..d698571 100644
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -58,19 +58,43 @@ LLVMInitializePasses() {
+   initializeTarget(Registry);
+ }
+ 
+-extern "C" bool
+-LLVMRustAddPass(LLVMPassManagerRef PM, const char *PassName) {
+-    PassManagerBase *pm = unwrap(PM);
+ 
++enum class SupportedPassKind {
++  Function,
++  Module,
++  Unsupported
++};
++
++extern "C" Pass*
++LLVMRustFindAndCreatePass(const char *PassName) {
+     StringRef SR(PassName);
+     PassRegistry *PR = PassRegistry::getPassRegistry();
+ 
+     const PassInfo *PI = PR->getPassInfo(SR);
+     if (PI) {
+-        pm->add(PI->createPass());
+-        return true;
++        return PI->createPass();
+     }
+-    return false;
++    return NULL;
++}
++
++extern "C" SupportedPassKind
++LLVMRustPassKind(Pass *pass) {
++    assert(pass);
++    PassKind passKind = pass->getPassKind();
++    if (passKind == PT_Module) {
++        return SupportedPassKind::Module;
++    } else if (passKind == PT_Function) {
++        return SupportedPassKind::Function;
++    } else {
++        return SupportedPassKind::Unsupported;
++    }
++}
++
++extern "C" void
++LLVMRustAddPass(LLVMPassManagerRef PM, Pass *pass) {
++    assert(pass);
++    PassManagerBase *pm = unwrap(PM);
++    pm->add(pass);
+ }
+ 
+ extern "C" LLVMTargetMachineRef

@@ -6,23 +6,20 @@ EAPI=5
 
 PYTHON_COMPAT=( python2_7 )
 
-inherit eutils multilib python-any-r1
-
-MY_P="rustc-${PV}"
+inherit eutils git-2 multilib python-any-r1
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="http://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
-
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
-SLOT="nightly"
-KEYWORDS="~amd64 ~x86"
+SLOT="git"
+EGIT_REPO_URI="https://github.com/rust-lang/rust.git"
+KEYWORDS=""
 
-IUSE="+clang -debug doc +libcxx +system-llvm"
+IUSE="+clang debug doc +libcxx +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
-CDEPEND="libcxx? ( sys-devel/llvm[libcxx] )
+CDEPEND="libcxx? ( sys-libs/libcxx )
 	>=app-eselect/eselect-rust-0.3_pre20150425
 	!dev-lang/rust:0
 "
@@ -32,12 +29,35 @@ DEPEND="${CDEPEND}
 	clang? ( sys-devel/clang )
 	system-llvm? ( >=sys-devel/llvm-3.6.0 )
 "
-RDEPEND="${CDEPEND}"
-
-S=${WORKDIR}/${MY_P}
+RDEPEND="${CDEPEND}
+"
 
 src_unpack() {
-	unpack "${MY_P}-src.tar.gz" || die
+	git-2_src_unpack
+
+	EGIT_REPO_URI="https://github.com/rust-lang/hoedown.git"
+	EGIT_SOURCEDIR="${S}/src/rt/hoedown"
+	git-2_src_unpack
+
+	EGIT_REPO_URI="https://github.com/rust-lang/rust-installer.git"
+	EGIT_SOURCEDIR="${S}/src/rust-installer"
+	git-2_src_unpack
+
+	EGIT_REPO_URI="https://github.com/rust-lang-nursery/libc.git"
+	EGIT_SOURCEDIR="${S}/src/liblibc"
+	git-2_src_unpack
+
+	EGIT_REPO_URI="https://github.com/rust-lang/compiler-rt.git"
+	EGIT_SOURCEDIR="${S}/src/compiler-rt"
+	git-2_src_unpack
+
+	use amd64 && BUILD_TRIPLE=x86_64-unknown-linux-gnu
+	use x86 && BUILD_TRIPLE=i686-unknown-linux-gnu
+	export CFG_SRC_DIR="${S}" && \
+		cd ${S} && \
+		mkdir -p "${S}/dl" && \
+		mkdir -p "${S}/${BUILD_TRIPLE}/stage0/bin" && \
+		python2 "${S}/src/etc/get-snapshot.py" ${BUILD_TRIPLE} || die
 }
 
 src_prepare() {
@@ -45,22 +65,17 @@ src_prepare() {
 	sed -i -e "s/CFG_FILENAME_EXTRA=.*/CFG_FILENAME_EXTRA=${postfix}/" mk/main.mk || die
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
-	epatch "${FILESDIR}/${PN}-1.1.0-install.patch"
-	epatch "${FILESDIR}/llvm-shared.patch"
-	epatch "${FILESDIR}/no-multitarget.patch"
 }
 
 src_configure() {
 	export CFG_DISABLE_LDCONFIG="notempty"
-
 	"${ECONF_SOURCE:-.}"/configure \
 		--prefix="${EPREFIX}/usr" \
 		--libdir="${EPREFIX}/usr/$(get_libdir)/${P}" \
 		--mandir="${EPREFIX}/usr/share/${P}/man" \
-		--release-channel=${SLOT} \
 		--disable-manage-submodules \
 		--disable-jemalloc \
-		--target=x86_64-unknown-linux-gnu,i686-unknown-linux-gnu \
+                --target=x86_64-unknown-linux-gnu,i686-unknown-linux-gnu \
 		$(use_enable clang) \
 		$(use_enable debug) \
 		$(use_enable debug llvm-assertions) \
@@ -79,15 +94,11 @@ src_compile() {
 }
 
 src_install() {
-	unset SUDO_USER
-
 	default
 
 	mv "${D}/usr/bin/rustc" "${D}/usr/bin/rustc-${PV}" || die
 	mv "${D}/usr/bin/rustdoc" "${D}/usr/bin/rustdoc-${PV}" || die
 	mv "${D}/usr/bin/rust-gdb" "${D}/usr/bin/rust-gdb-${PV}" || die
-
-	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
 
 	dodir "/usr/share/doc/rust-${PV}/"
 	mv "${D}/usr/share/doc/rust"/* "${D}/usr/share/doc/rust-${PV}/" || die
@@ -106,9 +117,6 @@ src_install() {
 	dodir /etc/env.d/rust
 	insinto /etc/env.d/rust
 	doins "${T}/provider-${P}"
-
-	mkdir -p "${D}"/usr/src/rust-${PV}
-	cp -r src/lib* "${D}"/usr/src/rust-${PV}/
 }
 
 pkg_postinst() {
