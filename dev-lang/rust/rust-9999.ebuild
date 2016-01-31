@@ -117,6 +117,9 @@ src_install() {
 	dodir /etc/env.d/rust
 	insinto /etc/env.d/rust
 	doins "${T}/provider-${P}"
+
+	mkdir -p "${D}"/usr/src/rust-${PV}
+        cp -r src/lib* "${D}"/usr/src/rust-${PV}/
 }
 
 pkg_postinst() {
