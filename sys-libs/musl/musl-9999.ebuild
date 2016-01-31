@@ -32,7 +32,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/context.patch
 	epatch "${FILESDIR}"/pthread-try-timed.patch
 	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
-	epatch "${FILESDIR}"/dmd-compat.patch
+	epatch "${FILESDIR}"/dmd-cargo-compat.patch
 	epatch "${FILESDIR}"/musl-obstack.patch
         cp /usr/include/unwind.h "${S}"/src/internal
         cp /usr/include/__libunwind_config.h "${S}"/src/internal
