@@ -50,13 +50,15 @@ src_configure(){
 
 src_install() {
 	mkdir -p ${S}/app/share/qmplay2/lang
-	mv lang/*.qm ${S}/app/share/qmplay2/lang
-	cp ChangeLog ${S}/app/share/qmplay2
 	mkdir -p ${S}/app/include/QMPlay2
 	mkdir -p app/share/applications
-	cp ${S}src/gui/Unix/QMPlay2*.desktop ${S}app/share/applications
-	cp ${S}/src/qmplay2/headers/* ${S}/app/include/QMPlay2
+	mkdir -p ${S}/app/share/icons/hicolor/128x128
 	mkdir "${D}"/usr
+	cp lang/*.qm ${S}/app/share/qmplay2/lang
+	cp ChangeLog ${S}/app/share/qmplay2
+	cp ${S}/src/gui/Icons/QMPlay2.png ${S}/app/share/icons/hicolor/128x128
+	cp ${S}/src/gui/Unix/QMPlay2.desktop ${S}/app/share/applications
+	cp ${S}/src/qmplay2/headers/* ${S}/app/include/QMPlay2
 
 	cp -r "${S}"/app/* "${D}"/usr
 }

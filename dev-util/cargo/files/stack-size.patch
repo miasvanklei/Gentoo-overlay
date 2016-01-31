@@ -1,26 +1,30 @@
---- cargo-0.7.0/src/bin/cargo.rs	2015-12-08 18:00:31.000000000 +0000
-+++ cargo-0.7.0/src/bin/cargo.rs	2015-12-27 21:19:47.998824104 +0000
-@@ -9,6 +9,7 @@
+--- cargo-0.8.0/src/bin/cargo.rs
++++ cargo-0.8.0/src/bin/cargo.rs
+@@ -11,6 +11,7 @@
  use std::env;
  use std::fs;
  use std::path::PathBuf;
 +use std::thread::Builder;
- 
+
  use cargo::execute_main_without_stdin;
  use cargo::util::{self, CliResult, lev_distance, Config, human, CargoResult};
-@@ -55,7 +56,14 @@
+@@ -57,7 +58,18 @@
  
  fn main() {
      env_logger::init().unwrap();
--    execute_main_without_stdin(execute, true, USAGE)
 +
-+    // stack is still to big for usage with musl. So increase stack size.
++    // Right now the algorithm in cargo::core::resolve is pretty recursive and
++    // runs the risk of blowing the stack. Platforms tend to have different
++    // stack limits by default (I just witnessed 512K on OSX and 2MB on Linux)
++    // so to get a consistent experience just spawn ourselves with a large stack
++    // size.
 +    let stack_size = env::var("CARGO_STACK_SIZE").ok()
 +                         .and_then(|s| s.parse().ok())
 +                         .unwrap_or(8 * 1024 * 1024); // 8MB
 +    Builder::new().stack_size(stack_size).spawn(|| {
 +        execute_main_without_stdin(execute, true, USAGE)
 +    }).unwrap().join().unwrap();
+-    execute_main_without_stdin(execute, true, USAGE)
  }
  
- macro_rules! each_subcommand{
+ macro_rules! each_subcommand{ ($mac:ident) => ({

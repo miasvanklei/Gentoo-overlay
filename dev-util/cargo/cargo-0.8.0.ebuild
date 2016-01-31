@@ -23,46 +23,45 @@ crate_uris(){
 	done
 }
 
-CRATES="aho-corasick-0.3.4
+CRATES="aho-corasick-0.4.0
 bitflags-0.1.1
 bufstream-0.1.1
-cmake-0.1.8
+cmake-0.1.12
 crossbeam-0.1.6
 curl-0.2.14
-curl-sys-0.1.28
-docopt-0.6.76
+curl-sys-0.1.29
+docopt-0.6.78
 env_logger-0.3.2
-filetime-0.1.7
+filetime-0.1.8
 flate2-0.2.11
-gcc-0.3.19
+gcc-0.3.21
 git2-0.3.3
 git2-curl-0.3.0
 glob-0.2.10
 hamcrest-0.1.0
-libc-0.1.12
-libc-0.2.2
-libgit2-sys-0.3.7
-libssh2-sys-0.1.33
-libz-sys-0.1.9
-log-0.3.3
+libc-0.2.4
+libgit2-sys-0.3.8
+libssh2-sys-0.1.34
+libz-sys-1.0.0
+log-0.3.4
 matches-0.1.2
 memchr-0.1.7
 miniz-sys-0.1.7
-num-0.1.27
-num_cpus-0.2.7
-openssl-sys-0.7.0
+num-0.1.29
+num_cpus-0.2.10
+openssl-sys-0.7.4
 pkg-config-0.3.6
-rand-0.3.12
-regex-0.1.41
+rand-0.3.13
+regex-0.1.44
 regex-syntax-0.2.2
 rustc-serialize-0.3.16
 semver-0.2.0
 strsim-0.3.0
 tar-0.3.2
 tempdir-0.3.4
-term-0.2.13
+term-0.2.14
 time-0.1.34
-toml-0.1.23
+toml-0.1.25
 url-0.2.38
 uuid-0.1.18
 "
@@ -70,22 +69,20 @@ uuid-0.1.18
 SRC_URI="https://github.com/rust-lang/cargo/archive/${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/rust-lang/rust-installer/archive/${RUST_INSTALLER_COMMIT}.tar.gz -> rust-installer-${RUST_INSTALLER_COMMIT}.tar.gz
 	$(crate_uris $CRATES)
-        !system-cargo? (
-		x86?   (
-			https://static-rust-lang-org.s3.amazonaws.com/cargo-dist/${CARGO_SNAPSHOT_DATE}/cargo-nightly-i686-unknown-linux-gnu.tar.gz ->
-			cargo-nightly-i686-unknown-linux-gnu-${CARGO_SNAPSHOT_DATE}.tar.gz
-		)
-		amd64? (
-			https://static-rust-lang-org.s3.amazonaws.com/cargo-dist/${CARGO_SNAPSHOT_DATE}/cargo-nightly-x86_64-unknown-linux-gnu.tar.gz ->
-			cargo-nightly-x86_64-unknown-linux-gnu-${CARGO_SNAPSHOT_DATE}.tar.gz
-		)
+	x86?   (
+		https://static-rust-lang-org.s3.amazonaws.com/cargo-dist/${CARGO_SNAPSHOT_DATE}/cargo-nightly-i686-unknown-linux-gnu.tar.gz ->
+		cargo-nightly-i686-unknown-linux-gnu-${CARGO_SNAPSHOT_DATE}.tar.gz
+	)
+	amd64? (
+		https://static-rust-lang-org.s3.amazonaws.com/cargo-dist/${CARGO_SNAPSHOT_DATE}/cargo-nightly-x86_64-unknown-linux-gnu.tar.gz ->
+		cargo-nightly-x86_64-unknown-linux-gnu-${CARGO_SNAPSHOT_DATE}.tar.gz
 	)"
 
 LICENSE="|| ( MIT Apache-2.0 )"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 
-IUSE="doc test +system-cargo"
+IUSE="doc test"
 
 COMMON_DEPEND="sys-libs/zlib
 	dev-libs/openssl:*
@@ -95,9 +92,8 @@ RDEPEND="${COMMON_DEPEND}
 	!dev-util/cargo-bin
 	net-misc/curl[ssl]"
 DEPEND="${COMMON_DEPEND}
-	|| ( >=dev-lang/rust-1.1.0 >=dev-lang/rust-bin-1.1.0 )
-	dev-util/cmake
-	system-cargo? ( dev-util/cargo )"
+	>=virtual/rust-1.1.0:*
+	dev-util/cmake"
 
 PATCHES=(
 	"${FILESDIR}"/${P}-local-deps.patch
@@ -119,10 +115,7 @@ src_unpack() {
 		esac
 	done
 
-	if use !system-cargo; then
-		mv cargo-nightly-*-unknown-linux-gnu "cargo-snapshot" || die
-	fi
-
+	mv cargo-nightly-*-unknown-linux-gnu "cargo-snapshot" || die
 	mv "rust-installer-${RUST_INSTALLER_COMMIT}"/* "${P}"/src/rust-installer || die
 }
 
@@ -165,7 +158,7 @@ src_configure() {
 		--disable-verify-install
 		--disable-debug
 		--disable-cross-tests
-		--local-cargo=/usr/bin/cargo
+		--local-cargo="${WORKDIR}"/cargo-snapshot/cargo/bin/cargo
 	)
 	autotools-utils_src_configure
 }
