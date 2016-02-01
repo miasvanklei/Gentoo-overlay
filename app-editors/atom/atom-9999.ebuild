@@ -56,7 +56,6 @@ src_prepare() {
 		|| die "Failed to fix Gruntfile"
 
 	epatch "${FILESDIR}/remove-minidump.patch"
-	epatch "${FILESDIR}/fix-atom-build.patch"
 
 	# Fix atom location guessing
 	sed -i -e 's/ATOM_PATH="$USR_DIRECTORY\/share\/atom/ATOM_PATH="$USR_DIRECTORY\/../g' \
@@ -95,16 +94,15 @@ src_compile() {
 src_install() {
 	into /usr
 	insinto /usr/share/applications
+	newins resources/linux/Atom.desktop atom.desktop
+	insinto /usr/share/pixmaps
+	doins resources/atom.png
+	insinto /usr/share/licenses/"${PN}"
+	doins LICENSE.md
 	insinto /usr/share/${PN}/resources
 	exeinto /usr/bin
 
-	cd "${S}"
-	doins resources/linux/Atom.desktop
-
-	cd "${S}/resources"
-
 	cd "${T}/Atom/resources"
-	dodoc LICENSE.md
 
 	# Installs everything in Atom/resources/app
 	doins -r .
