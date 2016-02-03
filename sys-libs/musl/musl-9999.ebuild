@@ -63,7 +63,6 @@ multilib_src_install() {
 	emake DESTDIR="${D}" install || die
 
 	rm -r "${D}"/usr/include/libintl.h
-	rm -r "${D}"/usr/include/iconv.h
 
 	# musl provides ldd via a sym link to its ld.so
 	local target=$(${CC} -dumpmachine)

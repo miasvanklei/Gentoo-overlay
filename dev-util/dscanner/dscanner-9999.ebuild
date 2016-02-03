@@ -14,11 +14,11 @@ EGIT_REPO_URI="https://github.com/Hackerpilot/Dscanner"
 
 inherit git-r3
 
-DEPEND="dev-lang/ldc2"
+DEPEND="dev-lang/dmd"
 RDEPEND="${DEPEND}"
 
 src_compile() {
-	make ldcbuild
+	make
 }
 
 src_install() {
