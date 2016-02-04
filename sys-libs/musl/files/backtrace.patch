@@ -1,70 +1,4 @@
 --- /dev/null	2015-08-21 21:30:31.093138902 -0200
-+++ src/compat/backtrace.c	2015-08-21 23:13:44.956985806 -0200
-@@ -0,0 +1,63 @@
-+/*
-+ * Perform stack unwinding by using the _Unwind_Backtrace.
-+ *
-+ * User application that wants to use backtrace needs to be
-+ * compiled with -fasynchronous-unwind-tables option and -rdynamic to get full
-+ * symbols printed.
-+ *
-+ * Copyright (C) 2009, 2010 STMicroelectronics Ltd.
-+ *
-+ * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
-+ * - Initial implementation for glibc
-+ *
-+ * Author(s): Carmelo Amoroso <carmelo.amoroso@st.com>
-+ * - Reworked for uClibc
-+ *   - use dlsym/dlopen from libdl
-+ *   - rewrite initialisation to not use libc_once
-+ *   - make it available in static link too
-+ *
-+ * Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
-+ *
-+ */
-+
-+#define _GNU_SOURCE
-+
-+#include <execinfo.h>
-+#include <dlfcn.h>
-+#include <stdlib.h>
-+#include <unwind.h>
-+#include <assert.h>
-+#include <stdio.h>
-+
-+struct trace_arg
-+{
-+  void **array;
-+  int cnt, size;
-+};
-+
-+static _Unwind_Reason_Code
-+backtrace_helper (struct _Unwind_Context *ctx, void *a)
-+{
-+	struct trace_arg *arg = a;
-+
-+	/* We are first called with address in the __backtrace function. Skip it. */
-+	if (arg->cnt != -1)
-+		arg->array[arg->cnt] = (void *) _Unwind_GetIP (ctx);
-+	if (++arg->cnt == arg->size)
-+		return _URC_END_OF_STACK;
-+	return _URC_NO_REASON;
-+}
-+
-+/*
-+ * Perform stack unwinding by using the _Unwind_Backtrace.
-+ *
-+ */
-+int backtrace (void **array, int size)
-+{
-+	struct trace_arg arg = { .array = array, .size = size, .cnt = -1 };
-+
-+	if (size >= 1)
-+		_Unwind_Backtrace (backtrace_helper, &arg);
-+
-+	return arg.cnt != -1 ? arg.cnt : 0;
-+}
---- /dev/null	2015-08-21 21:30:31.093138902 -0200
 +++ src/compat/backtracesyms.c	2015-08-21 23:13:59.836940941 -0200
 @@ -0,0 +1,106 @@
 +/* Return list with names for address in backtrace.
@@ -341,3 +275,94 @@
 +#endif
 +
 +#endif /* execinfo.h  */
+--- /dev/null	2016-02-04 11:11:22.958838658 +0100
++++ src/compat/backtrace.c	2016-02-04 12:07:15.689275999 +0100
+@@ -0,0 +1,88 @@
++/*
++ * Perform stack unwinding by using the _Unwind_Backtrace.
++ *
++ * User application that wants to use backtrace needs to be
++ * compiled with -fasynchronous-unwind-tables option and -rdynamic to get full
++ * symbols printed.
++ *
++ * Copyright (C) 2009, 2010 STMicroelectronics Ltd.
++ *
++ * Author(s): Giuseppe Cavallaro <peppe.cavallaro@st.com>
++ * - Initial implementation for glibc
++ *
++ * Author(s): Carmelo Amoroso <carmelo.amoroso@st.com>
++ * - Reworked for uClibc
++ *   - use dlsym/dlopen from libdl
++ *   - rewrite initialisation to not use libc_once
++ *   - make it available in static link too
++ *
++ * Licensed under the LGPL v2.1, see the file COPYING.LIB in this tarball.
++ *
++ */
++
++#define _GNU_SOURCE
++
++#include <execinfo.h>
++#include <dlfcn.h>
++#include <stdlib.h>
++#include <assert.h>
++#include <stdio.h>
++#include <stdint.h>
++
++struct trace_arg
++{
++  void **array;
++  int cnt, size;
++};
++
++typedef enum {
++  _URC_NO_REASON = 0,
++  _URC_OK = 0,
++  _URC_FOREIGN_EXCEPTION_CAUGHT = 1,
++  _URC_FATAL_PHASE2_ERROR = 2,
++  _URC_FATAL_PHASE1_ERROR = 3,
++  _URC_NORMAL_STOP = 4,
++  _URC_END_OF_STACK = 5,
++  _URC_HANDLER_FOUND = 6,
++  _URC_INSTALL_CONTEXT = 7,
++  _URC_CONTINUE_UNWIND = 8,
++} _Unwind_Reason_Code;
++
++typedef enum {
++  _UA_SEARCH_PHASE = 1,
++  _UA_CLEANUP_PHASE = 2,
++  _UA_HANDLER_FRAME = 4,
++  _UA_FORCE_UNWIND = 8,
++  _UA_END_OF_STACK = 16 // gcc extension to C++ ABI
++} _Unwind_Action;
++
++typedef _Unwind_Reason_Code (*_Unwind_Trace_Fn)(struct _Unwind_Context *, void *);
++extern _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn, void *);
++extern uintptr_t _Unwind_GetIP(struct _Unwind_Context *context);
++
++static _Unwind_Reason_Code
++backtrace_helper (struct _Unwind_Context *ctx, void *a)
++{
++	struct trace_arg *arg = a;
++
++	/* We are first called with address in the __backtrace function. Skip it. */
++	if (arg->cnt != -1)
++		arg->array[arg->cnt] = (void *) _Unwind_GetIP (ctx);
++	if (++arg->cnt == arg->size)
++		return _URC_END_OF_STACK;
++	return _URC_NO_REASON;
++}
++
++/*
++ * Perform stack unwinding by using the _Unwind_Backtrace.
++ *
++ */
++int backtrace (void **array, int size)
++{
++	struct trace_arg arg = { .array = array, .size = size, .cnt = -1 };
++
++	if (size >= 1)
++		_Unwind_Backtrace (backtrace_helper, &arg);
++
++	return arg.cnt != -1 ? arg.cnt : 0;
++}

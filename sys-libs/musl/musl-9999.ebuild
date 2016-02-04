@@ -7,6 +7,7 @@ EAPI=5
 inherit eutils flag-o-matic toolchain-funcs multilib-minimal git-2
 
 EGIT_REPO_URI="git://git.musl-libc.org/musl"
+EVCS_OFFLINE=" "
 
 DESCRIPTION="Lightweight, fast and simple C library focused on standards-conformance and safety"
 HOMEPAGE="http://www.musl-libc.org/"
@@ -18,7 +19,9 @@ IUSE="+compat +libunwind"
 RDEPEND="!sys-apps/getent
 	 libunwind? ( sys-libs/libunwind )
 	 compat? ( sys-libs/bsd-compat
-		   sys-libs/argp-standalone )"
+		   sys-libs/argp-standalone
+		   sys-libs/musl-obstack
+		   sys-libs/musl-fts )"
 
 src_prepare() {
 	epatch "${FILESDIR}"/kernel.patch
@@ -33,10 +36,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/pthread-try-timed.patch
 	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
 	epatch "${FILESDIR}"/dmd-cargo-compat.patch
-	epatch "${FILESDIR}"/musl-obstack.patch
-        cp /usr/include/unwind.h "${S}"/src/internal
-        cp /usr/include/__libunwind_config.h "${S}"/src/internal
-	mkdir -p "${D}"/usr/bin || die
 }
 
 multilib_src_configure() {
@@ -62,8 +61,6 @@ multilib_src_install() {
 
 	emake DESTDIR="${D}" install || die
 
-	rm -r "${D}"/usr/include/libintl.h
-
 	# musl provides ldd via a sym link to its ld.so
 	local target=$(${CC} -dumpmachine)
 	local arch
@@ -80,11 +77,12 @@ multilib_src_install() {
 	mv "${D}"/usr/$(get_libdir)/ld-musl-${arch}.so.1 "${D}"/usr/$(get_libdir)/libc.so
 
 	if multilib_is_native_abi; then
-		dosym /lib/ld-musl-${arch}.so.1 /usr/bin/ldd
 		local i
-        	for i in getconf getent ; do
-                	${CC} ${CFLAGS} "${FILESDIR}"/$i.c -o "$D"/usr/bin/$i
+        	for i in getconf getent iconv; do
+                	${CC} ${CFLAGS} "${FILESDIR}"/$i.c -o $i
+			dobin $i
         	done
+		dosym /lib/ld-musl-${arch}.so.1 /usr/bin/ldd
 	fi
 
 	dosym /$(get_libdir)/ld-musl-${arch}.so.1 /usr/bin/${target}-ldd
