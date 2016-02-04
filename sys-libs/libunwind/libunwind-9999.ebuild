@@ -55,7 +55,7 @@ multilib_src_install() {
 	cp ${compiler_rt_dir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/usr/$(get_libdir)/libgcc.a || die
 
 	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/usr/$(get_libdir)/libgcc_s.so.1 \
-	-Wl,--whole-archive ${D}/usr/$(get_libdir)/libgcc.a ${D}/usr/$(get_libdir)/libgcc_eh.a \
+	-Wl,--whole-archive ${D}/usr/$(get_libdir)/libgcc.a ${D}/usr/$(get_libdir)/libgcc_eh.a /usr/$(get_libdir)/libBlocksRuntime.a \
 	-Wl,--no-whole-archive || die
 	cd ${D}/usr/$(get_libdir) || die
 	ln -s libgcc_s.so.1 libgcc_s.so || die

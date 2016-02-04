@@ -39,8 +39,8 @@ COMMON_DEPEND="
 	gold? ( >=sys-devel/binutils-2.22:*[cxx] )
 	libedit? ( dev-libs/libedit:0=[${MULTILIB_USEDEP}] )
 	libffi? ( >=virtual/libffi-3.0.13-r1:0=[${MULTILIB_USEDEP}] )
-	libcxx? ( sys-libs/libcxx[${MULTILIB_USEDEP}] )
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )
+	libcxx? ( sys-libs/libcxx[${MULTILIB_USEDEP}] )
 	ocaml? (
 		>=dev-lang/ocaml-4.00.0:0=
 		dev-ml/findlib
@@ -65,6 +65,7 @@ DEPEND="${COMMON_DEPEND}
 	ocaml? ( test? ( dev-ml/ounit ) )
 	${PYTHON_DEPS}"
 RDEPEND="${COMMON_DEPEND}
+	sys-libs/libcxx
 	clang? ( !<=sys-devel/clang-${PV}-r99 )
 	openmp? ( sys-libs/libomp )
 	abi_x86_32? ( !<=app-emulation/emul-linux-x86-baselibs-20130224-r2
@@ -222,7 +223,6 @@ src_prepare() {
 		epatch "${FILESDIR}"/musl/cfe/cfe-010-fix-ada-in-configure.patch
 		epatch "${FILESDIR}"/musl/cfe/cfe-011-increase-gcc-version.patch
 		epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt-002-musl-no-dlvsym.patch
-		epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt-add-blocks-support.patch
 		epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt_musl_001-disable-sanitizers.patch
 	fi
 
