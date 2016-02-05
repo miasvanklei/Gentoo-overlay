@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=6
+EAPI=5
 
-inherit autotools
+inherit eutils autotools
 
 DESCRIPTION="A standalone library to implement GNU libc's obstack."
 HOMEPAGE="https://github.com/pullmoll/musl-obstack"
@@ -21,6 +21,7 @@ DEPEND="!sys-libs/glibc
 
 src_prepare() {
 	default
+	epatch "${FILESDIR}"/obstack-printf.patch
 	eautoreconf
 }
 
