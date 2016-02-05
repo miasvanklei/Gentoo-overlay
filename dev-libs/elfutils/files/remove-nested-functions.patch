@@ -1,0 +1,141 @@
+From 203f0a3eec8c630c5183fb9984d66339c1ea3c31 Mon Sep 17 00:00:00 2001
+From: Chih-Hung Hsieh <chh@google.com>
+Date: Fri, 22 Jan 2016 10:04:33 -0800
+Subject: Move nested functions in elf_compress.c and elf_strptr.c.
+
+* elf_compress.c (__libelf_compress): do_deflate_cleanup
+* elf_strptr.c (elf_strptr): get_zdata
+
+Signed-off-by: Chih-Hung Hsieh <chh@google.com>
+---
+ libelf/ChangeLog      |  7 +++++++
+ libelf/elf_compress.c | 25 +++++++++++++++----------
+ libelf/elf_strptr.c   | 33 +++++++++++++++++----------------
+ 3 files changed, 39 insertions(+), 26 deletions(-)
+
+diff --git a/libelf/ChangeLog b/libelf/ChangeLog
+index aabf6f6..afe6a6a 100644
+--- a/libelf/ChangeLog
++++ b/libelf/ChangeLog
+@@ -1,3 +1,10 @@
++2016-01-22  Chih-Hung Hsieh <chh@google.com>
++
++	* elf_compress.c (__libelf_compress): Move nested function
++	'do_deflate_cleanup' to file scope to compile with clang.
++	* elf_strptr.c (elf_strptr): Move nested function 'get_zdata'
++	to file scope to compile with clang.
++
+ 2016-01-13  Mark Wielaard  <mjw@redhat.com>
+ 
+ 	* libelf.h: Check SHF_COMPRESSED is defined. If not define it and the
+diff --git a/libelf/elf_compress.c b/libelf/elf_compress.c
+index ec5b717..4c7c35e 100644
+--- a/libelf/elf_compress.c
++++ b/libelf/elf_compress.c
+@@ -45,6 +45,21 @@
+ # define MAX(a, b) ((a) > (b) ? (a) : (b))
+ #endif
+ 
++/* Cleanup and return result.  Don't leak memory.  */
++static void *
++do_deflate_cleanup (void *result, z_stream *z, void *out_buf,
++                    int ei_data, Elf_Data *cdatap)
++{
++  deflateEnd (z);
++  free (out_buf);
++  if (ei_data != MY_ELFDATA)
++    free (cdatap->d_buf);
++  return result;
++}
++
++#define deflate_cleanup(result) \
++    do_deflate_cleanup(result, &z, out_buf, ei_data, &cdata)
++
+ /* Given a section, uses the (in-memory) Elf_Data to extract the
+    original data size (including the given header size) and data
+    alignment.  Returns a buffer that has at least hsize bytes (for the
+@@ -109,16 +124,6 @@ __libelf_compress (Elf_Scn *scn, size_t hsize, int ei_data,
+   Elf_Data cdata;
+   cdata.d_buf = NULL;
+ 
+-  /* Cleanup and return result.  Don't leak memory.  */
+-  void *deflate_cleanup (void *result)
+-  {
+-    deflateEnd (&z);
+-    free (out_buf);
+-    if (ei_data != MY_ELFDATA)
+-      free (cdata.d_buf);
+-    return result;
+-  }
+-
+   /* Loop over data buffers.  */
+   int flush = Z_NO_FLUSH;
+   do
+diff --git a/libelf/elf_strptr.c b/libelf/elf_strptr.c
+index e3b5876..ea21045 100644
+--- a/libelf/elf_strptr.c
++++ b/libelf/elf_strptr.c
+@@ -37,6 +37,21 @@
+ #include "libelfP.h"
+ 
+ 
++static void *
++get_zdata (Elf_Scn *strscn)
++{
++  size_t zsize, zalign;
++  void *zdata = __libelf_decompress_elf (strscn, &zsize, &zalign);
++  if (zdata == NULL)
++    return NULL;
++
++  strscn->zdata_base = zdata;
++  strscn->zdata_size = zsize;
++  strscn->zdata_align = zalign;
++
++  return zdata;
++}
++
+ char *
+ elf_strptr (Elf *elf, size_t idx, size_t offset)
+ {
+@@ -83,20 +98,6 @@ elf_strptr (Elf *elf, size_t idx, size_t offset)
+ 	}
+     }
+ 
+-  void *get_zdata (void)
+-  {
+-    size_t zsize, zalign;
+-    void *zdata = __libelf_decompress_elf (strscn, &zsize, &zalign);
+-    if (zdata == NULL)
+-      return NULL;
+-
+-    strscn->zdata_base = zdata;
+-    strscn->zdata_size = zsize;
+-    strscn->zdata_align = zalign;
+-
+-    return zdata;
+-  }
+-
+   size_t sh_size = 0;
+   if (elf->class == ELFCLASS32)
+     {
+@@ -112,7 +113,7 @@ elf_strptr (Elf *elf, size_t idx, size_t offset)
+ 	sh_size = shdr->sh_size;
+       else
+ 	{
+-	  if (strscn->zdata_base == NULL && get_zdata () == NULL)
++	  if (strscn->zdata_base == NULL && get_zdata (strscn) == NULL)
+ 	    goto out;
+ 	  sh_size = strscn->zdata_size;
+ 	}
+@@ -138,7 +139,7 @@ elf_strptr (Elf *elf, size_t idx, size_t offset)
+ 	sh_size = shdr->sh_size;
+       else
+ 	{
+-	  if (strscn->zdata_base == NULL && get_zdata () == NULL)
++	  if (strscn->zdata_base == NULL && get_zdata (strscn) == NULL)
+ 	    goto out;
+ 	  sh_size = strscn->zdata_size;
+ 	}
+-- 
+cgit v0.11.2
+
