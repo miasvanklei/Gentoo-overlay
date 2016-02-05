@@ -131,6 +131,7 @@ src_prepare()
 	epatch ${FILESDIR}/musl-fixes-chromium.patch
 	epatch ${FILESDIR}/chromium-system-jinja-r7.patch
 	epatch ${FILESDIR}/fix-build-after-removeing-bundles-libs.patch
+	epatch ${FILESDIR}/no-execinfo.patch
 
 	cd vendor/brightray/vendor/libchromiumcontent/vendor/chromium/src || die
 	build/linux/unbundle/remove_bundled_libraries.py \

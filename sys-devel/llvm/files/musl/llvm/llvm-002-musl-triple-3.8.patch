@@ -54,14 +54,14 @@ index dd101df..c5bdcca 100644
 --- a/lib/Target/ARM/ARMSubtarget.h
 +++ b/lib/Target/ARM/ARMSubtarget.h
 @@ -381,8 +381,10 @@ public:
- bool isTargetEHABICompatible() const {
+   bool isTargetEHABICompatible() const {
      return (TargetTriple.getEnvironment() == Triple::EABI ||
              TargetTriple.getEnvironment() == Triple::GNUEABI ||
 +            TargetTriple.getEnvironment() == Triple::MuslEABI ||
              TargetTriple.getEnvironment() == Triple::EABIHF ||
              TargetTriple.getEnvironment() == Triple::GNUEABIHF ||
 +            TargetTriple.getEnvironment() == Triple::MuslEABIHF ||
-             TargetTriple.getEnvironment() == Triple::Android) &&
+             isTargetAndroid()) &&
             !isTargetDarwin() && !isTargetWindows();
    }
 @@ -391,6 +393,7 @@ public:
@@ -69,7 +69,7 @@ index dd101df..c5bdcca 100644
      return TargetTriple.getEnvironment() == Triple::GNUEABIHF ||
             TargetTriple.getEnvironment() == Triple::EABIHF ||
 +           TargetTriple.getEnvironment() == Triple::MuslEABIHF ||
-            isTargetWindows();
+            isTargetWindows() || isAAPCS16_ABI();
    }
    bool isTargetAndroid() const {
 diff --git a/lib/Target/ARM/ARMTargetMachine.cpp b/lib/Target/ARM/ARMTargetMachine.cpp

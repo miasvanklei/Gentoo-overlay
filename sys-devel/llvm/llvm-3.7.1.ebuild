@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -12,19 +12,19 @@ inherit check-reqs cmake-utils eutils flag-o-matic multilib \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/${P/_}.src.tar.xz
-	clang? ( http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/compiler-rt-${PV/_}.src.tar.xz
-		http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/cfe-${PV/_}.src.tar.xz
-		http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/clang-tools-extra-${PV/_}.src.tar.xz )
-	lldb? ( http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/lldb-${PV/_}.src.tar.xz )
-	polly? ( http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/polly-${PV/_}.src.tar.xz )
-	!doc? ( http://dev.gentoo.org/~voyageur/distfiles/${P/_rc*}-manpages.tar.bz2 )"
+SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
+	clang? ( http://llvm.org/releases/${PV}/compiler-rt-${PV}.src.tar.xz
+		http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz
+		http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz )
+	lldb? ( http://llvm.org/releases/${PV}/lldb-${PV}.src.tar.xz )
+	polly? ( http://llvm.org/releases/${PV}/polly-${PV}.src.tar.xz )
+	!doc? ( http://dev.gentoo.org/~voyageur/distfiles/${PN}-3.7.0-manpages.tar.bz2 )"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x64-freebsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos"
-IUSE="+clang +cxx1y debug doc +eh +gold -jitevents +libedit +libcxx +libffi lldb multitarget +ncurses -ocaml +openmp -oprofile +polly
-	python +rtti +static-analyzer test +threads +xml werror video_cards_radeon kernel_Darwin"
+IUSE="+clang +cxx1y debug doc +eh -jitevents +gold +libedit +libcxx +libffi lldb multitarget +ncurses -ocaml +openmp -oprofile +polly
+	python +rtti +static-analyzer test +threads +xml -werror video_cards_radeon kernel_Darwin"
 
 COMMON_DEPEND="
 	sys-libs/zlib:0=
@@ -59,13 +59,13 @@ DEPEND="${COMMON_DEPEND}
 	kernel_Darwin? ( sys-libs/libcxx )
 	clang? ( xml? ( virtual/pkgconfig ) )
 	doc? ( dev-python/sphinx )
+	gold? ( sys-libs/binutils-libs )
 	libffi? ( virtual/pkgconfig )
 	lldb? ( dev-lang/swig )
 	!!<dev-python/configparser-3.3.0.2
 	ocaml? ( test? ( dev-ml/ounit ) )
 	${PYTHON_DEPS}"
 RDEPEND="${COMMON_DEPEND}
-	sys-libs/libcxx
 	clang? ( !<=sys-devel/clang-${PV}-r99 )
 	openmp? ( sys-libs/libomp )
 	abi_x86_32? ( !<=app-emulation/emul-linux-x86-baselibs-20130224-r2
@@ -147,11 +147,6 @@ src_unpack() {
 		mv "${WORKDIR}"/lldb-${PV/_}.src "${S}"/tools/lldb \
 			|| die "lldb source directory move failed"
 	fi
-
-	if use polly; then
-                mv "${WORKDIR}"/polly-${PV/_}.src "${S}"/tools/polly \
-                        || die "polly source directory move failed"
-	fi
 }
 
 src_prepare() {
@@ -174,30 +169,33 @@ src_prepare() {
 	# https://llvm.org/bugs/show_bug.cgi?id=18341
 	epatch "${FILESDIR}"/cmake/0004-cmake-Do-not-install-libgtest.patch
 
-	# Allow custom cmake build types (like 'Gentoo')
-	epatch "${FILESDIR}"/cmake/${PN}-3.8-allow_custom_cmake_build_types.patch
-
 	# Fix llvm-config for shared linking and sane flags
 	# https://bugs.gentoo.org/show_bug.cgi?id=565358
-	epatch "${FILESDIR}"/llvm-3.8-llvm-config.patch
+	epatch "${FILESDIR}"/llvm-3.7-llvm-config.patch
 
-	# By a commit 61dbca10ea813ea3af447cc7ac2556a5e81211f9 and bug 25059 they tried to fix soname for libllvm*
-	# but this failed. revert a part of that commit to have correct soname.
-	epatch "${FILESDIR}"/fix-so-version.patch
+	# Fix msan with newer kernels, #569894
+	epatch "${FILESDIR}"/llvm-3.7-msan-fix.patch
+
+	# disable use of SDK on OSX, bug #568758
+	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
 	if use clang; then
-		# Automatically select active system GCC's libraries, bugs #406163 and #417913
-		epatch "${FILESDIR}"/clang-3.5-gentoo-runtime-gcc-detection-v3.patch
+		epatch "${FILESDIR}"/clang-3.6-gentoo-install.patch
 
+		epatch "${FILESDIR}"/clang-3.4-darwin_prefix-include-paths.patch
 		eprefixify tools/clang/lib/Frontend/InitHeaderSearch.cpp
 
 		sed -i -e "s^@EPREFIX@^${EPREFIX}^" \
-			tools/clang/tools/scan-build/bin/scan-build || die
+			tools/clang/tools/scan-build/scan-build || die
 
 		# Install clang runtime into /usr/lib/clang
 		# https://llvm.org/bugs/show_bug.cgi?id=23792
-		epatch "${FILESDIR}"/cmake/clang-0001-Install-clang-runtime-into-usr-lib-without-suffix-3.8.patch
+		epatch "${FILESDIR}"/cmake/clang-0001-Install-clang-runtime-into-usr-lib-without-suffix.patch
 		epatch "${FILESDIR}"/cmake/compiler-rt-0001-cmake-Install-compiler-rt-into-usr-lib-without-suffi.patch
+
+		# Do not force -march flags on arm platforms
+		# https://bugs.gentoo.org/show_bug.cgi?id=562706
+		epatch "${FILESDIR}"/cmake/${PN}-3.7.0-compiler_rt_arm_march_flags.patch
 
 		# Make it possible to override CLANG_LIBDIR_SUFFIX
 		# (that is used only to find LLVMgold.so)
@@ -205,6 +203,9 @@ src_prepare() {
 		epatch "${FILESDIR}"/cmake/clang-0002-cmake-Make-CLANG_LIBDIR_SUFFIX-overridable.patch
 
 		pushd projects/compiler-rt >/dev/null || die
+
+		# Fix msan with newer kernels, compiler-rt part, #569894
+		epatch "${FILESDIR}"/compiler-rt-3.7-msan-fix.patch
 
 		# Fix WX sections, bug #421527
 		find lib/builtins -type f -name '*.S' -exec sed \
@@ -214,38 +215,42 @@ src_prepare() {
 		popd >/dev/null || die
 
 		# Fix for MUSL
-		epatch "${FILESDIR}"/musl/cfe/cfe-001-fix-stdint.patch
-		epatch "${FILESDIR}"/musl/cfe/cfe-003-fix-unwind-chain-inclusion.patch
-		epatch "${FILESDIR}"/musl/cfe/cfe-004-add-musl-triples.patch
-		epatch "${FILESDIR}"/musl/cfe/cfe-005-fix-dynamic-linker-paths.patch
-		epatch "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array-3.8.patch
-		epatch "${FILESDIR}"/musl/cfe/cfe-009-add-gentoo-linux-distro.patch
-		epatch "${FILESDIR}"/musl/cfe/cfe-010-fix-ada-in-configure.patch
-		epatch "${FILESDIR}"/musl/cfe/cfe-011-increase-gcc-version.patch
-		epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt-002-musl-no-dlvsym.patch
-		epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt_musl_001-disable-sanitizers.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-001-fix-stdint.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-003-fix-unwind-chain-inclusion.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-004-add-musl-triples.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-005-fix-dynamic-linker-paths.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-009-add-gentoo-linux-distro.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-010-fix-ada-in-configure.patch
+                epatch "${FILESDIR}"/musl/cfe/cfe-011-increase-gcc-version.patch
+                epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt-002-musl-no-dlvsym.patch
+                epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt_musl_001-disable-sanitizers.patch
+
 	fi
 
 	if use libcxx; then
-		epatch "${FILESDIR}"/musl/cfe/cfe-012-link-in-libcxxabi.patch
-		sed -i '/^  return ToolChain::CST_Libstdcxx/s@stdcxx@cxx@' tools/clang/lib/Driver/ToolChain.cpp
-	fi
+                epatch "${FILESDIR}"/musl/cfe/cfe-012-link-in-libcxxabi.patch
+                sed -i '/^  return ToolChain::CST_Libstdcxx/s@stdcxx@cxx@' tools/clang/lib/Driver/ToolChain.cpp
+        fi
+
 
 	if use lldb; then
-		# Fix for MUSL
-                epatch "${FILESDIR}"/musl/lldb/lldb-musl.patch
-
-                if use elibc_musl; then
-                        sed -i 's|__ptrace_request|int|g' tools/lldb/source/Plugins/Process/Linux/NativeProcessLinux.cpp || die
-                fi
-
 		# Do not install dummy readline.so module from
 		# https://llvm.org/bugs/show_bug.cgi?id=18841
 		sed -e 's/add_subdirectory(readline)/#&/' \
 			-i tools/lldb/scripts/Python/modules/CMakeLists.txt || die
+
+		# Fix Python paths, bugs #562436 and #562438
+		epatch "${FILESDIR}"/${PN}-3.7-lldb_python.patch
+		sed -e "s/GENTOO_LIBDIR/$(get_libdir)/" \
+			-i tools/lldb/scripts/Python/finishSwigPythonLLDB.py || die
+
+		# Fix build with ncurses[tinfo], #560474
+		# http://llvm.org/viewvc/llvm-project?view=revision&revision=247842
+		epatch "${FILESDIR}"/cmake/${PN}-3.7.0-lldb_tinfo.patch
 	fi
 
-        # Fix for MUSL
+	# Fix for MUSL
         epatch "${FILESDIR}"/musl/llvm/llvm-002-musl-triple.patch
         epatch "${FILESDIR}"/musl/llvm/llvm-003-musl.patch
 
@@ -286,14 +291,17 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_FFI=$(usex libffi)
 		-DLLVM_ENABLE_TERMINFO=$(usex ncurses)
 		-DLLVM_ENABLE_ASSERTIONS=$(usex debug)
-		-DLLVM_ENABLE_CXX1Y=$(usex cxx1y)
-		-DLLVM_ENABLE_THREADS=$(usex threads)
-		-DLLVM_USE_OPROFILE=$(usex oprofile)
-		-DLLVM_USE_INTEL_JITEVENTS=$(usex jitevents)
-		-DLLVM_ENABLE_WERROR=$(usex werror)
-		-DLLVM_ENABLE_RTTI=$(usex rtti)
-		-DLLVM_ENABLE_EH=$(usex eh)
-		-DWITH_POLLY=$(usex polly)
+
+ 		-DLLVM_ENABLE_CXX1Y=$(usex cxx1y)
+                -DLLVM_ENABLE_THREADS=$(usex threads)
+                -DLLVM_USE_OPROFILE=$(usex oprofile)
+                -DLLVM_USE_INTEL_JITEVENTS=$(usex jitevents)
+                -DLLVM_ENABLE_WERROR=$(usex werror)
+                -DLLVM_ENABLE_RTTI=$(usex rtti)
+                -DLLVM_ENABLE_EH=$(usex eh)
+                -DWITH_POLLY=$(usex polly)
+
+		-DWITH_POLLY=OFF # TODO
 
 		-DLLVM_HOST_TRIPLE="${CHOST}"
 
@@ -387,6 +395,12 @@ multilib_src_configure() {
 			-DCLANG_LIBDIR_SUFFIX="${NATIVE_LIBDIR#lib}"
 		)
 
+		# -- not needed when compiler-rt is built with host compiler --
+		# cmake passes host C*FLAGS to compiler-rt build
+		# which is performed using clang, so we need to filter out
+		# some flags clang does not support
+		# (if you know some more flags that don't work, let us know)
+		#filter-flags -msahf -frecord-gcc-switches
 	fi
 
 	cmake-utils_src_configure
@@ -453,7 +467,7 @@ multilib_src_install() {
 
 	if multilib_is_native_abi; then
 		# Install man pages.
-		use doc || doman "${WORKDIR}"/${P/_rc*}-manpages/*.1
+		use doc || doman "${WORKDIR}"/${PN}-3.7.0-manpages/*.1
 
 		# Symlink the gold plugin.
 		if use gold; then
@@ -508,6 +522,31 @@ multilib_src_install_all() {
 	if use clang; then
 		pushd tools/clang >/dev/null || die
 
+		if use static-analyzer ; then
+			pushd tools/scan-build >/dev/null || die
+
+			dobin ccc-analyzer scan-build
+			dosym ccc-analyzer /usr/bin/c++-analyzer
+			doman scan-build.1
+
+			insinto /usr/share/llvm
+			doins scanview.css sorttable.js
+
+			popd >/dev/null || die
+		fi
+
+		if use static-analyzer ; then
+			pushd tools/scan-view >/dev/null || die
+
+			python_doscript scan-view
+
+			touch __init__.py || die
+			python_moduleinto clang
+			python_domodule *.py Resources
+
+			popd >/dev/null || die
+		fi
+
 		if use python ; then
 			pushd bindings/python/clang >/dev/null || die
 
@@ -523,14 +562,14 @@ multilib_src_install_all() {
 		popd >/dev/null || die
 
 		python_fix_shebang "${ED}"
-		if use static-analyzer; then
-			python_optimize "${ED}"usr/share/scan-view
+		if use lldb && use python; then
+			python_optimize
 		fi
 	fi
 }
 
 pkg_postinst() {
-	if use clang && ! has_version 'sys-libs/libomp'; then
+	if use clang && ! has_version sys-libs/libomp; then
 		elog "To enable OpenMP support in clang, install sys-libs/libomp."
 	fi
 }

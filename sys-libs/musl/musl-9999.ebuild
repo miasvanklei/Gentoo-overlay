@@ -29,7 +29,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/printf.patch
 	epatch "${FILESDIR}"/glibc-abi-compat.patch
 	epatch "${FILESDIR}"/qsort_r.patch
-	epatch "${FILESDIR}"/backtrace.patch
 	epatch "${FILESDIR}"/ptrace.patch
 	epatch "${FILESDIR}"/mallinfo.patch
 	epatch "${FILESDIR}"/context.patch
@@ -58,34 +57,29 @@ multilib_src_install() {
 	/usr/include/bits/*
 	)
 
-
 	emake DESTDIR="${D}" install || die
 
-	# musl provides ldd via a sym link to its ld.so
-	local target=$(${CC} -dumpmachine)
-	local arch
-	case ${target} in
-                x86_64*) arch="x86_64";;
-                arm*)   arch="armhf";; # We only have hardfloat right now
-               	mips*)  arch="mips${endian}";;
-                ppc*)   arch="powerpc";;
-                i?86*)   arch="i386";;
-        esac
 
-	mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/$(get_libdir)/ld-musl-${arch}.so.1
-	gen_usr_ldscript ld-musl-${arch}.so.1
-	mv "${D}"/usr/$(get_libdir)/ld-musl-${arch}.so.1 "${D}"/usr/$(get_libdir)/libc.so
+	# musl provides ldd through its linker
+	local ldso=$(basename "${D}"/$(get_libdir)/ld-musl-*)
 
-	if multilib_is_native_abi; then
-		local i
-        	for i in getconf getent iconv; do
-                	${CC} ${CFLAGS} "${FILESDIR}"/$i.c -o $i
-			dobin $i
-        	done
-		dosym /lib/ld-musl-${arch}.so.1 /usr/bin/ldd
-	fi
 
-	dosym /$(get_libdir)/ld-musl-${arch}.so.1 /usr/bin/${target}-ldd
+	# move symlinks around and create linkerscript to directly link with libc.so
+        mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/$(get_libdir)/${ldso}
+        gen_usr_ldscript ${ldso}
+        mv "${D}"/usr/$(get_libdir)/${ldso} "${D}"/usr/$(get_libdir)/libc.so
+
+	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd
+}
+
+multilib_src_install_all() {
+	local ldso=$(basename "${D}"/$(get_libdir)/ld-musl-*)
+	local i
+        for i in getconf getent iconv; do
+		${CC} ${CFLAGS} "${FILESDIR}"/$i.c -o $i
+		dobin $i
+        done
+	dosym /$(get_libdir)/${ldso} /usr/bin/ldd
 }
 
 pkg_postinst() {
