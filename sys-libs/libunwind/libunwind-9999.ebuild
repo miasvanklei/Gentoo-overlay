@@ -34,11 +34,16 @@ multilib_src_configure() {
 
 multilib_src_compile() {
 	cmake-utils_src_compile
+	for i in backtrace backtracesyms backtracesymsfd; do
+                ${CC} ${CFLAGS} -fPIC -I"${FILESDIR}"/ -c "${FILESDIR}"/$i.c -o $i.o
+        done
+	ar rcs libexecinfo.a backtrace.o backtracesyms.o backtracesymsfd.o
 }
 
 multilib_src_install() {
 	cmake-utils_src_install
 
+	cp libexecinfo.a ${D}/usr/$(get_libdir)
 	mv ${D}/usr/$(get_libdir)/libunwind.a ${D}/usr/$(get_libdir)/libgcc_eh.a || die
 
 	local compiler_rt_dir=$(${CC} -print-file-name= 2>/dev/null)
@@ -55,8 +60,9 @@ multilib_src_install() {
 	cp ${compiler_rt_dir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/usr/$(get_libdir)/libgcc.a || die
 
 	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/usr/$(get_libdir)/libgcc_s.so.1 \
-	-Wl,--whole-archive ${D}/usr/$(get_libdir)/libgcc.a ${D}/usr/$(get_libdir)/libgcc_eh.a /usr/$(get_libdir)/libBlocksRuntime.a \
-	-Wl,--no-whole-archive || die
+	-Wl,--whole-archive ${D}/usr/$(get_libdir)/libgcc.a ${D}/usr/$(get_libdir)/libgcc_eh.a \
+	/usr/$(get_libdir)/libBlocksRuntime.a ${D}/usr/$(get_libdir)/libexecinfo.a -Wl,--no-whole-archive || die
+
 	cd ${D}/usr/$(get_libdir) || die
 	ln -s libgcc_s.so.1 libgcc_s.so || die
 }
@@ -64,4 +70,6 @@ multilib_src_install() {
 multilib_src_install_all() {
         mkdir "${D}"/usr/include
         cp -r "${S}"/include/* "${D}"/usr/include || die
+	cp "${FILESDIR}"/execinfo.h "${D}"/usr/include || die
+
 }
