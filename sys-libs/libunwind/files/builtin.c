@@ -1,5 +1,4 @@
-/*	$NetBSD: execinfo.h,v 1.2 2012/06/09 21:22:17 christos Exp $	*/
-/*	$FreeBSD: releng/10.1/contrib/libexecinfo/execinfo.h 255177 2013-09-03 13:38:41Z emaste $ */
+/*	$NetBSD: builtin.c,v 1.1 2012/05/26 22:02:29 christos Exp $	*/
 
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
@@ -29,23 +28,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef _EXECINFO_H_
-#define _EXECINFO_H_
+#include <sys/param.h>
+#include <sys/types.h>
 
-#ifdef __cplusplus
-extern "C" {
+#include "execinfo.h"
+
+#ifdef __MACHINE_STACK_GROWS_UP
+#define BELOW >
+#else
+#define BELOW <
 #endif
 
-#include <stddef.h>
+#ifdef __lint__
+#define __builtin_frame_address(a)	((void *)a)
+#endif
 
-size_t backtrace(void **, size_t);
-char **backtrace_symbols(void *const *, size_t);
-int backtrace_symbols_fd(void *const *, size_t, int);
-char **backtrace_symbols_fmt(void *const *, size_t, const char *);
-int backtrace_symbols_fd_fmt(void *const *, size_t, int, const char *);
+struct frameinfo {
+	struct frameinfo *next;
+	void *return_address;
+};
 
-#ifdef __cplusplus
+size_t
+backtrace(void **trace, size_t len)
+{
+	const struct frameinfo *frame = __builtin_frame_address(0);
+	void *stack = &stack;
+
+	for (size_t i = 0; i < len; i++) {
+		if ((const void *)frame BELOW stack)
+			return i;
+		trace[i] = frame->return_address;
+		frame = frame->next;
+	}
+
+	return len;
 }
-#endif
-
-#endif /* _EXECINFO_H_ */

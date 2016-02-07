@@ -1,5 +1,4 @@
-/*	$NetBSD: execinfo.h,v 1.2 2012/06/09 21:22:17 christos Exp $	*/
-/*	$FreeBSD: releng/10.1/contrib/libexecinfo/execinfo.h 255177 2013-09-03 13:38:41Z emaste $ */
+/*	$NetBSD: symtab.h,v 1.1 2012/05/26 22:02:29 christos Exp $	*/
 
 /*-
  * Copyright (c) 2012 The NetBSD Foundation, Inc.
@@ -29,23 +28,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef _EXECINFO_H_
-#define _EXECINFO_H_
+#ifndef _SYMTAB_H_
+#define _SYMTAB_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stddef.h>
+typedef struct symtab symtab_t;
 
-size_t backtrace(void **, size_t);
-char **backtrace_symbols(void *const *, size_t);
-int backtrace_symbols_fd(void *const *, size_t, int);
-char **backtrace_symbols_fmt(void *const *, size_t, const char *);
-int backtrace_symbols_fd_fmt(void *const *, size_t, int, const char *);
+void symtab_destroy(symtab_t *);
+symtab_t * symtab_create(int, int, int);
+int symtab_find(const symtab_t *, const void *, Dl_info *);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _EXECINFO_H_ */
+#endif /* _SYMTAB_H_ */

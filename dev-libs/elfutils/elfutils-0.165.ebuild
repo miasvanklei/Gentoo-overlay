@@ -31,9 +31,9 @@ DEPEND="${RDEPEND}
 	>=sys-devel/flex-2.5.4a
 	sys-devel/m4
 	elibc_musl? (
-		sys-libs/argp-standalone
-		sys-libs/musl-fts
-		sys-libs/musl-obstack
+		sys-libs/argp-standalone[${MULTILIB_USEDEP}]
+		sys-libs/musl-fts[${MULTILIB_USEDEP}]
+		sys-libs/musl-obstack[${MULTILIB_USEDEP}]
 	)"
 
 src_prepare() {

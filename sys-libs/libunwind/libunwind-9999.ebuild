@@ -16,7 +16,8 @@ LICENSE="MIT LGPL-2 GPL-2"
 SLOT="0"
 
 RDEPEND="sys-devel/llvm:0
-	sys-devel/llvm[clang]"
+	sys-devel/llvm[clang]
+	dev-libs/elfutils[${MULTILIB_USEDEP}]"
 
 src_prepare() {
 	epatch "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
@@ -39,10 +40,10 @@ multilib_src_compile() {
 
 	einfo compiling libexecinfo
 
-	for i in backtrace backtracesyms backtracesymsfd; do
+	for i in backtrace builtin symtab; do
                 ${CC} ${CFLAGS} -fPIC -I"${FILESDIR}"/ -c "${FILESDIR}"/$i.c -o $i.o
         done
-	ar rcs libexecinfo.a backtrace.o backtracesyms.o backtracesymsfd.o
+	ar rcs libexecinfo.a backtrace.o builtin.o symtab.o
 }
 
 multilib_src_install() {
@@ -72,7 +73,7 @@ multilib_src_install() {
 
 	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/temp/${libdir#lib}/libgcc_s.so.1 \
 	-Wl,--whole-archive ${D}/temp/${libdir#lib}/libgcc.a ${D}/temp/${libdir#lib}/libgcc_eh.a \
-	/usr/${libdir}/libBlocksRuntime.a ${D}/temp/${libdir#lib}/libexecinfo.a -Wl,--no-whole-archive || die
+	/usr/${libdir}/libBlocksRuntime.a ${D}/temp/${libdir#lib}/libexecinfo.a -Wl,--no-whole-archive -lelf || die
 
 	cd ${D}/temp/${libdir#lib} || die
 	ln -s libgcc_s.so.1 libgcc_s.so || die
