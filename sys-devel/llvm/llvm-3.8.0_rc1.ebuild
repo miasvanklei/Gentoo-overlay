@@ -218,6 +218,7 @@ src_prepare() {
 		# Fix for MUSL
 		epatch "${FILESDIR}"/musl/cfe/cfe-001-fix-stdint.patch
 		epatch "${FILESDIR}"/musl/cfe/cfe-003-fix-unwind-chain-inclusion.patch
+		epatch "${FILESDIR}"/musl/cfe/cfe-004-add-musl-triples.patch
 		epatch "${FILESDIR}"/musl/cfe/cfe-005-fix-dynamic-linker-paths.patch
 		epatch "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array-3.8.patch
 		epatch "${FILESDIR}"/musl/cfe/cfe-009-add-gentoo-linux-distro.patch

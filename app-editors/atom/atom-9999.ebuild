@@ -79,6 +79,7 @@ src_configure() {
 	./script/build --verbose --build-dir "${T}"
 
 	cp /usr/bin/node apm/node_modules/atom-package-manager/bin/node
+	sed -i s/--harmony_collections//g apm/node_modules/atom-package-manager/bin/apm
 
 	cd apm/node_modules/atom-package-manager/node_modules
 	npm rebuild --build-from-source
@@ -95,8 +96,6 @@ src_install() {
 	into /usr
 	insinto /usr/share/applications
 	newins resources/linux/Atom.desktop atom.desktop
-	insinto /usr/share/pixmaps
-	doins resources/atom.png
 	insinto /usr/share/licenses/"${PN}"
 	doins LICENSE.md
 	insinto /usr/share/${PN}/resources

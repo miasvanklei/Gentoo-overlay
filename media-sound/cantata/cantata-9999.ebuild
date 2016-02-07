@@ -55,7 +55,6 @@ RDEPEND="
         )
         taglib? (
                 media-libs/taglib[asf,mp4]
-                media-libs/taglib-extras
         )
 	mpd? ( media-sound/mpd )
 "
@@ -85,7 +84,6 @@ src_configure() {
                 $(cmake-utils_use_enable replaygain FFMPEG)
                 $(cmake-utils_use_enable replaygain MPG123)
                 $(cmake-utils_use_enable taglib)
-                $(cmake-utils_use_enable taglib TAGLIB_EXTRAS)
                 $(cmake-utils_use_enable udisks DEVICES_SUPPORT)
                 $(cmake-utils_use_enable stream HTTP_STREAM_PLAYBACK)
 		$(cmake-utils_use_enable remote REMOTE_DEVICES)

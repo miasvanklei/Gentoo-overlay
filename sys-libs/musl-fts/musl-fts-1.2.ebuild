@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit autotools
+inherit autotools multilib-minimal
 
 DESCRIPTION="A standalone library to implement fts."
 HOMEPAGE="https://github.com/pullmoll/musl-fts"
@@ -24,13 +24,15 @@ src_prepare() {
 	eautoreconf
 }
 
-src_configure() {
-	econf \
-	$(use_enable static-libs static)
+multilib_src_configure() {
+        ECONF_SOURCE="${S}" \
+        econf \
+        $(use_enable static-libs static)
 }
 
-src_install() {
-	default
-	insinto /usr/lib/pkgconfig
-	doins musl-fts.pc
+multilib_src_install() {
+        default
+        insinto /usr/lib/pkgconfig
+        doins musl-fts.pc
 }
+

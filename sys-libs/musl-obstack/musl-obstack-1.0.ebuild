@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils autotools
+inherit eutils autotools multilib-minimal
 
 DESCRIPTION="A standalone library to implement GNU libc's obstack."
 HOMEPAGE="https://github.com/pullmoll/musl-obstack"
@@ -25,12 +25,13 @@ src_prepare() {
 	eautoreconf
 }
 
-src_configure() {
+multilib_src_configure() {
+        ECONF_SOURCE="${S}" \
 	econf \
 	$(use_enable static-libs static)
 }
 
-src_install() {
+multilib_src_install() {
 	default
 	insinto /usr/lib/pkgconfig
 	doins musl-obstack.pc

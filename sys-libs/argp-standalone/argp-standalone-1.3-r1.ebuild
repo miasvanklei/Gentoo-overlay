@@ -4,7 +4,7 @@
 
 EAPI="4"
 
-inherit eutils autotools flag-o-matic
+inherit eutils autotools flag-o-matic multilib-minimal
 
 DESCRIPTION="Standalone argp library for use with uclibc"
 HOMEPAGE="http://www.lysator.liu.se/~nisse/misc/"
@@ -27,13 +27,14 @@ src_prepare() {
 	eautoreconf
 }
 
-src_configure() {
+multilib_src_configure() {
+	ECONF_SOURCE="${S}" \
 	econf \
 	$(use_enable static-libs static)
 }
 
-src_install() {
+multilib_src_install() {
 	default
 	insinto /usr/include
-	doins argp.h
+	doins ${S}/argp.h
 }
