@@ -16,8 +16,7 @@ LICENSE="MIT LGPL-2 GPL-2"
 SLOT="0"
 
 RDEPEND="sys-devel/llvm:0
-	sys-devel/llvm[clang]
-	dev-libs/elfutils[${MULTILIB_USEDEP}]"
+	sys-devel/llvm[clang]"
 
 src_prepare() {
 	epatch "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
@@ -37,13 +36,6 @@ multilib_src_configure() {
 
 multilib_src_compile() {
 	cmake-utils_src_compile
-
-	einfo compiling libexecinfo
-
-	for i in backtrace builtin symtab; do
-                ${CC} ${CFLAGS} -fPIC -I"${FILESDIR}"/ -c "${FILESDIR}"/$i.c -o $i.o
-        done
-	ar rcs libexecinfo.a backtrace.o builtin.o symtab.o
 }
 
 multilib_src_install() {
@@ -53,27 +45,26 @@ multilib_src_install() {
 
 	mkdir -p ${D}/temp/${libdir#lib}
 
-	mv libexecinfo.a ${D}/temp/${libdir#lib}/
 	mv ${D}/usr/${libdir}/libunwind.a ${D}/temp/${libdir#lib}/libgcc_eh.a || die
 
-	local compiler_rt_dir=$(${CC} -print-file-name= 2>/dev/null)
-	local target=$(${CC} -dumpmachine)
-	local arch
+	local crtdir=$(${CC} -print-file-name= 2>/dev/null)
+	local target=$(tc-arch) arch
 
 	case ${target} in
-        	x86_64*) arch="x86_64";;
-                arm*)   arch="armhf";; # We only have hardfloat right now
-                ppc*)   arch="powerpc";;
-                i?86*)   arch="i386";;
-        esac
+		amd64) arch="x86_64";;
+		arm)   arch="armhf";; # We only have hardfloat right now
+		ppc)   arch="powerpc";;
+		x86)   arch="i386";;
+	esac
 
-	cp ${compiler_rt_dir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/temp/${libdir#lib}/libgcc.a || die
+
+	cp ${crtdir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/temp/${libdir#lib}/libgcc.a || die
 
 	einfo creating shared gcc library
 
 	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/temp/${libdir#lib}/libgcc_s.so.1 \
 	-Wl,--whole-archive ${D}/temp/${libdir#lib}/libgcc.a ${D}/temp/${libdir#lib}/libgcc_eh.a \
-	/usr/${libdir}/libBlocksRuntime.a ${D}/temp/${libdir#lib}/libexecinfo.a -Wl,--no-whole-archive -lelf || die
+	/usr/${libdir}/libBlocksRuntime.a -Wl,--no-whole-archive || die
 
 	cd ${D}/temp/${libdir#lib} || die
 	ln -s libgcc_s.so.1 libgcc_s.so || die
@@ -88,6 +79,4 @@ multilib_src_install_all() {
 	mv "${D}"/temp/* "${D}"/usr/lib/gcc/${CHOST}/${gccversion}/ || die
         mkdir "${D}"/usr/include
         cp -r "${S}"/include/* "${D}"/usr/include || die
-	cp "${FILESDIR}"/execinfo.h "${D}"/usr/include || die
-
 }

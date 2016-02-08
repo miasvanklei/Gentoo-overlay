@@ -35,8 +35,8 @@ src_prepare() {
 	epatch "${FILESDIR}"/pthread-try-timed.patch
 	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
 	epatch "${FILESDIR}"/dmd-cargo-compat.patch
-	epatch "${FILESDIR}"/musl-add-crt.patch
 	epatch "${FILESDIR}"/multilib.patch
+	epatch "${FILESDIR}"/backtrace.patch
 }
 
 multilib_src_configure() {
