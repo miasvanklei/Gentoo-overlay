@@ -23,7 +23,7 @@ SRC_URI="http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/${P/_}.src.tar.xz
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x64-freebsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos"
-IUSE="+clang +cxx1y debug doc +eh +gold -jitevents +libedit +libcxx +libffi +lldb +lld multitarget +ncurses -ocaml +openmp -oprofile +polly
+IUSE="+clang +cxx1y debug doc +eh +gold -jitevents +libedit +libcxx +libffi +lldb lld multitarget +ncurses -ocaml +openmp -oprofile +polly
 	python +rtti +static-analyzer test +threads +xml werror video_cards_radeon kernel_Darwin"
 
 COMMON_DEPEND="
