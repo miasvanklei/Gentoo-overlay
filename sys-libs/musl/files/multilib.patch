@@ -1,5 +1,5 @@
---- ldso/dynlink.c	2016-02-09 19:46:23.122930857 +0100
-+++ ldso/dynlink.c	2016-02-09 19:48:02.557742970 +0100
+--- ldso/dynlink.c	2016-02-10 19:44:56.682765411 +0100
++++ ldso/dynlink.c	2016-02-10 17:39:24.283695472 +0100
 @@ -115,6 +115,7 @@
  static struct dso ldso;
  static struct dso *head, *tail, *fini_head;
@@ -35,6 +35,18 @@
  	if (!*name) {
  		errno = EINVAL;
  		return 0;
+@@ -974,9 +981,9 @@
+ 					prefix_len = 0;
+ 				}
+ 				char etc_ldso_path[prefix_len + 1
+-					+ sizeof "/etc/ld-musl-" LDSO_ARCH ".path"];
++					+ sizeof "/etc/ld-musl.path"];
+ 				snprintf(etc_ldso_path, sizeof etc_ldso_path,
+-					"%.*s/etc/ld-musl-" LDSO_ARCH ".path",
++					"%.*s/etc/ld-musl.path",
+ 					(int)prefix_len, prefix);
+ 				FILE *f = fopen(etc_ldso_path, "rbe");
+ 				if (f) {
 @@ -1013,7 +1020,9 @@
  	}
  	map = noload ? 0 : map_library(fd, &temp_dso);
