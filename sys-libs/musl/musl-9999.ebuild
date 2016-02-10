@@ -14,10 +14,9 @@ HOMEPAGE="http://www.musl-libc.org/"
 
 LICENSE="MIT LGPL-2 GPL-2"
 SLOT="0"
-IUSE="+compat +libunwind"
+IUSE="+compat"
 
 RDEPEND="!sys-apps/getent
-	 libunwind? ( sys-libs/libunwind )
 	 compat? ( sys-libs/bsd-compat
 		   sys-libs/argp-standalone
 		   sys-libs/musl-obstack

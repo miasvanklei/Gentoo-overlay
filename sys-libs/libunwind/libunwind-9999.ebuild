@@ -15,8 +15,7 @@ HOMEPAGE="http://www.llvm.org/"
 LICENSE="MIT LGPL-2 GPL-2"
 SLOT="0"
 
-RDEPEND="sys-devel/llvm:0
-	sys-devel/llvm[clang]"
+RDEPEND="sys-devel/llvm[clang]"
 
 src_prepare() {
 	epatch "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
