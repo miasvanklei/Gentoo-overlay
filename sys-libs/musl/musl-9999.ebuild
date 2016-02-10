@@ -81,6 +81,8 @@ multilib_src_install_all() {
 		dobin $i
         done
 	dosym /$(get_libdir)/${ldso} /usr/bin/ldd
+	insinto /sbin
+	doins ${FILESDIR}/ldconfig
 }
 
 pkg_postinst() {
