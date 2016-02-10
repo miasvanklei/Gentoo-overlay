@@ -19,7 +19,6 @@ RDEPEND="sys-libs/libunwind
 
 src_prepare() {
         epatch "${FILESDIR}"/remove-llvm-src.patch
-	epatch "${FILESDIR}"/libcxx-remove-glibc-prereq.patch
 	epatch "${FILESDIR}"/libcxx-fixes.patch
 	epatch "${FILESDIR}"/libcxx-static-and-shared.patch
 	epatch "${FILESDIR}"/libcxx-wrong-std.patch
