@@ -1,0 +1,56 @@
+--- mtp/devicecache.cpp.old	2015-01-24 16:57:44.895214280 +0100
++++ mtp/devicecache.cpp	2015-01-24 17:05:33.426070171 +0100
+@@ -90,7 +90,7 @@
+     connect(notifier, SIGNAL(deviceAdded(QString)), this, SLOT(deviceAdded(QString)));
+     connect(notifier, SIGNAL(deviceRemoved(QString)), this, SLOT(deviceRemoved(QString)));
+ 
+-    foreach(Solid::Device solidDevice, Solid::Device::listFromType(Solid::DeviceInterface::PortableMediaPlayer, QString())) {
++    foreach(Solid::Device solidDevice, Solid::Device::allDevices() ) {
+         checkDevice(solidDevice);
+     }
+ }
+@@ -107,23 +107,24 @@
+ 
+ void DeviceCache::checkDevice(Solid::Device solidDevice)
+ {
+-    Solid::GenericInterface *iface = solidDevice.as<Solid::GenericInterface>();
+-    QMap<QString, QVariant> properties = iface->allProperties();
++    if (!udiCache.contains( solidDevice.udi() ) ) {
++        qCDebug(LOG_KIO_MTP) << "new device, getting raw devices";
+ 
+-    int solidBusNum = properties.value(QLatin1String("BUSNUM")).toInt();
+-    int solidDevNum = properties.value(QLatin1String("DEVNUM")).toInt();
++	Solid::GenericInterface *iface = solidDevice.as<Solid::GenericInterface>();
++        if (iface == NULL)
++        {
++            qCDebug( LOG_KIO_MTP ) << "Solid device " << solidDevice.udi() << " has NOT a Solid::GenericInterface";
++            return;
++        }
+ 
+-    int isMtpDevice = LIBMTP_Check_Specific_Device(solidBusNum, solidDevNum);
+-
+-    if (isMtpDevice == 1 && !udiCache.contains(solidDevice.udi())) {
+-        qCDebug(LOG_KIO_MTP) << "new device, getting raw devices";
++        const QMap<QString, QVariant> &properties = iface->allProperties();
++        const uint32_t solidBusNum = properties.value ( QLatin1String ( "BUSNUM" ) ).toUInt();
++        const uint32_t solidDevNum = properties.value ( QLatin1String ( "DEVNUM" ) ).toUInt();
+ 
+         LIBMTP_raw_device_t *rawdevices = 0;
+         int numrawdevices;
+         LIBMTP_error_number_t err;
+ 
+-        QMap<QString, LIBMTP_raw_device_t *> devices;
+-
+         err = LIBMTP_Detect_Raw_Devices(&rawdevices, &numrawdevices);
+         switch (err) {
+         case LIBMTP_ERROR_CONNECTING:
+@@ -159,7 +160,8 @@
+             qCWarning(LOG_KIO_MTP) << "Unknown connection error";
+             break;
+         }
+-        free(rawdevices);
++       if ( rawdevices )
++         free( static_cast<void*>( rawdevices ) );
+     }
+ }
+ 

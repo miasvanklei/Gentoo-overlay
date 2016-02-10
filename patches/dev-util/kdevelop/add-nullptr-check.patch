@@ -1,0 +1,13 @@
+--- languages/clang/duchain/clangproblem.cpp.bak	2015-11-21 22:47:27.644640078 +0100
++++ languages/clang/duchain/clangproblem.cpp	2015-11-16 16:50:55.952635037 +0100
+@@ -184,7 +184,9 @@
+     for (const IProblem::Ptr& diagnostic : diagnostics()) {
+         const Ptr problem(dynamic_cast<ClangProblem*>(diagnostic.data()));
+         Q_ASSERT(problem);
+-        result << problem->allFixits();
++	if(problem != nullptr) {
++           result << problem->allFixits();
++	}
+     }
+     return result;
+ }

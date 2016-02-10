@@ -1,0 +1,39 @@
+--- libcpp/lex.c.bak	2016-02-03 16:10:46.077518577 +0100
++++ libcpp/lex.c	2016-02-03 16:15:55.034101073 +0100
+@@ -24,6 +24,9 @@
+ #include "system.h"
+ #include "cpplib.h"
+ #include "internal.h"
++#ifdef __clang__
++#include <emmintrin.h>
++#endif
+ 
+ enum spell_type
+ {
+@@ -395,10 +398,17 @@
+       mask = -1;
+ 
+     start:
++#ifdef __clang__
++      t  = _mm_cmpeq_epi8(data, repl_nl);
++      t |= _mm_cmpeq_epi8(data, repl_cr);
++      t |= _mm_cmpeq_epi8(data, repl_bs);
++      t |= _mm_cmpeq_epi8(data, repl_qm);
++#else
+       t  = __builtin_ia32_pcmpeqb128(data, repl_nl);
+       t |= __builtin_ia32_pcmpeqb128(data, repl_cr);
+       t |= __builtin_ia32_pcmpeqb128(data, repl_bs);
+       t |= __builtin_ia32_pcmpeqb128(data, repl_qm);
++#endif
+       found = __builtin_ia32_pmovmskb128 (t);
+       found &= mask;
+     }
+@@ -410,7 +420,7 @@
+   return (const uchar *)p + found;
+ }
+ 
+-#ifdef HAVE_SSE4
++#if defined(HAVE_SSE4) && !defined(__clang__)
+ /* A version of the fast scanner using SSE 4.2 vectorized string insns.  */
+ 
+ static const uchar *

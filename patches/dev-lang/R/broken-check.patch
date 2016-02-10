@@ -1,0 +1,16 @@
+--- configure.ac.bak	2015-10-06 15:01:19.333340630 +0200
++++ configure.ac	2015-10-06 15:03:14.332346292 +0200
+@@ -2417,8 +2417,12 @@
+     [AC_RUN_IFELSE([AC_LANG_SOURCE([[
+ #include "confdefs.h"
+ #include <stdlib.h>
+-extern void * __libc_stack_end;
+ 
++#ifdef __GLIBC__
++extern void * __libc_stack_end;
++#else
++#error "no __libc_stack_end"
++#endif
+ int main () {
+     exit(0);
+ }

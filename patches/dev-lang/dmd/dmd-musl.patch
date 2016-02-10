@@ -1,0 +1,13 @@
+--- src/druntime/src/rt/sections_elf_shared.d	2015-04-25 05:20:28.000000000 +0200
++++ src/druntime/src/rt/sections_elf_shared.d	2016-02-01 18:00:13.804401777 +0100
+@@ -631,9 +631,7 @@
+         {
+             if (dyn.d_tag == DT_STRTAB)
+             {
+-                version (linux)
+-                    strtab = cast(const(char)*)dyn.d_un.d_ptr;
+-                else version (FreeBSD)
++                version (linux)
+                     strtab = cast(const(char)*)(info.dlpi_addr + dyn.d_un.d_ptr); // relocate
+                 else
+                     static assert(0, "unimplemented");

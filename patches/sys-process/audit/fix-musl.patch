@@ -1,0 +1,59 @@
+--- src/auditctl.c.bak	2015-08-17 19:17:23.403170528 +0000
++++ src/auditctl.c	2015-08-17 19:19:15.034830655 +0000
+@@ -33,6 +33,7 @@
+ #include <ctype.h>
+ #include <unistd.h>
+ #include <sys/utsname.h>
++#include <sys/select.h>
+ #include <fcntl.h>
+ #include <errno.h>
+ #include <libgen.h>	/* For basename */
+--- auparse/auparse.c.bak	2015-08-17 19:20:50.298540193 +0000
++++ auparse/auparse.c	2015-08-17 19:21:07.354488655 +0000
+@@ -715,9 +715,9 @@
+ 
+         e->host = NULL;
+ 	if (*b == 'n')
+-		tmp = strndupa(b, 340);
++		tmp = strndup(b, 340);
+ 	else
+-		tmp = strndupa(b, 80);
++		tmp = strndup(b, 80);
+ 	ptr = audit_strsplit(tmp);
+ 	if (ptr) {
+ 		// Optionally grab the node - may or may not be included
+--- audisp/audispd.c.bak	2015-08-17 19:21:36.242401255 +0000
++++ audisp/audispd.c	2015-08-17 19:22:29.595231947 +0000
+@@ -29,6 +29,7 @@
+ #include <errno.h>
+ #include <string.h>
+ #include <sys/wait.h>
++#include <limits.h>
+ #include <pthread.h>
+ #include <dirent.h>
+ #include <fcntl.h>
+--- src/ausearch-lol.c.bak	2015-08-17 19:19:47.019733178 +0000
++++ src/ausearch-lol.c	2015-08-17 19:20:06.458674215 +0000
+@@ -135,9 +135,9 @@
+ 
+ 	e->node = NULL;
+ 	if (*b == 'n')
+-		tmp = strndupa(b, 340);
++		tmp = strndup(b, 340);
+ 	else
+-		tmp = strndupa(b, 80);
++		tmp = strndup(b, 80);
+ 	ptr = audit_strsplit(tmp);
+ 	if (ptr) {
+ 		// Check to see if this is the node info
+--- src/libev/ev.c.bak	2015-08-17 19:31:06.297549280 +0000
++++ src/libev/ev.c	2015-08-17 19:31:28.369478208 +0000
+@@ -967,7 +967,7 @@
+   #define ecb_unreachable() __builtin_unreachable ()
+ #else
+   /* this seems to work fine, but gcc always emits a warning for it :/ */
+-  ecb_inline void ecb_unreachable (void) ecb_noreturn;
++  ecb_inline ecb_noreturn void ecb_unreachable (void);
+   ecb_inline void ecb_unreachable (void) { }
+ #endif
+ 

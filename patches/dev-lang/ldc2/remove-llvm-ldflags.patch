@@ -1,0 +1,38 @@
+--- CMakeLists.txt.bak	2016-01-26 13:58:40.322126040 +0100
++++ CMakeLists.txt	2016-01-26 13:59:57.171267840 +0100
+@@ -446,7 +446,7 @@
+ )
+ 
+ # LDFLAGS should actually be in target property LINK_FLAGS, but this works, and gets around linking problems
+-target_link_libraries(${LDC_LIB} ${LLVM_LIBRARIES} ${PTHREAD_LIBS} ${TERMINFO_LIBS} "${LLVM_LDFLAGS}")
++target_link_libraries(${LDC_LIB} ${LLVM_LIBRARIES} ${PTHREAD_LIBS} ${TERMINFO_LIBS})
+ if(WIN32)
+     target_link_libraries(${LDC_LIB} imagehlp psapi)
+ elseif(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+@@ -495,7 +495,7 @@
+     COMPILE_FLAGS "${LLVM_CXXFLAGS} ${LDC_CXXFLAGS}"
+     LINK_FLAGS "${SANITIZE_LDFLAGS}"
+ )
+-target_link_libraries(gen_gccbuiltins ${LLVM_TABLEGEN_LIBRARY} ${LLVM_LIBRARIES} ${PTHREAD_LIBS} ${TERMINFO_LIBS} ${CMAKE_DL_LIBS} "${LLVM_LDFLAGS}")
++target_link_libraries(gen_gccbuiltins ${LLVM_TABLEGEN_LIBRARY} ${LLVM_LIBRARIES} ${PTHREAD_LIBS} ${TERMINFO_LIBS} ${CMAKE_DL_LIBS})
+ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+     target_link_libraries(gen_gccbuiltins dl)
+ endif()
+@@ -511,7 +511,7 @@
+         COMPILE_FLAGS "${LLVM_CXXFLAGS} ${LDC_CXXFLAGS}"
+         LINK_FLAGS "${SANITIZE_LDFLAGS}"
+     )
+-    target_link_libraries(FileCheck  ${LLVM_LIBRARIES} ${TERMINFO_LIBS} ${CMAKE_DL_LIBS} "${LLVM_LDFLAGS}")
++    target_link_libraries(FileCheck  ${LLVM_LIBRARIES} ${TERMINFO_LIBS} ${CMAKE_DL_LIBS})
+ else()
+     message(STATUS "Skip building FileCheck, assuming it can be found in LLVM bin directory")
+ endif()
+@@ -542,7 +542,7 @@
+ # use symbols from libdl, ..., so LLVM_LDFLAGS must come _after_ them in the
+ # command line. Maybe this could be improved using library groups, at least with
+ # GNU ld.
+-target_link_libraries(${LDMD_EXE} ${LLVM_LIBRARIES} ${PTHREAD_LIBS} ${TERMINFO_LIBS} ${CMAKE_DL_LIBS} "${LLVM_LDFLAGS}")
++target_link_libraries(${LDMD_EXE} ${LLVM_LIBRARIES} ${PTHREAD_LIBS} ${TERMINFO_LIBS} ${CMAKE_DL_LIBS})
+ 
+ #
+ # Test and runtime targets. Note that enable_testing() is order-sensitive!

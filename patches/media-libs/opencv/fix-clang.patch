@@ -1,0 +1,23 @@
+From 8bbf16ddc8c84d46f13610a7a0611d954b0f00e3 Mon Sep 17 00:00:00 2001
+From: Francisco Facioni <fran6co@gmail.com>
+Date: Thu, 12 Nov 2015 11:15:48 -0300
+Subject: [PATCH] Fixes clang compilation error
+
+According to ISO C++03 14.2/4 it should use the template keyword to fix this => http://stackoverflow.com/a/3786481/724098
+---
+ modules/cvv/src/stfl/stfl_engine.hpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git opencv_contrib-master/modules/cvv/src/stfl/stfl_engine.hpp opencv_contrib-master/modules/cvv/src/stfl/stfl_engine.hpp
+index eeabf82..90c8ad9 100644
+--- opencv_contrib-master/modules/cvv/src/stfl/stfl_engine.hpp
++++ opencv_contrib-master/modules/cvv/src/stfl/stfl_engine.hpp
+@@ -1053,7 +1053,7 @@ template <typename Element> class STFLEngine
+ 		{
+ 			return QStringList();
+ 		}
+-		return settings.value(key).value<QStringList>();
++		return settings.value(key).template value<QStringList>();
+ 	}
+ 
+ 	QStringList getStoredCmdsForInput(QString input)
