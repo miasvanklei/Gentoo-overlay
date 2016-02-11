@@ -1,0 +1,18 @@
+--- src/konfigurator/savehelper.cpp.bak	2016-02-04 23:36:52.528499166 +0100
++++ src/konfigurator/savehelper.cpp	2016-02-04 23:37:07.151453687 +0100
+@@ -25,14 +25,9 @@
+ 
+ #include <unistd.h>
+ 
+-#if defined(Q_CC_MSVC)
+-// TODO: or rather use uid_t in the getuid() call below?
+-#define __uid_t uid_t
+-#endif
+-
+ ActionReply SaveHelper::save(QVariantMap args)
+ {
+-    __uid_t uid = getuid();
++    uid_t uid = getuid();
+     qDebug() << "executing uid=" << uid;
+ 
+     return ActionReply::SuccessReply();

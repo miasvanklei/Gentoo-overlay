@@ -1,0 +1,76 @@
+--- ctx.cpp.bal	2016-02-08 23:02:02.423680974 +0100
++++ ctx.cpp	2016-02-08 23:02:33.848140292 +0100
+@@ -315,7 +315,7 @@
+             sprintf(buf, "__off_all_on_mask_%s", g->target->GetISAString());
+             llvm::Constant *offFunc =
+                 m->module->getOrInsertFunction(buf, LLVMTypes::VoidType,
+-                                               NULL);
++                                               nullptr);
+             AssertPos(currentPos, llvm::isa<llvm::Function>(offFunc));
+             llvm::BasicBlock *offBB =
+                    llvm::BasicBlock::Create(*g->ctx, "entry",
+@@ -3438,7 +3438,7 @@
+         m->module->getOrInsertFunction("llvm.memcpy.p0i8.p0i8.i64",
+                                        LLVMTypes::VoidType, LLVMTypes::VoidPointerType,
+                                        LLVMTypes::VoidPointerType, LLVMTypes::Int64Type,
+-                                       LLVMTypes::Int32Type, LLVMTypes::BoolType, NULL);
++                                       LLVMTypes::Int32Type, LLVMTypes::BoolType, nullptr);
+     AssertPos(currentPos, mcFunc != NULL);
+     AssertPos(currentPos, llvm::isa<llvm::Function>(mcFunc));
+ 
+--- cbackend.cpp.bak	2016-02-08 23:03:26.300821147 +0100
++++ cbackend.cpp	2016-02-08 23:04:48.300692385 +0100
+@@ -5021,7 +5021,7 @@
+                 module->getOrInsertFunction("__extract_element", 
+                                             shuffleInst->getOperand(0)->getType()->getVectorElementType(), 
+                                             shuffleInst->getOperand(0)->getType(),
+-                                            llvm::IntegerType::get(module->getContext(), 32), NULL);
++                                            llvm::IntegerType::get(module->getContext(), 32), nullptr);
+             extractFunc = llvm::dyn_cast<llvm::Function>(ef);
+             assert(extractFunc != NULL);
+             extractFunc->setDoesNotThrow();
+@@ -5072,7 +5072,7 @@
+                 // parameter type.
+                 llvm::Constant *sf =
+                     module->getOrInsertFunction(smearFuncName, iter->getType(),
+-                                                smearType, NULL);
++                                                smearType, nullptr);
+                 smearFunc = llvm::dyn_cast<llvm::Function>(sf);
+                 assert(smearFunc != NULL);
+                 smearFunc->setDoesNotThrow();
+@@ -5167,7 +5167,7 @@
+                 llvm::Constant *acf =
+                     m->module->getOrInsertFunction(funcName, LLVMTypes::MaskType,
+                                                    cmpOpType, cmpOpType,
+-                                                   LLVMTypes::MaskType, NULL);
++                                                   LLVMTypes::MaskType, nullptr);
+                 andCmpFunc = llvm::dyn_cast<llvm::Function>(acf);
+                 Assert(andCmpFunc != NULL);
+                 andCmpFunc->setDoesNotThrow();
+@@ -5213,7 +5213,7 @@
+         // Declare the __not, __and_not1, and __and_not2 functions that we
+         // expect the target to end up providing.
+         notFunc =
+-            llvm::dyn_cast<llvm::Function>(m->getOrInsertFunction("__not", mt, mt, NULL));
++            llvm::dyn_cast<llvm::Function>(m->getOrInsertFunction("__not", mt, mt, nullptr));
+         assert(notFunc != NULL);
+ #if ISPC_LLVM_VERSION == ISPC_LLVM_3_2
+         notFunc->addFnAttr(llvm::Attributes::NoUnwind);
+@@ -5225,7 +5225,7 @@
+ 
+         andNotFuncs[0] =
+             llvm::dyn_cast<llvm::Function>(m->getOrInsertFunction("__and_not1", mt, mt, mt,
+-                                                      NULL));
++                                                      nullptr));
+         assert(andNotFuncs[0] != NULL);
+ #if ISPC_LLVM_VERSION == ISPC_LLVM_3_2
+         andNotFuncs[0]->addFnAttr(llvm::Attributes::NoUnwind);
+@@ -5236,7 +5236,7 @@
+ #endif
+         andNotFuncs[1] =
+             llvm::dyn_cast<llvm::Function>(m->getOrInsertFunction("__and_not2", mt, mt, mt,
+-                                                      NULL));
++                                                      nullptr));
+         assert(andNotFuncs[1] != NULL);
+ #if ISPC_LLVM_VERSION == ISPC_LLVM_3_2
+         andNotFuncs[1]->addFnAttr(llvm::Attributes::NoUnwind);
