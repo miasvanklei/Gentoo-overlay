@@ -12,7 +12,7 @@ HOMEPAGE="https://atom.io"
 SRC_URI=""
 
 EGIT_REPO_URI="git://github.com/atom/atom"
-
+EGIT_BRANCH="wl-electron-35"
 LICENSE="MIT"
 SLOT="0"
 
@@ -32,7 +32,7 @@ DEPEND="
 	gnome-base/gconf
 	gnome-base/libgnome-keyring
 	x11-libs/libnotify
-	=app-shells/electron-0.34.5
+	=app-shells/electron-0.36.7
 "
 
 RDEPEND="${DEPEND}"

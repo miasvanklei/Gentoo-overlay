@@ -4,40 +4,40 @@
 
 EAPI=5
 
-DESCRIPTION="Low Level Virtual Machine"
-HOMEPAGE="http://llvm.org/"
+DESCRIPTION="Electron shell used by atom"
+HOMEPAGE="https://github.com/atom/electron"
 BOTO="f7574aa6cc2c819430c1f05e9a1a1a666ef8169b"
 CHROME_BREAKPAD="4ee7e1a703d066861b7bf6fce28526f8ed07dcd6"
 GOOGLE_BREAKPAD="d0b34abafbf97ec594cc5ea851c2ccbfd2a0f2f8"
-BRIGHTRAY="49a86c123f4cc43f4dca886ded612104a8a1fec6"
+BRIGHTRAY="ea6011bc9607f321258bf93e510f56f031973230"
 CRASHPAD="5b777419c303d8aa7930239d8ef755475f1ede57"
 DEPOT_TOOLS_1="4fa73b8ca6899bc69577932b80145a6bf07e4424"
 DEPOT_TOOLS_2="e3a3fd4"
-NATIVE_MATE="21cda4e7fcff592f33f989c1fea575658281711d"
-NODE="edfbc29d09425f2f387c52d77f6351b6ce101659"
+NATIVE_MATE="a3dcf8ced663e974ac94ad5e50a1d25a43995a9d"
 REQUESTS="e4d59bedfd3c7f4f254f4f5d036587bcd8152458"
-LIBCHROMIUMCONTENT="17a4337f7948a45b5ea4b8f391df152ba8db5979"
+LIBCHROMIUMCONTENT="ad63d8ba890bcaad2f1b7e6de148b7992f4d3af7"
 GYP="e0ee72ddc7fb97eb33d530cf684efcbe4d27ecb3"
 GOOGLE_STYLEGUIDE="ba88c8a53f1b563c43fc063cc048e5efdc238c18"
 PYTHON_PATCH="a336a458016ced89aba90dfc3f4c8222ae3b1403"
-CHROME_VERSION="45.0.2454.85"
+NODE="a130651f868f5ad23cb366abacea02f9ed50b769"
+CHROME_VERSION="47.0.2526.110"
 
 SRC_URI="https://github.com/atom/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz
-	https://github.com/boto/boto/archive/${BOTO}.zip -> boto.zip
-	https://github.com/atom/chromium-breakpad/archive/${CHROME_BREAKPAD}.zip -> chrome-breakpad.zip
-	https://github.com/svn2github/python-patch/archive/${PYTHON_PATCH}.zip -> python-patch.zip
-	https://github.com/atom/libchromiumcontent/archive/${LIBCHROMIUMCONTENT}.zip ->  libchromiumcontent.zip
-	https://github.com/svn2github/gyp/archive/${GYP}.zip -> gyp.zip
-	https://github.com/svn2github/sgss-mirror-google-styleguide/archive/${GOOGLE_STYLEGUIDE}.zip -> google-styleguide.zip
-	https://github.com/atom/brightray/archive/${BRIGHTRAY}.zip -> brightray.zip
-	https://github.com/atom/crashpad/archive/${CRASHPAD}.zip -> crashpad.zip
-	https://github.com/zcbenz/native-mate/archive/${NATIVE_MATE}.zip -> native-mate.zip
+	https://github.com/boto/boto/archive/${BOTO}.zip -> boto-${PV}.zip
+	https://github.com/atom/chromium-breakpad/archive/${CHROME_BREAKPAD}.zip -> chrome-breakpad-${PV}.zip
+	https://github.com/svn2github/python-patch/archive/${PYTHON_PATCH}.zip -> python-patch-${PV}.zip
+	https://github.com/atom/libchromiumcontent/archive/${LIBCHROMIUMCONTENT}.zip ->  libchromiumcontent-${PV}.zip
+	https://github.com/svn2github/gyp/archive/${GYP}.zip -> gyp-${PV}.zip
+	https://github.com/svn2github/sgss-mirror-google-styleguide/archive/${GOOGLE_STYLEGUIDE}.zip -> google-styleguide-${PV}.zip
+	https://github.com/atom/brightray/archive/${BRIGHTRAY}.zip -> brightray-${PV}.zip
+	https://github.com/atom/crashpad/archive/${CRASHPAD}.zip -> crashpad-${PV}.zip
+	https://github.com/zcbenz/native-mate/archive/${NATIVE_MATE}.zip -> native-mate-${PV}.zip
 	https://github.com/atom/node/archive/${NODE}.zip -> node.zip
-	https://github.com/kennethreitz/requests/archive/${REQUESTS}.zip -> requests.zip
+	https://github.com/kennethreitz/requests/archive/${REQUESTS}.zip -> requests-${PV}.zip
 	https://commondatastorage.googleapis.com/chromium-browser-official/chromium-${CHROME_VERSION}-lite.tar.xz
-	https://chromium.googlesource.com/external/google-breakpad/src.git/+archive/${GOOGLE_BREAKPAD}.tar.gz -> google-breakpad.tar.gz
-	https://chromium.googlesource.com/chromium/tools/depot_tools.git/+archive/${DEPOT_TOOLS_1}.tar.gz -> depot-tools-1.tar.gz
-	https://chromium.googlesource.com/chromium/tools/depot_tools.git/+archive/${DEPOT_TOOLS_2}.tar.gz -> depot-tools-2.tar.gz
+	https://chromium.googlesource.com/external/google-breakpad/src.git/+archive/${GOOGLE_BREAKPAD}.tar.gz -> google-breakpad-${PV}.tar.gz
+	https://chromium.googlesource.com/chromium/tools/depot_tools.git/+archive/${DEPOT_TOOLS_1}.tar.gz -> depot-tools-1-${PV}.tar.gz
+	https://chromium.googlesource.com/chromium/tools/depot_tools.git/+archive/${DEPOT_TOOLS_2}.tar.gz -> depot-tools-2-${PV}.tar.gz
 	"
 inherit eutils
 
@@ -60,51 +60,51 @@ src_unpack()
 	unpack ${P}.tar.gz
 	cd ${S}/vendor || die
 
-	unpack boto.zip
+	unpack boto-${PV}.zip
 	rm -r boto || die
 	mv boto-${BOTO} boto || die
 
-	unpack chrome-breakpad.zip
+	unpack chrome-breakpad-${PV}.zip
 	rm -r breakpad || die
 	mv chromium-breakpad-${CHROME_BREAKPAD} breakpad || die
 
-	unpack brightray.zip
+	unpack brightray-${PV}.zip
 	rm -r brightray || die
 	mv brightray-${BRIGHTRAY} brightray || die
 
 	unpack node.zip
 	rm -r node || die
-	mv node-${NODE} node || die
+	mv node* node || die
 
-	unpack crashpad.zip
+	unpack crashpad-${PV}.zip
 	rm -r crashpad || die
 	mv crashpad-${CRASHPAD} crashpad || die
 
-	unpack native-mate.zip
+	unpack native-mate-${PV}.zip
 	rm -r native_mate || die
 	mv native-mate-${NATIVE_MATE} native_mate || die
 
-	unpack requests.zip
+	unpack requests-${PV}.zip
 	rm -r requests || die
 	mv requests-${REQUESTS} requests || die
 
 	cd depot_tools || die
-	unpack depot-tools-2.tar.gz
+	unpack depot-tools-2-${PV}.tar.gz
 	cd ../
 
 	cd breakpad/src || die
-	unpack google-breakpad.tar.gz
+	unpack google-breakpad-${PV}.tar.gz
 	cd ../../brightray/vendor || die
 
-	unpack gyp.zip
+	unpack gyp-${PV}.zip
 	rm -r gyp || die
 	mv gyp-${GYP} gyp || die
 
-	unpack google-styleguide.zip
+	unpack google-styleguide-${PV}.zip
 	rm -r google-styleguide || die
 	mv sgss-mirror-google-styleguide-${GOOGLE_STYLEGUIDE} gyp || die
 
-	unpack libchromiumcontent.zip
+	unpack libchromiumcontent-${PV}.zip
 	rm -r libchromiumcontent || die
 	mv libchromiumcontent-${LIBCHROMIUMCONTENT} libchromiumcontent || die
 
@@ -113,19 +113,20 @@ src_unpack()
 	mv chromium-${CHROME_VERSION} src || die
 
 	cd ../depot_tools || die
-	unpack depot-tools-2.tar.gz
+	unpack depot-tools-2-${PV}.tar.gz
 	cd ../
 
-	unpack python-patch.zip
+	unpack python-patch-${PV}.zip
 	rm -r python-patch || die
 	mv python-patch-${PYTHON_PATCH} python-patch || die
 }
 
 src_prepare()
 {
+	rm -r vendor/brightray/vendor/libchromiumcontent/patches/third_party/ffmpeg/ffmpeg.patch || die
+	epatch ${FILESDIR}/${PN}-system-ffmpeg-r0.patch
 	epatch ${FILESDIR}/musl-fixes.patch
 	epatch ${FILESDIR}/use-system-libs.patch
-	epatch ${FILESDIR}/local-libchromiumcontent.patch
 	epatch ${FILESDIR}/musl-clang-nodebug.patch
 	epatch ${FILESDIR}/use-system-clang.patch
 	epatch ${FILESDIR}/musl-fixes-chromium.patch
@@ -135,6 +136,7 @@ src_prepare()
 
 	cd vendor/brightray/vendor/libchromiumcontent/vendor/chromium/src || die
 	build/linux/unbundle/remove_bundled_libraries.py \
+		'third_party/ffmpeg' \
 		'base/third_party/dmg_fp' \
 		'base/third_party/dynamic_annotations' \
 		'base/third_party/icu' \
@@ -157,13 +159,20 @@ src_prepare()
 		'third_party/boringssl' \
 		'third_party/brotli' \
 		'third_party/cacheinvalidation' \
+		'third_party/catapult' \
+		'third_party/catapult/tracing/third_party/components/polymer' \
+		'third_party/catapult/tracing/third_party/d3' \
+		'third_party/catapult/tracing/third_party/gl-matrix' \
+		'third_party/catapult/tracing/third_party/jszip' \
+		'third_party/catapult/tracing/third_party/tvcm' \
+		'third_party/catapult/tracing/third_party/tvcm/third_party/rcssmin' \
+		'third_party/catapult/tracing/third_party/tvcm/third_party/rjsmin' \
 		'third_party/cld_2' \
 		'third_party/cros_system_api' \
 		'third_party/cython/python_flags.py' \
 		'third_party/devscripts' \
 		'third_party/dom_distiller_js' \
 		'third_party/dom_distiller_js/dist/proto_gen/third_party/dom_distiller_js' \
-		'third_party/ffmpeg' \
 		'third_party/fips181' \
 		'third_party/flot' \
 		'third_party/google_input_tools' \
@@ -182,9 +191,10 @@ src_prepare()
 		'third_party/libsrtp' \
 		'third_party/libudev' \
 		'third_party/libusb' \
-		'third_party/libvpx' \
-		'third_party/libvpx/source/libvpx/third_party/x86inc' \
+		'third_party/libvpx_new' \
+		'third_party/libvpx_new/source/libvpx/third_party/x86inc' \
 		'third_party/libxml/chromium' \
+		'third_party/libwebm' \
 		'third_party/libyuv' \
 		'third_party/lss' \
 		'third_party/lzma_sdk' \
@@ -214,15 +224,6 @@ src_prepare()
 		'third_party/smhasher' \
 		'third_party/sqlite' \
 		'third_party/tcmalloc' \
-		'third_party/trace-viewer' \
-		'third_party/trace-viewer/tracing/third_party/components/polymer' \
-		'third_party/trace-viewer/tracing/third_party/d3' \
-		'third_party/trace-viewer/tracing/third_party/gl-matrix' \
-		'third_party/trace-viewer/tracing/third_party/jszip' \
-		'third_party/trace-viewer/tracing/third_party/tvcm' \
-		'third_party/trace-viewer/tracing/third_party/tvcm/third_party/beautifulsoup/polymer_soup.py' \
-		'third_party/trace-viewer/tracing/third_party/tvcm/third_party/rcssmin' \
-		'third_party/trace-viewer/tracing/third_party/tvcm/third_party/rjsmin' \
 		'third_party/usrsctp' \
 		'third_party/web-animations-js' \
 		'third_party/webdriver' \
@@ -251,6 +252,7 @@ src_configure()
                  -Dclang_use_chrome_plugins=0
                  -Dwerror=
                  -Dfastbuild=2
+		 -Duse_system_ffmpeg=1
                  -Duse_system_bzip2=1
                  -Duse_system_flac=1
                  -Duse_system_harfbuzz=1
