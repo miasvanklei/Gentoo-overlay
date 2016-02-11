@@ -9,7 +9,7 @@ inherit bash-completion-r1 autotools-utils
 DESCRIPTION="The Rust's package manager"
 HOMEPAGE="http://crates.io"
 
-CARGO_SNAPSHOT_DATE="2015-12-02"
+CARGO_SNAPSHOT_DATE="2015-11-02"
 RUST_INSTALLER_COMMIT="c37d3747da75c280237dc2d6b925078e69555499"
 
 crate_uris(){
