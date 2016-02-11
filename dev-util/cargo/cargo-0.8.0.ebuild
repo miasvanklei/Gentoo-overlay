@@ -92,7 +92,7 @@ RDEPEND="${COMMON_DEPEND}
 	!dev-util/cargo-bin
 	net-misc/curl[ssl]"
 DEPEND="${COMMON_DEPEND}
-	>=virtual/rust-1.1.0:*
+	dev-lang/rust
 	dev-util/cmake"
 
 PATCHES=(

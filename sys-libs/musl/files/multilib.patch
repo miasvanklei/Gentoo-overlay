@@ -1,18 +1,27 @@
---- ldso/dynlink.c	2016-02-10 19:44:56.682765411 +0100
-+++ ldso/dynlink.c	2016-02-10 17:39:24.283695472 +0100
-@@ -115,6 +115,7 @@
+--- ldso/dynlink.c	2016-02-11 20:29:30.834097657 +0100
++++ ldso/dynlink.c	2016-02-11 20:29:19.145133900 +0100
+@@ -3,6 +3,7 @@
+ #include <stdlib.h>
+ #include <stdarg.h>
+ #include <stddef.h>
++#include <stdbool.h>
+ #include <string.h>
+ #include <unistd.h>
+ #include <stdint.h>
+@@ -115,6 +116,8 @@
  static struct dso ldso;
  static struct dso *head, *tail, *fini_head;
  static char *env_path, *sys_path;
 +static const char *keeptrackoff;
++static bool retry;
  static unsigned long long gencnt;
  static int runtime;
  static int ldd_mode;
-@@ -720,12 +721,17 @@
+@@ -720,12 +723,17 @@
  {
  	size_t l;
  	int fd;
-+	if(keeptrackoff) s = keeptrackoff;
++	if(keeptrackoff && retry) s = keeptrackoff;
  	for (;;) {
  		s += strspn(s, ":\n");
  		l = strcspn(s, ":\n");
@@ -27,7 +36,7 @@
  			switch (errno) {
  			case ENOENT:
  			case ENOTDIR:
-@@ -898,6 +904,7 @@
+@@ -898,6 +906,7 @@
  	int n_th = 0;
  	int is_self = 0;
  
@@ -35,7 +44,7 @@
  	if (!*name) {
  		errno = EINVAL;
  		return 0;
-@@ -974,9 +981,9 @@
+@@ -974,9 +983,9 @@
  					prefix_len = 0;
  				}
  				char etc_ldso_path[prefix_len + 1
@@ -47,14 +56,31 @@
  					(int)prefix_len, prefix);
  				FILE *f = fopen(etc_ldso_path, "rbe");
  				if (f) {
-@@ -1013,7 +1020,9 @@
+@@ -1013,7 +1022,12 @@
  	}
  	map = noload ? 0 : map_library(fd, &temp_dso);
  	close(fd);
 -	if (!map) return 0;
-+	if (!map) goto retrypath;
++	if (!map) {
++		retry = !retry;
++		goto retrypath;
++	}
 +
 +	keeptrackoff = NULL;
  
  	/* Allocate storage for the new DSO. When there is TLS, this
  	 * storage must include a reservation for all pre-existing
+@@ -1084,8 +1098,11 @@
+ 			if (p->dynv[i] != DT_NEEDED) continue;
+ 			dep = load_library(p->strings + p->dynv[i+1], p);
+ 			if (!dep) {
+-				error("Error loading shared library %s: %m (needed by %s)",
+-					p->strings + p->dynv[i+1], p->name);
++				if(!retry)
++					error("Error loading shared library %s: %m (needed by %s)",
++						p->strings + p->dynv[i+1], p->name);
++				else
++					error("Shared library: %s was found but couldn't be loaded", p->strings + p->dynv[i+1]);
+ 				if (runtime) longjmp(*rtld_fail, 1);
+ 				continue;
+ 			}

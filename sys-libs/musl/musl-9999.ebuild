@@ -83,7 +83,7 @@ multilib_src_install_all() {
 	dosym /$(get_libdir)/${ldso} /usr/bin/ldd
 	insinto /sbin
 	doins ${FILESDIR}/ldconfig
-	chmod +x "${D}"/ldconfig
+	chmod +x "${D}"/sbin/ldconfig
 }
 
 pkg_postinst() {
