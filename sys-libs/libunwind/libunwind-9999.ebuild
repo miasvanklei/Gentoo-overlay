@@ -41,7 +41,11 @@ multilib_src_compile() {
 multilib_src_install() {
 	cmake-utils_src_install
 
-	mv ${D}/usr/$(get_libdir)/libunwind.a ${D}/usr/$(get_libdir)/libgcc_eh.a || die
+	local libdir=$(get_libdir)
+
+	mkdir -p ${D}/temp/${libdir#lib}
+
+	mv ${D}/usr/${libdir}/libunwind.a ${D}/temp/${libdir#lib}/libgcc_eh.a || die
 
 	local crtdir=$(${CC} -print-file-name= 2>/dev/null)
 	local target=$(tc-arch) arch
@@ -54,21 +58,25 @@ multilib_src_install() {
 	esac
 
 
-	cp ${crtdir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/usr/$(get_libdir)/libgcc.a || die
+	cp ${crtdir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/temp/${libdir#lib}/libgcc.a || die
 
 	einfo creating shared gcc library
 
-	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/usr/$(get_libdir)/libgcc_s.so.1 \
-	-Wl,--whole-archive ${D}/usr/$(get_libdir)/libgcc.a ${D}/usr/$(get_libdir)/libgcc_eh.a \
-	/usr/$(get_libdir)/libBlocksRuntime.a -Wl,--no-whole-archive || die
+	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/temp/${libdir#lib}/libgcc_s.so.1 \
+	-Wl,--whole-archive ${D}/temp/${libdir#lib}/libgcc.a ${D}/temp/${libdir#lib}/libgcc_eh.a \
+	/usr/${libdir}/libBlocksRuntime.a -Wl,--no-whole-archive || die
 
-	cd ${D}/usr/$(get_libdir) || die
+	cd ${D}/temp/${libdir#lib} || die
 	ln -s libgcc_s.so.1 libgcc_s.so || die
 }
 
 multilib_src_install_all() {
+	local gccversion=$(${CC} -dumpversion) || die
+	mkdir -p ${D}/usr/lib/gcc/${CHOST}/${gccversion}
+
 	einfo installing gcc library
 
+	mv "${D}"/temp/* "${D}"/usr/lib/gcc/${CHOST}/${gccversion}/ || die
         mkdir "${D}"/usr/include
         cp -r "${S}"/include/* "${D}"/usr/include || die
 }
