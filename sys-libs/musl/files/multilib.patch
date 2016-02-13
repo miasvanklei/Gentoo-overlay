@@ -1,5 +1,5 @@
---- ldso/dynlink.c	2016-02-12 00:37:20.965041187 +0100
-+++ ldso/dynlink.c	2016-02-12 00:37:08.456073841 +0100
+--- ldso/dynlink.c.bak	2016-02-13 16:35:57.261280885 +0100
++++ ldso/dynlink.c	2016-02-13 16:51:10.226893955 +0100
 @@ -3,6 +3,7 @@
  #include <stdlib.h>
  #include <stdarg.h>
@@ -64,7 +64,7 @@
  					(int)prefix_len, prefix);
  				FILE *f = fopen(etc_ldso_path, "rbe");
  				if (f) {
-@@ -1013,7 +1023,14 @@
+@@ -1013,7 +1023,12 @@
  	}
  	map = noload ? 0 : map_library(fd, &temp_dso);
  	close(fd);
@@ -75,22 +75,25 @@
 +		else
 +			return 0;
 +	}
-+	keeptrackoff = NULL;
-+	retry = false;
  
  	/* Allocate storage for the new DSO. When there is TLS, this
  	 * storage must include a reservation for all pre-existing
-@@ -1084,8 +1101,11 @@
+@@ -1084,11 +1099,16 @@
  			if (p->dynv[i] != DT_NEEDED) continue;
  			dep = load_library(p->strings + p->dynv[i+1], p);
  			if (!dep) {
 -				error("Error loading shared library %s: %m (needed by %s)",
 -					p->strings + p->dynv[i+1], p->name);
-+				if (retry)
++				if (!retry)
 +					error("Error loading shared library %s: %m (needed by %s)",
 +						p->strings + p->dynv[i+1], p->name);
-+				else if (!retry)
-+					error("Shared library: %s was found but couldn't be loaded", p->strings + p->dynv[i+1]);
++				else if (retry)
++					error("Shared library: %s was found but couldn't be loaded: (needed by %s)", p->strings + p->dynv[i+1], p->name);
  				if (runtime) longjmp(*rtld_fail, 1);
  				continue;
  			}
++			retry = false;
++			keeptrackoff = NULL;
+ 			if (runtime) {
+ 				tmp = realloc(*deps, sizeof(*tmp)*(ndeps+2));
+ 				if (!tmp) longjmp(*rtld_fail, 1);

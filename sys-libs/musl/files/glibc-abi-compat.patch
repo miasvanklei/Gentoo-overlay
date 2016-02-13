@@ -766,3 +766,19 @@
 +     return NULL;
 + return cmsg;
 +}
+--- /dev/null	2016-02-11 09:49:30.756577501 +0100
++++ src/compat/sched.c	2016-02-11 12:50:06.896671804 +0100
+@@ -0,0 +1,13 @@
++#define _GNU_SOURCE
++#include <sched.h>
++#include <stdlib.h>
++
++void __sched_cpufree (cpu_set_t *set)
++{
++	free(set);
++}
++
++cpu_set_t *__sched_cpualloc (size_t count)
++{
++	return malloc (CPU_ALLOC_SIZE (count));
++}
