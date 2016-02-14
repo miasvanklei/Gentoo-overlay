@@ -1,0 +1,169 @@
+--- util.cxx	2016-02-14 16:03:10.402801367 +0100
++++ /util.cxx	2016-02-14 16:02:41.938802026 +0100
+@@ -23,7 +23,6 @@
+ #include <string>
+ #include <fstream>
+ #include <cassert>
+-#include <ext/stdio_filebuf.h>
+ 
+ extern "C" {
+ #include <elf.h>
+@@ -869,8 +868,8 @@
+   if (child > 0)
+     {
+       // read everything from the child
+-      stdio_filebuf<char> in(child_fd, ios_base::in);
+-      out << &in;
++      //stdio_filebuf<char> in(child_fd, ios_base::in);
++      //out << &in;
+       return stap_waitpid(verbose, child);
+     }
+   return -1;
+--- loc2c.c	2016-02-14 16:03:10.430801366 +0100
++++ /loc2c.c	2016-02-14 15:47:18.529823415 +0100
+@@ -341,13 +341,15 @@
+ 
+ #define emit(fmt, ...) obstack_printf (ctx->pool, fmt, ## __VA_ARGS__)
+ 
+-  unsigned int stack_depth;
+-  unsigned int max_stack = 0;
+-  inline void deepen (void)
++  __block unsigned int stack_depth;
++  __block unsigned int max_stack = 0;
++
++
++  void (^deepen) (void) = ^
+     {
+       if (stack_depth == max_stack)
+ 	++max_stack;
+-    }
++    };
+ 
+ #define POP(var)							      \
+     if (stack_depth > 0)						      \
+@@ -364,22 +366,22 @@
+ #define push(fmt, ...) \
+   emit ("%*s" STACKFMT " = " fmt ";\n", indent * 2, "", PUSH, ## __VA_ARGS__)
+ 
+-  int tos_register;
+-  inline void fetch_tos_register (void)
++  __block int tos_register;
++  void (^fetch_tos_register) (void) = ^
+     {
+       deepen ();
+       emit ("%*s" STACKFMT " = fetch_register (%d);\n",
+ 	    indent * 2, "", stack_depth, tos_register);
+       tos_register = -1;
+-    }
++    };
+ 
+-  bool tos_value;
+-  Dwarf_Block implicit_value;
+-  bool used_deref;
+-  const Dwarf_Op *implicit_pointer;
++  __block bool tos_value;
++  __block Dwarf_Block implicit_value;
++  __block bool used_deref;
++  __block const Dwarf_Op *implicit_pointer;
+ 
+   /* Initialize our state for handling each new piece.  */
+-  inline void reset ()
++  void (^reset) () = ^
+     {
+       stack_depth = 0;
+       tos_register = -1;
+@@ -408,10 +410,10 @@
+ 	    abort ();
+ 	    break;
+ 	  }
+-    }
++    };
+ 
+-  size_t i;
+-  inline const char *finish (struct location *piece)
++  size_t i = 0;
++  const char* (^finish) (struct location *) = ^const char* (struct location *piece)
+     {
+       if (piece->nops == 0)
+ 	{
+@@ -481,7 +483,7 @@
+ 	  piece->reg.offset = 0;
+ 	}
+       return NULL;
+-    }
++    };
+ 
+   reset ();
+   struct location *pieces = NULL, **tailpiece = &pieces;
+@@ -493,12 +495,12 @@
+       uint_fast8_t sp;
+       Dwarf_Word value;
+ 
+-      inline bool more_ops (void)
++      bool (^more_ops) (void) = ^bool (void)
+       {
+ 	return (expr[i].atom != DW_OP_nop
+ 		&& expr[i].atom != DW_OP_piece
+ 		&& expr[i].atom != DW_OP_bit_piece);
+-      }
++      };
+ 
+       if (tos_value && more_ops ())
+ 	DIE ("operations follow DW_OP_stack_value");
+@@ -1126,9 +1128,10 @@
+ 		   const Dwarf_Op *expr, size_t len,
+ 		   struct location **input)
+ {
+-  Dwarf_Sword *stack = NULL;
+-  unsigned int stack_depth = 0, max_stack = 0;
+-  inline void deepen (void)
++  __block Dwarf_Sword *stack = NULL;
++  __block unsigned int stack_depth = 0, max_stack = 0;
++
++  void (^deepen) (void) = ^
+     {
+       if (stack_depth == max_stack)
+ 	{
+@@ -1136,7 +1139,7 @@
+ 	  obstack_blank (ctx->pool, sizeof stack[0]);
+ 	  stack = (void *) obstack_base (ctx->pool);
+ 	}
+-    }
++    };
+ 
+ #define POP(var)							      \
+     if (stack_depth > 0)						      \
+@@ -1639,7 +1642,7 @@
+ discontiguify (struct location_context *ctx, int indent, struct location *loc,
+ 	       Dwarf_Word total_bytes, Dwarf_Word max_piece_bytes)
+ {
+-  inline bool pieces_small_enough (void)
++  bool (^pieces_small_enough) (void) = ^bool
+     {
+       if (loc->type != loc_noncontiguous)
+ 	return total_bytes <= max_piece_bytes;
+@@ -1648,7 +1651,7 @@
+ 	if (p->byte_size > max_piece_bytes)
+ 	  return false;
+       return true;
+-    }
++    };
+ 
+   /* Constants are always copied byte-wise, but we may need to
+    * truncate to the total_bytes requested here. */
+@@ -1667,12 +1670,12 @@
+   noncontig->type = loc_noncontiguous;
+   noncontig->byte_size = total_bytes;
+   noncontig->pieces = NULL;
+-  struct location **tailpiece = &noncontig->pieces;
+-  inline void add (struct location *piece)
++  __block struct location **tailpiece = &noncontig->pieces;
++  void (^add) (struct location*) = ^ (struct location *piece)
+     {
+       *tailpiece = piece;
+       tailpiece = &piece->next;
+-    }
++    };
+ 
+   switch (loc->type)
+     {

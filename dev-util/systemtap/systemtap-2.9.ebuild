@@ -62,10 +62,13 @@ src_prepare() {
 		|| die "Failed to clean up sources"
 
 	epatch "${FILESDIR}"/${P}-musl.patch
+	epatch "${FILESDIR}"/clang-libcxx.patch
 
 	epatch_user
 
 	eautoreconf
+
+	find ${S} -type f -print0 | xargs -0 sed -i 's/using namespace __gnu_cxx//g'
 }
 
 src_configure() {
