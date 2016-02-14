@@ -21,6 +21,9 @@ sys-devel/llvm[clang]"
 src_prepare() {
 	epatch "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
 	epatch "${FILESDIR}"/remove-llvm-src.patch
+	find -type f -name '*.S' -exec sed \
+             -e '$a\\n#if defined(__linux__) && defined(__ELF__)\n.section .note.GNU-stack,"",%progbits\n#endif' \
+             -i {} + || die
 }
 
 multilib_src_configure() {
