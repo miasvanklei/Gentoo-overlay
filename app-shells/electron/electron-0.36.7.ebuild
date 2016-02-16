@@ -46,8 +46,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x64-freebsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos"
 IUSE=""
 
-DEPEND=">=net-libs/nodejs-4.0
-	<=net-libs/nodejs-4.9
+DEPEND=">=net-libs/nodejs-5.1
 	x11-libs/gtk+:2
 	x11-libs/libnotify
 	sys-devel/llvm[clang]
