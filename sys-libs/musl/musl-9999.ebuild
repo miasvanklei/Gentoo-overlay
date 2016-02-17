@@ -7,7 +7,6 @@ EAPI=5
 inherit eutils flag-o-matic toolchain-funcs multilib-minimal git-2
 
 EGIT_REPO_URI="git://git.musl-libc.org/musl"
-EVCS_OFFLINE=" "
 
 DESCRIPTION="Lightweight, fast and simple C library focused on standards-conformance and safety"
 HOMEPAGE="http://www.musl-libc.org/"
@@ -36,6 +35,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/dmd-cargo-compat.patch
 	epatch "${FILESDIR}"/multilib.patch
 	epatch "${FILESDIR}"/backtrace.patch
+	epatch "${FILESDIR}"/use-defines-instead-of-function.patch
 }
 
 multilib_src_configure() {
