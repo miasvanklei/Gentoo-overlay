@@ -1,0 +1,68 @@
+From 78a7d49140626994c23367b709e7b30b41e5cf70 Mon Sep 17 00:00:00 2001
+From: Hans Wennborg <hans@hanshq.net>
+Date: Thu, 4 Feb 2016 16:59:45 +0000
+Subject: [PATCH] Merging r259695:
+ ------------------------------------------------------------------------
+ r259695 | tfiala | 2016-02-03 13:13:23 -0800 (Wed, 03 Feb 2016) | 11 lines
+
+Address NDEBUG-related linkage issues for Value::assertModuleIsMaterialized()
+
+The IR/Value class had a linkage issue present when LLVM was built
+as a library, and the LLVM library build time had different settings
+for NDEBUG than the client of the LLVM library.  Clients could get
+into a state where the LLVM lib expected
+Value::assertModuleIsMaterialized() to be inline-defined in the header
+but clients expected that method to be defined in the LLVM library.
+
+See this llvm-commits thread for more details:
+http://lists.llvm.org/pipermail/llvm-commits/Week-of-Mon-20160201/329667.html
+------------------------------------------------------------------------
+
+
+git-svn-id: https://llvm.org/svn/llvm-project/llvm/branches/release_38@259801 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ include/llvm/IR/Value.h | 4 ----
+ lib/IR/Value.cpp        | 4 +++-
+ 2 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/include/llvm/IR/Value.h b/include/llvm/IR/Value.h
+index bb7ff27..8918dcd 100644
+--- a/include/llvm/IR/Value.h
++++ b/include/llvm/IR/Value.h
+@@ -280,11 +280,7 @@ class Value {
+   // when using them since you might not get all uses.
+   // The methods that don't start with materialized_ assert that modules is
+   // fully materialized.
+-#ifdef NDEBUG
+-  void assertModuleIsMaterialized() const {}
+-#else
+   void assertModuleIsMaterialized() const;
+-#endif
+ 
+   bool use_empty() const {
+     assertModuleIsMaterialized();
+diff --git a/lib/IR/Value.cpp b/lib/IR/Value.cpp
+index eb9deb6..4d224a0 100644
+--- a/lib/IR/Value.cpp
++++ b/lib/IR/Value.cpp
+@@ -313,8 +313,8 @@ void Value::takeName(Value *V) {
+     ST->reinsertValue(this);
+ }
+ 
+-#ifndef NDEBUG
+ void Value::assertModuleIsMaterialized() const {
++#ifndef NDEBUG
+   const GlobalValue *GV = dyn_cast<GlobalValue>(this);
+   if (!GV)
+     return;
+@@ -322,8 +322,10 @@ void Value::assertModuleIsMaterialized() const {
+   if (!M)
+     return;
+   assert(M->isMaterialized());
++#endif
+ }
+ 
++#ifndef NDEBUG
+ static bool contains(SmallPtrSetImpl<ConstantExpr *> &Cache, ConstantExpr *Expr,
+                      Constant *C) {
+   if (!Cache.insert(Expr).second)

@@ -1,4 +1,4 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
@@ -10,16 +10,22 @@ inherit linux-info xorg-2
 DESCRIPTION="X.Org driver for Intel cards"
 
 KEYWORDS="~amd64 ~x86 ~amd64-fbsd -x86-fbsd"
-IUSE="debug +sna +udev uxa xvmc"
+IUSE="debug +dri3 +sna +udev uxa xvmc"
+COMMIT_ID="636b52913cac10e691834a699cff10fb94d395fa"
+SRC_URI="http://cgit.freedesktop.org/xorg/driver/xf86-video-intel/snapshot/${COMMIT_ID}.tar.xz -> ${P}.tar.xz"
+
+S=${WORKDIR}/${COMMIT_ID}
 
 REQUIRED_USE="
 	|| ( sna uxa )
 "
-
 RDEPEND="x11-libs/libXext
 	x11-libs/libXfixes
 	>=x11-libs/pixman-0.27.1
 	>=x11-libs/libdrm-2.4.29[video_cards_intel]
+	dri3? (
+		>=x11-base/xorg-server-1.18
+	)
 	sna? (
 		>=x11-base/xorg-server-1.10
 	)
@@ -33,24 +39,25 @@ RDEPEND="x11-libs/libXext
 	)
 "
 DEPEND="${RDEPEND}
+	x11-misc/util-macros
 	>=x11-proto/dri2proto-2.6
 	x11-proto/dri3proto
 	x11-proto/presentproto
 	x11-proto/resourceproto"
 
-PATCHES=(
-	"${FILESDIR}"/${P}-sna-udev-fstat.patch
-	"${FILESDIR}"/${P}-uxa-udev-fstat.patch
-	"${FILESDIR}"/${P}-libdrm-kernel-4_0-crash.patch
-)
+src_prepare() {
+	eautoreconf
+}
 
 src_configure() {
 	XORG_CONFIGURE_OPTIONS=(
 		$(use_enable debug)
-		$(use_enable sna)
 		$(use_enable dri)
-		$(use_enable uxa)
+		$(use_enable dri3)
+		$(usex dri3 "--with-default-dri=3")
+		$(use_enable sna)
 		$(use_enable udev)
+		$(use_enable uxa)
 		$(use_enable xvmc)
 		--disable-ums
 	)
@@ -59,7 +66,7 @@ src_configure() {
 
 pkg_postinst() {
 	if linux_config_exists \
-		&& ! linux_chkconfig_present DRM_I915_KMS; then
+		kernel_is -lt 4 3 && ! linux_chkconfig_present DRM_I915_KMS; then
 		echo
 		ewarn "This driver requires KMS support in your kernel"
 		ewarn "  Device Drivers --->"

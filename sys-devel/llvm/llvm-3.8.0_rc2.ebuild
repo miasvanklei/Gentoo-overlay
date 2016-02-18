@@ -185,6 +185,7 @@ src_prepare() {
 	# Fix llvm-config for shared linking and sane flags
 	# https://bugs.gentoo.org/show_bug.cgi?id=565358
 	epatch "${FILESDIR}"/llvm-3.8-llvm-config.patch
+	epatch "${FILESDIR}"/address-ndebug-related-linking-issue.patch
 
 	# By a commit 61dbca10ea813ea3af447cc7ac2556a5e81211f9 and bug 25059 they tried to fix soname for libllvm*
 	# but this failed. revert a part of that commit to have correct soname.
