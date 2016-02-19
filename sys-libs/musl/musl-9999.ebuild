@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils flag-o-matic toolchain-funcs multilib-minimal git-2
+inherit eutils flag-o-matic toolchain-funcs multilib-minimal git-r3
 
 EGIT_REPO_URI="git://git.musl-libc.org/musl"
 
@@ -32,7 +32,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/context.patch
 	epatch "${FILESDIR}"/pthread-try-timed.patch
 	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
-	epatch "${FILESDIR}"/dmd-cargo-compat.patch
 	epatch "${FILESDIR}"/multilib.patch
 	epatch "${FILESDIR}"/backtrace.patch
 	epatch "${FILESDIR}"/use-defines-instead-of-function.patch
@@ -71,6 +70,7 @@ multilib_src_install() {
         mv "${D}"/usr/$(get_libdir)/${ldso} "${D}"/usr/$(get_libdir)/libc.so
 
 	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd
+	ar rcs ${D}/usr/$(get_libdir)/libintl.a || die
 }
 
 multilib_src_install_all() {

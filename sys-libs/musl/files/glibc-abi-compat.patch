@@ -610,46 +610,10 @@
  tryflag CFLAGS_AUTO -Wall
 --- /dev/null	2015-08-02 09:45:38.072599642 -0200
 +++ src/compat/math.c	2015-08-02 16:25:34.386451697 -0200
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,10 @@
 +#define _XOPEN_SOURCE 700
 +#include <math.h>
 +#include <float.h>
-+
-+#ifdef finitel
-+#undef finitel
-+#endif
-+int finitel(long double x)
-+{
-+	return isfinite(x);
-+}
-+
-+int __finitel(long double x)
-+{
-+	return isfinite(x);
-+}
-+
-+int __isinf(double x)
-+{
-+	return isinf(x);
-+}
-+
-+int isinfl(long double x)
-+{
-+	return isinf(x);
-+}
-+
-+int __isinfl(long double x)
-+{
-+	return isinf(x);
-+}
-+int __isnan(double x)
-+{
-+	return isnan(x);
-+}
-+int isnanl(long double x)
-+{
-+	return isnan(x);
-+}
 +
 +long double scalbl(long double x, long double exp)
 +{
@@ -699,7 +663,7 @@
 +weak_alias(register_atfork, __register_atfork);
 --- /dev/null
 +++ src/math/isinf.c
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,19 @@
 +#include <math.h>
 +#include "libc.h"
 +
@@ -708,10 +672,20 @@
 +    return isinf(arg);
 +}
 +
-+weak_alias(__isinff, isinf);
++int __isinf(double x)
++{
++	return isinf(x);
++}
++weak_alias(__isinf, isinf);
++
++int __isinfl(long double x)
++{
++	return isinf(x);
++}
++weak_alias(__isinfl, isinfl);
 --- /dev/null
 +++ src/math/isnan.c
-@@ -0,0 +1,9 @@
+@@ -0,0 +1,20 @@
 +#include <math.h>
 +#include "libc.h"
 +
@@ -719,8 +693,19 @@
 +{
 +    return isnan(arg);
 +}
++weak_alias(__isnanf, isnanf);
 +
-+weak_alias(__isnanf, isnan);
++int __isnan(double x)
++{
++	return isnan(x);
++}
++weak_alias(__isnan, isnan);
++
++int __isnanl(long double x)
++{
++	return isnan(x);
++}
++weak_alias(__isnanl, isnanl);
 --- src/stdio/tmpnam.c	2015-06-04 22:08:24.000000000 -0200
 +++ src/stdio/tmpnam.c	2015-08-23 12:36:53.167030469 -0200
 @@ -27,3 +27,8 @@
@@ -734,7 +719,7 @@
 +}
 --- src/math/finite.c	2015-06-04 22:08:24.000000000 -0200
 +++ src/math/finite.c	2015-08-23 12:40:08.000014438 -0200
-@@ -1,7 +1,9 @@
+@@ -1,7 +1,15 @@
  #define _GNU_SOURCE
  #include <math.h>
 +#include "libc.h"
@@ -745,6 +730,12 @@
  	return isfinite(x);
  }
 +weak_alias(__finite, finite);
++
++int __finitel(long double x)
++{
++	return isfinite(x);
++}
++weak_alias(__finitel, finitel);
 --- /dev/null	2015-08-25 09:44:41.984259192 -0200
 +++ src/compat/__cmsg_nxthdr.c	2015-08-25 19:43:37.802028470 -0200
 @@ -0,0 +1,18 @@
@@ -782,3 +773,32 @@
 +{
 +	return malloc (CPU_ALLOC_SIZE (count));
 +}
+--- src/string/strtok_r.c       2016-01-31 19:24:57.742649710 +0100
++++ src/string/strtok_r.c       2016-01-31 19:25:52.428469125 +0100
+@@ -1,6 +1,7 @@
+ #include <string.h>
++#include "libc.h"
+ 
+-char *strtok_r(char *restrict s, const char *restrict sep, char **restrict p)
++char *__strtok_r(char *restrict s, const char *restrict sep, char **restrict p)
+ {
+        if (!s && !(s = *p)) return NULL;
+        s += strspn(s, sep);
+@@ -10,3 +11,4 @@
+        else *p = 0;
+        return s;
+ }
++weak_alias(__strtok_r, strtok_r);
+--- src/math/finitef.c	2016-02-19 20:07:43.992445286 +0100
++++ src/math/finitef.c	2016-02-19 20:08:27.888441674 +0100
+@@ -1,7 +1,9 @@
+ #define _GNU_SOURCE
+ #include <math.h>
++#include "libc.h"
+ 
+-int finitef(float x)
++int __finitef(float x)
+ {
+ 	return isfinite(x);
+ }
++weak_alias(__finitef, finitef);
