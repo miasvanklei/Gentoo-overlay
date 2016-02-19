@@ -225,6 +225,7 @@ src_prepare() {
 		epatch "${FILESDIR}"/musl/cfe/cfe-009-add-gentoo-linux-distro.patch
 		epatch "${FILESDIR}"/musl/cfe/cfe-010-fix-ada-in-configure.patch
 		epatch "${FILESDIR}"/musl/cfe/cfe-011-increase-gcc-version.patch
+		epatch "${FILESDIR}"/musl/cfe/cfe-013-use-ssp-by-default.patch
 		epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt-002-musl-no-dlvsym.patch
 		epatch "${FILESDIR}"/musl/compiler-rt/compiler-rt_musl_001-disable-sanitizers.patch
 	fi
