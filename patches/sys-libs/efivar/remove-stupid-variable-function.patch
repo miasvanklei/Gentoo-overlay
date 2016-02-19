@@ -1,0 +1,37 @@
+--- src/include/efivar/efivar.h.bak	2016-02-19 17:25:16.314247356 +0100
++++ src/include/efivar/efivar.h	2016-02-19 17:28:51.589229642 +0100
+@@ -83,24 +83,28 @@
+ 				     __attribute__((__nonnull__ (2, 3)))
+ extern inline int
+ __attribute__((__gnu_inline__))
+-__attribute__((__artificial__))
+ __attribute__((__visibility__ ("default")))
+ efi_set_variable(efi_guid_t guid, const char *name,
+ 			       uint8_t *data, size_t data_size,
+ 			       uint32_t attributes, ...)
+ {
+-	if (__builtin_va_arg_pack_len() != 0 &&
+-			__builtin_va_arg_pack_len() != 1) {
++	if (attributes != 0 &&
++			attributes != 1) {
+ 		errno = EINVAL;
+ 		return -1;
+ 	}
+ 
+-	if (__builtin_va_arg_pack_len() == 0)
++	if (attributes == 0)
+ 		return _efi_set_variable(guid, name, data, data_size,
+ 					 attributes, 0644);
+ 
+-	return _efi_set_variable_variadic(guid, name, data, data_size,
+-					  attributes, __builtin_va_arg_pack());
++	va_list ap;
++        va_start(ap, attributes);
++
++	int test = _efi_set_variable_variadic(guid, name, data, data_size,
++					  attributes, ap);
++	va_end(ap);
++	return test;
+ }
+ 
+ extern int efi_append_variable(efi_guid_t guid, const char *name,

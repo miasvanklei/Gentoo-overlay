@@ -71,6 +71,11 @@ RDEPEND="${RDEPEND}
 
 # cantata has no tests
 RESTRICT="test"
+
+src_prepare() {
+	epatch ${FILESDIR}/musl-includes.patch
+}
+
 src_configure() {
 	local mycmakeargs=(
                 $(cmake-utils_use_enable cdda CDPARANOIA)
