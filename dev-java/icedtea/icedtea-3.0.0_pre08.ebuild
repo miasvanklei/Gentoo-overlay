@@ -149,7 +149,6 @@ DEPEND="${COMMON_DEP} ${ALSA_COMMON_DEP} ${CUPS_COMMON_DEP} ${X_COMMON_DEP} ${X_
 	dev-lang/perl
 	dev-libs/openssl
 	sys-apps/attr
-	sys-apps/lsb-release
 	x11-libs/libXt
 	virtual/pkgconfig
 	pax_kernel? ( sys-apps/elfix )"

@@ -1,0 +1,29 @@
+--- setfiles/restore.c.bak	2016-02-20 16:24:13.939802113 +0100
++++ setfiles/restore.c	2016-02-20 16:25:05.613797862 +0100
+@@ -16,6 +16,14 @@
+ #define HASH_BUCKETS (1 << HASH_BITS)
+ #define HASH_MASK (HASH_BUCKETS-1)
+ 
++#ifndef GLOB_TILDE
++#define GLOB_TILDE 0
++#endif
++
++#ifndef GLOB_BRACE
++#define GLOB_BRACE 0
++#endif
++
+ /*
+  * An association between an inode and a context.
+  */
+--- restorecond/watch.c.bak	2016-02-20 16:27:15.915787140 +0100
++++ restorecond/watch.c	2016-02-20 16:28:00.039783509 +0100
+@@ -25,6 +25,9 @@
+ /* reasonable guess as to size of 1024 events */
+ #define BUF_LEN        (1024 * (EVENT_SIZE + 16))
+ 
++#ifndef GLOB_TILDE
++#define GLOB_TILDE 0
++#endif
+ 
+ struct watchList {
+ 	struct watchList *next;

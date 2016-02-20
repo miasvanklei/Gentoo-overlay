@@ -4,7 +4,7 @@
 
 EAPI=5
 
-inherit eutils flag-o-matic toolchain-funcs multilib-minimal git-r3
+inherit eutils flag-o-matic toolchain-funcs multilib-minimal pax-utils git-r3
 
 EGIT_REPO_URI="git://git.musl-libc.org/musl"
 
@@ -38,7 +38,6 @@ src_prepare() {
 }
 
 multilib_src_configure() {
-	append-flags "-fPIC"
 	ECONF_SOURCE="${S}" \
         econf \
 	--prefix=/usr \
@@ -71,6 +70,10 @@ multilib_src_install() {
 
 	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd
 	ar rcs ${D}/usr/$(get_libdir)/libintl.a || die
+
+	# needed for ldd under pax kernel
+	pax-mark r "${D}"/lib64/${ldso}
+
 }
 
 multilib_src_install_all() {

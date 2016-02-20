@@ -1,0 +1,29 @@
+--- a/tools/clang/lib/Driver/ToolChains.cpp   2016-02-20 17:11:52.629566891 +0100
++++ b/tools/clang/lib/Driver/ToolChains.cpp       2016-02-20 17:12:57.254561574 +0100
+@@ -4131,7 +4131,12 @@
+   }
+ }
+ 
+-bool Linux::isPIEDefault() const { return getSanitizerArgs().requiresPIE(); }
++bool Linux::isPIEDefault() const {
++  StringRef VendorName = Linux::getTriple().getVendorName();
++  if (VendorName.compare("gentoo") == 0)
++    return true;
++  return getSanitizerArgs().requiresPIE();
++}
+ 
+ unsigned Linux::GetDefaultStackProtectorLevel(bool KernelOrKext) const {
+   StringRef VendorName = Linux::getTriple().getVendorName();
+--- a/tools/clang/lib/Driver/Tools.cpp
++++ b/tools/clang//lib/Driver/Tools.cpp
+@@ -7462,7 +7462,9 @@ void gnutools::Link::ConstructJob(Compilation &C, const JobAction &JA,
+   if (!D.SysRoot.empty())
+     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+
+-  if (IsPIE)
++  if (Args.hasArg(options::OPT_nopie))
++    CmdArgs.push_back("-nopie");
++  else if (IsPIE)
+     CmdArgs.push_back("-pie");
+
+   if (Args.hasArg(options::OPT_rdynamic))

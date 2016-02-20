@@ -1,0 +1,143 @@
+--- libsefs/src/new_ftw.h.bak	2016-02-20 16:07:39.142883969 +0100
++++ libsefs/src/new_ftw.h	2016-02-20 16:16:33.935839964 +0100
+@@ -43,7 +43,15 @@
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ 
+-__BEGIN_DECLS
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define __USE_XOPEN_EXTENDED
++#define __USE_LARGEFILE64
++#define __USE_GNU
++#undef __REDIRECT
++
+ /* Values for the FLAG argument to the user function passed to `ftw'
+    and 'nftw'.  */
+ 	enum
+@@ -140,17 +148,17 @@
+    This function is a possible cancellation point and therefore not
+    marked with __THROW.  */
+ #ifndef __USE_FILE_OFFSET64
+-extern int new_ftw(__const char *__dir, __new_ftw_func_t __func, int __descriptors, void *__data) __nonnull((1, 2));
++extern int new_ftw(__const char *__dir, __new_ftw_func_t __func, int __descriptors, void *__data);
+ #else
+ # ifdef __REDIRECT
+ extern int __REDIRECT(new_ftw, (__const char *__dir, __new_ftw_func_t __func,
+-				int __descriptors, void *__data), new_ftw64) __nonnull((1, 2));
++				int __descriptors, void *__data), new_ftw64);
+ # else
+ #  define new_ftw new_ftw64
+ # endif
+ #endif
+ #ifdef __USE_LARGEFILE64
+-extern int new_ftw64(__const char *__dir, __new_ftw64_func_t __func, int __descriptors, void *__data) __nonnull((1, 2));
++extern int new_ftw64(__const char *__dir, __new_ftw64_func_t __func, int __descriptors, void *__data);
+ #endif
+ 
+ #ifdef __USE_XOPEN_EXTENDED
+@@ -160,24 +168,26 @@
+    This function is a possible cancellation point and therefore not
+    marked with __THROW.  */
+ # ifndef __USE_FILE_OFFSET64
+-extern int new_nftw(__const char *__dir, __new_nftw_func_t __func, int __descriptors, int __flag, void *__data) __nonnull((1, 2));
++extern int new_nftw(__const char *__dir, __new_nftw_func_t __func, int __descriptors, int __flag, void *__data);
+ # else
+ #  ifdef __REDIRECT
+ extern int __REDIRECT(new_nftw, (__const char *__dir, __new_nftw_func_t __func,
+-				 int __descriptors, int __flag, void *__data), new_nftw64) __nonnull((1, 2));
++				 int __descriptors, int __flag, void *__data), new_nftw64);
+ #  else
+ #   define new_nftw new_nftw64
+ #  endif
+ # endif
+ # ifdef __USE_LARGEFILE64
+ extern int new_nftw64(__const char *__dir, __new_nftw64_func_t __func,
+-		      int __descriptors, int __flag, void *__data) __nonnull((1, 2));
++		      int __descriptors, int __flag, void *__data);
+ # endif
+ #endif
+ 
+ /* Compile new_nftw() to always have LFS enabled. */
+-extern int __REDIRECT(new_nftw, (__const char *__dir, __new_nftw_func_t __func,
+-				 int __descriptors, int __flag, void *__data), new_nftw64) __nonnull((1, 2));
++///extern int __REDIRECT(new_nftw, (__const char *__dir, __new_nftw_func_t __func,
++//				 int __descriptors, int __flag, void *__data), new_nftw64);
+ 
+-__END_DECLS
++#ifdef __cplusplus
++}
++#endif
+ #endif				       /* ftw.h */
+--- libseaudit/src/filter.c.bak	2016-02-20 16:17:24.937835767 +0100
++++ libseaudit/src/filter.c	2016-02-20 16:18:30.761830351 +0100
+@@ -359,7 +359,7 @@
+ 	return 0;
+ }
+ 
+-static int filter_set_ulong(seaudit_filter_t * filter, unsigned long *dest, const ulong src)
++static int filter_set_ulong(seaudit_filter_t * filter, unsigned long *dest, const unsigned long src)
+ {
+ 	if (src != *dest) {
+ 		*dest = src;
+@@ -370,7 +370,7 @@
+ 	return 0;
+ }
+ 
+-static int filter_set_uint(seaudit_filter_t * filter, unsigned int *dest, const ulong src)
++static int filter_set_uint(seaudit_filter_t * filter, unsigned int *dest, const unsigned long src)
+ {
+ 	if (src != *dest) {
+ 		*dest = src;
+--- libsefs/include/sefs/db.hh.bak	2016-02-20 16:04:33.883899212 +0100
++++ libsefs/include/sefs/db.hh	2016-02-20 16:05:38.957893858 +0100
+@@ -40,6 +40,7 @@
+ }
+ 
+ #include <stdexcept>
++#include <new>
+ 
+ /**
+  * This class represents a database that maps files to their SELinux
+--- libsefs/include/sefs/entry.hh.bak	2016-02-20 16:06:31.783889511 +0100
++++ libsefs/include/sefs/entry.hh	2016-02-20 16:06:45.757888361 +0100
+@@ -38,6 +38,7 @@
+ }
+ 
+ #include <stdexcept>
++#include <new>
+ 
+ class sefs_fclist;
+ struct sefs_context_node;
+--- libsefs/include/sefs/fclist.hh.bak	2016-02-20 16:04:50.408897852 +0100
++++ libsefs/include/sefs/fclist.hh	2016-02-20 16:05:51.907892792 +0100
+@@ -91,6 +91,7 @@
+ }
+ 
+ #include <stdexcept>
++#include <new>
+ 
+ struct apol_bst;
+ struct context_node;
+--- libsefs/include/sefs/filesystem.hh.bak	2016-02-20 16:05:05.483896612 +0100
++++ libsefs/include/sefs/filesystem.hh	2016-02-20 16:06:04.757891735 +0100
+@@ -38,6 +38,7 @@
+ }
+ 
+ #include <stdexcept>
++#include <new>
+ 
+ /**
+  * This class represents the SELinux file contexts on a local on-disk
+--- libsefs/include/sefs/query.hh.bak	2016-02-20 16:05:22.083895246 +0100
++++ libsefs/include/sefs/query.hh	2016-02-20 16:06:15.832890824 +0100
+@@ -46,6 +46,7 @@
+ }
+ 
+ #include <stdexcept>
++#include <new>
+ 
+ /**
+  * This class represents a query into a (subclass of) fclist.  Create
