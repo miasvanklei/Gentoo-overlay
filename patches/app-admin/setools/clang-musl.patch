@@ -121,16 +121,6 @@
  
  struct apol_bst;
  struct context_node;
---- libsefs/include/sefs/filesystem.hh.bak	2016-02-20 16:05:05.483896612 +0100
-+++ libsefs/include/sefs/filesystem.hh	2016-02-20 16:06:04.757891735 +0100
-@@ -38,6 +38,7 @@
- }
- 
- #include <stdexcept>
-+#include <new>
- 
- /**
-  * This class represents the SELinux file contexts on a local on-disk
 --- libsefs/include/sefs/query.hh.bak	2016-02-20 16:05:22.083895246 +0100
 +++ libsefs/include/sefs/query.hh	2016-02-20 16:06:15.832890824 +0100
 @@ -46,6 +46,7 @@
@@ -141,3 +131,14 @@
  
  /**
   * This class represents a query into a (subclass of) fclist.  Create
+--- libsefs/src/filesystem.cc.bak	2016-02-23 21:50:33.823336803 +0100
++++ libsefs/src/filesystem.cc	2016-02-23 21:51:03.446338261 +0100
+@@ -426,7 +426,7 @@
+ 	s.aborted = false;
+ 	s.retval = 0;
+ 
+-	int retval = new_nftw64(_root, filesystem_ftw_handler, 1024, 0, &s);
++	int retval = new_nftw(_root, filesystem_ftw_handler, 1024, 0, &s);
+ 	apol_vector_destroy(&s.dev_map);
+ 	apol_vector_destroy(&s.type_list);
+ 	apol_mls_range_destroy(&s.range);
