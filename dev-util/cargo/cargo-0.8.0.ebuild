@@ -179,6 +179,7 @@ src_install() {
 
 	dobashcomp "${ED}"/usr/etc/bash_completion.d/cargo
 	rm -r "${ED}"/usr/etc || die
+	rm -r "${ED}"/usr/lib/rustlib || die
 }
 
 src_test() {

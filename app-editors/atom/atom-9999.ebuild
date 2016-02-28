@@ -12,7 +12,6 @@ HOMEPAGE="https://atom.io"
 SRC_URI=""
 
 EGIT_REPO_URI="git://github.com/atom/atom"
-EGIT_BRANCH="wl-electron-35"
 LICENSE="MIT"
 SLOT="0"
 
@@ -78,7 +77,8 @@ src_configure() {
 	# always fails because of missing symbols and using incorrect headers for git-node
 	./script/build --verbose --build-dir "${T}"
 
-	cp /usr/bin/node apm/node_modules/atom-package-manager/bin/node
+	cp -r /usr/bin/node apm/node_modules/atom-package-manager/bin/node
+	paxctl-ng -m apm/node_modules/atom-package-manager/bin/node
 	sed -i s/--harmony_collections//g apm/node_modules/atom-package-manager/bin/apm
 
 	cd apm/node_modules/atom-package-manager/node_modules
