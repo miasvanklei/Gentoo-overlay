@@ -6,14 +6,16 @@ EAPI=5
 
 PYTHON_COMPAT=( python2_7 )
 
-inherit eutils git-2 multilib python-any-r1
+inherit eutils multilib python-any-r1
+
+MY_P=rustc-beta
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
+MY_SRC_URI="http://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
-SLOT="git"
-EGIT_REPO_URI="https://github.com/rust-lang/rust.git"
+SLOT="beta"
 KEYWORDS=""
 
 IUSE="+clang debug doc +libcxx +system-llvm"
@@ -22,34 +24,22 @@ REQUIRED_USE="libcxx? ( clang )"
 CDEPEND="libcxx? ( sys-libs/libcxx )
 	>=app-eselect/eselect-rust-0.3_pre20150425
 	!dev-lang/rust:0
+	system-llvm? ( >=sys-devel/llvm-3.7.0 )
 "
 DEPEND="${CDEPEND}
 	${PYTHON_DEPS}
 	>=dev-lang/perl-5.0
+	net-misc/wget
 	clang? ( sys-devel/clang )
-	system-llvm? ( >=sys-devel/llvm-3.6.0 )
 "
 RDEPEND="${CDEPEND}
 "
 
+S="${WORKDIR}/${MY_P}"
+
 src_unpack() {
-	git-2_src_unpack
-
-	EGIT_REPO_URI="https://github.com/rust-lang/hoedown.git"
-	EGIT_SOURCEDIR="${S}/src/rt/hoedown"
-	git-2_src_unpack
-
-	EGIT_REPO_URI="https://github.com/rust-lang/rust-installer.git"
-	EGIT_SOURCEDIR="${S}/src/rust-installer"
-	git-2_src_unpack
-
-	EGIT_REPO_URI="https://github.com/rust-lang-nursery/libc.git"
-	EGIT_SOURCEDIR="${S}/src/liblibc"
-	git-2_src_unpack
-
-	EGIT_REPO_URI="https://github.com/rust-lang/compiler-rt.git"
-	EGIT_SOURCEDIR="${S}/src/compiler-rt"
-	git-2_src_unpack
+	wget "${MY_SRC_URI}" || die
+	unpack ./"${MY_P}-src.tar.gz"
 
 	use amd64 && BUILD_TRIPLE=x86_64-unknown-linux-gnu
 	use x86 && BUILD_TRIPLE=i686-unknown-linux-gnu
@@ -65,6 +55,7 @@ src_prepare() {
 	sed -i -e "s/CFG_FILENAME_EXTRA=.*/CFG_FILENAME_EXTRA=${postfix}/" mk/main.mk || die
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
+	epatch ${FILESDIR}/llvm-3.8.patch
 }
 
 src_configure() {
@@ -73,9 +64,9 @@ src_configure() {
 		--prefix="${EPREFIX}/usr" \
 		--libdir="${EPREFIX}/usr/$(get_libdir)/${P}" \
 		--mandir="${EPREFIX}/usr/share/${P}/man" \
+		--release-channel=${SLOT} \
 		--disable-manage-submodules \
 		--disable-jemalloc \
-                --target=x86_64-unknown-linux-gnu,i686-unknown-linux-gnu \
 		$(use_enable clang) \
 		$(use_enable debug) \
 		$(use_enable debug llvm-assertions) \
@@ -99,6 +90,8 @@ src_install() {
 	mv "${D}/usr/bin/rustc" "${D}/usr/bin/rustc-${PV}" || die
 	mv "${D}/usr/bin/rustdoc" "${D}/usr/bin/rustdoc-${PV}" || die
 	mv "${D}/usr/bin/rust-gdb" "${D}/usr/bin/rust-gdb-${PV}" || die
+
+	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
 
 	dodir "/usr/share/doc/rust-${PV}/"
 	mv "${D}/usr/share/doc/rust"/* "${D}/usr/share/doc/rust-${PV}/" || die
