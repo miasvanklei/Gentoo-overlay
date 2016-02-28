@@ -1,5 +1,6 @@
---- bridges/source/cpp_uno/gcc3_linux_x86-64/abi.hxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/abi.hxx	2015-10-08 19:43:26.192044421 +0200
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/abi.hxx bridges/source/cpp_uno/gcc3_macosx_x86-64/abi.hxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/abi.hxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/abi.hxx	2016-01-27 01:58:25.000000000 +0100
 @@ -17,8 +17,8 @@
   *   the License at http://www.apache.org/licenses/LICENSE-2.0 .
   */
@@ -19,9 +20,37 @@
 +#endif // INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_MACOSX_X86_64_ABI_HXX
  
  /* vim:set shiftwidth=4 softtabstop=4 expandtab: */
---- bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.cxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.cxx	2015-10-08 19:43:26.192044421 +0200
-@@ -48,14 +48,22 @@
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/call.hxx bridges/source/cpp_uno/gcc3_macosx_x86-64/call.hxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/call.hxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/call.hxx	2016-01-27 01:58:25.000000000 +0100
+@@ -17,18 +17,21 @@
+  *   the License at http://www.apache.org/licenses/LICENSE-2.0 .
+  */
+ 
+-#ifndef INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_LINUX_X86_64_CALL_HXX
+-#define INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_LINUX_X86_64_CALL_HXX
++#ifndef INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_MACOSX_X86_64_CALL_HXX
++#define INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_MACOSX_X86_64_CALL_HXX
+ 
+ #include <sal/config.h>
+ 
+ #include <sal/types.h>
++#include <typelib/typeclass.h>
+ 
+ extern "C" typelib_TypeClass cpp_vtable_call(
+     sal_Int32 nFunctionIndex, sal_Int32 nVtableOffset,
+     void ** gpreg, void ** fpreg, void ** ovrflw,
+     sal_uInt64 * pRegisterReturn /* space for register return */ );
+ 
++extern "C" void privateSnippetExecutor();
++
+ #endif
+ 
+ /* vim:set shiftwidth=4 softtabstop=4 expandtab: */
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.cxx bridges/source/cpp_uno/gcc3_macosx_x86-64/callvirtualmethod.cxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.cxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/callvirtualmethod.cxx	2016-01-27 01:58:25.000000000 +0100
+@@ -48,51 +48,50 @@
  void CPPU_CURRENT_NAMESPACE::callVirtualMethod(
      void * pThis, sal_uInt32 nVtableIndex, void * pRegisterReturn,
      typelib_TypeDescriptionReference * pReturnTypeRef, bool bSimpleReturn,
@@ -41,35 +70,70 @@
 +    // than available" error:
      struct Data {
          sal_uInt64 pMethod;
+-        sal_uInt64 * pStack;
+-        sal_uInt32 nStack;
          sal_uInt64 * pGPR;
          double * pFPR;
 +        sal_uInt64 nFPR;
          // Return values:
          sal_uInt64 rax;
          sal_uInt64 rdx;
-@@ -64,6 +72,7 @@
+         double xmm0;
+         double xmm1;
      } data;
+-    data.pStack = pStack;
+-    data.nStack = nStack;
      data.pGPR = pGPR;
      data.pFPR = pFPR;
 +    data.nFPR = nFPR;
  
      // Get pointer to method
      sal_uInt64 pMethod = *static_cast<sal_uInt64 *>(pThis);
-@@ -71,12 +80,11 @@
+     pMethod += 8 * nVtableIndex;
      data.pMethod = *reinterpret_cast<sal_uInt64 *>(pMethod);
  
-     // Load parameters to stack, if necessary
--    sal_uInt64* pCallStack = NULL;
-     if ( nStack )
-     {
-         // 16-bytes aligned
-         sal_uInt32 nStackBytes = ( ( nStack + 1 ) >> 1 ) * 16;
--        pCallStack = static_cast<sal_uInt64 *>(__builtin_alloca( nStackBytes ));
++    // Load parameters to stack, if necessary
++    if ( nStack )
++    {
++        // 16-bytes aligned
++        sal_uInt32 nStackBytes = ( ( nStack + 1 ) >> 1 ) * 16;
 +        sal_uInt64 *pCallStack = static_cast<sal_uInt64 *>(__builtin_alloca( nStackBytes ));
-         std::memcpy( pCallStack, pStack, nStackBytes );
-     }
++        std::memcpy( pCallStack, pStack, nStackBytes );
++    }
++
+     asm volatile (
+-        // Push arguments to stack
+-        "movq %%rsp, %%r12\n\t"
+-        "movl 16%0, %%ecx\n\t"
+-        "jrcxz .Lpushed\n\t"
+-        "xor %%rax, %%rax\n\t"
+-        "leaq (%%rax, %%rcx, 8), %%rax\n\t"
+-        "subq %%rax, %%rsp\n\t"
+-        "andq $-9, %%rsp\n\t" // 16-bytes aligned
+-        "movq 8%0, %%rsi\n\t"
+-        "\n.Lpush:\n\t"
+-        "decq %%rcx\n\t"
+-        "movq (%%rsi, %%rcx, 8), %%rax\n\t"
+-        "movq %%rax, (%%rsp, %%rcx, 8)\n\t"
+-        "jnz .Lpush\n\t"
+-        "\n.Lpushed:\n\t"
  
-@@ -106,15 +114,15 @@
+         // Fill the xmm registers
+-        "movq 32%0, %%rax\n\t"
++        "movq 16%0, %%rax\n\t"
+ 
+         "movsd   (%%rax), %%xmm0\n\t"
+         "movsd  8(%%rax), %%xmm1\n\t"
+@@ -104,7 +103,7 @@
+         "movsd 56(%%rax), %%xmm7\n\t"
+ 
+         // Fill the general purpose registers
+-        "movq 24%0, %%rax\n\t"
++        "movq 8%0, %%rax\n\t"
+ 
+         "movq    (%%rax), %%rdi\n\t"
+         "movq   8(%%rax), %%rsi\n\t"
+@@ -115,18 +114,16 @@
  
          // Perform the call
          "movq 0%0, %%r11\n\t"
@@ -77,21 +141,24 @@
          "call *%%r11\n\t"
  
          // Fill the return values
--        "movq   %%rax, 24%0\n\t"
--        "movq   %%rdx, 32%0\n\t"
--        "movsd %%xmm0, 40%0\n\t"
--        "movsd %%xmm1, 48%0\n\t"
--        :: "o" (data),
--          "m" ( pCallStack ) // dummy input to prevent the compiler from optimizing the alloca out
+-        "movq   %%rax, 40%0\n\t"
+-        "movq   %%rdx, 48%0\n\t"
+-        "movsd %%xmm0, 56%0\n\t"
+-        "movsd %%xmm1, 64%0\n\t"
+-
+-        // Reset %rsp
+-        "movq %%r12, %%rsp\n\t"
 +        "movq   %%rax, 32%0\n\t"
 +        "movq   %%rdx, 40%0\n\t"
 +        "movsd %%xmm0, 48%0\n\t"
 +        "movsd %%xmm1, 56%0\n\t"
-+        :: "o" (data)
-         : "rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11",
+         :: "o" (data)
+-        : "rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11", "r12",
++        : "rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11",
            "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7",
            "xmm8", "xmm9", "xmm10", "xmm11", "xmm12", "xmm13", "xmm14", "xmm15",
-@@ -130,16 +138,16 @@
+           "memory"
+@@ -141,16 +138,16 @@
      case typelib_TypeClass_LONG:
      case typelib_TypeClass_UNSIGNED_LONG:
      case typelib_TypeClass_ENUM:
@@ -111,8 +178,9 @@
          break;
      case typelib_TypeClass_FLOAT:
      case typelib_TypeClass_DOUBLE:
---- bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.hxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.hxx	2015-10-08 19:43:26.192044421 +0200
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.hxx bridges/source/cpp_uno/gcc3_macosx_x86-64/callvirtualmethod.hxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/callvirtualmethod.hxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/callvirtualmethod.hxx	2016-01-27 01:58:25.000000000 +0100
 @@ -17,8 +17,8 @@
   *   the License at http://www.apache.org/licenses/LICENSE-2.0 .
   */
@@ -134,8 +202,9 @@
  
  }
  
---- bridges/source/cpp_uno/gcc3_linux_x86-64/cpp2uno.cxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/cpp2uno.cxx	2015-10-08 19:43:26.192044421 +0200
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/cpp2uno.cxx bridges/source/cpp_uno/gcc3_macosx_x86-64/cpp2uno.cxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/cpp2uno.cxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/cpp2uno.cxx	2016-01-27 01:58:25.000000000 +0100
 @@ -27,7 +27,6 @@
  
  #include <com/sun/star/uno/genfunc.hxx>
@@ -144,7 +213,7 @@
  #include <uno/data.h>
  #include <typelib/typedescription.hxx>
  
-@@ -38,7 +37,6 @@
+@@ -38,12 +37,12 @@
  
  #include "abi.hxx"
  #include "call.hxx"
@@ -152,6 +221,12 @@
  #include "share.hxx"
  
  using namespace ::osl;
+ using namespace ::com::sun::star::uno;
+ 
++
+ // Perform the UNO call
+ //
+ // We must convert the parameters stored in gpreg, fpreg and ovrflw to UNO
 @@ -111,11 +110,14 @@
  
          int nUsedGPR = 0;
@@ -169,6 +244,14 @@
  
              if ( nUsedSSE == 1 )
              {
+@@ -248,7 +250,6 @@
+     }
+ }
+ 
+-
+ typelib_TypeClass cpp_vtable_call(
+     sal_Int32 nFunctionIndex, sal_Int32 nVtableOffset,
+     void ** gpreg, void ** fpreg, void ** ovrflw,
 @@ -412,16 +413,11 @@
  
      // movq $<nOffsetAndIndex>, %r10
@@ -184,11 +267,11 @@
 -        = reinterpret_cast<sal_uInt64>(privateSnippetExecutor);
 -    *reinterpret_cast<sal_uInt32 *>( code + 16 )
 -        = reinterpret_cast<sal_uInt64>(privateSnippetExecutor) >> 32;
-+    *reinterpret_cast<sal_uInt64 *>( code + 12 ) = reinterpret_cast<sal_uInt64>( gcc3::privateSnippetExecutor );
++    *reinterpret_cast<sal_uInt64 *>( code + 12 ) = reinterpret_cast<sal_uInt64>( privateSnippetExecutor );
  
      // jmpq *%r11
      *reinterpret_cast<sal_uInt32 *>( code + 20 ) = 0x00e3ff49;
-@@ -451,17 +447,12 @@
+@@ -451,17 +451,12 @@
  
  bridges::cpp_uno::shared::VtableFactory::Slot *
  bridges::cpp_uno::shared::VtableFactory::initializeBlock(
@@ -200,18 +283,19 @@
      Slot * slots = mapBlockToVtable(block);
 -    slots[-2].fn = reinterpret_cast<void *>(-(vtableNumber * sizeof (void *)));
 -#if ENABLE_RUNTIME_OPTIMIZATIONS
-+    slots[-2].fn = 0;
-     slots[-1].fn = 0;
+     slots[-1].fn = nullptr;
 -    (void)type;
 -#else
 -    slots[-1].fn = x86_64::getRtti(type->aBase);
 -#endif
++    slots[-2].fn = nullptr;
      return slots + slotCount;
  }
  
---- bridges/source/cpp_uno/gcc3_linux_x86-64/except.cxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/except.cxx	2015-10-08 19:43:26.192044421 +0200
-@@ -17,29 +17,91 @@
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/except.cxx bridges/source/cpp_uno/gcc3_macosx_x86-64/except.cxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/except.cxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/except.cxx	2016-01-27 01:58:25.000000000 +0100
+@@ -17,29 +17,92 @@
   *   the License at http://www.apache.org/licenses/LICENSE-2.0 .
   */
  
@@ -225,6 +309,7 @@
  
 -#include <rtl/ustrbuf.hxx>
 -#include <sal/log.hxx>
++#include <cxxabi.h>
 +#include <dlfcn.h>
  
 -#include <com/sun/star/uno/genfunc.hxx>
@@ -255,16 +340,16 @@
 +namespace {
 +
 +struct Fake_type_info {
-+    virtual ~Fake_type_info() SAL_DELETED_FUNCTION;
++    virtual ~Fake_type_info() = delete;
 +    char const * name;
 +};
 +
 +struct Fake_class_type_info: Fake_type_info {
-+    virtual ~Fake_class_type_info() SAL_DELETED_FUNCTION;
++    virtual ~Fake_class_type_info() = delete;
 +};
 +
 +struct Fake_si_class_type_info: Fake_class_type_info {
-+    virtual ~Fake_si_class_type_info() SAL_DELETED_FUNCTION;
++    virtual ~Fake_si_class_type_info() = delete;
 +    void const * base;
 +};
 +
@@ -314,7 +399,7 @@
  
  static OUString toUNOname( char const * p )
  {
-@@ -78,10 +140,121 @@
+@@ -78,10 +141,121 @@
  #endif
  }
  
@@ -338,7 +423,7 @@
 +};
 +
 +RTTI::RTTI()
-+    : m_hApp( dlopen( 0, RTLD_LAZY ) )
++    : m_hApp( dlopen( nullptr, RTLD_LAZY ) )
 +{
 +}
 +
@@ -394,7 +479,7 @@
 +                // symbol and rtti-name is nearly identical,
 +                // the symbol is prefixed with _ZTI
 +                char * rttiName = strdup(symName.getStr() + 4);
-+                if (rttiName == 0) {
++                if (rttiName == nullptr) {
 +                    throw std::bad_alloc();
 +                }
 +#if OSL_DEBUG_LEVEL > 1
@@ -404,7 +489,7 @@
 +                {
 +                    // ensure availability of base
 +                    std::type_info * base_rtti = getRTTI(
-+                        (typelib_CompoundTypeDescription *)pTypeDescr->pBaseTypeDescription );
++                        pTypeDescr->pBaseTypeDescription );
 +                    rtti = createFake_si_class_type_info(rttiName, base_rtti);
 +                }
 +                else
@@ -436,10 +521,10 @@
 +static void deleteException( void * pExc )
 +{
 +    __cxa_exception const * header = static_cast<__cxa_exception const *>(pExc) - 1;
-     typelib_TypeDescription * pTD = 0;
+     typelib_TypeDescription * pTD = nullptr;
      OUString unoName( toUNOname( header->exceptionType->name() ) );
      ::typelib_typedescription_getByName( &pTD, unoName.pData );
-@@ -92,7 +265,6 @@
+@@ -92,7 +266,6 @@
          ::typelib_typedescription_release( pTD );
      }
  }
@@ -447,7 +532,7 @@
  
  void raiseException( uno_Any * pUnoExc, uno_Mapping * pUno2Cpp )
  {
-@@ -104,7 +276,7 @@
+@@ -104,7 +277,7 @@
      fprintf( stderr, "> uno exception occurred: %s\n", cstr.getStr() );
  #endif
      void * pCppExc;
@@ -456,12 +541,12 @@
  
      {
      // construct cpp exception object
-@@ -124,7 +296,21 @@
+@@ -124,7 +297,21 @@
      // destruct uno exception
-     ::uno_any_destruct( pUnoExc, 0 );
+     ::uno_any_destruct( pUnoExc, nullptr );
      // avoiding locked counts
 -    rtti = x86_64::getRtti(*pTypeDescr);
-+    static RTTI * s_rtti = 0;
++    static RTTI * s_rtti = nullptr;
 +    if (! s_rtti)
 +    {
 +        MutexGuard guard( Mutex::getGlobalMutex() );
@@ -479,8 +564,288 @@
      TYPELIB_DANGER_RELEASE( pTypeDescr );
      assert(rtti && "### no rtti for throwing exception!");
      if (! rtti)
---- bridges/source/cpp_uno/gcc3_linux_x86-64/rtti.cxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/rtti.cxx	1970-01-01 01:00:00.000000000 +0100
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/share.hxx bridges/source/cpp_uno/gcc3_macosx_x86-64/share.hxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/share.hxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/share.hxx	2016-01-27 01:58:25.000000000 +0100
+@@ -16,122 +16,119 @@
+  *   except in compliance with the License. You may obtain a copy of
+  *   the License at http://www.apache.org/licenses/LICENSE-2.0 .
+  */
++#ifndef INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_MACOSX_X86_64_SHARE_HXX
++#define INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_MACOSX_X86_64_SHARE_HXX
+ 
+-#include "sal/config.h"
++#include "uno/mapping.h"
+ 
+ #include <typeinfo>
+ #include <exception>
+ #include <cstddef>
+ 
+-#include <cxxabi.h>
+-#ifndef _GLIBCXX_CDTOR_CALLABI // new in GCC 4.7 cxxabi.h
+-#define _GLIBCXX_CDTOR_CALLABI
+-#endif
++namespace CPPU_CURRENT_NAMESPACE
++{
+ 
+-#include "config_gcc.h"
+-#include "uno/any2.h"
+-#include "uno/mapping.h"
++// From opensource.apple.com: libunwind-35.1/include/unwind.h
+ 
+-#ifdef _LIBCPP_VERSION
++typedef enum {
++    _URC_NO_REASON = 0,
++    _URC_FOREIGN_EXCEPTION_CAUGHT = 1,
++    _URC_FATAL_PHASE2_ERROR = 2,
++    _URC_FATAL_PHASE1_ERROR = 3,
++    _URC_NORMAL_STOP = 4,
++    _URC_END_OF_STACK = 5,
++    _URC_HANDLER_FOUND = 6,
++    _URC_INSTALL_CONTEXT = 7,
++    _URC_CONTINUE_UNWIND = 8
++} _Unwind_Reason_Code;
+ 
+-namespace __cxxabiv1
++struct _Unwind_Exception
+ {
+-    struct __class_type_info : public std::type_info
+-    {
+-        explicit __class_type_info( const char *__n ) : type_info( __n ) { }
+-        virtual ~__class_type_info();
+-    };
+-
+-    struct __si_class_type_info : public __class_type_info
+-    {
+-        explicit __si_class_type_info( const char *__n, const __class_type_info *__b ) :
+-            __class_type_info( __n ), __base_type( __b ) { }
+-        virtual ~__si_class_type_info();
+-        const __class_type_info *__base_type;
+-    };
+-
+-extern "C" void *__cxa_allocate_exception( std::size_t thrown_size ) _NOEXCEPT;
+-
+-extern "C" _LIBCPP_NORETURN void __cxa_throw(
+-    void *thrown_exception, std::type_info *tinfo, void (*dest) (void *) );
+-}
++    uint64_t                   exception_class;
++    void                     (*exception_cleanup)(_Unwind_Reason_Code reason, struct _Unwind_Exception* exc);
++    uintptr_t                  private_1;        // non-zero means forced unwind
++    uintptr_t                  private_2;        // holds sp that phase1 found for phase2 to use
++#if !__LP64__
++    // The gcc implementation of _Unwind_Exception used attribute mode on the above fields
++    // which had the side effect of causing this whole struct to round up to 32 bytes in size.
++    // To be more explicit, we add pad fields added for binary compatibility.
++    uint32_t                reserved[3];
++#endif
++};
+ 
+-#else
+ 
+-namespace CPPU_CURRENT_NAMESPACE
+-{
++// From libcppabi-24.2/include/unwind-cxx.h
+ 
+-// ----- following decl from libstdc++-v3/libsupc++/unwind-cxx.h and unwind.h
++typedef unsigned _Unwind_Ptr __attribute__((__mode__(__pointer__)));
+ 
+-struct _Unwind_Exception
+-{
+-    unsigned exception_class __attribute__((__mode__(__DI__)));
+-    void * exception_cleanup;
+-    unsigned private_1 __attribute__((__mode__(__word__)));
+-    unsigned private_2 __attribute__((__mode__(__word__)));
+-} __attribute__((__aligned__));
++// A C++ exception object consists of a header, which is a wrapper around
++// an unwind object header with additional C++ specific information,
++// followed by the exception object itself.
+ 
+ struct __cxa_exception
+ {
+-    ::std::type_info *exceptionType;
+-    void (*exceptionDestructor)(void *);
+-
+-    ::std::unexpected_handler unexpectedHandler;
+-    ::std::terminate_handler terminateHandler;
++#if __LP64__
++    // This is a new field to support C++ 0x exception_ptr.
++    // For binary compatibility it is at the start of this
++    // struct which is prepended to the object thrown in
++    // __cxa_allocate_exception.
++  size_t referenceCount;
++#endif
++  // Manage the exception object itself.
++  std::type_info *exceptionType;
++  void (*exceptionDestructor)(void *);
++
++  // The C++ standard has entertaining rules wrt calling set_terminate
++  // and set_unexpected in the middle of the exception cleanup process.
++  std::unexpected_handler unexpectedHandler;
++  std::terminate_handler terminateHandler;
++
++  // The caught exception stack threads through here.
++  __cxa_exception *nextException;
++
++  // How many nested handlers have caught this exception.  A negated
++  // value is a signal that this object has been rethrown.
++  int handlerCount;
++
++#ifdef __ARM_EABI_UNWINDER__
++  // Stack of exceptions in cleanups.
++  __cxa_exception* nextPropagatingException;
+ 
+-    __cxa_exception *nextException;
+-
+-    int handlerCount;
+-
+-    int handlerSwitchValue;
+-    const unsigned char *actionRecord;
+-    const unsigned char *languageSpecificData;
+-    void *catchTemp;
+-    void *adjustedPtr;
++  // The number of active cleanup handlers for this exception.
++  int propagationCount;
++#else
++  // Cache parsed handler data from the personality routine Phase 1
++  // for Phase 2 and __cxa_call_unexpected.
++  int handlerSwitchValue;
++  const unsigned char *actionRecord;
++  const unsigned char *languageSpecificData;
++  _Unwind_Ptr catchTemp;
++  void *adjustedPtr;
++#endif
++#if !__LP64__
++    // This is a new field to support C++ 0x exception_ptr.
++    // For binary compatibility it is placed where the compiler
++    // previously adding padded to 64-bit align unwindHeader.
++  size_t referenceCount;
++#endif
+ 
+-    _Unwind_Exception unwindHeader;
++  // The generic exception header.  Must be last.
++  _Unwind_Exception unwindHeader;
+ };
+ 
++// Each thread in a C++ program has access to a __cxa_eh_globals object.
+ struct __cxa_eh_globals
+ {
+-    __cxa_exception *caughtExceptions;
+-    unsigned int uncaughtExceptions;
+-};
+-
+-}
+-
+-// __cxa_get_globals is exported from libstdc++ since GCC 3.4.0 (CXXABI_1.3),
+-// but it is only declared in cxxabi.h (in namespace __cxxabiv1) since
+-// GCC 4.7.0.  It returns a pointer to a struct __cxa_eh_globals, but that
+-// struct is only incompletely declared even in the GCC 4.7.0 cxxabi.h.
+-// Therefore, provide a declaration here for old GCC (libstdc++, really) version
+-// that returns a void pointer, and in the code calling it always cast to the
+-// above fake definition of CPPU_CURRENT_NAMESPACE::__cxa_eh_globals (which
+-// hopefully keeps matching the real definition in libstdc++); similarly for
+-// __cxa_allocate_exception and __cxa_throw, though they do not have the
+-// additional problem of an incompletely declared return type:
+-
+-#if !HAVE_GCC_CXXABI_H_CXA_GET_GLOBALS
+-namespace __cxxabiv1 { extern "C" void * __cxa_get_globals() throw(); }
+-#endif
+-
+-#if !HAVE_GCC_CXXABI_H_CXA_ALLOCATE_EXCEPTION
+-namespace __cxxabiv1 {
+-extern "C" void * __cxa_allocate_exception(std::size_t thrown_size) throw();
+-}
++  __cxa_exception *caughtExceptions;
++  unsigned int uncaughtExceptions;
++#ifdef __ARM_EABI_UNWINDER__
++  __cxa_exception* propagatingExceptions;
+ #endif
++};
+ 
+-#if !HAVE_GCC_CXXABI_H_CXA_THROW
+-namespace __cxxabiv1 {
+-extern "C" void __cxa_throw(
+-    void * thrown_exception, void * tinfo, void (* dest)(void *))
+-    __attribute__((noreturn));
+ }
+-#endif
+-
+-#endif
+ 
+-extern "C" void privateSnippetExecutor( ... );
++extern "C" CPPU_CURRENT_NAMESPACE::__cxa_eh_globals *__cxa_get_globals () throw();
+ 
+ namespace CPPU_CURRENT_NAMESPACE
+ {
+@@ -140,11 +137,8 @@
+     uno_Any * pUnoExc, uno_Mapping * pUno2Cpp );
+ 
+ void fillUnoException(
+-#ifdef _LIBCPP_VERSION
+-    __cxxabiv1::__cxa_exception * header, uno_Any *, uno_Mapping * pCpp2Uno );
+-#else
+     __cxa_exception * header, uno_Any *, uno_Mapping * pCpp2Uno );
+-#endif
+ }
+ 
++#endif
+ /* vim:set shiftwidth=4 softtabstop=4 expandtab: */
+diff -ur bridges/source/cpp_uno/gcc3_linux_x86-64/uno2cpp.cxx bridges/source/cpp_uno/gcc3_macosx_x86-64/uno2cpp.cxx
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/uno2cpp.cxx	2016-01-27 01:58:25.000000000 +0100
++++ bridges/source/cpp_uno/gcc3_macosx_x86-64/uno2cpp.cxx	2016-01-27 01:58:25.000000000 +0100
+@@ -242,7 +242,8 @@
+                 pAdjustedThisPtr, aVtableSlot.index,
+                 pCppReturn, pReturnTypeRef, bSimpleReturn,
+                 pStackStart, ( pStack - pStackStart ),
+-                pGPR, pFPR );
++                pGPR, nGPR,
++                pFPR, nFPR );
+         } catch (const Exception &) {
+             throw;
+         } catch (const std::exception & e) {
+@@ -251,7 +252,8 @@
+             appendCString(buf, typeid(e).name());
+             buf.append(": ");
+             appendCString(buf, e.what());
+-            throw RuntimeException(buf.makeStringAndClear());
++            throw RuntimeException(
++                buf.makeStringAndClear());
+         } catch (...) {
+             throw RuntimeException("C++ code threw unknown exception");
+         }
+@@ -293,18 +295,8 @@
+     }
+      catch (...)
+      {
+-         // fill uno exception
+-#ifdef _LIBCPP_VERSION
+-         CPPU_CURRENT_NAMESPACE::fillUnoException(
+-             reinterpret_cast< __cxxabiv1::__cxa_eh_globals * >(
+-                 __cxxabiv1::__cxa_get_globals())->caughtExceptions,
+-             *ppUnoExc, pThis->getBridge()->getCpp2Uno());
+-#else
+-         fillUnoException(
+-             reinterpret_cast< CPPU_CURRENT_NAMESPACE::__cxa_eh_globals * >(
+-                 __cxxabiv1::__cxa_get_globals())->caughtExceptions,
+-             *ppUnoExc, pThis->getBridge()->getCpp2Uno());
+-#endif
++          // fill uno exception
++        fillUnoException( __cxa_get_globals()->caughtExceptions, *ppUnoExc, pThis->getBridge()->getCpp2Uno() );
+ 
+         // temporary params
+         for ( ; nTempIndices--; )
+--- bridges/Library_cpp_uno.mk  2015-08-22 08:41:35.000000000 +0200
++++ bridges/Library_cpp_uno.mk  2015-10-08 19:43:34.808044181 +0200
+@@ -134,7 +134,7 @@
+ bridges_SELECTED_BRIDGE := gcc3_linux_x86-64
+ bridge_asm_objects := call
+ bridge_noncallexception_noopt_objects := callvirtualmethod
+-bridge_exception_objects := abi cpp2uno except rtti uno2cpp
++bridge_exception_objects := abi cpp2uno except uno2cpp
+ else ifeq ($(OS),MACOSX)
+ bridges_SELECTED_BRIDGE := gcc3_macosx_x86-64
+ bridge_exception_objects := abi call cpp2uno except uno2cpp
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/rtti.cxx	2016-01-27 01:58:25.000000000 +0100
++++ /dev/null	2016-02-25 19:28:18.854205488 +0100
 @@ -1,226 +0,0 @@
 -/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 -/*
@@ -544,7 +909,7 @@
 -#if defined(FREEBSD) && __FreeBSD_version < 702104
 -    : m_hApp( dlopen( 0, RTLD_NOW | RTLD_GLOBAL ) )
 -#else
--    : m_hApp( dlopen( 0, RTLD_LAZY ) )
+-    : m_hApp( dlopen( nullptr, RTLD_LAZY ) )
 -#endif
 -{
 -}
@@ -679,7 +1044,7 @@
 -                default:
 -                    assert(false); // cannot happen
 -                }
--                if (rtti != 0) {
+-                if (rtti != nullptr) {
 -                    std::pair< t_rtti_map::iterator, bool > insertion (
 -                        m_generatedRttis.insert( t_rtti_map::value_type( unoName, rtti ) ) );
 -                    SAL_WARN_IF( !insertion.second, "bridges", "key " << unoName << " already in generated rtti map" );
@@ -708,8 +1073,8 @@
 -}
 -
 -/* vim:set shiftwidth=4 softtabstop=4 expandtab: */
---- bridges/source/cpp_uno/gcc3_linux_x86-64/rtti.hxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/rtti.hxx	1970-01-01 01:00:00.000000000 +0100
+--- bridges/source/cpp_uno/gcc3_linux_x86-64/rtti.hxx	2016-01-27 01:58:25.000000000 +0100
++++ /dev/null	2016-02-25 19:28:18.854205488 +0100
 @@ -1,37 +0,0 @@
 -/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
 -/*
@@ -748,296 +1113,3 @@
 -#endif
 -
 -/* vim:set shiftwidth=4 softtabstop=4 expandtab: */
---- bridges/source/cpp_uno/gcc3_linux_x86-64/share.hxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/share.hxx	2015-10-08 19:43:26.192044421 +0200
-@@ -16,135 +16,144 @@
-  *   except in compliance with the License. You may obtain a copy of
-  *   the License at http://www.apache.org/licenses/LICENSE-2.0 .
-  */
-+#ifndef INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_MACOSX_X86_64_SHARE_HXX
-+#define INCLUDED_BRIDGES_SOURCE_CPP_UNO_GCC3_MACOSX_X86_64_SHARE_HXX
- 
--#include "sal/config.h"
-+#include "uno/mapping.h"
- 
-+#include <cxxabi.h>
- #include <typeinfo>
- #include <exception>
- #include <cstddef>
- 
--#include <cxxabi.h>
--#ifndef _GLIBCXX_CDTOR_CALLABI // new in GCC 4.7 cxxabi.h
--#define _GLIBCXX_CDTOR_CALLABI
--#endif
-+namespace CPPU_CURRENT_NAMESPACE
-+{
- 
--#include "config_gcc.h"
--#include "uno/any2.h"
--#include "uno/mapping.h"
-+// From opensource.apple.com: libunwind-35.1/include/unwind.h
- 
--#ifdef _LIBCPP_VERSION
-+typedef enum {
-+    _URC_NO_REASON = 0,
-+    _URC_FOREIGN_EXCEPTION_CAUGHT = 1,
-+    _URC_FATAL_PHASE2_ERROR = 2,
-+    _URC_FATAL_PHASE1_ERROR = 3,
-+    _URC_NORMAL_STOP = 4,
-+    _URC_END_OF_STACK = 5,
-+    _URC_HANDLER_FOUND = 6,
-+    _URC_INSTALL_CONTEXT = 7,
-+    _URC_CONTINUE_UNWIND = 8
-+} _Unwind_Reason_Code;
- 
--namespace __cxxabiv1
-+struct _Unwind_Exception
- {
--    struct __class_type_info : public std::type_info
--    {
--        explicit __class_type_info( const char *__n ) : type_info( __n ) { }
--        virtual ~__class_type_info();
--    };
--
--    struct __si_class_type_info : public __class_type_info
--    {
--        explicit __si_class_type_info( const char *__n, const __class_type_info *__b ) :
--            __class_type_info( __n ), __base_type( __b ) { }
--        virtual ~__si_class_type_info();
--        const __class_type_info *__base_type;
--    };
--
--extern "C" void *__cxa_allocate_exception( std::size_t thrown_size ) _NOEXCEPT;
-+    uint64_t                   exception_class;
-+    void                     (*exception_cleanup)(_Unwind_Reason_Code reason, struct _Unwind_Exception* exc);
-+    uintptr_t                  private_1;        // non-zero means forced unwind
-+    uintptr_t                  private_2;        // holds sp that phase1 found for phase2 to use
-+#if !__LP64__
-+    // The gcc implementation of _Unwind_Exception used attribute mode on the above fields
-+    // which had the side effect of causing this whole struct to round up to 32 bytes in size.
-+    // To be more explicit, we add pad fields added for binary compatibility.
-+    uint32_t                reserved[3];
-+#endif
-+};
- 
--extern "C" _LIBCPP_NORETURN void __cxa_throw(
--    void *thrown_exception, std::type_info *tinfo, void (*dest) (void *) );
--}
- 
--#else
-+// From libcppabi-24.2/include/unwind-cxx.h
- 
--namespace CPPU_CURRENT_NAMESPACE
--{
--
--// ----- following decl from libstdc++-v3/libsupc++/unwind-cxx.h and unwind.h
-+typedef unsigned _Unwind_Ptr __attribute__((__mode__(__pointer__)));
- 
--struct _Unwind_Exception
--{
--    unsigned exception_class __attribute__((__mode__(__DI__)));
--    void * exception_cleanup;
--    unsigned private_1 __attribute__((__mode__(__word__)));
--    unsigned private_2 __attribute__((__mode__(__word__)));
--} __attribute__((__aligned__));
-+// A C++ exception object consists of a header, which is a wrapper around
-+// an unwind object header with additional C++ specific information,
-+// followed by the exception object itself.
- 
- struct __cxa_exception
- {
--    ::std::type_info *exceptionType;
--    void (*exceptionDestructor)(void *);
-+#if __LP64__
-+    // This is a new field to support C++ 0x exception_ptr.
-+    // For binary compatibility it is at the start of this
-+    // struct which is prepended to the object thrown in
-+    // __cxa_allocate_exception.
-+  size_t referenceCount;
-+#endif
-+  // Manage the exception object itself.
-+  std::type_info *exceptionType;
-+  void (*exceptionDestructor)(void *);
-+
-+  // The C++ standard has entertaining rules wrt calling set_terminate
-+  // and set_unexpected in the middle of the exception cleanup process.
-+  std::unexpected_handler unexpectedHandler;
-+  std::terminate_handler terminateHandler;
-+
-+  // The caught exception stack threads through here.
-+  __cxa_exception *nextException;
-+
-+  // How many nested handlers have caught this exception.  A negated
-+  // value is a signal that this object has been rethrown.
-+  int handlerCount;
-+
-+#ifdef __ARM_EABI_UNWINDER__
-+  // Stack of exceptions in cleanups.
-+  __cxa_exception* nextPropagatingException;
- 
--    ::std::unexpected_handler unexpectedHandler;
--    ::std::terminate_handler terminateHandler;
--
--    __cxa_exception *nextException;
--
--    int handlerCount;
--
--    int handlerSwitchValue;
--    const unsigned char *actionRecord;
--    const unsigned char *languageSpecificData;
--    void *catchTemp;
--    void *adjustedPtr;
-+  // The number of active cleanup handlers for this exception.
-+  int propagationCount;
-+#else
-+  // Cache parsed handler data from the personality routine Phase 1
-+  // for Phase 2 and __cxa_call_unexpected.
-+  int handlerSwitchValue;
-+  const unsigned char *actionRecord;
-+  const unsigned char *languageSpecificData;
-+  _Unwind_Ptr catchTemp;
-+  void *adjustedPtr;
-+#endif
-+#if !__LP64__
-+    // This is a new field to support C++ 0x exception_ptr.
-+    // For binary compatibility it is placed where the compiler
-+    // previously adding padded to 64-bit align unwindHeader.
-+  size_t referenceCount;
-+#endif
- 
--    _Unwind_Exception unwindHeader;
-+  // The generic exception header.  Must be last.
-+  _Unwind_Exception unwindHeader;
- };
- 
-+// Each thread in a C++ program has access to a __cxa_eh_globals object.
- struct __cxa_eh_globals
- {
--    __cxa_exception *caughtExceptions;
--    unsigned int uncaughtExceptions;
-+  __cxa_exception *caughtExceptions;
-+  unsigned int uncaughtExceptions;
-+#ifdef __ARM_EABI_UNWINDER__
-+  __cxa_exception* propagatingExceptions;
-+#endif
- };
- 
- }
- 
--// __cxa_get_globals is exported from libstdc++ since GCC 3.4.0 (CXXABI_1.3),
--// but it is only declared in cxxabi.h (in namespace __cxxabiv1) since
--// GCC 4.7.0.  It returns a pointer to a struct __cxa_eh_globals, but that
--// struct is only incompletely declared even in the GCC 4.7.0 cxxabi.h.
--// Therefore, provide a declaration here for old GCC (libstdc++, really) version
--// that returns a void pointer, and in the code calling it always cast to the
--// above fake definition of CPPU_CURRENT_NAMESPACE::__cxa_eh_globals (which
--// hopefully keeps matching the real definition in libstdc++); similarly for
--// __cxa_allocate_exception and __cxa_throw, though they do not have the
--// additional problem of an incompletely declared return type:
--
--#if !HAVE_GCC_CXXABI_H_CXA_GET_GLOBALS
--namespace __cxxabiv1 { extern "C" void * __cxa_get_globals() throw(); }
--#endif
--
--#if !HAVE_GCC_CXXABI_H_CXA_ALLOCATE_EXCEPTION
--namespace __cxxabiv1 {
--extern "C" void * __cxa_allocate_exception(std::size_t thrown_size) throw();
--}
--#endif
-+extern "C" CPPU_CURRENT_NAMESPACE::__cxa_eh_globals *__cxa_get_globals () throw();
- 
--#if !HAVE_GCC_CXXABI_H_CXA_THROW
--namespace __cxxabiv1 {
--extern "C" void __cxa_throw(
--    void * thrown_exception, void * tinfo, void (* dest)(void *))
--    __attribute__((noreturn));
--}
--#endif
-+namespace CPPU_CURRENT_NAMESPACE
-+{
- 
-+// The following are in cxxabi.h since GCC 4.7 (they are wrapped in
-+// CPPU_CURRENT_NAMESPACE here as different GCC versions have slightly different
-+// declarations for them, e.g., with or without throw() specification, so would
-+// complain about redeclarations of these somewhat implicitly declared
-+// functions):
-+#if __GNUC__ == 4 && __GNUC_MINOR__ <= 6
-+extern "C" void *__cxa_allocate_exception(
-+    std::size_t thrown_size ) throw();
-+extern "C" void __cxa_throw (
-+    void *thrown_exception, void *tinfo, void (*dest) (void *) ) __attribute__((noreturn));
- #endif
- 
--extern "C" void privateSnippetExecutor( ... );
-+extern "C" void privateSnippetExecutor( ... );
--
--namespace CPPU_CURRENT_NAMESPACE
--{
- 
- void raiseException(
-     uno_Any * pUnoExc, uno_Mapping * pUno2Cpp );
- 
- void fillUnoException(
--#ifdef _LIBCPP_VERSION
--    __cxxabiv1::__cxa_exception * header, uno_Any *, uno_Mapping * pCpp2Uno );
--#else
-     __cxa_exception * header, uno_Any *, uno_Mapping * pCpp2Uno );
--#endif
- }
- 
-+#endif
- /* vim:set shiftwidth=4 softtabstop=4 expandtab: */
---- bridges/source/cpp_uno/gcc3_linux_x86-64/uno2cpp.cxx	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/source/cpp_uno/gcc3_linux_x86-64/uno2cpp.cxx	2015-10-08 19:43:26.192044421 +0200
-@@ -242,7 +242,8 @@
-                 pAdjustedThisPtr, aVtableSlot.index,
-                 pCppReturn, pReturnTypeRef, bSimpleReturn,
-                 pStackStart, ( pStack - pStackStart ),
--                pGPR, pFPR );
-+                pGPR, nGPR,
-+                pFPR, nFPR );
-         } catch (const Exception &) {
-             throw;
-         } catch (const std::exception & e) {
-@@ -251,7 +252,8 @@
-             appendCString(buf, typeid(e).name());
-             buf.append(": ");
-             appendCString(buf, e.what());
--            throw RuntimeException(buf.makeStringAndClear());
-+            throw RuntimeException(
-+                buf.makeStringAndClear());
-         } catch (...) {
-             throw RuntimeException("C++ code threw unknown exception");
-         }
-@@ -293,18 +295,8 @@
-     }
-      catch (...)
-      {
--         // fill uno exception
--#ifdef _LIBCPP_VERSION
--         CPPU_CURRENT_NAMESPACE::fillUnoException(
--             reinterpret_cast< __cxxabiv1::__cxa_eh_globals * >(
--                 __cxxabiv1::__cxa_get_globals())->caughtExceptions,
--             *ppUnoExc, pThis->getBridge()->getCpp2Uno());
--#else
--         fillUnoException(
--             reinterpret_cast< CPPU_CURRENT_NAMESPACE::__cxa_eh_globals * >(
--                 __cxxabiv1::__cxa_get_globals())->caughtExceptions,
--             *ppUnoExc, pThis->getBridge()->getCpp2Uno());
--#endif
-+          // fill uno exception
-+        fillUnoException( __cxa_get_globals()->caughtExceptions, *ppUnoExc, pThis->getBridge()->getCpp2Uno() );
- 
-         // temporary params
-         for ( ; nTempIndices--; )
---- bridges/Library_cpp_uno.mk	2015-08-22 08:41:35.000000000 +0200
-+++ bridges/Library_cpp_uno.mk	2015-10-08 19:43:34.808044181 +0200
-@@ -134,7 +134,7 @@
- bridges_SELECTED_BRIDGE := gcc3_linux_x86-64
- bridge_asm_objects := call
- bridge_noncallexception_noopt_objects := callvirtualmethod
--bridge_exception_objects := abi cpp2uno except rtti uno2cpp
-+bridge_exception_objects := abi cpp2uno except uno2cpp
- else ifeq ($(OS),MACOSX)
- bridges_SELECTED_BRIDGE := gcc3_macosx_x86-64
- bridge_exception_objects := abi call cpp2uno except uno2cpp
