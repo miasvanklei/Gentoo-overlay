@@ -187,10 +187,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/llvm-3.8-llvm-config.patch
 	epatch "${FILESDIR}"/address-ndebug-related-linking-issue.patch
 
-	# By a commit 61dbca10ea813ea3af447cc7ac2556a5e81211f9 and bug 25059 they tried to fix soname for libllvm*
-	# but this failed. revert a part of that commit to have correct soname.
-	epatch "${FILESDIR}"/fix-so-version.patch
-
 	if use clang; then
 		eprefixify tools/clang/lib/Frontend/InitHeaderSearch.cpp
 
@@ -247,6 +243,9 @@ src_prepare() {
         epatch "${FILESDIR}"/musl/llvm/llvm-002-musl-triple-3.8.patch
         epatch "${FILESDIR}"/musl/llvm/llvm-003-musl.patch
 
+	# fix .so version
+        epatch "${FILESDIR}"/fix-so-version.patch
+
 	# User patches
 	epatch_user
 
@@ -276,7 +275,7 @@ multilib_src_configure() {
 		"${mycmakeargs[@]}"
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 
-		-DBUILD_SHARED_LIBS=ON
+		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_ENABLE_TIMESTAMPS=OFF
 		-DLLVM_TARGETS_TO_BUILD="${targets}"
 		-DLLVM_BUILD_TESTS=$(usex test)

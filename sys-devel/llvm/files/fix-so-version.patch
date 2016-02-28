@@ -1,5 +1,16 @@
---- cmake/modules/AddLLVM.cmake.bak	2016-01-29 01:22:31.684720741 +0100
-+++ cmake/modules/AddLLVM.cmake	2016-01-29 01:22:59.559667505 +0100
+--- a/tools/llvm-shlib/CMakeLists.txt
++++ b/tools/llvm-shlib/CMakeLists.txt
+@@ -38,7 +38,7 @@
+   add_custom_target(libLLVMExports DEPENDS ${LLVM_EXPORTED_SYMBOL_FILE})
+ endif()
+ 
++add_llvm_library(LLVM SHARED DISABLE_LLVM_LINK_LLVM_DYLIB ${SOURCES})
+-add_llvm_library(LLVM SHARED DISABLE_LLVM_LINK_LLVM_DYLIB SONAME ${SOURCES})
+ 
+ list(REMOVE_DUPLICATES LIB_NAMES)
+ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux") # FIXME: It should be "GNU ld for elf"
+--- a/cmake/modules/AddLLVM.cmake	2016-01-29 01:22:31.684720741 +0100
++++ b/cmake/modules/AddLLVM.cmake	2016-01-29 01:22:59.559667505 +0100
 @@ -468,6 +468,11 @@
      endif()
    endif()
