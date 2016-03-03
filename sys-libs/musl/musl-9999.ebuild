@@ -40,7 +40,6 @@ src_prepare() {
 multilib_src_configure() {
 	ECONF_SOURCE="${S}" \
         econf \
-	--prefix=/usr \
 	--syslibdir=/$(get_libdir) \
 	--libdir=/usr/$(get_libdir) \
 	--disable-gcc-wrapper
