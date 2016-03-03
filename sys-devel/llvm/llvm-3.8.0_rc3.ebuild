@@ -185,7 +185,6 @@ src_prepare() {
 	# Fix llvm-config for shared linking and sane flags
 	# https://bugs.gentoo.org/show_bug.cgi?id=565358
 	epatch "${FILESDIR}"/llvm-3.8-llvm-config.patch
-	epatch "${FILESDIR}"/address-ndebug-related-linking-issue.patch
 
 	if use clang; then
 		eprefixify tools/clang/lib/Frontend/InitHeaderSearch.cpp
