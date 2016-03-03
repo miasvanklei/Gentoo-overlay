@@ -52,6 +52,8 @@ DEPEND=">=net-libs/nodejs-5.1
 	sys-devel/llvm[clang]
 	app-accessibility/speech-dispatcher
 	dev-libs/re2
+	dev-python/html5lib
+	dev-python/beautifulsoup
 	"
 
 src_unpack()
