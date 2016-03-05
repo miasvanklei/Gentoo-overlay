@@ -8,29 +8,29 @@ PYTHON_COMPAT=( python2_7 )
 
 inherit eutils multilib python-any-r1
 
-MY_P=rustc-beta
+MY_P="rustc-${PV}"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
-MY_SRC_URI="http://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
+SRC_URI="http://static.rust-lang.org/dist/${MY_P}-src.tar.gz
+	amd64? ( http://static.rust-lang.org/stage0-snapshots/rust-stage0-2015-12-18-3391630-linux-x86_64-97e2a5eb8904962df8596e95d6e5d9b574d73bf4.tar.bz2 )
+	x86?   ( http://static.rust-lang.org/stage0-snapshots/rust-stage0-2015-12-18-3391630-linux-i386-a09c4a4036151d0cb28e265101669731600e01f2.tar.bz2 )"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
-SLOT="beta"
-KEYWORDS=""
+SLOT="stable"
+KEYWORDS="~amd64 ~x86"
 
 IUSE="+clang debug doc +libcxx +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
 CDEPEND="libcxx? ( sys-libs/libcxx )
 	>=app-eselect/eselect-rust-0.3_pre20150425
-	!dev-lang/rust:0
-	system-llvm? ( >=sys-devel/llvm-3.7.0 )
 "
 DEPEND="${CDEPEND}
 	${PYTHON_DEPS}
 	>=dev-lang/perl-5.0
-	net-misc/wget
 	clang? ( sys-devel/clang )
+	system-llvm? ( >=sys-devel/llvm-3.7.0 )
 "
 RDEPEND="${CDEPEND}
 "
@@ -38,16 +38,9 @@ RDEPEND="${CDEPEND}
 S="${WORKDIR}/${MY_P}"
 
 src_unpack() {
-	wget "${MY_SRC_URI}" || die
-	unpack ./"${MY_P}-src.tar.gz"
-
-	use amd64 && BUILD_TRIPLE=x86_64-unknown-linux-gnu
-	use x86 && BUILD_TRIPLE=i686-unknown-linux-gnu
-	export CFG_SRC_DIR="${S}" && \
-		cd ${S} && \
-		mkdir -p "${S}/dl" && \
-		mkdir -p "${S}/${BUILD_TRIPLE}/stage0/bin" && \
-		python2 "${S}/src/etc/get-snapshot.py" ${BUILD_TRIPLE} || die
+	unpack "${MY_P}-src.tar.gz"
+	mkdir "${MY_P}/dl" || die
+	cp "${DISTDIR}/rust-stage0"* "${MY_P}/dl/" || die
 }
 
 src_prepare() {
@@ -56,6 +49,7 @@ src_prepare() {
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
 	epatch ${FILESDIR}/llvm-3.8.patch
+	epatch ${FILESDIR}/remove-gcc-personality.patch
 }
 
 src_configure() {

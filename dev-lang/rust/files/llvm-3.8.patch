@@ -471,3 +471,14 @@ index d7cf713..e3080d2 100644
      "llvm-target": "i686-unknown-linux-gnu",
      "target-endian": "little",
      "target-pointer-width": "32",
+--- a/src/librustc_trans/trans/mir/rvalue.rs	2016-03-04 15:26:24.454345204 +0100
++++ b/src/librustc_trans/trans/mir/rvalue.rs	2016-03-04 15:28:03.028350057 +0100
+@@ -220,7 +220,7 @@
+                         let (llval, ll_t_in, signed) = if let CastTy::Int(IntTy::CEnum) = r_t_in {
+                             let repr = adt::represent_type(bcx.ccx(), operand.ty);
+                             let llval = operand.immediate();
+-                            let discr = adt::trans_get_discr(bcx, &*repr, llval, None);
++                            let discr = adt::trans_get_discr(bcx, &*repr, llval, None, true);
+                             (discr, common::val_ty(discr), adt::is_discr_signed(&*repr))
+                         } else {
+                             (operand.immediate(), ll_t_in, operand.ty.is_signed())

@@ -12,63 +12,8 @@ HOMEPAGE="http://crates.io"
 CARGO_SNAPSHOT_DATE="2015-11-02"
 RUST_INSTALLER_COMMIT="c37d3747da75c280237dc2d6b925078e69555499"
 
-crate_uris(){
-	while (( "$#" )); do
-		local name version url
-		name="${1%-*}"
-		version="${1##*-}"
-		url="https://crates.io/api/v1/crates/${name}/${version}/download -> ${1}.crate"
-		echo $url
-		shift
-	done
-}
-
-CRATES="aho-corasick-0.4.0
-bitflags-0.1.1
-bufstream-0.1.1
-cmake-0.1.12
-crossbeam-0.1.6
-curl-0.2.14
-curl-sys-0.1.29
-docopt-0.6.78
-env_logger-0.3.2
-filetime-0.1.8
-flate2-0.2.11
-gcc-0.3.21
-git2-0.3.3
-git2-curl-0.3.0
-glob-0.2.10
-hamcrest-0.1.0
-libc-0.2.4
-libgit2-sys-0.3.8
-libssh2-sys-0.1.34
-libz-sys-1.0.0
-log-0.3.4
-matches-0.1.2
-memchr-0.1.7
-miniz-sys-0.1.7
-num-0.1.29
-num_cpus-0.2.10
-openssl-sys-0.7.4
-pkg-config-0.3.6
-rand-0.3.13
-regex-0.1.44
-regex-syntax-0.2.2
-rustc-serialize-0.3.16
-semver-0.2.0
-strsim-0.3.0
-tar-0.3.2
-tempdir-0.3.4
-term-0.2.14
-time-0.1.34
-toml-0.1.25
-url-0.2.38
-uuid-0.1.18
-"
-
 SRC_URI="https://github.com/rust-lang/cargo/archive/${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/rust-lang/rust-installer/archive/${RUST_INSTALLER_COMMIT}.tar.gz -> rust-installer-${RUST_INSTALLER_COMMIT}.tar.gz
-	$(crate_uris $CRATES)
 	x86?   (
 		https://static-rust-lang-org.s3.amazonaws.com/cargo-dist/${CARGO_SNAPSHOT_DATE}/cargo-nightly-i686-unknown-linux-gnu.tar.gz ->
 		cargo-nightly-i686-unknown-linux-gnu-${CARGO_SNAPSHOT_DATE}.tar.gz
@@ -96,7 +41,7 @@ DEPEND="${COMMON_DEPEND}
 	dev-util/cmake"
 
 PATCHES=(
-	"${FILESDIR}"/${P}-local-deps.patch
+#	"${FILESDIR}"/${P}-local-deps.patch
 	"${FILESDIR}"/${P}-test.patch
 	"${FILESDIR}"/stack-size.patch
 )
@@ -158,7 +103,7 @@ src_configure() {
 		--disable-verify-install
 		--disable-debug
 		--disable-cross-tests
-		--local-cargo="${WORKDIR}"/cargo-snapshot/cargo/bin/cargo
+		--local-cargo=/usr/bin/cargo
 	)
 	autotools-utils_src_configure
 }
