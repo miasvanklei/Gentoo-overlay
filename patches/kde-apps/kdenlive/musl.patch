@@ -1,0 +1,52 @@
+--- a/src/dialogs/renderwidget.cpp	2016-03-06 12:37:11.056202011 +0100
++++ b/src/dialogs/renderwidget.cpp	2016-03-06 12:37:19.480202426 +0100
+@@ -1993,7 +1993,7 @@
+         QDateTime startTime = item->data(1, TimeRole).toDateTime();
+         int days = startTime.daysTo (QDateTime::currentDateTime()) ;
+         double elapsedTime = days * 86400 + startTime.addDays(days).secsTo( QDateTime::currentDateTime() );
+-        u_int32_t remaining = elapsedTime * (100.0 - progress) / progress;
++        uint32_t remaining = elapsedTime * (100.0 - progress) / progress;
+         int remainingSecs = remaining % 86400;
+         days = remaining / 86400;
+         QTime when = QTime ( 0, 0, 0, 0 ) ;
+--- a/src/scopes/audioscopes/spectrogram.cpp	2016-03-06 12:38:14.156205118 +0100
++++ b/src/scopes/audioscopes/spectrogram.cpp	2016-03-06 12:38:54.430207101 +0100
+@@ -245,7 +245,7 @@
+                 x = leftDist + (m_innerScopeRect.width()-1) * ((float)hz)/m_freqMax;
+ 
+                 // Hide text if it would overlap with the text drawn at the mouse position
+-                hideText = m_aTrackMouse->isChecked() && m_mouseWithinWidget && abs(x-(leftDist + mouseX + 20)) < (int) minDistX + 16
++                hideText = m_aTrackMouse->isChecked() && m_mouseWithinWidget && (x-(leftDist + mouseX + 20)) < (int) minDistX + 16
+                         && mouseX < m_innerScopeRect.width() && mouseX >= 0;
+ 
+                 if (x <= rightBorder) {
+@@ -273,7 +273,7 @@
+             }
+             // Draw the line at the very right (maximum frequency)
+             x = leftDist + m_innerScopeRect.width()-1;
+-            hideText = m_aTrackMouse->isChecked() && m_mouseWithinWidget && abs(x-(leftDist + mouseX + 30)) < (int) minDistX
++            hideText = m_aTrackMouse->isChecked() && m_mouseWithinWidget && (x-(leftDist + mouseX + 30)) < (int) minDistX
+                     && mouseX < m_innerScopeRect.width() && mouseX >= 0;
+             davinci.drawLine(x, topDist, x, topDist + m_innerScopeRect.height()+6);
+             if (!hideText) {
+--- a/src/dvdwizard/dvdwizardmenu.h	2016-03-06 12:39:21.931208455 +0100
++++ b/src/dvdwizard/dvdwizardmenu.h	2016-03-06 12:39:32.959208997 +0100
+@@ -31,6 +31,7 @@
+ #include <QGraphicsRectItem>
+ #include <QDomElement>
+ 
++#include <cmath>
+ #include <QDebug>
+ #include <KMessageWidget>
+ 
+--- a/src/monitor/scopes/monitoraudiolevel.cpp	2016-03-06 12:40:14.032211020 +0100
++++ b/src/monitor/scopes/monitoraudiolevel.cpp	2016-03-06 12:41:16.006214071 +0100
+@@ -23,7 +23,7 @@
+ 
+ #include "mlt++/Mlt.h"
+ 
+-
++#include <cmath>
+ #include <QPainter>
+ #include <QPaintEvent>
+ #include <QStylePainter>
