@@ -52,7 +52,7 @@ DEPEND="${COMMON_DEPEND}
 	>=sys-devel/make-3.81
 	>=sys-devel/flex-2.5.4
 	>=sys-devel/bison-1.875d
-	|| ( >=sys-devel/gcc-3.0 >=sys-devel/llvm-3.5
+	|| ( >=sys-devel/llvm-3.5
 		( >=sys-freebsd/freebsd-lib-9.1-r10 sys-libs/libcxx )
 	)
 	|| ( >=sys-devel/binutils-2.18 >=sys-devel/binutils-apple-5.1 )
