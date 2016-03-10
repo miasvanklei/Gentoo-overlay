@@ -9,11 +9,72 @@ inherit bash-completion-r1 autotools-utils
 DESCRIPTION="The Rust's package manager"
 HOMEPAGE="http://crates.io"
 
-CARGO_SNAPSHOT_DATE="2015-11-02"
+CARGO_SNAPSHOT_DATE="2016-01-31"
 RUST_INSTALLER_COMMIT="c37d3747da75c280237dc2d6b925078e69555499"
+
+crate_uris(){
+	while (( "$#" )); do
+		local name version url
+		name="${1%-*}"
+		version="${1##*-}"
+		url="https://crates.io/api/v1/crates/${name}/${version}/download -> ${1}.crate"
+		echo $url
+		shift
+	done
+}
+
+CRATES="aho-corasick-0.4.1
+bitflags-0.1.1
+bufstream-0.1.1
+cmake-0.1.13
+crossbeam-0.2.8
+curl-0.2.16
+curl-sys-0.1.32
+docopt-0.6.78
+env_logger-0.3.2
+filetime-0.1.10
+flate2-0.2.13
+gcc-0.3.23
+git2-0.4.2
+git2-curl-0.4.0
+glob-0.2.10
+hamcrest-0.1.0
+libc-0.2.7
+libgit2-sys-0.4.0
+libressl-pnacl-sys-2.1.6
+libssh2-sys-0.1.36
+libz-sys-1.0.1
+log-0.3.5
+matches-0.1.2
+memchr-0.1.7
+miniz-sys-0.1.7
+nom-1.2.0
+num-0.1.30
+num_cpus-0.2.10
+openssl-sys-0.7.6
+pkg-config-0.3.6
+pnacl-build-helper-1.4.10
+rand-0.3.14
+regex-0.1.48
+regex-syntax-0.2.2
+rustc-serialize-0.3.18
+semver-0.2.2
+strsim-0.3.0
+tar-0.4.3
+tempdir-0.3.4
+term-0.4.4
+time-0.1.34
+toml-0.1.27
+unicode-bidi-0.2.3
+unicode-normalization-0.1.2
+url-0.2.38
+url-0.5.5
+uuid-0.1.18
+"
 
 SRC_URI="https://github.com/rust-lang/cargo/archive/${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/rust-lang/rust-installer/archive/${RUST_INSTALLER_COMMIT}.tar.gz -> rust-installer-${RUST_INSTALLER_COMMIT}.tar.gz
+	$(crate_uris $CRATES)
 	x86?   (
 		https://static-rust-lang-org.s3.amazonaws.com/cargo-dist/${CARGO_SNAPSHOT_DATE}/cargo-nightly-i686-unknown-linux-gnu.tar.gz ->
 		cargo-nightly-i686-unknown-linux-gnu-${CARGO_SNAPSHOT_DATE}.tar.gz
@@ -37,13 +98,12 @@ RDEPEND="${COMMON_DEPEND}
 	!dev-util/cargo-bin
 	net-misc/curl[ssl]"
 DEPEND="${COMMON_DEPEND}
-	dev-lang/rust
+	>=virtual/rust-1.1.0:*
 	dev-util/cmake"
 
 PATCHES=(
-#	"${FILESDIR}"/${P}-local-deps.patch
+	"${FILESDIR}"/${P}-local-deps.patch
 	"${FILESDIR}"/${P}-test.patch
-	"${FILESDIR}"/stack-size.patch
 )
 
 src_unpack() {
@@ -124,7 +184,6 @@ src_install() {
 
 	dobashcomp "${ED}"/usr/etc/bash_completion.d/cargo
 	rm -r "${ED}"/usr/etc || die
-	rm -r "${ED}"/usr/lib/rustlib || die
 }
 
 src_test() {
