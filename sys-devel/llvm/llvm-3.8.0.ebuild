@@ -12,13 +12,13 @@ inherit check-reqs cmake-utils eutils flag-o-matic multilib \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/${P/_}.src.tar.xz
-        clang? ( http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/compiler-rt-${PV/_}.src.tar.xz
-                http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/cfe-${PV/_}.src.tar.xz
-                http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/clang-tools-extra-${PV/_}.src.tar.xz )
-        lldb? ( http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/lldb-${PV/_}.src.tar.xz )
-        lld? ( http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/lld-${PV/_}.src.tar.xz )
-        polly? ( http://llvm.org/pre-releases/${PV/_rc*}/${PV/3.8.0_}/polly-${PV/_}.src.tar.xz )
+SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
+        clang? ( http://llvm.org/releases/${PV}/compiler-rt-${PV}.src.tar.xz
+                http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz
+                http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz )
+        lldb? ( http://llvm.org/releases/${PV}/lldb-${PV}.src.tar.xz )
+	lld? ( http://llvm.org/releases/${PV}/lld-${PV}.src.tar.xz )
+	polly? ( http://llvm.org/releases/${PV}/polly-${PV}.src.tar.xz )
         !doc? ( http://dev.gentoo.org/~voyageur/distfiles/${P/_rc*}-manpages.tar.bz2 )"
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
