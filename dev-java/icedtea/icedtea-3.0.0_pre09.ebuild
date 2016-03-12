@@ -94,7 +94,6 @@ X_DEPEND="
 # Kerberos will be added following PR1537
 COMMON_DEP="
 	>=dev-libs/glib-2.26:2
-	>=dev-util/systemtap-1
 	media-libs/fontconfig
 	>=media-libs/freetype-2.5.3:2=
 	>=media-libs/lcms-2.5
