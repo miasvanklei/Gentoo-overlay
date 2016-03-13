@@ -103,6 +103,7 @@ DEPEND="${COMMON_DEPEND}
 
 PATCHES=(
 	"${FILESDIR}"/${P}-local-deps.patch
+	"${FILESDIR}"/stack-size.patch
 	"${FILESDIR}"/${P}-test.patch
 )
 
