@@ -3,7 +3,7 @@
 # $Header: $
 EAPI="5"
 
-inherit linux-mod git-r3
+inherit linux-mod git-r3 linux-info
 
 SLOT="0"
 
@@ -16,11 +16,17 @@ EGIT_REPO_URI="git://github.com/patjak/${PN}.git"
 LICENSE="GPL-2"
 KEYWORDS=""
 
-BUILD_TARGETS="clean all"
+BUILD_TARGETS="modules"
 MODULE_NAMES="mba6x_bl(misc)"
 
 src_unpack() {
   git-r3_src_unpack
+}
+
+pkg_setup() {
+  linux-mod_pkg_setup
+  local kversion=$(readlink /usr/src/linux | sed -e 's|linux-||g')
+  BUILD_PARAMS="-C /lib/modules/${kversion}/build M=${S}"
 }
 
 src_install() {
