@@ -18,7 +18,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
-RDEPEND=">=dev-haskell/haskell-src-exts-1.16.0:=[profile?]
+RDEPEND=">=dev-haskell/haskell-src-exts-1.17:=[profile?]
 	>=dev-haskell/mtl-2:=[profile?]
 	>=dev-haskell/syb-0.3:=[profile?]
 	>=dev-haskell/transformers-0.2:=[profile?]

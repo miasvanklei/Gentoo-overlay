@@ -18,7 +18,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
-RDEPEND=">=dev-haskell/haskell-src-exts-1.16:=[profile?] <dev-haskell/haskell-src-exts-1.17:=[profile?]
+RDEPEND=">=dev-haskell/haskell-src-exts-1.17:=[profile?] <dev-haskell/haskell-src-exts-1.18:=[profile?]
 	<dev-haskell/transformers-0.5:=[profile?]
 	>=dev-lang/ghc-7.4.1:=
 "
@@ -27,8 +27,3 @@ DEPEND="${RDEPEND}
 	test? ( >=dev-haskell/hunit-1.1
 		>=dev-haskell/quickcheck-2.1 <dev-haskell/quickcheck-2.9 )
 "
-
-src_prepare() {
-	cabal_chdeps \
-		'HUnit >= 1.1 && < 1.3' 'HUnit >= 1.1'
-}
