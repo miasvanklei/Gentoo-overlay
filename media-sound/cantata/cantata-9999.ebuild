@@ -74,6 +74,7 @@ RESTRICT="test"
 
 src_prepare() {
 	epatch ${FILESDIR}/musl-includes.patch
+	epatch ${FILESDIR}/qt-5.7.patch
 }
 
 src_configure() {
