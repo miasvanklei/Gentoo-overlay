@@ -1,0 +1,206 @@
+--- source/blender/blenlib/intern/easing.c.bak	2016-04-04 16:31:50.554377310 +0200
++++ source/blender/blenlib/intern/easing.c	2016-04-04 16:33:44.454382918 +0200
+@@ -144,11 +144,11 @@
+  */
+ static float elastic_blend(float time, float change, float duration, float amplitude, float s, float f)
+ {
+-	if (change) {
++	if ((_Bool)change) {
+ 		/* Looks like a magic number,
+ 		 * but this is a part of the sine curve we need to blend from */
+ 		const float t = fabsf(s);
+-		if (amplitude) {
++		if ((_Bool)amplitude) {
+ 			f *= amplitude / fabsf(change);
+ 		}
+ 		else {
+@@ -176,9 +176,9 @@
+ 	if ((time /= duration) == 1.0f)
+ 		return begin + change;
+ 	time -= 1.0f;
+-	if (!period)
++	if (!(_Bool)period)
+ 		period = duration * 0.3f;
+-	if (!amplitude || amplitude < fabsf(change)) {
++	if (!(_Bool)amplitude || amplitude < fabsf(change)) {
+ 		s = period / 4;
+ #ifdef USE_ELASTIC_BLEND
+ 		f = elastic_blend(time, change, duration, amplitude, s, f);
+@@ -201,9 +201,9 @@
+ 	if ((time /= duration) == 1.0f)
+ 		return begin + change;
+ 	time = -time;
+-	if (!period)
++	if (!(_Bool)period)
+ 		period = duration * 0.3f;
+-	if (!amplitude || amplitude < fabsf(change)) {
++	if (!(_Bool)amplitude || amplitude < fabsf(change)) {
+ 		s = period / 4;
+ #ifdef USE_ELASTIC_BLEND
+ 		f = elastic_blend(time, change, duration, amplitude, s, f);
+@@ -226,9 +226,9 @@
+ 	if ((time /= duration / 2) == 2.0f)
+ 		return begin + change;
+ 	time -= 1.0f;
+-	if (!period)
++	if (!(_Bool)period)
+ 		period = duration * (0.3f * 1.5f);
+-	if (!amplitude || amplitude < fabsf(change)) {
++	if (!(_Bool)amplitude || amplitude < fabsf(change)) {
+ 		s = period / 4;
+ #ifdef USE_ELASTIC_BLEND
+ 		f = elastic_blend(time, change, duration, amplitude, s, f);
+--- source/blender/blenlib/intern/math_rotation.c.bak	2016-04-04 16:34:07.533384054 +0200
++++ source/blender/blenlib/intern/math_rotation.c	2016-04-04 16:35:02.929386781 +0200
+@@ -1837,7 +1837,7 @@
+ 	dqsum->trans[3] += weight * dq->trans[3];
+ 
+ 	/* interpolate scale - but only if needed */
+-	if (dq->scale_weight) {
++	if ((bool)dq->scale_weight) {
+ 		float wmat[4][4];
+ 
+ 		if (flipped) /* we don't want negative weights for scaling */
+@@ -1857,10 +1857,10 @@
+ 	mul_qt_fl(dq->quat, scale);
+ 	mul_qt_fl(dq->trans, scale);
+ 
+-	if (dq->scale_weight) {
++	if ((bool)dq->scale_weight) {
+ 		float addweight = totweight - dq->scale_weight;
+ 
+-		if (addweight) {
++		if ((bool)addweight) {
+ 			dq->scale[0][0] += addweight;
+ 			dq->scale[1][1] += addweight;
+ 			dq->scale[2][2] += addweight;
+@@ -1901,7 +1901,7 @@
+ 	t[2] = 2 * (-t0 * z + x * t2 + w * t3 - t1 * y);
+ 
+ 	/* apply scaling */
+-	if (dq->scale_weight)
++	if ((bool)dq->scale_weight)
+ 		mul_m4_v3(dq->scale, co);
+ 
+ 	/* apply rotation and translation */
+@@ -1912,7 +1912,7 @@
+ 
+ 	/* compute crazyspace correction mat */
+ 	if (mat) {
+-		if (dq->scale_weight) {
++		if ((bool)dq->scale_weight) {
+ 			copy_m3_m4(scalemat, dq->scale);
+ 			mul_m3_m3m3(mat, M, scalemat);
+ 		}
+--- source/blender/modifiers/intern/MOD_screw.c.bak	2016-04-04 16:30:35.829373631 +0200
++++ source/blender/modifiers/intern/MOD_screw.c	2016-04-04 16:31:31.378376366 +0200
+@@ -374,7 +374,7 @@
+ 		}
+ 
+ 		uv_v_range_inv = uv_v_minmax[1] - uv_v_minmax[0];
+-		uv_v_range_inv = uv_v_range_inv ? 1.0f / uv_v_range_inv : 0.0f;
++		uv_v_range_inv = (bool)uv_v_range_inv ? 1.0f / uv_v_range_inv : 0.0f;
+ 	}
+ 
+ 	/* Set the locations of the first set of verts */
+@@ -806,7 +806,7 @@
+ 			copy_m3_m4(mat3, mat);
+ 		}
+ 
+-		if (screw_ofs)
++		if ((bool)screw_ofs)
+ 			madd_v3_v3fl(mat[3], axis_vec, screw_ofs * ((float)step / (float)(step_tot - 1)));
+ 
+ 		/* copy a slice */
+--- source/blender/modifiers/intern/MOD_correctivesmooth.c.bak	2016-04-04 16:29:15.878369695 +0200
++++ source/blender/modifiers/intern/MOD_correctivesmooth.c	2016-04-04 16:30:09.152372317 +0200
+@@ -214,13 +214,13 @@
+ 	if (smooth_weights == NULL) {
+ 		for (i = 0; i < numVerts; i++) {
+ 			vertex_edge_count_div[i] =
+-			        lambda * (vertex_edge_count_div[i] ? (1.0f / vertex_edge_count_div[i]) : 1.0f);
++			        lambda * ((bool)vertex_edge_count_div[i] ? (1.0f / vertex_edge_count_div[i]) : 1.0f);
+ 		}
+ 	}
+ 	else {
+ 		for (i = 0; i < numVerts; i++) {
+ 			vertex_edge_count_div[i] =
+-			        smooth_weights[i] * lambda * (vertex_edge_count_div[i] ? (1.0f / vertex_edge_count_div[i]) : 1.0f);
++			        smooth_weights[i] * lambda * ((bool)vertex_edge_count_div[i] ? (1.0f / vertex_edge_count_div[i]) : 1.0f);
+ 		}
+ 	}
+ 
+--- source/blender/blenkernel/intern/mesh_remap.c.bak	2016-04-04 16:25:15.927357881 +0200
++++ source/blender/blenkernel/intern/mesh_remap.c	2016-04-04 16:27:23.827364178 +0200
+@@ -282,7 +282,7 @@
+ 	copy_m4_m4(best_mat_dst, mat_dst);
+ 
+ 	/* And now, we have to check the otehr sixth possible mirrored versions... */
+-	for (mirr = mirrors; (*mirr)[0]; mirr++) {
++	for (mirr = mirrors; (bool)(*mirr)[0]; mirr++) {
+ 		mul_v3_fl(mat_dst[0], (*mirr)[0]);
+ 		mul_v3_fl(mat_dst[1], (*mirr)[1]);
+ 		mul_v3_fl(mat_dst[2], (*mirr)[2]);
+@@ -926,7 +926,7 @@
+ 				 * half of the rays found a source! */
+ 				if (totweights > ((float)grid_size / 2.0f)) {
+ 					for (j = 0; j < (int)numedges_src; j++) {
+-						if (!weights[j]) {
++						if (!(bool)weights[j]) {
+ 							continue;
+ 						}
+ 						/* Note: sources_num is always <= j! */
+@@ -1149,7 +1149,7 @@
+ 
+ 		BLI_AStarGraph *as_graphdata = NULL;
+ 		BLI_AStarSolution as_solution = {0};
+-		const int isld_steps_src = islands_precision_src ?
++		const int isld_steps_src = (bool)islands_precision_src ?
+ 		                           max_ii((int)(ASTAR_STEPS_MAX * islands_precision_src + 0.499f), 1) : 0;
+ 
+ 		float (*poly_nors_src)[3] = NULL;
+@@ -1545,7 +1545,7 @@
+ 								}
+ 							}
+ 							best_nor_dot = (best_nor_dot + 1.0f) * 0.5f;
+-							islands_res[tindex][plidx_dst].factor = hit_dist ? (best_nor_dot / hit_dist) : 1e18f;
++							islands_res[tindex][plidx_dst].factor = (bool)hit_dist ? (best_nor_dot / hit_dist) : 1e18f;
+ 							islands_res[tindex][plidx_dst].hit_dist = hit_dist;
+ 							islands_res[tindex][plidx_dst].index_src = best_index_src;
+ 						}
+@@ -1573,7 +1573,7 @@
+ 							if (mesh_remap_bvhtree_query_raycast(
+ 							        tdata, &rayhit, tmp_co, tmp_no, ray_radius / w, max_dist, &hit_dist))
+ 							{
+-								islands_res[tindex][plidx_dst].factor = (hit_dist ? (1.0f / hit_dist) : 1e18f) * w;
++								islands_res[tindex][plidx_dst].factor = ((bool)hit_dist ? (1.0f / hit_dist) : 1e18f) * w;
+ 								islands_res[tindex][plidx_dst].hit_dist = hit_dist;
+ 								islands_res[tindex][plidx_dst].index_src = (int)tdata->looptri[rayhit.index].poly;
+ 								copy_v3_v3(islands_res[tindex][plidx_dst].hit_point, rayhit.co);
+@@ -1623,7 +1623,7 @@
+ 						}
+ 
+ 						if (mesh_remap_bvhtree_query_nearest(tdata, &nearest, tmp_co, max_dist_sq, &hit_dist)) {
+-							islands_res[tindex][plidx_dst].factor = hit_dist ? (1.0f / hit_dist) : 1e18f;
++							islands_res[tindex][plidx_dst].factor = (bool)hit_dist ? (1.0f / hit_dist) : 1e18f;
+ 							islands_res[tindex][plidx_dst].hit_dist = hit_dist;
+ 							islands_res[tindex][plidx_dst].index_src = (int)tdata->looptri[nearest.index].poly;
+ 							copy_v3_v3(islands_res[tindex][plidx_dst].hit_point, nearest.co);
+@@ -2153,7 +2153,7 @@
+ 				 * with lower/upper bounds. */
+ 				sub_v2_v2v2(poly_dst_2d_size, poly_dst_2d_max, poly_dst_2d_min);
+ 
+-				if (ray_radius) {
++				if ((bool)ray_radius) {
+ 					tot_rays = (int)((max_ff(poly_dst_2d_size[0], poly_dst_2d_size[1]) / ray_radius) + 0.5f);
+ 					CLAMP(tot_rays, MREMAP_RAYCAST_TRI_SAMPLES_MIN, MREMAP_RAYCAST_TRI_SAMPLES_MAX);
+ 				}
+@@ -2227,7 +2227,7 @@
+ 
+ 				if (totweights > 0.0f) {
+ 					for (j = 0; j < (int)numpolys_src; j++) {
+-						if (!weights[j]) {
++						if (!(bool)weights[j]) {
+ 							continue;
+ 						}
+ 						/* Note: sources_num is always <= j! */
