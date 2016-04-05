@@ -6,16 +6,7 @@ EAPI=5
 MY_PN="QupZilla"
 MY_P=${MY_PN}-${PV}
 
-if [[ ${PV} == *9999* ]]; then
-	VCS_ECLASS=git-r3
-	EGIT_BRANCH=master
-	EGIT_REPO_URI="git://github.com/${MY_PN}/${PN}.git"
-else
-	VCS_ECLASS=vcs-snapshot
-	SRC_URI="https://github.com/${MY_PN}/${PN}/releases/download/v${PV}/${MY_P}.tar.xz"
-	KEYWORDS="~amd64 ~arm ~x86"
-	S=${WORKDIR}/${MY_P}
-fi
+S=${WORKDIR}/${MY_P}
 
 PLOCALES="ar_SA bg_BG ca_ES cs_CZ de_DE el_GR es_ES es_MX es_VE eu_ES fa_IR fi_FI fr_FR gl_ES he_IL hr_HR hu_HU id_ID it_IT ja_JP ka_GE lg lv_LV nl_NL nqo pl_PL pt_BR pt_PT ro_RO ru_RU sk_SK sr sr@ijekavian sr@ijekavianlatin sr@latin sv_SE tr_TR uk_UA uz@Latn zh_CN zh_TW"
 PLUGINS_HASH='7b037cc326921cefbfc6b5e54e2091eb4191e73f'
@@ -23,9 +14,11 @@ PLUGINS_VERSION='2015.10.02' # if there are no updates, we can use the older arc
 
 inherit eutils l10n multilib qmake-utils ${VCS_ECLASS}
 
-DESCRIPTION="Qt WebKit web browser"
+DESCRIPTION="Qt WebEngine web browser"
+KEYWORDS="~amd64 ~arm ~x86"
 HOMEPAGE="http://www.qupzilla.com/"
-SRC_URI+="https://github.com/${MY_PN}/${PN}-plugins/archive/${PLUGINS_HASH}.tar.gz -> ${PN}-plugins-${PLUGINS_VERSION}.tar.gz"
+SRC_URI="https://github.com/${MY_PN}/${PN}/releases/download/v${PV}/${MY_P}.tar.xz
+	 https://github.com/${MY_PN}/${PN}-plugins/archive/${PLUGINS_HASH}.tar.gz -> ${PN}-plugins-${PLUGINS_VERSION}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -49,14 +42,6 @@ DEPEND="${RDEPEND}
 
 DOCS=( AUTHORS BUILDING CHANGELOG FAQ README.md )
 
-src_unpack() {
-	if [[ ${PV} == *9999* ]]; then
-		git-r3_src_unpack
-		unpack ${A}
-	else
-		default
-	fi
-}
 
 src_prepare() {
 	rm_loc() {
