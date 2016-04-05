@@ -4,10 +4,10 @@ This repository adds some ebuilds which are broken in portage when used with mus
 some examples:
       - electron and atom: are based on chromium, binary builds use jmalloc which doesn't work with musl. even if it did work,
         chromium by default uses some obscure glibc functions.
-      - an up-to-date (3.8.0) llvm ebuild, which can be used standalone without gcc installed(linux kernel still needs gcc, (can be used with clang, will lose suspend).
+      - an up-to-date (3.8.0) llvm ebuild, which can be used standalone without gcc installed. kernel works but suspend is broken.
       - prolog ebuilds: swipl and yapl(yapl is heavily broken, outdated c++ code).
       - dlang ebuilds that can be used with musl, no segfaults.
-      - rust ebuild with system llvm(1.7 released on march 3 with llvm 3.8 patch).
+      - rust ebuild with system llvm (1.8 beta).
       - systemd ebuild with alot of patches. it works and runs but it isn't recommend to use for daily usage.
       
 some extra patches are in the patches directory, you can create a symlink for all patches, or only for specific packages.
