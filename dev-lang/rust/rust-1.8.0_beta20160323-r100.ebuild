@@ -1,84 +1,96 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 PYTHON_COMPAT=( python2_7 )
 
-inherit eutils multilib python-any-r1
+inherit python-any-r1 versionator toolchain-funcs
 
-MY_P="rustc-${PV}"
-MY_RUST="1.8.0-stage0-snapshot.zip"
+if [[ ${PV} = *beta* ]]; then
+	betaver=${PV//*beta}
+	BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
+	MY_P="rustc-beta"
+	SLOT="beta/${PV}"
+	SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.gz"
+	KEYWORDS=""
+else
+	ABI_VER="$(get_version_component_range 1-2)"
+	SLOT="stable/${ABI_VER}"
+	MY_P="rustc-${PV}"
+	SRC="${MY_P}-src.tar.gz"
+	KEYWORDS="~amd64 ~x86"
+fi
+
+# from src/snapshots.txt
+RUST_SNAPSHOT_DATE="2016-02-17"
+RUST_SNAPSHOT_SRCHASH="4d3eebf"
+RUST_SNAPSHOT_HASH_amd64="d29b7607d13d64078b6324aec82926fb493f59ba"
+RUST_SNAPSHOT_HASH_x86="5f194aa7628c0703f0fd48adc4ec7f3cc64b98c7"
+RUST_STAGE0="rust-stage0-${RUST_SNAPSHOT_DATE}-${RUST_SNAPSHOT_SRCHASH}"
+RUST_STAGE0_amd64="${RUST_STAGE0}-linux-x86_64-${RUST_SNAPSHOT_HASH_amd64}"
+RUST_STAGE0_x86="${RUST_STAGE0}-linux-i386-${RUST_SNAPSHOT_HASH_x86}"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
-SRC_URI="https://github.com/rust-lang/rust/archive/4d3eebff9dc9474f56cdba810edde324130fbc61.zip -> rust-${MY_RUST}
-         https://github.com/rust-lang/rust-installer/archive/c37d3747da75c280237dc2d6b925078e69555499.zip -> rust-installer-${MY_RUST}
-         https://github.com/rust-lang/libc/archive/a64ee24718c0289b82a77d692cf56f8a1226de51.zip -> rust-libc-${MY_RUST}
-         https://github.com/rust-lang/compiler-rt/archive/b6087e82ba1384c4af3adf2dc68e92316f0d4caf.zip -> rust-compiler_rt-${MY_RUST}
-	 https://github.com/rust-lang/hoedown/archive/4638c60dedfa581fd5fa7c6420d8f32274c9ca0b.zip -> rust-hoedown-${MY_RUST}
-	 amd64? ( http://static.rust-lang.org/stage0-snapshots/rust-stage0-2015-12-18-3391630-linux-x86_64-97e2a5eb8904962df8596e95d6e5d9b574d73bf4.tar.bz2 )
-	 x86?   ( http://static.rust-lang.org/stage0-snapshots/rust-stage0-2015-12-18-3391630-linux-i386-a09c4a4036151d0cb28e265101669731600e01f2.tar.bz2 )"
+
+SRC_URI="http://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
+	amd64? ( http://static.rust-lang.org/stage0-snapshots/${RUST_STAGE0_amd64}.tar.bz2 )
+	x86? ( http://static.rust-lang.org/stage0-snapshots/${RUST_STAGE0_x86}.tar.bz2 )
+"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
-SLOT="nightly"
-KEYWORDS="~amd64 ~x86"
 
-IUSE="+clang debug doc +libcxx +system-llvm"
+IUSE="clang debug doc +libcxx +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
-CDEPEND="libcxx? ( sys-libs/libcxx )
-	>=app-eselect/eselect-rust-0.3_pre20150425
+RDEPEND="libcxx? ( sys-libs/libcxx )
+	system-llvm? ( >=sys-devel/llvm-3.7.1-r1:=
+		<sys-devel/llvm-3.9.0:= )
 "
-DEPEND="${CDEPEND}
+
+DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	>=dev-lang/perl-5.0
 	clang? ( sys-devel/clang )
-	system-llvm? ( >=sys-devel/llvm-3.7.0 )
 "
-RDEPEND="${CDEPEND}
-"
+
+PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
 
 S="${WORKDIR}/${MY_P}"
 
 src_unpack() {
-	unpack rust-${MY_RUST}
-	mv rust* ${MY_P}
-
+	unpack "rustc-${PV}-src.tar.gz" || die
 	mkdir "${MY_P}/dl" || die
-	cp "${DISTDIR}/rust-stage0"* "${MY_P}/dl/" || die
-
-	unpack rust-installer-${MY_RUST}
-	mv rust-installer*/* ${MY_P}/src/rust-installer/
-
-	unpack rust-libc-${MY_RUST}
-	mv libc*/* ${MY_P}/src/liblibc/
-
-	unpack rust-compiler_rt-${MY_RUST}
-	mv compiler-rt*/* ${MY_P}/src/compiler-rt/
-
-	unpack rust-hoedown-${MY_RUST}
-	mv hoedown*/* ${MY_P}/src/rt/hoedown/
+	local stagename="RUST_STAGE0_${ARCH}"
+	local stage0="${!stagename}"
+	cp "${DISTDIR}/${stage0}.tar.bz2" "${MY_P}/dl/" || die "cp stage0"
+	cp ${FILESDIR}/rust-snapshot/*${RUST_SNAPSHOT_DATE}*.tar.bz2 "${MY_P}/dl/"*.tar.bz2
 }
 
 src_prepare() {
-	local postfix="gentoo-${SLOT}"
-	sed -i -e "s/CFG_FILENAME_EXTRA=.*/CFG_FILENAME_EXTRA=${postfix}/" mk/main.mk || die
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
-#	epatch ${FILESDIR}/llvm-3.8.patch
-	epatch ${FILESDIR}/remove-gcc-personality.patch
+
+	eapply ${FILESDIR}/remove-gcc-personality.patch
+	eapply ${FILESDIR}/remove-snapshot-sha-check.patch
+
+	eapply_user
 }
 
 src_configure() {
 	export CFG_DISABLE_LDCONFIG="notempty"
+
 	"${ECONF_SOURCE:-.}"/configure \
 		--prefix="${EPREFIX}/usr" \
 		--libdir="${EPREFIX}/usr/$(get_libdir)/${P}" \
 		--mandir="${EPREFIX}/usr/share/${P}/man" \
-		--release-channel=${SLOT} \
+		--release-channel=${SLOT%%/*} \
 		--disable-manage-submodules \
+		--default-linker=$(tc-getBUILD_CC) \
+		--default-ar=$(tc-getBUILD_AR) \
+		--python=${EPYTHON} \
 		--disable-jemalloc \
 		$(use_enable clang) \
 		$(use_enable debug) \
@@ -94,17 +106,19 @@ src_configure() {
 }
 
 src_compile() {
-	emake snap-stage3 VERBOSE=1
+	emake VERBOSE=1
 }
 
 src_install() {
+	unset SUDO_USER
+
 	default
 
 	mv "${D}/usr/bin/rustc" "${D}/usr/bin/rustc-${PV}" || die
 	mv "${D}/usr/bin/rustdoc" "${D}/usr/bin/rustdoc-${PV}" || die
 	mv "${D}/usr/bin/rust-gdb" "${D}/usr/bin/rust-gdb-${PV}" || die
 
-	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
+	dodoc COPYRIGHT
 
 	dodir "/usr/share/doc/rust-${PV}/"
 	mv "${D}/usr/share/doc/rust"/* "${D}/usr/share/doc/rust-${PV}/" || die
@@ -123,9 +137,6 @@ src_install() {
 	dodir /etc/env.d/rust
 	insinto /etc/env.d/rust
 	doins "${T}/provider-${P}"
-
-	mkdir -p "${D}"/usr/src/rust-${PV}
-        cp -r src/lib* "${D}"/usr/src/rust-${PV}/
 }
 
 pkg_postinst() {
