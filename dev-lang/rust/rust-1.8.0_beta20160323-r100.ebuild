@@ -20,24 +20,21 @@ else
 	SLOT="stable/${ABI_VER}"
 	MY_P="rustc-${PV}"
 	SRC="${MY_P}-src.tar.gz"
-	KEYWORDS="~amd64 ~x86"
+	KEYWORDS="~amd64"
 fi
 
 # from src/snapshots.txt
 RUST_SNAPSHOT_DATE="2016-02-17"
 RUST_SNAPSHOT_SRCHASH="4d3eebf"
 RUST_SNAPSHOT_HASH_amd64="d29b7607d13d64078b6324aec82926fb493f59ba"
-RUST_SNAPSHOT_HASH_x86="5f194aa7628c0703f0fd48adc4ec7f3cc64b98c7"
 RUST_STAGE0="rust-stage0-${RUST_SNAPSHOT_DATE}-${RUST_SNAPSHOT_SRCHASH}"
 RUST_STAGE0_amd64="${RUST_STAGE0}-linux-x86_64-${RUST_SNAPSHOT_HASH_amd64}"
-RUST_STAGE0_x86="${RUST_STAGE0}-linux-i386-${RUST_SNAPSHOT_HASH_x86}"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
 SRC_URI="http://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
 	amd64? ( http://static.rust-lang.org/stage0-snapshots/${RUST_STAGE0_amd64}.tar.bz2 )
-	x86? ( http://static.rust-lang.org/stage0-snapshots/${RUST_STAGE0_x86}.tar.bz2 )
 "
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
@@ -106,7 +103,7 @@ src_configure() {
 }
 
 src_compile() {
-	emake VERBOSE=1
+	emake RUSTFLAGS_STAGE0="-Lx86_64-unknown-linux-gnu/stage0/lib/rustlib/x86_64-unknown-linux-gnu/lib" VERBOSE=1
 }
 
 src_install() {
