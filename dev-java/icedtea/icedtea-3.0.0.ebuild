@@ -324,6 +324,7 @@ src_configure() {
 }
 
 src_compile() {
+        export USE_CLANG=true
 	emake
 }
 
