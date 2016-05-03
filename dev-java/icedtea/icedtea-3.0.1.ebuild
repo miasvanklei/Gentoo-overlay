@@ -3,10 +3,6 @@
 # $Id$
 # Build written by Andrew John Hughes (gnu_andrew@member.fsf.org)
 
-# *********************************************************
-# * IF YOU CHANGE THIS EBUILD, CHANGE ICEDTEA-6.* AS WELL *
-# *********************************************************
-
 EAPI="5"
 SLOT="8"
 
@@ -16,17 +12,18 @@ ICEDTEA_VER=$(get_version_component_range 1-3)
 ICEDTEA_BRANCH=$(get_version_component_range 1-2)
 ICEDTEA_PKG=icedtea-${ICEDTEA_VER}
 ICEDTEA_PRE=$(get_version_component_range _)
-CORBA_TARBALL="37af47894175.tar.xz"
-JAXP_TARBALL="4ed5441e40e1.tar.xz"
-JAXWS_TARBALL="a81c04154cc5.tar.xz"
-JDK_TARBALL="3334efeacd83.tar.xz"
-LANGTOOLS_TARBALL="dd581e8047e6.tar.xz"
-OPENJDK_TARBALL="8ed8d26a3f9a.tar.xz"
-NASHORN_TARBALL="697c5f792bec.tar.xz"
-HOTSPOT_TARBALL="5e587a29a6aa.tar.xz"
 
-CACAO_TARBALL="cacao-c182f119eaad.tar.gz"
-JAMVM_TARBALL="jamvm-2.0.0.tar.gz"
+CORBA_TARBALL="a6736e860d67.tar.xz"
+JAXP_TARBALL="c7145fc644df.tar.xz"
+JAXWS_TARBALL="412389386184.tar.xz"
+JDK_TARBALL="dab76de2f91c.tar.xz"
+LANGTOOLS_TARBALL="ad6886e3a101.tar.xz"
+OPENJDK_TARBALL="6a70821528ba.tar.xz"
+NASHORN_TARBALL="c89dc17f7c75.tar.xz"
+HOTSPOT_TARBALL="7bb48ba4de4f.tar.xz"
+
+CACAO_TARBALL="cacao-c182f119eaad.tar.xz"
+JAMVM_TARBALL="jamvm-ec18fb9e49e62dce16c5094ef1527eed619463aa.tar.gz"
 
 CORBA_GENTOO_TARBALL="icedtea-${ICEDTEA_BRANCH}-corba-${CORBA_TARBALL}"
 JAXP_GENTOO_TARBALL="icedtea-${ICEDTEA_BRANCH}-jaxp-${JAXP_TARBALL}"
@@ -60,7 +57,7 @@ SRC_URI="
 	${DROP_URL}/jamvm/${JAMVM_TARBALL} -> ${JAMVM_GENTOO_TARBALL}"
 
 LICENSE="Apache-1.1 Apache-2.0 GPL-1 GPL-2 GPL-2-with-linking-exception LGPL-2 MPL-1.0 MPL-1.1 public-domain W3C"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm ~ppc64 ~x86"
 
 IUSE="+alsa cacao cjk +cups debug doc examples +gtk headless-awt
 	jamvm +jbootstrap libressl nsplugin pax_kernel
@@ -194,36 +191,36 @@ src_unpack() {
 }
 
 java_prepare() {
-	# Link MUSL patches into icedtea build tree
-	ln -s "${FILESDIR}/${PN}-hotspot-musl.patch" patches || die
-	ln -s "${FILESDIR}/${PN}8-hotspot-noagent-musl.patch" patches || die
-	ln -s "${FILESDIR}/${PN}-hotspot-uclibc-fixes.patch" patches || die
-	ln -s "${FILESDIR}/${PN}8-jdk-execinfo.patch" patches || die
-	ln -s "${FILESDIR}/${PN}8-jdk-fix-libjvm-load.patch" patches || die
-	ln -s "${FILESDIR}/${PN}-jdk-fix-ipv6-init.patch" patches || die
-	ln -s "${FILESDIR}/${PN}8-jdk-musl.patch" patches || die
-
 	# For bootstrap builds as the sandbox control file might not yet exist.
 	addpredict /proc/self/coredump_filter
 
 	# icedtea doesn't like some locales. #330433 #389717
 	export LANG="C" LC_ALL="C"
+
+	# Link MUSL patches into icedtea build tree
+        ln -s "${FILESDIR}/${PN}-hotspot-musl.patch" patches || die
+        ln -s "${FILESDIR}/${PN}8-hotspot-noagent-musl.patch" patches || die
+        ln -s "${FILESDIR}/${PN}-hotspot-uclibc-fixes.patch" patches || die
+        ln -s "${FILESDIR}/${PN}8-jdk-execinfo.patch" patches || die
+        ln -s "${FILESDIR}/${PN}8-jdk-fix-libjvm-load.patch" patches || die
+        ln -s "${FILESDIR}/${PN}-jdk-fix-ipv6-init.patch" patches || die
+        ln -s "${FILESDIR}/${PN}8-jdk-musl.patch" patches || die
 }
 
 src_configure() {
 	local cacao_config config hotspot_port jamvm_config use_cacao use_jamvm use_zero zero_config
 	local vm=$(java-pkg_get-current-vm)
 
-	# Export MUSL patches for configure
-	DISTRIBUTION_PATCHES=""
+        # Export MUSL patches for configure
+        DISTRIBUTION_PATCHES=""
 
-	DISTRIBUTION_PATCHES+="patches/${PN}-hotspot-musl.patch "
-	DISTRIBUTION_PATCHES+="patches/${PN}8-hotspot-noagent-musl.patch "
-	DISTRIBUTION_PATCHES+="patches/${PN}-hotspot-uclibc-fixes.patch "
-	DISTRIBUTION_PATCHES+="patches/${PN}8-jdk-execinfo.patch "
-	DISTRIBUTION_PATCHES+="patches/${PN}8-jdk-fix-libjvm-load.patch "
-	DISTRIBUTION_PATCHES+="patches/${PN}-jdk-fix-ipv6-init.patch "
-	DISTRIBUTION_PATCHES+="patches/${PN}8-jdk-musl.patch "
+        DISTRIBUTION_PATCHES+="patches/${PN}-hotspot-musl.patch "
+        DISTRIBUTION_PATCHES+="patches/${PN}8-hotspot-noagent-musl.patch "
+        DISTRIBUTION_PATCHES+="patches/${PN}-hotspot-uclibc-fixes.patch "
+        DISTRIBUTION_PATCHES+="patches/${PN}8-jdk-execinfo.patch "
+        DISTRIBUTION_PATCHES+="patches/${PN}8-jdk-fix-libjvm-load.patch "
+        DISTRIBUTION_PATCHES+="patches/${PN}-jdk-fix-ipv6-init.patch "
+        DISTRIBUTION_PATCHES+="patches/${PN}8-jdk-musl.patch "
 
 	export DISTRIBUTION_PATCHES
 
@@ -290,6 +287,14 @@ src_configure() {
 		zero_config="--enable-zero"
 	fi
 
+	# IcedTea itself doesn't handle ccache yet.
+	if has ccache ${FEATURES}; then
+		ewarn 'ccache has been known to break IcedTea. Disable it before filing bugs.'
+		export enable_ccache=yes
+	else
+		export enable_ccache=no
+	fi
+
 	config+=" --with-parallel-jobs=$(makeopts_jobs)"
 
 	unset JAVA_HOME JDK_HOME CLASSPATH JAVAC JAVACFLAGS
@@ -324,8 +329,10 @@ src_configure() {
 }
 
 src_compile() {
-        export USE_CLANG=true
-	emake
+	export USE_CLANG=true
+	# OpenJDK is quite picky about ccache and dies if you attempt to use
+	# it via wrapper symlinks like Gentoo normally does.
+	PATH=$(sed 's#[^:]*/ccache/bin:##g' <<< "${PATH}") emake
 }
 
 src_test() {

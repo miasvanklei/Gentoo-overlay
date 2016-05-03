@@ -98,8 +98,8 @@ pkg_setup() {
 src_prepare() {
 	epatch "${FILESDIR}"/${PN}-2.68-doxyfile.patch \
 		"${FILESDIR}"/${PN}-2.68-fix-install-rules.patch \
-		"${FILESDIR}"/${PN}-2.77-sse2.patch
-		"${FILESDIR}"/float-conversion.patch
+		"${FILESDIR}"/${PN}-2.77-sse2.patch \
+		"${FILESDIR}"/float-conversion.patch \
 		"${FILESDIR}"/musl-compat.patch
 
 	epatch_user
