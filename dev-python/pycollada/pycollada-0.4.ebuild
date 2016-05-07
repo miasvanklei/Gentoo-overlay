@@ -21,7 +21,7 @@ DEPEND="doc? ( dev-python/sphinx )
 	test? ( dev-python/python-dateutil[${PYTHON_USEDEP}] )"
 RDEPEND="dev-python/numpy
 	dev-python/lxml
-	>=dev-python/python-dateutil-2.0"
+	>=dev-python/python-dateutil-2.0[${PYTHON_USEDEP}]"
 
 src_compile() {
 	distutils-r1_src_compile
