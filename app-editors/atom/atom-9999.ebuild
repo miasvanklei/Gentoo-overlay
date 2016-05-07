@@ -31,7 +31,7 @@ DEPEND="
 	gnome-base/gconf
 	gnome-base/libgnome-keyring
 	x11-libs/libnotify
-	=app-shells/electron-0.36.7
+	dev-util/electron
 "
 
 RDEPEND="${DEPEND}"
@@ -114,6 +114,8 @@ src_install() {
 	fperms +x /usr/share/${PN}/resources/app/apm/node_modules/npm/bin/node-gyp-bin/node-gyp
 
 	# Symlinking to /usr/bin
-	dosym ../share/${PN}/resources/app/atom.sh /usr/bin/atom
+	echo "#!/bin/bash" > ${D}/usr/bin/atom
+        echo "/usr/lib64/electron/electron /usr/share/atom/resources/app.asar" >> ${D}/usr/bin/atom
+	fperms +x /usr/bin/atom
 	dosym ../share/${PN}/resources/app/apm/bin/apm /usr/bin/apm
 }
