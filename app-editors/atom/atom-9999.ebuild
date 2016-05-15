@@ -12,6 +12,7 @@ HOMEPAGE="https://atom.io"
 SRC_URI=""
 
 EGIT_REPO_URI="git://github.com/atom/atom"
+EGIT_BRANCH="1.7-releases"
 LICENSE="MIT"
 SLOT="0"
 
