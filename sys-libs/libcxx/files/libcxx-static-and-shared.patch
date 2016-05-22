@@ -54,7 +54,7 @@
  
  # Generate a linker script inplace of a libc++.so symlink. Rerun this command
  # after cxx builds.
-@@ -144,18 +167,18 @@
+@@ -166,11 +166,11 @@
    endif()
    # Generate a linker script inplace of a libc++.so symlink. Rerun this command
    # after cxx builds.
@@ -68,20 +68,22 @@
        "${SCRIPT_ABI_LIBNAME}"
      WORKING_DIRECTORY ${LIBCXX_BUILD_DIR}
    )
- endif()
- 
- if (LIBCXX_INSTALL_LIBRARY)
--  install(TARGETS cxx
-+  install(TARGETS ${LIBCXX_TARGETS}
+@@ -180,7 +180,7 @@
+   if (LIBCXX_INSTALL_EXPERIMENTAL_LIBRARY)
+     set(experimental_lib cxx_experimental)
+   endif()
+-  install(TARGETS cxx ${experimental_lib}
++  install(TARGETS ${LIBCXX_TARGETS} ${experimental_lib}
      LIBRARY DESTINATION lib${LIBCXX_LIBDIR_SUFFIX} COMPONENT libcxx
      ARCHIVE DESTINATION lib${LIBCXX_LIBDIR_SUFFIX} COMPONENT libcxx
      )
-@@ -177,7 +177,7 @@
+@@ -198,7 +198,7 @@
  if (NOT CMAKE_CONFIGURATION_TYPES AND (LIBCXX_INSTALL_LIBRARY OR
                                         LIBCXX_INSTALL_HEADERS))
      if(LIBCXX_INSTALL_LIBRARY)
--      set(deps DEPENDS cxx)
-+      set(deps DEPENDS ${LIBCXX_TARGETS})
+-      set(lib_install_target cxx)
++      set(lib_install_target ${LIBCXX_TARGETS})
      endif()
-     add_custom_target(install-libcxx
-                       ${deps}
+     if (LIBCXX_INSTALL_EXPERIMENTAL_LIBRARY)
+       set(experimental_lib_install_target cxx_experimental)
+

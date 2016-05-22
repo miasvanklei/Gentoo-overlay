@@ -63,15 +63,15 @@ multilib_src_install() {
 
 
 	# move symlinks around and create linkerscript to directly link with libc.so
-        mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/$(get_libdir)/${ldso}
-        gen_usr_ldscript ${ldso}
-        mv "${D}"/usr/$(get_libdir)/${ldso} "${D}"/usr/$(get_libdir)/libc.so
+        mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/$(get_libdir)/${ldso} || die
+        gen_usr_ldscript ${ldso} || die
+        mv "${D}"/usr/$(get_libdir)/${ldso} "${D}"/usr/$(get_libdir)/libc.so || die
 
-	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd
+	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd || die
 	ar rcs ${D}/usr/$(get_libdir)/libintl.a || die
 
 	# needed for ldd under pax kernel
-	pax-mark r "${D}"/lib64/${ldso}
+	pax-mark r "${D}"/$(get_libdir)/${ldso} || die
 
 }
 
