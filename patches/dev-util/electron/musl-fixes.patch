@@ -1,4 +1,4 @@
---- a/third_party/lss/linux_syscall_support.h.orig
+--- a/third_party/lss/linux_syscall_support.h
 +++ b/third_party/lss/linux_syscall_support.h
 @@ -1127,6 +1127,12 @@
  #ifndef __NR_fallocate
@@ -13,7 +13,7 @@
  /* End of x86-64 definitions                                                 */
  #elif defined(__mips__)
  #if _MIPS_SIM == _MIPS_SIM_ABI32
---- a/sandbox/linux/suid/process_util.h.orig
+--- a/sandbox/linux/suid/process_util.h
 +++ b/sandbox/linux/suid/process_util.h
 @@ -11,6 +11,14 @@
  #include <stdbool.h>
@@ -30,7 +30,7 @@
  // This adjusts /proc/process/oom_score_adj so the Linux OOM killer
  // will prefer certain process types over others. The range for the
  // adjustment is [-1000, 1000], with [0, 1000] being user accessible.
---- a/sandbox/linux/seccomp-bpf/trap.cc.orig
+--- a/sandbox/linux/seccomp-bpf/trap.cc
 +++ b/sandbox/linux/seccomp-bpf/trap.cc
 @@ -156,7 +156,7 @@
    // most versions of glibc don't include this information in siginfo_t. So,
@@ -41,7 +41,7 @@
  
  #if defined(__mips__)
    // When indirect syscall (syscall(__NR_foo, ...)) is made on Mips, the
---- a/net/dns/dns_config_service_posix.cc.orig
+--- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -116,7 +116,7 @@
  ConfigParsePosixResult ReadDnsConfig(DnsConfig* config) {
@@ -52,7 +52,7 @@
    // Note: res_ninit in glibc always returns 0 and sets RES_INIT.
    // res_init behaves the same way.
    memset(&_res, 0, sizeof(_res));
---- a/third_party/ffmpeg/libavutil/cpu.c.orig
+--- a/third_party/ffmpeg/libavutil/cpu.c
 +++ b/third_party/ffmpeg/libavutil/cpu.c
 @@ -38,7 +38,6 @@
  #include <sys/param.h>
@@ -62,7 +62,7 @@
  #endif
  #if HAVE_UNISTD_H
  #include <unistd.h>
---- a/third_party/WebKit/Source/platform/heap/StackFrameDepth.cpp.orig
+--- a/third_party/WebKit/Source/platform/heap/StackFrameDepth.cpp
 +++ b/third_party/WebKit/Source/platform/heap/StackFrameDepth.cpp
 @@ -58,7 +58,7 @@
      // FIXME: On Mac OSX and Linux, this method cannot estimate stack size
@@ -82,7 +82,7 @@
      pthread_attr_t attr;
      int error;
  #if OS(FREEBSD)
---- a/third_party/ffmpeg/libavutil/autorename_libavutil_cpu.c.orig
+--- a/third_party/ffmpeg/libavutil/autorename_libavutil_cpu.c
 +++ b/third_party/ffmpeg/libavutil/autorename_libavutil_cpu.c
 @@ -38,7 +38,6 @@
  #include <sys/param.h>
@@ -92,7 +92,7 @@
  #endif
  #if HAVE_UNISTD_H
  #include <unistd.h>
---- a/device/serial/serial_io_handler_posix.cc.orig
+--- a/device/serial/serial_io_handler_posix.cc
 +++ b/device/serial/serial_io_handler_posix.cc
 @@ -6,6 +6,7 @@
  
@@ -102,8 +102,8 @@
  
  #include "base/posix/eintr_wrapper.h"
  
---- a/third_party/ots/include/opentype-sanitiser.h.bak    2015-11-29 20:57:44.090326971 +0100
-+++ b/third_party/ots/include/opentype-sanitiser.h        2015-11-29 20:58:20.963225505 +0100
+--- a/third_party/ots/include/opentype-sanitiser.h.bak
++++ b/third_party/ots/include/opentype-sanitiser.h
 @@ -24,6 +24,7 @@
  #include <stdint.h>
  #endif
@@ -112,8 +112,8 @@
  #include <algorithm>
  #include <cassert>
  #include <cstddef>
---- a/third_party/WebKit/Source/platform/heap/GCInfo.cpp.bak      2015-11-29 20:57:42.365387784 +0100
-+++ b/third_party/WebKit/Source/platform/heap/GCInfo.cpp  2015-11-29 20:58:08.738551520 +0100
+--- a/third_party/WebKit/Source/platform/heap/GCInfo.cpp
++++ b/third_party/WebKit/Source/platform/heap/GCInfo.cpp
 @@ -5,6 +5,7 @@
  #include "config.h"
  #include "platform/heap/GCInfo.h"
@@ -122,7 +122,7 @@
  #include "platform/heap/Handle.h"
  #include "platform/heap/Heap.h"
  
---- a/breakpad/src/client/linux/minidump_writer/minidump_writer.h.orig
+--- a/breakpad/src/client/linux/minidump_writer/minidump_writer.h
 +++ b/breakpad/src/client/linux/minidump_writer/minidump_writer.h
 @@ -48,7 +48,7 @@
  #if defined(__aarch64__)
@@ -133,7 +133,7 @@
  #endif
  
 
---- a/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc.orig
+--- a/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
 +++ b/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
 @@ -49,7 +49,7 @@
  }
@@ -153,7 +153,7 @@
    const greg_t* regs = uc->uc_mcontext.gregs;
  
    out->context_flags = MD_CONTEXT_AMD64_FULL;
---- a/breakpad/src/client/linux/dump_writer_common/ucontext_reader.h.orig
+--- a/breakpad/src/client/linux/dump_writer_common/ucontext_reader.h
 +++ b/breakpad/src/client/linux/dump_writer_common/ucontext_reader.h
 @@ -50,7 +50,7 @@
    //   info: the collection of register structures.
@@ -164,8 +164,8 @@
  #elif defined(__aarch64__)
    static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
                               const struct fpsimd_context* fpregs);
---- a/breakpad/src/common/stabs_reader.cc  2015-11-27 11:49:14.436842904 -0800
-+++ b/breakpad/src/common/stabs_reader.cc       2015-11-27 11:50:29.870178485 -0800
+--- a/breakpad/src/common/stabs_reader.cc
++++ b/breakpad/src/common/stabs_reader.cc
 @@ -34,7 +34,6 @@
  #include "common/stabs_reader.h"
  
@@ -174,28 +174,50 @@
  #include <string.h>
  
  #include <string>
---- a/breakpad/src/common/stabs_reader.h   2015-11-27 11:49:14.436842904 -0800
-+++ b/breakpad/src/common/stabs_reader.h        2015-11-27 11:52:50.146849332 -0800
-@@ -61,6 +61,17 @@
- #include <mach-o/nlist.h>
- #endif
+--- a/breakpad/src/common/common.gyp
++++ b/breakpad/src/common/common.gyp
+@@ -32,9 +32,6 @@
+       ['OS=="mac"', {
+         'defines': ['HAVE_MACH_O_NLIST_H'],
+       }],
+-      ['OS=="linux"', {
+-        'defines': ['HAVE_A_OUT_H'],
+-      }],
+     ],
+   },
+   'targets': [
+--- a/breakpad/BUILD.gn
++++ b/breakpad/BUILD.gn
+@@ -456,11 +456,6 @@
+       configs -= [ "//build/config/compiler:no_rtti" ]
+       configs += [ "//build/config/compiler:rtti" ]
  
-+// Definitions from <stab.h> and <a.out.h> for systems which
-+// do not have them
-+#undef N_UNDF
-+#define N_UNDF  0x0
-+#define N_FUN   0x24
-+#define N_SLINE 0x44
-+#define N_SO    0x64
-+#define N_LSYM  0x80
-+#define N_BINCL 0x82
-+#define N_SOL   0x84
-+
- #include <string>
- #include <vector>
+-      # Breakpad rev 583 introduced this flag.
+-      # Using this define, stabs_reader.h will include a.out.h to
+-      # build on Linux.
+-      defines = [ "HAVE_A_OUT_H" ]
+-
+       include_dirs = [ "src" ]
  
---- a/breakpad/src/common/stabs_reader_unittest.cc 2015-11-27 11:49:14.436842904 -0800
-+++ b/breakpad/src/common/stabs_reader_unittest.cc      2015-11-27 11:50:35.980178668 -0800
+       deps = [
+--- a/breakpad/breakpad.gyp
++++ b/breakpad/breakpad.gyp
+@@ -491,13 +491,6 @@
+             'src/tools/linux/dump_syms/dump_syms.cc',
+           ],
+ 
+-          # Breakpad rev 583 introduced this flag.
+-          # Using this define, stabs_reader.h will include a.out.h to
+-          # build on Linux.
+-          'defines': [
+-            'HAVE_A_OUT_H',
+-          ],
+-
+           'include_dirs': [
+             'src',
+             '..',
+--- a/breakpad/src/common/stabs_reader_unittest.cc
++++ b/breakpad/src/common/stabs_reader_unittest.cc
 @@ -33,7 +33,6 @@
  
  #include <assert.h>
@@ -204,7 +226,7 @@
  #include <stdarg.h>
  #include <stdlib.h>
  #include <string.h>
---- a/breakpad/src/common/linux/elf_core_dump.h.orig
+--- a/breakpad/src/common/linux/elf_core_dump.h
 +++ b/breakpad/src/common/linux/elf_core_dump.h
 @@ -36,6 +36,7 @@
  #include <elf.h>
@@ -226,3 +248,34 @@
    static const int kClass = ELFCLASS64;
  #else
  #error "Unsupported __WORDSIZE for ElfCoreDump."
+--- a/breakpad/src/common/stabs_reader.h
++++ b/breakpad/src/common/stabs_reader.h
+@@ -61,6 +61,17 @@
+ #include <mach-o/nlist.h>
+ #endif
+ 
++// Definitions from <stab.h> and <a.out.h> for systems which
++// do not have them
++#undef N_UNDF
++#define N_UNDF  0x0
++#define N_FUN   0x24
++#define N_SLINE 0x44
++#define N_SO    0x64
++#define N_LSYM  0x80
++#define N_BINCL 0x82
++#define N_SOL   0x84
++
+ #include <string>
+ #include <vector>
+ 
+--- a/breakpad/src/common/linux/dump_symbols.cc
++++ b/breakpad/src/common/linux/dump_symbols.cc
+@@ -45,6 +45,7 @@
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <libgen.h>
+ 
+ #include <iostream>
+ #include <set>
+
