@@ -7,6 +7,10 @@ EAPI=5
 inherit eutils flag-o-matic toolchain-funcs multilib-minimal pax-utils git-r3
 
 EGIT_REPO_URI="git://git.musl-libc.org/musl"
+SRC_URI="
+	http://dev.gentoo.org/~blueness/musl-misc/getconf.c
+	http://dev.gentoo.org/~blueness/musl-misc/getent.c
+	http://dev.gentoo.org/~blueness/musl-misc/iconv.c"
 
 DESCRIPTION="Lightweight, fast and simple C library focused on standards-conformance and safety"
 HOMEPAGE="http://www.musl-libc.org/"
@@ -31,7 +35,7 @@ src_prepare() {
 	epatch "${FILESDIR}"/mallinfo.patch
 	epatch "${FILESDIR}"/context.patch
 	epatch "${FILESDIR}"/pthread-try-timed.patch
-#	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
+	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
 	epatch "${FILESDIR}"/multilib.patch
 	epatch "${FILESDIR}"/backtrace.patch
 	epatch "${FILESDIR}"/use-defines-instead-of-function.patch
@@ -79,7 +83,7 @@ multilib_src_install_all() {
 	local ldso=$(basename "${D}"/$(get_libdir)/ld-musl-*)
 	local i
         for i in getconf getent iconv; do
-		${CC} ${CFLAGS} "${FILESDIR}"/$i.c -o $i
+		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/$i.c -o $i
 		dobin $i
         done
 	dosym /$(get_libdir)/${ldso} /usr/bin/ldd
