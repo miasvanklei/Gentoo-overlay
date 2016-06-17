@@ -179,6 +179,10 @@ src_prepare() {
         # https://bugs.gentoo.org/show_bug.cgi?id=578392
         eapply "${FILESDIR}"/llvm-3.8-soversion.patch
 
+	# some more fixes
+	eapply "${FILESDIR}"/llvm-3.8.0-fix-unpack-load.patch
+	eapply "${FILESDIR}"/llvm-nm-workaround.patch
+
         # disable use of SDK on OSX, bug #568758
         sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
@@ -216,22 +220,23 @@ src_prepare() {
 		popd >/dev/null || die
 
 		# Fix for MUSL
-		eapply "${FILESDIR}"/musl/cfe/cfe-001-fix-stdint.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-003-fix-unwind-chain-inclusion.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-004-add-musl-triples.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-005-fix-dynamic-linker-paths.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array-3.8.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-009-add-gentoo-linux-distro.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-010-fix-ada-in-configure.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-011-increase-gcc-version.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-013-use-ssp-by-default.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-014-gentoo-PIE-default.patch
-		eapply "${FILESDIR}"/musl/compiler-rt/compiler-rt-002-musl-no-dlvsym.patch
-		eapply "${FILESDIR}"/musl/compiler-rt/compiler-rt_musl_001-disable-sanitizers.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-001-add-gentoo-linux-distro.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-002-Use-z-relro-on-Alpine-Linux.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-003-Use-hash-style-gnu-for-Gentoo-Linux.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-004-Add-musl-targets-and-dynamic-linker.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-005-Enable-PIE-by-default-for-gentoo-linux.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-006-Link-with-z-now-by-default-for-Gentoo-Linux.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-009-use-ssp-by-default.patch
+		eapply "${FILESDIR}"/musl/compiler-rt/compiler-rt-001-add-blocks-support.patch
+
+		# Other patches
+		eapply "${FILESDIR}"/cfe-010-fix-ada-in-configure.patch
+		eapply "${FILESDIR}"/cfe-011-increase-gcc-version.patch
 	fi
 
 	if use libcxx; then
-		eapply "${FILESDIR}"/musl/cfe/cfe-012-link-in-libcxxabi.patch
+		eapply "${FILESDIR}"/cfe-012-link-in-libcxxabi.patch
 		sed -i '/^  return ToolChain::CST_Libstdcxx/s@stdcxx@cxx@' tools/clang/lib/Driver/ToolChain.cpp
 	fi
 
@@ -245,11 +250,9 @@ src_prepare() {
 	fi
 
         # Fix for MUSL
-        eapply "${FILESDIR}"/musl/llvm/llvm-002-musl-triple-3.8.patch
-        eapply "${FILESDIR}"/musl/llvm/llvm-003-musl.patch
-
-	# fix .so version
-        eapply "${FILESDIR}"/fix-so-version.patch
+	eapply "${FILESDIR}"/musl/llvm/llvm-001-musl-triple.patch
+	eapply "${FILESDIR}"/musl/llvm/llvm-002-Fix-build-with-musl-libc.patch
+	eapply "${FILESDIR}"/musl/llvm/llvm-003-Fix-DynamicLibrary-to-build-with-musl-libc.patch
 
 	# User patches
 	eapply_user
@@ -311,6 +314,7 @@ multilib_src_configure() {
 			# libgomp support fails to find headers without explicit -I
 			# furthermore, it provides only syntax checking
 			-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
+			-DCOMPILER_RT_BUILD_SANITIZERS=OFF
 		)
 	fi
 

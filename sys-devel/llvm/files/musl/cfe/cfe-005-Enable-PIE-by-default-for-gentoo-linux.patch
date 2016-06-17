@@ -1,0 +1,45 @@
+From efbdf70c883a356106fc1bcb1c2917ec6c0a6157 Mon Sep 17 00:00:00 2001
+From: Natanael Copa <ncopa@alpinelinux.org>
+Date: Tue, 23 Feb 2016 09:35:26 +0100
+Subject: [PATCH 5/7] Enable PIE by default for alpine linux
+
+Alpine Linux uses PIE by default.
+---
+ lib/Driver/ToolChains.cpp |  5 ++++-
+ lib/Driver/Tools.cpp      |  4 +++-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/lib/Driver/ToolChains.cpp b/lib/Driver/ToolChains.cpp
+index 0db9644..82449bf 100644
+--- a/tools/clang/lib/Driver/ToolChains.cpp
++++ b/tools/clang/lib/Driver/ToolChains.cpp
+@@ -4143,7 +4143,10 @@ void Linux::AddCudaIncludeArgs(const ArgList &DriverArgs,
+   }
+ }
+ 
+-bool Linux::isPIEDefault() const { return getSanitizerArgs().requiresPIE(); }
++bool Linux::isPIEDefault() const {
++  return getSanitizerArgs().requiresPIE() ||
++         Linux::getTriple().getVendorName().compare("gentoo") == 0;
++}
+ 
+ SanitizerMask Linux::getSupportedSanitizers() const {
+   const bool IsX86 = getTriple().getArch() == llvm::Triple::x86;
+diff --git a/lib/Driver/Tools.cpp b/lib/Driver/Tools.cpp
+index ea1ce6f..8fd3649 100644
+--- a/tools/clang/lib/Driver/Tools.cpp
++++ b/tools/clang/lib/Driver/Tools.cpp
+@@ -7919,7 +7919,9 @@ void freebsd::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+   if (!D.SysRoot.empty())
+     CmdArgs.push_back(Args.MakeArgString("--sysroot=" + D.SysRoot));
+ 
+-  if (IsPIE)
++  if (Args.hasArg(options::OPT_nopie))
++  {}
++  else if (IsPIE)
+     CmdArgs.push_back("-pie");
+ 
+   if (Args.hasArg(options::OPT_static)) {
+-- 
+2.7.3
+
