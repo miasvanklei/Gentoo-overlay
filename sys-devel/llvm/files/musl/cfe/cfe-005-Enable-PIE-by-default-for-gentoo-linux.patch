@@ -33,7 +33,7 @@ index ea1ce6f..8fd3649 100644
    const bool isAndroid = ToolChain.getTriple().isAndroid();
    const bool IsPIE =
        !Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_static) &&
-+      !Args.hasArg(options::OPT_nopie) &&
++      !(Args.hasArg(options::OPT_fno_pie) || Args.hasArg(options::OPT_fno_PIE)) &&
        (Args.hasArg(options::OPT_pie) || ToolChain.isPIEDefault());
    const bool HasCRTBeginEndFiles =
        ToolChain.getTriple().hasEnvironment() ||
