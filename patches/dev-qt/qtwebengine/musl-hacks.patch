@@ -20,3 +20,26 @@
  extern pthread_t pthread_self ()
  	   __attribute((weak));
  extern int pthread_key_create ()
+--- ./src/3rdparty/chromium/third_party/usrsctp/usrsctplib/usrsctplib/netinet/sctp_userspace.c.bak	2016-06-22 17:47:24.468815906 +0200
++++ ./src/3rdparty/chromium/third_party/usrsctp/usrsctplib/usrsctplib/netinet/sctp_userspace.c	2016-06-22 17:47:35.317815014 +0200
+@@ -72,7 +72,7 @@
+ 	pthread_setname_np(name);
+ #endif
+ #if defined(__Userspace_os_Linux)
+-	pthread_setname_np(pthread_self(), name);
++//	pthread_setname_np(pthread_self(), name);
+ #endif
+ #if defined(__Userspace_os_FreeBSD)
+ 	pthread_set_name_np(pthread_self(), name);
+--- ./src/3rdparty/chromium/content/common/sandbox_linux/sandbox_seccomp_bpf_linux.cc.bak 2016-06-22 19:20:20.104357126 +0200
++++ ./src/3rdparty/chromium/content/common/sandbox_linux/sandbox_seccomp_bpf_linux.cc     2016-06-22 19:20:29.303356369 +0200
+@@ -50,7 +50,7 @@
+ // Make sure that seccomp-bpf does not get disabled by mistake. Also make sure
+ // that we think twice about this when adding a new architecture.
+ #if !defined(ARCH_CPU_ARM64)
+-#error "Seccomp-bpf disabled on supported architecture!"
++//#error "Seccomp-bpf disabled on supported architecture!"
+ #endif  // !defined(ARCH_CPU_ARM64)
+ 
+ #endif  //
+

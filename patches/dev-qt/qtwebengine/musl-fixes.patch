@@ -122,3 +122,14 @@
  #include "platform/heap/Handle.h"
  #include "platform/heap/Heap.h"
  
+--- a/src/3rdparty/chromium/base/logging.cc.bak	2016-06-22 17:46:30.918820313 +0200
++++ b/src/3rdparty/chromium/base/logging.cc	2016-06-22 17:46:44.417819202 +0200
+@@ -515,7 +515,7 @@
+ }
+ 
+ LogMessage::~LogMessage() {
+-#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && !defined(__UCLIBC__)
++#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && defined(__GLIBC__)
+   if (severity_ == LOG_FATAL && !base::debug::BeingDebugged()) {
+     // Include a stack trace on a fatal, unless a debugger is attached.
+     base::debug::StackTrace trace;
