@@ -233,6 +233,7 @@ src_prepare() {
 		# Other patches
 		eapply "${FILESDIR}"/cfe-010-fix-ada-in-configure.patch
 		eapply "${FILESDIR}"/cfe-011-increase-gcc-version.patch
+		eapply "${FILESDIR}"/cfe-013-dont-use-gcc-dir.patch
 	fi
 
 	if use libcxx; then
