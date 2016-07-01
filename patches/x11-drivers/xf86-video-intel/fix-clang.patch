@@ -1,0 +1,11 @@
+--- a/src/sna/compiler.h.bak	2016-06-26 14:33:36.405768175 +0200
++++ a/src/sna/compiler.h	2016-06-26 14:34:26.904764019 +0200
+@@ -69,7 +69,7 @@
+ #define fast
+ #endif
+ 
+-#if HAS_GCC(4, 7)
++#if HAS_GCC(4, 7) && !defined(__clang__)
+ #define avx2 fast __attribute__((target("avx2,avx,sse4.2,sse2,fpmath=sse")))
+ #define assume_aligned(ptr, align) __builtin_assume_aligned((ptr), (align))
+ #define assume_misaligned(ptr, align, offset) __builtin_assume_aligned((ptr), (align), (offset))
