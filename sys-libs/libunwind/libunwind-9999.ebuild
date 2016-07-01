@@ -65,7 +65,7 @@ multilib_src_install() {
 
 	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/usr/${libdir}/libgcc_s.so.1 \
 	-Wl,--whole-archive ${D}/usr/${libdir}/libgcc.a ${D}/usr/${libdir}/libgcc_eh.a \
-	/usr/${libdir}/libBlocksRuntime.a -Wl,--no-whole-archive || die
+	-Wl,--no-whole-archive || die
 
 	cd ${D}/usr/${libdir} || die
 	ln -s libgcc_s.so.1 libgcc_s.so || die
@@ -73,8 +73,8 @@ multilib_src_install() {
 	einfo installing gcc library
 	local gccversion=$(${CC} -dumpversion) || die
 
-	mkdir -p ${D}/usr/lib/gcc/${CHOST}/${gccversion}
-	mv ${D}/usr/${libdir}/* ${D}/usr/lib/gcc/${CHOST}/${gccversion}
+	mkdir -p ${D}/usr/lib/clang/${CHOST}/${gccversion}
+	mv ${D}/usr/${libdir}/* ${D}/usr/lib/clang/${CHOST}/${gccversion}
 }
 
 multilib_src_install_all() {
