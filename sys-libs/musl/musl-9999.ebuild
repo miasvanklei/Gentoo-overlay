@@ -34,7 +34,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/ptrace.patch
 	epatch "${FILESDIR}"/mallinfo.patch
 	epatch "${FILESDIR}"/context.patch
-	epatch "${FILESDIR}"/pthread-try-timed.patch
 	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
 	epatch "${FILESDIR}"/multilib.patch
 	epatch "${FILESDIR}"/backtrace.patch
