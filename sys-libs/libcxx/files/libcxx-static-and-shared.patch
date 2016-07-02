@@ -1,7 +1,7 @@
---- lib/CMakeLists.txt	2015-03-31 06:15:45.000000000 +0200
-+++ lib/CMakeLists.txt	2015-10-06 12:17:45.069885643 +0200
-@@ -24,11 +24,7 @@
-   endif()
+--- lib/CMakeLists.txt.bak	2016-07-02 10:38:53.825750697 +0200
++++ lib/CMakeLists.txt	2016-07-02 10:39:50.724746015 +0200
+@@ -28,11 +28,7 @@
+   set(exclude_from_all EXCLUDE_FROM_ALL)
  endif()
  
 -if (LIBCXX_ENABLE_SHARED)
@@ -13,7 +13,7 @@
  
  if (DEFINED LIBCXX_CXX_ABI_DEPS)
    add_dependencies(cxx LIBCXX_CXX_ABI_DEPS)
-@@ -120,18 +122,39 @@
+@@ -139,18 +135,39 @@
    endif()
  endif()
  
@@ -52,9 +52,18 @@
 +
 +add_custom_target(allcxx DEPENDS ${LIBCXX_TARGETS})
  
- # Generate a linker script inplace of a libc++.so symlink. Rerun this command
- # after cxx builds.
-@@ -166,11 +166,11 @@
+ if (LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY)
+   file(GLOB LIBCXX_EXPERIMENTAL_SOURCES ../src/experimental/*.cpp)
+@@ -158,7 +175,7 @@
+     file(GLOB LIBCXX_FILESYSTEM_SOURCES ../src/experimental/filesystem/*.cpp)
+   endif()
+   add_library(cxx_experimental STATIC ${LIBCXX_EXPERIMENTAL_SOURCES} ${LIBCXX_FILESYSTEM_SOURCES})
+-  target_link_libraries(cxx_experimental cxx)
++  target_link_libraries(cxx_experimental cxx_static)
+ 
+   set(experimental_flags "${LIBCXX_COMPILE_FLAGS}")
+   check_flag_supported(-std=c++14)
+@@ -183,11 +200,11 @@
    endif()
    # Generate a linker script inplace of a libc++.so symlink. Rerun this command
    # after cxx builds.
@@ -68,7 +77,7 @@
        "${SCRIPT_ABI_LIBNAME}"
      WORKING_DIRECTORY ${LIBCXX_BUILD_DIR}
    )
-@@ -180,7 +180,7 @@
+@@ -197,7 +214,7 @@
    if (LIBCXX_INSTALL_EXPERIMENTAL_LIBRARY)
      set(experimental_lib cxx_experimental)
    endif()
@@ -77,7 +86,7 @@
      LIBRARY DESTINATION lib${LIBCXX_LIBDIR_SUFFIX} COMPONENT libcxx
      ARCHIVE DESTINATION lib${LIBCXX_LIBDIR_SUFFIX} COMPONENT libcxx
      )
-@@ -198,7 +198,7 @@
+@@ -215,7 +232,7 @@
  if (NOT CMAKE_CONFIGURATION_TYPES AND (LIBCXX_INSTALL_LIBRARY OR
                                         LIBCXX_INSTALL_HEADERS))
      if(LIBCXX_INSTALL_LIBRARY)
@@ -86,4 +95,3 @@
      endif()
      if (LIBCXX_INSTALL_EXPERIMENTAL_LIBRARY)
        set(experimental_lib_install_target cxx_experimental)
-
