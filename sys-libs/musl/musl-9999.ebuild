@@ -52,6 +52,20 @@ multilib_src_compile() {
 	emake || die
 }
 
+gen_ldscript() {
+        local output_format
+        output_format=$($(tc-getCC) ${CFLAGS} ${LDFLAGS} -Wl,--verbose 2>&1 | sed -n 's/^OUTPUT_FORMAT("\([^"]*\)",.*/\1/p')
+        [[ -n ${output_format} ]] && output_format="OUTPUT_FORMAT ( ${output_format} )"
+
+        cat <<-END_LDSCRIPT
+/* GNU ld script
+   link only ld-arch.so
+*/
+${output_format}
+GROUP ( $@ )
+END_LDSCRIPT
+}
+
 multilib_src_install() {
 
 	MULTILIB_WRAPPED_HEADERS=(
@@ -65,10 +79,10 @@ multilib_src_install() {
 	local ldso=$(basename "${D}"/$(get_libdir)/ld-musl-*)
 
 
-	# move symlinks around and create linkerscript to directly link with libc.so
+	#move ld-musl and create linkerscript to directly link with libc.so
         mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/$(get_libdir)/${ldso} || die
-        gen_usr_ldscript ${ldso} || die
-        mv "${D}"/usr/$(get_libdir)/${ldso} "${D}"/usr/$(get_libdir)/libc.so || die
+
+	gen_ldscript "/$(get_libdir)/${ldso}" > "${ED}/usr/$(get_libdir)/libc.so"
 
 	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd || die
 	ar rcs ${D}/usr/$(get_libdir)/libintl.a || die
