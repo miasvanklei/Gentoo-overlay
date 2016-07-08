@@ -50,14 +50,13 @@ PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
 
 S="${WORKDIR}/${MY_P}"
 
-#src_unpack() {
-#	unpack "rustc-${PV}-src.tar.gz" || die
-#	mkdir "${MY_P}/dl" || die
-#	local stagename="RUST_STAGE0_${ARCH}"
-#	local stage0="${!stagename}"
-#	cp "${DISTDIR}/${stage0}.tar.bz2" "${MY_P}/dl/" || die "cp stage0"
-#	cp ${FILESDIR}/rust-snapshot/*${RUST_SNAPSHOT_DATE}*.tar.bz2 "${MY_P}/dl/"*.tar.bz2
-#}
+src_unpack() {
+	unpack "rustc-${PV}-src.tar.gz" || die
+	mkdir "${MY_P}/dl" || die
+	local stagename="RUST_STAGE0"
+	local stage0="${!stagename}"
+	cp ${FILESDIR}/rust-snapshot/rustc-1.9.0* "${MY_P}/dl/" || die "cp stage0"
+}
 
 src_prepare() {
 	find mk -name '*.mk' -exec \
@@ -82,8 +81,6 @@ src_configure() {
 		--default-ar=$(tc-getBUILD_AR) \
 		--python=${EPYTHON} \
 		--disable-jemalloc \
-		--enable-local-rust \
-		--local-rust-root=/usr/bin \
 		$(use_enable clang) \
 		$(use_enable debug) \
 		$(use_enable debug llvm-assertions) \
