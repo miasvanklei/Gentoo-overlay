@@ -42,7 +42,6 @@ RDEPEND="libcxx? ( sys-libs/libcxx )
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	>=dev-lang/perl-5.0
-	=dev-lang/rust-1.9.0
 	clang? ( sys-devel/clang )
 "
 
