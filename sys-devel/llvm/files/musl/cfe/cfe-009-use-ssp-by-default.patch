@@ -1,27 +1,17 @@
 --- a/tools/clang/lib/Driver/ToolChains.h	2016-01-07 23:09:47.000000000 +0100
 +++ b/tools/clang/lib/Driver/ToolChains.h	2016-02-19 20:03:17.237467235 +0100
-@@ -794,6 +794,8 @@
-   void AddCudaIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                           llvm::opt::ArgStringList &CC1Args) const override;
+@@ -838,6 +838,14 @@
+   void AddIAMCUIncludeArgs(const llvm::opt::ArgList &DriverArgs,
+                            llvm::opt::ArgStringList &CC1Args) const override;
    bool isPIEDefault() const override;
-+  unsigned GetDefaultStackProtectorLevel(bool KernelOrKext) const override;
++
++  unsigned GetDefaultStackProtectorLevel(bool KernelOrKext) const override {
++    StringRef VendorName = Linux::getTriple().getVendorName();
++    if (VendorName.compare("gentoo") == 0)
++      return 2;
++    return 1;
++  }
 +
    SanitizerMask getSupportedSanitizers() const override;
    void addProfileRTLibs(const llvm::opt::ArgList &Args,
                          llvm::opt::ArgStringList &CmdArgs) const override;
---- a/tools/clang/lib/Driver/ToolChains.cpp	2016-02-19 19:58:58.612488516 +0100
-+++ b/tools/clang/lib/Driver/ToolChains.cpp	2016-02-19 19:59:38.886485202 +0100
-@@ -4118,6 +4118,13 @@
- 
- bool Linux::isPIEDefault() const { return getSanitizerArgs().requiresPIE(); }
- 
-+unsigned Linux::GetDefaultStackProtectorLevel(bool KernelOrKext) const {
-+  StringRef VendorName = Linux::getTriple().getVendorName();
-+  if (VendorName.compare("gentoo") == 0)
-+    return 2;
-+  return 1;
-+}
-+
- SanitizerMask Linux::getSupportedSanitizers() const {
-   const bool IsX86 = getTriple().getArch() == llvm::Triple::x86;
-   const bool IsX86_64 = getTriple().getArch() == llvm::Triple::x86_64;
