@@ -12,14 +12,12 @@ diff --git a/src/mesa/drivers/dri/i965/Makefile.am b/src/mesa/drivers/dri/i965/M
 index 9d003e4..8797431 100644
 --- a/src/mesa/drivers/dri/i965/Makefile.am
 +++ b/src/mesa/drivers/dri/i965/Makefile.am
-@@ -44,7 +44,7 @@ AM_CXXFLAGS = $(AM_CFLAGS)
- 
- noinst_LTLIBRARIES = libi965_dri.la libi965_compiler.la
  libi965_dri_la_SOURCES = $(i965_FILES)
--libi965_dri_la_LIBADD = libi965_compiler.la $(INTEL_LIBS)
-+libi965_dri_la_LIBADD = libi965_compiler.la $(INTEL_LIBS) $(top_builddir)/src/mapi/shared-glapi/libglapi.la
- 
- libi965_compiler_la_SOURCES = $(i965_compiler_FILES)
+ libi965_dri_la_LIBADD = \
+        $(top_builddir)/src/intel/isl/libisl.la \
++       $(top_builddir)/src/mapi/shared-glapi/libglapi.la \
+        libi965_compiler.la \
+        $(INTEL_LIBS)
  
 -- 
 2.6.3
