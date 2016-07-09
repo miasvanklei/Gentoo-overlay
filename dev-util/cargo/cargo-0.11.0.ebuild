@@ -1,34 +1,18 @@
-# Copyright 1999-2015 Gentoo Foundation
+# Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
-AUTOTOOLS_IN_SOURCE_BUILD=1
-inherit bash-completion-r1 autotools-utils
-
-DESCRIPTION="The Rust's package manager"
-HOMEPAGE="http://crates.io"
+EAPI=6
 
 CARGO_SNAPSHOT_DATE="2016-03-21"
-RUST_INSTALLER_COMMIT="c37d3747da75c280237dc2d6b925078e69555499"
-
-crate_uris(){
-	while (( "$#" )); do
-		local name version url
-		name="${1%-*}"
-		version="${1##*-}"
-		url="https://crates.io/api/v1/crates/${name}/${version}/download -> ${1}.crate"
-		echo $url
-		shift
-	done
-}
-
-CRATES="aho-corasick-0.5.1
+CARGO_INDEX_COMMIT="4472288863a48749e63cc32d94867b4f5cff8d8e"
+CRATES="advapi32-sys-0.1.2
+aho-corasick-0.5.1
 bitflags-0.1.1
 bufstream-0.1.1
 cmake-0.1.16
 crossbeam-0.2.8
-curl-0.2.18
+curl-0.2.19
 curl-sys-0.1.34
 docopt-0.6.78
 env_logger-0.3.2
@@ -36,12 +20,14 @@ filetime-0.1.10
 flate2-0.2.13
 fs2-0.2.3
 gcc-0.3.26
-git2-0.4.2
-git2-curl-0.4.0
+git2-0.4.3
+git2-curl-0.4.1
 glob-0.2.11
 hamcrest-0.1.0
+idna-0.1.0
+kernel32-sys-0.2.1
 libc-0.2.8
-libgit2-sys-0.4.2
+libgit2-sys-0.4.3
 libressl-pnacl-sys-2.1.6
 libssh2-sys-0.1.37
 libz-sys-1.0.2
@@ -49,6 +35,8 @@ log-0.3.5
 matches-0.1.2
 memchr-0.1.10
 miniz-sys-0.1.7
+miow-0.1.2
+net2-0.2.24
 nom-1.2.2
 num-0.1.31
 num_cpus-0.2.11
@@ -61,86 +49,65 @@ regex-syntax-0.3.0
 rustc-serialize-0.3.18
 semver-0.2.3
 strsim-0.3.0
-tar-0.4.4
+tar-0.4.5
 tempdir-0.3.4
 term-0.4.4
-time-0.1.34
 toml-0.1.28
 unicode-bidi-0.2.3
 unicode-normalization-0.1.2
-url-0.2.38
-url-0.5.7
+url-1.1.0
+user32-sys-0.1.2
 utf8-ranges-0.1.3
-uuid-0.1.18
+winapi-0.2.6
+winapi-build-0.1.1
 "
 
-SRC_URI="https://github.com/rust-lang/cargo/archive/${PV}.tar.gz -> ${P}.tar.gz
-	https://github.com/rust-lang/rust-installer/archive/${RUST_INSTALLER_COMMIT}.tar.gz -> rust-installer-${RUST_INSTALLER_COMMIT}.tar.gz
-	$(crate_uris $CRATES)"
+inherit cargo bash-completion-r1
 
+DESCRIPTION="The Rust's package manager"
+HOMEPAGE="http://crates.io"
+SRC_URI="https://github.com/rust-lang/cargo/archive/${PV}.tar.gz -> ${P}.tar.gz
+	https://github.com/rust-lang/crates.io-index/archive/${CARGO_INDEX_COMMIT}.tar.gz -> cargo-registry-${CARGO_INDEX_COMMIT}.tar.gz
+	$(cargo_crate_uris ${CRATES})"
+
+RESTRICT="mirror"
 LICENSE="|| ( MIT Apache-2.0 )"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
 
-IUSE="doc test"
+IUSE="doc"
 
 COMMON_DEPEND="sys-libs/zlib
-	dev-libs/openssl:*
+	dev-libs/openssl:0=
 	net-libs/libssh2
 	net-libs/http-parser"
 RDEPEND="${COMMON_DEPEND}
 	!dev-util/cargo-bin
 	net-misc/curl[ssl]"
 DEPEND="${COMMON_DEPEND}
-	>=dev-lang/rust-1.9.0
-	dev-util/cmake"
+	>=dev-lang/rust-1.1.0:stable
+	dev-util/cmake
+	sys-apps/coreutils
+	sys-apps/diffutils
+	sys-apps/findutils
+	sys-apps/sed"
 
 PATCHES=(
-	"${FILESDIR}"/${P}-local-deps.patch
-	"${FILESDIR}"/${P}-test.patch
+"${FILESDIR}/0001-build-strip-CFG_PREFIX-from-CFG_-DATADIR-MANDIR-INFO.patch"
+"${FILESDIR}/0002-build-write-updated-variables-to-config.mk.patch"
+"${FILESDIR}/${PV}-0003-build-respect-datadir-infodir-mandir-libdir-and-sysc.patch"
+"${FILESDIR}/0004-build-add-docdir-to-configure.patch"
+"${FILESDIR}/0005-stack-size.patch"
 )
 
-src_unpack() {
-	for archive in ${A}; do
-		case "${archive}" in
-			*.crate)
-				ebegin "Unpacking ${archive}"
-				tar -xf "${DISTDIR}"/${archive} || die
-				eend $?
-				;;
-			*)
-				unpack ${archive}
-				;;
-		esac
-	done
-
-	mv "rust-installer-${RUST_INSTALLER_COMMIT}"/* "${P}"/src/rust-installer || die
-}
-
-src_prepare() {
-	pushd "${WORKDIR}" &>/dev/null
-	autotools-utils_src_prepare
-	popd &>/dev/null
-
-	# FIX: doc path
-	sed -i \
-		-e "s:/share/doc/cargo:/share/doc/${PF}:" \
-		Makefile.in || die
-}
-
 src_configure() {
-	# Defines the level of verbosity.
-	ECARGO_VERBOSE=""
-	[[ -z ${PORTAGE_VERBOSE} ]] || ECARGO_VERBOSE=1
-
 	# Cargo only supports these GNU triples:
 	# - Linux: <arch>-unknown-linux-gnu
 	# - MacOS: <arch>-apple-darwin
 	# - Windows: <arch>-pc-windows-gnu
 	# where <arch> could be 'x86_64' (amd64) or 'i686' (x86)
-	CTARGET="-unknown-linux-gnu"
-	use amd64 && CTARGET="x86_64${CTARGET}"
-	use x86 && CTARGET="i686${CTARGET}"
+	use amd64 && CTARGET="x86_64-unknown-linux-gnu"
+	use x86 && CTARGET="i686-unknown-linux-gnu"
 
 	# NOTE: 'disable-nightly' is used by crates (such as 'matches') to entirely
 	# skip their internal libraries that make use of unstable rustc features.
@@ -148,8 +115,8 @@ src_configure() {
 	# otherwise you could get compilation issues.
 	# see: github.com/gentoo/gentoo-rust/issues/13
 	local myeconfargs=(
-		--build=${CTARGET}
 		--host=${CTARGET}
+		--build=${CTARGET}
 		--target=${CTARGET}
 		--enable-optimize
 		--disable-nightly
@@ -158,39 +125,37 @@ src_configure() {
 		--disable-cross-tests
 		--local-cargo=/usr/bin/cargo
 	)
-	autotools-utils_src_configure
+	econf "${myeconfargs[@]}"
 }
 
 src_compile() {
 	# Building sources
-	autotools-utils_src_compile VERBOSE=${ECARGO_VERBOSE} PKG_CONFIG_PATH=""
+	export CARGO_HOME="${ECARGO_HOME}"
+	emake VERBOSE=1 PKG_CONFIG_PATH=""
 
 	# Building HTML documentation
 	use doc && emake doc
 }
 
 src_install() {
-	autotools-utils_src_install VERBOSE=${ECARGO_VERBOSE} CFG_DISABLE_LDCONFIG="true"
+	emake prepare-image-${CTARGET} IMGDIR_${CTARGET}="${ED}/usr"
 
 	# Install HTML documentation
-	use doc && dohtml -r target/doc/*
+	use doc && HTML_DOCS=("target/doc")
+	einstalldocs
 
 	dobashcomp "${ED}"/usr/etc/bash_completion.d/cargo
-	rm -r "${ED}"/usr/etc || die
+	rm -rf "${ED}"/usr/etc || die
 }
 
 src_test() {
-	if has sandbox $FEATURES && has network-sandbox $FEATURES; then
-		eerror "Some tests require sandbox, and network-sandbox to be disabled in FEATURES."
-	fi
-
 	# Running unit tests
 	# NOTE: by default 'make test' uses the copy of cargo (v0.0.1-pre-nighyly)
 	# from the installer snapshot instead of the version just built, so the
 	# ebuild needs to override the value of CFG_LOCAL_CARGO to avoid false
 	# positives from unit tests.
-	autotools-utils_src_test \
+	emake test \
 		CFG_ENABLE_OPTIMIZE=1 \
-		VERBOSE=${ECARGO_VERBOSE} \
+		VERBOSE=1 \
 		CFG_LOCAL_CARGO="${WORKDIR}"/${P}/target/${CTARGET}/release/cargo
 }
