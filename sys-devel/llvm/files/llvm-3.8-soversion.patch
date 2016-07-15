@@ -5,13 +5,28 @@ Subject: [PATCH] cmake: Restore SOVERSIONs on shared libraries
 
 ---
  cmake/modules/AddLLVM.cmake | 5 +++++
- 1 file changed, 5 insertions(+)
+ tools/llvm-shlib/CMakeLists.txt | 2 +-
+ 2 file changed, 6 insertions(+), 1 deletions(-)
 
 diff --git a/cmake/modules/AddLLVM.cmake b/cmake/modules/AddLLVM.cmake
 index a829751..a7e0688 100644
 --- a/cmake/modules/AddLLVM.cmake
 +++ b/cmake/modules/AddLLVM.cmake
-@@ -436,6 +436,11 @@ function(llvm_add_library name)
+@@ -326,12 +326,10 @@
+ #     Same semantics as target_link_libraries().
+ #   ADDITIONAL_HEADERS
+ #     May specify header files for IDE generators.
+-#   SONAME
+-#     Should set SONAME link flags and create symlinks
+ #   )
+ function(llvm_add_library name)
+   cmake_parse_arguments(ARG
+-    "MODULE;SHARED;STATIC;OBJECT;DISABLE_LLVM_LINK_LLVM_DYLIB;SONAME"
++    "MODULE;SHARED;STATIC;OBJECT;DISABLE_LLVM_LINK_LLVM_DYLIB"
+     "OUTPUT_NAME"
+     "ADDITIONAL_HEADERS;DEPENDS;LINK_COMPONENTS;LINK_LIBS;OBJLIBS"
+     ${ARGN})
+@@ -436,6 +434,11 @@
          PREFIX ""
          )
      endif()
@@ -26,3 +41,14 @@ index a829751..a7e0688 100644
 -- 
 2.7.4
 
+--- a/tools/llvm-shlib/CMakeLists.txt	2015-11-05 00:11:12.000000000 +0100
++++ b/tools/llvm-shlib/CMakeLists.txt	2016-07-15 23:43:14.968643811 +0200
+@@ -38,7 +38,7 @@
+   add_custom_target(libLLVMExports DEPENDS ${LLVM_EXPORTED_SYMBOL_FILE})
+ endif()
+ 
+-add_llvm_library(LLVM SHARED DISABLE_LLVM_LINK_LLVM_DYLIB SONAME ${SOURCES})
++add_llvm_library(LLVM SHARED DISABLE_LLVM_LINK_LLVM_DYLIB ${SOURCES})
+ 
+ list(REMOVE_DUPLICATES LIB_NAMES)
+ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux") # FIXME: It should be "GNU ld for elf"

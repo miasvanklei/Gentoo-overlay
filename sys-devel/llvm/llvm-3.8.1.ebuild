@@ -21,7 +21,7 @@ SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
 	polly? ( http://llvm.org/releases/${PV}/polly-${PV}.src.tar.xz )
         !doc? ( http://dev.gentoo.org/~voyageur/distfiles/${PN}-3.8.0-manpages.tar.bz2 )"
 LICENSE="UoI-NCSA"
-SLOT="0/${PV}"
+SLOT="0/3.8.0"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x64-freebsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos"
 IUSE="+clang +cxx1y debug doc +eh +gold -jitevents +libedit +libcxx +libffi +lldb lld multitarget +ncurses -ocaml +openmp -oprofile +polly
 	python +rtti +static-analyzer test +threads +xml werror video_cards_radeon kernel_Darwin"
@@ -180,7 +180,6 @@ src_prepare() {
         eapply "${FILESDIR}"/llvm-3.8-soversion.patch
 
 	# some more fixes
-	eapply "${FILESDIR}"/llvm-3.8.0-fix-unpack-load.patch
 	eapply "${FILESDIR}"/llvm-nm-workaround.patch
 
         # disable use of SDK on OSX, bug #568758
@@ -460,7 +459,7 @@ multilib_src_install() {
 
 	if multilib_is_native_abi; then
 		# Install the Manpages
-		use doc || doman "${WORKDIR}"/${P/_rc*}-manpages/*.1
+		use doc || doman "${WORKDIR}"/llvm-3.8.0-manpages/*.1
 
 		# Symlink the gold plugin.
 		if use gold; then
