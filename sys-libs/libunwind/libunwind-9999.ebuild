@@ -2,12 +2,11 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/sys-libs/libunwind/libunwind-9999.ebuild,v 1.21 2015/05/13 17:37:06 ulm Exp $
 
-EAPI=5
+EAPI=6
 
 inherit cmake-utils flag-o-matic toolchain-funcs multilib-minimal git-r3
 
 EGIT_REPO_URI="http://llvm.org/git/libunwind.git"
-EGIT_BRANCH="release_38"
 
 DESCRIPTION="unwind library"
 HOMEPAGE="http://www.llvm.org/"
@@ -19,11 +18,12 @@ RDEPEND="sys-devel/llvm:0
 sys-devel/llvm[clang]"
 
 src_prepare() {
-	epatch "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
-	epatch "${FILESDIR}"/remove-llvm-src.patch
+	eapply "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
+	eapply "${FILESDIR}"/remove-llvm-src.patch
 	find -type f -name '*.S' -exec sed \
              -e '$a\\n#if defined(__linux__) && defined(__ELF__)\n.section .note.GNU-stack,"",%progbits\n#endif' \
              -i {} + || die
+	eapply_user
 }
 
 multilib_src_configure() {
@@ -32,6 +32,7 @@ multilib_src_configure() {
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBUNWIND_ENABLE_SHARED=OFF
 		-DLIBUNWIND_ENABLE_ASSERTIONS=OFF
+		-DLIBUNWIND_ENABLE_CROSS_UNWINDING=OFF
 	)
 
 	cmake-utils_src_configure
@@ -49,15 +50,16 @@ multilib_src_install() {
 	mv ${D}/usr/${libdir}/libunwind.a ${D}/usr/${libdir}/libgcc_eh.a || die
 
 	local crtdir=$(${CC} -print-file-name= 2>/dev/null)
-	local target=$(tc-arch) arch
+#	local target=$(tc-arch) arch
 
-	case ${target} in
-		amd64) arch="x86_64";;
-		arm)   arch="armhf";; # We only have hardfloat right now
-		ppc)   arch="powerpc";;
-		x86)   arch="i386";;
-	esac
+#	case ${target} in
+#		amd64) arch="x86_64";;
+#		arm)   arch="armhf";; # We only have hardfloat right now
+#		ppc)   arch="powerpc";;
+#		x86)   arch="i386";;
+#	esac
 
+	local arch=$(/${libdir}/ld-musl* 2>&1 | sed -n 's/^.*(\(.*\))$/\1/;1p')
 
 	cp ${crtdir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/usr/${libdir}/libgcc.a || die
 
