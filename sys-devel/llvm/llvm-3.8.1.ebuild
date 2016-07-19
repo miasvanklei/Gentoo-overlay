@@ -233,8 +233,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/cfe-010-fix-ada-in-configure.patch
 		eapply "${FILESDIR}"/cfe-011-increase-gcc-version.patch
 		eapply "${FILESDIR}"/cfe-013-dont-use-gcc-dir.patch
-		eapply "${FILESDIR}"/cfe-014-add-libunwind.patch
-		eapply "${FILESDIR}"/compiler-rt-002-shared.patch
+		eapply "${FILESDIR}"/cfe-014-remove-rtm-haswell.patch
 	fi
 
 	if use libcxx; then
