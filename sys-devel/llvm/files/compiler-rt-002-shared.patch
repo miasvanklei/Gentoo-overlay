@@ -1,0 +1,45 @@
+--- a/projects/compiler-rt/lib/builtins/CMakeLists.txt	2016-07-19 12:51:12.608968948 +0200
++++ b/projects/compiler-rt/lib/builtins/CMakeLists.txt	2016-07-19 12:52:04.834967738 +0200
+@@ -162,12 +162,6 @@
+       emutls.c)
+ endif()
+ 
+-if (HAVE_UNWIND_H)
+-  set(GENERIC_SOURCES
+-      ${GENERIC_SOURCES}
+-      gcc_personality_v0.c)
+-endif ()
+-
+ if (NOT MSVC)
+   set(x86_64_SOURCES
+       x86_64/chkstk.S
+@@ -381,10 +375,12 @@
+       endforeach ()
+ 
+       add_compiler_rt_runtime(clang_rt.builtins
+-                              STATIC
++                              SHARED
+                               ARCHS ${arch}
+                               SOURCES ${${arch}_SOURCES}
+                               CFLAGS ${maybe_stdc99}
++                              LINKFLAGS "-nodefaultlibs"
++                              LINK_LIBS "-lc"
+                               PARENT_TARGET builtins)
+     endif ()
+   endforeach ()
+--- a/tools/clang/include/clang/Driver/ToolChain.h	2016-01-07 20:38:29.000000000 +0100
++++ b/tools/clang/include/clang/Driver/ToolChain.h	2016-07-19 14:06:55.240944844 +0200
+@@ -258,11 +258,11 @@
+ 
+   virtual std::string getCompilerRT(const llvm::opt::ArgList &Args,
+                                     StringRef Component,
+-                                    bool Shared = false) const;
++                                    bool Shared = true) const;
+ 
+   const char *getCompilerRTArgString(const llvm::opt::ArgList &Args,
+                                      StringRef Component,
+-                                     bool Shared = false) const;
++                                     bool Shared = true) const;
+   /// needsProfileRT - returns true if instrumentation profile is on.
+   static bool needsProfileRT(const llvm::opt::ArgList &Args);
+ 
