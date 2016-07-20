@@ -2,7 +2,7 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Header: /var/cvsroot/gentoo-x86/sys-libs/musl/musl-9999.ebuild,v 1.21 2015/05/13 17:37:06 ulm Exp $
 
-EAPI=5
+EAPI=6
 
 inherit eutils flag-o-matic toolchain-funcs multilib-minimal pax-utils git-r3
 
@@ -26,18 +26,20 @@ RDEPEND="!sys-apps/getent
 		   sys-libs/musl-fts )"
 
 src_prepare() {
-	epatch "${FILESDIR}"/kernel.patch
-	epatch "${FILESDIR}"/musl-add-gnu-symbols.patch
-	epatch "${FILESDIR}"/printf.patch
-	epatch "${FILESDIR}"/glibc-abi-compat.patch
-	epatch "${FILESDIR}"/qsort_r.patch
-	epatch "${FILESDIR}"/ptrace.patch
-	epatch "${FILESDIR}"/mallinfo.patch
-	epatch "${FILESDIR}"/context.patch
-	epatch "${FILESDIR}"/no-utf8-code-units-locale.patch
-	epatch "${FILESDIR}"/multilib.patch
-	epatch "${FILESDIR}"/backtrace.patch
-	epatch "${FILESDIR}"/use-defines-instead-of-function.patch
+	eapply "${FILESDIR}"/kernel.patch
+	eapply "${FILESDIR}"/musl-add-gnu-symbols.patch
+	eapply "${FILESDIR}"/printf.patch
+	eapply "${FILESDIR}"/glibc-abi-compat.patch
+	eapply "${FILESDIR}"/qsort_r.patch
+	eapply "${FILESDIR}"/ptrace.patch
+	eapply "${FILESDIR}"/mallinfo.patch
+	eapply "${FILESDIR}"/context.patch
+	eapply "${FILESDIR}"/no-utf8-code-units-locale.patch
+	eapply "${FILESDIR}"/multilib.patch
+	eapply "${FILESDIR}"/backtrace.patch
+	eapply "${FILESDIR}"/use-defines-instead-of-function.patch
+	eapply "${FILESDIR}"/use-getopt-from-dietlibc.patch
+	eapply_user
 }
 
 multilib_src_configure() {
