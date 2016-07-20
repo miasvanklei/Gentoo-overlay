@@ -8,20 +8,20 @@ PYTHON_COMPAT=( python2_7 )
 
 inherit python-any-r1 versionator toolchain-funcs
 
-if [[ ${PV} = *beta* ]]; then
+#if [[ ${PV} = *beta* ]]; then
 	betaver=${PV//*beta}
 	BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
 	MY_P="rustc-beta"
 	SLOT="beta/${PV}"
-	SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.gz"
-	KEYWORDS=""
-else
-	ABI_VER="$(get_version_component_range 1-2)"
-	SLOT="stable/${ABI_VER}"
-	MY_P="rustc-${PV}"
-	SRC="${MY_P}-src.tar.gz"
+	SRC="rustc-beta-src.tar.gz"
 	KEYWORDS="~amd64"
-fi
+#else
+#	ABI_VER="$(get_version_component_range 1-2)"
+#	SLOT="stable/${ABI_VER}"
+#	MY_P="rustc-${PV}"
+#	SRC="${MY_P}-src.tar.gz"
+#	KEYWORDS="~amd64"
+#fi
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
@@ -35,8 +35,7 @@ IUSE="clang debug doc +libcxx +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
-	system-llvm? ( >=sys-devel/llvm-3.7.1-r1:=
-		<sys-devel/llvm-3.9.0:= )
+	system-llvm? ( sys-devel/llvm )
 "
 
 DEPEND="${RDEPEND}
@@ -54,7 +53,7 @@ src_unpack() {
 	mkdir "${MY_P}/dl" || die
 	local stagename="RUST_STAGE0"
 	local stage0="${!stagename}"
-	cp ${FILESDIR}/rust-snapshot/rustc-1.9.0* "${MY_P}/dl/" || die "cp stage0"
+	cp ${FILESDIR}/rust-snapshot/rustc-1.10.0* "${MY_P}/dl/" || die "cp stage0"
 }
 
 src_prepare() {
