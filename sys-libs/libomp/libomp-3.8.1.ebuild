@@ -8,10 +8,10 @@ EAPI=5
 
 inherit cmake-utils multilib-minimal
 
-MY_P=openmp-${PV}rc1
+MY_P=openmp-${PV}
 DESCRIPTION="OpenMP runtime library for LLVM/clang compiler"
 HOMEPAGE="http://openmp.llvm.org"
-SRC_URI="http://llvm.org/pre-releases/${PV}/rc1/${MY_P}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/${MY_P}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0/3.7"
