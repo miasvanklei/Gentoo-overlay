@@ -1,0 +1,41 @@
+From 4a15edc7815492a37ae71289e0414b26eb372cf3 Mon Sep 17 00:00:00 2001
+From: Emil Renner Berthing <systemd@esmil.dk>
+Date: Thu, 18 Sep 2014 15:24:48 +0200
+Subject: [PATCH] shared/missing.h: check for missing canonicalize_file_name
+
+---
+ configure.ac        | 2 +-
+ src/basic/missing.h | 6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/configure.ac b/configure.ac
+index 852e5b3..e032df4 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -295,7 +295,7 @@
+ LIBS="$save_LIBS"
+ AC_SUBST(CAP_LIBS)
+ 
+-AC_CHECK_FUNCS([__secure_getenv secure_getenv])
++AC_CHECK_FUNCS([__secure_getenv secure_getenv canonicalize_file_name])
+ AC_CHECK_DECLS([
+         memfd_create,
+         gettid,
+diff --git a/src/basic/missing.h b/src/basic/missing.h
+index 253dd49..e29dc9b 100644
+--- a/src/basic/missing.h
++++ b/src/basic/missing.h
+@@ -971,6 +971,12 @@
+   })
+ #endif
+ 
++#if !HAVE_CANONICALIZE_FILE_NAME
++static inline char *canonicalize_file_name(const char *path) {
++        return realpath(path, NULL);
++}
++#endif
++
+ #ifndef KEYCTL_READ
+ #define KEYCTL_READ 11
+ #endif
+

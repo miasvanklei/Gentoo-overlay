@@ -1,0 +1,22 @@
+--- a/src/basic/strbuf.c
++++ b/src/basic/strbuf.c
+@@ -165,7 +165,7 @@ ssize_t strbuf_add_string(struct strbuf *str, const char *s, size_t len) {
+                 search.c = c;
+                 child = bsearch(&search, node->children, node->children_count,
+                                 sizeof(struct strbuf_child_entry),
+-                                (__compar_fn_t) strbuf_children_cmp);
++                                strbuf_children_cmp);
+                 if (!child)
+                         break;
+                 node = child->child;
+--- a/src/basic/util.h
++++ b/src/basic/util.h
+@@ -94,7 +94,7 @@ void *xbsearch_r(const void *key, const void *base, size_t nmemb, size_t size,
+  * Normal qsort requires base to be nonnull. Here were require
+  * that only if nmemb > 0.
+  */
+-static inline void qsort_safe(void *base, size_t nmemb, size_t size, comparison_fn_t compar) {
++static inline void qsort_safe(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
+         if (nmemb <= 1)
+                 return;
+ 
