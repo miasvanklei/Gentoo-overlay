@@ -16,11 +16,11 @@ HOMEPAGE="http://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="http://llvm.org/git/llvm.git
 	https://github.com/llvm-mirror/llvm.git"
-
+EGIT_BRANCH="release_39"
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="+clang +cxx1y debug doc +eh +gold -jitevents +libedit +libcxx +libffi +lldb +lld multitarget +ncurses -ocaml +openmp -oprofile +polly
+IUSE="+clang +cxx1y debug doc +eh +gold -jitevents +libedit +libcxx +libffi -lldb -lld multitarget +ncurses -ocaml +openmp -oprofile +polly
        python +rtti +static-analyzer test +threads +xml werror video_cards_radeon kernel_Darwin"
 
 COMMON_DEPEND="
@@ -52,6 +52,7 @@ DEPEND="${COMMON_DEPEND}
 	clang? ( xml? ( virtual/pkgconfig ) )
 	doc? ( dev-python/sphinx )
 	gold? ( sys-libs/binutils-libs )
+	openmp? ( sys-libs/libomp )
 	libffi? ( virtual/pkgconfig )
 	lldb? ( dev-lang/swig )
 	libcxx? ( sys-libs/libcxx )
@@ -196,7 +197,7 @@ src_prepare() {
 
 	# Restore SOVERSIONs for shared libraries
 	# https://bugs.gentoo.org/show_bug.cgi?id=578392
-	eapply "${FILESDIR}"/llvm-3.8-soversion.patch
+	eapply "${FILESDIR}"/llvm-3.9-soversion.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
@@ -235,6 +236,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/cfe-010-fix-ada-in-configure.patch
 		eapply "${FILESDIR}"/cfe-011-increase-gcc-version.patch
 		eapply "${FILESDIR}"/cfe-013-dont-use-gcc-dir.patch
+		eapply "${FILESDIR}"/cfe-014-remove-rtm-haswell.patch
 	fi
 
 	if use libcxx; then
@@ -278,6 +280,7 @@ multilib_src_configure() {
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 
+		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_ENABLE_TIMESTAMPS=OFF
 		-DLLVM_TARGETS_TO_BUILD="${targets}"
 		-DLLVM_BUILD_TESTS=$(usex test)
