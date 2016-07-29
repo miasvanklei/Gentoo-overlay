@@ -19,18 +19,17 @@ sys-devel/llvm[clang]"
 
 src_prepare() {
 	eapply "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
-	eapply "${FILESDIR}"/remove-llvm-src.patch
-	find -type f -name '*.S' -exec sed \
-             -e '$a\\n#if defined(__linux__) && defined(__ELF__)\n.section .note.GNU-stack,"",%progbits\n#endif' \
-             -i {} + || die
+	eapply "${FILESDIR}"/libunwind-3.8-cmake.patch
 	eapply_user
 }
 
 multilib_src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
+		-DLLVM_CONFIG=OFF
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBUNWIND_ENABLE_SHARED=OFF
+		-DLIBUNWIND_BUILT_STANDALONE=ON
 		-DLIBUNWIND_ENABLE_ASSERTIONS=OFF
 		-DLIBUNWIND_ENABLE_CROSS_UNWINDING=OFF
 	)
@@ -50,14 +49,6 @@ multilib_src_install() {
 	mv ${D}/usr/${libdir}/libunwind.a ${D}/usr/${libdir}/libgcc_eh.a || die
 
 	local crtdir=$(${CC} -print-file-name= 2>/dev/null)
-#	local target=$(tc-arch) arch
-
-#	case ${target} in
-#		amd64) arch="x86_64";;
-#		arm)   arch="armhf";; # We only have hardfloat right now
-#		ppc)   arch="powerpc";;
-#		x86)   arch="i386";;
-#	esac
 
 	local arch=$(/${libdir}/ld-musl* 2>&1 | sed -n 's/^.*(\(.*\))$/\1/;1p')
 
