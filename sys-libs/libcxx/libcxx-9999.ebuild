@@ -42,8 +42,6 @@ src_prepare() {
 
 src_configure() {
 	append-cppflags -DLIBCXX_BUILDING_LIBCXXABI "-I${EPREFIX}/usr/include/libc++abi/"
-	export LIBS="-lc++abi -lc -lgcc_s"
-	cp "${EPREFIX}/usr/include/libc++abi/"*.h "${S}/include"
 
 	tc-export AR CC CXX
 
@@ -51,6 +49,12 @@ src_configure() {
 }
 
 multilib_src_compile() {
+        local crtdir=$(${CC} -print-file-name= 2>/dev/null)
+        local arch=$(/$(get_libdir)/ld-musl* 2>&1 | sed -n 's/^.*(\(.*\))$/\1/;1p')
+
+	export LIBS="-lc++abi -lc -lunwind ${crtdir}/lib/linux/libclang_rt.builtins-${arch}.a"
+	cp "${EPREFIX}/usr/include/libc++abi/"*.h "${S}/include"
+
 	cd "${BUILD_DIR}/lib" || die
 	emake shared
 	use static-libs && emake static
@@ -63,7 +67,7 @@ multilib_src_test() {
 	CC="clang++ $(get_abi_CFLAGS) ${CXXFLAGS}" \
 	HEADER_INCLUDE="-I${BUILD_DIR}/include" \
 	SOURCE_LIB="-L${BUILD_DIR}/lib" \
-	LIBS="-lm $(usex libcxxrt -lcxxrt "")" \
+	LIBS="-lc++abi" \
 	./testit || die
 	# TODO: fix link against libsupc++
 }
@@ -113,10 +117,10 @@ multilib_src_install() {
 	cd "${BUILD_DIR}/lib"
 	if use static-libs ; then
 		dolib.a libc++.a
-		#gen_static_ldscript
+		gen_static_ldscript
 	fi
 	dolib.so libc++.so*
-	#gen_shared_ldscript
+	gen_shared_ldscript
 }
 
 multilib_src_install_all() {

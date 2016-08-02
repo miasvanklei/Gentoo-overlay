@@ -23,8 +23,8 @@ SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
 LICENSE="UoI-NCSA"
 SLOT="0/3.8.0"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x64-freebsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos"
-IUSE="+clang +cxx1y debug doc +eh +gold -jitevents +libedit +libcxx +libffi +lldb lld multitarget +ncurses -ocaml +openmp -oprofile +polly
-	python +rtti +static-analyzer test +threads +xml werror video_cards_radeon kernel_Darwin"
+IUSE="+clang +cxx1y +default-compiler-rt +default-libcxx debug doc +eh +gold -jitevents +libedit +libffi +lldb lld multitarget +ncurses -ocaml +openmp -oprofile +polly
+	python +rtti -sanitize +static-analyzer test +threads +xml werror video_cards_radeon kernel_Darwin"
 
 COMMON_DEPEND="
 	sys-libs/zlib:0=
@@ -41,7 +41,6 @@ COMMON_DEPEND="
 	libffi? ( >=virtual/libffi-3.0.13-r1:0=[${MULTILIB_USEDEP}] )
 	lldb? ( dev-python/six[${PYTHON_USEDEP}] )
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )
-	libcxx? ( sys-libs/libcxx[${MULTILIB_USEDEP}] )
 	ocaml? (
 		>=dev-lang/ocaml-4.00.0:0=
 		dev-ml/findlib
@@ -66,7 +65,7 @@ DEPEND="${COMMON_DEPEND}
 	ocaml? ( test? ( dev-ml/ounit ) )
 	${PYTHON_DEPS}"
 RDEPEND="${COMMON_DEPEND}
-	sys-libs/libcxx
+	default-libcxx? ( sys-libs/libcxx[${MULTILIB_USEDEP}] )
 	clang? ( !<=sys-devel/clang-${PV}-r99 )
 	openmp? ( sys-libs/libomp )
 	abi_x86_32? ( !<=app-emulation/emul-linux-x86-baselibs-20130224-r2
@@ -179,6 +178,12 @@ src_prepare() {
         # https://bugs.gentoo.org/show_bug.cgi?id=578392
         eapply "${FILESDIR}"/llvm-3.8-soversion.patch
 
+	# support building llvm against musl-libc
+	use elibc_musl && eapply "${FILESDIR}"/llvm-3.8-musl-fixes.patch
+
+	# support "musl" as a valid environment type in llvm
+	eapply "${FILESDIR}"/llvm-3.8-musl-support.patch
+
 	# some more fixes
 	eapply "${FILESDIR}"/llvm-nm-workaround.patch
 
@@ -194,6 +199,15 @@ src_prepare() {
 
 		sed -i -e "s^@EPREFIX@^${EPREFIX}^" \
 			tools/clang/tools/scan-build/bin/scan-build || die
+
+		pushd "${S}"/tools/clang >/dev/null || die
+		# be able to specify default values for -stdlib and -rtlib at build time
+		eapply "${FILESDIR}"/clang-3.8-default-libs.patch
+
+		# enable clang to recognize musl-libc
+		eapply "${FILESDIR}"/clang-3.8-musl-support.patch
+
+		popd >/dev/null || die
 
 		# Install clang runtime into /usr/lib/clang
 		# https://llvm.org/bugs/show_bug.cgi?id=23792
@@ -222,7 +236,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/musl/cfe/cfe-001-add-gentoo-linux-distro.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-002-Use-z-relro-on-Alpine-Linux.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-003-Use-hash-style-gnu-for-Gentoo-Linux.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-004-Add-musl-targets-and-dynamic-linker.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-005-Enable-PIE-by-default-for-gentoo-linux.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-006-Link-with-z-now-by-default-for-Gentoo-Linux.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array.patch
@@ -236,11 +249,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/cfe-014-remove-rtm-haswell.patch
 	fi
 
-	if use libcxx; then
-		eapply "${FILESDIR}"/cfe-012-link-in-libcxxabi.patch
-		sed -i '/^  return ToolChain::CST_Libstdcxx/s@stdcxx@cxx@' tools/clang/lib/Driver/ToolChain.cpp
-	fi
-
 	if use lldb; then
 		# Do not install dummy readline.so module from
 		# https://llvm.org/bugs/show_bug.cgi?id=18841
@@ -249,11 +257,6 @@ src_prepare() {
 		# Do not install bundled six module
 		eapply "${FILESDIR}"/${PN}-3.8-lldb_six.patch
 	fi
-
-        # Fix for MUSL
-	eapply "${FILESDIR}"/musl/llvm/llvm-001-musl-triple.patch
-	eapply "${FILESDIR}"/musl/llvm/llvm-002-Fix-build-with-musl-libc.patch
-	eapply "${FILESDIR}"/musl/llvm/llvm-003-Fix-DynamicLibrary-to-build-with-musl-libc.patch
 
 	# User patches
 	eapply_user
@@ -315,7 +318,14 @@ multilib_src_configure() {
 			# libgomp support fails to find headers without explicit -I
 			# furthermore, it provides only syntax checking
 			-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
-			-DCOMPILER_RT_BUILD_SANITIZERS=OFF
+
+			# override default stdlib and rtlib
+			-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
+			-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
+
+			# compiler-rt's test cases depend on sanitizer
+			-DCOMPILER_RT_BUILD_SANITIZERS=$(usex sanitize)
+			-DCOMPILER_RT_INCLUDE_TESTS=$(usex sanitize)
 		)
 	fi
 

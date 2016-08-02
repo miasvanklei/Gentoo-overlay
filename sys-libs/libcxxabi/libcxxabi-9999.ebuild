@@ -31,6 +31,9 @@ multilib_src_configure() {
         local mycmakeargs=(
                 -DLIBCXXABI_LIBDIR_SUFFIX=${libdir#lib}
                 -DLIBCXXABI_ENABLE_ASSERTIONS=OFF
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON
+		-DLIBCXXABI_USE_COMPILER_RT=ON
+		-DLIBCXXABI_BUILT_STANDALONE=1
         )
 
 	cmake-utils_src_configure
@@ -46,6 +49,6 @@ multilib_src_install() {
 }
 
 multilib_src_install_all() {
-	mkdir "${D}"/usr/include
-        cp -r "${S}"/include/* "${D}"/usr/include || die
+	mkdir -p "${D}"/usr/include/libc++abi
+        cp -r "${S}"/include/* "${D}"/usr/include/libc++abi || die
 }

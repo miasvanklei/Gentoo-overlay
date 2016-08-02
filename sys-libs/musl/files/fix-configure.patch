@@ -1,0 +1,19 @@
+--- a/configure	2016-08-02 19:54:34.188898356 +0200
++++ b/configure	2016-08-02 19:54:16.209898773 +0200
+@@ -501,7 +501,6 @@
+ tryflag CFLAGS_AUTO -Werror=implicit-function-declaration
+ tryflag CFLAGS_AUTO -Werror=implicit-int
+ tryflag CFLAGS_AUTO -Werror=pointer-sign
+-tryflag CFLAGS_AUTO -Werror=pointer-arith
+ 
+ if test "x$warnings" = xyes ; then
+ tryflag CFLAGS_AUTO -Wall
+@@ -586,6 +585,8 @@
+ tryldflag LDFLAGS_AUTO -Wl,-Bsymbolic-functions
+ 
+ # Find compiler runtime library
++test -z "$LIBCC" && try_libcc=`$CC -print-file-name=  2>/dev/null` \
++                 && tryldflag LIBCC "$try_libcc"/lib/linux/libclang_rt.builtins-$ARCH.a
+ test -z "$LIBCC" && tryldflag LIBCC -lgcc && tryldflag LIBCC -lgcc_eh
+ test -z "$LIBCC" && tryldflag LIBCC -lcompiler_rt
+ test -z "$LIBCC" && try_libcc=`$CC -print-file-name=libpcc.a 2>/dev/null` \

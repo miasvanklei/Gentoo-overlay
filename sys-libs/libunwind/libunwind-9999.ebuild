@@ -28,7 +28,6 @@ multilib_src_configure() {
 	local mycmakeargs=(
 		-DLLVM_CONFIG=OFF
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
-		-DLIBUNWIND_ENABLE_SHARED=OFF
 		-DLIBUNWIND_BUILT_STANDALONE=ON
 		-DLIBUNWIND_ENABLE_ASSERTIONS=OFF
 		-DLIBUNWIND_ENABLE_CROSS_UNWINDING=OFF
@@ -67,13 +66,13 @@ multilib_src_install() {
 	local gccversion=$(${CC} -dumpversion) || die
 
 	mkdir -p ${D}/usr/lib/clang/${CHOST}/${gccversion}
-	mv ${D}/usr/${libdir}/* ${D}/usr/lib/clang/${CHOST}/${gccversion}
+	mv ${D}/usr/${libdir}/libgcc* ${D}/usr/lib/clang/${CHOST}/${gccversion}
 }
 
 multilib_src_install_all() {
 
-	rm -r "${D}"/usr/lib64
-	rm -r "${D}"/usr/lib32
+#	rm -r "${D}"/usr/lib64
+#	rm -r "${D}"/usr/lib32
         mkdir "${D}"/usr/include
         cp -r "${S}"/include/* "${D}"/usr/include || die
 }

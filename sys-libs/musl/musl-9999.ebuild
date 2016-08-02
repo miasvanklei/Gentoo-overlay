@@ -39,6 +39,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/backtrace.patch
 	eapply "${FILESDIR}"/use-defines-instead-of-function.patch
 	eapply "${FILESDIR}"/use-getopt-from-dietlibc.patch
+	eapply "${FILESDIR}"/fix-configure.patch
 	eapply_user
 }
 
