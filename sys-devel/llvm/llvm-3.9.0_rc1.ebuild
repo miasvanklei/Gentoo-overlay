@@ -12,13 +12,13 @@ inherit check-reqs cmake-utils eutils flag-o-matic multilib \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
-        clang? ( http://llvm.org/releases/${PV}/compiler-rt-${PV}.src.tar.xz
-                http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz
-                http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz )
-        lldb? ( http://llvm.org/releases/${PV}/lldb-${PV}.src.tar.xz )
-	lld? ( http://llvm.org/releases/${PV}/lld-${PV}.src.tar.xz )
-	polly? ( http://llvm.org/releases/${PV}/polly-${PV}.src.tar.xz )
+SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${P/_}.src.tar.xz
+        clang? ( http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/compiler-rt-${PV/_}.src.tar.xz
+                http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/cfe-${PV/_}.src.tar.xz
+                http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/clang-tools-extra-${PV/_}.src.tar.xz )
+        lldb? ( http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/lldb-${PV/_}.src.tar.xz )
+	lld? ( http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/lld-${PV/_}.src.tar.xz )
+	polly? ( http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/polly-${PV/_}.src.tar.xz )
         !doc? ( http://dev.gentoo.org/~voyageur/distfiles/${PN}-3.8.0-manpages.tar.bz2 )"
 LICENSE="UoI-NCSA"
 SLOT="0/3.8.0"
@@ -172,20 +172,14 @@ src_prepare() {
 
 	# Fix llvm-config for shared linking and sane flags
 	# https://bugs.gentoo.org/show_bug.cgi?id=565358
-	eapply "${FILESDIR}"/llvm-3.8-llvm-config.patch
+	eapply "${FILESDIR}"/llvm-3.9-llvm-config.patch
 
         # Restore SOVERSIONs for shared libraries
         # https://bugs.gentoo.org/show_bug.cgi?id=578392
-        eapply "${FILESDIR}"/llvm-3.8-soversion.patch
+        eapply "${FILESDIR}"/llvm-3.9-soversion.patch
 
-	# support building llvm against musl-libc
-	use elibc_musl && eapply "${FILESDIR}"/llvm-3.8-musl-fixes.patch
-
-	# support "musl" as a valid environment type in llvm
-	eapply "${FILESDIR}"/llvm-3.8-musl-support.patch
-
-	# some more fixes
-	eapply "${FILESDIR}"/llvm-nm-workaround.patch
+	# fix for llvm musl
+	eapply "${FILESDIR}"/llvm-3.8-musl-fixes.patch
 
         # disable use of SDK on OSX, bug #568758
         sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
@@ -194,43 +188,27 @@ src_prepare() {
                 # Automatically select active system GCC's libraries, bugs #406163 and #417913
                 eapply "${FILESDIR}"/clang-3.5-gentoo-runtime-gcc-detection-v3.patch
 
-                eapply "${FILESDIR}"/clang-3.4-darwin_prefix-include-paths.patch
-		eprefixify tools/clang/lib/Frontend/InitHeaderSearch.cpp
 
-		sed -i -e "s^@EPREFIX@^${EPREFIX}^" \
-			tools/clang/tools/scan-build/bin/scan-build || die
-
-		pushd "${S}"/tools/clang >/dev/null || die
-		# be able to specify default values for -stdlib and -rtlib at build time
-		eapply "${FILESDIR}"/clang-3.8-default-libs.patch
+		# be able to specify default values for -rtlib at build time
+		eapply "${FILESDIR}"/clang-3.9-default-rtlib.patch
 
 		# enable clang to recognize musl-libc
-		eapply "${FILESDIR}"/clang-3.8-musl-support.patch
-
-		popd >/dev/null || die
+		eapply "${FILESDIR}"/musl/cfe/cfe-004-Add-dynamic-linker-3.9.patch
 
 		# Install clang runtime into /usr/lib/clang
 		# https://llvm.org/bugs/show_bug.cgi?id=23792
 		eapply "${FILESDIR}"/cmake/clang-0001-Install-clang-runtime-into-usr-lib-without-suffix-3.8.patch
-		eapply "${FILESDIR}"/cmake/compiler-rt-0001-cmake-Install-compiler-rt-into-usr-lib-without-suffi.patch
-
-                # Do not force -march flags on arm platforms
-                # https://bugs.gentoo.org/show_bug.cgi?id=562706
-                eapply "${FILESDIR}"/cmake/${PN}-3.8.0-compiler_rt_arm_march_flags.patch
+		eapply "${FILESDIR}"/cmake/compiler-rt-3.9-cmake-Install-compiler-rt-into-usr-lib-without-suffi.patch
 
 		# Make it possible to override CLANG_LIBDIR_SUFFIX
 		# (that is used only to find LLVMgold.so)
 		# https://llvm.org/bugs/show_bug.cgi?id=23793
 		eapply "${FILESDIR}"/cmake/clang-0002-cmake-Make-CLANG_LIBDIR_SUFFIX-overridable.patch
 
-		pushd projects/compiler-rt >/dev/null || die
-
 		# Fix WX sections, bug #421527
-		find lib/builtins -type f -name '*.S' -exec sed \
+		find projects/compiler-rt/lib/builtins -type f -name '*.S' -exec sed \
 			 -e '$a\\n#if defined(__linux__) && defined(__ELF__)\n.section .note.GNU-stack,"",%progbits\n#endif' \
 			 -i {} + || die
-
-		popd >/dev/null || die
 
 		# Fix for MUSL
 		eapply "${FILESDIR}"/musl/cfe/cfe-001-add-gentoo-linux-distro.patch
@@ -247,6 +225,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/cfe-011-increase-gcc-version.patch
 		eapply "${FILESDIR}"/cfe-013-dont-use-gcc-dir.patch
 		eapply "${FILESDIR}"/cfe-014-remove-rtm-haswell.patch
+		eapply "${FILESDIR}"/update-default-cxx-standard.patch
 	fi
 
 	if use lldb; then
@@ -254,8 +233,6 @@ src_prepare() {
 		# https://llvm.org/bugs/show_bug.cgi?id=18841
 		sed -e 's/add_subdirectory(readline)/#&/' \
 			-i tools/lldb/scripts/Python/modules/CMakeLists.txt || die
-		# Do not install bundled six module
-		eapply "${FILESDIR}"/${PN}-3.8-lldb_six.patch
 	fi
 
 	# User patches
@@ -272,7 +249,7 @@ multilib_src_configure() {
 	if use multitarget; then
 		targets=all
 	else
-		targets='host;BPF;CppBackend'
+		targets='host;BPF'
 		use video_cards_radeon && targets+=';AMDGPU'
 	fi
 
@@ -284,7 +261,6 @@ multilib_src_configure() {
 
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
-		"${mycmakeargs[@]}"
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 
 		-DLLVM_LINK_LLVM_DYLIB=ON

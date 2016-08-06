@@ -1,0 +1,102 @@
+From 781609faebe8b7d0ce805e7e5828dd563c1e89dd Mon Sep 17 00:00:00 2001
+From: Jonas Hahnfeld <Hahnfeld@itc.rwth-aachen.de>
+Date: Wed, 27 Jul 2016 08:15:54 +0000
+Subject: [PATCH] Support setting default value for -rtlib at build time
+
+This patch introduces a new cmake variable: CLANG_DEFAULT_RTLIB, thru
+which we can specify a default value for -rtlib (libgcc or
+compiler-rt) at build time, just like how we set the default C++
+stdlib thru CLANG_DEFAULT_CXX_STDLIB.
+
+With these two options, we can configure clang to build binaries on
+Linux that have no runtime dependence on any gcc libs (libstdc++ or
+libgcc_s).
+
+Patch by Lei Zhang!
+
+Differential Revision: https://reviews.llvm.org/D22663
+
+git-svn-id: https://llvm.org/svn/llvm-project/cfe/trunk@276848 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ CMakeLists.txt                      | 15 +++++++-
+ include/clang/Config/config.h.cmake |  3 ++
+ lib/Driver/ToolChain.cpp            | 22 ++++++-----
+ 14 files changed, 124 insertions(+), 97 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0a2dccb..2359360 100644
+--- a/tools/clang/CMakeLists.txt
++++ b/tools/clang/CMakeLists.txt
+@@ -193,12 +193,23 @@ set(ENABLE_X86_RELAX_RELOCATIONS OFF CACHE BOOL
+     "enable x86 relax relocations by default")
+ 
+ set(CLANG_DEFAULT_CXX_STDLIB "" CACHE STRING
+-  "Default C++ stdlib to use (empty for architecture default, \"libstdc++\" or \"libc++\"")
++  "Default C++ stdlib to use (\"libstdc++\" or \"libc++\", empty for platform default")
+ if (NOT(CLANG_DEFAULT_CXX_STDLIB STREQUAL "" OR
+         CLANG_DEFAULT_CXX_STDLIB STREQUAL "libstdc++" OR
+         CLANG_DEFAULT_CXX_STDLIB STREQUAL "libc++"))
+   message(WARNING "Resetting default C++ stdlib to use architecture default")
+-  set(CLANG_DEFAULT_CXX_STDLIB "")
++  set(CLANG_DEFAULT_CXX_STDLIB "" CACHE STRING
++    "Default C++ stdlib to use (\"libstdc++\" or \"libc++\", empty for platform default" FORCE)
++endif()
++
++set(CLANG_DEFAULT_RTLIB "" CACHE STRING
++  "Default runtime library to use (\"libgcc\" or \"compiler-rt\", empty for platform default)")
++if (NOT(CLANG_DEFAULT_RTLIB STREQUAL "" OR
++        CLANG_DEFAULT_RTLIB STREQUAL "libgcc" OR
++        CLANG_DEFAULT_RTLIB STREQUAL "compiler-rt"))
++  message(WARNING "Resetting default rtlib to use platform default")
++  set(CLANG_DEFAULT_RTLIB "" CACHE STRING
++    "Default runtime library to use (\"libgcc\" or \"compiler-rt\", empty for platform default)" FORCE)
+ endif()
+ 
+ set(CLANG_DEFAULT_OPENMP_RUNTIME "libomp" CACHE STRING
+diff --git a/include/clang/Config/config.h.cmake b/include/clang/Config/config.h.cmake
+index e5a1d0d..9200ed9 100644
+--- a/tools/clang/include/clang/Config/config.h.cmake
++++ b/tools/clang/include/clang/Config/config.h.cmake
+@@ -11,6 +11,9 @@
+ /* Default C++ stdlib to use. */
+ #define CLANG_DEFAULT_CXX_STDLIB "${CLANG_DEFAULT_CXX_STDLIB}"
+ 
++/* Default runtime library to use. */
++#define CLANG_DEFAULT_RTLIB "${CLANG_DEFAULT_RTLIB}"
++
+ /* Default OpenMP runtime used by -fopenmp. */
+ #define CLANG_DEFAULT_OPENMP_RUNTIME "${CLANG_DEFAULT_OPENMP_RUNTIME}"
+ 
+diff --git a/lib/Driver/ToolChain.cpp b/lib/Driver/ToolChain.cpp
+index 66b76cd..91b3641 100644
+--- a/tools/clang/lib/Driver/ToolChain.cpp
++++ b/tools/clang/lib/Driver/ToolChain.cpp
+@@ -534,15 +534,19 @@ void ToolChain::addProfileRTLibs(const llvm::Triple &EffectiveTriple,
+ 
+ ToolChain::RuntimeLibType ToolChain::GetRuntimeLibType(
+     const ArgList &Args) const {
+-  if (Arg *A = Args.getLastArg(options::OPT_rtlib_EQ)) {
+-    StringRef Value = A->getValue();
+-    if (Value == "compiler-rt")
+-      return ToolChain::RLT_CompilerRT;
+-    if (Value == "libgcc")
+-      return ToolChain::RLT_Libgcc;
+-    getDriver().Diag(diag::err_drv_invalid_rtlib_name)
+-      << A->getAsString(Args);
+-  }
++  const Arg* A = Args.getLastArg(options::OPT_rtlib_EQ);
++  StringRef LibName = A ? A->getValue() : CLANG_DEFAULT_RTLIB;
++
++  // "platform" is only used in tests to override CLANG_DEFAULT_RTLIB
++  if (LibName == "compiler-rt")
++    return ToolChain::RLT_CompilerRT;
++  else if (LibName == "libgcc")
++    return ToolChain::RLT_Libgcc;
++  else if (LibName == "platform")
++    return GetDefaultRuntimeLibType();
++
++  if (A)
++    getDriver().Diag(diag::err_drv_invalid_rtlib_name) << A->getAsString(Args);
+ 
+   return GetDefaultRuntimeLibType();
+ }
