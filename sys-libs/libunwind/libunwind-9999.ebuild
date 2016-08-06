@@ -43,30 +43,30 @@ multilib_src_compile() {
 multilib_src_install() {
 	cmake-utils_src_install
 
-	local libdir=$(get_libdir)
-
-	mv ${D}/usr/${libdir}/libunwind.a ${D}/usr/${libdir}/libgcc_eh.a || die
-
-	local crtdir=$(${CC} -print-file-name= 2>/dev/null)
-
-	local arch=$(/${libdir}/ld-musl* 2>&1 | sed -n 's/^.*(\(.*\))$/\1/;1p')
-
-	cp ${crtdir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/usr/${libdir}/libgcc.a || die
-
-	einfo creating shared gcc library
-
-	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/usr/${libdir}/libgcc_s.so.1 \
-	-Wl,--whole-archive ${D}/usr/${libdir}/libgcc.a ${D}/usr/${libdir}/libgcc_eh.a \
-	-Wl,--no-whole-archive || die
-
-	cd ${D}/usr/${libdir} || die
-	ln -s libgcc_s.so.1 libgcc_s.so || die
-
-	einfo installing gcc library
-	local gccversion=$(${CC} -dumpversion) || die
-
-	mkdir -p ${D}/usr/lib/clang/${CHOST}/${gccversion}
-	mv ${D}/usr/${libdir}/libgcc* ${D}/usr/lib/clang/${CHOST}/${gccversion}
+#	local libdir=$(get_libdir)
+#
+#	mv ${D}/usr/${libdir}/libunwind.a ${D}/usr/${libdir}/libgcc_eh.a || die
+#
+#	local crtdir=$(${CC} -print-file-name= 2>/dev/null)
+#
+#	local arch=$(/${libdir}/ld-musl* 2>&1 | sed -n 's/^.*(\(.*\))$/\1/;1p')
+#
+#	cp ${crtdir}/lib/linux/libclang_rt.builtins-${arch}.a ${D}/usr/${libdir}/libgcc.a || die
+#
+#	einfo creating shared gcc library
+#
+#	${CC} -shared -nodefaultlibs -lc -Wl,-soname,libgcc_s.so.1 -o ${D}/usr/${libdir}/libgcc_s.so.1 \
+#	-Wl,--whole-archive ${D}/usr/${libdir}/libgcc.a ${D}/usr/${libdir}/libgcc_eh.a \
+#	-Wl,--no-whole-archive || die
+#
+#	cd ${D}/usr/${libdir} || die
+#	ln -s libgcc_s.so.1 libgcc_s.so || die
+#
+#	einfo installing gcc library
+#	local gccversion=$(${CC} -dumpversion) || die
+#
+#	mkdir -p ${D}/usr/lib/clang/${CHOST}/${gccversion}
+#	mv ${D}/usr/${libdir}/libgcc* ${D}/usr/lib/clang/${CHOST}/${gccversion}
 }
 
 multilib_src_install_all() {

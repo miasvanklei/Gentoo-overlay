@@ -31,7 +31,8 @@ multilib_src_compile() {
 }
 
 multilib_src_install() {
+	local libdir=$(get_libdir)
 	local gccversion=$(${CC} -dumpversion) || die
-        mkdir -p ${D}/usr/lib/clang/${CHOST}/${gccversion}
-	cp crt* ${D}/usr/lib/clang/${CHOST}/${gccversion}
+        mkdir -p ${D}/usr/${libdir}
+	cp crt* ${D}/usr/${libdir}/
 }

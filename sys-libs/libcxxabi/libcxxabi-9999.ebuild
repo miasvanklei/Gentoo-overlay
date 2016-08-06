@@ -18,6 +18,7 @@ RDEPEND="sys-libs/libunwind"
 
 src_prepare() {
         epatch "${FILESDIR}"/remove-llvm-src.patch
+        epatch "${FILESDIR}"/fix-configure.patch
 
 	# copy libunwind headers, otherwise segfault
 	cp  /usr/include/unwind.h "${S}"/src

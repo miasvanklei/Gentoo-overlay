@@ -1,0 +1,29 @@
+--- a/CMakeLists.txt	2016-08-05 15:34:10.218559602 +0200
++++ b/CMakeLists.txt	2016-08-05 15:36:23.114548667 +0200
+@@ -47,7 +47,7 @@
+     set(LLVM_INCLUDE_DIR ${INCLUDE_DIR} CACHE PATH "Path to llvm/include")
+     set(LLVM_BINARY_DIR ${LLVM_OBJ_ROOT} CACHE PATH "Path to LLVM build tree")
+     set(LLVM_MAIN_SRC_DIR ${MAIN_SRC_DIR} CACHE PATH "Path to LLVM source tree")
+-    set(LLVM_CMAKE_PATH "${LLVM_BINARY_DIR}/share/llvm/cmake")
++    set(LLVM_CMAKE_PATH "${LLVM_BINARY_DIR}/lib/cmake/llvm")
+     set(LLVM_LIT_PATH "${LLVM_PATH}/utils/lit/lit.py")
+   else()
+     message(FATAL_ERROR "llvm-config not found and LLVM_MAIN_SRC_DIR not defined. "
+@@ -356,7 +356,7 @@
+     "Specify path to libunwind source." FORCE)
+ 
+ include_directories(include)
+-if (LIBCXXABI_USE_LLVM_UNWINDER OR LLVM_NATIVE_ARCH MATCHES ARM)
++if (LIBCXXABI_USE_LLVM_UNWINDER OR LLVM_NATIVE_ARCH MATCHES ARM AND NOT LIBCXXABI_BUILT_STANDALONE)
+   find_path(
+     LIBCXXABI_LIBUNWIND_INCLUDES_INTERNAL
+     libunwind.h
+@@ -389,7 +389,7 @@
+ # soname, etc...
+ add_subdirectory(src)
+ 
+-if (LIBCXXABI_BUILT_STANDALONE AND NOT LIBCXXABI_ENABLE_SHARED)
++if (LIBCXXABI_BUILT_STANDALONE)
+   # We can't reasonably test the system C++ library with a static libc++abi.
+   # We either need to be able to replace libc++abi at run time (with a shared
+   # libc++abi), or we need to be able to replace the C++ runtime (with a non-
