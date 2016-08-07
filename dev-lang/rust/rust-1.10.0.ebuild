@@ -9,34 +9,40 @@ PYTHON_COMPAT=( python2_7 )
 inherit python-any-r1 versionator toolchain-funcs
 
 if [[ ${PV} = *beta* ]]; then
-        betaver=${PV//*beta}
-        BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
-        MY_P="rustc-beta"
-        SLOT="beta/${PV}"
-        SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.gz"
-        KEYWORDS=""
+	betaver=${PV//*beta}
+	BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
+	MY_P="rustc-beta"
+	SLOT="beta/${PV}"
+	SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.gz"
+	KEYWORDS=""
 else
-        ABI_VER="$(get_version_component_range 1-2)"
-        SLOT="stable/${ABI_VER}"
-        MY_P="rustc-${PV}"
-        SRC="${MY_P}-src.tar.gz"
-        KEYWORDS="~amd64 ~x86"
+	ABI_VER="$(get_version_component_range 1-2)"
+	SLOT="stable/${ABI_VER}"
+	MY_P="rustc-${PV}"
+	SRC="${MY_P}-src.tar.gz"
+	KEYWORDS="~amd64"
 fi
+
+STAGE0_VERSION="1.$(($(get_version_component_range 2) - 1)).0"
+RUST_STAGE0_amd64="rustc-${STAGE0_VERSION}-x86_64-unknown-linux-gnu"
+RUST_STAGE0_x86="rustc-${STAGE0_VERSION}-i686-unknown-linux-gnu"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="http://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
+SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
+	amd64? ( https://alpine.geeknet.cz/distfiles/rustc-${PV}-x86_64-unknown-linux-musl.tar.gz
+		 https://alpine.geeknet.cz/distfiles/rust-std-${PV}-x86_64-unknown-linux-musl.tar.gz )
 "
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="clang debug doc +libcxx +system-llvm"
+IUSE="+clang debug doc +libcxx +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
 	system-llvm? ( >=sys-devel/llvm-3.7.1-r1:=
-		<sys-devel/llvm-3.9.0:= )
+		<sys-devel/llvm-3.10.0:= )
 "
 
 DEPEND="${RDEPEND}
@@ -50,25 +56,39 @@ PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
 S="${WORKDIR}/${MY_P}"
 
 src_unpack() {
-	unpack "rustc-${PV}-src.tar.gz" || die
-	mkdir "${MY_P}/dl" || die
-	local stagename="RUST_STAGE0"
-	local stage0="${!stagename}"
-	cp ${FILESDIR}/rust-snapshot/rustc-1.9.0* "${MY_P}/dl/" || die "cp stage0"
+	default
 }
 
 src_prepare() {
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
 
-	eapply ${FILESDIR}/remove-gcc-personality.patch
-	eapply ${FILESDIR}/add-libc++abi.patch
+	eapply "${FILESDIR}"/llvm-001-3.9.patch
+	eapply "${FILESDIR}"/llvm-002-3.9.patch
+	eapply "${FILESDIR}"/fix-pic.patch
+	eapply "${FILESDIR}"/fix-linking.patch
+
+	mkdir ${S}/stage0
+
+	cp -flr "${WORKDIR}"/rustc-*/rustc/* \
+		"${WORKDIR}"/rust-std-*/rust-std-*/* \
+		"${WORKDIR}"/cargo-*/cargo/* \
+		"${S}/stage0"/
+
+	local rustc_ver=$(${S}/stage0/bin/rustc --version | cut -f2 -d ' ')
+	local rustc_key=$(printf ${rustc_ver} | md5sum | cut -c1-8)
+
+	sed -Ei \
+		-e "s/^(rustc):.*/\1: ${rustc_ve}r-1970-01-01/" \
+		-e "s/^(rustc_key):.*/\1: ${rustc_key}/" \
+		src/stage0.txt
 
 	eapply_user
 }
 
 src_configure() {
 	export CFG_DISABLE_LDCONFIG="notempty"
+	export CARGO_HOME="${S}/.cargo"
 
 	"${ECONF_SOURCE:-.}"/configure \
 		--prefix="${EPREFIX}/usr" \
@@ -79,6 +99,9 @@ src_configure() {
 		--default-linker=$(tc-getBUILD_CC) \
 		--default-ar=$(tc-getBUILD_AR) \
 		--python=${EPYTHON} \
+		--disable-rpath \
+		--enable-local-rust \
+		--local-rust-root=${S}/stage0 \
 		--disable-jemalloc \
 		$(use_enable clang) \
 		$(use_enable debug) \
@@ -94,7 +117,7 @@ src_configure() {
 }
 
 src_compile() {
-	emake RUSTFLAGS_STAGE0="-Lx86_64-unknown-linux-gnu/stage0/lib/rustlib/x86_64-unknown-linux-gnu/lib" VERBOSE=1
+	emake VERBOSE=1
 }
 
 src_install() {
@@ -125,9 +148,6 @@ src_install() {
 	dodir /etc/env.d/rust
 	insinto /etc/env.d/rust
 	doins "${T}/provider-${P}"
-
-	mkdir -p "${D}"/usr/src/rust-${PV}
-        cp -r src/lib* "${D}"/usr/src/rust-${PV}/
 }
 
 pkg_postinst() {

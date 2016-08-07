@@ -1,0 +1,941 @@
+From 7420874a97a268d1c75dbc0e95231e4c8a1d513a Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Wed, 13 Jul 2016 00:38:30 +0200
+Subject: [PATCH 01/25] [LLVM-3.9] Rename custom methods to Rust-specific ones
+
+---
+ src/librustc_llvm/lib.rs      | 6 +++---
+ src/librustc_trans/builder.rs | 2 +-
+ src/rustllvm/RustWrapper.cpp  | 4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/librustc_llvm/lib.rs b/src/librustc_llvm/lib.rs
+index e757201..f14df2a 100644
+--- a/src/librustc_llvm/lib.rs
++++ b/src/librustc_llvm/lib.rs
+@@ -226,7 +226,7 @@ impl Attributes {
+ 
+     pub fn apply_callsite(&self, idx: usize, callsite: ValueRef) {
+         unsafe {
+-            LLVMAddCallSiteAttribute(callsite, idx as c_uint, self.regular.bits());
++            LLVMRustAddCallSiteAttribute(callsite, idx as c_uint, self.regular.bits());
+             if self.dereferenceable_bytes != 0 {
+                 LLVMAddDereferenceableCallSiteAttr(callsite, idx as c_uint,
+                                                    self.dereferenceable_bytes);
+@@ -1056,7 +1056,7 @@ extern {
+     pub fn LLVMSetInstrParamAlignment(Instr: ValueRef,
+                                       index: c_uint,
+                                       align: c_uint);
+-    pub fn LLVMAddCallSiteAttribute(Instr: ValueRef,
++    pub fn LLVMRustAddCallSiteAttribute(Instr: ValueRef,
+                                     index: c_uint,
+                                     Val: uint64_t);
+     pub fn LLVMAddDereferenceableCallSiteAttr(Instr: ValueRef,
+@@ -1561,7 +1561,7 @@ extern {
+                                 Alignment: c_uint)
+                                 -> ValueRef;
+ 
+-    pub fn LLVMBuildAtomicCmpXchg(B: BuilderRef,
++    pub fn LLVMRustBuildAtomicCmpXchg(B: BuilderRef,
+                                   LHS: ValueRef,
+                                   CMP: ValueRef,
+                                   RHS: ValueRef,
+diff --git a/src/librustc_trans/builder.rs b/src/librustc_trans/builder.rs
+index e88257d..7495f2b 100644
+--- a/src/librustc_trans/builder.rs
++++ b/src/librustc_trans/builder.rs
+@@ -1083,7 +1083,7 @@ impl<'a, 'tcx> Builder<'a, 'tcx> {
+                          failure_order: AtomicOrdering,
+                          weak: llvm::Bool) -> ValueRef {
+         unsafe {
+-            llvm::LLVMBuildAtomicCmpXchg(self.llbuilder, dst, cmp, src,
++            llvm::LLVMRustBuildAtomicCmpXchg(self.llbuilder, dst, cmp, src,
+                                          order, failure_order, weak)
+         }
+     }
+diff --git a/src/rustllvm/RustWrapper.cpp b/src/rustllvm/RustWrapper.cpp
+index fadd95c..bc38245 100644
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -99,7 +99,7 @@ extern "C" LLVMTypeRef LLVMMetadataTypeInContext(LLVMContextRef C) {
+   return wrap(Type::getMetadataTy(*unwrap(C)));
+ }
+ 
+-extern "C" void LLVMAddCallSiteAttribute(LLVMValueRef Instr, unsigned index, uint64_t Val) {
++extern "C" void LLVMRustAddCallSiteAttribute(LLVMValueRef Instr, unsigned index, uint64_t Val) {
+   CallSite Call = CallSite(unwrap<Instruction>(Instr));
+   AttrBuilder B;
+   B.addRawValue(Val);
+@@ -203,7 +203,7 @@ extern "C" LLVMValueRef LLVMBuildAtomicStore(LLVMBuilderRef B,
+     return wrap(unwrap(B)->Insert(si));
+ }
+ 
+-extern "C" LLVMValueRef LLVMBuildAtomicCmpXchg(LLVMBuilderRef B,
++extern "C" LLVMValueRef LLVMRustBuildAtomicCmpXchg(LLVMBuilderRef B,
+                                                LLVMValueRef target,
+                                                LLVMValueRef old,
+                                                LLVMValueRef source,
+
+From fba1f8f1239e45aa44bacfa0f955a24e3ade6982 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Wed, 13 Jul 2016 00:40:38 +0200
+Subject: [PATCH 02/25] [LLVM-3.9] Setup the compile unit information
+ immediately
+
+Since LLVM reversed the order of the debug info graphs, we need to have
+a compile unit that exists *before* any functions (`DISubprogram`s) are
+created. This allows the LLVM debug info builder to automatically link
+the functions to the compile unit.
+---
+ src/librustc_trans/context.rs            |  4 +++-
+ src/librustc_trans/debuginfo/metadata.rs | 30 +++++++++++++++++-------------
+ src/librustc_trans/debuginfo/mod.rs      |  5 ++---
+ 3 files changed, 22 insertions(+), 17 deletions(-)
+
+diff --git a/src/librustc_trans/context.rs b/src/librustc_trans/context.rs
+index a8f8474..aa60110 100644
+--- a/src/librustc_trans/context.rs
++++ b/src/librustc_trans/context.rs
+@@ -558,7 +558,9 @@ impl<'tcx> LocalCrateContext<'tcx> {
+                                                           &llmod_id[..]);
+ 
+             let dbg_cx = if shared.tcx.sess.opts.debuginfo != NoDebugInfo {
+-                Some(debuginfo::CrateDebugContext::new(llmod))
++                let dctx = debuginfo::CrateDebugContext::new(llmod);
++                debuginfo::metadata::compile_unit_metadata(shared, &dctx, shared.tcx.sess);
++                Some(dctx)
+             } else {
+                 None
+             };
+diff --git a/src/librustc_trans/debuginfo/metadata.rs b/src/librustc_trans/debuginfo/metadata.rs
+index 46813d9..1119ee0 100644
+--- a/src/librustc_trans/debuginfo/metadata.rs
++++ b/src/librustc_trans/debuginfo/metadata.rs
+@@ -18,7 +18,9 @@ use super::utils::{debug_context, DIB, span_start, bytes_to_bits, size_and_align
+                    fn_should_be_ignored, is_node_local_to_unit};
+ use super::namespace::mangled_name_of_item;
+ use super::type_names::{compute_debuginfo_type_name, push_debuginfo_type_name};
+-use super::{declare_local, VariableKind, VariableAccess};
++use super::{declare_local, VariableKind, VariableAccess, CrateDebugContext};
++use context::SharedCrateContext;
++use session::Session;
+ 
+ use llvm::{self, ValueRef};
+ use llvm::debuginfo::{DIType, DIFile, DIScope, DIDescriptor, DICompositeType};
+@@ -48,7 +50,6 @@ use syntax::ast;
+ use syntax::parse::token;
+ use syntax_pos::{self, Span};
+ 
+-
+ // From DWARF 5.
+ // See http://www.dwarfstd.org/ShowIssue.php?issue=140129.1
+ const DW_LANG_RUST: c_uint = 0x1c;
+@@ -981,14 +982,17 @@ fn pointer_type_metadata<'a, 'tcx>(cx: &CrateContext<'a, 'tcx>,
+     return ptr_metadata;
+ }
+ 
+-pub fn compile_unit_metadata(cx: &CrateContext) -> DIDescriptor {
+-    let work_dir = &cx.sess().working_dir;
+-    let compile_unit_name = match cx.sess().local_crate_source_file {
+-        None => fallback_path(cx),
++pub fn compile_unit_metadata(scc: &SharedCrateContext,
++                             debug_context: &CrateDebugContext,
++                             sess: &Session)
++                             -> DIDescriptor {
++    let work_dir = &sess.working_dir;
++    let compile_unit_name = match sess.local_crate_source_file {
++        None => fallback_path(scc),
+         Some(ref abs_path) => {
+             if abs_path.is_relative() {
+-                cx.sess().warn("debuginfo: Invalid path to crate's local root source file!");
+-                fallback_path(cx)
++                sess.warn("debuginfo: Invalid path to crate's local root source file!");
++                fallback_path(scc)
+             } else {
+                 match abs_path.strip_prefix(work_dir) {
+                     Ok(ref p) if p.is_relative() => {
+@@ -998,7 +1002,7 @@ pub fn compile_unit_metadata(cx: &CrateContext) -> DIDescriptor {
+                             path2cstr(&Path::new(".").join(p))
+                         }
+                     }
+-                    _ => fallback_path(cx)
++                    _ => fallback_path(scc)
+                 }
+             }
+         }
+@@ -1015,19 +1019,19 @@ pub fn compile_unit_metadata(cx: &CrateContext) -> DIDescriptor {
+     let split_name = "\0";
+     return unsafe {
+         llvm::LLVMDIBuilderCreateCompileUnit(
+-            debug_context(cx).builder,
++            debug_context.builder,
+             DW_LANG_RUST,
+             compile_unit_name,
+             work_dir.as_ptr(),
+             producer.as_ptr(),
+-            cx.sess().opts.optimize != config::OptLevel::No,
++            sess.opts.optimize != config::OptLevel::No,
+             flags.as_ptr() as *const _,
+             0,
+             split_name.as_ptr() as *const _)
+     };
+ 
+-    fn fallback_path(cx: &CrateContext) -> CString {
+-        CString::new(cx.link_meta().crate_name.clone()).unwrap()
++    fn fallback_path(scc: &::context::SharedCrateContext) -> CString {
++        CString::new(scc.link_meta().crate_name.clone()).unwrap()
+     }
+ }
+ 
+diff --git a/src/librustc_trans/debuginfo/mod.rs b/src/librustc_trans/debuginfo/mod.rs
+index 8c5b3ed..ed20d94 100644
+--- a/src/librustc_trans/debuginfo/mod.rs
++++ b/src/librustc_trans/debuginfo/mod.rs
+@@ -18,7 +18,7 @@ use self::utils::{DIB, span_start, create_DIArray, is_node_local_to_unit};
+ use self::namespace::mangled_name_of_item;
+ use self::type_names::compute_debuginfo_type_name;
+ use self::metadata::{type_metadata, diverging_type_metadata};
+-use self::metadata::{file_metadata, scope_metadata, TypeMap, compile_unit_metadata};
++use self::metadata::{file_metadata, scope_metadata, TypeMap};
+ use self::source_loc::InternalDebugLocation::{self, UnknownLocation};
+ 
+ use llvm;
+@@ -50,7 +50,7 @@ pub mod gdb;
+ mod utils;
+ mod namespace;
+ mod type_names;
+-mod metadata;
++pub mod metadata;
+ mod create_scope_map;
+ mod source_loc;
+ 
+@@ -168,7 +168,6 @@ pub fn finalize(cx: &CrateContext) {
+     }
+ 
+     debug!("finalize");
+-    let _ = compile_unit_metadata(cx);
+ 
+     if gdb::needs_gdb_debug_scripts_section(cx) {
+         // Add a .debug_gdb_scripts section to this compile-unit. This will
+
+From 6ed5db8d351038622b180be917ef2e2e3f0727b2 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Wed, 13 Jul 2016 00:42:20 +0200
+Subject: [PATCH 03/25] [LLVM-3.9] Specify that we are using the legacy
+ interface
+
+LLVM pass manager infrastructure is currently getting rewritten to be
+more flexible, but the rewrite isn't complete yet.
+---
+ src/rustllvm/PassWrapper.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/rustllvm/PassWrapper.cpp b/src/rustllvm/PassWrapper.cpp
+index 3564f33..95ad686 100644
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -267,7 +267,7 @@ LLVMRustAddLibraryInfo(LLVMPassManagerRef PMB,
+ // similar code in clang's BackendUtil.cpp file.
+ extern "C" void
+ LLVMRustRunFunctionPassManager(LLVMPassManagerRef PM, LLVMModuleRef M) {
+-    FunctionPassManager *P = unwrap<FunctionPassManager>(PM);
++    llvm::legacy::FunctionPassManager *P = unwrap<llvm::legacy::FunctionPassManager>(PM);
+     P->doInitialization();
+     for (Module::iterator I = unwrap(M)->begin(),
+          E = unwrap(M)->end(); I != E; ++I)
+@@ -294,7 +294,7 @@ LLVMRustWriteOutputFile(LLVMTargetMachineRef Target,
+                         LLVMModuleRef M,
+                         const char *path,
+                         TargetMachine::CodeGenFileType FileType) {
+-  PassManager *PM = unwrap<PassManager>(PMR);
++  llvm::legacy::PassManager *PM = unwrap<llvm::legacy::PassManager>(PMR);
+ 
+   std::string ErrorInfo;
+   std::error_code EC;
+@@ -320,7 +320,7 @@ extern "C" void
+ LLVMRustPrintModule(LLVMPassManagerRef PMR,
+                     LLVMModuleRef M,
+                     const char* path) {
+-  PassManager *PM = unwrap<PassManager>(PMR);
++  llvm::legacy::PassManager *PM = unwrap<llvm::legacy::PassManager>(PMR);
+   std::string ErrorInfo;
+ 
+   std::error_code EC;
+
+From 5b44e10fb7e9d1226af11df26ee5fa78b8d54cc3 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Wed, 13 Jul 2016 00:42:44 +0200
+Subject: [PATCH 04/25] [LLVM-3.9] Preserve certain functions when
+ internalizing
+
+This makes sure to still use the old way for older LLVM versions.
+---
+ src/rustllvm/PassWrapper.cpp | 17 ++++++++++++++++-
+ 1 file changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/src/rustllvm/PassWrapper.cpp b/src/rustllvm/PassWrapper.cpp
+index 95ad686..64edc79 100644
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -358,9 +358,24 @@ LLVMRustAddAlwaysInlinePass(LLVMPassManagerBuilderRef PMB, bool AddLifetimes) {
+ 
+ extern "C" void
+ LLVMRustRunRestrictionPass(LLVMModuleRef M, char **symbols, size_t len) {
+-    PassManager passes;
++    llvm::legacy::PassManager passes;
++
++#if LLVM_VERSION_MINOR <= 8
+     ArrayRef<const char*> ref(symbols, len);
+     passes.add(llvm::createInternalizePass(ref));
++#else
++    auto PreserveFunctions = [=](const GlobalValue &GV) {
++        for (size_t i=0; i<len; i++) {
++            if (GV.getName() == symbols[i]) {
++                return true;
++            }
++        }
++        return false;
++    };
++
++    passes.add(llvm::createInternalizePass(PreserveFunctions));
++#endif
++
+     passes.run(*unwrap(M));
+ }
+ 
+
+From 8433f9bb337066d933f3ae7a975354a5d910c718 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Wed, 13 Jul 2016 15:29:24 +0200
+Subject: [PATCH 05/25] [LLVM-3.9] Replace NewArchiveIterator with
+ NewArchiveMember
+
+The new NewArchiveMember is simpler and requires less context,
+according to upstream.
+
+This was changed in http://reviews.llvm.org/D21721
+---
+ src/rustllvm/ArchiveWrapper.cpp | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index 1e7b04c..cdd11e8 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -150,19 +150,33 @@ LLVMRustWriteArchive(char *Dst,
+                      const LLVMRustArchiveMember **NewMembers,
+                      bool WriteSymbtab,
+                      Archive::Kind Kind) {
+-  std::vector<NewArchiveIterator> Members;
++  std::vector<NewArchiveMember> Members;
+ 
+   for (size_t i = 0; i < NumMembers; i++) {
+     auto Member = NewMembers[i];
+     assert(Member->name);
+     if (Member->filename) {
+-#if LLVM_VERSION_MINOR >= 8
+-      Members.push_back(NewArchiveIterator(Member->filename));
++#if LLVM_VERSION_MINOR >= 9
++      Expected<NewArchiveMember> MOrErr = NewArchiveMember::getFile(Member->filename, true);
++      if (!MOrErr) {
++        LLVMRustSetLastError(toString(MOrErr.takeError()).c_str());
++        return -1;
++      }
++      Members.push_back(std::move(*MOrErr));
+ #else
+       Members.push_back(NewArchiveIterator(Member->filename, Member->name));
+ #endif
+     } else {
++#if LLVM_VERSION_MINOR >= 9
++      Expected<NewArchiveMember> MOrErr = NewArchiveMember::getOldMember(Member->child, true);
++      if (!MOrErr) {
++        LLVMRustSetLastError(toString(MOrErr.takeError()).c_str());
++        return -1;
++      }
++      Members.push_back(std::move(*MOrErr));
++#else
+       Members.push_back(NewArchiveIterator(Member->child, Member->name));
++#endif
+     }
+   }
+ #if LLVM_VERSION_MINOR >= 8
+
+From dbb4178f4effa2f7686aca70d5fdfa0eff94e692 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Wed, 13 Jul 2016 16:06:50 +0200
+Subject: [PATCH 06/25] [LLVM-3.9] Update return type for Archive::create
+
+Changed in
+https://github.com/rust-lang/llvm/commit/0b21d88fd31b4bfb6fdb7e2f1ed5f93639d5bd1c
+---
+ src/rustllvm/ArchiveWrapper.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index cdd11e8..514d252 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -43,11 +43,19 @@ LLVMRustOpenArchive(char *path) {
+         return nullptr;
+     }
+ 
++#if LLVM_VERSION_MINOR <= 8
+     ErrorOr<std::unique_ptr<Archive>> archive_or =
++#else
++    Expected<std::unique_ptr<Archive>> archive_or =
++#endif
+         Archive::create(buf_or.get()->getMemBufferRef());
+ 
+     if (!archive_or) {
++#if LLVM_VERSION_MINOR <= 8
+         LLVMRustSetLastError(archive_or.getError().message().c_str());
++#else
++        LLVMRustSetLastError(toString(archive_or.takeError()).c_str());
++#endif
+         return nullptr;
+     }
+ 
+
+From 9e706f90cbc844bb09187e01acd4ae075130bc81 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Wed, 13 Jul 2016 00:41:40 +0200
+Subject: [PATCH 07/25] [LLVM-3.9] Configure PIE at the module level instead of
+ compilation unit level
+
+This was deleted here[1] which appears to be replaced by this[2]
+which is a new setPIELevel function on the LLVM module itself.
+
+[1]: http://reviews.llvm.org/D19753
+[2]: http://reviews.llvm.org/D19671
+---
+ src/librustc_llvm/lib.rs      |  1 +
+ src/librustc_trans/context.rs |  1 +
+ src/rustllvm/PassWrapper.cpp  | 10 ++++++++++
+ 3 files changed, 12 insertions(+)
+
+diff --git a/src/librustc_llvm/lib.rs b/src/librustc_llvm/lib.rs
+index f14df2a..4fc8667 100644
+--- a/src/librustc_llvm/lib.rs
++++ b/src/librustc_llvm/lib.rs
+@@ -2155,6 +2155,7 @@ extern {
+ 
+     pub fn LLVMRustSetComdat(M: ModuleRef, V: ValueRef, Name: *const c_char);
+     pub fn LLVMRustUnsetComdat(V: ValueRef);
++    pub fn LLVMRustSetModulePIELevel(M: ModuleRef);
+ }
+ 
+ // LLVM requires symbols from this library, but apparently they're not printed
+diff --git a/src/librustc_trans/context.rs b/src/librustc_trans/context.rs
+index aa60110..2437fa9 100644
+--- a/src/librustc_trans/context.rs
++++ b/src/librustc_trans/context.rs
+@@ -352,6 +352,7 @@ unsafe fn create_context_and_module(sess: &Session, mod_name: &str) -> (ContextR
+     let llvm_target = sess.target.target.llvm_target.as_bytes();
+     let llvm_target = CString::new(llvm_target).unwrap();
+     llvm::LLVMRustSetNormalizedTarget(llmod, llvm_target.as_ptr());
++    llvm::LLVMRustSetModulePIELevel(llmod);
+     (llcx, llmod)
+ }
+ 
+diff --git a/src/rustllvm/PassWrapper.cpp b/src/rustllvm/PassWrapper.cpp
+index 64edc79..edf83bf 100644
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -188,7 +188,10 @@ LLVMRustCreateTargetMachine(const char *triple,
+     }
+ 
+     TargetOptions Options;
++#if LLVM_VERSION_MINOR <= 8
+     Options.PositionIndependentExecutable = PositionIndependentExecutable;
++#endif
++
+     Options.FloatABIType = FloatABI::Default;
+     if (UseSoftFloat) {
+         Options.FloatABIType = FloatABI::Soft;
+@@ -411,3 +414,10 @@ extern "C" LLVMTargetDataRef
+ LLVMRustGetModuleDataLayout(LLVMModuleRef M) {
+     return wrap(&unwrap(M)->getDataLayout());
+ }
++
++extern "C" void
++LLVMRustSetModulePIELevel(LLVMModuleRef M) {
++#if LLVM_VERSION_MINOR >= 9
++    unwrap(M)->setPIELevel(PIELevel::Level::Default);
++#endif
++}
+
+From 12ccff99bf254fe3721ad389953eb53b723872e4 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Thu, 14 Jul 2016 19:28:54 +0200
+Subject: [PATCH 08/25] Use relative path to type
+
+---
+ src/librustc_trans/debuginfo/metadata.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/librustc_trans/debuginfo/metadata.rs b/src/librustc_trans/debuginfo/metadata.rs
+index 1119ee0..09059cc 100644
+--- a/src/librustc_trans/debuginfo/metadata.rs
++++ b/src/librustc_trans/debuginfo/metadata.rs
+@@ -1030,7 +1030,7 @@ pub fn compile_unit_metadata(scc: &SharedCrateContext,
+             split_name.as_ptr() as *const _)
+     };
+ 
+-    fn fallback_path(scc: &::context::SharedCrateContext) -> CString {
++    fn fallback_path(scc: &SharedCrateContext) -> CString {
+         CString::new(scc.link_meta().crate_name.clone()).unwrap()
+     }
+ }
+
+From deafab19be13e8cd33e55b211ba8835488747a05 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Thu, 14 Jul 2016 21:26:09 +0200
+Subject: [PATCH 09/25] [LLVM-3.9] Increase PIELevel
+
+Previously, we had a PositionIndependentExecutable, now we simply
+choose the highest level. This should be equivalent.
+
+:cake:
+---
+ src/rustllvm/PassWrapper.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/rustllvm/PassWrapper.cpp b/src/rustllvm/PassWrapper.cpp
+index edf83bf..d4ef4e8 100644
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -418,6 +418,6 @@ LLVMRustGetModuleDataLayout(LLVMModuleRef M) {
+ extern "C" void
+ LLVMRustSetModulePIELevel(LLVMModuleRef M) {
+ #if LLVM_VERSION_MINOR >= 9
+-    unwrap(M)->setPIELevel(PIELevel::Level::Default);
++    unwrap(M)->setPIELevel(PIELevel::Level::Large);
+ #endif
+ }
+
+From 1bc04472609aec664ce434f7a3b7df7e06e80637 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Thu, 14 Jul 2016 21:27:14 +0200
+Subject: [PATCH 10/25] [LLVM-3.9] Maintain backward compatibility in Archiver
+
+---
+ src/rustllvm/ArchiveWrapper.cpp | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index 514d252..03b0aaf 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -158,7 +158,12 @@ LLVMRustWriteArchive(char *Dst,
+                      const LLVMRustArchiveMember **NewMembers,
+                      bool WriteSymbtab,
+                      Archive::Kind Kind) {
++
++#if LLVM_VERSION_MINOR >= 9
+   std::vector<NewArchiveMember> Members;
++#else
++  std::vector<NewArchiveIterator> Members;
++#endif
+ 
+   for (size_t i = 0; i < NumMembers; i++) {
+     auto Member = NewMembers[i];
+@@ -171,6 +176,8 @@ LLVMRustWriteArchive(char *Dst,
+         return -1;
+       }
+       Members.push_back(std::move(*MOrErr));
++#elif LLVM_VERSION_MINOR == 8
++      Members.push_back(NewArchiveIterator(Member->filename));
+ #else
+       Members.push_back(NewArchiveIterator(Member->filename, Member->name));
+ #endif
+
+From f439aeef070da498f5a75b7cf17080bde0e72738 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Sat, 16 Jul 2016 19:36:51 +0200
+Subject: [PATCH 14/25] [LLVM-3.9] Use old way of getting next child
+
+This was changed back in
+https://github.com/rust-lang/llvm/commit/aacf2fbf
+---
+ src/rustllvm/ArchiveWrapper.cpp | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index 03b0aaf..b6d352e 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -79,7 +79,12 @@ extern "C" RustArchiveIterator*
+ LLVMRustArchiveIteratorNew(RustArchive *ra) {
+     Archive *ar = ra->getBinary();
+     RustArchiveIterator *rai = new RustArchiveIterator();
++#if LLVM_VERSION_MINOR >= 9
++    Error err;
++    rai->cur = ar->child_begin(err);
++#else
+     rai->cur = ar->child_begin();
++#endif
+     rai->end = ar->child_end();
+     return rai;
+ }
+@@ -88,8 +93,8 @@ extern "C" const Archive::Child*
+ LLVMRustArchiveIteratorNext(RustArchiveIterator *rai) {
+     if (rai->cur == rai->end)
+         return NULL;
+-#if LLVM_VERSION_MINOR >= 8
+-    const ErrorOr<Archive::Child>* cur = rai->cur.operator->();
++#if LLVM_VERSION_MINOR == 8
++    Archive::Child* cur = rai->cur.operator->();
+     if (!*cur) {
+         LLVMRustSetLastError(cur->getError().message().c_str());
+         return NULL;
+
+From 09c3f33ec2a5035d35307598a7e66132747ead9d Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Sat, 16 Jul 2016 19:44:43 +0200
+Subject: [PATCH 15/25] Flip LLVM verion check clause
+
+---
+ src/rustllvm/ArchiveWrapper.cpp | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index b6d352e..5e8250b 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -79,11 +79,11 @@ extern "C" RustArchiveIterator*
+ LLVMRustArchiveIteratorNew(RustArchive *ra) {
+     Archive *ar = ra->getBinary();
+     RustArchiveIterator *rai = new RustArchiveIterator();
+-#if LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MINOR <= 8
++    rai->cur = ar->child_begin();
++#else
+     Error err;
+     rai->cur = ar->child_begin(err);
+-#else
+-    rai->cur = ar->child_begin();
+ #endif
+     rai->end = ar->child_end();
+     return rai;
+@@ -164,10 +164,10 @@ LLVMRustWriteArchive(char *Dst,
+                      bool WriteSymbtab,
+                      Archive::Kind Kind) {
+ 
+-#if LLVM_VERSION_MINOR >= 9
+-  std::vector<NewArchiveMember> Members;
+-#else
++#if LLVM_VERSION_MINOR <= 8
+   std::vector<NewArchiveIterator> Members;
++#else
++  std::vector<NewArchiveMember> Members;
+ #endif
+ 
+   for (size_t i = 0; i < NumMembers; i++) {
+@@ -187,15 +187,15 @@ LLVMRustWriteArchive(char *Dst,
+       Members.push_back(NewArchiveIterator(Member->filename, Member->name));
+ #endif
+     } else {
+-#if LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MINOR <= 8
++      Members.push_back(NewArchiveIterator(Member->child, Member->name));
++#else
+       Expected<NewArchiveMember> MOrErr = NewArchiveMember::getOldMember(Member->child, true);
+       if (!MOrErr) {
+         LLVMRustSetLastError(toString(MOrErr.takeError()).c_str());
+         return -1;
+       }
+       Members.push_back(std::move(*MOrErr));
+-#else
+-      Members.push_back(NewArchiveIterator(Member->child, Member->name));
+ #endif
+     }
+   }
+
+From dc7076b52e2464a703de7d87fa6c60b8fc98ada9 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Thu, 21 Jul 2016 11:24:35 +0200
+Subject: [PATCH 18/25] [LLVM-3.9] Pass correct relocation model flag
+
+---
+ configure      | 5 +++++
+ mk/platform.mk | 9 ++++++++-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/configure b/configure
+index d2ec457..af29ef3 100755
+--- a/configure
++++ b/configure
+@@ -1020,6 +1020,11 @@ then
+             err "bad LLVM version: $LLVM_VERSION, need >=3.7"
+             ;;
+     esac
++
++    if "$CFG_LLVM_ROOT/bin/llvm-mc" -help | grep "-relocation-model"; then
++        CFG_LLVM_MC_HAS_RELOCATION_MODEL=1
++        putvar CFG_LLVM_MC_HAS_RELOCATION_MODEL
++    fi
+ fi
+ 
+ # Even when the user overrides the choice of CC, still try to detect
+diff --git a/mk/platform.mk b/mk/platform.mk
+index c264462..d601cab 100644
+--- a/mk/platform.mk
++++ b/mk/platform.mk
+@@ -221,12 +221,19 @@ define CFG_MAKE_TOOLCHAIN
+     LLVM_MC_RELOCATION_MODEL="default"
+   endif
+ 
++  # LLVM changed this flag in 3.9
++  ifdef CFG_LLVM_MC_HAS_RELOCATION_MODEL
++    LLVM_MC_RELOC_FLAG := -relocation-model=$$(LLVM_MC_RELOCATION_MODEL)
++  else
++    LLVM_MC_RELOC_FLAG := -position-independent
++  endif
++
+   # We're using llvm-mc as our assembler because it supports
+   # .cfi pseudo-ops on mac
+   CFG_ASSEMBLE_$(1)=$$(CPP_$(1)) -E $$(2) | \
+                     $$(LLVM_MC_$$(CFG_BUILD)) \
+                     -assemble \
+-                    -relocation-model=$$(LLVM_MC_RELOCATION_MODEL) \
++                    $$(LLVM_MC_RELOC_FLAG) \
+                     -filetype=obj \
+                     -triple=$(1) \
+                     -o=$$(1)
+
+From 079db4f9715ab5c495115b11adcca5f5bd4ed260 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Thu, 21 Jul 2016 11:24:51 +0200
+Subject: [PATCH 19/25] Use correct error handling type
+
+---
+ src/rustllvm/ArchiveWrapper.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index 5e8250b..935052a 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -94,7 +94,7 @@ LLVMRustArchiveIteratorNext(RustArchiveIterator *rai) {
+     if (rai->cur == rai->end)
+         return NULL;
+ #if LLVM_VERSION_MINOR == 8
+-    Archive::Child* cur = rai->cur.operator->();
++    const ErrorOr<Archive::Child>* cur = rai->cur.operator->();
+     if (!*cur) {
+         LLVMRustSetLastError(cur->getError().message().c_str());
+         return NULL;
+
+From 2c16e24643976523e6858fd41a1ded0429a96ef1 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Sun, 24 Jul 2016 22:31:16 +0200
+Subject: [PATCH 20/25] Use C type when passing value to LLVM pass
+
+Previously the C type LLVMRelocMode (available as RelocMode in Rust)
+was passed as is to the function.
+However createTargetMachine expects a Reloc::Model, which is an enum
+just one value short.
+Additionally, the function was marked as requiring Reloc::Model in the
+C code, but RelocMode on the Rust-side.
+
+We now use the correct C type LLVMRelocMode and convert it to an
+Optional<Reloc::Model> as expected by the createTargetMachine call the
+same the original LLVMCreateTargetMachine function does.
+See
+https://github.com/llvm-mirror/llvm/blob/c9b262bfbd5b9fb6f10749dba1465569f39bd625/lib/Target/TargetMachineC.cpp#L104-L121
+
+This was found by @eddyb.
+---
+ src/rustllvm/PassWrapper.cpp | 25 ++++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/src/rustllvm/PassWrapper.cpp b/src/rustllvm/PassWrapper.cpp
+index d4ef4e8..a127606 100644
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -167,12 +167,35 @@ LLVMRustCreateTargetMachine(const char *triple,
+                             const char *cpu,
+                             const char *feature,
+                             CodeModel::Model CM,
+-                            Reloc::Model RM,
++                            LLVMRelocMode Reloc,
+                             CodeGenOpt::Level OptLevel,
+                             bool UseSoftFloat,
+                             bool PositionIndependentExecutable,
+                             bool FunctionSections,
+                             bool DataSections) {
++
++#if LLVM_VERSION_MINOR <= 8
++    Reloc::Model RM;
++#else
++    Optional<Reloc::Model> RM;
++#endif
++    switch (Reloc){
++        case LLVMRelocStatic:
++            RM = Reloc::Static;
++            break;
++        case LLVMRelocPIC:
++            RM = Reloc::PIC_;
++            break;
++        case LLVMRelocDynamicNoPic:
++            RM = Reloc::DynamicNoPIC;
++            break;
++        default:
++#if LLVM_VERSION_MINOR <= 8
++            RM = Reloc::Default;
++#endif
++            break;
++    }
++
+     std::string Error;
+     Triple Trip(Triple::normalize(triple));
+     const llvm::Target *TheTarget = TargetRegistry::lookupTarget(Trip.getTriple(),
+
+From a36595ed14b4ded33d207040e5bcd3da169ecc20 Mon Sep 17 00:00:00 2001
+From: Jan-Erik Rediger <janerik@fnordig.de>
+Date: Sun, 24 Jul 2016 22:34:37 +0200
+Subject: [PATCH 21/25] Force check of error
+
+The passed error needs to be checked.
+Otherwise it will force an abort when it is deconstructed, but a
+success value.
+---
+ src/rustllvm/ArchiveWrapper.cpp | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index 935052a..3d48024 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -73,6 +73,9 @@ LLVMRustDestroyArchive(RustArchive *ar) {
+ struct RustArchiveIterator {
+     Archive::child_iterator cur;
+     Archive::child_iterator end;
++#if LLVM_VERSION_MINOR >= 9
++    Error err;
++#endif
+ };
+ 
+ extern "C" RustArchiveIterator*
+@@ -82,8 +85,11 @@ LLVMRustArchiveIteratorNew(RustArchive *ra) {
+ #if LLVM_VERSION_MINOR <= 8
+     rai->cur = ar->child_begin();
+ #else
+-    Error err;
+-    rai->cur = ar->child_begin(err);
++    rai->cur = ar->child_begin(rai->err);
++    if (rai->err) {
++        LLVMRustSetLastError(toString(std::move(rai->err)).c_str());
++        return NULL;
++    }
+ #endif
+     rai->end = ar->child_end();
+     return rai;
+@@ -91,6 +97,12 @@ LLVMRustArchiveIteratorNew(RustArchive *ra) {
+ 
+ extern "C" const Archive::Child*
+ LLVMRustArchiveIteratorNext(RustArchiveIterator *rai) {
++#if LLVM_VERSION_MINOR >= 9
++    if (rai->err) {
++        LLVMRustSetLastError(toString(std::move(rai->err)).c_str());
++        return NULL;
++    }
++#endif
+     if (rai->cur == rai->end)
+         return NULL;
+ #if LLVM_VERSION_MINOR == 8
+
+From d851428cc352254aed0dd894d1a9970a228ec9ed Mon Sep 17 00:00:00 2001
+From: Alex Crichton <alex@alexcrichton.com>
+Date: Mon, 25 Jul 2016 10:20:05 -0700
+Subject: [PATCH 22/25] configure: Fix grep invocation for llvm-mc argument
+
+---
+ configure | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/configure b/configure
+index af29ef3..3e2cbcb 100755
+--- a/configure
++++ b/configure
+@@ -1021,7 +1021,8 @@ then
+             ;;
+     esac
+ 
+-    if "$CFG_LLVM_ROOT/bin/llvm-mc" -help | grep "-relocation-model"; then
++    if "$CFG_LLVM_ROOT/bin/llvm-mc" -help | grep -- "-relocation-model"; then
++        msg "found older llvm-mc"
+         CFG_LLVM_MC_HAS_RELOCATION_MODEL=1
+         putvar CFG_LLVM_MC_HAS_RELOCATION_MODEL
+     fi
+
+From e8f76661f13620f075626d27f94750ea94d6cf2e Mon Sep 17 00:00:00 2001
+From: Alex Crichton <alex@alexcrichton.com>
+Date: Mon, 25 Jul 2016 10:21:31 -0700
+Subject: [PATCH 23/25] rustc: Fix data-layout for AArch64 targets
+
+Also relax the assertion whenever we have a custom LLVM root as LLVM may
+disagree about exact specifics.
+---
+ src/librustc_back/target/aarch64_linux_android.rs    |  2 +-
+ .../target/aarch64_unknown_linux_gnu.rs              |  2 +-
+ src/librustc_trans/context.rs                        | 20 +++++++++++++++++++-
+ 3 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/src/librustc_back/target/aarch64_linux_android.rs b/src/librustc_back/target/aarch64_linux_android.rs
+index 81be546..a5be1a2 100644
+--- a/src/librustc_back/target/aarch64_linux_android.rs
++++ b/src/librustc_back/target/aarch64_linux_android.rs
+@@ -20,7 +20,7 @@ pub fn target() -> Target {
+         llvm_target: "aarch64-linux-android".to_string(),
+         target_endian: "little".to_string(),
+         target_pointer_width: "64".to_string(),
+-        data_layout: "e-m:e-i64:64-i128:128-n32:64-S128".to_string(),
++        data_layout: "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128".to_string(),
+         arch: "aarch64".to_string(),
+         target_os: "android".to_string(),
+         target_env: "".to_string(),
+diff --git a/src/librustc_back/target/aarch64_unknown_linux_gnu.rs b/src/librustc_back/target/aarch64_unknown_linux_gnu.rs
+index aec1bae..2dc9355 100644
+--- a/src/librustc_back/target/aarch64_unknown_linux_gnu.rs
++++ b/src/librustc_back/target/aarch64_unknown_linux_gnu.rs
+@@ -18,7 +18,7 @@ pub fn target() -> Target {
+         target_endian: "little".to_string(),
+         target_pointer_width: "64".to_string(),
+         target_env: "gnu".to_string(),
+-        data_layout: "e-m:e-i64:64-i128:128-n32:64-S128".to_string(),
++        data_layout: "e-m:e-i8:8:32-i16:16:32-i64:64-i128:128-n32:64-S128".to_string(),
+         arch: "aarch64".to_string(),
+         target_os: "linux".to_string(),
+         target_vendor: "unknown".to_string(),
+diff --git a/src/librustc_trans/context.rs b/src/librustc_trans/context.rs
+index d8b3089..792169b 100644
+--- a/src/librustc_trans/context.rs
++++ b/src/librustc_trans/context.rs
+@@ -370,7 +370,25 @@ unsafe fn create_context_and_module(sess: &Session, mod_name: &str) -> (ContextR
+         let data_layout = str::from_utf8(CStr::from_ptr(data_layout).to_bytes())
+             .ok().expect("got a non-UTF8 data-layout from LLVM");
+ 
+-        if sess.target.target.data_layout != data_layout {
++        // Unfortunately LLVM target specs change over time, and right now we
++        // don't have proper support to work with any more than one
++        // `data_layout` than the one that is in the rust-lang/rust repo. If
++        // this compiler is configured against a custom LLVM, we may have a
++        // differing data layout, even though we should update our own to use
++        // that one.
++        //
++        // As an interim hack, if CFG_LLVM_ROOT is not an empty string then we
++        // disable this check entirely as we may be configured with something
++        // that has a different target layout.
++        //
++        // Unsure if this will actually cause breakage when rustc is configured
++        // as such.
++        //
++        // FIXME(#34960)
++        let cfg_llvm_root = option_env!("CFG_LLVM_ROOT").unwrap_or("");
++        let custom_llvm_used = cfg_llvm_root.trim() != "";
++
++        if !custom_llvm_used && sess.target.target.data_layout != data_layout {
+             bug!("data-layout for builtin `{}` target, `{}`, \
+                   differs from LLVM default, `{}`",
+                  sess.target.target.llvm_target,
