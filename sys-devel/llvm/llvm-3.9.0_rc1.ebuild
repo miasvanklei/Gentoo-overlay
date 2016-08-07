@@ -233,6 +233,7 @@ src_prepare() {
 		# https://llvm.org/bugs/show_bug.cgi?id=18841
 		sed -e 's/add_subdirectory(readline)/#&/' \
 			-i tools/lldb/scripts/Python/modules/CMakeLists.txt || die
+		eapply "${FILESDIR}"/lldb-fix-getopt.patch
 	fi
 
 	# User patches
