@@ -73,31 +73,35 @@ src_unpack() {
 }
 
 src_prepare() {
-	## Patch CMakeLists.txt
-	epatch "${FILESDIR}/${PN}-6.2.3-CMakeLists.patch" \
-		"${FILESDIR}/${PN}-6.2.5-wbcopytables.patch" \
-		"${FILESDIR}/${PN}-6.3.3-mysql_options4.patch"
+        ## Patch CMakeLists.txt
+        epatch "${FILESDIR}/${PN}-6.2.3-CMakeLists.patch" \
+                "${FILESDIR}/${PN}-6.2.5-wbcopytables.patch" \
+                "${FILESDIR}/${PN}-6.3.3-mysql_options4.patch" \
+                "${FILESDIR}/${PN}-6.3.4-cxx11.patch"
 
-	## remove hardcoded CXXFLAGS
-	sed -i -e 's/-O0 -g3//' ext/scintilla/gtk/CMakeLists.txt || die
+        sed -i -e '/target_link_libraries/ s/sqlparser.grt/sqlparser.grt sqlparser/' \
+                modules/db.mysql.sqlparser/CMakeLists.txt
 
-	## package is very fragile...
-	strip-flags
+        ## remove hardcoded CXXFLAGS
+        sed -i -e 's/-O0 -g3//' ext/scintilla/gtk/CMakeLists.txt || die
 
-	cmake-utils_src_prepare
+        ## package is very fragile...
+        strip-flags
+
+        cmake-utils_src_prepare
 }
 
 src_configure() {
-	local mycmakeargs=(
-		$(cmake-utils_use_use gnome-keyring GNOME_KEYRING)
-		-DLIB_INSTALL_DIR="/usr/$(get_libdir)"
-		-DPYTHON_INCLUDE_DIR="$(python_get_includedir)"
-		-DPYTHON_LIBRARY="$(python_get_library_path)"
-	)
-	ANTLR_JAR_PATH="${DISTDIR}/antlr-3.4-complete.jar" cmake-utils_src_configure
+        local mycmakeargs=(
+                $(cmake-utils_use_use gnome-keyring GNOME_KEYRING)
+                -DLIB_INSTALL_DIR="/usr/$(get_libdir)"
+                -DPYTHON_INCLUDE_DIR="$(python_get_includedir)"
+                -DPYTHON_LIBRARY="$(python_get_library_path)"
+        )
+        cmake-utils_src_configure
 }
 
 src_compile() {
-	# Work around parallel build issues, bug 507838
-	cmake-utils_src_compile -j1
+        # Work around parallel build issues, bug 507838
+        cmake-utils_src_compile -j1
 }
