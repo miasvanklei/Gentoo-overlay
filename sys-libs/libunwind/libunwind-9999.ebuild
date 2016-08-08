@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit cmake-utils flag-o-matic toolchain-funcs multilib-minimal git-r3
+inherit cmake-utils multilib-minimal git-r3
 
 EGIT_REPO_URI="http://llvm.org/git/libunwind.git"
 
@@ -14,12 +14,12 @@ HOMEPAGE="http://www.llvm.org/"
 LICENSE="MIT LGPL-2 GPL-2"
 SLOT="0"
 
-RDEPEND="sys-devel/llvm:0
-sys-devel/llvm[clang]"
+RDEPEND=""
 
 src_prepare() {
 	eapply "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
 	eapply "${FILESDIR}"/libunwind-3.8-cmake.patch
+	eapply "${FILESDIR}"/revert-alignedment-commit.patch
 	eapply_user
 }
 
@@ -46,8 +46,6 @@ multilib_src_install() {
 
 multilib_src_install_all() {
 
-#	rm -r "${D}"/usr/lib64
-#	rm -r "${D}"/usr/lib32
         mkdir "${D}"/usr/include
         cp -r "${S}"/include/* "${D}"/usr/include || die
 }
