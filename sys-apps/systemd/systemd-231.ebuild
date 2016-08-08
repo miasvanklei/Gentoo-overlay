@@ -262,11 +262,11 @@ multilib_src_configure() {
 		--without-kill-user-processes
 
                 # musl fixes
-#                --disable-smack
+                --disable-smack
                 --disable-myhostname
-#                --disable-machined
-#                --disable-sysusers
-#                --disable-resolved
+                --disable-machined
+                --disable-sysusers
+                --disable-resolved
 	)
 
 	# Work around bug 463846.
@@ -352,7 +352,7 @@ multilib_src_install_all() {
 	# If we install these symlinks, there is no way for the sysadmin to remove them
 	# permanently.
 	rm "${D}"/etc/systemd/system/multi-user.target.wants/systemd-networkd.service || die
-	rm -f "${D}"/etc/systemd/system/multi-user.target.wants/systemd-resolved.service || die
+#	rm -f "${D}"/etc/systemd/system/multi-user.target.wants/systemd-resolved.service || die
 	rm -r "${D}"/etc/systemd/system/network-online.target.wants || die
 	rm -r "${D}"/etc/systemd/system/sockets.target.wants || die
 	rm -r "${D}"/etc/systemd/system/sysinit.target.wants || die
@@ -416,7 +416,7 @@ pkg_postinst() {
 	newusergroup systemd-journal-remote
 	newusergroup systemd-journal-upload
 	newusergroup systemd-network
-	newusergroup systemd-resolve
+#	newusergroup systemd-resolve
 	newusergroup systemd-timesync
 
 	systemd_update_catalog
