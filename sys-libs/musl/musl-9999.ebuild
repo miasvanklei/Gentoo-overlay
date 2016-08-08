@@ -26,19 +26,27 @@ RDEPEND="!sys-apps/getent
 		   sys-libs/musl-fts )"
 
 src_prepare() {
-	eapply "${FILESDIR}"/kernel.patch
-	eapply "${FILESDIR}"/musl-add-gnu-symbols.patch
-	eapply "${FILESDIR}"/printf.patch
-	eapply "${FILESDIR}"/glibc-abi-compat.patch
-	eapply "${FILESDIR}"/qsort_r.patch
-	eapply "${FILESDIR}"/ptrace.patch
-	eapply "${FILESDIR}"/mallinfo.patch
-	eapply "${FILESDIR}"/context.patch
-	eapply "${FILESDIR}"/no-utf8-code-units-locale.patch
-	eapply "${FILESDIR}"/multilib.patch
-	eapply "${FILESDIR}"/backtrace.patch
-	eapply "${FILESDIR}"/use-defines-instead-of-function.patch
-	eapply "${FILESDIR}"/fix-configure.patch
+
+	for i in "${FILESDIR}"/*.patch; do
+		eapply $i
+	done
+#	local PATCHES=(
+#		"${FILESDIR}"/kernel.patch
+#		"${FILESDIR}"/musl-add-gnu-symbols.patch
+#		"${FILESDIR}"/printf.patch
+#		"${FILESDIR}"/glibc-abi-compat.patch
+#		"${FILESDIR}"/qsort_r.patch
+#		"${FILESDIR}"/ptrace.patch
+#		"${FILESDIR}"/mallinfo.patch
+#		"${FILESDIR}"/context.patch
+#		"${FILESDIR}"/no-utf8-code-units-locale.patch
+#		"${FILESDIR}"/multilib.patch
+#		"${FILESDIR}"/backtrace.patch
+#		"${FILESDIR}"/use-defines-instead-of-function.patch
+#		"${FILESDIR}"/fix-configure.patch
+#		"${FILESDIR}"/missing-define.patch
+#	)
+
 	eapply_user
 }
 
