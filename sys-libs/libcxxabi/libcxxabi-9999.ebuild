@@ -19,6 +19,7 @@ RDEPEND="sys-libs/libunwind"
 src_prepare() {
         epatch "${FILESDIR}"/remove-llvm-src.patch
         epatch "${FILESDIR}"/fix-configure.patch
+        epatch "${FILESDIR}"/add-cxa_thread_atexit.patch
 
 	# copy libunwind headers, otherwise segfault
 	cp  /usr/include/unwind.h "${S}"/src
