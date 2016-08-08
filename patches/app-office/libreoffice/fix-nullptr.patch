@@ -1,0 +1,25 @@
+--- a/bridges/source/cpp_uno/gcc3_linux_x86-64/except.cxx	2016-07-29 00:11:19.000000000 +0200
++++ b/bridges/source/cpp_uno/gcc3_linux_x86-64/except.cxx	2016-08-08 19:56:46.037582445 +0200
+@@ -83,13 +83,16 @@
+ {
+     __cxxabiv1::__cxa_exception const * header = (static_cast<__cxxabiv1::__cxa_exception const *>(pExc) - 1);
+     typelib_TypeDescription * pTD = nullptr;
+-    OUString unoName( toUNOname( header->exceptionType->name() ) );
+-    ::typelib_typedescription_getByName( &pTD, unoName.pData );
+-    assert(pTD && "### unknown exception type! leaving out destruction => leaking!!!");
+-    if (pTD)
++    if(header->exceptionType)
+     {
+-        ::uno_destructData( pExc, pTD, cpp_release );
+-        ::typelib_typedescription_release( pTD );
++        OUString unoName( toUNOname( header->exceptionType->name() ) );
++        ::typelib_typedescription_getByName( &pTD, unoName.pData );
++        assert(pTD && "### unknown exception type! leaving out destruction => leaking!!!");
++        if (pTD)
++        {
++            ::uno_destructData( pExc, pTD, cpp_release );
++            ::typelib_typedescription_release( pTD );
++        }
+     }
+ }
+ }
