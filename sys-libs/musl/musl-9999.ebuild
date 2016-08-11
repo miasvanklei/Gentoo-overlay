@@ -20,32 +20,16 @@ SLOT="0"
 IUSE="+compat"
 
 RDEPEND="!sys-apps/getent
-	 compat? ( sys-libs/bsd-compat
+	 compat? ( sys-libs/queue
 		   sys-libs/argp-standalone
 		   sys-libs/musl-obstack
-		   sys-libs/musl-fts )"
+		   sys-libs/fts-standalone )"
 
 src_prepare() {
 
 	for i in "${FILESDIR}"/*.patch; do
 		eapply $i
 	done
-#	local PATCHES=(
-#		"${FILESDIR}"/kernel.patch
-#		"${FILESDIR}"/musl-add-gnu-symbols.patch
-#		"${FILESDIR}"/printf.patch
-#		"${FILESDIR}"/glibc-abi-compat.patch
-#		"${FILESDIR}"/qsort_r.patch
-#		"${FILESDIR}"/ptrace.patch
-#		"${FILESDIR}"/mallinfo.patch
-#		"${FILESDIR}"/context.patch
-#		"${FILESDIR}"/no-utf8-code-units-locale.patch
-#		"${FILESDIR}"/multilib.patch
-#		"${FILESDIR}"/backtrace.patch
-#		"${FILESDIR}"/use-defines-instead-of-function.patch
-#		"${FILESDIR}"/fix-configure.patch
-#		"${FILESDIR}"/missing-define.patch
-#	)
 
 	eapply_user
 }
