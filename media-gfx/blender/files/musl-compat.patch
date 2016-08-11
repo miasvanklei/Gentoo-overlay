@@ -1,11 +1,22 @@
---- source/creator/creator.c.bak	2016-04-04 16:35:46.633388933 +0200
-+++ source/creator/creator.c	2016-04-04 16:36:06.580389915 +0200
+--- a/source/creator/creator.c	2016-04-04 16:35:46.633388933 +0200
++++ b/source/creator/creator.c	2016-04-04 16:36:06.580389915 +0200
 @@ -618,7 +618,7 @@
  	 * set breakpoints on fpe_handler */
  	signal(SIGFPE, fpe_handler);
  
 -# if defined(__linux__) && defined(__GNUC__)
-+# if defined(__linux__) && defined(__GLIBC__)
++# if defined(__GLIBC__)
  	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW);
  # endif /* defined(__linux__) && defined(__GNUC__) */
  # if defined(OSX_SSE_FPE)
+--- a/intern/guardedalloc/intern/mallocn_intern.h	2016-08-09 14:54:59.794500761 +0200
++++ b/intern/guardedalloc/intern/mallocn_intern.h	2016-08-09 14:55:34.618499791 +0200
+@@ -52,7 +52,7 @@
+ #undef HAVE_MALLOC_STATS
+ #define USE_MALLOC_USABLE_SIZE  /* internal, when we have malloc_usable_size() */
+ 
+-#if defined(__linux__) || (defined(__FreeBSD_kernel__) && !defined(__FreeBSD__)) || defined(__GLIBC__)
++#if (defined(__FreeBSD_kernel__) && !defined(__FreeBSD__)) || defined(__GLIBC__)
+ #  include <malloc.h>
+ #  define HAVE_MALLOC_STATS
+ #elif defined(__FreeBSD__)
