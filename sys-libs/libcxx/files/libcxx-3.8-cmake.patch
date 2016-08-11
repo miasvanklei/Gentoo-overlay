@@ -14,7 +14,7 @@ diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
 index d6a35f8..608eb4e 100644
 --- a/lib/CMakeLists.txt
 +++ b/lib/CMakeLists.txt
-@@ -28,16 +28,6 @@ if(NOT LIBCXX_INSTALL_LIBRARY)
+@@ -28,16 +28,6 @@
    set(exclude_from_all EXCLUDE_FROM_ALL)
  endif()
  
@@ -31,7 +31,7 @@ index d6a35f8..608eb4e 100644
  #if LIBCXX_CXX_ABI_LIBRARY_PATH is defined we want to add it to the search path.
  add_link_flags_if(LIBCXX_CXX_ABI_LIBRARY_PATH "-L${LIBCXX_CXX_ABI_LIBRARY_PATH}")
  
-@@ -124,18 +114,48 @@ if ( APPLE AND (LIBCXX_CXX_ABI_LIBNAME STREQUAL "libcxxabi" OR
+@@ -139,18 +129,48 @@
    endif()
  endif()
  
@@ -87,9 +87,17 @@ index d6a35f8..608eb4e 100644
 +
 +add_custom_target(cxx DEPENDS ${LIBCXX_TARGETS})
  
- # Generate a linker script inplace of a libc++.so symlink. Rerun this command
- # after cxx builds.
-@@ -159,7 +179,7 @@ if (LIBCXX_ENABLE_ABI_LINKER_SCRIPT)
+ if (LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY)
+   file(GLOB LIBCXX_EXPERIMENTAL_SOURCES ../src/experimental/*.cpp)
+@@ -158,7 +178,6 @@
+     file(GLOB LIBCXX_FILESYSTEM_SOURCES ../src/experimental/filesystem/*.cpp)
+   endif()
+   add_library(cxx_experimental STATIC ${LIBCXX_EXPERIMENTAL_SOURCES} ${LIBCXX_FILESYSTEM_SOURCES})
+-  target_link_libraries(cxx_experimental cxx)
+ 
+   set(experimental_flags "${LIBCXX_COMPILE_FLAGS}")
+   check_flag_supported(-std=c++14)
+@@ -197,7 +216,7 @@
    if (LIBCXX_INSTALL_EXPERIMENTAL_LIBRARY)
      set(experimental_lib cxx_experimental)
    endif()
