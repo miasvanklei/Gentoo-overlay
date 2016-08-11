@@ -1,0 +1,28 @@
+From 1a65d7935adf52aef28079689a4959bc51330be5 Mon Sep 17 00:00:00 2001
+From: Khem Raj <raj.khem@gmail.com>
+Date: Sat, 12 Sep 2015 19:10:04 +0000
+Subject: [PATCH] Use getenv when secure versions are not available
+
+musl doesnt implement secure version, so we default
+to it if configure does not detect a secure imeplementation
+
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Upstream-Status: Denied
+---
+ src/systemd/nm-sd-adapt.h | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/src/systemd/nm-sd-adapt.h b/src/systemd/nm-sd-adapt.h
+index 4f21184..b5e15be 100644
+--- a/src/systemd/nm-sd-adapt.h
++++ b/src/systemd/nm-sd-adapt.h
+@@ -119,7 +119,7 @@
+ #  ifdef HAVE___SECURE_GETENV
+ #    define secure_getenv __secure_getenv
+ #  else
+-#    error neither secure_getenv nor __secure_getenv is available
++#    define secure_getenv getenv
+ #  endif
+ #endif
+ 
+
