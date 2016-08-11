@@ -2,16 +2,16 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
 #: ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 
-inherit cmake-utils multilib-minimal
+inherit cmake-multilib
 
 MY_P=openmp-${PV}
 DESCRIPTION="OpenMP runtime library for LLVM/clang compiler"
 HOMEPAGE="http://openmp.llvm.org"
-SRC_URI="http://llvm.org/releases/${PV}/${MY_P}.src.tar.xz"
+SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${MY_P/_}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0/3.7"
@@ -21,7 +21,7 @@ IUSE=""
 DEPEND=""
 RDEPEND="${DEPEND}"
 
-S="${WORKDIR}/${MY_P}.src"
+S="${WORKDIR}/${MY_P/_}.src"
 
 PATCHES=(
         "${FILESDIR}"/${PN}-3.7.0-os_detection.patch
