@@ -51,6 +51,28 @@
       AC_SUBST(NATIVE_ARCH_DEFINES, "-DTARGET_POSIX -DTARGET_LINUX -D_LINUX")
       ;;
    *)
+@@ -33,10 +33,10 @@
+ 
+ # host detection and setup - this is the target arch
+ case $host in
+-  i*86*-linux-gnu*|i*86*-*-linux-uclibc*)
++  i*86*-linux-gnu*|i*86*-*-linux-uclibc*|i*86*-linux-musl*)
+      AC_SUBST(ARCH_DEFINES, "-DTARGET_POSIX -DTARGET_LINUX -D_LINUX")
+      ;;
+-  x86_64-*-linux-gnu*|x86_64-*-linux-uclibc*)
++  x86_64-*-linux-gnu*|x86_64-*-linux-uclibc*|x86_64-*-linux-musl*)
+      AC_SUBST(ARCH_DEFINES, "-DTARGET_POSIX -DTARGET_LINUX -D_LINUX")
+      ;;
+   i386-*-freebsd*)
+@@ -60,7 +60,7 @@
+   powerpc64-*-linux-gnu*|powerpc64-*-linux-uclibc*)
+      AC_SUBST(ARCH_DEFINES, "-DTARGET_POSIX -DTARGET_LINUX -D_LINUX -D_POWERPC64")
+      ;;
+-  arm*-*-linux-gnu*|arm*-*-linux-uclibc*)
++  arm*-*-linux-gnu*|arm*-*-linux-uclibc*|arm*-*-linux-muslgnu*)
+      AC_SUBST(ARCH_DEFINES, "-DTARGET_POSIX -DTARGET_LINUX -D_LINUX")
+      ;;
+   mips*-*-linux-gnu*|mips*-*-linux-uclibc*)
 --- ./xbmc/cores/DllLoader/ldt_keeper.c.orig
 +++ ./xbmc/cores/DllLoader/ldt_keeper.c
 @@ -48,7 +48,7 @@
