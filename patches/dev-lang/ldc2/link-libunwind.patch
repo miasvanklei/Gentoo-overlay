@@ -1,0 +1,39 @@
+--- a/driver/linker.cpp	2016-08-11 20:00:04.168447085 +0200
++++ b/driver/linker.cpp	2016-08-11 20:00:47.892445867 +0200
+@@ -250,6 +250,7 @@
+       break;
+     }
+     args.push_back("-lrt");
++    args.push_back("-lunwind");
+   // fallthrough
+   case llvm::Triple::Darwin:
+   case llvm::Triple::MacOSX:
+--- a/runtime/CMakeLists.txt	2016-08-11 20:01:08.768445285 +0200
++++ b/runtime/CMakeLists.txt	2016-08-11 20:03:21.143441596 +0200
+@@ -8,7 +8,7 @@
+ 
+ set(DMDFE_VERSION         ${D_VERSION}.${DMDFE_MINOR_VERSION}.${DMDFE_PATCH_VERSION})
+ 
+-set(MULTILIB              OFF                                       CACHE BOOL    "Build both 32/64 bit runtime libraries")
++set(MULTILIB              ON                                        CACHE BOOL    "Build both 32/64 bit runtime libraries")
+ set(BUILD_BC_LIBS         OFF                                       CACHE BOOL    "Build the runtime as LLVM bitcode libraries")
+ set(INCLUDE_INSTALL_DIR   ${CMAKE_INSTALL_PREFIX}/include/d         CACHE PATH    "Path to install D modules to")
+ set(BUILD_SHARED_LIBS     OFF                                       CACHE BOOL    "Whether to build the runtime as a shared library")
+@@ -420,7 +420,7 @@
+         # TOOD: Once BUILD_SHARED_LIBS is supported on operating systems other
+         # than Linux, the library selection will need to be adapted based on
+         # the target.
+-        target_link_libraries(druntime-ldc${target_suffix} "m" "pthread" "rt" "dl")
++        target_link_libraries(druntime-ldc${target_suffix} "m" "pthread" "rt" "dl" "unwind")
+     endif()
+ 
+     list(APPEND ${outlist_targets} druntime-ldc${target_suffix})
+@@ -448,7 +448,7 @@
+             # TODO: As for druntime, adapt once shared libraries are supported
+             # on more operating systems.
+             target_link_libraries(phobos2-ldc${target_suffix}
+-                druntime-ldc${target_suffix} "m" "pthread" "dl")
++                druntime-ldc${target_suffix} "m" "pthread" "dl" "unwind")
+         endif()
+ 
+         list(APPEND ${outlist_targets} "phobos2-ldc${target_suffix}")
