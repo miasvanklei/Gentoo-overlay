@@ -32,7 +32,7 @@ DEPEND="${RDEPEND}
 	sys-devel/m4
 	elibc_musl? (
 		sys-libs/argp-standalone[${MULTILIB_USEDEP}]
-		sys-libs/musl-fts[${MULTILIB_USEDEP}]
+		sys-libs/fts-standalone[${MULTILIB_USEDEP}]
 		sys-libs/musl-obstack[${MULTILIB_USEDEP}]
 	)"
 
