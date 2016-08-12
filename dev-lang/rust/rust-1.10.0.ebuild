@@ -67,6 +67,8 @@ src_prepare() {
 	eapply "${FILESDIR}"/llvm-002-3.9.patch
 	eapply "${FILESDIR}"/fix-pic.patch
 	eapply "${FILESDIR}"/fix-linking.patch
+	eapply "${FILESDIR}"/disable-no-defaultlibs.patch
+	eapply "${FILESDIR}"/remove-compiler-rt.patch
 
 	mkdir ${S}/stage0
 
