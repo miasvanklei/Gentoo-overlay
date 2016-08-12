@@ -3,20 +3,19 @@
 # $Header: $
 
 EAPI=5
-PYTHON_COMPAT=(python2_7)
+PYTHON_COMPAT=(python3_5)
 
 inherit vcs-snapshot distutils-r1
 
-DESCRIPTION="An unofficial api for Google Play Music"
-HOMEPAGE="https://github.com/simon-weber/gmusicapi"
-SRC_URI="https://github.com/hickford/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+DESCRIPTION="PyCryptodome is a self-contained Python package of low-level cryptographic primitives."
+HOMEPAGE="https://github.com/Legrandin/pycryptodome"
+SRC_URI="https://pypi.python.org/packages/source/p/${PN}/${P}.tar.gz"
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE="test"
 
-RDEPEND=">=dev-python/requests-2.6.0[${PYTHON_USEDEP}]
-	 >=dev-python/beautifulsoup-4.4.1[${PYTHON_USEDEP}]"
+RDEPEND=""
 DEPEND="${RDEPEND} dev-python/setuptools[${PYTHON_USEDEP}]"
 
 python_test() {
