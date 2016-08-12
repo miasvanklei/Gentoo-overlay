@@ -1,0 +1,11 @@
+--- a/libguile/vm-i-scheme.c	2016-08-12 23:17:55.049637937 +0200
++++ b/libguile/vm-i-scheme.c	2016-08-12 23:15:14.123642421 +0200
+@@ -233,7 +233,7 @@
+ /* Assembly tagged integer arithmetic routines.  This code uses the
+    `asm goto' feature introduced in GCC 4.5.  */
+ 
+-#if SCM_GNUC_PREREQ (4, 5) && (defined __x86_64__ || defined __i386__)
++#if SCM_GNUC_PREREQ (4, 5) && (defined __x86_64__ || defined __i386__) && !defined(__clang__)
+ 
+ # undef _CX
+ # if SCM_I_FIXNUM_BIT == 62
