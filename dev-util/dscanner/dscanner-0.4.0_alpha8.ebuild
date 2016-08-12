@@ -10,18 +10,18 @@ LICENSE="GPL-3"
 
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
-EGIT_REPO_URI="https://github.com/Hackerpilot/Dscanner"
+SRC_URI="https://github.com/Hackerpilot/Dscanner/archive/v0.4.0-alpha.8.tar.gz"
 
-inherit git-r3
-
-DEPEND="dev-lang/dmd"
+DEPEND="dev-lang/ldc2"
 RDEPEND="${DEPEND}"
 
+S=${WORKDIR}/Dscanner-0.4.0-alpha.8
+
 src_compile() {
-	make
+	dub build
 }
 
 src_install() {
-	dobin bin/dscanner
+	dobin dscanner
 	dodoc README.md
 }
