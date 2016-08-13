@@ -4,14 +4,13 @@
 
 EAPI=6
 
-inherit cmake-multilib
+inherit cmake-multilib git-r3
 
 DESCRIPTION="New implementation of low level support for a standard C++ library"
 HOMEPAGE="http://libcxxabi.llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${P/_}.src.tar.xz
-        http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/libcxx-${PV/_}.src.tar.xz"
-S="${WORKDIR}/${P/_}.src"
-LIBCXX_S="${WORKDIR}/libcxx-${PV/_}.src"
+EGIT_REPO_URI="https://github.com/llvm-mirror/libcxxabi.git"
+
+LIBCXX_S="${WORKDIR}/libcxx"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -23,6 +22,10 @@ RDEPEND="${DEPEND}"
 
 src_prepare() {
 	default
+
+	git-r3_fetch "https://github.com/llvm-mirror/libcxx.git"
+
+	git-r3_checkout https://github.com/llvm-mirror/libcxx.git "${LIBCXX_S}"
 
 	# to support standalone build
 	eapply "${FILESDIR}/${PN}-3.8-cmake.patch"

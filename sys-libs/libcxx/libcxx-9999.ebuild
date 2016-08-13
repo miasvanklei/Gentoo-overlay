@@ -4,29 +4,17 @@
 
 EAPI=6
 
-ESVN_REPO_URI="http://llvm.org/svn/llvm-project/libcxx/trunk"
-
-[ "${PV%9999}" != "${PV}" ] && SCM="subversion" || SCM=""
-
-inherit ${SCM} cmake-multilib toolchain-funcs
+inherit git-r3 cmake-multilib toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="http://libcxx.llvm.org/"
-if [ "${PV%9999}" = "${PV}" ] ; then
-	SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${P/_}.src.tar.xz"
-	S="${WORKDIR}/${P/_}.src"
-else
-	SRC_URI=""
-fi
+
+EGIT_REPO_URI="https://github.com/llvm-mirror/libcxx.git"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-if [ "${PV%9999}" = "${PV}" ] ; then
-	KEYWORDS="~amd64 ~mips ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
-else
-	KEYWORDS=""
-fi
-IUSE="-libcxxrt +libunwind +static-libs"
+KEYWORDS="~amd64 ~mips ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
+IUSE="+experimental -libcxxrt +libunwind +static-libs"
 
 RDEPEND="libcxxrt? ( >=sys-libs/libcxxrt-0.0_p20130725[libunwind=,static-libs?,${MULTILIB_USEDEP}] )
 	!libcxxrt? ( ~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}] )"
@@ -47,7 +35,7 @@ pkg_setup() {
 src_prepare() {
 	default
 	# allow building shared and static libs in one run
-	eapply "${FILESDIR}/${PN}-3.8-cmake.patch"
+	eapply "${FILESDIR}/${PN}-3.8-musl-support.patch"
 }
 
 multilib_src_configure() {
@@ -64,6 +52,7 @@ multilib_src_configure() {
 		-DLIBCXX_CXX_ABI_INCLUDE_PATHS="${EPREFIX}/usr/include/${cxxabi}"
 		-DLIBCXX_HAS_MUSL_LIBC=$(usex elibc_musl)
 		-DLIBCXX_HAS_GCC_S_LIB=$(usex !libunwind)
+		-DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=ON
 	)
 	cmake-utils_src_configure
 }

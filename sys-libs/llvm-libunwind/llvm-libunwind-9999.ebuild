@@ -4,13 +4,11 @@
 
 EAPI=6
 
-inherit cmake-multilib
-
-MY_P="libunwind-${PV}"
+inherit cmake-multilib git-r3
 
 DESCRIPTION="C++ runtime stack unwinder from LLVM"
 HOMEPAGE="https://github.com/llvm-mirror/libunwind"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${MY_P/_}.src.tar.xz"
+EGIT_REPO_URI="https://github.com/llvm-mirror/libunwind.git"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -19,8 +17,6 @@ IUSE="+static-libs"
 
 DEPEND=""
 RDEPEND="!sys-libs/libunwind"
-
-S="${WORKDIR}/${MY_P/_}.src"
 
 src_prepare() {
 	default
