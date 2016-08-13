@@ -1,0 +1,52 @@
+--- b/vcl/inc/unx/gtk/gtkinst.hxx
++++ a/vcl/inc/unx/gtk/gtkinst.hxx
+@@ -42,7 +42,7 @@
+ class GenPspGraphics;
+ class GtkYieldMutex : public SalYieldMutex
+ {
++    std::list<sal_uLong> aYieldStack;
+-    thread_local static sal_uIntPtr yieldCount;
+ 
+ public:
+          GtkYieldMutex() {}
+--- b/vcl/unx/gtk/gtkinst.cxx
++++ a/vcl/unx/gtk/gtkinst.cxx
+@@ -288,24 +288,29 @@
+  * for each pair, so we can accurately restore
+  * it later.
+  */
+-thread_local sal_uIntPtr GtkYieldMutex::yieldCount;
+-
+ void GtkYieldMutex::ThreadsEnter()
+ {
+     acquire();
++    if( !aYieldStack.empty() )
++    { /* Previously called ThreadsLeave() */
++        sal_uLong nCount = aYieldStack.front();
++        aYieldStack.pop_front();
++        while( nCount-- > 1 )
++            acquire();
+-    for (; yieldCount != 0; --yieldCount) {
+-        acquire();
+     }
+ }
+ 
+ void GtkYieldMutex::ThreadsLeave()
+ {
++    aYieldStack.push_front( mnCount );
++
++    SAL_WARN_IF(
++        mnThreadId && mnThreadId != osl::Thread::getCurrentIdentifier(),
++        "vcl.gtk", "other thread " << mnThreadId << " owns the mutex");
++
++    while( mnCount > 1 )
+-    assert(mnCount != 0);
+-    assert(yieldCount == 0);
+-    yieldCount = mnCount - 1;
+-    for (sal_uIntPtr i = 0; i != yieldCount + 1; ++i) {
+         release();
++    release();
+-    }
+ }
+ 
+ SalVirtualDevice* GtkInstance::CreateVirtualDevice( SalGraphics *pG,
