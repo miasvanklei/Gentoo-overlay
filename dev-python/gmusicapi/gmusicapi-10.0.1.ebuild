@@ -28,7 +28,8 @@ RDEPEND=">=dev-python/appdirs-1.1.0[${PYTHON_USEDEP}]
 	>=dev-python/MechanicalSoup-0.4.0[${PYTHON_USEDEP}]
 	dev-python/future[${PYTHON_USEDEP}]
 	dev-python/pycryptodomex[${PYTHON_USEDEP}]
-	dev-python/httplib2[${PYTHON_USEDEP}]
+	dev-python/watchdog[${PYTHON_USEDEP}]
+	dev-python/pathtools[${PYTHON_USEDEP}]
 	"
 DEPEND="${RDEPEND}
 	test? ( dev-python/nose[${PYTHON_USEDEP}]
