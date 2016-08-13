@@ -30,9 +30,6 @@ src_prepare() {
 	# to support standalone build
 	eapply "${FILESDIR}/${PN}-3.8-cmake.patch"
 
-	# to support cxa_thread_atexit
-	eapply "${FILESDIR}"/add-cxa_thread_atexit.patch
-
 	if use elibc_musl; then
 		pushd ${LIBCXX_S} >/dev/null || die
 		eapply "${FILESDIR}/libcxx-3.8-musl-support.patch"
