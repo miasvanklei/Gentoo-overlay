@@ -1,59 +1,545 @@
---- /dev/null	2016-08-11 23:28:45.000254564 +0200
-+++ b/crt/crtbegin.c	2016-08-14 21:02:47.190096581 +0200
-@@ -0,0 +1,52 @@
-+void *__dso_handle = 0;
+--- /dev/null	2016-08-13 19:52:51.553976259 +0200
++++ b/crt/i386/crtbegin.s	2016-08-14 22:35:02.208066086 +0200
+@@ -0,0 +1,128 @@
++	.section	.ctors, "aw", @progbits
++	.align 4
++__CTOR_LIST__:
++	.long -1
 +
-+typedef void (*cfptr)(int argc, char **argv, char **envp);
-+typedef void (*dfptr)(void);
++	.section	.dtors, "aw", @progbits
++	.align 4
++__DTOR_LIST__:
++	.long -1
 +
-+extern void (*__init_array_start [])(int, char **, char **)
-+    __attribute__((visibility("hidden")));
-+extern void (*__init_array_end [])(int, char **, char **)
-+    __attribute__((visibility("hidden")));
-+extern void (*__fini_array_start [])(void)
-+    __attribute__((visibility("hidden")));
-+extern void (*__fini_array_end [])(void)
-+    __attribute__((visibility("hidden")));
++	.section	.eh_frame, "a", @progbits
++	.align 4
++__EH_FRAME_LIST__:
 +
-+static void
-+do_ctors(int argc, char **argv, char **envp)
-+{
-+    cfptr *fpp;
++	.section	.jcr, "aw", @progbits
++	.align 4
++__JCR_LIST__:
 +
-+    for(fpp = __init_array_start;  fpp != __init_array_end;  ++fpp)
-+        (**fpp)(argc, argv, envp);
-+}
++	.section	.data.rel, "aw", @progbits
++	.align 4
++	.type	__dso_handle, @object
++	.size	__dso_handle, 4
++	.globl	__dso_handle
++	.hidden	__dso_handle
++__dso_handle:
++	.long	0
 +
-+static void
-+do_dtors(void)
-+{
-+    dfptr *fpp;
++__dwarf_eh_object:
++	.zero	32
 +
-+    for(fpp = __fini_array_end;  fpp != __fini_array_start; ) {
-+        --fpp;
-+        (**fpp)();
-+    }
-+}
++__initialized:
++	.zero	1
++__finished:
++	.zero	1
 +
-+static cfptr p_do_ctors = do_ctors;
-+static dfptr p_do_dtors = do_dtors;
++	.text
++	.weak	__cxa_finalize
++	.weak	__deregister_frame_info
++	.weak	__register_frame_info
++	.weak	_Jv_RegisterClasses
 +
-+extern void _init(int argc, char **argv, char **envp) __attribute__((section(".init")));
++__get_thunk:
++	movl	(%esp), %ebx
++	ret
 +
-+extern void _fini(void) __attribute__((section(".fini")));
++__do_global_dtors_aux:
++	pushl	%ebx
++	pushl	%edi
++	subl	$8, %esp
++	call	__get_thunk
++	addl	$_GLOBAL_OFFSET_TABLE_, %ebx
 +
-+void
-+_fini(void)
-+{
-+    (*p_do_dtors)();
-+}
++	cmpb	$0, __finished@GOTOFF(%ebx)
++	jne	4f
++	movb	$1, __finished@GOTOFF(%ebx)
 +
-+void
-+_init(int argc, char **argv, char **envp)
-+{
-+    (*p_do_ctors)(argc, argv, envp);
-+}
---- /dev/null	2016-08-11 23:28:45.000254564 +0200
-+++ crtend.c	2016-08-14 21:03:44.953007686 +0200
-@@ -0,0 +1 @@
++	leal	4+__DTOR_LIST__@GOTOFF(%ebx), %edi
++2:
++	movl	(%edi), %eax
++	testl	%eax, %eax
++	je	3f
++	call	*%eax
++	addl	$8, %edi
++	jmp	2b
++3:
 +
++	cmpl	$0, __deregister_frame_info@GOT(%ebx)
++	je	4f
++	leal	__EH_FRAME_LIST__@GOTOFF(%ebx), %eax
++	movl	%eax, (%esp)
++	call	__deregister_frame_info@PLT
++4:
++	addl	$8, %esp
++	popl	%edi
++	popl	%ebx
++	ret
++
++
++__do_global_ctors_aux:
++	pushl	%ebx
++	pushl	%edi
++	subl	$8, %esp
++	call	__get_thunk
++	addl	$_GLOBAL_OFFSET_TABLE_, %ebx
++
++	cmpb	$0, __initialized@GOTOFF(%ebx)
++	jne	4f
++	movb	$1, __initialized@GOTOFF(%ebx)
++
++	cmpl	$0, __register_frame_info@GOT(%ebx)
++	je	1f
++	leal	__dwarf_eh_object@GOTOFF(%ebx), %edi
++	movl	%edi, 4(%esp)
++	leal	__EH_FRAME_LIST__@GOTOFF(%ebx), %edi
++	movl	%edi, (%esp)
++	call	__register_frame_info@PLT
++
++1:
++	cmpl	$0, _Jv_RegisterClasses@GOT(%ebx)
++	je	2f
++	leal	__JCR_LIST__@GOTOFF(%ebx), %edi
++	movl	(%edi), %edi
++	testl	%edi, %edi
++	je 	2f
++	movl	%edi, (%esp)
++	call	_Jv_RegisterClasses@PLT
++2:
++
++	leal	-4+__CTOR_LIST_END__@GOTOFF(%ebx), %edi
++3:
++	movl	(%edi), %eax
++	cmpl	$-1, %eax
++	je	4f
++	call	*%eax
++	subl	$4, %edi
++	jmp	3b
++
++4:
++	addl	$8, %esp
++	popl	%edi
++	popl	%ebx
++	ret
++
++	.section	.init, "ax", @progbits
++	call	__do_global_ctors_aux
++	.section	.fini, "ax", @progbits
++	call	__do_global_dtors_aux
++.section .note.GNU-stack,"",%progbits
+--- /dev/null	2016-08-13 19:52:51.553976259 +0200
++++ b/crt/i386/crtbeginS.s	2016-08-14 22:35:19.958993353 +0200
+@@ -0,0 +1,135 @@
++	.section	.ctors, "aw", @progbits
++	.align 4
++__CTOR_LIST__:
++	.long -1
++
++	.section	.dtors, "aw", @progbits
++	.align 4
++__DTOR_LIST__:
++	.long -1
++
++	.section	.eh_frame, "a", @progbits
++	.align 4
++__EH_FRAME_LIST__:
++
++	.section	.jcr, "aw", @progbits
++	.align 4
++__JCR_LIST__:
++
++	.section	.data.rel, "aw", @progbits
++	.align 4
++	.type	__dso_handle, @object
++	.size	__dso_handle, 4
++	.globl	__dso_handle
++	.hidden	__dso_handle
++__dso_handle:
++	.long	__dso_handle
++
++__dwarf_eh_object:
++	.zero	32
++
++__initialized:
++	.zero	1
++__finished:
++	.zero	1
++
++	.text
++	.weak	__cxa_finalize
++	.weak	__deregister_frame_info
++	.weak	__register_frame_info
++	.weak	_Jv_RegisterClasses
++
++__get_thunk:
++	movl	(%esp), %ebx
++	ret
++
++__do_global_dtors_aux:
++	pushl	%ebx
++	pushl	%edi
++	subl	$8, %esp
++	call	__get_thunk
++	addl	$_GLOBAL_OFFSET_TABLE_, %ebx
++
++	cmpb	$0, __finished@GOTOFF(%ebx)
++	jne	4f
++	movb	$1, __finished@GOTOFF(%ebx)
++
++	cmpl	$0, __cxa_finalize@GOT(%ebx)
++	je	1f
++	movl	__dso_handle@GOTOFF(%ebx), %eax
++	movl	%eax, (%esp)
++	call	__cxa_finalize@PLT
++1:
++
++	leal	4+__DTOR_LIST__@GOTOFF(%ebx), %edi
++2:
++	movl	(%edi), %eax
++	testl	%eax, %eax
++	je	3f
++	call	*%eax
++	addl	$8, %edi
++	jmp	2b
++3:
++
++	cmpl	$0, __deregister_frame_info@GOT(%ebx)
++	je	4f
++	leal	__EH_FRAME_LIST__@GOTOFF(%ebx), %eax
++	movl	%eax, (%esp)
++	call	__deregister_frame_info@PLT
++4:
++	addl	$8, %esp
++	popl	%edi
++	popl	%ebx
++	ret
++
++
++__do_global_ctors_aux:
++	pushl	%ebx
++	pushl	%edi
++	subl	$8, %esp
++	call	__get_thunk
++	addl	$_GLOBAL_OFFSET_TABLE_, %ebx
++
++	cmpb	$0, __initialized@GOTOFF(%ebx)
++	jne	4f
++	movb	$1, __initialized@GOTOFF(%ebx)
++
++	cmpl	$0, __register_frame_info@GOT(%ebx)
++	je	1f
++	leal	__dwarf_eh_object@GOTOFF(%ebx), %edi
++	movl	%edi, 4(%esp)
++	leal	__EH_FRAME_LIST__@GOTOFF(%ebx), %edi
++	movl	%edi, (%esp)
++	call	__register_frame_info@PLT
++
++1:
++	cmpl	$0, _Jv_RegisterClasses@GOT(%ebx)
++	je	2f
++	leal	__JCR_LIST__@GOTOFF(%ebx), %edi
++	movl	(%edi), %edi
++	testl	%edi, %edi
++	je 	2f
++	movl	%edi, (%esp)
++	call	_Jv_RegisterClasses@PLT
++2:
++
++	leal	-4+__CTOR_LIST_END__@GOTOFF(%ebx), %edi
++3:
++	movl	(%edi), %eax
++	cmpl	$-1, %eax
++	je	4f
++	call	*%eax
++	subl	$4, %edi
++	jmp	3b
++
++4:
++	addl	$8, %esp
++	popl	%edi
++	popl	%ebx
++	ret
++
++	.section	.init, "ax", @progbits
++	call	__do_global_ctors_aux
++	.section	.fini, "ax", @progbits
++	call	__do_global_dtors_aux
++.section .note.GNU-stack,"",%progbits
+--- /dev/null	2016-08-13 19:52:51.553976259 +0200
++++ b/crt/i386/crtend.s	2016-08-14 22:35:27.458962832 +0200
+@@ -0,0 +1,19 @@
++	.section	.ctors, "aw", @progbits
++	.align 4
++	.global		__CTOR_LIST_END__
++	.hidden 	__CTOR_LIST_END__
++__CTOR_LIST_END__:
++	.long 0
++
++	.section	.dtors, "aw", @progbits
++	.align 4
++	.long 0
++
++	.section	.eh_frame, "a", @progbits
++	.align 4
++	.long 0
++
++	.section	.jcr, "aw", @progbits
++	.align 4
++	.long 0
++.section .note.GNU-stack,"",%progbits
+--- /dev/null	2016-08-13 19:52:51.553976259 +0200
++++ b/crt/x86_64/crtbegin.s	2016-08-14 22:35:35.758929198 +0200
+@@ -0,0 +1,111 @@
++	.section	.ctors, "aw", @progbits
++	.align 8
++__CTOR_LIST__:
++	.quad -1
++
++	.section	.dtors, "aw", @progbits
++	.align 8
++__DTOR_LIST__:
++	.quad -1
++
++	.section	.eh_frame, "a", @progbits
++	.align 8
++__EH_FRAME_LIST__:
++
++	.section	.jcr, "aw", @progbits
++	.align 8
++__JCR_LIST__:
++
++	.section	.data.rel, "aw", @progbits
++	.align 8
++	.type	__dso_handle, @object
++	.size	__dso_handle, 8
++	.globl	__dso_handle
++	.hidden	__dso_handle
++__dso_handle:
++	.quad	0
++
++__dwarf_eh_object:
++	.zero	64
++
++__initialized:
++	.zero	1
++__finished:
++	.zero	1
++
++	.text
++	.weak	__cxa_finalize
++	.weak	__deregister_frame_info
++	.weak	__register_frame_info
++	.weak	_Jv_RegisterClasses
++
++__do_global_dtors_aux:
++	cmpb	$0, __finished(%rip)
++	je	1f
++	ret
++1:
++	pushq	%rbx
++	movb	$1, __finished(%rip)
++
++
++	leaq	8+__DTOR_LIST__(%rip), %rbx
++3:
++	movq	(%rbx), %rax
++	testq	%rax, %rax
++	je	4f
++	call	*%rax
++	addq	$8, %rbx
++	jmp	3b	
++4:
++
++	cmpq	$0, __deregister_frame_info@GOTPCREL(%rip)
++	je	5f
++	leaq	__EH_FRAME_LIST__(%rip), %rdi
++	call	__deregister_frame_info@PLT
++5:
++	popq	%rbx
++	ret
++
++
++__do_global_ctors_aux:
++	cmpb	$0, __initialized(%rip)
++	je	1f
++	ret
++1:
++	pushq	%rbx
++	movb	$1, __initialized(%rip)
++
++	cmpq	$0, __register_frame_info@GOTPCREL(%rip)
++	je	2f
++	leaq	__dwarf_eh_object(%rip), %rsi
++	leaq	__EH_FRAME_LIST__(%rip), %rdi
++	call	__register_frame_info@PLT
++
++2:
++	cmpq	$0, _Jv_RegisterClasses@GOTPCREL(%rip)
++	je	3f
++	leaq	__JCR_LIST__(%rip), %rdi
++	cmpq	$0, (%rdi)
++	je 	3f
++	call	_Jv_RegisterClasses@PLT
++3:
++
++	leaq	-8+__CTOR_LIST_END__(%rip), %rbx
++4:
++	movq	(%rbx), %rax
++	cmpq	$-1, %rax
++	je	5f
++	call	*%rax
++	subq	$8, %rbx
++	jmp	4b
++
++5:
++	popq	%rbx
++
++	ret
++
++	.section	.init, "ax", @progbits
++	call	__do_global_ctors_aux
++	.section	.fini, "ax", @progbits
++	call	__do_global_dtors_aux
++.section .note.GNU-stack,"",%progbits
+--- /dev/null	2016-08-13 19:52:51.553976259 +0200
++++ b/crt/x86_64/crtbeginS.s	2016-08-14 22:33:35.383432668 +0200
+@@ -0,0 +1,115 @@
++	.section	.ctors, "aw", @progbits
++	.align 8
++__CTOR_LIST__:
++	.quad -1
++
++	.section	.dtors, "aw", @progbits
++	.align 8
++__DTOR_LIST__:
++	.quad -1
++
++	.section	.eh_frame, "a", @progbits
++	.align 8
++__EH_FRAME_LIST__:
++
++	.section	.jcr, "aw", @progbits
++	.align 8
++__JCR_LIST__:
++
++	.section	.data.rel, "aw", @progbits
++	.align 8
++	.type	__dso_handle, @object
++	.size	__dso_handle, 8
++	.globl	__dso_handle
++	.hidden	__dso_handle
++__dso_handle:
++	.quad	__dso_handle
++
++__dwarf_eh_object:
++	.zero	64
++
++__initialized:
++	.zero	1
++__finished:
++	.zero	1
++
++	.text
++	.weak	__cxa_finalize
++	.weak	__deregister_frame_info
++	.weak	__register_frame_info
++	.weak	_Jv_RegisterClasses
++
++__do_global_dtors_aux:
++	cmpb	$0, __finished(%rip)
++	je	1f
++	ret
++1:
++	pushq	%rbx
++	movb	$1, __finished(%rip)
++
++	cmpq	$0, __cxa_finalize@GOTPCREL(%rip)
++	je	2f
++	movq	__dso_handle(%rip), %rdi
++	call	__cxa_finalize@PLT
++2:
++
++	leaq	8+__DTOR_LIST__(%rip), %rbx
++3:
++	movq	(%rbx), %rax
++	testq	%rax, %rax
++	je	4f
++	call	*%rax
++	addq	$8, %rbx
++	jmp	3b	
++4:
++
++	cmpq	$0, __deregister_frame_info@GOTPCREL(%rip)
++	je	5f
++	leaq	__EH_FRAME_LIST__(%rip), %rdi
++	call	__deregister_frame_info@PLT
++5:
++	popq	%rbx
++	ret
++
++__do_global_ctors_aux:
++	cmpb	$0, __initialized(%rip)
++	je	1f
++	ret
++1:
++	pushq	%rbx
++	movb	$1, __initialized(%rip)
++
++	cmpq	$0, __register_frame_info@GOTPCREL(%rip)
++	je	2f
++	leaq	__dwarf_eh_object(%rip), %rsi
++	leaq	__EH_FRAME_LIST__(%rip), %rdi
++	call	__register_frame_info@PLT
++
++2:
++	cmpq	$0, _Jv_RegisterClasses@GOTPCREL(%rip)
++	je	3f
++	leaq	__JCR_LIST__(%rip), %rdi
++	cmpq	$0, (%rdi)
++	je 	3f
++	call	_Jv_RegisterClasses@PLT
++3:
++
++	leaq	-8+__CTOR_LIST_END__(%rip), %rbx
++4:
++	movq	(%rbx), %rax
++	cmpq	$-1, %rax
++	je	5f
++	call	*%rax
++	subq	$8, %rbx
++	jmp	4b
++
++5:
++	popq	%rbx
++
++	ret
++
++	.section	.init, "ax", @progbits
++	call	__do_global_ctors_aux
++	.section	.fini, "ax", @progbits
++	call	__do_global_dtors_aux
++.section .note.GNU-stack,"",%progbits
+--- /dev/null	2016-08-13 19:52:51.553976259 +0200
++++ b/crt/x86_64/crtend.s	2016-08-14 22:35:44.458894100 +0200
+@@ -0,0 +1,19 @@
++	.section	.ctors, "aw", @progbits
++	.align 8
++	.global		__CTOR_LIST_END__
++	.hidden 	__CTOR_LIST_END__
++__CTOR_LIST_END__:
++	.quad 0
++
++	.section	.dtors, "aw", @progbits
++	.align 8
++	.quad 0
++
++	.section	.eh_frame, "a", @progbits
++	.align 8
++	.quad 0
++
++	.section	.jcr, "aw", @progbits
++	.align 8
++	.quad 0
++.section .note.GNU-stack,"",%progbits

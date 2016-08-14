@@ -225,7 +225,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/cfe-010-increase-gcc-version.patch
 		eapply "${FILESDIR}"/cfe-011-dont-use-gcc-dir.patch
 		eapply "${FILESDIR}"/cfe-012-remove-rtm-haswell.patch
-		eapply "${FILESDIR}"/cfe-013-remove-link-crtfiles.patch
 		eapply "${FILESDIR}"/update-default-cxx-standard.patch
 	fi
 
