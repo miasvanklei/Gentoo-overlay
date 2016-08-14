@@ -217,16 +217,15 @@ src_prepare() {
 		eapply "${FILESDIR}"/musl/cfe/cfe-005-Enable-PIE-by-default-for-gentoo-linux.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-006-Link-with-z-now-by-default-for-Gentoo-Linux.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-008-musl-disable-cxa-atexit.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-009-use-ssp-by-default.patch
-		eapply "${FILESDIR}"/musl/compiler-rt/compiler-rt-001-add-blocks-support.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-008-use-ssp-by-default.patch
 
 		# Other patches
-		eapply "${FILESDIR}"/cfe-010-fix-ada-in-configure.patch
-		eapply "${FILESDIR}"/cfe-011-increase-gcc-version.patch
-		eapply "${FILESDIR}"/cfe-013-dont-use-gcc-dir.patch
-		eapply "${FILESDIR}"/cfe-014-remove-rtm-haswell.patch
-		eapply "${FILESDIR}"/cfe-015-remove-link-crtfiles.patch
+		eapply "${FILESDIR}"/compiler-rt-001-add-blocks-support.patch
+		eapply "${FILESDIR}"/cfe-009-fix-ada-in-configure.patch
+		eapply "${FILESDIR}"/cfe-010-increase-gcc-version.patch
+		eapply "${FILESDIR}"/cfe-012-dont-use-gcc-dir.patch
+		eapply "${FILESDIR}"/cfe-013-remove-rtm-haswell.patch
+		eapply "${FILESDIR}"/cfe-014-remove-link-crtfiles.patch
 		eapply "${FILESDIR}"/update-default-cxx-standard.patch
 	fi
 
