@@ -223,9 +223,9 @@ src_prepare() {
 		eapply "${FILESDIR}"/compiler-rt-001-add-blocks-support.patch
 		eapply "${FILESDIR}"/cfe-009-fix-ada-in-configure.patch
 		eapply "${FILESDIR}"/cfe-010-increase-gcc-version.patch
-		eapply "${FILESDIR}"/cfe-012-dont-use-gcc-dir.patch
-		eapply "${FILESDIR}"/cfe-013-remove-rtm-haswell.patch
-		eapply "${FILESDIR}"/cfe-014-remove-link-crtfiles.patch
+		eapply "${FILESDIR}"/cfe-011-dont-use-gcc-dir.patch
+		eapply "${FILESDIR}"/cfe-012-remove-rtm-haswell.patch
+		eapply "${FILESDIR}"/cfe-013-remove-link-crtfiles.patch
 		eapply "${FILESDIR}"/update-default-cxx-standard.patch
 	fi
 
