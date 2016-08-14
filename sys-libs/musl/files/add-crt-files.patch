@@ -1,0 +1,53 @@
+--- /dev/null	2016-08-11 23:28:45.000254564 +0200
++++ b/crt/crtbegin.c	2016-08-14 15:31:45.098176777 +0200
+@@ -0,0 +1,43 @@
++typedef void (*fptr)(void);
++
++static fptr ctor_list[1] __attribute__((section(".ctors"))) = { (fptr) -1 };
++static fptr dtor_list[1] __attribute__((section(".dtors"))) = { (fptr) -1 };
++
++static void
++do_ctors(void)
++{
++    fptr *fpp;
++
++    for(fpp = ctor_list + 1;  *fpp != 0;  ++fpp)
++        ;
++    while(--fpp > ctor_list)
++        (**fpp)();
++}
++
++static void
++do_dtors(void)
++{
++    fptr *fpp;
++
++    for(fpp = dtor_list + 1;  *fpp != 0;  ++fpp)
++        (**fpp)();
++}
++
++static void (*p_do_ctors)(void) = do_ctors;
++static void (*p_do_dtors)(void) = do_dtors;
++
++extern void _init(void) __attribute__((section(".init")));
++
++extern void _fini(void) __attribute__((section(".fini")));
++
++void
++_fini(void)
++{
++    (*p_do_dtors)();
++}
++
++void
++_init(void)
++{
++    (*p_do_ctors)();
++}
+--- /dev/null	2016-08-11 23:28:45.000254564 +0200
++++ b/crt/crtend.c	2016-08-14 15:32:01.939025514 +0200
+@@ -0,0 +1,4 @@
++typedef void (*fptr)(void);
++
++static fptr ctor_end[1] __attribute__((section(".ctors"), unused, used)) = { 0 };
++static fptr dtor_end[1] __attribute__((section(".dtors"), unused, used)) = { 0 };

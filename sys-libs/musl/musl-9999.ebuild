@@ -26,7 +26,6 @@ RDEPEND="!sys-apps/getent
 		   sys-libs/fts-standalone )"
 
 src_prepare() {
-
 	for i in "${FILESDIR}"/*.patch; do
 		eapply $i
 	done
