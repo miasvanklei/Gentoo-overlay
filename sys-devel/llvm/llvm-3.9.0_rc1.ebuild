@@ -216,7 +216,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/musl/cfe/cfe-003-Use-hash-style-gnu-for-Gentoo-Linux.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-005-Enable-PIE-by-default-for-gentoo-linux.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-006-Link-with-z-now-by-default-for-Gentoo-Linux.patch
-		eapply "${FILESDIR}"/musl/cfe/cfe-007-musl-use-init-array.patch
 		eapply "${FILESDIR}"/musl/cfe/cfe-008-use-ssp-by-default.patch
 
 		# Other patches
