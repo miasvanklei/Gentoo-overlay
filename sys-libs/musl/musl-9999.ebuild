@@ -83,6 +83,7 @@ multilib_src_install() {
 	# needed for ldd under pax kernel
 	pax-mark r "${D}"/$(get_libdir)/${ldso} || die
 
+	cd ${D}/usr/$(get_libdir)
 }
 
 multilib_src_install_all() {
