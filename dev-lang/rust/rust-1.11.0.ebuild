@@ -31,8 +31,8 @@ DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
 SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
-	amd64? ( https://alpine.geeknet.cz/distfiles/rustc-${PV}-x86_64-unknown-linux-musl.tar.gz
-		 https://alpine.geeknet.cz/distfiles/rust-std-${PV}-x86_64-unknown-linux-musl.tar.gz )
+	amd64? ( https://alpine.geeknet.cz/distfiles/rustc-1.10.0-x86_64-unknown-linux-musl.tar.gz
+		 https://alpine.geeknet.cz/distfiles/rust-std-1.10.0-x86_64-unknown-linux-musl.tar.gz )
 "
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
@@ -63,8 +63,7 @@ src_prepare() {
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
 
-	eapply "${FILESDIR}"/llvm-001-3.9.patch
-	eapply "${FILESDIR}"/llvm-002-3.9.patch
+	eapply "${FILESDIR}"/llvm-3.9.patch
 	eapply "${FILESDIR}"/fix-pic.patch
 	eapply "${FILESDIR}"/fix-linking.patch
 	eapply "${FILESDIR}"/disable-no-defaultlibs.patch
@@ -74,16 +73,15 @@ src_prepare() {
 
 	cp -flr "${WORKDIR}"/rustc-*/rustc/* \
 		"${WORKDIR}"/rust-std-*/rust-std-*/* \
-		"${WORKDIR}"/cargo-*/cargo/* \
 		"${S}/stage0"/
 
-	local rustc_ver=$(${S}/stage0/bin/rustc --version | cut -f2 -d ' ')
-	local rustc_key=$(printf ${rustc_ver} | md5sum | cut -c1-8)
+	#local rustc_ver=$(${S}/stage0/bin/rustc --version | cut -f2 -d ' ')
+	#local rustc_key=$(printf ${rustc_ver} | md5sum | cut -c1-8)
 
-	sed -Ei \
-		-e "s/^(rustc):.*/\1: ${rustc_ve}r-1970-01-01/" \
-		-e "s/^(rustc_key):.*/\1: ${rustc_key}/" \
-		src/stage0.txt
+	#sed -Ei \
+	#	-e "s/^(rustc):.*/\1: ${rustc_ve}r-1970-01-01/" \
+	#	-e "s/^(rustc_key):.*/\1: ${rustc_key}/" \
+	#	src/stage0.txt
 
 	eapply_user
 }
