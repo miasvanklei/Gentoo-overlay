@@ -99,7 +99,7 @@ diff -Naurw elfutils-0.165.orig/libcpu/i386_disasm.c elfutils-0.165/libcpu/i386_
 diff -Naurw elfutils-0.165.orig/libdw/libdw.h elfutils-0.165/libdw/libdw.h
 --- elfutils-0.165.orig/libdw/libdw.h	2016-02-03 16:27:23.670960308 -0800
 +++ elfutils-0.165/libdw/libdw.h	2016-02-03 16:29:59.662955872 -0800
-@@ -33,7 +33,27 @@
+@@ -33,7 +33,18 @@
  #include <stdbool.h>
  #include <stddef.h>
  #include <stdint.h>
@@ -114,15 +114,6 @@ diff -Naurw elfutils-0.165.orig/libdw/libdw.h elfutils-0.165/libdw/libdw.h
 +       do __result = (long int) (expression);                                 \
 +       while (__result == -1L && errno == EINTR);                             \
 +       __result; }))
-+#endif
-+
-+#ifndef strndupa
-+#define strndupa(s, n) \
-+       (__extension__ ({const char *__in = (s); \
-+                        size_t __len = strnlen (__in, (n)) + 1; \
-+                        char *__out = (char *) alloca (__len); \
-+                        __out[__len-1] = '\0'; \
-+                        (char *) memcpy (__out, __in, __len-1);}))
 +#endif
  
  #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)

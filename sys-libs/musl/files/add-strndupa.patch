@@ -1,0 +1,24 @@
+--- /dev/null	2016-08-19 16:34:41.583975909 +0200
++++ b/src/string/strndupa.c	2016-08-19 23:45:10.868036204 +0200
+@@ -0,0 +1,11 @@
++#include <alloca.h>
++#include <stdlib.h>
++#include <string.h>
++
++char *strndupa(const char* s, size_t n)
++{
++       char *tmp = alloca(n + 1);
++       strncpy(tmp, s, n);
++       tmp[n] = 0;
++       return tmp;
++}
+--- a/include/string.h	2016-08-19 23:42:50.878194348 +0200
++++ b/include/string.h	2016-08-19 23:46:29.293942619 +0200
+@@ -67,6 +67,7 @@
+ size_t strnlen (const char *, size_t);
+ char *strdup (const char *);
+ char *strndup (const char *, size_t);
++char *strndupa (const char *, size_t);
+ char *strsignal(int);
+ char *strerror_l (int, locale_t);
+ int strcoll_l (const char *, const char *, locale_t);
