@@ -221,10 +221,12 @@ src_prepare() {
 
 		# Other patches
 		eapply "${FILESDIR}"/compiler-rt-001-add-blocks-support.patch
+		eapply "${FILESDIR}"/compiler-rt-002-add-shared.patch
 		eapply "${FILESDIR}"/cfe-009-fix-ada-in-configure.patch
 		eapply "${FILESDIR}"/cfe-010-increase-gcc-version.patch
 		eapply "${FILESDIR}"/cfe-011-dont-use-gcc-dir.patch
 		eapply "${FILESDIR}"/cfe-012-remove-rtm-haswell.patch
+		eapply "${FILESDIR}"/musl/cfe/cfe-013-link-compiler-rt-shared.patch
 		eapply "${FILESDIR}"/update-default-cxx-standard.patch
 	fi
 
