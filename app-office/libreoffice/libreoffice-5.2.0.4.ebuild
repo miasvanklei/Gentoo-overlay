@@ -25,7 +25,7 @@ BRANDING="${PN}-branding-gentoo-0.8.tar.xz"
 # PATCHSET="${P}-patchset-01.tar.xz"
 
 [[ ${PV} == *9999* ]] && SCM_ECLASS="git-r3"
-inherit multiprocessing autotools bash-completion-r1 check-reqs eutils java-pkg-opt-2 kde4-base pax-utils python-single-r1 multilib toolchain-funcs flag-o-matic versionator ${SCM_ECLASS}
+inherit multiprocessing autotools bash-completion-r1 check-reqs eutils java-pkg-opt-2 kde4-base pax-utils python-single-r1 multilib toolchain-funcs flag-o-matic versionator xdg-utils ${SCM_ECLASS}
 unset SCM_ECLASS
 
 DESCRIPTION="A full office productivity suite"
@@ -186,7 +186,7 @@ RDEPEND="${COMMON_DEPEND}
 "
 
 if [[ ${PV} != *9999* ]]; then
-	PDEPEND="app-office/libreoffice-l10n"
+	PDEPEND="=app-office/libreoffice-l10n-$(get_version_component_range 1-2)*"
 else
 	# Translations are not reliable on live ebuilds
 	# rather force people to use english only.
@@ -240,6 +240,9 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 "
 
 PATCHES=(
+	# from 5.2 branch
+	"${FILESDIR}/${PN}-curl-7.50.0.patch"
+
 	# not upstreamable stuff
 	"${FILESDIR}/${PN}-5.2-system-pyuno.patch"
 )
@@ -284,6 +287,7 @@ pkg_setup() {
 	java-pkg-opt-2_pkg_setup
 	kde4-base_pkg_setup
 	python-single-r1_pkg_setup
+	xdg_environment_reset
 
 	[[ ${MERGE_TYPE} != binary ]] && check-reqs_pkg_setup
 }
@@ -539,10 +543,6 @@ src_install() {
 
 	# Remove desktop files to support old installs that can't parse mime
 	rm -r "${ED}"usr/share/mimelnk/ || die
-
-	# FIXME: Hack add missing file
-	exeinto /usr/$(get_libdir)/${PN}/program
-	doexe "${S}"/instdir/program/libsaxlo.so
 
 	pax-mark -m "${ED}"usr/$(get_libdir)/libreoffice/program/soffice.bin
 	pax-mark -m "${ED}"usr/$(get_libdir)/libreoffice/program/unopkg.bin
