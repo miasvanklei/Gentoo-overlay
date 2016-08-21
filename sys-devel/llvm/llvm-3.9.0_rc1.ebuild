@@ -21,8 +21,8 @@ SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${P/_}.src.ta
 	polly? ( http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/polly-${PV/_}.src.tar.xz )
         !doc? ( http://dev.gentoo.org/~voyageur/distfiles/${PN}-3.8.0-manpages.tar.bz2 )"
 LICENSE="UoI-NCSA"
-SLOT="0/3.8.0"
-KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x64-freebsd ~amd64-linux ~arm-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos"
+SLOT="0/3.9.0"
+KEYWORDS="~amd64 ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
 IUSE="+clang +cxx1y +default-compiler-rt +default-libcxx debug doc +eh +gold -jitevents +libedit +libffi +lldb lld multitarget +ncurses -ocaml +openmp -oprofile +polly
 	python +rtti -sanitize +static-analyzer test +threads +xml werror video_cards_radeon kernel_Darwin"
 
