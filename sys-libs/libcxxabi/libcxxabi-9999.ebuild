@@ -10,8 +10,6 @@ DESCRIPTION="New implementation of low level support for a standard C++ library"
 HOMEPAGE="http://libcxxabi.llvm.org/"
 EGIT_REPO_URI="https://github.com/llvm-mirror/libcxxabi.git"
 
-LIBCXX_S="${WORKDIR}/libcxx"
-
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
@@ -23,29 +21,15 @@ RDEPEND="${DEPEND}"
 src_prepare() {
 	default
 
-	git-r3_fetch "https://github.com/llvm-mirror/libcxx.git"
-
-	git-r3_checkout https://github.com/llvm-mirror/libcxx.git "${LIBCXX_S}"
-
-	# to support standalone build
-	eapply "${FILESDIR}/${PN}-3.8-cmake.patch"
-
-	if use elibc_musl; then
-		pushd ${LIBCXX_S} >/dev/null || die
-		eapply "${FILESDIR}/libcxx-3.8-musl-support.patch"
-		popd >/dev/null || die
-	fi
+	eapply "${FILESDIR}/libcxxabi-3.9-cmake.patch"
 }
 
 multilib_src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
-		-DLLVM_CONFIG=OFF
-		-DLIBCXXABI_BUILT_STANDALONE=ON
 		-DLIBCXXABI_USE_COMPILER_RT=ON
 		-DLIBCXXABI_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXXABI_ENABLE_STATIC=$(usex static-libs)
-		-DLIBCXXABI_LIBCXX_INCLUDES="${LIBCXX_S}/include"
 		-DLIBCXXABI_HAS_GCC_S_LIB=$(usex !libunwind)
 		-DCMAKE_SHARED_LINKER_FLAGS=$(usex libunwind "-lunwind" "")
 	)

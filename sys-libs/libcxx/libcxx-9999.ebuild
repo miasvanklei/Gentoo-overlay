@@ -32,19 +32,11 @@ pkg_setup() {
 	fi
 }
 
-src_prepare() {
-	default
-	# allow building shared and static libs in one run
-	eapply "${FILESDIR}/${PN}-3.8-musl-support.patch"
-}
-
 multilib_src_configure() {
 	local libdir=$(get_libdir)
 	local cxxabi=$(usex libcxxrt libcxxrt libcxxabi)
 
 	local mycmakeargs=(
-		-DLLVM_CONFIG=OFF
-		-DLIBCXX_BUILT_STANDALONE=ON
 		-DLIBCXX_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXX_ENABLE_SHARED=ON
 		-DLIBCXX_ENABLE_STATIC=$(usex static-libs)
@@ -53,6 +45,7 @@ multilib_src_configure() {
 		-DLIBCXX_HAS_MUSL_LIBC=$(usex elibc_musl)
 		-DLIBCXX_HAS_GCC_S_LIB=$(usex !libunwind)
 		-DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=ON
+		-DLIBCXX_HAS_MUSL_LIBC=ON
 	)
 	cmake-utils_src_configure
 }

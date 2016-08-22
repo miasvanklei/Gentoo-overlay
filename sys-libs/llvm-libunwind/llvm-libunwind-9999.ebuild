@@ -21,8 +21,8 @@ RDEPEND="!sys-libs/libunwind"
 src_prepare() {
 	default
 	eapply "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
-	eapply "${FILESDIR}"/libunwind-3.8-cmake.patch
 	eapply "${FILESDIR}"/revert-alignedment-commit.patch
+	eapply "${FILESDIR}"/llvm-libunwind-3.9-cmake.patch
 }
 
 multilib_src_configure() {
@@ -31,9 +31,7 @@ multilib_src_configure() {
 	local mycmakeargs=(
 		# work-around attempting to use llvm-config to get llvm sources
 		# (that are not needed at all)
-		-DLLVM_CONFIG=OFF
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
-		-DLIBUNWIND_BUILT_STANDALONE=ON
 		-DLIBUNWIND_ENABLE_STATIC=$(usex static-libs)
 		-DLIBUNWIND_ENABLE_ASSERTIONS=OFF
 	)
