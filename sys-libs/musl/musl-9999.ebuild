@@ -79,8 +79,6 @@ multilib_src_install() {
 
 	# needed for ldd under pax kernel
 	pax-mark r "${D}"/$(get_libdir)/${ldso} || die
-
-	cd ${D}/usr/$(get_libdir)
 }
 
 multilib_src_install_all() {
@@ -90,6 +88,7 @@ multilib_src_install_all() {
 		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/$i.c -o $i
 		dobin $i
         done
+
 	dosym /$(get_libdir)/${ldso} /usr/bin/ldd
 	insinto /sbin
 	doins ${FILESDIR}/ldconfig
