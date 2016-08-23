@@ -9,8 +9,8 @@ PYTHON_COMPAT=( python2_7 )
 inherit python-any-r1 versionator toolchain-funcs
 
 ABI_VER="$(get_version_component_range 1-2)"
-SLOT="stable/${ABI_VER}"
-MY_P="rustc-${PV}"
+SLOT="beta/${ABI_VER}"
+MY_P="rustc-beta"
 SRC="${MY_P}-src.tar.gz"
 KEYWORDS="~amd64"
 
@@ -30,7 +30,7 @@ REQUIRED_USE="libcxx? ( clang )"
 RDEPEND="libcxx? ( sys-libs/libcxx )
 	system-llvm? ( >=sys-devel/llvm-3.7.1-r1:=
 		<sys-devel/llvm-3.10.0:= )
-	local-rust? ( >dev-lang/rust-1.9.0 )
+	local-rust? ( >dev-lang/rust-1.10.0 )
 "
 
 DEPEND="${RDEPEND}
@@ -51,13 +51,9 @@ src_prepare() {
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
 
-	eapply "${FILESDIR}"/llvm-3.9.patch
-	eapply "${FILESDIR}"/fix-llvm-3.9.patch
-	eapply "${FILESDIR}"/fix-pic.patch
-	eapply "${FILESDIR}"/fix-linking.patch
-	eapply "${FILESDIR}"/disable-no-defaultlibs.patch
+	eapply "${FILESDIR}"/use-system-libs.patch
 	eapply "${FILESDIR}"/remove-compiler-rt.patch
-	eapply "${FILESDIR}"/fix-local-rust-1.11.patch
+	eapply "${FILESDIR}"/llvm-ffi.patch
 
 	if ! use local-rust; then
 		mkdir ${S}/stage0
@@ -75,11 +71,14 @@ src_configure() {
 
 	if use local-rust; then
 		local rustc_ver="$(/usr/bin/rustc --version | cut -f2 -d ' ')"
-		local rustc_key="$(printf "$rustc_ver" | md5sum | cut -c1-8)"
-		sed -Ei \
-			-e "s/^(rustc):.*/\1: $rustc_ver-1970-01-01/" \
-			-e "s/^(rustc_key):.*/\1: $rustc_key/" \
-			src/stage0.txt
+
+		if [[ "${PV}" == "{rustc_ver" ]] ; then
+			local rustc_key="$(printf "$rustc_ver" | md5sum | cut -c1-8)"
+			sed -Ei \
+				-e "s/^(rustc):.*/\1: $rustc_ver-1970-01-01/" \
+				-e "s/^(rustc_key):.*/\1: $rustc_key/" \
+				src/stage0.txt
+		fi
 	fi
 
 	"${ECONF_SOURCE:-.}"/configure \
@@ -109,7 +108,6 @@ src_configure() {
 }
 
 src_compile() {
-	echo "nothing"
 	if use local-rust; then
 		emake RUSTFLAGS_STAGE0="-Lx86_64-unknown-linux-gnu/stage0/lib/rustlib/x86_64-unknown-linux-gnu/lib" VERBOSE=1
 	else

@@ -4,7 +4,18 @@
          executables: true,
          linker_is_gnu: true,
          has_rpath: true,
-+	no_compiler_rt: true,
++	 no_compiler_rt: true,
          pre_link_args: vec![
              // We want to be able to strip as much executable code as possible
              // from the linker command line, and this flag indicates to the
+--- a/mk/platform.mk	2016-08-23 23:47:06.122896811 +0200
++++ b/mk/platform.mk	2016-08-23 23:47:23.146864316 +0200
+@@ -102,8 +102,6 @@
+ define ADD_INSTALLED_OBJECTS
+   INSTALLED_OBJECTS_$(1) += $$(CFG_INSTALLED_OBJECTS_$(1))
+   REQUIRED_OBJECTS_$(1) += $$(CFG_THIRD_PARTY_OBJECTS_$(1))
+-  INSTALLED_OBJECTS_$(1) += $$(call CFG_STATIC_LIB_NAME_$(1),compiler-rt)
+-  REQUIRED_OBJECTS_$(1) += $$(call CFG_STATIC_LIB_NAME_$(1),compiler-rt)
+ endef
+ 
+ $(foreach target,$(CFG_TARGET), \
