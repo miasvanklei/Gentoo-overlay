@@ -5,70 +5,14 @@
 EAPI=6
 
 CARGO_SNAPSHOT_DATE="2016-03-21"
-CARGO_INDEX_COMMIT="4472288863a48749e63cc32d94867b4f5cff8d8e"
-CRATES="advapi32-sys-0.1.2
-aho-corasick-0.5.1
-bitflags-0.1.1
-bufstream-0.1.1
-cmake-0.1.16
-crossbeam-0.2.8
-curl-0.2.19
-curl-sys-0.1.34
-docopt-0.6.78
-env_logger-0.3.2
-filetime-0.1.10
-flate2-0.2.13
-fs2-0.2.3
-gcc-0.3.26
-git2-0.4.3
-git2-curl-0.4.1
-glob-0.2.11
-hamcrest-0.1.0
-idna-0.1.0
-kernel32-sys-0.2.1
-libc-0.2.8
-libgit2-sys-0.4.3
-libressl-pnacl-sys-2.1.6
-libssh2-sys-0.1.37
-libz-sys-1.0.2
-log-0.3.5
-matches-0.1.2
-memchr-0.1.10
-miniz-sys-0.1.7
-miow-0.1.2
-net2-0.2.24
-nom-1.2.2
-num-0.1.31
-num_cpus-0.2.11
-openssl-sys-0.7.8
-pkg-config-0.3.8
-pnacl-build-helper-1.4.10
-rand-0.3.14
-regex-0.1.58
-regex-syntax-0.3.0
-rustc-serialize-0.3.18
-semver-0.2.3
-strsim-0.3.0
-tar-0.4.5
-tempdir-0.3.4
-term-0.4.4
-toml-0.1.28
-unicode-bidi-0.2.3
-unicode-normalization-0.1.2
-url-1.1.0
-user32-sys-0.1.2
-utf8-ranges-0.1.3
-winapi-0.2.6
-winapi-build-0.1.1
-"
+CARGO_INDEX_COMMIT="64a9f2f594cefc2ca652e0cecf7ce6e41c0279ee"
 
 inherit cargo bash-completion-r1
 
 DESCRIPTION="The Rust's package manager"
 HOMEPAGE="http://crates.io"
 SRC_URI="https://github.com/rust-lang/cargo/archive/${PV}.tar.gz -> ${P}.tar.gz
-	https://github.com/rust-lang/crates.io-index/archive/${CARGO_INDEX_COMMIT}.tar.gz -> cargo-registry-${CARGO_INDEX_COMMIT}.tar.gz
-	$(cargo_crate_uris ${CRATES})"
+	https://github.com/rust-lang/crates.io-index/archive/${CARGO_INDEX_COMMIT}.tar.gz -> cargo-registry-${CARGO_INDEX_COMMIT}.tar.gz"
 
 RESTRICT="mirror"
 LICENSE="|| ( MIT Apache-2.0 )"
@@ -93,11 +37,7 @@ DEPEND="${COMMON_DEPEND}
 	sys-apps/sed"
 
 PATCHES=(
-"${FILESDIR}/0001-build-strip-CFG_PREFIX-from-CFG_-DATADIR-MANDIR-INFO.patch"
-"${FILESDIR}/0002-build-write-updated-variables-to-config.mk.patch"
-"${FILESDIR}/${PV}-0003-build-respect-datadir-infodir-mandir-libdir-and-sysc.patch"
-"${FILESDIR}/0004-build-add-docdir-to-configure.patch"
-"${FILESDIR}/0005-stack-size.patch"
+"${FILESDIR}/stack-size.patch"
 )
 
 src_configure() {
@@ -107,7 +47,6 @@ src_configure() {
 	# - Windows: <arch>-pc-windows-gnu
 	# where <arch> could be 'x86_64' (amd64) or 'i686' (x86)
 	use amd64 && CTARGET="x86_64-unknown-linux-gnu"
-	use x86 && CTARGET="i686-unknown-linux-gnu"
 
 	# NOTE: 'disable-nightly' is used by crates (such as 'matches') to entirely
 	# skip their internal libraries that make use of unstable rustc features.
