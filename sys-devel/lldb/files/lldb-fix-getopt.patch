@@ -1,0 +1,36 @@
+--- a/include/lldb/Host/common/GetOptInc.h	2016-08-07 17:47:54.256185381 +0200
++++ b/include/lldb/Host/common/GetOptInc.h	2016-08-07 17:49:26.055182823 +0200
+@@ -2,13 +2,9 @@
+ 
+ #include "lldb/lldb-defines.h"
+ 
+-#if defined(_MSC_VER)
+ #define REPLACE_GETOPT
+ #define REPLACE_GETOPT_LONG
+-#endif
+-#if defined(_MSC_VER) || defined(__NetBSD__)
+ #define REPLACE_GETOPT_LONG_ONLY
+-#endif
+ 
+ #if defined(REPLACE_GETOPT)
+ // from getopt.h
+--- a/include/lldb/Host/HostGetOpt.h	2016-08-07 17:45:26.404189501 +0200
++++ b/include/lldb/Host/HostGetOpt.h	2016-08-07 17:46:20.332187998 +0200
+@@ -8,17 +8,4 @@
+ //===----------------------------------------------------------------------===//
+ #pragma once
+ 
+-#if !defined(_MSC_VER) && !defined(__NetBSD__)
+-
+-#ifdef _WIN32
+-#define _BSD_SOURCE // Required so that getopt.h defines optreset
+-#endif
+-
+-#include <unistd.h>
+-#include <getopt.h>
+-
+-#else
+-
+ #include <lldb/Host/common/GetOptInc.h>
+-
+-#endif
