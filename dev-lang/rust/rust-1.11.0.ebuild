@@ -8,41 +8,29 @@ PYTHON_COMPAT=( python2_7 )
 
 inherit python-any-r1 versionator toolchain-funcs
 
-if [[ ${PV} = *beta* ]]; then
-	betaver=${PV//*beta}
-	BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
-	MY_P="rustc-beta"
-	SLOT="beta/${PV}"
-	SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.gz"
-	KEYWORDS=""
-else
-	ABI_VER="$(get_version_component_range 1-2)"
-	SLOT="stable/${ABI_VER}"
-	MY_P="rustc-${PV}"
-	SRC="${MY_P}-src.tar.gz"
-	KEYWORDS="~amd64"
-fi
-
-STAGE0_VERSION="1.$(($(get_version_component_range 2) - 1)).0"
-RUST_STAGE0_amd64="rustc-${STAGE0_VERSION}-x86_64-unknown-linux-gnu"
-RUST_STAGE0_x86="rustc-${STAGE0_VERSION}-i686-unknown-linux-gnu"
+ABI_VER="$(get_version_component_range 1-2)"
+SLOT="stable/${ABI_VER}"
+MY_P="rustc-${PV}"
+SRC="${MY_P}-src.tar.gz"
+KEYWORDS="~amd64"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
 SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
-	amd64? ( https://alpine.geeknet.cz/distfiles/rustc-1.10.0-x86_64-unknown-linux-musl.tar.gz
-		 https://alpine.geeknet.cz/distfiles/rust-std-1.10.0-x86_64-unknown-linux-musl.tar.gz )
+	 !local-rust? ( amd64? ( https://alpine.geeknet.cz/distfiles/rustc-1.10.0-x86_64-unknown-linux-musl.tar.gz
+		               https://alpine.geeknet.cz/distfiles/rust-std-1.10.0-x86_64-unknown-linux-musl.tar.gz ) )
 "
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clang debug doc +libcxx +system-llvm"
+IUSE="+clang debug doc +libcxx +system-llvm +local-rust"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
 	system-llvm? ( >=sys-devel/llvm-3.7.1-r1:=
 		<sys-devel/llvm-3.10.0:= )
+	local-rust? ( >dev-lang/rust-1.9.0 )
 "
 
 DEPEND="${RDEPEND}
@@ -64,31 +52,34 @@ src_prepare() {
 		 sed -i -e "s/-Werror / /g" {} \; || die
 
 	eapply "${FILESDIR}"/llvm-3.9.patch
+	eapply "${FILESDIR}"/fix-llvm-3.9.patch
 	eapply "${FILESDIR}"/fix-pic.patch
 	eapply "${FILESDIR}"/fix-linking.patch
 	eapply "${FILESDIR}"/disable-no-defaultlibs.patch
 	eapply "${FILESDIR}"/remove-compiler-rt.patch
 
-	mkdir ${S}/stage0
+	if ! use local-rust; then
+		mkdir ${S}/stage0
 
-	cp -flr "${WORKDIR}"/rustc-*/rustc/* \
-		"${WORKDIR}"/rust-std-*/rust-std-*/* \
-		"${S}/stage0"/
-
-	#local rustc_ver=$(${S}/stage0/bin/rustc --version | cut -f2 -d ' ')
-	#local rustc_key=$(printf ${rustc_ver} | md5sum | cut -c1-8)
-
-	#sed -Ei \
-	#	-e "s/^(rustc):.*/\1: ${rustc_ve}r-1970-01-01/" \
-	#	-e "s/^(rustc_key):.*/\1: ${rustc_key}/" \
-	#	src/stage0.txt
+		cp -flr "${WORKDIR}"/rustc-*/rustc/* \
+			"${WORKDIR}"/rust-std-*/rust-std-*/* \
+			"${S}/stage0"/
+	fi
 
 	eapply_user
 }
 
 src_configure() {
 	export CFG_DISABLE_LDCONFIG="notempty"
-	export CARGO_HOME="${S}/.cargo"
+
+	if use local-rust; then
+		local rustc_ver="$(/usr/bin/rustc --version | cut -f2 -d ' ')"
+		local rustc_key="$(printf "$rustc_ver" | md5sum | cut -c1-8)"
+		sed -Ei \
+			-e "s/^(rustc):.*/\1: $rustc_ver-1970-01-01/" \
+			-e "s/^(rustc_key):.*/\1: $rustc_key/" \
+			src/stage0.txt
+	fi
 
 	"${ECONF_SOURCE:-.}"/configure \
 		--prefix="${EPREFIX}/usr" \
@@ -101,7 +92,6 @@ src_configure() {
 		--python=${EPYTHON} \
 		--disable-rpath \
 		--enable-local-rust \
-		--local-rust-root=${S}/stage0 \
 		--disable-jemalloc \
 		$(use_enable clang) \
 		$(use_enable debug) \
@@ -113,11 +103,16 @@ src_configure() {
 		$(use_enable doc docs) \
 		$(use_enable libcxx libcpp) \
 		$(usex system-llvm "--llvm-root=${EPREFIX}/usr" " ") \
+		$(usex local-rust "--local-rust-root=${EPREFIX}/usr/bin" "--local-rust-root=${S}/stage0") \
 		|| die
 }
 
 src_compile() {
-	emake VERBOSE=1
+	if use local-rust; then
+		emake RUSTFLAGS_STAGE0="-Lx86_64-unknown-linux-gnu/stage0/lib/rustlib/x86_64-unknown-linux-gnu/lib" VERBOSE=1
+	else
+		emake VERBOSE=1
+	fi
 }
 
 src_install() {
