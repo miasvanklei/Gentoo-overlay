@@ -14,9 +14,6 @@ IUSE="pim sdk"
 
 RDEPEND="
 	$(add_kdeapps_dep kate)
-	=kde-apps/kfind-9999
-	=kde-apps/libkonq-9999
-	=kde-apps/libkcddb-9999
 	=kde-apps/okular-5.9999
 	$(add_kdeapps_dep kdeadmin-meta)
 	$(add_kdeapps_dep kdecore-meta)
