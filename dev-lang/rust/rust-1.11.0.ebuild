@@ -24,7 +24,7 @@ SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clang debug doc +libcxx +system-llvm +local-rust"
+IUSE="+clang debug doc +libcxx +system-llvm +local-rust +source"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
@@ -57,6 +57,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/fix-linking.patch
 	eapply "${FILESDIR}"/disable-no-defaultlibs.patch
 	eapply "${FILESDIR}"/remove-compiler-rt.patch
+	eapply "${FILESDIR}"/fix-local-rust-1.11.patch
 
 	if ! use local-rust; then
 		mkdir ${S}/stage0
@@ -108,6 +109,7 @@ src_configure() {
 }
 
 src_compile() {
+	echo "nothing"
 	if use local-rust; then
 		emake RUSTFLAGS_STAGE0="-Lx86_64-unknown-linux-gnu/stage0/lib/rustlib/x86_64-unknown-linux-gnu/lib" VERBOSE=1
 	else
@@ -143,6 +145,13 @@ src_install() {
 	dodir /etc/env.d/rust
 	insinto /etc/env.d/rust
 	doins "${T}/provider-${P}"
+
+	if use source; then
+		pushd ${S}/src
+		mkdir -p ${D}/usr/src/${P}/
+		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${P}/ \; || die
+		popd >/dev/null
+	fi
 }
 
 pkg_postinst() {
