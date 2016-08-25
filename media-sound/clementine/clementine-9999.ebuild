@@ -34,7 +34,6 @@ COMMON_DEPEND="
 	dev-db/sqlite:=
 	>=dev-libs/glib-2.24.1-r1
 	dev-libs/libxml2
-	media-libs/libechonest
 	dev-libs/protobuf:=
 	dev-qt/qtcore:5
 	dev-qt/qtgui:5
@@ -98,6 +97,9 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.3-fix-tokenizer.patch
 	"${FILESDIR}"/libmygpo-system.patch
 	"${FILESDIR}"/fix-find-qtsingleapplication.patch
+	"${FILESDIR}"/remove-echonest.patch
+	"${FILESDIR}"/add-google.patch
+	"${FILESDIR}"/remove-deprecated-desktop-entry.patch
 )
 
 src_prepare() {
