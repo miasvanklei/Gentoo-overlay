@@ -12,7 +12,7 @@ LANGS=" af ar be bg bn br bs ca cs cy da de el en_CA en_GB eo es et eu fa fi fr 
 inherit cmake-utils flag-o-matic fdo-mime gnome2-utils virtualx
 [[ ${PV} == *9999* ]] && inherit git-r3
 
-DESCRIPTION="A modern music player and library organizer based on Amarok 1.4 and Qt4"
+DESCRIPTION="A modern music player and library organizer based on Amarok 1.4 and Qt5"
 HOMEPAGE="http://www.clementine-player.org https://github.com/clementine-player/Clementine"
 [[ ${PV} == *9999* ]] || \
 SRC_URI="https://github.com/clementine-player/Clementine/archive/${PV/_}.tar.gz -> ${P}.tar.gz"
@@ -40,7 +40,7 @@ COMMON_DEPEND="
 	dev-qt/qtopengl:5
 	dev-qt/qtsql:5
 	dev-qt/qtsingleapplication[qt5]
-	dev-cpp/gmock
+	test? ( dev-cpp/gmock )
 	media-libs/libmygpo-qt
 	>=media-libs/chromaprint-0.6
 	media-libs/gstreamer:1.0
@@ -100,6 +100,7 @@ PATCHES=(
 	"${FILESDIR}"/remove-echonest.patch
 	"${FILESDIR}"/add-google.patch
 	"${FILESDIR}"/remove-deprecated-desktop-entry.patch
+	"${FILESDIR}"/tests-optional.patch
 )
 
 src_prepare() {
@@ -138,6 +139,7 @@ src_configure() {
 		-DENABLE_SEAFILE="$(usex seafile)"
 		-DENABLE_SKYDRIVE="$(usex skydrive)"
 		-DENABLE_VK="$(usex vkontakte)"
+		-DENABLE_VK="$(usex test)"
 		-DENABLE_SPOTIFY_BLOB=OFF
 		-DENABLE_BREAKPAD=OFF  #< disable crash reporting
 		-DUSE_BUILTIN_TAGLIB=OFF
