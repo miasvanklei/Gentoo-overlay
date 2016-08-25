@@ -13,7 +13,7 @@ inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/lldb-${PV/_}.src.tar.xz"
+SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${P/_}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV%.*}"
