@@ -241,7 +241,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 
 PATCHES=(
 	# from 5.2 branch
-	"${FILESDIR}/${PN}-curl-7.50.0.patch"
+#	"${FILESDIR}/${PN}-curl-7.50.0.patch"
 
 	# not upstreamable stuff
 	"${FILESDIR}/${PN}-5.2-system-pyuno.patch"
