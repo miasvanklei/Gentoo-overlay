@@ -12,7 +12,8 @@ SLOT="0"
 KEYWORDS="~x86 ~amd64"
 SRC_URI="https://github.com/Hackerpilot/Dscanner/archive/v0.4.0-alpha.8.tar.gz"
 
-DEPEND="dev-lang/ldc2"
+DEPEND="dev-lang/ldc2
+	dev-util/dub"
 RDEPEND="${DEPEND}"
 
 S=${WORKDIR}/Dscanner-0.4.0-alpha.8
