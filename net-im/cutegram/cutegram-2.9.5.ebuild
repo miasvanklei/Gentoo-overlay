@@ -30,8 +30,9 @@ IUSE=""
 DEPEND="
 	>=net-misc/TelegramQML-0.9.1
 	net-misc/aseman-qt-tools
-	dev-qt/qtwebkit:5
-	dev-qt/qtmultimedia:5
+	dev-qt/qtgui:5
+	dev-qt/qtcore:5
+	dev-qt/qtwidgets:5
 	dev-qt/qtdeclarative:5[localstorage]
 "
 RDEPEND="${DEPEND}"
