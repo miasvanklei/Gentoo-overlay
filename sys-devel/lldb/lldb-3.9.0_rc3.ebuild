@@ -21,7 +21,7 @@ KEYWORDS=""
 IUSE="debug libedit python ncurses doc"
 
 RDEPEND="
-	~sys-devel/llvm-${PV}:=[debug=,${MULTILIB_USEDEP}]
+	~sys-devel/llvm-${PV}:=[debug=,ncurses,${MULTILIB_USEDEP}]
 	~sys-devel/clang-${PV}:=[debug=,${MULTILIB_USEDEP}]
 	dev-python/six[${PYTHON_USEDEP}]
 	!<sys-devel/llvm-${PV}
@@ -95,9 +95,9 @@ multilib_src_configure() {
                 -DLLVM_ENABLE_RTTI=ON
                 -DLLVM_ENABLE_CXX1Y=ON
                 -DLLVM_ENABLE_THREADS=ON
+		-DLLVM_ENABLE_TERMINFO=$(usex ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)
 		-DLLDB_DISABLE_CURSES=$(usex !ncurses)
-		-DLLDB_ENABLE_TERMINFO=$(usex ncurses)
 	)
 
 	if multilib_is_native_abi; then

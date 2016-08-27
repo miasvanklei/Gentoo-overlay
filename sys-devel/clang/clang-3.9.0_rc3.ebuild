@@ -168,6 +168,7 @@ multilib_src_configure() {
                 -DLLVM_ENABLE_RTTI=ON
                 -DLLVM_ENABLE_CXX1Y=ON
                 -DLLVM_ENABLE_THREADS=ON
+		-DCLANG_INCLUDE_TESTS=$(usex test)
 	)
 
 	if multilib_is_native_abi; then
