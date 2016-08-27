@@ -3,7 +3,7 @@
 # $Header: $
 
 EAPI=5
-PYTHON_COMPAT=(python3_5)
+PYTHON_COMPAT=(python2_7)
 
 inherit vcs-snapshot distutils-r1
 
