@@ -17,6 +17,5 @@ IUSE="+ffmpeg"
 # Add back whenever it is ported - no change since 4.10
 # 	mplayer? ( $(add_kdeapps_dep mplayerthumbs) )
 RDEPEND="
-	$(add_kdeapps_dep kdenlive)
 	ffmpeg? ( $(add_kdeapps_dep ffmpegthumbs) )
 "
