@@ -1,0 +1,15 @@
+--- a/src/modules/backends/web/qtwebkit/QtWebKitWebWidget.cpp	2016-08-27 22:38:26.014501343 +0200
++++ b/src/modules/backends/web/qtwebkit/QtWebKitWebWidget.cpp	2016-08-27 22:44:02.089070428 +0200
+@@ -805,8 +805,11 @@
+ 	settings->setAttribute(QWebSettings::OfflineStorageDatabaseEnabled, getOption(QLatin1String("Browser/EnableOfflineStorageDatabase"), url).toBool());
+ 	settings->setAttribute(QWebSettings::OfflineWebApplicationCacheEnabled, getOption(QLatin1String("Browser/EnableOfflineWebApplicationCache"), url).toBool());
+ 	settings->setDefaultTextEncoding(getOption(QLatin1String("Content/DefaultCharacterEncoding"), url).toString());
++
++// needs to be enabled for html5test to work
++	settings->setAttribute(QWebSettings::MediaSourceEnabled, true);
++
+ #ifndef OTTER_ENABLE_QTWEBKIT_LEGACY
+-	settings->setAttribute(QWebSettings::MediaSourceEnabled, getOption(QLatin1String("QtWebKitBackend/EnableMediaSource"), url).toBool());
+ 
+ 	if (settings->testAttribute(QWebSettings::PrivateBrowsingEnabled))
+ 	{
