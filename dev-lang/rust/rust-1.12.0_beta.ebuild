@@ -14,29 +14,34 @@ MY_P="rustc-beta"
 SRC="${MY_P}-src.tar.gz"
 KEYWORDS="~amd64"
 
+STAGE0_VERSION="1.$(($(get_version_component_range 2) - 1)).0"
+NEXT_VERSION="1.$(($(get_version_component_range 2) + 1)).0"
+
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
-	 !local-rust? ( amd64? ( https://alpine.geeknet.cz/distfiles/rustc-1.10.0-x86_64-unknown-linux-musl.tar.gz
-		               https://alpine.geeknet.cz/distfiles/rust-std-1.10.0-x86_64-unknown-linux-musl.tar.gz ) )
-"
+SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clang debug doc +libcxx +system-llvm +local-rust +source"
+IUSE="+clang debug doc +libcxx +system-llvm +source"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
 	system-llvm? ( >=sys-devel/llvm-3.7.1-r1:=
 		<sys-devel/llvm-3.10.0:= )
-	local-rust? ( >dev-lang/rust-1.10.0 )
 "
 
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	>=dev-lang/perl-5.0
 	clang? ( sys-devel/clang )
+	|| (
+		( >=dev-lang/rust-bin-${STAGE0_VERSION}:stable
+		  <dev-lang/rust-bin-${NEXT_VERSION}:stable )
+		( >=dev-lang/rust-${STAGE0_VERSION}:stable
+		  <dev-lang/rust-${NEXT_VERSION}:stable )
+	)
 "
 
 PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
@@ -54,32 +59,23 @@ src_prepare() {
 	eapply "${FILESDIR}"/use-system-libs.patch
 	eapply "${FILESDIR}"/remove-compiler-rt.patch
 	eapply "${FILESDIR}"/llvm-ffi.patch
-
-	if ! use local-rust; then
-		mkdir ${S}/stage0
-
-		cp -flr "${WORKDIR}"/rustc-*/rustc/* \
-			"${WORKDIR}"/rust-std-*/rust-std-*/* \
-			"${S}/stage0"/
-	fi
+	eapply "${FILESDIR}"/rust-1.11.0-libdir-bootstrap.patch
 
 	eapply_user
 }
 
 src_configure() {
-	export CFG_DISABLE_LDCONFIG="notempty"
-
-	if use local-rust; then
-		local rustc_ver="$(/usr/bin/rustc --version | cut -f2 -d ' ')"
-
-		if [[ "${PV}" == "{rustc_ver" ]] ; then
-			local rustc_key="$(printf "$rustc_ver" | md5sum | cut -c1-8)"
-			sed -Ei \
-				-e "s/^(rustc):.*/\1: $rustc_ver-1970-01-01/" \
-				-e "s/^(rustc_key):.*/\1: $rustc_key/" \
-				src/stage0.txt
-		fi
-	fi
+	local local_rebuild
+	local installed_version="$("${EPREFIX}/usr/bin/rustc" --version)" || die
+	case "${installed_version}" in
+		"rustc ${PV}") local_rebuild=--enable-local-rebuild ;;
+		"rustc ${STAGE0_VERSION}") ;;
+		*)
+			eerror "Selected rust (${installed_version}) cannot build"
+			eerror "version ${PV}.  Please use version ${STAGE0_VERSION}"
+			eerror "or ${PV}."
+			die "Incompatible rust selected"
+	esac
 
 	"${ECONF_SOURCE:-.}"/configure \
 		--prefix="${EPREFIX}/usr" \
@@ -92,6 +88,8 @@ src_configure() {
 		--python=${EPYTHON} \
 		--disable-rpath \
 		--enable-local-rust \
+		--local-rust-root="${EPREFIX}/usr" \
+		${local_rebuild} \
 		--disable-jemalloc \
 		$(use_enable clang) \
 		$(use_enable debug) \
@@ -103,16 +101,11 @@ src_configure() {
 		$(use_enable doc docs) \
 		$(use_enable libcxx libcpp) \
 		$(usex system-llvm "--llvm-root=${EPREFIX}/usr" " ") \
-		$(usex local-rust "--local-rust-root=${EPREFIX}/usr/bin" "--local-rust-root=${S}/stage0") \
 		|| die
 }
 
 src_compile() {
-	if use local-rust; then
-		emake RUSTFLAGS_STAGE0="-Lx86_64-unknown-linux-gnu/stage0/lib/rustlib/x86_64-unknown-linux-gnu/lib" VERBOSE=1
-	else
-		emake VERBOSE=1
-	fi
+	emake VERBOSE=1
 }
 
 src_install() {
