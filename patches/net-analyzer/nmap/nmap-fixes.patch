@@ -1,0 +1,56 @@
+--- a/scan_engine_raw.cc	2016-08-28 15:18:48.699911305 +0200
++++ b/scan_engine_raw.cc	2016-08-28 15:19:41.324822041 +0200
+@@ -969,10 +969,10 @@
+       fatal("macstring length is %d, should be %u", len, (unsigned)(sizeof(macstring) - 1));
+     /* First four bytes of MAC. */
+     pcap_filter = "arp and arp[18:4] = 0x";
+-    pcap_filter.append(macstring, 0, 4 * 2);
++    pcap_filter.append(static_cast<std::string>(macstring), 0, 4 * 2);
+     /* Last two bytes. */
+     pcap_filter += " and arp[22:2] = 0x";
+-    pcap_filter.append(macstring, 4 * 2, 2 * 2);
++    pcap_filter.append(static_cast<std::string>(macstring), 4 * 2, 2 * 2);
+     //its not arp, so lets check if for a protocol scan.
+   } else if (USI->ping_scan_nd) {
+     /* Libpcap: IPv6 upper-layer protocol is not supported by proto[x] */
+--- a/osscan.cc	2016-08-28 15:17:56.052997919 +0200
++++ b/osscan.cc	2016-08-28 15:18:28.998944046 +0200
+@@ -135,17 +135,8 @@
+ 
+ #include <errno.h>
+ #include <stdarg.h>
+-#if TIME_WITH_SYS_TIME
+-# include <sys/time.h>
+-# include <time.h>
+-#else
+-# if HAVE_SYS_TIME_H
+-#  include <sys/time.h>
+-# else
+-#  include <time.h>
+-# endif
+-#endif
+ 
++#include <time.h>
+ #include <algorithm>
+ #include <list>
+ #include <set>
+--- a/osscan2.cc	2016-08-28 15:17:34.350032774 +0200
++++ b/osscan2.cc	2016-08-28 15:17:44.549016459 +0200
+@@ -138,6 +138,7 @@
+ 
+ #include <list>
+ #include <math.h>
++#include <time.h>
+ 
+ extern NmapOps o;
+ #ifdef WIN32
+--- a/nmap_error.cc	2016-08-28 15:16:27.625136541 +0200
++++ b/nmap_error.cc	2016-08-28 15:16:40.198117403 +0200
+@@ -128,6 +128,7 @@
+ #include "xml.h"
+ 
+ #include <errno.h>
++#include <time.h>
+ 
+ extern NmapOps o;
+ 

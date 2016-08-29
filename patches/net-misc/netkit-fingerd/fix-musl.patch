@@ -1,0 +1,29 @@
+--- a/finger/lprint.c	2016-08-28 14:19:02.127187530 +0200
++++ b/finger/lprint.c	2016-08-28 14:19:43.800094362 +0200
+@@ -48,6 +48,7 @@
+ #include <sys/types.h>
+ #include <sys/file.h>
+ #include <sys/stat.h>
++#include <fcntl.h>
+ #include <time.h>
+ #include "finger.h"
+ 
+--- a/finger/util.c	2016-08-28 14:18:34.751244955 +0200
++++ b/finger/util.c	2016-08-28 14:20:45.975943495 +0200
+@@ -51,6 +51,7 @@
+ #include <lastlog.h>
+ #include <unistd.h>
+ #include <stdlib.h>
++#include <fcntl.h>
+ #include "finger.h"
+ 
+ #define	HBITS	8			/* number of bits in hash code */
+@@ -228,7 +229,7 @@
+ }
+ 
+ static int get_lastlog(int fd, uid_t uid, struct lastlog *ll) {
+-    loff_t pos;
++    off_t pos;
+     if (fd == -1) return -1;
+     pos = (long)uid * sizeof(*ll);
+     if (lseek(fd, pos, L_SET) != pos) return -1;

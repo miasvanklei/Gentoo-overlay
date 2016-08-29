@@ -1,0 +1,346 @@
+From 92bac3c65fa5a4828bdd7abf41131f4863b6fd43 Mon Sep 17 00:00:00 2001
+From: Ruud van Asseldonk <dev@veniogames.com>
+Date: Tue, 4 Feb 2014 15:02:10 +0100
+Subject: [PATCH] Add support for album artist in the browser view
+
+This includes a setting to opt-in for using the album artist
+instead of the track artist.
+---
+ data/org.gnome.rhythmbox.gschema.xml |  5 +++++
+ data/ui/general-prefs.ui             | 18 ++++++++++++++++
+ rhythmdb/rhythmdb-property-model.c   | 24 +++++++++++++++++++++
+ shell/rb-shell-preferences.c         | 42 ++++++++++++++++++++++++++++++++++++
+ sources/rb-source.c                  |  7 +++++-
+ widgets/rb-library-browser.c         | 30 ++++++++++++++++++++++++--
+ widgets/rb-property-view.c           |  1 +
+ 7 files changed, 124 insertions(+), 3 deletions(-)
+
+diff --git a/data/org.gnome.rhythmbox.gschema.xml b/data/org.gnome.rhythmbox.gschema.xml
+index 2d4df10..5b5923c 100644
+--- a/data/org.gnome.rhythmbox.gschema.xml
++++ b/data/org.gnome.rhythmbox.gschema.xml
+@@ -141,6 +141,11 @@
+       <summary>Views to show in the library browser.</summary>
+       <description>Views to show in the library browser.</description>
+     </key>
++    <key name="browser-views-use-album-artist" type="b">
++      <default>false</default>
++      <summary>Use album artist instead of artist.</summary>
++      <description>If true, the artist browser view will show album artists instead of track artists</description>
++    </key>
+     <key name="visible-columns" type="as">
+       <default>['track-number','artist','album','genre','duration','post-time']</default>
+       <summary>List of visible columns.</summary>
+diff --git a/data/ui/general-prefs.ui b/data/ui/general-prefs.ui
+index 7d9c2fd..b4ab515 100644
+--- a/data/ui/general-prefs.ui
++++ b/data/ui/general-prefs.ui
+@@ -123,6 +123,23 @@
+                         <property name="position">2</property>
+                       </packing>
+                     </child>
++                    <child>
++                      <object class="GtkCheckButton" id="library_browser_views_use_album_artist_check">
++                        <property name="label" translatable="yes">Use a_lbum artist instead of artist</property>
++                        <property name="visible">True</property>
++                        <property name="can_focus">True</property>
++                        <property name="receives_default">False</property>
++                        <property name="use_action_appearance">False</property>
++                        <property name="use_underline">True</property>
++                        <property name="draw_indicator">True</property>
++                        <signal name="toggled" handler="rb_shell_preferences_browser_views_use_album_artist_check_changed_cb" swapped="no"/>
++                      </object>
++                      <packing>
++                        <property name="expand">False</property>
++                        <property name="fill">False</property>
++                        <property name="position">3</property>
++                      </packing>
++                    </child>
+                   </object>
+                   <packing>
+                     <property name="expand">True</property>
+diff --git a/rhythmdb/rhythmdb-property-model.c b/rhythmdb/rhythmdb-property-model.c
+index 648e818..ef0fbf0 100644
+--- a/rhythmdb/rhythmdb-property-model.c
++++ b/rhythmdb/rhythmdb-property-model.c
+@@ -132,6 +132,7 @@ static gboolean rhythmdb_property_model_row_draggable (RbTreeDragSource *dragsou
+ enum {
+ 	TARGET_ALBUMS,
+ 	TARGET_GENRE,
++	TARGET_ALBUM_ARTISTS,
+ 	TARGET_ARTISTS,
+ 	TARGET_LOCATION,
+ 	TARGET_ENTRIES,
+@@ -154,6 +155,11 @@ static const GtkTargetEntry targets_artist [] = {
+ 	{ "application/x-rhythmbox-entry", 0, TARGET_ENTRIES },
+ 	{ "text/uri-list", 0, TARGET_URIS },
+ };
++static const GtkTargetEntry targets_album_artist [] = {
++	{ "text/x-rhythmbox-album-artist", 0, TARGET_ALBUM_ARTISTS },
++	{ "application/x-rhythmbox-entry", 0, TARGET_ENTRIES },
++	{ "text/uri-list", 0, TARGET_URIS },
++};
+ static const GtkTargetEntry targets_location [] = {
+ 	{ "text/x-rhythmbox-location", 0, TARGET_LOCATION },
+ 	{ "application/x-rhythmbox-entry", 0, TARGET_ENTRIES },
+@@ -167,6 +173,7 @@ static const GtkTargetEntry targets_composer [] = {
+ 
+ static GtkTargetList *rhythmdb_property_model_album_drag_target_list = NULL;
+ static GtkTargetList *rhythmdb_property_model_artist_drag_target_list = NULL;
++static GtkTargetList *rhythmdb_property_model_album_artist_drag_target_list = NULL;
+ static GtkTargetList *rhythmdb_property_model_genre_drag_target_list = NULL;
+ static GtkTargetList *rhythmdb_property_model_location_drag_target_list = NULL;
+ static GtkTargetList *rhythmdb_property_model_composer_drag_target_list = NULL;
+@@ -417,6 +424,12 @@ rhythmdb_property_model_set_property (GObject *object,
+ 		case RHYTHMDB_PROP_GENRE:
+ 			append_sort_property (model, RHYTHMDB_PROP_GENRE);
+ 			break;
++		case RHYTHMDB_PROP_ALBUM_ARTIST:
++			append_sort_property (model, RHYTHMDB_PROP_ALBUM_ARTIST_SORTNAME);
++			append_sort_property (model, RHYTHMDB_PROP_ALBUM_ARTIST);
++			append_sort_property (model, RHYTHMDB_PROP_ARTIST_SORTNAME);
++			append_sort_property (model, RHYTHMDB_PROP_ARTIST);
++			break;
+ 		case RHYTHMDB_PROP_ARTIST:
+ 			append_sort_property (model, RHYTHMDB_PROP_ARTIST_SORTNAME);
+ 			append_sort_property (model, RHYTHMDB_PROP_ARTIST);
+@@ -478,6 +491,10 @@ rhythmdb_property_model_get_property (GObject *object,
+ static void
+ rhythmdb_property_model_init (RhythmDBPropertyModel *model)
+ {
++	if (!rhythmdb_property_model_album_artist_drag_target_list)
++		rhythmdb_property_model_album_artist_drag_target_list =
++			gtk_target_list_new (targets_album_artist,
++					     G_N_ELEMENTS (targets_album_artist));
+ 	if (!rhythmdb_property_model_artist_drag_target_list)
+ 		rhythmdb_property_model_artist_drag_target_list =
+ 			gtk_target_list_new (targets_artist,
+@@ -1224,6 +1241,9 @@ rhythmdb_property_model_drag_data_get (RbTreeDragSource *dragsource,
+ 	case RHYTHMDB_PROP_ALBUM:
+ 		drag_target_list = rhythmdb_property_model_album_drag_target_list;
+ 		break;
++	case RHYTHMDB_PROP_ALBUM_ARTIST:
++		drag_target_list = rhythmdb_property_model_album_artist_drag_target_list;
++		break;
+ 	case RHYTHMDB_PROP_ARTIST:
+ 		drag_target_list = rhythmdb_property_model_artist_drag_target_list;
+ 		break;
+@@ -1394,6 +1414,10 @@ rhythmdb_property_model_enable_drag (RhythmDBPropertyModel *model,
+ 		targets = targets_album;
+ 		n_elements = G_N_ELEMENTS (targets_album);
+ 		break;
++	case RHYTHMDB_PROP_ALBUM_ARTIST:
++		targets = targets_album_artist;
++		n_elements = G_N_ELEMENTS (targets_album_artist);
++		break;
+ 	case RHYTHMDB_PROP_ARTIST:
+ 		targets = targets_artist;
+ 		n_elements = G_N_ELEMENTS (targets_artist);
+diff --git a/shell/rb-shell-preferences.c b/shell/rb-shell-preferences.c
+index 7073bcc..2b80271 100644
+--- a/shell/rb-shell-preferences.c
++++ b/shell/rb-shell-preferences.c
+@@ -77,6 +77,8 @@ void rb_shell_preferences_column_check_changed_cb (GtkCheckButton *butt,
+ 						   RBShellPreferences *shell_preferences);
+ void rb_shell_preferences_browser_views_activated_cb (GtkWidget *widget,
+ 						      RBShellPreferences *shell_preferences);
++void rb_shell_preferences_browser_views_use_album_artist_check_changed_cb (GtkCheckButton* butt,
++									   RBShellPreferences* shell_preferences);
+ 
+ static void column_check_toggled_cb (GtkWidget *widget, RBShellPreferences *preferences);
+ 
+@@ -125,6 +127,7 @@ struct RBShellPreferencesPrivate
+ 	GtkWidget *playback_prefs_plugin_box;
+ 
+ 	GSList *browser_views_group;
++	GtkWidget *browser_views_use_album_artist_check;
+ 
+ 	gboolean applying_settings;
+ 
+@@ -243,6 +246,9 @@ rb_shell_preferences_init (RBShellPreferences *shell_preferences)
+ 		g_slist_reverse (g_slist_copy (gtk_radio_button_get_group
+ 					       (GTK_RADIO_BUTTON (tmp))));
+ 
++	shell_preferences->priv->browser_views_use_album_artist_check =
++		GTK_WIDGET (gtk_builder_get_object (builder, "library_browser_views_use_album_artist_check"));
++
+ 	gtk_notebook_append_page (GTK_NOTEBOOK (shell_preferences->priv->notebook),
+ 				  GTK_WIDGET (gtk_builder_get_object (builder, "general_vbox")),
+ 				  gtk_label_new (_("General")));
+@@ -257,6 +263,9 @@ rb_shell_preferences_init (RBShellPreferences *shell_preferences)
+ 	source_settings_changed_cb (shell_preferences->priv->source_settings,
+ 				    "browser-views",
+ 				    shell_preferences);
++	source_settings_changed_cb (shell_preferences->priv->source_settings,
++				    "browser-views-use-album-artist",
++				    shell_preferences);
+ 
+ 	shell_preferences->priv->main_settings = g_settings_new ("org.gnome.rhythmbox");
+ 
+@@ -500,6 +509,28 @@ rb_shell_preferences_browser_views_activated_cb (GtkWidget *widget,
+ 	g_settings_set_enum (shell_preferences->priv->source_settings, "browser-views", index);
+ }
+ 
++/**
++ * rb_shell_preferences_browser_views_use_album_artist_check_changed_cb:
++ * @widget: the check button
++ * @shell_preferences: the #RBShellPreferences instance
++ *
++ * Signal handler used for the check button used to configure the
++ * visible browser views, whether to use album artist or artist.
++ */
++void
++rb_shell_preferences_browser_views_use_album_artist_check_changed_cb (GtkCheckButton* widget,
++								      RBShellPreferences *shell_preferences)
++{
++	gboolean use_album_artist;
++
++	if (shell_preferences->priv->applying_settings)
++		return;
++
++	use_album_artist = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget));
++
++	g_settings_set_boolean (shell_preferences->priv->source_settings, "browser-views-use-album-artist", use_album_artist);
++}
++
+ static void
+ source_settings_changed_cb (GSettings *settings, const char *key, RBShellPreferences *preferences)
+ {
+@@ -513,6 +544,17 @@ source_settings_changed_cb (GSettings *settings, const char *key, RBShellPrefere
+ 		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), TRUE);
+ 		preferences->priv->applying_settings = FALSE;
+ 
++	} else if (g_strcmp0 (key, "browser-views-use-album-artist") == 0) {
++		gboolean use_album_artist;
++		GtkWidget* widget;
++
++		use_album_artist = g_settings_get_boolean(preferences->priv->source_settings, "browser-views-use-album-artist");
++		widget = preferences->priv->browser_views_use_album_artist_check;
++		preferences->priv->applying_settings = TRUE;
++		gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (widget), use_album_artist);
++		preferences->priv->applying_settings = FALSE;
++
++
+ 	} else if (g_strcmp0 (key, "visible-columns") == 0) {
+ 		char **columns;
+ 		GHashTableIter iter;
+diff --git a/sources/rb-source.c b/sources/rb-source.c
+index 0e4a6a6..48a23cb 100644
+--- a/sources/rb-source.c
++++ b/sources/rb-source.c
+@@ -1407,7 +1407,7 @@ paned_position_changed_cb (GObject *paned, GParamSpec *pspec, GSettings *setting
+  * from the source's constructed method.
+  *
+  * If the browser widget has a browser-views property, it will be bound to the
+- * browser-views settings key.
++ * browser-views settings key. The browser-views-use-album-artist property will be bound as well.
+  */
+ void
+ rb_source_bind_settings (RBSource *source, GtkWidget *entry_view, GtkWidget *paned, GtkWidget *browser, gboolean sort_order)
+@@ -1451,6 +1451,11 @@ rb_source_bind_settings (RBSource *source, GtkWidget *entry_view, GtkWidget *pan
+ 		if (g_object_class_find_property (G_OBJECT_GET_CLASS (browser), "browser-views")) {
+ 			g_settings_bind (common_settings, "browser-views", browser, "browser-views", G_SETTINGS_BIND_DEFAULT);
+ 		}
++
++		if (g_object_class_find_property (G_OBJECT_GET_CLASS (browser), "browser-views-use-album-artist")) {
++			g_settings_bind (common_settings, "browser-views-use-album-artist", browser, "browser-views-use-album-artist",
++				G_SETTINGS_BIND_DEFAULT);
++		}
+ 	}
+ 
+ 	g_free (name);
+diff --git a/widgets/rb-library-browser.c b/widgets/rb-library-browser.c
+index 1cc8c06..7fc59aa 100644
+--- a/widgets/rb-library-browser.c
++++ b/widgets/rb-library-browser.c
+@@ -108,6 +108,7 @@ typedef struct
+ 
+ 	GSList *browser_views_group;
+ 	char *browser_views;
++	gboolean browser_views_use_album_artist;
+ 
+ 	GHashTable *property_views;
+ 	GHashTable *selections;
+@@ -122,7 +123,8 @@ enum
+ 	PROP_INPUT_MODEL,
+ 	PROP_OUTPUT_MODEL,
+ 	PROP_ENTRY_TYPE,
+-	PROP_BROWSER_VIEWS
++	PROP_BROWSER_VIEWS,
++	PROP_BROWSER_VIEWS_USE_ALBUM_ARTIST
+ };
+ 
+ typedef struct {
+@@ -132,6 +134,7 @@ typedef struct {
+ 
+ static BrowserPropertyInfo browser_properties[] = {
+ 	{RHYTHMDB_PROP_GENRE, N_("Genre")},
++	{RHYTHMDB_PROP_ALBUM_ARTIST, N_("Album Artist")},
+ 	{RHYTHMDB_PROP_ARTIST, N_("Artist")},
+ 	{RHYTHMDB_PROP_ALBUM, N_("Album")}
+ };
+@@ -219,6 +222,19 @@ rb_library_browser_class_init (RBLibraryBrowserClass *klass)
+ 							      "artists-albums",
+ 							      G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
+ 
++	/**
++	 * RBLibraryBrowser:browser-views-use-album-artist:
++	 *
++	 * Whether to use album artists instead of track artists.
++	 */
++	g_object_class_install_property (object_class,
++					 PROP_BROWSER_VIEWS_USE_ALBUM_ARTIST,
++					 g_param_spec_boolean ("browser-views-use-album-artist",
++							       "browser views use album artist",
++							       "Whether to use album artists instead of track artists",
++							       FALSE,
++							       G_PARAM_READWRITE | G_PARAM_CONSTRUCT));
++
+ 	g_type_class_add_private (klass, sizeof (RBLibraryBrowserPrivate));
+ }
+ 
+@@ -342,6 +358,10 @@ rb_library_browser_set_property (GObject *object,
+ 		priv->browser_views = g_value_dup_string (value);
+ 		update_browser_views_visibility (RB_LIBRARY_BROWSER (object));
+ 		break;
++	case PROP_BROWSER_VIEWS_USE_ALBUM_ARTIST:
++		priv->browser_views_use_album_artist = g_value_get_boolean (value);
++		update_browser_views_visibility (RB_LIBRARY_BROWSER (object));
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -372,6 +392,9 @@ rb_library_browser_get_property (GObject *object,
+ 	case PROP_BROWSER_VIEWS:
+ 		g_value_set_string (value, priv->browser_views);
+ 		break;
++	case PROP_BROWSER_VIEWS_USE_ALBUM_ARTIST:
++		g_value_set_boolean (value, priv->browser_views_use_album_artist);
++		break;
+ 	default:
+ 		G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+ 		break;
+@@ -429,7 +452,10 @@ update_browser_views_visibility (RBLibraryBrowser *widget)
+ 
+ 	if (strstr (priv->browser_views, "albums") != NULL)
+ 		properties = g_list_prepend (properties, (gpointer)RHYTHMDB_PROP_ALBUM);
+-	properties = g_list_prepend (properties, (gpointer)RHYTHMDB_PROP_ARTIST);
++	if (priv->browser_views_use_album_artist)
++		properties = g_list_prepend (properties, (gpointer)RHYTHMDB_PROP_ALBUM_ARTIST);
++	else
++		properties = g_list_prepend (properties, (gpointer)RHYTHMDB_PROP_ARTIST);
+ 	if (strstr (priv->browser_views, "genres") != NULL)
+ 		properties = g_list_prepend (properties, (gpointer)RHYTHMDB_PROP_GENRE);
+ 
+diff --git a/widgets/rb-property-view.c b/widgets/rb-property-view.c
+index 7ccae79..e641dad 100644
+--- a/widgets/rb-property-view.c
++++ b/widgets/rb-property-view.c
+@@ -658,6 +658,7 @@ rb_property_view_cell_data_func (GtkTreeViewColumn *column,
+ 
+ 		switch (view->priv->propid) {
+ 		case RHYTHMDB_PROP_ARTIST:
++		case RHYTHMDB_PROP_ALBUM_ARTIST:
+ 			fmt = ngettext ("%d artist (%d)", "All %d artists (%d)", nodes);
+ 			break;
+ 		case RHYTHMDB_PROP_ALBUM:
