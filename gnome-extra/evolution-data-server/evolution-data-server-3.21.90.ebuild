@@ -48,7 +48,6 @@ RDEPEND="
 	google? (
 		>=dev-libs/json-glib-1.0.4
 		>=dev-libs/libgdata-0.15.1:=
-		>=net-libs/webkit-gtk-2.4.9:3
 	)
 	gnome-online-accounts? ( >=net-libs/gnome-online-accounts-3.8:= )
 	introspection? ( >=dev-libs/gobject-introspection-0.9.12:= )
