@@ -9,3 +9,25 @@
    OutputToStream(&stream);
  #endif
    return stream.str();
+--- a/base/logging.cc	2016-08-30 10:44:37.362708999 +0200
++++ b/base/logging.cc	2016-08-30 10:45:28.656987729 +0200
+@@ -494,7 +494,7 @@
+ }
+ 
+ LogMessage::~LogMessage() {
+-#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && !defined(__UCLIBC__)
++#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && defined(__GLIBC__)
+   if (severity_ == LOG_FATAL && !base::debug::BeingDebugged()) {
+     // Include a stack trace on a fatal, unless a debugger is attached.
+     base::debug::StackTrace trace;
+--- net/base/url_util.cc.bak	2016-08-30 07:59:57.329941954 +0200
++++ net/base/url_util.cc	2016-08-30 08:00:41.102777124 +0200
+@@ -49,7 +49,7 @@
+       replaced = true;
+       key_value_pair = (param_name + "=" + param_value);
+     } else {
+-      key_value_pair.assign(input.data(),
++      key_value_pair.assign(static_cast<std::string>(input.data()),
+                             key_range.begin,
+                             value_range.end() - key_range.begin);
+     }
