@@ -116,7 +116,7 @@ DEPEND="
 	${PYTHON_DEPS}
 	>=app-text/hunspell-1.3.3:=
 	dev-libs/libgit2[ssh]
-	>=gnome-base/libgnome-keyring-3.12:=
+	app-crypt/libsecret
 	>=dev-libs/oniguruma-5.9.5:=
 	>=dev-util/ctags-5.8
 	>=dev-util/electron-0.36.12-r3:0/36
@@ -302,6 +302,13 @@ src_prepare() {
 
 	sed -i -e "s|{{ATOM_SUFFIX}}|${suffix}|g" \
 		"${S}/build/app/src/config-schema.js" || die
+
+	# use libsecret instead of libgnome-keyring
+	cd "${WORKDIR}"/node-keytar-${NODE_KEYTAR_V} || die
+
+	epatch "${FILESDIR}/port-to-libsecret.patch"
+
+	cd "${S}" || die
 
 	eapply_user
 }
