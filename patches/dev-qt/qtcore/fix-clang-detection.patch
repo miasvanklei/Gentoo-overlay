@@ -1,0 +1,36 @@
+--- a/configure	2016-08-31 23:06:14.723917338 +0200
++++ b/configure	2016-08-31 23:21:06.779896675 +0200
+@@ -2935,9 +2935,9 @@
+         "
+         ;;
+      Linux:*)
+-        PLATFORM=linux-g++
++        PLATFORM=linux-clang
+         PLATFORM_NOTES="
+-            - Also available for Linux: linux-clang linux-kcc linux-icc linux-cxx
++            - Also available for Linux: linux-gcc linux-kcc linux-icc linux-cxx
+         "
+         ;;
+      SunOS:5*)
+@@ -6833,20 +6833,13 @@
+ fi
+ 
+ case "$QMAKE_CONF_COMPILER" in
+-*clang*)
+-    # Clang
+-    COMPILER_VERSION=`${QMAKE_CONF_COMPILER} -v 2>&1 | sed -n -E '
+-/^Apple (clang|LLVM) version /{s///; s/^([0-9]*)\.([0-9]*).*$/QT_APPLE_CLANG_MAJOR_VERSION=\1; QT_APPLE_CLANG_MINOR_VERSION=\2/;p;q;}
+-/^clang version /{s///; s/^([0-9]*)\.([0-9]*).*$/QT_CLANG_MAJOR_VERSION=\1; QT_CLANG_MINOR_VERSION=\2/;p;q;}'`
+-    eval "$COMPILER_VERSION"
+-    ;;
+ *icpc)
+     # Intel CC
+     COMPILER_VERSION=`${QMAKE_CONF_COMPILER} -v 2>&1 | sed -n '
+ s/icpc version \([0-9]*\)\.\([0-9]*\)\.\([0-9]*\) .*$/QT_ICC_MAJOR_VERSION=\1; QT_ICC_MINOR_VERSION=\2; QT_ICC_PATCH_VERSION=\3/p'`
+     eval "$COMPILER_VERSION"
+     ;;
+-*g++*)
++*g++*|*clang*)
+     # GNU C++
+     COMPILER_VERSION=`${QMAKE_CONF_COMPILER} -dumpversion 2>/dev/null`
+ 
