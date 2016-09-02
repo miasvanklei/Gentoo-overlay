@@ -41,6 +41,7 @@ DEPEND="${RDEPEND}
 		  <dev-lang/rust-bin-${NEXT_VERSION}:stable )
 		( >=dev-lang/rust-${STAGE0_VERSION}:stable
 		  <dev-lang/rust-${NEXT_VERSION}:stable )
+		( =dev-lang/${P} )
 	)
 "
 
