@@ -24,6 +24,7 @@ RDEPEND="
 	net-libs/webkit-gtk:4[gstreamer]
 	media-libs/gstreamer:1.0
 	media-gfx/scour
+	dev-libs/diorite
 	>=net-libs/libsoup-2.34
 	x11-libs/gdk-pixbuf[jpeg]
 "
