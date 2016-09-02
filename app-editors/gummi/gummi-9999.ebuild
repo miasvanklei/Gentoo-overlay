@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit autotools eutils git-r3
+inherit autotools eutils git-r3 flag-o-matic
 
 DESCRIPTION="Simple LaTeX editor for GTK+ users"
 HOMEPAGE="https://github.com/aitjcize/Gummi.git"
@@ -39,6 +39,11 @@ DOCS=( AUTHORS ChangeLog README.md )
 src_prepare() {
 	strip-linguas ${LANGS}
 	eautoreconf
+	default
+}
+
+src_configure() {
+	append-ldflags "-rdynamic"
 	default
 }
 
