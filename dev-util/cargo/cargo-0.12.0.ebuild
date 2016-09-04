@@ -29,7 +29,7 @@ RDEPEND="${COMMON_DEPEND}
 	!dev-util/cargo-bin
 	net-misc/curl[ssl]"
 DEPEND="${COMMON_DEPEND}
-	>=dev-lang/rust-1.1.0:stable
+	>=dev-lang/rust-1.1.0
 	dev-util/cmake
 	sys-apps/coreutils
 	sys-apps/diffutils
