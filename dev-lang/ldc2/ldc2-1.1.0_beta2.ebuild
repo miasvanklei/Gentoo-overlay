@@ -39,12 +39,3 @@ src_install() {
 
 	rm -rf "${ED}"/usr/share/bash-completion
 }
-
-pkg_postinst() {
-	# Update active ldc2
-	"${ROOT}"/usr/bin/eselect dlang update ldc2
-}
-
-pkg_postrm() {
-	"${ROOT}"/usr/bin/eselect dlang update ldc2
-}
