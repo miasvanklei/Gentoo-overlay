@@ -13,10 +13,10 @@ inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${P/_}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
-SLOT="0/${PV%.*}"
+SLOT="0/${PV}"
 KEYWORDS=""
 IUSE="debug libedit python ncurses doc"
 
@@ -34,6 +34,8 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+
+S=${WORKDIR}/${P/_}.src
 
 pkg_pretend() {
 	local build_size=650
@@ -64,13 +66,6 @@ pkg_setup() {
 	pkg_pretend
 
 	python-single-r1_pkg_setup
-}
-
-src_unpack() {
-	default
-
-	mv "${WORKDIR}"/${P/_}.src "${S}" \
-		|| die "lldb source directory move failed"
 }
 
 src_prepare() {

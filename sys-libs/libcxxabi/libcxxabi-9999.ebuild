@@ -15,7 +15,8 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="+libunwind +static-libs"
 
-DEPEND="libunwind? ( ~sys-libs/llvm-libunwind-${PV}[static-libs?,${MULTILIB_USEDEP}] )"
+DEPEND="libunwind? ( ~sys-libs/llvm-libunwind-${PV}[static-libs?,${MULTILIB_USEDEP}] )
+	~sys-libs/libcxx-${PV}[static-libs?,${MULTILIB_USEDEP}]"
 RDEPEND="${DEPEND}"
 
 src_prepare() {
@@ -30,8 +31,9 @@ multilib_src_configure() {
 		-DLIBCXXABI_USE_COMPILER_RT=ON
 		-DLIBCXXABI_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXXABI_ENABLE_STATIC=$(usex static-libs)
-		-DLIBCXXABI_HAS_GCC_S_LIB=$(usex !libunwind)
-		-DCMAKE_SHARED_LINKER_FLAGS=$(usex libunwind "-lunwind" "")
+		-DLIBCXXABI_LIBCXX_INCLUDES="/usr/include/c++/v1"
+		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
+		-DLIBCXXABI_LIBUNWIND_INCLUDES="${EPREFIX}/usr/include/llvm-libunwind"
 	)
 
 	cmake-utils_src_configure

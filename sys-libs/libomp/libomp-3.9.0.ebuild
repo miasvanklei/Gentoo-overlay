@@ -11,17 +11,17 @@ inherit cmake-multilib
 MY_P=openmp-${PV}
 DESCRIPTION="OpenMP runtime library for LLVM/clang compiler"
 HOMEPAGE="http://openmp.llvm.org"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${MY_P/_}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/${MY_P}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
-SLOT="0/3.7"
+SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 DEPEND=""
 RDEPEND="${DEPEND}"
 
-S="${WORKDIR}/${MY_P/_}.src"
+S="${WORKDIR}/${MY_P}.src"
 
 PATCHES=(
         "${FILESDIR}"/${PN}-3.7.0-os_detection.patch

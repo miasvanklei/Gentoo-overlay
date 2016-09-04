@@ -9,3 +9,16 @@
      set(LLVM_LIT_PATH "${LLVM_PATH}/utils/lit/lit.py")
    else()
      message(FATAL_ERROR "llvm-config not found and LLVM_MAIN_SRC_DIR not defined. "
+@@ -380,10 +380,11 @@
+   if (LIBCXXABI_LIBUNWIND_SOURCES STREQUAL "LIBCXXABI_LIBUNWIND_SOURCES-NOTFOUND")
+     message(WARNING "LIBCXXABI_LIBUNWIND_SOURCES was not specified and couldn't be infered.")
+     set(LIBCXXABI_LIBUNWIND_SOURCES "")
++  else()
++    include_directories("${LIBCXXABI_LIBUNWIND_SOURCES}")
+   endif()
+ 
+   include_directories("${LIBCXXABI_LIBUNWIND_INCLUDES_INTERNAL}")
+-  include_directories("${LIBCXXABI_LIBUNWIND_SOURCES}")
+ endif()
+ 
+ # Add source code. This also contains all of the logic for deciding linker flags

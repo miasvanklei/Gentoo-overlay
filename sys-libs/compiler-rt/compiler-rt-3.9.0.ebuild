@@ -8,14 +8,14 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils git-r3 python-single-r1
+inherit cmake-utils python-single-r1 flag-o-matic
 
 DESCRIPTION="Compiler runtime libraries for clang"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/compiler-rt-${PV/_}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
-SLOT="0/${PV%.*}"
+SLOT="0/${PV}"
 KEYWORDS=""
 IUSE="-sanitize"
 
@@ -28,12 +28,7 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-src_unpack() {
-        default
-
-        mv "${WORKDIR}"/${P/_}.src "${S}" \
-                || die "compiler-rt source directory move failed"
-}
+S=${WORKDIR}/${P/_}.src
 
 src_prepare() {
 	eapply "${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
@@ -43,7 +38,7 @@ src_prepare() {
 }
 
 src_configure() {
-	local clang_version=3.9.0
+	local clang_version=${PV}
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		# used to find cmake modules

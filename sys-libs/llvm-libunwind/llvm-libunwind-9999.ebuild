@@ -13,7 +13,7 @@ EGIT_REPO_URI="https://github.com/llvm-mirror/libunwind.git"
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="+static-libs"
+IUSE="+static-libs debug"
 
 DEPEND=""
 RDEPEND="!sys-libs/libunwind"
@@ -29,18 +29,15 @@ multilib_src_configure() {
 	local libdir=$(get_libdir)
 
 	local mycmakeargs=(
-		# work-around attempting to use llvm-config to get llvm sources
-		# (that are not needed at all)
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
+		-DLIBUNWIND_ENABLE_ASSERTIONS=$(usex debug)
 		-DLIBUNWIND_ENABLE_STATIC=$(usex static-libs)
-		-DLIBUNWIND_ENABLE_ASSERTIONS=OFF
 	)
 
 	cmake-utils_src_configure
 }
 
 multilib_src_install_all() {
-
-        mkdir "${D}"/usr/include
-        cp -r "${S}"/include/* "${D}"/usr/include || die
+	insinto "/usr/include/${PN}/"
+        doins include/*
 }

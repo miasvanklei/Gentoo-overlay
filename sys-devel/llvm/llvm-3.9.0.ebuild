@@ -5,19 +5,19 @@
 EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
-CMAKE_MIN_VERSION=3.4.3
+CMAKE_MIN_VERSION=3.6.1-r1
 DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils distutils-r1 flag-o-matic \
+inherit check-reqs cmake-utils flag-o-matic \
 	multilib-minimal pax-utils toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/${P/_}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
-SLOT="0/${PV%.*}"
+SLOT="0/${PV}"
 KEYWORDS=""
 IUSE="debug -doc +gold +libedit +libffi multitarget +ncurses ocaml test
 	video_cards_radeon kernel_Darwin"
@@ -32,9 +32,7 @@ RDEPEND="
 	ocaml? (
 		>=dev-lang/ocaml-4.00.0:0=
 		dev-ml/findlib
-		dev-ml/ocaml-ctypes )
-	${PYTHON_DEPS}"
-# configparser-3.2 breaks the build (3.3 or none at all are fine)
+		dev-ml/ocaml-ctypes )"
 DEPEND="${RDEPEND}
 	dev-lang/perl
 	|| ( >=sys-devel/gcc-3.0 >=sys-devel/llvm-3.5
@@ -46,9 +44,12 @@ DEPEND="${RDEPEND}
 	gold? ( sys-libs/binutils-libs )
 	libffi? ( virtual/pkgconfig )
 	ocaml? ( test? ( dev-ml/ounit ) )
-	!!<dev-python/configparser-3.3.0.2"
+	!!<dev-python/configparser-3.3.0.2
+	${PYTHON_DEPS}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+
+S=${WORKDIR}/${P/_}.src
 
 pkg_pretend() {
 	# in megs
@@ -84,19 +85,10 @@ pkg_setup() {
 	pkg_pretend
 }
 
-src_unpack() {
-	default
-
-	mv "${WORKDIR}"/${P/_}.src "${S}" \
-		|| die "clang source directory move failed"
-}
-
 src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
-	# Make ocaml warnings non-fatal, bug #537308
-	sed -e "/RUN/s/-warn-error A//" -i test/Bindings/OCaml/*ml  || die
 	# Fix libdir for ocaml bindings install, bug #559134
 	eapply "${FILESDIR}"/0001-cmake-Install-OCaml-modules-into-correct-package-loc.patch
 	# Do not build/install ocaml docs with USE=-doc, bug #562008
@@ -125,11 +117,6 @@ src_prepare() {
 	# https://bugs.gentoo.org/show_bug.cgi?id=578392
 	eapply "${FILESDIR}"/0008-cmake-Restore-SOVERSIONs-on-shared-libraries.patch
 
-	# Fix lit tests to find installed llvm-lit correctly
-	eapply "${FILESDIR}"/0009-cmake-Use-system-llvm-lit-when-lit.py-does-not-exist.patch
-	# Install lit as llvm-lit (as expected by cmake)
-	eapply "${FILESDIR}"/0010-lit-setup.py-Install-as-llvm-lit-as-cmake-expects-it.patch
-
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/musl-fixes.patch
 
@@ -152,12 +139,6 @@ multilib_src_configure() {
 		use video_cards_radeon && targets+=';AMDGPU'
 	fi
 
-	local ffi_cflags ffi_ldflags
-	if use libffi; then
-		ffi_cflags=$(pkg-config --cflags-only-I libffi)
-		ffi_ldflags=$(pkg-config --libs-only-L libffi)
-	fi
-
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
@@ -171,13 +152,10 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_CXX1Y=ON
-                -DLLVM_ENABLE_THREADS=ON
+		-DLLVM_ENABLE_THREADS=ON
 		-DWITH_POLLY=OFF # TODO
 
 		-DLLVM_HOST_TRIPLE="${CHOST}"
-
-		-DFFI_INCLUDE_DIR="${ffi_cflags#-I}"
-		-DFFI_LIBRARY_DIR="${ffi_ldflags#-L}"
 
 		-DHAVE_HISTEDIT_H=$(usex libedit)
 	)
@@ -202,17 +180,13 @@ multilib_src_configure() {
 			-DLLVM_ENABLE_DOXYGEN=OFF
 			-DLLVM_INSTALL_UTILS=ON
 		)
-
-		if use gold; then
-			mycmakeargs+=(
-				-DLLVM_BINUTILS_INCDIR="${EPREFIX}"/usr/include
-			)
-		fi
-
-		if use doc; then
+		use doc && mycmakeargs+=(
 			-DLLVM_INSTALL_HTML="${EPREFIX}/usr/share/doc/${PF}/html"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
-		fi
+		)
+		use gold && mycmakeargs+=(
+			-DLLVM_BINUTILS_INCDIR="${EPREFIX}"/usr/include
+		)
 	fi
 
 	if tc-is-cross-compiler; then
@@ -241,10 +215,6 @@ multilib_src_compile() {
 		pax-mark m "${BUILD_DIR}"/unittests/ExecutionEngine/MCJIT/MCJITTests
 		pax-mark m "${BUILD_DIR}"/unittests/Support/SupportTests
 	fi
-
-	# Run setup.py for lit
-	cd "${S}"/utils/lit || die
-	distutils-r1_src_compile
 }
 
 multilib_src_test() {
@@ -263,10 +233,6 @@ src_install() {
 	)
 
 	multilib-minimal_src_install
-
-	# Install lit
-	cd "${S}"/utils/lit || die
-	distutils-r1_src_install
 }
 
 multilib_src_install() {

@@ -13,11 +13,11 @@ inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/cfe-${PV/_}.src.tar.xz
-	http://llvm.org/pre-releases/${PV%_rc*}/${PV/${PV%_rc*}_}/clang-tools-extra-${PV/_}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz"
+#	http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
-SLOT="0/${PV%.*}"
+SLOT="0/${PV}"
 KEYWORDS=""
 IUSE="debug +default-compiler-rt +default-libcxx -doc multitarget python
 	+static-analyzer test xml video_cards_radeon kernel_FreeBSD"
@@ -39,6 +39,8 @@ PDEPEND="
 	default-libcxx? ( sys-libs/libcxx )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+
+S=${WORKDIR}/cfe-${PV/_}.src
 
 pkg_pretend() {
 	local build_size=650
@@ -71,15 +73,6 @@ pkg_setup() {
 	python-single-r1_pkg_setup
 }
 
-src_unpack() {
-	default
-
-	mv "${WORKDIR}"/cfe-${PV/_}.src "${S}" \
-		|| die "clang source directory move failed"
-	mv "${WORKDIR}"/clang-tools-extra-${PV/_}.src "${S}"/tools/extra \
-		|| die "clang-tools-extra source directory move failed"
-}
-
 src_prepare() {
 	python_setup
 
@@ -88,8 +81,6 @@ src_prepare() {
 	# automatically select active system GCC's libraries, bugs #406163 and #417913
 	# TODO: cross-linux tests broken by this one
 	eapply "${FILESDIR}"/0002-driver-Support-obtaining-active-toolchain-from-gcc-c.patch
-	# adjust llvm-lit search to match LLVM cmake macros
-	eapply "${FILESDIR}"/0004-cmake-Adjust-llvm-lit-search-to-match-the-one-in-LLV.patch
 	# support overriding clang runtime install directory
 	eapply "${FILESDIR}"/0005-cmake-Supporting-overriding-runtime-libdir-via-CLANG.patch
 	# support overriding LLVMgold.so plugin directory
@@ -165,24 +156,24 @@ multilib_src_configure() {
 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 
 		-DLLVM_ENABLE_EH=ON
-                -DLLVM_ENABLE_RTTI=ON
-                -DLLVM_ENABLE_CXX1Y=ON
-                -DLLVM_ENABLE_THREADS=ON
-		-DCLANG_INCLUDE_TESTS=$(usex test)
+		-DLLVM_ENABLE_RTTI=ON
+		-DLLVM_ENABLE_CXX1Y=ON
+		-DLLVM_ENABLE_THREADS=ON
+	)
+	use test && mycmakeargs+=(
+		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
 	)
 
 	if multilib_is_native_abi; then
 		mycmakeargs+=(
-			# TODO: docs don't work out-of-llvm
 			-DLLVM_BUILD_DOCS=$(usex doc)
 			-DLLVM_ENABLE_SPHINX=$(usex doc)
 			-DLLVM_ENABLE_DOXYGEN=OFF
 		)
-
-		if use doc; then
+		use doc && mycmakeargs+=(
 			-DCLANG_INSTALL_HTML="${EPREFIX}/usr/share/doc/${PF}/clang"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
-		fi
+		)
 	else
 		mycmakeargs+=(
 			-DLLVM_EXTERNAL_CLANG_TOOLS_EXTRA_BUILD=OFF
