@@ -33,7 +33,7 @@ multilib_src_configure() {
 		-DLIBCXXABI_ENABLE_STATIC=$(usex static-libs)
 		-DLIBCXXABI_LIBCXX_INCLUDES="/usr/include/c++/v1"
 		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
-		-DLIBCXXABI_LIBUNWIND_INCLUDES="${EPREFIX}/usr/include/llvm-libunwind"
+#		-DLIBCXXABI_LIBUNWIND_INCLUDES="${EPREFIX}/usr/include/llvm-libunwind"
 	)
 
 	cmake-utils_src_configure

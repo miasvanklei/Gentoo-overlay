@@ -21,7 +21,6 @@ RDEPEND="!sys-libs/libunwind"
 src_prepare() {
 	default
 	eapply "${FILESDIR}"/unwind-fix-missing-condition-encoding.patch
-	eapply "${FILESDIR}"/revert-alignedment-commit.patch
 	eapply "${FILESDIR}"/llvm-libunwind-3.9-cmake.patch
 }
 
@@ -37,7 +36,7 @@ multilib_src_configure() {
 	cmake-utils_src_configure
 }
 
-multilib_src_install_all() {
-	insinto "/usr/include/${PN}/"
-        doins include/*
-}
+#multilib_src_install_all() {
+#	insinto "/usr/include/llvm-libunwind"
+#        doins include/*
+#}
