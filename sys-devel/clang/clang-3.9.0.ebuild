@@ -13,8 +13,8 @@ inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz"
-#	http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz
+	http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
@@ -41,6 +41,11 @@ PDEPEND="
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 S=${WORKDIR}/cfe-${PV/_}.src
+
+src_unpack() {
+	mv "${WORKDIR}"/clang-tools-extra-${PV/_}.src "${S}"/tools/extra \
+		|| die "clang-tools-extra source directory move failed"
+}
 
 pkg_pretend() {
 	local build_size=650
@@ -152,9 +157,14 @@ multilib_src_configure() {
 		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
 		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
 
+		# enable static-analyzer when needed
 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 
+		# enable libomp
+		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
+
+		# llvm options
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_CXX1Y=ON
