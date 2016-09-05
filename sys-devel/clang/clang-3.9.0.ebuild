@@ -43,6 +43,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 S=${WORKDIR}/cfe-${PV/_}.src
 
 src_unpack() {
+	default
+
 	mv "${WORKDIR}"/clang-tools-extra-${PV/_}.src "${S}"/tools/extra \
 		|| die "clang-tools-extra source directory move failed"
 }
