@@ -120,6 +120,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0020-dont-use-gcc-dir.patch
 	eapply "${FILESDIR}"/0021-remove-rtm-haswell.patch
 	eapply "${FILESDIR}"/0022-update-default-cxx-standard.patch
+	eapply "${FILESDIR}"/0023-add-libunwind-libcxxabi.patch
 
 
 	# User patches
