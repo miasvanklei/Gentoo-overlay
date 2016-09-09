@@ -31,6 +31,7 @@ DEPEND="${RDEPEND}
 src_prepare() {
 	use nls || sed -i '/add_subdirectory (po)/d' CMakeLists.txt
 	eapply ${FILESDIR}/prefer-light-theme.patch
+	eapply ${FILESDIR}/doesnt-work.patch
 
 	cmake-utils_src_prepare
 	vala_src_prepare
