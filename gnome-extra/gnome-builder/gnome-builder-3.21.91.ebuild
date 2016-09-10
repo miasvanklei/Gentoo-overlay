@@ -8,7 +8,7 @@ PYTHON_COMPAT=( python{3_3,3_4,3_5} )
 VALA_MIN_API_VERSION="0.30"
 VALA_USE_DEPEND="vapigen"
 
-inherit gnome2 python-single-r1 vala virtualx
+inherit autotools gnome2 python-single-r1 vala virtualx
 
 DESCRIPTION="Builder attempts to be an IDE for writing software for GNOME"
 HOMEPAGE="https://wiki.gnome.org/Apps/Builder"
@@ -53,7 +53,8 @@ pkg_setup() {
 
 src_prepare() {
 	use vala && vala_src_prepare
-	gnome2_src_prepare
+	epatch ${FILESDIR}/doesnt-work-with-gentoo-sandbox.patch
+	eautoreconf
 }
 
 src_configure() {
@@ -65,7 +66,8 @@ src_configure() {
 		$(use_enable python jedi-plugin) \
 		$(use_enable vala vala-pack-plugin) \
 		$(use_enable sysprof sysprof-plugin) \
-		$(use_enable !debug optimizations)
+		$(use_enable !debug optimizations) \
+		$(usex debug --enable-debug=yes --enable-debug=no)
 }
 
 src_test() {
