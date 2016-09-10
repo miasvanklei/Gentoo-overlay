@@ -21,9 +21,9 @@
 -      CLONE_SYSVSEM | CLONE_SETTLS | CLONE_PARENT_SETTID | CLONE_CHILD_CLEARTID;
 -  const BoolExpr glibc_test = flags == kGlibcPthreadFlags;
 -
--  const BoolExpr android_test = flags == kAndroidCloneMask ||
--                                flags == kObsoleteAndroidCloneMask ||
--                                flags == kGlibcPthreadFlags;
+-  const BoolExpr android_test =
+-      AnyOf(flags == kAndroidCloneMask, flags == kObsoleteAndroidCloneMask,
+-            flags == kGlibcPthreadFlags);
 -
 -  return If(IsAndroid() ? android_test : glibc_test, Allow())
 +  return If(thread_clone_ok, Allow())
