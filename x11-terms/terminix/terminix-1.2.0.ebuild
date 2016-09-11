@@ -16,7 +16,7 @@ IUSE="debug"
 
 SRC_URI="https://github.com/gnunn1/${PN}/archive/${PV}.tar.gz"
 
-DEPEND="x11-libs/gtk-d"
+DEPEND="x11-libs/GtkD"
 RDEPEND="${DEPEND}"
 
 src_prepare() {
