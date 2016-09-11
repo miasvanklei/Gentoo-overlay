@@ -4,12 +4,11 @@
 
 EAPI=5
 
-EGIT_REPO_URI="https://github.com/dmo60/lLyrics.git"
+inherit gnome2-utils
 
-inherit git-r3
-
-DESCRIPTION="Replaces the large Rhythmbox toolbar with a client-side decorated or compact toolbar which can be hidden."
-HOMEPAGE="https://github.com/fossfreedom/alternative-toolbar"
+DESCRIPTION="A Rhythmbox plugin for displaying lyrics in the sidebar."
+HOMEPAGE="https://github.com/dmo60/lLyrics"
+SRC_URI="https://github.com/dmo60/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
@@ -22,12 +21,9 @@ DEPEND="${RDEPEND}
 	>=dev-vcs/git-2.4.6
 	>=sys-devel/gettext-0.19.4"
 
-src_unpack() {
-	git-r3_src_unpack
-}
 
 src_compile() {
-	einfo "non needed"
+	einfo "Not needed"
 }
 
 src_install() {
@@ -39,9 +35,9 @@ src_install() {
 }
 
 pkg_postinst() {
-	/usr/bin/glib-compile-schemas /usr/share/glib-2.0/schemas
+        gnome2_schemas_update
 }
 
 pkg_postrm() {
-	pkg_postinst
+        gnome2_schemas_update
 }
