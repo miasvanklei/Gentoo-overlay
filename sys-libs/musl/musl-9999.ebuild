@@ -39,7 +39,14 @@ multilib_src_configure() {
 }
 
 multilib_src_compile() {
-	emake || die
+	emake
+
+	if multilib_is_native_abi; then
+		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/getconf.c -o "${T}"/getconf
+		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/getent.c -o "${T}"/getent
+		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/iconv.c -o "${T}"/iconv
+	fi
+
 }
 
 gen_ldscript() {
@@ -75,27 +82,24 @@ multilib_src_install() {
 	gen_ldscript "/$(get_libdir)/${ldso}" > "${ED}/usr/$(get_libdir)/libc.so"
 
 	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd || die
-	ar rcs ${D}/usr/$(get_libdir)/libintl.a || die
 
 	# needed for ldd under pax kernel
 	pax-mark r "${D}"/$(get_libdir)/${ldso} || die
-
-	cd ${D}/usr/$(get_libdir)
-	ln -s crtend.o crtendS.o
 }
 
 multilib_src_install_all() {
 	local ldso=$(basename "${D}"/$(get_libdir)/ld-musl-*)
-	local i
-        for i in getconf getent iconv; do
-		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/$i.c -o $i
-		dobin $i
-        done
 
 	dosym /$(get_libdir)/${ldso} /usr/bin/ldd
-	insinto /sbin
-	doins ${FILESDIR}/ldconfig
-	chmod +x "${D}"/sbin/ldconfig
+
+	into /
+	dosbin "${FILESDIR}"/ldconfig
+	into /usr
+	dobin "${T}"/getconf
+	dobin "${T}"/getent
+	dobin "${T}"/iconv
+	echo 'LDPATH="include ld.so.conf.d/*.conf"' > "${T}"/00musl || die
+	doenvd "${T}"/00musl || die
 }
 
 pkg_postinst() {
