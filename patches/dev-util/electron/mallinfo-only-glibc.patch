@@ -1,0 +1,18 @@
+--- a/base/trace_event/malloc_dump_provider.cc	2016-09-12 19:57:35.172738877 +0200
++++ b/base/trace_event/malloc_dump_provider.cc	2016-09-12 20:00:25.072203948 +0200
+@@ -36,6 +36,7 @@
+ // the current process.
+ bool MallocDumpProvider::OnMemoryDump(const MemoryDumpArgs& args,
+                                       ProcessMemoryDump* pmd) {
++#if defined(OS_MACOSX) || defined(OS_IOS) || defined(USE_TCMALLOC) || defined(__GLIBC__)
+   size_t total_virtual_size = 0;
+   size_t resident_size = 0;
+   size_t allocated_objects_size = 0;
+@@ -96,6 +97,7 @@
+                           resident_size - allocated_objects_size);
+   }
+ 
++#endif
+   return true;
+ }
+ 
