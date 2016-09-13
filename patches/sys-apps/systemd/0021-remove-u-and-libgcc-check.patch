@@ -1,0 +1,22 @@
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -2872,8 +2872,7 @@
+ 
+ $(systemd_boot_solib): $(systemd_boot_objects)
+ 	$(AM_V_CCLD)$(LD) $(efi_ldflags) $(systemd_boot_objects) \
+-		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name); \
+-	nm -D -u $@ | grep ' U ' && exit 1 || :
++		-o $@ -lefi -lgnuefi;
+ 
+ $(systemd_boot): $(systemd_boot_solib)
+ 	$(AM_V_GEN)$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic \
+@@ -2922,8 +2921,7 @@
+ 
+ $(stub_solib): $(stub_objects)
+ 	$(AM_V_CCLD)$(LD) $(efi_ldflags) $(stub_objects) \
+-		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name); \
+-	nm -D -u $@ | grep ' U ' && exit 1 || :
++		-o $@ -lefi -lgnuefi;
+ 
+ $(stub): $(stub_solib)
+ 	$(AM_V_GEN)$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic \
