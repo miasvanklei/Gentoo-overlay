@@ -33,6 +33,7 @@ inherit systemd
 
 src_prepare()
 {
+	eapply ${FILESDIR}/fix-compile.patch
 	default
 
 	mv -T ../containers-${CONTAINERS}            containers                        || die

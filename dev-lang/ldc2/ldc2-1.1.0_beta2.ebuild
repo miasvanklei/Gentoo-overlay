@@ -22,6 +22,13 @@ DEPEND=">=dev-util/cmake-2.8
 	sys-devel/llvm
 	${RDEPEND}"
 
+src_prepare() {
+	eapply ${FILESDIR}/default-pic.patch
+	eapply ${FILESDIR}/fix-libunwind-alignment.patch
+	eapply ${FILESDIR}/fix-musl.patch
+	eapply ${FILESDIR}/link-libunwind.patch
+}
+
 src_configure() {
 	local mycmakeargs=(
 		-DD_VERSION=2
