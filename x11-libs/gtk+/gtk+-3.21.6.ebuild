@@ -137,7 +137,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/${PN}-3.16.2-remove_update-icon-cache.patch
 
 	gnome2_src_prepare
-	eautoreconf
 }
 
 multilib_src_configure() {
