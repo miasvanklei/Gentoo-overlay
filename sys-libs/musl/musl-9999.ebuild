@@ -7,10 +7,6 @@ EAPI=6
 inherit eutils flag-o-matic toolchain-funcs multilib-minimal pax-utils git-r3
 
 EGIT_REPO_URI="git://git.musl-libc.org/musl"
-SRC_URI="
-	http://dev.gentoo.org/~blueness/musl-misc/getconf.c
-	http://dev.gentoo.org/~blueness/musl-misc/getent.c
-	http://dev.gentoo.org/~blueness/musl-misc/iconv.c"
 
 DESCRIPTION="Lightweight, fast and simple C library focused on standards-conformance and safety"
 HOMEPAGE="http://www.musl-libc.org/"
@@ -20,7 +16,7 @@ SLOT="0"
 IUSE="+compat"
 
 RDEPEND="!sys-apps/getent
-	 compat? ( sys-libs/queue
+	 compat? ( sys-libs/musl-compat
 		   sys-libs/argp-standalone
 		   sys-libs/musl-obstack
 		   sys-libs/fts-standalone )"
@@ -40,13 +36,6 @@ multilib_src_configure() {
 
 multilib_src_compile() {
 	emake
-
-	if multilib_is_native_abi; then
-		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/getconf.c -o "${T}"/getconf
-		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/getent.c -o "${T}"/getent
-		$(tc-getCC) ${CFLAGS} "${DISTDIR}"/iconv.c -o "${T}"/iconv
-	fi
-
 }
 
 gen_ldscript() {
@@ -94,10 +83,6 @@ multilib_src_install_all() {
 
 	into /
 	dosbin "${FILESDIR}"/ldconfig
-	into /usr
-	dobin "${T}"/getconf
-	dobin "${T}"/getent
-	dobin "${T}"/iconv
 	echo 'LDPATH="include ld.so.conf.d/*.conf"' > "${T}"/00musl || die
 	doenvd "${T}"/00musl || die
 }

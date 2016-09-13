@@ -34,22 +34,3 @@
  
  #include <net/ethernet.h>
  #include <net/if_arp.h>
---- a/include/netinet/in.h	2015-06-04 22:08:24.000000000 -0200
-+++ b/include/netinet/in.h	2015-08-22 15:03:58.004786139 -0200
-@@ -21,6 +21,8 @@
- 	uint8_t sin_zero[8];
- };
- 
-+#if !defined(HAVE_IN6_H)
-+#define HAVE_IN6_H
- struct in6_addr {
- 	union {
-                uint8_t __s6_addr[16];
-@@ -47,6 +49,7 @@
- 	struct in6_addr ipv6mr_multiaddr;
- 	unsigned        ipv6mr_interface;
- };
-+#endif
- 
- #define INADDR_ANY        ((in_addr_t) 0x00000000)
- #define INADDR_BROADCAST  ((in_addr_t) 0xffffffff)
