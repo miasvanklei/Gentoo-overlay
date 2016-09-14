@@ -43,7 +43,9 @@ src_prepare() {
 	# maintainer mode gets triggered -- even if the order is correct
 	sed -e 's:^CPPFLAGS="$CPPFLAGS -g"$::g' \
 		-i configure || die "debugger sed failed"
-	gnome2_src_prepare
+	eautoreconf
+
+	eapply_user
 }
 
 src_configure() {
