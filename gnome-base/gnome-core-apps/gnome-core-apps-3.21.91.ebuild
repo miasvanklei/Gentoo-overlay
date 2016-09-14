@@ -20,7 +20,7 @@ KEYWORDS="~amd64 ~arm ~ia64 ~ppc ~ppc64 ~x86"
 RDEPEND="
 	>=gnome-base/gnome-core-libs-${PV}[cups?]
 
-	>=gnome-base/gnome-session-${PV}
+	>=gnome-base/gnome-session-3.21.90
 	>=gnome-base/gnome-menus-3.10.1:3
 	>=gnome-base/gnome-settings-daemon-${PV}[cups?]
 	>=gnome-base/gnome-control-center-${PV}[cups?]
@@ -31,7 +31,7 @@ RDEPEND="
 	>=gnome-extra/evolution-data-server-${PV}
 
 	>=app-crypt/seahorse-3.20.0
-	>=app-editors/gedit-${PV}
+	>=app-editors/gedit-3.21.90
 	>=app-text/evince-3.21.4
 	>=gnome-extra/gnome-contacts-3.20.0
 	>=media-gfx/eog-3.20.4

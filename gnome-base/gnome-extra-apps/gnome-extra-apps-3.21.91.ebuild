@@ -21,7 +21,7 @@ RDEPEND="
 	>=gnome-base/gnome-core-libs-${PV}
 
 	>=app-admin/gnome-logs-${PV}
-	>=app-arch/file-roller-${PV}
+	>=app-arch/file-roller-3.21.90
 	>=app-dicts/gnome-dictionary-3.20.0
 	>=gnome-base/dconf-editor-${PV}
 	>=gnome-extra/gnome-calculator-${PV}
