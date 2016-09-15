@@ -18,7 +18,8 @@ RDEPEND="
 	$(add_kdeapps_dep kdecore-meta)
 	$(add_kdeapps_dep kdegraphics-meta)
 	$(add_kdeapps_dep kdemultimedia-meta)
+	$(add_kdeapps_dep kdenetwork-meta)
 	$(add_kdeapps_dep kdeutils-meta)
-	pim? ( =kde-apps/kdepim-meta-16.04.3 )
+	pim? ( $(add_kdeapps_dep kdepim-meta) )
 	sdk? ( $(add_kdeapps_dep kdesdk-meta) )
 "

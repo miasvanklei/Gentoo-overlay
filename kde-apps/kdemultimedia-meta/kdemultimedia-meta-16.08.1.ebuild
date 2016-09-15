@@ -11,11 +11,17 @@ HOMEPAGE="
 	https://www.kde.org/applications/multimedia/
 	https://multimedia.kde.org/
 "
-KEYWORDS=" ~amd64 ~x86"
-IUSE="+ffmpeg"
+KEYWORDS="~amd64 ~x86"
+IUSE="+ffmpeg nls"
 
-# Add back whenever it is ported - no change since 4.10
-# 	mplayer? ( $(add_kdeapps_dep mplayerthumbs) )
+[[ ${KDE_BUILD_TYPE} = live ]] && L10N_MINIMAL=${KDE_APPS_MINIMAL}
+
 RDEPEND="
+	$(add_kdeapps_dep dragon)
+	$(add_kdeapps_dep kdenlive)
 	ffmpeg? ( $(add_kdeapps_dep ffmpegthumbs) )
+	nls? (
+		$(add_kdeapps_dep kde-l10n '' ${L10N_MINIMAL})
+		$(add_kdeapps_dep kde4-l10n '' ${L10N_MINIMAL})
+	)
 "
