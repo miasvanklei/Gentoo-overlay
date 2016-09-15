@@ -14,7 +14,6 @@ IUSE="nls ppp +telepathy"
 
 RDEPEND="
 	$(add_kdeapps_dep kdenetwork-filesharing)
-	$(add_kdeapps_dep kget)
 	$(add_kdeapps_dep krdc)
 	$(add_kdeapps_dep krfb)
 	nls? (

@@ -23,7 +23,6 @@ RDEPEND="
 	$(add_kdeapps_dep libkexiv2)
 	$(add_kdeapps_dep libkipi)
 	$(add_kdeapps_dep spectacle)
-	$(add_kdeapps_dep svgpart)
 	$(add_kdeapps_dep thumbnailers)
 	nls? (
 		$(add_kdeapps_dep kde-l10n '' ${L10N_MINIMAL})
