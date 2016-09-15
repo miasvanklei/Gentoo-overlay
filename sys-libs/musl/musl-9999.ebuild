@@ -34,9 +34,9 @@ multilib_src_configure() {
 	--disable-gcc-wrapper
 }
 
-multilib_src_compile() {
-	emake
-}
+#multilib_src_compile() {
+#	emake
+#}
 
 gen_ldscript() {
         local output_format

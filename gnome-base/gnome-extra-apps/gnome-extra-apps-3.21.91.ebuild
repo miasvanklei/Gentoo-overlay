@@ -21,7 +21,7 @@ RDEPEND="
 	>=gnome-base/gnome-core-libs-${PV}
 
 	>=app-admin/gnome-logs-${PV}
-	>=app-arch/file-roller-3.21.90
+	>=app-arch/file-roller-${PV}
 	>=app-dicts/gnome-dictionary-3.20.0
 	>=gnome-base/dconf-editor-${PV}
 	>=gnome-extra/gnome-calculator-${PV}
@@ -66,9 +66,9 @@ RDEPEND="
 		>=games-puzzle/quadrapassel-${PV}
 		>=games-puzzle/swell-foop-${PV} )
 	share? ( >=gnome-extra/gnome-user-share-3.18.1 )
-	shotwell? ( >=media-gfx/shotwell-0.22 )
+	shotwell? ( >=media-gfx/shotwell-0.23 )
 	tracker? (
-		>=app-misc/tracker-1.8
+		>=app-misc/tracker-1.9
 		>=gnome-extra/gnome-documents-${PV}
 		>=media-gfx/gnome-photos-${PV}
 		>=media-sound/gnome-music-${PV} )

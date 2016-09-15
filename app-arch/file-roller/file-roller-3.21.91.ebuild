@@ -12,7 +12,7 @@ HOMEPAGE="https://wiki.gnome.org/Apps/FileRoller"
 
 LICENSE="GPL-2+ CC-BY-SA-3.0"
 SLOT="0"
-IUSE="nautilus packagekit"
+IUSE="packagekit"
 KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~ppc ~ppc64 ~sparc ~x86 ~x86-fbsd ~x86-freebsd ~amd64-linux ~x86-linux"
 
 # gdk-pixbuf used extensively in the source
@@ -28,7 +28,6 @@ RDEPEND="
 	x11-libs/cairo
 	x11-libs/gdk-pixbuf:2
 	x11-libs/pango
-	nautilus? ( >=gnome-base/nautilus-3 )
 	packagekit? ( app-admin/packagekit-base )
 "
 DEPEND="${RDEPEND}
@@ -74,7 +73,6 @@ src_configure() {
 		--disable-debug \
 		--enable-magic \
 		--enable-libarchive \
-		$(use_enable nautilus nautilus-actions) \
 		$(use_enable packagekit)
 }
 
