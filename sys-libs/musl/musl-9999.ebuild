@@ -16,10 +16,7 @@ SLOT="0"
 IUSE="+compat"
 
 RDEPEND="!sys-apps/getent
-	 compat? ( sys-libs/musl-compat
-		   sys-libs/argp-standalone
-		   sys-libs/musl-obstack
-		   sys-libs/fts-standalone )"
+	 compat? ( sys-libs/musl-compat )"
 
 src_prepare() {
 	eapply ${FILESDIR}/
