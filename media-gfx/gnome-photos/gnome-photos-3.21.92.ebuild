@@ -25,7 +25,7 @@ RDEPEND="
 	media-libs/gexiv2
 	>=media-libs/grilo-0.3.0:0.3=
 	>=media-libs/libpng-1.6:0=
-	>=media-plugins/grilo-plugins-0.2.6:0.2[upnp-av]
+	media-plugins/grilo-plugins[upnp-av]
 	>=net-libs/gnome-online-accounts-3.8:=
 	>=net-libs/libgfbgraph-0.2.1:0.2
 	>=x11-libs/cairo-1.14
