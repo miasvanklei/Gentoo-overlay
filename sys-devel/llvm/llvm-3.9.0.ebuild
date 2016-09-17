@@ -10,7 +10,7 @@ DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python2_7 )
 
 inherit check-reqs cmake-utils flag-o-matic \
-	multilib-minimal pax-utils toolchain-funcs
+	multilib-minimal pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
@@ -154,6 +154,9 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DWITH_POLLY=OFF # TODO
+
+		-DFFI_INCLUDE_DIR="/usr/include"
+                -DFFI_LIBRARY_DIR="/usr/lib64"
 
 		-DLLVM_HOST_TRIPLE="${CHOST}"
 

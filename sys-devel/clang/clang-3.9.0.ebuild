@@ -111,7 +111,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0016-use-ssp-by-default.patch
 
 	# compile/link compiler-rt shared
-	eapply "${FILESDIR}"/0017-link-compiler-rt-shared.patch
+	eapply "${FILESDIR}"/0017-link-compiler-rt-shared-and-libunwind.patch
 
 	# fixes for removing gcc, like increase gcc version for portage,
 	# remove rtm for qt, update cxx standard for qt, or ada check binutils.
@@ -120,7 +120,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0020-dont-use-gcc-dir.patch
 	eapply "${FILESDIR}"/0021-remove-rtm-haswell.patch
 	eapply "${FILESDIR}"/0022-update-default-cxx-standard.patch
-	eapply "${FILESDIR}"/0023-add-libunwind-libcxxabi.patch
+	eapply "${FILESDIR}"/0023-link-libcxxabi.patch
 	eapply "${FILESDIR}"/0024-dont-define-on-musl.patch
 
 

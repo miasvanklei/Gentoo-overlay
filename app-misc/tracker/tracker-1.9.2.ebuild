@@ -133,6 +133,9 @@ src_prepare() {
 	sort "${S}"/tests/libtracker-data/functions/functions-tracker-2.out \
 		-o "${S}"/tests/libtracker-data/functions/functions-tracker-2.out || die
 
+	sed -e"/^AM_CPPFLAGS/i AM_LDFLAGS = ${LDFLAGS}" \
+		-i "${S}"/src/*/Makefile.am "${S}"/src/*/*/Makefile.am
+
 	eautoreconf # See bug #367975
 	gnome2_src_prepare
 	vala_src_prepare
@@ -154,7 +157,7 @@ src_configure() {
 		myconf="${myconf} --enable-generic-media-extractor=external"
 	fi
 
-	# unicode-support: libunistring, libicu or glib ?
+	# unicode-support: libunistring or libicu?
 	# According to NEWS, introspection is required
 	# is not being generated
 	# nautilus extension is in a separate package, nautilus-tracker-tags
