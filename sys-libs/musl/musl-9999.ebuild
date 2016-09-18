@@ -31,10 +31,6 @@ multilib_src_configure() {
 	--disable-gcc-wrapper
 }
 
-#multilib_src_compile() {
-#	emake
-#}
-
 gen_ldscript() {
         local output_format
         output_format=$($(tc-getCC) ${CFLAGS} ${LDFLAGS} -Wl,--verbose 2>&1 | sed -n 's/^OUTPUT_FORMAT("\([^"]*\)",.*/\1/p')

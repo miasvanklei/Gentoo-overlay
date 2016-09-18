@@ -4,6 +4,8 @@
 
 EAPI=6
 
+inherit multilib-minimal
+
 DESCRIPTION="A tiling terminal emulator for Linux using GTK+ 3"
 HOMEPAGE="https://github.com/gnunn1/terminix"
 LICENSE="MIT"
@@ -12,7 +14,7 @@ SLOT="3"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 
-SRC_URI="http://gtkd.org/Downloads/sources/${P}.zip"
+SRC_URI="https://github.com/gtkd-developers/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 DEPEND="app-arch/unzip"
 RDEPEND="${DEPEND}
@@ -21,15 +23,22 @@ RDEPEND="${DEPEND}
 	>=media-libs/gstreamer-1.8:1.0
 	>=x11-libs/vte-0.43:2.91"
 
-S=${WORKDIR}
+src_prepare() {
+	default
+	multilib_copy_sources
+}
 
-src_compile() {
+multilib_src_compile() {
 	unset LDFLAGS
 	make all
 }
 
-src_install() {
-	make DESTDIR=${D} prefix=/usr install-headers-gtkd install-headers-gtkdsv install-headers-gstreamer install-headers-vte || die
-	make DESTDIR=${D} prefix=/usr install install-gstreamer install-vte \
+multilib_src_install() {
+	make DESTDIR=${D} prefix=/usr libdir=$(get_libdir) install install-gstreamer install-vte \
 		install-shared install-shared-gstreamer install-shared-vte || die
+}
+
+multilib_src_install_all() {
+	make DESTDIR=${D} prefix=/usr libdir=$(get_libdir) install-headers-gtkd \
+		install-headers-gtkdsv install-headers-gstreamer install-headers-vte || die
 }
