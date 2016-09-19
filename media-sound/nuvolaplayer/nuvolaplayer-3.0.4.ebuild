@@ -9,7 +9,7 @@ PYTHON_REQ_USE='threads(+)'
 
 DESCRIPTION="The third generation of Nuvola Player - cloud music integration for your Linux desktop"
 HOMEPAGE="https://tiliado.eu/nuvolaplayer"
-SRC_URI="https://github.com/tiliado/nuvolaplayer/archive/3.0.3.tar.gz -> nuvolaplayer-3.0.3.tar.gz"
+SRC_URI="https://github.com/tiliado/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-2"
 SLOT="0"
