@@ -1,0 +1,47 @@
+--- a/net/wireless/Kconfig	2016-01-11 00:01:32.000000000 +0100
++++ b/net/wireless/Kconfig	2016-03-14 13:03:26.033995019 +0100
+@@ -201,22 +201,36 @@
+ 	  wext compatibility symbols to be exported.
+ 
+ config LIB80211
+-	tristate
+-	default n
++	tristate "enable lib80211 routines"
++	default y
+ 	help
+-	  This options enables a library of common routines used
++	  This option enables a library of common routines used
+ 	  by IEEE802.11 wireless LAN drivers.
+ 
+-	  Drivers should select this themselves if needed.
+-
+ config LIB80211_CRYPT_WEP
+-	tristate
++	tristate "enable WEP encryption"
++	depends on LIB80211
++	default y
++	help
++	  This option enables WEP Encryption used by
++          IEEE802.11 wireless LAN drivers.
+ 
+ config LIB80211_CRYPT_CCMP
+-	tristate
++	tristate "enable CCMP encryption"
++	depends on LIB80211
++	default y
++	help
++	  This option enables CCMP Encryption used by
++          IEEE802.11 wireless LAN drivers.
+ 
+ config LIB80211_CRYPT_TKIP
+-	tristate
++	tristate "enable TKIP encryption"
++	depends on LIB80211
++       select CFG80211_WEXT
++	default y
++	help
++	  This option enables TKIP Encryption used by
++          IEEE802.11 wireless LAN drivers.
+ 
+ config LIB80211_DEBUG
+ 	bool "lib80211 debugging messages"
