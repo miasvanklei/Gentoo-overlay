@@ -125,10 +125,10 @@ DEPEND="${COMMON_DEPEND}
 src_prepare() {
 	# Make some panels and dependencies optional; requires eautoreconf
 	# https://bugzilla.gnome.org/686840, 697478, 700145
-	eapply "${FILESDIR}"/${PN}-3.21.90-optional.patch
+	eapply "${FILESDIR}"/${P}-optional.patch
 	eapply "${FILESDIR}"/${PN}-3.16.0-make-wayland-optional.patch
 	eapply "${FILESDIR}"/${PN}-3.18.0-keep-panels-optional.patch
-	eapply "${FILESDIR}"/${PN}-3.21.90-networkmanager.patch
+	eapply "${FILESDIR}"/${P}-networkmanager.patch
 
 	# Fix some absolute paths to be appropriate for Gentoo
 	eapply "${FILESDIR}"/${PN}-3.10.2-gentoo-paths.patch
