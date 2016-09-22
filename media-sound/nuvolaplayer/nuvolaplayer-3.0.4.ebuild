@@ -4,7 +4,7 @@
 
 EAPI=5
 
-PYTHON_COMPAT=( python3_5 )
+PYTHON_COMPAT=( python3_4 )
 PYTHON_REQ_USE='threads(+)'
 
 DESCRIPTION="The third generation of Nuvola Player - cloud music integration for your Linux desktop"
@@ -15,7 +15,7 @@ LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
 
-inherit python-single-r1 waf-utils gnome2-utils vala flag-o-matic
+inherit distutils-r1 waf-utils gnome2-utils vala flag-o-matic
 
 RDEPEND="
 	x11-libs/gtk+:3
@@ -33,10 +33,6 @@ DEPEND="${RDEPEND}
 	dev-util/intltool
 "
 
-pkg_setup() {
-	python-single-r1_pkg_setup
-}
-
 src_prepare() {
 	epatch ${FILESDIR}/fix-stupid-options.patch
 	vala_src_prepare
@@ -44,6 +40,7 @@ src_prepare() {
 
 src_configure() {
 	append-cflags "-Wno-return-type"
+	python_setup
 	waf-utils_src_configure
 }
 

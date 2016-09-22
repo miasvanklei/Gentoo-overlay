@@ -4,7 +4,7 @@
 
 EAPI=5
 
-PYTHON_COMPAT=( python3_5 )
+PYTHON_COMPAT=( python3_4 )
 PYTHON_REQ_USE='threads(+)'
 
 DESCRIPTION="Diorite Library is a utility and widget library for Nuvola Player project based on GLib, GIO and GTK."
@@ -15,11 +15,7 @@ LICENSE="GPL-2"
 SLOT="0"
 KEYWORDS="~x86 ~amd64"
 
-inherit python-single-r1 waf-utils flag-o-matic
-
-pkg_setup() {
-	python-single-r1_pkg_setup
-}
+inherit distutils-r1 waf-utils flag-o-matic
 
 src_prepare() {
 	epatch ${FILESDIR}/fix-stupid-options.patch
@@ -28,5 +24,6 @@ src_prepare() {
 src_configure() {
 	# disable stack protector, crash otherwise
         append-cflags "-fno-stack-protector"
+	python_setup
         waf-utils_src_configure
 }
