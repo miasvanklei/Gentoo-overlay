@@ -151,7 +151,7 @@ src_prepare() {
 
 	cd "${B}"
 
-	epatch ${FILEDIR}/c++11-compat.patch
+	epatch ${FILESDIR}/c++11-compat.patch
 
 	#EPATCH_MULTI_MSG="Applying patches from upstream bugfix branch..." EPATCH_SUFFIX="patch" epatch "${WORKDIR}/gentoo_branch2011_patches"
 	EPATCH_SUFFIX="patch" epatch "${WORKDIR}/patches"
