@@ -136,6 +136,9 @@ src_prepare() {
 	# gtk-update-icon-cache is installed by dev-util/gtk-update-icon-cache
 	eapply "${FILESDIR}"/${PN}-3.16.2-remove_update-icon-cache.patch
 
+
+	eapply "${FILESDIR}"/fix-invalid-surface.patch
+
 	eautoreconf
 
 	eapply_user
