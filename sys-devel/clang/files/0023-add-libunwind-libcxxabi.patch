@@ -1,0 +1,25 @@
+--- a/lib/Driver/ToolChain.cpp	2015-07-30 11:57:20.000000000 +0200
++++ b/lib/Driver/ToolChain.cpp	2016-01-23 22:59:14.753775902 +0100
+@@ -633,16 +633,22 @@
+ void ToolChain::AddCXXStdlibLibArgs(const ArgList &Args,
+                                     ArgStringList &CmdArgs) const {
+   CXXStdlibType Type = GetCXXStdlibType(Args);
++  const Arg* A = Args.getLastArg(options::OPT_rtlib_EQ);
++  StringRef LibName = A ? A->getValue() : CLANG_DEFAULT_RTLIB;
+ 
+   switch (Type) {
+   case ToolChain::CST_Libcxx:
+     CmdArgs.push_back("-lc++");
++    CmdArgs.push_back("-lc++abi");
+     break;
+ 
+   case ToolChain::CST_Libstdcxx:
+     CmdArgs.push_back("-lstdc++");
+     break;
+   }
++
++  if (LibName == "compiler-rt")
++    CmdArgs.push_back("-lunwind");
+ }
+ 
+ void ToolChain::AddFilePathLibArgs(const ArgList &Args,
