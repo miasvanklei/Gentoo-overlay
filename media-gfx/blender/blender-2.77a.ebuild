@@ -3,7 +3,7 @@
 # $Id$
 
 EAPI=6
-PYTHON_COMPAT=( python3_5 )
+PYTHON_COMPAT=( python3_4 )
 
 inherit fdo-mime gnome2-utils cmake-utils python-single-r1 \
 	flag-o-matic toolchain-funcs pax-utils check-reqs versionator
