@@ -15,5 +15,5 @@ SLOT="0"
 KEYWORDS="~amd64"
 IUSE="test"
 
-RDEPEND=""
+RDEPEND="dev-python/python-distutils-extra[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}"

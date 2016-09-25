@@ -30,6 +30,5 @@ src_prepare() {
 
 src_install() {
 	emake install prefix=${D}/usr
-	rm ${D}/usr/include/sys/cdefs.h
 	rm ${D}/usr/bin/ldconfig
 }
