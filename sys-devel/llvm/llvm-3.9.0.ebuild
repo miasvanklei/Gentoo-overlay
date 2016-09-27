@@ -139,6 +139,12 @@ multilib_src_configure() {
 		use video_cards_radeon && targets+=';AMDGPU'
 	fi
 
+	local ffi_cflags ffi_ldflags
+	if use libffi; then
+		ffi_cflags=$(pkg-config --cflags-only-I libffi)
+		ffi_ldflags=$(pkg-config --libs-only-L libffi)
+	fi
+
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
@@ -155,8 +161,8 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DWITH_POLLY=OFF # TODO
 
-		-DFFI_INCLUDE_DIR="/usr/include"
-                -DFFI_LIBRARY_DIR="/usr/lib64"
+		-DFFI_INCLUDE_DIR="${ffi_cflags#-I}"
+		-DFFI_LIBRARY_DIR="${ffi_ldflags#-L}"
 
 		-DLLVM_HOST_TRIPLE="${CHOST}"
 
