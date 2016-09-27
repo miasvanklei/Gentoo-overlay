@@ -107,7 +107,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0012-Use-hash-style-gnu-for-Gentoo-Linux.patch
 	eapply "${FILESDIR}"/0013-Enable-PIE-by-default-for-gentoo-linux.patch
 	eapply "${FILESDIR}"/0014-Link-with-z-now-by-default-for-Gentoo-Linux.patch
-	eapply "${FILESDIR}"/0015-fix-crt-files.patch
+#	eapply "${FILESDIR}"/0015-fix-crt-files.patch
 	eapply "${FILESDIR}"/0016-use-ssp-by-default.patch
 
 	# link compiler-rt/libunwind shared
