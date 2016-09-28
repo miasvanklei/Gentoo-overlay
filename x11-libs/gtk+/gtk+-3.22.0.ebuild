@@ -121,6 +121,7 @@ src_prepare() {
 	if ! use test ; then
 		# don't waste time building tests
 		strip_builddir SRC_SUBDIRS testsuite Makefile.{am,in}
+		strip_builddir SRC_SUBDIRS tests Makefile.{am,in}
 
 		# the tests dir needs to be build now because since commit
 		# 7ff3c6df80185e165e3bf6aa31bd014d1f8bf224 tests/gtkgears.o needs to be there
