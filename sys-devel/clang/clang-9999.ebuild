@@ -8,16 +8,17 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
+inherit check-reqs cmake-utils flag-o-matic git-r3 multilib-minimal \
 	python-single-r1 toolchain-funcs pax-utils
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz
-	http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz"
+SRC_URI=""
+EGIT_REPO_URI="http://llvm.org/git/clang.git
+	https://github.com/llvm-mirror/clang.git"
 
 LICENSE="UoI-NCSA"
-SLOT="0/${PV}"
+SLOT="0/${PV%.*}"
 KEYWORDS=""
 IUSE="debug +default-compiler-rt +default-libcxx -doc multitarget python
 	+static-analyzer test xml video_cards_radeon kernel_FreeBSD"
@@ -39,15 +40,6 @@ PDEPEND="
 	default-libcxx? ( sys-libs/libcxx )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
-
-S=${WORKDIR}/cfe-${PV/_}.src
-
-src_unpack() {
-	default
-
-	mv "${WORKDIR}"/clang-tools-extra-${PV/_}.src "${S}"/tools/extra \
-		|| die "clang-tools-extra source directory move failed"
-}
 
 pkg_pretend() {
 	local build_size=650
@@ -80,6 +72,29 @@ pkg_setup() {
 	python-single-r1_pkg_setup
 }
 
+src_unpack() {
+	git-r3_fetch "http://llvm.org/git/clang-tools-extra.git
+		https://github.com/llvm-mirror/clang-tools-extra.git"
+
+	if use test; then
+		# needed for patched gtest
+		git-r3_fetch "http://llvm.org/git/llvm.git
+			https://github.com/llvm-mirror/llvm.git"
+	fi
+
+	git-r3_fetch
+
+	git-r3_checkout http://llvm.org/git/clang-tools-extra.git \
+		"${S}"/tools/clang/tools/extra
+
+	if use test; then
+		git-r3_checkout http://llvm.org/git/llvm.git \
+			"${WORKDIR}"/llvm
+	fi
+
+	git-r3_checkout
+}
+
 src_prepare() {
 	python_setup
 
@@ -94,9 +109,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/0006-cmake-Add-CLANG_GOLD_LIBDIR_SUFFIX-to-specify-loc-of.patch
 	# fix stand-alone doc build
 	eapply "${FILESDIR}"/0007-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
-
-	# be able to specify default values for -rtlib at build time
-	eapply "${FILESDIR}"/0008-default-rtlib.patch
 
 	# enable clang to recognize musl-libc
 	eapply "${FILESDIR}"/0009-Add-dynamic-linker.patch
@@ -185,7 +197,7 @@ multilib_src_configure() {
 			-DLLVM_ENABLE_DOXYGEN=OFF
 		)
 		use doc && mycmakeargs+=(
-			-DCLANG_INSTALL_HTML="${EPREFIX}/usr/share/doc/${PF}/clang"
+			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
 		)
 	else
@@ -218,7 +230,7 @@ multilib_src_test() {
 
 src_install() {
 	# note: magic applied in multilib_src_install()!
-	CLANG_VERSION=${PV%.*}
+	CLANG_VERSION=4.0
 
 	MULTILIB_CHOST_TOOLS=(
 		/usr/bin/clang
