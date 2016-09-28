@@ -75,6 +75,9 @@ src_prepare() {
 	# m4_copy: won't overwrite defined macro: glib_DEFUN
 	rm m4/glib-gettext.m4 || die
 
+	# fix for broken translations path
+	epatch "${FILESDIR}/${P}-translations-path-fix.patch"
+
 	default
 	eautoreconf
 }
