@@ -16,7 +16,7 @@ HOMEPAGE="https://wiki.gnome.org/Apps/Builder"
 LICENSE="GPL-3+ GPL-2+ LGPL-3+ LGPL-2+ MIT CC-BY-SA-3.0 CC0-1.0"
 SLOT="0"
 KEYWORDS="amd64 x86"
-IUSE="debug +introspection +python +vala +sysprof"
+IUSE="debug +introspection +python +vala +sysprof +webkit"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 # FIXME: some unittests seem to hang forever
@@ -27,7 +27,6 @@ RDEPEND="
 	>=dev-libs/libgit2-glib-0.23.4[ssh]
 	>=dev-libs/libpeas-1.14.1
 	>=dev-libs/libxml2-2.9
-	dev-util/uncrustify
 	sys-devel/clang
 	>=x11-libs/gtk+-3.17.8:3[introspection?]
 	>=x11-libs/gtksourceview-3.21.2:3.0[introspection?]
@@ -37,10 +36,12 @@ RDEPEND="
 		>dev-python/pygobject-3.21.0:3 )
 	vala? ( $(vala_depend) )
 	sysprof? ( dev-util/sysprof )
+	webkit? ( >=net-libs/webkit-gtk-2.14.0:4= )
 "
 DEPEND="${RDEPEND}
 	dev-libs/appstream-glib
 	dev-cpp/mm-common
+	dev-util/desktop-file-utils
 	>=dev-util/gtk-doc-am-1.11
 	>=dev-util/intltool-0.50.1
 	>=sys-devel/gettext-0.18
@@ -53,20 +54,21 @@ pkg_setup() {
 
 src_prepare() {
 	use vala && vala_src_prepare
-	epatch ${FILESDIR}/doesnt-work-with-gentoo-sandbox.patch
-	eautoreconf
+	gnome2_src_prepare
 }
 
 src_configure() {
 	use python && export PYTHON3_CONFIG="$(python_get_PYTHON_CONFIG)"
 	gnome2_src_configure \
 		--disable-static \
+		--enable-editorconfig \
 		$(use_enable introspection) \
 		$(use_enable python python-pack-plugin) \
 		$(use_enable python jedi-plugin) \
 		$(use_enable vala vala-pack-plugin) \
 		$(use_enable sysprof sysprof-plugin) \
 		$(use_enable !debug optimizations) \
+		$(use_enable webkit) \
 		$(usex debug --enable-debug=yes --enable-debug=no)
 }
 
