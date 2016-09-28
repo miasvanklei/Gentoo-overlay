@@ -17,11 +17,11 @@ KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~ppc ~ppc64 ~sparc ~x86"
 # Note to developers:
 # This is a wrapper for the core libraries used by GNOME 3
 RDEPEND="
-	>=dev-libs/glib-2.48:2
+	>=dev-libs/glib-2.50:2
 	>=x11-libs/gdk-pixbuf-2.34:2
 	>=x11-libs/pango-1.40
 	>=media-libs/clutter-1.26:1.0
-	>=x11-libs/gtk+-3.21.5:3[cups?]
+	>=x11-libs/gtk+-3.22.0:3[cups?]
 	>=dev-libs/atk-2.20
 	>=x11-libs/libwnck-3.20.1:3
 	>=gnome-base/librsvg-2.40.16

@@ -20,7 +20,7 @@ KEYWORDS="~amd64 ~x86"
 RDEPEND="
 	>=gnome-base/gnome-core-libs-${PV}
 
-	>=app-admin/gnome-logs-${PV}
+	>=gnome-extra/gnome-logs-${PV}
 	>=app-arch/file-roller-${PV}
 	>=app-dicts/gnome-dictionary-3.20.0
 	>=gnome-base/dconf-editor-${PV}
@@ -30,6 +30,7 @@ RDEPEND="
 	>=gnome-extra/gnome-power-manager-${PV}
 	>=gnome-extra/gnome-search-tool-3.6
 	>=gnome-extra/gnome-system-monitor-${PV}
+	>=gnome-extra/gnome-tweak-tool-${PV}
 	>=gnome-extra/gnome-weather-3.20.2
 	>=gnome-extra/gucharmap-${PV}:2.90
 	>=gnome-extra/nautilus-sendto-3.8.4
@@ -67,7 +68,7 @@ RDEPEND="
 	share? ( >=gnome-extra/gnome-user-share-3.18.1 )
 	shotwell? ( >=media-gfx/shotwell-0.23 )
 	tracker? (
-		>=app-misc/tracker-1.9
+		>=app-misc/tracker-1.10
 		>=gnome-extra/gnome-documents-${PV}
 		>=media-gfx/gnome-photos-${PV}
 		>=media-sound/gnome-music-${PV} )
