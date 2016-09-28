@@ -11,10 +11,7 @@ HOMEPAGE="https://git.gnome.org/browse/mutter/"
 LICENSE="GPL-2+"
 SLOT="0"
 
-IUSE="+introspection +kms test wayland"
-REQUIRED_USE="
-	wayland? ( kms )
-"
+IUSE="+introspection test wayland"
 
 KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~ppc ~ppc64 ~sparc ~x86"
 
@@ -25,8 +22,6 @@ COMMON_DEPEND="
 	>=x11-libs/cairo-1.10[X]
 	>=x11-libs/gtk+-3.19.8:3[X,introspection?]
 	>=dev-libs/glib-2.36.0:2[dbus]
-	>=media-libs/clutter-1.25.3:1.0[X,introspection?]
-	>=media-libs/cogl-1.17.1:1.0=[introspection?]
 	>=media-libs/libcanberra-0.26[gtk3]
 	>=x11-libs/startup-notification-0.7
 	>=x11-libs/libXcomposite-0.2
@@ -54,18 +49,14 @@ COMMON_DEPEND="
 	gnome-extra/zenity
 
 	introspection? ( >=dev-libs/gobject-introspection-1.42:= )
-	kms? (
+	wayland? (
 		dev-libs/libinput
-		>=media-libs/clutter-1.20[egl]
-		media-libs/cogl:1.0=[kms]
 		>=media-libs/mesa-10.3[gbm]
 		sys-apps/systemd
 		virtual/libgudev
-		x11-libs/libdrm:= )
-	wayland? (
+		x11-libs/libdrm:=
 		>=dev-libs/wayland-1.6.90
 		>=dev-libs/wayland-protocols-1.1
-		>=media-libs/clutter-1.20[wayland]
 		x11-base/xorg-server[wayland] )
 "
 DEPEND="${COMMON_DEPEND}
@@ -84,11 +75,15 @@ RDEPEND="${COMMON_DEPEND}
 src_configure() {
 	gnome2_src_configure \
 		--disable-static \
+		--disable-Werror \
 		--enable-sm \
 		--enable-startup-notification \
 		--enable-verbose-mode \
 		--with-libcanberra \
 		$(use_enable introspection) \
-		$(use_enable kms native-backend) \
-		$(use_enable wayland)
+		$(use_enable wayland native-backend) \
+		$(use_enable wayland egl-backend) \
+                $(use_enable wayland evdev-input) \
+		$(use_enable wayland) \
+		$(use_enable wayland wayland-egl-server)
 }

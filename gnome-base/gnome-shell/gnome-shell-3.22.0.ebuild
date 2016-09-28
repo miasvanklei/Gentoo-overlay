@@ -27,7 +27,7 @@ COMMON_DEPEND="
 	>=app-crypt/gcr-3.7.5[introspection]
 	>=dev-libs/glib-2.45.3:2[dbus]
 	>=dev-libs/gjs-1.39
-	>=dev-libs/gobject-introspection-1.45.4:=
+	>=dev-libs/gobject-introspection-1.49.1:=
 	dev-libs/libical:=
 	>=x11-libs/gtk+-3.15.0:3[introspection]
 	>=media-libs/clutter-1.21.5:1.0[introspection]
@@ -121,16 +121,8 @@ DEPEND="${COMMON_DEPEND}
 # https://bugs.gentoo.org/show_bug.cgi?id=360413
 
 src_prepare() {
-	# Change favorites defaults, bug #479918
-	eapply "${FILESDIR}"/${PN}-3.14.0-defaults.patch
-
 	# Fix automagic gnome-bluetooth dep, bug #398145
 	eapply "${FILESDIR}"/${PN}-3.12-bluetooth-flag.patch
-
-	# Fix silent bluetooth linking failure with ld.gold, bug #503952
-	# https://bugzilla.gnome.org/show_bug.cgi?id=726435
-	# This shouldn't be needed per upstream
-#	epatch "${FILESDIR}"/${PN}-3.14.0-bluetooth-gold.patch
 
 	eautoreconf
 	gnome2_src_prepare
