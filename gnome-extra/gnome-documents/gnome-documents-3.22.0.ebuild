@@ -28,6 +28,7 @@ COMMON_DEPEND="
 	>=net-libs/libsoup-2.41.3:2.4
 	>=net-libs/libzapojit-0.0.2
 	>=net-libs/webkit-gtk-2.6:4
+	>=dev-libs/libgepub-0.4
 	>=x11-libs/gdk-pixbuf-2.25:2[introspection]
 	>=x11-libs/gtk+-3.19.1:3[introspection]
 	x11-libs/pango[introspection]
