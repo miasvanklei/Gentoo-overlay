@@ -1,0 +1,37 @@
+Use "-z relro", "-z now", and "--hash-style=gnu" on Gentoo Linux
+
+---
+ lib/Driver/ToolChains.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/Driver/ToolChains.cpp b/lib/Driver/ToolChains.cpp
+index 70b53bd..46326f0 100644
+--- a/lib/Driver/ToolChains.cpp
++++ b/lib/Driver/ToolChains.cpp
+@@ -4011,8 +4036,14 @@
+                        .str());
+ 
+   Distro Distro = DetectDistro(D, Arch);
++  StringRef VendorName = Linux::getTriple().getVendorName();
++
++  if (VendorName.compare("gentoo") == 0) {
++    ExtraOpts.push_back("-z");
++    ExtraOpts.push_back("now");
++  }
+ 
+-  if (IsOpenSUSE(Distro) || IsUbuntu(Distro)) {
++  if (IsOpenSUSE(Distro) || IsUbuntu(Distro) || VendorName.compare("gentoo") == 0) {
+     ExtraOpts.push_back("-z");
+     ExtraOpts.push_back("relro");
+   }
+@@ -4032,8 +4063,8 @@
+   // ABI requires a mapping between the GOT and the symbol table.
+   // Android loader does not support .gnu.hash.
+   if (!IsMips && !IsAndroid) {
+-    if (IsRedhat(Distro) || IsOpenSUSE(Distro) ||
+-        (IsUbuntu(Distro) && Distro >= UbuntuMaverick))
++    if (IsRedhat(Distro) || IsOpenSUSE(Distro) || VendorName.compare("gentoo") == 0 ||
++       (IsUbuntu(Distro) && Distro >= UbuntuMaverick))
+       ExtraOpts.push_back("--hash-style=gnu");
+ 
+     if (IsDebian(Distro) || IsOpenSUSE(Distro) || Distro == UbuntuLucid ||
