@@ -1,0 +1,199 @@
+--- a/configure	2016-09-30 09:55:09.078030370 +0200
++++ b/configure	2016-09-30 09:56:06.605025637 +0200
+@@ -8203,9 +8203,9 @@
+     # If gcc knows about the stack protector, turn it off.
+     # Otherwise the stack-smash handler gets triggered.
+     echo 'int main(void) {return 0;}' > conftest.c
+-    if $CC -c conftest.c -fno-stack-protector > /dev/null 2>&1
++    if $CC -c conftest.c > /dev/null 2>&1
+     then
+-        CFLAGS="$CFLAGS -fno-stack-protector"
++        CFLAGS="$CFLAGS"
+     fi
+ 
+     rm -f conftest.c conftest.o
+@@ -8292,9 +8292,9 @@
+     # If gcc knows about the stack protector, turn it off.
+     # Otherwise the stack-smash handler gets triggered.
+     echo 'int main(void) {return 0;}' > conftest.c
+-    if $CC -c conftest.c -fno-stack-protector > /dev/null 2>&1
++    if $CC -c conftest.c > /dev/null 2>&1
+     then
+-        CONF_CC_OPTS_STAGE0="$CONF_CC_OPTS_STAGE0 -fno-stack-protector"
++        CONF_CC_OPTS_STAGE0="$CONF_CC_OPTS_STAGE0"
+     fi
+ 
+     rm -f conftest.c conftest.o
+@@ -8381,9 +8381,9 @@
+     # If gcc knows about the stack protector, turn it off.
+     # Otherwise the stack-smash handler gets triggered.
+     echo 'int main(void) {return 0;}' > conftest.c
+-    if $CC -c conftest.c -fno-stack-protector > /dev/null 2>&1
++    if $CC -c conftest.c > /dev/null 2>&1
+     then
+-        CONF_CC_OPTS_STAGE1="$CONF_CC_OPTS_STAGE1 -fno-stack-protector"
++        CONF_CC_OPTS_STAGE1="$CONF_CC_OPTS_STAGE1"
+     fi
+ 
+     rm -f conftest.c conftest.o
+@@ -8470,9 +8470,9 @@
+     # If gcc knows about the stack protector, turn it off.
+     # Otherwise the stack-smash handler gets triggered.
+     echo 'int main(void) {return 0;}' > conftest.c
+-    if $CC -c conftest.c -fno-stack-protector > /dev/null 2>&1
++    if $CC -c conftest.c > /dev/null 2>&1
+     then
+-        CONF_CC_OPTS_STAGE2="$CONF_CC_OPTS_STAGE2 -fno-stack-protector"
++        CONF_CC_OPTS_STAGE2="$CONF_CC_OPTS_STAGE2"
+     fi
+ 
+     rm -f conftest.c conftest.o
+--- a/aclocal.m4	2016-09-30 09:56:11.279025252 +0200
++++ b/aclocal.m4	2016-09-30 09:56:33.229023446 +0200
+@@ -606,9 +606,9 @@
+     # If gcc knows about the stack protector, turn it off.
+     # Otherwise the stack-smash handler gets triggered.
+     echo 'int main(void) {return 0;}' > conftest.c
+-    if $CC -c conftest.c -fno-stack-protector > /dev/null 2>&1
++    if $CC -c conftest.c > /dev/null 2>&1
+     then
+-        $2="$$2 -fno-stack-protector"
++        $2="$$2"
+     fi
+ 
+     rm -f conftest.c conftest.o
+--- a/compiler/main/DynFlags.hs	2016-09-30 22:46:08.463224003 +0200
++++ b/compiler/main/DynFlags.hs	2016-09-30 22:47:07.538219142 +0200
+@@ -4616,13 +4616,11 @@
+       -- objects, but can't without -fPIC.  See
+       -- http://ghc.haskell.org/trac/ghc/wiki/Commentary/PositionIndependentCode
+        | gopt Opt_PIC dflags || WayDyn `elem` ways dflags ->
+-          ["-fPIC", "-U__PIC__", "-D__PIC__"]
++          ["-fPIC"]
+        | otherwise                             -> []
+ 
+ picPOpts :: DynFlags -> [String]
+-picPOpts dflags
+- | gopt Opt_PIC dflags = ["-U__PIC__", "-D__PIC__"]
+- | otherwise           = []
++picPOpts _ = []
+ 
+ -- -----------------------------------------------------------------------------
+ -- Splitting
+--- a/mk/ways.mk	2016-09-30 22:12:22.950390668 +0200
++++ b/mk/ways.mk	2016-09-30 22:13:14.650386414 +0200
+@@ -34,15 +34,15 @@
+ 
+ # Way 'v':
+ WAY_v_NAME=vanilla
+-WAY_v_HC_OPTS= -static
++WAY_v_HC_OPTS= -static -fPIC
+ 
+ # Way 'p':
+ WAY_p_NAME=profiling
+-WAY_p_HC_OPTS= -static -prof
++WAY_p_HC_OPTS= -static -fPIC -prof
+ 
+ # Way 'l':
+ WAY_l_NAME=event logging
+-WAY_l_HC_OPTS= -static -eventlog
++WAY_l_HC_OPTS= -static -fPIC -eventlog
+ 
+ #
+ # These ways apply to the RTS only:
+@@ -50,31 +50,31 @@
+ 
+ # Way 'thr':
+ WAY_thr_NAME=threaded
+-WAY_thr_HC_OPTS= -static -optc-DTHREADED_RTS
++WAY_thr_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS
+ 
+ # Way 'thr_p':
+ WAY_thr_p_NAME=threaded profiled
+-WAY_thr_p_HC_OPTS= -static -optc-DTHREADED_RTS -prof
++WAY_thr_p_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS -prof
+ 
+ # Way 'thr_l':
+ WAY_thr_l_NAME=threaded event logging
+-WAY_thr_l_HC_OPTS= -static -optc-DTHREADED_RTS -eventlog
++WAY_thr_l_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS -eventlog
+ 
+ # Way 'debug':
+ WAY_debug_NAME=debug
+-WAY_debug_HC_OPTS= -static -optc-DDEBUG -ticky -DTICKY_TICKY
++WAY_debug_HC_OPTS= -static -fPIC -optc-DDEBUG -ticky -DTICKY_TICKY
+ 
+ # Way 'debug_p':
+ WAY_debug_p_NAME=debug profiled
+-WAY_debug_p_HC_OPTS= -static -optc-DDEBUG -prof
++WAY_debug_p_HC_OPTS= -static -fPIC -optc-DDEBUG -prof
+ 
+ # Way 'thr_debug':
+ WAY_thr_debug_NAME=threaded debug
+-WAY_thr_debug_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG
++WAY_thr_debug_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS -optc-DDEBUG
+ 
+ # Way 'thr_debug_p':
+ WAY_thr_debug_p_NAME=threaded debug profiling
+-WAY_thr_debug_p_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG -prof
++WAY_thr_debug_p_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS -optc-DDEBUG -prof
+ 
+ # Way 'dyn': build dynamic shared libraries
+ WAY_dyn_NAME=dyn
+--- a/rts/ghc.mk	2016-09-30 22:11:46.550393663 +0200
++++ b/rts/ghc.mk	2016-09-30 22:12:14.725391345 +0200
+@@ -404,20 +404,20 @@
+ 
+ ifeq "$(TargetArch_CPP)" "i386"
+ ifeq "$(i386_SPEED_HACK)" "YES"
+-rts/sm/Evac_HC_OPTS           += -fno-PIC
+-rts/sm/Evac_thr_HC_OPTS       += -fno-PIC
+-rts/sm/Scav_HC_OPTS           += -fno-PIC
+-rts/sm/Scav_thr_HC_OPTS       += -fno-PIC
+-rts/sm/Compact_HC_OPTS        += -fno-PIC
+-rts/sm/GC_HC_OPTS             += -fno-PIC
++rts/sm/Evac_HC_OPTS           += -fPIC
++rts/sm/Evac_thr_HC_OPTS       += -fPIC
++rts/sm/Scav_HC_OPTS           += -fPIC
++rts/sm/Scav_thr_HC_OPTS       += -fPIC
++rts/sm/Compact_HC_OPTS        += -fPIC
++rts/sm/GC_HC_OPTS             += -fPIC
+ 
+ # -static is also necessary for these bits, otherwise the NCG
+ # -generates dynamic references:
+-rts/Updates_HC_OPTS += -fno-PIC -static
+-rts/StgMiscClosures_HC_OPTS += -fno-PIC -static
+-rts/PrimOps_HC_OPTS += -fno-PIC -static
+-rts/Apply_HC_OPTS += -fno-PIC -static
+-rts/dist/build/AutoApply_HC_OPTS += -fno-PIC -static
++rts/Updates_HC_OPTS += -fPIC -static
++rts/StgMiscClosures_HC_OPTS += -fPIC -static
++rts/PrimOps_HC_OPTS += -fPIC -static
++rts/Apply_HC_OPTS += -fPIC -static
++rts/dist/build/AutoApply_HC_OPTS += -fPIC -static
+ endif
+ endif
+ 
+--- a/compiler/main/SysTools.hs	2016-09-30 22:45:00.913229561 +0200
++++ b/compiler/main/SysTools.hs	2016-09-30 22:45:37.437226556 +0200
+@@ -259,7 +259,7 @@
+            -- TABLES_NEXT_TO_CODE affects the info table layout.
+            tntc_gcc_args
+             | mkTablesNextToCode targetUnregisterised
+-               = ["-DTABLES_NEXT_TO_CODE"]
++               = []
+             | otherwise = []
+            cpp_args= map Option (words cpp_args_str)
+            gcc_args = map Option (words gcc_args_str
+--- a/compiler/main/DriverPipeline.hs	2016-09-30 22:10:45.574398681 +0200
++++ b/compiler/main/DriverPipeline.hs	2016-09-30 22:41:42.811245861 +0200
+@@ -2145,7 +2145,8 @@
+       osInfo = platformOS (targetPlatform dflags)
+       ld_r args cc = SysTools.runLink dflags ([
+                        SysTools.Option "-nostdlib",
+-                       SysTools.Option "-Wl,-r"
++                       SysTools.Option "-Wl,-r",
++                       SysTools.Option "-fno-pie"
+                      ]
+                      ++ (if any (cc ==) [Clang, AppleClang, AppleClang51]
+                           then []
