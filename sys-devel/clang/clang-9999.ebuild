@@ -17,14 +17,19 @@ SRC_URI=""
 EGIT_REPO_URI="http://llvm.org/git/clang.git
 	https://github.com/llvm-mirror/clang.git"
 
+ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
+	NVPTX PowerPC Sparc SystemZ X86 XCore )
+ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
+LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
+
 LICENSE="UoI-NCSA"
 SLOT="0/${PV%.*}"
 KEYWORDS=""
 IUSE="debug +default-compiler-rt +default-libcxx -doc multitarget python
-	+static-analyzer test xml video_cards_radeon kernel_FreeBSD"
+	+static-analyzer test xml video_cards_radeon kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
-	~sys-devel/llvm-${PV}:=[debug=,multitarget?,video_cards_radeon?,${MULTILIB_USEDEP}]
+	~sys-devel/llvm-${PV}:=[debug=,${LLVM_TARGET_USEDEPS// /,},${MULTILIB_USEDEP}]
 	static-analyzer? ( dev-lang/perl:* )
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
 	!<sys-devel/llvm-${PV}
@@ -39,7 +44,9 @@ PDEPEND="
 	default-compiler-rt? ( sys-libs/compiler-rt )
 	default-libcxx? ( sys-libs/libcxx )"
 
-REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+REQUIRED_USE="${PYTHON_REQUIRED_USE}
+	|| ( ${ALL_LLVM_TARGETS[*]} )
+	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
 pkg_pretend() {
 	local build_size=650
@@ -100,9 +107,6 @@ src_prepare() {
 
 	# fix race condition between sphinx targets
 	eapply "${FILESDIR}"/0001-cmake-Add-ordering-dep-between-HTML-Sphinx-docs-and-.patch
-	# automatically select active system GCC's libraries, bugs #406163 and #417913
-	# TODO: cross-linux tests broken by this one
-	eapply "${FILESDIR}"/0002-driver-Support-obtaining-active-toolchain-from-gcc-c.patch
 	# support overriding clang runtime install directory
 	eapply "${FILESDIR}"/0005-cmake-Supporting-overriding-runtime-libdir-via-CLANG.patch
 	# support overriding LLVMgold.so plugin directory
@@ -111,30 +115,26 @@ src_prepare() {
 	eapply "${FILESDIR}"/0007-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
 
 	# enable clang to recognize musl-libc
-	eapply "${FILESDIR}"/0009-Add-dynamic-linker.patch
+	eapply "${FILESDIR}"/0009-9999-Add-dynamic-linker.patch
 
 	# optimizations like ssp, pie, relro, and removal of crt files.
-	eapply "${FILESDIR}"/0010-add-gentoo-linux-distro.patch
-	eapply "${FILESDIR}"/0011-Use-z-relro-on-Alpine-Linux.patch
-	eapply "${FILESDIR}"/0012-Use-hash-style-gnu-for-Gentoo-Linux.patch
-	eapply "${FILESDIR}"/0013-Enable-PIE-by-default-for-gentoo-linux.patch
-	eapply "${FILESDIR}"/0014-Link-with-z-now-by-default-for-Gentoo-Linux.patch
-	eapply "${FILESDIR}"/0015-fix-crt-files.patch
-	eapply "${FILESDIR}"/0016-use-ssp-by-default.patch
+	eapply "${FILESDIR}"/0010-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
+	eapply "${FILESDIR}"/0011-Enable-PIE-by-default-for-gentoo-linux.patch
+	eapply "${FILESDIR}"/0012-fix-crt-files.patch
+	eapply "${FILESDIR}"/0013-use-ssp-by-default.patch
 
 	# link compiler-rt/libunwind shared
-	eapply "${FILESDIR}"/0017-link-compiler-rt-shared-and-libunwind.patch
+	eapply "${FILESDIR}"/0014-link-compiler-rt-shared-and-libunwind.patch
 
 	# fixes for removing gcc, like increase gcc version for portage,
 	# remove rtm for qt, update cxx standard for qt, or ada check binutils.
-	eapply "${FILESDIR}"/0018-fix-ada-in-configure.patch
-	eapply "${FILESDIR}"/0019-increase-gcc-version.patch
-	eapply "${FILESDIR}"/0020-dont-use-gcc-dir.patch
-	eapply "${FILESDIR}"/0021-remove-rtm-haswell.patch
-	eapply "${FILESDIR}"/0022-update-default-cxx-standard.patch
-	eapply "${FILESDIR}"/0023-link-libcxxabi.patch
-	eapply "${FILESDIR}"/0024-dont-define-on-musl.patch
-
+	eapply "${FILESDIR}"/0015-9999-fix-ada-in-configure.patch
+	eapply "${FILESDIR}"/0016-increase-gcc-version.patch
+	eapply "${FILESDIR}"/0017-dont-use-gcc-dir.patch
+	eapply "${FILESDIR}"/0018-remove-rtm-haswell.patch
+	eapply "${FILESDIR}"/0019-update-default-cxx-standard.patch
+	eapply "${FILESDIR}"/0020-link-libcxxabi.patch
+	eapply "${FILESDIR}"/0021-dont-define-on-musl.patch
 
 	# User patches
 	eapply_user
@@ -144,14 +144,6 @@ src_prepare() {
 }
 
 multilib_src_configure() {
-	local targets
-	if use multitarget; then
-		targets=all
-	else
-		targets='host;BPF'
-		use video_cards_radeon && targets+=';AMDGPU'
-	fi
-
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
@@ -160,7 +152,7 @@ multilib_src_configure() {
 		# specify host's binutils gold plugin path
 		-DCLANG_GOLD_LIBDIR_SUFFIX="${NATIVE_LIBDIR#lib}"
 
-		-DLLVM_TARGETS_TO_BUILD="${targets}"
+		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		# TODO: get them properly conditional
 		#-DLLVM_BUILD_TESTS=$(usex test)
 

@@ -16,11 +16,15 @@ DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
 SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
 
+ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Mips MSP430
+	NVPTX PowerPC Sparc SystemZ X86 XCore )
+ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
+
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
 IUSE="debug -doc +gold +libedit +libffi multitarget +ncurses ocaml test
-	video_cards_radeon kernel_Darwin"
+	video_cards_radeon kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 # python is needed for llvm-lit (which is installed)
 RDEPEND="
@@ -47,7 +51,9 @@ DEPEND="${RDEPEND}
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
 
-REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+REQUIRED_USE="${PYTHON_REQUIRED_USE}
+	|| ( ${ALL_LLVM_TARGETS[*]} )
+	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
 S=${WORKDIR}/${P/_}.src
 
@@ -131,14 +137,6 @@ src_prepare() {
 }
 
 multilib_src_configure() {
-	local targets
-	if use multitarget; then
-		targets=all
-	else
-		targets='host;BPF'
-		use video_cards_radeon && targets+=';AMDGPU'
-	fi
-
 	local ffi_cflags ffi_ldflags
 	if use libffi; then
 		ffi_cflags=$(pkg-config --cflags-only-I libffi)
@@ -149,7 +147,7 @@ multilib_src_configure() {
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 
-		-DLLVM_TARGETS_TO_BUILD="${targets}"
+		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DLLVM_ENABLE_FFI=$(usex libffi)
