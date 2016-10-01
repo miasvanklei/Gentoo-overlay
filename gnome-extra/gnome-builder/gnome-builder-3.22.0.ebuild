@@ -33,7 +33,8 @@ RDEPEND="
 	introspection? ( >=dev-libs/gobject-introspection-1.42:= )
 	python? (
 		${PYTHON_DEPS}
-		>dev-python/pygobject-3.21.0:3 )
+		dev-python/jedi
+		>=dev-python/pygobject-3.21.0:3 )
 	vala? ( $(vala_depend) )
 	sysprof? ( dev-util/sysprof )
 	webkit? ( >=net-libs/webkit-gtk-2.14.0:4= )
