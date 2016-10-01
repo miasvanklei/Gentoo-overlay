@@ -9,7 +9,7 @@ CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
 inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
-	python-single-r1 toolchain-funcs pax-utils
+	python-single-r1 toolchain-funcs pax-utils git-r3
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
@@ -35,8 +35,6 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
-
-S=${WORKDIR}/${P/_}.src
 
 pkg_pretend() {
 	local build_size=650
@@ -73,7 +71,7 @@ src_prepare() {
 	python_setup
 
 	eapply "${FILESDIR}"/lldb-fix-getopt.patch
-	eapply "${FILESDIR}"/fix-regex-impl.patch
+#	eapply "${FILESDIR}"/fix-regex-impl.patch
 
 
 	# User patches
