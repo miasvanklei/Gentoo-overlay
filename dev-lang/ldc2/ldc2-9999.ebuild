@@ -3,12 +3,12 @@
 # $Id$
 EAPI=6
 
-inherit cmake-utils versionator
+inherit cmake-utils versionator git-r3
 
 MY_PV="$(replace_version_separator '_' '-')"
 MY_P="ldc-${MY_PV}-src"
-SRC_URI="https://github.com/ldc-developers/ldc/releases/download/v${MY_PV}/${MY_P}.tar.gz"
-S=${WORKDIR}/${MY_P}
+SRC_URI=""
+EGIT_REPO_URI="https://github.com/ldc-developers/ldc.git"
 
 DESCRIPTION="LLVM D Compiler"
 HOMEPAGE="https://ldc-developers.github.com/ldc"
@@ -23,7 +23,6 @@ DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
 
 src_prepare() {
-	eapply ${FILESDIR}/default-pic.patch
 	eapply ${FILESDIR}/fix-libunwind-alignment.patch
 	eapply ${FILESDIR}/fix-musl.patch
 	eapply ${FILESDIR}/link-libunwind.patch

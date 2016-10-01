@@ -8,37 +8,39 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils python-single-r1 flag-o-matic
+inherit cmake-utils python-single-r1 flag-o-matic git-r3
 
 DESCRIPTION="Compiler runtime libraries for clang"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
+SRC_URI=""
+EGIT_REPO_URI="http://llvm.org/git/compiler-rt.git
+	https://github.com/llvm-mirror/compiler-rt.git"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="-sanitize"
+IUSE="-sanitize -xray"
 
 RDEPEND="
 	~sys-devel/llvm-${PV}
 	!<sys-devel/llvm-${PV}
-	sanitize? ( ${PYTHON_DEPS} )"
+	sanitize? ( ${PYTHON_DEPS} )
+	xray? ( ${PYTHON_DEPS} )"
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-S=${WORKDIR}/${P/_}.src
-
 src_prepare() {
 	eapply "${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
 	eapply "${FILESDIR}"/compiler-rt-0002-add-shared.patch
+	eapply "${FILESDIR}"/fix-visibility.patch
 
 	eapply_user
 }
 
 src_configure() {
-	local clang_version=${PV}
+	local clang_version=4.0.0
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		# used to find cmake modules
@@ -48,6 +50,7 @@ src_configure() {
 		# TODO: tests do not support standalone builds
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF
 		-DCOMPILER_RT_BUILD_SANITIZERS=$(usex sanitize)
+		-DCOMPILER_RT_BUILD_XRAY=$(usex xray)
 	)
 
 	cmake-utils_src_configure
