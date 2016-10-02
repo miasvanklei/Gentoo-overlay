@@ -64,6 +64,24 @@
      rm -f conftest.c conftest.o
 --- a/compiler/main/DynFlags.hs	2016-09-30 22:46:08.463224003 +0200
 +++ b/compiler/main/DynFlags.hs	2016-09-30 22:47:07.538219142 +0200
+@@ -3629,16 +3629,7 @@
+     where platform = sTargetPlatform settings
+ 
+ default_PIC :: Platform -> [GeneralFlag]
+-default_PIC platform =
+-  case (platformOS platform, platformArch platform) of
+-    (OSDarwin, ArchX86_64) -> [Opt_PIC]
+-    (OSOpenBSD, ArchX86_64) -> [Opt_PIC] -- Due to PIE support in
+-                                         -- OpenBSD since 5.3 release
+-                                         -- (1 May 2013) we need to
+-                                         -- always generate PIC. See
+-                                         -- #10597 for more
+-                                         -- information.
+-    _                      -> []
++default_PIC platform = [Opt_PIC]
+ 
+ -- General flags that are switched on/off when other general flags are switched
+ -- on
 @@ -4616,13 +4616,11 @@
        -- objects, but can't without -fPIC.  See
        -- http://ghc.haskell.org/trac/ghc/wiki/Commentary/PositionIndependentCode
