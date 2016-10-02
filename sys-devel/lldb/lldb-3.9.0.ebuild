@@ -74,6 +74,12 @@ src_prepare() {
 	eapply "${FILESDIR}"/lldb-fix-getopt.patch
 	eapply "${FILESDIR}"/fix-regex-impl.patch
 
+	# Do not install dummy readline.so module from
+	# https://llvm.org/bugs/show_bug.cgi?id=18841
+	sed -e 's/add_subdirectory(readline)/#&/' \
+		-i scripts/Python/modules/CMakeLists.txt || die
+	# Do not install bundled six module
+	eapply "${FILESDIR}"/six.patch
 
 	# User patches
 	eapply_user

@@ -70,9 +70,7 @@ pkg_setup() {
 src_prepare() {
 	python_setup
 
-	eapply "${FILESDIR}"/lldb-fix-getopt.patch
-#	eapply "${FILESDIR}"/fix-regex-impl.patch
-
+	eapply "${FILESDIR}"/lldb-9999-fix-getopt.patch
 
 	# User patches
 	eapply_user
