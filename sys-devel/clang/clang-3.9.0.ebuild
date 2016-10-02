@@ -108,7 +108,7 @@ src_prepare() {
 	# optimizations like ssp, pie, relro, and removal of crt files.
 	eapply "${FILESDIR}"/0010-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
 	eapply "${FILESDIR}"/0011-Enable-PIE-by-default-for-gentoo-linux.patch
-	eapply "${FILESDIR}"/0012-fix-crt-files.patch
+#	eapply "${FILESDIR}"/0012-fix-crt-files.patch
 	eapply "${FILESDIR}"/0013-use-ssp-by-default.patch
 
 	# link compiler-rt/libunwind shared
