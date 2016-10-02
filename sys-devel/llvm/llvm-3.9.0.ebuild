@@ -16,7 +16,7 @@ DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
 SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
 
-ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Mips MSP430
+ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
 	NVPTX PowerPC Sparc SystemZ X86 XCore )
 ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 
