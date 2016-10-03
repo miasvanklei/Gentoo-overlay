@@ -158,40 +158,6 @@
  
  # Way 'dyn': build dynamic shared libraries
  WAY_dyn_NAME=dyn
---- a/rts/ghc.mk	2016-09-30 22:11:46.550393663 +0200
-+++ b/rts/ghc.mk	2016-09-30 22:12:14.725391345 +0200
-@@ -404,20 +404,20 @@
- 
- ifeq "$(TargetArch_CPP)" "i386"
- ifeq "$(i386_SPEED_HACK)" "YES"
--rts/sm/Evac_HC_OPTS           += -fno-PIC
--rts/sm/Evac_thr_HC_OPTS       += -fno-PIC
--rts/sm/Scav_HC_OPTS           += -fno-PIC
--rts/sm/Scav_thr_HC_OPTS       += -fno-PIC
--rts/sm/Compact_HC_OPTS        += -fno-PIC
--rts/sm/GC_HC_OPTS             += -fno-PIC
-+rts/sm/Evac_HC_OPTS           += -fPIC
-+rts/sm/Evac_thr_HC_OPTS       += -fPIC
-+rts/sm/Scav_HC_OPTS           += -fPIC
-+rts/sm/Scav_thr_HC_OPTS       += -fPIC
-+rts/sm/Compact_HC_OPTS        += -fPIC
-+rts/sm/GC_HC_OPTS             += -fPIC
- 
- # -static is also necessary for these bits, otherwise the NCG
- # -generates dynamic references:
--rts/Updates_HC_OPTS += -fno-PIC -static
--rts/StgMiscClosures_HC_OPTS += -fno-PIC -static
--rts/PrimOps_HC_OPTS += -fno-PIC -static
--rts/Apply_HC_OPTS += -fno-PIC -static
--rts/dist/build/AutoApply_HC_OPTS += -fno-PIC -static
-+rts/Updates_HC_OPTS += -fPIC -static
-+rts/StgMiscClosures_HC_OPTS += -fPIC -static
-+rts/PrimOps_HC_OPTS += -fPIC -static
-+rts/Apply_HC_OPTS += -fPIC -static
-+rts/dist/build/AutoApply_HC_OPTS += -fPIC -static
- endif
- endif
- 
 --- a/compiler/main/SysTools.hs	2016-09-30 22:45:00.913229561 +0200
 +++ b/compiler/main/SysTools.hs	2016-09-30 22:45:37.437226556 +0200
 @@ -259,7 +259,7 @@
@@ -215,3 +181,18 @@
                       ]
                       ++ (if any (cc ==) [Clang, AppleClang, AppleClang51]
                            then []
+--- a/rts/ghc.mk	2016-05-16 19:08:53.000000000 +0200
++++ b/rts/ghc.mk	2016-10-04 00:34:01.467999480 +0200
+@@ -546,6 +538,12 @@
+ 	"$(DTRACE)" $(filter -I%,$(rts_CC_OPTS)) -C $(DTRACE_FLAGS) -h -o $@ -s $<
+ endif
+ 
++# clang compiles GC wrong, so disable all optimizations
++ifeq "$(CC_CLANG_BACKEND)" "1"
++rts/sm/GC_CC_OPTS += -O0
++rts/sm/GC_HC_OPTS += -O0
++endif
++
+ # -----------------------------------------------------------------------------
+ # The RTS package config
+ 
