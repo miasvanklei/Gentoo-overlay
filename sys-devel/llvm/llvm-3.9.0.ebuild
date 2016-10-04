@@ -14,7 +14,8 @@ inherit check-reqs cmake-utils flag-o-matic \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
+SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
+	!doc? ( http://dev.gentoo.org/~mgorny/dist/${PN}-3.9.0_rc3-manpages.tar.bz2 )"
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
 	NVPTX PowerPC Sparc SystemZ X86 XCore )
@@ -236,6 +237,7 @@ src_install() {
 	)
 
 	local MULTILIB_WRAPPED_HEADERS=(
+		/usr/include/llvm/Config/config.h
 		/usr/include/llvm/Config/llvm-config.h
 	)
 
@@ -246,9 +248,6 @@ multilib_src_install() {
 	cmake-utils_src_install
 
 	if multilib_is_native_abi; then
-		# Install docs.
-		#use doc && dohtml -r "${S}"/docs/_build/html/
-
 		# Symlink the gold plugin.
 		if use gold; then
 			dodir "/usr/${CHOST}/binutils-bin/lib/bfd-plugins"
@@ -263,4 +262,8 @@ multilib_src_install_all() {
 	doins -r utils/vim/*/.
 	# some users may find it useful
 	dodoc utils/vim/vimrc
+
+	if ! use doc; then
+		doman "${WORKDIR}"/${PN}-3.9.0_rc3-manpages/*.1
+	fi
 }
