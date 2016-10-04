@@ -1,4 +1,3 @@
-
 # Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
@@ -9,14 +8,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-# TODO: fix unnecessary dep on Python upstream
-inherit cmake-utils flag-o-matic git-r3 python-any-r1 toolchain-funcs
+inherit cmake-utils flag-o-matic python-any-r1 toolchain-funcs
 
-DESCRIPTION="Compiler runtime library for clang (built-in part)"
+DESCRIPTION="Compiler runtime libraries for clang"
 HOMEPAGE="http://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="http://llvm.org/git/compiler-rt.git
-	https://github.com/llvm-mirror/compiler-rt.git"
+SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV%.*}"
@@ -24,23 +20,22 @@ KEYWORDS=""
 IUSE=""
 
 RDEPEND="
-	!<sys-devel/llvm-3.7"
+	!<sys-devel/llvm-${PV}"
 DEPEND="${RDEPEND}
 	~sys-devel/llvm-${PV}
 	${PYTHON_DEPS}"
+
+S=${WORKDIR}/${P/_}.src
 
 test_compiler() {
 	$(tc-getCC) ${CFLAGS} ${LDFLAGS} "${@}" -o /dev/null -x c - \
 		<<<'int main() { return 0; }' &>/dev/null
 }
 
-src_prepare() {
-	eapply "${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
-	eapply "${FILESDIR}"/compiler-rt-0002-add-shared.patch
-	eapply "${FILESDIR}"/fix-visibility.patch
-
-	eapply_user
-}
+PATCHES=(
+	"${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
+	"${FILESDIR}"/compiler-rt-0002-add-shared.patch
+)
 
 src_configure() {
 	# pre-set since we need to pass it to cmake
@@ -54,7 +49,7 @@ src_configure() {
 		fi
 	fi
 
-	local clang_version=3.9.0
+	local clang_version=${PV}
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		# used to find cmake modules
@@ -67,7 +62,6 @@ src_configure() {
 		# currently lit covers only sanitizer tests
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF
 		-DCOMPILER_RT_BUILD_SANITIZERS=OFF
-		-DCOMPILER_RT_BUILD_XRAY=OFF
 	)
 
 	cmake-utils_src_configure

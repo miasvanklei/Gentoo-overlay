@@ -40,6 +40,7 @@ DEPEND="${RDEPEND}
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
 PDEPEND="
+	~sys-devel/clang-runtime-${PV}
 	default-compiler-rt? ( sys-libs/compiler-rt )
 	default-libcxx? ( sys-libs/libcxx )"
 
@@ -210,65 +211,52 @@ multilib_src_test() {
 }
 
 src_install() {
-	# note: magic applied in multilib_src_install()!
-	CLANG_VERSION=${PV%.*}
-
-	MULTILIB_CHOST_TOOLS=(
-		/usr/bin/clang
-		/usr/bin/clang++
-		/usr/bin/clang-cl
-		/usr/bin/clang-${CLANG_VERSION}
-		/usr/bin/clang++-${CLANG_VERSION}
-		/usr/bin/clang-cl-${CLANG_VERSION}
-	)
-
-	MULTILIB_WRAPPED_HEADERS=(
+	MULTILIB_WRAPPED_HEADERS+=(
 		/usr/include/clang/Config/config.h
 	)
 
 	multilib-minimal_src_install
 
+	# Apply CHOST and version suffix to clang tools
+	local clang_version=${PV%.*}
+	local clang_tools=( clang clang++ clang-cl clang-cpp)
+	local abi i
+
+	# cmake gives us:
+	# - clang-X.Y
+	# - clang -> clang-X.Y
+	# - clang++, clang-cl, clang-cpp -> clang
+	# we want to have:
+	# - clang-X.Y
+	# - clang++-X.Y, clang-cl-X.Y, clang-cpp-X.Y -> clang-X.Y
+	# - clang, clang++, clang-cl, clang-cpp -> clang*-X.Y
+	# also in CHOST variant
+	for i in "${clang_tools[@]:1}"; do
+		rm -f "${ED%/}/usr/bin/${i}" || die
+		dosym "clang-${clang_version}" "/usr/bin/${i}-${clang_version}"
+		dosym "${i}-${clang_version}" "/usr/bin/${i}"
+	done
+
+	# now create target symlinks for all supported ABIs
+	for abi in $(get_all_abis); do
+		local abi_chost=$(get_abi_CHOST "${abi}")
+		for i in "${clang_tools[@]}"; do
+			dosym "${i}-${clang_version}" \
+				"/usr/bin/${abi_chost}-${i}-${clang_version}"
+			dosym "${abi_chost}-${i}-${clang_version}" \
+				"/usr/bin/${abi_chost}-${i}"
+		done
+	done
+
+
 	# Remove unnecessary headers on FreeBSD, bug #417171
-	if use kernel_FreeBSD && use clang; then
+	if use kernel_FreeBSD; then
 		rm "${ED}"usr/lib/clang/${PV}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
 	fi
 }
 
 multilib_src_install() {
 	cmake-utils_src_install
-
-	# apply CHOST and CLANG_VERSION to clang executables
-	# they're statically linked so we don't have to worry about the lib
-	local clang_tools=( clang clang++ clang-cl )
-	local i
-
-	# cmake gives us:
-	# - clang-X.Y
-	# - clang -> clang-X.Y
-	# - clang++, clang-cl -> clang
-	# we want to have:
-	# - clang-X.Y
-	# - clang++-X.Y, clang-cl-X.Y -> clang-X.Y
-	# - clang, clang++, clang-cl -> clang*-X.Y
-	# so we need to fix the two tools
-	for i in "${clang_tools[@]:1}"; do
-		rm "${ED%/}/usr/bin/${i}" || die
-		dosym "clang-${CLANG_VERSION}" "/usr/bin/${i}-${CLANG_VERSION}"
-		dosym "${i}-${CLANG_VERSION}" "/usr/bin/${i}"
-	done
-
-	# now prepend ${CHOST} and let the multilib-build.eclass symlink it
-	if ! multilib_is_native_abi; then
-		# non-native? let's replace it with a simple wrapper
-		for i in "${clang_tools[@]}"; do
-			rm "${ED%/}/usr/bin/${i}-${CLANG_VERSION}" || die
-			cat > "${T}"/wrapper.tmp <<-_EOF_
-				#!${EPREFIX}/bin/sh
-				exec "${i}-${CLANG_VERSION}" $(get_abi_CFLAGS) "\${@}"
-			_EOF_
-			newbin "${T}"/wrapper.tmp "${i}-${CLANG_VERSION}"
-		done
-	fi
 }
 
 multilib_src_install_all() {
@@ -284,11 +272,5 @@ multilib_src_install_all() {
 	python_fix_shebang "${ED}"
 	if use static-analyzer; then
 		python_optimize "${ED}"usr/share/scan-view
-	fi
-}
-
-pkg_postinst() {
-	if ! has_version 'sys-libs/libomp'; then
-		elog "To enable OpenMP support in clang, install sys-libs/libomp."
 	fi
 }
