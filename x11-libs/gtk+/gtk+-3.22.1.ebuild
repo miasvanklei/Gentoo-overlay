@@ -137,7 +137,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/${PN}-3.16.2-remove_update-icon-cache.patch
 
 
-	eapply "${FILESDIR}"/fix-invalid-surface.patch
+#	eapply "${FILESDIR}"/fix-invalid-surface.patch
 
 	eautoreconf
 
