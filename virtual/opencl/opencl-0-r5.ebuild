@@ -21,7 +21,7 @@ DEPEND=""
 RDEPEND="app-eselect/eselect-opencl
 	|| (
 		beignet? (
-			dev-libs/intel-beignet )
+			dev-libs/beignet )
 		mesa? (
 			>=media-libs/mesa-9.1.6[opencl,${MULTILIB_USEDEP}] )
 		video_cards_fglrx? (
