@@ -129,6 +129,9 @@ src_prepare() {
 	# Gentoo does not have a fingerprint-auth pam stack
 	eapply "${FILESDIR}/${PN}-3.8.4-fingerprint-auth.patch"
 
+	# Gentoo install pam *.so files in /lib not in /usr/lib
+	eapply "${FILESDIR}/fix-pam-libdir.patch"
+
 	# Show logo when branding is enabled
 	use branding && eapply "${FILESDIR}/${PN}-3.8.4-logo.patch"
 
@@ -148,6 +151,7 @@ src_configure() {
 	! use plymouth && myconf="${myconf} --with-initial-vt=1"
 
 	gnome2_src_configure \
+		--enable-securedir=/lib/security \
 		--enable-gdm-xsession \
 		--with-run-dir=/run/gdm \
 		--localstatedir="${EPREFIX}"/var \
