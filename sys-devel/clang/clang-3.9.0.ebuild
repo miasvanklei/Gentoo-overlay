@@ -116,7 +116,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0014-link-compiler-rt-shared-and-libunwind.patch
 
 	# fixes for removing gcc, like increase gcc version for portage,
-	# remove rtm for qt, update cxx standard for qt, or ada check binutils.
+	# remove rtm for qt, update cxx standard for qt, or ada check binutils, lld.
 	eapply "${FILESDIR}"/0015-fix-ada-in-configure.patch
 	eapply "${FILESDIR}"/0016-increase-gcc-version.patch
 	eapply "${FILESDIR}"/0017-dont-use-gcc-dir.patch
@@ -124,7 +124,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0019-update-default-cxx-standard.patch
 	eapply "${FILESDIR}"/0020-link-libcxxabi.patch
 	eapply "${FILESDIR}"/0021-dont-define-on-musl.patch
-
+	eapply "${FILESDIR}"/0022-change-default-linker.patch
 
 	# User patches
 	eapply_user
@@ -167,9 +167,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_THREADS=ON
-	)
-	use test && mycmakeargs+=(
-		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
+		-DLLVM_ENABLE_LLD=ON
 	)
 
 	if multilib_is_native_abi; then

@@ -15,6 +15,7 @@ inherit check-reqs cmake-utils flag-o-matic \
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
 SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
+	lld? ( http://llvm.org/releases/${PV}/lld-${PV}.src.tar.xz )
 	!doc? ( http://dev.gentoo.org/~mgorny/dist/${PN}-3.9.0_rc3-manpages.tar.bz2 )"
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -24,7 +25,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="debug -doc +gold +libedit +libffi multitarget +ncurses ocaml test
+IUSE="debug -doc +gold +libedit +libffi +lld multitarget +ncurses ocaml test
 	video_cards_radeon kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 # python is needed for llvm-lit (which is installed)
@@ -92,6 +93,14 @@ pkg_setup() {
 	pkg_pretend
 }
 
+
+src_unpack() {
+	default
+
+        mv "${WORKDIR}"/lld-${PV/_}.src "${S}"/tools/lld \
+                || die "lld source directory move failed"
+}
+
 src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
@@ -127,6 +136,12 @@ src_prepare() {
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/musl-fixes.patch
 
+	# output correct host
+	use elibc_musl && eapply "${FILESDIR}"/0011-output-my-chost.patch
+
+	use lld && eapply "${FILESDIR}"/0012-lld-remove-linker-script.patch
+
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
@@ -159,6 +174,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DWITH_POLLY=OFF # TODO
+		-DLLVM_ENABLE_LLD=ON
 
 		-DFFI_INCLUDE_DIR="${ffi_cflags#-I}"
 		-DFFI_LIBRARY_DIR="${ffi_ldflags#-L}"
@@ -188,6 +204,7 @@ multilib_src_configure() {
 			-DLLVM_ENABLE_DOXYGEN=OFF
 			-DLLVM_INSTALL_UTILS=ON
 		)
+
 		use doc && mycmakeargs+=(
 			-DLLVM_INSTALL_HTML="${EPREFIX}/usr/share/doc/${PF}/html"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF

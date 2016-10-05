@@ -61,6 +61,7 @@ src_configure() {
                 -DLLVM_ENABLE_RTTI=ON
                 -DLLVM_ENABLE_CXX1Y=ON
                 -DLLVM_ENABLE_THREADS=ON
+		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_TERMINFO=$(usex ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)
 		-DLLDB_DISABLE_PYTHON=$(usex !python)
