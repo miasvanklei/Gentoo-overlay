@@ -139,7 +139,10 @@ src_prepare() {
 	# output correct host
 	use elibc_musl && eapply "${FILESDIR}"/0011-output-my-chost.patch
 
-	use lld && eapply "${FILESDIR}"/0012-lld-remove-linker-script.patch
+	if use lld; then
+		eapply "${FILESDIR}"/0012-lld-remove-linker-script.patch
+		eapply "${FILESDIR}"/0013-lld-gnu-ld-compat.patch
+	fi
 
 
 	# disable use of SDK on OSX, bug #568758
