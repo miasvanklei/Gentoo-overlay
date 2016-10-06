@@ -1,0 +1,15 @@
+--- a/libsandbox/Makefile.am	2016-10-06 15:11:27.748889408 +0200
++++ b/libsandbox/Makefile.am	2016-10-06 15:12:00.299891010 +0200
+@@ -57,10 +57,10 @@
+ SB_AWK = LC_ALL=C $(AWK) -v SYMBOLS_LIST="$(SYMBOLS_LIST)" -v srcdir="$(srcdir)" -f
+ 
+ libsandbox.map: $(SYMBOLS_FILE) $(GEN_VERSION_MAP_SCRIPT)
+-	$(AM_V_GEN)$(READELF) -s $(LIBC_PATH) | $(SB_AWK) $(GEN_VERSION_MAP_SCRIPT) > $@
++	$(AM_V_GEN)$(READELF) -dyn-symbols -elf-output-style=GNU $(LIBC_PATH) | $(SB_AWK) $(GEN_VERSION_MAP_SCRIPT) > $@
+ 
+ symbols.h: $(SYMBOLS_FILE) $(GEN_HEADER_SCRIPT)
+-	$(AM_V_GEN)$(READELF) -s $(LIBC_PATH) | $(SB_AWK) $(GEN_HEADER_SCRIPT) > $@
++	$(AM_V_GEN)$(READELF) -dyn-symbols -elf-output-style=GNU $(LIBC_PATH) | $(SB_AWK) $(GEN_HEADER_SCRIPT) > $@
+ 
+ SB_NR_FILE = $(srcdir)/sb_nr.h.in
+ sb_nr.h: symbols.h $(SB_NR_FILE)

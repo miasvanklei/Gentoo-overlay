@@ -50,8 +50,8 @@
  	$READELF -d libctest | \
 -	$EGREP 'NEEDED.* \@<:@libc\.so' | \
 -	$AWK '{print $NF}' | [sed -e 's:\[::' -e 's:\]::']
-+	$EGREP 'NEEDED.* \@<:@.*ld-musl.*\.so.1' | \
-+	$AWK '{print $5}' | [sed -e 's:\[::' -e 's:\]::']
++	$EGREP 'NEEDED.* .*ld-musl.*\.so.1' | \
++	$AWK '{print $4}' | [sed 's/.*(\(.*\)).*/\1/g']
  )
  rm -f libctest*
  if test "$LIBC_VERSION"x = x ; then
