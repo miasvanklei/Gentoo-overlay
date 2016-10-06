@@ -142,8 +142,11 @@ src_prepare() {
 	if use lld; then
 		eapply "${FILESDIR}"/0012-lld-remove-linker-script.patch
 		eapply "${FILESDIR}"/0013-lld-gnu-ld-compat.patch
+		eapply "${FILESDIR}"/0014-lld-ignore-options.patch
 	fi
 
+	# add compat option -d for llvm-readobj
+	eapply "${FILESDIR}"/0015-llvm-readobj-add-d-option.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
