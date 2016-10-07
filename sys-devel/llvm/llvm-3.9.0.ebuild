@@ -25,7 +25,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="debug -doc +gold +libedit +libffi +lld multitarget +ncurses ocaml test
+IUSE="debug -doc -gold +libedit +libffi +lld multitarget +ncurses ocaml test
 	video_cards_radeon kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 # python is needed for llvm-lit (which is installed)
@@ -147,6 +147,10 @@ src_prepare() {
 
 	# add compat option -d for llvm-readobj
 	eapply "${FILESDIR}"/0015-llvm-readobj-add-d-option.patch
+
+	# add llvm-strings and llvm-cxxfilt
+	eapply "${FILESDIR}"/0016-llvm-add-cxxfilt.patch
+	eapply "${FILESDIR}"/0017-llvm-add-strings.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
