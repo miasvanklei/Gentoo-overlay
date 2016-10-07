@@ -1,13 +1,23 @@
 # Gentoo repository for musl related patches.
 
-This repository adds some ebuilds which are broken in portage when used with musl, or aren't provided at all.
-some examples:
+ld.lld from llvm is used as linker for all packages.
+binutils is not installed, but some tools are still needed:
+      - strip
+      - ld.bfd for the linux kernel and sandbox
+      - objcopy for the linux kernel
+      - as for the linux kernel
+      
+gcc is only needed for two packages right now, for all others clang is used with libcxx, libcxxabi, llvm-libunwind:
+      - gentoo-sources
+      - gtk+ (investigating the issue)
+      
+lldb is used as debugger.
+
+gnome 3.22 is included as well with systemd(alot of patches).
+
+some other ebuilds:
       - electron and atom: are based on chromium, binary builds use jmalloc which doesn't work with musl. even if it did work,
         chromium by default uses some obscure glibc functions.
-      - an up-to-date (3.9.0) llvm ebuild, which can be used standalone without gcc installed. kernel works but suspend is broken.
-      - prolog ebuilds: swipl and yapl(yapl is heavily broken, outdated c++ code).
       - dlang ebuilds that can be used with musl, no segfaults.
-      - rust ebuild with system llvm (1.10).
-      - systemd ebuild with alot of patches. it works and runs but it isn't recommend to use for daily usage.
       
-some extra patches are in the patches directory, you can create a symlink for all patches, or only for specific packages.
+alot extra patches are in the patches directory, you can create a symlink for all patches, or only for specific packages.
