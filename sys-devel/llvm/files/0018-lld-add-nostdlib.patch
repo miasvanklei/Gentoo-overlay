@@ -1,0 +1,81 @@
+From b36678dcb296160095312e4fc0dbdbfb38e15fa1 Mon Sep 17 00:00:00 2001
+From: Rui Ueyama <ruiu@google.com>
+Date: Fri, 2 Sep 2016 19:20:33 +0000
+Subject: [PATCH] Add -nostdlib.
+
+git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@280528 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ tools/lld/ELF/Config.h         | 1 +
+ tools/lld/ELF/Driver.cpp       | 1 +
+ tools/lld/ELF/LinkerScript.cpp | 3 ++-
+ tools/lld/ELF/Options.td       | 3 +++
+ tools/lld/test/ELF/libsearch.s | 5 +++++
+ 5 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/tools/lld/ELF/Config.h b/tools/lld/ELF/Config.h
+index 7bf650c..f06cfbd 100644
+--- a/tools/lld/ELF/Config.h
++++ b/tools/lld/ELF/Config.h
+@@ -98,6 +98,7 @@ struct Configuration {
+   bool Mips64EL = false;
+   bool NoGnuUnique;
+   bool NoUndefinedVersion;
++  bool Nostdlib;
+   bool Pic;
+   bool Pie;
+   bool PrintGcSections;
+diff --git a/tools/lld/ELF/Driver.cpp b/tools/lld/ELF/Driver.cpp
+index 9b44b1b..7f10823 100644
+--- a/tools/lld/ELF/Driver.cpp
++++ b/tools/lld/ELF/Driver.cpp
+@@ -410,6 +410,7 @@ void LinkerDriver::readConfigs(opt::InputArgList &Args) {
+   Config->ICF = Args.hasArg(OPT_icf);
+   Config->NoGnuUnique = Args.hasArg(OPT_no_gnu_unique);
+   Config->NoUndefinedVersion = Args.hasArg(OPT_no_undefined_version);
++  Config->Nostdlib = Args.hasArg(OPT_nostdlib);
+   Config->Pie = Args.hasArg(OPT_pie);
+   Config->PrintGcSections = Args.hasArg(OPT_print_gc_sections);
+   Config->Relocatable = Args.hasArg(OPT_relocatable);
+diff --git a/tools/lld/ELF/LinkerScript.cpp b/tools/lld/ELF/LinkerScript.cpp
+index c1ce76c..3872d30 100644
+--- a/tools/lld/ELF/LinkerScript.cpp
++++ b/tools/lld/ELF/LinkerScript.cpp
+@@ -870,7 +870,8 @@ void ScriptParser::readPhdrs() {
+ 
+ void ScriptParser::readSearchDir() {
+   expect("(");
+-  Config->SearchPaths.push_back(next());
++  if (!Config->Nostdlib)
++    Config->SearchPaths.push_back(next());
+   expect(")");
+ }
+ 
+diff --git a/tools/lld/ELF/Options.td b/tools/lld/ELF/Options.td
+index acfba9e..d37a41a 100644
+--- a/tools/lld/ELF/Options.td
++++ b/tools/lld/ELF/Options.td
+@@ -97,6 +97,9 @@ def lto_O: J<"lto-O">, MetaVarName<"<opt-level>">,
+ 
+ def m: JoinedOrSeparate<["-"], "m">, HelpText<"Set target emulation">;
+ 
++def nostdlib: F<"nostdlib">,
++  HelpText<"Only search directories specified on the command line">;
++
+ def no_as_needed: F<"no-as-needed">,
+   HelpText<"Always DT_NEEDED for shared libraries">;
+ 
+diff --git a/tools/lld/test/ELF/libsearch.s b/tools/lld/test/ELF/libsearch.s
+index 782d755..98512cd 100644
+--- a/tools/lld/test/ELF/libsearch.s
++++ b/tools/lld/test/ELF/libsearch.s
+@@ -85,5 +85,10 @@
+ // RUN: ld.lld -o %t3 %t.o -L%t.dir -Bstatic -call_shared -lls
+ // RUN: llvm-readobj --symbols %t3 | FileCheck --check-prefix=DYNAMIC %s
+ 
++// -nostdlib
++// RUN: echo 'SEARCH_DIR(' %t.dir ')' > %t.script
++// RUN: ld.lld -o %t3 %t.o -script %t.script -lls
++// RUN: not ld.lld -o %t3 %t.o -script %t.script -lls -nostdlib
++
+ .globl _start,_bar
+ _start:

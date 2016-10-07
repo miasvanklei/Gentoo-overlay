@@ -143,10 +143,11 @@ src_prepare() {
 		eapply "${FILESDIR}"/0012-lld-remove-linker-script.patch
 		eapply "${FILESDIR}"/0013-lld-gnu-ld-compat.patch
 		eapply "${FILESDIR}"/0014-lld-ignore-options.patch
+		eapply "${FILESDIR}"/0018-lld-add-nostdlib.patch
 	fi
 
-	# add compat option -d for llvm-readobj
-	eapply "${FILESDIR}"/0015-llvm-readobj-add-d-option.patch
+	# llvm-readobj has all options, just incorrect: -s becomes S, -t becomes -s, add -d
+	eapply "${FILESDIR}"/0015-llvm-readobj-reorder-options.patch
 
 	# add llvm-strings and llvm-cxxfilt
 	eapply "${FILESDIR}"/0016-llvm-add-cxxfilt.patch
