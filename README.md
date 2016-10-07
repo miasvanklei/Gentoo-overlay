@@ -6,9 +6,11 @@ binutils is not installed, but some tools are still needed:
       - ld.bfd for the linux kernel and sandbox
       - objcopy for the linux kernel
       - as for the linux kernel
+      
 gcc is only needed for two packages right now, for all others clang is used with libcxx, libcxxabi, llvm-libunwind:
       - gentoo-sources
       - gtk+ (investigating the issue)
+      
 lldb is used as debugger.
 
 gnome 3.22 is included as well with systemd(alot of patches).
