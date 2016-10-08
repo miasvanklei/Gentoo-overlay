@@ -93,37 +93,33 @@ src_prepare() {
 
 	# fix race condition between sphinx targets
 	eapply "${FILESDIR}"/0001-cmake-Add-ordering-dep-between-HTML-Sphinx-docs-and-.patch
-	# support overriding clang runtime install directory
-	eapply "${FILESDIR}"/0005-cmake-Supporting-overriding-runtime-libdir-via-CLANG.patch
 	# support overriding LLVMgold.so plugin directory
-	eapply "${FILESDIR}"/0006-cmake-Add-CLANG_GOLD_LIBDIR_SUFFIX-to-specify-loc-of.patch
+	eapply "${FILESDIR}"/0002-cmake-Add-CLANG_GOLD_LIBDIR_SUFFIX-to-specify-loc-of.patch
+	# support overriding clang runtime install directory
+	eapply "${FILESDIR}"/0003-cmake-Supporting-overriding-runtime-libdir-via-CLANG.patch
 	# fix stand-alone doc build
-	eapply "${FILESDIR}"/0007-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
+	eapply "${FILESDIR}"/0004-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
 
 	# be able to specify default values for -rtlib at build time
-	eapply "${FILESDIR}"/0008-default-rtlib.patch
-
-	# enable clang to recognize musl-libc
-	eapply "${FILESDIR}"/0009-Add-dynamic-linker.patch
+	eapply "${FILESDIR}"/0005-default-rtlib.patch
 
 	# optimizations like ssp, pie, relro, and removal of crt files.
-	eapply "${FILESDIR}"/0010-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
-	eapply "${FILESDIR}"/0011-Enable-PIE-by-default-for-gentoo-linux.patch
-#	eapply "${FILESDIR}"/0012-fix-crt-files.patch
-	eapply "${FILESDIR}"/0013-use-ssp-by-default.patch
+	eapply "${FILESDIR}"/0006-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
+	eapply "${FILESDIR}"/0007-Enable-PIE-by-default-for-gentoo-linux.patch
+	eapply "${FILESDIR}"/0008-use-ssp-by-default.patch
 
 	# link compiler-rt/libunwind shared
-	eapply "${FILESDIR}"/0014-link-compiler-rt-shared-and-libunwind.patch
+	eapply "${FILESDIR}"/0009-link-compiler-rt-shared-and-libunwind.patch
 
 	# fixes for removing gcc, like increase gcc version for portage,
 	# remove rtm for qt, update cxx standard for qt, or ada check binutils, lld.
-	eapply "${FILESDIR}"/0015-fix-ada-in-configure.patch
-	eapply "${FILESDIR}"/0016-increase-gcc-version.patch
-	eapply "${FILESDIR}"/0017-dont-use-gcc-dir.patch
-	eapply "${FILESDIR}"/0018-remove-rtm-haswell.patch
-	eapply "${FILESDIR}"/0019-update-default-cxx-standard.patch
-	eapply "${FILESDIR}"/0020-link-libcxxabi.patch
-	eapply "${FILESDIR}"/0021-dont-define-on-musl.patch
+	eapply "${FILESDIR}"/0010-fix-ada-in-configure.patch
+	eapply "${FILESDIR}"/0011-increase-gcc-version.patch
+	eapply "${FILESDIR}"/0012-remove-gcc-detection.patch
+	eapply "${FILESDIR}"/0013-remove-rtm-haswell.patch
+	eapply "${FILESDIR}"/0014-update-default-cxx-standard.patch
+	eapply "${FILESDIR}"/0015-link-libcxxabi.patch
+	eapply "${FILESDIR}"/0016-dont-define-on-musl.patch
 
 	# User patches
 	eapply_user
