@@ -30,17 +30,15 @@ DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
 SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
-	amd64? ( !elibc_musl? ( https://static.rust-lang.org/dist/${RUST_STAGE0_amd64}.tar.gz )
-		elibc_musl? ( https://repo.voidlinux.eu/distfiles/rustc-1.11.0-x86_64-unknown-linux-musl.tar.gz
-			https://repo.voidlinux.eu/distfiles/rust-std-1.11.0-x86_64-unknown-linux-musl.tar.gz
-			https://alpine.geeknet.cz/distfiles/cargo-0.11.0-nightly-x86_64-alpine-linux-musl.tar.gz
-		)
-	 )
+	!elibc_musl? ( https://static.rust-lang.org/dist/${RUST_STAGE0_amd64}.tar.gz )
+	elibc_musl? ( https://repo.voidlinux.eu/distfiles/rustc-1.11.0-x86_64-unknown-linux-musl.tar.gz
+		https://repo.voidlinux.eu/distfiles/rust-std-1.11.0-x86_64-unknown-linux-musl.tar.gz
+		https://alpine.geeknet.cz/distfiles/cargo-0.11.0-nightly-x86_64-alpine-linux-musl.tar.gz )
 "
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clang debug doc +libcxx +system-llvm"
+IUSE="+clang debug doc +libcxx +source +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
@@ -203,6 +201,11 @@ src_install() {
 	dodir /etc/env.d/rust
 	insinto /etc/env.d/rust
 	doins "${T}/provider-${P}"
+
+	if use source; then
+		mkdir -p ${D}/usr/src/${P}
+		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${P} \; || die
+	fi
 }
 
 pkg_postinst() {
