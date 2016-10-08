@@ -26,7 +26,7 @@ src_prepare() {
 multilib_src_configure() {
 	ECONF_SOURCE="${S}" \
         econf \
-	--syslibdir=/$(get_libdir) \
+	--syslibdir=/lib \
 	--libdir=/usr/$(get_libdir) \
 	--disable-gcc-wrapper
 }
@@ -55,24 +55,24 @@ multilib_src_install() {
 
 
 	# musl provides ldd through its linker
-	local ldso=$(basename "${D}"/$(get_libdir)/ld-musl-*)
+	local ldso=$(basename "${D}"/lib/ld-musl-*)
 
 
 	#move ld-musl and create linkerscript to directly link with libc.so
-        mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/$(get_libdir)/${ldso} || die
+        mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/lib/${ldso} || die
 
-	gen_ldscript "/$(get_libdir)/${ldso}" > "${ED}/usr/$(get_libdir)/libc.so"
+	gen_ldscript "/lib/${ldso}" > "${ED}/usr/$(get_libdir)/libc.so"
 
-	dosym /$(get_libdir)/${ldso} /usr/bin/${CHOST}-ldd || die
+	dosym /lib/${ldso} /usr/bin/${CHOST}-ldd || die
 
 	# needed for ldd under pax kernel
-	pax-mark r "${D}"/$(get_libdir)/${ldso} || die
+	pax-mark r "${D}"/lib/${ldso} || die
 }
 
 multilib_src_install_all() {
-	local ldso=$(basename "${D}"/$(get_libdir)/ld-musl-*)
+	local ldso=$(basename "${D}"/lib/ld-musl-*)
 
-	dosym /$(get_libdir)/${ldso} /usr/bin/ldd
+	dosym /lib/${ldso} /usr/bin/ldd
 
 	into /
 	dosbin "${FILESDIR}"/ldconfig
