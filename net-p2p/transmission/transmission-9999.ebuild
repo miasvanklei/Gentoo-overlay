@@ -76,7 +76,7 @@ src_prepare() {
 	rm m4/glib-gettext.m4 || die
 
 	# fix for broken translations path
-	epatch "${FILESDIR}/${P}-translations-path-fix.patch"
+	epatch "${FILESDIR}/${PN}-2.80-translations-path-fix.patch"
 
 	default
 	eautoreconf
