@@ -124,7 +124,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/0019-update-default-cxx-standard.patch
 	eapply "${FILESDIR}"/0020-link-libcxxabi.patch
 	eapply "${FILESDIR}"/0021-dont-define-on-musl.patch
-	eapply "${FILESDIR}"/0022-change-default-linker.patch
 
 	# User patches
 	eapply_user

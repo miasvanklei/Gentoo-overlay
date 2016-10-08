@@ -1,0 +1,229 @@
+# Copyright 1999-2016 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Id$
+
+EAPI=6
+
+PYTHON_COMPAT=( python2_7 )
+
+inherit python-any-r1 versionator toolchain-funcs
+
+if [[ ${PV} = *beta* ]]; then
+	betaver=${PV//*beta}
+	BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
+	MY_P="rustc-beta"
+	SLOT="beta/${PV}"
+	SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.gz"
+	KEYWORDS=""
+else
+	ABI_VER="$(get_version_component_range 1-2)"
+	SLOT="stable/${ABI_VER}"
+	MY_P="rustc-${PV}"
+	SRC="${MY_P}-src.tar.gz"
+	KEYWORDS="~amd64"
+fi
+
+STAGE0_VERSION="1.$(($(get_version_component_range 2) - 1)).0"
+RUST_STAGE0_amd64="rustc-${STAGE0_VERSION}-x86_64-unknown-linux-gnu"
+
+DESCRIPTION="Systems programming language from Mozilla"
+HOMEPAGE="http://www.rust-lang.org/"
+
+SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
+	amd64? ( !elibc_musl? ( https://static.rust-lang.org/dist/${RUST_STAGE0_amd64}.tar.gz )
+		elibc_musl? ( https://repo.voidlinux.eu/distfiles/rustc-1.11.0-x86_64-unknown-linux-musl.tar.gz
+			https://repo.voidlinux.eu/distfiles/rust-std-1.11.0-x86_64-unknown-linux-musl.tar.gz
+			https://alpine.geeknet.cz/distfiles/cargo-0.11.0-nightly-x86_64-alpine-linux-musl.tar.gz
+		)
+	 )
+"
+
+LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
+
+IUSE="+clang debug doc +libcxx +system-llvm"
+REQUIRED_USE="libcxx? ( clang )"
+
+RDEPEND="libcxx? ( sys-libs/libcxx )
+	system-llvm? ( >=sys-devel/llvm-3.8.1-r2:=[multitarget]
+		<sys-devel/llvm-3.10.0:=[multitarget] )
+"
+
+DEPEND="${RDEPEND}
+	${PYTHON_DEPS}
+	>=dev-lang/perl-5.0
+	clang? ( sys-devel/clang )
+"
+
+PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
+
+S="${WORKDIR}/${MY_P}"
+
+src_unpack() {
+	if use !elibc_musl; then
+		unpack "rustc-${PV}-src.tar.gz" || die
+		mkdir "${MY_P}/dl" || die
+		local stagename="RUST_STAGE0_${ARCH}"
+		local stage0="${!stagename}"
+		cp "${DISTDIR}/${stage0}.tar.gz" "${MY_P}/dl/" || die "cp stage0"
+	else
+		default
+	fi
+}
+
+src_prepare() {
+	find mk -name '*.mk' -exec \
+		 sed -i -e "s/-Werror / /g" {} \; || die
+
+	if use elibc_musl; then
+		rm -rf src/llvm
+
+		mkdir -p stage0
+		cp -flr ../rustc-*/rustc/* stage0
+		cp -flr ../rust-std-*/rust-std-*/* stage0
+		cp -flr ../cargo-*/cargo/* stage0
+
+		# XXX: Cheat Rust build system so we can build rustc using different
+		# version of (prebuilt) stable rustc than preconfigured. It's hack-ish,
+		# but since we're basically rebuilding rustc with the same version,
+		# it's actually safe.
+		# Note: --enable-local-rebuild from #33787 didn't work, don't know why.
+		export LD_LIBRARY_PATH="${S}/stage0/lib"
+		rustc_ver="$(${S}/stage0/bin/rustc --version | cut -f2 -d ' ')"
+		rustc_key="$(printf "$rustc_ver" | md5sum | cut -c1-8)"
+		sed -Ei \
+			-e "s/^(rustc):.*/\1: $rustc_ver-1970-01-01/" \
+			-e "s/^(rustc_key):.*/\1: $rustc_key/" \
+			src/stage0.txt
+
+		# Generate config for bootstrap.py to use our prebuilt rustc and cargo
+		# for bootstrapping instead of downloading snapshot from internet.
+		cat > config.toml <<EOF
+[build]
+cargo = "${S}/stage0/bin/cargo"
+rustc = "${S}/stage0/bin/rustc"
+EOF
+
+		sed -i /LD_LIBRARY_PATH/d src/bootstrap/bootstrap.py
+
+		eapply "${FILESDIR}"/link-musl-dynamically.patch
+		eapply "${FILESDIR}"/use-libunwind.patch
+		eapply "${FILESDIR}"/no-compiler-rt.patch
+		eapply "${FILESDIR}"/dont-use-no_default_libraries.patch
+		dont-install-crfiles.patch
+	fi
+
+	eapply "${FILESDIR}"/link-llvm-static.patch
+	eapply "${FILESDIR}"/dont-require-filecheck.patch
+	eapply "${FILESDIR}"/llvm-with-ffi.patch
+
+	eapply_user
+}
+
+src_configure() {
+	export CFG_DISABLE_LDCONFIG="notempty"
+	export CARGO_HOME="${S}/.cargo"
+	use elibc_musl $$ export LD_LIBRARY_PATH="${S}/stage0/lib"
+
+	local target
+	case ${CHOST} in
+		x86_64-*musl) target=x86_64-unknown-linux-musl;;
+		x86_64-*gnu) target=x86_64-unknown-linux-gnu;;
+	esac
+
+	"${ECONF_SOURCE:-.}"/configure \
+		--prefix="${EPREFIX}/usr" \
+		--libdir="${EPREFIX}/usr/$(get_libdir)/${P}" \
+		--mandir="${EPREFIX}/usr/share/${P}/man" \
+		--release-channel=${SLOT%%/*} \
+		--disable-manage-submodules \
+		--default-linker=$(tc-getBUILD_CC) \
+		--default-ar=$(tc-getBUILD_AR) \
+		--python=${EPYTHON} \
+		--disable-rpath \
+		--host=${target} \
+		--build=${target} \
+		--enable-rustbuild \
+		$(use_enable clang) \
+		$(use_enable debug) \
+		$(use_enable debug llvm-assertions) \
+		$(use_enable !debug optimize) \
+		$(use_enable !debug optimize-cxx) \
+		$(use_enable !debug optimize-llvm) \
+		$(use_enable !debug optimize-tests) \
+		$(use_enable doc docs) \
+		$(use_enable !elibc_musl jemalloc) \
+		$(use_enable libcxx libcpp) \
+		$(usex system-llvm "--llvm-root=${EPREFIX}/usr" " ") \
+		$(usex elibc_musl "--musl-root=${EPREFIX}/usr" " ") \
+		|| die
+}
+
+src_compile() {
+	emake VERBOSE=1
+}
+
+src_install() {
+	emake dist VERBOSE=1
+	unset SUDO_USER
+
+	mkdir -p "${D}/usr"
+
+	tar xf build/dist/rustc-*-*-*.tar.gz -C "${D}/usr" --strip-components=2 --exclude=manifest.in || die
+	tar xf build/dist/rust-std-*-*-*.tar.gz -C "${D}/usr/lib" --strip-components=3 --exclude=manifest.in || die
+
+	pushd ${D}/usr/lib || die
+
+	# symlinks instead of copies
+	ln -sf rustlib/*/lib/*.so . || die
+
+	use elibc_musl && rm -r rustlib/x86_64-unknown-linux-musl/lib/crt*
+
+	popd >/dev/null
+
+	mv "${D}/usr/bin/rustc" "${D}/usr/bin/rustc-${PV}" || die
+	mv "${D}/usr/bin/rustdoc" "${D}/usr/bin/rustdoc-${PV}" || die
+	mv "${D}/usr/bin/rust-gdb" "${D}/usr/bin/rust-gdb-${PV}" || die
+
+	dodoc COPYRIGHT
+
+	dodir "/usr/share/doc/rust-${PV}/"
+	mv "${D}/usr/share/doc/rust"/* "${D}/usr/share/doc/rust-${PV}/" || die
+	rmdir "${D}/usr/share/doc/rust/" || die
+
+	cat <<-EOF > "${T}"/50${P}
+	LDPATH="/usr/$(get_libdir)/${P}"
+	MANPATH="/usr/share/${P}/man"
+	EOF
+	doenvd "${T}"/50${P}
+
+	cat <<-EOF > "${T}/provider-${P}"
+	/usr/bin/rustdoc
+	/usr/bin/rust-gdb
+	EOF
+	dodir /etc/env.d/rust
+	insinto /etc/env.d/rust
+	doins "${T}/provider-${P}"
+}
+
+pkg_postinst() {
+	eselect rust update --if-unset
+
+	elog "Rust installs a helper script for calling GDB now,"
+	elog "for your convenience it is installed under /usr/bin/rust-gdb-${PV}."
+
+	if has_version app-editors/emacs || has_version app-editors/emacs-vcs; then
+		elog "install app-emacs/rust-mode to get emacs support for rust."
+	fi
+
+	if has_version app-editors/gvim || has_version app-editors/vim; then
+		elog "install app-vim/rust-vim to get vim support for rust."
+	fi
+
+	if has_version 'app-shells/zsh'; then
+		elog "install app-shells/rust-zshcomp to get zsh completion for rust."
+	fi
+}
+
+pkg_postrm() {
+	eselect rust unset --if-invalid
+}
