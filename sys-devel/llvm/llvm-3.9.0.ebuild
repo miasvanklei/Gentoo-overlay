@@ -146,8 +146,8 @@ src_prepare() {
 		eapply "${FILESDIR}"/0018-lld-add-nostdlib.patch
 	fi
 
-	# llvm-readobj has all options, just incorrect: -s becomes S, -t becomes -s, add -d
-	eapply "${FILESDIR}"/0015-llvm-readobj-reorder-options.patch
+	# llvm-readobj has allmost all options
+	eapply "${FILESDIR}"/0015-llvm-readobj-binutils-compat.patch
 
 	# add llvm-strings and llvm-cxxfilt
 	eapply "${FILESDIR}"/0016-llvm-add-cxxfilt.patch
