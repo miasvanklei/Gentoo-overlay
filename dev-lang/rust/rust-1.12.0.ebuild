@@ -42,8 +42,8 @@ IUSE="+clang debug doc +libcxx +source +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
-	system-llvm? ( >=sys-devel/llvm-3.8.1-r2:=[multitarget]
-		<sys-devel/llvm-3.10.0:=[multitarget] )
+	system-llvm? ( >=sys-devel/llvm-3.8.1-r2:=
+		<sys-devel/llvm-3.10.0:= )
 "
 
 DEPEND="${RDEPEND}
@@ -107,7 +107,6 @@ EOF
 		eapply "${FILESDIR}"/use-libunwind.patch
 		eapply "${FILESDIR}"/no-compiler-rt.patch
 		eapply "${FILESDIR}"/dont-use-no_default_libraries.patch
-		dont-install-crfiles.patch
 	fi
 
 	eapply "${FILESDIR}"/link-llvm-static.patch
@@ -203,8 +202,10 @@ src_install() {
 	doins "${T}/provider-${P}"
 
 	if use source; then
+		pushd ${S}/src
 		mkdir -p ${D}/usr/src/${P}
 		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${P} \; || die
+		popd >/dev/null
 	fi
 }
 
