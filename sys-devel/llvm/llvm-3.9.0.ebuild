@@ -137,21 +137,24 @@ src_prepare() {
 	use elibc_musl && eapply "${FILESDIR}"/musl-fixes.patch
 
 	# output correct host
-	use elibc_musl && eapply "${FILESDIR}"/0011-output-my-chost.patch
-
-	if use lld; then
-		eapply "${FILESDIR}"/0012-lld-remove-linker-script.patch
-		eapply "${FILESDIR}"/0013-lld-gnu-ld-compat.patch
-		eapply "${FILESDIR}"/0014-lld-ignore-options.patch
-		eapply "${FILESDIR}"/0018-lld-add-nostdlib.patch
-	fi
+	use elibc_musl && eapply "${FILESDIR}"/0009-output-my-chost.patch
 
 	# llvm-readobj has allmost all options
-	eapply "${FILESDIR}"/0015-llvm-readobj-binutils-compat.patch
+	eapply "${FILESDIR}"/0010-llvm-readobj-binutils-compat.patch
 
 	# add llvm-strings and llvm-cxxfilt
-	eapply "${FILESDIR}"/0016-llvm-add-cxxfilt.patch
-	eapply "${FILESDIR}"/0017-llvm-add-strings.patch
+	eapply "${FILESDIR}"/0011-llvm-add-cxxfilt.patch
+	eapply "${FILESDIR}"/0012-llvm-add-strings.patch
+
+
+	if use lld; then
+		eapply "${FILESDIR}"/0013-lld-remove-linker-script.patch
+		eapply "${FILESDIR}"/0014-lld-gnu-ld-compat.patch
+		eapply "${FILESDIR}"/0015-lld-ignore-options.patch
+		eapply "${FILESDIR}"/0016-lld-add-nostdlib.patch
+		eapply "${FILESDIR}"/0017-lld-do-not-merge-sections-in-case-of-relocatable-object-generation.patch
+		eapply "${FILESDIR}"/0018-lld-do-not-ignore-relocations-addends.patch
+	fi
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die

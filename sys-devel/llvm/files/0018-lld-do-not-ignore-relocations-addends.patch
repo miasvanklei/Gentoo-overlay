@@ -1,0 +1,96 @@
+From d696b2b5f7905eb0fdd550b7604291d5a5889d9b Mon Sep 17 00:00:00 2001
+From: George Rimar <grimar@accesssoftek.com>
+Date: Tue, 2 Aug 2016 08:49:57 +0000
+Subject: [PATCH] [ELF] - Fix: do not ignore relocations addends when using lld
+ -r
+
+Previously addends were ignored. This is PR28779.
+Patch fixes the issue.
+
+Differential revision: https://reviews.llvm.org/D23011
+
+git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@277432 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ tools/lld/ELF/InputSection.cpp           |  4 +++-
+ tools/lld/test/ELF/relocatable-symbols.s | 42 ++++++++++++++++++++++++++++++------------
+ 2 files changed, 33 insertions(+), 13 deletions(-)
+
+diff --git a/tools/lld/ELF/InputSection.cpp b/tools/lld/ELF/InputSection.cpp
+index baa2e91..83d2ad1 100644
+--- a/tools/lld/ELF/InputSection.cpp
++++ b/tools/lld/ELF/InputSection.cpp
+@@ -161,9 +161,11 @@ void InputSection<ELFT>::copyRelocations(uint8_t *Buf, ArrayRef<RelTy> Rels) {
+     uint32_t Type = Rel.getType(Config->Mips64EL);
+     SymbolBody &Body = this->File->getRelocTargetSym(Rel);
+ 
+-    RelTy *P = reinterpret_cast<RelTy *>(Buf);
++    Elf_Rela *P = reinterpret_cast<Elf_Rela *>(Buf);
+     Buf += sizeof(RelTy);
+ 
++    if (Config->Rela)
++      P->r_addend = getAddend<ELFT>(Rel);
+     P->r_offset = RelocatedSection->getOffset(Rel.r_offset);
+     P->setSymbolAndType(Body.DynsymIndex, Type, Config->Mips64EL);
+   }
+diff --git a/tools/lld/test/ELF/relocatable-symbols.s b/tools/lld/test/ELF/relocatable-symbols.s
+index 75ed17e..79608e7 100644
+--- a/tools/lld/test/ELF/relocatable-symbols.s
++++ b/tools/lld/test/ELF/relocatable-symbols.s
+@@ -2,6 +2,7 @@
+ # RUN: llvm-mc -filetype=obj -triple=x86_64-unknown-linux %s -o %t
+ # RUN: ld.lld -r %t -o %tout
+ # RUN: llvm-objdump -d %tout | FileCheck -check-prefix=DISASM %s
++# RUN: llvm-readobj -r %t | FileCheck -check-prefix=RELOC %s
+ # RUN: llvm-readobj -symbols -r %tout | FileCheck -check-prefix=SYMBOL %s
+ 
+ # DISASM:      _start:
+@@ -28,20 +29,37 @@
+ # DISASM-NEXT:  1: 90 nop
+ # DISASM-NEXT:  2: 90 nop
+ 
++# RELOC:      Relocations [
++# RELOC-NEXT:   Section ({{.*}}) .rela.text {
++# RELOC-NEXT:     0x1 R_X86_64_PC32 __start_foo 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x6 R_X86_64_PC32 __stop_foo 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0xB R_X86_64_PC32 __start_bar 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x10 R_X86_64_PC32 __stop_bar 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x15 R_X86_64_PC32 __start_doo 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x1A R_X86_64_PC32 __stop_doo 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x1F R_X86_64_PC32 __preinit_array_start 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x24 R_X86_64_PC32 __preinit_array_end 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x29 R_X86_64_PC32 __init_array_start 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x2E R_X86_64_PC32 __init_array_end 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x33 R_X86_64_PC32 __fini_array_start 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:     0x38 R_X86_64_PC32 __fini_array_end 0xFFFFFFFFFFFFFFFC
++# RELOC-NEXT:   }
++# RELOC-NEXT: ]
++
+ # SYMBOL:      Relocations [
+ # SYMBOL-NEXT:  Section ({{.*}}) .rela.text {
+-# SYMBOL-NEXT:     0x1 R_X86_64_PC32 __start_foo 0x0
+-# SYMBOL-NEXT:     0x6 R_X86_64_PC32 __stop_foo 0x0
+-# SYMBOL-NEXT:     0xB R_X86_64_PC32 __start_bar 0x0
+-# SYMBOL-NEXT:     0x10 R_X86_64_PC32 __stop_bar 0x0
+-# SYMBOL-NEXT:     0x15 R_X86_64_PC32 __start_doo 0x0
+-# SYMBOL-NEXT:     0x1A R_X86_64_PC32 __stop_doo 0x0
+-# SYMBOL-NEXT:     0x1F R_X86_64_PC32 __preinit_array_start 0x0
+-# SYMBOL-NEXT:     0x24 R_X86_64_PC32 __preinit_array_end 0x0
+-# SYMBOL-NEXT:     0x29 R_X86_64_PC32 __init_array_start 0x0
+-# SYMBOL-NEXT:     0x2E R_X86_64_PC32 __init_array_end 0x0
+-# SYMBOL-NEXT:     0x33 R_X86_64_PC32 __fini_array_start 0x0
+-# SYMBOL-NEXT:     0x38 R_X86_64_PC32 __fini_array_end 0x0
++# SYMBOL-NEXT:     0x1 R_X86_64_PC32 __start_foo 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x6 R_X86_64_PC32 __stop_foo 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0xB R_X86_64_PC32 __start_bar 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x10 R_X86_64_PC32 __stop_bar 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x15 R_X86_64_PC32 __start_doo 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x1A R_X86_64_PC32 __stop_doo 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x1F R_X86_64_PC32 __preinit_array_start 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x24 R_X86_64_PC32 __preinit_array_end 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x29 R_X86_64_PC32 __init_array_start 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x2E R_X86_64_PC32 __init_array_end 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x33 R_X86_64_PC32 __fini_array_start 0xFFFFFFFFFFFFFFFC
++# SYMBOL-NEXT:     0x38 R_X86_64_PC32 __fini_array_end 0xFFFFFFFFFFFFFFFC
+ # SYMBOL-NEXT:   }
+ # SYMBOL-NEXT: ]
+ # SYMBOL:      Symbol {

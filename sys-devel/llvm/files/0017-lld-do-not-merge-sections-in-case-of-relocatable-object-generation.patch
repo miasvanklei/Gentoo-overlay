@@ -1,0 +1,170 @@
+From 8289081e8ba9a4456cd5e055f93d5e399f01d8ef Mon Sep 17 00:00:00 2001
+From: Simon Atanasyan <simon@atanasyan.com>
+Date: Wed, 5 Oct 2016 07:49:18 +0000
+Subject: [PATCH] [ELF] Do not merge sections in case of relocatable object
+ generation
+
+Do not merge sections if generating a relocatable object. It makes
+the code simpler because we do not need to update relocations addends
+to reflect changes introduced by merging. Instead of that we write
+such "merge" sections into separate OutputSections and keep SHF_MERGE
+/ SHF_STRINGS flags and sh_entsize value to be able to perform merging
+later during a final linking.
+
+Differential Revision: http://reviews.llvm.org/D25066
+
+git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@283300 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ tools/lld/ELF/InputFiles.cpp     |  9 +++++
+ tools/lld/ELF/OutputSections.cpp | 10 +++++-
+ tools/lld/test/ELF/merge-reloc.s | 92 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 110 insertions(+), 1 deletion(-)
+ create mode 100644 test/ELF/merge-reloc.s
+
+diff --git a/tools/lld/ELF/InputFiles.cpp b/tools/lld/ELF/InputFiles.cpp
+index cd29311..3562609 100644
+--- a/tools/lld/ELF/InputFiles.cpp
++++ b/tools/lld/ELF/InputFiles.cpp
+@@ -177,6 +177,15 @@ bool elf::ObjectFile<ELFT>::shouldMerge(const Elf_Shdr &Sec) {
+   if (Config->Optimize == 0)
+     return false;
+ 
++  // Do not merge sections if generating a relocatable object. It makes
++  // the code simpler because we do not need to update relocation addends
++  // to reflect changes introduced by merging. Instead of that we write
++  // such "merge" sections into separate OutputSections and keep SHF_MERGE
++  // / SHF_STRINGS flags and sh_entsize value to be able to perform merging
++  // later during a final linking.
++  if (Config->Relocatable)
++    return false;
++
+   uintX_t Flags = Sec.sh_flags;
+   if (!(Flags & SHF_MERGE))
+     return false;
+diff --git a/tools/lld/ELF/OutputSections.cpp b/tools/lld/ELF/OutputSections.cpp
+index 0cbee53..0a6c873 100644
+--- a/tools/lld/ELF/OutputSections.cpp
++++ b/tools/lld/ELF/OutputSections.cpp
+@@ -894,6 +894,10 @@ void OutputSection<ELFT>::addSection(InputSectionBase<ELFT> *C) {
+   Sections.push_back(S);
+   S->OutSec = this;
+   this->updateAlignment(S->Alignment);
++  // Keep sh_entsize value of the input section to be able to perform merging
++  // later during a final linking using the generated relocatable object.
++  if (Config->Relocatable && (S->getSectionHdr()->sh_flags & SHF_MERGE))
++    this->Header.sh_entsize = S->getSectionHdr()->sh_entsize;
+ }
+ 
+ // This function is called after we sort input sections
+@@ -1836,8 +1840,12 @@ static SectionKey<ELFT::Is64Bits> createKey(InputSectionBase<ELFT> *C,
+   // For SHF_MERGE we create different output sections for each alignment.
+   // This makes each output section simple and keeps a single level mapping from
+   // input to output.
++  // In case of relocatable object generation we do not try to perform merging
++  // and treat SHF_MERGE sections as regular ones, but also create different
++  // output sections for them to allow merging at final linking stage.
+   uintX_t Alignment = 0;
+-  if (isa<MergeInputSection<ELFT>>(C))
++  if (isa<MergeInputSection<ELFT>>(C) ||
++      (Config->Relocatable && (H->sh_flags & SHF_MERGE)))
+     Alignment = std::max(H->sh_addralign, H->sh_entsize);
+ 
+   uint32_t Type = H->sh_type;
+diff --git a/tools/lld/test/ELF/merge-reloc.s b/tools/lld/test/ELF/merge-reloc.s
+new file mode 100644
+index 0000000..2447e3e
+--- /dev/null
++++ b/tools/lld/test/ELF/merge-reloc.s
+@@ -0,0 +1,92 @@
++# REQUIRES: x86
++# RUN: llvm-mc -filetype=obj -triple=x86_64-pc-linux %s -o %t.o
++# RUN: ld.lld %t.o -r -o %t-rel
++# RUN: llvm-readobj -s -section-data %t-rel | FileCheck %s
++
++# When linker generates a relocatable object it should keep "merge"
++# sections as-is: do not merge content, do not join regular and
++# "merge" sections, do not joint "merge" sections with different
++# entry size.
++
++# CHECK:      Section {
++# CHECK:        Index:
++# CHECK:        Name: .data
++# CHECK-NEXT:   Type: SHT_PROGBITS
++# CHECK-NEXT:   Flags [
++# CHECK-NEXT:     SHF_ALLOC
++# CHECK-NEXT:     SHF_MERGE
++# CHECK-NEXT:   ]
++# CHECK-NEXT:   Address:
++# CHECK-NEXT:   Offset:
++# CHECK-NEXT:   Size: 12
++# CHECK-NEXT:   Link: 0
++# CHECK-NEXT:   Info: 0
++# CHECK-NEXT:   AddressAlignment: 4
++# CHECK-NEXT:   EntrySize: 4
++# CHECK-NEXT:   SectionData (
++# CHECK-NEXT:     0000: 42000000 42000000 42000000
++# CHECK-NEXT:   )
++# CHECK-NEXT: }
++# CHECK:      Section {
++# CHECK:        Index:
++# CHECK:        Name: .data
++# CHECK-NEXT:   Type: SHT_PROGBITS
++# CHECK-NEXT:   Flags [
++# CHECK-NEXT:     SHF_ALLOC
++# CHECK-NEXT:     SHF_MERGE
++# CHECK-NEXT:   ]
++# CHECK-NEXT:   Address:
++# CHECK-NEXT:   Offset:
++# CHECK-NEXT:   Size: 16
++# CHECK-NEXT:   Link: 0
++# CHECK-NEXT:   Info: 0
++# CHECK-NEXT:   AddressAlignment: 8
++# CHECK-NEXT:   EntrySize: 8
++# CHECK-NEXT:   SectionData (
++# CHECK-NEXT:     0000: 42000000 42000000 42000000 42000000
++# CHECK-NEXT:   )
++# CHECK-NEXT: }
++# CHECK:      Section {
++# CHECK:        Index:
++# CHECK:        Name: .data
++# CHECK-NEXT:   Type: SHT_PROGBITS
++# CHECK-NEXT:   Flags [
++# CHECK-NEXT:     SHF_ALLOC
++# CHECK-NEXT:     SHF_WRITE
++# CHECK-NEXT:   ]
++# CHECK-NEXT:   Address:
++# CHECK-NEXT:   Offset:
++# CHECK-NEXT:   Size: 16
++# CHECK-NEXT:   Link: 0
++# CHECK-NEXT:   Info: 0
++# CHECK-NEXT:   AddressAlignment: 1
++# CHECK-NEXT:   EntrySize: 0
++# CHECK-NEXT:   SectionData (
++# CHECK-NEXT:     0000: 42000000 42000000 42000000 42000000
++# CHECK-NEXT:   )
++# CHECK-NEXT: }
++
++        .section        .data.1,"aM",@progbits,4
++        .align  4
++        .global foo
++foo:
++        .long   0x42
++        .long   0x42
++        .long   0x42
++
++        .section        .data.2,"aM",@progbits,8
++        .align  8
++        .global bar
++bar:
++        .long   0x42
++        .long   0x42
++        .long   0x42
++        .long   0x42
++
++        .data
++        .global gar
++zed:
++        .long   0x42
++        .long   0x42
++        .long   0x42
++        .long   0x42

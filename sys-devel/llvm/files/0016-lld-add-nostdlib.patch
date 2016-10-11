@@ -40,13 +40,14 @@ diff --git a/tools/lld/ELF/LinkerScript.cpp b/tools/lld/ELF/LinkerScript.cpp
 index c1ce76c..3872d30 100644
 --- a/tools/lld/ELF/LinkerScript.cpp
 +++ b/tools/lld/ELF/LinkerScript.cpp
-@@ -870,7 +870,8 @@ void ScriptParser::readPhdrs() {
+@@ -870,7 +870,9 @@ void ScriptParser::readPhdrs() {
  
  void ScriptParser::readSearchDir() {
    expect("(");
 -  Config->SearchPaths.push_back(next());
++  StringRef Tok = next();
 +  if (!Config->Nostdlib)
-+    Config->SearchPaths.push_back(next());
++    Config->SearchPaths.push_back(Tok);
    expect(")");
  }
  
