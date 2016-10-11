@@ -38,7 +38,6 @@ src_prepare() {
 	epatch "${FILESDIR}"/${P}-fix-visibility-musl.patch
 	epatch "${FILESDIR}"/${P}-linker-as-libc.patch
 	epatch "${FILESDIR}"/${P}-dont-abort-long-name.patch
-	epatch "${FILESDIR}"/${P}-llvm-readobj.patch
 	epatch_user
 	eautoreconf
 }
