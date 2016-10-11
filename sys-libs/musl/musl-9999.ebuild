@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit eutils flag-o-matic toolchain-funcs multilib-minimal pax-utils git-r3
+inherit eutils flag-o-matic toolchain-funcs pax-utils git-r3
 
 EGIT_REPO_URI="git://git.musl-libc.org/musl"
 
@@ -23,11 +23,11 @@ src_prepare() {
 	eapply_user
 }
 
-multilib_src_configure() {
+src_configure() {
 	ECONF_SOURCE="${S}" \
         econf \
 	--syslibdir=/lib \
-	--libdir=/usr/$(get_libdir) \
+	--libdir=/usr/lib \
 	--disable-gcc-wrapper
 }
 
@@ -45,37 +45,30 @@ GROUP ( $@ )
 END_LDSCRIPT
 }
 
-multilib_src_install() {
-
-	MULTILIB_WRAPPED_HEADERS=(
-	/usr/include/bits/*
-	)
-
+src_install() {
 	emake DESTDIR="${D}" install || die
 
 
 	# musl provides ldd through its linker
-	local ldso=$(basename "${D}"/lib/ld-musl-*)
-
+	local arch=$("${D}"usr/lib/libc.so 2>&1 | sed -n '1s/^musl libc (\(.*\))$/\1/p')
 
 	#move ld-musl and create linkerscript to directly link with libc.so
-        mv -f "${D}"/usr/$(get_libdir)/libc.so "${D}"/lib/${ldso} || die
+        mv -f "${D}"/usr/lib/libc.so "${D}"/lib/ld-musl-${arch}.so.1 || die
 
-	gen_ldscript "/lib/${ldso}" > "${ED}/usr/$(get_libdir)/libc.so"
+	gen_ldscript "/lib/ld-musl-${arch}.so.1" > "${ED}/usr/lib/libc.so"
 
-	dosym /lib/${ldso} /usr/bin/${CHOST}-ldd || die
+	dosym /lib/ld-musl-${arch}.so.1 /usr/bin/${CHOST}-ldd || die
 
 	# needed for ldd under pax kernel
-	pax-mark r "${D}"/lib/${ldso} || die
-}
+	pax-mark r "${D}"/lib/ld-musl-${arch}.so.1 || die
 
-multilib_src_install_all() {
-	local ldso=$(basename "${D}"/lib/ld-musl-*)
+	dosym /lib/ld-musl-${arch}.so.1 /usr/bin/ldd || die
 
-	dosym /lib/${ldso} /usr/bin/ldd
+        cp "${FILESDIR}"/ldconfig.in "${T}" || die
+        sed -e "s|@@ARCH@@|${arch}|" "${T}"/ldconfig.in > "${T}"/ldconfig || die
+        into /
+        dosbin "${T}"/ldconfig
 
-	into /
-	dosbin "${FILESDIR}"/ldconfig
 	echo 'LDPATH="include ld.so.conf.d/*.conf"' > "${T}"/00musl || die
 	doenvd "${T}"/00musl || die
 }

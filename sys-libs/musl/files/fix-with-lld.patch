@@ -1,0 +1,101 @@
+--- a/configure	2016-10-11 22:28:09.283210316 +0200
++++ b/configure	2016-10-11 22:28:53.033212470 +0200
+@@ -72,7 +72,7 @@
+ echo "#if $1" >> "$tmpc"
+ echo "#error yes" >> "$tmpc"
+ echo "#endif" >> "$tmpc"
+-if $CC $2 -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++if $CC $2 -c -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ printf "false\n"
+ return 1
+ else
+@@ -84,7 +84,7 @@
+ tryflag () {
+ printf "checking whether compiler accepts %s... " "$2"
+ echo "typedef int x;" > "$tmpc"
+-if $CC $CFLAGS_TRY $2 -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++if $CC $CFLAGS_TRY $2 -c -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ printf "yes\n"
+ eval "$1=\"\${$1} \$2\""
+ eval "$1=\${$1# }"
+@@ -98,7 +98,7 @@
+ tryldflag () {
+ printf "checking whether linker accepts %s... " "$2"
+ echo "typedef int x;" > "$tmpc"
+-if $CC $LDFLAGS_TRY -nostdlib -shared "$2" -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++if $CC $LDFLAGS_TRY -nostdlib -shared "$2" -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ printf "yes\n"
+ eval "$1=\"\${$1} \$2\""
+ eval "$1=\${$1# }"
+@@ -237,7 +237,7 @@
+ 
+ printf "checking whether C compiler works... "
+ echo "typedef int x;" > "$tmpc"
+-if output=$($CC $CPPFLAGS $CFLAGS -c -o /dev/null "$tmpc" 2>&1) ; then
++if output=$($CC $CPPFLAGS $CFLAGS -c -o conftest "$tmpc" 2>&1) ; then
+ printf "yes\n"
+ else
+ printf "no; compiler output follows:\n%s\n" "$output"
+@@ -275,7 +275,7 @@
+ echo "#error no" >> "$tmpc"
+ echo "#endif" >> "$tmpc"
+ printf "checking for toolchain wrapper to build... "
+-if test "$wrapper" = auto && ! $CC -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++if test "$wrapper" = auto && ! $CC -c -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ echo "none"
+ elif test "$cc_family" = gcc ; then
+ gcc_wrapper=yes
+@@ -354,7 +354,7 @@
+ x;
+ EOF
+ if $CC $CFLAGS_C99FSE $CPPFLAGS $CFLAGS \
+-  -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++  -c -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ printf "no\n"
+ else
+ printf "yes\n"
+@@ -397,7 +397,7 @@
+ printf "checking whether we should preprocess assembly to add debugging information... "
+ if fnmatch '-g*|*\ -g*' "$CFLAGS_AUTO $CFLAGS" &&
+    test -f "tools/add-cfi.$ARCH.awk" &&
+-   printf ".file 1 \"srcfile.s\"\n.line 1\n.cfi_startproc\n.cfi_endproc" | $CC -g -x assembler -c -o /dev/null 2>/dev/null -
++   printf ".file 1 \"srcfile.s\"\n.line 1\n.cfi_startproc\n.cfi_endproc" | $CC -g -x assembler -c -o conftest 2>/dev/null -
+ then
+   ADD_CFI=yes
+ else
+@@ -533,7 +533,7 @@
+ if $CC $CFLAGS_C99FSE $CPPFLAGS $CFLAGS \
+   -DSHARED -fPIC -I$srcdir/src/internal -include vis.h \
+   -nostdlib -shared -Wl,-Bsymbolic-functions \
+-  -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++  -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ visibility=yes
+ else
+ visibility=no
+@@ -610,7 +610,7 @@
+ if test "$cc_family" = clang ; then
+ printf "checking whether clang's vfp asm constraints work... "
+ echo 'float f(float x) { __asm__("":"+t"(x)); return x; }' > "$tmpc"
+-if $CC $CFLAGS_C99FSE $CPPFLAGS $CFLAGS -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++if $CC $CFLAGS_C99FSE $CPPFLAGS $CFLAGS -c -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ printf "yes\n"
+ else
+ printf "no\n"
+@@ -661,7 +661,7 @@
+ # supports single precision. Reject them.
+ printf "checking whether compiler's double type is IEEE double... "
+ echo 'typedef char dblcheck[(int)sizeof(double)-5];' > "$tmpc"
+-if $CC $CFLAGS_C99FSE $CPPFLAGS $CFLAGS -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++if $CC $CFLAGS_C99FSE $CPPFLAGS $CFLAGS -c -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ printf "yes\n"
+ else
+ printf "no\n"
+@@ -698,7 +698,7 @@
+ echo '#endif' >> "$tmpc"
+ if $CC $CFLAGS_C99FSE \
+   -I$srcdir/arch/$ARCH -I$srcdir/arch/generic -I$srcdir/include \
+-  $CPPFLAGS $CFLAGS -c -o /dev/null "$tmpc" >/dev/null 2>&1 ; then
++  $CPPFLAGS $CFLAGS -c -o conftest "$tmpc" >/dev/null 2>&1 ; then
+ printf "yes\n"
+ else
+ printf "no\n"
