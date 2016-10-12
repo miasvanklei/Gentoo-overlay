@@ -148,7 +148,6 @@ src_prepare() {
 
 
 	if use lld; then
-		eapply "${FILESDIR}"/0013-lld-fix-version_script-local-parse.patch
 		eapply "${FILESDIR}"/0014-lld-gnu-ld-compat.patch
 		eapply "${FILESDIR}"/0015-lld-ignore-options.patch
 		eapply "${FILESDIR}"/0016-lld-add-nostdlib.patch
