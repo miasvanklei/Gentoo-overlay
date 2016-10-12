@@ -24,10 +24,12 @@ src_prepare() {
 }
 
 src_configure() {
+	# disable visibility is needed for non-pic code with gcc(gtk+)
 	ECONF_SOURCE="${S}" \
         econf \
 	--syslibdir=/lib \
 	--libdir=/usr/lib \
+	--disable-visibility \
 	--disable-gcc-wrapper
 }
 
