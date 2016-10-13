@@ -1,0 +1,60 @@
+From 13d4e724484ce44e44cd48ef42779d16f2d56543 Mon Sep 17 00:00:00 2001
+From: Davide Italiano <davide@freebsd.org>
+Date: Thu, 8 Sep 2016 21:18:38 +0000
+Subject: [PATCH] [ELF] Fix DT_NEEDED value.
+
+Differential Revision: https://reviews.llvm.org/D24363
+
+git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@280990 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ tools/lld/ELF/InputFiles.cpp            | 3 ++-
+ tools/lld/test/ELF/as-needed-no-reloc.s | 2 +-
+ tools/lld/test/ELF/shared.s             | 1 -
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/tools/lld/ELF/InputFiles.cpp b/tools/lld/ELF/InputFiles.cpp
+index 9589a50..fbe34e6 100644
+--- a/tools/lld/ELF/InputFiles.cpp
++++ b/tools/lld/ELF/InputFiles.cpp
+@@ -19,6 +19,7 @@
+ #include "llvm/CodeGen/Analysis.h"
+ #include "llvm/IR/LLVMContext.h"
+ #include "llvm/IR/Module.h"
++#include "llvm/Support/Path.h"
+ #include "llvm/Support/raw_ostream.h"
+ 
+ using namespace llvm;
+@@ -477,7 +478,7 @@ template <class ELFT> void SharedFile<ELFT>::parseSoName() {
+   }
+ 
+   this->initStringTable();
+-  SoName = this->getName();
++  SoName = sys::path::filename(this->getName());
+ 
+   if (!DynamicSec)
+     return;
+diff --git a/tools/lld/test/ELF/as-needed-no-reloc.s b/tools/lld/test/ELF/as-needed-no-reloc.s
+index 0706ca0..9cbe25c 100644
+--- a/tools/lld/test/ELF/as-needed-no-reloc.s
++++ b/tools/lld/test/ELF/as-needed-no-reloc.s
+@@ -16,7 +16,7 @@
+ # CHECK-NEXT: Other: 0
+ # CHECK-NEXT: Section: Undefined
+ 
+-# CHECK: NEEDED SharedLibrary ({{.*}}2.so)
++# CHECK: NEEDED SharedLibrary (as-needed-no-reloc{{.*}}2.so)
+ 
+         .globl _start
+ _start:
+diff --git a/tools/lld/test/ELF/shared.s b/tools/lld/test/ELF/shared.s
+index a81a093..086cc73 100644
+--- a/tools/lld/test/ELF/shared.s
++++ b/tools/lld/test/ELF/shared.s
+@@ -119,7 +119,6 @@
+ // CHECK-NEXT:   EntrySize: 8
+ // CHECK-NEXT:   SectionData (
+ // CHECK:        )
+-// CHECK-NEXT: }
+ 
+ // CHECK:      Name: .symtab
+ // CHECK-NEXT: Type: SHT_SYMTAB

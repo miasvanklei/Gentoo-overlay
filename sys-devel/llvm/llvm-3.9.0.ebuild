@@ -151,8 +151,14 @@ src_prepare() {
 		eapply "${FILESDIR}"/0014-lld-gnu-ld-compat.patch
 		eapply "${FILESDIR}"/0015-lld-ignore-options.patch
 		eapply "${FILESDIR}"/0016-lld-add-nostdlib.patch
+
+		# bugs found by compiling ghc
 		eapply "${FILESDIR}"/0017-lld-do-not-merge-sections-in-case-of-relocatable-object-generation.patch
 		eapply "${FILESDIR}"/0018-lld-do-not-ignore-relocations-addends.patch
+
+		# bugs found by compiling rust
+		eapply "${FILESDIR}"/0019-lld-accept-sh_entsize0.patch
+		eapply "${FILESDIR}"/0020-lld-fix-dt_needed-value.patch
 	fi
 
 	# disable use of SDK on OSX, bug #568758
