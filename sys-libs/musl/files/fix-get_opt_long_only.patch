@@ -1,0 +1,13 @@
+--- a/src/misc/getopt_long.c
++++ b/src/misc/getopt_long.c
+@@ -53,6 +53,10 @@
+ {
+ 	optarg = 0;
+ 	if (longopts && argv[optind][0] == '-' &&
++		argv[optind][1] == '-' && !argv[optind][2])
++               return getopt(argc, argv, optstring);
++
++	if (longopts && argv[optind][0] == '-' &&
+ 		((longonly && argv[optind][1]) ||
+ 		 (argv[optind][1] == '-' && argv[optind][2])))
+ 	{
