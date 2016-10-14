@@ -39,7 +39,7 @@ S=${WORKDIR}/${P/_}.src
 src_prepare() {
 	python_setup
 
-	eapply "${FILESDIR}"/fix-regex-impl.patch
+	eapply "${FILESDIR}"/0001-lldb-use-llvm-regex.patch
 
 	# Do not install dummy readline.so module from
 	# https://llvm.org/bugs/show_bug.cgi?id=18841
