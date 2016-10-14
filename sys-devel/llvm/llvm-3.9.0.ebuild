@@ -105,6 +105,9 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
+	# include checkatomic
+	eapply "${FILESDIR}"/llvm-include-checkatomic.patch
+
 	# Fix libdir for ocaml bindings install, bug #559134
 	eapply "${FILESDIR}"/0001-cmake-Install-OCaml-modules-into-correct-package-loc.patch
 	# Do not build/install ocaml docs with USE=-doc, bug #562008
