@@ -57,13 +57,17 @@ src_install() {
 	#move ld-musl and create linkerscript to directly link with libc.so
         mv -f "${D}"/usr/lib/libc.so "${D}"/lib/ld-musl-${arch}.so.1 || die
 
-	gen_ldscript "/lib/ld-musl-${arch}.so.1" > "${ED}/usr/lib/libc.so"
+	pushd "${D}" >/dev/null
+	dosym ld-musl-${arch}.so.1 /lib/libc.so
+	popd >/dev/null
 
-	dosym /lib/ld-musl-${arch}.so.1 /usr/bin/${CHOST}-ldd || die
+	gen_ldscript "/lib/libc.so" > "${ED}/usr/lib/libc.so"
+
 
 	# needed for ldd under pax kernel
 	pax-mark r "${D}"/lib/ld-musl-${arch}.so.1 || die
 
+	dosym /lib/ld-musl-${arch}.so.1 /usr/bin/${CHOST}-ldd || die
 	dosym /lib/ld-musl-${arch}.so.1 /usr/bin/ldd || die
 
         cp "${FILESDIR}"/ldconfig.in "${T}" || die
