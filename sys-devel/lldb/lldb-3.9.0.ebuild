@@ -39,7 +39,6 @@ S=${WORKDIR}/${P/_}.src
 src_prepare() {
 	python_setup
 
-	eapply "${FILESDIR}"/lldb-fix-getopt.patch
 	eapply "${FILESDIR}"/fix-regex-impl.patch
 
 	# Do not install dummy readline.so module from
