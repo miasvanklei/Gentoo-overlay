@@ -11,14 +11,14 @@ Differential revision: https://reviews.llvm.org/D23011
 
 git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@277432 91177308-0d34-0410-b5e6-96231b3b80d8
 ---
- tools/lld/ELF/InputSection.cpp           |  4 +++-
- tools/lld/test/ELF/relocatable-symbols.s | 42 ++++++++++++++++++++++++++++++------------
+ ELF/InputSection.cpp           |  4 +++-
+ test/ELF/relocatable-symbols.s | 42 ++++++++++++++++++++++++++++++------------
  2 files changed, 33 insertions(+), 13 deletions(-)
 
-diff --git a/tools/lld/ELF/InputSection.cpp b/tools/lld/ELF/InputSection.cpp
+diff --git a/ELF/InputSection.cpp b/ELF/InputSection.cpp
 index baa2e91..83d2ad1 100644
---- a/tools/lld/ELF/InputSection.cpp
-+++ b/tools/lld/ELF/InputSection.cpp
+--- a/ELF/InputSection.cpp
++++ b/ELF/InputSection.cpp
 @@ -161,9 +161,11 @@ void InputSection<ELFT>::copyRelocations(uint8_t *Buf, ArrayRef<RelTy> Rels) {
      uint32_t Type = Rel.getType(Config->Mips64EL);
      SymbolBody &Body = this->File->getRelocTargetSym(Rel);
@@ -32,10 +32,10 @@ index baa2e91..83d2ad1 100644
      P->r_offset = RelocatedSection->getOffset(Rel.r_offset);
      P->setSymbolAndType(Body.DynsymIndex, Type, Config->Mips64EL);
    }
-diff --git a/tools/lld/test/ELF/relocatable-symbols.s b/tools/lld/test/ELF/relocatable-symbols.s
+diff --git a/test/ELF/relocatable-symbols.s b/test/ELF/relocatable-symbols.s
 index 75ed17e..79608e7 100644
---- a/tools/lld/test/ELF/relocatable-symbols.s
-+++ b/tools/lld/test/ELF/relocatable-symbols.s
+--- a/test/ELF/relocatable-symbols.s
++++ b/test/ELF/relocatable-symbols.s
 @@ -2,6 +2,7 @@
  # RUN: llvm-mc -filetype=obj -triple=x86_64-unknown-linux %s -o %t
  # RUN: ld.lld -r %t -o %tout

@@ -1,0 +1,39 @@
+--- lib/Driver/CMakeLists.txt.bak	2016-10-15 00:01:27.027544383 +0200
++++ lib/Driver/CMakeLists.txt	2016-10-15 00:01:34.077543803 +0200
+@@ -1,7 +1,3 @@
+-set(LLVM_TARGET_DEFINITIONS DarwinLdOptions.td)
+-tablegen(LLVM DarwinLdOptions.inc -gen-opt-parser-defs)
+-add_public_tablegen_target(DriverOptionsTableGen)
+-
+ add_lld_library(lldDriver
+   DarwinLdDriver.cpp
+ 
+--- ELF/CMakeLists.txt.bak	2016-10-15 00:01:04.002546278 +0200
++++ ELF/CMakeLists.txt	2016-10-15 00:02:33.852538885 +0200
+@@ -1,7 +1,3 @@
+-set(LLVM_TARGET_DEFINITIONS Options.td)
+-tablegen(LLVM Options.inc -gen-opt-parser-defs)
+-add_public_tablegen_target(ELFOptionsTableGen)
+-
+ add_lld_library(lldELF
+   Driver.cpp
+   DriverUtils.cpp
+@@ -47,4 +43,8 @@
+   ${PTHREAD_LIB}
+   )
+ 
++if(NOT LLD_BUILT_STANDALONE)
+ add_dependencies(lldELF intrinsics_gen ELFOptionsTableGen)
++else()
++add_dependencies(lldELF ELFOptionsTableGen)
++endif()
+--- COFF/CMakeLists.txt.bak	2016-10-15 00:01:15.177545358 +0200
++++ COFF/CMakeLists.txt	2016-10-15 00:02:30.902539128 +0200
+@@ -1,7 +1,3 @@
+-set(LLVM_TARGET_DEFINITIONS Options.td)
+-tablegen(LLVM Options.inc -gen-opt-parser-defs)
+-add_public_tablegen_target(COFFOptionsTableGen)
+-
+ add_lld_library(lldCOFF
+   Chunks.cpp
+   DLL.cpp

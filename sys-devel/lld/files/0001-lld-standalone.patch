@@ -1,0 +1,1669 @@
+--- a/ELF/Strings.cpp	2016-10-14 23:31:13.766693584 +0200
++++ b/ELF/Strings.cpp	2016-10-14 23:31:24.090692735 +0200
+@@ -11,7 +11,7 @@
+ #include "Error.h"
+ #include "llvm/ADT/StringRef.h"
+ #include "llvm/ADT/Twine.h"
+-#include "llvm/Config/config.h"
++#include "llvm/Config/llvm-config.h"
+ #include <algorithm>
+ 
+ #ifdef HAVE_CXXABI_H
+--- a/lib/ReaderWriter/MachO/MachOLinkingContext.cpp	2016-10-14 23:23:18.712732673 +0200
++++ b/lib/ReaderWriter/MachO/MachOLinkingContext.cpp	2016-10-14 23:23:31.487731622 +0200
+@@ -22,7 +22,7 @@
+ #include "llvm/ADT/STLExtras.h"
+ #include "llvm/ADT/StringExtras.h"
+ #include "llvm/ADT/Triple.h"
+-#include "llvm/Config/config.h"
++#include "llvm/Config/llvm-config.h"
+ #include "llvm/Support/Debug.h"
+ #include "llvm/Support/Errc.h"
+ #include "llvm/Support/Host.h"
+--- a/ELF/DriverUtils.cpp	2016-10-14 23:30:38.565696481 +0200
++++ b/ELF/DriverUtils.cpp	2016-10-14 23:30:55.315695102 +0200
+@@ -34,7 +34,7 @@
+ 
+ // Create prefix string literals used in Options.td
+ #define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+-#include "Options.inc"
++#include "lld/ELF/Options.inc"
+ #undef PREFIX
+ 
+ // Create table mapping all options defined in Options.td
+@@ -44,7 +44,7 @@
+     X1, X2, X9, X10, OPT_##ID, opt::Option::KIND##Class, X8, X7, OPT_##GROUP,  \
+         OPT_##ALIAS, X6                                                        \
+   },
+-#include "Options.inc"
++#include "lld/ELF/Options.inc"
+ #undef OPTION
+ };
+ 
+--- a/ELF/Driver.h	2016-10-14 23:26:04.013719072 +0200
++++ b/ELF/Driver.h	2016-10-14 23:26:20.288717732 +0200
+@@ -65,7 +65,7 @@
+ enum {
+   OPT_INVALID = 0,
+ #define OPTION(_1, _2, ID, _4, _5, _6, _7, _8, _9, _10, _11) OPT_##ID,
+-#include "Options.inc"
++#include "lld/ELF/Options.inc"
+ #undef OPTION
+ };
+ 
+--- a/COFF/Driver.h	2016-10-14 23:23:59.988729277 +0200
++++ b/COFF/Driver.h	2016-10-14 23:24:16.062727954 +0200
+@@ -167,7 +167,7 @@
+ enum {
+   OPT_INVALID = 0,
+ #define OPTION(_1, _2, ID, _4, _5, _6, _7, _8, _9, _10, _11) OPT_##ID,
+-#include "Options.inc"
++#include "lld/COFF/Options.inc"
+ #undef OPTION
+ };
+ 
+--- a/COFF/DriverUtils.cpp	2016-10-14 23:24:49.738725183 +0200
++++ b/COFF/DriverUtils.cpp	2016-10-14 23:25:17.438722904 +0200
+@@ -575,7 +575,7 @@
+ 
+ // Create prefix string literals used in Options.td
+ #define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+-#include "Options.inc"
++#include "lld/COFF/Options.inc"
+ #undef PREFIX
+ 
+ // Create table mapping all options defined in Options.td
+@@ -585,7 +585,7 @@
+     X1, X2, X9, X10, OPT_##ID, llvm::opt::Option::KIND##Class, X8, X7, \
+     OPT_##GROUP, OPT_##ALIAS, X6                                       \
+   },
+-#include "Options.inc"
++#include "lld/COFF/Options.inc"
+ #undef OPTION
+ };
+ 
+--- a/lib/Driver/DarwinLdDriver.cpp	2016-10-14 22:55:00.677872393 +0200
++++ b/lib/Driver/DarwinLdDriver.cpp	2016-10-14 23:28:24.864707482 +0200
+@@ -43,13 +43,13 @@
+ #define OPTION(PREFIX, NAME, ID, KIND, GROUP, ALIAS, ALIASARGS, FLAGS, PARAM, \
+                HELP, META) \
+           OPT_##ID,
+-#include "DarwinLdOptions.inc"
++#include "lld/Driver/DarwinLdOptions.inc"
+ #undef OPTION
+ };
+ 
+ // Create prefix string literals used in DarwinLdOptions.td
+ #define PREFIX(NAME, VALUE) const char *const NAME[] = VALUE;
+-#include "DarwinLdOptions.inc"
++#include "lld/Driver/DarwinLdOptions.inc"
+ #undef PREFIX
+ 
+ // Create table mapping all options defined in DarwinLdOptions.td
+@@ -58,7 +58,7 @@
+                HELPTEXT, METAVAR)   \
+   { PREFIX, NAME, HELPTEXT, METAVAR, OPT_##ID, llvm::opt::Option::KIND##Class, \
+     PARAM, FLAGS, OPT_##GROUP, OPT_##ALIAS, ALIASARGS },
+-#include "DarwinLdOptions.inc"
++#include "lld/Driver/DarwinLdOptions.inc"
+ #undef OPTION
+ };
+ 
+--- a/lib/Driver/CMakeLists.txt	2016-10-15 00:01:27.027544383 +0200
++++ b/lib/Driver/CMakeLists.txt	2016-10-15 00:01:34.077543803 +0200
+@@ -1,7 +1,3 @@
+-set(LLVM_TARGET_DEFINITIONS DarwinLdOptions.td)
+-tablegen(LLVM DarwinLdOptions.inc -gen-opt-parser-defs)
+-add_public_tablegen_target(DriverOptionsTableGen)
+-
+ add_lld_library(lldDriver
+   DarwinLdDriver.cpp
+ 
+--- a/ELF/CMakeLists.txt	2016-10-15 00:01:04.002546278 +0200
++++ b/ELF/CMakeLists.txt	2016-10-15 00:02:33.852538885 +0200
+@@ -1,7 +1,3 @@
+-set(LLVM_TARGET_DEFINITIONS Options.td)
+-tablegen(LLVM Options.inc -gen-opt-parser-defs)
+-add_public_tablegen_target(ELFOptionsTableGen)
+-
+ add_lld_library(lldELF
+   Driver.cpp
+   DriverUtils.cpp
+@@ -47,4 +43,8 @@
+   ${PTHREAD_LIB}
+   )
+ 
++if(NOT LLD_BUILT_STANDALONE)
+ add_dependencies(lldELF intrinsics_gen ELFOptionsTableGen)
++else()
++add_dependencies(lldELF ELFOptionsTableGen)
++endif()
+--- a/COFF/CMakeLists.txt	2016-10-15 00:01:15.177545358 +0200
++++ b/COFF/CMakeLists.txt	2016-10-15 00:02:30.902539128 +0200
+@@ -1,7 +1,3 @@
+-set(LLVM_TARGET_DEFINITIONS Options.td)
+-tablegen(LLVM Options.inc -gen-opt-parser-defs)
+-add_public_tablegen_target(COFFOptionsTableGen)
+-
+ add_lld_library(lldCOFF
+   Chunks.cpp
+   DLL.cpp
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/CMakeLists.txt	2016-10-14 23:18:14.360757716 +0200
+@@ -0,0 +1 @@
++add_subdirectory(lld)
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/lld/CMakeLists.txt	2016-10-14 23:16:51.409764542 +0200
+@@ -0,0 +1,3 @@
++add_subdirectory(COFF)
++add_subdirectory(Driver)
++add_subdirectory(ELF)
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/lld/COFF/CMakeLists.txt	2016-10-14 23:18:03.385758619 +0200
+@@ -0,0 +1,3 @@
++set(LLVM_TARGET_DEFINITIONS Options.td)
++tablegen(LLVM Options.inc -gen-opt-parser-defs)
++add_public_tablegen_target(COFFOptionsTableGen)
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/lld/ELF/CMakeLists.txt	2016-10-14 23:17:18.835762285 +0200
+@@ -0,0 +1,3 @@
++set(LLVM_TARGET_DEFINITIONS Options.td)
++tablegen(LLVM Options.inc -gen-opt-parser-defs)
++add_public_tablegen_target(ELFOptionsTableGen)
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/lld/Driver/CMakeLists.txt	2016-10-14 23:13:26.408781410 +0200
+@@ -0,0 +1,3 @@
++set(LLVM_TARGET_DEFINITIONS DarwinLdOptions.td)
++tablegen(LLVM DarwinLdOptions.inc -gen-opt-parser-defs)
++add_public_tablegen_target(DriverOptionsTableGen)
+--- a/CMakeLists.txt	2016-10-14 22:44:18.447925237 +0200
++++ b/CMakeLists.txt	2016-10-14 23:22:00.461739112 +0200
+@@ -1,3 +1,172 @@
++cmake_minimum_required(VERSION 3.4.3)
++
++# If we are not building as a part of LLVM, build Clang as an
++# standalone project, using LLVM as an external library:
++if( CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR )
++  project(Clang)
++
++  # Rely on llvm-config.
++  set(CONFIG_OUTPUT)
++  find_program(LLVM_CONFIG "llvm-config")
++  if(LLVM_CONFIG)
++    message(STATUS "Found LLVM_CONFIG as ${LLVM_CONFIG}")
++    set(CONFIG_COMMAND ${LLVM_CONFIG}
++      "--assertion-mode"
++      "--bindir"
++      "--libdir"
++      "--includedir"
++      "--prefix"
++      "--src-root")
++    execute_process(
++      COMMAND ${CONFIG_COMMAND}
++      RESULT_VARIABLE HAD_ERROR
++      OUTPUT_VARIABLE CONFIG_OUTPUT
++    )
++    if(NOT HAD_ERROR)
++      string(REGEX REPLACE
++        "[ \t]*[\r\n]+[ \t]*" ";"
++        CONFIG_OUTPUT ${CONFIG_OUTPUT})
++    else()
++      string(REPLACE ";" " " CONFIG_COMMAND_STR "${CONFIG_COMMAND}")
++      message(STATUS "${CONFIG_COMMAND_STR}")
++      message(FATAL_ERROR "llvm-config failed with status ${HAD_ERROR}")
++    endif()
++  else()
++    message(FATAL_ERROR "llvm-config not found -- ${LLVM_CONFIG}")
++  endif()
++
++  list(GET CONFIG_OUTPUT 0 ENABLE_ASSERTIONS)
++  list(GET CONFIG_OUTPUT 1 TOOLS_BINARY_DIR)
++  list(GET CONFIG_OUTPUT 2 LIBRARY_DIR)
++  list(GET CONFIG_OUTPUT 3 INCLUDE_DIR)
++  list(GET CONFIG_OUTPUT 4 LLVM_OBJ_ROOT)
++  list(GET CONFIG_OUTPUT 5 MAIN_SRC_DIR)
++
++  if(NOT MSVC_IDE)
++    set(LLVM_ENABLE_ASSERTIONS ${ENABLE_ASSERTIONS}
++      CACHE BOOL "Enable assertions")
++    # Assertions should follow llvm-config's.
++    mark_as_advanced(LLVM_ENABLE_ASSERTIONS)
++  endif()
++
++  set(LLVM_TOOLS_BINARY_DIR ${TOOLS_BINARY_DIR} CACHE PATH "Path to llvm/bin")
++  set(LLVM_LIBRARY_DIR ${LIBRARY_DIR} CACHE PATH "Path to llvm/lib")
++  set(LLVM_MAIN_INCLUDE_DIR ${INCLUDE_DIR} CACHE PATH "Path to llvm/include")
++  set(LLVM_BINARY_DIR ${LLVM_OBJ_ROOT} CACHE PATH "Path to LLVM build tree")
++  set(LLVM_MAIN_SRC_DIR ${MAIN_SRC_DIR} CACHE PATH "Path to LLVM source tree")
++
++  find_program(LLVM_TABLEGEN_EXE "llvm-tblgen" ${LLVM_TOOLS_BINARY_DIR}
++    NO_DEFAULT_PATH)
++
++  set(LLVM_CMAKE_PATH "${LLVM_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX}/cmake/llvm")
++  set(LLVMCONFIG_FILE "${LLVM_CMAKE_PATH}/LLVMConfig.cmake")
++  if(EXISTS ${LLVMCONFIG_FILE})
++    list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_PATH}")
++    include(${LLVMCONFIG_FILE})
++  else()
++    message(FATAL_ERROR "Not found: ${LLVMCONFIG_FILE}")
++  endif()
++
++  # They are used as destination of target generators.
++  set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/bin)
++  set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib${LLVM_LIBDIR_SUFFIX})
++  if(WIN32 OR CYGWIN)
++    # DLL platform -- put DLLs into bin.
++    set(LLVM_SHLIB_OUTPUT_INTDIR ${LLVM_RUNTIME_OUTPUT_INTDIR})
++  else()
++    set(LLVM_SHLIB_OUTPUT_INTDIR ${LLVM_LIBRARY_OUTPUT_INTDIR})
++  endif()
++
++  option(LLVM_INSTALL_TOOLCHAIN_ONLY
++    "Only include toolchain files in the 'install' target." OFF)
++
++  option(LLVM_FORCE_USE_OLD_HOST_TOOLCHAIN
++    "Set to ON to force using an old, unsupported host toolchain." OFF)
++
++  include(AddLLVM)
++  include(TableGen)
++  include(HandleLLVMOptions)
++  include(VersionFromVCS)
++
++  set(PACKAGE_VERSION "${LLVM_PACKAGE_VERSION}")
++
++  if (NOT DEFINED LLVM_INCLUDE_TESTS)
++    set(LLVM_INCLUDE_TESTS ON)
++  endif()
++
++  include_directories("${LLVM_BINARY_DIR}/include" "${LLVM_MAIN_INCLUDE_DIR}")
++  link_directories("${LLVM_LIBRARY_DIR}")
++
++  set( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
++  set( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX} )
++  set( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib${LLVM_LIBDIR_SUFFIX} )
++
++  if(LLVM_INCLUDE_TESTS)
++    set(Python_ADDITIONAL_VERSIONS 2.7)
++    include(FindPythonInterp)
++    if(NOT PYTHONINTERP_FOUND)
++      message(FATAL_ERROR
++"Unable to find Python interpreter, required for builds and testing.
++
++Please install Python or specify the PYTHON_EXECUTABLE CMake variable.")
++    endif()
++
++    if( ${PYTHON_VERSION_STRING} VERSION_LESS 2.7 )
++      message(FATAL_ERROR "Python 2.7 or newer is required")
++    endif()
++
++    # Check prebuilt llvm/utils.
++    if(EXISTS ${LLVM_TOOLS_BINARY_DIR}/FileCheck${CMAKE_EXECUTABLE_SUFFIX}
++        AND EXISTS ${LLVM_TOOLS_BINARY_DIR}/count${CMAKE_EXECUTABLE_SUFFIX}
++        AND EXISTS ${LLVM_TOOLS_BINARY_DIR}/not${CMAKE_EXECUTABLE_SUFFIX})
++      set(LLVM_UTILS_PROVIDED ON)
++    endif()
++
++    if(EXISTS ${LLVM_MAIN_SRC_DIR}/utils/lit/lit.py)
++      set(LLVM_LIT ${LLVM_MAIN_SRC_DIR}/utils/lit/lit.py)
++      if(NOT LLVM_UTILS_PROVIDED)
++        add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/FileCheck utils/FileCheck)
++        add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/count utils/count)
++        add_subdirectory(${LLVM_MAIN_SRC_DIR}/utils/not utils/not)
++        set(LLVM_UTILS_PROVIDED ON)
++        set(CLANG_TEST_DEPS FileCheck count not)
++      endif()
++      set(UNITTEST_DIR ${LLVM_MAIN_SRC_DIR}/utils/unittest)
++      if(EXISTS ${UNITTEST_DIR}/googletest/include/gtest/gtest.h
++          AND NOT EXISTS ${LLVM_LIBRARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gtest${CMAKE_STATIC_LIBRARY_SUFFIX}
++          AND EXISTS ${UNITTEST_DIR}/CMakeLists.txt)
++        add_subdirectory(${UNITTEST_DIR} utils/unittest)
++      endif()
++    else()
++      # Seek installed Lit.
++      find_program(LLVM_LIT "lit.py" ${LLVM_MAIN_SRC_DIR}/utils/lit
++        DOC "Path to lit.py")
++    endif()
++
++    if(LLVM_LIT)
++      # Define the default arguments to use with 'lit', and an option for the user
++      # to override.
++      set(LIT_ARGS_DEFAULT "-sv")
++      if (MSVC OR XCODE)
++        set(LIT_ARGS_DEFAULT "${LIT_ARGS_DEFAULT} --no-progress-bar")
++      endif()
++      set(LLVM_LIT_ARGS "${LIT_ARGS_DEFAULT}" CACHE STRING "Default options for lit")
++
++      # On Win32 hosts, provide an option to specify the path to the GnuWin32 tools.
++      if( WIN32 AND NOT CYGWIN )
++        set(LLVM_LIT_TOOLS_DIR "" CACHE PATH "Path to GnuWin32 tools")
++      endif()
++    else()
++      set(LLVM_INCLUDE_TESTS OFF)
++    endif()
++  endif()
++
++  set( LLD_BUILT_STANDALONE 1 )
++  set(BACKEND_PACKAGE_STRING "LLVM ${LLVM_PACKAGE_VERSION}")
++else()
++  set(BACKEND_PACKAGE_STRING "${PACKAGE_STRING}")
++endif()
++
+ set(LLD_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+ set(LLD_INCLUDE_DIR ${LLD_SOURCE_DIR}/include )
+ set(LLD_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+@@ -94,6 +263,7 @@
+ 
+ 
+ add_subdirectory(lib)
++add_subdirectory(include)
+ add_subdirectory(tools/lld)
+ 
+ if (LLVM_INCLUDE_TESTS)	
+--- a/lib/Driver/DarwinLdOptions.td	2016-02-09 03:10:39.000000000 +0100
++++ /dev/null	2016-10-14 11:37:13.827218589 +0200
+@@ -1,242 +0,0 @@
+-include "llvm/Option/OptParser.td"
+-
+-
+-// output kinds
+-def grp_kind : OptionGroup<"outs">, HelpText<"OUTPUT KIND">;
+-def relocatable : Flag<["-"], "r">,
+-     HelpText<"Create relocatable object file">, Group<grp_kind>;
+-def static : Flag<["-"], "static">,
+-     HelpText<"Create static executable">, Group<grp_kind>;
+-def dynamic : Flag<["-"], "dynamic">,
+-     HelpText<"Create dynamic executable (default)">,Group<grp_kind>;
+-def dylib : Flag<["-"], "dylib">,
+-     HelpText<"Create dynamic library">, Group<grp_kind>;
+-def bundle : Flag<["-"], "bundle">,
+-     HelpText<"Create dynamic bundle">, Group<grp_kind>;
+-def execute : Flag<["-"], "execute">,
+-     HelpText<"Create main executable (default)">, Group<grp_kind>;
+-def preload : Flag<["-"], "preload">,
+-     HelpText<"Create binary for use with embedded systems">, Group<grp_kind>;
+-
+-// optimizations
+-def grp_opts : OptionGroup<"opts">, HelpText<"OPTIMIZATIONS">;
+-def dead_strip : Flag<["-"], "dead_strip">,
+-     HelpText<"Remove unreference code and data">, Group<grp_opts>;
+-def macosx_version_min : Separate<["-"], "macosx_version_min">,
+-     MetaVarName<"<version>">,
+-     HelpText<"Minimum Mac OS X version">, Group<grp_opts>;
+-def ios_version_min : Separate<["-"], "ios_version_min">,
+-     MetaVarName<"<version>">,
+-     HelpText<"Minimum iOS version">, Group<grp_opts>;
+-def iphoneos_version_min : Separate<["-"], "iphoneos_version_min">,
+-     Alias<ios_version_min>;
+-def ios_simulator_version_min : Separate<["-"], "ios_simulator_version_min">,
+-     MetaVarName<"<version>">,
+-     HelpText<"Minimum iOS simulator version">, Group<grp_opts>;
+-def sdk_version : Separate<["-"], "sdk_version">,
+-     MetaVarName<"<version>">,
+-     HelpText<"SDK version">, Group<grp_opts>;
+-def source_version : Separate<["-"], "source_version">,
+-     MetaVarName<"<version>">,
+-     HelpText<"Source version">, Group<grp_opts>;
+-def version_load_command : Flag<["-"], "version_load_command">,
+-     HelpText<"Force generation of a version load command">, Group<grp_opts>;
+-def no_version_load_command : Flag<["-"], "no_version_load_command">,
+-     HelpText<"Disable generation of a version load command">, Group<grp_opts>;
+-def function_starts : Flag<["-"], "function_starts">,
+-     HelpText<"Force generation of a function starts load command">,
+-     Group<grp_opts>;
+-def no_function_starts : Flag<["-"], "no_function_starts">,
+-     HelpText<"Disable generation of a function starts load command">,
+-     Group<grp_opts>;
+-def data_in_code_info : Flag<["-"], "data_in_code_info">,
+-     HelpText<"Force generation of a data in code load command">,
+-     Group<grp_opts>;
+-def no_data_in_code_info : Flag<["-"], "no_data_in_code_info">,
+-     HelpText<"Disable generation of a data in code load command">,
+-     Group<grp_opts>;
+-def mllvm : Separate<["-"], "mllvm">,
+-     MetaVarName<"<option>">,
+-     HelpText<"Options to pass to LLVM during LTO">, Group<grp_opts>;
+-def exported_symbols_list : Separate<["-"], "exported_symbols_list">,
+-     MetaVarName<"<file-path>">,
+-     HelpText<"Restricts which symbols will be exported">, Group<grp_opts>;
+-def exported_symbol : Separate<["-"], "exported_symbol">,
+-     MetaVarName<"<symbol>">,
+-     HelpText<"Restricts which symbols will be exported">, Group<grp_opts>;
+-def unexported_symbols_list : Separate<["-"], "unexported_symbols_list">,
+-     MetaVarName<"<file-path>">,
+-     HelpText<"Lists symbols that should not be exported">, Group<grp_opts>;
+-def unexported_symbol : Separate<["-"], "unexported_symbol">,
+-     MetaVarName<"<symbol>">,
+-     HelpText<"A symbol which should not be exported">, Group<grp_opts>;
+-def keep_private_externs : Flag<["-"], "keep_private_externs">,
+-     HelpText<"Private extern (hidden) symbols should not be transformed "
+-              "into local symbols">, Group<grp_opts>;
+-def order_file : Separate<["-"], "order_file">,
+-     MetaVarName<"<file-path>">,
+-     HelpText<"re-order and move specified symbols to start of their section">,
+-     Group<grp_opts>;
+-def flat_namespace : Flag<["-"], "flat_namespace">,
+-     HelpText<"Resolves symbols in any (transitively) linked dynamic libraries. "
+-              "Source libraries are not recorded: dyld will re-search all "
+-              "images at runtime and use the first definition found.">,
+-     Group<grp_opts>;
+-def twolevel_namespace : Flag<["-"], "twolevel_namespace">,
+-     HelpText<"Resolves symbols in listed libraries only. Source libraries are "
+-              "recorded in the symbol table.">,
+-     Group<grp_opts>;
+-def undefined : Separate<["-"], "undefined">,
+-                MetaVarName<"<undefined>">,
+-                HelpText<"Determines how undefined symbols are handled.">,
+-                Group<grp_opts>;
+-def no_objc_category_merging : Flag<["-"], "no_objc_category_merging">,
+-     HelpText<"Disables the optimisation which merges Objective-C categories "
+-              "on a class in to the class itself.">,
+-     Group<grp_opts>;
+-
+-// main executable options
+-def grp_main : OptionGroup<"opts">, HelpText<"MAIN EXECUTABLE OPTIONS">;
+-def entry : Separate<["-"], "e">,
+-     MetaVarName<"<entry-name>">,
+-     HelpText<"entry symbol name">,Group<grp_main>;
+-def pie : Flag<["-"], "pie">,
+-     HelpText<"Create Position Independent Executable (for ASLR)">,
+-     Group<grp_main>;
+-def no_pie : Flag<["-"], "no_pie">,
+-     HelpText<"Do not create Position Independent Executable">,
+-     Group<grp_main>;
+-def stack_size : Separate<["-"], "stack_size">,
+-     HelpText<"Specifies the maximum stack size for the main thread in a program. "
+-              "Must be a page-size multiple. (default=8Mb)">,
+-     Group<grp_main>;
+-def export_dynamic : Flag<["-"], "export_dynamic">,
+-     HelpText<"Preserves all global symbols in main executables during LTO">,
+-     Group<grp_main>;
+-
+-// dylib executable options
+-def grp_dylib : OptionGroup<"opts">, HelpText<"DYLIB EXECUTABLE OPTIONS">;
+-def install_name : Separate<["-"], "install_name">,
+-     MetaVarName<"<path>">,
+-     HelpText<"The dylib's install name">, Group<grp_dylib>;
+-def mark_dead_strippable_dylib : Flag<["-"], "mark_dead_strippable_dylib">,
+-     HelpText<"Marks the dylib as having no side effects during initialization">,
+-     Group<grp_dylib>;
+-def compatibility_version : Separate<["-"], "compatibility_version">,
+-     MetaVarName<"<version>">,
+-     HelpText<"The dylib's compatibility version">, Group<grp_dylib>;
+-def current_version : Separate<["-"], "current_version">,
+-     MetaVarName<"<version>">,
+-     HelpText<"The dylib's current version">, Group<grp_dylib>;
+-
+-// dylib executable options - compatibility aliases
+-def dylib_install_name : Separate<["-"], "dylib_install_name">,
+-     Alias<install_name>;
+-def dylib_compatibility_version : Separate<["-"], "dylib_compatibility_version">,
+-     MetaVarName<"<version>">, Alias<compatibility_version>;
+-def dylib_current_version : Separate<["-"], "dylib_current_version">,
+-     MetaVarName<"<version>">, Alias<current_version>;
+-
+-// bundle executable options
+-def grp_bundle : OptionGroup<"opts">, HelpText<"BUNDLE EXECUTABLE OPTIONS">;
+-def bundle_loader : Separate<["-"], "bundle_loader">,
+-     MetaVarName<"<path>">,
+-     HelpText<"The executable that will be loading this Mach-O bundle">,
+-     Group<grp_bundle>;
+-
+-// library options
+-def grp_libs : OptionGroup<"libs">, HelpText<"LIBRARY OPTIONS">;
+-def L : JoinedOrSeparate<["-"], "L">,
+-     MetaVarName<"<dir>">,
+-     HelpText<"Add directory to library search path">, Group<grp_libs>;
+-def F : JoinedOrSeparate<["-"], "F">,
+-     MetaVarName<"<dir>">,
+-     HelpText<"Add directory to framework search path">, Group<grp_libs>;
+-def Z : Flag<["-"], "Z">,
+-     HelpText<"Do not search standard directories for libraries or frameworks">;
+-def all_load : Flag<["-"], "all_load">,
+-     HelpText<"Forces all members of all static libraries to be loaded">,
+-     Group<grp_libs>;
+-def force_load : Separate<["-"], "force_load">,
+-     MetaVarName<"<library-path>">,
+-     HelpText<"Forces all members of specified static libraries to be loaded">,
+-     Group<grp_libs>;
+-def syslibroot : Separate<["-"], "syslibroot">, MetaVarName<"<dir>">,
+-     HelpText<"Add path to SDK to all absolute library search paths">,
+-     Group<grp_libs>;
+-
+-// Input options
+-def l : Joined<["-"], "l">,
+-     MetaVarName<"<libname>">,
+-     HelpText<"Base name of library searched for in -L directories">;
+-def upward_l : Joined<["-"], "upward-l">,
+-     MetaVarName<"<libname>">,
+-     HelpText<"Base name of upward library searched for in -L directories">;
+-def framework : Separate<["-"], "framework">,
+-     MetaVarName<"<name>">,
+-     HelpText<"Base name of framework searched for in -F directories">;
+-def upward_framework : Separate<["-"], "upward_framework">,
+-     MetaVarName<"<name>">,
+-     HelpText<"Base name of upward framework searched for in -F directories">;
+-def upward_library : Separate<["-"], "upward_library">,
+-     MetaVarName<"<path>">,
+-     HelpText<"path to upward dylib to link with">;
+-def filelist : Separate<["-"], "filelist">,
+-     MetaVarName<"<path>">,
+-     HelpText<"file containing paths to input files">;
+-
+-
+-// test case options
+-def print_atoms : Flag<["-"], "print_atoms">,
+-     HelpText<"Emit output as yaml atoms">;
+-def test_file_usage : Flag<["-"], "test_file_usage">,
+-     HelpText<"Only files specified by -file_exists are considered to exist. "
+-              "Print which files would be used">;
+-def path_exists : Separate<["-"], "path_exists">,
+-     MetaVarName<"<path>">,
+-     HelpText<"Used with -test_file_usage to declare a path">;
+-
+-
+-// general options
+-def output : Separate<["-"], "o">,
+-     MetaVarName<"<path>">,
+-     HelpText<"Output file path">;
+-def arch : Separate<["-"], "arch">,
+-     MetaVarName<"<arch-name>">,
+-     HelpText<"Architecture to link">;
+-def sectalign : MultiArg<["-"], "sectalign", 3>,
+-     MetaVarName<"<segname> <sectname> <alignment>">,
+-     HelpText<"Alignment for segment/section">;
+-def sectcreate : MultiArg<["-"], "sectcreate", 3>,
+-     MetaVarName<"<segname> <sectname> <file>">,
+-     HelpText<"Create section <segname>/<sectname> from contents of <file>">;
+-def image_base : Separate<["-"], "image_base">;
+-def seg1addr : Separate<["-"], "seg1addr">, Alias<image_base>;
+-def demangle : Flag<["-"], "demangle">,
+-     HelpText<"Demangles symbol names in errors and warnings">;
+-def dependency_info : Separate<["-"], "dependency_info">,
+-     MetaVarName<"<file>">,
+-     HelpText<"Write binary list of files used during link">;
+-def S : Flag<["-"], "S">,
+-     HelpText<"Remove debug information (STABS or DWARF) from the output file">;
+-def rpath : Separate<["-"], "rpath">,
+-     MetaVarName<"<path>">,
+-     HelpText<"Add path to the runpath search path list for image being created">;
+-
+-def t : Flag<["-"], "t">,
+-     HelpText<"Print the names of the input files as ld processes them">;
+-def v : Flag<["-"], "v">,
+-     HelpText<"Print linker information">;
+-
+-// Obsolete options
+-def grp_obsolete : OptionGroup<"obsolete">, HelpText<"OBSOLETE OPTIONS">;
+-def single_module : Flag<["-"], "single_module">,
+-     HelpText<"Default for dylibs">, Group<grp_obsolete>;
+-def multi_module : Flag<["-"], "multi_module">,
+-     HelpText<"Unsupported way to build dylibs">, Group<grp_obsolete>;
+-def objc_gc_compaction : Flag<["-"], "objc_gc_compaction">,
+-     HelpText<"Unsupported ObjC GC option">, Group<grp_obsolete>;
+-def objc_gc : Flag<["-"], "objc_gc">,
+-     HelpText<"Unsupported ObjC GC option">, Group<grp_obsolete>;
+-def objc_gc_only : Flag<["-"], "objc_gc_only">,
+-     HelpText<"Unsupported ObjC GC option">, Group<grp_obsolete>;
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/lld/Driver/DarwinLdOptions.td	2016-02-09 03:10:39.000000000 +0100
+@@ -0,0 +1,242 @@
++include "llvm/Option/OptParser.td"
++
++
++// output kinds
++def grp_kind : OptionGroup<"outs">, HelpText<"OUTPUT KIND">;
++def relocatable : Flag<["-"], "r">,
++     HelpText<"Create relocatable object file">, Group<grp_kind>;
++def static : Flag<["-"], "static">,
++     HelpText<"Create static executable">, Group<grp_kind>;
++def dynamic : Flag<["-"], "dynamic">,
++     HelpText<"Create dynamic executable (default)">,Group<grp_kind>;
++def dylib : Flag<["-"], "dylib">,
++     HelpText<"Create dynamic library">, Group<grp_kind>;
++def bundle : Flag<["-"], "bundle">,
++     HelpText<"Create dynamic bundle">, Group<grp_kind>;
++def execute : Flag<["-"], "execute">,
++     HelpText<"Create main executable (default)">, Group<grp_kind>;
++def preload : Flag<["-"], "preload">,
++     HelpText<"Create binary for use with embedded systems">, Group<grp_kind>;
++
++// optimizations
++def grp_opts : OptionGroup<"opts">, HelpText<"OPTIMIZATIONS">;
++def dead_strip : Flag<["-"], "dead_strip">,
++     HelpText<"Remove unreference code and data">, Group<grp_opts>;
++def macosx_version_min : Separate<["-"], "macosx_version_min">,
++     MetaVarName<"<version>">,
++     HelpText<"Minimum Mac OS X version">, Group<grp_opts>;
++def ios_version_min : Separate<["-"], "ios_version_min">,
++     MetaVarName<"<version>">,
++     HelpText<"Minimum iOS version">, Group<grp_opts>;
++def iphoneos_version_min : Separate<["-"], "iphoneos_version_min">,
++     Alias<ios_version_min>;
++def ios_simulator_version_min : Separate<["-"], "ios_simulator_version_min">,
++     MetaVarName<"<version>">,
++     HelpText<"Minimum iOS simulator version">, Group<grp_opts>;
++def sdk_version : Separate<["-"], "sdk_version">,
++     MetaVarName<"<version>">,
++     HelpText<"SDK version">, Group<grp_opts>;
++def source_version : Separate<["-"], "source_version">,
++     MetaVarName<"<version>">,
++     HelpText<"Source version">, Group<grp_opts>;
++def version_load_command : Flag<["-"], "version_load_command">,
++     HelpText<"Force generation of a version load command">, Group<grp_opts>;
++def no_version_load_command : Flag<["-"], "no_version_load_command">,
++     HelpText<"Disable generation of a version load command">, Group<grp_opts>;
++def function_starts : Flag<["-"], "function_starts">,
++     HelpText<"Force generation of a function starts load command">,
++     Group<grp_opts>;
++def no_function_starts : Flag<["-"], "no_function_starts">,
++     HelpText<"Disable generation of a function starts load command">,
++     Group<grp_opts>;
++def data_in_code_info : Flag<["-"], "data_in_code_info">,
++     HelpText<"Force generation of a data in code load command">,
++     Group<grp_opts>;
++def no_data_in_code_info : Flag<["-"], "no_data_in_code_info">,
++     HelpText<"Disable generation of a data in code load command">,
++     Group<grp_opts>;
++def mllvm : Separate<["-"], "mllvm">,
++     MetaVarName<"<option>">,
++     HelpText<"Options to pass to LLVM during LTO">, Group<grp_opts>;
++def exported_symbols_list : Separate<["-"], "exported_symbols_list">,
++     MetaVarName<"<file-path>">,
++     HelpText<"Restricts which symbols will be exported">, Group<grp_opts>;
++def exported_symbol : Separate<["-"], "exported_symbol">,
++     MetaVarName<"<symbol>">,
++     HelpText<"Restricts which symbols will be exported">, Group<grp_opts>;
++def unexported_symbols_list : Separate<["-"], "unexported_symbols_list">,
++     MetaVarName<"<file-path>">,
++     HelpText<"Lists symbols that should not be exported">, Group<grp_opts>;
++def unexported_symbol : Separate<["-"], "unexported_symbol">,
++     MetaVarName<"<symbol>">,
++     HelpText<"A symbol which should not be exported">, Group<grp_opts>;
++def keep_private_externs : Flag<["-"], "keep_private_externs">,
++     HelpText<"Private extern (hidden) symbols should not be transformed "
++              "into local symbols">, Group<grp_opts>;
++def order_file : Separate<["-"], "order_file">,
++     MetaVarName<"<file-path>">,
++     HelpText<"re-order and move specified symbols to start of their section">,
++     Group<grp_opts>;
++def flat_namespace : Flag<["-"], "flat_namespace">,
++     HelpText<"Resolves symbols in any (transitively) linked dynamic libraries. "
++              "Source libraries are not recorded: dyld will re-search all "
++              "images at runtime and use the first definition found.">,
++     Group<grp_opts>;
++def twolevel_namespace : Flag<["-"], "twolevel_namespace">,
++     HelpText<"Resolves symbols in listed libraries only. Source libraries are "
++              "recorded in the symbol table.">,
++     Group<grp_opts>;
++def undefined : Separate<["-"], "undefined">,
++                MetaVarName<"<undefined>">,
++                HelpText<"Determines how undefined symbols are handled.">,
++                Group<grp_opts>;
++def no_objc_category_merging : Flag<["-"], "no_objc_category_merging">,
++     HelpText<"Disables the optimisation which merges Objective-C categories "
++              "on a class in to the class itself.">,
++     Group<grp_opts>;
++
++// main executable options
++def grp_main : OptionGroup<"opts">, HelpText<"MAIN EXECUTABLE OPTIONS">;
++def entry : Separate<["-"], "e">,
++     MetaVarName<"<entry-name>">,
++     HelpText<"entry symbol name">,Group<grp_main>;
++def pie : Flag<["-"], "pie">,
++     HelpText<"Create Position Independent Executable (for ASLR)">,
++     Group<grp_main>;
++def no_pie : Flag<["-"], "no_pie">,
++     HelpText<"Do not create Position Independent Executable">,
++     Group<grp_main>;
++def stack_size : Separate<["-"], "stack_size">,
++     HelpText<"Specifies the maximum stack size for the main thread in a program. "
++              "Must be a page-size multiple. (default=8Mb)">,
++     Group<grp_main>;
++def export_dynamic : Flag<["-"], "export_dynamic">,
++     HelpText<"Preserves all global symbols in main executables during LTO">,
++     Group<grp_main>;
++
++// dylib executable options
++def grp_dylib : OptionGroup<"opts">, HelpText<"DYLIB EXECUTABLE OPTIONS">;
++def install_name : Separate<["-"], "install_name">,
++     MetaVarName<"<path>">,
++     HelpText<"The dylib's install name">, Group<grp_dylib>;
++def mark_dead_strippable_dylib : Flag<["-"], "mark_dead_strippable_dylib">,
++     HelpText<"Marks the dylib as having no side effects during initialization">,
++     Group<grp_dylib>;
++def compatibility_version : Separate<["-"], "compatibility_version">,
++     MetaVarName<"<version>">,
++     HelpText<"The dylib's compatibility version">, Group<grp_dylib>;
++def current_version : Separate<["-"], "current_version">,
++     MetaVarName<"<version>">,
++     HelpText<"The dylib's current version">, Group<grp_dylib>;
++
++// dylib executable options - compatibility aliases
++def dylib_install_name : Separate<["-"], "dylib_install_name">,
++     Alias<install_name>;
++def dylib_compatibility_version : Separate<["-"], "dylib_compatibility_version">,
++     MetaVarName<"<version>">, Alias<compatibility_version>;
++def dylib_current_version : Separate<["-"], "dylib_current_version">,
++     MetaVarName<"<version>">, Alias<current_version>;
++
++// bundle executable options
++def grp_bundle : OptionGroup<"opts">, HelpText<"BUNDLE EXECUTABLE OPTIONS">;
++def bundle_loader : Separate<["-"], "bundle_loader">,
++     MetaVarName<"<path>">,
++     HelpText<"The executable that will be loading this Mach-O bundle">,
++     Group<grp_bundle>;
++
++// library options
++def grp_libs : OptionGroup<"libs">, HelpText<"LIBRARY OPTIONS">;
++def L : JoinedOrSeparate<["-"], "L">,
++     MetaVarName<"<dir>">,
++     HelpText<"Add directory to library search path">, Group<grp_libs>;
++def F : JoinedOrSeparate<["-"], "F">,
++     MetaVarName<"<dir>">,
++     HelpText<"Add directory to framework search path">, Group<grp_libs>;
++def Z : Flag<["-"], "Z">,
++     HelpText<"Do not search standard directories for libraries or frameworks">;
++def all_load : Flag<["-"], "all_load">,
++     HelpText<"Forces all members of all static libraries to be loaded">,
++     Group<grp_libs>;
++def force_load : Separate<["-"], "force_load">,
++     MetaVarName<"<library-path>">,
++     HelpText<"Forces all members of specified static libraries to be loaded">,
++     Group<grp_libs>;
++def syslibroot : Separate<["-"], "syslibroot">, MetaVarName<"<dir>">,
++     HelpText<"Add path to SDK to all absolute library search paths">,
++     Group<grp_libs>;
++
++// Input options
++def l : Joined<["-"], "l">,
++     MetaVarName<"<libname>">,
++     HelpText<"Base name of library searched for in -L directories">;
++def upward_l : Joined<["-"], "upward-l">,
++     MetaVarName<"<libname>">,
++     HelpText<"Base name of upward library searched for in -L directories">;
++def framework : Separate<["-"], "framework">,
++     MetaVarName<"<name>">,
++     HelpText<"Base name of framework searched for in -F directories">;
++def upward_framework : Separate<["-"], "upward_framework">,
++     MetaVarName<"<name>">,
++     HelpText<"Base name of upward framework searched for in -F directories">;
++def upward_library : Separate<["-"], "upward_library">,
++     MetaVarName<"<path>">,
++     HelpText<"path to upward dylib to link with">;
++def filelist : Separate<["-"], "filelist">,
++     MetaVarName<"<path>">,
++     HelpText<"file containing paths to input files">;
++
++
++// test case options
++def print_atoms : Flag<["-"], "print_atoms">,
++     HelpText<"Emit output as yaml atoms">;
++def test_file_usage : Flag<["-"], "test_file_usage">,
++     HelpText<"Only files specified by -file_exists are considered to exist. "
++              "Print which files would be used">;
++def path_exists : Separate<["-"], "path_exists">,
++     MetaVarName<"<path>">,
++     HelpText<"Used with -test_file_usage to declare a path">;
++
++
++// general options
++def output : Separate<["-"], "o">,
++     MetaVarName<"<path>">,
++     HelpText<"Output file path">;
++def arch : Separate<["-"], "arch">,
++     MetaVarName<"<arch-name>">,
++     HelpText<"Architecture to link">;
++def sectalign : MultiArg<["-"], "sectalign", 3>,
++     MetaVarName<"<segname> <sectname> <alignment>">,
++     HelpText<"Alignment for segment/section">;
++def sectcreate : MultiArg<["-"], "sectcreate", 3>,
++     MetaVarName<"<segname> <sectname> <file>">,
++     HelpText<"Create section <segname>/<sectname> from contents of <file>">;
++def image_base : Separate<["-"], "image_base">;
++def seg1addr : Separate<["-"], "seg1addr">, Alias<image_base>;
++def demangle : Flag<["-"], "demangle">,
++     HelpText<"Demangles symbol names in errors and warnings">;
++def dependency_info : Separate<["-"], "dependency_info">,
++     MetaVarName<"<file>">,
++     HelpText<"Write binary list of files used during link">;
++def S : Flag<["-"], "S">,
++     HelpText<"Remove debug information (STABS or DWARF) from the output file">;
++def rpath : Separate<["-"], "rpath">,
++     MetaVarName<"<path>">,
++     HelpText<"Add path to the runpath search path list for image being created">;
++
++def t : Flag<["-"], "t">,
++     HelpText<"Print the names of the input files as ld processes them">;
++def v : Flag<["-"], "v">,
++     HelpText<"Print linker information">;
++
++// Obsolete options
++def grp_obsolete : OptionGroup<"obsolete">, HelpText<"OBSOLETE OPTIONS">;
++def single_module : Flag<["-"], "single_module">,
++     HelpText<"Default for dylibs">, Group<grp_obsolete>;
++def multi_module : Flag<["-"], "multi_module">,
++     HelpText<"Unsupported way to build dylibs">, Group<grp_obsolete>;
++def objc_gc_compaction : Flag<["-"], "objc_gc_compaction">,
++     HelpText<"Unsupported ObjC GC option">, Group<grp_obsolete>;
++def objc_gc : Flag<["-"], "objc_gc">,
++     HelpText<"Unsupported ObjC GC option">, Group<grp_obsolete>;
++def objc_gc_only : Flag<["-"], "objc_gc_only">,
++     HelpText<"Unsupported ObjC GC option">, Group<grp_obsolete>;
+--- a/COFF/Options.td	2016-04-19 03:21:58.000000000 +0200
++++ /dev/null	2016-10-14 11:37:13.827218589 +0200
+@@ -1,127 +0,0 @@
+-include "llvm/Option/OptParser.td"
+-
+-// link.exe accepts options starting with either a dash or a slash.
+-
+-// Flag that takes no arguments.
+-class F<string name> : Flag<["/", "-", "-?"], name>;
+-
+-// Flag that takes one argument after ":".
+-class P<string name, string help> :
+-      Joined<["/", "-", "-?"], name#":">, HelpText<help>;
+-
+-// Boolean flag suffixed by ":no".
+-multiclass B<string name, string help> {
+-  def "" : F<name>;
+-  def _no : F<name#":no">, HelpText<help>;
+-}
+-
+-def align   : P<"align", "Section alignment">;
+-def alternatename : P<"alternatename", "Define weak alias">;
+-def base    : P<"base", "Base address of the program">;
+-def defaultlib : P<"defaultlib", "Add the library to the list of input files">;
+-def delayload : P<"delayload", "Delay loaded DLL name">;
+-def entry   : P<"entry", "Name of entry point symbol">;
+-def export  : P<"export", "Export a function">;
+-// No help text because /failifmismatch is not intended to be used by the user.
+-def failifmismatch : P<"failifmismatch", "">;
+-def heap    : P<"heap", "Size of the heap">;
+-def implib  : P<"implib", "Import library name">;
+-def libpath : P<"libpath", "Additional library search path">;
+-def machine : P<"machine", "Specify target platform">;
+-def merge   : P<"merge", "Combine sections">;
+-def mllvm   : P<"mllvm", "Options to pass to LLVM">;
+-def nodefaultlib : P<"nodefaultlib", "Remove a default library">;
+-def opt     : P<"opt", "Control optimizations">;
+-def out     : P<"out", "Path to file to write output">;
+-def pdb : P<"pdb", "PDB file path">;
+-def section : P<"section", "Specify section attributes">;
+-def stack   : P<"stack", "Size of the stack">;
+-def stub    : P<"stub", "Specify DOS stub file">;
+-def subsystem : P<"subsystem", "Specify subsystem">;
+-def version : P<"version", "Specify a version number in the PE header">;
+-
+-def disallowlib : Joined<["/", "-", "-?"], "disallowlib:">, Alias<nodefaultlib>;
+-
+-def manifest : F<"manifest">;
+-def manifest_colon : P<"manifest", "Create manifest file">;
+-def manifestuac : P<"manifestuac", "User access control">;
+-def manifestfile : P<"manifestfile", "Manifest file path">;
+-def manifestdependency : P<"manifestdependency",
+-                           "Attributes for <dependency> in manifest file">;
+-def manifestinput : P<"manifestinput", "Specify manifest file">;
+-
+-// We cannot use multiclass P because class name "incl" is different
+-// from its command line option name. We do this because "include" is
+-// a reserved keyword in tablegen.
+-def incl : Joined<["/", "-"], "include:">,
+-    HelpText<"Force symbol to be added to symbol table as undefined one">;
+-
+-// "def" is also a keyword.
+-def deffile : Joined<["/", "-"], "def:">,
+-    HelpText<"Use module-definition file">;
+-
+-def debug : F<"debug">, HelpText<"Embed a symbol table in the image">;
+-def dll : F<"dll">, HelpText<"Create a DLL">;
+-def nodefaultlib_all : F<"nodefaultlib">;
+-def noentry : F<"noentry">;
+-def profile : F<"profile">;
+-def swaprun_cd : F<"swaprun:cd">;
+-def swaprun_net : F<"swaprun:net">;
+-def verbose : F<"verbose">;
+-
+-def force : F<"force">,
+-    HelpText<"Allow undefined symbols when creating executables">;
+-def force_unresolved : F<"force:unresolved">;
+-
+-defm allowbind: B<"allowbind", "Disable DLL binding">;
+-defm allowisolation : B<"allowisolation", "Set NO_ISOLATION bit">;
+-defm dynamicbase : B<"dynamicbase",
+-                     "Disable address space layout randomization">;
+-defm fixed    : B<"fixed", "Enable base relocations">;
+-defm highentropyva : B<"highentropyva", "Set HIGH_ENTROPY_VA bit">;
+-defm largeaddressaware : B<"largeaddressaware", "Disable large addresses">;
+-defm nxcompat : B<"nxcompat", "Disable data execution provention">;
+-defm safeseh : B<"safeseh", "Produce an image with Safe Exception Handler">;
+-defm tsaware  : B<"tsaware", "Create non-Terminal Server aware executable">;
+-
+-def help : F<"help">;
+-def help_q : Flag<["/?", "-?"], "">, Alias<help>;
+-
+-// LLD extensions
+-def nosymtab : F<"nosymtab">;
+-
+-// Flags for debugging
+-def lldmap : Joined<["/", "-"], "lldmap:">;
+-
+-//==============================================================================
+-// The flags below do nothing. They are defined only for link.exe compatibility.
+-//==============================================================================
+-
+-class QF<string name> : Joined<["/", "-", "-?"], name#":">;
+-
+-multiclass QB<string name> {
+-  def "" : F<name>;
+-  def _no : F<name#":no">;
+-}
+-
+-def functionpadmin : F<"functionpadmin">;
+-def ignoreidl : F<"ignoreidl">;
+-def incremental : F<"incremental">;
+-def no_incremental : F<"incremental:no">;
+-def nologo : F<"nologo">;
+-def throwingnew : F<"throwingnew">;
+-def editandcontinue : F<"editandcontinue">;
+-def fastfail : F<"fastfail">;
+-
+-def delay : QF<"delay">;
+-def errorreport : QF<"errorreport">;
+-def idlout : QF<"idlout">;
+-def ignore : QF<"ignore">;
+-def maxilksize : QF<"maxilksize">;
+-def pdbaltpath : QF<"pdbaltpath">;
+-def tlbid : QF<"tlbid">;
+-def tlbout : QF<"tlbout">;
+-def verbose_all : QF<"verbose">;
+-def guardsym : QF<"guardsym">;
+-
+-defm wx : QB<"wx">;
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/lld/COFF/Options.td	2016-04-19 03:21:58.000000000 +0200
+@@ -0,0 +1,127 @@
++include "llvm/Option/OptParser.td"
++
++// link.exe accepts options starting with either a dash or a slash.
++
++// Flag that takes no arguments.
++class F<string name> : Flag<["/", "-", "-?"], name>;
++
++// Flag that takes one argument after ":".
++class P<string name, string help> :
++      Joined<["/", "-", "-?"], name#":">, HelpText<help>;
++
++// Boolean flag suffixed by ":no".
++multiclass B<string name, string help> {
++  def "" : F<name>;
++  def _no : F<name#":no">, HelpText<help>;
++}
++
++def align   : P<"align", "Section alignment">;
++def alternatename : P<"alternatename", "Define weak alias">;
++def base    : P<"base", "Base address of the program">;
++def defaultlib : P<"defaultlib", "Add the library to the list of input files">;
++def delayload : P<"delayload", "Delay loaded DLL name">;
++def entry   : P<"entry", "Name of entry point symbol">;
++def export  : P<"export", "Export a function">;
++// No help text because /failifmismatch is not intended to be used by the user.
++def failifmismatch : P<"failifmismatch", "">;
++def heap    : P<"heap", "Size of the heap">;
++def implib  : P<"implib", "Import library name">;
++def libpath : P<"libpath", "Additional library search path">;
++def machine : P<"machine", "Specify target platform">;
++def merge   : P<"merge", "Combine sections">;
++def mllvm   : P<"mllvm", "Options to pass to LLVM">;
++def nodefaultlib : P<"nodefaultlib", "Remove a default library">;
++def opt     : P<"opt", "Control optimizations">;
++def out     : P<"out", "Path to file to write output">;
++def pdb : P<"pdb", "PDB file path">;
++def section : P<"section", "Specify section attributes">;
++def stack   : P<"stack", "Size of the stack">;
++def stub    : P<"stub", "Specify DOS stub file">;
++def subsystem : P<"subsystem", "Specify subsystem">;
++def version : P<"version", "Specify a version number in the PE header">;
++
++def disallowlib : Joined<["/", "-", "-?"], "disallowlib:">, Alias<nodefaultlib>;
++
++def manifest : F<"manifest">;
++def manifest_colon : P<"manifest", "Create manifest file">;
++def manifestuac : P<"manifestuac", "User access control">;
++def manifestfile : P<"manifestfile", "Manifest file path">;
++def manifestdependency : P<"manifestdependency",
++                           "Attributes for <dependency> in manifest file">;
++def manifestinput : P<"manifestinput", "Specify manifest file">;
++
++// We cannot use multiclass P because class name "incl" is different
++// from its command line option name. We do this because "include" is
++// a reserved keyword in tablegen.
++def incl : Joined<["/", "-"], "include:">,
++    HelpText<"Force symbol to be added to symbol table as undefined one">;
++
++// "def" is also a keyword.
++def deffile : Joined<["/", "-"], "def:">,
++    HelpText<"Use module-definition file">;
++
++def debug : F<"debug">, HelpText<"Embed a symbol table in the image">;
++def dll : F<"dll">, HelpText<"Create a DLL">;
++def nodefaultlib_all : F<"nodefaultlib">;
++def noentry : F<"noentry">;
++def profile : F<"profile">;
++def swaprun_cd : F<"swaprun:cd">;
++def swaprun_net : F<"swaprun:net">;
++def verbose : F<"verbose">;
++
++def force : F<"force">,
++    HelpText<"Allow undefined symbols when creating executables">;
++def force_unresolved : F<"force:unresolved">;
++
++defm allowbind: B<"allowbind", "Disable DLL binding">;
++defm allowisolation : B<"allowisolation", "Set NO_ISOLATION bit">;
++defm dynamicbase : B<"dynamicbase",
++                     "Disable address space layout randomization">;
++defm fixed    : B<"fixed", "Enable base relocations">;
++defm highentropyva : B<"highentropyva", "Set HIGH_ENTROPY_VA bit">;
++defm largeaddressaware : B<"largeaddressaware", "Disable large addresses">;
++defm nxcompat : B<"nxcompat", "Disable data execution provention">;
++defm safeseh : B<"safeseh", "Produce an image with Safe Exception Handler">;
++defm tsaware  : B<"tsaware", "Create non-Terminal Server aware executable">;
++
++def help : F<"help">;
++def help_q : Flag<["/?", "-?"], "">, Alias<help>;
++
++// LLD extensions
++def nosymtab : F<"nosymtab">;
++
++// Flags for debugging
++def lldmap : Joined<["/", "-"], "lldmap:">;
++
++//==============================================================================
++// The flags below do nothing. They are defined only for link.exe compatibility.
++//==============================================================================
++
++class QF<string name> : Joined<["/", "-", "-?"], name#":">;
++
++multiclass QB<string name> {
++  def "" : F<name>;
++  def _no : F<name#":no">;
++}
++
++def functionpadmin : F<"functionpadmin">;
++def ignoreidl : F<"ignoreidl">;
++def incremental : F<"incremental">;
++def no_incremental : F<"incremental:no">;
++def nologo : F<"nologo">;
++def throwingnew : F<"throwingnew">;
++def editandcontinue : F<"editandcontinue">;
++def fastfail : F<"fastfail">;
++
++def delay : QF<"delay">;
++def errorreport : QF<"errorreport">;
++def idlout : QF<"idlout">;
++def ignore : QF<"ignore">;
++def maxilksize : QF<"maxilksize">;
++def pdbaltpath : QF<"pdbaltpath">;
++def tlbid : QF<"tlbid">;
++def tlbout : QF<"tlbout">;
++def verbose_all : QF<"verbose">;
++def guardsym : QF<"guardsym">;
++
++defm wx : QB<"wx">;
+--- a/ELF/Options.td	2016-07-12 21:37:53.000000000 +0200
++++ /dev/null	2016-10-14 11:37:13.827218589 +0200
+@@ -1,276 +0,0 @@
+-include "llvm/Option/OptParser.td"
+-
+-// For options whose names are multiple letters, either one dash or
+-// two can precede the option name except those that start with 'o'.
+-class F<string name>: Flag<["--", "-"], name>;
+-class J<string name>: Joined<["--", "-"], name>;
+-class S<string name>: Separate<["--", "-"], name>;
+-class JS<string name>: JoinedOrSeparate<["--", "-"], name>;
+-
+-def Bsymbolic: F<"Bsymbolic">, HelpText<"Bind defined symbols locally">;
+-
+-def Bsymbolic_functions: F<"Bsymbolic-functions">,
+-  HelpText<"Bind defined function symbols locally">;
+-
+-def Bdynamic: F<"Bdynamic">, HelpText<"Link against shared libraries">;
+-
+-def Bstatic: F<"Bstatic">, HelpText<"Do not link against shared libraries">;
+-
+-def build_id: F<"build-id">, HelpText<"Generate build ID note">;
+-
+-def build_id_eq: J<"build-id=">, HelpText<"Generate build ID note">;
+-
+-def L: JoinedOrSeparate<["-"], "L">, MetaVarName<"<dir>">,
+-  HelpText<"Add a directory to the library search path">;
+-
+-def O: Joined<["-"], "O">, HelpText<"Optimize output file size">;
+-
+-def allow_multiple_definition: F<"allow-multiple-definition">,
+-  HelpText<"Allow multiple definitions">;
+-
+-def as_needed: F<"as-needed">,
+-  HelpText<"Only set DT_NEEDED for shared libraries if used">;
+-
+-def disable_new_dtags: F<"disable-new-dtags">,
+-  HelpText<"Disable new dynamic tags">;
+-
+-def discard_all: F<"discard-all">, HelpText<"Delete all local symbols">;
+-
+-def discard_locals: F<"discard-locals">,
+-  HelpText<"Delete temporary local symbols">;
+-
+-def discard_none: F<"discard-none">,
+-  HelpText<"Keep all symbols in the symbol table">;
+-
+-def dynamic_linker: S<"dynamic-linker">,
+-  HelpText<"Which dynamic linker to use">;
+-
+-def dynamic_list: S<"dynamic-list">,
+-  HelpText<"Read a list of dynamic symbols">;
+-
+-def eh_frame_hdr: F<"eh-frame-hdr">,
+-  HelpText<"Request creation of .eh_frame_hdr section and PT_GNU_EH_FRAME segment header">;
+-
+-def enable_new_dtags: F<"enable-new-dtags">,
+-  HelpText<"Enable new dynamic tags">;
+-
+-def end_lib: F<"end-lib">,
+-  HelpText<"End a grouping of objects that should be treated as if they were together in an archive">;
+-
+-def entry: S<"entry">, MetaVarName<"<entry>">,
+-  HelpText<"Name of entry point symbol">;
+-
+-def export_dynamic: F<"export-dynamic">,
+-  HelpText<"Put symbols in the dynamic symbol table">;
+-
+-def export_dynamic_symbol: S<"export-dynamic-symbol">,
+-  HelpText<"Put a symbol in the dynamic symbol table">;
+-
+-def fatal_warnings: F<"fatal-warnings">,
+-  HelpText<"Treat warnings as errors">;
+-
+-def fini: S<"fini">, MetaVarName<"<symbol>">,
+-  HelpText<"Specify a finalizer function">;
+-
+-def hash_style: S<"hash-style">,
+-  HelpText<"Specify hash style (sysv, gnu or both)">;
+-
+-def help: F<"help">, HelpText<"Print option help">;
+-
+-def icf: F<"icf=all">, HelpText<"Enable identical code folding">;
+-
+-def image_base : J<"image-base=">, HelpText<"Set the base address">;
+-
+-def gc_sections: F<"gc-sections">,
+-  HelpText<"Enable garbage collection of unused sections">;
+-
+-def init: S<"init">, MetaVarName<"<symbol>">,
+-  HelpText<"Specify an initializer function">;
+-
+-def l: JoinedOrSeparate<["-"], "l">, MetaVarName<"<libName>">,
+-  HelpText<"Root name of library to use">;
+-
+-def lto_O: J<"lto-O">, MetaVarName<"<opt-level>">,
+-  HelpText<"Optimization level for LTO">;
+-
+-def m: JoinedOrSeparate<["-"], "m">, HelpText<"Set target emulation">;
+-
+-def no_as_needed: F<"no-as-needed">,
+-  HelpText<"Always DT_NEEDED for shared libraries">;
+-
+-def no_demangle: F<"no-demangle">,
+-  HelpText<"Do not demangle symbol names">;
+-
+-def no_gnu_unique: F<"no-gnu-unique">,
+-  HelpText<"Disable STB_GNU_UNIQUE symbol binding">;
+-
+-def no_whole_archive: F<"no-whole-archive">,
+-  HelpText<"Restores the default behavior of loading archive members">;
+-
+-def noinhibit_exec: F<"noinhibit-exec">,
+-  HelpText<"Retain the executable output file whenever it is still usable">;
+-
+-def no_undefined: F<"no-undefined">,
+-  HelpText<"Report unresolved symbols even if the linker is creating a shared library">;
+-
+-def no_undefined_version: F<"no-undefined-version">,
+-  HelpText<"Report version scripts that refer undefined symbols">;
+-
+-def o: JoinedOrSeparate<["-"], "o">, MetaVarName<"<path>">,
+-  HelpText<"Path to file to write output">;
+-
+-def pie: F<"pie">, HelpText<"Create a position independent executable">;
+-
+-def print_gc_sections: F<"print-gc-sections">,
+-  HelpText<"List removed unused sections">;
+-
+-def reproduce: S<"reproduce">,
+-  HelpText<"Dump linker invocation and input files for debugging">;
+-
+-def rpath: S<"rpath">, HelpText<"Add a DT_RUNPATH to the output">;
+-
+-def relocatable: F<"relocatable">, HelpText<"Create relocatable object file">;
+-
+-def script: S<"script">, HelpText<"Read linker script">;
+-
+-def shared: F<"shared">, HelpText<"Build a shared object">;
+-
+-def soname: J<"soname=">, HelpText<"Set DT_SONAME">;
+-
+-def start_lib: F<"start-lib">,
+-  HelpText<"Start a grouping of objects that should be treated as if they were together in an archive">;
+-
+-def strip_all: F<"strip-all">, HelpText<"Strip all symbols">;
+-
+-def strip_debug: F<"strip-debug">, HelpText<"Strip debugging information">;
+-
+-def sysroot: J<"sysroot=">, HelpText<"Set the system root">;
+-
+-def threads: F<"threads">, HelpText<"Enable use of threads">;
+-
+-def trace: F<"trace">, HelpText<"Print the names of the input files">;
+-
+-def trace_symbol : J<"trace-symbol=">, HelpText<"Trace references to symbols">;
+-
+-def undefined: J<"undefined=">,
+-  HelpText<"Force undefined symbol during linking">;
+-
+-def unresolved_symbols: J<"unresolved-symbols=">,
+-  HelpText<"Determine how to handle unresolved symbols">;
+-
+-def rsp_quoting: J<"rsp-quoting=">,
+-  HelpText<"Quoting style for response files. Values supported: windows|posix">;
+-
+-def verbose: F<"verbose">, HelpText<"Verbose mode">;
+-
+-def version: F<"version">, HelpText<"Display the version number">;
+-
+-def version_script: S<"version-script">,
+-  HelpText<"Read a version script">;
+-
+-def warn_common: F<"warn-common">,
+-  HelpText<"Warn about duplicate common symbols">;
+-
+-def whole_archive: F<"whole-archive">,
+-  HelpText<"Force load of all members in a static library">;
+-
+-def wrap: S<"wrap">, MetaVarName<"<symbol>">,
+-  HelpText<"Use wrapper functions for symbol">;
+-
+-def z: JoinedOrSeparate<["-"], "z">, MetaVarName<"<option>">,
+-  HelpText<"Linker option extensions">;
+-
+-// Aliases
+-def alias_Bdynamic_call_shared: F<"call_shared">, Alias<Bdynamic>;
+-def alias_Bdynamic_dy: F<"dy">, Alias<Bdynamic>;
+-def alias_Bstatic_dn: F<"dn">, Alias<Bstatic>;
+-def alias_Bstatic_non_shared: F<"non_shared">, Alias<Bstatic>;
+-def alias_Bstatic_static: F<"static">, Alias<Bstatic>;
+-def alias_L__library_path: J<"library-path=">, Alias<L>;
+-def alias_discard_all_x: Flag<["-"], "x">, Alias<discard_all>;
+-def alias_discard_locals_X: Flag<["-"], "X">, Alias<discard_locals>;
+-def alias_dynamic_list: J<"dynamic-list=">, Alias<dynamic_list>;
+-def alias_entry_e: JoinedOrSeparate<["-"], "e">, Alias<entry>;
+-def alias_entry_entry: J<"entry=">, Alias<entry>;
+-def alias_export_dynamic_E: Flag<["-"], "E">, Alias<export_dynamic>;
+-def alias_export_dynamic_symbol: J<"export-dynamic-symbol=">,
+-  Alias<export_dynamic_symbol>;
+-def alias_fini_fini: J<"fini=">, Alias<fini>;
+-def alias_hash_style_hash_style: J<"hash-style=">, Alias<hash_style>;
+-def alias_init_init: J<"init=">, Alias<init>;
+-def alias_l__library: J<"library=">, Alias<l>;
+-def alias_o_output: Joined<["--"], "output=">, Alias<o>;
+-def alias_pie_pic_executable: F<"pic-executable">, Alias<pie>;
+-def alias_relocatable_r: Flag<["-"], "r">, Alias<relocatable>;
+-def alias_rpath_R: Joined<["-"], "R">, Alias<rpath>;
+-def alias_rpath_rpath: J<"rpath=">, Alias<rpath>;
+-def alias_script_T: JoinedOrSeparate<["-"], "T">, Alias<script>;
+-def alias_shared_Bshareable: F<"Bshareable">, Alias<shared>;
+-def alias_soname_h: JoinedOrSeparate<["-"], "h">, Alias<soname>;
+-def alias_soname_soname: S<"soname">, Alias<soname>;
+-def alias_strip_all: Flag<["-"], "s">, Alias<strip_all>;
+-def alias_strip_debug_S: Flag<["-"], "S">, Alias<strip_debug>;
+-def alias_trace: Flag<["-"], "t">, Alias<trace>;
+-def alias_trace_symbol_y : JoinedOrSeparate<["-"], "y">, Alias<trace_symbol>;
+-def alias_undefined_u: JoinedOrSeparate<["-"], "u">, Alias<undefined>;
+-def alias_version_V: Flag<["-"], "V">, Alias<version>;
+-def alias_version_v: Flag<["-"], "v">, Alias<version>;
+-def alias_wrap_wrap: J<"wrap=">, Alias<wrap>;
+-
+-// Our symbol resolution algorithm handles symbols in archive files differently
+-// than traditional linkers, so we don't need --start-group and --end-group.
+-// These options are recongized for compatibility but ignored.
+-def end_group: F<"end-group">;
+-def end_group_paren: Flag<["-"], ")">;
+-def start_group: F<"start-group">;
+-def start_group_paren: Flag<["-"], "(">;
+-
+-// Ignore LTO plugin-related options.
+-// clang -flto passes -plugin and -plugin-opt to the linker. This is required
+-// for ld.gold and ld.bfd to get LTO working. But it's not for lld which doesn't
+-// rely on a plugin. Instead of detecting which linker is used on clang side we
+-// just ignore the option on lld side as it's easier. In fact, the linker could
+-// be called 'ld' and understanding which linker is used would require parsing of
+-// --version output.
+-def plugin: S<"plugin">;
+-def plugin_eq: J<"plugin=">;
+-def plugin_opt: S<"plugin-opt">;
+-def plugin_opt_eq: J<"plugin-opt=">;
+-
+-// Options listed below are silently ignored for now for compatibility.
+-def allow_shlib_undefined: F<"allow-shlib-undefined">;
+-def define_common: F<"define-common">;
+-def demangle: F<"demangle">;
+-def detect_odr_violations: F<"detect-odr-violations">;
+-def no_add_needed: F<"no-add-needed">;
+-def no_allow_shlib_undefined: F<"no-allow-shlib-undefined">;
+-def no_copy_dt_needed_entries: F<"no-copy-dt-needed-entries">,
+-  Alias<no_add_needed>;
+-def no_dynamic_linker: F<"no-dynamic-linker">;
+-def no_fatal_warnings: F<"no-fatal-warnings">;
+-def no_mmap_output_file: F<"no-mmap-output-file">;
+-def no_warn_common: F<"no-warn-common">;
+-def no_warn_mismatch: F<"no-warn-mismatch">;
+-def rpath_link: S<"rpath-link">;
+-def rpath_link_eq: J<"rpath-link=">;
+-def sort_common: F<"sort-common">;
+-def warn_execstack: F<"warn-execstack">;
+-def warn_shared_textrel: F<"warn-shared-textrel">;
+-def G: Separate<["-"], "G">;
+-
+-// Aliases for ignored options
+-def alias_define_common_d: Flag<["-"], "d">, Alias<define_common>;
+-def alias_define_common_dc: F<"dc">, Alias<define_common>;
+-def alias_define_common_dp: F<"dp">, Alias<define_common>;
+-def alias_version_script_version_script: J<"version-script=">,
+-  Alias<version_script>;
+-
+-// LTO-related options.
+-def lto_jobs: J<"lto-jobs=">, HelpText<"Number of threads to run codegen">;
+-def lto_aa_pipeline: J<"lto-aa-pipeline=">,
+-  HelpText<"AA pipeline to run during LTO. Used in conjunction with -lto-newpm-passes">;
+-def lto_newpm_passes: J<"lto-newpm-passes=">,
+-  HelpText<"Passes to run during LTO">;
+-def disable_verify: F<"disable-verify">;
+-def mllvm: S<"mllvm">;
+-def save_temps: F<"save-temps">;
+--- /dev/null	2016-10-14 11:37:13.827218589 +0200
++++ b/include/lld/ELF/Options.td	2016-07-12 21:37:53.000000000 +0200
+@@ -0,0 +1,276 @@
++include "llvm/Option/OptParser.td"
++
++// For options whose names are multiple letters, either one dash or
++// two can precede the option name except those that start with 'o'.
++class F<string name>: Flag<["--", "-"], name>;
++class J<string name>: Joined<["--", "-"], name>;
++class S<string name>: Separate<["--", "-"], name>;
++class JS<string name>: JoinedOrSeparate<["--", "-"], name>;
++
++def Bsymbolic: F<"Bsymbolic">, HelpText<"Bind defined symbols locally">;
++
++def Bsymbolic_functions: F<"Bsymbolic-functions">,
++  HelpText<"Bind defined function symbols locally">;
++
++def Bdynamic: F<"Bdynamic">, HelpText<"Link against shared libraries">;
++
++def Bstatic: F<"Bstatic">, HelpText<"Do not link against shared libraries">;
++
++def build_id: F<"build-id">, HelpText<"Generate build ID note">;
++
++def build_id_eq: J<"build-id=">, HelpText<"Generate build ID note">;
++
++def L: JoinedOrSeparate<["-"], "L">, MetaVarName<"<dir>">,
++  HelpText<"Add a directory to the library search path">;
++
++def O: Joined<["-"], "O">, HelpText<"Optimize output file size">;
++
++def allow_multiple_definition: F<"allow-multiple-definition">,
++  HelpText<"Allow multiple definitions">;
++
++def as_needed: F<"as-needed">,
++  HelpText<"Only set DT_NEEDED for shared libraries if used">;
++
++def disable_new_dtags: F<"disable-new-dtags">,
++  HelpText<"Disable new dynamic tags">;
++
++def discard_all: F<"discard-all">, HelpText<"Delete all local symbols">;
++
++def discard_locals: F<"discard-locals">,
++  HelpText<"Delete temporary local symbols">;
++
++def discard_none: F<"discard-none">,
++  HelpText<"Keep all symbols in the symbol table">;
++
++def dynamic_linker: S<"dynamic-linker">,
++  HelpText<"Which dynamic linker to use">;
++
++def dynamic_list: S<"dynamic-list">,
++  HelpText<"Read a list of dynamic symbols">;
++
++def eh_frame_hdr: F<"eh-frame-hdr">,
++  HelpText<"Request creation of .eh_frame_hdr section and PT_GNU_EH_FRAME segment header">;
++
++def enable_new_dtags: F<"enable-new-dtags">,
++  HelpText<"Enable new dynamic tags">;
++
++def end_lib: F<"end-lib">,
++  HelpText<"End a grouping of objects that should be treated as if they were together in an archive">;
++
++def entry: S<"entry">, MetaVarName<"<entry>">,
++  HelpText<"Name of entry point symbol">;
++
++def export_dynamic: F<"export-dynamic">,
++  HelpText<"Put symbols in the dynamic symbol table">;
++
++def export_dynamic_symbol: S<"export-dynamic-symbol">,
++  HelpText<"Put a symbol in the dynamic symbol table">;
++
++def fatal_warnings: F<"fatal-warnings">,
++  HelpText<"Treat warnings as errors">;
++
++def fini: S<"fini">, MetaVarName<"<symbol>">,
++  HelpText<"Specify a finalizer function">;
++
++def hash_style: S<"hash-style">,
++  HelpText<"Specify hash style (sysv, gnu or both)">;
++
++def help: F<"help">, HelpText<"Print option help">;
++
++def icf: F<"icf=all">, HelpText<"Enable identical code folding">;
++
++def image_base : J<"image-base=">, HelpText<"Set the base address">;
++
++def gc_sections: F<"gc-sections">,
++  HelpText<"Enable garbage collection of unused sections">;
++
++def init: S<"init">, MetaVarName<"<symbol>">,
++  HelpText<"Specify an initializer function">;
++
++def l: JoinedOrSeparate<["-"], "l">, MetaVarName<"<libName>">,
++  HelpText<"Root name of library to use">;
++
++def lto_O: J<"lto-O">, MetaVarName<"<opt-level>">,
++  HelpText<"Optimization level for LTO">;
++
++def m: JoinedOrSeparate<["-"], "m">, HelpText<"Set target emulation">;
++
++def no_as_needed: F<"no-as-needed">,
++  HelpText<"Always DT_NEEDED for shared libraries">;
++
++def no_demangle: F<"no-demangle">,
++  HelpText<"Do not demangle symbol names">;
++
++def no_gnu_unique: F<"no-gnu-unique">,
++  HelpText<"Disable STB_GNU_UNIQUE symbol binding">;
++
++def no_whole_archive: F<"no-whole-archive">,
++  HelpText<"Restores the default behavior of loading archive members">;
++
++def noinhibit_exec: F<"noinhibit-exec">,
++  HelpText<"Retain the executable output file whenever it is still usable">;
++
++def no_undefined: F<"no-undefined">,
++  HelpText<"Report unresolved symbols even if the linker is creating a shared library">;
++
++def no_undefined_version: F<"no-undefined-version">,
++  HelpText<"Report version scripts that refer undefined symbols">;
++
++def o: JoinedOrSeparate<["-"], "o">, MetaVarName<"<path>">,
++  HelpText<"Path to file to write output">;
++
++def pie: F<"pie">, HelpText<"Create a position independent executable">;
++
++def print_gc_sections: F<"print-gc-sections">,
++  HelpText<"List removed unused sections">;
++
++def reproduce: S<"reproduce">,
++  HelpText<"Dump linker invocation and input files for debugging">;
++
++def rpath: S<"rpath">, HelpText<"Add a DT_RUNPATH to the output">;
++
++def relocatable: F<"relocatable">, HelpText<"Create relocatable object file">;
++
++def script: S<"script">, HelpText<"Read linker script">;
++
++def shared: F<"shared">, HelpText<"Build a shared object">;
++
++def soname: J<"soname=">, HelpText<"Set DT_SONAME">;
++
++def start_lib: F<"start-lib">,
++  HelpText<"Start a grouping of objects that should be treated as if they were together in an archive">;
++
++def strip_all: F<"strip-all">, HelpText<"Strip all symbols">;
++
++def strip_debug: F<"strip-debug">, HelpText<"Strip debugging information">;
++
++def sysroot: J<"sysroot=">, HelpText<"Set the system root">;
++
++def threads: F<"threads">, HelpText<"Enable use of threads">;
++
++def trace: F<"trace">, HelpText<"Print the names of the input files">;
++
++def trace_symbol : J<"trace-symbol=">, HelpText<"Trace references to symbols">;
++
++def undefined: J<"undefined=">,
++  HelpText<"Force undefined symbol during linking">;
++
++def unresolved_symbols: J<"unresolved-symbols=">,
++  HelpText<"Determine how to handle unresolved symbols">;
++
++def rsp_quoting: J<"rsp-quoting=">,
++  HelpText<"Quoting style for response files. Values supported: windows|posix">;
++
++def verbose: F<"verbose">, HelpText<"Verbose mode">;
++
++def version: F<"version">, HelpText<"Display the version number">;
++
++def version_script: S<"version-script">,
++  HelpText<"Read a version script">;
++
++def warn_common: F<"warn-common">,
++  HelpText<"Warn about duplicate common symbols">;
++
++def whole_archive: F<"whole-archive">,
++  HelpText<"Force load of all members in a static library">;
++
++def wrap: S<"wrap">, MetaVarName<"<symbol>">,
++  HelpText<"Use wrapper functions for symbol">;
++
++def z: JoinedOrSeparate<["-"], "z">, MetaVarName<"<option>">,
++  HelpText<"Linker option extensions">;
++
++// Aliases
++def alias_Bdynamic_call_shared: F<"call_shared">, Alias<Bdynamic>;
++def alias_Bdynamic_dy: F<"dy">, Alias<Bdynamic>;
++def alias_Bstatic_dn: F<"dn">, Alias<Bstatic>;
++def alias_Bstatic_non_shared: F<"non_shared">, Alias<Bstatic>;
++def alias_Bstatic_static: F<"static">, Alias<Bstatic>;
++def alias_L__library_path: J<"library-path=">, Alias<L>;
++def alias_discard_all_x: Flag<["-"], "x">, Alias<discard_all>;
++def alias_discard_locals_X: Flag<["-"], "X">, Alias<discard_locals>;
++def alias_dynamic_list: J<"dynamic-list=">, Alias<dynamic_list>;
++def alias_entry_e: JoinedOrSeparate<["-"], "e">, Alias<entry>;
++def alias_entry_entry: J<"entry=">, Alias<entry>;
++def alias_export_dynamic_E: Flag<["-"], "E">, Alias<export_dynamic>;
++def alias_export_dynamic_symbol: J<"export-dynamic-symbol=">,
++  Alias<export_dynamic_symbol>;
++def alias_fini_fini: J<"fini=">, Alias<fini>;
++def alias_hash_style_hash_style: J<"hash-style=">, Alias<hash_style>;
++def alias_init_init: J<"init=">, Alias<init>;
++def alias_l__library: J<"library=">, Alias<l>;
++def alias_o_output: Joined<["--"], "output=">, Alias<o>;
++def alias_pie_pic_executable: F<"pic-executable">, Alias<pie>;
++def alias_relocatable_r: Flag<["-"], "r">, Alias<relocatable>;
++def alias_rpath_R: Joined<["-"], "R">, Alias<rpath>;
++def alias_rpath_rpath: J<"rpath=">, Alias<rpath>;
++def alias_script_T: JoinedOrSeparate<["-"], "T">, Alias<script>;
++def alias_shared_Bshareable: F<"Bshareable">, Alias<shared>;
++def alias_soname_h: JoinedOrSeparate<["-"], "h">, Alias<soname>;
++def alias_soname_soname: S<"soname">, Alias<soname>;
++def alias_strip_all: Flag<["-"], "s">, Alias<strip_all>;
++def alias_strip_debug_S: Flag<["-"], "S">, Alias<strip_debug>;
++def alias_trace: Flag<["-"], "t">, Alias<trace>;
++def alias_trace_symbol_y : JoinedOrSeparate<["-"], "y">, Alias<trace_symbol>;
++def alias_undefined_u: JoinedOrSeparate<["-"], "u">, Alias<undefined>;
++def alias_version_V: Flag<["-"], "V">, Alias<version>;
++def alias_version_v: Flag<["-"], "v">, Alias<version>;
++def alias_wrap_wrap: J<"wrap=">, Alias<wrap>;
++
++// Our symbol resolution algorithm handles symbols in archive files differently
++// than traditional linkers, so we don't need --start-group and --end-group.
++// These options are recongized for compatibility but ignored.
++def end_group: F<"end-group">;
++def end_group_paren: Flag<["-"], ")">;
++def start_group: F<"start-group">;
++def start_group_paren: Flag<["-"], "(">;
++
++// Ignore LTO plugin-related options.
++// clang -flto passes -plugin and -plugin-opt to the linker. This is required
++// for ld.gold and ld.bfd to get LTO working. But it's not for lld which doesn't
++// rely on a plugin. Instead of detecting which linker is used on clang side we
++// just ignore the option on lld side as it's easier. In fact, the linker could
++// be called 'ld' and understanding which linker is used would require parsing of
++// --version output.
++def plugin: S<"plugin">;
++def plugin_eq: J<"plugin=">;
++def plugin_opt: S<"plugin-opt">;
++def plugin_opt_eq: J<"plugin-opt=">;
++
++// Options listed below are silently ignored for now for compatibility.
++def allow_shlib_undefined: F<"allow-shlib-undefined">;
++def define_common: F<"define-common">;
++def demangle: F<"demangle">;
++def detect_odr_violations: F<"detect-odr-violations">;
++def no_add_needed: F<"no-add-needed">;
++def no_allow_shlib_undefined: F<"no-allow-shlib-undefined">;
++def no_copy_dt_needed_entries: F<"no-copy-dt-needed-entries">,
++  Alias<no_add_needed>;
++def no_dynamic_linker: F<"no-dynamic-linker">;
++def no_fatal_warnings: F<"no-fatal-warnings">;
++def no_mmap_output_file: F<"no-mmap-output-file">;
++def no_warn_common: F<"no-warn-common">;
++def no_warn_mismatch: F<"no-warn-mismatch">;
++def rpath_link: S<"rpath-link">;
++def rpath_link_eq: J<"rpath-link=">;
++def sort_common: F<"sort-common">;
++def warn_execstack: F<"warn-execstack">;
++def warn_shared_textrel: F<"warn-shared-textrel">;
++def G: Separate<["-"], "G">;
++
++// Aliases for ignored options
++def alias_define_common_d: Flag<["-"], "d">, Alias<define_common>;
++def alias_define_common_dc: F<"dc">, Alias<define_common>;
++def alias_define_common_dp: F<"dp">, Alias<define_common>;
++def alias_version_script_version_script: J<"version-script=">,
++  Alias<version_script>;
++
++// LTO-related options.
++def lto_jobs: J<"lto-jobs=">, HelpText<"Number of threads to run codegen">;
++def lto_aa_pipeline: J<"lto-aa-pipeline=">,
++  HelpText<"AA pipeline to run during LTO. Used in conjunction with -lto-newpm-passes">;
++def lto_newpm_passes: J<"lto-newpm-passes=">,
++  HelpText<"Passes to run during LTO">;
++def disable_verify: F<"disable-verify">;
++def mllvm: S<"mllvm">;
++def save_temps: F<"save-temps">;

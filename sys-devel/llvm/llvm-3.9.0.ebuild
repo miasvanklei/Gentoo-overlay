@@ -15,7 +15,6 @@ inherit check-reqs cmake-utils flag-o-matic \
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
 SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
-	lld? ( http://llvm.org/releases/${PV}/lld-${PV}.src.tar.xz )
 	!doc? ( http://dev.gentoo.org/~mgorny/dist/${PN}-3.9.0_rc3-manpages.tar.bz2 )"
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -25,7 +24,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="debug -doc -gold +libedit +libffi +lld multitarget +ncurses ocaml test
+IUSE="debug -doc -gold +libedit +libffi multitarget +ncurses ocaml test
 	video_cards_radeon kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 # python is needed for llvm-lit (which is installed)
@@ -43,7 +42,7 @@ DEPEND="${RDEPEND}
 	|| ( >=sys-devel/gcc-3.0 >=sys-devel/llvm-3.5
 		( >=sys-freebsd/freebsd-lib-9.1-r10 sys-libs/libcxx )
 	)
-	|| ( >=sys-devel/binutils-2.18 >=sys-devel/binutils-apple-5.1 )
+	|| ( >=sys-devel/lld-${PV}:= >=sys-devel/binutils-2.18 >=sys-devel/binutils-apple-5.1 )
 	kernel_Darwin? ( <sys-libs/libcxx-${PV%_rc*}.9999 )
 	doc? ( dev-python/sphinx )
 	gold? ( sys-libs/binutils-libs )
@@ -94,13 +93,6 @@ pkg_setup() {
 }
 
 
-src_unpack() {
-	default
-
-        mv "${WORKDIR}"/lld-${PV/_}.src "${S}"/tools/lld \
-                || die "lld source directory move failed"
-}
-
 src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
@@ -148,21 +140,6 @@ src_prepare() {
 	# add llvm-strings and llvm-cxxfilt
 	eapply "${FILESDIR}"/0011-llvm-add-cxxfilt.patch
 	eapply "${FILESDIR}"/0012-llvm-add-strings.patch
-
-
-	if use lld; then
-		eapply "${FILESDIR}"/0014-lld-gnu-ld-compat.patch
-		eapply "${FILESDIR}"/0015-lld-ignore-options.patch
-		eapply "${FILESDIR}"/0016-lld-add-nostdlib.patch
-
-		# bugs found by compiling ghc
-		eapply "${FILESDIR}"/0017-lld-do-not-merge-sections-in-case-of-relocatable-object-generation.patch
-		eapply "${FILESDIR}"/0018-lld-do-not-ignore-relocations-addends.patch
-
-		# bugs found by compiling rust
-		eapply "${FILESDIR}"/0019-lld-accept-sh_entsize0.patch
-		eapply "${FILESDIR}"/0020-lld-fix-dt_needed-value.patch
-	fi
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die

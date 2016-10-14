@@ -15,16 +15,16 @@ Differential Revision: http://reviews.llvm.org/D25066
 
 git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@283300 91177308-0d34-0410-b5e6-96231b3b80d8
 ---
- tools/lld/ELF/InputFiles.cpp     |  9 +++++
- tools/lld/ELF/OutputSections.cpp | 10 +++++-
- tools/lld/test/ELF/merge-reloc.s | 92 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ ELF/InputFiles.cpp     |  9 +++++
+ ELF/OutputSections.cpp | 10 +++++-
+ test/ELF/merge-reloc.s | 92 ++++++++++++++++++++++++++++++++++++++++++++++++++
  3 files changed, 110 insertions(+), 1 deletion(-)
  create mode 100644 test/ELF/merge-reloc.s
 
-diff --git a/tools/lld/ELF/InputFiles.cpp b/tools/lld/ELF/InputFiles.cpp
+diff --git a/ELF/InputFiles.cpp b/ELF/InputFiles.cpp
 index cd29311..3562609 100644
---- a/tools/lld/ELF/InputFiles.cpp
-+++ b/tools/lld/ELF/InputFiles.cpp
+--- a/ELF/InputFiles.cpp
++++ b/ELF/InputFiles.cpp
 @@ -177,6 +177,15 @@ bool elf::ObjectFile<ELFT>::shouldMerge(const Elf_Shdr &Sec) {
    if (Config->Optimize == 0)
      return false;
@@ -41,10 +41,10 @@ index cd29311..3562609 100644
    uintX_t Flags = Sec.sh_flags;
    if (!(Flags & SHF_MERGE))
      return false;
-diff --git a/tools/lld/ELF/OutputSections.cpp b/tools/lld/ELF/OutputSections.cpp
+diff --git a/ELF/OutputSections.cpp b/ELF/OutputSections.cpp
 index 0cbee53..0a6c873 100644
---- a/tools/lld/ELF/OutputSections.cpp
-+++ b/tools/lld/ELF/OutputSections.cpp
+--- a/ELF/OutputSections.cpp
++++ b/ELF/OutputSections.cpp
 @@ -894,6 +894,10 @@ void OutputSection<ELFT>::addSection(InputSectionBase<ELFT> *C) {
    Sections.push_back(S);
    S->OutSec = this;
@@ -70,11 +70,11 @@ index 0cbee53..0a6c873 100644
      Alignment = std::max(H->sh_addralign, H->sh_entsize);
  
    uint32_t Type = H->sh_type;
-diff --git a/tools/lld/test/ELF/merge-reloc.s b/tools/lld/test/ELF/merge-reloc.s
+diff --git a/test/ELF/merge-reloc.s b/test/ELF/merge-reloc.s
 new file mode 100644
 index 0000000..2447e3e
 --- /dev/null
-+++ b/tools/lld/test/ELF/merge-reloc.s
++++ b/test/ELF/merge-reloc.s
 @@ -0,0 +1,92 @@
 +# REQUIRES: x86
 +# RUN: llvm-mc -filetype=obj -triple=x86_64-pc-linux %s -o %t.o

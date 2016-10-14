@@ -5,17 +5,17 @@ Subject: [PATCH] Add -nostdlib.
 
 git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@280528 91177308-0d34-0410-b5e6-96231b3b80d8
 ---
- tools/lld/ELF/Config.h         | 1 +
- tools/lld/ELF/Driver.cpp       | 1 +
- tools/lld/ELF/LinkerScript.cpp | 3 ++-
- tools/lld/ELF/Options.td       | 3 +++
- tools/lld/test/ELF/libsearch.s | 5 +++++
+ ELF/Config.h         | 1 +
+ ELF/Driver.cpp       | 1 +
+ ELF/LinkerScript.cpp | 3 ++-
+ ELF/Options.td       | 3 +++
+ test/ELF/libsearch.s | 5 +++++
  5 files changed, 12 insertions(+), 1 deletion(-)
 
-diff --git a/tools/lld/ELF/Config.h b/tools/lld/ELF/Config.h
+diff --git a/ELF/Config.h b/ELF/Config.h
 index 7bf650c..f06cfbd 100644
---- a/tools/lld/ELF/Config.h
-+++ b/tools/lld/ELF/Config.h
+--- a/ELF/Config.h
++++ b/ELF/Config.h
 @@ -98,6 +98,7 @@ struct Configuration {
    bool Mips64EL = false;
    bool NoGnuUnique;
@@ -24,10 +24,10 @@ index 7bf650c..f06cfbd 100644
    bool Pic;
    bool Pie;
    bool PrintGcSections;
-diff --git a/tools/lld/ELF/Driver.cpp b/tools/lld/ELF/Driver.cpp
+diff --git a/ELF/Driver.cpp b/ELF/Driver.cpp
 index 9b44b1b..7f10823 100644
---- a/tools/lld/ELF/Driver.cpp
-+++ b/tools/lld/ELF/Driver.cpp
+--- a/ELF/Driver.cpp
++++ b/ELF/Driver.cpp
 @@ -410,6 +410,7 @@ void LinkerDriver::readConfigs(opt::InputArgList &Args) {
    Config->ICF = Args.hasArg(OPT_icf);
    Config->NoGnuUnique = Args.hasArg(OPT_no_gnu_unique);
@@ -36,10 +36,10 @@ index 9b44b1b..7f10823 100644
    Config->Pie = Args.hasArg(OPT_pie);
    Config->PrintGcSections = Args.hasArg(OPT_print_gc_sections);
    Config->Relocatable = Args.hasArg(OPT_relocatable);
-diff --git a/tools/lld/ELF/LinkerScript.cpp b/tools/lld/ELF/LinkerScript.cpp
+diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
 index c1ce76c..3872d30 100644
---- a/tools/lld/ELF/LinkerScript.cpp
-+++ b/tools/lld/ELF/LinkerScript.cpp
+--- a/ELF/LinkerScript.cpp
++++ b/ELF/LinkerScript.cpp
 @@ -870,7 +870,9 @@ void ScriptParser::readPhdrs() {
  
  void ScriptParser::readSearchDir() {
@@ -51,10 +51,10 @@ index c1ce76c..3872d30 100644
    expect(")");
  }
  
-diff --git a/tools/lld/ELF/Options.td b/tools/lld/ELF/Options.td
+diff --git a/include/lld/ELF/Options.td b/include/lld/ELF/Options.td
 index acfba9e..d37a41a 100644
---- a/tools/lld/ELF/Options.td
-+++ b/tools/lld/ELF/Options.td
+--- a/include/lld/ELF/Options.td
++++ b/include/lld/ELF/Options.td
 @@ -97,6 +97,9 @@ def lto_O: J<"lto-O">, MetaVarName<"<opt-level>">,
  
  def m: JoinedOrSeparate<["-"], "m">, HelpText<"Set target emulation">;
@@ -65,10 +65,10 @@ index acfba9e..d37a41a 100644
  def no_as_needed: F<"no-as-needed">,
    HelpText<"Always DT_NEEDED for shared libraries">;
  
-diff --git a/tools/lld/test/ELF/libsearch.s b/tools/lld/test/ELF/libsearch.s
+diff --git a/test/ELF/libsearch.s b/test/ELF/libsearch.s
 index 782d755..98512cd 100644
---- a/tools/lld/test/ELF/libsearch.s
-+++ b/tools/lld/test/ELF/libsearch.s
+--- a/test/ELF/libsearch.s
++++ b/test/ELF/libsearch.s
 @@ -85,5 +85,10 @@
  // RUN: ld.lld -o %t3 %t.o -L%t.dir -Bstatic -call_shared -lls
  // RUN: llvm-readobj --symbols %t3 | FileCheck --check-prefix=DYNAMIC %s

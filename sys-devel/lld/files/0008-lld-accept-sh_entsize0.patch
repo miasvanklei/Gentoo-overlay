@@ -11,15 +11,15 @@ Differential Revision: https://reviews.llvm.org/D24789
 
 git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@282049 91177308-0d34-0410-b5e6-96231b3b80d8
 ---
- tools/lld/ELF/InputFiles.cpp            | 16 ++++++++++++----
- tools/lld/test/ELF/invalid-elf.test     |  4 ----
- tools/lld/test/ELF/merge-invalid-size.s |  7 +++++--
+ ELF/InputFiles.cpp            | 16 ++++++++++++----
+ test/ELF/invalid-elf.test     |  4 ----
+ test/ELF/merge-invalid-size.s |  7 +++++--
  3 files changed, 17 insertions(+), 10 deletions(-)
 
-diff --git a/tools/lld/ELF/InputFiles.cpp b/tools/lld/ELF/InputFiles.cpp
+diff --git a/ELF/InputFiles.cpp b/ELF/InputFiles.cpp
 index 4857d57..7d6a368 100644
---- a/tools/lld/ELF/InputFiles.cpp
-+++ b/tools/lld/ELF/InputFiles.cpp
+--- a/ELF/InputFiles.cpp
++++ b/ELF/InputFiles.cpp
 @@ -184,15 +184,23 @@ bool elf::ObjectFile<ELFT>::shouldMerge(const Elf_Shdr &Sec) {
    if (Sec.sh_size == 0)
      return false;
@@ -48,10 +48,10 @@ index 4857d57..7d6a368 100644
  
    // Don't try to merge if the alignment is larger than the sh_entsize and this
    // is not SHF_STRINGS.
-diff --git a/tools/lld/test/ELF/invalid-elf.test b/tools/lld/test/ELF/invalid-elf.test
+diff --git a/test/ELF/invalid-elf.test b/test/ELF/invalid-elf.test
 index c3a97d3..73516a4 100644
---- a/tools/lld/test/ELF/invalid-elf.test
-+++ b/tools/lld/test/ELF/invalid-elf.test
+--- a/test/ELF/invalid-elf.test
++++ b/test/ELF/invalid-elf.test
 @@ -24,10 +24,6 @@
  # RUN:   FileCheck --check-prefix=INVALID-SECTION-INDEX %s
  # INVALID-SECTION-INDEX: Invalid section index
@@ -63,10 +63,10 @@ index c3a97d3..73516a4 100644
  # RUN: not ld.lld %p/Inputs/invalid-multiple-eh-relocs.elf -o %t2 2>&1 | \
  # RUN:   FileCheck --check-prefix=INVALID-EH-RELOCS %s
  # INVALID-EH-RELOCS: multiple relocation sections to .eh_frame are not supported
-diff --git a/tools/lld/test/ELF/merge-invalid-size.s b/tools/lld/test/ELF/merge-invalid-size.s
+diff --git a/test/ELF/merge-invalid-size.s b/test/ELF/merge-invalid-size.s
 index 2a99e14..c27b21b 100644
---- a/tools/lld/test/ELF/merge-invalid-size.s
-+++ b/tools/lld/test/ELF/merge-invalid-size.s
+--- a/test/ELF/merge-invalid-size.s
++++ b/test/ELF/merge-invalid-size.s
 @@ -3,5 +3,8 @@
  // RUN: not ld.lld %t.o -o %t.so 2>&1 | FileCheck %s
  // CHECK: SHF_MERGE section size must be a multiple of sh_entsize

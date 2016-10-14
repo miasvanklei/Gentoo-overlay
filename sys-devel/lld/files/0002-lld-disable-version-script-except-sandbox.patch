@@ -1,0 +1,34 @@
+--- a/include/lld/ELF/Options.td	2016-10-14 19:26:28.524901932 +0200
++++ b/include/lld/ELF/Options.td	2016-10-14 19:27:14.249898170 +0200
+@@ -168,6 +168,9 @@
+ def version_script: S<"version-script">,
+   HelpText<"Read a version script">;
+ 
++def sandbox_version_script: S<"sandbox-version-script">,
++  HelpText<"Read a sandbox version script">;
++
+ def warn_common: F<"warn-common">,
+   HelpText<"Warn about duplicate common symbols">;
+ 
+--- a/ELF/Driver.cpp	2016-10-14 17:34:17.511455781 +0200
++++ b/ELF/Driver.cpp	2016-10-14 17:34:48.635453220 +0200
+@@ -443,7 +443,7 @@
+   for (auto *Arg : Args.filtered(OPT_export_dynamic_symbol))
+     Config->DynamicList.push_back(Arg->getValue());
+ 
+-  if (auto *Arg = Args.getLastArg(OPT_version_script))
++  if (auto *Arg = Args.getLastArg(OPT_sandbox_version_script))
+     if (Optional<MemoryBufferRef> Buffer = readFile(Arg->getValue()))
+       parseVersionScript(*Buffer);
+ }
+--- a/ELF/DriverUtils.cpp	2016-10-14 17:33:57.636457416 +0200
++++ b/ELF/DriverUtils.cpp	2016-10-14 17:34:30.910454679 +0200
+@@ -225,7 +225,7 @@
+     case OPT_rpath:
+     case OPT_alias_script_T:
+     case OPT_script:
+-    case OPT_version_script:
++    case OPT_sandbox_version_script:
+       OS << Arg->getSpelling() << " "
+          << quote(rewritePath(Arg->getValue())) << "\n";
+       break;
