@@ -1,0 +1,31 @@
+--- configure.ac.bak	2016-10-15 00:34:47.940379742 +0200
++++ configure.ac	2016-10-15 00:36:26.191371658 +0200
+@@ -349,7 +349,7 @@
+ LIBC_PATH=$(AS_IF(
+ 	dnl GNU linker (bfd & gold)
+ 	[try_link -Wl,--verbose],
+-		[$AWK '/ttempt to open/ { if (($(NF-1) ~ /\/libc\.so/) && ($NF == "succeeded")) LIBC = $(NF-1); }; END {print LIBC}' libctest.log],
++		[$AWK '{ if (($(NF-1) ~ /\/libc\.so/)) LIBC = $(NF-1); }; END {print LIBC}' libctest.log],
+ 	dnl Solaris linker
+ 	[try_link -Wl,-m],
+ 		[set -- `$EGREP -o '/[[^ ]]*/libc.so' libctest.log`; echo $1]
+@@ -370,8 +370,8 @@
+ $CC $CFLAGS $CPPFLAGS $LDFLAGS -o libctest libctest.c
+ LIBC_VERSION=$(
+ 	$READELF -d libctest | \
+-	$EGREP 'NEEDED.* \@<:@libc\.so' | \
+-	$AWK '{print $NF}' | [sed -e 's:\[::' -e 's:\]::']
++	$EGREP 'NEEDED.* \(libc\.so)' | \
++	$AWK '{print $NF}' | sed 's/.*(\(.*\)).*/\1/g'
+ )
+ rm -f libctest*
+ if test "$LIBC_VERSION"x = x ; then
+@@ -442,7 +442,7 @@
+ 	rm -f conftest.map
+ fi])
+ LDFLAG_VER=
+-SB_CHECK_LDFLAG_VER([--version-script])
++SB_CHECK_LDFLAG_VER([--sandbox-version-script])
+ SB_CHECK_LDFLAG_VER([-M])
+ if test "x${LDFLAG_VER}" = "x" ; then
+ 	AC_MSG_ERROR([unable to find a linker flag for versioning])

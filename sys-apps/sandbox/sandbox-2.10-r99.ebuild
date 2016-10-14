@@ -32,11 +32,11 @@ sandbox_death_notice() {
 }
 
 src_prepare() {
-#	epatch "${FILESDIR}"/${P}-memory-corruption.patch #568714
+	epatch "${FILESDIR}"/${P}-memory-corruption.patch #568714
 	epatch "${FILESDIR}"/${P}-disable-same.patch
 	epatch "${FILESDIR}"/${PN}-2.6-musl.patch
 	epatch "${FILESDIR}"/${P}-fix-visibility-musl.patch
-	epatch "${FILESDIR}"/${P}-linker-as-libc.patch
+	epatch "${FILESDIR}"/${P}-lld-llvm.patch
 	epatch "${FILESDIR}"/${P}-dont-abort-long-name.patch
 	epatch_user
 	eautoreconf
