@@ -40,6 +40,7 @@ src_prepare() {
 	python_setup
 
 	eapply "${FILESDIR}"/0001-lldb-use-llvm-regex.patch
+	eapply "${FILESDIR}"/0002-lldb-remove-MIUtilParse.patch
 
 	# Do not install dummy readline.so module from
 	# https://llvm.org/bugs/show_bug.cgi?id=18841
