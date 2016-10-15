@@ -32,7 +32,6 @@ RDEPEND="
 	>=gnome-extra/gnome-system-monitor-${PV}
 	>=gnome-extra/gnome-tweak-tool-${PV}
 	>=gnome-extra/gnome-weather-3.20.2
-	>=gnome-extra/gucharmap-${PV}:2.90
 	>=gnome-extra/nautilus-sendto-3.8.4
 	>=gnome-extra/sushi-3.21.91
 	>=mail-client/evolution-${PV}
