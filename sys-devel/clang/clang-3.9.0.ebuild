@@ -120,7 +120,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/0014-update-default-cxx-standard.patch
 	eapply "${FILESDIR}"/0015-link-libcxxabi.patch
 	eapply "${FILESDIR}"/0016-dont-define-on-musl.patch
-	eapply "${FILESDIR}"/0017-dont-use-crtfiles.patch
 
 	# User patches
 	eapply_user
@@ -163,7 +162,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_THREADS=ON
-		-DLLVM_ENABLE_LLD=ON
+		-DLLVM_ENABLE_LLD=OFF
 	)
 
 	if multilib_is_native_abi; then
