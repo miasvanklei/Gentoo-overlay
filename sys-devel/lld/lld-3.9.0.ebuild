@@ -79,6 +79,7 @@ src_prepare() {
 	# bugs found by compiling ghc
 	eapply "${FILESDIR}"/0006-lld-do-not-merge-sections-in-case-of-relocatable-object-generation.patch
 	eapply "${FILESDIR}"/0007-lld-do-not-ignore-relocations-addends.patch
+	eapply "${FILESDIR}"/0010-lld-R-separate.patch
 
 	# bugs found by compiling rust
 	eapply "${FILESDIR}"/0008-lld-accept-sh_entsize0.patch
