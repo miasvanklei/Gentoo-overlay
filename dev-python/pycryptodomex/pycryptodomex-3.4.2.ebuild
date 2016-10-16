@@ -18,6 +18,12 @@ IUSE="test"
 RDEPEND=""
 DEPEND="${RDEPEND} dev-python/setuptools[${PYTHON_USEDEP}]"
 
+src_prepare()
+{
+	default
+	mkdir ${S}/build
+}
+
 python_test() {
 	${PYTHON} ${PN}/test/run_tests.py --group=local || die
 }
