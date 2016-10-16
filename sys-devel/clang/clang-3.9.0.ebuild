@@ -120,6 +120,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0014-update-default-cxx-standard.patch
 	eapply "${FILESDIR}"/0015-link-libcxxabi.patch
 	eapply "${FILESDIR}"/0016-dont-define-on-musl.patch
+	eapply "${FILESDIR}"/0017-define__std_iso_10646__.patch
 
 	# User patches
 	eapply_user
