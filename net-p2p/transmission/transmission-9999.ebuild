@@ -78,6 +78,9 @@ src_prepare() {
 	# fix for broken translations path
 	epatch "${FILESDIR}/${PN}-2.80-translations-path-fix.patch"
 
+	# fix for missing includes
+	epatch "${FILESDIR}/musl-missing-includes.patch"
+
 	default
 	eautoreconf
 }
