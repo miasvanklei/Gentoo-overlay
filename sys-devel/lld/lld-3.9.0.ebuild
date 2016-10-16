@@ -85,6 +85,9 @@ src_prepare() {
 	eapply "${FILESDIR}"/0008-lld-accept-sh_entsize0.patch
 	eapply "${FILESDIR}"/0009-lld-fix-dt_needed-value.patch
 
+	# strip comment section
+	eapply "${FILESDIR}"/0011-lld-strip-comment-section.patch
+
 	# User patches
 	eapply_user
 

@@ -1,0 +1,11 @@
+--- a/ELF/InputFiles.cpp	2016-10-16 21:11:38.801434288 +0200
++++ b/ELF/InputFiles.cpp	2016-10-16 21:14:22.001420860 +0200
+@@ -313,7 +313,7 @@
+     return &InputSection<ELFT>::Discarded;
+   }
+ 
+-  if (Config->StripDebug && Name.startswith(".debug"))
++  if (Config->StripDebug && (Name.startswith(".debug") || Name.startswith(".comment")))
+     return &InputSection<ELFT>::Discarded;
+ 
+   // A MIPS object file has a special sections that contain register
