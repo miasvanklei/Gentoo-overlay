@@ -20,7 +20,7 @@ DEPEND="net-misc/curl"
 RDEPEND="${DEPEND}"
 
 src_compile() {
-	./build.sh
+	./build.sh || die
 }
 
 src_install() {

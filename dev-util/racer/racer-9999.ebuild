@@ -22,7 +22,7 @@ DEPEND="${COMMON_DEPEND}
 RDEPEND="${COMMON_DEPEND}"
 
 src_compile() {
-	cargo build --release
+	cargo build --release --verbose || die
 }
 
 src_install() {
