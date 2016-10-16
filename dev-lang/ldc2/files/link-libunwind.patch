@@ -10,22 +10,12 @@
    case llvm::Triple::MacOSX:
 --- a/runtime/CMakeLists.txt	2016-08-11 20:01:08.768445285 +0200
 +++ b/runtime/CMakeLists.txt	2016-08-11 20:03:21.143441596 +0200
-@@ -420,7 +420,7 @@
-     if(BUILD_SHARED_LIBS)
-         if(${CMAKE_SYSTEM} MATCHES "FreeBSD")
-             set(dso_system_libs "m" "pthread")
-         else()
--            set(dso_system_libs "m" "pthread" "rt" "dl")
-+            set(dso_system_libs "-lunwind")
-         endif()
-         target_link_libraries(druntime-ldc${target_suffix} ${dso_system_libs})
-     endif()
-@@ -448,7 +448,7 @@
-             # TODO: As for druntime, adapt once shared libraries are supported
-             # on more operating systems.
-             target_link_libraries(phobos2-ldc${target_suffix}
--                druntime-ldc${target_suffix} "m" "pthread" "dl")
-+                druntime-ldc${target_suffix} "unwind")
-         endif()
+@@ -425,7 +425,7 @@
  
-         list(APPEND ${outlist_targets} "phobos2-ldc${target_suffix}")
+     if(BUILD_SHARED_LIBS)
+         if(${CMAKE_SYSTEM} MATCHES "Linux")
+-            set(dso_system_libs "m" "pthread" "rt" "dl")
++            set(dso_system_libs "unwind")
+         else()
+             set(dso_system_libs "m" "pthread")
+         endif()
