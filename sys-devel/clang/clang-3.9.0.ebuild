@@ -103,7 +103,7 @@ src_prepare() {
 	# be able to specify default values for -rtlib at build time
 	eapply "${FILESDIR}"/0005-default-rtlib.patch
 
-	# optimizations like ssp, pie, relro, and removal of crt files.
+	# optimizations like ssp, pie, relro
 	eapply "${FILESDIR}"/0006-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
 	eapply "${FILESDIR}"/0007-Enable-PIE-by-default-for-gentoo-linux.patch
 	eapply "${FILESDIR}"/0008-use-ssp-by-default.patch
@@ -111,17 +111,30 @@ src_prepare() {
 	# link compiler-rt/libunwind shared
 	eapply "${FILESDIR}"/0009-link-compiler-rt-shared-and-libunwind.patch
 
-	# fixes for removing gcc, like increase gcc version for portage,
-	# remove rtm for qt, update cxx standard for qt, or ada check binutils, lld.
+	# remove gcc quirks
 	eapply "${FILESDIR}"/0010-fix-ada-in-configure.patch
 	eapply "${FILESDIR}"/0011-increase-gcc-version.patch
 	eapply "${FILESDIR}"/0012-remove-gcc-detection.patch
+
+	# rtm is not availible on all haswell
 	eapply "${FILESDIR}"/0013-remove-rtm-haswell.patch
+
+	# patches for c++
 	eapply "${FILESDIR}"/0014-update-default-cxx-standard.patch
 	eapply "${FILESDIR}"/0015-link-libcxxabi.patch
+
+	# fixes for musl
 	eapply "${FILESDIR}"/0016-dont-define-on-musl.patch
 	eapply "${FILESDIR}"/0017-define__std_iso_10646__.patch
+
+	# remove dependency on strip from binutils
 	eapply "${FILESDIR}"/0018-always-strip-symbols-unless-debug.patch
+
+	# remove dependency on crtbegin* and crtend*
+	eapply "${FILESDIR}"/0019-remove-crtfiles.patch
+	eapply "${FILESDIR}"/0020-fuse-init-array.patch
+	eapply "${FILESDIR}"/0021-fno-use-cxa-atexit.patch
+
 
 	# User patches
 	eapply_user

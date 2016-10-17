@@ -1,0 +1,12 @@
+--- a/lib/Driver/ToolChains.cpp	2016-10-17 15:33:32.889775819 +0200
++++ b/lib/Driver/ToolChains.cpp	2016-10-17 15:37:30.016756308 +0200
+@@ -2748,7 +2748,8 @@
+       getTriple().getArch() == llvm::Triple::aarch64 ||
+       getTriple().getArch() == llvm::Triple::aarch64_be ||
+       (getTriple().getOS() == llvm::Triple::Linux &&
+-       (!V.isOlderThan(4, 7, 0) || getTriple().isAndroid())) ||
++       (!V.isOlderThan(4, 7, 0) || getTriple().isAndroid() ||
++        getTriple().getEnvironment() == llvm::Triple::Musl)) ||
+       getTriple().getOS() == llvm::Triple::NaCl ||
+       (getTriple().getVendor() == llvm::Triple::MipsTechnologies &&
+        !getTriple().hasEnvironment());
