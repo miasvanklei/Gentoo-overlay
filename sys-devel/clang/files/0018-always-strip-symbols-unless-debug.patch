@@ -5,7 +5,17 @@
      CmdArgs.push_back("-export-dynamic");
  
 -  if (Args.hasArg(options::OPT_s))
-+  if (!Args.hasArg(options::OPT_gTune_Group) && !Args.hasArg(options::OPT_ggdbN_Group) && !Args.hasArg(options::OPT_g_Group) && !Args.hasArg(options::OPT_gN_Group))
++  if (!Args.hasArg(options::OPT_nostrip))
      CmdArgs.push_back("-s");
  
    if (Arch == llvm::Triple::armeb || Arch == llvm::Triple::thumbeb)
+--- a/include/clang/Driver/Options.td	2016-10-18 14:40:43.252321932 +0200
++++ b/include/clang/Driver/Options.td	2016-10-18 14:43:36.200307701 +0200
+@@ -1880,6 +1880,7 @@
+            "system header.">;
+ def : Separate<["--"], "no-system-header-prefix">, Alias<no_system_header_prefix>;
+ def s : Flag<["-"], "s">;
++def nostrip : Flag<["-"], "nostrip">;
+ def target : Joined<["--"], "target=">, Flags<[DriverOption, CoreOption]>,
+   HelpText<"Generate code for the given target">;
+ def gcc_toolchain : Joined<["--"], "gcc-toolchain=">, Flags<[DriverOption]>,
