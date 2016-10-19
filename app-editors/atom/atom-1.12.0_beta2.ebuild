@@ -11,7 +11,7 @@ DESCRIPTION="A hackable text editor for the 21st Century"
 HOMEPAGE="https://atom.io"
 MY_PV="${PV//_/-}"
 
-ELECTRON_SLOT=0.37
+ELECTRON_SLOT=1.3
 
 # All binary packages depend on this
 NAN_V=2.4.0
@@ -20,20 +20,20 @@ NAN_V=2.4.0
 CACHED_RUN_IN_THIS_CONTEXT_V=0.4.1
 GIT_UTILS_V=4.1.2
 NODE_NSLOG_V=3.0.0
-NODE_ONIGURUMA_V=5.1.2
+NODE_ONIGURUMA_V=6.1.0
 NODE_PATHWATCHER_V=6.5.0
 NODE_RUNAS_V=3.1.1
 SCROLLBAR_STYLE_V=3.2.0
-SPELL_CHECK_V=0.68.2
+SPELL_CHECK_V=0.68.4
 
 # textbuffer dependency
-MARKER_INDEX_V=4.0.0
+MARKER_INDEX_V=4.0.1
 
 # apm dependency
 NODE_KEYTAR_V=3.0.2
 
 # atom-keymap dependency
-KEYBOARD_LAYOUT_V=1.0.1
+KEYBOARD_LAYOUT_V=1.2.2
 
 # symbols-view dependency
 NODE_CTAGS_V=3.0.0
