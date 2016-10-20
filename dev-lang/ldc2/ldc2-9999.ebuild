@@ -3,10 +3,8 @@
 # $Id$
 EAPI=6
 
-inherit cmake-utils versionator git-r3
+inherit cmake-utils git-r3
 
-MY_PV="$(replace_version_separator '_' '-')"
-MY_P="ldc-${MY_PV}-src"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/ldc-developers/ldc.git"
 
