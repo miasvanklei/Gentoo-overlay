@@ -70,23 +70,24 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
-	eapply "${FILESDIR}"/0001-lld-standalone.patch
-	eapply "${FILESDIR}"/0002-lld-disable-version-script-except-sandbox.patch
-	eapply "${FILESDIR}"/0003-lld-gnu-ld-compat.patch
-	eapply "${FILESDIR}"/0004-lld-ignore-options.patch
-	eapply "${FILESDIR}"/0005-lld-add-nostdlib.patch
+	eapply "${FILESDIR}"/0001-standalone.patch
+	eapply "${FILESDIR}"/0002-disable-version-script-except-sandbox.patch
+	eapply "${FILESDIR}"/0003-gnu-ld-compat.patch
+	eapply "${FILESDIR}"/0004-ignore-options.patch
+	eapply "${FILESDIR}"/0005-add-nostdlib.patch
 
 	# bugs found by compiling ghc
-	eapply "${FILESDIR}"/0006-lld-do-not-merge-sections-in-case-of-relocatable-object-generation.patch
-	eapply "${FILESDIR}"/0007-lld-do-not-ignore-relocations-addends.patch
-	eapply "${FILESDIR}"/0010-lld-R-separate.patch
+	eapply "${FILESDIR}"/0006-do-not-merge-sections-in-case-of-relocatable-object-generation.patch
+	eapply "${FILESDIR}"/0007-do-not-ignore-relocations-addends.patch
+	eapply "${FILESDIR}"/0008-R-separate.patch
 
 	# bugs found by compiling rust
-	eapply "${FILESDIR}"/0008-lld-accept-sh_entsize0.patch
-	eapply "${FILESDIR}"/0009-lld-fix-dt_needed-value.patch
+	eapply "${FILESDIR}"/0009-accept-sh_entsize0.patch
+	eapply "${FILESDIR}"/0010-fix-dt_needed-value.patch
+	eapply "${FILESDIR}"/0011-fix-strip.patch
 
 	# strip comment section
-	eapply "${FILESDIR}"/0011-lld-strip-comment-section.patch
+	eapply "${FILESDIR}"/0012-strip-comment-section.patch
 
 	# User patches
 	eapply_user
