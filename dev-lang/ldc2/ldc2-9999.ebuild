@@ -26,6 +26,7 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-libunwind-alignment.patch
 	eapply ${FILESDIR}/fix-musl.patch
 	eapply ${FILESDIR}/link-libunwind.patch
+	eapply ${FILESDIR}/use-init-array.patch
 	default
 }
 
