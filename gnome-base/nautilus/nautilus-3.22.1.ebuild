@@ -5,7 +5,7 @@
 EAPI=6
 GNOME2_LA_PUNT="yes" # Needed with USE 'sendto'
 
-inherit gnome2 readme.gentoo-r1 virtualx
+inherit gnome2 readme.gentoo-r1 virtualx flag-o-matic
 
 DESCRIPTION="A file manager for the GNOME desktop"
 HOMEPAGE="https://wiki.gnome.org/Apps/Nautilus"
@@ -80,6 +80,10 @@ src_prepare() {
 }
 
 src_configure() {
+
+	# multiple definitions in nautilus search
+	append-ld-flags -Wl,--allow-multiple-definition
+
 	gnome2_src_configure \
 		--disable-profiling \
 		--disable-update-mimedb \
