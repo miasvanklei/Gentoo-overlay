@@ -112,6 +112,7 @@ EOF
 	eapply "${FILESDIR}"/link-llvm-static.patch
 	eapply "${FILESDIR}"/dont-require-filecheck.patch
 	eapply "${FILESDIR}"/llvm-with-ffi.patch
+	eapply "${FILESDIR}"/link-with-libcxx.patch
 
 	eapply_user
 }
