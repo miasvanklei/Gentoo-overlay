@@ -25,13 +25,14 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-musl.patch
 	eapply ${FILESDIR}/link-libunwind.patch
 	eapply ${FILESDIR}/use-init-array.patch
+	eapply ${FILESDIR}/without-crtfiles.patch
 	default
 }
 
 src_configure() {
 	local mycmakeargs=(
 		-DD_VERSION=2
-		-DBUILD_SHARED_LIBS=ON
+		-DBUILD_SHARED_LIBS=OFF
 	)
 	cmake-utils_src_configure
 }

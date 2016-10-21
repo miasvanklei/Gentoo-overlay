@@ -1,0 +1,50 @@
+--- a/runtime/druntime/src/rt/sections_ldc.d	2016-10-21 13:46:58.014671013 +0200
++++ b/runtime/druntime/src/rt/sections_ldc.d	2016-10-21 13:47:06.310005027 +0200
+@@ -16,7 +16,7 @@
+ 
+ module rt.sections_ldc;
+ 
+-version (linux) {} else version (OSX) {} else version (FreeBSD) {} else version(LDC):
++version (OSX) {} else version (FreeBSD) {} else version(LDC):
+ 
+ import core.stdc.stdlib : alloca;
+ import rt.minfo;
+--- a/runtime/druntime/src/rt/sections_elf_shared.d	2016-10-21 13:46:33.365679096 +0200
++++ b/runtime/druntime/src/rt/sections_elf_shared.d	2016-10-21 13:46:39.644931707 +0200
+@@ -10,7 +10,7 @@
+ 
+ module rt.sections_elf_shared;
+ 
+-version (CRuntime_Glibc) enum SharedELF = true;
++version (CRuntime_Glibc) enum SharedELF = false;
+ else version (FreeBSD) enum SharedELF = true;
+ else enum SharedELF = false;
+ 
+--- a/gen/modules.cpp	2016-10-21 13:45:55.180144195 +0200
++++ b/gen/modules.cpp	2016-10-21 13:46:12.972859123 +0200
+@@ -115,25 +115,6 @@
+ 
+ /// Returns the module registry style to use for the current target triple.
+ RegistryStyle getModuleRegistryStyle() {
+-  const auto t = global.params.targetTriple;
+-
+-  if (t->isMacOSX()) {
+-    return RegistryStyle::sectionDarwin;
+-  }
+-
+-  if ((t->isOSLinux() && t->getEnvironment() != llvm::Triple::Android) ||
+-      t->isOSFreeBSD() ||
+-#if LDC_LLVM_VER > 305
+-      t->isOSNetBSD() || t->isOSOpenBSD() || t->isOSDragonFly()
+-#else
+-      t->getOS() == llvm::Triple::NetBSD ||
+-      t->getOS() == llvm::Triple::OpenBSD ||
+-      t->getOS() == llvm::Triple::DragonFly
+-#endif
+-          ) {
+-    return RegistryStyle::sectionELF;
+-  }
+-
+   return RegistryStyle::legacyLinkedList;
+ }
+ 
