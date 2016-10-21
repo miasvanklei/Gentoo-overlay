@@ -84,7 +84,7 @@ src_prepare() {
 	# bugs found by compiling rust
 	eapply "${FILESDIR}"/0009-accept-sh_entsize0.patch
 	eapply "${FILESDIR}"/0010-fix-dt_needed-value.patch
-	eapply "${FILESDIR}"/0011-fix-strip.patch
+	eapply "${FILESDIR}"/0011-dont-crash-discarded-sections.patch
 
 	# strip comment section
 	eapply "${FILESDIR}"/0012-strip-comment-section.patch
