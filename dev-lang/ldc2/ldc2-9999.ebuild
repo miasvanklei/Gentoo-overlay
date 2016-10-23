@@ -25,6 +25,9 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-musl.patch
 	eapply ${FILESDIR}/link-libunwind.patch
 	eapply ${FILESDIR}/use-init-array.patch
+	eapply ${FILESDIR}/remove-backtrace.patch
+	eapply ${FILESDIR}/remove-qsort_r.patch
+	eapply ${FILESDIR}/better-cmsg_nxthdr.patch
 	default
 }
 
