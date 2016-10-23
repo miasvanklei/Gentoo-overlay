@@ -43,6 +43,20 @@
  
    // -needed-libs
    cl::opt<bool> NeededLibraries("needed-libs",
+@@ -131,9 +131,12 @@
+   cl::opt<bool> NeededLibraries("needed-libs",
+     cl::desc("Display the needed libraries"));
+ 
+-  // -program-headers
++  // -program-headers, -l
+   cl::opt<bool> ProgramHeaders("program-headers",
+     cl::desc("Display ELF program headers"));
++  cl::alias ProgramHeadersShort("l",
++    cl::desc("Alias for -program-headers"),
++    cl::aliasopt(ProgramHeaders));
+ 
+   // -hash-table
+   cl::opt<bool> HashTable("hash-table",
 @@ -263,7 +263,7 @@
        Output("elf-output-style", cl::desc("Specify ELF dump style"),
               cl::values(clEnumVal(LLVM, "LLVM default style"),
