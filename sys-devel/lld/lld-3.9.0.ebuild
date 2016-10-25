@@ -10,7 +10,7 @@ DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python2_7 )
 
 inherit check-reqs cmake-utils flag-o-matic \
-	multilib-minimal pax-utils python-any-r1 toolchain-funcs
+	pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="LLD linker"
 HOMEPAGE="http://llvm.org/"
@@ -89,6 +89,9 @@ src_prepare() {
 	# strip comment section
 	eapply "${FILESDIR}"/0012-strip-comment-section.patch
 
+	# add -z muldefs
+	eapply "${FILESDIR}"/0013-add-muldefs-option.patch
+
 	# User patches
 	eapply_user
 
@@ -96,7 +99,7 @@ src_prepare() {
 	NATIVE_LIBDIR=$(get_libdir)
 }
 
-multilib_src_configure() {
+src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
@@ -119,20 +122,8 @@ multilib_src_configure() {
 	cmake-utils_src_configure
 }
 
-multilib_src_compile() {
-	cmake-utils_src_compile
-}
-
-multilib_src_test() {
+src_test() {
 	# respect TMPDIR!
 	local -x LIT_PRESERVES_TMP=1
 	cmake-utils_src_make check
-}
-
-src_install() {
-	multilib-minimal_src_install
-}
-
-multilib_src_install() {
-	cmake-utils_src_install
 }

@@ -4,7 +4,7 @@
 
 EAPI=5
 
-PYTHON_COMPAT=( python3_4 )
+PYTHON_COMPAT=( python3_5 )
 PYTHON_REQ_USE='threads(+)'
 
 DESCRIPTION="The third generation of Nuvola Player - cloud music integration for your Linux desktop"

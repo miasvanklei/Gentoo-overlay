@@ -82,7 +82,7 @@ src_prepare() {
 src_configure() {
 
 	# multiple definitions in nautilus search
-	append-ld-flags -Wl,--allow-multiple-definition
+	append-ldflags "-Wl,-z,muldefs"
 
 	gnome2_src_configure \
 		--disable-profiling \
