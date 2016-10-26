@@ -2,14 +2,12 @@
 
 ld.lld from llvm is used as linker for all packages.
 binutils is not installed, but some tools are still needed:
-      - strip
-      - ld.bfd for the linux kernel and sandbox
+      - ld.bfd for the linux kernel
       - objcopy for the linux kernel
       - as for the linux kernel
       
 gcc is only needed for two packages right now, for all others clang is used with libcxx, libcxxabi, llvm-libunwind:
       - gentoo-sources
-      - gtk+ (investigating the issue)
       
 lldb is used as debugger.
 
