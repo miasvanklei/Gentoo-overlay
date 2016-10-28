@@ -1,0 +1,195 @@
+--- a/include/math.h
++++ b/include/math.h
+@@ -385,15 +385,25 @@ double      yn(int, double);
+ 
+ double      drem(double, double);
+ float       dremf(float, float);
++long double dreml(long double, long double);
+ 
+ int         finite(double);
+ int         finitef(float);
++int         finitel(long double);
++
++int         isinff(float x);
++int         isinfl(long double x);
++
++int         isnanf(float x);
++int         isnanl(long double x);
+ 
+ double      scalb(double, double);
+ float       scalbf(float, float);
++long double scalbl(long double, long double);
+ 
+ double      significand(double);
+ float       significandf(float);
++long double significandl(long double);
+ 
+ double      lgamma_r(double, int*);
+ float       lgammaf_r(float, int*);
+--- a/src/math/finite.c
++++ b/src/math/finite.c
+@@ -1,7 +1,9 @@
+ #define _GNU_SOURCE
+ #include <math.h>
++#include <libc.h>
+ 
+-int finite(double x)
++int __finite(double x)
+ {
+ 	return isfinite(x);
+ }
++weak_alias(__finite, finite);
+--- a/src/math/finitef.c
++++ b/src/math/finitef.c
+@@ -1,7 +1,9 @@
+ #define _GNU_SOURCE
+ #include <math.h>
++#include <libc.h>
+ 
+-int finitef(float x)
++int __finitef(float x)
+ {
+ 	return isfinite(x);
+ }
++weak_alias(__finitef, finitef);
+--- /dev/null
++++ b/src/math/finitel.c
+@@ -0,0 +1,9 @@
++#define _GNU_SOURCE
++#include <math.h>
++#include <libc.h>
++
++int __finitel(long double x)
++{
++	return isfinite(x);
++}
++weak_alias(__finitel, finitel);
+--- /dev/null
++++ b/src/math/isinf.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isinf(double x)
++{
++       return isinf(x);
++}
++weak_alias(__isinf, isinf);
+--- /dev/null
++++ b/src/math/isinff.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isinff(float x)
++{
++       return isinf(x);
++}
++weak_alias(__isinff, isinff);
+--- /dev/null
++++ b/src/math/isinfl.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isinfl(long double x)
++{
++       return isinf(x);
++}
++weak_alias(__isinfl, isinfl);
+--- /dev/null
++++ b/src/math/isnan.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnan(double x)
++{
++       return isnan(x);
++}
++weak_alias(__isnan, isnan);
++
+--- /dev/null
++++ b/src/math/isnanf.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnanf(float x)
++{
++       return isnan(x);
++}
++weak_alias(__isnanf, isnanf);
++
+--- /dev/null
++++ b/src/math/isnanl.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnanl(long double x)
++{
++       return isnan(x);
++}
++weak_alias(__isnanl, isnanl);
++
+--- a/src/math/remainderl.c
++++ b/src/math/remainderl.c
+@@ -1,5 +1,6 @@
+ #include <math.h>
+ #include <float.h>
++#include "libc.h"
+ 
+ #if LDBL_MANT_DIG == 53 && LDBL_MAX_EXP == 1024
+ long double remainderl(long double x, long double y)
+@@ -13,3 +14,4 @@ long double remainderl(long double x, long double y)
+ 	return remquol(x, y, &q);
+ }
+ #endif
++weak_alias(remainderl, dreml);
+--- /dev/null
++++ b/src/math/scalbl.c
+@@ -0,0 +1,33 @@
++/* e_scalbl.c -- long double version of s_scalb.c.
++ * Conversion to long double by Ulrich Drepper,
++ * Cygnus Support, drepper@cygnus.com.
++ */
++
++/*
++ * ====================================================
++ * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
++ *
++ * Developed at SunPro, a Sun Microsystems, Inc. business.
++ * Permission to use, copy, modify, and distribute this
++ * software is freely granted, provided that this notice
++ * is preserved.
++ * ====================================================
++ */
++
++#define _GNU_SOURCE
++#include <math.h>
++
++long double scalbl(long double x, long double fn)
++{
++	if (isnan(x) || isnan(fn)) return x*fn;
++	if (!isfinite(fn)) {
++		if (fn > 0.0f)
++			return x*fn;
++		else
++			return x/(-fn);
++	}
++	if (rintl(fn) != fn) return (fn-fn)/(fn-fn);
++	if ( fn > 65000.0) return scalbnl(x, 65000);
++	if (-fn > 65000.0) return scalbnl(x,-65000);
++	return scalbnl(x,(int)fn);
++}
+--- /dev/null
++++ b/src/math/significandl.c
+@@ -0,0 +1,7 @@
++#define _GNU_SOURCE
++#include <math.h>
++
++long double significandl(long double x)
++{
++	return scalbnl(x, -ilogbl(x));
++}

@@ -1,0 +1,63 @@
+diff --git a/src/stdlib/strtod.c b/src/stdlib/strtod.c
+index 461dcf8..d4b4624 100644
+--- a/src/stdlib/strtod.c
++++ b/src/stdlib/strtod.c
+@@ -37,4 +37,5 @@ weak_alias(strtod, strtod_l);
+ weak_alias(strtold, strtold_l);
+ weak_alias(strtof, __strtof_l);
+ weak_alias(strtod, __strtod_l);
++weak_alias(strtod, __strtod_internal);
+ weak_alias(strtold, __strtold_l);
+diff --git a/src/string/strndup.c b/src/string/strndup.c
+index 617d27b..e1d7cb1 100644
+--- a/src/string/strndup.c
++++ b/src/string/strndup.c
+@@ -1,7 +1,8 @@
+ #include <stdlib.h>
+ #include <string.h>
++#include "libc.h"
+ 
+-char *strndup(const char *s, size_t n)
++char *__strndup(const char *s, size_t n)
+ {
+ 	size_t l = strnlen(s, n);
+ 	char *d = malloc(l+1);
+@@ -10,3 +11,4 @@ char *strndup(const char *s, size_t n)
+ 	d[l] = 0;
+ 	return d;
+ }
++weak_alias(__strndup, strndup);
+diff --git a/src/string/strsep.c b/src/string/strsep.c
+index cb37c32..9365c9f 100644
+--- a/src/string/strsep.c
++++ b/src/string/strsep.c
+@@ -1,5 +1,6 @@
+ #define _GNU_SOURCE
+ #include <string.h>
++#include "libc.h"
+ 
+ char *strsep(char **str, const char *sep)
+ {
+@@ -11,3 +12,4 @@ char *strsep(char **str, const char *sep)
+ 	*str = end;
+ 	return s;
+ }
++weak_alias(strsep, __strsep_g);
+diff --git a/src/string/strtok_r.c b/src/string/strtok_r.c
+index 862d4fe..d9b621b 100644
+--- a/src/string/strtok_r.c
++++ b/src/string/strtok_r.c
+@@ -1,6 +1,7 @@
+ #include <string.h>
++#include "libc.h"
+ 
+-char *strtok_r(char *restrict s, const char *restrict sep, char **restrict p)
++char *__strtok_r(char *restrict s, const char *restrict sep, char **restrict p)
+ {
+ 	if (!s && !(s = *p)) return NULL;
+ 	s += strspn(s, sep);
+@@ -10,3 +11,4 @@ char *strtok_r(char *restrict s, const char *restrict sep, char **restrict p)
+ 	else *p = 0;
+ 	return s;
+ }
++weak_alias(__strtok_r, strtok_r);
