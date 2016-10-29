@@ -1,0 +1,341 @@
+--- a/include/math.h
++++ b/include/math.h
+@@ -58,33 +58,49 @@
+ 	sizeof(x) == sizeof(double) ? __fpclassify(x) : \
+ 	__fpclassifyl(x) )
+ 
++int __isinf(double x);
++int __isinff(float x);
++int __isinfl(long double x);
++
+ #define isinf(x) ( \
+-	sizeof(x) == sizeof(float) ? (__FLOAT_BITS(x) & 0x7fffffff) == 0x7f800000 : \
+-	sizeof(x) == sizeof(double) ? (__DOUBLE_BITS(x) & -1ULL>>1) == 0x7ffULL<<52 : \
+-	__fpclassifyl(x) == FP_INFINITE)
++	sizeof(x) == sizeof(float) ? __isinff(x) : \
++	sizeof(x) == sizeof(double) ? __isinf(x) : \
++	__isinfl(x))
++
++int __isnan(double x);
++int __isnanf(float x);
++int __isnanl(long double x);
+ 
+ #define isnan(x) ( \
+-	sizeof(x) == sizeof(float) ? (__FLOAT_BITS(x) & 0x7fffffff) > 0x7f800000 : \
+-	sizeof(x) == sizeof(double) ? (__DOUBLE_BITS(x) & -1ULL>>1) > 0x7ffULL<<52 : \
+-	__fpclassifyl(x) == FP_NAN)
++	sizeof(x) == sizeof(float) ? __isnanf(x) : \
++	sizeof(x) == sizeof(double) ? __isnan(x) : \
++	__isnanl(x))
++
++int __isnormal(double x);
++int __isnormalf(float x);
++int __isnormall(long double x);
+ 
+ #define isnormal(x) ( \
+-	sizeof(x) == sizeof(float) ? ((__FLOAT_BITS(x)+0x00800000) & 0x7fffffff) >= 0x01000000 : \
+-	sizeof(x) == sizeof(double) ? ((__DOUBLE_BITS(x)+(1ULL<<52)) & -1ULL>>1) >= 1ULL<<53 : \
+-	__fpclassifyl(x) == FP_NORMAL)
++	sizeof(x) == sizeof(float) ? __isnormalf(x) : \
++	sizeof(x) == sizeof(double) ? __isnormal(x) : \
++	__isnormall(x))
++
++int __finite(double);
++int __finitef(float);
++int __finitel(long double);
+ 
+ #define isfinite(x) ( \
+-	sizeof(x) == sizeof(float) ? (__FLOAT_BITS(x) & 0x7fffffff) < 0x7f800000 : \
+-	sizeof(x) == sizeof(double) ? (__DOUBLE_BITS(x) & -1ULL>>1) < 0x7ffULL<<52 : \
+-	__fpclassifyl(x) > FP_INFINITE)
++	sizeof(x) == sizeof(float) ? __finitef(x) : \
++	sizeof(x) == sizeof(double) ? __finite(x) : \
++	__finitel(x))
+ 
+ int __signbit(double);
+ int __signbitf(float);
+ int __signbitl(long double);
+ 
+ #define signbit(x) ( \
+-	sizeof(x) == sizeof(float) ? (int)(__FLOAT_BITS(x)>>31) : \
+-	sizeof(x) == sizeof(double) ? (int)(__DOUBLE_BITS(x)>>63) : \
++	sizeof(x) == sizeof(float) ? __signbitf(x) : \
++	sizeof(x) == sizeof(double) ? __signbit(x) : \
+ 	__signbitl(x) )
+ 
+ #define isunordered(x,y) (isnan((x)) ? ((void)(y),1) : isnan((y)))
+@@ -385,15 +401,15 @@ double      yn(int, double);
+ 
+ double      drem(double, double);
+ float       dremf(float, float);
+-
+-int         finite(double);
+-int         finitef(float);
++long double dreml(long double, long double);
+ 
+ double      scalb(double, double);
+ float       scalbf(float, float);
++long double scalbl(long double, long double);
+ 
+ double      significand(double);
+ float       significandf(float);
++long double significandl(long double);
+ 
+ double      lgamma_r(double, int*);
+ float       lgammaf_r(float, int*);
+--- /dev/null
++++ b/src/math/__finite.c
+@@ -0,0 +1,9 @@
++#define _GNU_SOURCE
++#include <math.h>
++#include <libc.h>
++
++int __finite(double x)
++{
++	return (__DOUBLE_BITS(x) & -1ULL>>1) < 0x7ffULL<<52;
++}
++weak_alias(__finite, finite);
+--- /dev/null
++++ b/src/math/__finitef.c
+@@ -0,0 +1,9 @@
++#define _GNU_SOURCE
++#include <math.h>
++#include <libc.h>
++
++int __finitef(float x)
++{
++	return (__FLOAT_BITS(x) & 0x7fffffff) < 0x7f800000;
++}
++weak_alias(__finitef, finitef);
+--- /dev/null
++++ b/src/math/__finitel.c
+@@ -0,0 +1,9 @@
++#define _GNU_SOURCE
++#include <math.h>
++#include <libc.h>
++
++int __finitel(long double x)
++{
++	return __fpclassifyl(x) > FP_INFINITE;
++}
++weak_alias(__finitel, finitel);
+--- /dev/null
++++ b/src/math/__isinf.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isinf(double x)
++{
++       return (__DOUBLE_BITS(x) & -1ULL>>1) < 0x7ffULL<<52;
++}
++weak_alias(__isinf, isinf);
+--- /dev/null
++++ b/src/math/__isinff.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isinff(float x)
++{
++       return (__FLOAT_BITS(x) & 0x7fffffff) < 0x7f800000;
++}
++weak_alias(__isinff, isinff);
+--- /dev/null
++++ b/src/math/__isinfl.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isinfl(long double x)
++{
++       return __fpclassifyl(x) > FP_INFINITE;
++}
++weak_alias(__isinfl, isinfl);
+--- /dev/null
++++ b/src/math/__isnan.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnan(double x)
++{
++       return (__DOUBLE_BITS(x) & -1ULL>>1) > 0x7ffULL<<52;
++}
++weak_alias(__isnan, isnan);
++
+--- /dev/null
++++ b/src/math/__isnanf.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnanf(float x)
++{
++       return (__FLOAT_BITS(x) & 0x7fffffff) > 0x7f800000;
++}
++weak_alias(__isnanf, isnanf);
++
+--- /dev/null
++++ b/src/math/__isnanl.c
+@@ -0,0 +1,9 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnanl(long double x)
++{
++       return __fpclassifyl(x) == FP_NAN;
++}
++weak_alias(__isnanl, isnanl);
++
+--- /dev/null
++++ b/src/math/__isnormal.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnormal(double x)
++{
++       return ((__DOUBLE_BITS(x)+(1ULL<<52)) & -1ULL>>1) >= 1ULL<<53;
++}
++weak_alias(__isnormal, isnormal);
+--- /dev/null
++++ b/src/math/__isnormalf.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnormalf(float x)
++{
++       return ((__FLOAT_BITS(x)+0x00800000) & 0x7fffffff) >= 0x01000000;
++}
++weak_alias(__isnormalf, isnormalf);
+--- /dev/null
++++ b/src/math/__isnormall.c
+@@ -0,0 +1,8 @@
++#include <math.h>
++#include "libc.h"
++
++int __isnormall(long double x)
++{
++       return __fpclassifyl(x) == FP_NORMAL;
++}
++weak_alias(__isnormall, isnormall);
+--- a/src/math/__signbit.c
++++ b/src/math/__signbit.c
+@@ -1,13 +1,8 @@
+-#include "libm.h"
++#include <math.h>
++#include "libc.h"
+ 
+-// FIXME: macro in math.h
+ int __signbit(double x)
+ {
+-	union {
+-		double d;
+-		uint64_t i;
+-	} y = { x };
+-	return y.i>>63;
++	return (int)(__DOUBLE_BITS(x)>>63);
+ }
+-
+-
++weak_alias(__signbit, signbit);
+--- a/src/math/__signbitf.c
++++ b/src/math/__signbitf.c
+@@ -1,11 +1,8 @@
+-#include "libm.h"
++#include <math.h>
++#include "libc.h"
+ 
+-// FIXME: macro in math.h
+ int __signbitf(float x)
+ {
+-	union {
+-		float f;
+-		uint32_t i;
+-	} y = { x };
+-	return y.i>>31;
++	return (int)(__FLOAT_BITS(x)>>31);
+ }
++weak_alias(__signbitf, signbitf);
+--- a/src/math/finite.c
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#define _GNU_SOURCE
+-#include <math.h>
+-
+-int finite(double x)
+-{
+-	return isfinite(x);
+-}
+--- a/src/math/finitef.c
++++ /dev/null
+@@ -1,7 +0,0 @@
+-#define _GNU_SOURCE
+-#include <math.h>
+-
+-int finitef(float x)
+-{
+-	return isfinite(x);
+-}
+--- a/src/math/remainderl.c
++++ b/src/math/remainderl.c
+@@ -1,5 +1,6 @@
+ #include <math.h>
+ #include <float.h>
++#include "libc.h"
+ 
+ #if LDBL_MANT_DIG == 53 && LDBL_MAX_EXP == 1024
+ long double remainderl(long double x, long double y)
+@@ -13,3 +14,4 @@ long double remainderl(long double x, long double y)
+ 	return remquol(x, y, &q);
+ }
+ #endif
++weak_alias(remainderl, dreml);
+--- /dev/null
++++ b/src/math/scalbl.c
+@@ -0,0 +1,33 @@
++/* e_scalbl.c -- long double version of s_scalb.c.
++ * Conversion to long double by Ulrich Drepper,
++ * Cygnus Support, drepper@cygnus.com.
++ */
++
++/*
++ * ====================================================
++ * Copyright (C) 1993 by Sun Microsystems, Inc. All rights reserved.
++ *
++ * Developed at SunPro, a Sun Microsystems, Inc. business.
++ * Permission to use, copy, modify, and distribute this
++ * software is freely granted, provided that this notice
++ * is preserved.
++ * ====================================================
++ */
++
++#define _GNU_SOURCE
++#include <math.h>
++
++long double scalbl(long double x, long double fn)
++{
++	if (isnan(x) || isnan(fn)) return x*fn;
++	if (!isfinite(fn)) {
++		if (fn > 0.0f)
++			return x*fn;
++		else
++			return x/(-fn);
++	}
++	if (rintl(fn) != fn) return (fn-fn)/(fn-fn);
++	if ( fn > 65000.0) return scalbnl(x, 65000);
++	if (-fn > 65000.0) return scalbnl(x,-65000);
++	return scalbnl(x,(int)fn);
++}
+--- /dev/null
++++ b/src/math/significandl.c
+@@ -0,0 +1,7 @@
++#define _GNU_SOURCE
++#include <math.h>
++
++long double significandl(long double x)
++{
++	return scalbnl(x, -ilogbl(x));
++}
