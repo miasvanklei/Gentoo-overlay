@@ -135,6 +135,8 @@ src_prepare() {
 	eapply "${FILESDIR}"/0020-fuse-init-array.patch
 	eapply "${FILESDIR}"/0021-fno-use-cxa-atexit.patch
 
+	# needed in linux kernel
+        eapply "${FILESDIR}"/0022-add-fno-delete-null-pointer-checks.patch
 
 	# User patches
 	eapply_user
