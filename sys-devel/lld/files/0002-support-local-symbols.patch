@@ -1,0 +1,126 @@
+--- a/ELF/SymbolListFile.cpp	2016-07-16 20:45:23.000000000 +0200
++++ b/ELF/SymbolListFile.cpp	2016-10-31 12:13:00.008566509 +0100
+@@ -72,7 +72,7 @@
+   void parseExtern(std::vector<SymbolVersion> *Globals);
+   void parseVersion(StringRef VerStr);
+   void parseGlobal(StringRef VerStr);
+-  void parseLocal();
++  void parseLocal(StringRef VerStr);
+ };
+ 
+ size_t elf::defineSymbolVersion(StringRef VerStr) {
+@@ -89,7 +89,7 @@
+   if (skip("global:") || peek() != "local:")
+     parseGlobal(VerStr);
+   if (skip("local:"))
+-    parseLocal();
++    parseLocal(VerStr);
+   expect("}");
+ 
+   // Each version may have a parent version. For example, "Ver2" defined as
+@@ -101,10 +101,27 @@
+   expect(";");
+ }
+ 
+-void VersionScriptParser::parseLocal() {
+-  Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+-  expect("*");
+-  expect(";");
++void VersionScriptParser::parseLocal(StringRef VerStr) {
++  if (peek() == "*") {
++    Config->DefaultSymbolVersion = VER_NDX_LOCAL;
++    expect("*");
++    expect(";");
++    return;
++  }
++  std::vector<SymbolVersion> *Locals;
++  if (VerStr.empty())
++    Locals = &Config->VersionScriptLocals;
++  else
++    Locals = &Config->VersionDefinitions.back().Locals;
++
++  for (;;) {
++    StringRef Cur = peek();
++    if (Cur == "}" || Error)
++      return;
++    next();
++    Locals->push_back({Cur, false});
++    expect(";");
++  }
+ }
+ 
+ void VersionScriptParser::parseExtern(std::vector<SymbolVersion> *Globals) {
+--- a/ELF/Config.h	2016-10-31 11:40:58.688675910 +0100
++++ b/ELF/Config.h	2016-10-31 11:54:56.873955049 +0100
+@@ -46,6 +46,7 @@
+   llvm::StringRef Name;
+   size_t Id;
+   std::vector<SymbolVersion> Globals;
++  std::vector<SymbolVersion> Locals;
+   size_t NameOff; // Offset in string table.
+ };
+ 
+@@ -72,6 +73,7 @@
+   std::vector<llvm::StringRef> SearchPaths;
+   std::vector<llvm::StringRef> Undefined;
+   std::vector<SymbolVersion> VersionScriptGlobals;
++  std::vector<SymbolVersion> VersionScriptLocals;
+   std::vector<uint8_t> BuildIdVector;
+   bool AllowMultipleDefinition;
+   bool AsNeeded = false;
+--- a/ELF/SymbolTable.cpp	2016-07-18 03:35:00.000000000 +0200
++++ b/ELF/SymbolTable.cpp	2016-10-31 15:10:54.701158493 +0100
+@@ -585,10 +585,25 @@
+ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+   // If version script does not contain versions declarations,
+   // we just should mark global symbols.
+-  if (!Config->VersionScriptGlobals.empty()) {
+-    for (SymbolVersion &Sym : Config->VersionScriptGlobals)
+-      if (SymbolBody *B = find(Sym.Name))
+-        B->symbol()->VersionId = VER_NDX_GLOBAL;
++  if (!Config->VersionScriptGlobals.empty() || !Config->VersionScriptLocals.empty()) {
++    if (!Config->VersionScriptGlobals.empty())
++      for (SymbolVersion &Sym : Config->VersionScriptGlobals) {
++        if (hasWildcard(Sym.Name))
++          for (SymbolBody *B : findAll(Sym.Name))
++            B->symbol()->VersionId = VER_NDX_GLOBAL;
++	else
++          if (SymbolBody *B = find(Sym.Name))
++            B->symbol()->VersionId = VER_NDX_GLOBAL;
++      }
++    if (!Config->VersionScriptLocals.empty())
++      for (SymbolVersion &Sym : Config->VersionScriptLocals) {
++        if (hasWildcard(Sym.Name))
++          for (SymbolBody *B : findAll(Sym.Name))
++            B->symbol()->VersionId = VER_NDX_LOCAL;
++        else
++          if (SymbolBody *B = find(Sym.Name))
++            B->symbol()->VersionId = VER_NDX_LOCAL;
++      }
+     return;
+   }
+ 
+@@ -616,6 +631,12 @@
+       SymbolBody *B = Sym.IsExternCpp ? Demangled[Sym.Name] : find(Sym.Name);
+       setVersionId(B, V.Name, Sym.Name, V.Id);
+     }
++    for (SymbolVersion Sym : V.Locals) {
++      if (hasWildcard(Sym.Name))
++        continue;
++      SymbolBody *B = Sym.IsExternCpp ? Demangled[Sym.Name] : find(Sym.Name);
++      setVersionId(B, V.Name, Sym.Name, VER_NDX_LOCAL);
++    }
+   }
+ 
+   // Handle wildcards.
+@@ -626,6 +647,10 @@
+         for (SymbolBody *B : findAll(Sym.Name))
+           if (B->symbol()->VersionId == Config->DefaultSymbolVersion)
+             B->symbol()->VersionId = V.Id;
++    for (SymbolVersion &Sym : V.Locals)
++      if (hasWildcard(Sym.Name))
++        for (SymbolBody *B : findAll(Sym.Name))
++            B->symbol()->VersionId = VER_NDX_LOCAL;
+   }
+ }
+ 

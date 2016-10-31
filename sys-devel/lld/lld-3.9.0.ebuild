@@ -70,8 +70,12 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
+	# support standalone build
 	eapply "${FILESDIR}"/0001-standalone.patch
-	eapply "${FILESDIR}"/0002-disable-version-script-except-sandbox.patch
+
+	# support local symbols without wildcard
+	eapply "${FILESDIR}"/0002-support-local-symbols.patch
+
 	eapply "${FILESDIR}"/0003-gnu-ld-compat.patch
 	eapply "${FILESDIR}"/0004-ignore-options.patch
 	eapply "${FILESDIR}"/0005-add-nostdlib.patch
