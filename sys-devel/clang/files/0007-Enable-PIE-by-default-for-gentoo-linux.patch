@@ -28,13 +28,33 @@ diff --git a/lib/Driver/Tools.cpp b/lib/Driver/Tools.cpp
 index ea1ce6f..8fd3649 100644
 --- a/lib/Driver/Tools.cpp
 +++ b/lib/Driver/Tools.cpp
-@@ -8775,6 +8817,7 @@ void gnutools::Link::ConstructJob(Compilation &C, const JobAction &JA,
+@@ -9358,7 +9358,7 @@
    const bool isAndroid = ToolChain.getTriple().isAndroid();
+   const bool IsIAMCU = ToolChain.getTriple().isOSIAMCU();
    const bool IsPIE =
-       !Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_static) &&
-+      !(Args.hasArg(options::OPT_fno_pie) || Args.hasArg(options::OPT_fno_PIE)) &&
+-      !Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_static) &&
++      !Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_fno_pie) &&
        (Args.hasArg(options::OPT_pie) || ToolChain.isPIEDefault());
    const bool HasCRTBeginEndFiles =
        ToolChain.getTriple().hasEnvironment() ||
+@@ -9413,6 +9413,9 @@
+       CmdArgs.push_back("-Bstatic");
+     else
+       CmdArgs.push_back("-static");
++    if (isPIE) {
++	CmdArgs.push_back("-Bsymbolic");
++    }
+   } else if (Args.hasArg(options::OPT_shared)) {
+     CmdArgs.push_back("-shared");
+   }
+@@ -9438,6 +9441,8 @@
+       if (!Args.hasArg(options::OPT_shared)) {
+         if (Args.hasArg(options::OPT_pg))
+           crt1 = "gcrt1.o";
++        else if (isPIE && Args.hasArg(options::OPT_static))
++          crt1 = "rcrt1.o";
+         else if (IsPIE)
+           crt1 = "Scrt1.o";
+         else
 -- 
 2.7.3
