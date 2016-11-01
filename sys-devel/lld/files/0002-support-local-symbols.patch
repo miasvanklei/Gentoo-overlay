@@ -70,7 +70,7 @@
    bool AsNeeded = false;
 --- a/ELF/SymbolTable.cpp	2016-07-18 03:35:00.000000000 +0200
 +++ b/ELF/SymbolTable.cpp	2016-10-31 15:10:54.701158493 +0100
-@@ -585,10 +585,25 @@
+@@ -585,10 +585,31 @@
  template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
    // If version script does not contain versions declarations,
    // we just should mark global symbols.
@@ -82,17 +82,23 @@
 +    if (!Config->VersionScriptGlobals.empty())
 +      for (SymbolVersion &Sym : Config->VersionScriptGlobals) {
 +        if (hasWildcard(Sym.Name))
-+          for (SymbolBody *B : findAll(Sym.Name))
++          for (SymbolBody *B : findAll(Sym.Name)) {
 +            B->symbol()->VersionId = VER_NDX_GLOBAL;
++            B->symbol()->VersionScriptProcessed = true;
++         }
 +	else
-+          if (SymbolBody *B = find(Sym.Name))
++          if (SymbolBody *B = find(Sym.Name)) {
 +            B->symbol()->VersionId = VER_NDX_GLOBAL;
++            B->symbol()->VersionScriptProcessed = true;
++	 }
 +      }
 +    if (!Config->VersionScriptLocals.empty())
 +      for (SymbolVersion &Sym : Config->VersionScriptLocals) {
 +        if (hasWildcard(Sym.Name))
-+          for (SymbolBody *B : findAll(Sym.Name))
-+            B->symbol()->VersionId = VER_NDX_LOCAL;
++          for (SymbolBody *B : findAll(Sym.Name)) {
++            if (!B->symbol()->VersionScriptProcessed)
++              B->symbol()->VersionId = VER_NDX_LOCAL;
++          }
 +        else
 +          if (SymbolBody *B = find(Sym.Name))
 +            B->symbol()->VersionId = VER_NDX_LOCAL;
@@ -100,7 +106,7 @@
      return;
    }
  
-@@ -616,6 +631,12 @@
+@@ -616,6 +637,12 @@
        SymbolBody *B = Sym.IsExternCpp ? Demangled[Sym.Name] : find(Sym.Name);
        setVersionId(B, V.Name, Sym.Name, V.Id);
      }
@@ -113,7 +119,7 @@
    }
  
    // Handle wildcards.
-@@ -626,6 +647,10 @@
+@@ -626,6 +653,10 @@
          for (SymbolBody *B : findAll(Sym.Name))
            if (B->symbol()->VersionId == Config->DefaultSymbolVersion)
              B->symbol()->VersionId = V.Id;
@@ -124,3 +130,14 @@
    }
  }
  
+--- a/ELF/Symbols.h	2016-07-18 03:35:00.000000000 +0200
++++ b/ELF/Symbols.h	2016-11-01 21:36:08.165066054 +0100
+@@ -406,6 +406,8 @@
+   // Version definition index.
+   uint16_t VersionId;
+ 
++  bool VersionScriptProcessed = false;
++
+   // Symbol visibility. This is the computed minimum visibility of all
+   // observed non-DSO symbols.
+   unsigned Visibility : 2;
