@@ -6,12 +6,12 @@ binutils is not installed, but some tools are still needed:
       - objcopy for the linux kernel
       - as for the linux kernel
       
-gcc is only needed for two packages right now, for all others clang is used with libcxx, libcxxabi, llvm-libunwind:
-      - gentoo-sources
+gcc is not needed anymore, for all others clang is used with libcxx, libcxxabi, llvm-libunwind:
+      - gentoo-sources (apply hweight.patch
       
 lldb is used as debugger.
 
-gnome 3.22 is included as well with systemd(alot of patches).
+systemd(a lot of patches).
 
 some other ebuilds:
       - electron and atom: are based on chromium, binary builds use jmalloc which doesn't work with musl. even if it did work,
