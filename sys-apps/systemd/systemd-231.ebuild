@@ -54,9 +54,9 @@ COMMON_DEPEND=">=sys-apps/util-linux-2.27.1:0=[${MULTILIB_USEDEP}]
 	lz4? ( >=app-arch/lz4-0_p131:0=[${MULTILIB_USEDEP}] )
 	lzma? ( >=app-arch/xz-utils-5.0.5-r1:0=[${MULTILIB_USEDEP}] )
 	nat? ( net-firewall/iptables:0= )
-	pam? ( virtual/pam:=[${MULTILIB_USEDEP}] )
+	pam? ( virtual/pam:= )
 	qrcode? ( media-gfx/qrencode:0= )
-	seccomp? ( >=sys-libs/libseccomp-2.3.1:0= )
+	seccomp? ( sys-libs/libseccomp:0= )
 	selinux? ( sys-libs/libselinux:0= )
 	sysv-utils? (
 		!sys-apps/systemd-sysv-utils
@@ -158,16 +158,9 @@ src_prepare() {
 	sed -i -e 's/GROUP="dialout"/GROUP="uucp"/' rules/*.rules || die
 
 	local PATCHES=(
+		"${FILESDIR}/218-Dont-enable-audit-by-default.patch"
+		"${FILESDIR}/228-noclean-tmp.patch"
 	)
-
-	if ! use vanilla; then
-		PATCHES+=(
-			"${FILESDIR}/218-Dont-enable-audit-by-default.patch"
-			"${FILESDIR}/228-noclean-tmp.patch"
-			"${FILESDIR}/232-systemd-user-pam.patch"
-		)
-	fi
-
 	[[ -d "${WORKDIR}"/patches ]] && PATCHES+=( "${WORKDIR}"/patches )
 
 	default
@@ -242,7 +235,7 @@ multilib_src_configure() {
 		$(use_enable lz4)
 		$(use_enable lzma xz)
 		$(multilib_native_use_enable nat libiptc)
-		$(use_enable pam)
+		$(multilib_native_use_enable pam)
 		$(multilib_native_use_enable policykit polkit)
 		$(multilib_native_use_enable qrcode qrencode)
 		$(multilib_native_use_enable seccomp)
@@ -270,7 +263,7 @@ multilib_src_configure() {
 		# Breaks screen, tmux, etc.
 		--without-kill-user-processes
 
-		# musl fixes
+		--disable-sysusers
 		--disable-smack
 	)
 
@@ -288,14 +281,10 @@ multilib_src_compile() {
 	if multilib_is_native_abi; then
 		emake "${mymakeopts[@]}"
 	else
-		emake built-sources
-		local targets=(
-			'$(rootlib_LTLIBRARIES)'
-			'$(lib_LTLIBRARIES)'
-			'$(pamlib_LTLIBRARIES)'
-			'$(pkgconfiglib_DATA)'
-		)
-		echo "gentoo: ${targets[*]}" | emake "${mymakeopts[@]}" -f Makefile -f - gentoo
+		echo 'gentoo: $(BUILT_SOURCES)' | \
+		emake "${mymakeopts[@]}" -f Makefile -f - gentoo
+		echo 'gentoo: $(lib_LTLIBRARIES) $(pkgconfiglib_DATA)' | \
+		emake "${mymakeopts[@]}" -f Makefile -f - gentoo
 	fi
 }
 
@@ -319,11 +308,10 @@ multilib_src_install() {
 		emake "${mymakeopts[@]}" install
 	else
 		mymakeopts+=(
-			install-rootlibLTLIBRARIES
 			install-libLTLIBRARIES
-			install-pamlibLTLIBRARIES
 			install-pkgconfiglibDATA
 			install-includeHEADERS
+			# safe to call unconditionally, 'installs' empty list
 			install-pkgincludeHEADERS
 		)
 
@@ -334,7 +322,7 @@ multilib_src_install() {
 multilib_src_install_all() {
 	prune_libtool_files --modules
 	einstalldocs
-	dodoc "${FILESDIR}"/nsswitch.conf
+	dodoc ${FILESDIR}/nsswitch.conf
 
 	if [[ ${PV} != 9999 ]]; then
 		use doc || doman "${WORKDIR}"/man/systemd.{directives,index}.7
@@ -451,10 +439,10 @@ pkg_postinst() {
 		eerror
 	fi
 
-	if [[ $(readlink "${ROOT}"etc/resolv.conf) == */run/systemd/* ]]; then
-		ewarn "You should replace the resolv.conf symlink:"
-		ewarn "ln -snf ${ROOTPREFIX-/usr}/lib/systemd/resolv.conf ${ROOT}etc/resolv.conf"
-	fi
+	#if [[ $(readlink "${ROOT}"etc/resolv.conf) == */run/systemd/* ]]; then
+	#	ewarn "You should replace the resolv.conf symlink:"
+	#	ewarn "ln -snf ${ROOTPREFIX-/usr}/lib/systemd/resolv.conf ${ROOT}etc/resolv.conf"
+	#fi
 }
 
 pkg_prerm() {
