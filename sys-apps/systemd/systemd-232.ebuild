@@ -38,6 +38,7 @@ COMMON_DEPEND=">=sys-apps/util-linux-2.27.1:0=[${MULTILIB_USEDEP}]
 	audit? ( >=sys-process/audit-2:0= )
 	cryptsetup? ( >=sys-fs/cryptsetup-1.6:0= )
 	curl? ( net-misc/curl:0= )
+	elibc_musl? ( sys-libs/musl-nscd )
 	elfutils? ( >=dev-libs/elfutils-0.158:0= )
 	gcrypt? ( >=dev-libs/libgcrypt-1.4.5:0=[${MULTILIB_USEDEP}] )
 	http? (
@@ -53,9 +54,9 @@ COMMON_DEPEND=">=sys-apps/util-linux-2.27.1:0=[${MULTILIB_USEDEP}]
 	lz4? ( >=app-arch/lz4-0_p131:0=[${MULTILIB_USEDEP}] )
 	lzma? ( >=app-arch/xz-utils-5.0.5-r1:0=[${MULTILIB_USEDEP}] )
 	nat? ( net-firewall/iptables:0= )
-	pam? ( virtual/pam:= )
+	pam? ( virtual/pam:=[${MULTILIB_USEDEP}] )
 	qrcode? ( media-gfx/qrencode:0= )
-	seccomp? ( sys-libs/libseccomp:0= )
+	seccomp? ( >=sys-libs/libseccomp-2.3.1:0= )
 	selinux? ( sys-libs/libselinux:0= )
 	sysv-utils? (
 		!sys-apps/systemd-sysv-utils
@@ -106,12 +107,13 @@ python_check_deps() {
 pkg_pretend() {
 	local CONFIG_CHECK="~AUTOFS4_FS ~BLK_DEV_BSG ~CGROUPS
 		~DEVTMPFS ~DMIID ~EPOLL ~FANOTIFY ~FHANDLE
-		~INOTIFY_USER ~IPV6 ~NET ~NET_NS ~PROC_FS ~SECCOMP ~SIGNALFD ~SYSFS
+		~INOTIFY_USER ~IPV6 ~NET ~NET_NS ~PROC_FS ~SIGNALFD ~SYSFS
 		~TIMERFD ~TMPFS_XATTR ~UNIX
 		~!FW_LOADER_USER_HELPER ~!GRKERNSEC_PROC ~!IDE ~!SYSFS_DEPRECATED
 		~!SYSFS_DEPRECATED_V2"
 
 	use acl && CONFIG_CHECK+=" ~TMPFS_POSIX_ACL"
+	use seccomp && CONFIG_CHECK+=" ~SECCOMP ~SECCOMP_FILTER"
 	kernel_is -lt 3 7 && CONFIG_CHECK+=" ~HOTPLUG"
 	kernel_is -lt 4 7 && CONFIG_CHECK+=" ~DEVPTS_MULTIPLE_INSTANCES"
 
@@ -156,9 +158,16 @@ src_prepare() {
 	sed -i -e 's/GROUP="dialout"/GROUP="uucp"/' rules/*.rules || die
 
 	local PATCHES=(
-		"${FILESDIR}/218-Dont-enable-audit-by-default.patch"
-		"${FILESDIR}/228-noclean-tmp.patch"
 	)
+
+	if ! use vanilla; then
+		PATCHES+=(
+			"${FILESDIR}/218-Dont-enable-audit-by-default.patch"
+			"${FILESDIR}/228-noclean-tmp.patch"
+			"${FILESDIR}/232-systemd-user-pam.patch"
+		)
+	fi
+
 	[[ -d "${WORKDIR}"/patches ]] && PATCHES+=( "${WORKDIR}"/patches )
 
 	default
@@ -233,7 +242,7 @@ multilib_src_configure() {
 		$(use_enable lz4)
 		$(use_enable lzma xz)
 		$(multilib_native_use_enable nat libiptc)
-		$(multilib_native_use_enable pam)
+		$(use_enable pam)
 		$(multilib_native_use_enable policykit polkit)
 		$(multilib_native_use_enable qrcode qrencode)
 		$(multilib_native_use_enable seccomp)
@@ -261,12 +270,8 @@ multilib_src_configure() {
 		# Breaks screen, tmux, etc.
 		--without-kill-user-processes
 
-                # musl fixes
-                --disable-smack
-                --disable-myhostname
-                --disable-machined
-                --disable-sysusers
-                --disable-resolved
+		# musl fixes
+		--disable-smack
 	)
 
 	# Work around bug 463846.
@@ -283,10 +288,14 @@ multilib_src_compile() {
 	if multilib_is_native_abi; then
 		emake "${mymakeopts[@]}"
 	else
-		echo 'gentoo: $(BUILT_SOURCES)' | \
-		emake "${mymakeopts[@]}" -f Makefile -f - gentoo
-		echo 'gentoo: $(lib_LTLIBRARIES) $(pkgconfiglib_DATA)' | \
-		emake "${mymakeopts[@]}" -f Makefile -f - gentoo
+		emake built-sources
+		local targets=(
+			'$(rootlib_LTLIBRARIES)'
+			'$(lib_LTLIBRARIES)'
+			'$(pamlib_LTLIBRARIES)'
+			'$(pkgconfiglib_DATA)'
+		)
+		echo "gentoo: ${targets[*]}" | emake "${mymakeopts[@]}" -f Makefile -f - gentoo
 	fi
 }
 
@@ -310,10 +319,11 @@ multilib_src_install() {
 		emake "${mymakeopts[@]}" install
 	else
 		mymakeopts+=(
+			install-rootlibLTLIBRARIES
 			install-libLTLIBRARIES
+			install-pamlibLTLIBRARIES
 			install-pkgconfiglibDATA
 			install-includeHEADERS
-			# safe to call unconditionally, 'installs' empty list
 			install-pkgincludeHEADERS
 		)
 
@@ -324,6 +334,7 @@ multilib_src_install() {
 multilib_src_install_all() {
 	prune_libtool_files --modules
 	einstalldocs
+	dodoc "${FILESDIR}"/nsswitch.conf
 
 	if [[ ${PV} != 9999 ]]; then
 		use doc || doman "${WORKDIR}"/man/systemd.{directives,index}.7
@@ -352,7 +363,7 @@ multilib_src_install_all() {
 	# If we install these symlinks, there is no way for the sysadmin to remove them
 	# permanently.
 	rm "${D}"/etc/systemd/system/multi-user.target.wants/systemd-networkd.service || die
-#	rm -f "${D}"/etc/systemd/system/multi-user.target.wants/systemd-resolved.service || die
+	rm -f "${D}"/etc/systemd/system/multi-user.target.wants/systemd-resolved.service || die
 	rm -r "${D}"/etc/systemd/system/network-online.target.wants || die
 	rm -r "${D}"/etc/systemd/system/sockets.target.wants || die
 	rm -r "${D}"/etc/systemd/system/sysinit.target.wants || die
@@ -416,7 +427,7 @@ pkg_postinst() {
 	newusergroup systemd-journal-remote
 	newusergroup systemd-journal-upload
 	newusergroup systemd-network
-#	newusergroup systemd-resolve
+	newusergroup systemd-resolve
 	newusergroup systemd-timesync
 
 	systemd_update_catalog
@@ -440,10 +451,10 @@ pkg_postinst() {
 		eerror
 	fi
 
-	#if [[ $(readlink "${ROOT}"etc/resolv.conf) == */run/systemd/* ]]; then
-	#	ewarn "You should replace the resolv.conf symlink:"
-	#	ewarn "ln -snf ${ROOTPREFIX-/usr}/lib/systemd/resolv.conf ${ROOT}etc/resolv.conf"
-	#fi
+	if [[ $(readlink "${ROOT}"etc/resolv.conf) == */run/systemd/* ]]; then
+		ewarn "You should replace the resolv.conf symlink:"
+		ewarn "ln -snf ${ROOTPREFIX-/usr}/lib/systemd/resolv.conf ${ROOT}etc/resolv.conf"
+	fi
 }
 
 pkg_prerm() {

@@ -1,0 +1,314 @@
+--- a/lib/Makefile.am
++++ b/lib/Makefile.am
+@@ -3,7 +3,7 @@ AUTOMAKE_OPTIONS = 1.0 foreign
+ 
+ DEFS = 
+ 
+-noinst_LTLIBRARIES = libshadow.la
++lib_LTLIBRARIES = libshadow.la
+ 
+ libshadow_la_LDFLAGS = -version-info 0:0:0
+ 
+@@ -55,6 +55,8 @@ libshadow_la_SOURCES = \
+ 	spawn.c \
+ 	utent.c
+ 
++include_HEADERS = gshadow.h
++
+ if WITH_TCB
+ libshadow_la_SOURCES += tcbfuncs.c tcbfuncs.h
+ endif
+@@ -65,5 +67,4 @@ endif
+ # sources for dbm support (not yet used)
+ 
+ EXTRA_DIST = \
+-	.indent.pro \
+-	gshadow_.h
++	.indent.pro
+--- a/lib/gshadow.c
++++ b/lib/gshadow.c
+@@ -40,10 +40,10 @@
+ #include <stdio.h>
+ #include "prototypes.h"
+ #include "defines.h"
+-static /*@null@*/FILE *shadow;
+-static /*@null@*//*@only@*/char **members = NULL;
++static FILE *shadow;
++static char **members = NULL;
+ static size_t nmembers = 0;
+-static /*@null@*//*@only@*/char **admins = NULL;
++static char **admins = NULL;
+ static size_t nadmins = 0;
+ static struct sgrp sgroup;
+ 
+@@ -78,7 +78,7 @@ static int bind_nis (void)
+ }
+ #endif
+ 
+-static /*@null@*/char **build_list (char *s, char **list[], size_t * nlist)
++static char **build_list (char *s, char **list[], size_t * nlist)
+ {
+ 	char **ptr = *list;
+ 	size_t nelem = *nlist, size;
+@@ -128,7 +128,7 @@ void endsgent (void)
+ 	shadow = (FILE *) 0;
+ }
+ 
+-/*@observer@*//*@null@*/struct sgrp *sgetsgent (const char *string)
++struct sgrp *sgetsgent (const char *string)
+ {
+ 	static char *sgrbuf = NULL;
+ 	static size_t sgrbuflen = 0;
+@@ -210,7 +210,7 @@ void endsgent (void)
+  * converts it to a (struct sgrp).  NULL is returned on EOF.
+  */
+ 
+-/*@observer@*//*@null@*/struct sgrp *fgetsgent (/*@null@*/FILE * fp)
++struct sgrp *fgetsgent (FILE * fp)
+ {
+ 	static size_t buflen = 0;
+ 	static char *buf = NULL;
+@@ -271,7 +271,7 @@ void endsgent (void)
+  * getsgent - get a single shadow group entry
+  */
+ 
+-/*@observer@*//*@null@*/struct sgrp *getsgent (void)
++struct sgrp *getsgent (void)
+ {
+ #ifdef	USE_NIS
+ 	bool nis_1_group = false;
+@@ -369,7 +369,7 @@ void endsgent (void)
+  * getsgnam - get a shadow group entry by name
+  */
+ 
+-/*@observer@*//*@null@*/struct sgrp *getsgnam (const char *name)
++struct sgrp *getsgnam (const char *name)
+ {
+ 	struct sgrp *sgrp;
+ 
+--- /dev/null
++++ b/lib/gshadow.h
+@@ -0,0 +1,75 @@
++/*
++ * Copyright (c) 1988 - 1994, Julianne Frances Haugh
++ * Copyright (c) 1996 - 1997, Marek Michałkiewicz
++ * Copyright (c) 2003 - 2005, Tomasz Kłoczko
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 3. The name of the copyright holders or contributors may not be used to
++ *    endorse or promote products derived from this software without
++ *    specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
++ * PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT
++ * HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ */
++
++/*
++ *	$Id$
++ */
++
++#ifndef	_H_GSHADOW
++#define	_H_GSHADOW
++
++/*
++ * Shadow group security file structure
++ */
++
++struct sgrp {
++	char *sg_name;		/* group name */
++	char *sg_passwd;	/* group password */
++	char **sg_adm;		/* group administrator list */
++	char **sg_mem;		/* group membership list */
++};
++
++/*
++ * Shadow group security file functions.
++ */
++
++#include <stdio.h>		/* for FILE */
++
++#if __STDC__
++struct sgrp *getsgent (void);
++struct sgrp *getsgnam (const char *);
++struct sgrp *sgetsgent (const char *);
++struct sgrp *fgetsgent (/*@null@*/FILE *);
++void setsgent (void);
++void endsgent (void);
++int putsgent (const struct sgrp *, FILE *);
++#else
++struct sgrp *getsgent ();
++struct sgrp *getsgnam ();
++struct sgrp *sgetsgent ();
++struct sgrp *fgetsgent ();
++void setsgent ();
++void endsgent ();
++int putsgent ();
++#endif
++
++#define	GSHADOW	"/etc/gshadow"
++#endif				/* ifndef _H_GSHADOW */
+--- a/lib/gshadow_.h
++++ /dev/null
+@@ -1,75 +0,0 @@
+-/*
+- * Copyright (c) 1988 - 1994, Julianne Frances Haugh
+- * Copyright (c) 1996 - 1997, Marek Michałkiewicz
+- * Copyright (c) 2003 - 2005, Tomasz Kłoczko
+- * All rights reserved.
+- *
+- * Redistribution and use in source and binary forms, with or without
+- * modification, are permitted provided that the following conditions
+- * are met:
+- * 1. Redistributions of source code must retain the above copyright
+- *    notice, this list of conditions and the following disclaimer.
+- * 2. Redistributions in binary form must reproduce the above copyright
+- *    notice, this list of conditions and the following disclaimer in the
+- *    documentation and/or other materials provided with the distribution.
+- * 3. The name of the copyright holders or contributors may not be used to
+- *    endorse or promote products derived from this software without
+- *    specific prior written permission.
+- *
+- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+- * ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+- * PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT
+- * HOLDERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+- */
+-
+-/*
+- *	$Id$
+- */
+-
+-#ifndef	_H_GSHADOW
+-#define	_H_GSHADOW
+-
+-/*
+- * Shadow group security file structure
+- */
+-
+-struct sgrp {
+-	char *sg_name;		/* group name */
+-	char *sg_passwd;	/* group password */
+-	char **sg_adm;		/* group administrator list */
+-	char **sg_mem;		/* group membership list */
+-};
+-
+-/*
+- * Shadow group security file functions.
+- */
+-
+-#include <stdio.h>		/* for FILE */
+-
+-#if __STDC__
+-/*@observer@*//*@null@*/struct sgrp *getsgent (void);
+-/*@observer@*//*@null@*/struct sgrp *getsgnam (const char *);
+-/*@observer@*//*@null@*/struct sgrp *sgetsgent (const char *);
+-/*@observer@*//*@null@*/struct sgrp *fgetsgent (/*@null@*/FILE *);
+-void setsgent (void);
+-void endsgent (void);
+-int putsgent (const struct sgrp *, FILE *);
+-#else
+-/*@observer@*//*@null@*/struct sgrp *getsgent ();
+-/*@observer@*//*@null@*/struct sgrp *getsgnam ();
+-/*@observer@*//*@null@*/struct sgrp *sgetsgent ();
+-/*@observer@*//*@null@*/struct sgrp *fgetsgent ();
+-void setsgent ();
+-void endsgent ();
+-int putsgent ();
+-#endif
+-
+-#define	GSHADOW	"/etc/gshadow"
+-#endif				/* ifndef _H_GSHADOW */
+--- a/lib/defines.h
++++ b/lib/defines.h
+@@ -135,7 +135,7 @@
+  */
+ #include <shadow.h>
+ #if defined(SHADOWGRP) && !defined(GSHADOW)
+-#include "gshadow_.h"
++#include "gshadow.h"
+ #endif
+ 
+ #include <limits.h>
+--- a/lib/prototypes.h
++++ b/lib/prototypes.h
+@@ -59,7 +59,7 @@
+ #include "defines.h"
+ #include "commonio.h"
+ 
+-extern /*@observer@*/ const char *Prog;
++extern /*@observer@*/ __attribute__((weak)) const char *Prog;
+ 
+ /* addgrps.c */
+ #if defined (HAVE_SETGROUPS) && ! defined (USE_PAM)
+--- a/lib/gshadow.c
++++ b/lib/gshadow.c
+@@ -482,14 +482,15 @@
+ 	 * Copy the administrators, separating each from the other
+ 	 * with a ",".
+ 	 */
++	if (sgrp->sg_adm != NULL) {
++		for (i = 0; NULL != sgrp->sg_adm[i]; i++) {
++			if (i > 0) {
++				*cp++ = ',';
++			}
+ 
+-	for (i = 0; NULL != sgrp->sg_adm[i]; i++) {
+-		if (i > 0) {
+-			*cp++ = ',';
++			strcpy (cp, sgrp->sg_adm[i]);
++			cp += strlen (cp);
+ 		}
+-
+-		strcpy (cp, sgrp->sg_adm[i]);
+-		cp += strlen (cp);
+ 	}
+ 	*cp = ':';
+ 	cp++;
+@@ -498,14 +499,16 @@
+ 	 * Now do likewise with the group members.
+ 	 */
+ 
+-	for (i = 0; NULL != sgrp->sg_mem[i]; i++) {
+-		if (i > 0) {
+-			*cp = ',';
+-			cp++;
+-		}
++	if (sgrp->sg_mem != NULL) {
++		for (i = 0; NULL != sgrp->sg_mem[i]; i++) {
++			if (i > 0) {
++				*cp = ',';
++				cp++;
++			}
+ 
+-		strcpy (cp, sgrp->sg_mem[i]);
+-		cp += strlen (cp);
++			strcpy (cp, sgrp->sg_mem[i]);
++			cp += strlen (cp);
++		}
+ 	}
+ 	*cp = '\n';
+ 	cp++;
