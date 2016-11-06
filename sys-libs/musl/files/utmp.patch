@@ -1,256 +1,3 @@
---- a/src/legacy/utmpx.c
-+++ b/src/legacy/utmpx.c
-@@ -1,44 +1,236 @@
--#include <utmpx.h>
--#include <stddef.h>
-+#define _GNU_SOURCE
-+#include <utmp.h>
-+#include <fcntl.h>
- #include <errno.h>
-+#include <string.h>
-+#include <unistd.h>
-+#include <signal.h>
-+#include <sys/time.h>
- #include "libc.h"
- 
-+static const char *utmp_file_name = _PATH_UTMPX;
-+static int fd = -1;
-+static off_t utmp_current = 0;
-+
-+void *__utmp_io(int fd, void *ut, ssize_t len, off_t *offset, int type)
-+{
-+	int e, ret;
-+	struct flock fl;
-+	off_t newoffset;
-+
-+	fl.l_whence	= SEEK_CUR;
-+	fl.l_start	= 0;
-+	fl.l_len	= len;
-+	fl.l_pid	= 0;
-+	fl.l_type	= type;
-+
-+	if (fcntl(fd, F_SETLKW, &fl)) return NULL;
-+
-+	if (type == F_WRLCK) {
-+		ret = write(fd, ut, len);
-+		e = errno;
-+		fsync (fd);
-+		newoffset = lseek (fd, 0, SEEK_CUR);
-+	} else {
-+		newoffset = lseek (fd, 0, SEEK_CUR);
-+		ret = read(fd, ut, len);
-+		e = errno;
-+	}
-+	fl.l_start	= -(len);
-+	fl.l_type	= F_UNLCK;
-+
-+	fcntl(fd, F_SETLK, &fl);
-+
-+	if (offset) *offset = newoffset;
-+
-+	errno = e;
-+
-+	if (ret != len)
-+		return (void *)0;
-+	return ut;
-+}
-+
-+
-+sigset_t *__utmp_block_signals (sigset_t *oldset)
-+{
-+    sigset_t blockset;
-+
-+    sigfillset (&blockset);
-+
-+    sigdelset (&blockset, SIGILL);
-+    sigdelset (&blockset, SIGTRAP);
-+    sigdelset (&blockset, SIGABRT);
-+    sigdelset (&blockset, SIGIOT);
-+    sigdelset (&blockset, SIGFPE);
-+    sigdelset (&blockset, SIGSEGV);
-+
-+#ifdef SIGBUS
-+    sigdelset (&blockset, SIGBUS);
-+#endif
-+#ifdef SIGEMT
-+    sigdelset (&blockset, SIGEMT);
-+#endif
-+#ifdef SIGSYS
-+    sigdelset (&blockset, SIGSYS);
-+#endif
-+
-+    if (sigprocmask (SIG_BLOCK, &blockset, oldset) < 0)
-+	oldset = (sigset_t *)0;
-+
-+    return oldset;
-+}
-+
- void endutxent(void)
- {
-+	if (fd < 0) return;
-+
-+	close(fd);
-+	fd =- 1;
-+	utmp_current = 0;
- }
- 
- void setutxent(void)
- {
-+	sigset_t oldset, *savedset;
-+	savedset = __utmp_block_signals(&oldset);
-+
-+	if (fd < 0) fd = open(utmp_file_name, O_RDWR);
-+
-+	if (fd < 0) fd = open(utmp_file_name, O_RDONLY);
-+
-+	fcntl (fd, F_SETFD, FD_CLOEXEC);
-+	utmp_current = lseek(fd, 0, SEEK_SET);
-+
-+	if (savedset) sigprocmask (SIG_SETMASK, savedset, 0);
- }
- 
- struct utmpx *getutxent(void)
- {
--	return NULL;
-+	static struct utmpx getutent_tmp, *retval;
-+	ssize_t ret;
-+	sigset_t oldset, *savedset;
-+
-+	if (fd < 0) {
-+		setutxent();
-+		if (fd < 0) return NULL;
-+	}
-+
-+	savedset = __utmp_block_signals (&oldset);
-+
-+	retval = __utmp_io(fd, &getutent_tmp, sizeof(struct utmpx), &utmp_current, F_RDLCK);
-+
-+	if (savedset)
-+	sigprocmask (SIG_SETMASK, savedset, 0);
-+
-+	return retval;
- }
- 
- struct utmpx *getutxid(const struct utmpx *ut)
- {
--	return NULL;
-+	struct utmpx *tmp;
-+
-+	while ((tmp = getutxent())) {
-+		if (ut->ut_type && (ut->ut_type <= OLD_TIME))
-+			if (ut->ut_type == tmp->ut_type) break;
-+
-+		if ((ut->ut_type >= INIT_PROCESS) && (ut->ut_type <= DEAD_PROCESS))
-+			if (!strncmp(ut->ut_id, tmp->ut_id, 4)) break;
-+	}
-+
-+	return tmp;
- }
- 
- struct utmpx *getutxline(const struct utmpx *ut)
- {
--	return NULL;
-+	struct utmpx *tmp;
-+
-+	while ((tmp = getutxent()))
-+		if ((tmp->ut_type == USER_PROCESS) || (tmp->ut_type == LOGIN_PROCESS))
-+			if (!strncmp(ut->ut_line, tmp->ut_line, UT_LINESIZE)) break;
-+
-+	return tmp;
- }
- 
--struct utmpx *pututxline(const struct utmpx *ut)
-+struct utmpx *pututxline(struct utmpx *ut)
- {
--	return NULL;
-+	struct utmpx *tmp, ut_copy, *retval = 0, *result;
-+	int e;
-+	ssize_t bytes_written;
-+	sigset_t oldset, *savedset;
-+
-+	memcpy (&ut_copy, ut, sizeof (struct utmpx));
-+	savedset = __utmp_block_signals (&oldset);
-+
-+	lseek (fd, utmp_current, SEEK_SET);
-+	if ((tmp = getutxid(&ut_copy))) {
-+		lseek(fd, - (off_t)sizeof(struct utmpx), SEEK_CUR);
-+		result = __utmp_io (fd, &ut_copy, sizeof(struct utmpx), &utmp_current, F_WRLCK);
-+		e = errno;
-+	} else {
-+		utmp_current = lseek(fd, 0, SEEK_END);
-+		result = __utmp_io (fd, &ut_copy, sizeof(struct utmpx), &utmp_current, F_WRLCK);
-+		e = errno;
-+	}
-+
-+	if (savedset)
-+		sigprocmask (SIG_SETMASK, savedset, 0);
-+
-+	if (result) {
-+		retval = ut;
-+	}
-+
-+	memcpy (ut, &ut_copy, sizeof (struct utmpx));
-+	errno = e;
-+	return retval;
- }
- 
- void updwtmpx(const char *f, const struct utmpx *u)
- {
-+	int fd = open(f, O_WRONLY|O_APPEND);
-+	if (fd < 0) return;
-+	fcntl (fd, F_SETFD, FD_CLOEXEC);
-+	write(fd, u, sizeof(struct utmpx));
-+	close(fd);
- }
- 
- int __utmpxname(const char *f)
- {
--	errno = ENOTSUP;
--	return -1;
-+	if (f)
-+		utmp_file_name = f;
-+	else
-+		utmp_file_name = _PATH_UTMPX;
-+	return 0;
-+}
-+
-+void getutmpx (const struct utmp *_utmp, struct utmpx *_utmpx)
-+{
-+	memcpy (_utmpx, _utmp, sizeof(struct utmpx));
-+	return;
-+}
-+
-+void logwtmp(const char *line, const char *name, const char *host)
-+{
-+	struct utmpx ut;
-+
-+	memset(&ut, 0, sizeof(struct utmp));
-+
-+	ut.ut_pid = getpid ();
-+	ut.ut_type = name[0] ? USER_PROCESS : DEAD_PROCESS;
-+
-+	memccpy (ut.ut_line, line, 0, sizeof ut.ut_line);
-+	memccpy (ut.ut_name, name, 0, sizeof ut.ut_name);
-+	memccpy (ut.ut_host, host, 0, sizeof ut.ut_host);
-+
-+	if (sizeof(ut.ut_tv) == sizeof(struct timeval))
-+		gettimeofday((struct timeval *)&ut.ut_tv, NULL);
-+	else {
-+		struct timeval tv;
-+		gettimeofday(&tv, NULL);
-+		ut.ut_tv.tv_sec = tv.tv_sec;
-+		ut.ut_tv.tv_usec = tv.tv_usec;
-+	}
-+
-+	updwtmpx (_PATH_WTMP, &ut);
- }
- 
- weak_alias(endutxent, endutent);
-@@ -50,3 +242,4 @@ weak_alias(pututxline, pututline);
- weak_alias(updwtmpx, updwtmp);
- weak_alias(__utmpxname, utmpname);
- weak_alias(__utmpxname, utmpxname);
-+weak_alias(getutmpx, getutmp);
 --- a/include/utmpx.h
 +++ b/include/utmpx.h
 @@ -14,13 +14,21 @@ extern "C" {
@@ -328,3 +75,225 @@
  
  #define UTMP_FILE _PATH_UTMP
  #define WTMP_FILE _PATH_WTMP
+--- a/src/legacy/utmpx.c
++++ b/src/legacy/utmpx.c
+@@ -1,44 +1,205 @@
+-#include <utmpx.h>
+-#include <stddef.h>
++#define _GNU_SOURCE
++#include <utmp.h>
++#include <fcntl.h>
+ #include <errno.h>
++#include <string.h>
++#include <unistd.h>
++#include <signal.h>
++#include <sys/time.h>
++#include "pthread_impl.h"
+ #include "libc.h"
+ 
++static const char *utmp_file_name = _PATH_UTMPX;
++static int fd = -1;
++static off_t utmp_current = 0;
++
++void *__utmp_io(int fd, void *ut, ssize_t len, off_t *offset, int type)
++{
++	int e, ret;
++	struct flock fl;
++	off_t newoffset;
++
++	fl.l_whence	= SEEK_CUR;
++	fl.l_start	= 0;
++	fl.l_len	= len;
++	fl.l_pid	= 0;
++	fl.l_type	= type;
++
++	if (fcntl(fd, F_SETLKW, &fl)) return NULL;
++
++	if (type == F_WRLCK) {
++		ret = write(fd, ut, len);
++		e = errno;
++		fsync (fd);
++		newoffset = lseek (fd, 0, SEEK_CUR);
++	} else {
++		newoffset = lseek (fd, 0, SEEK_CUR);
++		ret = read(fd, ut, len);
++		e = errno;
++	}
++	fl.l_start	= -(len);
++	fl.l_type	= F_UNLCK;
++
++	fcntl(fd, F_SETLK, &fl);
++
++	if (offset) *offset = newoffset;
++
++	errno = e;
++
++	if (ret != len)
++		return (void *)0;
++	return ut;
++}
++
+ void endutxent(void)
+ {
++	if (fd < 0) return;
++
++	close(fd);
++	fd =- 1;
++	utmp_current = 0;
+ }
+ 
+ void setutxent(void)
+ {
++	sigset_t set;
++	__block_all_sigs(&set);
++
++	if (fd < 0) fd = open(utmp_file_name, O_RDWR);
++
++	if (fd < 0) fd = open(utmp_file_name, O_RDONLY);
++
++	fcntl (fd, F_SETFD, FD_CLOEXEC);
++	utmp_current = lseek(fd, 0, SEEK_SET);
++
++	__restore_sigs(&set);
+ }
+ 
+ struct utmpx *getutxent(void)
+ {
+-	return NULL;
++	static struct utmpx getutent_tmp, *retval;
++	ssize_t ret;
++	sigset_t set;
++
++	if (fd < 0) {
++		setutxent();
++		if (fd < 0) return NULL;
++	}
++
++	__block_all_sigs(&set);
++
++	retval = __utmp_io(fd, &getutent_tmp, sizeof(struct utmpx), &utmp_current, F_RDLCK);
++
++	__restore_sigs(&set);
++
++	return retval;
+ }
+ 
+ struct utmpx *getutxid(const struct utmpx *ut)
+ {
+-	return NULL;
++	struct utmpx *tmp;
++
++	while ((tmp = getutxent())) {
++		if (ut->ut_type && (ut->ut_type <= OLD_TIME))
++			if (ut->ut_type == tmp->ut_type) break;
++
++		if ((ut->ut_type >= INIT_PROCESS) && (ut->ut_type <= DEAD_PROCESS))
++			if (!strncmp(ut->ut_id, tmp->ut_id, 4)) break;
++	}
++
++	return tmp;
+ }
+ 
+ struct utmpx *getutxline(const struct utmpx *ut)
+ {
+-	return NULL;
++	struct utmpx *tmp;
++
++	while ((tmp = getutxent()))
++		if ((tmp->ut_type == USER_PROCESS) || (tmp->ut_type == LOGIN_PROCESS))
++			if (!strncmp(ut->ut_line, tmp->ut_line, UT_LINESIZE)) break;
++
++	return tmp;
+ }
+ 
+-struct utmpx *pututxline(const struct utmpx *ut)
++struct utmpx *pututxline(struct utmpx *ut)
+ {
+-	return NULL;
++	struct utmpx *tmp, ut_copy, *retval = 0, *result;
++	int e;
++	ssize_t bytes_written;
++	sigset_t set;
++
++	memcpy (&ut_copy, ut, sizeof (struct utmpx));
++	__block_all_sigs(&set);
++
++	lseek (fd, utmp_current, SEEK_SET);
++	if ((tmp = getutxid(&ut_copy))) {
++		lseek(fd, - (off_t)sizeof(struct utmpx), SEEK_CUR);
++		result = __utmp_io (fd, &ut_copy, sizeof(struct utmpx), &utmp_current, F_WRLCK);
++		e = errno;
++	} else {
++		utmp_current = lseek(fd, 0, SEEK_END);
++		result = __utmp_io (fd, &ut_copy, sizeof(struct utmpx), &utmp_current, F_WRLCK);
++		e = errno;
++	}
++
++	__restore_sigs(&set);
++
++	if (result) {
++		retval = ut;
++	}
++
++	memcpy (ut, &ut_copy, sizeof (struct utmpx));
++	errno = e;
++	return retval;
+ }
+ 
+ void updwtmpx(const char *f, const struct utmpx *u)
+ {
++	int fd = open(f, O_WRONLY|O_APPEND);
++	if (fd < 0) return;
++	fcntl (fd, F_SETFD, FD_CLOEXEC);
++	write(fd, u, sizeof(struct utmpx));
++	close(fd);
+ }
+ 
+ int __utmpxname(const char *f)
+ {
+-	errno = ENOTSUP;
+-	return -1;
++	if (f)
++		utmp_file_name = f;
++	else
++		utmp_file_name = _PATH_UTMPX;
++	return 0;
++}
++
++void getutmpx (const struct utmp *_utmp, struct utmpx *_utmpx)
++{
++	memcpy (_utmpx, _utmp, sizeof(struct utmpx));
++	return;
++}
++
++void logwtmp(const char *line, const char *name, const char *host)
++{
++	struct utmpx ut;
++
++	memset(&ut, 0, sizeof(struct utmp));
++
++	ut.ut_pid = getpid ();
++	ut.ut_type = name[0] ? USER_PROCESS : DEAD_PROCESS;
++
++	memccpy (ut.ut_line, line, 0, sizeof ut.ut_line);
++	memccpy (ut.ut_name, name, 0, sizeof ut.ut_name);
++	memccpy (ut.ut_host, host, 0, sizeof ut.ut_host);
++
++	if (sizeof(ut.ut_tv) == sizeof(struct timeval))
++		gettimeofday((struct timeval *)&ut.ut_tv, NULL);
++	else {
++		struct timeval tv;
++		gettimeofday(&tv, NULL);
++		ut.ut_tv.tv_sec = tv.tv_sec;
++		ut.ut_tv.tv_usec = tv.tv_usec;
++	}
++
++	updwtmpx (_PATH_WTMP, &ut);
+ }
+ 
+ weak_alias(endutxent, endutent);
+@@ -50,3 +211,4 @@ weak_alias(pututxline, pututline);
+ weak_alias(updwtmpx, updwtmp);
+ weak_alias(__utmpxname, utmpname);
+ weak_alias(__utmpxname, utmpxname);
++weak_alias(getutmpx, getutmp);
