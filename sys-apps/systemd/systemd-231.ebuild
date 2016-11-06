@@ -265,6 +265,7 @@ multilib_src_configure() {
 
 		--disable-sysusers
 		--disable-smack
+		--disable-utmp
 	)
 
 	# Work around bug 463846.
@@ -335,7 +336,7 @@ multilib_src_install_all() {
 		dosym "..${ROOTPREFIX-/usr}/lib/systemd/systemd" /sbin/init
 	else
 		# we just keep sysvinit tools, so no need for the mans
-		rm "${D}"/usr/share/man/man8/{halt,poweroff,reboot,runlevel,shutdown,telinit}.8 \
+		rm "${D}"/usr/share/man/man8/{halt,poweroff,reboot,shutdown,telinit}.8 \
 			|| die
 		rm "${D}"/usr/share/man/man1/init.1 || die
 	fi
