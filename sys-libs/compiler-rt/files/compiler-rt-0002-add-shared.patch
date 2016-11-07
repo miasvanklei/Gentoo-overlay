@@ -1,24 +1,18 @@
 --- a/lib/builtins/CMakeLists.txt	2016-08-19 13:57:25.431530276 +0200
 +++ b/lib/builtins/CMakeLists.txt	2016-08-19 13:58:48.505731558 +0200
-@@ -408,13 +408,20 @@
-           list(REMOVE_ITEM ${arch}_SOURCES ${_cname})
-         endif ()
-       endforeach ()
--
-       add_compiler_rt_runtime(clang_rt.builtins
-                               STATIC
-                               ARCHS ${arch}
-                               SOURCES ${${arch}_SOURCES}
-                               CFLAGS ${maybe_stdc99}
+@@ -472,6 +472,15 @@
+                               DEFS ${BUILTIN_DEFS}
+                               CFLAGS ${BUILTIN_CFLAGS}
                                PARENT_TARGET builtins)
 +
 +      add_compiler_rt_runtime(clang_rt.builtins
 +                              SHARED
 +                              ARCHS ${arch}
 +                              SOURCES ${${arch}_SOURCES}
-+                              CFLAGS ${maybe_stdc99}
++                              CFLAGS ${BUILTIN_CFLAGS}
 +                              LINK_LIBS "unwind"
 +                              PARENT_TARGET builtins)
++
      endif ()
    endforeach ()
  endif ()

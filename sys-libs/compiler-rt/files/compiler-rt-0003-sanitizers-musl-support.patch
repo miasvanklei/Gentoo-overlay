@@ -1,9 +1,9 @@
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -37,6 +37,12 @@
- mark_as_advanced(COMPILER_RT_BUILD_BUILTINS)
- option(COMPILER_RT_BUILD_SANITIZERS "Build sanitizers" ON)
  mark_as_advanced(COMPILER_RT_BUILD_SANITIZERS)
+ option(COMPILER_RT_BUILD_XRAY "Build xray" ON)
+ mark_as_advanced(COMPILER_RT_BUILD_XRAY)
 +option(COMPILER_RT_MUSL "Build with Musl" OFF)
 +mark_as_advanced(COMPILER_RT_MUSL)
 +
@@ -57,10 +57,31 @@
  }
  
 -#if !defined(__ANDROID__)  // android does not have dlvsym
-+#if !defined(__ANDROID__) && !LIBC_MUSL  // android does not have dlvsym
++#if !defined(__ANDROID__) && !LIBC_MUSL  // android and musl do not have dlvsym
  void *GetFuncAddrVer(const char *func_name, const char *ver) {
    return dlvsym(RTLD_NEXT, func_name, ver);
  }
+--- a/lib/interception/interception_linux.h
++++ b/lib/interception/interception_linux.h
+@@ -25,7 +25,9 @@
+ // returns true if a function with the given name was found.
+ bool GetRealFunctionAddress(const char *func_name, uptr *func_addr,
+     uptr real, uptr wrapper);
++#if !defined(__ANDROID__) && !LIBC_MUSL
+ void *GetFuncAddrVer(const char *func_name, const char *ver);
++#endif
+ }  // namespace __interception
+ 
+ #define INTERCEPT_FUNCTION_LINUX_OR_FREEBSD(func)                          \
+@@ -34,7 +36,7 @@
+       (::__interception::uptr) & (func),                                   \
+       (::__interception::uptr) & WRAP(func))
+ 
+-#if !defined(__ANDROID__)  // android does not have dlvsym
++#if !defined(__ANDROID__) && !LIBC_MUSL  // android and musl do not have dlvsym
+ #define INTERCEPT_FUNCTION_VER_LINUX_OR_FREEBSD(func, symver) \
+   (::__interception::real_##func = (func##_f)(                \
+        unsigned long)::__interception::GetFuncAddrVer(#func, symver))
 --- a/lib/msan/msan_interceptors.cc
 +++ b/lib/msan/msan_interceptors.cc
 @@ -263,7 +263,7 @@ INTERCEPTOR(uptr, malloc_usable_size, void *ptr) {
@@ -567,8 +588,8 @@
    for (int i = 0; i < MAXNS && cnt < nfd; i++) {
      if (statp->_u._ext.nsaddrs[i] && statp->_u._ext.nssocks[i] != -1)
        fds[cnt++] = statp->_u._ext.nssocks[i];
---- a/lib/sanitizer_common/sanitizer_linux_libcdep.cc	2016-11-07 17:01:32.029198692 +0100
-+++ b/lib/sanitizer_common/sanitizer_linux_libcdep.cc	2016-11-07 17:03:46.186303113 +0100
+--- a/lib/sanitizer_common/sanitizer_linux_libcdep.cc
++++ b/lib/sanitizer_common/sanitizer_linux_libcdep.cc
 @@ -156,7 +156,7 @@
  #endif
  }
@@ -623,3 +644,96 @@
    uptr addr, size;
    GetTls(&addr, &size);
    return size;
+--- a/lib/scudo/scudo_interceptors.cpp
++++ b/lib/scudo/scudo_interceptors.cpp
+@@ -68,8 +68,10 @@
+   return scudoMallocUsableSize(ptr);
+ }
+ 
++#if !LIBC_MUSL
+ INTERCEPTOR(int, mallopt, int cmd, int value) {
+   return -1;
+ }
++#endif
+ 
+ #endif // SANITIZER_LINUX
+--- a/lib/asan/asan_malloc_linux.cc
++++ b/lib/asan/asan_malloc_linux.cc
+@@ -122,9 +122,11 @@
+   return res;
+ }
+ 
++#if LIBC_MUSL
+ INTERCEPTOR(int, mallopt, int cmd, int value) {
+   return -1;
+ }
++#endif
+ 
+ INTERCEPTOR(int, posix_memalign, void **memptr, uptr alignment, uptr size) {
+   GET_STACK_TRACE_MALLOC;
+--- a/lib/lsan/lsan_interceptors.cc
++++ b/lib/lsan/lsan_interceptors.cc
+@@ -137,9 +137,11 @@
+   return res;
+ }
+ 
++#if !LIBC_MUSL
+ INTERCEPTOR(int, mallopt, int cmd, int value) {
+   return -1;
+ }
++#endif
+ 
+ INTERCEPTOR(void*, pvalloc, uptr size) {
+   ENSURE_LSAN_INITED;
+@@ -287,7 +289,9 @@
+   INTERCEPT_FUNCTION(pvalloc);
+   INTERCEPT_FUNCTION(malloc_usable_size);
+   INTERCEPT_FUNCTION(mallinfo);
++#if !LIBC_MUSL
+   INTERCEPT_FUNCTION(mallopt);
++#endif
+   INTERCEPT_FUNCTION(pthread_create);
+   INTERCEPT_FUNCTION(pthread_join);
+ 
+--- a/lib/tsan/rtl/tsan_interceptors.cc
++++ b/lib/tsan/rtl/tsan_interceptors.cc
+@@ -98,7 +98,7 @@
+ extern "C" int *__errno_location();
+ extern "C" int fileno_unlocked(void *stream);
+ extern "C" int dirfd(void *dirp);
+-#if !SANITIZER_FREEBSD && !SANITIZER_ANDROID
++#if !SANITIZER_FREEBSD && !SANITIZER_ANDROID && !LIBC_MUSL
+ extern "C" int mallopt(int param, int value);
+ #endif
+ extern __sanitizer_FILE *stdout, *stderr;
+@@ -2437,7 +2437,7 @@
+ #endif
+ 
+   // Instruct libc malloc to consume less memory.
+-#if SANITIZER_LINUX
++#if SANITIZER_LINUX && !LIBC_MUSL
+   mallopt(1, 0);  // M_MXFAST
+   mallopt(-3, 32*1024);  // M_MMAP_THRESHOLD
+ #endif
+--- a/lib/msan/msan_interceptors.cc
++++ b/lib/msan/msan_interceptors.cc
+@@ -265,7 +265,7 @@
+ #define MSAN_MAYBE_INTERCEPT_MALLINFO
+ #endif
+ 
+-#if !SANITIZER_FREEBSD
++#if !SANITIZER_FREEBSD && !LIBC_MUSL
+ INTERCEPTOR(int, mallopt, int cmd, int value) {
+   return -1;
+ }
+--- a/lib/ubsan/ubsan_init_standalone.cc
++++ b/lib/ubsan/ubsan_init_standalone.cc
+@@ -19,7 +19,7 @@
+ #include "sanitizer_common/sanitizer_internal_defs.h"
+ #include "ubsan_init.h"
+ 
+-#if SANITIZER_CAN_USE_PREINIT_ARRAY
++#if SANITIZER_CAN_USE_PREINIT_ARRAY && !LIBC_MUSL
+ __attribute__((section(".preinit_array"), used))
+ void (*__local_ubsan_preinit)(void) = __ubsan::InitAsStandalone;
+ #else

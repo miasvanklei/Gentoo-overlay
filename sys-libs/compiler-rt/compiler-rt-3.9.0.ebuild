@@ -8,12 +8,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic python-any-r1 toolchain-funcs
+inherit cmake-utils flag-o-matic python-any-r1 toolchain-funcs git-r3
 
 DESCRIPTION="Compiler runtime libraries for clang"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
-
+SRC_URI=""
+EGIT_REPO_URI="http://llvm.org/git/compiler-rt.git
+        https://github.com/llvm-mirror/compiler-rt.git"
 LICENSE="UoI-NCSA"
 SLOT="0/${PV%.*}"
 KEYWORDS=""
@@ -24,8 +25,6 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	~sys-devel/llvm-${PV}
 	${PYTHON_DEPS}"
-
-S=${WORKDIR}/${P/_}.src
 
 test_compiler() {
 	$(tc-getCC) ${CFLAGS} ${LDFLAGS} "${@}" -o /dev/null -x c - \
@@ -64,6 +63,7 @@ src_configure() {
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF
 		-DCOMPILER_RT_BUILD_SANITIZERS=ON
 		-DCOMPILER_RT_MUSL=$(usex elibc_musl)
+		-DCOMPILER_RT_BUILD_XRAY=OFF
 	)
 
 	cmake-utils_src_configure
