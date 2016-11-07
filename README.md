@@ -1,13 +1,14 @@
 # Gentoo repository for musl related patches.
 
 ld.lld from llvm is used as linker for all packages.
+
 binutils is not installed, but some tools are still needed:
-      - ld.bfd for the linux kernel
-      - objcopy for the linux kernel
-      - as for the linux kernel
+      - ld.bfd for the linux kernel because lld does not work yet
+      - objcopy for the linux kernel because llvm lacks one
+      - as for the linux kernel because clang checks emmitted assembly
       
 gcc is not needed anymore, for all others clang is used with libcxx, libcxxabi, llvm-libunwind:
-      - gentoo-sources (apply hweight.patch
+      - gentoo-sources (apply two patches)
       
 lldb is used as debugger.
 

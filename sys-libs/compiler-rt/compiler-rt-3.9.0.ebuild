@@ -35,6 +35,7 @@ test_compiler() {
 PATCHES=(
 	"${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
 	"${FILESDIR}"/compiler-rt-0002-add-shared.patch
+	"${FILESDIR}"/compiler-rt-0003-sanitizers-musl-support.patch
 )
 
 src_configure() {
@@ -61,7 +62,8 @@ src_configure() {
 
 		# currently lit covers only sanitizer tests
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF
-		-DCOMPILER_RT_BUILD_SANITIZERS=OFF
+		-DCOMPILER_RT_BUILD_SANITIZERS=ON
+		-DCOMPILER_RT_MUSL=$(usex elibc_musl)
 	)
 
 	cmake-utils_src_configure
