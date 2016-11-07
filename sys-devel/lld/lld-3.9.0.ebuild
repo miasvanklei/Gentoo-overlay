@@ -96,6 +96,9 @@ src_prepare() {
 	# add -z muldefs
 	eapply "${FILESDIR}"/0013-add-muldefs-option.patch
 
+	# do not strip
+	eapply "${FILESDIR}"/0014-add-nostrip-option.patch
+
 	# User patches
 	eapply_user
 
