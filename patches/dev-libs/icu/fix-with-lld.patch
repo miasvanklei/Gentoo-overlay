@@ -1,0 +1,26 @@
+--- a/stubdata/Makefile.in	2016-11-08 18:59:06.789785450 +0100
++++ b/stubdata/Makefile.in	2016-11-08 18:59:17.164750174 +0100
+@@ -48,7 +48,7 @@
+ CPPFLAGS += -I$(top_srcdir)/common $(LIBCPPFLAGS)
+ LDFLAGS += $(LDFLAGSICUDT)
+ 
+-OBJECTS = stubdata.o
++OBJECTS = stubdata.o dummy.o
+ 
+ ## Header files to install
+ HEADERS = 
+--- a/data/pkgdataMakefile.in	2016-11-08 18:58:07.338989374 +0100
++++ b/data/pkgdataMakefile.in	2016-11-08 18:58:33.213900228 +0100
+@@ -26,7 +26,7 @@
+ 	@echo LIB_EXT_ORDER=$(FINAL_SO_TARGET) >> $(OUTPUTFILE)
+ 	@echo COMPILE="$(COMPILE.c)" >> $(OUTPUTFILE)
+ 	@echo LIBFLAGS="-I$(top_srcdir)/common -I$(top_builddir)/common $(SHAREDLIBCPPFLAGS) $(SHAREDLIBCFLAGS)" >> $(OUTPUTFILE)
+-	@echo GENLIB="$(SHLIB.c)" >> $(OUTPUTFILE)
++	@echo GENLIB="$(SHLIB.c) ../stubdata/dummy.o" >> $(OUTPUTFILE)
+ 	@echo LDICUDTFLAGS=$(LDFLAGSICUDT) >> $(OUTPUTFILE)
+ 	@echo LD_SONAME=$(LD_SONAME) >> $(OUTPUTFILE)
+ 	@echo RPATH_FLAGS=$(RPATH_FLAGS) >> $(OUTPUTFILE)
+--- /dev/null	2016-11-06 20:40:20.322240085 +0100
++++ b/stubdata/dummy.c	2016-11-08 18:58:50.488841055 +0100
+@@ -0,0 +1 @@
++int test() {}
