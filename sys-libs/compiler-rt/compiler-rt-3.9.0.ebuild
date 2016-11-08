@@ -33,8 +33,7 @@ test_compiler() {
 
 PATCHES=(
 	"${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
-	"${FILESDIR}"/compiler-rt-0002-add-shared.patch
-	"${FILESDIR}"/compiler-rt-0003-sanitizers-musl-support.patch
+	"${FILESDIR}"/compiler-rt-0002-sanitizers-musl-support.patch
 )
 
 src_configure() {
@@ -63,7 +62,7 @@ src_configure() {
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF
 		-DCOMPILER_RT_BUILD_SANITIZERS=ON
 		-DCOMPILER_RT_MUSL=$(usex elibc_musl)
-		-DCOMPILER_RT_BUILD_XRAY=OFF
+		-DCOMPILER_RT_BUILD_XRAY=ON
 	)
 
 	cmake-utils_src_configure
@@ -74,8 +73,6 @@ src_install() {
 
 	local clang_version=${PV}
 
-	# includes are mistakenly installed for all sanitizers and xray
-	rm -rf "${ED}"usr/lib/clang/*/include || die
 	mkdir -p "${ED}"etc/env.d
 	echo "LDPATH=\"/usr/lib/clang/${clang_version}/lib/linux\"" > "${ED}"etc/env.d/04clang-x86_64-gentoo-linux-musl
 }

@@ -108,8 +108,8 @@ src_prepare() {
 	eapply "${FILESDIR}"/0007-Enable-PIE-by-default-for-gentoo-linux.patch
 	eapply "${FILESDIR}"/0008-use-ssp-by-default.patch
 
-	# link compiler-rt/libunwind shared
-	eapply "${FILESDIR}"/0009-link-compiler-rt-shared-and-libunwind.patch
+	# link libunwind
+	eapply "${FILESDIR}"/0009-link-libunwind.patch
 
 	# remove gcc quirks
 	eapply "${FILESDIR}"/0010-fix-ada-in-configure.patch
@@ -133,7 +133,7 @@ src_prepare() {
 	# remove dependency on crtbegin* and crtend*
 	eapply "${FILESDIR}"/0019-remove-crtfiles.patch
 	eapply "${FILESDIR}"/0020-fuse-init-array.patch
-	eapply "${FILESDIR}"/0021-fno-use-cxa-atexit.patch
+	eapply "${FILESDIR}"/0021-dont-use-__dso_handle.patch
 
 	# needed in linux kernel
         eapply "${FILESDIR}"/0022-add-fno-delete-null-pointer-checks.patch
