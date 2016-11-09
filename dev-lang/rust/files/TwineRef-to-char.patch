@@ -1,0 +1,105 @@
+From de6eefe581ae70452324110cea534a970639b9f0 Mon Sep 17 00:00:00 2001
+From: Dylan McKay <dylanmckay34@gmail.com>
+Date: Thu, 6 Oct 2016 21:10:09 +1300
+Subject: [PATCH] [4.0] Convert a bunch of strings to char buffers
+
+LLVM 4.0 makes these std::string objects.
+---
+ src/librustc_llvm/diagnostic.rs  | 2 +-
+ src/librustc_llvm/ffi.rs         | 2 +-
+ src/librustc_trans/back/write.rs | 6 +++++-
+ src/rustllvm/PassWrapper.cpp     | 6 +++---
+ src/rustllvm/RustWrapper.cpp     | 6 +++---
+ 5 files changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/src/librustc_llvm/diagnostic.rs b/src/librustc_llvm/diagnostic.rs
+index 8767f03..c11b64e 100644
+--- a/src/librustc_llvm/diagnostic.rs
++++ b/src/librustc_llvm/diagnostic.rs
+@@ -48,7 +48,7 @@ pub struct OptimizationDiagnostic {
+     pub pass_name: *const c_char,
+     pub function: ValueRef,
+     pub debug_loc: DebugLocRef,
+-    pub message: TwineRef,
++    pub message: *const c_char,
+ }
+ 
+ impl OptimizationDiagnostic {
+diff --git a/src/librustc_llvm/ffi.rs b/src/librustc_llvm/ffi.rs
+index 8761e6b..13a87b8 100644
+--- a/src/librustc_llvm/ffi.rs
++++ b/src/librustc_llvm/ffi.rs
+@@ -1822,7 +1822,7 @@ extern "C" {
+                                                 pass_name_out: *mut *const c_char,
+                                                 function_out: *mut ValueRef,
+                                                 debugloc_out: *mut DebugLocRef,
+-                                                message_out: *mut TwineRef);
++                                                message_out: *mut *const c_char);
+     pub fn LLVMRustUnpackInlineAsmDiagnostic(DI: DiagnosticInfoRef,
+                                              cookie_out: *mut c_uint,
+                                              message_out: *mut TwineRef,
+diff --git a/src/librustc_trans/back/write.rs b/src/librustc_trans/back/write.rs
+index 9012914..bd70688 100644
+--- a/src/librustc_trans/back/write.rs
++++ b/src/librustc_trans/back/write.rs
+@@ -397,6 +397,10 @@ unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_vo
+             let pass_name = str::from_utf8(CStr::from_ptr(opt.pass_name).to_bytes())
+                                 .ok()
+                                 .expect("got a non-UTF8 pass name from LLVM");
++            let message = str::from_utf8(CStr::from_ptr(opt.message).to_bytes())
++                              .ok()
++                              .expect("got a non-UTF8 message from LLVM");
++
+             let enabled = match cgcx.remark {
+                 AllPasses => true,
+                 SomePasses(ref v) => v.iter().any(|s| *s == pass_name),
+@@ -408,7 +412,7 @@ unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_vo
+                                                 opt.kind.describe(),
+                                                 pass_name,
+                                                 if loc.is_empty() { "[unknown]" } else { &*loc },
+-                                                llvm::twine_to_string(opt.message)));
++                                                message));
+             }
+         }
+ 
+diff --git a/src/rustllvm/PassWrapper.cpp b/src/rustllvm/PassWrapper.cpp
+index 9ff7330..d678b39 100644
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -529,9 +529,9 @@ LLVMRustPrintPasses() {
+     LLVMInitializePasses();
+     struct MyListener : PassRegistrationListener {
+         void passEnumerate(const PassInfo *info) {
+-            if (info->getPassArgument() && *info->getPassArgument()) {
+-                printf("%15s - %s\n", info->getPassArgument(),
+-                       info->getPassName());
++            if (!info->getPassArgument().empty()) {
++                printf("%15s - %s\n", info->getPassArgument().data(),
++                       info->getPassName().data());
+             }
+         }
+     } listener;
+diff --git a/src/rustllvm/RustWrapper.cpp b/src/rustllvm/RustWrapper.cpp
+index f8bb00e..16df65e6 100644
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -882,16 +882,16 @@ LLVMRustUnpackOptimizationDiagnostic(
+     const char **pass_name_out,
+     LLVMValueRef *function_out,
+     LLVMDebugLocRef *debugloc_out,
+-    LLVMTwineRef *message_out)
++    const char **message_out)
+ {
+     // Undefined to call this not on an optimization diagnostic!
+     llvm::DiagnosticInfoOptimizationBase *opt
+         = static_cast<llvm::DiagnosticInfoOptimizationBase*>(unwrap(di));
+ 
+-    *pass_name_out = opt->getPassName();
++    *pass_name_out = opt->getPassName().data();
+     *function_out = wrap(&opt->getFunction());
+     *debugloc_out = wrap(&opt->getDebugLoc());
+-    *message_out = wrap(&opt->getMsg());
++    *message_out = opt->getMsg().data();
+ }
+ 
+ extern "C" void
