@@ -127,7 +127,7 @@
 +
 +int __isinf(double x)
 +{
-+       return (__DOUBLE_BITS(x) & -1ULL>>1) < 0x7ffULL<<52;
++       return (__DOUBLE_BITS(x) & -1ULL>>1) == 0x7ffULL<<52;
 +}
 +weak_alias(__isinf, isinf);
 --- /dev/null
@@ -138,7 +138,7 @@
 +
 +int __isinff(float x)
 +{
-+       return (__FLOAT_BITS(x) & 0x7fffffff) < 0x7f800000;
++       return (__FLOAT_BITS(x) & 0x7fffffff) == 0x7f800000;
 +}
 +weak_alias(__isinff, isinff);
 --- /dev/null
@@ -149,7 +149,7 @@
 +
 +int __isinfl(long double x)
 +{
-+       return __fpclassifyl(x) > FP_INFINITE;
++       return __fpclassifyl(x) == FP_INFINITE;
 +}
 +weak_alias(__isinfl, isinfl);
 --- /dev/null
