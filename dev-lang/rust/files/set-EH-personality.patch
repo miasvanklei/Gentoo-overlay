@@ -1,0 +1,32 @@
+From bafd059632082ac1226c4cf7da1f27cc6c013dbf Mon Sep 17 00:00:00 2001
+From: Dylan McKay <dylanmckay34@gmail.com>
+Date: Sun, 2 Oct 2016 02:04:42 +1300
+Subject: [PATCH] [4.0] Set EH personality when resuming stack unwinding
+
+To resume stack unwinding, the LLVM `resume` instruction must be used.
+
+In order to use this instruction, the calling function must have an
+exception handling personality set.
+
+LLVM 4.0 adds a new IR validation check to ensure a personality is
+always set in these cases.
+
+This was introduced in [r277360](https://reviews.llvm.org/rL277360).
+---
+ src/librustc_trans/mir/block.rs | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/librustc_trans/mir/block.rs b/src/librustc_trans/mir/block.rs
+index 8bf27b4..c088b98 100644
+--- a/src/librustc_trans/mir/block.rs
++++ b/src/librustc_trans/mir/block.rs
+@@ -116,6 +116,9 @@ impl<'bcx, 'tcx> MirContext<'bcx, 'tcx> {
+                 if let Some(cleanup_pad) = cleanup_pad {
+                     bcx.cleanup_ret(cleanup_pad, None);
+                 } else {
++                    let llpersonality = bcx.fcx().eh_personality();
++                    bcx.set_personality_fn(llpersonality);
++
+                     let ps = self.get_personality_slot(&bcx);
+                     let lp = bcx.load(ps);
+                     bcx.with_block(|bcx| {

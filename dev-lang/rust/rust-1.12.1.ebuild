@@ -114,6 +114,17 @@ EOF
 	eapply "${FILESDIR}"/llvm-with-ffi.patch
 	eapply "${FILESDIR}"/link-with-libcxx.patch
 
+	# llvm 4.0
+	eapply "${FILESDIR}"/preprocessor-llvm-4.0.patch
+	eapply "${FILESDIR}"/allow-llvm-4.0.patch
+	eapply "${FILESDIR}"/TwineRef-to-char.patch
+	eapply "${FILESDIR}"/set-EH-personality.patch
+	eapply "${FILESDIR}"/legacy-pass.patch
+	eapply "${FILESDIR}"/new-error-reporting.patch
+	eapply "${FILESDIR}"/outdated-stuff.patch
+	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
+	eapply "${FILESDIR}"/cannot-cast-like-this.patch
+
 	eapply_user
 }
 
