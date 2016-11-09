@@ -1,0 +1,12 @@
+--- lib/CodeGen/ItaniumCXXABI.cpp.bak	2016-11-08 09:38:53.405777334 +0100
++++ lib/CodeGen/ItaniumCXXABI.cpp	2016-11-08 10:25:13.394875023 +0100
+@@ -2116,8 +2116,7 @@
+     fn->setDoesNotThrow();
+ 
+   // Create a variable that binds the atexit to this shared object.
+-  llvm::Constant *handle =
+-    CGF.CGM.CreateRuntimeVariable(CGF.Int8Ty, "__dso_handle");
++  llvm::Constant *handle = llvm::ConstantPointerNull::get(CGF.Int8PtrTy);
+ 
+   llvm::Value *args[] = {
+     llvm::ConstantExpr::getBitCast(dtor, dtorTy),
