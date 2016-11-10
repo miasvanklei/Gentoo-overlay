@@ -60,16 +60,3 @@ https://gist.github.com/japaric/52b8816a4c86f5a4699bcc50ebc3e020.
      base.cpu = "x86-64".to_string();
      base.max_atomic_width = 64;
      base.pre_link_args.push("-m64".to_string());
---- a/src/libunwind/build.rs
-+++ b/src/libunwind/build.rs
-@@ -16,9 +16,7 @@
-     let target = env::var("TARGET").unwrap();
-  
-     if target.contains("linux") {
--        if target.contains("musl") && !target.contains("mips") {
--            println!("cargo:rustc-link-lib=static=unwind");
--        } else if !target.contains("android") {
-+        if !target.contains("musl") && !target.contains("android") {
-             println!("cargo:rustc-link-lib=gcc_s");
-         }
-     } else if target.contains("freebsd") {

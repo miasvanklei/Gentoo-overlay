@@ -216,6 +216,14 @@ index 863aecc..245dff8 100644
              ptr::null_mut(),
              empty_array,
              0,
+@@ -1895,7 +1894,6 @@
+             UNKNOWN_LINE_NUMBER,
+             bytes_to_bits(union_size),
+             bytes_to_bits(union_align),
+-            0, // Flags
+             empty_array,
+             0, // RuntimeLang
+             unique_type_id.as_ptr())
 diff --git a/src/librustc_trans/debuginfo/mod.rs b/src/librustc_trans/debuginfo/mod.rs
 index 3bc5f4f..e865f52 100644
 --- a/src/librustc_trans/debuginfo/mod.rs
@@ -357,3 +365,13 @@ index 369388c..b9862cb 100644
      return wrap(Builder->createUnionType(
          unwrapDI<DIDescriptor>(Scope),
          Name,
+--- a/src/librustc_trans/debuginfo/metadata.rs	2016-11-10 18:29:03.356011869 +0100
++++ b/src/librustc_trans/debuginfo/metadata.rs	2016-11-10 18:29:18.630957536 +0100
+@@ -1221,7 +1221,6 @@
+                 llvm_type: type_of::type_of(cx, fty),
+                 type_metadata: type_metadata(cx, fty, self.span),
+                 offset: FixedMemberOffset { bytes: 0 },
+-                flags: FLAGS_NONE,
+             }
+         }).collect()
+     }

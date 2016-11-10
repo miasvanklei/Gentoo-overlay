@@ -29,12 +29,7 @@ RUST_STAGE0_amd64="rustc-${STAGE0_VERSION}-x86_64-unknown-linux-gnu"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
-	!elibc_musl? ( https://static.rust-lang.org/dist/${RUST_STAGE0_amd64}.tar.gz )
-	elibc_musl? ( https://repo.voidlinux.eu/distfiles/rustc-1.12.0-x86_64-unknown-linux-musl.tar.gz
-		https://repo.voidlinux.eu/distfiles/rust-std-1.12.0-x86_64-unknown-linux-musl.tar.gz
-		https://alpine.geeknet.cz/distfiles/cargo-0.11.0-nightly-x86_64-alpine-linux-musl.tar.gz )
-"
+SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
@@ -56,55 +51,20 @@ PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
 
 S="${WORKDIR}/${MY_P}"
 
-src_unpack() {
-	if use !elibc_musl; then
-		unpack "rustc-${PV}-src.tar.gz" || die
-		mkdir "${MY_P}/dl" || die
-		local stagename="RUST_STAGE0_${ARCH}"
-		local stage0="${!stagename}"
-		cp "${DISTDIR}/${stage0}.tar.gz" "${MY_P}/dl/" || die "cp stage0"
-	else
-		default
-	fi
-}
-
 src_prepare() {
 	find mk -name '*.mk' -exec \
 		 sed -i -e "s/-Werror / /g" {} \; || die
 
 	if use elibc_musl; then
-		rm -rf src/llvm
-
-		mkdir -p stage0
-		cp -flr ../rustc-*/rustc/* stage0
-		cp -flr ../rust-std-*/rust-std-*/* stage0
-		cp -flr ../cargo-*/cargo/* stage0
-
-		# XXX: Cheat Rust build system so we can build rustc using different
-		# version of (prebuilt) stable rustc than preconfigured. It's hack-ish,
-		# but since we're basically rebuilding rustc with the same version,
-		# it's actually safe.
-		# Note: --enable-local-rebuild from #33787 didn't work, don't know why.
-		export LD_LIBRARY_PATH="${S}/stage0/lib"
-		rustc_ver="$(${S}/stage0/bin/rustc --version | cut -f2 -d ' ')"
-		rustc_key="$(printf "$rustc_ver" | md5sum | cut -c1-8)"
-		sed -Ei \
-			-e "s/^(rustc):.*/\1: $rustc_ver-1970-01-01/" \
-			-e "s/^(rustc_key):.*/\1: $rustc_key/" \
-			src/stage0.txt
-
-		# Generate config for bootstrap.py to use our prebuilt rustc and cargo
-		# for bootstrapping instead of downloading snapshot from internet.
 		cat > config.toml <<EOF
 [build]
-cargo = "${S}/stage0/bin/cargo"
-rustc = "${S}/stage0/bin/rustc"
+cargo = "/usr/bin/cargo"
+rustc = "/usr/bin/rustc"
 EOF
-
 		sed -i /LD_LIBRARY_PATH/d src/bootstrap/bootstrap.py
 
 		eapply "${FILESDIR}"/link-musl-dynamically.patch
-		eapply "${FILESDIR}"/use-libunwind.patch
+		eapply "${FILESDIR}"/libunwind-shared.patch
 		eapply "${FILESDIR}"/no-compiler-rt.patch
 		eapply "${FILESDIR}"/dont-use-no_default_libraries.patch
 		eapply "${FILESDIR}"/dont-install-crtfiles.patch
@@ -115,16 +75,17 @@ EOF
 	eapply "${FILESDIR}"/link-with-libcxx.patch
 
 	# llvm 4.0
-	eapply "${FILESDIR}"/allow-llvm-4.0.patch
-	eapply "${FILESDIR}"/TwineRef-to-char.patch
-	eapply "${FILESDIR}"/set-EH-personality.patch
-	eapply "${FILESDIR}"/legacy-pass.patch
-	eapply "${FILESDIR}"/new-error-reporting.patch
-	eapply "${FILESDIR}"/outdated-stuff.patch
-	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
-	eapply "${FILESDIR}"/cannot-cast-like-this.patch
-	eapply "${FILESDIR}"/some-fixes.patch
-	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
+#	eapply "${FILESDIR}"/allow-llvm-4.0.patch
+#	eapply "${FILESDIR}"/TwineRef-to-char.patch
+#	eapply "${FILESDIR}"/set-EH-personality.patch
+#	eapply "${FILESDIR}"/legacy-pass.patch
+#	eapply "${FILESDIR}"/new-error-reporting.patch
+#	eapply "${FILESDIR}"/outdated-stuff.patch
+#	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
+#	eapply "${FILESDIR}"/cannot-cast-like-this.patch
+#	eapply "${FILESDIR}"/some-fixes.patch
+#	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
+	eapply "${FILESDIR}"/compile-without-debug.patch
 
 	eapply_user
 }
@@ -132,7 +93,6 @@ EOF
 src_configure() {
 	export CFG_DISABLE_LDCONFIG="notempty"
 	export CARGO_HOME="${S}/.cargo"
-	use elibc_musl $$ export LD_LIBRARY_PATH="${S}/stage0/lib"
 
 	local target
 	case ${CHOST} in
@@ -153,6 +113,7 @@ src_configure() {
 		--host=${target} \
 		--build=${target} \
 		--enable-rustbuild \
+		--enable-local-rust \
 		$(use_enable clang) \
 		$(use_enable debug) \
 		$(use_enable debug llvm-assertions) \

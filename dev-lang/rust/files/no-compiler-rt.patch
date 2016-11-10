@@ -1,10 +1,22 @@
---- a/src/librustc_back/target/linux_base.rs	2016-08-12 13:51:24.073585071 +0200
-+++ b/src/librustc_back/target/linux_base.rs	2016-08-12 13:52:19.097583538 +0200
-@@ -17,6 +17,7 @@
-         executables: true,
-         linker_is_gnu: true,
-         has_rpath: true,
-+        no_compiler_rt: true,
-         pre_link_args: vec![
-             // We want to be able to strip as much executable code as possible
-             // from the linker command line, and this flag indicates to the
+--- a/src/libstd/lib.rs	2016-11-10 16:38:41.460851478 +0100
++++ b/src/libstd/lib.rs	2016-11-10 16:38:59.136786859 +0100
+@@ -321,9 +321,6 @@
+ #[cfg(stage0)]
+ extern crate alloc_system;
+ 
+-// compiler-rt intrinsics
+-extern crate compiler_builtins;
+-
+ // Make std testable by not duplicating lang items and other globals. See #2912
+ #[cfg(test)] extern crate std as realstd;
+ 
+--- a/src/libstd/Cargo.toml	2016-11-10 16:36:43.186296681 +0100
++++ b/src/libstd/Cargo.toml	2016-11-10 16:36:58.511237638 +0100
+@@ -19,7 +19,6 @@
+ core = { path = "../libcore" }
+ libc = { path = "../rustc/libc_shim" }
+ rand = { path = "../librand" }
+-compiler_builtins = { path = "../libcompiler_builtins" }
+ rustc_unicode = { path = "../librustc_unicode" }
+ unwind = { path = "../libunwind" }
+ 
