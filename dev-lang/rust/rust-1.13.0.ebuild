@@ -31,8 +31,8 @@ HOMEPAGE="http://www.rust-lang.org/"
 
 SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz
 	!elibc_musl? ( https://static.rust-lang.org/dist/${RUST_STAGE0_amd64}.tar.gz )
-	elibc_musl? ( https://repo.voidlinux.eu/distfiles/rustc-1.11.0-x86_64-unknown-linux-musl.tar.gz
-		https://repo.voidlinux.eu/distfiles/rust-std-1.11.0-x86_64-unknown-linux-musl.tar.gz
+	elibc_musl? ( https://repo.voidlinux.eu/distfiles/rustc-1.12.0-x86_64-unknown-linux-musl.tar.gz
+		https://repo.voidlinux.eu/distfiles/rust-std-1.12.0-x86_64-unknown-linux-musl.tar.gz
 		https://alpine.geeknet.cz/distfiles/cargo-0.11.0-nightly-x86_64-alpine-linux-musl.tar.gz )
 "
 
@@ -107,15 +107,14 @@ EOF
 		eapply "${FILESDIR}"/use-libunwind.patch
 		eapply "${FILESDIR}"/no-compiler-rt.patch
 		eapply "${FILESDIR}"/dont-use-no_default_libraries.patch
+		eapply "${FILESDIR}"/dont-install-crtfiles.patch
 	fi
 
 	eapply "${FILESDIR}"/link-llvm-static.patch
-	eapply "${FILESDIR}"/dont-require-filecheck.patch
 	eapply "${FILESDIR}"/llvm-with-ffi.patch
 	eapply "${FILESDIR}"/link-with-libcxx.patch
 
 	# llvm 4.0
-	eapply "${FILESDIR}"/preprocessor-llvm-4.0.patch
 	eapply "${FILESDIR}"/allow-llvm-4.0.patch
 	eapply "${FILESDIR}"/TwineRef-to-char.patch
 	eapply "${FILESDIR}"/set-EH-personality.patch
@@ -124,6 +123,8 @@ EOF
 	eapply "${FILESDIR}"/outdated-stuff.patch
 	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
 	eapply "${FILESDIR}"/cannot-cast-like-this.patch
+	eapply "${FILESDIR}"/some-fixes.patch
+	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
 
 	eapply_user
 }
