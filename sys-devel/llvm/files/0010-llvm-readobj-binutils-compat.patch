@@ -29,38 +29,10 @@
      cl::desc("Alias for --symbols"),
      cl::aliasopt(Symbols));
  
-@@ -117,9 +117,12 @@
-     cl::desc("Alias for --unwind"),
-     cl::aliasopt(UnwindInfo));
- 
--  // -dynamic-table
-+  // -dynamic-table, -d
-   cl::opt<bool> DynamicTable("dynamic-table",
-     cl::desc("Display the ELF .dynamic section table"));
-+  cl::alias DynamicTableShort("d",
-+    cl::desc("Alias for -dynamic-table"),
-+    cl::aliasopt(DynamicTable));
- 
-   // -needed-libs
-   cl::opt<bool> NeededLibraries("needed-libs",
-@@ -131,9 +131,12 @@
-   cl::opt<bool> NeededLibraries("needed-libs",
-     cl::desc("Display the needed libraries"));
- 
--  // -program-headers
-+  // -program-headers, -l
-   cl::opt<bool> ProgramHeaders("program-headers",
-     cl::desc("Display ELF program headers"));
-+  cl::alias ProgramHeadersShort("l",
-+    cl::desc("Alias for -program-headers"),
-+    cl::aliasopt(ProgramHeaders));
- 
-   // -hash-table
-   cl::opt<bool> HashTable("hash-table",
 @@ -263,7 +263,7 @@
        Output("elf-output-style", cl::desc("Specify ELF dump style"),
               cl::values(clEnumVal(LLVM, "LLVM default style"),
-                         clEnumVal(GNU, "GNU readelf style"), clEnumValEnd),
+                         clEnumVal(GNU, "GNU readelf style")),
 -             cl::init(LLVM));
 +             cl::init(GNU));
  } // namespace opts

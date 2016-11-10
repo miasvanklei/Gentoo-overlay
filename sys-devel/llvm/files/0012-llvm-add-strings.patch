@@ -37,12 +37,12 @@
 +// deal with the Error value directly, rather than converting to error_code.
 +class _readobj_error_category : public std::error_category {
 +public:
-+  const char* name() const LLVM_NOEXCEPT override;
++  const char* name() const noexcept override;
 +  std::string message(int ev) const override;
 +};
 +} // namespace
 +
-+const char *_readobj_error_category::name() const LLVM_NOEXCEPT {
++const char *_readobj_error_category::name() const noexcept {
 +  return "llvm.readobj";
 +}
 +
@@ -110,7 +110,7 @@
 +#endif
 --- /dev/null	1970-01-01 01:00:00.000000000 +0100
 +++ b/tools/llvm-strings/llvm-strings.cpp	2016-10-06 22:56:37.307263518 +0200
-@@ -0,0 +1,271 @@
+@@ -0,0 +1,269 @@
 +#include "llvm/Object/Archive.h"
 +#include "llvm/Object/MachO.h"
 +#include "llvm/Object/MachOUniversal.h"
@@ -167,8 +167,7 @@
 +          cl::desc("Print size in radix. Only 8, 10, and 16 are valid"),
 +          cl::values(clEnumValN(octal, "o", "Print size in octal"),
 +                     clEnumValN(decimal, "d", "Print size in decimal"),
-+                     clEnumValN(hexadecimal, "x", "Print size in hexadecimal"),
-+                     clEnumValEnd),
++                     clEnumValN(hexadecimal, "x", "Print size in hexadecimal")),
 +          cl::init(decimal));
 +
 +static cl::alias RadixShort("t", cl::aliasopt(Radix));
@@ -186,8 +185,7 @@
 +    "encoding", cl::desc("Print string in encoding:"),
 +    cl::values(clEnumValN(U8, "s", "7-bit"), clEnumValN(U8, "S", "8-bit"),
 +               clEnumValN(U16, "b", "16-bit"), clEnumValN(U16, "l", "16-bit"),
-+               clEnumValN(U32, "B", "32-bit"), clEnumValN(U32, "L", "32-bit"),
-+               clEnumValEnd),
++               clEnumValN(U32, "B", "32-bit"), clEnumValN(U32, "L", "32-bit")),
 +    cl::init(U8));
 +static cl::alias EncodingShort("e", cl::aliasopt(Encoding));
 +

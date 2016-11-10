@@ -1,5 +1,5 @@
---- a/include/lld/ELF/Options.td	2016-11-07 16:50:58.392900038 +0100
-+++ b/include/lld/ELF/Options.td	2016-11-07 16:52:37.554769701 +0100
+--- a/ELF/Options.td	2016-11-07 16:50:58.392900038 +0100
++++ b/ELF/Options.td	2016-11-07 16:52:37.554769701 +0100
 @@ -145,6 +145,8 @@
  
  def strip_all: F<"strip-all">, HelpText<"Strip all symbols">;
@@ -11,12 +11,20 @@
  def sysroot: J<"sysroot=">, HelpText<"Set the system root">;
 --- a/ELF/Driver.cpp	2016-11-07 16:49:26.581078380 +0100
 +++ b/ELF/Driver.cpp	2016-11-07 16:50:39.766389361 +0100
-@@ -360,7 +360,7 @@
-   Config->Relocatable = Args.hasArg(OPT_relocatable);
-   Config->SaveTemps = Args.hasArg(OPT_save_temps);
-   Config->Shared = Args.hasArg(OPT_shared);
--  Config->StripAll = Args.hasArg(OPT_strip_all);
-+  Config->StripAll = !Args.hasArg(OPT_nostrip) && Args.hasArg(OPT_strip_all);
-   Config->StripDebug = Args.hasArg(OPT_strip_debug);
-   Config->Threads = Args.hasArg(OPT_threads);
-   Config->Trace = Args.hasArg(OPT_trace);
+@@ -403,10 +403,12 @@
+ }
+ 
+ static StripPolicy getStripOption(opt::InputArgList &Args) {
+-  if (auto *Arg = Args.getLastArg(OPT_strip_all, OPT_strip_debug)) {
+-    if (Arg->getOption().getID() == OPT_strip_all)
+-      return StripPolicy::All;
+-    return StripPolicy::Debug;
++  if (!Args.hasArg(OPT_nostrip)) {
++    if (auto *Arg = Args.getLastArg(OPT_strip_all, OPT_strip_debug)) {
++      if (Arg->getOption().getID() == OPT_strip_all)
++        return StripPolicy::All;
++      return StripPolicy::Debug;
++    }
+   }
+   return StripPolicy::None;
+ }

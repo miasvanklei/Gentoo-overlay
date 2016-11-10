@@ -9,13 +9,14 @@ CMAKE_MIN_VERSION=3.6.1-r1
 DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic \
+inherit check-reqs cmake-utils flag-o-matic git-r3 \
 	multilib-minimal pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz
-	!doc? ( http://dev.gentoo.org/~mgorny/dist/${PN}-3.9.0_rc3-manpages.tar.bz2 )"
+SRC_URI=""
+EGIT_REPO_URI="http://llvm.org/git/llvm.git
+        https://github.com/llvm-mirror/llvm.git"
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
 	NVPTX PowerPC Sparc SystemZ X86 XCore )
@@ -56,7 +57,6 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
-S=${WORKDIR}/${P/_}.src
 
 pkg_pretend() {
 	# in megs
@@ -97,36 +97,12 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
-	# include checkatomic
-	eapply "${FILESDIR}"/llvm-include-checkatomic.patch
-
-	# Fix libdir for ocaml bindings install, bug #559134
-	eapply "${FILESDIR}"/0001-cmake-Install-OCaml-modules-into-correct-package-loc.patch
-	# Do not build/install ocaml docs with USE=-doc, bug #562008
-	eapply "${FILESDIR}"/0002-cmake-Make-OCaml-docs-dependent-on-LLVM_BUILD_DOCS.patch
-
-	# Make it possible to override Sphinx HTML install dirs
-	# https://llvm.org/bugs/show_bug.cgi?id=23780
-	eapply "${FILESDIR}"/0003-cmake-Support-overriding-Sphinx-HTML-doc-install-dir.patch
-
-	# Prevent race conditions with parallel Sphinx runs
-	# https://llvm.org/bugs/show_bug.cgi?id=23781
-	eapply "${FILESDIR}"/0004-cmake-Add-an-ordering-dep-between-HTML-man-Sphinx-ta.patch
-
-	# Prevent installing libgtest
-	# https://llvm.org/bugs/show_bug.cgi?id=18341
-	eapply "${FILESDIR}"/0005-cmake-Do-not-install-libgtest.patch
-
 	# Allow custom cmake build types (like 'Gentoo')
 	eapply "${FILESDIR}"/0006-cmake-Remove-the-CMAKE_BUILD_TYPE-assertion.patch
 
 	# Fix llvm-config for shared linking and sane flags
 	# https://bugs.gentoo.org/show_bug.cgi?id=565358
 	eapply "${FILESDIR}"/0007-llvm-config-Clean-up-exported-values-update-for-shar.patch
-
-	# Restore SOVERSIONs for shared libraries
-	# https://bugs.gentoo.org/show_bug.cgi?id=578392
-	eapply "${FILESDIR}"/0008-cmake-Restore-SOVERSIONs-on-shared-libraries.patch
 
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/musl-fixes.patch
@@ -137,8 +113,7 @@ src_prepare() {
 	# llvm-readobj has allmost all options
 	eapply "${FILESDIR}"/0010-llvm-readobj-binutils-compat.patch
 
-	# add llvm-strings and llvm-cxxfilt
-	eapply "${FILESDIR}"/0011-llvm-add-cxxfilt.patch
+	# add llvm-strings
 	eapply "${FILESDIR}"/0012-llvm-add-strings.patch
 
 	# disable use of SDK on OSX, bug #568758
@@ -198,6 +173,7 @@ multilib_src_configure() {
 
 	if multilib_is_native_abi; then
 		mycmakeargs+=(
+			-DLLVM_ENABLE_OCAMLDOC=OFF
 			-DLLVM_BUILD_DOCS=$(usex doc)
 			-DLLVM_ENABLE_SPHINX=$(usex doc)
 			-DLLVM_ENABLE_DOXYGEN=OFF
@@ -227,8 +203,6 @@ multilib_src_configure() {
 
 multilib_src_compile() {
 	cmake-utils_src_compile
-	# TODO: not sure why this target is not correctly called
-	multilib_is_native_abi && use doc && use ocaml && cmake-utils_src_make docs/ocaml_doc
 
 	pax-mark m "${BUILD_DIR}"/bin/llvm-rtdyld
 	pax-mark m "${BUILD_DIR}"/bin/lli
@@ -253,7 +227,6 @@ src_install() {
 	)
 
 	local MULTILIB_WRAPPED_HEADERS=(
-		/usr/include/llvm/Config/config.h
 		/usr/include/llvm/Config/llvm-config.h
 	)
 
@@ -278,8 +251,4 @@ multilib_src_install_all() {
 	doins -r utils/vim/*/.
 	# some users may find it useful
 	dodoc utils/vim/vimrc
-
-	if ! use doc; then
-		doman "${WORKDIR}"/${PN}-3.9.0_rc3-manpages/*.1
-	fi
 }

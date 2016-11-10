@@ -11,7 +11,7 @@ index 70b53bd..46326f0 100644
 @@ -4011,8 +4036,14 @@
                         .str());
  
-   Distro Distro = DetectDistro(D, Arch);
+   Distro Distro = DetectDistro(D.getVFS());
 +  StringRef VendorName = Linux::getTriple().getVendorName();
 +
 +  if (VendorName.compare("gentoo") == 0) {

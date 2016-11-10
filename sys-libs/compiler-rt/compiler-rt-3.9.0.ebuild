@@ -48,7 +48,7 @@ src_configure() {
 		fi
 	fi
 
-	local clang_version=${PV}
+	local clang_version=4.0.0
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		# used to find cmake modules
@@ -71,7 +71,7 @@ src_configure() {
 src_install() {
 	cmake-utils_src_install
 
-	local clang_version=${PV}
+	local clang_version=4.0.0
 
 	mkdir -p "${ED}"etc/env.d
 	echo "LDPATH=\"/usr/lib/clang/${clang_version}/lib/linux\"" > "${ED}"etc/env.d/04clang-x86_64-gentoo-linux-musl

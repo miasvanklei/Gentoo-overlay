@@ -8,13 +8,15 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
+inherit check-reqs cmake-utils flag-o-matic git-r3 multilib-minimal \
 	python-single-r1 toolchain-funcs pax-utils
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/cfe-${PV}.src.tar.xz
-	http://llvm.org/releases/${PV}/clang-tools-extra-${PV}.src.tar.xz"
+EGIT_REPO_URI="http://llvm.org/git/clang.git
+        https://github.com/llvm-mirror/clang.git"
+
+SRC_URI=""
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
 	NVPTX PowerPC Sparc SystemZ X86 XCore )
@@ -48,15 +50,6 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
-S=${WORKDIR}/cfe-${PV/_}.src
-
-src_unpack() {
-	default
-
-	mv "${WORKDIR}"/clang-tools-extra-${PV/_}.src "${S}"/tools/extra \
-		|| die "clang-tools-extra source directory move failed"
-}
-
 pkg_pretend() {
 	local build_size=650
 
@@ -88,20 +81,21 @@ pkg_setup() {
 	python-single-r1_pkg_setup
 }
 
+src_unpack() {
+	git-r3_fetch "http://llvm.org/git/clang-tools-extra.git
+		https://github.com/llvm-mirror/clang-tools-extra.git"
+	git-r3_fetch
+
+	git-r3_checkout http://llvm.org/git/clang-tools-extra.git \
+		"${S}"/tools/clang/tools/extra
+	git-r3_checkout
+}
+
 src_prepare() {
 	python_setup
 
-	# fix race condition between sphinx targets
-	eapply "${FILESDIR}"/0001-cmake-Add-ordering-dep-between-HTML-Sphinx-docs-and-.patch
-	# support overriding LLVMgold.so plugin directory
-	eapply "${FILESDIR}"/0002-cmake-Add-CLANG_GOLD_LIBDIR_SUFFIX-to-specify-loc-of.patch
-	# support overriding clang runtime install directory
-	eapply "${FILESDIR}"/0003-cmake-Supporting-overriding-runtime-libdir-via-CLANG.patch
 	# fix stand-alone doc build
 	eapply "${FILESDIR}"/0004-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
-
-	# be able to specify default values for -rtlib at build time
-	eapply "${FILESDIR}"/0005-default-rtlib.patch
 
 	# optimizations like ssp, pie, relro
 	eapply "${FILESDIR}"/0006-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
@@ -146,13 +140,12 @@ src_prepare() {
 }
 
 multilib_src_configure() {
+	local clang_version=4.0.0
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
-		# install clang runtime straight into /usr/lib
-		-DCLANG_LIBDIR_SUFFIX=""
-		# specify host's binutils gold plugin path
-		-DCLANG_GOLD_LIBDIR_SUFFIX="${NATIVE_LIBDIR#lib}"
+		# relative to bindir
+                -DCLANG_RESOURCE_DIR="../lib/clang/${clang_version}"
 
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		# TODO: get them properly conditional
@@ -171,15 +164,12 @@ multilib_src_configure() {
 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 
-		# enable libomp
-		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
-
 		# llvm options
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_THREADS=ON
-		-DLLVM_ENABLE_LLD=OFF
+		-DLLVM_ENABLE_LLD=ON
 	)
 
 	if multilib_is_native_abi; then
@@ -227,8 +217,12 @@ src_install() {
 
 	multilib-minimal_src_install
 
+	# Move runtime headers to /usr/lib/clang, where they belong
+	dodir /usr/lib
+	mv "${ED}usr/include/clangrt" "${ED}usr/lib/clang" || die
+
 	# Apply CHOST and version suffix to clang tools
-	local clang_version=${PV%.*}
+	local clang_version=4.0
 	local clang_tools=( clang clang++ clang-cl clang-cpp)
 	local abi i
 
@@ -267,6 +261,12 @@ src_install() {
 
 multilib_src_install() {
 	cmake-utils_src_install
+
+	# move headers to include/ to get them checked for ABI mismatch
+	# (then to the correct directory in src_install())
+	insinto /usr/include/clangrt
+	doins -r "${ED}usr/$(get_libdir)/clang"/.
+	rm -r "${ED}usr/$(get_libdir)/clang" || die
 }
 
 multilib_src_install_all() {

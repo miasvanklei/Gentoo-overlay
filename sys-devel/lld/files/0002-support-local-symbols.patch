@@ -1,38 +1,32 @@
---- a/ELF/SymbolListFile.cpp	2016-07-16 20:45:23.000000000 +0200
-+++ b/ELF/SymbolListFile.cpp	2016-10-31 12:13:00.008566509 +0100
-@@ -72,7 +72,7 @@
-   void parseExtern(std::vector<SymbolVersion> *Globals);
-   void parseVersion(StringRef VerStr);
-   void parseGlobal(StringRef VerStr);
--  void parseLocal();
-+  void parseLocal(StringRef VerStr);
- };
+--- a/ELF/LinkerScript.cpp	2016-11-08 21:49:49.432379365 +0100
++++ b/ELF/LinkerScript.cpp	2016-11-08 21:57:04.901174961 +0100
+@@ -970,7 +970,7 @@
+   void readExtern(std::vector<SymbolVersion> *Globals);
+   void readVersionDeclaration(StringRef VerStr);
+   void readGlobal(StringRef VerStr);
+-  void readLocal();
++  void readLocal(StringRef VerStr);
  
- size_t elf::defineSymbolVersion(StringRef VerStr) {
-@@ -89,7 +89,7 @@
-   if (skip("global:") || peek() != "local:")
-     parseGlobal(VerStr);
-   if (skip("local:"))
--    parseLocal();
-+    parseLocal(VerStr);
+   ScriptConfiguration &Opt = *ScriptConfig;
+   bool IsUnderSysroot;
+@@ -1780,7 +1780,7 @@
+   if (consume("global:") || peek() != "local:")
+     readGlobal(VerStr);
+   if (consume("local:"))
+-    readLocal();
++    readLocal(VerStr);
    expect("}");
  
    // Each version may have a parent version. For example, "Ver2" defined as
-@@ -101,10 +101,27 @@
+@@ -1792,10 +1792,21 @@
    expect(";");
  }
  
--void VersionScriptParser::parseLocal() {
+-void ScriptParser::readLocal() {
 -  Config->DefaultSymbolVersion = VER_NDX_LOCAL;
 -  expect("*");
 -  expect(";");
-+void VersionScriptParser::parseLocal(StringRef VerStr) {
-+  if (peek() == "*") {
-+    Config->DefaultSymbolVersion = VER_NDX_LOCAL;
-+    expect("*");
-+    expect(";");
-+    return;
-+  }
++void ScriptParser::readLocal(StringRef VerStr) {
 +  std::vector<SymbolVersion> *Locals;
 +  if (VerStr.empty())
 +    Locals = &Config->VersionScriptLocals;
@@ -43,16 +37,16 @@
 +    StringRef Cur = peek();
 +    if (Cur == "}" || Error)
 +      return;
-+    next();
-+    Locals->push_back({Cur, false});
++    skip();
++    Locals->push_back({Cur, false, false});
 +    expect(";");
 +  }
  }
  
- void VersionScriptParser::parseExtern(std::vector<SymbolVersion> *Globals) {
---- a/ELF/Config.h	2016-10-31 11:40:58.688675910 +0100
-+++ b/ELF/Config.h	2016-10-31 11:54:56.873955049 +0100
-@@ -46,6 +46,7 @@
+ void ScriptParser::readExtern(std::vector<SymbolVersion> *Globals) {
+--- a/ELF/Config.h	2016-11-08 21:49:49.430379371 +0100
++++ b/ELF/Config.h	2016-11-08 21:58:00.051021249 +0100
+@@ -61,6 +61,7 @@
    llvm::StringRef Name;
    size_t Id;
    std::vector<SymbolVersion> Globals;
@@ -60,7 +54,7 @@
    size_t NameOff; // Offset in string table.
  };
  
-@@ -72,6 +73,7 @@
+@@ -89,6 +90,7 @@
    std::vector<llvm::StringRef> SearchPaths;
    std::vector<llvm::StringRef> Undefined;
    std::vector<SymbolVersion> VersionScriptGlobals;
@@ -68,71 +62,105 @@
    std::vector<uint8_t> BuildIdVector;
    bool AllowMultipleDefinition;
    bool AsNeeded = false;
---- a/ELF/SymbolTable.cpp	2016-07-18 03:35:00.000000000 +0200
-+++ b/ELF/SymbolTable.cpp	2016-10-31 15:10:54.701158493 +0100
-@@ -585,10 +585,31 @@
+--- a/ELF/SymbolTable.cpp	2016-11-08 22:08:02.028745830 +0100
++++ b/ELF/SymbolTable.cpp	2016-11-08 22:21:55.429973390 +0100
+@@ -650,30 +650,56 @@
+ // but just specifies symbols visibilities. We assume that the script was
+ // in the form of { global: foo; bar; local *; }. So, local is default.
+ // In this function, we make specified symbols global.
+-template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion() {
++template <class ELFT> void SymbolTable<ELFT>::handleGlobalAnonymousVersion() {
+   std::vector<StringRef> Patterns;
+   for (SymbolVersion &Sym : Config->VersionScriptGlobals) {
+     if (hasWildcard(Sym.Name)) {
+       Patterns.push_back(Sym.Name);
+       continue;
+     }
+-    if (SymbolBody *B = find(Sym.Name))
++    if (SymbolBody *B = find(Sym.Name)) {
++      B->symbol()->VersionScriptProcessed = true;
+       B->symbol()->VersionId = VER_NDX_GLOBAL;
++    }
+   }
+   if (Patterns.empty())
+     return;
+   StringMatcher M(Patterns);
+   std::vector<SymbolBody *> Syms = findAll(M);
+-  for (SymbolBody *B : Syms)
++  for (SymbolBody *B : Syms) {
++    B->symbol()->VersionScriptProcessed = true;
+     B->symbol()->VersionId = VER_NDX_GLOBAL;
++  }
++}
++
++template <class ELFT> void SymbolTable<ELFT>::handleLocalAnonymousVersion() {
++  std::vector<StringRef> Patterns;
++  for (SymbolVersion &Sym : Config->VersionScriptLocals) {
++    if (hasWildcard(Sym.Name)) {
++      Patterns.push_back(Sym.Name);
++      continue;
++    }
++    if (SymbolBody *B = find(Sym.Name))
++      B->symbol()->VersionId = VER_NDX_LOCAL;
++  }
++  if (Patterns.empty())
++    return;
++  StringMatcher M(Patterns);
++  std::vector<SymbolBody *> Syms = findAll(M);
++  for (SymbolBody *B : Syms)
++    if (!B->symbol()->VersionScriptProcessed)
++      B->symbol()->VersionId = VER_NDX_LOCAL;
+ }
+ 
+ // This function processes version scripts by updating VersionId
+ // member of symbols.
  template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
-   // If version script does not contain versions declarations,
-   // we just should mark global symbols.
+   // Handle edge cases first.
 -  if (!Config->VersionScriptGlobals.empty()) {
--    for (SymbolVersion &Sym : Config->VersionScriptGlobals)
--      if (SymbolBody *B = find(Sym.Name))
--        B->symbol()->VersionId = VER_NDX_GLOBAL;
+-    handleAnonymousVersion();
 +  if (!Config->VersionScriptGlobals.empty() || !Config->VersionScriptLocals.empty()) {
 +    if (!Config->VersionScriptGlobals.empty())
-+      for (SymbolVersion &Sym : Config->VersionScriptGlobals) {
-+        if (hasWildcard(Sym.Name))
-+          for (SymbolBody *B : findAll(Sym.Name)) {
-+            B->symbol()->VersionId = VER_NDX_GLOBAL;
-+            B->symbol()->VersionScriptProcessed = true;
-+         }
-+	else
-+          if (SymbolBody *B = find(Sym.Name)) {
-+            B->symbol()->VersionId = VER_NDX_GLOBAL;
-+            B->symbol()->VersionScriptProcessed = true;
-+	 }
-+      }
++      handleGlobalAnonymousVersion();
 +    if (!Config->VersionScriptLocals.empty())
-+      for (SymbolVersion &Sym : Config->VersionScriptLocals) {
-+        if (hasWildcard(Sym.Name))
-+          for (SymbolBody *B : findAll(Sym.Name)) {
-+            if (!B->symbol()->VersionScriptProcessed)
-+              B->symbol()->VersionId = VER_NDX_LOCAL;
-+          }
-+        else
-+          if (SymbolBody *B = find(Sym.Name))
-+            B->symbol()->VersionId = VER_NDX_LOCAL;
-+      }
++      handleLocalAnonymousVersion();
      return;
    }
  
-@@ -616,6 +637,12 @@
-       SymbolBody *B = Sym.IsExternCpp ? Demangled[Sym.Name] : find(Sym.Name);
-       setVersionId(B, V.Name, Sym.Name, V.Id);
+@@ -708,6 +734,14 @@
+       }
+       setVersionId(find(N), V.Name, N, V.Id);
      }
++
 +    for (SymbolVersion Sym : V.Locals) {
-+      if (hasWildcard(Sym.Name))
++      if (Sym.HasWildcards)
 +        continue;
-+      SymbolBody *B = Sym.IsExternCpp ? Demangled[Sym.Name] : find(Sym.Name);
-+      setVersionId(B, V.Name, Sym.Name, VER_NDX_LOCAL);
++
++      StringRef N = Sym.Name;
++      setVersionId(find(N), V.Name, N, VER_NDX_LOCAL);
 +    }
    }
  
-   // Handle wildcards.
-@@ -626,6 +653,10 @@
-         for (SymbolBody *B : findAll(Sym.Name))
-           if (B->symbol()->VersionId == Config->DefaultSymbolVersion)
-             B->symbol()->VersionId = V.Id;
-+    for (SymbolVersion &Sym : V.Locals)
-+      if (hasWildcard(Sym.Name))
-+        for (SymbolBody *B : findAll(Sym.Name))
-+            B->symbol()->VersionId = VER_NDX_LOCAL;
+   // Next, we assign versions to fuzzy matching symbols,
+@@ -730,6 +764,16 @@
+         if (B->symbol()->VersionId == Config->DefaultSymbolVersion)
+           B->symbol()->VersionId = V.Id;
+     }
++
++    for (SymbolVersion &Sym : V.Locals) {
++      if (!Sym.HasWildcards)
++        continue;
++      StringMatcher M({Sym.Name});
++      std::vector<SymbolBody *> Syms = findAll(M);
++
++      for (SymbolBody *B : Syms)
++        B->symbol()->VersionId = VER_NDX_LOCAL;
++    }
    }
  }
  
---- a/ELF/Symbols.h	2016-07-18 03:35:00.000000000 +0200
-+++ b/ELF/Symbols.h	2016-11-01 21:36:08.165066054 +0100
-@@ -406,6 +406,8 @@
+--- a/ELF/Symbols.h	2016-11-08 22:22:15.529897903 +0100
++++ b/ELF/Symbols.h	2016-11-08 22:22:41.279801763 +0100
+@@ -407,6 +407,8 @@
    // Version definition index.
    uint16_t VersionId;
  
@@ -141,3 +169,15 @@
    // Symbol visibility. This is the computed minimum visibility of all
    // observed non-DSO symbols.
    unsigned Visibility : 2;
+--- a/ELF/SymbolTable.h	2016-11-08 21:49:49.434379360 +0100
++++ b/ELF/SymbolTable.h	2016-11-08 22:25:41.405144178 +0100
+@@ -101,7 +101,8 @@
+                                    InputFile *File);
+ 
+   std::map<std::string, std::vector<SymbolBody *>> getDemangledSyms();
+-  void handleAnonymousVersion();
++  void handleGlobalAnonymousVersion();
++  void handleLocalAnonymousVersion();
+ 
+   struct SymIndex {
+     SymIndex(int Idx, bool Traced) : Idx(Idx), Traced(Traced) {}

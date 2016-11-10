@@ -4,8 +4,19 @@
      return &InputSection<ELFT>::Discarded;
    }
  
--  if (Config->StripDebug && Name.startswith(".debug"))
-+  if (Config->StripDebug && (Name.startswith(".debug") || Name.startswith(".comment")))
+-  if (Config->Strip != StripPolicy::None && Name.startswith(".debug"))
++  if (Config->Strip != StripPolicy::None && (Name.startswith(".debug") || Name.startswith(".comment")))
      return &InputSection<ELFT>::Discarded;
  
-   // A MIPS object file has a special sections that contain register
+   // The linker merges EH (exception handling) frames and creates a
+--- a/ELF/Writer.cpp
++++ b/ELF/Writer.cpp
+@@ -268,8 +268,6 @@ template <class ELFT> void Writer<ELFT>::createSyntheticSections() {
+     Out<ELFT>::VerDef = make<VersionDefinitionSection<ELFT>>();
+ 
+   // Initialize linker generated sections
+-  Symtab<ELFT>::X->Sections.push_back(createCommentSection<ELFT>());
+-
+   if (Config->BuildId == BuildIdKind::Fast)
+     In<ELFT>::BuildId = make<BuildIdFastHash<ELFT>>();
+   else if (Config->BuildId == BuildIdKind::Md5)
