@@ -11,12 +11,12 @@
    // The linker merges EH (exception handling) frames and creates a
 --- a/ELF/Writer.cpp
 +++ b/ELF/Writer.cpp
-@@ -268,8 +268,6 @@ template <class ELFT> void Writer<ELFT>::createSyntheticSections() {
+@@ -268,8 +268,8 @@ template <class ELFT> void Writer<ELFT>::createSyntheticSections() {
      Out<ELFT>::VerDef = make<VersionDefinitionSection<ELFT>>();
  
    // Initialize linker generated sections
--  Symtab<ELFT>::X->Sections.push_back(createCommentSection<ELFT>());
--
+-  if (!Config->Relocatable)
++  if (!Config->Relocatable && Config->Strip != StripPolicy::None)
+     Symtab<ELFT>::X->Sections.push_back(createCommentSection<ELFT>());
+ 
    if (Config->BuildId == BuildIdKind::Fast)
-     In<ELFT>::BuildId = make<BuildIdFastHash<ELFT>>();
-   else if (Config->BuildId == BuildIdKind::Md5)
