@@ -73,19 +73,21 @@ EOF
 	eapply "${FILESDIR}"/link-llvm-static.patch
 	eapply "${FILESDIR}"/llvm-with-ffi.patch
 	eapply "${FILESDIR}"/link-with-libcxx.patch
+	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 
 	# llvm 4.0
-#	eapply "${FILESDIR}"/allow-llvm-4.0.patch
-#	eapply "${FILESDIR}"/TwineRef-to-char.patch
-#	eapply "${FILESDIR}"/set-EH-personality.patch
-#	eapply "${FILESDIR}"/legacy-pass.patch
-#	eapply "${FILESDIR}"/new-error-reporting.patch
-#	eapply "${FILESDIR}"/outdated-stuff.patch
-#	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
-#	eapply "${FILESDIR}"/cannot-cast-like-this.patch
-#	eapply "${FILESDIR}"/some-fixes.patch
-#	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
+	eapply "${FILESDIR}"/allow-llvm-4.0.patch
+	eapply "${FILESDIR}"/TwineRef-to-char.patch
+	eapply "${FILESDIR}"/set-EH-personality.patch
+	eapply "${FILESDIR}"/legacy-pass.patch
+	eapply "${FILESDIR}"/new-error-reporting.patch
+	eapply "${FILESDIR}"/outdated-stuff.patch
+	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
+	eapply "${FILESDIR}"/cannot-cast-like-this.patch
+	eapply "${FILESDIR}"/some-fixes.patch
+	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
 	eapply "${FILESDIR}"/compile-without-debug.patch
+	eapply "${FILESDIR}"/split-header.patch
 
 	eapply_user
 }

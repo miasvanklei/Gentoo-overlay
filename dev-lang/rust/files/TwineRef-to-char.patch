@@ -42,23 +42,17 @@ diff --git a/src/librustc_trans/back/write.rs b/src/librustc_trans/back/write.rs
 index 9012914..bd70688 100644
 --- a/src/librustc_trans/back/write.rs
 +++ b/src/librustc_trans/back/write.rs
-@@ -397,6 +397,10 @@ unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_vo
-             let pass_name = str::from_utf8(CStr::from_ptr(opt.pass_name).to_bytes())
-                                 .ok()
-                                 .expect("got a non-UTF8 pass name from LLVM");
-+            let message = str::from_utf8(CStr::from_ptr(opt.message).to_bytes())
-+                              .ok()
-+                              .expect("got a non-UTF8 message from LLVM");
-+
-             let enabled = match cgcx.remark {
-                 AllPasses => true,
-                 SomePasses(ref v) => v.iter().any(|s| *s == pass_name),
-@@ -408,7 +412,7 @@ unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_vo
+@@ -404,11 +404,10 @@
+ 
+             if enabled {
+                 let loc = llvm::debug_loc_to_string(llcx, opt.debug_loc);
+-                cgcx.handler.note_without_error(&format!("optimization {} for {} at {}: {}",
++                cgcx.handler.note_without_error(&format!("optimization {} for {} at {}",
                                                  opt.kind.describe(),
                                                  pass_name,
-                                                 if loc.is_empty() { "[unknown]" } else { &*loc },
+-                                                if loc.is_empty() { "[unknown]" } else { &*loc },
 -                                                llvm::twine_to_string(opt.message)));
-+                                                message));
++                                                if loc.is_empty() { "[unknown]" } else { &*loc }));
              }
          }
  
