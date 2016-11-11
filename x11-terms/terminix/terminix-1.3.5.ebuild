@@ -14,7 +14,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE="debug"
 
-SRC_URI="https://github.com/gnunn1/${PN}/archive/${PV}.tar.gz"
+SRC_URI="https://github.com/gnunn1/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 DEPEND="x11-libs/GtkD
 	dev-lang/ldc2"
