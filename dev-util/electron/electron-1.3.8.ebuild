@@ -16,9 +16,9 @@ inherit check-reqs chromium-2 eutils gnome2-utils flag-o-matic multilib \
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent/VERSION
 CHROMIUM_VERSION="52.0.2743.82"
 # Keep this in sync with vendor/brightray
-BRIGHTRAY_COMMIT="554946c7873bbc6930779c871fe230856575049a"
+BRIGHTRAY_COMMIT="ee26c5218eeec199c54c92a7517a72d2dbd0adbf"
 # Keep this in sync with vendor/node
-NODE_COMMIT="ee8c429deaee0adeeef069c3ad34c0defe53a567"
+NODE_COMMIT="c47e9bf9011de682d07c82f7f610a467f30cca60"
 # Keep this in sync with vendor/native_mate
 NATIVE_MATE_COMMIT="b5e5de626c6a57e44c7e6448d8bbaaac475d493c"
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent
@@ -256,11 +256,11 @@ src_prepare() {
 	ln -s "${WORKDIR}/${ASAR_P}/node_modules" "${S}/node_modules" || die
 
 	# electron patches
-	epatch "${FILESDIR}/${P}.patch"
+	epatch "${FILESDIR}/${PN}-1.3.5.patch"
 
 	# node patches
 	cd "${NODE_S}" || die
-	epatch "${FILESDIR}/${P}-vendor-node.patch"
+	epatch "${FILESDIR}/${PN}-1.3.5-vendor-node.patch"
 	epatch "${FILESDIR}/electron-vendor-node-external-snapshots-r0.patch"
 	# make sure node uses the correct version of v8
 	rm -r deps/v8 || die
@@ -281,11 +281,11 @@ src_prepare() {
 
 	# brightray patches
 	cd "${BRIGHTRAY_S}" || die
-	epatch "${FILESDIR}/${P}-vendor-brightray.patch"
+	epatch "${FILESDIR}/${PN}-1.3.5-vendor-brightray.patch"
 
 	# libcc patches
 	cd "${LIBCC_S}" || die
-	epatch "${FILESDIR}/${P}-vendor-libchromiumcontent.patch"
+	epatch "${FILESDIR}/${PN}-1.3.5-vendor-libchromiumcontent.patch"
 
 	# chromium patches
 	cd "${S}" || die
