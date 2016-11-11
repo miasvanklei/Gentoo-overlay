@@ -149,8 +149,6 @@ src_install() {
 	# symlinks instead of copies
 	ln -sf rustlib/*/lib/*.so . || die
 
-	use elibc_musl && rm -r rustlib/x86_64-unknown-linux-musl/lib/crt*
-
 	popd >/dev/null
 
 	mv "${D}/usr/bin/rustc" "${D}/usr/bin/rustc-${PV}" || die
