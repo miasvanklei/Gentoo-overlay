@@ -9,3 +9,19 @@
      }
  
      fn no_default_libraries(&mut self) {
+--- a/src/librustc_trans/back/link.rs	2016-11-11 16:04:06.436523378 +0100
++++ b/src/librustc_trans/back/link.rs	2016-11-11 16:10:08.212914205 +0100
+@@ -767,8 +767,11 @@
+     // Pass optimization flags down to the linker.
+     cmd.optimize();
+ 
+-    // Pass debuginfo flags down to the linker.
+-    cmd.debuginfo();
++    // do not strip when debugging
++    if sess.opts.debuginfo != config::NoDebugInfo {
++        // Pass debuginfo flags down to the linker.
++        cmd.debuginfo();
++    }
+ 
+     // We want to prevent the compiler from accidentally leaking in any system
+     // libraries, so we explicitly ask gcc to not link to any libraries by
