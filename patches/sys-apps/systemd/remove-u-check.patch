@@ -1,0 +1,22 @@
+--- a/Makefile.am	2016-11-11 22:59:31.619155281 +0100
++++ b/Makefile.am	2016-11-11 22:59:50.120066523 +0100
+@@ -2868,8 +2868,7 @@
+ 
+ $(systemd_boot_solib): $(systemd_boot_objects)
+ 	$(AM_V_CCLD)$(LD) $(efi_ldflags) $(systemd_boot_objects) \
+-		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name); \
+-	nm -D -u $@ | grep ' U ' && exit 1 || :
++		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name);
+ 
+ $(systemd_boot): $(systemd_boot_solib)
+ 	$(AM_V_GEN)$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic \
+@@ -2918,8 +2917,7 @@
+ 
+ $(stub_solib): $(stub_objects)
+ 	$(AM_V_CCLD)$(LD) $(efi_ldflags) $(stub_objects) \
+-		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name); \
+-	nm -D -u $@ | grep ' U ' && exit 1 || :
++		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name);
+ 
+ $(stub): $(stub_solib)
+ 	$(AM_V_GEN)$(OBJCOPY) -j .text -j .sdata -j .data -j .dynamic \

@@ -6,11 +6,11 @@
    Table.PrintHelp(outs(), Argv0, "lld", false);
 +
 +  // keep track of supported targets in Driver.cpp
-+  std::string Targets = std::string("\nld: supported targets: elf32-i386");
-+  Targets += std::string(" elf-iamcu elf_amd64 elf_x86_64 elf32-x86-64");
-+  Targets += std::string(" elf64ppc elf64ltsmip elf64btsmip elf32ppc");
-+  Targets += std::string(" elf32ltsmip elf32btsmip aarch64elf");
-+  Targets += std::string(" aarch64linux armelf_linux_eabi\n");
++  std::string Targets = std::string("\nld: supported targets: aarch64elf");
++  Targets += std::string(" aarch64linux armelf_linux_eabi elf32-x86-64");
++  Targets += std::string(" elf32btsmip elf32ltsmip elf32btsmipn32 elf32ltsmipn32");
++  Targets += std::string(" elf32ppc elf64btsmip elf64ltsmip elf64ppc elf_amd64");
++  Targets += std::string(" elf_x86_64 elf_i386 elf_iamcu\n");
 +  outs() << Targets;
  }
  
@@ -24,3 +24,26 @@
 -  return "LLD " + std::string(LLD_VERSION_STRING) + getRepository();
 +  return "GNU gold " + std::string(LLD_VERSION_STRING) + getRepository();
  }
+--- ELF/Driver.cpp.bak	2016-11-11 19:48:19.308726806 +0100
++++ ELF/Driver.cpp	2016-11-11 19:53:59.125750362 +0100
+@@ -165,14 +165,17 @@
+ }
+ 
+ Optional<MemoryBufferRef> LinkerDriver::readFile(StringRef Path) {
+-  if (Config->Verbose)
+-    outs() << Path << "\n";
++  StringRef attempt = "attempt to open ";
+ 
+   auto MBOrErr = MemoryBuffer::getFile(Path);
+   if (auto EC = MBOrErr.getError()) {
+-    error(EC, "cannot open " + Path);
++    error(EC, attempt + Path + " failed");
+     return None;
+   }
++  else
++    if (Config->Verbose)
++      outs() << attempt << Path << " succeeded\n";
++
+   std::unique_ptr<MemoryBuffer> &MB = *MBOrErr;
+   MemoryBufferRef MBRef = MB->getMemBufferRef();
+   OwningMBs.push_back(std::move(MB)); // take MB ownership
