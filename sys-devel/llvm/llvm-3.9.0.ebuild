@@ -19,7 +19,7 @@ EGIT_REPO_URI="http://llvm.org/git/llvm.git
         https://github.com/llvm-mirror/llvm.git"
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
-	NVPTX PowerPC Sparc SystemZ X86 XCore )
+	NVPTX PowerPC RISCV Sparc SystemZ X86 XCore )
 ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 
 LICENSE="UoI-NCSA"
@@ -112,9 +112,6 @@ src_prepare() {
 
 	# llvm-readobj has allmost all options
 	eapply "${FILESDIR}"/0010-llvm-readobj-binutils-compat.patch
-
-	# add llvm-strings
-	eapply "${FILESDIR}"/0012-llvm-add-strings.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
