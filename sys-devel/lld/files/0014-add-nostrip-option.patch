@@ -11,7 +11,7 @@
  def sysroot: J<"sysroot=">, HelpText<"Set the system root">;
 --- a/ELF/Driver.cpp	2016-11-07 16:49:26.581078380 +0100
 +++ b/ELF/Driver.cpp	2016-11-07 16:50:39.766389361 +0100
-@@ -403,10 +403,12 @@
+@@ -403,10 +403,8 @@
  }
  
  static StripPolicy getStripOption(opt::InputArgList &Args) {
@@ -19,12 +19,9 @@
 -    if (Arg->getOption().getID() == OPT_strip_all)
 -      return StripPolicy::All;
 -    return StripPolicy::Debug;
-+  if (!Args.hasArg(OPT_nostrip)) {
-+    if (auto *Arg = Args.getLastArg(OPT_strip_all, OPT_strip_debug)) {
-+      if (Arg->getOption().getID() == OPT_strip_all)
+-  }
++  if (!Args.hasArg(OPT_nostrip))
 +        return StripPolicy::All;
-+      return StripPolicy::Debug;
-+    }
-   }
    return StripPolicy::None;
  }
+ 

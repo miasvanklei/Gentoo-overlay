@@ -19,7 +19,7 @@ EGIT_REPO_URI="http://llvm.org/git/clang.git
 SRC_URI=""
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
-	NVPTX PowerPC Sparc SystemZ X86 XCore )
+	NVPTX PowerPC RISCV Sparc SystemZ X86 XCore )
 ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 
@@ -120,9 +120,6 @@ src_prepare() {
 	# fixes for musl
 	eapply "${FILESDIR}"/0016-dont-define-on-musl.patch
 	eapply "${FILESDIR}"/0017-define__std_iso_10646__.patch
-
-	# remove dependency on strip from binutils
-	eapply "${FILESDIR}"/0018-always-strip-symbols-unless-debug.patch
 
 	# remove dependency on crtbegin* and crtend*
 	eapply "${FILESDIR}"/0019-remove-crtfiles.patch
