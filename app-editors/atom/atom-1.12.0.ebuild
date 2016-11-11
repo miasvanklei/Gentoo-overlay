@@ -132,7 +132,7 @@ enode_electron() {
 }
 
 enodegyp_atom() {
-	local apmpath="/usr/share/atom-beta/resources/app/apm"
+	local apmpath="/usr/share/atom/resources/app/apm"
 	local nodegyp="${S}/${apmpath}/node_modules/node-gyp/bin/node-gyp.js"
 
 	PATH="$(get_electron_dir):${PATH}" \
@@ -190,7 +190,7 @@ src_prepare() {
 	local suffix="$(get_install_suffix)"
 	local patch binmod _s nan_s="${WORKDIR}/nan-${NAN_V}"
 
-	cd "${S}/usr/share/atom-beta/resources/app" || die
+	cd "${S}/usr/share/atom/resources/app" || die
 	epatch "${FILESDIR}/${PN}-python.patch"
 	epatch "${FILESDIR}/${PN}-unbundle-electron.patch"
 
@@ -217,8 +217,8 @@ src_prepare() {
 
 	rm apm/bin/node || die
 
-	sed -i -e "s|/usr/share/atom-beta/atom|/usr/bin/atom|g" \
-		"${S}/usr/share/applications/atom-beta.desktop" || die
+	sed -i -e "s|/usr/share/atom/atom|/usr/bin/atom|g" \
+		"${S}/usr/share/applications/atom.desktop" || die
 
 	cd "${S}" || die
 
@@ -256,7 +256,7 @@ src_prepare() {
 	done
 
 	# Unpack app.asar
-	easar extract "${S}/usr/share/atom-beta/resources/app.asar" "${S}/build/app"
+	easar extract "${S}/usr/share/atom/resources/app.asar" "${S}/build/app"
 
 	cd "${S}" || die
 
@@ -304,7 +304,7 @@ src_compile() {
 
 	# Put compiled binary modules in place
 	_fix_binmods "${S}/build" "app"
-	_fix_binmods "${S}/usr/share/atom-beta/resources" "app"
+	_fix_binmods "${S}/usr/share/atom/resources" "app"
 
 	# Remove non-Linux vendored ctags binaries
 	rm "${S}/build/app/${ctags_d}/ctags-darwin" \
@@ -375,18 +375,18 @@ src_install() {
 
 	doins build/app.asar
 	doins -r build/app.asar.unpacked
-	doins -r usr/share/atom-beta/resources/app
+	doins -r usr/share/atom/resources/app
 
 	insinto /usr/share/applications/
-	newins usr/share/applications/atom-beta.desktop "atom${suffix}.desktop"
+	newins usr/share/applications/atom.desktop "atom${suffix}.desktop"
 
 	insinto /usr/share/icons/
 	doins -r usr/share/icons/hicolor
 
 	exeinto "${install_dir}"
-	newexe usr/share/atom-beta/resources/app/atom.sh atom
+	newexe usr/share/atom/resources/app/atom.sh atom
 	insinto /usr/share/licenses/"${PN}${suffix}"
-	doins usr/share/atom-beta/resources/LICENSE.md
+	doins usr/share/atom/resources/LICENSE.md
 	dosym "${install_dir}/atom" "/usr/bin/atom${suffix}"
 	dosym "${install_dir}/app/apm/bin/apm" "/usr/bin/apm${suffix}"
 
