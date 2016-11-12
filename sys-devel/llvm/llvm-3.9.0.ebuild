@@ -25,7 +25,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="debug -doc -gold +libedit +libffi multitarget +ncurses ocaml test
+IUSE="debug -doc -gold +libedit +libffi multitarget +ncurses test
 	video_cards_radeon kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 # python is needed for llvm-lit (which is installed)
@@ -34,10 +34,7 @@ RDEPEND="
 	gold? ( >=sys-devel/binutils-2.22:*[cxx] )
 	libedit? ( dev-libs/libedit:0=[${MULTILIB_USEDEP}] )
 	libffi? ( >=virtual/libffi-3.0.13-r1:0=[${MULTILIB_USEDEP}] )
-	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )
-	ocaml? (
-		>=dev-lang/ocaml-4.00.0:0=
-		dev-ml/ocaml-ctypes:= )"
+	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )"
 DEPEND="${RDEPEND}
 	dev-lang/perl
 	|| ( >=sys-devel/gcc-3.0 >=sys-devel/llvm-3.5
@@ -48,8 +45,6 @@ DEPEND="${RDEPEND}
 	doc? ( dev-python/sphinx )
 	gold? ( sys-libs/binutils-libs )
 	libffi? ( virtual/pkgconfig )
-	ocaml? ( dev-ml/findlib
-	 	test? ( dev-ml/ounit ) )
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
 
@@ -58,7 +53,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
 
-pkg_pretend() {
+check_space() {
 	# in megs
 	# !debug !multitarget -O2       400
 	# !debug  multitarget -O2       550
@@ -88,8 +83,12 @@ pkg_pretend() {
 	check-reqs_pkg_pretend
 }
 
+pkg_pretend() {
+	check_space
+}
+
 pkg_setup() {
-	pkg_pretend
+	check_space
 }
 
 
@@ -155,11 +154,6 @@ multilib_src_configure() {
 		-DHAVE_HISTEDIT_H=$(usex libedit)
 	)
 
-	if ! multilib_is_native_abi || ! use ocaml; then
-		mycmakeargs+=(
-			-DOCAMLFIND=NO
-		)
-	fi
 #	Note: go bindings have no CMake rules at the moment
 #	but let's kill the check in case they are introduced
 #	if ! multilib_is_native_abi || ! use go; then
@@ -170,8 +164,8 @@ multilib_src_configure() {
 
 	if multilib_is_native_abi; then
 		mycmakeargs+=(
-			-DLLVM_ENABLE_OCAMLDOC=OFF
 			-DLLVM_BUILD_DOCS=$(usex doc)
+			-DLLVM_ENABLE_OCAMLDOC=OFF
 			-DLLVM_ENABLE_SPHINX=$(usex doc)
 			-DLLVM_ENABLE_DOXYGEN=OFF
 			-DLLVM_INSTALL_UTILS=ON

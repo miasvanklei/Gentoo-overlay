@@ -50,7 +50,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
-pkg_pretend() {
+check_space() {
 	local build_size=650
 
 	if use debug; then
@@ -75,8 +75,12 @@ pkg_pretend() {
 	check-reqs_pkg_pretend
 }
 
+pkg_pretend() {
+	check_space
+}
+
 pkg_setup() {
-	pkg_pretend
+	check_space
 
 	python-single-r1_pkg_setup
 }

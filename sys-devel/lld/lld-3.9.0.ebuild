@@ -37,37 +37,6 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
-pkg_pretend() {
-	# in megs
-	# !debug !multitarget -O2       400
-	# !debug  multitarget -O2       550
-	#  debug  multitarget -O2      5G
-
-	local build_size=550
-
-	if use debug; then
-		ewarn "USE=debug is known to increase the size of package considerably"
-		ewarn "and cause the tests to fail."
-		ewarn
-
-		(( build_size *= 14 ))
-	elif is-flagq '-g?(gdb)?([1-9])'; then
-		ewarn "The C++ compiler -g option is known to increase the size of the package"
-		ewarn "considerably. If you run out of space, please consider removing it."
-		ewarn
-
-		(( build_size *= 10 ))
-	fi
-
-	local CHECKREQS_DISK_BUILD=${build_size}M
-	check-reqs_pkg_pretend
-}
-
-pkg_setup() {
-	pkg_pretend
-}
-
-
 src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
