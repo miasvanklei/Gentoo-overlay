@@ -26,6 +26,7 @@ S="${WORKDIR}/${MY_P}.src"
 
 PATCHES=(
 	"${FILESDIR}"/glibc-incompat.patch
+	"${FILESDIR}"/wrong-page-size.patch
 )
 
 multilib_src_configure() {
