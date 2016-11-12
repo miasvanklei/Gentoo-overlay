@@ -260,7 +260,7 @@ src_prepare() {
 
 	# node patches
 	cd "${NODE_S}" || die
-	epatch "${FILESDIR}/${PN}-1.3.5-vendor-node.patch"
+	epatch "${FILESDIR}/${P}-vendor-node.patch"
 	epatch "${FILESDIR}/electron-vendor-node-external-snapshots-r0.patch"
 	# make sure node uses the correct version of v8
 	rm -r deps/v8 || die
