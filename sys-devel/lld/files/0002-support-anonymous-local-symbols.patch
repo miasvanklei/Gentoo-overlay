@@ -127,3 +127,16 @@ index 7056e34..a929603 100644
  
    if (Config->VersionDefinitions.empty())
      return;
+@@ -727,10 +742,10 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+ 
+   for (size_t I = Config->VersionDefinitions.size() - 1; I != (size_t)-1; --I) {
+     VersionDefinition &V = Config->VersionDefinitions[I];
+-    for (SymbolVersion &Sym : V.Locals)
+-      assignFuzzyVersion(Sym, VER_NDX_LOCAL);
+     for (SymbolVersion &Sym : V.Globals)
+       assignFuzzyVersion(Sym, V.Id);
++    for (SymbolVersion &Sym : V.Locals)
++      assignFuzzyVersion(Sym, VER_NDX_LOCAL);
+   }
+ }
+ 
