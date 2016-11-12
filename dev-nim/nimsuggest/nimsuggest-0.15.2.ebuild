@@ -4,12 +4,9 @@
 
 EAPI=5
 
-inherit git-r3
-
 DESCRIPTION="tool for providing auto completion data for Nim source code"
 HOMEPAGE="https://github.com/nim-lang/nimsuggest"
-EGIT_REPO_URI="https://github.com/nim-lang/nimsuggest"
-EGIT_CLONE_TYPE="shallow"
+SRC_URI="https://github.com/nim-lang/nimsuggest/archive/v0.15.2.tar.gz -> ${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
@@ -21,7 +18,7 @@ DEPEND=">=dev-lang/nim-0.15.0
 RDEPEND=""
 
 src_compile() {
-	nimble build || die "compile failed"
+	nim c -d:release ${PN}.nim || die "compile failed"
 }
 
 src_install() {
