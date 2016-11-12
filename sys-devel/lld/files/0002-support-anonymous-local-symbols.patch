@@ -1,11 +1,17 @@
 diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
-index e25175d..392089b 100644
+index e25175d..f8719f7 100644
 --- a/ELF/LinkerScript.cpp
 +++ b/ELF/LinkerScript.cpp
-@@ -1797,13 +1797,15 @@ void ScriptParser::readLocal(StringRef VerStr) {
-     return;
-   }
+@@ -1791,19 +1791,15 @@ void ScriptParser::readVersionDeclaration(StringRef VerStr) {
+ }
  
+ void ScriptParser::readLocal(StringRef VerStr) {
+-  if (consume("*")) {
+-    Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+-    expect(";");
+-    return;
+-  }
+-
 +  std::vector<SymbolVersion> *Locals;
    if (VerStr.empty())
 -    setError("locals list for anonymous version is not supported");
