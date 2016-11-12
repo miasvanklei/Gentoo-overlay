@@ -76,7 +76,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0001-standalone.patch
 
 	# support local symbols without wildcard
-	eapply "${FILESDIR}"/0002-support-local-symbols.patch
+	eapply "${FILESDIR}"/0002-support-anonymous-local-symbols.patch
 
 	# compat with gnu gold
 	eapply "${FILESDIR}"/0003-gnu-ld-compat.patch

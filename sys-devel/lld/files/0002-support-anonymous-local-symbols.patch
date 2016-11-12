@@ -1,0 +1,123 @@
+diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
+index e25175d..392089b 100644
+--- a/ELF/LinkerScript.cpp
++++ b/ELF/LinkerScript.cpp
+@@ -1797,13 +1797,15 @@ void ScriptParser::readLocal(StringRef VerStr) {
+     return;
+   }
+ 
++  std::vector<SymbolVersion> *Locals;
+   if (VerStr.empty())
+-    setError("locals list for anonymous version is not supported");
++    Locals = &Config->VersionScriptLocals;
++  else
++    Locals = &Config->VersionDefinitions.back().Locals;
+ 
+-  std::vector<SymbolVersion> &Locals = Config->VersionDefinitions.back().Locals;
+   while (!Error && peek() != "}") {
+     StringRef Tok = next();
+-    Locals.push_back({unquote(Tok), false, hasWildcard(Tok)});
++    Locals->push_back({unquote(Tok), false, hasWildcard(Tok)});
+     expect(";");
+   }
+ }
+diff --git a/ELF/Config.h b/ELF/Config.h
+index a46a8a8..5157bbf 100644
+--- a/ELF/Config.h
++++ b/ELF/Config.h
+@@ -92,6 +92,7 @@ struct Configuration {
+   std::vector<llvm::StringRef> SearchPaths;
+   std::vector<llvm::StringRef> Undefined;
+   std::vector<SymbolVersion> VersionScriptGlobals;
++  std::vector<SymbolVersion> VersionScriptLocals;
+   std::vector<uint8_t> BuildIdVector;
+   bool AllowMultipleDefinition;
+   bool AsNeeded = false;
+diff --git a/ELF/SymbolTable.h b/ELF/SymbolTable.h
+index 08e1b4e..cb2b5a0 100644
+--- a/ELF/SymbolTable.h
++++ b/ELF/SymbolTable.h
+@@ -99,7 +99,7 @@ private:
+                                    InputFile *File);
+ 
+   std::map<std::string, std::vector<SymbolBody *>> getDemangledSyms();
+-  void handleAnonymousVersion();
++  void handleAnonymousVersion(std::vector<SymbolVersion> &symbolversions, size_t Version);
+ 
+   struct SymIndex {
+     SymIndex(int Idx, bool Traced) : Idx(Idx), Traced(Traced) {}
+diff --git a/ELF/Symbols.h b/ELF/Symbols.h
+index 192433e..aec12e9 100644
+--- a/ELF/Symbols.h
++++ b/ELF/Symbols.h
+@@ -406,6 +406,9 @@ struct Symbol {
+   // Version definition index.
+   uint16_t VersionId;
+ 
++  // If a symbol has been processed.
++  bool VersionScriptProcessed = false;
++
+   // Symbol visibility. This is the computed minimum visibility of all
+   // observed non-DSO symbols.
+   unsigned Visibility : 2;
+diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
+index 7056e34..a929603 100644
+--- a/ELF/SymbolTable.cpp
++++ b/ELF/SymbolTable.cpp
+@@ -642,32 +642,47 @@ findAllDemangled(const std::map<std::string, std::vector<SymbolBody *>> &D,
+ // but just specifies symbols visibilities. We assume that the script was
+ // in the form of { global: foo; bar; local *; }. So, local is default.
+ // In this function, we make specified symbols global.
+-template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion() {
++template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion(
++                std::vector<SymbolVersion> &symbolversions, size_t Version) {
+   std::vector<StringRef> Patterns;
+-  for (SymbolVersion &Sym : Config->VersionScriptGlobals) {
++
++  for (SymbolVersion &Sym : symbolversions) {
+     if (hasWildcard(Sym.Name)) {
+       Patterns.push_back(Sym.Name);
+       continue;
+     }
+-    if (SymbolBody *B = find(Sym.Name))
+-      B->symbol()->VersionId = VER_NDX_GLOBAL;
++    if (SymbolBody *B = find(Sym.Name)) {
++      B->symbol()->VersionId = Version;
++      B->symbol()->VersionScriptProcessed = true;
++    }
+   }
++
+   if (Patterns.empty())
+     return;
+   StringMatcher M(Patterns);
+   std::vector<SymbolBody *> Syms = findAll(M);
+-  for (SymbolBody *B : Syms)
+-    B->symbol()->VersionId = VER_NDX_GLOBAL;
++  for (SymbolBody *B : Syms) {
++    if (Version == VER_NDX_GLOBAL)
++      B->symbol()->VersionScriptProcessed = true;
++    else if (!B->symbol()->VersionScriptProcessed)
++      B->symbol()->VersionId = Version;
++  }
+ }
+ 
+ // This function processes version scripts by updating VersionId
+ // member of symbols.
+ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+   // Handle edge cases first.
+-  if (!Config->VersionScriptGlobals.empty()) {
+-    handleAnonymousVersion();
++  bool gresult = !Config->VersionScriptGlobals.empty();
++  bool lresult = !Config->VersionScriptLocals.empty();
++
++  if (lresult)
++    handleAnonymousVersion(Config->VersionScriptGlobals, VER_NDX_GLOBAL);
++  if (gresult)
++    handleAnonymousVersion(Config->VersionScriptLocals, VER_NDX_LOCAL);
++
++  if(gresult || lresult)
+     return;
+-  }
+ 
+   if (Config->VersionDefinitions.empty())
+     return;
