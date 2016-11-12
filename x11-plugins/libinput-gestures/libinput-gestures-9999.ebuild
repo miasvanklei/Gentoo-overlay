@@ -14,5 +14,6 @@ RDEPEND="
     >=dev-lang/python-3
     >=dev-libs/libinput-1
     x11-misc/xdotool
+    x11-misc/wmctrl
 "
 DEPEND="${RDEPEND}"
