@@ -9,7 +9,7 @@ CMAKE_MIN_VERSION=3.6.1-r1
 DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic git-r3 \
+inherit cmake-utils flag-o-matic git-r3 \
 	pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="LLD linker"
