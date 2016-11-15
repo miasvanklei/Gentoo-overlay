@@ -133,6 +133,9 @@ src_prepare() {
 	# needed in linux kernel
         eapply "${FILESDIR}"/0022-add-fno-delete-null-pointer-checks.patch
 
+	# add swift support
+        eapply "${FILESDIR}"/0023-add-swift-support.patch
+
 	# User patches
 	eapply_user
 

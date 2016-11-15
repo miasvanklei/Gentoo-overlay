@@ -97,20 +97,23 @@ src_prepare() {
 	python_setup
 
 	# Allow custom cmake build types (like 'Gentoo')
-	eapply "${FILESDIR}"/0006-cmake-Remove-the-CMAKE_BUILD_TYPE-assertion.patch
+	eapply "${FILESDIR}"/0001-cmake-Remove-the-CMAKE_BUILD_TYPE-assertion.patch
 
 	# Fix llvm-config for shared linking and sane flags
 	# https://bugs.gentoo.org/show_bug.cgi?id=565358
-	eapply "${FILESDIR}"/0007-llvm-config-Clean-up-exported-values-update-for-shar.patch
+	eapply "${FILESDIR}"/0002-llvm-config-Clean-up-exported-values-update-for-shar.patch
 
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/musl-fixes.patch
 
 	# output correct host
-	use elibc_musl && eapply "${FILESDIR}"/0009-output-my-chost.patch
+	use elibc_musl && eapply "${FILESDIR}"/0003-output-my-chost.patch
 
 	# llvm-readobj has allmost all options
-	eapply "${FILESDIR}"/0010-llvm-readobj-binutils-compat.patch
+	eapply "${FILESDIR}"/0004-llvm-readobj-binutils-compat.patch
+
+	# add swift support
+	eapply "${FILESDIR}"/0005-add-swift-support.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
