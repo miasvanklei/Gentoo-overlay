@@ -1,0 +1,47 @@
+From 7aeb66e8ab261007a95fd0fee0f573d6aede496d Mon Sep 17 00:00:00 2001
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Mon, 14 Nov 2016 23:01:07 -0500
+Subject: [PATCH] paxldso: always expose ldpaths array
+
+This fixes building when ldso config logic is unavailable since consumers
+(like scanelf) always attempt to walk the array.  Changing the code to be
+an empty array by default so it won't suck up too much space when support
+isn't available.
+---
+ paxldso.c | 4 ++--
+ paxldso.h | 3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/paxldso.c b/paxldso.c
+index 93eaf97..ce64e6c 100644
+--- a/paxldso.c
++++ b/paxldso.c
+@@ -235,11 +235,11 @@ static void ldso_cache_cleanup(void)
+  * ld.so.conf logic
+  */
+ 
+-#if PAX_LDSO_CONFIG
+-
+ static array_t _ldpaths = array_init_decl;
+ array_t *ldpaths = &_ldpaths;
+ 
++#if PAX_LDSO_CONFIG
++
+ #if defined(__GLIBC__) || defined(__UCLIBC__) || defined(__NetBSD__)
+ 
+ int ldso_config_load(const char *fname)
+diff --git a/paxldso.h b/paxldso.h
+index bbf8852..1517e5e 100644
+--- a/paxldso.h
++++ b/paxldso.h
+@@ -49,8 +49,9 @@ static inline char *ldso_cache_lookup_lib(elfobj *elf, const char *fname)
+ # define PAX_LDSO_CONFIG 1
+ #endif
+ 
+-#if PAX_LDSO_CONFIG
++/* Consumers refer to ldpaths directly, so can't hide its def. */
+ extern array_t *ldpaths;
++#if PAX_LDSO_CONFIG
+ extern int ldso_config_load(const char *fname);
+ #else
+ static inline int ldso_config_load(const char *fname)
