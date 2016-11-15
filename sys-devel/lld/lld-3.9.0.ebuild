@@ -25,8 +25,7 @@ IUSE="debug"
 
 # python is needed for llvm-lit (which is installed)
 RDEPEND="sys-libs/zlib:0=
-	~sys-devel/llvm-${PV}
-        !<sys-devel/llvm-${PV}"
+	~sys-devel/llvm-${PV}:="
 DEPEND="${RDEPEND}
 	dev-lang/perl
 	|| ( >=sys-devel/gcc-3.0 >=sys-devel/llvm-3.5
