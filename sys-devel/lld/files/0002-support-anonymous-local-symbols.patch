@@ -39,19 +39,6 @@ index a46a8a8..5157bbf 100644
    std::vector<uint8_t> BuildIdVector;
    bool AllowMultipleDefinition;
    bool AsNeeded = false;
-diff --git a/ELF/SymbolTable.h b/ELF/SymbolTable.h
-index 08e1b4e..cb2b5a0 100644
---- a/ELF/SymbolTable.h
-+++ b/ELF/SymbolTable.h
-@@ -99,7 +99,7 @@ private:
-                                    InputFile *File);
- 
-   std::map<std::string, std::vector<SymbolBody *>> getDemangledSyms();
--  void handleAnonymousVersion();
-+  void handleAnonymousVersion(std::vector<SymbolVersion> &symbolversions, size_t Version);
- 
-   struct SymIndex {
-     SymIndex(int Idx, bool Traced) : Idx(Idx), Traced(Traced) {}
 diff --git a/ELF/Symbols.h b/ELF/Symbols.h
 index 192433e..aec12e9 100644
 --- a/ELF/Symbols.h
@@ -67,27 +54,26 @@ index 192433e..aec12e9 100644
    // observed non-DSO symbols.
    unsigned Visibility : 2;
 diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
-index 7056e34..a929603 100644
+index efbcba9..dfc5f09 100644
 --- a/ELF/SymbolTable.cpp
 +++ b/ELF/SymbolTable.cpp
-@@ -642,32 +642,47 @@ findAllDemangled(const std::map<std::string, std::vector<SymbolBody *>> &D,
+@@ -648,22 +648,30 @@ SymbolTable<ELFT>::findAllDemangled(const StringMatcher &M) {
  // but just specifies symbols visibilities. We assume that the script was
  // in the form of { global: foo; bar; local *; }. So, local is default.
  // In this function, we make specified symbols global.
 -template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion() {
 +template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion(
-+                std::vector<SymbolVersion> &symbolversions, size_t Version) {
++            std::vector<SymbolVersion> &symbolversions, size_t Version) {
    std::vector<StringRef> Patterns;
--  for (SymbolVersion &Sym : Config->VersionScriptGlobals) {
-+
-+  for (SymbolVersion &Sym : symbolversions) {
-     if (hasWildcard(Sym.Name)) {
-       Patterns.push_back(Sym.Name);
+-  for (SymbolVersion &Ver : Config->VersionScriptGlobals) {
++  for (SymbolVersion &Ver : symbolversions) {
+     if (hasWildcard(Ver.Name)) {
+       Patterns.push_back(Ver.Name);
        continue;
      }
--    if (SymbolBody *B = find(Sym.Name))
+-    if (SymbolBody *B = find(Ver.Name))
 -      B->symbol()->VersionId = VER_NDX_GLOBAL;
-+    if (SymbolBody *B = find(Sym.Name)) {
++    if (SymbolBody *B = find(Ver.Name)) {
 +      B->symbol()->VersionId = Version;
 +      B->symbol()->VersionScriptProcessed = true;
 +    }
@@ -107,7 +93,8 @@ index 7056e34..a929603 100644
 +  }
  }
  
- // This function processes version scripts by updating VersionId
+ template <class ELFT>
+@@ -687,10 +695,16 @@ void SymbolTable<ELFT>::assignWildcardVersion(SymbolVersion Ver,
  // member of symbols.
  template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
    // Handle edge cases first.
@@ -121,22 +108,35 @@ index 7056e34..a929603 100644
 +  if (gresult)
 +    handleAnonymousVersion(Config->VersionScriptLocals, VER_NDX_LOCAL);
 +
-+  if(gresult || lresult)
++  if (gresult || lresult)
      return;
 -  }
  
    if (Config->VersionDefinitions.empty())
      return;
-@@ -727,10 +742,10 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
- 
+@@ -727,10 +741,10 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+   // we iterate over the definitions in the reverse order.
    for (size_t I = Config->VersionDefinitions.size() - 1; I != (size_t)-1; --I) {
      VersionDefinition &V = Config->VersionDefinitions[I];
--    for (SymbolVersion &Sym : V.Locals)
--      assignFuzzyVersion(Sym, VER_NDX_LOCAL);
-     for (SymbolVersion &Sym : V.Globals)
-       assignFuzzyVersion(Sym, V.Id);
-+    for (SymbolVersion &Sym : V.Locals)
-+      assignFuzzyVersion(Sym, VER_NDX_LOCAL);
+-    for (SymbolVersion &Ver : V.Locals)
+-      assignWildcardVersion(Ver, VER_NDX_LOCAL);
+     for (SymbolVersion &Ver : V.Globals)
+       assignWildcardVersion(Ver, V.Id);
++    for (SymbolVersion &Ver : V.Locals)
++      assignWildcardVersion(Ver, VER_NDX_LOCAL);
    }
  }
  
+diff --git a/ELF/SymbolTable.h b/ELF/SymbolTable.h
+index d78287c..dc139ba 100644
+--- a/ELF/SymbolTable.h
++++ b/ELF/SymbolTable.h
+@@ -102,7 +102,7 @@ private:
+   std::vector<SymbolBody *> findAllDemangled(const StringMatcher &M);
+ 
+   void initDemangledSyms();
+-  void handleAnonymousVersion();
++  void handleAnonymousVersion(std::vector<SymbolVersion> &symbolversions, size_t Version);
+   void assignWildcardVersion(SymbolVersion Ver, size_t VersionId);
+ 
+   struct SymIndex {
