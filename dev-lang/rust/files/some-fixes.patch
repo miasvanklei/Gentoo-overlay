@@ -139,12 +139,17 @@
  }
  
  extern "C" void LLVMRustDICompositeTypeSetTypeArray(
-@@ -807,7 +814,7 @@
+@@ -911,10 +911,10 @@
+ LLVMRustLinkInExternalBitcode(LLVMModuleRef dst, char *bc, size_t len) {
      Module *Dst = unwrap(dst);
      std::unique_ptr<MemoryBuffer> buf = MemoryBuffer::getMemBufferCopy(StringRef(bc, len));
-     ErrorOr<std::unique_ptr<Module>> Src =
+-    ErrorOr<std::unique_ptr<Module>> Src =
 -        llvm::getLazyBitcodeModule(std::move(buf), Dst->getContext());
++    Expected<std::unique_ptr<Module>> Src =
 +        llvm::getOwningLazyBitcodeModule(std::move(buf), Dst->getContext());
      if (!Src) {
-         LLVMRustSetLastError(Src.getError().message().c_str());
+-        LLVMRustSetLastError(Src.getError().message().c_str());
++        LLVMRustSetLastError(toString(Src.takeError()).c_str());
          return false;
+     }
+ 
