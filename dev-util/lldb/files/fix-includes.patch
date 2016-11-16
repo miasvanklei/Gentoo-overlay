@@ -1,0 +1,35 @@
+From a8a4d06d3463bbb5eb51971dd4059a4ee6fbf7f6 Mon Sep 17 00:00:00 2001
+From: Eugene Zelenko <eugene.zelenko@gmail.com>
+Date: Tue, 1 Nov 2016 17:11:10 +0000
+Subject: [PATCH] Fix RHEL 6 build with missing cerrno and some other Include
+ What You Use warnings.
+
+Differential revision: https://reviews.llvm.org/D26171
+
+
+git-svn-id: https://llvm.org/svn/llvm-project/lldb/trunk@285710 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ source/Host/posix/MainLoopPosix.cpp | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/source/Host/posix/MainLoopPosix.cpp b/source/Host/posix/MainLoopPosix.cpp
+index b6325a5..08c969e 100644
+--- a/source/Host/posix/MainLoopPosix.cpp
++++ b/source/Host/posix/MainLoopPosix.cpp
+@@ -8,10 +8,13 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "lldb/Host/posix/MainLoopPosix.h"
+-
+-#include <vector>
+-
+ #include "lldb/Core/Error.h"
++#include <algorithm>
++#include <cassert>
++#include <cerrno>
++#include <csignal>
++#include <vector>
++#include <sys/select.h>
+ 
+ using namespace lldb;
+ using namespace lldb_private;

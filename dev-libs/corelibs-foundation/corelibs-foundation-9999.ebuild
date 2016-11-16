@@ -23,6 +23,7 @@ IUSE=""
 RDEPEND="dev-libs/libdispatch
 	dev-libs/icu
 	sys-libs/zlib
+        dev-lang/swift
 	dev-libs/openssl
 	net-nds/openldap
 	elibc_musl? ( sys-libs/fts-standalone )

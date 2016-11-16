@@ -1,0 +1,34 @@
+From a1e8875dd43da8fe8c45c8b3bf0998809afedf63 Mon Sep 17 00:00:00 2001
+From: Adrian Prantl <aprantl@apple.com>
+Date: Fri, 28 Oct 2016 20:11:27 +0000
+Subject: [PATCH] Rename DWARF 5 constants to adapt to change in LLVM
+
+git-svn-id: https://llvm.org/svn/llvm-project/lldb/trunk@285441 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ source/Expression/DWARFExpression.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/source/Expression/DWARFExpression.cpp b/source/Expression/DWARFExpression.cpp
+index 71abadd..4503182 100644
+--- a/source/Expression/DWARFExpression.cpp
++++ b/source/Expression/DWARFExpression.cpp
+@@ -3029,16 +3029,16 @@ bool DWARFExpression::AddressRangeForLocationListEntry(
+     return true;
+   case SplitDwarfLocationList:
+     switch (debug_loc_data.GetU8(offset_ptr)) {
+-    case DW_LLE_end_of_list_entry:
++    case DW_LLE_end_of_list:
+       return false;
+-    case DW_LLE_start_end_entry: {
++    case DW_LLE_start_end: {
+       uint64_t index = debug_loc_data.GetULEB128(offset_ptr);
+       low_pc = ReadAddressFromDebugAddrSection(dwarf_cu, index);
+       index = debug_loc_data.GetULEB128(offset_ptr);
+       high_pc = ReadAddressFromDebugAddrSection(dwarf_cu, index);
+       return true;
+     }
+-    case DW_LLE_start_length_entry: {
++    case DW_LLE_start_length: {
+       uint64_t index = debug_loc_data.GetULEB128(offset_ptr);
+       low_pc = ReadAddressFromDebugAddrSection(dwarf_cu, index);
+       uint32_t length = debug_loc_data.GetU32(offset_ptr);

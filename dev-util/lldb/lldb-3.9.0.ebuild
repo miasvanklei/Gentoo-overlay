@@ -13,8 +13,8 @@ inherit cmake-utils git-r3 python-single-r1 toolchain-funcs
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
 SRC_URI=""
-EGIT_REPO_URI="http://llvm.org/git/lldb.git
-	https://github.com/llvm-mirror/lldb.git"
+EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
+EGIT_BRANCH="master-next"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -22,6 +22,7 @@ KEYWORDS=""
 IUSE="libedit ncurses python test"
 
 RDEPEND="
+	dev-lang/swift
 	libedit? ( dev-libs/libedit:0= )
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0= )
 	python? ( dev-python/six[${PYTHON_USEDEP}]
@@ -37,6 +38,15 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
+
+src_prepare() {
+	eapply ${FILESDIR}/cmake-cleanup.patch
+	eapply ${FILESDIR}/nostrip.patch
+	eapply ${FILESDIR}/rename-dwarf-constant.patch
+	eapply ${FILESDIR}/fix-iohandler.cpp.patch
+	eapply ${FILESDIR}/fix-includes.patch
+	eapply_user
+}
 
 src_configure() {
 	local libdir=$(get_libdir)

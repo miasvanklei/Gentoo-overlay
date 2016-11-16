@@ -26,10 +26,7 @@ RDEPEND="
 	~sys-devel/clang-${PV}[xml]
 	~sys-devel/llvm-${PV}
 	!<sys-devel/llvm-${PV}"
-DEPEND="${RDEPEND}
-	${PYTHON_DEPS}"
-
-REQUIRED_USE=${PYTHON_REQUIRED_USE}
+DEPEND="${RDEPEND}"
 
 src_prepare() {
 	eapply ${FILESDIR}/custom-build-type.patch
@@ -41,7 +38,10 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-segfault.patch
 	eapply ${FILESDIR}/fix-modulemap.patch
 	eapply ${FILESDIR}/fix-garbage.patch
+	eapply ${FILESDIR}/fix-opaque-struct.patch
 	eapply ${FILESDIR}/dont-set-linker.patch
+	eapply ${FILESDIR}/fix-non-defined.patch
+	eapply ${FILESDIR}/fix-dlopen.patch
 	default
 }
 
@@ -72,4 +72,20 @@ src_compile() {
 
 src_install() {
 	cmake-utils_src_install
+
+	# copy libraries
+	cp -r ${BUILD_DIR}/lib/*.a ${D}/usr/lib
+
+	# copy headers
+	mkdir -p ${D}/usr/include/swift/IRGen || die
+	pushd ${S}/include/swift >/dev/null
+        find . -name "*.h" -type f -exec cp --parents {} ${D}/usr/include/swift \; || die
+        find . -name "*.def" -type f -exec cp --parents {} ${D}/usr/include/swift \; || die
+	popd >/dev/null
+	cp -r ${S}/lib/IRGen/*.h ${D}/usr/include/swift/IRGen || die
+
+	# copy cmake files
+	mkdir -p ${D}/usr/lib/cmake/swift || die
+	cp ${S}/cmake/modules/SwiftAddCustomCommandTarget.cmake ${D}/usr/lib/cmake/swift || die
+	cp ${S}/cmake/modules/SwiftUtils.cmake ${D}/usr/lib/cmake/swift || die
 }

@@ -1,0 +1,95 @@
+diff --git a/CoreFoundation/Base.subproj/CFInternal.h b/CoreFoundation/Base.subproj/CFInternal.h
+index eefe4a6..aed51fa 100644
+--- a/CoreFoundation/Base.subproj/CFInternal.h
++++ b/CoreFoundation/Base.subproj/CFInternal.h
+@@ -100,7 +100,7 @@ CF_EXTERN_C_BEGIN
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI || DEPLOYMENT_TARGET_LINUX || DEPLOYMENT_TARGET_FREEBSD
+ #if TARGET_OS_CYGWIN
+ #else
+-#include <xlocale.h>
++#include <locale.h>
+ #endif
+ #include <unistd.h>
+ #include <sys/time.h>
+diff --git a/CoreFoundation/Base.subproj/CFRuntime.c b/CoreFoundation/Base.subproj/CFRuntime.c
+index d3d3b35..bc6b1c7 100644
+--- a/CoreFoundation/Base.subproj/CFRuntime.c
++++ b/CoreFoundation/Base.subproj/CFRuntime.c
+@@ -310,7 +310,7 @@ CF_INLINE CFRuntimeBase *_cf_aligned_malloc(size_t align, CFIndex size, const ch
+     char errorStringBuffer[errorStringBufferLength] = "unknown error";
+     const char *errorStringPointer = errorStringBuffer;
+     //The GNU-specific version returns a pointer, which may or may not be the pointer passed in. The XSI version returns int. See strerror(3) on Linux.
+-#if ! ( (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE )
++#if ! ( (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !defined(_GNU_SOURCE) )
+     errorStringPointer =
+ #endif
+     strerror_r(errno, errorStringBuffer, errorStringBufferLength);
+diff --git a/CoreFoundation/Base.subproj/CFUtilities.c b/CoreFoundation/Base.subproj/CFUtilities.c
+index 338e90d..c02c0c2 100644
+--- a/CoreFoundation/Base.subproj/CFUtilities.c
++++ b/CoreFoundation/Base.subproj/CFUtilities.c
+@@ -1312,7 +1312,7 @@ CFDictionaryRef __CFGetEnvironment() {
+         extern char **environ;
+         char **envp = environ;
+ #elif DEPLOYMENT_TARGET_LINUX
+-#if !defined(environ) && !defined(__ANDROID__)
++#if !defined(environ) && !defined(__ANDROID__) && defined(__GLIBC__)
+ #define environ __environ
+ #endif
+         char **envp = environ;
+diff --git a/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h b/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
+index 0dfc3c5..fb37b40 100644
+--- a/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
++++ b/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
+@@ -182,7 +182,7 @@ typedef int		boolean_t;
+ typedef unsigned long fd_mask;
+ #endif
+ 
+-#if !defined(__ANDROID__) && !TARGET_OS_CYGWIN
++#if !defined(__ANDROID__) && !TARGET_OS_CYGWIN && defined(__GLIBC__)
+ CF_INLINE size_t
+ strlcpy(char * dst, const char * src, size_t maxlen) {
+     const size_t srclen = strlen(src);
+@@ -210,7 +210,7 @@ strlcat(char * dst, const char * src, size_t maxlen) {
+ }
+ #endif
+ 
+-#if !TARGET_OS_CYGWIN
++#if !TARGET_OS_CYGWIN && defined(__GLIBC__)
+ #define issetugid() 0
+ #endif
+     
+diff --git a/CoreFoundation/Base.subproj/ForFoundationOnly.h b/CoreFoundation/Base.subproj/ForFoundationOnly.h
+index 4dba6fc..e019055 100644
+--- a/CoreFoundation/Base.subproj/ForFoundationOnly.h
++++ b/CoreFoundation/Base.subproj/ForFoundationOnly.h
+@@ -34,6 +34,7 @@
+ #include <CoreFoundation/CFStreamPriv.h>
+ #include <math.h>
+ #include <limits.h>
++#include <sys/types.h>
+ 
+ #define _CF_EXPORT_SCOPE_BEGIN \
+ CF_EXTERN_C_BEGIN \
+diff --git a/build.py b/build.py
+index 293cf11..007b88e 100644
+--- a/build.py
++++ b/build.py
+@@ -89,7 +89,7 @@ if triple == "armv7-none-linux-androideabi":
+ else:
+        foundation.LDFLAGS += '-lpthread '
+ 
+-foundation.LDFLAGS += '-ldl -lm -lswiftCore -lxml2 '
++foundation.LDFLAGS += '-ldl -lm -lswiftCore -lxml2 -ldispatch -lfts -lcurl '
+ 
+ # Configure use of Dispatch in CoreFoundation and Foundation if libdispatch is being built
+ if "LIBDISPATCH_SOURCE_DIR" in Configuration.current.variables:
+@@ -477,8 +477,6 @@ foundation_tests = SwiftExecutable('TestFoundation', [
+         'Foundation/ProgressFraction.swift',
+ ] + glob.glob('./TestFoundation/Test*.swift')) # all TestSomething.swift are considered sources to the test project in the TestFoundation directory
+ 
+-Configuration.current.extra_ld_flags = '-L'+Configuration.current.variables["LIBDISPATCH_BUILD_DIR"]+'/src/.libs'
+-
+ foundation_tests.add_dependency(foundation_tests_resources)
+ foundation.add_phase(foundation_tests_resources)
+ foundation.add_phase(foundation_tests)
