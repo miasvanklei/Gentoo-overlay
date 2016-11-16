@@ -685,25 +685,6 @@
 +} // end namespace llvm
 +
 +#endif
---- a/include/llvm/Transforms/Utils/SSAUpdaterImpl.h	2016-11-15 10:59:17.926804754 +0100
-+++ b/include/llvm/Transforms/Utils/SSAUpdaterImpl.h	2016-11-15 10:56:16.515268555 +0100
-@@ -39,6 +39,7 @@
-   typedef typename Traits::BlkT BlkT;
-   typedef typename Traits::ValT ValT;
-   typedef typename Traits::PhiT PhiT;
-+  typedef typename Traits::PhiItT PhiItT;
- 
-   /// BBInfo - Per-basic block information used internally by SSAUpdaterImpl.
-   /// The predecessors of each block are cached here since pred_iterator is
-@@ -376,7 +377,7 @@
-   /// FindExistingPHI - Look through the PHI nodes in a block to see if any of
-   /// them match what is needed.
-   void FindExistingPHI(BlkT *BB, BlockListTy *BlockList) {
--    for (typename BlkT::iterator BBI = BB->begin(), BBE = BB->end();
-+    for (PhiItT BBI = Traits::PhiItT_begin(BB), BBE = Traits::PhiItT_end(BB);
-          BBI != BBE; ++BBI) {
-       PhiT *SomePHI = Traits::InstrIsPHI(&*BBI);
-       if (!SomePHI)
 --- a/lib/Bitcode/Reader/BitcodeReader.cpp	2016-11-15 11:00:03.517108485 +0100
 +++ b/lib/Bitcode/Reader/BitcodeReader.cpp	2016-11-15 10:56:16.531267893 +0100
 @@ -2614,6 +2614,23 @@
@@ -755,41 +736,3 @@
    if (Tag == dwarf::DW_TAG_enumeration_type ||
        Tag == dwarf::DW_TAG_class_type || Tag == dwarf::DW_TAG_structure_type ||
        Tag == dwarf::DW_TAG_union_type) {
-@@ -1009,8 +1018,7 @@
-     // No harm in adding the runtime language to the declaration.
-     unsigned RLang = CTy->getRuntimeLang();
-     if (RLang)
--      addUInt(Buffer, dwarf::DW_AT_APPLE_runtime_class, dwarf::DW_FORM_data1,
--              RLang);
-+      addUInt(Buffer, dwarf::DW_AT_APPLE_runtime_class, None, RLang);
- 
-     // Add align info if available.
-     if (uint32_t AlignInBytes = CTy->getAlignInBytes())
---- a/lib/CodeGen/MachineSSAUpdater.cpp	2016-11-15 10:59:17.966807154 +0100
-+++ b/lib/CodeGen/MachineSSAUpdater.cpp	2016-11-15 10:56:16.549267148 +0100
-@@ -244,6 +244,11 @@
-   static BlkSucc_iterator BlkSucc_begin(BlkT *BB) { return BB->succ_begin(); }
-   static BlkSucc_iterator BlkSucc_end(BlkT *BB) { return BB->succ_end(); }
- 
-+  /// Iterator over phis in a block.
-+  typedef BlkT::iterator PhiItT;
-+  static PhiItT PhiItT_begin(BlkT *BB) { return BB->begin(); }
-+  static PhiItT PhiItT_end(BlkT *BB) { return BB->end(); }
-+
-   /// Iterator for PHI operands.
-   class PHI_iterator {
-   private:
---- a/lib/Transforms/Utils/SSAUpdater.cpp	2016-11-15 10:59:18.536841130 +0100
-+++ b/lib/Transforms/Utils/SSAUpdater.cpp	2016-11-15 10:56:17.233238790 +0100
-@@ -216,6 +216,11 @@
-   static BlkSucc_iterator BlkSucc_begin(BlkT *BB) { return succ_begin(BB); }
-   static BlkSucc_iterator BlkSucc_end(BlkT *BB) { return succ_end(BB); }
- 
-+  /// Iterator over phis in a block.
-+  typedef BlkT::iterator PhiItT;
-+  static PhiItT PhiItT_begin(BlkT *BB) { return BB->begin(); }
-+  static PhiItT PhiItT_end(BlkT *BB) { return BB->end(); }
-+
-   class PHI_iterator {
-   private:
-     PHINode *PHI;

@@ -1,0 +1,19 @@
+diff --git a/lib/Driver/ToolChains.cpp b/lib/Driver/ToolChains.cpp
+index ee44637..54cf19a 100644
+--- a/lib/Driver/ToolChains.cpp
++++ b/lib/Driver/ToolChains.cpp
+@@ -1291,13 +1291,8 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
+   }
+ 
+   // Select the linker to use.
+-  std::string Linker;
+   if (const Arg *A = context.Args.getLastArg(options::OPT_use_ld)) {
+-    Linker = A->getValue();
+-  } else {
+-    Linker = getDefaultLinker();
+-  }
+-  if (!Linker.empty()) {
++    std::string Linker = A->getValue();
+     Arguments.push_back(context.Args.MakeArgString("-fuse-ld=" + Linker));
+   }
+ 

@@ -1,0 +1,57 @@
+diff --git a/stdlib/public/stubs/Stubs.cpp b/stdlib/public/stubs/Stubs.cpp
+index 4389e44..e4a46cb 100644
+--- a/stdlib/public/stubs/Stubs.cpp
++++ b/stdlib/public/stubs/Stubs.cpp
+@@ -61,7 +61,7 @@ static long double swift_strtold_l(const char *nptr,
+ #define strtof_l swift_strtof_l
+ #define strtold_l swift_strtold_l
+ #else
+-#include <xlocale.h>
++#include <locale.h>
+ #endif
+ #include <limits>
+ #include "llvm/ADT/StringExtras.h"
+diff --git a/stdlib/public/runtime/Errors.cpp b/stdlib/public/runtime/Errors.cpp
+index 1b88d7b..97f8c74 100644
+--- a/stdlib/public/runtime/Errors.cpp
++++ b/stdlib/public/runtime/Errors.cpp
+@@ -14,7 +14,7 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
+-#if defined(__CYGWIN__) || defined(__ANDROID__) || defined(_MSC_VER)
++#if defined(__CYGWIN__) || defined(__ANDROID__) || defined(_MSC_VER) || !defined(__GLIBC__)
+ #  define SWIFT_SUPPORTS_BACKTRACE_REPORTING 0
+ #else
+ #  define SWIFT_SUPPORTS_BACKTRACE_REPORTING 1
+diff --git a/stdlib/public/stubs/LibcShims.cpp b/stdlib/public/stubs/LibcShims.cpp
+index 39c2d36..30a062e 100644
+--- a/stdlib/public/stubs/LibcShims.cpp
++++ b/stdlib/public/stubs/LibcShims.cpp
+@@ -116,7 +116,11 @@ size_t swift::_swift_stdlib_malloc_size(const void *ptr) {
+   return malloc_usable_size(const_cast<void *>(ptr));
+ }
+ #else
+-#error No malloc_size analog known for this platform/libc.
++#include <malloc.h>
++SWIFT_RUNTIME_STDLIB_INTERFACE
++size_t swift::_swift_stdlib_malloc_size(const void *ptr) {
++  return malloc_usable_size(const_cast<void *>(ptr));
++}
+ #endif
+ 
+ static Lazy<std::mt19937> theGlobalMT19937;
+diff --git a/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift b/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift
+index 24531f5..595886a 100644
+--- a/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift
++++ b/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift
+@@ -291,7 +291,7 @@ internal func _getEnviron() -> UnsafeMutablePointer<UnsafeMutablePointer<CChar>?
+ #elseif os(Android)
+   return environ
+ #else
+-  return __environ
++  return environ
+ #endif
+ }
+ #endif
+

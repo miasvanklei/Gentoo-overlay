@@ -1,0 +1,85 @@
+diff --git a/utils/CMakeLists.txt b/utils/CMakeLists.txt
+index 9860cd8..ef01bfa 100644
+--- a/utils/CMakeLists.txt
++++ b/utils/CMakeLists.txt
+@@ -7,8 +7,3 @@ swift_install_in_component(editor-integration
+ swift_install_in_component(tools
+     FILES swift-api-dump.py
+     DESTINATION bin)
+-
+-# We install LLVM's FileCheck, if requested.
+-swift_install_in_component(toolchain-dev-tools
+-    FILES "${SWIFT_PATH_TO_LLVM_BUILD}/bin/FileCheck"
+-    DESTINATION bin)
+diff --git a/stdlib/public/SwiftShims/CMakeLists.txt b/stdlib/public/SwiftShims/CMakeLists.txt
+index 1993212..7d45ac6 100644
+--- a/stdlib/public/SwiftShims/CMakeLists.txt
++++ b/stdlib/public/SwiftShims/CMakeLists.txt
+@@ -51,67 +51,6 @@ if ("${LLVM_PACKAGE_VERSION}" STREQUAL "")
+           "LLVM_PACKAGE_VERSION must be set before including subdirectories")
+ endif()
+ 
+-# Symlink in the Clang headers.
+-# First extract the "version" used for Clang's resource directory.
+-string(REGEX MATCH "[0-9]+\\.[0-9]+(\\.[0-9]+)?" CLANG_VERSION
+-  "${LLVM_PACKAGE_VERSION}")
+-
+-if(SWIFT_BUILT_STANDALONE)
+-  set(clang_headers_locations
+-      "${LLVM_LIBRARY_DIR}/clang/${CLANG_VERSION}"
+-
+-      # FIXME: if we want to support separate Clang builds and mix different
+-      # build configurations of Clang and Swift, this line should be adjusted.
+-      "${SWIFT_PATH_TO_CLANG_BUILD}/${CMAKE_CFG_INTDIR}/lib/clang/${CLANG_VERSION}"
+-      "${SWIFT_PATH_TO_CLANG_BUILD}/${LLVM_BUILD_TYPE}/lib/clang/${CLANG_VERSION}")
+-
+-  set(clang_headers_location)
+-  foreach(loc ${clang_headers_locations})
+-    if(EXISTS "${loc}")
+-      set(clang_headers_location "${loc}")
+-      break()
+-    endif()
+-  endforeach()
+-  if("${clang_headers_location}" STREQUAL "")
+-    message(FATAL_ERROR "Clang headers were not found in any of the following locations: ${clang_headers_locations}")
+-  endif()
+-else() # NOT SWIFT_BUILT_STANDALONE
+-  set(clang_headers_location "${LLVM_LIBRARY_DIR}/clang/${CLANG_VERSION}")
+-endif()
+-
+-add_custom_command_target(unused_var
+-    COMMAND
+-      "${CMAKE_COMMAND}" "-E" "make_directory" "${SWIFTLIB_DIR}"
+-    COMMAND
+-      "${CMAKE_COMMAND}" "-E" "create_symlink"
+-      "${clang_headers_location}"
+-      "${SWIFTLIB_DIR}/clang"
+-
+-    CUSTOM_TARGET_NAME "symlink_clang_headers"
+-    OUTPUT "${SWIFTLIB_DIR}/clang"
+-    COMMENT "Symlinking Clang resource headers into ${SWIFTLIB_DIR}/clang")
+-add_dependencies(copy_shim_headers symlink_clang_headers)
+-
+ swift_install_in_component(compiler
+     FILES ${sources}
+     DESTINATION "lib/swift/shims")
+-
+-# Install Clang headers under the Swift library so that an installed Swift's
+-# module importer can find the compiler headers corresponding to its Clang.
+-swift_install_in_component(clang-builtin-headers
+-    DIRECTORY "${clang_headers_location}/"
+-    DESTINATION "lib/swift/clang"
+-    PATTERN "*.h")
+-
+-swift_install_symlink_component(clang-resource-dir-symlink
+-  LINK_NAME clang
+-  TARGET ../clang/${CLANG_VERSION}
+-  DESTINATION "lib/swift")
+-
+-# Possibly install Clang headers under Clang's resource directory in case we
+-# need to use a different version of the headers than the installed Clang. This
+-# should be used in conjunction with clang-resource-dir-symlink.
+-swift_install_in_component(clang-builtin-headers-in-clang-resource-dir
+-    DIRECTORY "${SWIFT_PATH_TO_CLANG_BUILD}/lib/clang"
+-    DESTINATION "lib"
+-    PATTERN "*.h")

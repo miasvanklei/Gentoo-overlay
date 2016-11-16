@@ -1,0 +1,26 @@
+diff --git a/stdlib/public/Platform/glibc.modulemap.gyb b/stdlib/public/Platform/glibc.modulemap.gyb
+index a2f325e..9a3ae20 100644
+--- a/stdlib/public/Platform/glibc.modulemap.gyb
++++ b/stdlib/public/Platform/glibc.modulemap.gyb
+@@ -19,6 +19,7 @@
+ /// It's not named just Glibc so that it doesn't conflict in the event of a
+ /// future official glibc modulemap.
+ module SwiftGlibc [system] {
++  config_macros [exhaustive] GNU_SOURCE
+ % if CMAKE_SDK in ["LINUX", "FREEBSD", "CYGWIN"]:
+   link "pthread"
+   // FIXME: util contains rarely used functions and not usually needed. Unfortunately
+@@ -150,13 +151,6 @@ module SwiftGlibc [system] {
+ 
+   // POSIX
+   module POSIX {
+-% if CMAKE_SDK in ["LINUX", "CYGWIN"]:
+-    module wait {
+-      header "${GLIBC_INCLUDE_PATH}/wait.h"
+-      export *
+-    }
+-% end
+-
+ % if CMAKE_SDK in ["LINUX", "FREEBSD"]:
+     module aio {
+       header "${GLIBC_INCLUDE_PATH}/aio.h"

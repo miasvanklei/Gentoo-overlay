@@ -2256,19 +2256,6 @@
  
    /// \brief Stmt attributes - this routine is the top level dispatcher.
    StmtResult ProcessStmtAttributes(Stmt *Stmt, AttributeList *Attrs,
-@@ -7842,6 +7883,12 @@
-     RTC_Unknown
-   };
- 
-+  /// Check whether the declared result type of the given Objective-C
-+  /// method declaration is compatible with the method's class.
-+  ResultTypeCompatibilityKind
-+  checkRelatedResultTypeCompatibility(const ObjCMethodDecl *Method,
-+                                      const ObjCInterfaceDecl *CurrentClass);
-+
-   void CheckObjCMethodOverrides(ObjCMethodDecl *ObjCMethod,
-                                 ObjCInterfaceDecl *CurrentClass,
-                                 ResultTypeCompatibilityKind RTC);
 @@ -9894,6 +9941,7 @@
  
    /// The struct behind the CFErrorRef pointer.
@@ -7826,37 +7813,6 @@
 +    }
 +  }
 +}
---- a/lib/AST/ASTContext.cpp	2016-11-15 11:12:11.617150038 +0100
-+++ b/lib/AST/ASTContext.cpp	2016-11-15 11:10:43.342110362 +0100
-@@ -4020,11 +4020,6 @@
-                   bool allowOnPointerType) const {
-   hasError = false;
- 
--  if (const ObjCTypeParamType *objT =
--      dyn_cast<ObjCTypeParamType>(type.getTypePtr())) {
--    return getObjCTypeParamType(objT->getDecl(), protocols);
--  }
--
-   // Apply protocol qualifiers to ObjCObjectPointerType.
-   if (allowOnPointerType) {
-     if (const ObjCObjectPointerType *objPtr =
---- a/lib/AST/DeclObjC.cpp	2016-11-15 11:12:11.622149808 +0100
-+++ b/lib/AST/DeclObjC.cpp	2016-11-15 11:10:43.347110144 +0100
-@@ -1323,12 +1323,8 @@
-                                              IdentifierInfo *name,
-                                              SourceLocation colonLoc,
-                                              TypeSourceInfo *boundInfo) {
--  auto *TPDecl =
--    new (ctx, dc) ObjCTypeParamDecl(ctx, dc, variance, varianceLoc, index,
--                                    nameLoc, name, colonLoc, boundInfo);
--  QualType TPType = ctx.getObjCTypeParamType(TPDecl, {});
--  TPDecl->setTypeForDecl(TPType.getTypePtr());
--  return TPDecl;
-+  return new (ctx, dc) ObjCTypeParamDecl(ctx, dc, variance, varianceLoc, index,
-+                                         nameLoc, name, colonLoc, boundInfo);
- }
- 
- ObjCTypeParamDecl *ObjCTypeParamDecl::CreateDeserialized(ASTContext &ctx,
 --- a/lib/AST/DeclPrinter.cpp	2016-11-15 11:12:11.622149808 +0100
 +++ b/lib/AST/DeclPrinter.cpp	2016-11-15 11:10:43.347110144 +0100
 @@ -1231,6 +1231,9 @@
@@ -7869,37 +7825,6 @@
    Out << "@interface " << I;
  
    if (auto TypeParams = OID->getTypeParamListAsWritten()) {
---- a/lib/AST/Type.cpp	2016-11-15 11:12:11.630149441 +0100
-+++ b/lib/AST/Type.cpp	2016-11-15 11:10:43.354109838 +0100
-@@ -1081,24 +1081,13 @@
- 
-     // Replace an Objective-C type parameter reference with the corresponding
-     // type argument.
--    if (const auto *OTPTy = dyn_cast<ObjCTypeParamType>(splitType.Ty)) {
--      if (auto *typeParam = dyn_cast<ObjCTypeParamDecl>(OTPTy->getDecl())) {
-+    if (const auto *typedefTy = dyn_cast<TypedefType>(splitType.Ty)) {
-+      if (auto *typeParam = dyn_cast<ObjCTypeParamDecl>(typedefTy->getDecl())) {
-         // If we have type arguments, use them.
-         if (!typeArgs.empty()) {
-+          // FIXME: Introduce SubstObjCTypeParamType ?
-           QualType argType = typeArgs[typeParam->getIndex()];
--          if (OTPTy->qual_empty())
--            return ctx.getQualifiedType(argType, splitType.Quals);
--
--          // Apply protocol lists if exists.
--          bool hasError;
--          SmallVector<ObjCProtocolDecl*, 8> protocolsVec;
--          protocolsVec.append(OTPTy->qual_begin(),
--                              OTPTy->qual_end());
--          ArrayRef<ObjCProtocolDecl *> protocolsToApply = protocolsVec;
--          QualType resultTy = ctx.applyObjCProtocolQualifiers(argType,
--              protocolsToApply, hasError, true/*allowOnPointerType*/);
--
--          return ctx.getQualifiedType(resultTy, splitType.Quals);
-+          return ctx.getQualifiedType(argType, splitType.Quals);
-         }
- 
-         switch (context) {
 --- a/lib/Basic/CMakeLists.txt	2016-11-15 11:12:11.635149211 +0100
 +++ b/lib/Basic/CMakeLists.txt	2016-11-15 11:10:43.361109532 +0100
 @@ -82,6 +82,7 @@
@@ -8098,273 +8023,6 @@
  add_subdirectory(Lex)
  add_subdirectory(Parse)
  add_subdirectory(AST)
---- a/lib/CodeGen/CGObjCGNU.cpp	2016-11-15 11:12:11.651148475 +0100
-+++ b/lib/CodeGen/CGObjCGNU.cpp	2016-11-15 11:10:43.375108921 +0100
-@@ -591,8 +591,8 @@
-     return NULLPtr;
-   }
- 
--  llvm::GlobalVariable *GetClassGlobal(StringRef Name,
--                                       bool Weak = false) override {
-+  llvm::Constant *GetClassGlobal(StringRef Name, bool ForDefinition,
-+                                 bool Weak, bool DLLImport) override {
-     return nullptr;
-   }
- };
---- a/lib/CodeGen/CGObjCMac.cpp	2016-11-15 11:12:11.652148429 +0100
-+++ b/lib/CodeGen/CGObjCMac.cpp	2016-11-15 11:10:43.377108833 +0100
-@@ -1289,8 +1289,10 @@
- 
-   /// GetClassGlobal - Return the global variable for the Objective-C
-   /// class of the given name.
--  llvm::GlobalVariable *GetClassGlobal(StringRef Name,
--                                       bool Weak = false) override {
-+  llvm::Constant *GetClassGlobal(StringRef Name,
-+                                 bool ForDefinition,
-+                                 bool Weak = false,
-+                                 bool DLLImport = false) override {
-     llvm_unreachable("CGObjCMac::GetClassGlobal");
-   }
- };
-@@ -1390,8 +1392,8 @@
-   
-   /// GetClassGlobal - Return the global variable for the Objective-C
-   /// class of the given name.
--  llvm::GlobalVariable *GetClassGlobal(StringRef Name,
--                                       bool Weak = false) override;
-+  llvm::Constant *GetClassGlobal(StringRef Name, bool ForDefinition,
-+                                 bool Weak, bool DLLImport) override;
- 
-   /// EmitClassRef - Return a Value*, of type ObjCTypes.ClassPtrTy,
-   /// for the given class reference.
-@@ -6011,7 +6013,13 @@
-                   llvm::PointerType::getUnqual(ObjCTypes.ImpnfABITy));
-   llvm::Constant *Init = llvm::ConstantStruct::get(ObjCTypes.ClassnfABITy,
-                                                    Values);
--  llvm::GlobalVariable *GV = GetClassGlobal(ClassName, Weak);
-+  llvm::GlobalVariable *GV = cast<llvm::GlobalVariable>(
-+                               GetClassGlobal(ClassName,
-+                                              /*ForDefinition=*/true,
-+                                              Weak,
-+                                              /*DLLImport (ignored on def)*/ false));
-+  if (Init->getType() != GV->getValueType())
-+    Init = llvm::ConstantExpr::getBitCast(Init, GV->getValueType());
-   GV->setInitializer(Init);
-   if (CGM.getTriple().isOSBinFormatMachO())
-     GV->setSection("__DATA, __objc_data");
-@@ -6088,7 +6096,7 @@
-   uint32_t InstanceSize = InstanceStart;
-   uint32_t flags = NonFragileABI_Class_Meta;
- 
--  llvm::GlobalVariable *SuperClassGV, *IsAGV;
-+  llvm::Constant *SuperClassGV, *IsAGV;
- 
-   StringRef ClassName = ID->getObjCRuntimeNameAsString();
-   const auto *CI = ID->getClassInterface();
-@@ -6114,16 +6122,16 @@
-     flags |= NonFragileABI_Class_Root;
- 
-     SuperClassGV = GetClassGlobal((getClassSymbolPrefix() + ClassName).str(),
--                                  CI->isWeakImported());
--    if (CGM.getTriple().isOSBinFormatCOFF())
--      if (CI->hasAttr<DLLImportAttr>())
--        SuperClassGV->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
-+                                  /*ForDefinition=*/false,
-+                                  CI->isWeakImported(),
-+                                  CGM.getTriple().isOSBinFormatCOFF()
-+                                    && CI->hasAttr<DLLImportAttr>());
- 
-     IsAGV = GetClassGlobal((getMetaclassSymbolPrefix() + ClassName).str(),
--                           CI->isWeakImported());
--    if (CGM.getTriple().isOSBinFormatCOFF())
--      if (CI->hasAttr<DLLImportAttr>())
--        IsAGV->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
-+                           /*ForDefinition=*/false,
-+                           CI->isWeakImported(),
-+                           CGM.getTriple().isOSBinFormatCOFF()
-+                             && CI->hasAttr<DLLImportAttr>());
-   } else {
-     // Has a root. Current class is not a root.
-     const ObjCInterfaceDecl *Root = ID->getClassInterface();
-@@ -6135,18 +6143,18 @@
-     StringRef SuperClassName = Super->getObjCRuntimeNameAsString();
- 
-     IsAGV = GetClassGlobal((getMetaclassSymbolPrefix() + RootClassName).str(),
--                           Root->isWeakImported());
--    if (CGM.getTriple().isOSBinFormatCOFF())
--      if (Root->hasAttr<DLLImportAttr>())
--        IsAGV->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
-+                           /*ForDefinition=*/false,
-+                           Root->isWeakImported(),
-+                           CGM.getTriple().isOSBinFormatCOFF()
-+                             && Super->hasAttr<DLLImportAttr>());
- 
-     // work on super class metadata symbol.
-     SuperClassGV =
-         GetClassGlobal((getMetaclassSymbolPrefix() + SuperClassName).str(),
--                       Super->isWeakImported());
--    if (CGM.getTriple().isOSBinFormatCOFF())
--      if (Super->hasAttr<DLLImportAttr>())
--        SuperClassGV->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
-+                       /*ForDefinition=*/false,
-+                       Super->isWeakImported(),
-+                       CGM.getTriple().isOSBinFormatCOFF()
-+                         && Super->hasAttr<DLLImportAttr>());
-   }
- 
-   llvm::GlobalVariable *CLASS_RO_GV =
-@@ -6192,10 +6200,10 @@
- 
-     SuperClassGV =
-         GetClassGlobal((getClassSymbolPrefix() + SuperClassName).str(),
--                       Super->isWeakImported());
--    if (CGM.getTriple().isOSBinFormatCOFF())
--      if (Super->hasAttr<DLLImportAttr>())
--        SuperClassGV->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
-+                       /*ForDefinition=*/false,
-+                       Super->isWeakImported(),
-+                       CGM.getTriple().isOSBinFormatCOFF()
-+                         && Super->hasAttr<DLLImportAttr>());
-   }
- 
-   GetClassSizeInfo(ID, InstanceStart, InstanceSize);
-@@ -6289,8 +6297,11 @@
-   llvm::Constant *Values[8];
-   Values[0] = GetClassName(OCD->getIdentifier()->getName());
-   // meta-class entry symbol
--  llvm::GlobalVariable *ClassGV =
--      GetClassGlobal(ExtClassName.str(), Interface->isWeakImported());
-+  llvm::Constant *ClassGV = GetClassGlobal(ExtClassName.str(),
-+                                           /*ForDefinition=*/false,
-+                                           Interface->isWeakImported(),
-+                                           CGM.getTriple().isOSBinFormatCOFF()
-+                                             && Interface->hasAttr<DLLImportAttr>());
- 
-   Values[1] = ClassGV;
-   std::vector<llvm::Constant*> Methods;
-@@ -7017,8 +7028,9 @@
-                       false, CallArgs, Method, Class, ObjCTypes);
- }
- 
--llvm::GlobalVariable *
--CGObjCNonFragileABIMac::GetClassGlobal(StringRef Name, bool Weak) {
-+llvm::Constant *CGObjCNonFragileABIMac::GetClassGlobal(StringRef Name,
-+                                                       bool ForDefinition,
-+                                                       bool Weak, bool DLLImport) {
-   llvm::GlobalValue::LinkageTypes L =
-       Weak ? llvm::GlobalValue::ExternalWeakLinkage
-            : llvm::GlobalValue::ExternalLinkage;
-@@ -7029,8 +7041,16 @@
-     GV = new llvm::GlobalVariable(CGM.getModule(), ObjCTypes.ClassnfABITy,
-                                   false, L, nullptr, Name);
- 
-+  if (DLLImport)
-+    GV->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
-+
-   assert(GV->getLinkage() == L);
--  return GV;
-+
-+  if (ForDefinition ||
-+      GV->getValueType() == ObjCTypes.ClassnfABITy)
-+    return GV;
-+
-+  return llvm::ConstantExpr::getBitCast(GV, ObjCTypes.ClassnfABIPtrTy);
- }
- 
- llvm::Value *CGObjCNonFragileABIMac::EmitClassRefFromId(CodeGenFunction &CGF,
-@@ -7043,7 +7063,10 @@
-   if (!Entry) {
-     StringRef Name = ID ? ID->getObjCRuntimeNameAsString() : II->getName();
-     std::string ClassName = (getClassSymbolPrefix() + Name).str();
--    llvm::GlobalVariable *ClassGV = GetClassGlobal(ClassName, Weak);
-+    llvm::Constant *ClassGV = GetClassGlobal(ClassName,
-+                                             /*ForDefinition=*/false,
-+                                             Weak,
-+                                             /*FIXME:DLLImport*/ false);
-     Entry = new llvm::GlobalVariable(CGM.getModule(), ObjCTypes.ClassnfABIPtrTy,
-                                      false, llvm::GlobalValue::PrivateLinkage,
-                                      ClassGV, "OBJC_CLASSLIST_REFERENCES_$_");
-@@ -7079,8 +7102,12 @@
-   if (!Entry) {
-     llvm::SmallString<64> ClassName(getClassSymbolPrefix());
-     ClassName += ID->getObjCRuntimeNameAsString();
--    llvm::GlobalVariable *ClassGV = GetClassGlobal(ClassName.str(),
--                                                   ID->isWeakImported());
-+    llvm::Constant *ClassGV = GetClassGlobal(ClassName.str(),
-+                                             /*ForDefinition=*/false,
-+                                             ID->isWeakImported(),
-+                                             CGM.getTriple().isOSBinFormatCOFF()
-+                                               && ID->hasAttr<DLLImportAttr>());
-+
-     Entry = new llvm::GlobalVariable(CGM.getModule(), ObjCTypes.ClassnfABIPtrTy,
-                                      false, llvm::GlobalValue::PrivateLinkage,
-                                      ClassGV, "OBJC_CLASSLIST_SUP_REFS_$_");
-@@ -7102,8 +7129,11 @@
-   if (!Entry) {
-     llvm::SmallString<64> MetaClassName(getMetaclassSymbolPrefix());
-     MetaClassName += ID->getObjCRuntimeNameAsString();
--    llvm::GlobalVariable *MetaClassGV =
--      GetClassGlobal(MetaClassName.str(), Weak);
-+    llvm::Constant *MetaClassGV = GetClassGlobal(MetaClassName.str(),
-+                                                 /*ForDefinition=*/false,
-+                                                 Weak,
-+                                                 CGM.getTriple().isOSBinFormatCOFF()
-+                                                   && ID->hasAttr<DLLImportAttr>());
- 
-     Entry = new llvm::GlobalVariable(CGM.getModule(), ObjCTypes.ClassnfABIPtrTy,
-                                      false, llvm::GlobalValue::PrivateLinkage,
-@@ -7124,7 +7154,11 @@
-   if (ID->isWeakImported()) {
-     llvm::SmallString<64> ClassName(getClassSymbolPrefix());
-     ClassName += ID->getObjCRuntimeNameAsString();
--    llvm::GlobalVariable *ClassGV = GetClassGlobal(ClassName.str(), true);
-+    llvm::GlobalVariable *ClassGV = cast<llvm::GlobalVariable>(
-+                                      GetClassGlobal(ClassName.str(),
-+                                                     /*ForDefinition=*/true,
-+                                                     /*Weak=*/true,
-+                                                     /*DLLImport*/false));
-     (void)ClassGV;
-     assert(ClassGV->hasExternalWeakLinkage());
-   }
-@@ -7437,7 +7471,11 @@
-       llvm::ConstantExpr::getGetElementPtr(VTableGV->getValueType(), VTableGV,
-                                            VTableIdx),
-       GetClassName(ID->getObjCRuntimeNameAsString()),
--      GetClassGlobal((getClassSymbolPrefix() + ClassName).str()),
-+      GetClassGlobal((getClassSymbolPrefix() + ClassName).str(),
-+                     /*ForDefinition*/false,
-+                     /*Weak*/ID->isWeakImported(),
-+                     /*DLLImport*/CGM.getTriple().isOSBinFormatCOFF()
-+                       && ID->hasAttr<DLLImportAttr>()),
-   };
-   llvm::Constant *Init = llvm::ConstantStruct::get(ObjCTypes.EHTypeTy, Values);
- 
---- a/lib/CodeGen/CGObjCRuntime.h	2016-11-15 11:12:11.652148429 +0100
-+++ b/lib/CodeGen/CGObjCRuntime.h	2016-11-15 11:10:43.377108833 +0100
-@@ -280,8 +280,8 @@
-   virtual llvm::Constant *BuildByrefLayout(CodeGen::CodeGenModule &CGM,
-                                            QualType T) = 0;
- 
--  virtual llvm::GlobalVariable *GetClassGlobal(StringRef Name,
--                                               bool Weak = false) = 0;
-+  virtual llvm::Constant *GetClassGlobal(StringRef Name, bool ForDefinition,
-+                                         bool Weak = false, bool DLLImport = false) = 0;
- 
-   struct MessageSendInfo {
-     const CGFunctionInfo &CallInfo;
---- a/lib/CodeGen/CodeGenModule.cpp	2016-11-15 11:12:11.657148199 +0100
-+++ b/lib/CodeGen/CodeGenModule.cpp	2016-11-15 11:10:43.382108615 +0100
-@@ -3288,7 +3288,9 @@
-       std::string str = 
-         StringClass.empty() ? "OBJC_CLASS_$_NSConstantString" 
-                             : "OBJC_CLASS_$_" + StringClass;
--      GV = getObjCRuntime().GetClassGlobal(str);
-+      GV = getObjCRuntime().GetClassGlobal(str,
-+                                           /*ForDefinition=*/false,
-+                                           /*Weak=*/false);
-       // Make sure the result is of the correct type.
-       llvm::Type *PTy = llvm::PointerType::getUnqual(Ty);
-       V = llvm::ConstantExpr::getBitCast(GV, PTy);
 --- a/lib/Driver/Job.cpp	2016-11-15 11:12:11.663147923 +0100
 +++ b/lib/Driver/Job.cpp	2016-11-15 11:10:43.388108353 +0100
 @@ -74,7 +74,8 @@
@@ -8459,15 +8117,6 @@
  }
  
  // Output Files
-@@ -934,7 +955,7 @@
-                               SourceLocation ImportLoc,
-                               Module *Module,
-                               StringRef ModuleFileName) {
--  ModuleMap &ModMap 
-+  ModuleMap &ModMap
-     = ImportingInstance.getPreprocessor().getHeaderSearchInfo().getModuleMap();
-     
-   // Construct a compiler invocation for creating this module.
 @@ -1694,8 +1715,13 @@
      // Check whether this module is available.
      clang::Module::Requirement Requirement;
@@ -8929,7 +8578,7 @@
          ThisDecl = VT->getTemplatedDecl();
  
 -      if (ThisDecl && AccessAttrs)
-+      if (ThisDecl) {
++      if (ThisDecl && AccessAttrs) {
          Actions.ProcessDeclAttributeList(getCurScope(), ThisDecl, AccessAttrs);
 +        Actions.ProcessAPINotes(ThisDecl);
 +      }
@@ -9840,7 +9489,7 @@
      D = TD->getTemplatedDecl();
 -  ProcessDeclAttributeList(S, D, Attrs.getList());
 +
-+  ProcessDeclAttributeList(S, D, Attrs.getList());  
++  ProcessDeclAttributeList(S, D, Attrs.getList());
 +  ProcessAPINotes(D);
  
    if (CXXMethodDecl *Method = dyn_cast_or_null<CXXMethodDecl>(D))
@@ -10568,23 +10217,6 @@
            SourceLocation DeclLoc(IDecl->getLocation());
            SourceLocation SuperClassLoc(getLocForEndOfToken(DeclLoc));
            Diag(DeclLoc, diag::warn_objc_root_class_missing)
-@@ -3932,12 +3938,10 @@
-   return (Decl::ObjCDeclQualifier) (unsigned) PQTVal;
- }
- 
--/// \brief Check whether the declared result type of the given Objective-C
--/// method declaration is compatible with the method's class.
--///
--static Sema::ResultTypeCompatibilityKind 
--CheckRelatedResultTypeCompatibility(Sema &S, ObjCMethodDecl *Method,
--                                    ObjCInterfaceDecl *CurrentClass) {
-+Sema::ResultTypeCompatibilityKind
-+Sema::checkRelatedResultTypeCompatibility(
-+    const ObjCMethodDecl *Method,
-+    const ObjCInterfaceDecl *CurrentClass) {
-   QualType ResultType = Method->getReturnType();
- 
-   // If an Objective-C method inherits its related result type, then its 
 @@ -4393,6 +4397,7 @@
  
      // Apply the attributes to the parameter.
@@ -10601,35 +10233,6 @@
  
    // Add the method now.
    const ObjCMethodDecl *PrevMethod = nullptr;
-@@ -4478,7 +4484,7 @@
-   }
- 
-   ResultTypeCompatibilityKind RTC
--    = CheckRelatedResultTypeCompatibility(*this, ObjCMethod, CurrentClass);
-+    = checkRelatedResultTypeCompatibility(ObjCMethod, CurrentClass);
- 
-   CheckObjCMethodOverrides(ObjCMethod, CurrentClass, RTC);
- 
---- a/lib/Sema/SemaObjCProperty.cpp	2016-11-15 11:12:11.725145073 +0100
-+++ b/lib/Sema/SemaObjCProperty.cpp	2016-11-15 11:10:43.452105557 +0100
-@@ -636,8 +636,6 @@
-     PDecl->setInvalidDecl();
-   }
- 
--  ProcessDeclAttributes(S, PDecl, FD.D);
--
-   // Regardless of setter/getter attribute, we save the default getter/setter
-   // selector names in anticipation of declaration of setter/getter methods.
-   PDecl->setGetterName(GetterSel);
-@@ -645,6 +643,8 @@
-   PDecl->setPropertyAttributesAsWritten(
-                           makePropertyAttributesAsWritten(AttributesAsWritten));
- 
-+  ProcessDeclAttributes(S, PDecl, FD.D);
-+
-   if (Attributes & ObjCDeclSpec::DQ_PR_readonly)
-     PDecl->setPropertyAttributes(ObjCPropertyDecl::OBJC_PR_readonly);
- 
 --- a/lib/Sema/SemaTemplate.cpp	2016-11-15 11:12:11.732144751 +0100
 +++ b/lib/Sema/SemaTemplate.cpp	2016-11-15 11:10:43.459105251 +0100
 @@ -1256,6 +1256,7 @@
@@ -10674,27 +10277,6 @@
      // Let the ASTConsumer know that this function has been explicitly
 --- a/lib/Sema/SemaType.cpp	2016-11-15 11:12:11.736144567 +0100
 +++ b/lib/Sema/SemaType.cpp	2016-11-15 11:10:43.463105076 +0100
-@@ -1158,20 +1158,6 @@
-     ResultTL = ObjCObjectPointerTL.getPointeeLoc();
-   }
- 
--  if (auto OTPTL = ResultTL.getAs<ObjCTypeParamTypeLoc>()) {
--    // Protocol qualifier information.
--    if (OTPTL.getNumProtocols() > 0) {
--      assert(OTPTL.getNumProtocols() == Protocols.size());
--      OTPTL.setProtocolLAngleLoc(ProtocolLAngleLoc);
--      OTPTL.setProtocolRAngleLoc(ProtocolRAngleLoc);
--      for (unsigned i = 0, n = Protocols.size(); i != n; ++i)
--        OTPTL.setProtocolLoc(i, ProtocolLocs[i]);
--    }
--
--    // We're done. Return the completed type to the parser.
--    return CreateParsedType(Result, ResultTInfo);
--  }
--
-   auto ObjCObjectTL = ResultTL.castAs<ObjCObjectTypeLoc>();
- 
-   // Type argument information.
 @@ -3395,25 +3381,9 @@
      if (auto recordType = type->getAs<RecordType>()) {
        RecordDecl *recordDecl = recordType->getDecl();
@@ -10848,20 +10430,6 @@
      const Type *pointeeType;
      if (desugared->isArrayType())
        pointeeType = desugared->getArrayElementTypeNoTypeQual();
-@@ -6060,13 +6081,6 @@
- }
- 
- bool Sema::checkObjCKindOfType(QualType &type, SourceLocation loc) {
--  if (isa<ObjCTypeParamType>(type)) {
--    // Build the attributed type to record where __kindof occurred.
--    type = Context.getAttributedType(AttributedType::attr_objc_kindof,
--                                     type, type);
--    return false;
--  }
--
-   // Find out if it's an Objective-C object or object pointer type;
-   const ObjCObjectPointerType *ptrType = type->getAs<ObjCObjectPointerType>();
-   const ObjCObjectType *objType = ptrType ? ptrType->getObjectType() 
 @@ -6807,7 +6821,7 @@
                mapNullabilityAttrKind(attr.getKind()),
                attr.getLoc(),
@@ -10912,17 +10480,6 @@
        Stream.EmitRecordWithBlob(DefinitionAbbrev, Record, Mod->Name);
      }
  
---- a/lib/StaticAnalyzer/Checkers/DynamicTypePropagation.cpp	2016-11-15 11:12:11.746144107 +0100
-+++ b/lib/StaticAnalyzer/Checkers/DynamicTypePropagation.cpp	2016-11-15 11:10:43.473104640 +0100
-@@ -626,7 +626,7 @@
-       : public RecursiveASTVisitor<IsObjCTypeParamDependentTypeVisitor> {
-   public:
-     IsObjCTypeParamDependentTypeVisitor() : Result(false) {}
--    bool VisitObjCTypeParamType(const ObjCTypeParamType *Type) {
-+    bool VisitTypedefType(const TypedefType *Type) {
-       if (isa<ObjCTypeParamDecl>(Type->getDecl())) {
-         Result = true;
-         return false;
 --- a/test/APINotes/Inputs/APINotes/SomeOtherKit.apinotes	1970-01-01 01:00:00.000000000 +0100
 +++ b/test/APINotes/Inputs/APINotes/SomeOtherKit.apinotes	2016-11-15 11:10:43.486104072 +0100
 @@ -0,0 +1,8 @@
@@ -13024,71 +12581,6 @@
  // rdar://23622446
  @interface RD23622446_Tester: NSObject
  
---- a/test/SemaObjC/kindof.m	2016-11-15 11:12:12.791096060 +0100
-+++ b/test/SemaObjC/kindof.m	2016-11-15 11:10:44.622054448 +0100
-@@ -385,7 +385,7 @@
- @end
- 
- @interface NSGeneric<ObjectType> : NSObject
--- (void)test:(__kindof ObjectType)T; // expected-note{{passing argument to parameter 'T' here}}
-+- (void)test:(__kindof ObjectType)T;
- - (void)mapUsingBlock:(id (^)(__kindof ObjectType))block;
- @end
- @implementation NSGeneric
-@@ -395,14 +395,6 @@
- }
- @end
- 
--void testGeneric(NSGeneric<NSString*> *generic) {
--  NSObject *NSObject_obj;
--  // Assign from NSObject_obj to __kindof NSString*.
--  [generic test:NSObject_obj]; // expected-warning{{incompatible pointer types sending 'NSObject *' to parameter of type '__kindof NSString *'}}
--  NSString *NSString_str;
--  [generic test:NSString_str];
--}
--
- // Check that clang doesn't crash when a type parameter is illegal.
- @interface Array1<T> : NSObject
- @end
---- a/test/SemaObjC/parameterized_classes_subst.m	2016-11-15 11:12:12.796095830 +0100
-+++ b/test/SemaObjC/parameterized_classes_subst.m	2016-11-15 11:10:44.627054229 +0100
-@@ -426,36 +426,3 @@
- // warning about likely protocol/class name typos.
- // --------------------------------------------------------------------------
- typedef NSArray<NSObject> ArrayOfNSObjectWarning; // expected-warning{{parameterized class 'NSArray' already conforms to the protocols listed; did you forget a '*'?}}
--
--// rdar://25060179
--@interface MyMutableDictionary<KeyType, ObjectType> : NSObject
--- (void)setObject:(ObjectType)obj forKeyedSubscript:(KeyType <NSCopying>)key; // expected-note{{passing argument to parameter 'obj' here}} \
--    // expected-note{{passing argument to parameter 'key' here}}
--@end
--
--void bar(MyMutableDictionary<NSString *, NSString *> *stringsByString,
--                             NSNumber *n1, NSNumber *n2) {
--  // We warn here when the key types do not match.
--  stringsByString[n1] = n2; // expected-warning{{incompatible pointer types sending 'NSNumber *' to parameter of type 'NSString *'}} \
--    // expected-warning{{incompatible pointer types sending 'NSNumber *' to parameter of type 'NSString<NSCopying> *'}}
--}
--
--@interface MyTest<K, V> : NSObject <NSCopying>
--- (V)test:(K)key;
--- (V)test2:(K)key; // expected-note{{previous definition is here}}
--- (void)mapUsingBlock:(id (^)(V))block;
--- (void)mapUsingBlock2:(id (^)(V))block; // expected-note{{previous definition is here}}
--@end
--
--@implementation MyTest
--- (id)test:(id)key {
--  return key;
--}
--- (int)test2:(id)key{ // expected-warning{{conflicting return type in implementation}}
--  return 0;
--}
--- (void)mapUsingBlock:(id (^)(id))block {
--}
--- (void)mapUsingBlock2:(id)block { // expected-warning{{conflicting parameter types in implementation}}
--}
--@end
 --- a/tools/clang-check/CMakeLists.txt	2016-11-15 11:12:12.841093761 +0100
 +++ b/tools/clang-check/CMakeLists.txt	2016-11-15 11:10:44.671052307 +0100
 @@ -9,6 +9,7 @@
@@ -13375,25 +12867,3 @@
    clangParse
    clangSema
    )
---- a/utils/perf-training/lit.cfg	2016-11-15 11:12:12.865092658 +0100
-+++ b/utils/perf-training/lit.cfg	2016-11-15 11:10:44.698051128 +0100
-@@ -7,7 +7,7 @@
- def getSysrootFlagsOnDarwin(config, lit_config):
-     # On Darwin, support relocatable SDKs by providing Clang with a
-     # default system root path.
--    if 'darwin' in config.target_triple:
-+    if lit.util.isMacOSTriple(config.target_triple):
-         try:
-             out = lit.util.capture(['xcrun', '--show-sdk-path']).strip()
-             res = 0
---- a/utils/perf-training/order-files.lit.cfg	2016-11-15 11:12:12.865092658 +0100
-+++ b/utils/perf-training/order-files.lit.cfg	2016-11-15 11:10:44.698051128 +0100
-@@ -8,7 +8,7 @@
- def getSysrootFlagsOnDarwin(config, lit_config):
-     # On Darwin, support relocatable SDKs by providing Clang with a
-     # default system root path.
--    if 'darwin' in config.target_triple:
-+    if lit.util.isMacOSTriple(config.target_triple):
-         try:
-             out = lit.util.capture(['xcrun', '--show-sdk-path']).strip()
-             res = 0
