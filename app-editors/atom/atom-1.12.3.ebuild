@@ -33,7 +33,7 @@ MARKER_INDEX_V=4.0.1
 NODE_KEYTAR_V=3.0.2
 
 # atom-keymap dependency
-KEYBOARD_LAYOUT_V=1.2.2
+KEYBOARD_LAYOUT_V=2.0.1
 
 # symbols-view dependency
 NODE_CTAGS_V=3.0.0
