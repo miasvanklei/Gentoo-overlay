@@ -2,7 +2,7 @@ diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
 index e25175d..f8719f7 100644
 --- a/ELF/LinkerScript.cpp
 +++ b/ELF/LinkerScript.cpp
-@@ -1791,19 +1791,15 @@ void ScriptParser::readVersionDeclaration(StringRef VerStr) {
+@@ -1835,16 +1835,10 @@ void ScriptParser::readSymbols(std::vector<SymbolVersion> &V) {
  }
  
  void ScriptParser::readLocal(StringRef VerStr) {
@@ -12,33 +12,28 @@ index e25175d..f8719f7 100644
 -    return;
 -  }
 -
-+  std::vector<SymbolVersion> *Locals;
    if (VerStr.empty())
 -    setError("locals list for anonymous version is not supported");
-+    Locals = &Config->VersionScriptLocals;
+-
+-  readSymbols(Config->VersionScriptLocals);
++    readSymbols(Config->VersionScriptLocals);
 +  else
-+    Locals = &Config->VersionDefinitions.back().Locals;
- 
--  std::vector<SymbolVersion> &Locals = Config->VersionDefinitions.back().Locals;
-   while (!Error && peek() != "}") {
-     StringRef Tok = next();
--    Locals.push_back({unquote(Tok), false, hasWildcard(Tok)});
-+    Locals->push_back({unquote(Tok), false, hasWildcard(Tok)});
-     expect(";");
-   }
++    readSymbols(Config->VersionDefinitions.back().Locals);
  }
+ 
+ void ScriptParser::readVersionExtern(std::vector<SymbolVersion> *V) {
 diff --git a/ELF/Config.h b/ELF/Config.h
 index a46a8a8..5157bbf 100644
 --- a/ELF/Config.h
 +++ b/ELF/Config.h
-@@ -92,6 +92,7 @@ struct Configuration {
-   std::vector<llvm::StringRef> SearchPaths;
-   std::vector<llvm::StringRef> Undefined;
-   std::vector<SymbolVersion> VersionScriptGlobals;
-+  std::vector<SymbolVersion> VersionScriptLocals;
-   std::vector<uint8_t> BuildIdVector;
-   bool AllowMultipleDefinition;
-   bool AsNeeded = false;
+@@ -62,6 +62,7 @@ struct VersionDefinition {
+   llvm::StringRef Name;
+   size_t Id;
+   std::vector<SymbolVersion> Globals;
++  std::vector<SymbolVersion> Locals;
+   size_t NameOff; // Offset in string table.
+ }; 
+ 
 diff --git a/ELF/Symbols.h b/ELF/Symbols.h
 index 192433e..aec12e9 100644
 --- a/ELF/Symbols.h
@@ -114,19 +109,36 @@ index efbcba9..dfc5f09 100644
  
    if (Config->VersionDefinitions.empty())
      return;
-@@ -727,10 +741,10 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+@@ -716,21 +729,23 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+ 
+   // First, we assign versions to exact matching symbols,
+   // i.e. version definitions not containing any glob meta-characters.
+-  for (SymbolVersion Sym : Config->VersionScriptLocals)
+-    assignVersion(Sym, VER_NDX_LOCAL, "local");
+-  for (VersionDefinition &V : Config->VersionDefinitions)
++  for (VersionDefinition &V : Config->VersionDefinitions) {
+     for (SymbolVersion Sym : V.Globals)
+       assignVersion(Sym, V.Id, V.Name);
++    for (SymbolVersion Sym : V.Locals)
++      assignVersion(Sym, VER_NDX_LOCAL, "local");
++  }
+ 
+   // Next, we assign versions to fuzzy matching symbols,
+   // i.e. version definitions containing glob meta-characters.
+   // Note that because the last match takes precedence over previous matches,
    // we iterate over the definitions in the reverse order.
-   for (size_t I = Config->VersionDefinitions.size() - 1; I != (size_t)-1; --I) {
-     VersionDefinition &V = Config->VersionDefinitions[I];
--    for (SymbolVersion &Ver : V.Locals)
--      assignWildcardVersion(Ver, VER_NDX_LOCAL);
-     for (SymbolVersion &Ver : V.Globals)
-       assignWildcardVersion(Ver, V.Id);
-+    for (SymbolVersion &Ver : V.Locals)
+-  for (SymbolVersion &Ver : Config->VersionScriptLocals)
+-    assignWildcardVersion(Ver, VER_NDX_LOCAL);
+-  for (size_t I = Config->VersionDefinitions.size() - 1; I != (size_t)-1; --I)
++  for (size_t I = Config->VersionDefinitions.size() - 1; I != (size_t)-1; --I) {
+     for (SymbolVersion &Ver : Config->VersionDefinitions[I].Globals)
+       assignWildcardVersion(Ver, Config->VersionDefinitions[I].Id);
++    for (SymbolVersion &Ver : Config->VersionDefinitions[I].Locals)
 +      assignWildcardVersion(Ver, VER_NDX_LOCAL);
-   }
++  }
  }
  
+ template class elf::SymbolTable<ELF32LE>;
 diff --git a/ELF/SymbolTable.h b/ELF/SymbolTable.h
 index d78287c..dc139ba 100644
 --- a/ELF/SymbolTable.h
