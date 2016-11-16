@@ -76,17 +76,13 @@ diff --git a/src/node_main.cc b/src/node_main.cc
 index 02082ba..641e8db 100644
 --- a/src/node_main.cc
 +++ b/src/node_main.cc
-@@ -49,11 +49,14 @@
+@@ -49,8 +49,10 @@ int wmain(int argc, wchar_t *wargv[]) {
  }
  #else
  // UNIX
-+#include <stdio.h>
-+
++#include <stdlib.h>
  int main(int argc, char *argv[]) {
-   // Disable stdio buffering, it interacts poorly with printf()
-   // calls elsewhere in the program (e.g., any logging from V8.)
-   setvbuf(stdout, nullptr, _IONBF, 0);
-   setvbuf(stderr, nullptr, _IONBF, 0);
+   setvbuf(stderr, NULL, _IOLBF, 1024);
 +  putenv("ELECTRON_NODE_DISABLE_ASAR_SUPPORT=1");
    return node::Start(argc, argv);
  }

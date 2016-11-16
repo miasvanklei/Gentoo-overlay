@@ -16,9 +16,9 @@ inherit check-reqs chromium-2 eutils gnome2-utils flag-o-matic multilib \
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent/VERSION
 CHROMIUM_VERSION="52.0.2743.82"
 # Keep this in sync with vendor/brightray
-BRIGHTRAY_COMMIT="ee26c5218eeec199c54c92a7517a72d2dbd0adbf"
+BRIGHTRAY_COMMIT="554946c7873bbc6930779c871fe230856575049a"
 # Keep this in sync with vendor/node
-NODE_COMMIT="c47e9bf9011de682d07c82f7f610a467f30cca60"
+NODE_COMMIT="ee8c429deaee0adeeef069c3ad34c0defe53a567"
 # Keep this in sync with vendor/native_mate
 NATIVE_MATE_COMMIT="b5e5de626c6a57e44c7e6448d8bbaaac475d493c"
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent
@@ -256,7 +256,7 @@ src_prepare() {
 	ln -s "${WORKDIR}/${ASAR_P}/node_modules" "${S}/node_modules" || die
 
 	# electron patches
-	epatch "${FILESDIR}/${PN}-1.3.5.patch"
+	epatch "${FILESDIR}/${P}.patch"
 
 	# node patches
 	cd "${NODE_S}" || die
@@ -281,11 +281,11 @@ src_prepare() {
 
 	# brightray patches
 	cd "${BRIGHTRAY_S}" || die
-	epatch "${FILESDIR}/${PN}-1.3.5-vendor-brightray.patch"
+	epatch "${FILESDIR}/${P}-vendor-brightray.patch"
 
 	# libcc patches
 	cd "${LIBCC_S}" || die
-	epatch "${FILESDIR}/${PN}-1.3.5-vendor-libchromiumcontent.patch"
+	epatch "${FILESDIR}/${P}-vendor-libchromiumcontent.patch"
 
 	# chromium patches
 	cd "${S}" || die
@@ -301,6 +301,7 @@ src_prepare() {
 	epatch "${FILESDIR}/chromium-ffmpeg-license-r0.patch"
 	epatch "${FILESDIR}/chromium-shared-v8-r1.patch"
 	epatch "${FILESDIR}/chromium-lto-fixes-r1.patch"
+#	epatch "${FILESDIR}/chromium-icu-58-r1.patch"
 
 	# libcc chromium patches
 	_unnest_patches "${LIBCC_S}/patches"
