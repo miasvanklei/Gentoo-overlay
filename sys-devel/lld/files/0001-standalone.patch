@@ -173,41 +173,6 @@
  set(LLD_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
  set(LLD_INCLUDE_DIR ${LLD_SOURCE_DIR}/include )
  set(LLD_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
---- a/COFF/CMakeLists.txt
-+++ b/COFF/CMakeLists.txt
-@@ -37,4 +37,10 @@ add_lld_library(lldCOFF
-   ${PTHREAD_LIB}
-   )
- 
-+include_directories(${CMAKE_CURRENT_BINARY_DIR})
-+
-+if(NOT LLD_BUILT_STANDALONE)
- add_dependencies(lldCOFF COFFOptionsTableGen intrinsics_gen)
-+else()
-+add_dependencies(lldCOFF COFFOptionsTableGen)
-+endif()
---- a/ELF/CMakeLists.txt
-+++ b/ELF/CMakeLists.txt
-@@ -54,4 +54,10 @@ add_lld_library(lldELF
-   ${PTHREAD_LIB}
-   )
- 
-+include_directories(${CMAKE_CURRENT_BINARY_DIR})
-+
-+if(NOT LLD_BUILT_STANDALONE)
- add_dependencies(lldELF intrinsics_gen ELFOptionsTableGen)
-+else()
-+add_dependencies(lldELF ELFOptionsTableGen)
-+endif()
---- a/lib/Driver/CMakeLists.txt
-+++ b/lib/Driver/CMakeLists.txt
-@@ -19,4 +19,6 @@ add_lld_library(lldDriver
-     LLVMSupport
-   )
- 
-+include_directories(${CMAKE_CURRENT_BINARY_DIR})
-+
- add_dependencies(lldDriver DriverOptionsTableGen)
 --- a/lib/ReaderWriter/MachO/MachOLinkingContext.cpp
 +++ b/lib/ReaderWriter/MachO/MachOLinkingContext.cpp
 @@ -22,7 +22,7 @@
@@ -230,3 +195,51 @@
  #include "llvm/Demangle/Demangle.h"
  #include <algorithm>
  
+diff --git a/lib/Driver/CMakeLists.txt b/lib/Driver/CMakeLists.txt
+index 1bd1f21..f5303f1 100644
+--- a/lib/Driver/CMakeLists.txt
++++ b/lib/Driver/CMakeLists.txt
+@@ -1,6 +1,7 @@
+ set(LLVM_TARGET_DEFINITIONS DarwinLdOptions.td)
+ tablegen(LLVM DarwinLdOptions.inc -gen-opt-parser-defs)
+ add_public_tablegen_target(DriverOptionsTableGen)
++include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ 
+ add_lld_library(lldDriver
+   DarwinLdDriver.cpp
+diff --git a/COFF/CMakeLists.txt b/COFF/CMakeLists.txt
+index d8fb23f..04aea7a 100644
+--- a/COFF/CMakeLists.txt
++++ b/COFF/CMakeLists.txt
+@@ -1,6 +1,7 @@
+ set(LLVM_TARGET_DEFINITIONS Options.td)
+ tablegen(LLVM Options.inc -gen-opt-parser-defs)
+ add_public_tablegen_target(COFFOptionsTableGen)
++include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ 
+ add_lld_library(lldCOFF
+   Chunks.cpp
+@@ -38,5 +39,4 @@ add_lld_library(lldCOFF
+ 
+   DEPENDS
+   COFFOptionsTableGen
+-  intrinsics_gen
+   )
+diff --git a/ELF/CMakeLists.txt b/ELF/CMakeLists.txt
+index 84a49e9..9a7d860 100644
+--- a/ELF/CMakeLists.txt
++++ b/ELF/CMakeLists.txt
+@@ -1,6 +1,7 @@
+ set(LLVM_TARGET_DEFINITIONS Options.td)
+ tablegen(LLVM Options.inc -gen-opt-parser-defs)
+ add_public_tablegen_target(ELFOptionsTableGen)
++include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ 
+ add_lld_library(lldELF
+   Driver.cpp
+@@ -55,5 +56,4 @@ add_lld_library(lldELF
+ 
+   DEPENDS
+   ELFOptionsTableGen
+-  intrinsics_gen
+   )
