@@ -40,7 +40,7 @@ src_prepare() {
 src_configure() {
 	export DSTROOT=${D}
 	export SWIFT_TARGET=${CHOST}
-	econf --target=${CHOST} --build_mode=release
+	econf --target=${CHOST} release
 }
 
 pkg_preinst() {
