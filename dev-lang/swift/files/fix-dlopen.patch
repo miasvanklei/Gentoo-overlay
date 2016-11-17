@@ -1,27 +1,5 @@
-diff --git a/lib/Immediate/Immediate.cpp b/lib/Immediate/Immediate.cpp
-index 4302bb9..24d1660 100644
---- a/lib/Immediate/Immediate.cpp
-+++ b/lib/Immediate/Immediate.cpp
-@@ -59,12 +59,12 @@ static void *loadRuntimeLib(StringRef runtimeLibPathWithName) {
- }
- 
- void *swift::immediate::loadSwiftRuntime(StringRef runtimeLibPath) {
--  return loadRuntimeLib("libswiftCore" LTDL_SHLIB_EXT, runtimeLibPath);
-+  return loadRuntimeLib("libswiftCore.so", runtimeLibPath);
- }
- 
- static bool tryLoadLibrary(LinkLibrary linkLib,
-@@ -86,7 +88,7 @@ static bool tryLoadLibrary(LinkLibrary linkLib,
-       // FIXME: Try the appropriate extension for the current platform?
-       stem = "lib";
-       stem += path;
--      stem += LTDL_SHLIB_EXT;
-+      stem += ".so";
-     }
- 
-     // Try user-provided library search paths first.
 diff --git a/lib/Driver/Driver.cpp b/lib/Driver/Driver.cpp
-index 4f98358..9ed3db8 100644
+index 4f98358..98ea9d0 100644
 --- a/lib/Driver/Driver.cpp
 +++ b/lib/Driver/Driver.cpp
 @@ -1647,7 +1647,7 @@ static StringRef getOutputFilename(Compilation &C,
@@ -33,3 +11,25 @@ index 4f98358..9ed3db8 100644
          return Buffer.str();
        }
      }
+diff --git a/lib/Immediate/Immediate.cpp b/lib/Immediate/Immediate.cpp
+index 4302bb9..525bb12 100644
+--- a/lib/Immediate/Immediate.cpp
++++ b/lib/Immediate/Immediate.cpp
+@@ -64,7 +64,7 @@ static void *loadRuntimeLib(StringRef sharedLibName, StringRef runtimeLibPath) {
+ }
+ 
+ void *swift::immediate::loadSwiftRuntime(StringRef runtimeLibPath) {
+-  return loadRuntimeLib("libswiftCore" LTDL_SHLIB_EXT, runtimeLibPath);
++  return loadRuntimeLib("libswiftCore.so", runtimeLibPath);
+ }
+ 
+ static bool tryLoadLibrary(LinkLibrary linkLib,
+@@ -86,7 +86,7 @@ static bool tryLoadLibrary(LinkLibrary linkLib,
+       // FIXME: Try the appropriate extension for the current platform?
+       stem = "lib";
+       stem += path;
+-      stem += LTDL_SHLIB_EXT;
++      stem += ".so";
+     }
+ 
+     // Try user-provided library search paths first.
