@@ -20,8 +20,8 @@ IUSE=""
 RDEPEND="sys-devel/llvm
 	dev-lang/swift
 	dev-libs/corelibs-foundation
-        dev-libs/corelib-xctest
-	dev-util/lit
+        dev-libs/corelibs-xctest
+	dev-python/lit
 	dev-util/llbuild"
 DEPEND="${RDEPEND}"
 

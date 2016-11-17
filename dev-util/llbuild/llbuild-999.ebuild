@@ -22,7 +22,7 @@ IUSE=""
 RDEPEND="sys-devel/llvm
 	dev-lang/swift
 	sys-libs/ncurses
-	dev-libs/sqlite
+	dev-db/sqlite
 	dev-libs/corelibs-foundation"
 DEPEND="${RDEPEND}"
 

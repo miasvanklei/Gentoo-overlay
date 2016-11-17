@@ -19,7 +19,7 @@ IUSE=""
 RDEPEND="dev-libs/libdispatch
 	dev-libs/icu
 	dev-lang/swift
-	dev-libs/corelib-foundation
+	dev-libs/corelibs-foundation
 	sys-libs/zlib
 	dev-libs/openssl
 	net-nds/openldap

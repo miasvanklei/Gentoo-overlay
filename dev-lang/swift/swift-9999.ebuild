@@ -23,9 +23,8 @@ RDEPEND="
 	dev-libs/libcmark
 	sys-libs/zlib
 	sys-libs/ncurses
-	~sys-devel/clang-${PV}[xml]
-	~sys-devel/llvm-${PV}
-	!<sys-devel/llvm-${PV}"
+	>=sys-devel/clang-3.9.0
+	>=sys-devel/llvm-3.9.0"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
