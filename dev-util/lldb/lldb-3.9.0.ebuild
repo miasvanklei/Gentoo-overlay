@@ -45,6 +45,7 @@ src_prepare() {
 	eapply ${FILESDIR}/rename-dwarf-constant.patch
 	eapply ${FILESDIR}/fix-iohandler.cpp.patch
 	eapply ${FILESDIR}/fix-includes.patch
+	eapply ${FILESDIR}/fix-default-resource-dir.patch
 	eapply_user
 }
 

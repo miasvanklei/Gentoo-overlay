@@ -1,0 +1,29 @@
+diff --git a/source/Symbol/SwiftASTContext.cpp b/source/Symbol/SwiftASTContext.cpp
+index e8a41dc..c9bcc2a 100644
+--- a/source/Symbol/SwiftASTContext.cpp
++++ b/source/Symbol/SwiftASTContext.cpp
+@@ -1262,9 +1262,8 @@ ConstString SwiftASTContext::GetPluginName() {
+ 
+ uint32_t SwiftASTContext::GetPluginVersion() { return 1; }
+ 
+-static std::string &GetDefaultResourceDir() {
+-  static std::string s_resource_dir;
+-  return s_resource_dir;
++static std::string GetDefaultResourceDir() {
++  return "/usr/lib/swift";
+ }
+ 
+ lldb::TypeSystemSP SwiftASTContext::CreateInstance(lldb::LanguageType language,
+@@ -1672,12 +1671,6 @@ lldb::TypeSystemSP SwiftASTContext::CreateInstance(lldb::LanguageType language,
+           if (resource_dir) {
+             handled_resource_dir = true;
+             swift_ast_sp->SetResourceDir(resource_dir);
+-            if (GetDefaultResourceDir().empty()) {
+-              // Tuck this away as a reasonable default resource dir
+-              // for contexts that don't have one.  The Swift parser
+-              // will assert without one.
+-              GetDefaultResourceDir() = resource_dir;
+-            }
+           }
+         }
+ 
