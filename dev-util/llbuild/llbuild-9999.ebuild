@@ -26,6 +26,12 @@ RDEPEND="sys-devel/llvm
 	dev-libs/corelibs-foundation"
 DEPEND="${RDEPEND}"
 
+src_prepare() {
+	eapply ${FILESDIR}/fix-cmake.patch
+	eapply ${FILESDIR}/fix-conversion.patch
+	eapply ${FILESDIR}/fix-includes.patch
+}
+
 src_configure() {
 	cmake-utils_src_configure
 }

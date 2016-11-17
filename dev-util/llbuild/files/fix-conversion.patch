@@ -1,0 +1,24 @@
+diff --git a/products/swift-bindings/llbuild.swift b/products/swift-bindings/llbuild.swift
+index 4a91c13..02a7357 100644
+--- a/products/swift-bindings/llbuild.swift
++++ b/products/swift-bindings/llbuild.swift
+@@ -17,7 +17,8 @@ enum DatabaseError: Error {
+ private func stringFromData(data: llb_data_t) -> String {
+   // Convert as a UTF8 string, if possible.
+   let tmp = NSData(bytes: unsafeBitCast(data.data, to: UnsafeRawPointer.self), length: Int(data.length))
+-  if let str = String(data: tmp as Data, encoding: String.Encoding.utf8) {
++  let _tmp = Data._unconditionallyBridgeFromObjectiveC(tmp)
++  if let str = String(data: _tmp, encoding: String.Encoding.utf8) {
+     return str
+   }
+     
+@@ -28,7 +29,8 @@ private func stringFromData(data: llb_data_t) -> String {
+ private func stringFromUInt8Array(_ data: [UInt8]) -> String {
+   // Convert as a UTF8 string, if possible.
+   let tmp = NSData(bytes: data, length: data.count)
+-  if let str = String(data: tmp as Data, encoding: String.Encoding.utf8) {
++  let _tmp = Data._unconditionallyBridgeFromObjectiveC(tmp)
++  if let str = String(data: _tmp, encoding: String.Encoding.utf8) {
+     return str
+   }
+     
