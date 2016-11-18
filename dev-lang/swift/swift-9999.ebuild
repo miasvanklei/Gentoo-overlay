@@ -34,12 +34,10 @@ src_prepare() {
 	eapply ${FILESDIR}/musl-fixes.patch
 	eapply ${FILESDIR}/add-destructor.patch
 	eapply ${FILESDIR}/fix-segfault.patch
-	eapply ${FILESDIR}/fix-modulemap.patch
 	eapply ${FILESDIR}/fix-garbage.patch
-	eapply ${FILESDIR}/fix-opaque-struct.patch
 	eapply ${FILESDIR}/dont-set-linker.patch
-	eapply ${FILESDIR}/fix-non-defined.patch
-	eapply ${FILESDIR}/fix-dlopen.patch
+	eapply ${FILESDIR}/glibc-modulemap.patch
+	eapply ${FILESDIR}/c++11.patch
 	default
 }
 
