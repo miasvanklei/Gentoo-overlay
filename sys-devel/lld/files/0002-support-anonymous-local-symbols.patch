@@ -1,27 +1,3 @@
-diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
-index e25175d..f8719f7 100644
---- a/ELF/LinkerScript.cpp
-+++ b/ELF/LinkerScript.cpp
-@@ -1835,16 +1835,10 @@ void ScriptParser::readSymbols(std::vector<SymbolVersion> &V) {
- }
- 
- void ScriptParser::readLocal(StringRef VerStr) {
--  if (consume("*")) {
--    Config->DefaultSymbolVersion = VER_NDX_LOCAL;
--    expect(";");
--    return;
--  }
--
-   if (VerStr.empty())
--    setError("locals list for anonymous version is not supported");
--
--  readSymbols(Config->VersionScriptLocals);
-+    readSymbols(Config->VersionScriptLocals);
-+  else
-+    readSymbols(Config->VersionDefinitions.back().Locals);
- }
- 
- void ScriptParser::readVersionExtern(std::vector<SymbolVersion> *V) {
 diff --git a/ELF/Config.h b/ELF/Config.h
 index a46a8a8..5157bbf 100644
 --- a/ELF/Config.h
@@ -144,3 +120,43 @@ index 2bf9abc..fc97d8e 100644
    void assignExactVersion(SymbolVersion Ver, uint16_t VersionId,
                            StringRef VersionName);
    void assignWildcardVersion(SymbolVersion Ver, uint16_t VersionId);
+diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
+index a9a5a0b..39c1ad2 100644
+--- a/ELF/LinkerScript.cpp
++++ b/ELF/LinkerScript.cpp
+@@ -1827,14 +1827,8 @@ void ScriptParser::readAnonymousDeclaration() {
+     Config->VersionScriptGlobals = readSymbols();
+ 
+   // Next, read local symbols.
+-  if (consume("local:")) {
+-    if (consume("*")) {
+-      Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+-      expect(";");
+-    } else {
+-      setError("local symbol list for anonymous version is not supported");
+-    }
+-  }
++  if (consume("local:"))
++    Config->VersionScriptLocals = readSymbols();
+   expect("}");
+   expect(";");
+ }
+@@ -1851,15 +1845,9 @@ void ScriptParser::readVersionDeclaration(StringRef VerStr) {
+     Config->VersionDefinitions.back().Globals = readSymbols();
+ 
+   // Read local symbols.
+-  if (consume("local:")) {
+-    if (consume("*")) {
+-      Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+-      expect(";");
+-    } else {
+-      for (SymbolVersion V : readSymbols())
+-        Config->VersionScriptLocals.push_back(V);
+-    }
+-  }
++  if (consume("local:"))
++    Config->VersionDefinitions.back().Locals = readSymbols();
++
+   expect("}");
+ 
+   // Each version may have a parent version. For example, "Ver2"
