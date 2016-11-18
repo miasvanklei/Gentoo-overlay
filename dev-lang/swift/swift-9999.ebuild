@@ -13,6 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
+EGIT_BRANCH="master-next"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -30,8 +31,6 @@ DEPEND="${RDEPEND}"
 src_prepare() {
 	eapply ${FILESDIR}/custom-build-type.patch
 	eapply ${FILESDIR}/standalone.patch
-	eapply ${FILESDIR}/llvm-4.0.patch
-	eapply ${FILESDIR}/llvm-4.0-1.patch
 	eapply ${FILESDIR}/musl-fixes.patch
 	eapply ${FILESDIR}/add-destructor.patch
 	eapply ${FILESDIR}/fix-segfault.patch
