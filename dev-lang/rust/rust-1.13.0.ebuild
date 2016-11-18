@@ -88,6 +88,8 @@ EOF
 	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
 	eapply "${FILESDIR}"/compile-without-debug.patch
 	eapply "${FILESDIR}"/split-header.patch
+	eapply "${FILESDIR}"/run-rustfmt.patch
+	eapply "${FILESDIR}"/use-llvm-attribute.patch
 
 	eapply_user
 }
