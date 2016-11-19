@@ -84,12 +84,13 @@ EOF
 	eapply "${FILESDIR}"/outdated-stuff.patch
 	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
 	eapply "${FILESDIR}"/cannot-cast-like-this.patch
-	eapply "${FILESDIR}"/some-fixes.patch
 	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
 	eapply "${FILESDIR}"/compile-without-debug.patch
-	eapply "${FILESDIR}"/split-header.patch
 	eapply "${FILESDIR}"/run-rustfmt.patch
 	eapply "${FILESDIR}"/use-llvm-attribute.patch
+	eapply "${FILESDIR}"/bitcode-api-changes.patch
+	eapply "${FILESDIR}"/split-header.patch
+	eapply "${FILESDIR}"/argument-createnamespace.patch
 
 	eapply_user
 }

@@ -1,0 +1,23 @@
+From d84cf9b73d9b073430fd0313e46f41346f8cbf6d Mon Sep 17 00:00:00 2001
+From: Jake Goulding <jake.goulding@gmail.com>
+Date: Thu, 17 Nov 2016 09:10:01 -0500
+Subject: [PATCH] [4.0] Update for new argument to CreateNameSpace
+
+---
+ src/rustllvm/RustWrapper.cpp | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/rustllvm/RustWrapper.cpp b/src/rustllvm/RustWrapper.cpp
+index 266e441..8be7a2a 100644
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -748,7 +748,8 @@ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateNameSpace(
+         unwrapDI<DIDescriptor>(Scope),
+         Name,
+         unwrapDI<DIFile>(File),
+-        LineNo));
++        LineNo,
++        false));
+ }
+ 
+ extern "C" void LLVMRustDICompositeTypeSetTypeArray(

@@ -1,0 +1,50 @@
+From e2911952df0794b9d2a7dc9475fc990ce8624051 Mon Sep 17 00:00:00 2001
+From: Jake Goulding <jake.goulding@gmail.com>
+Date: Thu, 17 Nov 2016 18:22:36 -0500
+Subject: [PATCH] [4.0] bitcode API changes
+
+---
+ src/rustllvm/RustWrapper.cpp | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/src/rustllvm/RustWrapper.cpp b/src/rustllvm/RustWrapper.cpp
+index 8be7a2a..62d3364 100644
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -805,19 +805,35 @@ extern "C" void LLVMRustWriteValueToString(LLVMValueRef Value, RustStringRef str
+ extern "C" bool
+ LLVMRustLinkInExternalBitcode(LLVMModuleRef dst, char *bc, size_t len) {
+     Module *Dst = unwrap(dst);
++
+     std::unique_ptr<MemoryBuffer> buf = MemoryBuffer::getMemBufferCopy(StringRef(bc, len));
++
++#if LLVM_VERSION_GE(4, 0)
++    // can avoid copy at all?
++    Expected<std::unique_ptr<Module>> SrcOrError =
++        llvm::getLazyBitcodeModule(buf->getMemBufferRef(), Dst->getContext());
++    if (!SrcOrError) {
++        LLVMRustSetLastError(toString(SrcOrError.takeError()).c_str());
++        return false;
++    }
++
++    auto Src = std::move(*SrcOrError);
++#else
+     ErrorOr<std::unique_ptr<Module>> Src =
+         llvm::getLazyBitcodeModule(std::move(buf), Dst->getContext());
+     if (!Src) {
+         LLVMRustSetLastError(Src.getError().message().c_str());
+         return false;
+     }
++#endif
+ 
+     std::string Err;
+ 
+     raw_string_ostream Stream(Err);
+     DiagnosticPrinterRawOStream DP(Stream);
+-#if LLVM_VERSION_GE(3, 8)
++#if LLVM_VERSION_GE(4, 0)
++    if (Linker::linkModules(*Dst, std::move(Src))) {
++#elif LLVM_VERSION_GE(3, 8)
+     if (Linker::linkModules(*Dst, std::move(Src.get()))) {
+ #else
+     if (Linker::LinkModules(Dst, Src->get(), [&](const DiagnosticInfo &DI) { DI.print(DP); })) {
