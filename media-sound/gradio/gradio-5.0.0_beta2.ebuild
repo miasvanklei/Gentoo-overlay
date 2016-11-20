@@ -1,11 +1,11 @@
 EAPI=6
 
-inherit cmake-utils gnome2-utils vala
+inherit autotools gnome2-utils vala
 
 MY_PV="${PV//_/-}"
 DESCRIPTION="A GTK3 app for finding and listening to internet radio stations"
 HOMEPAGE="https://github.com/haecker-felix/gradio"
-SRC_URI="https://github.com/haecker-felix/gradio/archive/v5.0.0-beta1.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/haecker-felix/gradio/archive/v5.0.0-beta2.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
@@ -25,15 +25,8 @@ S="${WORKDIR}/${PN}-${MY_PV}"
 src_prepare()
 {
 	vala_src_prepare
+	eautoreconf
 	default
-}
-
-src_configure() {
-	local mycmakeargs=(
-		-DGSETTINGS_COMPILE=OFF
-		-DVALA_EXECUTABLE="${VALAC}"
-	)
-	cmake-utils_src_configure
 }
 
 pkg_preinst() {
