@@ -38,6 +38,7 @@ src_prepare() {
 	eapply ${FILESDIR}/dont-set-linker.patch
 	eapply ${FILESDIR}/glibc-modulemap.patch
 	eapply ${FILESDIR}/c++11.patch
+	eapply ${FILESDIR}/timer-change.patch
 	default
 }
 
