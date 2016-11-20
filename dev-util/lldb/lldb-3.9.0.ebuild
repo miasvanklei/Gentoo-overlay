@@ -13,8 +13,7 @@ inherit cmake-utils git-r3 python-single-r1 toolchain-funcs
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
-EGIT_BRANCH="master-next"
+EGIT_REPO_URI="https://github.com/llvm-mirror/lldb.git"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -40,12 +39,7 @@ DEPEND="${RDEPEND}
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
 src_prepare() {
-	eapply ${FILESDIR}/cmake-cleanup.patch
-	eapply ${FILESDIR}/nostrip.patch
-	eapply ${FILESDIR}/rename-dwarf-constant.patch
-	eapply ${FILESDIR}/fix-iohandler.cpp.patch
-	eapply ${FILESDIR}/fix-includes.patch
-	eapply ${FILESDIR}/fix-default-resource-dir.patch
+	eapply ${FILESDIR}/0001-add-swift-support.patch
 	eapply_user
 }
 
@@ -72,6 +66,9 @@ src_configure() {
 		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
+
+		# swift
+                -DSWIFTC=/usr/bin/swiftc
 	)
 
 	cmake-utils_src_configure
