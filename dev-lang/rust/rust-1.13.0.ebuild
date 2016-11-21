@@ -76,21 +76,9 @@ EOF
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 
 	# llvm 4.0
-	eapply "${FILESDIR}"/allow-llvm-4.0.patch
-	eapply "${FILESDIR}"/TwineRef-to-char.patch
-	eapply "${FILESDIR}"/set-EH-personality.patch
-	eapply "${FILESDIR}"/legacy-pass.patch
-	eapply "${FILESDIR}"/new-error-reporting.patch
 	eapply "${FILESDIR}"/outdated-stuff.patch
-	eapply "${FILESDIR}"/remove-DIDescriptorFlags.patch
-	eapply "${FILESDIR}"/cannot-cast-like-this.patch
-	eapply "${FILESDIR}"/disable-target-feature-listing-support.patch
-	eapply "${FILESDIR}"/compile-without-debug.patch
 	eapply "${FILESDIR}"/run-rustfmt.patch
-	eapply "${FILESDIR}"/use-llvm-attribute.patch
-	eapply "${FILESDIR}"/bitcode-api-changes.patch
-	eapply "${FILESDIR}"/split-header.patch
-	eapply "${FILESDIR}"/argument-createnamespace.patch
+	eapply "${FILESDIR}"/llvm-4.0-support.patch
 
 	eapply_user
 }
