@@ -1,0 +1,91 @@
+From db4a9b344639abe51a81e2813157c18f13bf318b Mon Sep 17 00:00:00 2001
+From: Michael Woerister <michaelwoerister@posteo.net>
+Date: Fri, 14 Oct 2016 14:53:17 -0400
+Subject: [PATCH] debuginfo: Remove some outdated stuff from LLVM DIBuilder
+ binding.
+
+---
+ src/librustc_llvm/ffi.rs            | 11 -----------
+ src/librustc_trans/debuginfo/mod.rs |  2 --
+ src/rustllvm/RustWrapper.cpp        | 21 +--------------------
+ 3 files changed, 1 insertion(+), 33 deletions(-)
+
+diff --git a/src/librustc_llvm/ffi.rs b/src/librustc_llvm/ffi.rs
+index 50c68d5..302c0ce 100644
+--- a/src/librustc_llvm/ffi.rs
++++ b/src/librustc_llvm/ffi.rs
+@@ -1817,8 +1817,6 @@ extern {
+                                            Ty: DIType,
+                                            AlwaysPreserve: bool,
+                                            Flags: c_uint,
+-                                           AddrOps: *const i64,
+-                                           AddrOpsCount: c_uint,
+                                            ArgNo: c_uint)
+                                            -> DIVariable;
+ 
+@@ -1855,15 +1853,6 @@ extern {
+                                                InsertAtEnd: BasicBlockRef)
+                                                -> ValueRef;
+ 
+-    pub fn LLVMRustDIBuilderInsertDeclareBefore(Builder: DIBuilderRef,
+-                                                Val: ValueRef,
+-                                                VarInfo: DIVariable,
+-                                                AddrOps: *const i64,
+-                                                AddrOpsCount: c_uint,
+-                                                DL: ValueRef,
+-                                                InsertBefore: ValueRef)
+-                                                -> ValueRef;
+-
+     pub fn LLVMRustDIBuilderCreateEnumerator(Builder: DIBuilderRef,
+                                              Name: *const c_char,
+                                              Val: u64)
+diff --git a/src/librustc_trans/debuginfo/mod.rs b/src/librustc_trans/debuginfo/mod.rs
+index a23fd3a..813915b 100644
+--- a/src/librustc_trans/debuginfo/mod.rs
++++ b/src/librustc_trans/debuginfo/mod.rs
+@@ -482,8 +482,6 @@ pub fn declare_local<'blk, 'tcx>(bcx: Block<'blk, 'tcx>,
+                     type_metadata,
+                     cx.sess().opts.optimize != config::OptLevel::No,
+                     0,
+-                    address_operations.as_ptr(),
+-                    address_operations.len() as c_uint,
+                     argument_index)
+             };
+             source_loc::set_debug_location(cx, None,
+diff --git a/src/rustllvm/RustWrapper.cpp b/src/rustllvm/RustWrapper.cpp
+index 672ab11..369388c 100644
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -562,8 +562,6 @@ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateVariable(
+     LLVMRustMetadataRef Ty,
+     bool AlwaysPreserve,
+     unsigned Flags,
+-    int64_t* AddrOps,
+-    unsigned AddrOpsCount,
+     unsigned ArgNo) {
+ #if LLVM_VERSION_GE(3, 8)
+     if (Tag == 0x100) { // DW_TAG_auto_variable
+@@ -645,23 +643,6 @@ extern "C" LLVMValueRef LLVMRustDIBuilderInsertDeclareAtEnd(
+         unwrap(InsertAtEnd)));
+ }
+ 
+-extern "C" LLVMValueRef LLVMRustDIBuilderInsertDeclareBefore(
+-    LLVMRustDIBuilderRef Builder,
+-    LLVMValueRef Val,
+-    LLVMRustMetadataRef VarInfo,
+-    int64_t* AddrOps,
+-    unsigned AddrOpsCount,
+-    LLVMValueRef DL,
+-    LLVMValueRef InsertBefore) {
+-    return wrap(Builder->insertDeclare(
+-        unwrap(Val),
+-        unwrap<DILocalVariable>(VarInfo),
+-        Builder->createExpression(
+-          llvm::ArrayRef<int64_t>(AddrOps, AddrOpsCount)),
+-        DebugLoc(cast<MDNode>(unwrap<MetadataAsValue>(DL)->getMetadata())),
+-        unwrap<Instruction>(InsertBefore)));
+-}
+-
+ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateEnumerator(
+     LLVMRustDIBuilderRef Builder,
+     const char* Name,
