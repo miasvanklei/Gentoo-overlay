@@ -1,11 +1,12 @@
---- a/lib/Driver/ToolChains.cpp	2016-10-08 23:43:58.051529569 +0200
-+++ b/lib/Driver/ToolChains.cpp	2016-10-08 23:42:50.864526262 +0200
-@@ -3991,25 +3991,10 @@
+diff --git a/lib/Driver/ToolChains.cpp b/lib/Driver/ToolChains.cpp
+index a06a0f8..9ca3a0c 100644
+--- a/lib/Driver/ToolChains.cpp
++++ b/lib/Driver/ToolChains.cpp
+@@ -4210,24 +4210,9 @@ static void addMultilibsFilePaths(const Driver &D, const MultilibSet &Multilibs,
  
  Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
      : Generic_ELF(D, Triple, Args) {
 -  GCCInstallation.init(Triple, Args);
-   CudaInstallation.init(Triple, Args);
 -  Multilibs = GCCInstallation.getMultilibs();
    llvm::Triple::ArchType Arch = Triple.getArch();
    std::string SysRoot = computeSysRoot();
@@ -26,7 +27,7 @@
    Distro Distro = DetectDistro(D.getVFS());
    StringRef VendorName = Linux::getTriple().getVendorName();
  
-@@ -4057,123 +4042,12 @@
+@@ -4269,123 +4254,11 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
    if (IsOpenSUSE(Distro))
      ExtraOpts.push_back("--enable-new-dtags");
  
@@ -36,7 +37,7 @@
 -  // possible permutations of these directories, and seeing which ones it added
 -  // to the link paths.
    path_list &Paths = getFilePaths();
- 
+-
    const std::string OSLibDir = getOSLibDir(Triple, Args);
 -  const std::string MultiarchTriple = getMultiarchTriple(D, Triple, SysRoot);
 -

@@ -222,6 +222,7 @@ src_install() {
 
 	local MULTILIB_WRAPPED_HEADERS=(
 		/usr/include/llvm/Config/llvm-config.h
+		/usr/include/llvm/Config/config.h
 	)
 
 	multilib-minimal_src_install
@@ -229,6 +230,9 @@ src_install() {
 
 multilib_src_install() {
 	cmake-utils_src_install
+
+	# copy config.h as well, needed for lld and swift
+	cp ${BUILD_DIR}/include/llvm/Config/config.h ${D}/usr/include/llvm/Config || die
 
 	if multilib_is_native_abi; then
 		# Symlink the gold plugin.

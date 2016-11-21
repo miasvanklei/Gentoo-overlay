@@ -8091,9 +8091,9 @@
  #include "clang/AST/ASTContext.h"
  #include "clang/AST/Decl.h"
 @@ -538,6 +539,26 @@
-                                   CodeCompleteConsumer *CompletionConsumer) {
-   TheSema.reset(new Sema(getPreprocessor(), getASTContext(), getASTConsumer(),
-                          TUKind, CompletionConsumer));
+     TheSema->addExternalSource(ExternalSemaSrc.get());
+     ExternalSemaSrc->InitializeSema(*TheSema);
+   }
 +
 +  // Set up API notes.
 +  TheSema->APINotes.setSwiftVersion(getAPINotesOpts().SwiftVersion);
@@ -12593,19 +12593,21 @@
    clangDriver
 --- a/tools/driver/CMakeLists.txt	2016-11-15 11:12:12.843093669 +0100
 +++ b/tools/driver/CMakeLists.txt	2016-11-15 11:10:44.675052133 +0100
-@@ -28,10 +28,12 @@
+@@ -28,12 +28,14 @@
    driver.cpp
    cc1_main.cpp
    cc1as_main.cpp
 +  apinotes_main.cpp
+ 
+   DEPENDS
+   intrinsics_gen
    )
  
  target_link_libraries(clang
-   clangBasic
 +  clangAPINotes
+   clangBasic
    clangCodeGen
    clangDriver
-   clangFrontend
 --- a/tools/driver/apinotes_main.cpp	1970-01-01 01:00:00.000000000 +0100
 +++ b/tools/driver/apinotes_main.cpp	2016-11-15 11:10:44.675052133 +0100
 @@ -0,0 +1,154 @@
