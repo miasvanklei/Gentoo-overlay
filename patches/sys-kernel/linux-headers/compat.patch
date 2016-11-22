@@ -19,3 +19,58 @@
  
  
  #endif /* _UAPI_LINUX_IF_ARP_H */
+--- a/include/uapi/linux/if.h	2016-11-22 13:34:17.501618699 +0100
++++ b/include/uapi/linux/if.h	2016-11-22 13:36:22.726289350 +0100
+@@ -73,6 +73,8 @@
+  * @IFF_DORMANT: driver signals dormant. Volatile.
+  * @IFF_ECHO: echo sent packets. Volatile.
+  */
++#if !defined(HAVE_IF)
++#define HAVE_IF
+ enum net_device_flags {
+ /* for compatibility with glibc net/if.h */
+ #if __UAPI_DEF_IF_NET_DEVICE_FLAGS
+@@ -99,6 +101,7 @@
+ 	IFF_ECHO			= 1<<18, /* volatile */
+ #endif /* __UAPI_DEF_IF_NET_DEVICE_FLAGS_LOWER_UP_DORMANT_ECHO */
+ };
++#endif
+ #endif /* __UAPI_DEF_IF_NET_DEVICE_FLAGS_LOWER_UP_DORMANT_ECHO != 0 && __UAPI_DEF_IF_NET_DEVICE_FLAGS != 0 */
+ 
+ /* for compatibility with glibc net/if.h */
+--- a/include/uapi/linux/in6.h	2016-11-22 13:36:49.177220812 +0100
++++ b/include/uapi/linux/in6.h	2016-11-22 13:37:14.952154333 +0100
+@@ -28,6 +28,8 @@
+  *	IPv6 address structure
+  */
+ 
++#if !defined(HAVE_IN6)
++#define HAVE_IN6
+ #if __UAPI_DEF_IN6_ADDR
+ struct in6_addr {
+ 	union {
+@@ -64,6 +66,7 @@
+ 	int		ipv6mr_ifindex;
+ };
+ #endif /* __UAPI_DEF_IVP6_MREQ */
++#endif
+ 
+ #define ipv6mr_acaddr	ipv6mr_multiaddr
+ 
+--- a/include/uapi/linux/if_ether.h	2016-11-22 13:33:41.226715814 +0100
++++ b/include/uapi/linux/if_ether.h	2016-11-22 13:35:03.476496781 +0100
+@@ -138,11 +138,13 @@
+  *	This is an Ethernet frame header.
+  */
+ 
++#if !defined(HAVE_IF_ETHER)
++#define HAVE_IF_ETHER
+ struct ethhdr {
+ 	unsigned char	h_dest[ETH_ALEN];	/* destination eth addr	*/
+ 	unsigned char	h_source[ETH_ALEN];	/* source ether addr	*/
+ 	__be16		h_proto;		/* packet type ID field	*/
+ } __attribute__((packed));
+-
++#endif
+ 
+ #endif /* _UAPI_LINUX_IF_ETHER_H */
