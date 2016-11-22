@@ -27,6 +27,7 @@ S="${WORKDIR}/${MY_P}.src"
 PATCHES=(
 	"${FILESDIR}"/glibc-incompat.patch
 	"${FILESDIR}"/wrong-page-size.patch
+	"${FILESDIR}"/use-va_copy-macro.patch
 )
 
 multilib_src_configure() {
