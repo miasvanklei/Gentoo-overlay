@@ -30,6 +30,7 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-cmake.patch
 	eapply ${FILESDIR}/fix-conversion.patch
 	eapply ${FILESDIR}/fix-includes.patch
+	eapply_user
 }
 
 src_configure() {
