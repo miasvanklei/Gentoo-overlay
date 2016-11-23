@@ -1,0 +1,24 @@
+diff --git a/driver/cache.cpp b/driver/cache.cpp
+index 6da78cf7..d32c93a5 100644
+--- a/driver/cache.cpp
++++ b/driver/cache.cpp
+@@ -45,7 +45,6 @@
+ #include "llvm/Support/MD5.h"
+ #include "llvm/Support/Path.h"
+ #include "llvm/Support/raw_ostream.h"
+-#include "llvm/Support/TimeValue.h"
+ 
+ // Include close() declaration.
+ #if !defined(_MSC_VER) && !defined(__MINGW32__)
+@@ -334,9 +333,9 @@ void recoverObjectFile(llvm::StringRef cacheObjectHash,
+             cacheFile.c_str());
+       fatal();
+     }
+-
++    llvm::sys::TimePoint<> StartTime = std::chrono::system_clock::now();
+     if (llvm::sys::fs::setLastModificationAndAccessTime(
+-            FD, llvm::sys::TimeValue::now())) {
++            FD, StartTime)) {
+       error(Loc(), "Failed to set the cached file modification time: %s",
+             cacheFile.c_str());
+       fatal();
