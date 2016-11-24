@@ -14,7 +14,6 @@ IUSE="debug"
 
 GITHUB_URI="https://codeload.github.com/D-Programming-Language"
 SRC_URI="${GITHUB_URI}/${PN}/tar.gz/v${PV} -> ${PN}-${PV}.tar.gz"
-PATCHES="${FILESDIR}/${P}-gdc-dmd-pathfix.patch"
 
 DEPEND="net-misc/curl"
 RDEPEND="${DEPEND}"
