@@ -10,7 +10,7 @@ SRC_URI="https://github.com/nim-lang/nimsuggest/archive/v0.15.2.tar.gz -> ${P}.t
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 DEPEND=">=dev-lang/nim-0.15.0
