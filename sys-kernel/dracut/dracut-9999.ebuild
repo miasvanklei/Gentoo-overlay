@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
-EAPI=5
+EAPI=6
 
-inherit bash-completion-r1 eutils linux-info multilib systemd git-2 flag-o-matic
+inherit bash-completion-r1 eutils linux-info multilib systemd git-r3 flag-o-matic
 
 DESCRIPTION="Generic initramfs generation tool"
 HOMEPAGE="https://dracut.wiki.kernel.org"
