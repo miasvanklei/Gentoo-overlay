@@ -22,7 +22,7 @@ HOMEPAGE="https://www.freedesktop.org/wiki/Software/systemd"
 
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
-IUSE="acl apparmor audit cryptsetup curl doc elfutils +gcrypt gnuefi http
+IUSE="acl apparmor audit cryptsetup curl doc elfutils +gcrypt +gnuefi http
 	idn importd +kmod +lz4 lzma nat pam policykit
 	qrcode -seccomp selinux ssl sysv-utils test vanilla xkb"
 
@@ -33,6 +33,7 @@ MINKV="3.11"
 COMMON_DEPEND=">=sys-apps/util-linux-2.27.1:0=[${MULTILIB_USEDEP}]
 	sys-libs/libcap:0=[${MULTILIB_USEDEP}]
 	!<sys-libs/glibc-2.16
+	elibc_musl? ( sys-libs/musl-nscd )
 	acl? ( sys-apps/acl:0= )
 	apparmor? ( sys-libs/libapparmor:0= )
 	audit? ( >=sys-process/audit-2:0= )
