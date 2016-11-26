@@ -1,0 +1,281 @@
+ configure.ac                       |   21 +++++++++++++++++----
+ panels/network/Makefile.am         |    5 +++++
+ panels/network/cc-network-panel.c  |   12 ++++++++++++
+ panels/network/net-device-mobile.c |   23 +++++++++++++++++++++--
+ 4 files changed, 55 insertions(+), 6 deletions(-)
+---
+diff --git a/configure.ac b/configure.ac
+index ba69638..c2186c1 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -101,7 +101,6 @@ POLKIT_REQUIRED_VERSION=0.103
+ GSD_REQUIRED_VERSION=3.19.1
+ NETWORK_MANAGER_REQUIRED_VERSION=1.2.0
+ NETWORK_MANAGER_APPLET_REQUIRED_VERSION=1.2.0
+-MODEM_MANAGER_REQUIRED_VERSION=0.7
+ LIBNOTIFY_REQUIRED_VERSION=0.7.3
+ GNOME_DESKTOP_REQUIRED_VERSION=3.21.2
+ SCHEMAS_REQUIRED_VERSION=3.21.4
+@@ -249,13 +249,12 @@ PKG_CHECK_MODULES(NETWORK_MANAGER, NetworkManager >= $NETWORK_MANAGER_REQUIRED_V
+       [
+         PKG_CHECK_MODULES(NETWORK_MANAGER,
+                           libnm >= $NETWORK_MANAGER_REQUIRED_VERSION
+-                          libnma >= $NETWORK_MANAGER_APPLET_REQUIRED_VERSION
+-                          mm-glib >= $MODEM_MANAGER_REQUIRED_VERSION,
++                          libnma >= $NETWORK_MANAGER_APPLET_REQUIRED_VERSION,
+                           [have_networkmanager=yes], [have_networkmanager=no])
+ 
+         AS_IF([test "$have_networkmanager" = "no"],
+               [
+-                AC_MSG_WARN([*** Network panel will not be built (NetworkManager or ModemManager not found) ***])
++                AC_MSG_WARN([*** Network panel will not be built (NetworkManager not found) ***])
+               ], [
+                 AC_DEFINE(BUILD_NETWORK, 1, [Define to 1 to build the Network panel])
+                 AC_DEFINE(HAVE_NETWORK_MANAGER, 1, [Define to 1 if NetworkManager is available])
+@@ -275,6 +275,16 @@
+                     gnome-settings-daemon >= $GSD_REQUIRED_VERSION)
+ fi
+ 
++# Check for libmm-glib for ModemManager1 support
++PKG_CHECK_MODULES(MM_GLIB, mm-glib,
++                  [have_libmm_glib=yes], have_libmm_glib=no)
++if test "x$have_libmm_glib" = xno ; then
++  AC_MSG_WARN(*** Network panel will not be built with ModemManager1 support (libmm-glib not found) ***)
++else
++  AC_DEFINE(HAVE_MM_GLIB, 1, [Defined if libmm-glib is available])
++fi
++AM_CONDITIONAL(HAVE_MM_GLIB, test "x$have_libmm_glib" = "xyes")
++
+ # Check for gnome-bluetooth
+ have_bluetooth=no
+ AC_ARG_ENABLE([bluetooth],
+@@ -639,6 +649,11 @@
+ else
+ 	AC_MSG_NOTICE([   Network panel disabled])
+ fi
++if test "x$have_libmm_glib" = "xyes"; then
++       AC_MSG_NOTICE([** ModemManager1 support (Network panel)])
++else
++       AC_MSG_NOTICE([   ModemManager1 support disabled])
++fi
+ if test "x$have_bluetooth" = "xyes"; then
+ 	AC_MSG_NOTICE([** gnome-bluetooth (Bluetooth panel)])
+ else
+diff --git a/panels/network/Makefile.am b/panels/network/Makefile.am
+index 1b61259..6aed1f7 100644
+--- a/panels/network/Makefile.am
++++ b/panels/network/Makefile.am
+@@ -54,6 +54,13 @@ libnetwork_la_LIBADD = $(PANEL_LIBS) $(NETWORK_PANEL_LIBS) $(NETWORK_MANAGER_LIB
+ 
+ libnetwork_la_LDFLAGS = $(PANEL_LDFLAGS)
+ 
++if HAVE_MM_GLIB
++libnetwork_la_CPPFLAGS = $(MM_GLIB_CFLAGS)
++libnetwork_la_LIBADD += $(MM_GLIB_LIBS)
++else
++libnetwork_la_CPPFLAGS = $(PANEL_CFLAGS) $(NETWORK_PANEL_CFLAGS) $(NETWORK_MANAGER_CFLAGS)
++endif
++
+ resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(srcdir)/network.gresource.xml)
+ cc-network-resources.c: network.gresource.xml $(resource_files)
+        $(AM_V_GEN) glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name cc_network $<
+diff --git a/panels/network/cc-network-panel.c b/panels/network/cc-network-panel.c
+index b276b96..0abedc8 100644
+--- a/panels/network/cc-network-panel.c
++++ b/panels/network/cc-network-panel.c
+@@ -51,7 +51,9 @@
+ #include "network-dialogs.h"
+ #include "connection-editor/net-connection-editor.h"
+ 
++#if HAVE_MM_GLIB
+ #include <libmm-glib.h>
++#endif /* HAVE_MM_GLIB */
+ 
+ CC_PANEL_REGISTER (CcNetworkPanel, cc_network_panel)
+ 
+@@ -73,7 +75,9 @@ struct _CcNetworkPanelPrivate
+         GtkBuilder       *builder;
+         GtkWidget        *treeview;
+         NMClient         *client;
++#if HAVE_MM_GLIB
+         MMManager        *modem_manager;
++#endif /* HAVE_MM_GLIB */
+         gboolean          updating_device;
+ 
+         /* Killswitch stuff */
+@@ -216,7 +220,9 @@ cc_network_panel_dispose (GObject *object)
+         g_clear_object (&priv->rfkill_proxy);
+         g_clear_object (&priv->builder);
+         g_clear_object (&priv->client);
++#if HAVE_MM_GLIB
+         g_clear_object (&priv->modem_manager);
++#endif /* HAVE_MM_GLIB */
+         g_clear_object (&priv->kill_switch_header);
+         priv->rfkill_switch = NULL;
+ 
+@@ -686,6 +692,7 @@ panel_add_device (CcNetworkPanel *panel, NMDevice *device)
+                                    "id", nm_device_get_udi (device),
+                                    NULL);
+ 
++#if HAVE_MM_GLIB
+         if (type == NM_DEVICE_TYPE_MODEM &&
+             g_str_has_prefix (nm_device_get_udi (device), "/org/freedesktop/ModemManager1/Modem/")) {
+                 GDBusObject *modem_object;
+@@ -710,6 +717,7 @@ panel_add_device (CcNetworkPanel *panel, NMDevice *device)
+                               NULL);
+                 g_object_unref (modem_object);
+         }
++#endif /* HAVE_MM_GLIB */
+ 
+         /* add as a panel */
+         if (device_g_type != NET_TYPE_DEVICE) {
+@@ -1326,7 +1334,9 @@ cc_network_panel_init (CcNetworkPanel *panel)
+         GtkTreeSelection *selection;
+         GtkWidget *widget;
+         GtkWidget *toplevel;
++#if HAVE_MM_GLIB
+         GDBusConnection *system_bus;
++#endif /* HAVE_MM_GLIB */
+         GtkCssProvider *provider;
+         const GPtrArray *connections;
+         guint i; 
+@@ -1376,6 +1386,7 @@ cc_network_panel_init (CcNetworkPanel *panel)
+         g_signal_connect (panel->priv->client, "device-removed",
+                           G_CALLBACK (device_removed_cb), panel);
+ 
++#if HAVE_MM_GLIB
+         /* Setup ModemManager client */
+         system_bus = g_bus_get_sync (G_BUS_TYPE_SYSTEM, NULL, &error);
+         if (system_bus == NULL) {
+@@ -1394,6 +1405,7 @@ cc_network_panel_init (CcNetworkPanel *panel)
+                 }
+                 g_object_unref (system_bus);
+         }
++#endif /* HAVE_MM_GLIB */
+ 
+         widget = GTK_WIDGET (gtk_builder_get_object (panel->priv->builder,
+                                                      "add_toolbutton"));
+diff --git a/panels/network/net-device-mobile.c b/panels/network/net-device-mobile.c
+index aafdc79..c7c4bb9 100644
+--- a/panels/network/net-device-mobile.c
++++ b/panels/network/net-device-mobile.c
+@@ -34,7 +34,9 @@
+ #include <glib/gi18n.h>
+ 
+ #include <NetworkManager.h>
++#if HAVE_MM_GLIB
+ #include <libmm-glib.h>
++#endif /* HAVE_MM_GLIB */
+ #include <nma-mobile-providers.h>
+ 
+ #include "panel-common.h"
+@@ -52,7 +54,7 @@ struct _NetDeviceMobilePrivate
+         GDBusProxy *cdma_proxy;
+ 
+         /* New MM >= 0.7 support */
+-        MMObject   *mm_object;
++        gpointer    mm_object;
+         guint       operator_name_updated;
+ 
+         NMAMobileProvidersDatabase *mpd;
+@@ -247,6 +249,7 @@ device_mobile_refresh_equipment_id (NetDeviceMobile *device_mobile)
+ {
+         const gchar *equipment_id = NULL;
+ 
++#if HAVE_MM_GLIB
+         if (device_mobile->priv->mm_object != NULL) {
+                 MMModem *modem;
+ 
+@@ -261,10 +264,13 @@ device_mobile_refresh_equipment_id (NetDeviceMobile *device_mobile)
+                                  equipment_id);
+                 }
+         } else {
++#endif /* HAVE_MM_GLIB */
+                 /* Assume old MM handling */
+                 equipment_id = g_object_get_data (G_OBJECT (device_mobile),
+                                                   "ControlCenter::EquipmentIdentifier");
++#if HAVE_MM_GLIB
+         }
++#endif /* HAVE_MM_GLIB */
+ 
+         panel_set_device_widget_details (device_mobile->priv->builder, "imei", equipment_id);
+ }
+@@ -312,6 +318,7 @@ device_mobile_find_provider (NetDeviceMobile *device_mobile,
+ static void
+ device_mobile_refresh_operator_name (NetDeviceMobile *device_mobile)
+ {
++#if HAVE_MM_GLIB
+         if (device_mobile->priv->mm_object != NULL) {
+                 gchar *operator_name = NULL;
+                 MMModem3gpp *modem_3gpp;
+@@ -351,6 +358,7 @@ device_mobile_refresh_operator_name (NetDeviceMobile *device_mobile)
+                 panel_set_device_widget_details (device_mobile->priv->builder, "provider", operator_name);
+                 g_free (operator_name);
+         } else {
++#endif /* HAVE_MM_GLIB */
+                 const gchar *gsm;
+                 const gchar *cdma;
+ 
+@@ -373,7 +381,9 @@ device_mobile_refresh_operator_name (NetDeviceMobile *device_mobile)
+                 } else {
+                         panel_set_device_widget_details (device_mobile->priv->builder, "provider", NULL);
+                 }
++#if HAVE_MM_GLIB
+         }
++#endif /* HAVE_MM_GLIB */
+ }
+ 
+ static void
+@@ -780,6 +790,8 @@ net_device_mobile_constructed (GObject *object)
+         nm_device_mobile_refresh_ui (device_mobile);
+ }
+ 
++#if HAVE_MM_GLIB
++
+ static void
+ operator_name_updated (MMModem3gpp     *modem_3gpp_iface,
+                        GParamSpec      *pspec,
+@@ -811,6 +823,7 @@ net_device_mobile_setup_modem_object (NetDeviceMobile *self)
+         }
+ }
+ 
++#endif /* HAVE_MM_GLIB */
+ 
+ static void
+ net_device_mobile_get_property (GObject    *device_,
+@@ -841,7 +854,9 @@ net_device_mobile_set_property (GObject      *device_,
+         switch (prop_id) {
+         case PROP_MODEM_OBJECT:
+                 self->priv->mm_object = g_value_dup_object (value);
++#if HAVE_MM_GLIB
+                 net_device_mobile_setup_modem_object (self);
++#endif /* HAVE_MM_GLIB */
+                 break;
+         default:
+                 G_OBJECT_WARN_INVALID_PROPERTY_ID (self, prop_id, pspec);
+@@ -859,12 +874,16 @@ net_device_mobile_dispose (GObject *object)
+         g_clear_object (&priv->gsm_proxy);
+         g_clear_object (&priv->cdma_proxy);
+ 
++#if HAVE_MM_GLIB
+         if (priv->operator_name_updated) {
+                 g_assert (priv->mm_object != NULL);
+                 g_signal_handler_disconnect (mm_object_peek_modem_3gpp (priv->mm_object), priv->operator_name_updated);
+                 priv->operator_name_updated = 0;
+         }
++#endif /* HAVE_MM_GLIB */
++
+         g_clear_object (&priv->mm_object);
++
+         g_clear_object (&priv->mpd);
+ 
+         G_OBJECT_CLASS (net_device_mobile_parent_class)->dispose (object);
+@@ -890,7 +909,7 @@ net_device_mobile_class_init (NetDeviceMobileClass *klass)
+                                          g_param_spec_object ("mm-object",
+                                                               NULL,
+                                                               NULL,
+-                                                              MM_TYPE_OBJECT,
++                                                              G_TYPE_OBJECT,
+                                                               G_PARAM_READWRITE));
+ }
+ 
