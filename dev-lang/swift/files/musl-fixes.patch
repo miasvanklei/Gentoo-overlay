@@ -55,26 +55,6 @@ index 24531f5..595886a 100644
  }
  #endif
 
-diff --git a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
-index 201d89c..3a74181 100644
---- a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
-+++ b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
-@@ -80,15 +80,9 @@ public func _stdlib_pthread_create_block<Argument, Result>(
-   }
- }
- 
--#if os(Linux) || os(Android)
--internal func _make_pthread_t() -> pthread_t {
--  return pthread_t()
--}
--#else
- internal func _make_pthread_t() -> pthread_t? {
-   return nil
- }
--#endif
- 
- /// Block-based wrapper for `pthread_join`.
- public func _stdlib_pthread_join<Result>(
 diff --git a/stdlib/public/Platform/Platform.swift b/stdlib/public/Platform/Platform.swift
 index a3284be..eefa60e 100644
 --- a/stdlib/public/Platform/Platform.swift
@@ -101,3 +81,32 @@ index 7014efd..8fadfaa 100644
  // At the moment CYGWIN pthreads implementation doesn't support the use of
  // constexpr for static allocation versions. The way they define things
  // results in a reinterpret_cast which violates constexpr. Similarly, Android's
+diff --git a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
+index 201d89c47c..3a74181388 100644
+--- a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
++++ b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
+@@ -71,7 +71,7 @@ public func _stdlib_pthread_create_block<Argument, Result>(
+   let contextAsVoidPointer = Unmanaged.passRetained(context).toOpaque()
+ 
+   var threadID = _make_pthread_t()
+-  let result = pthread_create(&threadID, attr,
++  let result = pthread_create(&threadID!, attr,
+     { invokeBlockContext($0) }, contextAsVoidPointer)
+   if result == 0 {
+     return (result, threadID)
+@@ -80,15 +80,9 @@ public func _stdlib_pthread_create_block<Argument, Result>(
+   }
+ }
+ 
+-#if os(Linux) || os(Android)
+-internal func _make_pthread_t() -> pthread_t {
+-  return pthread_t()
+-}
+-#else
+ internal func _make_pthread_t() -> pthread_t? {
+   return nil
+ }
+-#endif
+ 
+ /// Block-based wrapper for `pthread_join`.
+ public func _stdlib_pthread_join<Result>(

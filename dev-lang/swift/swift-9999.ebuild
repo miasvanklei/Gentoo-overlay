@@ -73,7 +73,7 @@ src_install() {
 	cmake-utils_src_install
 
 	# copy libraries
-	cp -r ${BUILD_DIR}/lib/*.{a,so} ${D}/usr/lib
+	cp -r ${BUILD_DIR}/lib/*.a ${D}/usr/lib
 
 	# copy headers
 	mkdir -p ${D}/usr/include/swift/IRGen || die
