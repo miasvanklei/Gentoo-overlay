@@ -17,8 +17,7 @@ SLOT="0"
 KEYWORDS=""
 IUSE=""
 
-RDEPEND="sys-devel/llvm
-	dev-lang/swift
+RDEPEND="dev-lang/swift
 	dev-libs/corelibs-foundation
         dev-libs/corelibs-xctest
 	dev-python/lit
