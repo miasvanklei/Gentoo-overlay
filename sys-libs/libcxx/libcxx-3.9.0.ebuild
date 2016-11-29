@@ -22,7 +22,7 @@ IUSE="+experimental +libunwind +static-libs"
 RDEPEND="~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
 DEPEND="${RDEPEND}
 	app-arch/xz-utils
-	>=sys-devel/llvm-3.9.0"
+	>=sys-devel/clang-3.9.0"
 
 DOCS=( CREDITS.TXT )
 
