@@ -48,6 +48,7 @@ src_configure() {
 	local mycmakeargs=(
 		# used to find cmake modules
 		-DLLVM_LIBDIR_SUFFIX="${libdir#lib}"
+		-DBUILD_SHARED_LIBS=ON
 
 		-DLLDB_DISABLE_CURSES=$(usex !ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)

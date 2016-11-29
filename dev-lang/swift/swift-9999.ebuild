@@ -39,6 +39,7 @@ src_prepare() {
 	eapply ${FILESDIR}/glibc-modulemap.patch
 	eapply ${FILESDIR}/c++11.patch
 	eapply ${FILESDIR}/timer-change.patch
+	eapply ${FILESDIR}/shared-support.patch
 	default
 }
 
@@ -47,6 +48,7 @@ src_configure() {
 	local mycmakeargs=(
 		# used to find cmake modules
 		-DLLVM_LIBDIR_SUFFIX="${libdir#lib}"
+                -DBUILD_SHARED_LIBS=ON
 
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
@@ -71,7 +73,7 @@ src_install() {
 	cmake-utils_src_install
 
 	# copy libraries
-	cp -r ${BUILD_DIR}/lib/*.a ${D}/usr/lib
+	cp -r ${BUILD_DIR}/lib/*.{a,so} ${D}/usr/lib
 
 	# copy headers
 	mkdir -p ${D}/usr/include/swift/IRGen || die

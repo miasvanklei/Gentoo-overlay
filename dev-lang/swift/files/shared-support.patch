@@ -1,0 +1,540 @@
+diff --git a/cmake/modules/AddSwift.cmake b/cmake/modules/AddSwift.cmake
+index 86c0839e26..2de83ae5f2 100644
+--- a/cmake/modules/AddSwift.cmake
++++ b/cmake/modules/AddSwift.cmake
+@@ -914,11 +874,11 @@ function(_add_swift_library_single target name)
+   # specified with this syntax, which breaks linking.
+   set(prefixed_link_libraries)
+   foreach(dep ${SWIFTLIB_SINGLE_LINK_LIBRARIES})
+-    if("${dep}" MATCHES "^clang")
+-      set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
+-    endif()
++    #if("${dep}" MATCHES "^clang")
++    #  set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
++    #endif()
+     if("${dep}" STREQUAL "cmark")
+-      set(dep "${CMARK_LIBRARY_DIR}/lib${dep}.a")
++      set(dep "-lcmark")
+     endif()
+     list(APPEND prefixed_link_libraries "${dep}")
+   endforeach()
+diff --git a/lib/AST/CMakeLists.txt b/lib/AST/CMakeLists.txt
+index b29329e84c..14f01e1915 100644
+--- a/lib/AST/CMakeLists.txt
++++ b/lib/AST/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftAST STATIC
++add_swift_library(swiftAST SHARED
+   ArchetypeBuilder.cpp
+   ASTContext.cpp
+   ASTDumper.cpp
+diff --git a/lib/ASTSectionImporter/CMakeLists.txt b/lib/ASTSectionImporter/CMakeLists.txt
+index 5f20e7ff97..5320edb6f4 100644
+--- a/lib/ASTSectionImporter/CMakeLists.txt
++++ b/lib/ASTSectionImporter/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftASTSectionImporter STATIC
++add_swift_library(swiftASTSectionImporter SHARED
+   ASTSectionImporter.cpp
+   LINK_LIBRARIES swiftBasic
+   LLVM_COMPONENT_DEPENDS core)
+diff --git a/lib/Basic/CMakeLists.txt b/lib/Basic/CMakeLists.txt
+index bc56d9e6dd..9dbcc640ec 100644
+--- a/lib/Basic/CMakeLists.txt
++++ b/lib/Basic/CMakeLists.txt
+@@ -58,7 +59,7 @@ generate_revision_inc(swift_revision_inc Swift "${SWIFT_SOURCE_DIR}")
+ set(version_inc_files
+   ${llvm_revision_inc} ${clang_revision_inc} ${swift_revision_inc})
+ 
+-add_swift_library(swiftBasic STATIC
++add_swift_library(swiftBasic SHARED
+   Cache.cpp
+   ClusteredBitVector.cpp
+   Demangle.cpp
+diff --git a/lib/ClangImporter/CMakeLists.txt b/lib/ClangImporter/CMakeLists.txt
+index 920b0863e6..a9885905e1 100644
+--- a/lib/ClangImporter/CMakeLists.txt
++++ b/lib/ClangImporter/CMakeLists.txt
+@@ -8,7 +8,7 @@ handle_gyb_sources(
+     generated_include_sources
+     "")
+ 
+-add_swift_library(swiftClangImporter STATIC
++add_swift_library(swiftClangImporter SHARED
+   CFTypeInfo.cpp
+   ClangAdapter.cpp
+   ClangDiagnosticConsumer.cpp
+@@ -22,7 +22,8 @@ add_swift_library(swiftClangImporter STATIC
+   SwiftLookupTable.cpp
+   LINK_LIBRARIES
+     swiftAST
+-    swiftParse
++
++    clangRewriteFrontend
+ )
+ 
+ # This property is only set by calls to clang_tablegen. It will not be set on
+diff --git a/lib/Driver/CMakeLists.txt b/lib/Driver/CMakeLists.txt
+index 7f9d1633f4..15e9246901 100644
+--- a/lib/Driver/CMakeLists.txt
++++ b/lib/Driver/CMakeLists.txt
+@@ -14,7 +14,7 @@ set(swiftDriver_sources
+ 
+ set(swiftDriver_targetDefines)
+ 
+-add_swift_library(swiftDriver STATIC
++add_swift_library(swiftDriver SHARED
+   ${swiftDriver_sources}
+   DEPENDS SwiftOptions
+   LINK_LIBRARIES swiftAST swiftBasic swiftFrontend swiftOption)
+diff --git a/lib/Frontend/CMakeLists.txt b/lib/Frontend/CMakeLists.txt
+index 9db8f2c643..4dcf279ab3 100644
+--- a/lib/Frontend/CMakeLists.txt
++++ b/lib/Frontend/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftFrontend STATIC
++add_swift_library(swiftFrontend SHARED
+   CompilerInvocation.cpp
+   DiagnosticVerifier.cpp
+   Frontend.cpp
+diff --git a/lib/FrontendTool/CMakeLists.txt b/lib/FrontendTool/CMakeLists.txt
+index 31156da03d..1bdc1bdbde 100644
+--- a/lib/FrontendTool/CMakeLists.txt
++++ b/lib/FrontendTool/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftFrontendTool STATIC
++add_swift_library(swiftFrontendTool SHARED
+   FrontendTool.cpp
+   DEPENDS SwiftOptions
+   LINK_LIBRARIES
+diff --git a/lib/IDE/CMakeLists.txt b/lib/IDE/CMakeLists.txt
+index 3cb10e37d0..ec7f736f09 100644
+--- a/lib/IDE/CMakeLists.txt
++++ b/lib/IDE/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftIDE STATIC
++add_swift_library(swiftIDE SHARED
+   CodeCompletion.cpp
+   CodeCompletionCache.cpp
+   CommentConversion.cpp
+diff --git a/lib/IRGen/CMakeLists.txt b/lib/IRGen/CMakeLists.txt
+index a3b0afc7a6..6b8ff35d20 100644
+--- a/lib/IRGen/CMakeLists.txt
++++ b/lib/IRGen/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftIRGen STATIC
++add_swift_library(swiftIRGen SHARED
+   DebugTypeInfo.cpp
+   EnumPayload.cpp
+   ExtraInhabitants.cpp
+diff --git a/lib/Immediate/CMakeLists.txt b/lib/Immediate/CMakeLists.txt
+index f6919cddf0..9f8ef94d1f 100644
+--- a/lib/Immediate/CMakeLists.txt
++++ b/lib/Immediate/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftImmediate STATIC
++add_swift_library(swiftImmediate SHARED
+   Immediate.cpp
+   REPL.cpp
+   LINK_LIBRARIES
+diff --git a/lib/Index/CMakeLists.txt b/lib/Index/CMakeLists.txt
+index d91c5a8398..5c99585da4 100644
+--- a/lib/Index/CMakeLists.txt
++++ b/lib/Index/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftIndex STATIC
++add_swift_library(swiftIndex SHARED
+   Index.cpp
+   IndexDataConsumer.cpp
+   IndexSymbol.cpp
+diff --git a/lib/LLVMPasses/CMakeLists.txt b/lib/LLVMPasses/CMakeLists.txt
+index 54af8cd1c5..2cdfb5844f 100644
+--- a/lib/LLVMPasses/CMakeLists.txt
++++ b/lib/LLVMPasses/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftLLVMPasses STATIC
++add_swift_library(swiftLLVMPasses SHARED
+   LLVMSwiftAA.cpp
+   LLVMSwiftRCIdentity.cpp
+   LLVMARCOpts.cpp
+diff --git a/lib/Markup/CMakeLists.txt b/lib/Markup/CMakeLists.txt
+index 06c5ebe2e6..8ff68c93df 100644
+--- a/lib/Markup/CMakeLists.txt
++++ b/lib/Markup/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftMarkup STATIC
++add_swift_library(swiftMarkup SHARED
+   AST.cpp
+   LineList.cpp
+   Markup.cpp
+diff --git a/lib/Option/CMakeLists.txt b/lib/Option/CMakeLists.txt
+index 03e0f4b8f9..41dd6f4319 100644
+--- a/lib/Option/CMakeLists.txt
++++ b/lib/Option/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftOption STATIC
++add_swift_library(swiftOption SHARED
+   Options.cpp
+   SanitizerOptions.cpp
+   DEPENDS SwiftOptions
+diff --git a/lib/Parse/CMakeLists.txt b/lib/Parse/CMakeLists.txt
+index 07600e79f6..89e9d8283e 100644
+--- a/lib/Parse/CMakeLists.txt
++++ b/lib/Parse/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftParse STATIC
++add_swift_library(swiftParse SHARED
+   Lexer.cpp
+   ParseDecl.cpp
+   ParseExpr.cpp
+diff --git a/lib/PrintAsObjC/CMakeLists.txt b/lib/PrintAsObjC/CMakeLists.txt
+index 33aae23129..a2ff7919f3 100644
+--- a/lib/PrintAsObjC/CMakeLists.txt
++++ b/lib/PrintAsObjC/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftPrintAsObjC STATIC
++add_swift_library(swiftPrintAsObjC SHARED
+   PrintAsObjC.cpp
+ 
+   LINK_LIBRARIES
+diff --git a/lib/RemoteAST/CMakeLists.txt b/lib/RemoteAST/CMakeLists.txt
+index 970400d1af..b1f4cea193 100644
+--- a/lib/RemoteAST/CMakeLists.txt
++++ b/lib/RemoteAST/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftRemoteAST STATIC
++add_swift_library(swiftRemoteAST SHARED
+   RemoteAST.cpp
+   LINK_LIBRARIES
+     swiftSema swiftIRGen)
+diff --git a/lib/SIL/CMakeLists.txt b/lib/SIL/CMakeLists.txt
+index 05a2446942..d84a97b61c 100644
+--- a/lib/SIL/CMakeLists.txt
++++ b/lib/SIL/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftSIL STATIC
++add_swift_library(swiftSIL SHARED
+   AbstractionPattern.cpp
+   Bridging.cpp
+   Dominance.cpp
+diff --git a/lib/SILGen/CMakeLists.txt b/lib/SILGen/CMakeLists.txt
+index a0090f18a2..5669372170 100644
+--- a/lib/SILGen/CMakeLists.txt
++++ b/lib/SILGen/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftSILGen STATIC
++add_swift_library(swiftSILGen SHARED
+   ArgumentSource.cpp
+   Cleanup.cpp
+   Condition.cpp
+diff --git a/lib/SILOptimizer/CMakeLists.txt b/lib/SILOptimizer/CMakeLists.txt
+index c018cf6efe..c0aaae12d5 100644
+--- a/lib/SILOptimizer/CMakeLists.txt
++++ b/lib/SILOptimizer/CMakeLists.txt
+@@ -8,7 +8,7 @@ add_subdirectory(SILCombiner)
+ add_subdirectory(Transforms)
+ add_subdirectory(UtilityPasses)
+ add_subdirectory(Utils)
+-add_swift_library(swiftSILOptimizer STATIC
++add_swift_library(swiftSILOptimizer SHARED
+   ${ARC_SOURCES}
+   ${ANALYSIS_SOURCES}
+   ${SILCOMBINER_SOURCES}
+diff --git a/lib/Sema/CMakeLists.txt b/lib/Sema/CMakeLists.txt
+index 44e2db813b..fd37356678 100644
+--- a/lib/Sema/CMakeLists.txt
++++ b/lib/Sema/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftSema STATIC
++add_swift_library(swiftSema SHARED
+   CSApply.cpp
+   CSDiag.cpp
+   CSGen.cpp
+@@ -39,6 +39,5 @@ add_swift_library(swiftSema STATIC
+   TypeCheckType.cpp
+   TypeChecker.cpp
+   LINK_LIBRARIES
+-    swiftParse
+     swiftAST)
+ 
+diff --git a/lib/Serialization/CMakeLists.txt b/lib/Serialization/CMakeLists.txt
+index be7a2186aa..8bd2430d77 100644
+--- a/lib/Serialization/CMakeLists.txt
++++ b/lib/Serialization/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftSerialization STATIC
++add_swift_library(swiftSerialization SHARED
+   Deserialization.cpp
+   DeserializeSIL.cpp
+   ModuleFile.cpp
+diff --git a/lib/Syntax/CMakeLists.txt b/lib/Syntax/CMakeLists.txt
+index 62d614b92c..5e8a7af898 100644
+--- a/lib/Syntax/CMakeLists.txt
++++ b/lib/Syntax/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-add_swift_library(swiftSyntax STATIC
++add_swift_library(swiftSyntax SHARED
+   Token.cpp
+   Syntax.cpp
+ )
+diff --git a/tools/driver/CMakeLists.txt b/tools/driver/CMakeLists.txt
+index 902b9fe97c..f6986f9a1c 100644
+--- a/tools/driver/CMakeLists.txt
++++ b/tools/driver/CMakeLists.txt
+@@ -7,8 +7,29 @@ add_swift_host_tool(swift
+   LINK_LIBRARIES
+     swiftDriver
+     swiftFrontendTool
++    swiftFrontend
++    swiftBasic
++    swiftAST
++    swiftSema
++    swiftOption
++    swiftOption
++    swiftSIL
++    swiftParse
++    swiftIDE
++    swiftIRGen
++    swiftClangImporter
++
++    clangAPINotes
+   LLVM_COMPONENT_DEPENDS
+     DebugInfoCodeView
++    Support
++    X86Info
++    X86CodeGen
++    X86Desc
++    X86AsmParser
++    X86Disassembler
++    Option
++    Object
+   SWIFT_COMPONENT compiler
+ )
+ 
+diff --git a/tools/lldb-moduleimport-test/CMakeLists.txt b/tools/lldb-moduleimport-test/CMakeLists.txt
+index f1c80823a6..676e3b187f 100644
+--- a/tools/lldb-moduleimport-test/CMakeLists.txt
++++ b/tools/lldb-moduleimport-test/CMakeLists.txt
+@@ -1,9 +1,22 @@
+ add_swift_host_tool(lldb-moduleimport-test
+   lldb-moduleimport-test.cpp
+   LINK_LIBRARIES
+-    swiftASTSectionImporter swiftFrontend swiftClangImporter
++    swiftASTSectionImporter
++    swiftFrontend
++    swiftClangImporter
++    swiftAST
++    swiftSIL
++    swiftSerialization
+   LLVM_COMPONENT_DEPENDS
+     DebugInfoCodeView
++    Support
++    Option
++    Object
++    X86Info
++    X86CodeGen
++    X86Desc
++    X86AsmParser
++    X86Disassembler
+   SWIFT_COMPONENT testsuite-tools
+ )
+ 
+diff --git a/tools/sil-extract/CMakeLists.txt b/tools/sil-extract/CMakeLists.txt
+index 982cdb10ff..b7c90d4a48 100644
+--- a/tools/sil-extract/CMakeLists.txt
++++ b/tools/sil-extract/CMakeLists.txt
+@@ -2,11 +2,22 @@ add_swift_host_tool(sil-extract
+   SILExtract.cpp
+   LINK_LIBRARIES
+     swiftFrontend
++    swiftSIL
++    swiftBasic
+     swiftSILGen
+     swiftSILOptimizer
+     swiftSerialization
+     swiftClangImporter
++    swiftAST
+   LLVM_COMPONENT_DEPENDS
+     DebugInfoCodeView
++    Support
++    Option
++    Object
++    X86Info
++    X86CodeGen
++    X86Desc
++    X86AsmParser
++    X86Disassembler
+   SWIFT_COMPONENT tools
+ )
+diff --git a/tools/sil-opt/CMakeLists.txt b/tools/sil-opt/CMakeLists.txt
+index f2ccbb8fbf..2035301be0 100644
+--- a/tools/sil-opt/CMakeLists.txt
++++ b/tools/sil-opt/CMakeLists.txt
+@@ -1,11 +1,23 @@
+ add_swift_host_tool(sil-opt
+   SILOpt.cpp
+   LINK_LIBRARIES
++    swiftBasic
+     swiftFrontend
+     swiftIRGen
+     swiftSILGen
+     swiftSILOptimizer
++    swiftSIL
++    swiftSerialization
++    swiftAST
+   LLVM_COMPONENT_DEPENDS
+     DebugInfoCodeView
++    Option
++    TableGen
++    Support
++    X86Info
++    X86CodeGen
++    X86Desc
++    X86AsmParser
++    X86Disassembler
+   SWIFT_COMPONENT tools
+ )
+diff --git a/tools/swift-api-digester/CMakeLists.txt b/tools/swift-api-digester/CMakeLists.txt
+index d09f6437cf..62aae2fb08 100644
+--- a/tools/swift-api-digester/CMakeLists.txt
++++ b/tools/swift-api-digester/CMakeLists.txt
+@@ -1,5 +1,24 @@
+ add_swift_host_tool(swift-api-digester
+   swift-api-digester.cpp
+-  LINK_LIBRARIES swiftFrontend swiftIDE
++  LINK_LIBRARIES
++    swiftFrontend
++    swiftIDE
++    swiftAST
++    swiftBasic
++    swiftDriver
++    swiftSIL
++    swiftClangImporter
++
++    clangAST
++    clangBasic
++  LLVM_COMPONENT_DEPENDS
++    Support
++    Option
++    X86Info
++    X86CodeGen
++    X86Desc
++    X86AsmParser
++    X86Disassembler
++    Core
+   SWIFT_COMPONENT tools
+ )
+diff --git a/tools/swift-ide-test/CMakeLists.txt b/tools/swift-ide-test/CMakeLists.txt
+index eedd3ce866..d3313e7374 100644
+--- a/tools/swift-ide-test/CMakeLists.txt
++++ b/tools/swift-ide-test/CMakeLists.txt
+@@ -6,8 +6,27 @@ add_swift_host_tool(swift-ide-test
+     swiftDriver
+     swiftFrontend
+     swiftIDE
++    swiftBasic
++    swiftIRGen
++    swiftSILGen
++    swiftSILOptimizer
++    swiftSIL
++    swiftSerialization
++    swiftAST
++    swiftClangImporter
++    swiftMarkup
++    swiftSema
++    swiftParse
++
++    clangRewrite
+   LLVM_COMPONENT_DEPENDS
+     DebugInfoCodeView
++    Support
++    X86Info
++    X86CodeGen
++    X86Desc
++    X86AsmParser
++    X86Disassembler
+   SWIFT_COMPONENT tools
+ )
+ 
+diff --git a/tools/swift-llvm-opt/CMakeLists.txt b/tools/swift-llvm-opt/CMakeLists.txt
+index 628d7bddb8..e9f88bffe0 100644
+--- a/tools/swift-llvm-opt/CMakeLists.txt
++++ b/tools/swift-llvm-opt/CMakeLists.txt
+@@ -6,6 +6,8 @@ add_swift_host_tool(swift-llvm-opt
+   # Swift libraries included to appease the linker on linux.
+   swiftSema
+   swiftAST
++  swiftBasic
++  swiftLLVMPasses
+ 
+   # Clang libraries included to appease the linker on linux.
+   clangBasic
+@@ -13,6 +15,29 @@ add_swift_host_tool(swift-llvm-opt
+ 
+   LLVM_COMPONENT_DEPENDS
+     DebugInfoCodeView
++    ScalarOpts
++    TransformUtils
++    CodeGen
++    InstCombine
++    ScalarOpts
++    Vectorize
++    ExecutionEngine
++    Instrumentation
++    Support
++    Option
++    Object
++    X86Info
++    X86CodeGen
++    X86Desc
++    X86AsmParser
++    X86Disassembler
++    ObjCARCOpts
++    Ipo
++    Target
++    Core
++    Analysis
++    MC
++    IRReader
+ 
+   SWIFT_COMPONENT tools
+ )
+diff --git a/tools/swift-remoteast-test/CMakeLists.txt b/tools/swift-remoteast-test/CMakeLists.txt
+index b0c546ed50..47bb49dec2 100644
+--- a/tools/swift-remoteast-test/CMakeLists.txt
++++ b/tools/swift-remoteast-test/CMakeLists.txt
+@@ -3,6 +3,21 @@ add_swift_host_tool(swift-remoteast-test
+   LINK_LIBRARIES
+     swiftFrontendTool
+     swiftRemoteAST
++    swiftSIL
++    swiftDriver
++    swiftFrontend
++    swiftIDE
++    swiftBasic
++    swiftIRGen
++    swiftSILGen
++    swiftSILOptimizer
++    swiftSerialization
++    swiftAST
++    swiftSema
++    swiftParse
++
++  LLVM_COMPONENT_DEPENDS
++    Support
+   SWIFT_COMPONENT tools
+ )
+ 
+diff --git a/include/swift/SIL/SILModule.h b/include/swift/SIL/SILModule.h
+index 7c189dd76e..5774c32078 100644
+--- a/include/swift/SIL/SILModule.h
++++ b/include/swift/SIL/SILModule.h
+@@ -614,7 +614,7 @@ inline llvm::raw_ostream &operator<<(llvm::raw_ostream &OS, const SILModule &M){
+ namespace Lowering {
+   /// Determine whether the given class will be allocated/deallocated
+   /// using the Objective-C runtime, i.e., +alloc and -dealloc.
+-  LLVM_LIBRARY_VISIBILITY bool usesObjCAllocator(ClassDecl *theClass);
++  bool usesObjCAllocator(ClassDecl *theClass);
+ }
+ 
+ } // end swift namespace

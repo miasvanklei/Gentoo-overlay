@@ -135,6 +135,7 @@ multilib_src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
+		-DBUILD_SHARED_LIBS=ON
 
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DLLVM_BUILD_TESTS=$(usex test)

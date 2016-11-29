@@ -148,6 +148,7 @@ multilib_src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
+		-DBUILD_SHARED_LIBS=ON
 		# relative to bindir
                 -DCLANG_RESOURCE_DIR="../lib/clang/${clang_version}"
 

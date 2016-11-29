@@ -70,6 +70,7 @@ src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
+		-DBUILD_SHARED_LIBS=ON
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_CXX1Y=ON

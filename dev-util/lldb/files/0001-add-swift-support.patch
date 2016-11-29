@@ -12,69 +12,6 @@ index 8c285eb..79d0245 100644
  if (__ANDROID_NDK__ OR (CMAKE_SYSTEM_NAME MATCHES "Windows"))
    set(LLDB_DEFAULT_DISABLE_LIBEDIT 1)
  else()
-diff --git a/cmake/LLDBDependencies.cmake b/cmake/LLDBDependencies.cmake
-index f9f61ee..bdb6db9 100644
---- a/cmake/LLDBDependencies.cmake
-+++ b/cmake/LLDBDependencies.cmake
-@@ -27,6 +27,7 @@ set( LLDB_USED_LIBS
-   lldbPluginJavaLanguage
-   lldbPluginObjCLanguage
-   lldbPluginObjCPlusPlusLanguage
-+  lldbPluginSwiftLanguage
-   lldbPluginOCamlLanguage
- 
-   lldbPluginObjectFileELF
-@@ -85,6 +86,7 @@ set( LLDB_USED_LIBS
-   lldbPluginJITLoaderGDB
-   lldbPluginExpressionParserClang
-   lldbPluginExpressionParserGo
-+  lldbPluginExpressionParserSwift
-   )
- 
- # Windows-only libraries
-@@ -139,6 +141,7 @@ set( CLANG_USED_LIBS
-   clangDriver
-   clangEdit
-   clangFrontend
-+  clangIndex
-   clangLex
-   clangParse
-   clangRewrite
-@@ -146,6 +149,26 @@ set( CLANG_USED_LIBS
-   clangSema
-   clangSerialization
-   )
-+set(SWIFT_USED_LIBS
-+  swiftAST
-+  swiftASTSectionImporter
-+  swiftBasic
-+  swiftClangImporter
-+  swiftFrontend
-+  swiftIDE
-+  swiftIRGen
-+  swiftLLVMPasses
-+  swiftMarkup
-+  swiftOption
-+  swiftParse
-+  swiftRemoteAST
-+  swiftSema
-+  swiftSerialization
-+  swiftSIL
-+  swiftSILGen
-+  swiftSILOptimizer
-+  swiftSyntax
-+  )
- 
- set(LLDB_SYSTEM_LIBS)
- if (NOT CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT __ANDROID_NDK__)
-@@ -218,3 +241,7 @@ if ( NOT LLDB_DISABLE_PYTHON )
-                  APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-sequence-point -Wno-cast-qual")
-   endif ()
- endif()
-+
-+# this needs to be linked statially
-+list(APPEND LLDB_SYSTEM_LIBS -lcmark)
-+list(APPEND LLDB_SYSTEM_LIBS -luuid)
 diff --git a/cmake/modules/AddLLDB.cmake b/cmake/modules/AddLLDB.cmake
 index 09952b1..c1919ee 100644
 --- a/cmake/modules/AddLLDB.cmake
@@ -41398,3 +41335,74 @@ index cd5988d..4a869b2 100644
    llvm_config(${test_name} ${LLVM_LINK_COMPONENTS})
  endfunction()
  
+diff --git a/cmake/LLDBDependencies.cmake b/cmake/LLDBDependencies.cmake
+index f78d17729..407cd08ad 100644
+--- a/cmake/LLDBDependencies.cmake
++++ b/cmake/LLDBDependencies.cmake
+@@ -27,6 +27,7 @@ set( LLDB_USED_LIBS
+   lldbPluginJavaLanguage
+   lldbPluginObjCLanguage
+   lldbPluginObjCPlusPlusLanguage
++  lldbPluginSwiftLanguage
+   lldbPluginOCamlLanguage
+ 
+   lldbPluginObjectFileELF
+@@ -85,6 +86,7 @@ set( LLDB_USED_LIBS
+   lldbPluginJITLoaderGDB
+   lldbPluginExpressionParserClang
+   lldbPluginExpressionParserGo
++  lldbPluginExpressionParserSwift
+   )
+ 
+ # Windows-only libraries
+@@ -138,6 +140,7 @@ set( CLANG_USED_LIBS
+   clangDriver
+   clangEdit
+   clangFrontend
++  clangIndex
+   clangLex
+   clangParse
+   clangRewrite
+@@ -145,6 +148,26 @@ set( CLANG_USED_LIBS
+   clangSema
+   clangSerialization
+   )
++set(SWIFT_USED_LIBS
++  swiftAST
++  swiftASTSectionImporter
++  swiftBasic
++  swiftClangImporter
++  swiftFrontend
++  swiftIDE
++  swiftIRGen
++  swiftLLVMPasses
++  swiftMarkup
++  swiftOption
++  swiftParse
++  swiftRemoteAST
++  swiftSema
++  swiftSerialization
++  swiftSIL
++  swiftSILGen
++  swiftSILOptimizer
++  swiftSyntax
++  )
+ 
+ set(LLDB_SYSTEM_LIBS)
+ if (NOT CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT __ANDROID_NDK__)
+@@ -187,6 +210,7 @@ set(LLVM_LINK_COMPONENTS
+   ${LLVM_TARGETS_TO_BUILD}
+   interpreter
+   asmparser
++  analysis
+   bitreader
+   bitwriter
+   codegen
+@@ -217,3 +241,7 @@ if ( NOT LLDB_DISABLE_PYTHON )
+                  APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-sequence-point -Wno-cast-qual")
+   endif ()
+ endif()
++
++# this needs to be linked statially
++list(APPEND LLDB_SYSTEM_LIBS -lcmark)
++list(APPEND LLDB_SYSTEM_LIBS -luuid)

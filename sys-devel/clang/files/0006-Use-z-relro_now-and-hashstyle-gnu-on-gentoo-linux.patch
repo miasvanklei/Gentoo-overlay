@@ -11,7 +11,7 @@ index 70b53bd..46326f0 100644
 @@ -4011,8 +4036,14 @@
                         .str());
  
-   Distro Distro = DetectDistro(D.getVFS());
+   Distro Distro(D.getVFS());
 +  StringRef VendorName = Linux::getTriple().getVendorName();
 +
 +  if (VendorName.compare("gentoo") == 0) {
@@ -19,8 +19,8 @@ index 70b53bd..46326f0 100644
 +    ExtraOpts.push_back("now");
 +  }
  
--  if (IsOpenSUSE(Distro) || IsUbuntu(Distro)) {
-+  if (IsOpenSUSE(Distro) || IsUbuntu(Distro) || VendorName.compare("gentoo") == 0) {
+-  if (Distro.IsOpenSUSE() || Distro.IsUbuntu()) {
++  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || VendorName.compare("gentoo") == 0) {
      ExtraOpts.push_back("-z");
      ExtraOpts.push_back("relro");
    }
@@ -28,10 +28,10 @@ index 70b53bd..46326f0 100644
    // ABI requires a mapping between the GOT and the symbol table.
    // Android loader does not support .gnu.hash.
    if (!IsMips && !IsAndroid) {
--    if (IsRedhat(Distro) || IsOpenSUSE(Distro) ||
--        (IsUbuntu(Distro) && Distro >= UbuntuMaverick))
-+    if (IsRedhat(Distro) || IsOpenSUSE(Distro) || VendorName.compare("gentoo") == 0 ||
-+       (IsUbuntu(Distro) && Distro >= UbuntuMaverick))
+-    if (Distro.IsRedhat() || Distro.IsOpenSUSE() ||
+-        (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick))
++    if (Distro.IsRedhat() || Distro.IsOpenSUSE() || VendorName.compare("gentoo") == 0 ||
++       (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick))
        ExtraOpts.push_back("--hash-style=gnu");
  
-     if (IsDebian(Distro) || IsOpenSUSE(Distro) || Distro == UbuntuLucid ||
+     if (Distro.IsDebian() || Distro.IsOpenSUSE() || Distro == Distro::UbuntuLucid ||
