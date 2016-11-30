@@ -57,6 +57,7 @@ src_configure() {
 		-DLLVM_ENABLE_LLD=ON
 		-DCMARK_LIBRARY_DIR=/usr/lib
 		-DSWIFT_HOST_TRIPLE=${CHOST}
+		-DSWIFT_BUILD_SOURCEKIT=TRUE
 	)
 
 	cmake-utils_src_configure
