@@ -40,6 +40,7 @@ src_prepare() {
 	eapply ${FILESDIR}/c++11.patch
 	eapply ${FILESDIR}/timer-change.patch
 	eapply ${FILESDIR}/shared-support.patch
+	eapply ${FILESDIR}/sourcekitd-fixes.patch
 	default
 }
 
@@ -52,12 +53,12 @@ src_configure() {
 
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
-		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DCMARK_LIBRARY_DIR=/usr/lib
 		-DSWIFT_HOST_TRIPLE=${CHOST}
 		-DSWIFT_BUILD_SOURCEKIT=TRUE
+		-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=TRUE
 	)
 
 	cmake-utils_src_configure
