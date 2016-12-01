@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 8c285eb..79d0245 100644
+index 8c285eb2f..79d0245bf 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -4,6 +4,9 @@ include(cmake/modules/LLDBStandalone.cmake)
@@ -12,8 +12,84 @@ index 8c285eb..79d0245 100644
  if (__ANDROID_NDK__ OR (CMAKE_SYSTEM_NAME MATCHES "Windows"))
    set(LLDB_DEFAULT_DISABLE_LIBEDIT 1)
  else()
+diff --git a/cmake/LLDBDependencies.cmake b/cmake/LLDBDependencies.cmake
+index f78d17729..c378650ca 100644
+--- a/cmake/LLDBDependencies.cmake
++++ b/cmake/LLDBDependencies.cmake
+@@ -27,6 +27,7 @@ set( LLDB_USED_LIBS
+   lldbPluginJavaLanguage
+   lldbPluginObjCLanguage
+   lldbPluginObjCPlusPlusLanguage
++  lldbPluginSwiftLanguage
+   lldbPluginOCamlLanguage
+ 
+   lldbPluginObjectFileELF
+@@ -85,6 +86,7 @@ set( LLDB_USED_LIBS
+   lldbPluginJITLoaderGDB
+   lldbPluginExpressionParserClang
+   lldbPluginExpressionParserGo
++  lldbPluginExpressionParserSwift
+   )
+ 
+ # Windows-only libraries
+@@ -138,6 +140,7 @@ set( CLANG_USED_LIBS
+   clangDriver
+   clangEdit
+   clangFrontend
++  clangIndex
+   clangLex
+   clangParse
+   clangRewrite
+@@ -145,6 +148,26 @@ set( CLANG_USED_LIBS
+   clangSema
+   clangSerialization
+   )
++set(SWIFT_USED_LIBS
++  swiftAST
++  swiftASTSectionImporter
++  swiftBasic
++  swiftClangImporter
++  swiftFrontend
++  swiftIDE
++  swiftIRGen
++  swiftLLVMPasses
++  swiftMarkup
++  swiftOption
++  swiftParse
++  swiftRemoteAST
++  swiftSema
++  swiftSerialization
++  swiftSIL
++  swiftSILGen
++  swiftSILOptimizer
++  swiftSyntax
++  )
+ 
+ set(LLDB_SYSTEM_LIBS)
+ if (NOT CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT __ANDROID_NDK__)
+@@ -187,6 +210,12 @@ set(LLVM_LINK_COMPONENTS
+   ${LLVM_TARGETS_TO_BUILD}
+   interpreter
+   asmparser
++  analysis
++  profiledata
++  transformutils
++  objcarcopts
++  instrumentation
++  object
+   bitreader
+   bitwriter
+   codegen
+@@ -217,3 +246,7 @@ if ( NOT LLDB_DISABLE_PYTHON )
+                  APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-sequence-point -Wno-cast-qual")
+   endif ()
+ endif()
++
++# this needs to be linked statially
++list(APPEND LLDB_SYSTEM_LIBS -lcmark)
++list(APPEND LLDB_SYSTEM_LIBS -luuid)
 diff --git a/cmake/modules/AddLLDB.cmake b/cmake/modules/AddLLDB.cmake
-index 09952b1..c1919ee 100644
+index 09952b129..c1919eef2 100644
 --- a/cmake/modules/AddLLDB.cmake
 +++ b/cmake/modules/AddLLDB.cmake
 @@ -61,11 +61,12 @@ macro(add_lldb_library name)
@@ -31,7 +107,7 @@ index 09952b1..c1919ee 100644
            )
        endif()
 diff --git a/docs/lldb.1 b/docs/lldb.1
-index a28cabe..4dcefc6 100644
+index a28cabe7a..4dcefc6e1 100644
 --- a/docs/lldb.1
 +++ b/docs/lldb.1
 @@ -18,7 +18,7 @@
@@ -44,7 +120,7 @@ index a28cabe..4dcefc6 100644
  The following options are available:
  .Bl -tag -width indent
 diff --git a/include/lldb/API/SBError.h b/include/lldb/API/SBError.h
-index 7f2f3a6..5713756 100644
+index 7f2f3a6cc..5713756f1 100644
 --- a/include/lldb/API/SBError.h
 +++ b/include/lldb/API/SBError.h
 @@ -57,6 +57,7 @@ protected:
@@ -56,7 +132,7 @@ index 7f2f3a6..5713756 100644
    friend class SBProcess;
    friend class SBStructuredData;
 diff --git a/include/lldb/API/SBExpressionOptions.h b/include/lldb/API/SBExpressionOptions.h
-index 370811d..af5f0c5 100644
+index 370811d0c..af5f0c506 100644
 --- a/include/lldb/API/SBExpressionOptions.h
 +++ b/include/lldb/API/SBExpressionOptions.h
 @@ -73,6 +73,14 @@ public:
@@ -75,7 +151,7 @@ index 370811d..af5f0c5 100644
  
    void SetGenerateDebugInfo(bool b = true);
 diff --git a/include/lldb/API/SBModule.h b/include/lldb/API/SBModule.h
-index bcc3997..5bc4529 100644
+index bcc3997a2..5bc4529a7 100644
 --- a/include/lldb/API/SBModule.h
 +++ b/include/lldb/API/SBModule.h
 @@ -295,6 +295,8 @@ public:
@@ -88,7 +164,7 @@ index bcc3997..5bc4529 100644
    friend class SBAddress;
    friend class SBFrame;
 diff --git a/include/lldb/API/SBTarget.h b/include/lldb/API/SBTarget.h
-index 4e8db83..2a73857 100644
+index 4e8db835d..2a738572c 100644
 --- a/include/lldb/API/SBTarget.h
 +++ b/include/lldb/API/SBTarget.h
 @@ -571,12 +571,14 @@ public:
@@ -124,7 +200,7 @@ index 4e8db83..2a73857 100644
  
    lldb::SBBreakpoint BreakpointCreateBySBAddress(SBAddress &address);
 diff --git a/include/lldb/API/SBThread.h b/include/lldb/API/SBThread.h
-index 502e5c9..65ad456 100644
+index 502e5c973..65ad45686 100644
 --- a/include/lldb/API/SBThread.h
 +++ b/include/lldb/API/SBThread.h
 @@ -79,6 +79,10 @@ public:
@@ -139,7 +215,7 @@ index 502e5c9..65ad456 100644
  
    uint32_t GetIndexID() const;
 diff --git a/include/lldb/Core/ClangForward.h b/include/lldb/Core/ClangForward.h
-index b3cab8a..4335be0 100644
+index b3cab8a22..4335be050 100644
 --- a/include/lldb/Core/ClangForward.h
 +++ b/include/lldb/Core/ClangForward.h
 @@ -133,6 +133,11 @@ class APInt;
@@ -155,7 +231,7 @@ index b3cab8a..4335be0 100644
  
  #endif // #if defined(__cplusplus)
 diff --git a/include/lldb/Core/Debugger.h b/include/lldb/Core/Debugger.h
-index ccc07b3..680b5f6 100644
+index ccc07b30f..680b5f6cd 100644
 --- a/include/lldb/Core/Debugger.h
 +++ b/include/lldb/Core/Debugger.h
 @@ -168,6 +168,9 @@ public:
@@ -188,7 +264,7 @@ index ccc07b3..680b5f6 100644
  
    bool StartEventHandlerThread();
 diff --git a/include/lldb/Core/IOHandler.h b/include/lldb/Core/IOHandler.h
-index 2e6ff31..0df13be 100644
+index 2e6ff31ee..0df13befa 100644
 --- a/include/lldb/Core/IOHandler.h
 +++ b/include/lldb/Core/IOHandler.h
 @@ -517,7 +517,9 @@ protected:
@@ -291,7 +367,7 @@ index 2e6ff31..0df13be 100644
  private:
    DISALLOW_COPY_AND_ASSIGN(IOHandlerStack);
 diff --git a/include/lldb/Core/Module.h b/include/lldb/Core/Module.h
-index 90d75b6..5b4ebf2 100644
+index 90d75b623..5b4ebf25d 100644
 --- a/include/lldb/Core/Module.h
 +++ b/include/lldb/Core/Module.h
 @@ -15,6 +15,8 @@
@@ -350,7 +426,7 @@ index 90d75b6..5b4ebf2 100644
    // Member Variables
    //------------------------------------------------------------------
 diff --git a/include/lldb/Core/ModuleList.h b/include/lldb/Core/ModuleList.h
-index 4aa1674..ac31a2b 100644
+index 4aa16740b..ac31a2bca 100644
 --- a/include/lldb/Core/ModuleList.h
 +++ b/include/lldb/Core/ModuleList.h
 @@ -506,6 +506,8 @@ public:
@@ -363,7 +439,7 @@ index 4aa1674..ac31a2b 100644
    //------------------------------------------------------------------
    // Class typedefs.
 diff --git a/include/lldb/Core/Stream.h b/include/lldb/Core/Stream.h
-index 807f9bf..efd1b9d 100644
+index 807f9bfc7..efd1b9df5 100644
 --- a/include/lldb/Core/Stream.h
 +++ b/include/lldb/Core/Stream.h
 @@ -35,8 +35,10 @@ public:
@@ -381,7 +457,7 @@ index 807f9bf..efd1b9d 100644
    //------------------------------------------------------------------
 diff --git a/include/lldb/Core/SwiftForward.h b/include/lldb/Core/SwiftForward.h
 new file mode 100644
-index 0000000..dbcc540
+index 000000000..dbcc540e6
 --- /dev/null
 +++ b/include/lldb/Core/SwiftForward.h
 @@ -0,0 +1,81 @@
@@ -467,7 +543,7 @@ index 0000000..dbcc540
 +#endif // #if defined(__cplusplus)
 +#endif // liblldb_SwiftForward_h_
 diff --git a/include/lldb/Core/ThreadSafeDenseSet.h b/include/lldb/Core/ThreadSafeDenseSet.h
-index 49c55e9..44ec246 100644
+index 49c55e96a..44ec24643 100644
 --- a/include/lldb/Core/ThreadSafeDenseSet.h
 +++ b/include/lldb/Core/ThreadSafeDenseSet.h
 @@ -46,7 +46,7 @@ public:
@@ -480,7 +556,7 @@ index 49c55e9..44ec246 100644
    }
  
 diff --git a/include/lldb/Core/ValueObject.h b/include/lldb/Core/ValueObject.h
-index 14fd8f9..e1e5a2c 100644
+index 14fd8f95f..e1e5a2cc8 100644
 --- a/include/lldb/Core/ValueObject.h
 +++ b/include/lldb/Core/ValueObject.h
 @@ -590,6 +590,8 @@ public:
@@ -505,7 +581,7 @@ index 14fd8f9..e1e5a2c 100644
  
    void SetPreferredDisplayLanguageIfNeeded(lldb::LanguageType);
 diff --git a/include/lldb/Core/ValueObjectSyntheticFilter.h b/include/lldb/Core/ValueObjectSyntheticFilter.h
-index 0a5a4d9..ea9b351 100644
+index 0a5a4d9f7..ea9b351af 100644
 --- a/include/lldb/Core/ValueObjectSyntheticFilter.h
 +++ b/include/lldb/Core/ValueObjectSyntheticFilter.h
 @@ -63,6 +63,12 @@ public:
@@ -539,7 +615,7 @@ index 0a5a4d9..ea9b351 100644
  
    bool SetValueFromCString(const char *value_str, Error &error) override;
 diff --git a/include/lldb/DataFormatters/FormatManager.h b/include/lldb/DataFormatters/FormatManager.h
-index 924ef0c..27f3939 100644
+index 924ef0cdf..27f3939fc 100644
 --- a/include/lldb/DataFormatters/FormatManager.h
 +++ b/include/lldb/DataFormatters/FormatManager.h
 @@ -237,6 +237,7 @@ private:
@@ -551,7 +627,7 @@ index 924ef0c..27f3939 100644
    lldb::TypeFormatImplSP GetHardcodedFormat(FormattersMatchData &);
  
 diff --git a/include/lldb/Expression/Expression.h b/include/lldb/Expression/Expression.h
-index f48a799..04aab02 100644
+index f48a79922..04aab02ea 100644
 --- a/include/lldb/Expression/Expression.h
 +++ b/include/lldb/Expression/Expression.h
 @@ -20,9 +20,12 @@
@@ -609,7 +685,7 @@ index f48a799..04aab02 100644
  
  } // namespace lldb_private
 diff --git a/include/lldb/Expression/ExpressionParser.h b/include/lldb/Expression/ExpressionParser.h
-index 99f583d..0cd508d 100644
+index 99f583d7c..0cd508d42 100644
 --- a/include/lldb/Expression/ExpressionParser.h
 +++ b/include/lldb/Expression/ExpressionParser.h
 @@ -59,7 +59,10 @@ public:
@@ -625,7 +701,7 @@ index 99f583d..0cd508d 100644
    //------------------------------------------------------------------
    /// Try to use the FixIts in the diagnostic_manager to rewrite the
 diff --git a/include/lldb/Expression/ExpressionSourceCode.h b/include/lldb/Expression/ExpressionSourceCode.h
-index 02fc72a..133cfb0 100644
+index 02fc72aaf..133cfb0d3 100644
 --- a/include/lldb/Expression/ExpressionSourceCode.h
 +++ b/include/lldb/Expression/ExpressionSourceCode.h
 @@ -10,7 +10,9 @@
@@ -675,7 +751,7 @@ index 02fc72a..133cfb0 100644
  };
  
 diff --git a/include/lldb/Expression/ExpressionVariable.h b/include/lldb/Expression/ExpressionVariable.h
-index 3f6b020..0c58e0d 100644
+index 3f6b02013..0c58e0d92 100644
 --- a/include/lldb/Expression/ExpressionVariable.h
 +++ b/include/lldb/Expression/ExpressionVariable.h
 @@ -242,7 +242,7 @@ public:
@@ -697,7 +773,7 @@ index 3f6b020..0c58e0d 100644
    LLVMCastKind m_kind;
  
 diff --git a/include/lldb/Expression/IRExecutionUnit.h b/include/lldb/Expression/IRExecutionUnit.h
-index 72c1775..17fc574 100644
+index 72c1775b5..17fc574b0 100644
 --- a/include/lldb/Expression/IRExecutionUnit.h
 +++ b/include/lldb/Expression/IRExecutionUnit.h
 @@ -14,6 +14,7 @@
@@ -748,7 +824,7 @@ index 72c1775..17fc574 100644
    std::vector<std::string> m_cpu_features;
    std::vector<JittedFunction> m_jitted_functions; ///< A vector of all functions
 diff --git a/include/lldb/Expression/LLVMUserExpression.h b/include/lldb/Expression/LLVMUserExpression.h
-index 48d0161..ec0835b 100644
+index 48d016199..ec0835b1d 100644
 --- a/include/lldb/Expression/LLVMUserExpression.h
 +++ b/include/lldb/Expression/LLVMUserExpression.h
 @@ -65,6 +65,10 @@ public:
@@ -799,7 +875,7 @@ index 48d0161..ec0835b 100644
                      ///variables.
  
 diff --git a/include/lldb/Expression/Materializer.h b/include/lldb/Expression/Materializer.h
-index 4874929..364c8a6 100644
+index 487492913..364c8a6e6 100644
 --- a/include/lldb/Expression/Materializer.h
 +++ b/include/lldb/Expression/Materializer.h
 @@ -27,8 +27,16 @@ namespace lldb_private {
@@ -872,7 +948,7 @@ index 4874929..364c8a6 100644
    EntityVector m_entities;
    uint32_t m_current_offset;
 diff --git a/include/lldb/Expression/UserExpression.h b/include/lldb/Expression/UserExpression.h
-index fca667e..67fea02 100644
+index fca667e8e..67fea0261 100644
 --- a/include/lldb/Expression/UserExpression.h
 +++ b/include/lldb/Expression/UserExpression.h
 @@ -96,7 +96,8 @@ public:
@@ -895,7 +971,7 @@ index fca667e..67fea02 100644
  
    //------------------------------------------------------------------
 diff --git a/include/lldb/Host/File.h b/include/lldb/Host/File.h
-index 6fa4e56..3606ba3 100644
+index 6fa4e5682..3606ba372 100644
 --- a/include/lldb/Host/File.h
 +++ b/include/lldb/Host/File.h
 @@ -57,13 +57,15 @@ public:
@@ -935,7 +1011,7 @@ index 6fa4e56..3606ba3 100644
    LazyBool m_is_real_terminal;
    LazyBool m_supports_colors;
 diff --git a/include/lldb/Host/HostInfoBase.h b/include/lldb/Host/HostInfoBase.h
-index 74ac79b..05abfb8 100644
+index 74ac79b69..05abfb83b 100644
 --- a/include/lldb/Host/HostInfoBase.h
 +++ b/include/lldb/Host/HostInfoBase.h
 @@ -117,12 +117,14 @@ public:
@@ -954,7 +1030,7 @@ index 74ac79b..05abfb8 100644
  
    static void ComputeHostArchitectureSupport(ArchSpec &arch_32,
 diff --git a/include/lldb/Host/macosx/HostInfoMacOSX.h b/include/lldb/Host/macosx/HostInfoMacOSX.h
-index b182b9b..791aa54 100644
+index b182b9bce..791aa541e 100644
 --- a/include/lldb/Host/macosx/HostInfoMacOSX.h
 +++ b/include/lldb/Host/macosx/HostInfoMacOSX.h
 @@ -34,11 +34,13 @@ public:
@@ -972,7 +1048,7 @@ index b182b9b..791aa54 100644
    static bool ComputeUserPluginsDirectory(FileSpec &file_spec);
  };
 diff --git a/include/lldb/Host/posix/HostInfoPosix.h b/include/lldb/Host/posix/HostInfoPosix.h
-index 6d22776..462844a 100644
+index 6d22776e1..462844a84 100644
 --- a/include/lldb/Host/posix/HostInfoPosix.h
 +++ b/include/lldb/Host/posix/HostInfoPosix.h
 @@ -35,8 +35,10 @@ public:
@@ -987,10 +1063,10 @@ index 6d22776..462844a 100644
    static bool ComputePathRelativeToLibrary(FileSpec &file_spec,
                                             llvm::StringRef dir);
 diff --git a/include/lldb/Interpreter/Args.h b/include/lldb/Interpreter/Args.h
-index 70610f2..e92820a 100644
+index 6610be14d..cd97dd1fc 100644
 --- a/include/lldb/Interpreter/Args.h
 +++ b/include/lldb/Interpreter/Args.h
-@@ -322,6 +322,11 @@ public:
+@@ -329,6 +329,11 @@ public:
                                OptionElementVector &option_element_vector,
                                uint32_t cursor_index);
  
@@ -1003,7 +1079,7 @@ index 70610f2..e92820a 100644
    // Clear the arguments.
    //
 diff --git a/include/lldb/Symbol/ClangASTContext.h b/include/lldb/Symbol/ClangASTContext.h
-index 4262ecb..fdd08e0 100644
+index 4262ecb4b..fdd08e051 100644
 --- a/include/lldb/Symbol/ClangASTContext.h
 +++ b/include/lldb/Symbol/ClangASTContext.h
 @@ -61,6 +61,8 @@ public:
@@ -1129,7 +1205,7 @@ index 4262ecb..fdd08e0 100644
      std::unique_ptr<clang::MangleContext>           m_mangle_ctx_ap;
      CompleteTagDeclCallback                         m_callback_tag_decl;
 diff --git a/include/lldb/Symbol/CompilerType.h b/include/lldb/Symbol/CompilerType.h
-index 6822160..603c5c5 100644
+index 68221609c..603c5c529 100644
 --- a/include/lldb/Symbol/CompilerType.h
 +++ b/include/lldb/Symbol/CompilerType.h
 @@ -19,6 +19,7 @@
@@ -1213,7 +1289,7 @@ index 6822160..603c5c5 100644
    void DumpSummary(ExecutionContext *exe_ctx, Stream *s,
                     const DataExtractor &data, lldb::offset_t data_offset,
 diff --git a/include/lldb/Symbol/GoASTContext.h b/include/lldb/Symbol/GoASTContext.h
-index 5530a35..d7cc52f 100644
+index 5530a3549..d7cc52f0e 100644
 --- a/include/lldb/Symbol/GoASTContext.h
 +++ b/include/lldb/Symbol/GoASTContext.h
 @@ -44,7 +44,8 @@ public:
@@ -1303,7 +1379,7 @@ index 5530a35..d7cc52f 100644
                         CompilerType *pointee_type = nullptr,
                         bool *is_rvalue = nullptr) override;
 diff --git a/include/lldb/Symbol/JavaASTContext.h b/include/lldb/Symbol/JavaASTContext.h
-index 6e97674..014579e 100644
+index 6e9767484..014579e9a 100644
 --- a/include/lldb/Symbol/JavaASTContext.h
 +++ b/include/lldb/Symbol/JavaASTContext.h
 @@ -41,7 +41,8 @@ public:
@@ -1364,7 +1440,7 @@ index 6e97674..014579e 100644
  
    void DumpTypeDescription(lldb::opaque_compiler_type_t type,
 diff --git a/include/lldb/Symbol/OCamlASTContext.h b/include/lldb/Symbol/OCamlASTContext.h
-index 9560866..1b74e61 100644
+index 9560866d3..1b74e61a8 100644
 --- a/include/lldb/Symbol/OCamlASTContext.h
 +++ b/include/lldb/Symbol/OCamlASTContext.h
 @@ -42,7 +42,8 @@ public:
@@ -1428,7 +1504,7 @@ index 9560866..1b74e61 100644
  
 diff --git a/include/lldb/Symbol/SwiftASTContext.h b/include/lldb/Symbol/SwiftASTContext.h
 new file mode 100644
-index 0000000..9cd6cee
+index 000000000..9cd6cee0c
 --- /dev/null
 +++ b/include/lldb/Symbol/SwiftASTContext.h
 @@ -0,0 +1,911 @@
@@ -2345,7 +2421,7 @@ index 0000000..9cd6cee
 +#endif // #ifndef liblldb_SwiftASTContext_h_
 diff --git a/include/lldb/Symbol/SwiftMangledNameVisitor.h b/include/lldb/Symbol/SwiftMangledNameVisitor.h
 new file mode 100644
-index 0000000..2679782
+index 000000000..26797820d
 --- /dev/null
 +++ b/include/lldb/Symbol/SwiftMangledNameVisitor.h
 @@ -0,0 +1,35 @@
@@ -2385,7 +2461,7 @@ index 0000000..2679782
 +
 +#endif // #ifndef liblldb_SwiftMangledNameVisitor_h_
 diff --git a/include/lldb/Symbol/Symbol.h b/include/lldb/Symbol/Symbol.h
-index 3f12b9a..d224df5 100644
+index 3f12b9a99..d224df5b8 100644
 --- a/include/lldb/Symbol/Symbol.h
 +++ b/include/lldb/Symbol/Symbol.h
 @@ -47,7 +47,9 @@ public:
@@ -2400,7 +2476,7 @@ index 3f12b9a..d224df5 100644
    bool ValueIsAddress() const;
  
 diff --git a/include/lldb/Symbol/SymbolFile.h b/include/lldb/Symbol/SymbolFile.h
-index 34ae8d7..22ed447 100644
+index 34ae8d76e..22ed447d8 100644
 --- a/include/lldb/Symbol/SymbolFile.h
 +++ b/include/lldb/Symbol/SymbolFile.h
 @@ -10,6 +10,8 @@
@@ -2490,7 +2566,7 @@ index 34ae8d7..22ed447 100644
  private:
    DISALLOW_COPY_AND_ASSIGN(SymbolFile);
 diff --git a/include/lldb/Symbol/SymbolVendor.h b/include/lldb/Symbol/SymbolVendor.h
-index 7db3de6..6ca6cd3 100644
+index 7db3de6e6..6ca6cd3cf 100644
 --- a/include/lldb/Symbol/SymbolVendor.h
 +++ b/include/lldb/Symbol/SymbolVendor.h
 @@ -136,6 +136,14 @@ public:
@@ -2527,7 +2603,7 @@ index 7db3de6..6ca6cd3 100644
    //------------------------------------------------------------------
    // Classes that inherit from SymbolVendor can see and modify these
 diff --git a/include/lldb/Symbol/Symtab.h b/include/lldb/Symbol/Symtab.h
-index 6a8d62c..235251d 100644
+index 6a8d62cea..235251d7e 100644
 --- a/include/lldb/Symbol/Symtab.h
 +++ b/include/lldb/Symbol/Symtab.h
 @@ -44,9 +44,13 @@ public:
@@ -2547,7 +2623,7 @@ index 6a8d62c..235251d 100644
    std::recursive_mutex &GetMutex() { return m_mutex; }
    Symbol *FindSymbolByID(lldb::user_id_t uid) const;
 diff --git a/include/lldb/Symbol/Type.h b/include/lldb/Symbol/Type.h
-index 13c95e7..0164b2c 100644
+index 13c95e71f..0164b2cd7 100644
 --- a/include/lldb/Symbol/Type.h
 +++ b/include/lldb/Symbol/Type.h
 @@ -369,6 +369,9 @@ protected:
@@ -2561,7 +2637,7 @@ index 13c95e7..0164b2c 100644
  public:
    TypeImpl();
 diff --git a/include/lldb/Symbol/TypeSystem.h b/include/lldb/Symbol/TypeSystem.h
-index b4f84c0..853054d 100644
+index b4f84c0dd..853054da3 100644
 --- a/include/lldb/Symbol/TypeSystem.h
 +++ b/include/lldb/Symbol/TypeSystem.h
 @@ -91,7 +91,8 @@ public:
@@ -2687,7 +2763,7 @@ index b4f84c0..853054d 100644
  protected:
    // This function does not take the map mutex, and should only be called from
 diff --git a/include/lldb/Target/LanguageRuntime.h b/include/lldb/Target/LanguageRuntime.h
-index a57216e..a53eb60 100644
+index a57216e84..a53eb6012 100644
 --- a/include/lldb/Target/LanguageRuntime.h
 +++ b/include/lldb/Target/LanguageRuntime.h
 @@ -128,6 +128,11 @@ public:
@@ -2703,7 +2779,7 @@ index a57216e..a53eb60 100644
  
    virtual lldb::BreakpointResolverSP
 diff --git a/include/lldb/Target/Process.h b/include/lldb/Target/Process.h
-index 7bcabdd..ad27d1e 100644
+index 251dfe6a1..3d9b1b8c5 100644
 --- a/include/lldb/Target/Process.h
 +++ b/include/lldb/Target/Process.h
 @@ -531,7 +531,7 @@ public:
@@ -2782,7 +2858,7 @@ index 7bcabdd..ad27d1e 100644
    bool m_can_interpret_function_calls;  // Some targets, e.g the OSX kernel,
                                          // don't support the ability to modify
                                          // the stack.
-@@ -3138,7 +3163,7 @@ protected:
+@@ -3133,7 +3158,7 @@ protected:
  
    bool PushProcessIOHandler();
  
@@ -2792,7 +2868,7 @@ index 7bcabdd..ad27d1e 100644
    bool ProcessIOHandlerIsActive();
  
 diff --git a/include/lldb/Target/StopInfo.h b/include/lldb/Target/StopInfo.h
-index 46f3456..26b0677 100644
+index 46f345673..26b067797 100644
 --- a/include/lldb/Target/StopInfo.h
 +++ b/include/lldb/Target/StopInfo.h
 @@ -133,7 +133,8 @@ public:
@@ -2817,7 +2893,7 @@ index 46f3456..26b0677 100644
    GetExpressionVariable(lldb::StopInfoSP &stop_info_sp);
 diff --git a/include/lldb/Target/SwiftLanguageRuntime.h b/include/lldb/Target/SwiftLanguageRuntime.h
 new file mode 100644
-index 0000000..6827204
+index 000000000..682720463
 --- /dev/null
 +++ b/include/lldb/Target/SwiftLanguageRuntime.h
 @@ -0,0 +1,476 @@
@@ -3298,7 +3374,7 @@ index 0000000..6827204
 +
 +#endif // liblldb_SwiftLanguageRuntime_h_
 diff --git a/include/lldb/Target/Target.h b/include/lldb/Target/Target.h
-index 224af6f..3a8c819 100644
+index 224af6fcb..3a8c8198d 100644
 --- a/include/lldb/Target/Target.h
 +++ b/include/lldb/Target/Target.h
 @@ -16,10 +16,13 @@
@@ -3532,7 +3608,7 @@ index 224af6f..3a8c819 100644
    typedef std::map<lldb::LanguageType, lldb::REPLSP> REPLMap;
    REPLMap m_repl_map;
 diff --git a/include/lldb/Target/Thread.h b/include/lldb/Target/Thread.h
-index 63449bb..0a45ae1 100644
+index 63449bbf9..0a45ae13b 100644
 --- a/include/lldb/Target/Thread.h
 +++ b/include/lldb/Target/Thread.h
 @@ -986,11 +986,15 @@ public:
@@ -3553,7 +3629,7 @@ index 63449bb..0a45ae1 100644
    //------------------------------------------------------------------
    /// Gets the outer-most expression variable from the completed plans
 diff --git a/include/lldb/Target/ThreadPlan.h b/include/lldb/Target/ThreadPlan.h
-index fd25cd0..a2ef1f8 100644
+index fd25cd08f..a2ef1f859 100644
 --- a/include/lldb/Target/ThreadPlan.h
 +++ b/include/lldb/Target/ThreadPlan.h
 @@ -516,6 +516,8 @@ public:
@@ -3566,7 +3642,7 @@ index fd25cd0..a2ef1f8 100644
    // longer than the command
    // that instigated the expression (generally because the expression evaluation
 diff --git a/include/lldb/Target/ThreadPlanCallFunction.h b/include/lldb/Target/ThreadPlanCallFunction.h
-index 3d43491..ec3fabf 100644
+index 3d43491af..ec3fabff1 100644
 --- a/include/lldb/Target/ThreadPlanCallFunction.h
 +++ b/include/lldb/Target/ThreadPlanCallFunction.h
 @@ -16,6 +16,7 @@
@@ -3602,7 +3678,7 @@ index 3d43491..ec3fabf 100644
  private:
    CompilerType m_return_type;
 diff --git a/include/lldb/Target/ThreadPlanStepInRange.h b/include/lldb/Target/ThreadPlanStepInRange.h
-index c3116ea..7696ba9 100644
+index c3116eac8..7696ba96f 100644
 --- a/include/lldb/Target/ThreadPlanStepInRange.h
 +++ b/include/lldb/Target/ThreadPlanStepInRange.h
 @@ -54,6 +54,8 @@ public:
@@ -3639,7 +3715,7 @@ index c3116ea..7696ba9 100644
  };
  
 diff --git a/include/lldb/Target/ThreadPlanStepOut.h b/include/lldb/Target/ThreadPlanStepOut.h
-index 285f4ca..4bf376c 100644
+index 285f4cab1..4bf376cc5 100644
 --- a/include/lldb/Target/ThreadPlanStepOut.h
 +++ b/include/lldb/Target/ThreadPlanStepOut.h
 @@ -45,6 +45,10 @@ public:
@@ -3670,7 +3746,7 @@ index 285f4ca..4bf376c 100644
  
    friend lldb::ThreadPlanSP Thread::QueueThreadPlanForStepOut(
 diff --git a/include/lldb/lldb-enumerations.h b/include/lldb/lldb-enumerations.h
-index cf42828..11e3e1d 100644
+index cf42828e2..11e3e1d06 100644
 --- a/include/lldb/lldb-enumerations.h
 +++ b/include/lldb/lldb-enumerations.h
 @@ -601,7 +601,12 @@ enum SymbolType {
@@ -3780,7 +3856,7 @@ index cf42828..11e3e1d 100644
  FLAGS_ENUM(CommandFlags){
      //----------------------------------------------------------------------
 diff --git a/include/lldb/lldb-forward.h b/include/lldb/lldb-forward.h
-index 8f70a59..6614dfd 100644
+index 8f70a59ca..6614dfd8d 100644
 --- a/include/lldb/lldb-forward.h
 +++ b/include/lldb/lldb-forward.h
 @@ -200,6 +200,9 @@ class SectionList;
@@ -3802,7 +3878,7 @@ index 8f70a59..6614dfd 100644
  typedef std::shared_ptr<lldb_private::StackFrame> StackFrameSP;
  typedef std::unique_ptr<lldb_private::StackFrame> StackFrameUP;
 diff --git a/include/lldb/lldb-private-interfaces.h b/include/lldb/lldb-private-interfaces.h
-index c0d5c85..5b9d6ea 100644
+index c0d5c859a..5b9d6ea92 100644
 --- a/include/lldb/lldb-private-interfaces.h
 +++ b/include/lldb/lldb-private-interfaces.h
 @@ -94,7 +94,8 @@ typedef lldb::InstrumentationRuntimeType (*InstrumentationRuntimeGetType)();
@@ -3816,7 +3892,7 @@ index c0d5c85..5b9d6ea 100644
                                             lldb::LanguageType language,
                                             Debugger *debugger, Target *target,
 diff --git a/scripts/interface/SBExpressionOptions.i b/scripts/interface/SBExpressionOptions.i
-index cb61dd9..8ce19ca 100644
+index cb61dd9d9..8ce19caf5 100644
 --- a/scripts/interface/SBExpressionOptions.i
 +++ b/scripts/interface/SBExpressionOptions.i
 @@ -92,6 +92,18 @@ public:
@@ -3839,7 +3915,7 @@ index cb61dd9..8ce19ca 100644
      void
      SetLanguage (lldb::LanguageType language);
 diff --git a/scripts/interface/SBModule.i b/scripts/interface/SBModule.i
-index b1b6d2a..db6369d 100644
+index b1b6d2a7c..db6369d0a 100644
 --- a/scripts/interface/SBModule.i
 +++ b/scripts/interface/SBModule.i
 @@ -315,6 +315,9 @@ public:
@@ -3853,7 +3929,7 @@ index b1b6d2a..db6369d 100644
      operator == (const lldb::SBModule &rhs) const;
               
 diff --git a/scripts/interface/SBTarget.i b/scripts/interface/SBTarget.i
-index c1d749c..7fc72c4 100644
+index c1d749c7c..7fc72c418 100644
 --- a/scripts/interface/SBTarget.i
 +++ b/scripts/interface/SBTarget.i
 @@ -691,6 +691,12 @@ public:
@@ -3870,7 +3946,7 @@ index c1d749c..7fc72c4 100644
  
      lldb::SBBreakpoint
 diff --git a/scripts/interface/SBThread.i b/scripts/interface/SBThread.i
-index 9aacb43..af4a751 100644
+index 9aacb4374..af4a751fd 100644
 --- a/scripts/interface/SBThread.i
 +++ b/scripts/interface/SBThread.i
 @@ -135,10 +135,33 @@ public:
@@ -3908,7 +3984,7 @@ index 9aacb43..af4a751 100644
      for the current SBThread that will remain constant throughout the thread's
      lifetime in this process and will not be reused by another thread during this
 diff --git a/source/API/SBExpressionOptions.cpp b/source/API/SBExpressionOptions.cpp
-index 218d93e..d8efa5a 100644
+index 218d93e96..d8efa5acc 100644
 --- a/source/API/SBExpressionOptions.cpp
 +++ b/source/API/SBExpressionOptions.cpp
 @@ -115,6 +115,23 @@ void SBExpressionOptions::SetCancelCallback(
@@ -3936,7 +4012,7 @@ index 218d93e..d8efa5a 100644
    return m_opaque_ap->GetGenerateDebugInfo();
  }
 diff --git a/source/API/SBMemoryRegionInfoList.cpp b/source/API/SBMemoryRegionInfoList.cpp
-index f7ce81a..3adeb58 100644
+index f7ce81af5..3adeb58bc 100644
 --- a/source/API/SBMemoryRegionInfoList.cpp
 +++ b/source/API/SBMemoryRegionInfoList.cpp
 @@ -7,8 +7,8 @@
@@ -3950,7 +4026,7 @@ index f7ce81a..3adeb58 100644
  #include "lldb/Core/Log.h"
  #include "lldb/Target/MemoryRegionInfo.h"
 diff --git a/source/API/SBModule.cpp b/source/API/SBModule.cpp
-index 8964303..82c43cc 100644
+index 89643033a..82c43cc74 100644
 --- a/source/API/SBModule.cpp
 +++ b/source/API/SBModule.cpp
 @@ -26,6 +26,7 @@
@@ -3984,7 +4060,7 @@ index 8964303..82c43cc 100644
 +  return sb_error;
 +}
 diff --git a/source/API/SBTarget.cpp b/source/API/SBTarget.cpp
-index a620f6f..0fcb983 100644
+index a620f6f30..0fcb983b2 100644
 --- a/source/API/SBTarget.cpp
 +++ b/source/API/SBTarget.cpp
 @@ -23,7 +23,9 @@
@@ -4037,7 +4113,7 @@ index a620f6f..0fcb983 100644
  
    if (log)
 diff --git a/source/API/SBThread.cpp b/source/API/SBThread.cpp
-index fbde6dd..746cfe0 100644
+index fbde6dd32..746cfe0dc 100644
 --- a/source/API/SBThread.cpp
 +++ b/source/API/SBThread.cpp
 @@ -425,6 +425,24 @@ size_t SBThread::GetStopDescription(char *dst, size_t dst_len) {
@@ -4076,7 +4152,7 @@ index fbde6dd..746cfe0 100644
      } else {
        if (log)
 diff --git a/source/API/SBTypeEnumMember.cpp b/source/API/SBTypeEnumMember.cpp
-index 787a46b..1cca0b1 100644
+index 787a46b17..1cca0b197 100644
 --- a/source/API/SBTypeEnumMember.cpp
 +++ b/source/API/SBTypeEnumMember.cpp
 @@ -7,10 +7,10 @@
@@ -4093,7 +4169,7 @@ index 787a46b..1cca0b1 100644
  #include "lldb/Symbol/CompilerType.h"
  #include "lldb/Symbol/Type.h"
 diff --git a/source/API/SystemInitializerFull.cpp b/source/API/SystemInitializerFull.cpp
-index 3a57daf..ab3dcb8 100644
+index 4ebbc5549..3dde1aa4e 100644
 --- a/source/API/SystemInitializerFull.cpp
 +++ b/source/API/SystemInitializerFull.cpp
 @@ -28,6 +28,7 @@
@@ -4152,7 +4228,7 @@ index 3a57daf..ab3dcb8 100644
 +  ::SwiftInitialize();
 +
  #if defined(_MSC_VER)
-   ProcessWindowsLive::Initialize();
+   ProcessWindows::Initialize();
  #endif
 @@ -409,6 +432,7 @@ void SystemInitializerFull::Terminate() {
    GoASTContext::Terminate();
@@ -4172,7 +4248,7 @@ index 3a57daf..ab3dcb8 100644
    GoLanguage::Terminate();
    JavaLanguage::Terminate();
 diff --git a/source/Breakpoint/BreakpointLocation.cpp b/source/Breakpoint/BreakpointLocation.cpp
-index 578267a..9b2067d 100644
+index 578267a41..9b2067dfe 100644
 --- a/source/Breakpoint/BreakpointLocation.cpp
 +++ b/source/Breakpoint/BreakpointLocation.cpp
 @@ -236,7 +236,7 @@ bool BreakpointLocation::ConditionSaysStop(ExecutionContext &exe_ctx,
@@ -4185,7 +4261,7 @@ index 578267a..9b2067d 100644
            "Couldn't parse conditional expression:\n%s",
            diagnostics.GetString().c_str());
 diff --git a/source/Breakpoint/BreakpointResolverFileLine.cpp b/source/Breakpoint/BreakpointResolverFileLine.cpp
-index acdd297..d546d6c 100644
+index acdd29736..d546d6c99 100644
 --- a/source/Breakpoint/BreakpointResolverFileLine.cpp
 +++ b/source/Breakpoint/BreakpointResolverFileLine.cpp
 @@ -19,6 +19,8 @@
@@ -4237,7 +4313,7 @@ index acdd297..d546d6c 100644
    s.Printf("for %s:%d ", m_file_spec.GetFilename().AsCString("<Unknown>"),
             m_line_number);
 diff --git a/source/Breakpoint/BreakpointResolverName.cpp b/source/Breakpoint/BreakpointResolverName.cpp
-index 6cc8f60..86d8b23 100644
+index 6cc8f60db..86d8b2392 100644
 --- a/source/Breakpoint/BreakpointResolverName.cpp
 +++ b/source/Breakpoint/BreakpointResolverName.cpp
 @@ -23,6 +23,8 @@
@@ -4276,7 +4352,7 @@ index 6cc8f60..86d8b23 100644
  }
  
 diff --git a/source/Commands/CommandObjectBreakpoint.cpp b/source/Commands/CommandObjectBreakpoint.cpp
-index 941dd9a..38b0360 100644
+index 941dd9a78..38b036012 100644
 --- a/source/Commands/CommandObjectBreakpoint.cpp
 +++ b/source/Commands/CommandObjectBreakpoint.cpp
 @@ -115,11 +115,11 @@ static OptionDefinition g_breakpoint_set_options[] = {
@@ -4334,7 +4410,7 @@ index 941dd9a..38b0360 100644
        m_language = lldb::eLanguageTypeUnknown;
        m_skip_prologue = eLazyBoolCalculate;
 diff --git a/source/Commands/CommandObjectCommands.cpp b/source/Commands/CommandObjectCommands.cpp
-index 946bb83..da5a849 100644
+index cc86b4b3d..7b845aa30 100644
 --- a/source/Commands/CommandObjectCommands.cpp
 +++ b/source/Commands/CommandObjectCommands.cpp
 @@ -1057,6 +1057,20 @@ protected:
@@ -4359,7 +4435,7 @@ index 946bb83..da5a849 100644
      const size_t argc = command.GetArgumentCount();
      if (argc == 0) {
 diff --git a/source/Commands/CommandObjectExpression.cpp b/source/Commands/CommandObjectExpression.cpp
-index ba477cd..7ca1742 100644
+index ba477cd5f..7ca1742f5 100644
 --- a/source/Commands/CommandObjectExpression.cpp
 +++ b/source/Commands/CommandObjectExpression.cpp
 @@ -10,8 +10,14 @@
@@ -4579,7 +4655,7 @@ index ba477cd..7ca1742 100644
            // Drop into REPL
            m_expr_lines.clear();
 diff --git a/source/Commands/CommandObjectExpression.h b/source/Commands/CommandObjectExpression.h
-index 7c21adc..3debada 100644
+index 7c21adcc2..3debada3e 100644
 --- a/source/Commands/CommandObjectExpression.h
 +++ b/source/Commands/CommandObjectExpression.h
 @@ -49,6 +49,9 @@ public:
@@ -4613,7 +4689,7 @@ index 7c21adc..3debada 100644
    uint32_t m_expr_line_count;
    std::string m_expr_lines;       // Multi-line expression support
 diff --git a/source/Commands/CommandObjectSource.cpp b/source/Commands/CommandObjectSource.cpp
-index e44ef6d..1fff8a8 100644
+index e44ef6d9a..1fff8a83b 100644
 --- a/source/Commands/CommandObjectSource.cpp
 +++ b/source/Commands/CommandObjectSource.cpp
 @@ -1220,23 +1220,36 @@ protected:
@@ -4785,7 +4861,7 @@ index e44ef6d..1fff8a8 100644
      }
      return result.Succeeded();
 diff --git a/source/Commands/CommandObjectTarget.cpp b/source/Commands/CommandObjectTarget.cpp
-index d2e53aa..6ca12d6 100644
+index d2e53aa4a..6ca12d665 100644
 --- a/source/Commands/CommandObjectTarget.cpp
 +++ b/source/Commands/CommandObjectTarget.cpp
 @@ -1410,14 +1410,15 @@ static size_t DumpModuleObjfileHeaders(Stream &strm, ModuleList &module_list) {
@@ -4894,7 +4970,7 @@ index d2e53aa..6ca12d6 100644
  
    bool LookupInModule(CommandInterpreter &interpreter, Module *module,
 diff --git a/source/Commands/CommandObjectType.cpp b/source/Commands/CommandObjectType.cpp
-index 621ef58..b2ffd8a 100644
+index 621ef581a..b2ffd8a23 100644
 --- a/source/Commands/CommandObjectType.cpp
 +++ b/source/Commands/CommandObjectType.cpp
 @@ -2847,8 +2847,8 @@ public:
@@ -4917,7 +4993,7 @@ index 621ef58..b2ffd8a 100644
        languages.push_back(Language::FindPlugin(m_command_options.m_language));
      }
 diff --git a/source/Core/DataExtractor.cpp b/source/Core/DataExtractor.cpp
-index fbc6e80..46c6bc6 100644
+index fbc6e80be..46c6bc692 100644
 --- a/source/Core/DataExtractor.cpp
 +++ b/source/Core/DataExtractor.cpp
 @@ -1723,10 +1723,11 @@ lldb::offset_t DataExtractor::Dump(
@@ -4935,7 +5011,7 @@ index fbc6e80..46c6bc6 100644
                llvm::APInt apint;
                if (GetAPInt(*this, &offset, byte_size, apint)) {
 diff --git a/source/Core/Debugger.cpp b/source/Core/Debugger.cpp
-index e66fb23..939c8a6 100644
+index 8f888a518..a6befdf81 100644
 --- a/source/Core/Debugger.cpp
 +++ b/source/Core/Debugger.cpp
 @@ -15,10 +15,13 @@
@@ -5118,7 +5194,7 @@ index e66fb23..939c8a6 100644
  }
  
 diff --git a/source/Core/FormatEntity.cpp b/source/Core/FormatEntity.cpp
-index 08166d2..61290d6 100644
+index 08166d208..61290d65c 100644
 --- a/source/Core/FormatEntity.cpp
 +++ b/source/Core/FormatEntity.cpp
 @@ -1274,10 +1274,16 @@ bool FormatEntity::Format(const Entry &entry, Stream &s,
@@ -5142,7 +5218,7 @@ index 08166d2..61290d6 100644
            }
          }
 diff --git a/source/Core/Mangled.cpp b/source/Core/Mangled.cpp
-index 30c4ac1..9f68180 100644
+index 30c4ac12d..9f6818021 100644
 --- a/source/Core/Mangled.cpp
 +++ b/source/Core/Mangled.cpp
 @@ -13,6 +13,13 @@
@@ -5322,7 +5398,7 @@ index 30c4ac1..9f68180 100644
    }
    return lldb::eLanguageTypeUnknown;
 diff --git a/source/Core/Module.cpp b/source/Core/Module.cpp
-index 220773b..acce231 100644
+index 220773b5a..acce23146 100644
 --- a/source/Core/Module.cpp
 +++ b/source/Core/Module.cpp
 @@ -32,11 +32,13 @@
@@ -5446,7 +5522,7 @@ index 220773b..acce231 100644
    ObjectFile *obj_file = GetObjectFile();
  
 diff --git a/source/Core/ModuleList.cpp b/source/Core/ModuleList.cpp
-index b980e15..cd82ad4 100644
+index b980e15c0..cd82ad42d 100644
 --- a/source/Core/ModuleList.cpp
 +++ b/source/Core/ModuleList.cpp
 @@ -29,6 +29,8 @@
@@ -5589,7 +5665,7 @@ index b980e15..cd82ad4 100644
 +    module->ClearModuleDependentCaches();
 +}
 diff --git a/source/Core/SearchFilter.cpp b/source/Core/SearchFilter.cpp
-index 2dfb269..a05631f 100644
+index 2dfb26910..a05631f0a 100644
 --- a/source/Core/SearchFilter.cpp
 +++ b/source/Core/SearchFilter.cpp
 @@ -14,6 +14,7 @@
@@ -5643,7 +5719,7 @@ index 2dfb269..a05631f 100644
              UINT32_MAX) {
        SymbolContext matchingContext(m_target_sp, module_sp);
 diff --git a/source/Core/SourceManager.cpp b/source/Core/SourceManager.cpp
-index 603fe57..6331b8a 100644
+index 603fe5711..6331b8a90 100644
 --- a/source/Core/SourceManager.cpp
 +++ b/source/Core/SourceManager.cpp
 @@ -270,6 +270,57 @@ bool SourceManager::SetDefaultFileAndLine(const FileSpec &file_spec,
@@ -5740,7 +5816,7 @@ index 603fe57..6331b8a 100644
        }
      }
 diff --git a/source/Core/Value.cpp b/source/Core/Value.cpp
-index a480c3c..075f31b 100644
+index a480c3cf3..075f31b00 100644
 --- a/source/Core/Value.cpp
 +++ b/source/Core/Value.cpp
 @@ -216,6 +216,8 @@ uint64_t Value::GetValueByteSize(Error *error_ptr, ExecutionContext *exe_ctx) {
@@ -5763,7 +5839,7 @@ index a480c3c..075f31b 100644
    // Make sure we have enough room within "data", and if we don't make
    // something large enough that does
 diff --git a/source/Core/ValueObject.cpp b/source/Core/ValueObject.cpp
-index d8870d6..d477bf5 100644
+index d8870d69b..d477bf584 100644
 --- a/source/Core/ValueObject.cpp
 +++ b/source/Core/ValueObject.cpp
 @@ -44,6 +44,7 @@
@@ -5987,7 +6063,7 @@ index d8870d6..d477bf5 100644
  
  bool ValueObject::IsRuntimeSupportValue() {
 diff --git a/source/Core/ValueObjectDynamicValue.cpp b/source/Core/ValueObjectDynamicValue.cpp
-index 1fb32d4..160f7af 100644
+index 1fb32d4e8..160f7afd0 100644
 --- a/source/Core/ValueObjectDynamicValue.cpp
 +++ b/source/Core/ValueObjectDynamicValue.cpp
 @@ -34,6 +34,7 @@
@@ -6084,7 +6160,7 @@ index 1fb32d4..160f7af 100644
        if (!CanProvideValue()) {
          // this value object represents an aggregate type whose
 diff --git a/source/Core/ValueObjectSyntheticFilter.cpp b/source/Core/ValueObjectSyntheticFilter.cpp
-index 592f1ea..4111a51 100644
+index 592f1ea56..4111a516c 100644
 --- a/source/Core/ValueObjectSyntheticFilter.cpp
 +++ b/source/Core/ValueObjectSyntheticFilter.cpp
 @@ -305,7 +305,7 @@ lldb::ValueObjectSP ValueObjectSynthetic::GetNonSyntheticValue() {
@@ -6097,7 +6173,7 @@ index 592f1ea..4111a51 100644
  
  bool ValueObjectSynthetic::CanProvideValue() {
 diff --git a/source/Core/ValueObjectVariable.cpp b/source/Core/ValueObjectVariable.cpp
-index f8eedc3..3dffc95 100644
+index f8eedc30e..3dffc95e7 100644
 --- a/source/Core/ValueObjectVariable.cpp
 +++ b/source/Core/ValueObjectVariable.cpp
 @@ -13,6 +13,7 @@
@@ -6145,7 +6221,7 @@ index f8eedc3..3dffc95 100644
            (type_info & (lldb::eTypeIsPointer | lldb::eTypeIsReference)) != 0;
  
 diff --git a/source/DataFormatters/CMakeLists.txt b/source/DataFormatters/CMakeLists.txt
-index bfb5c8b..7ff1660 100644
+index bfb5c8b9f..7ff16606e 100644
 --- a/source/DataFormatters/CMakeLists.txt
 +++ b/source/DataFormatters/CMakeLists.txt
 @@ -17,3 +17,12 @@ add_lldb_library(lldbDataFormatters
@@ -6162,7 +6238,7 @@ index bfb5c8b..7ff1660 100644
 +  CODE "file(MAKE_DIRECTORY ${lib_dir}/lldb)")
 +
 diff --git a/source/DataFormatters/FormatManager.cpp b/source/DataFormatters/FormatManager.cpp
-index 6e5fdf9..7c8709b 100644
+index 6e5fdf923..7c8709b78 100644
 --- a/source/DataFormatters/FormatManager.cpp
 +++ b/source/DataFormatters/FormatManager.cpp
 @@ -16,6 +16,7 @@
@@ -6207,7 +6283,7 @@ index 6e5fdf9..7c8709b 100644
                   lldb::eLanguageTypeObjC_plus_plus);
  }
 diff --git a/source/DataFormatters/TypeCategory.cpp b/source/DataFormatters/TypeCategory.cpp
-index db3372c..75489a2 100644
+index db3372c52..75489a2e1 100644
 --- a/source/DataFormatters/TypeCategory.cpp
 +++ b/source/DataFormatters/TypeCategory.cpp
 @@ -55,6 +55,12 @@ static bool IsApplicable(lldb::LanguageType category_lang,
@@ -6224,7 +6300,7 @@ index db3372c..75489a2 100644
    case eLanguageTypeC89:
    case eLanguageTypeC:
 diff --git a/source/DataFormatters/TypeFormat.cpp b/source/DataFormatters/TypeFormat.cpp
-index 8bd369b..8e8bc39 100644
+index 8bd369b35..8e8bc39f6 100644
 --- a/source/DataFormatters/TypeFormat.cpp
 +++ b/source/DataFormatters/TypeFormat.cpp
 @@ -92,7 +92,8 @@ bool TypeFormatImpl_Format::FormatObject(ValueObject *valobj,
@@ -6261,7 +6337,7 @@ index 8bd369b..8e8bc39 100644
      dest = sstr.GetString();
    return !dest.empty();
 diff --git a/source/Expression/ExpressionSourceCode.cpp b/source/Expression/ExpressionSourceCode.cpp
-index 90a9ff2..ff8a6e6 100644
+index 90a9ff2ff..ff8a6e6aa 100644
 --- a/source/Expression/ExpressionSourceCode.cpp
 +++ b/source/Expression/ExpressionSourceCode.cpp
 @@ -9,9 +9,15 @@
@@ -6555,7 +6631,7 @@ index 90a9ff2..ff8a6e6 100644
    case lldb::eLanguageTypeC_plus_plus:
    case lldb::eLanguageTypeObjC:
 diff --git a/source/Expression/ExpressionVariable.cpp b/source/Expression/ExpressionVariable.cpp
-index 00e6896..e8c37b8 100644
+index 00e689622..e8c37b8be 100644
 --- a/source/Expression/ExpressionVariable.cpp
 +++ b/source/Expression/ExpressionVariable.cpp
 @@ -30,6 +30,11 @@ uint8_t *ExpressionVariable::GetValueBytes() {
@@ -6571,7 +6647,7 @@ index 00e6896..e8c37b8 100644
    SymbolMap::iterator si = m_symbol_map.find(name.GetCString());
  
 diff --git a/source/Expression/FunctionCaller.cpp b/source/Expression/FunctionCaller.cpp
-index f218ccb..d3c0b2e 100644
+index f218ccb04..d3c0b2e3d 100644
 --- a/source/Expression/FunctionCaller.cpp
 +++ b/source/Expression/FunctionCaller.cpp
 @@ -93,18 +93,9 @@ bool FunctionCaller::WriteFunctionWrapper(
@@ -6597,7 +6673,7 @@ index f218ccb..d3c0b2e 100644
      m_jit_process_wp = process->shared_from_this();
  
 diff --git a/source/Expression/IRExecutionUnit.cpp b/source/Expression/IRExecutionUnit.cpp
-index 9ad2b33..6f3f5f0 100644
+index 9ad2b33ce..6f3f5f08f 100644
 --- a/source/Expression/IRExecutionUnit.cpp
 +++ b/source/Expression/IRExecutionUnit.cpp
 @@ -43,12 +43,30 @@ IRExecutionUnit::IRExecutionUnit(std::unique_ptr<llvm::LLVMContext> &context_ap,
@@ -6802,7 +6878,7 @@ index 9ad2b33..6f3f5f0 100644
 +  return s_llvm_context_mutex;
 +}
 diff --git a/source/Expression/LLVMUserExpression.cpp b/source/Expression/LLVMUserExpression.cpp
-index c5df781..311c6dd 100644
+index c5df7812b..311c6dd1e 100644
 --- a/source/Expression/LLVMUserExpression.cpp
 +++ b/source/Expression/LLVMUserExpression.cpp
 @@ -51,9 +51,7 @@ LLVMUserExpression::LLVMUserExpression(ExecutionContextScope &exe_scope,
@@ -6901,7 +6977,7 @@ index c5df781..311c6dd 100644
      if (m_materialized_address == LLDB_INVALID_ADDRESS) {
        Error alloc_error;
 diff --git a/source/Expression/Materializer.cpp b/source/Expression/Materializer.cpp
-index 6ddd4a4..eeb7571 100644
+index 6ddd4a4d8..eeb7571d0 100644
 --- a/source/Expression/Materializer.cpp
 +++ b/source/Expression/Materializer.cpp
 @@ -17,13 +17,13 @@
@@ -7093,7 +7169,7 @@ index 6ddd4a4..eeb7571 100644
  
    Wipe();
 diff --git a/source/Expression/UserExpression.cpp b/source/Expression/UserExpression.cpp
-index 041caf5..3dffa81 100644
+index 041caf57b..3dffa8143 100644
 --- a/source/Expression/UserExpression.cpp
 +++ b/source/Expression/UserExpression.cpp
 @@ -208,6 +208,16 @@ lldb::ExpressionResults UserExpression::Evaluate(
@@ -7136,7 +7212,7 @@ index 041caf5..3dffa81 100644
          diagnostic_manager.Clear();
          user_expression_sp = fixed_expression_sp;
 diff --git a/source/Host/common/Editline.cpp b/source/Host/common/Editline.cpp
-index 6e12bfb..5e733bf 100644
+index a600c61c8..2da45ea2f 100644
 --- a/source/Host/common/Editline.cpp
 +++ b/source/Host/common/Editline.cpp
 @@ -1347,7 +1347,8 @@ bool Editline::GetLines(int first_line_number, StringList &lines,
@@ -7150,7 +7226,7 @@ index 6e12bfb..5e733bf 100644
      lines = GetInputAsStringList();
    }
 diff --git a/source/Host/common/File.cpp b/source/Host/common/File.cpp
-index fcd1416..24f0d97 100644
+index fcd1416e9..24f0d97a2 100644
 --- a/source/Host/common/File.cpp
 +++ b/source/Host/common/File.cpp
 @@ -71,7 +71,8 @@ File::File(const char *path, uint32_t options, uint32_t permissions)
@@ -7184,7 +7260,7 @@ index fcd1416..24f0d97 100644
      if (_isatty(fd)) {
        m_is_interactive = eLazyBoolYes;
 diff --git a/source/Host/common/HostInfoBase.cpp b/source/Host/common/HostInfoBase.cpp
-index 01ac870..f213070 100644
+index 01ac87047..f21307009 100644
 --- a/source/Host/common/HostInfoBase.cpp
 +++ b/source/Host/common/HostInfoBase.cpp
 @@ -59,9 +59,11 @@ struct HostInfoBaseFields {
@@ -7283,7 +7359,7 @@ index 01ac870..f213070 100644
  bool HostInfoBase::ComputeUserPluginsDirectory(FileSpec &file_spec) {
    // TODO(zturner): Figure out how to compute the user plugins directory for all
 diff --git a/source/Host/macosx/Symbols.cpp b/source/Host/macosx/Symbols.cpp
-index c428377..8c40151 100644
+index c428377eb..8c4015168 100644
 --- a/source/Host/macosx/Symbols.cpp
 +++ b/source/Host/macosx/Symbols.cpp
 @@ -509,10 +509,12 @@ bool Symbols::DownloadObjectAndSymbolFile(ModuleSpec &module_spec,
@@ -7302,7 +7378,7 @@ index c428377..8c40151 100644
  
        if (!command.GetString().empty()) {
 diff --git a/source/Host/posix/HostInfoPosix.cpp b/source/Host/posix/HostInfoPosix.cpp
-index 689928c..3c434b4 100644
+index 689928cd3..3c434b410 100644
 --- a/source/Host/posix/HostInfoPosix.cpp
 +++ b/source/Host/posix/HostInfoPosix.cpp
 @@ -176,6 +176,19 @@ bool HostInfoPosix::ComputeClangDirectory(FileSpec &file_spec) {
@@ -7344,7 +7420,7 @@ index 689928c..3c434b4 100644
                                        std::string &var) {
    if (const char *pvar = ::getenv(var_name.c_str())) {
 diff --git a/source/Host/posix/HostProcessPosix.cpp b/source/Host/posix/HostProcessPosix.cpp
-index 9dd9fef..c00cb43 100644
+index 9dd9fef94..c00cb43a1 100644
 --- a/source/Host/posix/HostProcessPosix.cpp
 +++ b/source/Host/posix/HostProcessPosix.cpp
 @@ -7,9 +7,9 @@
@@ -7360,7 +7436,7 @@ index 9dd9fef..c00cb43 100644
  #include "llvm/ADT/STLExtras.h"
  
 diff --git a/source/Initialization/SystemInitializerCommon.cpp b/source/Initialization/SystemInitializerCommon.cpp
-index 5bf4cea..28b8c48 100644
+index 5bf4ceaa1..28b8c4804 100644
 --- a/source/Initialization/SystemInitializerCommon.cpp
 +++ b/source/Initialization/SystemInitializerCommon.cpp
 @@ -9,6 +9,10 @@
@@ -7411,7 +7487,7 @@ index 5bf4cea..28b8c48 100644
    EmulateInstructionMIPS::Terminate();
    EmulateInstructionMIPS64::Terminate();
 diff --git a/source/Interpreter/Args.cpp b/source/Interpreter/Args.cpp
-index 1e86dea..78d65df 100644
+index 1e86deafb..78d65dfcb 100644
 --- a/source/Interpreter/Args.cpp
 +++ b/source/Interpreter/Args.cpp
 @@ -590,7 +590,11 @@ lldb::addr_t Args::StringToAddress(const ExecutionContext *exe_ctx,
@@ -7517,7 +7593,7 @@ index 1e86dea..78d65df 100644
    dst.clear();
    if (src) {
 diff --git a/source/Interpreter/CommandInterpreter.cpp b/source/Interpreter/CommandInterpreter.cpp
-index 251f591..2c5ac54 100644
+index 36651519e..3b72ef0e9 100644
 --- a/source/Interpreter/CommandInterpreter.cpp
 +++ b/source/Interpreter/CommandInterpreter.cpp
 @@ -141,9 +141,9 @@ bool CommandInterpreter::GetPromptOnQuit() const {
@@ -7559,7 +7635,7 @@ index 251f591..2c5ac54 100644
                                             "source list --name \"%1\"") &&
          list_regex_cmd_ap->AddRegexCommand("^$", "source list")) {
 diff --git a/source/Interpreter/OptionGroupValueObjectDisplay.cpp b/source/Interpreter/OptionGroupValueObjectDisplay.cpp
-index 6d33132..3bdd90a 100644
+index 6d331326d..3bdd90a4c 100644
 --- a/source/Interpreter/OptionGroupValueObjectDisplay.cpp
 +++ b/source/Interpreter/OptionGroupValueObjectDisplay.cpp
 @@ -47,7 +47,7 @@ static OptionDefinition g_option_table[] = {
@@ -7572,7 +7648,7 @@ index 6d33132..3bdd90a 100644
       nullptr, nullptr, 0, eArgTypeCount, "The number of pointers to be "
                                           "traversed when dumping values "
 diff --git a/source/Plugins/ABI/SysV-x86_64/ABISysV_x86_64.cpp b/source/Plugins/ABI/SysV-x86_64/ABISysV_x86_64.cpp
-index 2019db2..c9ea208 100644
+index 2019db2bf..c9ea208a9 100644
 --- a/source/Plugins/ABI/SysV-x86_64/ABISysV_x86_64.cpp
 +++ b/source/Plugins/ABI/SysV-x86_64/ABISysV_x86_64.cpp
 @@ -1516,7 +1516,8 @@ ValueObjectSP ABISysV_x86_64::GetReturnValueObjectSimple(
@@ -7964,7 +8040,7 @@ index 2019db2..c9ea208 100644
  
        if (!is_memory) {
 diff --git a/source/Plugins/DynamicLoader/Hexagon-DYLD/HexagonDYLDRendezvous.cpp b/source/Plugins/DynamicLoader/Hexagon-DYLD/HexagonDYLDRendezvous.cpp
-index da0edc8..52c67c9 100644
+index da0edc870..52c67c90f 100644
 --- a/source/Plugins/DynamicLoader/Hexagon-DYLD/HexagonDYLDRendezvous.cpp
 +++ b/source/Plugins/DynamicLoader/Hexagon-DYLD/HexagonDYLDRendezvous.cpp
 @@ -352,8 +352,9 @@ void HexagonDYLDRendezvous::DumpToLog(Log *log) const {
@@ -7980,7 +8056,7 @@ index da0edc8..52c67c9 100644
    iterator I = begin();
    iterator E = end();
 diff --git a/source/Plugins/DynamicLoader/POSIX-DYLD/DYLDRendezvous.cpp b/source/Plugins/DynamicLoader/POSIX-DYLD/DYLDRendezvous.cpp
-index 136bf65..410a53b 100644
+index 136bf6561..410a53b60 100644
 --- a/source/Plugins/DynamicLoader/POSIX-DYLD/DYLDRendezvous.cpp
 +++ b/source/Plugins/DynamicLoader/POSIX-DYLD/DYLDRendezvous.cpp
 @@ -527,6 +527,30 @@ bool DYLDRendezvous::ReadSOEntryFromMemory(lldb::addr_t addr, SOEntry &entry) {
@@ -8027,7 +8103,7 @@ index 136bf65..410a53b 100644
    iterator I = begin();
    iterator E = end();
 diff --git a/source/Plugins/ExpressionParser/CMakeLists.txt b/source/Plugins/ExpressionParser/CMakeLists.txt
-index dc0540a..600c0d3 100644
+index dc0540ad3..600c0d312 100644
 --- a/source/Plugins/ExpressionParser/CMakeLists.txt
 +++ b/source/Plugins/ExpressionParser/CMakeLists.txt
 @@ -1,2 +1,3 @@
@@ -8035,7 +8111,7 @@ index dc0540a..600c0d3 100644
  add_subdirectory(Go)
 +add_subdirectory(Swift)
 diff --git a/source/Plugins/ExpressionParser/Clang/ASTResultSynthesizer.h b/source/Plugins/ExpressionParser/Clang/ASTResultSynthesizer.h
-index c0e6c03..a1f3165 100644
+index c0e6c0358..a1f3165a7 100644
 --- a/source/Plugins/ExpressionParser/Clang/ASTResultSynthesizer.h
 +++ b/source/Plugins/ExpressionParser/Clang/ASTResultSynthesizer.h
 @@ -109,7 +109,7 @@ public:
@@ -8048,7 +8124,7 @@ index c0e6c03..a1f3165 100644
  
    //----------------------------------------------------------------------
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp b/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
-index 0f08dd3..9a6ea23 100644
+index 0f08dd330..9a6ea2363 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/ClangASTSource.cpp
 @@ -476,10 +476,13 @@ void ClangASTSource::FindExternalLexicalDecls(
@@ -8069,7 +8145,7 @@ index 0f08dd3..9a6ea23 100644
  
    const DeclContext *original_decl_context =
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.cpp b/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.cpp
-index 3fa78f0..0db4bf8 100644
+index 3fa78f01f..0db4bf82e 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.cpp
 @@ -563,6 +563,9 @@ addr_t ClangExpressionDeclMap::GetSymbolAddress(Target &target,
@@ -8123,7 +8199,7 @@ index 3fa78f0..0db4bf8 100644
        var_type->GetForwardCompilerType().GetTypeSystem());
  
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.h b/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.h
-index ac88c1d..3bd1c52 100644
+index ac88c1d6b..3bd1c52a8 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.h
 +++ b/source/Plugins/ExpressionParser/Clang/ClangExpressionDeclMap.h
 @@ -445,7 +445,7 @@ private:
@@ -8136,7 +8212,7 @@ index ac88c1d..3bd1c52 100644
    //------------------------------------------------------------------
    /// Given a target, find a data symbol that has the given name.
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.cpp b/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.cpp
-index a75e60f..3902d85 100644
+index a75e60ff6..3902d85f2 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.cpp
 @@ -20,6 +20,7 @@
@@ -8341,7 +8417,7 @@ index a75e60f..3902d85 100644
  
    if (execution_policy != eExecutionPolicyTopLevel) {
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.h b/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.h
-index 3f01156..4f79111 100644
+index 3f01156c6..4f79111e2 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.h
 +++ b/source/Plugins/ExpressionParser/Clang/ClangExpressionParser.h
 @@ -55,7 +55,6 @@ public:
@@ -8373,7 +8449,7 @@ index 3f01156..4f79111 100644
                        lldb::IRExecutionUnitSP &execution_unit_sp,
                        ExecutionContext &exe_ctx, bool &can_interpret,
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangModulesDeclVendor.cpp b/source/Plugins/ExpressionParser/Clang/ClangModulesDeclVendor.cpp
-index c542b36..cd27acf 100644
+index c542b36b6..cd27acf35 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangModulesDeclVendor.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/ClangModulesDeclVendor.cpp
 @@ -13,6 +13,7 @@
@@ -8401,7 +8477,7 @@ index c542b36..cd27acf 100644
    instance->setDiagnostics(diagnostics_engine.get());
    instance->setInvocation(invocation.get());
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.cpp b/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.cpp
-index 4d30956..6b1a161 100644
+index 4d3095617..6b1a161b6 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.cpp
 @@ -8,12 +8,18 @@
@@ -8505,7 +8581,7 @@ index 4d30956..6b1a161 100644
    return name;
  }
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.h b/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.h
-index 16981a7..920d47b 100644
+index 16981a7fe..920d47ba5 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.h
 +++ b/source/Plugins/ExpressionParser/Clang/ClangPersistentVariables.h
 @@ -21,6 +21,13 @@
@@ -8598,7 +8674,7 @@ index 16981a7..920d47b 100644
    typedef llvm::DenseMap<const char *, clang::NamedDecl *> PersistentDeclMap;
    PersistentDeclMap
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangUserExpression.cpp b/source/Plugins/ExpressionParser/Clang/ClangUserExpression.cpp
-index 5abad71..f61be26 100644
+index 5abad71b8..f61be26f7 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangUserExpression.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/ClangUserExpression.cpp
 @@ -66,6 +66,8 @@ ClangUserExpression::ClangUserExpression(
@@ -8827,7 +8903,7 @@ index 5abad71..f61be26 100644
  
      args.push_back(struct_address);
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangUserExpression.h b/source/Plugins/ExpressionParser/Clang/ClangUserExpression.h
-index 155c153..dafbe02 100644
+index 155c153b8..dafbe022c 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangUserExpression.h
 +++ b/source/Plugins/ExpressionParser/Clang/ClangUserExpression.h
 @@ -28,6 +28,7 @@
@@ -8875,7 +8951,7 @@ index 155c153..dafbe02 100644
    ExpressionTypeSystemHelper *GetTypeSystemHelper() override {
      return &m_type_system_helper;
 diff --git a/source/Plugins/ExpressionParser/Clang/ClangUtilityFunction.cpp b/source/Plugins/ExpressionParser/Clang/ClangUtilityFunction.cpp
-index 5a86994..ab9a4f9 100644
+index 73d37516f..718024d30 100644
 --- a/source/Plugins/ExpressionParser/Clang/ClangUtilityFunction.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/ClangUtilityFunction.cpp
 @@ -124,18 +124,8 @@ bool ClangUtilityFunction::Install(DiagnosticManager &diagnostic_manager,
@@ -8900,7 +8976,7 @@ index 5a86994..ab9a4f9 100644
  
  #if 0
 diff --git a/source/Plugins/ExpressionParser/Clang/IRForTarget.cpp b/source/Plugins/ExpressionParser/Clang/IRForTarget.cpp
-index ac6e93c..f462911 100644
+index ac6e93ce6..f46291117 100644
 --- a/source/Plugins/ExpressionParser/Clang/IRForTarget.cpp
 +++ b/source/Plugins/ExpressionParser/Clang/IRForTarget.cpp
 @@ -2035,7 +2035,7 @@ llvm::Constant *IRForTarget::BuildRelocation(llvm::Type *type,
@@ -8913,7 +8989,7 @@ index ac6e93c..f462911 100644
        ConstantExpr::getBitCast(reloc_getelementptr, type);
  
 diff --git a/source/Plugins/ExpressionParser/Go/GoUserExpression.cpp b/source/Plugins/ExpressionParser/Go/GoUserExpression.cpp
-index a448da6..70a1d6c 100644
+index a448da683..70a1d6c3b 100644
 --- a/source/Plugins/ExpressionParser/Go/GoUserExpression.cpp
 +++ b/source/Plugins/ExpressionParser/Go/GoUserExpression.cpp
 @@ -209,7 +209,7 @@ bool GoUserExpression::Parse(DiagnosticManager &diagnostic_manager,
@@ -8936,7 +9012,7 @@ index a448da6..70a1d6c 100644
    // We can't use the same variable format as clang.
    ::snprintf(name_cstr, sizeof(name_cstr), "$go%u",
 diff --git a/source/Plugins/ExpressionParser/Go/GoUserExpression.h b/source/Plugins/ExpressionParser/Go/GoUserExpression.h
-index 03ceb76..8ed0eea 100644
+index 03ceb76b8..8ed0eeaa6 100644
 --- a/source/Plugins/ExpressionParser/Go/GoUserExpression.h
 +++ b/source/Plugins/ExpressionParser/Go/GoUserExpression.h
 @@ -29,7 +29,7 @@ class GoPersistentExpressionState : public PersistentExpressionState {
@@ -8963,7 +9039,7 @@ index 03ceb76..8ed0eea 100644
        lldb::ExpressionVariableSP &result,
 diff --git a/source/Plugins/ExpressionParser/Swift/CMakeLists.txt b/source/Plugins/ExpressionParser/Swift/CMakeLists.txt
 new file mode 100644
-index 0000000..26f3fb8
+index 000000000..26f3fb8b6
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/CMakeLists.txt
 @@ -0,0 +1,10 @@
@@ -8979,7 +9055,7 @@ index 0000000..26f3fb8
 +  )
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.cpp b/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.cpp
 new file mode 100644
-index 0000000..7ec452f
+index 000000000..7ec452f3a
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.cpp
 @@ -0,0 +1,1612 @@
@@ -10597,7 +10673,7 @@ index 0000000..7ec452f
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.h b/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.h
 new file mode 100644
-index 0000000..3972719
+index 000000000..397271978
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.h
 @@ -0,0 +1,225 @@
@@ -10828,7 +10904,7 @@ index 0000000..3972719
 +#endif
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftDiagnostic.h b/source/Plugins/ExpressionParser/Swift/SwiftDiagnostic.h
 new file mode 100644
-index 0000000..441fadd
+index 000000000..441faddc5
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftDiagnostic.h
 @@ -0,0 +1,56 @@
@@ -10890,7 +10966,7 @@ index 0000000..441fadd
 +#endif /* lldb_SwiftDiagnostic_h */
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.cpp b/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.cpp
 new file mode 100644
-index 0000000..f6253ab
+index 000000000..f6253ab07
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.cpp
 @@ -0,0 +1,1995 @@
@@ -12891,7 +12967,7 @@ index 0000000..f6253ab
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.h b/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.h
 new file mode 100644
-index 0000000..fc3b245
+index 000000000..fc3b24521
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.h
 @@ -0,0 +1,168 @@
@@ -13065,7 +13141,7 @@ index 0000000..fc3b245
 +#endif // liblldb_SwiftExpressionParser_h_
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftExpressionVariable.cpp b/source/Plugins/ExpressionParser/Swift/SwiftExpressionVariable.cpp
 new file mode 100644
-index 0000000..9ffa0e2
+index 000000000..9ffa0e26a
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftExpressionVariable.cpp
 @@ -0,0 +1,52 @@
@@ -13123,7 +13199,7 @@ index 0000000..9ffa0e2
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftExpressionVariable.h b/source/Plugins/ExpressionParser/Swift/SwiftExpressionVariable.h
 new file mode 100644
-index 0000000..ef6548e
+index 000000000..ef6548eb7
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftExpressionVariable.h
 @@ -0,0 +1,123 @@
@@ -13252,7 +13328,7 @@ index 0000000..ef6548e
 +#endif // liblldb_SwiftExpressionVariable_h_
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftPersistentExpressionState.cpp b/source/Plugins/ExpressionParser/Swift/SwiftPersistentExpressionState.cpp
 new file mode 100644
-index 0000000..a92f304
+index 000000000..a92f30417
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftPersistentExpressionState.cpp
 @@ -0,0 +1,263 @@
@@ -13521,7 +13597,7 @@ index 0000000..a92f304
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftPersistentExpressionState.h b/source/Plugins/ExpressionParser/Swift/SwiftPersistentExpressionState.h
 new file mode 100644
-index 0000000..05ff667
+index 000000000..05ff6672b
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftPersistentExpressionState.h
 @@ -0,0 +1,139 @@
@@ -13666,7 +13742,7 @@ index 0000000..05ff667
 +#endif
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftREPL.cpp b/source/Plugins/ExpressionParser/Swift/SwiftREPL.cpp
 new file mode 100644
-index 0000000..f07e29a
+index 000000000..f07e29a2f
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftREPL.cpp
 @@ -0,0 +1,588 @@
@@ -14260,7 +14336,7 @@ index 0000000..f07e29a
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftREPL.h b/source/Plugins/ExpressionParser/Swift/SwiftREPL.h
 new file mode 100644
-index 0000000..05e0c3c
+index 000000000..05e0c3c03
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftREPL.h
 @@ -0,0 +1,82 @@
@@ -14348,7 +14424,7 @@ index 0000000..05e0c3c
 +#endif // liblldb_SwiftREPL_h_
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftREPLMaterializer.cpp b/source/Plugins/ExpressionParser/Swift/SwiftREPLMaterializer.cpp
 new file mode 100644
-index 0000000..5a6bf27
+index 000000000..5a6bf271a
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftREPLMaterializer.cpp
 @@ -0,0 +1,458 @@
@@ -14812,7 +14888,7 @@ index 0000000..5a6bf27
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftREPLMaterializer.h b/source/Plugins/ExpressionParser/Swift/SwiftREPLMaterializer.h
 new file mode 100644
-index 0000000..8e7b354
+index 000000000..8e7b35427
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftREPLMaterializer.h
 @@ -0,0 +1,52 @@
@@ -14870,7 +14946,7 @@ index 0000000..8e7b354
 +#endif /* SwiftREPLMaterializer_h */
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftSILManipulator.cpp b/source/Plugins/ExpressionParser/Swift/SwiftSILManipulator.cpp
 new file mode 100644
-index 0000000..0d89ad0
+index 000000000..0d89ad07e
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftSILManipulator.cpp
 @@ -0,0 +1,115 @@
@@ -14991,7 +15067,7 @@ index 0000000..0d89ad0
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftSILManipulator.h b/source/Plugins/ExpressionParser/Swift/SwiftSILManipulator.h
 new file mode 100644
-index 0000000..f7f52c9
+index 000000000..f7f52c938
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftSILManipulator.h
 @@ -0,0 +1,46 @@
@@ -15043,7 +15119,7 @@ index 0000000..f7f52c9
 +#endif
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftUserExpression.cpp b/source/Plugins/ExpressionParser/Swift/SwiftUserExpression.cpp
 new file mode 100644
-index 0000000..6a5ebc7
+index 000000000..6a5ebc798
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftUserExpression.cpp
 @@ -0,0 +1,737 @@
@@ -15786,7 +15862,7 @@ index 0000000..6a5ebc7
 +}
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftUserExpression.h b/source/Plugins/ExpressionParser/Swift/SwiftUserExpression.h
 new file mode 100644
-index 0000000..0696419
+index 000000000..06964192a
 --- /dev/null
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftUserExpression.h
 @@ -0,0 +1,189 @@
@@ -15980,7 +16056,7 @@ index 0000000..0696419
 +
 +#endif // liblldb_SwiftUserExpression_h_
 diff --git a/source/Plugins/Language/CMakeLists.txt b/source/Plugins/Language/CMakeLists.txt
-index 4b92a8e..b4ba880 100644
+index 4b92a8ef8..b4ba88081 100644
 --- a/source/Plugins/Language/CMakeLists.txt
 +++ b/source/Plugins/Language/CMakeLists.txt
 @@ -4,3 +4,4 @@ add_subdirectory(Java)
@@ -15989,7 +16065,7 @@ index 4b92a8e..b4ba880 100644
  add_subdirectory(OCaml)
 +add_subdirectory(Swift)
 diff --git a/source/Plugins/Language/CPlusPlus/CPlusPlusLanguage.cpp b/source/Plugins/Language/CPlusPlus/CPlusPlusLanguage.cpp
-index fc70948..70f1237 100644
+index fc70948d3..70f123705 100644
 --- a/source/Plugins/Language/CPlusPlus/CPlusPlusLanguage.cpp
 +++ b/source/Plugins/Language/CPlusPlus/CPlusPlusLanguage.cpp
 @@ -1022,9 +1022,8 @@ CPlusPlusLanguage::GetHardcodedSynthetics() {
@@ -16017,7 +16093,7 @@ index fc70948..70f1237 100644
            new CXXSyntheticChildren(
                SyntheticChildren::Flags()
 diff --git a/source/Plugins/Language/Go/GoLanguage.cpp b/source/Plugins/Language/Go/GoLanguage.cpp
-index 85c41d1..30ebb55 100644
+index 85c41d1fe..30ebb55fb 100644
 --- a/source/Plugins/Language/Go/GoLanguage.cpp
 +++ b/source/Plugins/Language/Go/GoLanguage.cpp
 @@ -66,38 +66,36 @@ GoLanguage::GetHardcodedSummaries() {
@@ -16090,7 +16166,7 @@ index 85c41d1..30ebb55 100644
    return g_formatters;
  }
 diff --git a/source/Plugins/Language/ObjC/Cocoa.cpp b/source/Plugins/Language/ObjC/Cocoa.cpp
-index b2ad8c3..d51f497 100644
+index b2ad8c375..d51f497bb 100644
 --- a/source/Plugins/Language/ObjC/Cocoa.cpp
 +++ b/source/Plugins/Language/ObjC/Cocoa.cpp
 @@ -38,6 +38,15 @@ using namespace lldb;
@@ -16110,7 +16186,7 @@ index b2ad8c3..d51f497 100644
      ValueObject &valobj, Stream &stream, const TypeSummaryOptions &options) {
    ProcessSP process_sp = valobj.GetProcessSP();
 diff --git a/source/Plugins/Language/ObjC/Cocoa.h b/source/Plugins/Language/ObjC/Cocoa.h
-index 491a119..5c809b2 100644
+index 491a1196e..5c809b232 100644
 --- a/source/Plugins/Language/ObjC/Cocoa.h
 +++ b/source/Plugins/Language/ObjC/Cocoa.h
 @@ -19,6 +19,9 @@
@@ -16124,7 +16200,7 @@ index 491a119..5c809b2 100644
                                 const TypeSummaryOptions &options);
  
 diff --git a/source/Plugins/Language/ObjC/NSArray.cpp b/source/Plugins/Language/ObjC/NSArray.cpp
-index 6ab6d53..2e2513f 100644
+index 6ab6d537b..2e2513ff4 100644
 --- a/source/Plugins/Language/ObjC/NSArray.cpp
 +++ b/source/Plugins/Language/ObjC/NSArray.cpp
 @@ -664,7 +664,7 @@ lldb_private::formatters::NSArraySyntheticFrontEndCreator(
@@ -16137,7 +16213,7 @@ index 6ab6d53..2e2513f 100644
      valobj_sp = valobj_sp->AddressOf(error);
      if (error.Fail() || !valobj_sp)
 diff --git a/source/Plugins/Language/ObjC/NSDictionary.cpp b/source/Plugins/Language/ObjC/NSDictionary.cpp
-index 5cc52c8..23a445f 100644
+index 5cc52c820..23a445f3e 100644
 --- a/source/Plugins/Language/ObjC/NSDictionary.cpp
 +++ b/source/Plugins/Language/ObjC/NSDictionary.cpp
 @@ -30,6 +30,12 @@
@@ -16163,7 +16239,7 @@ index 5cc52c8..23a445f 100644
      valobj_sp = valobj_sp->AddressOf(error);
      if (error.Fail() || !valobj_sp)
 diff --git a/source/Plugins/Language/ObjC/NSSet.cpp b/source/Plugins/Language/ObjC/NSSet.cpp
-index 9757c58..542c242 100644
+index 9757c5877..542c242db 100644
 --- a/source/Plugins/Language/ObjC/NSSet.cpp
 +++ b/source/Plugins/Language/ObjC/NSSet.cpp
 @@ -261,7 +261,7 @@ lldb_private::formatters::NSSetSyntheticFrontEndCreator(
@@ -16176,7 +16252,7 @@ index 9757c58..542c242 100644
      valobj_sp = valobj_sp->AddressOf(error);
      if (error.Fail() || !valobj_sp)
 diff --git a/source/Plugins/Language/ObjC/ObjCLanguage.cpp b/source/Plugins/Language/ObjC/ObjCLanguage.cpp
-index 6e59a8b..0bfac15 100644
+index 6e59a8be3..0bfac150a 100644
 --- a/source/Plugins/Language/ObjC/ObjCLanguage.cpp
 +++ b/source/Plugins/Language/ObjC/ObjCLanguage.cpp
 @@ -744,6 +744,11 @@ static void LoadObjCFormatters(TypeCategoryImplSP objc_category_sp) {
@@ -16205,7 +16281,7 @@ index 6e59a8b..0bfac15 100644
      do {
 diff --git a/source/Plugins/Language/Swift/CMakeLists.txt b/source/Plugins/Language/Swift/CMakeLists.txt
 new file mode 100644
-index 0000000..b62feac
+index 000000000..b62feace5
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/CMakeLists.txt
 @@ -0,0 +1,17 @@
@@ -16228,7 +16304,7 @@ index 0000000..b62feac
 +
 diff --git a/source/Plugins/Language/Swift/FoundationValueTypes.cpp b/source/Plugins/Language/Swift/FoundationValueTypes.cpp
 new file mode 100644
-index 0000000..0b1ab9c
+index 000000000..0b1ab9cdf
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/FoundationValueTypes.cpp
 @@ -0,0 +1,427 @@
@@ -16661,7 +16737,7 @@ index 0000000..0b1ab9c
 +}
 diff --git a/source/Plugins/Language/Swift/FoundationValueTypes.h b/source/Plugins/Language/Swift/FoundationValueTypes.h
 new file mode 100644
-index 0000000..723f67e
+index 000000000..723f67e23
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/FoundationValueTypes.h
 @@ -0,0 +1,57 @@
@@ -16724,7 +16800,7 @@ index 0000000..723f67e
 +#endif // liblldb_FoundationValueTypes_h_
 diff --git a/source/Plugins/Language/Swift/ObjCRuntimeSyntheticProvider.cpp b/source/Plugins/Language/Swift/ObjCRuntimeSyntheticProvider.cpp
 new file mode 100644
-index 0000000..00f6d7f
+index 000000000..00f6d7fee
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/ObjCRuntimeSyntheticProvider.cpp
 @@ -0,0 +1,123 @@
@@ -16853,7 +16929,7 @@ index 0000000..00f6d7f
 +}
 diff --git a/source/Plugins/Language/Swift/ObjCRuntimeSyntheticProvider.h b/source/Plugins/Language/Swift/ObjCRuntimeSyntheticProvider.h
 new file mode 100644
-index 0000000..3b1de3f
+index 000000000..3b1de3f36
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/ObjCRuntimeSyntheticProvider.h
 @@ -0,0 +1,82 @@
@@ -16941,7 +17017,7 @@ index 0000000..3b1de3f
 +#endif // lldb_ObjCRuntimeSyntheticProvider_h
 diff --git a/source/Plugins/Language/Swift/SwiftArray.cpp b/source/Plugins/Language/Swift/SwiftArray.cpp
 new file mode 100644
-index 0000000..28d182a
+index 000000000..28d182a4d
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftArray.cpp
 @@ -0,0 +1,523 @@
@@ -17470,7 +17546,7 @@ index 0000000..28d182a
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftArray.h b/source/Plugins/Language/Swift/SwiftArray.h
 new file mode 100644
-index 0000000..c525b8d
+index 000000000..c525b8db3
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftArray.h
 @@ -0,0 +1,219 @@
@@ -17695,7 +17771,7 @@ index 0000000..c525b8d
 +#endif // liblldb_SwiftArray_h_
 diff --git a/source/Plugins/Language/Swift/SwiftBasicTypes.cpp b/source/Plugins/Language/Swift/SwiftBasicTypes.cpp
 new file mode 100644
-index 0000000..5f70d88
+index 000000000..5f70d88f4
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftBasicTypes.cpp
 @@ -0,0 +1,33 @@
@@ -17734,7 +17810,7 @@ index 0000000..5f70d88
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftBasicTypes.h b/source/Plugins/Language/Swift/SwiftBasicTypes.h
 new file mode 100644
-index 0000000..354401c
+index 000000000..354401c78
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftBasicTypes.h
 @@ -0,0 +1,41 @@
@@ -17781,7 +17857,7 @@ index 0000000..354401c
 +#endif // liblldb_SwiftDictionary_h_
 diff --git a/source/Plugins/Language/Swift/SwiftDictionary.cpp b/source/Plugins/Language/Swift/SwiftDictionary.cpp
 new file mode 100644
-index 0000000..e51058d
+index 000000000..e51058d86
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftDictionary.cpp
 @@ -0,0 +1,137 @@
@@ -17924,7 +18000,7 @@ index 0000000..e51058d
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftDictionary.h b/source/Plugins/Language/Swift/SwiftDictionary.h
 new file mode 100644
-index 0000000..f1dfcc2
+index 000000000..f1dfcc2f9
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftDictionary.h
 @@ -0,0 +1,38 @@
@@ -17968,7 +18044,7 @@ index 0000000..f1dfcc2
 +#endif // liblldb_SwiftDictionary_h_
 diff --git a/source/Plugins/Language/Swift/SwiftFormatters.cpp b/source/Plugins/Language/Swift/SwiftFormatters.cpp
 new file mode 100644
-index 0000000..18e2572
+index 000000000..18e257279
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftFormatters.cpp
 @@ -0,0 +1,780 @@
@@ -18754,7 +18830,7 @@ index 0000000..18e2572
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftFormatters.h b/source/Plugins/Language/Swift/SwiftFormatters.h
 new file mode 100644
-index 0000000..a4bba05
+index 000000000..a4bba0532
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftFormatters.h
 @@ -0,0 +1,104 @@
@@ -18864,7 +18940,7 @@ index 0000000..a4bba05
 +#endif // liblldb_SwiftFormatters_h_
 diff --git a/source/Plugins/Language/Swift/SwiftHashedContainer.cpp b/source/Plugins/Language/Swift/SwiftHashedContainer.cpp
 new file mode 100644
-index 0000000..8b2a6ce
+index 000000000..8b2a6cef9
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftHashedContainer.cpp
 @@ -0,0 +1,474 @@
@@ -19344,7 +19420,7 @@ index 0000000..8b2a6ce
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftHashedContainer.h b/source/Plugins/Language/Swift/SwiftHashedContainer.h
 new file mode 100644
-index 0000000..e15e161
+index 000000000..e15e161e6
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftHashedContainer.h
 @@ -0,0 +1,191 @@
@@ -19541,7 +19617,7 @@ index 0000000..e15e161
 +#endif // liblldb_SwiftHashedContainer_h_
 diff --git a/source/Plugins/Language/Swift/SwiftLanguage.cpp b/source/Plugins/Language/Swift/SwiftLanguage.cpp
 new file mode 100644
-index 0000000..2e39120
+index 000000000..1a9addd0c
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftLanguage.cpp
 @@ -0,0 +1,1726 @@
@@ -19594,7 +19670,7 @@ index 0000000..2e39120
 +using namespace lldb;
 +using namespace lldb_private;
 +
-+#ifndef LLDB_DISABLE_PYTHON
++#ifdef LLDB_DISABLE_PYTHON
 +using lldb_private::formatters::AddCXXSummary;
 +using lldb_private::formatters::AddCXXSynthetic;
 +#endif
@@ -19759,7 +19835,7 @@ index 0000000..2e39120
 +  basic_synth_flags.SetCascades(true).SetSkipPointers(true).SetSkipReferences(
 +      true);
 +
-+#ifndef LLDB_DISABLE_PYTHON
++#ifdef LLDB_DISABLE_PYTHON
 +  AddCXXSummary(swift_category_sp,
 +                lldb_private::formatters::swift::ObjC_Selector_SummaryProvider,
 +                "ObjectiveC.Selector", ConstString("ObjectiveC.Selector"),
@@ -20207,7 +20283,7 @@ index 0000000..2e39120
 +      .SetHideItemNames(false)
 +      .SetShowMembersOneLiner(false);
 +
-+#ifndef LLDB_DISABLE_PYTHON
++#ifdef LLDB_DISABLE_PYTHON
 +  lldb_private::formatters::AddCXXSummary(
 +      swift_category_sp, lldb_private::formatters::swift::Date_SummaryProvider,
 +      "Foundation.Date summary provider", ConstString("Foundation.Date"),
@@ -21273,7 +21349,7 @@ index 0000000..2e39120
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftLanguage.h b/source/Plugins/Language/Swift/SwiftLanguage.h
 new file mode 100644
-index 0000000..bc939f1
+index 000000000..bc939f1c3
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftLanguage.h
 @@ -0,0 +1,96 @@
@@ -21375,7 +21451,7 @@ index 0000000..bc939f1
 +#endif // liblldb_SwiftLanguage_h_
 diff --git a/source/Plugins/Language/Swift/SwiftMetatype.cpp b/source/Plugins/Language/Swift/SwiftMetatype.cpp
 new file mode 100644
-index 0000000..0dcf223
+index 000000000..0dcf223a6
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftMetatype.cpp
 @@ -0,0 +1,51 @@
@@ -21432,7 +21508,7 @@ index 0000000..0dcf223
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftMetatype.h b/source/Plugins/Language/Swift/SwiftMetatype.h
 new file mode 100644
-index 0000000..c72f6ee
+index 000000000..c72f6eea0
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftMetatype.h
 @@ -0,0 +1,28 @@
@@ -21466,7 +21542,7 @@ index 0000000..c72f6ee
 +#endif // liblldb_SwiftMetatype_h_
 diff --git a/source/Plugins/Language/Swift/SwiftOptionSet.cpp b/source/Plugins/Language/Swift/SwiftOptionSet.cpp
 new file mode 100644
-index 0000000..6b4b1cc
+index 000000000..6b4b1cc61
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftOptionSet.cpp
 @@ -0,0 +1,221 @@
@@ -21693,7 +21769,7 @@ index 0000000..6b4b1cc
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftOptionSet.h b/source/Plugins/Language/Swift/SwiftOptionSet.h
 new file mode 100644
-index 0000000..0b7a3b4
+index 000000000..0b7a3b4f1
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftOptionSet.h
 @@ -0,0 +1,64 @@
@@ -21763,7 +21839,7 @@ index 0000000..0b7a3b4
 +#endif // liblldb_SwiftOptionSet_h_
 diff --git a/source/Plugins/Language/Swift/SwiftOptional.cpp b/source/Plugins/Language/Swift/SwiftOptional.cpp
 new file mode 100644
-index 0000000..a13cd4f
+index 000000000..a13cd4fc6
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftOptional.cpp
 @@ -0,0 +1,273 @@
@@ -22042,7 +22118,7 @@ index 0000000..a13cd4f
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftOptional.h b/source/Plugins/Language/Swift/SwiftOptional.h
 new file mode 100644
-index 0000000..25eaa23
+index 000000000..25eaa2356
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftOptional.h
 @@ -0,0 +1,123 @@
@@ -22171,7 +22247,7 @@ index 0000000..25eaa23
 +#endif // liblldb_SwiftOptional_h_
 diff --git a/source/Plugins/Language/Swift/SwiftSet.cpp b/source/Plugins/Language/Swift/SwiftSet.cpp
 new file mode 100644
-index 0000000..4e0ccf1
+index 000000000..4e0ccf15e
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftSet.cpp
 @@ -0,0 +1,145 @@
@@ -22322,7 +22398,7 @@ index 0000000..4e0ccf1
 +}
 diff --git a/source/Plugins/Language/Swift/SwiftSet.h b/source/Plugins/Language/Swift/SwiftSet.h
 new file mode 100644
-index 0000000..ba423aa
+index 000000000..ba423aa7e
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftSet.h
 @@ -0,0 +1,38 @@
@@ -22366,7 +22442,7 @@ index 0000000..ba423aa
 +#endif // liblldb_SwiftSet_h_
 diff --git a/source/Plugins/Language/Swift/URLComponents.def b/source/Plugins/Language/Swift/URLComponents.def
 new file mode 100644
-index 0000000..a5132d3
+index 000000000..a5132d337
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/URLComponents.def
 @@ -0,0 +1,15 @@
@@ -22386,7 +22462,7 @@ index 0000000..a5132d3
 +
 +#undef COMPONENT
 diff --git a/source/Plugins/LanguageRuntime/CPlusPlus/ItaniumABI/ItaniumABILanguageRuntime.cpp b/source/Plugins/LanguageRuntime/CPlusPlus/ItaniumABI/ItaniumABILanguageRuntime.cpp
-index ddfbd86..30c6b85 100644
+index ddfbd864e..30c6b8536 100644
 --- a/source/Plugins/LanguageRuntime/CPlusPlus/ItaniumABI/ItaniumABILanguageRuntime.cpp
 +++ b/source/Plugins/LanguageRuntime/CPlusPlus/ItaniumABI/ItaniumABILanguageRuntime.cpp
 @@ -44,8 +44,9 @@ static const char *vtable_demangled_prefix = "vtable for ";
@@ -22402,7 +22478,7 @@ index ddfbd86..30c6b85 100644
  
  TypeAndOrName ItaniumABILanguageRuntime::GetTypeInfoFromVTableAddress(
 diff --git a/source/Plugins/LanguageRuntime/Java/JavaLanguageRuntime.cpp b/source/Plugins/LanguageRuntime/Java/JavaLanguageRuntime.cpp
-index 36c30a9..c8b0086 100644
+index 36c30a99f..c8b0086b4 100644
 --- a/source/Plugins/LanguageRuntime/Java/JavaLanguageRuntime.cpp
 +++ b/source/Plugins/LanguageRuntime/Java/JavaLanguageRuntime.cpp
 @@ -105,7 +105,7 @@ bool JavaLanguageRuntime::GetDynamicTypeAndAddress(
@@ -22415,7 +22491,7 @@ index 36c30a9..c8b0086 100644
    else
      linkage_name = JavaASTContext::GetLinkageName(in_type);
 diff --git a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.cpp b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.cpp
-index 24eddb5..0000837 100644
+index 24eddb516..00008371b 100644
 --- a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.cpp
 +++ b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.cpp
 @@ -170,6 +170,7 @@ bool AppleObjCRuntime::GetObjectDescription(Stream &strm, Value &value,
@@ -22464,7 +22540,7 @@ index 24eddb5..0000837 100644
    if (module_sp) {
      const FileSpec &module_file_spec = module_sp->GetFileSpec();
 diff --git a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.h b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.h
-index 57d98fb..5856f85 100644
+index 57d98fbd7..5856f858f 100644
 --- a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.h
 +++ b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntime.h
 @@ -53,12 +53,21 @@ public:
@@ -22490,7 +22566,7 @@ index 57d98fb..5856f85 100644
                                   ValueObject &static_value) override;
  
 diff --git a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.cpp b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.cpp
-index 47bf4ac..33fe277 100644
+index 47bf4acd4..33fe277d3 100644
 --- a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.cpp
 +++ b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.cpp
 @@ -62,6 +62,11 @@
@@ -22552,7 +22628,7 @@ index 47bf4ac..33fe277 100644
    // Else we need to check with our process to see when the map was updated.
    Process *process = GetProcess();
 diff --git a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.h b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.h
-index 7180730..bb78453 100644
+index 718073090..bb78453f5 100644
 --- a/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.h
 +++ b/source/Plugins/LanguageRuntime/ObjC/AppleObjCRuntime/AppleObjCRuntimeV2.h
 @@ -58,6 +58,12 @@ public:
@@ -22595,7 +22671,7 @@ index 7180730..bb78453 100644
    std::unique_ptr<UtilityFunction> m_get_class_info_code;
    lldb::addr_t m_get_class_info_args;
 diff --git a/source/Plugins/ObjectFile/ELF/ObjectFileELF.cpp b/source/Plugins/ObjectFile/ELF/ObjectFileELF.cpp
-index 406fa50..6312e02 100644
+index 406fa5017..6312e02b3 100644
 --- a/source/Plugins/ObjectFile/ELF/ObjectFileELF.cpp
 +++ b/source/Plugins/ObjectFile/ELF/ObjectFileELF.cpp
 @@ -1844,6 +1844,7 @@ void ObjectFileELF::CreateSections(SectionList &unified_section_list) {
@@ -22650,7 +22726,7 @@ index 406fa50..6312e02 100644
      // function symbols
      // coming from hand written assembly. As none of the function symbol should
 diff --git a/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp b/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
-index 9ef4e9c..904766c 100644
+index 9ef4e9c3c..904766c6b 100644
 --- a/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
 +++ b/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
 @@ -1199,8 +1199,10 @@ AddressClass ObjectFileMachO::GetAddressClass(lldb::addr_t file_addr) {
@@ -23086,7 +23162,7 @@ index 9ef4e9c..904766c 100644
        uint32_t num_synthetic_function_symbols = 0;
        for (i = 0; i < function_starts_count; ++i) {
 diff --git a/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp b/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
-index f0647e0..94a83e7 100644
+index f0647e021..94a83e7c6 100644
 --- a/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
 +++ b/source/Plugins/ObjectFile/PECOFF/ObjectFilePECOFF.cpp
 @@ -681,6 +681,7 @@ void ObjectFilePECOFF::CreateSections(SectionList &unified_section_list) {
@@ -23107,7 +23183,7 @@ index f0647e0..94a83e7 100644
            section_type = eSectionTypeGoSymtab;
          else if (m_sect_headers[idx].flags & llvm::COFF::IMAGE_SCN_CNT_CODE) {
 diff --git a/source/Plugins/Platform/MacOSX/PlatformDarwin.cpp b/source/Plugins/Platform/MacOSX/PlatformDarwin.cpp
-index 1849120..60d92df 100644
+index 184912046..60d92df23 100644
 --- a/source/Plugins/Platform/MacOSX/PlatformDarwin.cpp
 +++ b/source/Plugins/Platform/MacOSX/PlatformDarwin.cpp
 @@ -1866,6 +1866,53 @@ lldb_private::FileSpec PlatformDarwin::LocateExecutable(const char *basename) {
@@ -23165,7 +23241,7 @@ index 1849120..60d92df 100644
  PlatformDarwin::LaunchProcess(lldb_private::ProcessLaunchInfo &launch_info) {
    // Starting in Fall 2016 OSes, NSLog messages only get mirrored to stderr
 diff --git a/source/Plugins/Platform/MacOSX/PlatformDarwin.h b/source/Plugins/Platform/MacOSX/PlatformDarwin.h
-index 2abff92..a666995 100644
+index 2abff92fa..a66699574 100644
 --- a/source/Plugins/Platform/MacOSX/PlatformDarwin.h
 +++ b/source/Plugins/Platform/MacOSX/PlatformDarwin.h
 @@ -89,6 +89,8 @@ public:
@@ -23178,7 +23254,7 @@ index 2abff92..a666995 100644
    LaunchProcess(lldb_private::ProcessLaunchInfo &launch_info) override;
  
 diff --git a/source/Plugins/Platform/MacOSX/PlatformRemoteAppleTV.cpp b/source/Plugins/Platform/MacOSX/PlatformRemoteAppleTV.cpp
-index 47b1c8f..14afaa9 100644
+index 47b1c8f07..14afaa9d7 100644
 --- a/source/Plugins/Platform/MacOSX/PlatformRemoteAppleTV.cpp
 +++ b/source/Plugins/Platform/MacOSX/PlatformRemoteAppleTV.cpp
 @@ -112,15 +112,6 @@ PlatformSP PlatformRemoteAppleTV::CreateInstance(bool force,
@@ -23198,7 +23274,7 @@ index 47b1c8f..14afaa9 100644
          break;
        }
 diff --git a/source/Plugins/Platform/MacOSX/PlatformRemoteAppleWatch.cpp b/source/Plugins/Platform/MacOSX/PlatformRemoteAppleWatch.cpp
-index f12fcab..ecb5c21 100644
+index f12fcab3b..ecb5c21a4 100644
 --- a/source/Plugins/Platform/MacOSX/PlatformRemoteAppleWatch.cpp
 +++ b/source/Plugins/Platform/MacOSX/PlatformRemoteAppleWatch.cpp
 @@ -113,15 +113,6 @@ PlatformSP PlatformRemoteAppleWatch::CreateInstance(bool force,
@@ -23218,7 +23294,7 @@ index f12fcab..ecb5c21 100644
          break;
        }
 diff --git a/source/Plugins/Platform/MacOSX/PlatformRemoteiOS.cpp b/source/Plugins/Platform/MacOSX/PlatformRemoteiOS.cpp
-index cf4f88d..188ec40 100644
+index cf4f88d90..188ec40a6 100644
 --- a/source/Plugins/Platform/MacOSX/PlatformRemoteiOS.cpp
 +++ b/source/Plugins/Platform/MacOSX/PlatformRemoteiOS.cpp
 @@ -98,15 +98,6 @@ PlatformSP PlatformRemoteiOS::CreateInstance(bool force, const ArchSpec *arch) {
@@ -23238,7 +23314,7 @@ index cf4f88d..188ec40 100644
          break;
        }
 diff --git a/source/Plugins/Process/Linux/NativeProcessLinux.cpp b/source/Plugins/Process/Linux/NativeProcessLinux.cpp
-index 8494077..8fe7731 100644
+index 849407714..8fe773130 100644
 --- a/source/Plugins/Process/Linux/NativeProcessLinux.cpp
 +++ b/source/Plugins/Process/Linux/NativeProcessLinux.cpp
 @@ -1703,22 +1703,24 @@ Error NativeProcessLinux::GetMemoryRegionInfo(lldb::addr_t load_addr,
@@ -23283,7 +23359,7 @@ index 8494077..8fe7731 100644
      // If we had an error, we'll mark unsupported.
      if (error.Fail()) {
 diff --git a/source/Plugins/Process/Linux/NativeRegisterContextLinux_arm64.cpp b/source/Plugins/Process/Linux/NativeRegisterContextLinux_arm64.cpp
-index cb0700d..669811d 100644
+index 786778e25..8a916cd4f 100644
 --- a/source/Plugins/Process/Linux/NativeRegisterContextLinux_arm64.cpp
 +++ b/source/Plugins/Process/Linux/NativeRegisterContextLinux_arm64.cpp
 @@ -9,8 +9,8 @@
@@ -23297,10 +23373,10 @@ index cb0700d..669811d 100644
  // C Includes
  // C++ Includes
 diff --git a/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationClient.cpp b/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationClient.cpp
-index 1e5067a..61b07d6 100644
+index f9bbaef60..c196982cd 100644
 --- a/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationClient.cpp
 +++ b/source/Plugins/Process/gdb-remote/GDBRemoteCommunicationClient.cpp
-@@ -3475,8 +3475,11 @@ void GDBRemoteCommunicationClient::ServeSymbolLookups(
+@@ -3471,8 +3471,11 @@ void GDBRemoteCommunicationClient::ServeSymbolLookups(
                        case eSymbolTypeCompiler:
                        case eSymbolTypeInstrumentation:
                        case eSymbolTypeTrampoline:
@@ -23313,10 +23389,10 @@ index 1e5067a..61b07d6 100644
                        case eSymbolTypeResolver:
                        case eSymbolTypeData:
 diff --git a/source/Plugins/Process/gdb-remote/ProcessGDBRemote.cpp b/source/Plugins/Process/gdb-remote/ProcessGDBRemote.cpp
-index 876af4f..d32747d 100644
+index fac52901e..61c58f906 100644
 --- a/source/Plugins/Process/gdb-remote/ProcessGDBRemote.cpp
 +++ b/source/Plugins/Process/gdb-remote/ProcessGDBRemote.cpp
-@@ -3262,7 +3262,11 @@ Error ProcessGDBRemote::EstablishConnectionIfNeeded(
+@@ -3261,7 +3261,11 @@ Error ProcessGDBRemote::EstablishConnectionIfNeeded(
    return error;
  }
  #if defined(__APPLE__)
@@ -23330,7 +23406,7 @@ index 876af4f..d32747d 100644
  
  #ifdef USE_SOCKETPAIR_FOR_LOCAL_CONNECTION
 diff --git a/source/Plugins/SymbolFile/DWARF/CMakeLists.txt b/source/Plugins/SymbolFile/DWARF/CMakeLists.txt
-index 5ce20cc..d79acde 100644
+index 5ce20cc09..d79acde4c 100644
 --- a/source/Plugins/SymbolFile/DWARF/CMakeLists.txt
 +++ b/source/Plugins/SymbolFile/DWARF/CMakeLists.txt
 @@ -2,6 +2,7 @@ add_lldb_library(lldbPluginSymbolFileDWARF
@@ -23342,7 +23418,7 @@ index 5ce20cc..d79acde 100644
    DWARFASTParserJava.cpp
    DWARFASTParserOCaml.cpp
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp b/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp
-index c5a62d5..bd21a67 100644
+index c5a62d523..bd21a6723 100644
 --- a/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFASTParserClang.cpp
 @@ -21,6 +21,7 @@
@@ -23355,7 +23431,7 @@ index c5a62d5..bd21a67 100644
  #include "lldb/Core/StreamString.h"
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFASTParserSwift.cpp b/source/Plugins/SymbolFile/DWARF/DWARFASTParserSwift.cpp
 new file mode 100644
-index 0000000..260d04a
+index 000000000..260d04a59
 --- /dev/null
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFASTParserSwift.cpp
 @@ -0,0 +1,250 @@
@@ -23611,7 +23687,7 @@ index 0000000..260d04a
 +}
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFASTParserSwift.h b/source/Plugins/SymbolFile/DWARF/DWARFASTParserSwift.h
 new file mode 100644
-index 0000000..f14ca1f
+index 000000000..f14ca1f3c
 --- /dev/null
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFASTParserSwift.h
 @@ -0,0 +1,62 @@
@@ -23678,7 +23754,7 @@ index 0000000..f14ca1f
 +
 +#endif // SymbolFileDWARF_DWARFASTParserSwift_h_
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFCompileUnit.cpp b/source/Plugins/SymbolFile/DWARF/DWARFCompileUnit.cpp
-index 6d3ff8e..d5610bd 100644
+index 6d3ff8e35..d5610bd09 100644
 --- a/source/Plugins/SymbolFile/DWARF/DWARFCompileUnit.cpp
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFCompileUnit.cpp
 @@ -807,30 +807,52 @@ void DWARFCompileUnit::IndexPrivate(
@@ -23804,7 +23880,7 @@ index 6d3ff8e..d5610bd 100644
    // Note: user languages between lo_user and hi_user
    // must be handled explicitly here.
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.cpp b/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.cpp
-index a824c4a..114a59f 100644
+index a824c4ac6..114a59f03 100644
 --- a/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.cpp
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.cpp
 @@ -1003,6 +1003,15 @@ uint64_t DWARFDebugInfoEntry::GetAttributeValueAsUnsigned(
@@ -23824,7 +23900,7 @@ index a824c4a..114a59f 100644
  // GetAttributeValueAsSigned
  //
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.h b/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.h
-index 15abac7..1bd9201 100644
+index 15abac77a..1bd9201d9 100644
 --- a/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.h
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFDebugInfoEntry.h
 @@ -115,6 +115,10 @@ public:
@@ -23839,7 +23915,7 @@ index 15abac7..1bd9201 100644
        SymbolFileDWARF *dwarf2Data, const DWARFCompileUnit *cu,
        const dw_attr_t attr, uint64_t fail_value,
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFDebugMacro.cpp b/source/Plugins/SymbolFile/DWARF/DWARFDebugMacro.cpp
-index 1c31d1c..17fd400 100644
+index 1c31d1c42..17fd4000a 100644
 --- a/source/Plugins/SymbolFile/DWARF/DWARFDebugMacro.cpp
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFDebugMacro.cpp
 @@ -62,6 +62,9 @@ void DWARFDebugMacroEntry::ReadMacroEntries(
@@ -23859,7 +23935,7 @@ index 1c31d1c..17fd400 100644
 +#endif
  }
 diff --git a/source/Plugins/SymbolFile/DWARF/DWARFFormValue.h b/source/Plugins/SymbolFile/DWARF/DWARFFormValue.h
-index 8d6af3d..0aa9422 100644
+index 8d6af3d65..0aa9422fc 100644
 --- a/source/Plugins/SymbolFile/DWARF/DWARFFormValue.h
 +++ b/source/Plugins/SymbolFile/DWARF/DWARFFormValue.h
 @@ -77,6 +77,8 @@ public:
@@ -23880,7 +23956,7 @@ index 8d6af3d..0aa9422 100644
  protected:
    const DWARFCompileUnit *m_cu; // Compile unit for this form
 diff --git a/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.cpp b/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.cpp
-index afdb1d6..b2c67fd 100644
+index afdb1d6af..b2c67fde8 100644
 --- a/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.cpp
 +++ b/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.cpp
 @@ -122,17 +122,20 @@ const char *DWARFMappedHash::GetAtomTypeName(uint16_t atom) {
@@ -23908,7 +23984,7 @@ index afdb1d6..b2c67fd 100644
  DWARFMappedHash::Prologue::Prologue(dw_offset_t _die_base_offset)
      : die_base_offset(_die_base_offset), atoms(), atom_mask(0),
 diff --git a/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.h b/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.h
-index c1cb30b..7d35405 100644
+index c1cb30b60..7d3540524 100644
 --- a/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.h
 +++ b/source/Plugins/SymbolFile/DWARF/HashedNameToDIE.h
 @@ -34,15 +34,16 @@ public:
@@ -23946,7 +24022,7 @@ index c1cb30b..7d35405 100644
  
    struct Atom {
 diff --git a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
-index 3927745..9ac5f91 100644
+index aa019ead0..d463c8fce 100644
 --- a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
 +++ b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.cpp
 @@ -13,6 +13,7 @@
@@ -24166,7 +24242,7 @@ index 3927745..9ac5f91 100644
  void SymbolFileDWARF::Index() {
    if (m_indexed)
      return;
-@@ -2076,6 +2200,13 @@ bool SymbolFileDWARF::DeclContextMatchesThisSymbolFile(
+@@ -2077,6 +2201,13 @@ bool SymbolFileDWARF::DeclContextMatchesThisSymbolFile(
    return false;
  }
  
@@ -24180,7 +24256,7 @@ index 3927745..9ac5f91 100644
  uint32_t SymbolFileDWARF::FindGlobalVariables(
      const ConstString &name, const CompilerDeclContext *parent_decl_ctx,
      bool append, uint32_t max_matches, VariableList &variables) {
-@@ -3501,6 +3632,135 @@ TypeSP SymbolFileDWARF::ParseType(const SymbolContext &sc, const DWARFDIE &die,
+@@ -3502,6 +3633,135 @@ TypeSP SymbolFileDWARF::ParseType(const SymbolContext &sc, const DWARFDIE &die,
    return type_sp;
  }
  
@@ -24316,7 +24392,7 @@ index 3927745..9ac5f91 100644
  size_t SymbolFileDWARF::ParseTypes(const SymbolContext &sc,
                                     const DWARFDIE &orig_die,
                                     bool parse_siblings, bool parse_children) {
-@@ -3861,6 +4121,10 @@ VariableSP SymbolFileDWARF::ParseVariableDIE(const SymbolContext &sc,
+@@ -3862,6 +4122,10 @@ VariableSP SymbolFileDWARF::ParseVariableDIE(const SymbolContext &sc,
          }
        }
  
@@ -24327,7 +24403,7 @@ index 3927745..9ac5f91 100644
        const DWARFDIE parent_context_die = GetDeclContextDIEContainingDIE(die);
        const dw_tag_t parent_tag = die.GetParent().Tag();
        bool is_static_member =
-@@ -4035,8 +4299,14 @@ VariableSP SymbolFileDWARF::ParseVariableDIE(const SymbolContext &sc,
+@@ -4040,8 +4304,14 @@ VariableSP SymbolFileDWARF::ParseVariableDIE(const SymbolContext &sc,
        }
  
        if (symbol_context_scope) {
@@ -24345,7 +24421,7 @@ index 3927745..9ac5f91 100644
          if (const_value.Form() && type_sp && type_sp->GetType())
            location.CopyOpcodeData(const_value.Unsigned(),
 diff --git a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
-index 5293769..d11ddd6 100644
+index 529376975..d11ddd64a 100644
 --- a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
 +++ b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARF.h
 @@ -72,6 +72,7 @@ public:
@@ -24427,7 +24503,7 @@ index 5293769..d11ddd6 100644
  
    typedef std::shared_ptr<std::set<DIERef>> DIERefSetSP;
 diff --git a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp
-index 567ac88..73249b4 100644
+index 567ac88fd..73249b4b5 100644
 --- a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp
 +++ b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.cpp
 @@ -255,7 +255,8 @@ SymbolFile *SymbolFileDWARFDebugMap::CreateInstance(ObjectFile *obj_file) {
@@ -24508,7 +24584,7 @@ index 567ac88..73249b4 100644
 +  return ast_datas;
 +}
 diff --git a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h
-index 109da63..b949d44 100644
+index 109da631d..b949d4472 100644
 --- a/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h
 +++ b/source/Plugins/SymbolFile/DWARF/SymbolFileDWARFDebugMap.h
 @@ -22,6 +22,7 @@
@@ -24546,7 +24622,7 @@ index 109da63..b949d44 100644
  
    //------------------------------------------------------------------
 diff --git a/source/Plugins/SystemRuntime/MacOSX/AppleGetPendingItemsHandler.cpp b/source/Plugins/SystemRuntime/MacOSX/AppleGetPendingItemsHandler.cpp
-index 38bf336..25f93c0 100644
+index 38bf3368c..25f93c09d 100644
 --- a/source/Plugins/SystemRuntime/MacOSX/AppleGetPendingItemsHandler.cpp
 +++ b/source/Plugins/SystemRuntime/MacOSX/AppleGetPendingItemsHandler.cpp
 @@ -140,7 +140,7 @@ void AppleGetPendingItemsHandler::Detach() {
@@ -24559,7 +24635,7 @@ index 38bf336..25f93c0 100644
    Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_SYSTEM_RUNTIME));
  
 diff --git a/source/Plugins/SystemRuntime/MacOSX/AppleGetQueuesHandler.cpp b/source/Plugins/SystemRuntime/MacOSX/AppleGetQueuesHandler.cpp
-index 3994c28..93d0604 100644
+index 3994c2817..93d0604b3 100644
 --- a/source/Plugins/SystemRuntime/MacOSX/AppleGetQueuesHandler.cpp
 +++ b/source/Plugins/SystemRuntime/MacOSX/AppleGetQueuesHandler.cpp
 @@ -150,7 +150,7 @@ lldb::addr_t
@@ -24572,7 +24648,7 @@ index 3994c28..93d0604 100644
    Address impl_code_address;
    DiagnosticManager diagnostics;
 diff --git a/source/Plugins/SystemRuntime/MacOSX/AppleGetThreadItemInfoHandler.cpp b/source/Plugins/SystemRuntime/MacOSX/AppleGetThreadItemInfoHandler.cpp
-index 4ed43e5..55ae9c5 100644
+index 4ed43e5e6..55ae9c592 100644
 --- a/source/Plugins/SystemRuntime/MacOSX/AppleGetThreadItemInfoHandler.cpp
 +++ b/source/Plugins/SystemRuntime/MacOSX/AppleGetThreadItemInfoHandler.cpp
 @@ -147,7 +147,7 @@ void AppleGetThreadItemInfoHandler::Detach() {
@@ -24585,7 +24661,7 @@ index 4ed43e5..55ae9c5 100644
    DiagnosticManager diagnostics;
    Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_SYSTEM_RUNTIME));
 diff --git a/source/Symbol/CMakeLists.txt b/source/Symbol/CMakeLists.txt
-index c5f7be7..43cdfcb 100644
+index c5f7be73f..43cdfcb54 100644
 --- a/source/Symbol/CMakeLists.txt
 +++ b/source/Symbol/CMakeLists.txt
 @@ -22,6 +22,8 @@ add_lldb_library(lldbSymbol
@@ -24598,7 +24674,7 @@ index c5f7be7..43cdfcb 100644
    SymbolContext.cpp
    SymbolFile.cpp
 diff --git a/source/Symbol/ClangASTContext.cpp b/source/Symbol/ClangASTContext.cpp
-index 0c2cfe5..3078844 100644
+index 5d8fcbe11..cf71757ca 100644
 --- a/source/Symbol/ClangASTContext.cpp
 +++ b/source/Symbol/ClangASTContext.cpp
 @@ -46,6 +46,7 @@
@@ -24609,7 +24685,7 @@ index 0c2cfe5..3078844 100644
  #include "clang/Basic/FileManager.h"
  #include "clang/Basic/FileSystemOptions.h"
  #include "clang/Basic/SourceManager.h"
-@@ -541,6 +542,14 @@ ClangASTContext::ClangASTContext(const char *target_triple)
+@@ -543,6 +544,14 @@ ClangASTContext::ClangASTContext(const char *target_triple)
      SetTargetTriple(target_triple);
  }
  
@@ -24624,7 +24700,7 @@ index 0c2cfe5..3078844 100644
  //----------------------------------------------------------------------
  // Destructor
  //----------------------------------------------------------------------
-@@ -556,9 +565,10 @@ ConstString ClangASTContext::GetPluginName() {
+@@ -558,9 +567,10 @@ ConstString ClangASTContext::GetPluginName() {
  
  uint32_t ClangASTContext::GetPluginVersion() { return 1; }
  
@@ -24638,7 +24714,7 @@ index 0c2cfe5..3078844 100644
    if (ClangASTContextSupportsLanguage(language)) {
      ArchSpec arch;
      if (module)
-@@ -756,6 +766,8 @@ ASTContext *ClangASTContext::getASTContext() {
+@@ -758,6 +768,8 @@ ASTContext *ClangASTContext::getASTContext() {
  
  ClangASTContext *ClangASTContext::GetASTContext(clang::ASTContext *ast) {
    ClangASTContext *clang_ast = GetASTMap().Lookup(ast);
@@ -24647,7 +24723,7 @@ index 0c2cfe5..3078844 100644
    return clang_ast;
  }
  
-@@ -1298,6 +1310,30 @@ ClangASTContext::GetTranslationUnitDecl(clang::ASTContext *ast) {
+@@ -1300,6 +1312,30 @@ ClangASTContext::GetTranslationUnitDecl(clang::ASTContext *ast) {
    return ast->getTranslationUnitDecl();
  }
  
@@ -24678,7 +24754,7 @@ index 0c2cfe5..3078844 100644
  clang::Decl *ClangASTContext::CopyDecl(ASTContext *dst_ast, ASTContext *src_ast,
                                         clang::Decl *source_decl) {
    FileSystemOptions file_system_options;
-@@ -3550,7 +3586,7 @@ bool ClangASTContext::IsDefined(lldb::opaque_compiler_type_t type) {
+@@ -3552,7 +3588,7 @@ bool ClangASTContext::IsDefined(lldb::opaque_compiler_type_t type) {
  }
  
  bool ClangASTContext::IsObjCClassType(const CompilerType &type) {
@@ -24687,7 +24763,7 @@ index 0c2cfe5..3078844 100644
      clang::QualType qual_type(ClangUtil::GetCanonicalQualType(type));
  
      const clang::ObjCObjectPointerType *obj_pointer_type =
-@@ -3563,7 +3599,7 @@ bool ClangASTContext::IsObjCClassType(const CompilerType &type) {
+@@ -3565,7 +3601,7 @@ bool ClangASTContext::IsObjCClassType(const CompilerType &type) {
  }
  
  bool ClangASTContext::IsObjCObjectOrInterfaceType(const CompilerType &type) {
@@ -24696,7 +24772,7 @@ index 0c2cfe5..3078844 100644
      return ClangUtil::GetCanonicalQualType(type)->isObjCObjectOrInterfaceType();
    return false;
  }
-@@ -3613,7 +3649,7 @@ bool ClangASTContext::IsPolymorphicClass(lldb::opaque_compiler_type_t type) {
+@@ -3615,7 +3651,7 @@ bool ClangASTContext::IsPolymorphicClass(lldb::opaque_compiler_type_t type) {
  bool ClangASTContext::IsPossibleDynamicType(lldb::opaque_compiler_type_t type,
                                              CompilerType *dynamic_pointee_type,
                                              bool check_cplusplus,
@@ -24705,7 +24781,7 @@ index 0c2cfe5..3078844 100644
    clang::QualType pointee_qual_type;
    if (type) {
      clang::QualType qual_type(GetCanonicalQualType(type));
-@@ -3669,26 +3705,26 @@ bool ClangASTContext::IsPossibleDynamicType(lldb::opaque_compiler_type_t type,
+@@ -3671,26 +3707,26 @@ bool ClangASTContext::IsPossibleDynamicType(lldb::opaque_compiler_type_t type,
                                         ->getUnderlyingType()
                                         .getAsOpaquePtr(),
                                     dynamic_pointee_type, check_cplusplus,
@@ -24736,7 +24812,7 @@ index 0c2cfe5..3078844 100644
      default:
        break;
      }
-@@ -3829,7 +3865,7 @@ bool ClangASTContext::IsBeingDefined(lldb::opaque_compiler_type_t type) {
+@@ -3831,7 +3867,7 @@ bool ClangASTContext::IsBeingDefined(lldb::opaque_compiler_type_t type) {
  
  bool ClangASTContext::IsObjCObjectPointerType(const CompilerType &type,
                                                CompilerType *class_type_ptr) {
@@ -24745,7 +24821,7 @@ index 0c2cfe5..3078844 100644
      return false;
  
    clang::QualType qual_type(ClangUtil::GetCanonicalQualType(type));
-@@ -4389,6 +4425,12 @@ ClangASTContext::GetCanonicalType(lldb::opaque_compiler_type_t type) {
+@@ -4391,6 +4427,12 @@ ClangASTContext::GetCanonicalType(lldb::opaque_compiler_type_t type) {
    return CompilerType();
  }
  
@@ -24758,7 +24834,7 @@ index 0c2cfe5..3078844 100644
  static clang::QualType GetFullyUnqualifiedType_Impl(clang::ASTContext *ast,
                                                      clang::QualType qual_type) {
    if (qual_type->isPointerType())
-@@ -4673,6 +4715,28 @@ ClangASTContext::GetMemberFunctionAtIndex(lldb::opaque_compiler_type_t type,
+@@ -4675,6 +4717,28 @@ ClangASTContext::GetMemberFunctionAtIndex(lldb::opaque_compiler_type_t type,
      return TypeMemberFunctionImpl(clang_type, clang_decl, name, kind);
  }
  
@@ -24787,7 +24863,7 @@ index 0c2cfe5..3078844 100644
  CompilerType
  ClangASTContext::GetNonReferenceType(lldb::opaque_compiler_type_t type) {
    if (type)
-@@ -4843,6 +4907,20 @@ ClangASTContext::GetTypedefedType(lldb::opaque_compiler_type_t type) {
+@@ -4845,6 +4909,20 @@ ClangASTContext::GetTypedefedType(lldb::opaque_compiler_type_t type) {
    return CompilerType();
  }
  
@@ -24808,7 +24884,7 @@ index 0c2cfe5..3078844 100644
  //----------------------------------------------------------------------
  // Create related types using the current type's AST
  //----------------------------------------------------------------------
-@@ -4915,6 +4993,10 @@ uint64_t ClangASTContext::GetBitSize(lldb::opaque_compiler_type_t type,
+@@ -4917,6 +4995,10 @@ uint64_t ClangASTContext::GetBitSize(lldb::opaque_compiler_type_t type,
    return 0;
  }
  
@@ -24819,7 +24895,7 @@ index 0c2cfe5..3078844 100644
  size_t ClangASTContext::GetTypeBitAlign(lldb::opaque_compiler_type_t type) {
    if (GetCompleteType(type))
      return getASTContext()->getTypeAlign(GetQualType(type));
-@@ -6874,9 +6956,10 @@ CompilerType ClangASTContext::GetChildCompilerTypeAtIndex(
+@@ -6876,9 +6958,10 @@ CompilerType ClangASTContext::GetChildCompilerTypeAtIndex(
    return CompilerType();
  }
  
@@ -24833,7 +24909,7 @@ index 0c2cfe5..3078844 100644
    uint32_t child_idx = 0;
  
    const clang::CXXRecordDecl *cxx_record_decl =
-@@ -7021,10 +7104,10 @@ size_t ClangASTContext::GetIndexOfChildMemberWithName(
+@@ -7023,10 +7106,10 @@ size_t ClangASTContext::GetIndexOfChildMemberWithName(
  
            clang::CXXBasePaths paths;
            if (cxx_record_decl->lookupInBases(
@@ -24847,7 +24923,7 @@ index 0c2cfe5..3078844 100644
                    },
                    paths)) {
              clang::CXXBasePaths::const_paths_iterator path,
-@@ -9200,7 +9283,7 @@ bool ClangASTContext::DumpTypeValue(
+@@ -9202,7 +9285,7 @@ bool ClangASTContext::DumpTypeValue(
      lldb::opaque_compiler_type_t type, Stream *s, lldb::Format format,
      const lldb_private::DataExtractor &data, lldb::offset_t byte_offset,
      size_t byte_size, uint32_t bitfield_bit_size, uint32_t bitfield_bit_offset,
@@ -24856,7 +24932,7 @@ index 0c2cfe5..3078844 100644
    if (!type)
      return false;
    if (IsAggregateType(type)) {
-@@ -9232,7 +9315,7 @@ bool ClangASTContext::DumpTypeValue(
+@@ -9234,7 +9317,7 @@ bool ClangASTContext::DumpTypeValue(
                               // treat as a bitfield
            bitfield_bit_offset, // Offset in bits of a bitfield value if
                                 // bitfield_bit_size != 0
@@ -24865,7 +24941,7 @@ index 0c2cfe5..3078844 100644
      } break;
  
      case clang::Type::Enum:
-@@ -9614,9 +9697,14 @@ DWARFASTParser *ClangASTContext::GetDWARFParser() {
+@@ -9616,9 +9699,14 @@ DWARFASTParser *ClangASTContext::GetDWARFParser() {
  }
  
  PDBASTParser *ClangASTContext::GetPDBParser() {
@@ -24884,7 +24960,7 @@ index 0c2cfe5..3078844 100644
  
  bool ClangASTContext::LayoutRecordType(
 diff --git a/source/Symbol/CompilerType.cpp b/source/Symbol/CompilerType.cpp
-index 2684db9..a147b84 100644
+index 2684db980..a147b849f 100644
 --- a/source/Symbol/CompilerType.cpp
 +++ b/source/Symbol/CompilerType.cpp
 @@ -19,6 +19,7 @@
@@ -25037,7 +25113,7 @@ index 2684db9..a147b84 100644
    } else {
      uint64_t count = 0;
 diff --git a/source/Symbol/Function.cpp b/source/Symbol/Function.cpp
-index 8fde0a4..3e63745 100644
+index 8fde0a423..3e637455d 100644
 --- a/source/Symbol/Function.cpp
 +++ b/source/Symbol/Function.cpp
 @@ -112,7 +112,7 @@ ConstString InlineFunctionInfo::GetName(LanguageType language) const {
@@ -25059,7 +25135,7 @@ index 8fde0a4..3e63745 100644
  }
  
 diff --git a/source/Symbol/GoASTContext.cpp b/source/Symbol/GoASTContext.cpp
-index a28a6d7..8d78c6b 100644
+index a28a6d756..8d78c6ba5 100644
 --- a/source/Symbol/GoASTContext.cpp
 +++ b/source/Symbol/GoASTContext.cpp
 @@ -227,8 +227,8 @@ ConstString GoASTContext::GetPluginName() {
@@ -25102,7 +25178,7 @@ index a28a6d7..8d78c6b 100644
  
      uint32_t item_count = 1;
 diff --git a/source/Symbol/JavaASTContext.cpp b/source/Symbol/JavaASTContext.cpp
-index 79073a6..c5ad60d 100644
+index 79073a653..c5ad60d1a 100644
 --- a/source/Symbol/JavaASTContext.cpp
 +++ b/source/Symbol/JavaASTContext.cpp
 @@ -347,7 +347,8 @@ uint32_t JavaASTContext::GetPluginVersion() { return 1; }
@@ -25169,7 +25245,7 @@ index 79073a6..c5ad60d 100644
      return data.Dump(s, data_offset, format, data_byte_size,
                       1, // count
 diff --git a/source/Symbol/OCamlASTContext.cpp b/source/Symbol/OCamlASTContext.cpp
-index d459be3..00cdf61 100644
+index d459be3c2..00cdf61cd 100644
 --- a/source/Symbol/OCamlASTContext.cpp
 +++ b/source/Symbol/OCamlASTContext.cpp
 @@ -112,9 +112,9 @@ ConstString OCamlASTContext::GetPluginName() {
@@ -25249,7 +25325,7 @@ index d459be3..00cdf61 100644
      s->Printf("no type value\n");
      return false;
 diff --git a/source/Symbol/ObjectFile.cpp b/source/Symbol/ObjectFile.cpp
-index 0b1d6b2..ac464dd 100644
+index 0b1d6b299..ac464dde7 100644
 --- a/source/Symbol/ObjectFile.cpp
 +++ b/source/Symbol/ObjectFile.cpp
 @@ -353,8 +353,10 @@ AddressClass ObjectFile::GetAddressClass(addr_t file_addr) {
@@ -25295,7 +25371,7 @@ index 0b1d6b2..ac464dd 100644
          return lldb::eSymbolTypeObjCClass;
 diff --git a/source/Symbol/SwiftASTContext.cpp b/source/Symbol/SwiftASTContext.cpp
 new file mode 100644
-index 0000000..02dc947
+index 000000000..02dc94767
 --- /dev/null
 +++ b/source/Symbol/SwiftASTContext.cpp
 @@ -0,0 +1,9232 @@
@@ -34533,7 +34609,7 @@ index 0000000..02dc947
 +}
 diff --git a/source/Symbol/SwiftMangledNameVisitor.cpp b/source/Symbol/SwiftMangledNameVisitor.cpp
 new file mode 100644
-index 0000000..27b2746
+index 000000000..27b274649
 --- /dev/null
 +++ b/source/Symbol/SwiftMangledNameVisitor.cpp
 @@ -0,0 +1,47 @@
@@ -34585,7 +34661,7 @@ index 0000000..27b2746
 +                                                 strlen(mangled_name)));
 +}
 diff --git a/source/Symbol/Symbol.cpp b/source/Symbol/Symbol.cpp
-index d243657..69e0ca0 100644
+index d24365720..69e0ca080 100644
 --- a/source/Symbol/Symbol.cpp
 +++ b/source/Symbol/Symbol.cpp
 @@ -117,6 +117,8 @@ bool Symbol::ValueIsAddress() const {
@@ -34626,7 +34702,7 @@ index d243657..69e0ca0 100644
    default:
      break;
 diff --git a/source/Symbol/SymbolFile.cpp b/source/Symbol/SymbolFile.cpp
-index 8d8b606..9beb0a3 100644
+index 8d8b606b5..9beb0a3b8 100644
 --- a/source/Symbol/SymbolFile.cpp
 +++ b/source/Symbol/SymbolFile.cpp
 @@ -14,6 +14,8 @@
@@ -34693,7 +34769,7 @@ index 8d8b606..9beb0a3 100644
                                            uint32_t line, bool check_inlines,
                                            uint32_t resolve_scope,
 diff --git a/source/Symbol/SymbolVendor.cpp b/source/Symbol/SymbolVendor.cpp
-index f47bfd0..6ed9881 100644
+index a0a40efd0..9702c67c2 100644
 --- a/source/Symbol/SymbolVendor.cpp
 +++ b/source/Symbol/SymbolVendor.cpp
 @@ -13,8 +13,10 @@
@@ -34813,7 +34889,7 @@ index f47bfd0..6ed9881 100644
 +  return false;
 +}
 diff --git a/source/Symbol/Symtab.cpp b/source/Symbol/Symtab.cpp
-index 09cfd8e..d6013b9 100644
+index 09cfd8ead..d6013b909 100644
 --- a/source/Symbol/Symtab.cpp
 +++ b/source/Symbol/Symtab.cpp
 @@ -21,6 +21,7 @@
@@ -34936,7 +35012,7 @@ index 09cfd8e..d6013b9 100644
          }
        }
 diff --git a/source/Symbol/Type.cpp b/source/Symbol/Type.cpp
-index 2374a6d..6bb7a10 100644
+index 2374a6d2b..6bb7a10cc 100644
 --- a/source/Symbol/Type.cpp
 +++ b/source/Symbol/Type.cpp
 @@ -622,6 +622,33 @@ ConstString Type::GetQualifiedName() {
@@ -35010,10 +35086,10 @@ index 2374a6d..6bb7a10 100644
    return false;
  }
 diff --git a/source/Symbol/TypeSystem.cpp b/source/Symbol/TypeSystem.cpp
-index 3f68f62..daa719c 100644
+index fa5e0bc7d..882a046d6 100644
 --- a/source/Symbol/TypeSystem.cpp
 +++ b/source/Symbol/TypeSystem.cpp
-@@ -10,6 +10,7 @@
+@@ -19,6 +19,7 @@
  
  #include <set>
  
@@ -35021,7 +35097,7 @@ index 3f68f62..daa719c 100644
  #include "lldb/Core/PluginManager.h"
  #include "lldb/Symbol/CompilerType.h"
  
-@@ -26,7 +27,7 @@ lldb::TypeSystemSP TypeSystem::CreateInstance(lldb::LanguageType language,
+@@ -35,7 +36,7 @@ lldb::TypeSystemSP TypeSystem::CreateInstance(lldb::LanguageType language,
    while ((create_callback = PluginManager::GetTypeSystemCreateCallbackAtIndex(
                i++)) != nullptr) {
      lldb::TypeSystemSP type_system_sp =
@@ -35030,7 +35106,7 @@ index 3f68f62..daa719c 100644
      if (type_system_sp)
        return type_system_sp;
    }
-@@ -35,13 +36,14 @@ lldb::TypeSystemSP TypeSystem::CreateInstance(lldb::LanguageType language,
+@@ -44,13 +45,14 @@ lldb::TypeSystemSP TypeSystem::CreateInstance(lldb::LanguageType language,
  }
  
  lldb::TypeSystemSP TypeSystem::CreateInstance(lldb::LanguageType language,
@@ -35047,7 +35123,7 @@ index 3f68f62..daa719c 100644
      if (type_system_sp)
        return type_system_sp;
    }
-@@ -104,6 +106,24 @@ bool TypeSystem::IsMeaninglessWithoutDynamicResolution(void *type) {
+@@ -113,6 +115,24 @@ bool TypeSystem::IsMeaninglessWithoutDynamicResolution(void *type) {
    return false;
  }
  
@@ -35072,7 +35148,7 @@ index 3f68f62..daa719c 100644
  ConstString TypeSystem::DeclGetMangledName(void *opaque_decl) {
    return ConstString();
  }
-@@ -136,6 +156,8 @@ TypeSystemMap::TypeSystemMap()
+@@ -145,6 +165,8 @@ TypeSystemMap::TypeSystemMap()
  
  TypeSystemMap::~TypeSystemMap() {}
  
@@ -35081,7 +35157,7 @@ index 3f68f62..daa719c 100644
  void TypeSystemMap::Clear() {
    collection map;
    {
-@@ -201,9 +223,10 @@ TypeSystem *TypeSystemMap::GetTypeSystemForLanguage(lldb::LanguageType language,
+@@ -210,9 +232,10 @@ TypeSystem *TypeSystemMap::GetTypeSystemForLanguage(lldb::LanguageType language,
    return type_system_sp.get();
  }
  
@@ -35095,7 +35171,7 @@ index 3f68f62..daa719c 100644
    std::lock_guard<std::mutex> guard(m_mutex);
    collection::iterator pos = m_map.find(language);
    if (pos != m_map.end())
-@@ -225,12 +248,24 @@ TypeSystem *TypeSystemMap::GetTypeSystemForLanguage(lldb::LanguageType language,
+@@ -234,12 +257,24 @@ TypeSystem *TypeSystemMap::GetTypeSystemForLanguage(lldb::LanguageType language,
    // Cache even if we get a shared pointer that contains null type system back
    lldb::TypeSystemSP type_system_sp;
    if (!m_clear_in_progress)
@@ -35122,7 +35198,7 @@ index 3f68f62..daa719c 100644
                               lldb::TypeSystemSP const &type_system_sp) {
    if (!m_clear_in_progress)
 diff --git a/source/Symbol/Variable.cpp b/source/Symbol/Variable.cpp
-index e17685e..fa875ff 100644
+index e17685e83..fa875ffb6 100644
 --- a/source/Symbol/Variable.cpp
 +++ b/source/Symbol/Variable.cpp
 @@ -737,7 +737,8 @@ static void PrivateAutoComplete(
@@ -35136,7 +35212,7 @@ index e17685e..fa875ff 100644
                  Type *variable_type = variable->GetType();
                  if (variable_type) {
 diff --git a/source/Target/CMakeLists.txt b/source/Target/CMakeLists.txt
-index cdb047a..66a804c 100644
+index cdb047a66..66a804c2f 100644
 --- a/source/Target/CMakeLists.txt
 +++ b/source/Target/CMakeLists.txt
 @@ -31,6 +31,7 @@ add_lldb_library(lldbTarget
@@ -35148,7 +35224,7 @@ index cdb047a..66a804c 100644
    Target.cpp
    TargetList.cpp
 diff --git a/source/Target/JITLoaderList.cpp b/source/Target/JITLoaderList.cpp
-index aa748a5..c55c95e 100644
+index 1e908bd54..326dd7314 100644
 --- a/source/Target/JITLoaderList.cpp
 +++ b/source/Target/JITLoaderList.cpp
 @@ -7,8 +7,8 @@
@@ -35162,7 +35238,7 @@ index aa748a5..c55c95e 100644
  
  using namespace lldb;
 diff --git a/source/Target/LanguageRuntime.cpp b/source/Target/LanguageRuntime.cpp
-index cacb491..bb3bba4 100644
+index cacb49139..bb3bba471 100644
 --- a/source/Target/LanguageRuntime.cpp
 +++ b/source/Target/LanguageRuntime.cpp
 @@ -17,7 +17,9 @@
@@ -35229,10 +35305,10 @@ index cacb491..bb3bba4 100644
 +    return eLanguageTypeUnknown;
 +}
 diff --git a/source/Target/Process.cpp b/source/Target/Process.cpp
-index f5a5d47..27f8037 100644
+index 703126771..de2c8c59f 100644
 --- a/source/Target/Process.cpp
 +++ b/source/Target/Process.cpp
-@@ -55,6 +55,7 @@
+@@ -56,6 +56,7 @@
  #include "lldb/Target/RegisterContext.h"
  #include "lldb/Target/StopInfo.h"
  #include "lldb/Target/StructuredDataPlugin.h"
@@ -35240,7 +35316,7 @@ index f5a5d47..27f8037 100644
  #include "lldb/Target/SystemRuntime.h"
  #include "lldb/Target/Target.h"
  #include "lldb/Target/TargetList.h"
-@@ -742,7 +743,8 @@ Process::Process(lldb::TargetSP target_sp, ListenerSP listener_sp,
+@@ -753,7 +754,8 @@ Process::Process(lldb::TargetSP target_sp, ListenerSP listener_sp,
        m_private_run_lock(), m_stop_info_override_callback(nullptr),
        m_finalizing(false), m_finalize_called(false),
        m_clear_thread_plans_on_stop(false), m_force_next_event_delivery(false),
@@ -35250,7 +35326,7 @@ index f5a5d47..27f8037 100644
        m_can_interpret_function_calls(false), m_warnings_issued(),
        m_run_thread_plan_lock(), m_can_jit(eCanJITDontKnow) {
    CheckInWithManager();
-@@ -1003,8 +1005,9 @@ Process::WaitForProcessToStop(const std::chrono::microseconds &timeout,
+@@ -1016,8 +1018,9 @@ StateType Process::WaitForProcessToStop(const Timeout<std::micro> &timeout,
        *event_sp_ptr = event_sp;
  
      bool pop_process_io_handler = (hijack_listener_sp.get() != nullptr);
@@ -35262,7 +35338,7 @@ index f5a5d47..27f8037 100644
  
      switch (state) {
      case eStateCrashed:
-@@ -1033,36 +1036,61 @@ Process::WaitForProcessToStop(const std::chrono::microseconds &timeout,
+@@ -1046,36 +1049,61 @@ StateType Process::WaitForProcessToStop(const Timeout<std::micro> &timeout,
    return state;
  }
  
@@ -35333,7 +35409,7 @@ index f5a5d47..27f8037 100644
  
    case eStateConnected:
    case eStateRunning:
-@@ -1108,6 +1136,9 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
+@@ -1121,6 +1149,9 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
          }
        }
      } else {
@@ -35343,7 +35419,7 @@ index f5a5d47..27f8037 100644
        StopInfoSP curr_thread_stop_info_sp;
        // Lock the thread list so it doesn't change on us, this is the scope for
        // the locker:
-@@ -1115,7 +1146,7 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
+@@ -1128,7 +1159,7 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
          ThreadList &thread_list = process_sp->GetThreadList();
          std::lock_guard<std::recursive_mutex> guard(thread_list.GetMutex());
  
@@ -35352,7 +35428,7 @@ index f5a5d47..27f8037 100644
          ThreadSP thread;
          StopReason curr_thread_stop_reason = eStopReasonInvalid;
          if (curr_thread) {
-@@ -1156,6 +1187,7 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
+@@ -1169,6 +1200,7 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
              case eStopReasonTrace:
              case eStopReasonBreakpoint:
              case eStopReasonWatchpoint:
@@ -35360,7 +35436,7 @@ index f5a5d47..27f8037 100644
              case eStopReasonException:
              case eStopReasonExec:
              case eStopReasonThreadExiting:
-@@ -1164,26 +1196,80 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
+@@ -1177,26 +1209,80 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
                  other_thread = thread;
                break;
              case eStopReasonPlanComplete:
@@ -35445,7 +35521,7 @@ index f5a5d47..27f8037 100644
        // Drop the ThreadList mutex by here, since GetThreadStatus below might
        // have to run code,
        // e.g. for Data formatters, and if we hold the ThreadList mutex, then the
-@@ -1233,12 +1319,18 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
+@@ -1246,12 +1332,18 @@ bool Process::HandleProcessStateChangedEvent(const EventSP &event_sp,
  
        // Pop the process IO handler
        pop_process_io_handler = true;
@@ -35465,7 +35541,7 @@ index f5a5d47..27f8037 100644
  
    return true;
  }
-@@ -1426,6 +1518,12 @@ bool Process::SetExitStatus(int status, const char *cstr) {
+@@ -1425,6 +1517,12 @@ bool Process::SetExitStatus(int status, const char *cstr) {
  
  bool Process::IsAlive() {
    switch (m_private_state.GetValue()) {
@@ -35478,7 +35554,7 @@ index f5a5d47..27f8037 100644
    case eStateConnected:
    case eStateAttaching:
    case eStateLaunching:
-@@ -1494,7 +1592,7 @@ void Process::UpdateThreadListIfNeeded() {
+@@ -1493,7 +1591,7 @@ void Process::UpdateThreadListIfNeeded() {
          // already held by whoever is
          // shutting us down, causing a deadlock.
          OperatingSystem *os = GetOperatingSystem();
@@ -35487,7 +35563,7 @@ index f5a5d47..27f8037 100644
            // Clear any old backing threads where memory threads might have been
            // backed by actual threads from the lldb_private::Process subclass
            size_t num_old_threads = old_thread_list.GetSize(false);
-@@ -1789,6 +1887,9 @@ LanguageRuntime *Process::GetLanguageRuntime(lldb::LanguageType language,
+@@ -1788,6 +1886,9 @@ LanguageRuntime *Process::GetLanguageRuntime(lldb::LanguageType language,
  }
  
  CPPLanguageRuntime *Process::GetCPPLanguageRuntime(bool retry_if_null) {
@@ -35497,7 +35573,7 @@ index f5a5d47..27f8037 100644
    LanguageRuntime *runtime =
        GetLanguageRuntime(eLanguageTypeC_plus_plus, retry_if_null);
    if (runtime != nullptr &&
-@@ -1798,6 +1899,9 @@ CPPLanguageRuntime *Process::GetCPPLanguageRuntime(bool retry_if_null) {
+@@ -1797,6 +1898,9 @@ CPPLanguageRuntime *Process::GetCPPLanguageRuntime(bool retry_if_null) {
  }
  
  ObjCLanguageRuntime *Process::GetObjCLanguageRuntime(bool retry_if_null) {
@@ -35507,7 +35583,7 @@ index f5a5d47..27f8037 100644
    LanguageRuntime *runtime =
        GetLanguageRuntime(eLanguageTypeObjC, retry_if_null);
    if (runtime != nullptr && runtime->GetLanguageType() == eLanguageTypeObjC)
-@@ -1805,12 +1909,27 @@ ObjCLanguageRuntime *Process::GetObjCLanguageRuntime(bool retry_if_null) {
+@@ -1804,12 +1908,27 @@ ObjCLanguageRuntime *Process::GetObjCLanguageRuntime(bool retry_if_null) {
    return nullptr;
  }
  
@@ -35535,7 +35611,7 @@ index f5a5d47..27f8037 100644
    LanguageType known_type = in_value.GetObjectRuntimeLanguage();
  
    if (known_type != eLanguageTypeUnknown && known_type != eLanguageTypeC) {
-@@ -1823,7 +1942,14 @@ bool Process::IsPossibleDynamicValue(ValueObject &in_value) {
+@@ -1822,7 +1941,14 @@ bool Process::IsPossibleDynamicValue(ValueObject &in_value) {
      return true;
  
    LanguageRuntime *objc_runtime = GetLanguageRuntime(eLanguageTypeObjC);
@@ -35551,7 +35627,7 @@ index f5a5d47..27f8037 100644
  }
  
  void Process::SetDynamicCheckers(DynamicCheckerFunctions *dynamic_checkers) {
-@@ -3466,7 +3592,7 @@ Error Process::Detach(bool keep_stopped) {
+@@ -3462,7 +3588,7 @@ Error Process::Detach(bool keep_stopped) {
      }
    }
    m_destroy_in_process = false;
@@ -35560,7 +35636,7 @@ index f5a5d47..27f8037 100644
    // If we exited when we were waiting for a process to stop, then
    // forward the event here so we don't lose the event
    if (exit_event_sp) {
-@@ -3974,7 +4100,7 @@ void Process::HandlePrivateEvent(EventSP &event_sp) {
+@@ -3970,7 +4096,7 @@ void Process::HandlePrivateEvent(EventSP &event_sp) {
          // correctly.
  
          if (is_hijacked || !GetTarget().GetDebugger().IsHandlingEvents())
@@ -35569,7 +35645,7 @@ index f5a5d47..27f8037 100644
        }
      }
  
-@@ -4753,10 +4879,16 @@ bool Process::PushProcessIOHandler() {
+@@ -4749,10 +4875,16 @@ bool Process::PushProcessIOHandler() {
    return false;
  }
  
@@ -35589,7 +35665,7 @@ index f5a5d47..27f8037 100644
    return false;
  }
  
-@@ -4811,7 +4943,20 @@ Process::RunThreadPlan(ExecutionContext &exe_ctx,
+@@ -4846,7 +4978,20 @@ Process::RunThreadPlan(ExecutionContext &exe_ctx,
                         DiagnosticManager &diagnostic_manager) {
    ExpressionResults return_value = eExpressionSetupError;
  
@@ -35611,7 +35687,7 @@ index f5a5d47..27f8037 100644
  
    if (!thread_plan_sp) {
      diagnostic_manager.PutString(
-@@ -4905,8 +5050,6 @@ Process::RunThreadPlan(ExecutionContext &exe_ctx,
+@@ -4950,8 +5095,6 @@ Process::RunThreadPlan(ExecutionContext &exe_ctx,
    lldb::StateType old_state = eStateInvalid;
    lldb::ThreadPlanSP stopper_base_plan_sp;
  
@@ -35620,7 +35696,7 @@ index f5a5d47..27f8037 100644
    if (m_private_state_thread.EqualsThread(Host::GetCurrentThread())) {
      // Yikes, we are running on the private state thread!  So we can't wait for
      // public events on this thread, since
-@@ -4955,6 +5098,8 @@ Process::RunThreadPlan(ExecutionContext &exe_ctx,
+@@ -5000,6 +5143,8 @@ Process::RunThreadPlan(ExecutionContext &exe_ctx,
      // developers who can
      // live with not pretty...
      thread->Flush();
@@ -35629,7 +35705,7 @@ index f5a5d47..27f8037 100644
      return eExpressionStoppedForDebug;
    }
  
-@@ -6034,6 +6179,13 @@ void Process::PrintWarningOptimization(const SymbolContext &sc) {
+@@ -6007,6 +6152,13 @@ void Process::PrintWarningOptimization(const SymbolContext &sc) {
    }
  }
  
@@ -35644,7 +35720,7 @@ index f5a5d47..27f8037 100644
    info.Clear();
  
 diff --git a/source/Target/QueueItem.cpp b/source/Target/QueueItem.cpp
-index fe58980..c929a05 100644
+index fe58980c0..c929a0529 100644
 --- a/source/Target/QueueItem.cpp
 +++ b/source/Target/QueueItem.cpp
 @@ -7,9 +7,9 @@
@@ -35660,7 +35736,7 @@ index fe58980..c929a05 100644
  
  using namespace lldb;
 diff --git a/source/Target/QueueList.cpp b/source/Target/QueueList.cpp
-index ae9e7b9..fbbfcb6 100644
+index ae9e7b937..fbbfcb6c2 100644
 --- a/source/Target/QueueList.cpp
 +++ b/source/Target/QueueList.cpp
 @@ -7,9 +7,9 @@
@@ -35676,7 +35752,7 @@ index ae9e7b9..fbbfcb6 100644
  using namespace lldb;
  using namespace lldb_private;
 diff --git a/source/Target/StackFrame.cpp b/source/Target/StackFrame.cpp
-index 8daa649..c09ed57 100644
+index ec30fd626..82db95409 100644
 --- a/source/Target/StackFrame.cpp
 +++ b/source/Target/StackFrame.cpp
 @@ -808,11 +808,33 @@ ValueObjectSP StackFrame::GetValueForVariableExpressionPath(
@@ -35733,7 +35809,7 @@ index 8daa649..c09ed57 100644
        ValueObjectSP deref_valobj_sp(valobj_sp->Dereference(error));
        valobj_sp = deref_valobj_sp;
 diff --git a/source/Target/StopInfo.cpp b/source/Target/StopInfo.cpp
-index 6b589dd..ff0964d 100644
+index 6b589dd65..ff0964d4f 100644
 --- a/source/Target/StopInfo.cpp
 +++ b/source/Target/StopInfo.cpp
 @@ -1008,10 +1008,12 @@ public:
@@ -35808,7 +35884,7 @@ index 6b589dd..ff0964d 100644
  }
 diff --git a/source/Target/SwiftLanguageRuntime.cpp b/source/Target/SwiftLanguageRuntime.cpp
 new file mode 100644
-index 0000000..1e6d4b7
+index 000000000..1e6d4b7ae
 --- /dev/null
 +++ b/source/Target/SwiftLanguageRuntime.cpp
 @@ -0,0 +1,3867 @@
@@ -39680,7 +39756,7 @@ index 0000000..1e6d4b7
 +
 +uint32_t SwiftLanguageRuntime::GetPluginVersion() { return 1; }
 diff --git a/source/Target/Target.cpp b/source/Target/Target.cpp
-index e517d6c..23730f5 100644
+index 8f501248e..75cc33103 100644
 --- a/source/Target/Target.cpp
 +++ b/source/Target/Target.cpp
 @@ -11,10 +11,12 @@
@@ -39962,7 +40038,7 @@ index e517d6c..23730f5 100644
  Error Target::Launch(ProcessLaunchInfo &launch_info, Stream *stream) {
    Error error;
    Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_TARGET));
-@@ -3236,9 +3411,18 @@ static PropertyDefinition g_properties[] = {
+@@ -3233,9 +3408,18 @@ static PropertyDefinition g_properties[] = {
      {"clang-module-search-paths", OptionValue::eTypeFileSpecList, false, 0,
       nullptr, nullptr,
       "List of directories to be searched when locating modules for Clang."},
@@ -39981,7 +40057,7 @@ index e517d6c..23730f5 100644
      {"auto-apply-fixits", OptionValue::eTypeBoolean, false, true, nullptr,
       nullptr, "Automatically apply fix-it hints to expressions."},
      {"notify-about-fixits", OptionValue::eTypeBoolean, false, true, nullptr,
-@@ -3346,6 +3530,10 @@ static PropertyDefinition g_properties[] = {
+@@ -3343,6 +3527,10 @@ static PropertyDefinition g_properties[] = {
       OptionValue::eTypeString, nullptr, nullptr,
       "A list of trap handler function names, e.g. a common Unix user process "
       "one is _sigtramp."},
@@ -39992,7 +40068,7 @@ index e517d6c..23730f5 100644
      {"display-runtime-support-values", OptionValue::eTypeBoolean, false, false,
       nullptr, nullptr, "If true, LLDB will show variables that are meant to "
                         "support the operation of a language's runtime "
-@@ -3366,7 +3554,10 @@ enum {
+@@ -3363,7 +3551,10 @@ enum {
    ePropertyExecutableSearchPaths,
    ePropertyDebugFileSearchPaths,
    ePropertyClangModuleSearchPaths,
@@ -40003,7 +40079,7 @@ index e517d6c..23730f5 100644
    ePropertyAutoApplyFixIts,
    ePropertyNotifyAboutFixIts,
    ePropertySaveObjects,
-@@ -3394,6 +3585,8 @@ enum {
+@@ -3391,6 +3582,8 @@ enum {
    ePropertyMemoryModuleLoadLevel,
    ePropertyDisplayExpressionsInCrashlogs,
    ePropertyTrapHandlerNames,
@@ -40012,7 +40088,7 @@ index e517d6c..23730f5 100644
    ePropertyDisplayRuntimeSupportValues,
    ePropertyNonStopModeEnabled,
    ePropertyExperimental
-@@ -3492,7 +3685,7 @@ protected:
+@@ -3489,7 +3682,7 @@ protected:
  // TargetProperties
  //----------------------------------------------------------------------
  static PropertyDefinition g_experimental_properties[]{
@@ -40021,7 +40097,7 @@ index e517d6c..23730f5 100644
       nullptr,
       "If true, inject local variables explicitly into the expression text.  "
       "This will fix symbol resolution when there are name collisions between "
-@@ -3761,6 +3954,42 @@ FileSpecList &TargetProperties::GetDebugFileSearchPaths() {
+@@ -3758,6 +3951,42 @@ FileSpecList &TargetProperties::GetDebugFileSearchPaths() {
    return option_value->GetCurrentValue();
  }
  
@@ -40064,7 +40140,7 @@ index e517d6c..23730f5 100644
  FileSpecList &TargetProperties::GetClangModuleSearchPaths() {
    const uint32_t idx = ePropertyClangModuleSearchPaths;
    OptionValueFileSpecList *option_value =
-@@ -3776,6 +4005,12 @@ bool TargetProperties::GetEnableAutoImportClangModules() const {
+@@ -3773,6 +4002,12 @@ bool TargetProperties::GetEnableAutoImportClangModules() const {
        nullptr, idx, g_properties[idx].default_uint_value != 0);
  }
  
@@ -40077,7 +40153,7 @@ index e517d6c..23730f5 100644
  bool TargetProperties::GetEnableAutoApplyFixIts() const {
    const uint32_t idx = ePropertyAutoApplyFixIts;
    return m_collection_sp->GetPropertyAtIndexAsBoolean(
-@@ -4062,6 +4297,14 @@ void TargetProperties::DisableSTDIOValueChangedCallback(
+@@ -4059,6 +4294,14 @@ void TargetProperties::DisableSTDIOValueChangedCallback(
      this_->m_launch_info.GetFlags().Clear(lldb::eLaunchFlagDisableSTDIO);
  }
  
@@ -40093,7 +40169,7 @@ index e517d6c..23730f5 100644
  // Target::TargetEventData
  //----------------------------------------------------------------------
 diff --git a/source/Target/Thread.cpp b/source/Target/Thread.cpp
-index 5ead590..9a5e981 100644
+index 5ead59052..9a5e981d0 100644
 --- a/source/Target/Thread.cpp
 +++ b/source/Target/Thread.cpp
 @@ -384,8 +384,12 @@ lldb::StopInfoSP Thread::GetStopInfo() {
@@ -40135,7 +40211,7 @@ index 5ead590..9a5e981 100644
    }
    return ValueObjectSP();
 diff --git a/source/Target/ThreadPlanCallFunction.cpp b/source/Target/ThreadPlanCallFunction.cpp
-index 68fd503..29b58d5 100644
+index 68fd50390..29b58d59d 100644
 --- a/source/Target/ThreadPlanCallFunction.cpp
 +++ b/source/Target/ThreadPlanCallFunction.cpp
 @@ -24,6 +24,7 @@
@@ -40290,7 +40366,7 @@ index 68fd503..29b58d5 100644
    return false;
  }
 diff --git a/source/Target/ThreadPlanShouldStopHere.cpp b/source/Target/ThreadPlanShouldStopHere.cpp
-index 408650d..cb16b3c 100644
+index 408650d75..cb16b3c58 100644
 --- a/source/Target/ThreadPlanShouldStopHere.cpp
 +++ b/source/Target/ThreadPlanShouldStopHere.cpp
 @@ -11,11 +11,13 @@
@@ -40340,7 +40416,7 @@ index 408650d..cb16b3c 100644
    // FIXME: At present the ShouldStop and the StepFromHere calculate this
    // independently.  If this ever
 diff --git a/source/Target/ThreadPlanStepInRange.cpp b/source/Target/ThreadPlanStepInRange.cpp
-index 03f6679..8e62327 100644
+index 03f6679ae..8e6232709 100644
 --- a/source/Target/ThreadPlanStepInRange.cpp
 +++ b/source/Target/ThreadPlanStepInRange.cpp
 @@ -11,7 +11,9 @@
@@ -40665,7 +40741,7 @@ index 03f6679..8e62327 100644
          }
        } else if (IsUsuallyUnexplainedStopReason(reason)) {
 diff --git a/source/Target/ThreadPlanStepOut.cpp b/source/Target/ThreadPlanStepOut.cpp
-index b8d6e6d..0ab04bb 100644
+index b8d6e6dcb..0ab04bb67 100644
 --- a/source/Target/ThreadPlanStepOut.cpp
 +++ b/source/Target/ThreadPlanStepOut.cpp
 @@ -17,13 +17,16 @@
@@ -40771,7 +40847,7 @@ index b8d6e6d..0ab04bb 100644
          m_immediate_step_from_function->GetCompilerType()
              .GetFunctionReturnType();
 diff --git a/source/Target/ThreadPlanStepRange.cpp b/source/Target/ThreadPlanStepRange.cpp
-index dcee82e..fc42273 100644
+index dcee82ea3..fc4227345 100644
 --- a/source/Target/ThreadPlanStepRange.cpp
 +++ b/source/Target/ThreadPlanStepRange.cpp
 @@ -413,24 +413,25 @@ StateType ThreadPlanStepRange::GetPlanRunState() {
@@ -40816,7 +40892,7 @@ index dcee82e..fc42273 100644
    }
  
 diff --git a/source/Target/ThreadPlanStepThrough.cpp b/source/Target/ThreadPlanStepThrough.cpp
-index b975161..34e3d6b 100644
+index b9751614a..34e3d6bfe 100644
 --- a/source/Target/ThreadPlanStepThrough.cpp
 +++ b/source/Target/ThreadPlanStepThrough.cpp
 @@ -19,6 +19,7 @@
@@ -40850,7 +40926,7 @@ index b975161..34e3d6b 100644
    Log *log(lldb_private::GetLogIfAllCategoriesSet(LIBLLDB_LOG_STEP));
    if (log) {
 diff --git a/source/Utility/ConvertEnum.cpp b/source/Utility/ConvertEnum.cpp
-index bb0484e..aa79bbe 100644
+index bb0484ef5..aa79bbe64 100644
 --- a/source/Utility/ConvertEnum.cpp
 +++ b/source/Utility/ConvertEnum.cpp
 @@ -113,6 +113,10 @@ const char *lldb_private::GetSectionTypeAsCString(lldb::SectionType sect_type) {
@@ -40865,7 +40941,7 @@ index bb0484e..aa79bbe 100644
    return "unknown";
  }
 diff --git a/source/lldb.cpp b/source/lldb.cpp
-index efdcef8..cc41c47 100644
+index efdcef8f0..cc41c4729 100644
 --- a/source/lldb.cpp
 +++ b/source/lldb.cpp
 @@ -12,6 +12,23 @@
@@ -41074,7 +41150,7 @@ index efdcef8..cc41c47 100644
 +#endif
 +#endif
 diff --git a/tools/CMakeLists.txt b/tools/CMakeLists.txt
-index 49af928..e609c8e 100644
+index 49af928c3..e609c8e7f 100644
 --- a/tools/CMakeLists.txt
 +++ b/tools/CMakeLists.txt
 @@ -10,3 +10,4 @@ endif()
@@ -41083,7 +41159,7 @@ index 49af928..e609c8e 100644
  endif()
 +add_subdirectory(repl/swift)
 diff --git a/tools/debugserver/source/MacOSX/ppc/DNBArchImpl.cpp b/tools/debugserver/source/MacOSX/ppc/DNBArchImpl.cpp
-index 1653287..b711b47 100644
+index 165328743..b711b4755 100644
 --- a/tools/debugserver/source/MacOSX/ppc/DNBArchImpl.cpp
 +++ b/tools/debugserver/source/MacOSX/ppc/DNBArchImpl.cpp
 @@ -418,17 +418,17 @@ bool DNBArchMachPPC::GetRegisterValue(uint32_t set, uint32_t reg,
@@ -41113,7 +41189,7 @@ index 1653287..b711b47 100644
          } else if (reg == 34) // VRVALID
          {
 diff --git a/tools/driver/Driver.cpp b/tools/driver/Driver.cpp
-index 325d441..0148c97 100644
+index 325d441d5..0148c97b2 100644
 --- a/tools/driver/Driver.cpp
 +++ b/tools/driver/Driver.cpp
 @@ -41,7 +41,9 @@
@@ -41153,10 +41229,67 @@ index 325d441..0148c97 100644
    m_batch = false;
    m_after_crash_commands.clear();
 diff --git a/tools/lldb-server/CMakeLists.txt b/tools/lldb-server/CMakeLists.txt
-index 9a548d6..90d0974 100644
+index 990c4195e..77627bb58 100644
 --- a/tools/lldb-server/CMakeLists.txt
 +++ b/tools/lldb-server/CMakeLists.txt
-@@ -39,9 +39,12 @@ if (LLDB_LINKER_SUPPORTS_GROUPS)
+@@ -74,6 +74,7 @@ set( LLDB_USED_LIBS
+   lldbPluginObjectFilePECOFF
+   lldbPluginExpressionParserClang
+   lldbPluginExpressionParserGo
++  lldbPluginExpressionParserSwift
+   )
+ 
+ # Linux-only libraries
+@@ -99,6 +100,7 @@ set( CLANG_USED_LIBS
+   clangDriver
+   clangEdit
+   clangFrontend
++  clangIndex
+   clangLex
+   clangParse
+   clangRewrite
+@@ -107,6 +109,27 @@ set( CLANG_USED_LIBS
+   clangSerialization
+   )
+ 
++set(SWIFT_USED_LIBS
++  swiftAST
++  swiftASTSectionImporter
++  swiftBasic
++  swiftClangImporter
++  swiftFrontend
++  swiftIDE
++  swiftIRGen
++  swiftLLVMPasses
++  swiftMarkup
++  swiftOption
++  swiftParse
++  swiftRemoteAST
++  swiftSema
++  swiftSerialization
++  swiftSIL
++  swiftSILGen
++  swiftSILOptimizer
++  swiftSyntax
++  )
++
+ set(LLDB_SYSTEM_LIBS)
+ if (NOT CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT __ANDROID_NDK__)
+   if (NOT LLDB_DISABLE_LIBEDIT)
+@@ -165,6 +188,12 @@ set(LLVM_LINK_COMPONENTS
+   support
+   coverage
+   target
++  analysis
++  profiledata
++  transformutils
++  objcarcopts
++  instrumentation
++  object
+   )
+ 
+ add_lldb_executable(lldb-server INCLUDE_IN_FRAMEWORK
+@@ -181,15 +210,22 @@ if (LLDB_LINKER_SUPPORTS_GROUPS)
                          -Wl,--start-group ${LLDB_USED_LIBS} -Wl,--end-group)
    target_link_libraries(lldb-server
                          -Wl,--start-group ${CLANG_USED_LIBS} -Wl,--end-group)
@@ -41169,9 +41302,19 @@ index 9a548d6..90d0974 100644
  endif()
  llvm_config(lldb-server ${LLVM_LINK_COMPONENTS})
  
++list(APPEND LLDB_SYSTEM_LIBS -lcmark)
++list(APPEND LLDB_SYSTEM_LIBS -luuid)
++
+ target_link_libraries(lldb-server ${LLDB_SYSTEM_LIBS})
+ 
+ set_target_properties(lldb-server PROPERTIES VERSION ${LLDB_VERSION})
+ 
+ install(TARGETS lldb-server
+   RUNTIME DESTINATION bin)
++
 diff --git a/tools/repl/swift/CMakeLists.txt b/tools/repl/swift/CMakeLists.txt
 new file mode 100644
-index 0000000..c456625
+index 000000000..11dadf3f8
 --- /dev/null
 +++ b/tools/repl/swift/CMakeLists.txt
 @@ -0,0 +1,63 @@
@@ -41240,7 +41383,7 @@ index 0000000..c456625
 +  DESTINATION bin)
 diff --git a/tools/repl/swift/CMakeLists.txt.rej b/tools/repl/swift/CMakeLists.txt.rej
 new file mode 100644
-index 0000000..7a66fd8
+index 000000000..7a66fd8b3
 --- /dev/null
 +++ b/tools/repl/swift/CMakeLists.txt.rej
 @@ -0,0 +1,12 @@
@@ -41258,7 +41401,7 @@ index 0000000..7a66fd8
 + if(CMAKE_CROSSCOMPILING)
 diff --git a/tools/repl/swift/main.swift b/tools/repl/swift/main.swift
 new file mode 100644
-index 0000000..6ddb571
+index 000000000..6ddb571ff
 --- /dev/null
 +++ b/tools/repl/swift/main.swift
 @@ -0,0 +1,60 @@
@@ -41323,7 +41466,7 @@ index 0000000..6ddb571
 +#endif
 +
 diff --git a/unittests/CMakeLists.txt b/unittests/CMakeLists.txt
-index cd5988d..4a869b2 100644
+index cd5988d87..4a869b2bf 100644
 --- a/unittests/CMakeLists.txt
 +++ b/unittests/CMakeLists.txt
 @@ -32,7 +32,7 @@ function(add_lldb_unittest test_name)
@@ -41335,79 +41478,3 @@ index cd5988d..4a869b2 100644
    llvm_config(${test_name} ${LLVM_LINK_COMPONENTS})
  endfunction()
  
-diff --git a/cmake/LLDBDependencies.cmake b/cmake/LLDBDependencies.cmake
-index f78d17729..407cd08ad 100644
---- a/cmake/LLDBDependencies.cmake
-+++ b/cmake/LLDBDependencies.cmake
-@@ -27,6 +27,7 @@ set( LLDB_USED_LIBS
-   lldbPluginJavaLanguage
-   lldbPluginObjCLanguage
-   lldbPluginObjCPlusPlusLanguage
-+  lldbPluginSwiftLanguage
-   lldbPluginOCamlLanguage
- 
-   lldbPluginObjectFileELF
-@@ -85,6 +86,7 @@ set( LLDB_USED_LIBS
-   lldbPluginJITLoaderGDB
-   lldbPluginExpressionParserClang
-   lldbPluginExpressionParserGo
-+  lldbPluginExpressionParserSwift
-   )
- 
- # Windows-only libraries
-@@ -138,6 +140,7 @@ set( CLANG_USED_LIBS
-   clangDriver
-   clangEdit
-   clangFrontend
-+  clangIndex
-   clangLex
-   clangParse
-   clangRewrite
-@@ -145,6 +148,26 @@ set( CLANG_USED_LIBS
-   clangSema
-   clangSerialization
-   )
-+set(SWIFT_USED_LIBS
-+  swiftAST
-+  swiftASTSectionImporter
-+  swiftBasic
-+  swiftClangImporter
-+  swiftFrontend
-+  swiftIDE
-+  swiftIRGen
-+  swiftLLVMPasses
-+  swiftMarkup
-+  swiftOption
-+  swiftParse
-+  swiftRemoteAST
-+  swiftSema
-+  swiftSerialization
-+  swiftSIL
-+  swiftSILGen
-+  swiftSILOptimizer
-+  swiftSyntax
-+  )
- 
- set(LLDB_SYSTEM_LIBS)
- if (NOT CMAKE_SYSTEM_NAME MATCHES "Windows" AND NOT __ANDROID_NDK__)
-@@ -187,6 +210,12 @@ set(LLVM_LINK_COMPONENTS
-   ${LLVM_TARGETS_TO_BUILD}
-   interpreter
-   asmparser
-+  analysis
-+  profiledata
-+  transformutils
-+  objcarcopts
-+  instrumentation
-+  object
-   bitreader
-   bitwriter
-   codegen
-@@ -217,3 +241,7 @@ if ( NOT LLDB_DISABLE_PYTHON )
-                  APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-sequence-point -Wno-cast-qual")
-   endif ()
- endif()
-+
-+# this needs to be linked statially
-+list(APPEND LLDB_SYSTEM_LIBS -lcmark)
-+list(APPEND LLDB_SYSTEM_LIBS -luuid)

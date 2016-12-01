@@ -16,10 +16,18 @@ KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 
 DEPEND="dev-util/dub"
-RDEPEND="${DEPEND}"
+RDEPEND="${DEPEND}
+	dev-util/dcd
+	dev-util/Dscanner
+	dev-util/dfmt"
+
+src_prepare() {
+	eapply ${FILESDIR}/fix-musl.patch
+	default
+}
 
 src_compile() {
-	dub --build=release || die
+	dub --build=release
 }
 
 src_install() {
