@@ -51,7 +51,8 @@ src_install(){
 	doins -r bin
 	dosym "/opt/${PN}/bin/code" "/usr/bin/visual-studio-code"
 	make_wrapper "${PN}" "/opt/${PN}/bin/code"
-	make_desktop_entry "${PN}" "Visual Studio Code" "${PN}" "Development;IDE"
+	insinto "/usr/share/applications"
+        doins ${FILESDIR}/visual-studio-code.desktop
 	doicon ${FILESDIR}/${PN}.png
 	insinto "/usr/share/licenses/${PN}"
 	newins "resources/app/LICENSE.txt" "LICENSE"
