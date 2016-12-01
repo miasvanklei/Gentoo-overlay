@@ -18,7 +18,7 @@ EGIT_REPO_URI="https://github.com/llvm-mirror/lldb.git"
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS=""
-IUSE="+libedit +ncurses python test"
+IUSE="+libedit +ncurses +python test"
 
 RDEPEND="
 	dev-lang/swift
