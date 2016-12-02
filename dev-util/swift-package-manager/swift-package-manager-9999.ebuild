@@ -10,7 +10,7 @@ DESCRIPTION="The Package Manager for the Swift Programming Language"
 HOMEPAGE="http://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-package-manager.git"
-#EGIT_COMMIT="1b87a3651b0dcd7226f7214f445c6f5a92201f4f"
+EGIT_COMMIT="973a3ad9892ceeed2327327f442dc4f2d1957843"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -26,7 +26,9 @@ DEPEND="${RDEPEND}"
 
 src_prepare()
 {
-	eapply ${FILESDIR}/fix-build.patch
+	eapply ${FILESDIR}/fix-opaque.patch
+	eapply ${FILESDIR}/inherit-env.patch
+	eapply ${FILESDIR}/search-path.patch
 	eapply_user
 }
 
@@ -35,6 +37,7 @@ src_install() {
 	--swiftc /usr/bin/swiftc \
 	--sbt /usr/bin/swift-build-tool \
 	--prefix ${D}/usr \
+	--release \
 	--verbose || die
 	rm ${D}/usr/libexec
 }
