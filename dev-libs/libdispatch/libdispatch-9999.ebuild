@@ -20,7 +20,7 @@ RDEPEND="dev-libs/libbsd"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	eapply ${FILESDIR}/fix-includes.patch
+#	eapply ${FILESDIR}/fix-includes.patch
 	eautoreconf
 	eapply_user
 }
