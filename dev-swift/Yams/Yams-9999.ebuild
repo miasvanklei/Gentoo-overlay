@@ -40,5 +40,5 @@ src_install() {
         cp .build/release/lib* ${D}/usr/lib/swift/linux || die
 	cp .build/release/CYaml.build/module.modulemap ${D}/usr/lib/swift/CYaml || die
 	cp Sources/CYaml/include/yaml.h ${D}/usr/lib/swift/CYaml || die
-	sed -i "s#${D}Sources/CYaml/include#/usr/lib/swift/CYaml#g" ${D}/usr/lib/swift/CYaml/module.modulemap || die
+	sed -i -e 's|'${S}'/Sources/CYaml/include|/usr/lib/swift/CYaml|g' ${D}/usr/lib/swift/CYaml/module.modulemap || die
 }
