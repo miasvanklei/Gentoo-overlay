@@ -10,7 +10,6 @@ DESCRIPTION="An adorable little framework and command line tool for interacting 
 HOMEPAGE="https://github.com/jpsim/SourceKitten"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/jpsim/SourceKitten.git"
-EGIT_BRANCH="nn-sourcekit-variant"
 EGIT_SUBMODULES=()
 
 LICENSE="Apache-2.0"
@@ -29,7 +28,7 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-        eapply ${FILESDIR}/fix-compilation.patch
+        eapply ${FILESDIR}/downgrade.patch
         eapply ${FILESDIR}/fix-run.patch
         eapply ${FILESDIR}/remove-dependencies.patch
         eapply ${FILESDIR}/install-lib.patch

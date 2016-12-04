@@ -14,6 +14,7 @@ DESCRIPTION="The Foundation Project, providing core utilities, internationalizat
 HOMEPAGE="https://github.com/apple/swift-corelibs-foundation"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-corelibs-foundation.git"
+EGIT_COMMIT="06d0ab12261119084d860c4b805ea6f9a9bd3713"
 
 LICENSE="Apache-2.0"
 SLOT="0"

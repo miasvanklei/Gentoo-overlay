@@ -1,0 +1,121 @@
+diff --git a/Makefile.am b/Makefile.am
+index cc01c7c..2d14564 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -7,7 +7,6 @@ ACLOCAL_AMFLAGS = -I m4
+ if BUILD_OWN_PTHREAD_WORKQUEUES
+ SUBDIRS=					\
+ 	dispatch				\
+-	libpwq					\
+ 	man						\
+ 	os						\
+ 	private					\
+diff --git a/dispatch/io.h b/dispatch/io.h
+index c7bf426..82d8d4f 100644
+--- a/dispatch/io.h
++++ b/dispatch/io.h
+@@ -26,6 +26,8 @@
+ #include <dispatch/base.h> // for HeaderDoc
+ #endif
+ 
++#include <sys/types.h>
++
+ __BEGIN_DECLS
+ 
+ /*! @header
+diff --git a/src/inline_internal.h b/src/inline_internal.h
+index cc29b88..6ce5095 100644
+--- a/src/inline_internal.h
++++ b/src/inline_internal.h
+@@ -497,7 +497,7 @@ static inline void
+ _dispatch_queue_set_bound_thread(dispatch_queue_t dq)
+ {
+ 	//Tag thread-bound queues with the owning thread
+-	dispatch_assert(dq->dq_is_thread_bound);
++	dispatch_assert(dq->dq_is_thread_bound != 0);
+ 	dq->dq_thread = _dispatch_thread_port();
+ }
+ 
+@@ -505,7 +505,7 @@ DISPATCH_ALWAYS_INLINE
+ static inline void
+ _dispatch_queue_clear_bound_thread(dispatch_queue_t dq)
+ {
+-	dispatch_assert(dq->dq_is_thread_bound);
++	dispatch_assert(dq->dq_is_thread_bound != 0);
+ 	dq->dq_thread = MACH_PORT_NULL;
+ }
+ 
+@@ -513,7 +513,7 @@ DISPATCH_ALWAYS_INLINE
+ static inline mach_port_t
+ _dispatch_queue_get_bound_thread(dispatch_queue_t dq)
+ {
+-	dispatch_assert(dq->dq_is_thread_bound);
++	dispatch_assert(dq->dq_is_thread_bound != 0);
+ 	return dq->dq_thread;
+ }
+ 
+diff --git a/src/internal.h b/src/internal.h
+index a951811..4aefac1 100644
+--- a/src/internal.h
++++ b/src/internal.h
+@@ -209,7 +209,6 @@ DISPATCH_EXPORT DISPATCH_NOTHROW void dispatch_atfork_child(void);
+ #include <sys/event.h>
+ #include <sys/mount.h>
+ #include <sys/queue.h>
+-#include <sys/sysctl.h>
+ #include <sys/socket.h>
+ #include <sys/time.h>
+ #include <sys/mman.h>
+diff --git a/src/queue.c b/src/queue.c
+index bbc9ed8..46f6d64 100644
+--- a/src/queue.c
++++ b/src/queue.c
+@@ -2833,7 +2833,7 @@ _dispatch_barrier_sync_f_slow_invoke(void *ctxt)
+ 
+ 	dispatch_assert(dq == _dispatch_queue_get_current());
+ #if DISPATCH_COCOA_COMPAT
+-	if (slowpath(dq->dq_is_thread_bound)) {
++	if (slowpath(dq->dq_is_thread_bound != 0)) {
+ 		// The queue is bound to a non-dispatch thread (e.g. main thread)
+ 		_dispatch_continuation_voucher_adopt(dc);
+ 		_dispatch_client_callout(dc->dc_ctxt, dc->dc_func);
+@@ -2873,7 +2873,7 @@ _dispatch_barrier_sync_f_slow(dispatch_queue_t dq, void *ctxt,
+ 	// It's preferred to execute synchronous blocks on the current thread
+ 	// due to thread-local side effects, garbage collection, etc. However,
+ 	// blocks submitted to the main thread MUST be run on the main thread
+-	if (slowpath(dq->dq_is_thread_bound)) {
++	if (slowpath(dq->dq_is_thread_bound != 0)) {
+ 		_dispatch_continuation_voucher_set(&dc, 0);
+ 	}
+ #endif
+@@ -3068,7 +3068,7 @@ _dispatch_barrier_sync_slow(dispatch_queue_t dq, void (^work)(void))
+ void
+ dispatch_barrier_sync(dispatch_queue_t dq, void (^work)(void))
+ {
+-	if (slowpath(dq->dq_is_thread_bound) ||
++	if (slowpath(dq->dq_is_thread_bound != 0) ||
+ 			slowpath(_dispatch_block_has_private_data(work))) {
+ 		return _dispatch_barrier_sync_slow(dq, work);
+ 	}
+@@ -3273,7 +3273,7 @@ dispatch_sync(dispatch_queue_t dq, void (^work)(void))
+ 	if (fastpath(dq->dq_width == 1)) {
+ 		return dispatch_barrier_sync(dq, work);
+ 	}
+-	if (slowpath(dq->dq_is_thread_bound) ||
++	if (slowpath(dq->dq_is_thread_bound != 0) ||
+ 			slowpath(_dispatch_block_has_private_data(work)) ) {
+ 		return _dispatch_sync_slow(dq, work);
+ 	}
+diff --git a/src/source.c b/src/source.c
+index b703d9f..c686a83 100644
+--- a/src/source.c
++++ b/src/source.c
+@@ -621,7 +621,7 @@ _dispatch_source_kevent_resume(dispatch_source_t ds, uint32_t new_flags)
+ static void
+ _dispatch_source_kevent_register(dispatch_source_t ds)
+ {
+-	dispatch_assert_zero(ds->ds_is_installed);
++	dispatch_assert(ds->ds_is_installed == 0);
+ 	switch (ds->ds_dkev->dk_kevent.filter) {
+ 	case DISPATCH_EVFILT_TIMER:
+ 		_dispatch_timers_update(ds);

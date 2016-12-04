@@ -1,66 +1,54 @@
 diff --git a/CoreFoundation/Base.subproj/CFInternal.h b/CoreFoundation/Base.subproj/CFInternal.h
-index eefe4a6..aed51fa 100644
+index f292ca6..ae04242 100644
 --- a/CoreFoundation/Base.subproj/CFInternal.h
 +++ b/CoreFoundation/Base.subproj/CFInternal.h
-@@ -100,7 +100,7 @@ CF_EXTERN_C_BEGIN
+@@ -98,7 +98,7 @@ CF_EXTERN_C_BEGIN
+ #include <CoreFoundation/CFRuntime.h>
+ #include <limits.h>
  #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI || DEPLOYMENT_TARGET_LINUX || DEPLOYMENT_TARGET_FREEBSD
- #if TARGET_OS_CYGWIN
- #else
 -#include <xlocale.h>
 +#include <locale.h>
- #endif
  #include <unistd.h>
  #include <sys/time.h>
-diff --git a/CoreFoundation/Base.subproj/CFRuntime.c b/CoreFoundation/Base.subproj/CFRuntime.c
-index d3d3b35..bc6b1c7 100644
---- a/CoreFoundation/Base.subproj/CFRuntime.c
-+++ b/CoreFoundation/Base.subproj/CFRuntime.c
-@@ -310,7 +310,7 @@ CF_INLINE CFRuntimeBase *_cf_aligned_malloc(size_t align, CFIndex size, const ch
-     char errorStringBuffer[errorStringBufferLength] = "unknown error";
-     const char *errorStringPointer = errorStringBuffer;
-     //The GNU-specific version returns a pointer, which may or may not be the pointer passed in. The XSI version returns int. See strerror(3) on Linux.
--#if ! ( (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE )
-+#if ! ( (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && !defined(_GNU_SOURCE) )
-     errorStringPointer =
- #endif
-     strerror_r(errno, errorStringBuffer, errorStringBufferLength);
+ #include <signal.h>
 diff --git a/CoreFoundation/Base.subproj/CFUtilities.c b/CoreFoundation/Base.subproj/CFUtilities.c
-index 338e90d..c02c0c2 100644
+index e16ab2b..19098f9 100644
 --- a/CoreFoundation/Base.subproj/CFUtilities.c
 +++ b/CoreFoundation/Base.subproj/CFUtilities.c
-@@ -1312,7 +1312,7 @@ CFDictionaryRef __CFGetEnvironment() {
+@@ -1265,9 +1265,6 @@ CFDictionaryRef __CFGetEnvironment() {
          extern char **environ;
          char **envp = environ;
  #elif DEPLOYMENT_TARGET_LINUX
--#if !defined(environ) && !defined(__ANDROID__)
-+#if !defined(environ) && !defined(__ANDROID__) && defined(__GLIBC__)
- #define environ __environ
- #endif
+-#ifndef environ
+-#define environ __environ
+-#endif
          char **envp = environ;
+ #endif
+         envDict = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 diff --git a/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h b/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
-index 0dfc3c5..fb37b40 100644
+index e930f52..794aaca 100644
 --- a/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
 +++ b/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
-@@ -182,7 +182,7 @@ typedef int		boolean_t;
- typedef unsigned long fd_mask;
- #endif
+@@ -178,6 +178,7 @@ typedef int		boolean_t;
  
--#if !defined(__ANDROID__) && !TARGET_OS_CYGWIN
-+#if !defined(__ANDROID__) && !TARGET_OS_CYGWIN && defined(__GLIBC__)
+ #include <pthread.h>
+ 
++#if defined(__GLIBC__)
  CF_INLINE size_t
  strlcpy(char * dst, const char * src, size_t maxlen) {
      const size_t srclen = strlen(src);
-@@ -210,7 +210,7 @@ strlcat(char * dst, const char * src, size_t maxlen) {
+@@ -205,7 +206,8 @@ strlcat(char * dst, const char * src, size_t maxlen) {
  }
- #endif
  
--#if !TARGET_OS_CYGWIN
-+#if !TARGET_OS_CYGWIN && defined(__GLIBC__)
  #define issetugid() 0
- #endif
-     
+-    
++#endif
++
+ // Implemented in CFPlatform.c 
+ bool OSAtomicCompareAndSwapPtr(void *oldp, void *newp, void *volatile *dst);
+ bool OSAtomicCompareAndSwapLong(long oldl, long newl, long volatile *dst);
 diff --git a/CoreFoundation/Base.subproj/ForFoundationOnly.h b/CoreFoundation/Base.subproj/ForFoundationOnly.h
-index 4dba6fc..e019055 100644
+index f3e4c8d..2d6e92b 100644
 --- a/CoreFoundation/Base.subproj/ForFoundationOnly.h
 +++ b/CoreFoundation/Base.subproj/ForFoundationOnly.h
 @@ -34,6 +34,7 @@
@@ -71,25 +59,58 @@ index 4dba6fc..e019055 100644
  
  #define _CF_EXPORT_SCOPE_BEGIN \
  CF_EXTERN_C_BEGIN \
-diff --git a/build.py b/build.py
-index 293cf11..007b88e 100644
---- a/build.py
-+++ b/build.py
-@@ -89,7 +89,7 @@ if triple == "armv7-none-linux-androideabi":
- else:
-        foundation.LDFLAGS += '-lpthread '
+diff --git a/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c b/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
+index 31a40a1..2465f6c 100644
+--- a/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
++++ b/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
+@@ -25,7 +25,6 @@
  
--foundation.LDFLAGS += '-ldl -lm -lswiftCore -lxml2 '
-+foundation.LDFLAGS += '-ldl -lm -lswiftCore -lxml2 -ldispatch -lfts -lcurl '
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_LINUX || DEPLOYMENT_TARGET_EMBEDDED_MINI || DEPLOYMENT_TARGET_FREEBSD
+ #include <dirent.h>
+-#include <sys/sysctl.h>
+ #include <sys/mman.h>
+ #endif
  
- # Configure use of Dispatch in CoreFoundation and Foundation if libdispatch is being built
- if "LIBDISPATCH_SOURCE_DIR" in Configuration.current.variables:
-@@ -477,8 +477,6 @@ foundation_tests = SwiftExecutable('TestFoundation', [
-         'Foundation/ProgressFraction.swift',
- ] + glob.glob('./TestFoundation/Test*.swift')) # all TestSomething.swift are considered sources to the test project in the TestFoundation directory
+diff --git a/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c b/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
+index db73b4d..6d1ee22 100644
+--- a/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
++++ b/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
+@@ -33,7 +33,6 @@
  
--Configuration.current.extra_ld_flags = '-L'+Configuration.current.variables["LIBDISPATCH_BUILD_DIR"]+'/src/.libs'
--
- foundation_tests.add_dependency(foundation_tests_resources)
- foundation.add_phase(foundation_tests_resources)
- foundation.add_phase(foundation_tests)
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI || DEPLOYMENT_TARGET_LINUX
+ #include <unistd.h>
+-#include <sys/sysctl.h>
+ #include <sys/stat.h>
+ #include <dirent.h>
+ #endif
+diff --git a/Foundation/NSFileManager.swift b/Foundation/NSFileManager.swift
+index 68cb6de..c654d89 100644
+--- a/Foundation/NSFileManager.swift
++++ b/Foundation/NSFileManager.swift
+@@ -302,7 +302,7 @@ open class FileManager: NSObject {
+                 #if os(OSX) || os(iOS)
+                     let tempEntryType = entryType
+                 #elseif os(Linux)
+-                    let tempEntryType = Int(entryType)
++                    let tempEntryType = entryType
+                 #endif
+                         
+                 if tempEntryType == DT_DIR {
+diff --git a/Foundation/Unit.swift b/Foundation/Unit.swift
+index 88c7046..c12c173 100644
+--- a/Foundation/Unit.swift
++++ b/Foundation/Unit.swift
+@@ -98,11 +98,11 @@ private class UnitConverterReciprocal : UnitConverter, NSSecureCoding {
+         self.reciprocal = reciprocal
+     }
+     
+-    private override func baseUnitValue(fromValue value: Double) -> Double {
++    fileprivate override func baseUnitValue(fromValue value: Double) -> Double {
+         return reciprocal / value
+     }
+     
+-    private override func value(fromBaseUnitValue baseUnitValue: Double) -> Double {
++    fileprivate override func value(fromBaseUnitValue baseUnitValue: Double) -> Double {
+         return reciprocal / baseUnitValue
+     }
+     
