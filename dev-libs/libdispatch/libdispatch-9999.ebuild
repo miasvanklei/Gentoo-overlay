@@ -27,6 +27,7 @@ DEPEND="${RDEPEND}"
 src_prepare() {
 	rmdir libpwq
 	eapply ${FILESDIR}/fix-compile.patch
+	eapply ${FILESDIR}/no-link-runtime.patch
 	eautoreconf
 	eapply_user
 }
