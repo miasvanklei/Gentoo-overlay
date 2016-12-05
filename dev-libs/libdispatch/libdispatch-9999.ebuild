@@ -26,7 +26,7 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
 	rmdir libpwq
-	rmdir libkqueue
+	eapply ${FILESDIR}/fix-compile.patch
 	eautoreconf
 	eapply_user
 }
