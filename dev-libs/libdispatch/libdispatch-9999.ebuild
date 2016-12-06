@@ -10,7 +10,7 @@ DESCRIPTION="The libdispatch Project, (a.k.a. Grand Central Dispatch), for concu
 HOMEPAGE="https://github.com/apple/swift-corelibs-libdispatch"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-corelibs-libdispatch.git"
-EGIT_BRANCH="swift-3.0-preview-1-branch"
+#EGIT_BRANCH="swift-3.0-preview-1-branch"
 EGIT_SUBMODULES=()
 
 LICENSE="UoI-NCSA"
@@ -26,15 +26,16 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
 	rmdir libpwq
+	rmdir libkqueue
 	eapply ${FILESDIR}/fix-compile.patch
-	eapply ${FILESDIR}/no-link-runtime.patch
+#	eapply ${FILESDIR}/no-link-runtime.patch
 	eautoreconf
 	eapply_user
 }
 
 src_configure() {
 	# fix use of nostdlib
-	append-ldflags -lkqueue
+	append-ldflags -lkqueue -L/usr/lib/swift/linux -lswiftCore
 	find ./ -type f -exec sed -i -e 's/-nostdlib//g' {} \;
 	econf --with-swift-toolchain=/usr --enable-embedded-blocks-runtime=off --disable-libkqueue-install --disable-libpwq-install
 }

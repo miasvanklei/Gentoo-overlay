@@ -28,7 +28,7 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-        eapply ${FILESDIR}/downgrade.patch
+        eapply ${FILESDIR}/fix-crash.patch
         eapply ${FILESDIR}/fix-run.patch
         eapply ${FILESDIR}/remove-dependencies.patch
         eapply ${FILESDIR}/install-lib.patch

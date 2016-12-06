@@ -26,7 +26,6 @@ DEPEND="${RDEPEND}"
 
 src_prepare()
 {
-	eapply ${FILESDIR}/downgrade.patch
 	eapply ${FILESDIR}/fix-opaque.patch
 	eapply ${FILESDIR}/inherit-env.patch
 	eapply ${FILESDIR}/search-path.patch
