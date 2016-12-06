@@ -1,0 +1,54 @@
+diff --git a/source/Symbol/SwiftASTContext.cpp b/source/Symbol/SwiftASTContext.cpp
+index e8a41dc..c9bcc2a 100644
+--- a/source/Symbol/SwiftASTContext.cpp
++++ b/source/Symbol/SwiftASTContext.cpp
+@@ -58,12 +58,12 @@
+ #include "llvm/Target/TargetOptions.h"
+ #include "llvm/Target/TargetSubtargetInfo.h"
+ 
+-#include "swift/../../lib/IRGen/FixedTypeInfo.h"
+-#include "swift/../../lib/IRGen/GenEnum.h"
+-#include "swift/../../lib/IRGen/GenHeap.h"
+-#include "swift/../../lib/IRGen/IRGenModule.h"
+-#include "swift/../../lib/IRGen/Linking.h"
+-#include "swift/../../lib/IRGen/TypeInfo.h"
++#include "swift/IRGen/FixedTypeInfo.h"
++#include "swift/IRGen/GenEnum.h"
++#include "swift/IRGen/GenHeap.h"
++#include "swift/IRGen/IRGenModule.h"
++#include "swift/IRGen/Linking.h"
++#include "swift/IRGen/TypeInfo.h"
+ 
+ #include "swift/Serialization/SerializedModuleLoader.h"
+ #include "swift/Strings.h"
+diff --git a/source/Plugins/Language/Swift/SwiftLanguage.cpp b/source/Plugins/Language/Swift/SwiftLanguage.cpp
+index a05c1ecd8..05b65529b 100644
+--- a/source/Plugins/Language/Swift/SwiftLanguage.cpp
++++ b/source/Plugins/Language/Swift/SwiftLanguage.cpp
+@@ -47,7 +47,7 @@
+ using namespace lldb;
+ using namespace lldb_private;
+ 
+-#ifndef LLDB_DISABLE_PYTHON
++#ifdef LLDB_DISABLE_PYTHON
+ using lldb_private::formatters::AddCXXSummary;
+ using lldb_private::formatters::AddCXXSynthetic;
+ #endif
+@@ -225,7 +225,7 @@ static void LoadSwiftFormatters(lldb::TypeCategoryImplSP swift_category_sp) {
+   basic_synth_flags.SetCascades(true).SetSkipPointers(true).SetSkipReferences(
+       true);
+ 
+-#ifndef LLDB_DISABLE_PYTHON
++#ifdef LLDB_DISABLE_PYTHON
+   AddCXXSummary(swift_category_sp,
+                 lldb_private::formatters::swift::ObjC_Selector_SummaryProvider,
+                 "ObjectiveC.Selector", ConstString("ObjectiveC.Selector"),
+@@ -682,7 +682,7 @@ LoadFoundationValueTypesFormatters(lldb::TypeCategoryImplSP swift_category_sp) {
+       .SetHideItemNames(false)
+       .SetShowMembersOneLiner(false);
+ 
+-#ifndef LLDB_DISABLE_PYTHON
++#ifdef LLDB_DISABLE_PYTHON
+   lldb_private::formatters::AddCXXSummary(
+       swift_category_sp, lldb_private::formatters::swift::Date_SummaryProvider,
+       "Foundation.Date summary provider", ConstString("Foundation.Date"),

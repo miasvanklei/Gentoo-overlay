@@ -13,12 +13,13 @@ inherit cmake-utils git-r3 python-single-r1 toolchain-funcs
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm-mirror/lldb.git"
+EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
+EGIT_BRANCH="master-next"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS=""
-IUSE="+libedit +ncurses +python test"
+IUSE="+libedit ncurses +python test"
 
 RDEPEND="
 	dev-lang/swift
@@ -39,7 +40,11 @@ DEPEND="${RDEPEND}
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
 src_prepare() {
-	eapply ${FILESDIR}/0001-add-swift-support.patch
+	eapply ${FILESDIR}/cmake-cleanup.patch
+	eapply ${FILESDIR}/fix-swift.patch
+	eapply ${FILESDIR}/fix-iohandler.cpp.patch
+	eapply ${FILESDIR}/fix-includes.patch
+	eapply ${FILESDIR}/fix-default-resource-dir.patch
 	eapply_user
 }
 
@@ -49,7 +54,6 @@ src_configure() {
 		# used to find cmake modules
 		-DLLVM_LIBDIR_SUFFIX="${libdir#lib}"
 		-DBUILD_SHARED_LIBS=ON
-
 		-DLLDB_DISABLE_CURSES=$(usex !ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)
 		-DLLDB_DISABLE_PYTHON=$(usex !python)
@@ -66,9 +70,6 @@ src_configure() {
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
-
-		# swift
-                -DSWIFTC=/usr/bin/swiftc
 	)
 
 	cmake-utils_src_configure
