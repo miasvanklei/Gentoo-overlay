@@ -35,10 +35,10 @@ src_prepare() {
 	eapply ${FILESDIR}/add-destructor.patch
 	eapply ${FILESDIR}/fix-segfault.patch
 	eapply ${FILESDIR}/fix-garbage.patch
-	eapply ${FILESDIR}/dont-set-linker.patch
+	eapply ${FILESDIR}/fix-toolchain.patch
 	eapply ${FILESDIR}/glibc-modulemap.patch
 	eapply ${FILESDIR}/c++11.patch
-	eapply ${FILESDIR}/timer-change.patch
+	eapply ${FILESDIR}/llvm-4.0.patch
 	eapply ${FILESDIR}/shared-support.patch
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 	default

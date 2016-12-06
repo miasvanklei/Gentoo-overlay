@@ -101,3 +101,16 @@ index 201d89c47c..3a74181388 100644
  
  /// Block-based wrapper for `pthread_join`.
  public func _stdlib_pthread_join<Result>(
+diff --git a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
+index 201d89c47c..b354f28494 100644
+--- a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
++++ b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
+@@ -71,7 +71,7 @@ public func _stdlib_pthread_create_block<Argument, Result>(
+   let contextAsVoidPointer = Unmanaged.passRetained(context).toOpaque()
+ 
+   var threadID = _make_pthread_t()
+-  let result = pthread_create(&threadID, attr,
++  let result = pthread_create(&threadID!, attr,
+     { invokeBlockContext($0) }, contextAsVoidPointer)
+   if result == 0 {
+     return (result, threadID)
