@@ -38,7 +38,6 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-toolchain.patch
 	eapply ${FILESDIR}/glibc-modulemap.patch
 	eapply ${FILESDIR}/c++11.patch
-	eapply ${FILESDIR}/llvm-4.0.patch
 	eapply ${FILESDIR}/shared-support.patch
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 	default
