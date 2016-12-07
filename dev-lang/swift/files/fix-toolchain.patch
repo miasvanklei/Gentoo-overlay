@@ -16,7 +16,7 @@ index ee44637fe0..10e6500c92 100644
 -    Arguments.push_back(context.Args.MakeArgString("-fuse-ld=" + Linker));
 -  }
 +  if (const Arg *A = context.Args.getLastArg(options::OPT_use_ld))
-+    Arguments.push_back(context.Args.MakeArgString("-fuse-ld=" + A->getValue()));
++    Arguments.push_back(context.Args.MakeArgString("-fuse-ld=" + std::string(A->getValue())));
  
    // Configure the toolchain.
    // By default, use the system clang++ to link.
