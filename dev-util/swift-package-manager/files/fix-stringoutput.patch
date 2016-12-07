@@ -1,0 +1,21 @@
+diff --git a/Sources/Get/RawClone.swift b/Sources/Get/RawClone.swift
+index 8e4d69a..7857a04 100644
+--- a/Sources/Get/RawClone.swift
++++ b/Sources/Get/RawClone.swift
+@@ -70,7 +70,7 @@ class RawClone: Fetchable {
+         try Git.runCommandQuietly([Git.tool, "-C", path.asString, "reset", "--hard", tag])
+         try Git.runCommandQuietly([Git.tool, "-C", path.asString, "branch", "-m", tag])
+ 
+-        print("Resolved version:", ver)
++        print("Resolved version:", ver.description)
+ 
+         // we must re-read the manifest
+         _manifest = nil
+@@ -110,6 +110,6 @@ class RawClone: Fetchable {
+     }
+ 
+     var finalName: String {
+-        return "\(manifest.package.name)-\(currentVersion)"
++        return "\(manifest.package.name)-\(currentVersion.description)"
+     }
+ }

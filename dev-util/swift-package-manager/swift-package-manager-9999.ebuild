@@ -29,6 +29,7 @@ src_prepare()
 	eapply ${FILESDIR}/fix-opaque.patch
 	eapply ${FILESDIR}/inherit-env.patch
 	eapply ${FILESDIR}/search-path.patch
+	eapply ${FILESDIR}/fix-stringoutput.patch
 	eapply_user
 }
 
