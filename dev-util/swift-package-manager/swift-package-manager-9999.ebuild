@@ -10,7 +10,6 @@ DESCRIPTION="The Package Manager for the Swift Programming Language"
 HOMEPAGE="http://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-package-manager.git"
-EGIT_COMMIT="973a3ad9892ceeed2327327f442dc4f2d1957843"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -27,8 +26,7 @@ DEPEND="${RDEPEND}"
 src_prepare()
 {
 	eapply ${FILESDIR}/fix-opaque.patch
-	eapply ${FILESDIR}/inherit-env.patch
-	eapply ${FILESDIR}/search-path.patch
+	eapply ${FILESDIR}/fix-runtime.patch
 	eapply ${FILESDIR}/fix-stringoutput.patch
 	eapply_user
 }

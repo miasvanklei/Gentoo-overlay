@@ -1,0 +1,237 @@
+diff --git a/Sources/Build/Configuration.swift b/Sources/Build/Configuration.swift
+deleted file mode 100644
+index 8011799..0000000
+--- a/Sources/Build/Configuration.swift
++++ /dev/null
+@@ -1,26 +0,0 @@
+-/*
+- This source file is part of the Swift.org open source project
+-
+- Copyright 2015 - 2016 Apple Inc. and the Swift project authors
+- Licensed under Apache License v2.0 with Runtime Library Exception
+-
+- See http://swift.org/LICENSE.txt for license information
+- See http://swift.org/CONTRIBUTORS.txt for Swift project authors
+-*/
+-
+-public enum Configuration: String {
+-    case debug, release
+-
+-    public var dirname: String {
+-        switch self {
+-            case .debug: return "debug"
+-            case .release: return "release"
+-        }
+-    }
+-}
+-
+-extension Configuration: CustomStringConvertible {
+-    public var description: String {
+-        return dirname
+-    }
+-}
+diff --git a/Sources/Commands/SwiftBuildTool.swift b/Sources/Commands/SwiftBuildTool.swift
+index 6fa2e1e..cc2428d 100644
+--- a/Sources/Commands/SwiftBuildTool.swift
++++ b/Sources/Commands/SwiftBuildTool.swift
+@@ -15,7 +15,7 @@ import PackageLoading
+ import PackageModel
+ import Utility
+ 
+-import enum Build.Configuration
++import enum Utility.Configuration
+ import protocol Build.Toolchain
+ 
+ /// swift-build tool namespace
+@@ -61,7 +61,7 @@ public class SwiftBuildTool: SwiftTool<BuildToolOptions> {
+             to: { $0.clean = $1 })
+ 
+         binder.bind(
+-            option: parser.add(option: "--configuration", shortName: "-c", kind: Build.Configuration.self,
++            option: parser.add(option: "--configuration", shortName: "-c", kind: Utility.Configuration.self,
+                 usage: "Build with configuration (debug|release) [default: debug]"),
+             to: { $0.config = $1 })
+     }
+@@ -101,7 +101,7 @@ public class BuildToolOptions: ToolOptions {
+     var clean = false
+ 
+     /// Build configuration.
+-    var config: Build.Configuration = .debug
++    var config: Utility.Configuration = .debug
+ }
+ 
+ public enum BuildToolMode {
+@@ -115,4 +115,4 @@ public enum BuildToolMode {
+     case version
+ }
+ 
+-extension Build.Configuration: StringEnumArgument {}
++extension Utility.Configuration: StringEnumArgument {}
+diff --git a/Sources/Commands/SwiftPackageTool.swift b/Sources/Commands/SwiftPackageTool.swift
+index 12b3aa7..bfb33cc 100644
+--- a/Sources/Commands/SwiftPackageTool.swift
++++ b/Sources/Commands/SwiftPackageTool.swift
+@@ -17,7 +17,7 @@ import SourceControl
+ import Utility
+ import Xcodeproj
+ 
+-import enum Build.Configuration
++import enum Utility.Configuration
+ import protocol Build.Toolchain
+ import func POSIX.exit
+ import func POSIX.chdir
+diff --git a/Sources/Commands/SwiftTestTool.swift b/Sources/Commands/SwiftTestTool.swift
+index f3124b1..e006afd 100644
+--- a/Sources/Commands/SwiftTestTool.swift
++++ b/Sources/Commands/SwiftTestTool.swift
+@@ -58,7 +58,7 @@ public class TestToolOptions: ToolOptions {
+     var buildTests = true
+ 
+     /// Build configuration.
+-    var config: Build.Configuration = .debug
++    var config: Utility.Configuration = .debug
+ 
+     /// If tests should run in parallel mode.
+     var parallel = false 
+@@ -152,7 +152,7 @@ public class SwiftTestTool: SwiftTool<TestToolOptions> {
+     override class func defineArguments(parser: ArgumentParser, binder: ArgumentBinder<TestToolOptions>) {
+ 
+         binder.bind(
+-            option: parser.add(option: "--configuration", shortName: "-c", kind: Build.Configuration.self,
++            option: parser.add(option: "--configuration", shortName: "-c", kind: Utility.Configuration.self,
+                 usage: "Build with configuration (debug|release) [default: debug]"),
+             to: { $0.config = $1 })
+ 
+diff --git a/Sources/Get/RawClone.swift b/Sources/Get/RawClone.swift
+index 35eb6da..eab2e63 100644
+--- a/Sources/Get/RawClone.swift
++++ b/Sources/Get/RawClone.swift
+@@ -71,7 +71,7 @@ class RawClone: Fetchable {
+         try Git.runCommandQuietly([Git.tool, "-C", path.asString, "reset", "--hard", tag])
+         try Git.runCommandQuietly([Git.tool, "-C", path.asString, "branch", "-m", tag])
+ 
+-        print("Resolved version:", ver)
++        print("Resolved version:", ver.description)
+ 
+         // we must re-read the manifest
+         _manifest = nil
+@@ -111,6 +111,6 @@ class RawClone: Fetchable {
+     }
+ 
+     var finalName: String {
+-        return "\(manifest.package.name)-\(currentVersion)"
++        return "\(manifest.package.name)-\(currentVersion.description)"
+     }
+ }
+diff --git a/Sources/Utility/ArgumentParser.swift b/Sources/Utility/ArgumentParser.swift
+index b190810..a3f1465 100644
+--- a/Sources/Utility/ArgumentParser.swift
++++ b/Sources/Utility/ArgumentParser.swift
+@@ -55,6 +55,37 @@ extension String: ArgumentKind {
+     }
+ }
+ 
++extension Configuration: ArgumentKind {
++    public init?(arg: String) {
++        self = .debug
++    }
++
++    public init(parser: inout ArgumentParserProtocol) throws {
++        let associatedValue = try parser.associatedArgumentValue ?? parser.next()
++        switch associatedValue {
++            case "debug": self = .debug
++            case "release": self = .release
++            default: self = .debug
++        }
++    }
++}
++
++extension ColorWrap.Mode: ArgumentKind {
++    public init?(arg: String) {
++        self = .Auto
++    }
++
++    public init(parser: inout ArgumentParserProtocol) throws {
++        let associatedValue = try parser.associatedArgumentValue ?? parser.next()
++        switch associatedValue {
++            case "auto": self = .Auto
++            case "always": self = .Always
++            case "never": self = .Never
++            default: self = .Auto
++        }
++    }
++}
++
+ extension Int: ArgumentKind {
+     public init?(arg: String) {
+         self.init(arg)
+@@ -207,7 +238,17 @@ fileprivate final class AnyArgument: ArgumentProtocol, CustomStringConvertible {
+     let isArray: Bool
+ 
+     init<T: ArgumentProtocol>(_ arg: T) {
+-        self.kind = T.ArgumentKindTy.self as! ArgumentKind.Type
++        if T.ArgumentKindTy.self is String.Type {
++            self.kind = String.self
++        } else if T.ArgumentKindTy.self is Bool.Type {
++            self.kind = Bool.self
++        } else if T.ArgumentKindTy.self is Int.Type {
++            self.kind = Int.self
++        } else if T.ArgumentKindTy.self is Configuration.Type {
++            self.kind = Configuration.self
++        } else {
++            self.kind = ColorWrap.Mode.self
++        }
+         self.name = arg.name
+         self.shortName = arg.shortName
+         self.usage = arg.usage
+@@ -216,7 +257,17 @@ fileprivate final class AnyArgument: ArgumentProtocol, CustomStringConvertible {
+ 
+     /// Initializer for array arguments.
+     init<T>(_ arg: OptionArgument<[T]>) {
+-        self.kind = T.self as! ArgumentKind.Type
++        if T.self is String.Type {
++            self.kind = String.self
++        } else if T.self is Bool.Type {
++            self.kind = Bool.self
++        } else if T.self is Int.Type {
++            self.kind = Int.self
++        } else if T.self is Configuration.Type {
++            self.kind = Configuration.self
++        } else {
++            self.kind = ColorWrap.Mode.self
++        }
+         self.name = arg.name
+         self.shortName = arg.shortName
+         self.usage = arg.usage
+diff --git a/Sources/Utility/Configuration.swift b/Sources/Utility/Configuration.swift
+new file mode 100644
+index 0000000..8011799
+--- /dev/null
++++ b/Sources/Utility/Configuration.swift
+@@ -0,0 +1,26 @@
++/*
++ This source file is part of the Swift.org open source project
++
++ Copyright 2015 - 2016 Apple Inc. and the Swift project authors
++ Licensed under Apache License v2.0 with Runtime Library Exception
++
++ See http://swift.org/LICENSE.txt for license information
++ See http://swift.org/CONTRIBUTORS.txt for Swift project authors
++*/
++
++public enum Configuration: String {
++    case debug, release
++
++    public var dirname: String {
++        switch self {
++            case .debug: return "debug"
++            case .release: return "release"
++        }
++    }
++}
++
++extension Configuration: CustomStringConvertible {
++    public var description: String {
++        return dirname
++    }
++}
