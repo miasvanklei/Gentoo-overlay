@@ -27,7 +27,6 @@ src_prepare()
 {
 	eapply ${FILESDIR}/fix-opaque.patch
 	eapply ${FILESDIR}/fix-runtime.patch
-	eapply ${FILESDIR}/fix-stringoutput.patch
 	eapply_user
 }
 
