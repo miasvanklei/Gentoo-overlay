@@ -44,7 +44,8 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-swift.patch
 	eapply ${FILESDIR}/fix-iohandler.cpp.patch
 	eapply ${FILESDIR}/fix-includes.patch
-	eapply ${FILESDIR}/fix-default-resource-dir.patch
+	eapply ${FILESDIR}/swift-changes.patch
+	eapply ${FILESDIR}/fix-resourcedir.patch
 	eapply_user
 }
 
