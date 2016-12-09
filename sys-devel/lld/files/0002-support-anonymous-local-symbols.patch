@@ -28,7 +28,7 @@ diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
 index d7e7a94..064285b 100644
 --- a/ELF/SymbolTable.cpp
 +++ b/ELF/SymbolTable.cpp
-@@ -635,15 +635,22 @@ SymbolTable<ELFT>::findAllDemangled(StringRef GlobPat) {
+@@ -635,15 +635,23 @@ SymbolTable<ELFT>::findAllDemangled(StringRef GlobPat) {
  // but just specifies symbols visibilities. We assume that the script was
  // in the form of { global: foo; bar; local *; }. So, local is default.
  // In this function, we make specified symbols global.
@@ -50,11 +50,14 @@ index d7e7a94..064285b 100644
 +      continue;
 +    }
 +    for (SymbolBody *B = find(Ver)) {
-+      B->symbol()->VersionId = Version;
-+      B->symbol()->VersionScriptProcessed = true;
++      if (B) {
++        B->symbol()->VersionId = Version;
++        B->symbol()->VersionScriptProcessed = true;
++      }
      }
 -    for (SymbolBody *B : find(Ver))
--      B->symbol()->VersionId = VER_NDX_GLOBAL;
+-      if (B)
+-        B->symbol()->VersionId = VER_NDX_GLOBAL;
    }
  }
  
