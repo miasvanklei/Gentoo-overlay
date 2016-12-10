@@ -40,23 +40,15 @@ ARCH=$(uname -m)
 [[ ${ARCH} == "x86_64" ]] && S="${WORKDIR}/VSCode-linux-x64"
 [[ ${ARCH} != "x86_64" ]] && S="${WORKDIR}/VSCode-linux-ia32"
 
-src_prepare()
-{
-	epatch ${FILESDIR}/system-electron.patch
-}
-
 src_install(){
 	insinto "/opt/${PN}"
 	doins -r resources/app
-	doins -r bin
-	dosym "/opt/${PN}/bin/code" "/usr/bin/visual-studio-code"
-	make_wrapper "${PN}" "/opt/${PN}/bin/code"
+        dobin ${FILESDIR}/vscode
 	insinto "/usr/share/applications"
-        doins ${FILESDIR}/visual-studio-code.desktop
-	doicon ${FILESDIR}/${PN}.png
+        doins ${FILESDIR}/vscode.desktop
+	doicon ${FILESDIR}/vscode.png
 	insinto "/usr/share/licenses/${PN}"
 	newins "resources/app/LICENSE.txt" "LICENSE"
-	chmod +x ${D}/opt/${PN}/bin/code
 }
 
 pkg_postinst(){
