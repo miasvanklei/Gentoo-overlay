@@ -24,93 +24,6 @@ index 192433e..aec12e9 100644
    // Symbol visibility. This is the computed minimum visibility of all
    // observed non-DSO symbols.
    unsigned Visibility : 2;
-diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
-index d7e7a94..064285b 100644
---- a/ELF/SymbolTable.cpp
-+++ b/ELF/SymbolTable.cpp
-@@ -635,15 +635,23 @@ SymbolTable<ELFT>::findAllDemangled(StringRef GlobPat) {
- // but just specifies symbols visibilities. We assume that the script was
- // in the form of { global: foo; bar; local *; }. So, local is default.
- // In this function, we make specified symbols global.
--template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion() {
--  for (SymbolVersion &Ver : Config->VersionScriptGlobals) {
-+template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion(
-+            std::vector<SymbolVersion> &symbolversions, size_t Version) {
-+  for (SymbolVersion &Ver : symbolversions) {
-     if (Ver.HasWildcard) {
--      for (SymbolBody *B : findAll(Ver))
--        B->symbol()->VersionId = VER_NDX_GLOBAL;
--      continue;
-+      for (SymbolBody *B : findAll(Ver)) {
-+         if (Version == VER_NDX_GLOBAL)
-+           B->symbol()->VersionScriptProcessed = true;
-+         else if (!B->symbol()->VersionScriptProcessed)
-+           B->symbol()->VersionId = Version;
-+      }
-+      continue;
-+    }
-+    for (SymbolBody *B = find(Ver)) {
-+      if (B) {
-+        B->symbol()->VersionId = Version;
-+        B->symbol()->VersionScriptProcessed = true;
-+      }
-     }
--    for (SymbolBody *B : find(Ver))
--      if (B)
--        B->symbol()->VersionId = VER_NDX_GLOBAL;
-   }
- }
- 
-@@ -697,10 +703,16 @@ void SymbolTable<ELFT>::assignWildcardVersion(SymbolVersion Ver,
- // member of symbols.
- template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
-   // Handle edge cases first.
--  if (!Config->VersionScriptGlobals.empty()) {
--    handleAnonymousVersion();
-+  bool gresult = !Config->VersionScriptGlobals.empty();
-+  bool lresult = !Config->VersionScriptLocals.empty();
-+
-+  if (lresult)
-+    handleAnonymousVersion(Config->VersionScriptGlobals, VER_NDX_GLOBAL);
-+  if (gresult)
-+    handleAnonymousVersion(Config->VersionScriptLocals, VER_NDX_LOCAL);
-+
-+  if (gresult || lresult)
-     return;
--  }
- 
-   if (Config->VersionDefinitions.empty())
-     return;
-@@ -711,21 +723,23 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
- 
-   // First, we assign versions to exact matching symbols,
-   // i.e. version definitions not containing any glob meta-characters.
--  for (SymbolVersion &Ver : Config->VersionScriptLocals)
--    assignExactVersion(Ver, VER_NDX_LOCAL, "local");
--  for (VersionDefinition &V : Config->VersionDefinitions)
-+  for (VersionDefinition &V : Config->VersionDefinitions) {
-     for (SymbolVersion &Ver : V.Globals)
-       assignExactVersion(Ver, V.Id, V.Name);
-+    for (SymbolVersion &Ver : V.Locals)
-+      assignExactVersion(Ver, VER_NDX_LOCAL, "local");
-+  }
- 
-   // Next, we assign versions to fuzzy matching symbols,
-   // i.e. version definitions containing glob meta-characters.
-   // Note that because the last match takes precedence over previous matches,
-   // we iterate over the definitions in the reverse order.
--  for (SymbolVersion &Ver : Config->VersionScriptLocals)
--    assignWildcardVersion(Ver, VER_NDX_LOCAL);
--  for (VersionDefinition &V : llvm::reverse(Config->VersionDefinitions))
-+  for (VersionDefinition &V : llvm::reverse(Config->VersionDefinitions)) {
-     for (SymbolVersion &Ver : V.Globals)
-       assignWildcardVersion(Ver, V.Id);
-+    for (SymbolVersion &Ver : V.Locals)
-+      assignWildcardVersion(Ver, VER_NDX_LOCAL);
-+  }
- }
- 
- template class elf::SymbolTable<ELF32LE>;
 diff --git a/ELF/SymbolTable.h b/ELF/SymbolTable.h
 index 2bf9abc..fc97d8e 100644
 --- a/ELF/SymbolTable.h
@@ -164,3 +77,101 @@ index a9a5a0b..39c1ad2 100644
    expect("}");
  
    // Each version may have a parent version. For example, "Ver2"
+diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
+index 2d727358..4dbcdfcb 100644
+--- a/ELF/SymbolTable.cpp
++++ b/ELF/SymbolTable.cpp
+@@ -612,16 +612,24 @@ SymbolTable<ELFT>::findAllByVersion(SymbolVersion Ver) {
+ // but just specifies symbols visibilities. We assume that the script was
+ // in the form of { global: foo; bar; local *; }. So, local is default.
+ // In this function, we make specified symbols global.
+-template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion() {
+-  for (SymbolVersion &Ver : Config->VersionScriptGlobals) {
++template <class ELFT> void SymbolTable<ELFT>::handleAnonymousVersion(
++            std::vector<SymbolVersion> &symbolversions, size_t Version) {
++  for (SymbolVersion &Ver : symbolversions) {
+     if (Ver.HasWildcard) {
+-      for (SymbolBody *B : findAllByVersion(Ver))
+-        B->symbol()->VersionId = VER_NDX_GLOBAL;
++      for (SymbolBody *B : findAllByVersion(Ver)) {
++         if (Version == VER_NDX_GLOBAL)
++           B->symbol()->VersionScriptProcessed = true;
++         else if (!B->symbol()->VersionScriptProcessed)
++           B->symbol()->VersionId = Version;
++      }
+       continue;
+     }
+-    for (SymbolBody *B : findByVersion(Ver))
+-      if (B)
+-        B->symbol()->VersionId = VER_NDX_GLOBAL;
++    for (SymbolBody *B : findByVersion(Ver)) {
++      if (B) {
++        B->symbol()->VersionId = Version;
++        B->symbol()->VersionScriptProcessed = true;
++      }
++    }
+   }
+ }
+ 
+@@ -679,10 +687,16 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+       Sym->body()->parseSymbolVersion();
+ 
+   // Handle edge cases first.
+-  if (!Config->VersionScriptGlobals.empty()) {
+-    handleAnonymousVersion();
++  bool gresult = !Config->VersionScriptGlobals.empty();
++  bool lresult = !Config->VersionScriptLocals.empty();
++
++  if (lresult)
++    handleAnonymousVersion(Config->VersionScriptGlobals, VER_NDX_GLOBAL);
++  if (gresult)
++    handleAnonymousVersion(Config->VersionScriptLocals, VER_NDX_LOCAL);
++
++  if (gresult || lresult)
+     return;
+-  }
+ 
+   if (Config->VersionDefinitions.empty())
+     return;
+@@ -693,21 +707,23 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+ 
+   // First, we assign versions to exact matching symbols,
+   // i.e. version definitions not containing any glob meta-characters.
+-  for (SymbolVersion &Ver : Config->VersionScriptLocals)
+-    assignExactVersion(Ver, VER_NDX_LOCAL, "local");
+-  for (VersionDefinition &V : Config->VersionDefinitions)
++  for (VersionDefinition &V : Config->VersionDefinitions) {
+     for (SymbolVersion &Ver : V.Globals)
+       assignExactVersion(Ver, V.Id, V.Name);
++    for (SymbolVersion &Ver : V.Locals)
++      assignExactVersion(Ver, VER_NDX_LOCAL, "local");
++  }
+ 
+   // Next, we assign versions to fuzzy matching symbols,
+   // i.e. version definitions containing glob meta-characters.
+   // Note that because the last match takes precedence over previous matches,
+   // we iterate over the definitions in the reverse order.
+-  for (SymbolVersion &Ver : Config->VersionScriptLocals)
+-    assignWildcardVersion(Ver, VER_NDX_LOCAL);
+-  for (VersionDefinition &V : llvm::reverse(Config->VersionDefinitions))
++  for (VersionDefinition &V : llvm::reverse(Config->VersionDefinitions)) {
+     for (SymbolVersion &Ver : V.Globals)
+       assignWildcardVersion(Ver, V.Id);
++    for (SymbolVersion &Ver : V.Locals)
++      assignWildcardVersion(Ver, VER_NDX_LOCAL);
++  }
+ }
+ 
+ template class elf::SymbolTable<ELF32LE>;
+diff --git a/ELF/Symbols.cpp b/ELF/Symbols.cpp
+index ba1f2189..919be03d 100644
+--- a/ELF/Symbols.cpp
++++ b/ELF/Symbols.cpp
+@@ -213,6 +213,7 @@ void SymbolBody::parseSymbolVersion() {
+       symbol()->VersionId = Ver.Id;
+     else
+       symbol()->VersionId = Ver.Id | VERSYM_HIDDEN;
++    symbol()->VersionScriptProcessed = true;
+     return;
+   }
+ 
