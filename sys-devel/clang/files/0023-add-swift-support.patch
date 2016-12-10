@@ -8027,15 +8027,15 @@
 --- a/lib/Driver/Job.cpp	2016-11-15 11:12:11.663147923 +0100
 +++ b/lib/Driver/Job.cpp	2016-11-15 11:10:43.388108353 +0100
 @@ -74,7 +74,8 @@
-   StringRef FlagRef(Flag);
-   if ((!HaveCrashVFS &&
-        (FlagRef.startswith("-F") || FlagRef.startswith("-I"))) ||
--      FlagRef.startswith("-fmodules-cache-path="))
-+      FlagRef.startswith("-fmodules-cache-path=") ||
+   IsInclude = FlagRef.startswith("-F") || FlagRef.startswith("-I");
+   if (IsInclude)
+     return HaveCrashVFS ? false : true;
+-  if (FlagRef.startswith("-fmodules-cache-path="))
++  if (FlagRef.startswith("-fmodules-cache-path=") ||
 +      FlagRef.startswith("-fapinotes-cache-path="))
-     return 1;
+     return true;
  
-   return 0;
+   SkipNum = 0;
 --- a/lib/Driver/Tools.cpp	2016-11-15 11:12:11.668147693 +0100
 +++ b/lib/Driver/Tools.cpp	2016-11-15 11:10:43.392108178 +0100
 @@ -5533,6 +5533,42 @@
@@ -12156,8 +12156,8 @@
  
  The list of warnings below should NEVER grow.  It should gradually shrink to 0.
  
--CHECK: Warnings without flags (80):
-+CHECK: Warnings without flags (81):
+-CHECK: Warnings without flags (79):
++CHECK: Warnings without flags (80):
  CHECK-NEXT:   ext_excess_initializers
  CHECK-NEXT:   ext_excess_initializers_in_char_array_initializer
  CHECK-NEXT:   ext_expected_semi_decl_list
