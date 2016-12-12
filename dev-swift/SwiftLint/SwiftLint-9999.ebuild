@@ -31,9 +31,8 @@ DEPEND="${RDEPEND}"
 src_prepare() {
         eapply ${FILESDIR}/remove-dependencies.patch
         eapply ${FILESDIR}/install-lib.patch
-        eapply ${FILESDIR}/string-nsstring.patch
-        eapply ${FILESDIR}/linux.patch
         eapply ${FILESDIR}/foundation.patch
+        eapply ${FILESDIR}/linux.patch
         eapply_user
 }
 
