@@ -44,12 +44,15 @@ index ee44637fe0..10e6500c92 100644
    if (context.Args.hasArg(options::OPT_profile_generate)) {
      SmallString<128> LibProfile(RuntimeLibPath);
      llvm::sys::path::remove_filename(LibProfile); // remove platform name
-@@ -1419,6 +1402,9 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
+@@ -1419,6 +1402,12 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
      Arguments.push_back(context.Args.MakeArgString(PostInputObjectPath));
    }
  
 +  if (context.Args.getLastArg(options::OPT_g))
 +    Arguments.push_back("-Wl,-nostrip");
++
++  // Needed when using lld
++    Arguments.push_back("-Wl,-export-dynamic");
 +
    // This should be the last option, for convenience in checking output.
    Arguments.push_back("-o");

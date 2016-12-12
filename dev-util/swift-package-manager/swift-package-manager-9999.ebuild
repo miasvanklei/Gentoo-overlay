@@ -26,7 +26,6 @@ DEPEND="${RDEPEND}"
 src_prepare()
 {
 	eapply ${FILESDIR}/fix-opaque.patch
-	eapply ${FILESDIR}/fix-runtime.patch
 	eapply_user
 }
 
