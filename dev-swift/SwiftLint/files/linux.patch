@@ -1,0 +1,44 @@
+diff --git a/Source/SwiftLintFramework/Extensions/QueuedPrint.swift b/Source/SwiftLintFramework/Extensions/QueuedPrint.swift
+index 170fec5..cceac83 100644
+--- a/Source/SwiftLintFramework/Extensions/QueuedPrint.swift
++++ b/Source/SwiftLintFramework/Extensions/QueuedPrint.swift
+@@ -7,6 +7,7 @@
+ //
+ 
+ import Foundation
++import Dispatch
+ 
+ private let outputQueue: DispatchQueue = {
+     let queue = DispatchQueue(
+@@ -15,9 +16,9 @@ private let outputQueue: DispatchQueue = {
+         target: .global(qos: .userInteractive)
+     )
+ 
+-    atexit_b {
+-        queue.sync(flags: .barrier) {}
+-    }
++    //atexit_b {
++    //    queue.sync(flags: .barrier) {}
++   // }
+ 
+     return queue
+ }()
+diff --git a/Source/swiftlint/Commands/LintCommand.swift b/Source/swiftlint/Commands/LintCommand.swift
+index c7f8dcb..3d5a2b3 100644
+--- a/Source/swiftlint/Commands/LintCommand.swift
++++ b/Source/swiftlint/Commands/LintCommand.swift
+@@ -23,6 +23,14 @@ extension Reporter {
+     }
+ }
+ 
++#if os(Linux)
++// autoreleasepool is Objective-C feature
++//TODO check what is its equivalent in Swift on Linux
++func autoreleasepool(callback:() -> ()) {
++    callback()
++}
++#endif
++
+ struct LintCommand: CommandProtocol {
+     let verb = "lint"
+     let function = "Print lint warnings and errors (default command)"

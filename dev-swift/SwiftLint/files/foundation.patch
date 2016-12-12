@@ -1,0 +1,113 @@
+diff --git a/Source/SwiftLintFramework/Rules/StatementPositionRule.swift b/Source/SwiftLintFramework/Rules/StatementPositionRule.swift
+index 37ca7f0..186d466 100644
+--- a/Source/SwiftLintFramework/Rules/StatementPositionRule.swift
++++ b/Source/SwiftLintFramework/Rules/StatementPositionRule.swift
+@@ -153,11 +153,10 @@ private extension StatementPositionRule {
+     // followed by newline and the same amount of whitespace then 'else' or 'catch' literals
+     static let uncuddledPattern = "([ \t]*)\\}(\\n+)?([ \t]*)\\b(else|catch)\\b"
+ 
+-    static let uncuddledRegularExpression = (try? NSRegularExpression(pattern: uncuddledPattern,
+-        options: [])) ?? NSRegularExpression()
++    static let uncuddledRegularExpression = try? NSRegularExpression(pattern: uncuddledPattern, options: [])
+ 
+     static func uncuddledMatchValidator(_ contents: String) ->
+-        ((NSTextCheckingResult) -> NSTextCheckingResult?) {
++        ((TextCheckingResult) -> TextCheckingResult?) {
+         return { match in
+             if match.numberOfRanges != 5 {
+                 return match
+@@ -177,10 +176,10 @@ private extension StatementPositionRule {
+     }
+ 
+     static func uncuddledMatchFilter(contents: String, syntaxMap: SyntaxMap) ->
+-        ((NSTextCheckingResult) -> Bool) {
++        ((TextCheckingResult) -> Bool) {
+         return { match in
+             let range = match.range
+-            guard let matchRange = contents.NSRangeToByteRange(start: range.location,
++            guard let matchRange = contents.bridge().NSRangeToByteRange(start: range.location,
+                                                                length: range.length) else {
+                 return false
+             }
+@@ -193,33 +192,35 @@ private extension StatementPositionRule {
+         let contents = file.contents
+         let range = NSRange(location: 0, length: contents.utf16.count)
+         let syntaxMap = file.syntaxMap
+-        let matches = StatementPositionRule.uncuddledRegularExpression.matches(in: contents,
++        let matches = StatementPositionRule.uncuddledRegularExpression?.matches(in: contents,
+                                                                                  options: [],
+                                                                                  range: range)
+         let validator = type(of: self).uncuddledMatchValidator(contents)
+         let filterMatches = type(of: self).uncuddledMatchFilter(contents: contents,
+                                                                   syntaxMap: syntaxMap)
+ 
+-        let validMatches = matches.flatMap(validator).filter(filterMatches).map({ $0.range })
++        //let validMatches = matches.flatMap(validator).filter(filterMatches).map({ $0.range })
+ 
+-        return validMatches
++        //return validMatches
++        return []
+     }
+ 
+     func uncuddledCorrectFile(_ file: File) -> [Correction] {
+         var contents = file.contents
+         let range = NSRange(location: 0, length: contents.utf16.count)
+         let syntaxMap = file.syntaxMap
+-        let matches = StatementPositionRule.uncuddledRegularExpression.matches(in: contents,
++        let matches = StatementPositionRule.uncuddledRegularExpression?.matches(in: contents,
+                                                                                options: [],
+                                                                                range: range)
+         let validator = type(of: self).uncuddledMatchValidator(contents)
+         let filterRanges = type(of: self).uncuddledMatchFilter(contents: contents,
+                                                                syntaxMap: syntaxMap)
+ 
+-        let validMatches = matches.flatMap(validator).filter(filterRanges)
+-                  .filter { !file.ruleEnabledViolatingRanges([$0.range], forRule: self).isEmpty }
+-        if validMatches.isEmpty { return [] }
+-        let description = type(of: self).uncuddledDescription
++        //let validMatches = matches.flatMap(validator).filter(filterRanges)
++        //         .filter { !file.ruleEnabledViolatingRanges([$0.range], forRule: self).isEmpty }
++        //if validMatches.isEmpty { return [] }
++        return []
++        /*let description = type(of: self).uncuddledDescription
+         var corrections = [Correction]()
+ 
+         for match in validMatches.reversed() {
+@@ -245,6 +246,6 @@ private extension StatementPositionRule {
+         }
+ 
+         file.write(contents)
+-        return corrections
++        return corrections*/
+     }
+ }
+diff --git a/Source/SwiftLintFramework/Rules/RuleConfigurations/RegexConfiguration.swift b/Source/SwiftLintFramework/Rules/RuleConfigurations/RegexConfiguration.swift
+index 8a38495..eb2c968 100644
+--- a/Source/SwiftLintFramework/Rules/RuleConfigurations/RegexConfiguration.swift
++++ b/Source/SwiftLintFramework/Rules/RuleConfigurations/RegexConfiguration.swift
+@@ -13,8 +13,8 @@ public struct RegexConfiguration: RuleConfiguration, Equatable {
+     public let identifier: String
+     public var name: String?
+     public var message = "Regex matched."
+-    public var regex = NSRegularExpression()
+-    public var included = NSRegularExpression()
++    public var regex = try! NSRegularExpression(pattern: "", options: [])
++    public var included = try! NSRegularExpression(pattern: "", options: [])
+     public var matchKinds = Set(SyntaxKind.allKinds())
+     public var severityConfiguration = SeverityConfiguration(.warning)
+ 
+diff --git a/Source/SwiftLintFramework/Rules/RuleConfigurations/PrivateUnitTestConfiguration.swift b/Source/SwiftLintFramework/Rules/RuleConfigurations/PrivateUnitTestConfiguration.swift
+index cc4f290..3418f33 100644
+--- a/Source/SwiftLintFramework/Rules/RuleConfigurations/PrivateUnitTestConfiguration.swift
++++ b/Source/SwiftLintFramework/Rules/RuleConfigurations/PrivateUnitTestConfiguration.swift
+@@ -13,8 +13,8 @@ public struct PrivateUnitTestConfiguration: RuleConfiguration, Equatable {
+     public let identifier: String
+     public var name: String?
+     public var message = "Regex matched."
+-    public var regex = NSRegularExpression()
+-    public var included = NSRegularExpression()
++    public var regex = try! NSRegularExpression(pattern: "", options: [])
++    public var included = try! NSRegularExpression(pattern: "", options: [])
+     public var severityConfiguration = SeverityConfiguration(.warning)
+ 
+     public var severity: ViolationSeverity {

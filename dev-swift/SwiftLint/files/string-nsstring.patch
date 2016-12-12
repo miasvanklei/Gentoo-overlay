@@ -1,0 +1,768 @@
+diff --git a/Source/SwiftLintFramework/Extensions/Array+SwiftLint.swift b/Source/SwiftLintFramework/Extensions/Array+SwiftLint.swift
+index 438d4ec..93fbda0 100644
+--- a/Source/SwiftLintFramework/Extensions/Array+SwiftLint.swift
++++ b/Source/SwiftLintFramework/Extensions/Array+SwiftLint.swift
+@@ -19,7 +19,7 @@ extension Array {
+     }
+ }
+ 
+-extension Array where Element: NSTextCheckingResult {
++extension Array where Element: TextCheckingResult {
+     func ranges() -> [NSRange] {
+         return map { $0.range }
+     }
+diff --git a/Source/SwiftLintFramework/Extensions/File+SwiftLint.swift b/Source/SwiftLintFramework/Extensions/File+SwiftLint.swift
+index c3bc49a..16acd1a 100644
+--- a/Source/SwiftLintFramework/Extensions/File+SwiftLint.swift
++++ b/Source/SwiftLintFramework/Extensions/File+SwiftLint.swift
+@@ -39,7 +39,7 @@ extension File {
+         if sourcekitdFailed {
+             return []
+         }
+-        let contents = self.contents as NSString
++        let contents = self.contents.bridge()
+         return matchPattern("swiftlint:(enable|disable)(:previous|:this|:next)?\\ [^\\s]+",
+             withSyntaxKinds: [.comment]).flatMap { range in
+                 return Command(string: contents, range: range)
+@@ -79,11 +79,10 @@ extension File {
+ 
+     internal func rangesAndTokensMatching(_ regex: NSRegularExpression) ->
+         [(NSRange, [SyntaxToken])] {
+-        let contents = self.contents as NSString
+-        let range = NSRange(location: 0, length: contents.length)
++        let range = NSRange(location: 0, length: self.contents.bridge().length)
+         let syntax = syntaxMap
+         return regex.matches(in: self.contents, options: [], range: range).map { match in
+-            let matchByteRange = contents.NSRangeToByteRange(start: match.range.location,
++            let matchByteRange = self.contents.bridge().NSRangeToByteRange(start: match.range.location,
+                 length: match.range.length) ?? match.range
+             let tokensInRange = syntax.tokensIn(matchByteRange)
+             return (match.range, tokensInRange)
+@@ -164,7 +163,7 @@ extension File {
+     internal func matchPattern(_ pattern: String,
+                                excludingSyntaxKinds: [SyntaxKind],
+                                excludingPattern: String) -> [NSRange] {
+-        let contents = self.contents as NSString
++        let contents = self.contents.bridge()
+         let range = NSRange(location: 0, length: contents.length)
+         let matches = matchPattern(pattern, excludingSyntaxKinds: excludingSyntaxKinds)
+         if matches.isEmpty {
+@@ -196,7 +195,7 @@ extension File {
+         fileHandle.write(stringData)
+         fileHandle.closeFile()
+         contents += string
+-        lines = contents.lines()
++        lines = contents.bridge().lines()
+     }
+ 
+     internal func write(_ string: String) {
+@@ -215,7 +214,7 @@ extension File {
+             fatalError("can't write file to \(path)")
+         }
+         contents = string
+-        lines = contents.lines()
++        lines = contents.bridge().lines()
+     }
+ 
+     internal func ruleEnabledViolatingRanges(_ violatingRanges: [NSRange],
+diff --git a/Source/SwiftLintFramework/Extensions/NSFileManager+SwiftLint.swift b/Source/SwiftLintFramework/Extensions/NSFileManager+SwiftLint.swift
+index 70a7c7b..5cbab88 100644
+--- a/Source/SwiftLintFramework/Extensions/NSFileManager+SwiftLint.swift
++++ b/Source/SwiftLintFramework/Extensions/NSFileManager+SwiftLint.swift
+@@ -7,26 +7,26 @@
+ //
+ 
+ import Foundation
++import SourceKittenFramework
+ 
+ extension FileManager {
+     internal func filesToLintAtPath(_ path: String, rootDirectory: String? = nil) -> [String] {
+         let rootPath = rootDirectory ?? currentDirectoryPath
+-        let absolutePath = (path.absolutePathRepresentation(rootDirectory: rootPath) as NSString)
+-            .standardizingPath
++        let absolutePath = path.bridge().absolutePathRepresentation(rootDirectory: rootPath)
+         var isDirectory: ObjCBool = false
+         guard fileExists(atPath: absolutePath, isDirectory: &isDirectory) else {
+             return []
+         }
+-        if isDirectory.boolValue {
++        if isDirectory {
+             do {
+                 return try subpathsOfDirectory(atPath: absolutePath)
+-                    .map((absolutePath as NSString).appendingPathComponent).filter {
+-                        $0.isSwiftFile()
++                    .map((absolutePath.bridge()).appendingPathComponent).filter {
++                        $0.bridge().isSwiftFile()
+                 }
+             } catch {
+                 fatalError("Couldn't find files in \(absolutePath): \(error)")
+             }
+-        } else if absolutePath.isSwiftFile() {
++        } else if absolutePath.bridge().isSwiftFile() {
+             return [absolutePath]
+         }
+         return []
+diff --git a/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift b/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift
+index a18baab..670e6e8 100644
+--- a/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift
++++ b/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift
+@@ -79,6 +79,6 @@ extension String {
+     }
+ 
+     public func absolutePathStandardized() -> String {
+-        return (self.absolutePathRepresentation() as NSString).standardizingPath
++        return self.bridge().absolutePathRepresentation()
+     }
+ }
+diff --git a/Source/SwiftLintFramework/Models/Configuration.swift b/Source/SwiftLintFramework/Models/Configuration.swift
+index bc902d9..5e7d9be 100644
+--- a/Source/SwiftLintFramework/Models/Configuration.swift
++++ b/Source/SwiftLintFramework/Models/Configuration.swift
+@@ -157,7 +157,7 @@ public struct Configuration: Equatable {
+ 
+     public init(path: String = Configuration.fileName, rootPath: String? = nil,
+                 optional: Bool = true, quiet: Bool = false) {
+-        let fullPath = (path as NSString).absolutePathRepresentation()
++        let fullPath = path.bridge().absolutePathRepresentation()
+         let fail = { (msg: String) in
+             fatalError("Could not read configuration file at path '\(fullPath)': \(msg)")
+         }
+@@ -168,8 +168,8 @@ public struct Configuration: Equatable {
+             return
+         }
+         do {
+-            let yamlContents = try NSString(contentsOfFile: fullPath,
+-                                            encoding: String.Encoding.utf8.rawValue) as String
++            let yamlContents = try String(describing: NSString(contentsOfFile: fullPath,
++                                            encoding: String.Encoding.utf8.rawValue))
+             let dict = try YamlParser.parse(yamlContents)
+             if !quiet {
+                 queuedPrintError("Loading configuration from '\(path)'")
+@@ -189,7 +189,7 @@ public struct Configuration: Equatable {
+     public func lintablePathsForPath(_ path: String,
+                                      fileManager: FileManager = fileManager) -> [String] {
+         // If path is a Swift file, skip filtering with excluded/included paths
+-        if (path as NSString).isSwiftFile() {
++        if path.bridge().isSwiftFile() {
+             return [path]
+         }
+         let pathsForPath = included.isEmpty ? fileManager.filesToLintAtPath(path) : []
+@@ -207,7 +207,7 @@ public struct Configuration: Equatable {
+     }
+ 
+     public func configurationForFile(_ file: File) -> Configuration {
+-        if let containingDir = (file.path as NSString?)?.deletingLastPathComponent {
++        if let containingDir = file.path?.bridge().deletingLastPathComponent {
+             return configurationForPath(containingDir)
+         }
+         return self
+@@ -218,7 +218,7 @@ public struct Configuration: Equatable {
+ 
+ extension Configuration {
+     fileprivate func configurationForPath(_ path: String) -> Configuration {
+-        let pathNSString = path as NSString
++        let pathNSString = path.bridge()
+         let configurationSearchPath = pathNSString.appendingPathComponent(Configuration.fileName)
+ 
+         // If a configuration exists and it isn't us, load and merge the configurations
+diff --git a/Source/SwiftLintFramework/Models/Location.swift b/Source/SwiftLintFramework/Models/Location.swift
+index 394aba2..52d3949 100644
+--- a/Source/SwiftLintFramework/Models/Location.swift
++++ b/Source/SwiftLintFramework/Models/Location.swift
+@@ -40,7 +40,7 @@ public struct Location: CustomStringConvertible, Comparable {
+ 
+     public init(file: File, byteOffset offset: Int) {
+         self.file = file.path
+-        if let lineAndCharacter = file.contents.lineAndCharacter(forByteOffset: offset) {
++        if let lineAndCharacter = file.contents.bridge().lineAndCharacter(forByteOffset: offset) {
+             line = lineAndCharacter.line
+             character = lineAndCharacter.character
+         } else {
+@@ -51,7 +51,7 @@ public struct Location: CustomStringConvertible, Comparable {
+ 
+     public init(file: File, characterOffset offset: Int) {
+         self.file = file.path
+-        if let lineAndCharacter = file.contents.lineAndCharacter(forCharacterOffset: offset) {
++        if let lineAndCharacter = file.contents.bridge().lineAndCharacter(forCharacterOffset: offset) {
+             line = lineAndCharacter.line
+             character = lineAndCharacter.character
+         } else {
+diff --git a/Source/SwiftLintFramework/Rules/ClosureSpacingRule.swift b/Source/SwiftLintFramework/Rules/ClosureSpacingRule.swift
+index 04818c5..aca8bdd 100644
+--- a/Source/SwiftLintFramework/Rules/ClosureSpacingRule.swift
++++ b/Source/SwiftLintFramework/Rules/ClosureSpacingRule.swift
+@@ -44,7 +44,7 @@ public struct ClosureSpacingRule: Rule, ConfigurationProviderRule, OptInRule {
+ 
+     // returns ranges of braces { or } in the same line
+     private func validBraces(_ file: File) -> [NSRange] {
+-        let nsstring = (file.contents as NSString)
++        let nsstring = file.contents.bridge()
+         let bracePattern = regex("\\{|\\}")
+         let linesTokens = file.syntaxTokensByLines
+         let kindsToExclude = SyntaxKind.commentAndStringKinds().map { $0.rawValue }
+@@ -61,7 +61,7 @@ public struct ClosureSpacingRule: Rule, ConfigurationProviderRule, OptInRule {
+             // filter out braces in comments and strings
+             let tokens = linesTokens[eachLine.index].filter { kindsToExclude.contains($0.type) }
+             let tokenRanges = tokens.flatMap {
+-                file.contents.byteRangeToNSRange(start: $0.offset, length: $0.length)
++                file.contents.bridge().byteRangeToNSRange(start: $0.offset, length: $0.length)
+             }
+             linesWithBraces.append(braces.filter({ !$0.intersectsRanges(tokenRanges) }))
+         }
+diff --git a/Source/SwiftLintFramework/Rules/ColonRule.swift b/Source/SwiftLintFramework/Rules/ColonRule.swift
+index d49318e..0a3fc3e 100644
+--- a/Source/SwiftLintFramework/Rules/ColonRule.swift
++++ b/Source/SwiftLintFramework/Rules/ColonRule.swift
+@@ -146,7 +146,6 @@ public struct ColonRule: CorrectableRule, ConfigurationProviderRule {
+     }
+ 
+     fileprivate func violationRangesInFile(_ file: File, withPattern pattern: String) -> [NSRange] {
+-        let nsstring = file.contents as NSString
+         let commentAndStringKindsSet = Set(SyntaxKind.commentAndStringKinds())
+         return file.rangesAndTokensMatching(pattern).filter { range, syntaxTokens in
+             let syntaxKinds = syntaxTokens.flatMap { SyntaxKind(rawValue: $0.type) }
+@@ -155,8 +154,7 @@ public struct ColonRule: CorrectableRule, ConfigurationProviderRule {
+             }
+             return Set(syntaxKinds).intersection(commentAndStringKindsSet).isEmpty
+         }.flatMap { range, syntaxTokens in
+-            let identifierRange = nsstring
+-                .byteRangeToNSRange(start: syntaxTokens[0].offset, length: 0)
++            let identifierRange = file.contents.bridge().byteRangeToNSRange(start: syntaxTokens[0].offset, length: 0)
+             return identifierRange.map { NSUnionRange($0, range) }
+         }
+     }
+diff --git a/Source/SwiftLintFramework/Rules/CommaRule.swift b/Source/SwiftLintFramework/Rules/CommaRule.swift
+index 9e04a58..c769934 100644
+--- a/Source/SwiftLintFramework/Rules/CommaRule.swift
++++ b/Source/SwiftLintFramework/Rules/CommaRule.swift
+@@ -56,15 +56,15 @@ public struct CommaRule: CorrectableRule, ConfigurationProviderRule {
+         let matches = file.ruleEnabledViolatingRanges(violations, forRule: self)
+         if matches.isEmpty { return [] }
+ 
+-        var contents = file.contents as NSString
++        var contents = file.contents.bridge()
+         let description = type(of: self).description
+         var corrections = [Correction]()
+         for range in matches.reversed() {
+-            contents = contents.replacingCharacters(in: range, with: ", ") as NSString
++            contents = contents.replacingCharacters(in: range, with: ", ").bridge()
+             let location = Location(file: file, characterOffset: range.location)
+             corrections.append(Correction(ruleDescription: description, location: location))
+         }
+-        file.write(contents as String)
++        file.write(String(describing: contents))
+         return corrections
+     }
+ 
+@@ -89,7 +89,7 @@ public struct CommaRule: CorrectableRule, ConfigurationProviderRule {
+         "\(mainPatternGroups)"      // Regexp will match if expression begins with comma
+ 
+     // swiftlint:disable:next force_try
+-    fileprivate static let regularExpression = try! NSRegularExpression(pattern: pattern)
++    fileprivate static let regularExpression = try! NSRegularExpression(pattern: pattern, options: [])
+     fileprivate static let excludingSyntaxKindsForFirstCapture = SyntaxKind.commentAndStringKinds()
+         .map { $0.rawValue }
+     fileprivate static let excludingSyntaxKindsForSecondCapture = SyntaxKind.commentKinds()
+@@ -111,7 +111,7 @@ public struct CommaRule: CorrectableRule, ConfigurationProviderRule {
+ 
+                 // check first captured range
+                 let firstRange = match.rangeAt(indexStartRange)
+-                guard let matchByteFirstRange = contents
++                guard let matchByteFirstRange = contents.bridge()
+                     .NSRangeToByteRange(start: firstRange.location, length: firstRange.length)
+                     else { return nil }
+ 
+@@ -126,13 +126,13 @@ public struct CommaRule: CorrectableRule, ConfigurationProviderRule {
+ 
+                 // If the first range does not start with comma, it already violates this rule
+                 // no matter what is contained in the second range.
+-                if !(contents as NSString).substring(with: firstRange).hasPrefix(",") {
++                if !contents.bridge().substring(with: firstRange).hasPrefix(",") {
+                     return firstRange
+                 }
+ 
+                 // check second captured range
+                 let secondRange = match.rangeAt(indexStartRange + 1)
+-                guard let matchByteSecondRange = contents
++                guard let matchByteSecondRange = contents.bridge()
+                     .NSRangeToByteRange(start: secondRange.location, length: secondRange.length)
+                     else { return nil }
+ 
+diff --git a/Source/SwiftLintFramework/Rules/ConditionalReturnsOnNewline.swift b/Source/SwiftLintFramework/Rules/ConditionalReturnsOnNewline.swift
+index bed755c..9bb5f29 100644
+--- a/Source/SwiftLintFramework/Rules/ConditionalReturnsOnNewline.swift
++++ b/Source/SwiftLintFramework/Rules/ConditionalReturnsOnNewline.swift
+@@ -56,7 +56,7 @@ public struct ConditionalReturnsOnNewline: ConfigurationProviderRule, Rule, OptI
+     }
+ 
+     private func contentForToken(token: SyntaxToken, file: File) -> String {
+-        return file.contents.substringWithByteRange(start: token.offset,
++        return file.contents.bridge().substringWithByteRange(start: token.offset,
+                                                     length: token.length) ?? ""
+     }
+ }
+diff --git a/Source/SwiftLintFramework/Rules/CyclomaticComplexityRule.swift b/Source/SwiftLintFramework/Rules/CyclomaticComplexityRule.swift
+index 777fda1..6bf1963 100644
+--- a/Source/SwiftLintFramework/Rules/CyclomaticComplexityRule.swift
++++ b/Source/SwiftLintFramework/Rules/CyclomaticComplexityRule.swift
+@@ -98,7 +98,7 @@ public struct CyclomaticComplexityRule: ASTRule, ConfigurationProviderRule {
+         let bodyOffset = Int(dictionary["key.bodyoffset"] as? Int64 ?? 0)
+         let bodyLength = Int(dictionary["key.bodylength"] as? Int64 ?? 0)
+ 
+-        let c = (file.contents as NSString)
++        let c = file.contents.bridge()
+             .substringWithByteRange(start: bodyOffset, length: bodyLength) ?? ""
+ 
+         let fallthroughCount = c.components(separatedBy: "fallthrough").count - 1
+diff --git a/Source/SwiftLintFramework/Rules/EmptyParenthesesWithTrailingClosureRule.swift b/Source/SwiftLintFramework/Rules/EmptyParenthesesWithTrailingClosureRule.swift
+index e6dcea2..36ec291 100644
+--- a/Source/SwiftLintFramework/Rules/EmptyParenthesesWithTrailingClosureRule.swift
++++ b/Source/SwiftLintFramework/Rules/EmptyParenthesesWithTrailingClosureRule.swift
+@@ -69,7 +69,7 @@ public struct EmptyParenthesesWithTrailingClosureRule: ASTRule, ConfigurationPro
+         let rangeLength = (offset + length) - (nameOffset + nameLength)
+         let regex = EmptyParenthesesWithTrailingClosureRule.emptyParenthesesRegex
+ 
+-        guard let range = file.contents.byteRangeToNSRange(start: rangeStart, length: rangeLength),
++        guard let range = file.contents.bridge().byteRangeToNSRange(start: rangeStart, length: rangeLength),
+             let match = regex.firstMatch(in: file.contents, options: [], range: range),
+             match.range.location != NSNotFound else {
+                 return []
+diff --git a/Source/SwiftLintFramework/Rules/ExplicitInitRule.swift b/Source/SwiftLintFramework/Rules/ExplicitInitRule.swift
+index 07c289a..565a9d1 100644
+--- a/Source/SwiftLintFramework/Rules/ExplicitInitRule.swift
++++ b/Source/SwiftLintFramework/Rules/ExplicitInitRule.swift
+@@ -73,7 +73,7 @@ public struct ExplicitInitRule: ASTRule, ConfigurationProviderRule, CorrectableR
+             let name = dictionary["key.name"] as? String, isExpected(name),
+             let nameOffset = dictionary["key.nameoffset"] as? Int64,
+             let nameLength = dictionary["key.namelength"] as? Int64,
+-            let range = (file.contents as NSString)
++            let range = file.contents.bridge()
+                 .byteRangeToNSRange(start: Int(nameOffset + nameLength) - length, length: length)
+             else { return [] }
+         return [range]
+@@ -108,7 +108,7 @@ public struct ExplicitInitRule: ASTRule, ConfigurationProviderRule, CorrectableR
+         var corrections = [Correction]()
+         var contents = file.contents
+         for range in matches {
+-            contents = (contents as NSString)
++            contents = contents.bridge()
+                 .replacingCharacters(in: range, with: "")
+             let location = Location(file: file, characterOffset: range.location)
+             corrections.append(Correction(ruleDescription: description, location: location))
+diff --git a/Source/SwiftLintFramework/Rules/FileHeaderRule.swift b/Source/SwiftLintFramework/Rules/FileHeaderRule.swift
+index 958a85e..f050bd9 100644
+--- a/Source/SwiftLintFramework/Rules/FileHeaderRule.swift
++++ b/Source/SwiftLintFramework/Rules/FileHeaderRule.swift
+@@ -58,7 +58,7 @@ public struct FileHeaderRule: ConfigurationProviderRule, OptInRule {
+         if let firstToken = firstToken, let lastToken = lastToken {
+             let start = firstToken.offset
+             let length = lastToken.offset + lastToken.length - firstToken.offset
+-            guard let range = file.contents.byteRangeToNSRange(start: start, length: length) else {
++            guard let range = file.contents.bridge().byteRangeToNSRange(start: start, length: length) else {
+                 return []
+             }
+ 
+diff --git a/Source/SwiftLintFramework/Rules/ForceUnwrappingRule.swift b/Source/SwiftLintFramework/Rules/ForceUnwrappingRule.swift
+index 9ef1682..473dc63 100644
+--- a/Source/SwiftLintFramework/Rules/ForceUnwrappingRule.swift
++++ b/Source/SwiftLintFramework/Rules/ForceUnwrappingRule.swift
+@@ -67,7 +67,7 @@ public struct ForceUnwrappingRule: OptInRule, ConfigurationProviderRule {
+     // swiftlint:disable:next function_body_length
+     fileprivate func violationRangesInFile(_ file: File) -> [NSRange] {
+         let contents = file.contents
+-        let nsstring = contents as NSString
++        let nsstring = contents.bridge()
+         let range = NSRange(location: 0, length: contents.utf16.count)
+         let syntaxMap = file.syntaxMap
+         return ForceUnwrappingRule.regularExpression
+@@ -80,9 +80,9 @@ public struct ForceUnwrappingRule: OptInRule, ConfigurationProviderRule {
+ 
+                 let violationRange = NSRange(location: NSMaxRange(firstRange), length: 0)
+ 
+-                guard let matchByteFirstRange = contents
++                guard let matchByteFirstRange = contents.bridge()
+                     .NSRangeToByteRange(start: firstRange.location, length: firstRange.length),
+-                    let matchByteSecondRange = contents
++                    let matchByteSecondRange = contents.bridge()
+                         .NSRangeToByteRange(start: secondRange.location, length: secondRange.length)
+                     else { return nil }
+ 
+@@ -116,7 +116,7 @@ public struct ForceUnwrappingRule: OptInRule, ConfigurationProviderRule {
+ 
+                     // check third captured range
+                     let secondRange = match.rangeAt(3)
+-                    guard let matchByteThirdRange = contents
++                    guard let matchByteThirdRange = contents.bridge()
+                         .NSRangeToByteRange(start: secondRange.location, length: secondRange.length)
+                         else { return nil }
+ 
+@@ -140,7 +140,6 @@ public struct ForceUnwrappingRule: OptInRule, ConfigurationProviderRule {
+     // Returns if range should generate violation
+     // check deepest kind matching range in structure
+     fileprivate func checkStructure(_ file: File, byteRange: NSRange) -> Bool {
+-        let nsstring = file.contents as NSString
+         let kinds = file.structure.kindsFor(byteRange.location)
+         if let lastKind = kinds.last {
+             switch lastKind.kind {
+@@ -151,7 +150,7 @@ public struct ForceUnwrappingRule: OptInRule, ConfigurationProviderRule {
+             case SwiftDeclarationKind.varStatic.rawValue:
+                 let byteOffset = lastKind.byteRange.location
+                 let byteLength = byteRange.location - byteOffset
+-                if let varDeclarationString = nsstring
++                if let varDeclarationString = file.contents.bridge()
+                     .substringWithByteRange(start: byteOffset, length: byteLength),
+                     varDeclarationString.contains("=") {
+                         // if declarations contains "=", range is not type annotation
+diff --git a/Source/SwiftLintFramework/Rules/FunctionBodyLengthRule.swift b/Source/SwiftLintFramework/Rules/FunctionBodyLengthRule.swift
+index ac15738..3fc49d6 100644
+--- a/Source/SwiftLintFramework/Rules/FunctionBodyLengthRule.swift
++++ b/Source/SwiftLintFramework/Rules/FunctionBodyLengthRule.swift
+@@ -44,8 +44,8 @@ public struct FunctionBodyLengthRule: ASTRule, ConfigurationProviderRule {
+         if let offset = (dictionary["key.offset"] as? Int64).flatMap({ Int($0) }),
+             let bodyOffset = (dictionary["key.bodyoffset"] as? Int64).flatMap({ Int($0) }),
+             let bodyLength = (dictionary["key.bodylength"] as? Int64).flatMap({ Int($0) }) {
+-            let startLine = file.contents.lineAndCharacter(forByteOffset: bodyOffset)
+-            let endLine = file.contents.lineAndCharacter(forByteOffset: bodyOffset + bodyLength)
++            let startLine = file.contents.bridge().lineAndCharacter(forByteOffset: bodyOffset)
++            let endLine = file.contents.bridge().lineAndCharacter(forByteOffset: bodyOffset + bodyLength)
+ 
+             if let startLine = startLine?.line, let endLine = endLine?.line {
+                 for parameter in configuration.params {
+diff --git a/Source/SwiftLintFramework/Rules/FunctionParameterCountRule.swift b/Source/SwiftLintFramework/Rules/FunctionParameterCountRule.swift
+index 956a647..c5fd7e6 100644
+--- a/Source/SwiftLintFramework/Rules/FunctionParameterCountRule.swift
++++ b/Source/SwiftLintFramework/Rules/FunctionParameterCountRule.swift
+@@ -98,12 +98,12 @@ public struct FunctionParameterCountRule: ASTRule, ConfigurationProviderRule {
+     }
+ 
+     fileprivate func defaultFunctionParameterCount(_ file: File, offset: Int, length: Int) -> Int {
+-        return file.contents.substringWithByteRange(start: offset, length: length)?
++        return file.contents.bridge().substringWithByteRange(start: offset, length: length)?
+             .characters.filter { $0 == "=" }.count ?? 0
+     }
+ 
+     fileprivate func functionIsInitializer(_ file: File, offset: Int, length: Int) -> Bool {
+-        guard let name = file.contents.substringWithByteRange(start: offset, length: length),
++        guard let name = file.contents.bridge().substringWithByteRange(start: offset, length: length),
+             name.hasPrefix("init"),
+             let funcName = name.components(separatedBy: "(").first else {
+             return false
+diff --git a/Source/SwiftLintFramework/Rules/ImplicitGetterRule.swift b/Source/SwiftLintFramework/Rules/ImplicitGetterRule.swift
+index 9a95eb4..2751dc4 100644
+--- a/Source/SwiftLintFramework/Rules/ImplicitGetterRule.swift
++++ b/Source/SwiftLintFramework/Rules/ImplicitGetterRule.swift
+@@ -56,7 +56,7 @@ public struct ImplicitGetterRule: Rule, ConfigurationProviderRule {
+                 return false
+             }
+ 
+-            guard let tokenValue = file.contents.substringWithByteRange(start: token.offset,
++            guard let tokenValue = file.contents.bridge().substringWithByteRange(start: token.offset,
+                 length: token.length) else {
+                     return false
+             }
+diff --git a/Source/SwiftLintFramework/Rules/MarkRule.swift b/Source/SwiftLintFramework/Rules/MarkRule.swift
+index f78090c..08c2add 100644
+--- a/Source/SwiftLintFramework/Rules/MarkRule.swift
++++ b/Source/SwiftLintFramework/Rules/MarkRule.swift
+@@ -131,7 +131,7 @@ public struct MarkRule: CorrectableRule, ConfigurationProviderRule {
+         let matches = file.ruleEnabledViolatingRanges(violations, forRule: self)
+         if matches.isEmpty { return [] }
+ 
+-        var nsstring = file.contents as NSString
++        var nsstring = file.contents.bridge()
+         let description = type(of: self).description
+         var corrections = [Correction]()
+         for var range in matches.reversed() {
+@@ -139,20 +139,18 @@ public struct MarkRule: CorrectableRule, ConfigurationProviderRule {
+                 range.length -= 1
+             }
+             let location = Location(file: file, characterOffset: range.location)
+-            nsstring = nsstring.replacingCharacters(in: range, with: replaceString) as NSString
++            nsstring = nsstring.replacingCharacters(in: range, with: replaceString).bridge()
+             corrections.append(Correction(ruleDescription: description, location: location))
+         }
+-        file.write(nsstring as String)
++        file.write(String(describing: nsstring))
+         return corrections
+     }
+ 
+     private func violationRangesInFile(_ file: File, withPattern pattern: String) -> [NSRange] {
+-        let nsstring = file.contents as NSString
+         return file.rangesAndTokensMatching(pattern).filter { range, syntaxTokens in
+             return !syntaxTokens.isEmpty && SyntaxKind(rawValue: syntaxTokens[0].type) == .comment
+         }.flatMap { range, syntaxTokens in
+-            let identifierRange = nsstring
+-                .byteRangeToNSRange(start: syntaxTokens[0].offset, length: 0)
++            let identifierRange = file.contents.bridge().byteRangeToNSRange(start: syntaxTokens[0].offset, length: 0)
+             return identifierRange.map { NSUnionRange($0, range) }
+         }
+     }
+diff --git a/Source/SwiftLintFramework/Rules/NumberSeparatorRule.swift b/Source/SwiftLintFramework/Rules/NumberSeparatorRule.swift
+index c590dac..bd29f4c 100644
+--- a/Source/SwiftLintFramework/Rules/NumberSeparatorRule.swift
++++ b/Source/SwiftLintFramework/Rules/NumberSeparatorRule.swift
+@@ -113,6 +113,6 @@ public struct NumberSeparatorRule: OptInRule, ConfigurationProviderRule {
+     }
+ 
+     private func contentFrom(file: File, token: SyntaxToken) -> String? {
+-        return file.contents.substringWithByteRange(start: token.offset, length: token.length)
++        return file.contents.bridge().substringWithByteRange(start: token.offset, length: token.length)
+     }
+ }
+diff --git a/Source/SwiftLintFramework/Rules/RedundantStringEnumValueRule.swift b/Source/SwiftLintFramework/Rules/RedundantStringEnumValueRule.swift
+index 9e91710..11a041d 100644
+--- a/Source/SwiftLintFramework/Rules/RedundantStringEnumValueRule.swift
++++ b/Source/SwiftLintFramework/Rules/RedundantStringEnumValueRule.swift
+@@ -112,7 +112,7 @@ public struct RedundantStringEnumValueRule: ASTRule, ConfigurationProviderRule {
+             }
+ 
+             // the string would be quoted if offset and length were used directly
+-            let enumCaseName = file.contents.substringWithByteRange(start: offset + 1,
++            let enumCaseName = file.contents.bridge().substringWithByteRange(start: offset + 1,
+                                                                     length: length - 2) ?? ""
+             guard enumCaseName == name else {
+                 return nil
+diff --git a/Source/SwiftLintFramework/Rules/SwitchCaseOnNewlineRule.swift b/Source/SwiftLintFramework/Rules/SwitchCaseOnNewlineRule.swift
+index 2ee5e61..17dea1b 100644
+--- a/Source/SwiftLintFramework/Rules/SwitchCaseOnNewlineRule.swift
++++ b/Source/SwiftLintFramework/Rules/SwitchCaseOnNewlineRule.swift
+@@ -58,7 +58,7 @@ public struct SwitchCaseOnNewlineRule: ConfigurationProviderRule, Rule, OptInRul
+             }
+ 
+             // check if the first token in the line is `case`
+-            let lineAndCharacter = file.contents.lineAndCharacter(forByteOffset: range.location)
++            let lineAndCharacter = file.contents.bridge().lineAndCharacter(forByteOffset: range.location)
+             guard let (lineNumber, _) = lineAndCharacter else {
+                 return false
+             }
+@@ -101,7 +101,7 @@ public struct SwitchCaseOnNewlineRule: ConfigurationProviderRule, Rule, OptInRul
+     }
+ 
+     private func contentForRange(start: Int, length: Int, file: File) -> String {
+-        return file.contents.substringWithByteRange(start: start, length: length) ?? ""
++        return file.contents.bridge().substringWithByteRange(start: start, length: length) ?? ""
+     }
+ 
+     private func trailingComments(tokens: [SyntaxToken]) -> [SyntaxToken] {
+diff --git a/Source/SwiftLintFramework/Rules/TrailingCommaRule.swift b/Source/SwiftLintFramework/Rules/TrailingCommaRule.swift
+index 8c4c88c..947e282 100644
+--- a/Source/SwiftLintFramework/Rules/TrailingCommaRule.swift
++++ b/Source/SwiftLintFramework/Rules/TrailingCommaRule.swift
+@@ -62,15 +62,15 @@ public struct TrailingCommaRule: ASTRule, ConfigurationProviderRule {
+             return []
+         }
+ 
+-        if let (startLine, _) =  file.contents.lineAndCharacter(forByteOffset: bodyOffset),
+-            let (endLine, _) =  file.contents.lineAndCharacter(forByteOffset: lastPosition),
++        if let (startLine, _) =  file.contents.bridge().lineAndCharacter(forByteOffset: bodyOffset),
++            let (endLine, _) =  file.contents.bridge().lineAndCharacter(forByteOffset: lastPosition),
+             configuration.mandatoryComma && startLine == endLine {
+             // shouldn't trigger if mandatory comma style and is a single-line declaration 
+             return []
+         }
+ 
+         let length = bodyLength + bodyOffset - lastPosition
+-        let contentsAfterLastElement = file.contents
++        let contentsAfterLastElement = file.contents.bridge()
+             .substringWithByteRange(start: lastPosition, length: length) ?? ""
+ 
+         // if a trailing comma is not present
+diff --git a/Source/SwiftLintFramework/Rules/TrailingWhitespaceRule.swift b/Source/SwiftLintFramework/Rules/TrailingWhitespaceRule.swift
+index 2632f58..167e788 100644
+--- a/Source/SwiftLintFramework/Rules/TrailingWhitespaceRule.swift
++++ b/Source/SwiftLintFramework/Rules/TrailingWhitespaceRule.swift
+@@ -68,7 +68,7 @@ public struct TrailingWhitespaceRule: CorrectableRule, ConfigurationProviderRule
+                 continue
+             }
+ 
+-            let correctedLine = (line.content as NSString)
++            let correctedLine = line.content.bridge()
+                 .trimmingTrailingCharacters(in: whitespaceCharacterSet)
+ 
+             if configuration.ignoresEmptyLines && correctedLine.characters.isEmpty {
+diff --git a/Source/SwiftLintFramework/Rules/TypeBodyLengthRule.swift b/Source/SwiftLintFramework/Rules/TypeBodyLengthRule.swift
+index 5f8497a..51952d7 100644
+--- a/Source/SwiftLintFramework/Rules/TypeBodyLengthRule.swift
++++ b/Source/SwiftLintFramework/Rules/TypeBodyLengthRule.swift
+@@ -48,8 +48,8 @@ public struct TypeBodyLengthRule: ASTRule, ConfigurationProviderRule {
+         if let offset = (dictionary["key.offset"] as? Int64).flatMap({ Int($0) }),
+             let bodyOffset = (dictionary["key.bodyoffset"] as? Int64).flatMap({ Int($0) }),
+             let bodyLength = (dictionary["key.bodylength"] as? Int64).flatMap({ Int($0) }) {
+-            let startLine = file.contents.lineAndCharacter(forByteOffset: bodyOffset)
+-            let endLine = file.contents.lineAndCharacter(forByteOffset: bodyOffset + bodyLength)
++            let startLine = file.contents.bridge().lineAndCharacter(forByteOffset: bodyOffset)
++            let endLine = file.contents.bridge().lineAndCharacter(forByteOffset: bodyOffset + bodyLength)
+ 
+             if let startLine = startLine?.line, let endLine = endLine?.line {
+                 for parameter in configuration.params {
+diff --git a/Source/SwiftLintFramework/Rules/ValidDocsRule.swift b/Source/SwiftLintFramework/Rules/ValidDocsRule.swift
+index eaa870b..cea0ea4 100644
+--- a/Source/SwiftLintFramework/Rules/ValidDocsRule.swift
++++ b/Source/SwiftLintFramework/Rules/ValidDocsRule.swift
+@@ -22,7 +22,7 @@ extension File {
+             !comment.contains(":nodoc:") else {
+                 return substructureOffsets
+         }
+-        let declaration = (contents as NSString)
++        let declaration = contents.bridge()
+             .substringWithByteRange(start: Int(offset), length: Int(bodyOffset - offset))!
+         let hasViolation = missingReturnDocumentation(declaration, comment: comment) ||
+             superfluousReturnDocumentation(declaration, comment: comment, kind: kind) ||
+@@ -62,7 +62,7 @@ func matchOutsideBraces(_ declaration: String) -> NSString? {
+                 return nil
+     }
+ 
+-    return (declaration as NSString).substring(with: outsideBracesMatch.range) as NSString
++    return declaration.bridge().substring(with: outsideBracesMatch.range).bridge()
+ }
+ 
+ func declarationIsInitializer(_ declaration: String) -> Bool {
+@@ -113,7 +113,7 @@ func superfluousOrMissingParameterDocumentation(_ declaration: String,
+         let firstMatch = regex("([^,\\s(]+)\\s+\(parameter)\\s*:")
+             .firstMatch(in: declaration, options: [], range: fullRange)
+         if let match = firstMatch {
+-            let label = (declaration as NSString).substring(with: match.rangeAt(1))
++            let label = declaration.bridge().substring(with: match.rangeAt(1))
+             return (label, parameter)
+         }
+         return (parameter, parameter)
+@@ -123,7 +123,7 @@ func superfluousOrMissingParameterDocumentation(_ declaration: String,
+     let commentParameterMatches = regex("- [p|P]arameter ([^:]+)")
+         .matches(in: comment, options: [], range: commentRange)
+     let commentParameters = commentParameterMatches.map { match in
+-        return (comment as NSString).substring(with: match.rangeAt(1))
++        return comment.bridge().substring(with: match.rangeAt(1))
+     }
+     if commentParameters.count > labelsAndParams.count ||
+         labelsAndParams.count - commentParameters.count > optionallyDocumentedParameterCount {
+diff --git a/Source/swiftlint/Extensions/Configuration+CommandLine.swift b/Source/swiftlint/Extensions/Configuration+CommandLine.swift
+index bcc6f88..19342d2 100644
+--- a/Source/swiftlint/Extensions/Configuration+CommandLine.swift
++++ b/Source/swiftlint/Extensions/Configuration+CommandLine.swift
+@@ -48,7 +48,7 @@ private func scriptInputFiles() -> Result<[String], CommandantError<()>> {
+ 
+ extension File {
+     fileprivate static func maybeSwiftFile(_ path: String) -> File? {
+-        if let file = File(path: path), path.isSwiftFile() {
++        if let file = File(path: path), path.bridge().isSwiftFile() {
+             return file
+         }
+         return nil
+@@ -76,7 +76,7 @@ extension Configuration {
+             let fileCount = files.count
+             for (index, file) in files.enumerated() {
+                 if !quiet, let path = file.path {
+-                    let filename = (path as NSString).lastPathComponent
++                    let filename = path.bridge().lastPathComponent
+                     queuedPrintError("\(action) '\(filename)' (\(index + 1)/\(fileCount))")
+                 }
+                 visitorBlock(Linter(file: file, configuration: configurationForFile(file)))
+diff --git a/Source/swiftlint/main.swift b/Source/swiftlint/main.swift
+index 95143a6..14d8e7e 100644
+--- a/Source/swiftlint/main.swift
++++ b/Source/swiftlint/main.swift
+@@ -9,6 +9,7 @@
+ import Foundation
+ import Commandant
+ import SwiftLintFramework
++import Dispatch
+ 
+ DispatchQueue.global().async {
+     let registry = CommandRegistry<CommandantError<()>>()
+diff --git a/Source/SwiftLintFramework/Models/Command.swift b/Source/SwiftLintFramework/Models/Command.swift
+index 4203e38..5fd7611 100644
+--- a/Source/SwiftLintFramework/Models/Command.swift
++++ b/Source/SwiftLintFramework/Models/Command.swift
+@@ -44,33 +44,29 @@ public struct Command {
+ 
+     public init?(string: NSString, range: NSRange) {
+         let scanner = Scanner(string: string.substring(with: range))
+-        scanner.scanString("swiftlint:", into: nil)
+-        var optionalActionAndModifierNSString: NSString? = nil
+-        scanner.scanUpTo(" ", into: &optionalActionAndModifierNSString)
+-        guard let actionAndModifierString = optionalActionAndModifierNSString as String? else {
++        scanner.scanString(string: "swiftlint:")
++        guard let actionAndModifierString = scanner.scanUpToString(" ") else {
+             return nil
+         }
+         let actionAndModifierScanner = Scanner(string: actionAndModifierString)
+-        var actionNSString: NSString? = nil
+-        actionAndModifierScanner.scanUpTo(":", into: &actionNSString)
+-        guard let actionString = actionNSString as String?,
+-            let action = CommandAction(rawValue: actionString),
++        guard let actionString = actionAndModifierScanner.scanUpToString(":"),
++            let action = CommandAction(rawValue:  actionString),
+             let lineAndCharacter = string
+                 .lineAndCharacter(forCharacterOffset: NSMaxRange(range)) else {
+                 return nil
+         }
+         self.action = action
+-        ruleIdentifiers = (scanner.string as NSString)
++        ruleIdentifiers = scanner.string.bridge()
+             .substring(from: scanner.scanLocation + 1)
+             .components(separatedBy: .whitespaces)
+         line = lineAndCharacter.line
+         character = lineAndCharacter.character
+ 
+-        let hasModifier = actionAndModifierScanner.scanString(":", into: nil)
++        let hasModifier = actionAndModifierScanner.scanString(string: ":")
+ 
+         // Modifier
+-        if hasModifier {
+-            let modifierString = (actionAndModifierScanner.string as NSString)
++        if (hasModifier != nil) {
++            let modifierString = actionAndModifierScanner.string.bridge()
+                 .substring(from: actionAndModifierScanner.scanLocation)
+             modifier = CommandModifier(rawValue: modifierString)
+         } else {
+diff --git a/Source/SwiftLintFramework/Rules/DynamicInlineRule.swift b/Source/SwiftLintFramework/Rules/DynamicInlineRule.swift
+index d06ed60..1ac4888 100644
+--- a/Source/SwiftLintFramework/Rules/DynamicInlineRule.swift
++++ b/Source/SwiftLintFramework/Rules/DynamicInlineRule.swift
+@@ -43,17 +43,17 @@ public struct DynamicInlineRule: ASTRule, ConfigurationProviderRule {
+             attributes.contains("source.decl.attribute.dynamic"),
+             attributes.contains("source.decl.attribute.inline"),
+             let funcByteOffset = (dictionary["key.offset"] as? Int64).flatMap({ Int($0) }),
+-            let funcOffset = (file.contents as NSString)
++            let funcOffset = file.contents.bridge()
+                 .byteRangeToNSRange(start: funcByteOffset, length: 0)?
+                 .location,
+             case let inlinePattern = regex("@inline"),
+             case let range = NSRange(location: 0, length: funcOffset),
+-            let inlineMatch = inlinePattern.matches(in: file.contents, range: range).last,
++            let inlineMatch = inlinePattern.matches(in: file.contents, options: [], range: range).last,
+             inlineMatch.range.location != NSNotFound,
+             case let attributeRange = NSRange(location: inlineMatch.range.location,
+                 length: funcOffset - inlineMatch.range.location),
+             case let alwaysInlinePattern = regex("@inline\\(\\s*__always\\s*\\)"),
+-            alwaysInlinePattern.firstMatch(in: file.contents, range: attributeRange) != nil
++            alwaysInlinePattern.firstMatch(in: file.contents, options: [], range: attributeRange) != nil
+         else {
+             return []
+         }
+diff --git a/Source/SwiftLintFramework/Rules/CustomRules.swift b/Source/SwiftLintFramework/Rules/CustomRules.swift
+index b7c9f20..d9d5109 100644
+--- a/Source/SwiftLintFramework/Rules/CustomRules.swift
++++ b/Source/SwiftLintFramework/Rules/CustomRules.swift
+@@ -68,7 +68,7 @@ public struct CustomRules: Rule, ConfigurationProviderRule {
+                 if pattern.isEmpty { return true }
+ 
+                 let pathMatch = config.included.matches(in: path, options: [],
+-                    range: NSRange(location: 0, length: (path as NSString).length))
++                    range: NSRange(location: 0, length: path.bridge().length))
+ 
+                 return !pathMatch.isEmpty
+             }
+diff --git a/Source/SwiftLintFramework/Rules/PrivateUnitTestRule.swift b/Source/SwiftLintFramework/Rules/PrivateUnitTestRule.swift
+index e5f3e3a..2988762 100644
+--- a/Source/SwiftLintFramework/Rules/PrivateUnitTestRule.swift
++++ b/Source/SwiftLintFramework/Rules/PrivateUnitTestRule.swift
+@@ -143,7 +143,7 @@ public struct PrivateUnitTestRule: ASTRule, ConfigurationProviderRule {
+         let pathMatch = configuration.regex.matches(
+             in: superclass,
+             options: [],
+-            range: NSRange(location: 0, length: (superclass as NSString).length))
++            range: NSRange(location: 0, length: superclass.bridge().length))
+         return !pathMatch.isEmpty
+     }
+ 
