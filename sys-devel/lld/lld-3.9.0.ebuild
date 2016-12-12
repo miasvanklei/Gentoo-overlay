@@ -40,9 +40,6 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
-	# support standalone build
-	eapply "${FILESDIR}"/0001-standalone.patch
-
 	# support local symbols without wildcard
 	eapply "${FILESDIR}"/0002-support-anonymous-local-symbols.patch
 
