@@ -13,16 +13,16 @@ KEYWORDS="x86 amd64"
 IUSE="systemd"
 
 CONTAINERS="c9853bbca9f0840df32a46edebbb9b17c8216cd4"
-DSYMBOL="f6aac6cab1ffebdc2a56321f0c5fed2c896f38c4"
-LIBDPARSE="516a053c9b16d05aee30d2606a88b7f815cd55df"
+DSYMBOL="0605a90a84ac287f879530420c7046cded566b74"
+LIBDPARSE="4d876562b4862a98bf1b6b6bf4fd07af96506a54"
 MSGPACK="878fcb1852160d1c3d206df933f6becba18aa222"
 
 SRC_URI="
 	https://github.com/Hackerpilot/DCD/archive/v${PV}.tar.gz -> DCD-${PV}.tar.gz
-	https://github.com/economicmodeling/containers/archive/${CONTAINERS}.tar.gz -> containers-${CONTAINERS}.tar.gz
 	https://github.com/Hackerpilot/dsymbol/archive/${DSYMBOL}.tar.gz -> dsymbol-${DSYMBOL}.tar.gz
 	https://github.com/Hackerpilot/libdparse/archive/${LIBDPARSE}.tar.gz -> libdparse-${LIBDPARSE}.tar.gz
 	https://github.com/msgpack/msgpack-d/archive/${MSGPACK}.tar.gz -> msgpack-d-${MSGPACK}.tar.gz
+        https://github.com/economicmodeling/containers/archive/${CONTAINERS}.tar.gz -> containers-${CONTAINERS}.tar.gz
 	"
 S="${WORKDIR}/DCD-${PV}"
 
@@ -35,8 +35,7 @@ src_prepare()
 {
 #	eapply ${FILESDIR}/fix-compile.patch
 	default
-
-	mv -T ../containers-${CONTAINERS}            containers                        || die
+        mv -T ../containers-${CONTAINERS}            containers                        || die
 	mv -T ../dsymbol-${DSYMBOL}                  dsymbol                           || die
 	mv -T ../libdparse-${LIBDPARSE}              libdparse                         || die
 	mv -T ../msgpack-d-${MSGPACK}                msgpack-d                         || die
