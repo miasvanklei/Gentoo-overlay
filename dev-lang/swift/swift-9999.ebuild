@@ -64,8 +64,9 @@ src_configure() {
 }
 
 src_compile() {
+	# not all targets are called or in the correct order
+	cmake-utils_src_make swiftSwiftOnoneSupport-linux
 	cmake-utils_src_make
-	# not called?
 	cmake-utils_src_make swiftStdlibUnicodeUnittest-linux
 	cmake-utils_src_make swiftStdlibCollectionUnittest-linux
 }
