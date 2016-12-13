@@ -4,6 +4,8 @@
 
 EAPI=6
 
+MY_PV="${PV//_/-}"
+
 inherit autotools gnome2-utils
 
 DESCRIPTION="A tiling terminal emulator for Linux using GTK+ 3"
@@ -14,11 +16,13 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE="debug"
 
-SRC_URI="https://github.com/gnunn1/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/gnunn1/${PN}/archive/${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 DEPEND="x11-libs/GtkD
 	dev-lang/ldc2"
 RDEPEND="${DEPEND}"
+
+S=${WORKDIR}/${PN}-${MY_PV}
 
 src_prepare() {
 	eautoreconf
