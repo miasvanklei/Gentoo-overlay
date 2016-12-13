@@ -1,0 +1,26 @@
+diff --git a/Sources/Vapor/File/FileManager.swift b/Sources/Vapor/File/FileManager.swift
+index b1ea7074..a36338b1 100644
+--- a/Sources/Vapor/File/FileManager.swift
++++ b/Sources/Vapor/File/FileManager.swift
+@@ -41,7 +41,7 @@ class FileManager {
+         let path = try self.expandPath(path).finished(with: "/")
+         let pattern = strdup(path + "{*,.*}")
+ 
+-        switch glob(pattern, GLOB_MARK | GLOB_NOSORT | GLOB_BRACE, nil, &gt) {
++        switch glob(pattern, GLOB_MARK | GLOB_NOSORT, nil, &gt) {
+         case GLOB_NOMATCH:
+             return [ ]
+         case GLOB_ABORTED:
+diff --git a/Sources/Vapor/Provider/Provider.swift b/Sources/Vapor/Provider/Provider.swift
+index 1c294314..7e652167 100644
+--- a/Sources/Vapor/Provider/Provider.swift
++++ b/Sources/Vapor/Provider/Provider.swift
+@@ -92,7 +92,7 @@ extension Provider {
+             return "Provider"
+         }
+ 
+-        let trimmed = Array(characters).trimmed(["("])
++        let trimmed = Array<Character>(characters).trimmed(["("])
+ 
+         return String(Array(trimmed))
+     }

@@ -1,0 +1,17 @@
+diff --git a/Sources/Core/Strand.swift b/Sources/Core/Strand.swift
+index 57803c21..95e34a07 100644
+--- a/Sources/Core/Strand.swift
++++ b/Sources/Core/Strand.swift
+@@ -26,11 +26,7 @@ public final class Strand {
+         let holder = Unmanaged.passRetained(box)
+         let closurePointer = UnsafeMutableRawPointer(holder.toOpaque())
+ 
+-        #if os(Linux)
+-            var thread: pthread_t = 0
+-        #else
+-            var thread: pthread_t?
+-        #endif
++        var thread: pthread_t?
+ 
+         let result = pthread_create(&thread, nil, runner, closurePointer)
+         // back to optional so works either way (linux vs macos).

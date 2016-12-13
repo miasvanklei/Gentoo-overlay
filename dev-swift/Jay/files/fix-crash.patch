@@ -1,0 +1,15 @@
+diff --git a/Sources/Jay/NativeTypeConversions.swift b/Sources/Jay/NativeTypeConversions.swift
+index 46115f1..3ced7f2 100644
+--- a/Sources/Jay/NativeTypeConversions.swift
++++ b/Sources/Jay/NativeTypeConversions.swift
+@@ -189,9 +189,7 @@ struct NativeTypeConverter {
+             return .boolean(bool)
+             //number
+         case let dbl as FloatingPoint:
+-            guard let double = Double(String(describing: dbl)) else {
+-                throw JayError.unsupportedFloatingPointType(dbl)
+-            }
++            let double : Double = NSString(string: String(describing: dbl)).doubleValue
+             return .number(.double(double))
+         case let int as Int:
+             guard let integer = Int(String(int)) else {
