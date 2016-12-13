@@ -81,3 +81,23 @@ index 7014efd..8fadfaa 100644
  // At the moment CYGWIN pthreads implementation doesn't support the use of
  // constexpr for static allocation versions. The way they define things
  // results in a reinterpret_cast which violates constexpr. Similarly, Android's
+diff --git a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
+index d0c91e100a..8b6e5d426e 100644
+--- a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
++++ b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
+@@ -80,15 +80,9 @@ public func _stdlib_pthread_create_block<Argument, Result>(
+   }
+ }
+ 
+-#if os(Linux) || os(Android)
+-internal func _make_pthread_t() -> pthread_t {
+-  return pthread_t()
+-}
+-#else
+ internal func _make_pthread_t() -> pthread_t? {
+   return nil
+ }
+-#endif
+ 
+ /// Block-based wrapper for `pthread_join`.
+ public func _stdlib_pthread_join<Result>(
