@@ -1,8 +1,8 @@
 diff --git a/CoreFoundation/Base.subproj/CFInternal.h b/CoreFoundation/Base.subproj/CFInternal.h
-index eefe4a6..aed51fa 100644
+index f63a785..28e5337 100644
 --- a/CoreFoundation/Base.subproj/CFInternal.h
 +++ b/CoreFoundation/Base.subproj/CFInternal.h
-@@ -100,7 +100,7 @@ CF_EXTERN_C_BEGIN
+@@ -95,7 +95,7 @@ CF_EXTERN_C_BEGIN
  #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI || DEPLOYMENT_TARGET_LINUX || DEPLOYMENT_TARGET_FREEBSD
  #if TARGET_OS_CYGWIN
  #else
@@ -12,10 +12,10 @@ index eefe4a6..aed51fa 100644
  #include <unistd.h>
  #include <sys/time.h>
 diff --git a/CoreFoundation/Base.subproj/CFRuntime.c b/CoreFoundation/Base.subproj/CFRuntime.c
-index d3d3b35..bc6b1c7 100644
+index 5b3a091..39951a1 100644
 --- a/CoreFoundation/Base.subproj/CFRuntime.c
 +++ b/CoreFoundation/Base.subproj/CFRuntime.c
-@@ -310,7 +310,7 @@ CF_INLINE CFRuntimeBase *_cf_aligned_malloc(size_t align, CFIndex size, const ch
+@@ -302,7 +302,7 @@ CF_INLINE CFRuntimeBase *_cf_aligned_malloc(size_t align, CFIndex size, const ch
      char errorStringBuffer[errorStringBufferLength] = "unknown error";
      const char *errorStringPointer = errorStringBuffer;
      //The GNU-specific version returns a pointer, which may or may not be the pointer passed in. The XSI version returns int. See strerror(3) on Linux.
@@ -25,32 +25,44 @@ index d3d3b35..bc6b1c7 100644
  #endif
      strerror_r(errno, errorStringBuffer, errorStringBufferLength);
 diff --git a/CoreFoundation/Base.subproj/CFUtilities.c b/CoreFoundation/Base.subproj/CFUtilities.c
-index 338e90d..c02c0c2 100644
+index 4e99bc0..6c46540 100644
 --- a/CoreFoundation/Base.subproj/CFUtilities.c
 +++ b/CoreFoundation/Base.subproj/CFUtilities.c
-@@ -1312,7 +1312,7 @@ CFDictionaryRef __CFGetEnvironment() {
+@@ -684,7 +684,7 @@ static void _populateBanner(char **banner, char **time, char **thread, int *bann
+     bannerLen = asprintf(banner, "%04d-%02d-%02d %02d:%02d:%02d.%03d %s[%d:%x] ", year, month, day, hour, minute, second, ms, *_CFGetProgname(), getpid(), GetCurrentThreadId());
+     asprintf(thread, "%x", GetCurrentThreadId());
+ #else
+-    bannerLen = asprintf(banner, "%04d-%02d-%02d %02d:%02d:%02d.%03d %s[%d:%x] ", year, month, day, hour, minute, second, ms, *_CFGetProgname(), getpid(), (unsigned int)pthread_self());
++    bannerLen = asprintf(banner, "%04d-%02d-%02d %02d:%02d:%02d.%03d %s[%d:%x] ", year, month, day, hour, minute, second, ms, *_CFGetProgname(), getpid(), pthread_self());
+     asprintf(thread, "%lx", pthread_self());
+ #endif
+     asprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03d", year, month, day, hour, minute, second, ms);
+@@ -1526,9 +1526,6 @@ CFDictionaryRef __CFGetEnvironment() {
          extern char **environ;
          char **envp = environ;
  #elif DEPLOYMENT_TARGET_LINUX
--#if !defined(environ) && !defined(__ANDROID__)
-+#if !defined(environ) && !defined(__ANDROID__) && defined(__GLIBC__)
- #define environ __environ
- #endif
+-#if !defined(environ) && !TARGET_OS_ANDROID
+-#define environ __environ
+-#endif
          char **envp = environ;
+ #endif
+         envDict = CFDictionaryCreateMutable(kCFAllocatorSystemDefault, 0, &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
 diff --git a/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h b/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
-index 0dfc3c5..fb37b40 100644
+index 5f15195..cae8d06 100644
 --- a/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
 +++ b/CoreFoundation/Base.subproj/CoreFoundation_Prefix.h
-@@ -182,7 +182,7 @@ typedef int		boolean_t;
+@@ -162,8 +162,8 @@ typedef int		boolean_t;
+ #if TARGET_OS_ANDROID
  typedef unsigned long fd_mask;
  #endif
- 
--#if !defined(__ANDROID__) && !TARGET_OS_CYGWIN
-+#if !defined(__ANDROID__) && !TARGET_OS_CYGWIN && defined(__GLIBC__)
+-    
+-#if !TARGET_OS_ANDROID && !TARGET_OS_CYGWIN
++
++#if !TARGET_OS_ANDROID && !TARGET_OS_CYGWIN && defined(__GLIBC__)
  CF_INLINE size_t
  strlcpy(char * dst, const char * src, size_t maxlen) {
      const size_t srclen = strlen(src);
-@@ -210,7 +210,7 @@ strlcat(char * dst, const char * src, size_t maxlen) {
+@@ -191,7 +191,7 @@ strlcat(char * dst, const char * src, size_t maxlen) {
  }
  #endif
  
@@ -60,31 +72,161 @@ index 0dfc3c5..fb37b40 100644
  #endif
      
 diff --git a/CoreFoundation/Base.subproj/ForFoundationOnly.h b/CoreFoundation/Base.subproj/ForFoundationOnly.h
-index 4dba6fc..e019055 100644
+index 14dd5a1..09129e5 100644
 --- a/CoreFoundation/Base.subproj/ForFoundationOnly.h
 +++ b/CoreFoundation/Base.subproj/ForFoundationOnly.h
-@@ -34,6 +34,7 @@
+@@ -29,6 +29,7 @@
  #include <CoreFoundation/CFStreamPriv.h>
  #include <math.h>
  #include <limits.h>
 +#include <sys/types.h>
  
- #define _CF_EXPORT_SCOPE_BEGIN \
- CF_EXTERN_C_BEGIN \
+ #ifndef CF_SWIFT_EXPORT
+ #if DEPLOYMENT_RUNTIME_SWIFT
+diff --git a/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c b/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
+index a9ef705..cd92916 100644
+--- a/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
++++ b/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
+@@ -19,7 +19,6 @@
+ #if TARGET_OS_CYGWIN
+ #else
+ #include <dirent.h>
+-#include <sys/sysctl.h>
+ #include <sys/mman.h>
+ #endif
+ #endif
+diff --git a/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c b/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
+index b82ec82..e709440 100644
+--- a/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
++++ b/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
+@@ -27,7 +27,6 @@
+ 
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI || DEPLOYMENT_TARGET_LINUX
+ #include <unistd.h>
+-#include <sys/sysctl.h>
+ #include <sys/stat.h>
+ #include <dirent.h>
+ #endif
+diff --git a/CoreFoundation/RunLoop.subproj/CFRunLoop.c b/CoreFoundation/RunLoop.subproj/CFRunLoop.c
+index b92c2bf..cf5df40 100644
+--- a/CoreFoundation/RunLoop.subproj/CFRunLoop.c
++++ b/CoreFoundation/RunLoop.subproj/CFRunLoop.c
+@@ -46,7 +46,6 @@ CF_INLINE uint64_t check_uint64_add(uint64_t x, uint64_t y, int32_t* err) {
+ #include <dispatch/private.h>
+ #elif __HAS_DISPATCH__
+ extern dispatch_queue_t _dispatch_runloop_root_queue_create_4CF(const char *_Nullable label, unsigned long flags);
+-extern mach_port_t _dispatch_runloop_root_queue_get_port_4CF(dispatch_queue_t queue);
+ extern void _dispatch_source_set_runloop_timer_4CF(dispatch_source_t source, dispatch_time_t start, uint64_t interval, uint64_t leeway);
+ #endif
+ 
+@@ -90,9 +89,6 @@ DISPATCH_EXPORT void _dispatch_main_queue_callback_4CF(void);
+ #include <sys/eventfd.h>
+ #include <sys/timerfd.h>
+ 
+-dispatch_runloop_handle_t _dispatch_get_main_queue_handle_4CF(void);
+-extern void _dispatch_main_queue_callback_4CF(void *_Null_unspecified msg);
+-
+ #define _dispatch_get_main_queue_port_4CF _dispatch_get_main_queue_handle_4CF
+ #define _dispatch_main_queue_callback_4CF(x) _dispatch_main_queue_callback_4CF(x)
+ #endif
+diff --git a/Foundation/NSHost.swift b/Foundation/NSHost.swift
+index d01151f..ad19ff4 100644
+--- a/Foundation/NSHost.swift
++++ b/Foundation/NSHost.swift
+@@ -74,11 +74,7 @@ open class Host: NSObject {
+             }
+             var hints = addrinfo()
+             hints.ai_family = PF_UNSPEC
+-#if os(OSX) || os(iOS)
+             hints.ai_socktype = SOCK_STREAM
+-#else
+-            hints.ai_socktype = Int32(SOCK_STREAM.rawValue)
+-#endif
+     
+             hints.ai_flags = flags
+             
+diff --git a/Foundation/NSThread.swift b/Foundation/NSThread.swift
+index 3b46fac..d4c132d 100644
+--- a/Foundation/NSThread.swift
++++ b/Foundation/NSThread.swift
+@@ -129,12 +129,12 @@ open class Thread : NSObject {
+     open class func exit() {
+         pthread_exit(nil)
+     }
+-    
++
+     internal var _main: (Void) -> Void = {}
+ #if os(OSX) || os(iOS) || CYGWIN
+     private var _thread: pthread_t? = nil
+ #elseif os(Linux) || os(Android)
+-    private var _thread = pthread_t()
++    private var _thread : pthread_t? = nil
+ #endif
+ #if CYGWIN
+     internal var _attr : pthread_attr_t? = nil
+diff --git a/Foundation/Process.swift b/Foundation/Process.swift
+index c0e1518..9197e2f 100644
+--- a/Foundation/Process.swift
++++ b/Foundation/Process.swift
+@@ -241,11 +241,7 @@ open class Process: NSObject {
+         }
+ 
+         var taskSocketPair : [Int32] = [0, 0]
+-#if os(OSX) || os(iOS)
+         socketpair(AF_UNIX, SOCK_STREAM, 0, &taskSocketPair)
+-#else
+-        socketpair(AF_UNIX, Int32(SOCK_STREAM.rawValue), 0, &taskSocketPair)
+-#endif
+         var context = CFSocketContext()
+         context.version = 0
+         context.retain = runLoopSourceRetain
 diff --git a/build.py b/build.py
-index 293cf11..007b88e 100644
+index ccd9bf1..9c490c2 100644
 --- a/build.py
 +++ b/build.py
-@@ -89,7 +89,7 @@ if triple == "armv7-none-linux-androideabi":
+@@ -16,7 +16,7 @@ foundation.GCC_PREFIX_HEADER = 'CoreFoundation/Base.subproj/CoreFoundation_Prefi
+ swift_cflags = []
+ if Configuration.current.target.sdk == OSType.Linux:
+ 	foundation.CFLAGS = '-DDEPLOYMENT_TARGET_LINUX -D_GNU_SOURCE -DCF_CHARACTERSET_DATA_DIR="CoreFoundation/CharacterSets"'
+-	foundation.LDFLAGS = '${SWIFT_USE_LINKER} -Wl,@./CoreFoundation/linux.ld -lswiftGlibc `${PKG_CONFIG} icu-uc icu-i18n --libs` -Wl,-defsym,__CFConstantStringClassReference=_TMC10Foundation19_NSCFConstantString -Wl,-Bsymbolic '
++	foundation.LDFLAGS = '${SWIFT_USE_LINKER} -Wl,@./CoreFoundation/linux.ld -lswiftGlibc `${PKG_CONFIG} icu-uc icu-i18n --libs` -Wl,-T,String.script -Wl,-Bsymbolic '
+ 	Configuration.current.requires_pkg_config = True
+ elif Configuration.current.target.sdk == OSType.FreeBSD:
+ 	foundation.CFLAGS = '-DDEPLOYMENT_TARGET_FREEBSD -I/usr/local/include -I/usr/local/include/libxml2 -I/usr/local/include/curl '
+@@ -89,22 +89,18 @@ if triple == "armv7-none-linux-androideabi":
  else:
-        foundation.LDFLAGS += '-lpthread '
+ 	foundation.LDFLAGS += '-lpthread '
  
 -foundation.LDFLAGS += '-ldl -lm -lswiftCore -lxml2 '
-+foundation.LDFLAGS += '-ldl -lm -lswiftCore -lxml2 -ldispatch -lfts -lcurl '
++foundation.LDFLAGS += '-ldl -lm -lswiftCore -lxml2 -lfts -ldispatch -lcurl '
  
  # Configure use of Dispatch in CoreFoundation and Foundation if libdispatch is being built
- if "LIBDISPATCH_SOURCE_DIR" in Configuration.current.variables:
-@@ -477,8 +477,6 @@ foundation_tests = SwiftExecutable('TestFoundation', [
+-if "LIBDISPATCH_SOURCE_DIR" in Configuration.current.variables:
+-	foundation.CFLAGS += " "+" ".join([
+-		'-DDEPLOYMENT_ENABLE_LIBDISPATCH',
+-		'-I'+Configuration.current.variables["LIBDISPATCH_SOURCE_DIR"],
+-		'-I'+Configuration.current.variables["LIBDISPATCH_BUILD_DIR"]+'/tests'  # for include of dispatch/private.h in CF
+-	])
+-	swift_cflags += ([
+-		'-DDEPLOYMENT_ENABLE_LIBDISPATCH',
+-		'-I'+Configuration.current.variables["LIBDISPATCH_SOURCE_DIR"],
+-		'-I'+Configuration.current.variables["LIBDISPATCH_BUILD_DIR"]+'/src/swift',
+-		'-Xcc -fblocks'
+-	])
+-	foundation.LDFLAGS += '-ldispatch -L'+Configuration.current.variables["LIBDISPATCH_BUILD_DIR"]+'/src/.libs -rpath \$$ORIGIN '
++foundation.CFLAGS += " "+" ".join([
++	'-DDEPLOYMENT_ENABLE_LIBDISPATCH',
++	'-I/usr/lib/swift'
++])
++swift_cflags += ([
++	'-DDEPLOYMENT_ENABLE_LIBDISPATCH',
++	'-I/usr/lib/swift',
++	'-Xcc -fblocks'
++])
+ 
+ foundation.SWIFTCFLAGS = " ".join(swift_cflags)
+ 
+@@ -480,8 +476,6 @@ foundation_tests = SwiftExecutable('TestFoundation', [
          'Foundation/ProgressFraction.swift',
  ] + glob.glob('./TestFoundation/Test*.swift')) # all TestSomething.swift are considered sources to the test project in the TestFoundation directory
  
@@ -93,3 +235,7 @@ index 293cf11..007b88e 100644
  foundation_tests.add_dependency(foundation_tests_resources)
  foundation.add_phase(foundation_tests_resources)
  foundation.add_phase(foundation_tests)
+--- /dev/null	2016-11-12 21:17:27.702240958 +0100
++++ b/String.script	2016-11-16 14:23:09.535803848 +0100
+@@ -0,0 +1 @@
++__CFConstantStringClassReference = _TMC10Foundation19_NSCFConstantString;

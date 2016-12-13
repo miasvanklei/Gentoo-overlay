@@ -33,13 +33,14 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
 	eapply ${FILESDIR}/fix-build.patch
-	eapply ${FILESDIR}/provide-symbol.patch
+	eapply ${FILESDIR}/fix-queue.patch
 	eapply_user
 }
 
 src_configure() {
 	export DSTROOT=${D}
 	export SWIFT_TARGET=${CHOST}
+	export LIBDISPATCH_SOURCE_DIR=/usr/lib/swift
 	econf --target=${CHOST} release
 }
 
