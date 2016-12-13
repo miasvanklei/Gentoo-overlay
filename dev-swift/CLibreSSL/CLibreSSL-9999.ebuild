@@ -16,15 +16,9 @@ SLOT="0"
 KEYWORDS=""
 IUSE=""
 
-RDEPEND="dev-libs/libdispatch
-        dev-lang/swift
-	dev-util/swift-package-manager
-	dev-libs/corelibs-foundation"
+RDEPEND="dev-lang/swift
+	dev-util/swift-package-manager"
 DEPEND="${RDEPEND}"
-
-src_prepare() {
-	eapply_user
-}
 
 src_compile() {
 	swift build -c release \

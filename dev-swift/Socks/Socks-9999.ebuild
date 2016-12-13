@@ -24,7 +24,7 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
 	eapply ${FILESDIR}/install-lib.patch
-#	eapply ${FILESDIR}/musl.patch
+	eapply ${FILESDIR}/musl.patch
 	eapply_user
 }
 

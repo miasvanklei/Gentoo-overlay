@@ -19,7 +19,8 @@ IUSE=""
 RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
-	dev-libs/corelibs-foundation"
+	dev-libs/corelibs-foundation
+        dev-swift/Runes"
 DEPEND="${RDEPEND}"
 
 src_prepare() {

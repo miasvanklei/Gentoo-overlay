@@ -20,7 +20,7 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
-	dev-swift/Node"
+	dev-swift/Core"
 DEPEND="${RDEPEND}"
 
 src_prepare() {

@@ -22,7 +22,8 @@ RDEPEND="dev-libs/libdispatch
 	dev-libs/corelibs-foundation
 	dev-swift/Core
 	dev-swift/Crypto
-	dev-swift/TLS"
+	dev-swift/TLS
+	dev-swift/Socks"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
