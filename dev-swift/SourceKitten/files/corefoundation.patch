@@ -1,0 +1,22 @@
+diff --git a/Source/SourceKittenFramework/LinuxCompatibility.swift b/Source/SourceKittenFramework/LinuxCompatibility.swift
+index cc71b53..06dbe74 100644
+--- a/Source/SourceKittenFramework/LinuxCompatibility.swift
++++ b/Source/SourceKittenFramework/LinuxCompatibility.swift
+@@ -9,8 +9,6 @@
+ import Foundation
+ 
+ #if os(Linux)
+-public typealias Process = Task
+-public typealias NSRegularExpression = RegularExpression
+ 
+ extension CharacterSet {
+     public func bridge() -> NSCharacterSet {
+@@ -23,7 +21,7 @@ extension TextCheckingResult {
+     }
+ }
+ extension NSString {
+-    public var isAbsolutePath: Bool { return absolutePath }
++    public var isAbsolutePath: Bool { return hasPrefix("~") || hasPrefix("/") }
+ }
+ extension Dictionary {
+     public func bridge() -> NSDictionary {

@@ -21,7 +21,8 @@ RDEPEND="dev-libs/libdispatch
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
 	dev-swift/Core
-	dev-swift/Socks"
+	dev-swift/Socks
+	dev-swift/CLibreSSL"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
