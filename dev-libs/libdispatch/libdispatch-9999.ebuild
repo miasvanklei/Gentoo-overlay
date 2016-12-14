@@ -28,7 +28,7 @@ src_prepare() {
 	rmdir libpwq
 	rmdir libkqueue
 	eapply ${FILESDIR}/fix-compile.patch
-#	eapply ${FILESDIR}/no-link-runtime.patch
+	eapply ${FILESDIR}/fix-segfault.patch
 	eautoreconf
 	eapply_user
 }
