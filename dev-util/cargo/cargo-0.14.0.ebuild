@@ -36,9 +36,5 @@ src_compile() {
 }
 
 src_install() {
-	mkdir -p ${D}/usr
-	cp -r target/snapshot/* ${D}/usr
-	mv ${D}/usr/etc/* ${D}/usr
-	rm -r ${D}/usr/*.in
-	rm -r ${D}/usr/etc
+        dobin target/release/cargo
 }
