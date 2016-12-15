@@ -277,81 +277,6 @@ index a3f9886..3a49782 100644
      auto PreserveKernel = [=](const GlobalValue &GV) {
        for(size_t i = 0;i < kernels.size(); ++i)
          if(strcmp(GV.getName().data(), kernels[i]))
-diff --git a/backend/src/llvm/llvm_gen_backend.cpp b/backend/src/llvm/llvm_gen_backend.cpp
-index 397c721..dce6164 100644
---- a/backend/src/llvm/llvm_gen_backend.cpp
-+++ b/backend/src/llvm/llvm_gen_backend.cpp
-@@ -95,7 +95,7 @@
- #define LLVM_VERSION_MINOR 0
- #endif /* !defined(LLVM_VERSION_MINOR) */
- 
--#if (LLVM_VERSION_MAJOR != 3) || (LLVM_VERSION_MINOR < 3)
-+#if LLVM_VERSION_MAJOR <= 3 && LLVM_VERSION_MINOR < 3
- #error "Only LLVM 3.3 and newer are supported"
- #endif /* (LLVM_VERSION_MAJOR != 3) || (LLVM_VERSION_MINOR > 4) */
- 
-@@ -564,7 +564,7 @@ namespace gbe
-         has_errors(false),
-         legacyMode(true)
-     {
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7 || LLVM_VERSION_MAJOR == 4
-       initializeLoopInfoWrapperPassPass(*PassRegistry::getPassRegistry());
- #else
-       initializeLoopInfoPass(*PassRegistry::getPassRegistry());
-@@ -572,10 +572,14 @@ namespace gbe
-       pass = PASS_EMIT_REGISTERS;
-     }
- 
--    virtual const char *getPassName() const { return "Gen Back-End"; }
-+#if LLVM_VERSION_MAJOR == 4
-+    virtual StringRef getPassName() const { return "Gen Back-End"; }
-+#else
-+    virtual const char *getPassName() const { return "Gen Back-End"; }
-+#endif
- 
-     void getAnalysisUsage(AnalysisUsage &AU) const {
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7 || LLVM_VERSION_MAJOR == 4
-       AU.addRequired<LoopInfoWrapperPass>();
- #else
-       AU.addRequired<LoopInfo>();
-@@ -610,7 +610,7 @@ namespace gbe
-       if (legacyMode)
-         analyzePointerOrigin(F);
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7 || LLVM_VERSION_MAJOR == 4
-       LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
- #else
-       LI = &getAnalysis<LoopInfo>();
-@@ -744,7 +744,7 @@ namespace gbe
-     void visitVAArgInst(VAArgInst &I) {NOT_SUPPORTED;}
-     void visitSwitchInst(SwitchInst &I) {NOT_SUPPORTED;}
-     void visitInvokeInst(InvokeInst &I) {NOT_SUPPORTED;}
--#if LLVM_VERSION_MINOR == 0
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 0
-     void visitUnwindInst(UnwindInst &I) {NOT_SUPPORTED;}
- #endif /* __LLVM_30__ */
-     void visitResumeInst(ResumeInst &I) {NOT_SUPPORTED;}
-@@ -2332,7 +2332,7 @@ namespace gbe
-       Function::arg_iterator I = F.arg_begin(), E = F.arg_end();
- 
-       // Insert a new register for each function argument
--#if LLVM_VERSION_MINOR <= 1
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR <= 1
-       const AttrListPtr &PAL = F.getAttributes();
- #endif /* LLVM_VERSION_MINOR <= 1 */
-       for (; I != E; ++I, ++argID) {
-@@ -2416,7 +2416,7 @@ namespace gbe
-             continue;
-           Type *pointed = pointerType->getElementType();
-           // By value structure
--#if LLVM_VERSION_MINOR <= 1
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR <= 1
-           if (PAL.paramHasAttr(argID+1, Attribute::ByVal)) {
- #else
-           if (I->hasByValAttr()) {
 diff --git a/backend/src/llvm/llvm_gen_backend.hpp b/backend/src/llvm/llvm_gen_backend.hpp
 index f2a278e..e7e532b 100644
 --- a/backend/src/llvm/llvm_gen_backend.hpp
@@ -473,23 +398,6 @@ index e797e98..05259b4 100644
        return "Merge compatible Load/stores for Gen";
      }
    };
-diff --git a/backend/src/llvm/llvm_passes.cpp b/backend/src/llvm/llvm_passes.cpp
-index 02dd4bf..22b4741 100644
---- a/backend/src/llvm/llvm_passes.cpp
-+++ b/backend/src/llvm/llvm_passes.cpp
-@@ -201,7 +201,11 @@ namespace gbe
-       AU.setPreservesCFG();
-     }
- 
--    virtual const char *getPassName() const {
-+#if LLVM_VERSION_MAJOR == 4
-+      virtual StringRef getPassName() const {
-+#else
-+      virtual const char *getPassName() const {
-+#endif
-       return "SPIR backend: insert special spir instructions";
-     }
- 
 diff --git a/backend/src/llvm/llvm_printf_parser.cpp b/backend/src/llvm/llvm_printf_parser.cpp
 index 800f343..5f4c318 100644
 --- a/backend/src/llvm/llvm_printf_parser.cpp
@@ -913,3 +821,172 @@ index 6129909..4f6c420 100644
  add_one_lib("clangSerialization")
  add_one_lib("clangDriver")
  add_one_lib("clangCodeGen")
+diff --git a/backend/src/llvm/llvm_passes.cpp b/backend/src/llvm/llvm_passes.cpp
+index 02dd4bf..b675b03 100644
+--- a/backend/src/llvm/llvm_passes.cpp
++++ b/backend/src/llvm/llvm_passes.cpp
+@@ -42,7 +42,7 @@ namespace gbe
+ {
+   bool isKernelFunction(const llvm::Function &F) {
+     bool bKernel = false;
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+     bKernel = F.getMetadata("kernel_arg_name") != NULL;
+ #else
+     const Module *module = F.getParent();
+@@ -201,7 +201,11 @@ namespace gbe
+       AU.setPreservesCFG();
+     }
+ 
+-    virtual const char *getPassName() const {
++#if LLVM_VERSION_MAJOR == 4
++      virtual StringRef getPassName() const {
++#else
++      virtual const char *getPassName() const {
++#endif
+       return "SPIR backend: insert special spir instructions";
+     }
+ 
+diff --git a/backend/src/CMakeLists.txt b/backend/src/CMakeLists.txt
+index 6ff25e7..1bd9bf2 100644
+--- a/backend/src/CMakeLists.txt
++++ b/backend/src/CMakeLists.txt
+@@ -159,8 +159,9 @@ add_dependencies(gbe beignet_bitcode)
+ endif (NOT (USE_STANDALONE_GBE_COMPILER STREQUAL "true"))
+ 
+ add_library(gbeinterp SHARED gbe_bin_interpreter.cpp)
++target_link_libraries(gbeinterp LLVMSupport)
+ 
+-if (LLVM_VERSION_NODOT VERSION_EQUAL 34)
++if (NOT (LLVM_VERSION_NODOT LESS 34))
+   find_library(TERMINFO NAMES tinfo ncurses)
+   if (${TERMINFO} STREQUAL TERMINFO-NOTFOUND)
+     message(FATAL_ERROR "no libtinfo or libncurses is found in system")
+@@ -168,7 +169,7 @@ if (LLVM_VERSION_NODOT VERSION_EQUAL 34)
+     target_link_libraries(gbe ${TERMINFO})
+     message(STATUS "use ${TERMINFO} as terminal control library")
+   endif (${TERMINFO} STREQUAL TERMINFO-NOTFOUND)
+-endif(LLVM_VERSION_NODOT VERSION_EQUAL 34)
++endif(NOT (LLVM_VERSION_NODOT LESS 34))
+ 
+ link_directories (${LLVM_LIBRARY_DIR} ${DRM_LIBDIR})
+ 
+diff --git a/backend/src/llvm/llvm_gen_backend.cpp b/backend/src/llvm/llvm_gen_backend.cpp
+index d6b0665..3aa97fe 100644
+--- a/backend/src/llvm/llvm_gen_backend.cpp
++++ b/backend/src/llvm/llvm_gen_backend.cpp
+@@ -95,7 +95,7 @@
+ #define LLVM_VERSION_MINOR 0
+ #endif /* !defined(LLVM_VERSION_MINOR) */
+ 
+-#if (LLVM_VERSION_MAJOR != 3) || (LLVM_VERSION_MINOR < 3)
++#if LLVM_VERSION_MAJOR <= 3 && LLVM_VERSION_MINOR < 3
+ #error "Only LLVM 3.3 and newer are supported"
+ #endif /* (LLVM_VERSION_MAJOR != 3) || (LLVM_VERSION_MINOR > 4) */
+ 
+@@ -564,7 +564,7 @@ namespace gbe
+         has_errors(false),
+         legacyMode(true)
+     {
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7 || LLVM_VERSION_MAJOR == 4
+       initializeLoopInfoWrapperPassPass(*PassRegistry::getPassRegistry());
+ #else
+       initializeLoopInfoPass(*PassRegistry::getPassRegistry());
+@@ -572,10 +572,14 @@ namespace gbe
+       pass = PASS_EMIT_REGISTERS;
+     }
+ 
++#if LLVM_VERSION_MAJOR == 4
++    virtual StringRef getPassName() const { return "Gen Back-End"; }
++#else
+     virtual const char *getPassName() const { return "Gen Back-End"; }
++#endif
+ 
+     void getAnalysisUsage(AnalysisUsage &AU) const {
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7 || LLVM_VERSION_MAJOR == 4
+       AU.addRequired<LoopInfoWrapperPass>();
+ #else
+       AU.addRequired<LoopInfo>();
+@@ -610,7 +614,7 @@ namespace gbe
+       if (legacyMode)
+         analyzePointerOrigin(F);
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=7 || LLVM_VERSION_MAJOR == 4
+       LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+ #else
+       LI = &getAnalysis<LoopInfo>();
+@@ -744,7 +748,7 @@ namespace gbe
+     void visitVAArgInst(VAArgInst &I) {NOT_SUPPORTED;}
+     void visitSwitchInst(SwitchInst &I) {NOT_SUPPORTED;}
+     void visitInvokeInst(InvokeInst &I) {NOT_SUPPORTED;}
+-#if LLVM_VERSION_MINOR == 0
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 0
+     void visitUnwindInst(UnwindInst &I) {NOT_SUPPORTED;}
+ #endif /* __LLVM_30__ */
+     void visitResumeInst(ResumeInst &I) {NOT_SUPPORTED;}
+@@ -1271,7 +1275,7 @@ namespace gbe
+     MDNode *typeNameNode = NULL;
+     MDNode *typeBaseNameNode = NULL;
+     MDNode *typeQualNode = NULL;
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+     typeNameNode = F.getMetadata("kernel_arg_type");
+     typeBaseNameNode = F.getMetadata("kernel_arg_base_type");
+     typeQualNode = F.getMetadata("kernel_arg_type_qual");
+@@ -1738,7 +1742,7 @@ namespace gbe
+   {
+     GBE_ASSERT(dyn_cast<ConstantExpr>(CPV) == NULL);
+ 
+-#if LLVM_VERSION_MINOR > 0
++#if LLVM_VERSION_MINOR > 0 || LLVM_VERSION_MAJOR == 4
+     ConstantDataSequential *seq = dyn_cast<ConstantDataSequential>(CPV);
+ 
+     if (seq) {
+@@ -2113,7 +2117,7 @@ namespace gbe
+ 
+     std::string functionAttributes;
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+     /* LLVM 3.9 change kernel arg info as function metadata */
+     addrSpaceNode = F.getMetadata("kernel_arg_addr_space");
+     accessQualNode = F.getMetadata("kernel_arg_access_qual");
+@@ -2332,7 +2336,7 @@ namespace gbe
+       Function::arg_iterator I = F.arg_begin(), E = F.arg_end();
+ 
+       // Insert a new register for each function argument
+-#if LLVM_VERSION_MINOR <= 1
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR <= 1
+       const AttrListPtr &PAL = F.getAttributes();
+ #endif /* LLVM_VERSION_MINOR <= 1 */
+       for (; I != E; ++I, ++argID) {
+@@ -2416,7 +2420,7 @@ namespace gbe
+             continue;
+           Type *pointed = pointerType->getElementType();
+           // By value structure
+-#if LLVM_VERSION_MINOR <= 1
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR <= 1
+           if (PAL.paramHasAttr(argID+1, Attribute::ByVal)) {
+ #else
+           if (I->hasByValAttr()) {
+@@ -3737,7 +3741,7 @@ namespace gbe
+           break;
+           case Intrinsic::stackrestore:
+           break;
+-#if LLVM_VERSION_MINOR >= 2
++#if LLVM_VERSION_MINOR >= 2 || LLVM_VERSION_MAJOR == 4
+           case Intrinsic::lifetime_start:
+           case Intrinsic::lifetime_end:
+           break;
+@@ -4494,7 +4498,7 @@ namespace gbe
+             ctx.MOV(ir::getType(family), dst, src);
+           }
+           break;
+-#if LLVM_VERSION_MINOR >= 2
++#if LLVM_VERSION_MINOR >= 2 || LLVM_VERSION_MAJOR == 4
+           case Intrinsic::lifetime_start:
+           case Intrinsic::lifetime_end:
+           break;

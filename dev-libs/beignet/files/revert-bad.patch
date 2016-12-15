@@ -1,0 +1,55 @@
+--- b/src/intel/intel_driver.c
++++ a/src/intel/intel_driver.c
+@@ -139,22 +139,11 @@
+ {
+   driver->ctx = drm_intel_gem_context_create(driver->bufmgr);
+   assert(driver->ctx);
+-  driver->null_bo = NULL;
+-#ifdef HAS_BO_SET_SOFTPIN
+-  drm_intel_bo *bo = dri_bo_alloc(driver->bufmgr, "null_bo", 64*1024, 4096);
+-  drm_intel_bo_set_softpin_offset(bo, 0);
+-  // don't reuse it, that would make two bo trying to bind to same address,
+-  // which is un-reasonable.
+-  drm_intel_bo_disable_reuse(bo);
+-  driver->null_bo = bo;
+-#endif
+ }
+ 
+ static void
+ intel_driver_context_destroy(intel_driver_t *driver)
+ {
+-  if (driver->null_bo)
+-    drm_intel_bo_unreference(driver->null_bo);
+   if(driver->ctx)
+     drm_intel_gem_context_destroy(driver->ctx);
+   driver->ctx = NULL;
+--- b/src/intel/intel_driver.h
++++ a/src/intel/intel_driver.h
+@@ -79,7 +79,6 @@
+ {
+   dri_bufmgr *bufmgr;
+   drm_intel_context *ctx;
+-  drm_intel_bo *null_bo;
+   int fd;
+   int device_id;
+   int gen_ver;
+--- b/src/intel/intel_gpgpu.c
++++ a/src/intel/intel_gpgpu.c
+@@ -975,7 +975,6 @@
+   size_aux = ALIGN(size_aux, 4096);
+ 
+   bo = dri_bo_alloc(gpgpu->drv->bufmgr, "AUX_BUFFER", size_aux, 4096);
+-
+   if (!bo || dri_bo_map(bo, 1) != 0) {
+     fprintf(stderr, "%s:%d: %s.\n", __FILE__, __LINE__, strerror(errno));
+     if (bo)
+@@ -2051,9 +2050,6 @@
+ intel_gpgpu_states_setup(intel_gpgpu_t *gpgpu, cl_gpgpu_kernel *kernel)
+ {
+   gpgpu->ker = kernel;
+-  if (gpgpu->drv->null_bo)
+-    intel_gpgpu_setup_bti(gpgpu, gpgpu->drv->null_bo, 0, 64*1024, 0xfe, I965_SURFACEFORMAT_RAW);
+-
+   intel_gpgpu_build_idrt(gpgpu, kernel);
+   dri_bo_unmap(gpgpu->aux_buf.bo);
+ }
