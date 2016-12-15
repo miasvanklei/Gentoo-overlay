@@ -38,9 +38,9 @@ DEPEND="${COMMON}
 	virtual/pkgconfig"
 
 PATCHES=(
+	"${FILESDIR}"/revert-bad.patch
 	"${FILESDIR}"/no-debian-multiarch.patch
 	"${FILESDIR}"/beignet-1.2.0_no-hardcoded-cflags.patch
-	"${FILESDIR}"/llvm-terminfo.patch
 	"${FILESDIR}"/musl-fixes.patch
 	"${FILESDIR}"/llvm-4.0.patch
 )
