@@ -1,0 +1,22 @@
+diff --git a/gen/dibuilder.cpp b/gen/dibuilder.cpp
+index ab76ba01..88398743 100644
+--- a/gen/dibuilder.cpp
++++ b/gen/dibuilder.cpp
+@@ -780,7 +780,7 @@ void ldc::DIBuilder::EmitCompileUnit(Module *m) {
+   CUNode = DBuilder.createCompileUnit(
+       global.params.symdebug == 2 ? llvm::dwarf::DW_LANG_C
+                                   : llvm::dwarf::DW_LANG_D,
+-      llvm::sys::path::filename(srcpath), llvm::sys::path::parent_path(srcpath),
++      DBuilder.createFile(llvm::sys::path::filename(srcpath), llvm::sys::path::parent_path(srcpath)),
+       "LDC (http://wiki.dlang.org/LDC)",
+       isOptimizationEnabled(), // isOptimized
+       llvm::StringRef(),       // Flags TODO
+@@ -1212,7 +1212,7 @@ void ldc::DIBuilder::EmitGlobalVariable(llvm::GlobalVariable *llVar,
+ #if LDC_LLVM_VER >= 400
+   auto DIVar =
+ #endif
+-      DBuilder.createGlobalVariable(
++      DBuilder.createGlobalVariableExpression(
+ #if LDC_LLVM_VER >= 306
+           GetCU(), // context
+ #endif

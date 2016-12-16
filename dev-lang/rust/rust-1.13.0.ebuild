@@ -70,7 +70,7 @@ EOF
 		eapply "${FILESDIR}"/dont-install-crtfiles.patch
 	fi
 
-	eapply "${FILESDIR}"/link-llvm-static.patch
+	eapply "${FILESDIR}"/link-llvm-shared.patch
 	eapply "${FILESDIR}"/llvm-with-ffi.patch
 	eapply "${FILESDIR}"/link-with-libcxx.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
@@ -79,6 +79,7 @@ EOF
 	eapply "${FILESDIR}"/outdated-stuff.patch
 	eapply "${FILESDIR}"/run-rustfmt.patch
 	eapply "${FILESDIR}"/llvm-4.0-support.patch
+	eapply "${FILESDIR}"/llvm-4.0-support-1.patch
 
 	eapply_user
 }
