@@ -270,19 +270,6 @@ index b0c546ed50..47bb49dec2 100644
    SWIFT_COMPONENT tools
  )
  
-diff --git a/stdlib/public/core/CMakeLists.txt b/stdlib/public/core/CMakeLists.txt
-index fc49842db8..5417f23a55 100644
---- a/stdlib/public/core/CMakeLists.txt
-+++ b/stdlib/public/core/CMakeLists.txt
-@@ -216,6 +216,8 @@ add_swift_library(swiftCore ${SWIFT_STDLIB_LIBRARY_BUILD_TYPES} IS_STDLIB IS_STD
-   # directory, but is not sufficient to cause the object file to be rebuilt
-   # when the shim header changes.  Therefore, we pass both the target
-   # and the generated directory as dependencies.
-+  LLVM_COMPONENT_DEPENDS
-+    Support
-   FILE_DEPENDS
-     copy_shim_headers "${SWIFTLIB_DIR}/shims"
-     section_magic
 diff --git a/stdlib/public/SwiftRemoteMirror/CMakeLists.txt b/stdlib/public/SwiftRemoteMirror/CMakeLists.txt
 index 260d04e0f9..0d7f8cf1f3 100644
 --- a/stdlib/public/SwiftRemoteMirror/CMakeLists.txt
@@ -304,7 +291,7 @@ index fc49842db8..e5210337be 100644
    SWIFT_COMPILE_FLAGS ${swift_stdlib_compile_flags}
    LINK_FLAGS ${swift_core_link_flags}
 -  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries}
-+  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries} "-lLLVMSupport"
++  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries} "-lLLVMSupport -lobjc"
    INCORPORATE_OBJECT_LIBRARIES swiftRuntime swiftStdlibStubs
    FRAMEWORK_DEPENDS ${swift_core_framework_depends}
    INSTALL_IN_COMPONENT stdlib)

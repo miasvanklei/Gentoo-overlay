@@ -25,7 +25,8 @@ RDEPEND="
 	sys-libs/zlib
 	sys-libs/ncurses
 	>=sys-devel/clang-3.9.0
-	>=sys-devel/llvm-3.9.0"
+	>=sys-devel/llvm-3.9.0
+	gnustep-base/libobjc2"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
@@ -39,6 +40,7 @@ src_prepare() {
 	eapply ${FILESDIR}/glibc-modulemap.patch
 	eapply ${FILESDIR}/shared-support.patch
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
+	eapply ${FILESDIR}/fix-ndebug.patch
 	default
 }
 

@@ -76,6 +76,7 @@ multilib_src_configure() {
 
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_PREFIX="${VENDOR_DIR}"
+		-DENABLE_GL_SHARING=TRUE
 	)
 
 	cmake-utils_src_configure

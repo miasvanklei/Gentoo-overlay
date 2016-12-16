@@ -24,7 +24,6 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
         eapply ${FILESDIR}/install-lib.patch
-        eapply ${FILESDIR}/fix-crash.patch
 	eapply_user
 }
 
