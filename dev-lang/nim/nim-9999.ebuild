@@ -86,7 +86,7 @@ src_install() {
 	doexe tools/niminst/niminst
 	doexe tools/nimgrep
 	doexe compiler/nimfix/nimfix
-	doexe compiler/nimsuggest/nimsuggest
+	doexe tools/nimsuggest/nimsuggest
 	insinto /usr/share/nim/lib
 	doins -r compiler
 	doins -r doc
