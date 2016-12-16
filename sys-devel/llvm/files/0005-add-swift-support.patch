@@ -685,43 +685,8 @@
 +} // end namespace llvm
 +
 +#endif
---- a/lib/Bitcode/Reader/BitcodeReader.cpp	2016-11-15 11:00:03.517108485 +0100
-+++ b/lib/Bitcode/Reader/BitcodeReader.cpp	2016-11-15 10:56:16.531267893 +0100
-@@ -2614,6 +2614,23 @@
-       if (Tag >= 1u << 16 || Version != 0)
-         return error("Invalid record");
- 
-+      // Deprecated internal hack to support serializing MDModule.
-+      // This node has since been deleted.
-+      // Upgrading this node is not officially supported.  This code
-+      // may be removed in the future.
-+      if (Tag == dwarf::DW_TAG_module) {
-+        if (Record.size() != 6)
-+          return error("Invalid record");
-+
-+        MetadataList.assignValue(
-+            GET_OR_DISTINCT(DIModule,
-+                            (Context, getMDOrNull(Record[4]),
-+                             getMDString(Record[5]), nullptr,
-+                             nullptr, nullptr)),
-+            NextMetadataNo++);
-+        break;
-+      }
-+
-       auto *Header = getMDString(Record[3]);
-       SmallVector<Metadata *, 8> DwarfOps;
-       for (unsigned I = 4, E = Record.size(); I != E; ++I)
 --- a/lib/CodeGen/AsmPrinter/DwarfUnit.cpp	2016-11-15 10:59:17.950806194 +0100
 +++ b/lib/CodeGen/AsmPrinter/DwarfUnit.cpp	2016-11-15 10:56:16.536267686 +0100
-@@ -673,6 +673,8 @@
-     return getOrCreateTypeDIE(T);
-   if (auto *NS = dyn_cast<DINamespace>(Context))
-     return getOrCreateNameSpace(NS);
-+  if (auto *M = dyn_cast<DIModule>(Context))
-+    return getOrCreateModule(M);
-   if (auto *SP = dyn_cast<DISubprogram>(Context))
-     return getOrCreateSubprogramDIE(SP);
-   if (auto *M = dyn_cast<DIModule>(Context))
 @@ -987,6 +989,13 @@
    if (!Name.empty())
      addString(Buffer, dwarf::DW_AT_name, Name);
