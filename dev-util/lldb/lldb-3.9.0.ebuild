@@ -46,6 +46,7 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-includes.patch
 	eapply ${FILESDIR}/fix-resourcedir.patch
 	eapply ${FILESDIR}/add-d-support.patch
+	eapply ${FILESDIR}/llvm-4.0.patch
 	eapply_user
 }
 
