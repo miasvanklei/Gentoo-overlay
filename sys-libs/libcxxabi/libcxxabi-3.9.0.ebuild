@@ -19,7 +19,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="+compiler-rt +libunwind +static-libs"
 
-DEPEND="libunwind? ( ~sys-libs/llvm-libunwind-${PV}[static-libs?,${MULTILIB_USEDEP}] )
+DEPEND="libunwind? ( ~sys-libs/libunwind-${PV}[static-libs?,${MULTILIB_USEDEP}] )
 	compiler-rt? ( ~sys-libs/compiler-rt-${PV} )
 	~sys-libs/libcxx-${PV}[static-libs?,${MULTILIB_USEDEP}]"
 RDEPEND="${DEPEND}"
