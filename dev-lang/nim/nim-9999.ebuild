@@ -92,7 +92,7 @@ src_install() {
 	doins -r doc
 	insinto /usr/share/nim/lib/wrappers
 	doins -r lib/wrappers/linenoise
-	rm -r "${D}"/usr/share/nim/lib/compiler/{nimfix/nimcache,nimfix/nimfix,nimsuggest,nim,nim0,nim1}
+	rm -r "${D}"/usr/share/nim/lib/compiler/{nimfix/nimcache,nimfix/nimfix,nim,nim0,nim1}
 
 	if use doc; then
 		dohtml doc/*.html
