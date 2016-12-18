@@ -1,0 +1,16 @@
+diff --git a/src/client/composer/composer-container.vala b/src/client/composer/composer-container.vala
+index da82724d..3d14c926 100644
+--- a/src/client/composer/composer-container.vala
++++ b/src/client/composer/composer-container.vala
+@@ -87,8 +87,9 @@ public interface ComposerContainer {
+         // Now add our actions to the window and their accelerators
+         foreach (string action in ComposerWidget.action_accelerators.get_keys()) {
+             this.top_window.add_action(composer.get_action(action));
+-            app.set_accels_for_action("win." + action,
+-                                      ComposerWidget.action_accelerators[action].to_array());
++            foreach(string result in ComposerWidget.action_accelerators[action].to_array()) {
++                app.add_accelerator(result, "win." + action, null);
++            }
+         }
+     }
+ 

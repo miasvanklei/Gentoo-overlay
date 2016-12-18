@@ -46,6 +46,10 @@ DEPEND="${DEPEND}
 
 src_prepare() {
 	eapply ${FILESDIR}/vapigen.patch
+	eapply ${FILESDIR}/fix-missing-symbol.patch
+	eapply ${FILESDIR}/disable-fatal-warnings.patch
+	eapply ${FILESDIR}/fix-segfault.patch
+
 	local i
 	if use nls ; then
 		if [[ -n "${LINGUAS+x}" ]] ; then
@@ -72,6 +76,7 @@ src_configure() {
 		-DVALA_EXECUTABLE="${VALAC}"
 		-DWITH_UNITY=OFF
 		-DDESKTOP_VALIDATE=OFF
+		-DNO_FATAL_WARNINGS=TRUE
 	)
 
 	cmake-utils_src_configure

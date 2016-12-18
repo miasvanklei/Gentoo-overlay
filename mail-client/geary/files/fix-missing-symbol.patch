@@ -1,0 +1,37 @@
+diff --git a/src/client/web-process/util-webkit.vala b/src/client/web-process/util-webkit.vala
+index 20e32e9d..124339d0 100644
+--- a/src/client/web-process/util-webkit.vala
++++ b/src/client/web-process/util-webkit.vala
+@@ -24,7 +24,7 @@ namespace Util.DOM {
+     public WebKit.DOM.HTMLElement? clone_node(WebKit.DOM.Node node, bool deep = true) {
+         WebKit.DOM.HTMLElement? clone = null;
+         try {
+-            clone = node.clone_node(deep) as WebKit.DOM.HTMLElement;
++            clone = node.clone_node_with_error(deep) as WebKit.DOM.HTMLElement;
+         } catch (Error err) {
+             debug("Error selecting cloning node: %s", err.message);
+         }
+@@ -147,7 +147,7 @@ namespace Util.DOM {
+                             new_nodes.add(anchor);
+                         } else {
+                             // Text part.
+-                            WebKit.DOM.Node new_node = node.clone_node(false);
++                            WebKit.DOM.Node new_node = node.clone_node_with_error(false);
+                             new_node.set_node_value(pieces[i]);
+                             new_nodes.add(new_node);
+                         }
+diff --git a/src/client/web-process/util-composer.vala b/src/client/web-process/util-composer.vala
+index 4d87eaf1..dfbb1b3b 100644
+--- a/src/client/web-process/util-composer.vala
++++ b/src/client/web-process/util-composer.vala
+@@ -308,8 +308,8 @@ namespace Util.Composer {
+             return;
+         }
+ 
+-        left = node.clone_node(false);
+-        right = node.clone_node(false);
++        left = node.clone_node_with_error(false);
++        right = node.clone_node_with_error(false);
+ 
+         // Move the first $offset children to the left node.
+         for (long i = 0; i < offset; i++)
