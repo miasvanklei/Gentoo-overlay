@@ -1,0 +1,83 @@
+diff --git a/src/internal/pthread_impl.h b/src/internal/pthread_impl.h
+index 757b86ad..e1f5f5be 100644
+--- a/src/internal/pthread_impl.h
++++ b/src/internal/pthread_impl.h
+@@ -12,6 +12,8 @@
+ 
+ #define pthread __pthread
+ 
++struct thread_local_dtor;
++
+ struct pthread {
+ 	struct pthread *self;
+ 	void **dtv, *unused1, *unused2;
+@@ -48,6 +50,7 @@ struct pthread {
+ 	void *stdio_locks;
+ 	uintptr_t canary_at_end;
+ 	void **dtv_copy;
++       struct thread_local_dtor* thread_local_dtors;
+ };
+ 
+ struct __timer {
+diff --git a/src/thread/__cxa_thread_atexit_impl.c b/src/thread/__cxa_thread_atexit_impl.c
+new file mode 100644
+index 00000000..e7af14eb
+--- /dev/null
++++ b/src/thread/__cxa_thread_atexit_impl.c
+@@ -0,0 +1,35 @@
++#include <stddef.h>
++#include "pthread_impl.h"
++#include <malloc.h>
++
++struct thread_local_dtor {
++  void (*func) (void *);
++  void *arg;
++  void *dso_handle; // unused...
++  struct thread_local_dtor* next;
++};
++
++int __cxa_thread_atexit_impl(void (*func) (void *), void *arg, void *dso_handle) {
++  struct thread_local_dtor *dtor = malloc(sizeof *dtor);
++
++  dtor->func = func;
++  dtor->arg = arg;
++  dtor->dso_handle = dso_handle;
++
++  pthread_t self = __pthread_self();
++  dtor->next = self->thread_local_dtors;
++  self->thread_local_dtors = dtor;
++
++  return 0;
++}
++
++__attribute__((__visibility__("hidden"))) void __cxa_thread_finalize() {
++  pthread_t self = __pthread_self();
++  while (self->thread_local_dtors != NULL) {
++    struct thread_local_dtor* current = self->thread_local_dtors;
++    self->thread_local_dtors = current->next;
++
++    current->func(current->arg);
++    free(current);
++  }
++}
+diff --git a/src/thread/pthread_create.c b/src/thread/pthread_create.c
+index 49f2f729..b31137b3 100644
+--- a/src/thread/pthread_create.c
++++ b/src/thread/pthread_create.c
+@@ -9,6 +9,7 @@
+ void *__mmap(void *, size_t, int, int, int, off_t);
+ int __munmap(void *, size_t);
+ int __mprotect(void *, size_t, int);
++void __cxa_thread_finalize();
+ 
+ static void dummy_0()
+ {
+@@ -21,6 +22,8 @@ weak_alias(dummy_0, __dl_thread_cleanup);
+ 
+ _Noreturn void __pthread_exit(void *result)
+ {
++	__cxa_thread_finalize();
++
+ 	pthread_t self = __pthread_self();
+ 	sigset_t set;
+ 
