@@ -25,7 +25,7 @@ src_prepare() {
 
 src_configure() {
 	# disable stack protector, crash otherwise
-#        append-cflags "-fno-stack-protector"
+        append-cflags "-fno-stack-protector"
 	python_setup
         waf-utils_src_configure
 }
