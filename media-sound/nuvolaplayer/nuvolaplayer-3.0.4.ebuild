@@ -34,7 +34,8 @@ DEPEND="${RDEPEND}
 "
 
 src_prepare() {
-	epatch ${FILESDIR}/fix-stupid-options.patch
+	eapply ${FILESDIR}/fix-stupid-options.patch
+	eapply_user
 	vala_src_prepare
 }
 
