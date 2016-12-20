@@ -89,3 +89,12 @@ index 3894f10682..078866b9ca 100644
        Flags, MajorRuntimeVersion, SplitName,
        Opts.DebugInfoKind > IRGenDebugInfoKind::LineTables
            ? llvm::DICompileUnit::FullDebug
+@@ -1017,7 +1017,7 @@ void IRGenDebugInfo::emitGlobalVariableDeclaration(
+ 
+   // Emit it as global variable of the current module.
+   auto *Expr = Var ? nullptr : DBuilder.createConstantValueExpression(0);
+-  auto *GV = DBuilder.createGlobalVariable(MainModule, Name, LinkageName, File,
++  auto *GV = DBuilder.createGlobalVariableExpression(MainModule, Name, LinkageName, File,
+                                            L.Line, Ty, IsLocalToUnit, Expr);
+   if (Var)
+     Var->addDebugInfo(GV);
