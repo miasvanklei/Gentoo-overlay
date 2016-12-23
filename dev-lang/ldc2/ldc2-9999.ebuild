@@ -27,7 +27,6 @@ src_prepare() {
 	eapply ${FILESDIR}/use-init-array.patch
 	eapply ${FILESDIR}/remove-backtrace.patch
 	eapply ${FILESDIR}/remove-qsort_r.patch
-	eapply ${FILESDIR}/llvm-4.0.patch
 	default
 }
 
