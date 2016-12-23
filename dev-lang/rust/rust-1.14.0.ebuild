@@ -76,8 +76,6 @@ EOF
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 
 	# llvm 4.0
-	eapply "${FILESDIR}"/outdated-stuff.patch
-	eapply "${FILESDIR}"/run-rustfmt.patch
 	eapply "${FILESDIR}"/llvm-4.0-support.patch
 	eapply "${FILESDIR}"/llvm-4.0-support-1.patch
 

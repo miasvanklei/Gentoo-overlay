@@ -1,15 +1,23 @@
 --- a/src/libstd/lib.rs	2016-11-10 16:38:41.460851478 +0100
 +++ b/src/libstd/lib.rs	2016-11-10 16:38:59.136786859 +0100
-@@ -321,9 +321,6 @@
+@@ -245,7 +245,6 @@
+ #![feature(collections)]
+ #![feature(collections_bound)]
+ #![feature(collections_range)]
+-#![feature(compiler_builtins_lib)]
+ #![feature(const_fn)]
+ #![feature(core_float)]
+ #![feature(core_intrinsics)]
+@@ -333,9 +332,6 @@
  #[cfg(stage0)]
  extern crate alloc_system;
  
 -// compiler-rt intrinsics
 -extern crate compiler_builtins;
 -
- // Make std testable by not duplicating lang items and other globals. See #2912
- #[cfg(test)] extern crate std as realstd;
- 
+ // During testing, this crate is not actually the "real" std library, but rather
+ // it links to the real std library, which was compiled from this same source
+ // code. So any lang items std defines are conditionally excluded (or else they
 --- a/src/libstd/Cargo.toml	2016-11-10 16:36:43.186296681 +0100
 +++ b/src/libstd/Cargo.toml	2016-11-10 16:36:58.511237638 +0100
 @@ -19,7 +19,6 @@
@@ -20,26 +28,3 @@
  rustc_unicode = { path = "../librustc_unicode" }
  unwind = { path = "../libunwind" }
  
---- a/src/bootstrap/compile.rs	2016-11-11 16:12:10.863659676 +0100
-+++ b/src/bootstrap/compile.rs	2016-11-11 16:12:28.412621850 +0100
-@@ -40,20 +40,6 @@
-     let libdir = build.sysroot_libdir(compiler, target);
-     let _ = fs::remove_dir_all(&libdir);
-     t!(fs::create_dir_all(&libdir));
--    // FIXME(stage0) remove this `if` after the next snapshot
--    // The stage0 compiler still passes the `-lcompiler-rt` flag to the linker but now `bootstrap`
--    // never builds a `libcopmiler-rt.a`! We'll fill the hole by simply copying stage0's
--    // `libcompiler-rt.a` to where the stage1's one is expected (though we could as well just use
--    // an empty `.a` archive). Note that the symbols of that stage0 `libcompiler-rt.a` won't make
--    // it to the final binary because now `libcore.rlib` also contains the symbols that
--    // `libcompiler-rt.a` provides. Since that rlib appears first in the linker arguments, its
--    // symbols are used instead of `libcompiler-rt.a`'s.
--    if compiler.stage == 0 {
--        let rtlib = &staticlib("compiler-rt", target);
--        let src = build.rustc.parent().unwrap().parent().unwrap().join("lib").join("rustlib")
--            .join(target).join("lib").join(rtlib);
--        copy(&src, &libdir.join(rtlib));
--    }
- 
-     // Some platforms have startup objects that may be required to produce the
-     // libstd dynamic library, for example.

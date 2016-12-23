@@ -52,32 +52,32 @@ index bb2be24..b3a4271 100644
  
  pub mod debuginfo {
 -    pub use self::DIDescriptorFlags::*;
-     use super::{MetadataRef};
+     use super::MetadataRef;
  
      #[allow(missing_copy_implementations)]
-@@ -462,24 +461,39 @@ pub mod debuginfo {
+@@ -426,24 +426,38 @@
      pub type DIEnumerator = DIDescriptor;
      pub type DITemplateTypeParameter = DIDescriptor;
  
 -    #[derive(Copy, Clone)]
 -    pub enum DIDescriptorFlags {
--      FlagPrivate            = 1 << 0,
--      FlagProtected          = 1 << 1,
--      FlagFwdDecl            = 1 << 2,
--      FlagAppleBlock         = 1 << 3,
--      FlagBlockByrefStruct   = 1 << 4,
--      FlagVirtual            = 1 << 5,
--      FlagArtificial         = 1 << 6,
--      FlagExplicit           = 1 << 7,
--      FlagPrototyped         = 1 << 8,
--      FlagObjcClassComplete  = 1 << 9,
--      FlagObjectPointer      = 1 << 10,
--      FlagVector             = 1 << 11,
--      FlagStaticMember       = 1 << 12,
--      FlagIndirectVariable   = 1 << 13,
--      FlagLValueReference    = 1 << 14,
--      FlagRValueReference    = 1 << 15
-+    // These values **must** match with LLVMRustDIFlags!!
+-        FlagPrivate = 1 << 0,
+-        FlagProtected = 1 << 1,
+-        FlagFwdDecl = 1 << 2,
+-        FlagAppleBlock = 1 << 3,
+-        FlagBlockByrefStruct = 1 << 4,
+-        FlagVirtual = 1 << 5,
+-        FlagArtificial = 1 << 6,
+-        FlagExplicit = 1 << 7,
+-        FlagPrototyped = 1 << 8,
+-        FlagObjcClassComplete = 1 << 9,
+-        FlagObjectPointer = 1 << 10,
+-        FlagVector = 1 << 11,
+-        FlagStaticMember = 1 << 12,
+-        FlagIndirectVariable = 1 << 13,
+-        FlagLValueReference = 1 << 14,
+-        FlagRValueReference = 1 << 15,
++// These values **must** match with LLVMRustDIFlags!!
 +    bitflags! {
 +        #[repr(C)]
 +        #[derive(Debug, Default)]
@@ -108,7 +108,6 @@ index bb2be24..b3a4271 100644
 +
 +            // #if LLVM_VERSION_GE(4, 0)
 +            // FlagNoReturn            = (1 << 20),
-+            // #endif
 +        }
      }
  }
@@ -1354,8 +1353,8 @@ index e884ec0..e488b43 100644
  // option. This file may not be copied, modified, or distributed
  // except according to those terms.
  
--use llvm::{self, ValueRef};
-+use llvm::{self, ValueRef, AttributePlace};
+-use llvm::{self, ValueRef, Integer, Pointer, Float, Double, Struct, Array, Vector};
++use llvm::{self, ValueRef, Integer, Pointer, Float, Double, Struct, Array, Vector, AttributePlace};
  use base;
  use build::AllocaFcx;
  use common::{type_is_fat_ptr, BlockAndBuilder, C_uint};
@@ -1654,9 +1653,9 @@ index 3399014..7f2fdbf 100644
  
  use llvm::{Integer, Pointer, Float, Double};
 -use llvm::{Struct, Array, Attribute, Vector};
--use abi::{ArgType, FnType};
+-use abi::{self, ArgType, FnType};
 +use llvm::{Struct, Array, Vector};
-+use abi::{ArgType, ArgAttribute, FnType};
++use abi::{self, ArgType, ArgAttribute, FnType};
  use context::CrateContext;
  use type_::Type;
  
