@@ -29,9 +29,9 @@ index 2bf9abc..fc97d8e 100644
 --- a/ELF/SymbolTable.h
 +++ b/ELF/SymbolTable.h
 @@ -102,7 +102,7 @@ private:
-   std::vector<SymbolBody *> findAllDemangled(StringRef GlobPat);
+   std::vector<SymbolBody *> findAllByVersion(SymbolVersion Ver);
  
-   void initDemangledSyms();
+   llvm::StringMap<std::vector<SymbolBody *>> &getDemangledSyms();
 -  void handleAnonymousVersion();
 +  void handleAnonymousVersion(std::vector<SymbolVersion> &symbolversions, size_t Version);
    void assignExactVersion(SymbolVersion Ver, uint16_t VersionId,
@@ -81,7 +81,7 @@ diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
 index 2d727358..4dbcdfcb 100644
 --- a/ELF/SymbolTable.cpp
 +++ b/ELF/SymbolTable.cpp
-@@ -612,16 +612,24 @@ SymbolTable<ELFT>::findAllByVersion(SymbolVersion Ver) {
+@@ -608,15 +608,22 @@ SymbolTable<ELFT>::findAllByVersion(SymbolVersion Ver) {
  // but just specifies symbols visibilities. We assume that the script was
  // in the form of { global: foo; bar; local *; }. So, local is default.
  // In this function, we make specified symbols global.
@@ -102,13 +102,10 @@ index 2d727358..4dbcdfcb 100644
        continue;
      }
 -    for (SymbolBody *B : findByVersion(Ver))
--      if (B)
--        B->symbol()->VersionId = VER_NDX_GLOBAL;
+-      B->symbol()->VersionId = VER_NDX_GLOBAL;
 +    for (SymbolBody *B : findByVersion(Ver)) {
-+      if (B) {
-+        B->symbol()->VersionId = Version;
-+        B->symbol()->VersionScriptProcessed = true;
-+      }
++      B->symbol()->VersionId = Version;
++      B->symbol()->VersionScriptProcessed = true;
 +    }
    }
  }
