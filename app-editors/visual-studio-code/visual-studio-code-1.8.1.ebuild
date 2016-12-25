@@ -40,6 +40,25 @@ ARCH=$(uname -m)
 [[ ${ARCH} == "x86_64" ]] && S="${WORKDIR}/VSCode-linux-x64"
 [[ ${ARCH} != "x86_64" ]] && S="${WORKDIR}/VSCode-linux-ia32"
 
+
+node_compile()
+{
+	npm install $@ --nodedir=/usr/include/electron/node || die
+}
+
+src_compile()
+{
+        elog "recompile node modules with binaries"
+	node_compile native-keymap
+	node_compile gc-signals
+	node_compile oniguruma
+	node_compile pty.js
+
+        rm -r resources/app/node_modules/{native-keymap,gc-signals,oniguruma,pty.js} || die
+        find node_modules/* -name "*obj.target*" -exec rm -r "{}" \;
+        cp -r node_modules/* resources/app/node_modules || die
+}
+
 src_install(){
 	insinto "/opt/${PN}"
 	doins -r resources/app
