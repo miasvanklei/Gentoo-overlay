@@ -27,6 +27,7 @@ DEPEND="
 	x11-libs/cairo
 	gnome-base/gconf
 	x11-libs/libXtst
+	=net-libs/nodejs-6.3.0
 "
 
 RDEPEND="
