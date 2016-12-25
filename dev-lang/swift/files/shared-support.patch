@@ -113,21 +113,25 @@ diff --git a/tools/sil-opt/CMakeLists.txt b/tools/sil-opt/CMakeLists.txt
 index f2ccbb8fbf..2035301be0 100644
 --- a/tools/sil-opt/CMakeLists.txt
 +++ b/tools/sil-opt/CMakeLists.txt
-@@ -1,11 +1,23 @@
+@@ -1,8 +1,12 @@
  add_swift_host_tool(sil-opt
    SILOpt.cpp
    LINK_LIBRARIES
++    swiftAST
 +    swiftBasic
      swiftFrontend
      swiftIRGen
++    swiftSerialization
++    swiftSIL
      swiftSILGen
      swiftSILOptimizer
-+    swiftSIL
-+    swiftSerialization
-+    swiftAST
+     # Clang libraries included to appease the linker on linux.
+@@ -10,5 +14,14 @@ add_swift_host_tool(sil-opt
+     clangCodeGen
    LLVM_COMPONENT_DEPENDS
      DebugInfoCodeView
 +    Option
++    TransformUtils
 +    TableGen
 +    Support
 +    X86Info

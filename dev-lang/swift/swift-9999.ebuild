@@ -13,7 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_BRANCH="master-next"
+#EGIT_BRANCH="master-next"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -40,7 +40,6 @@ src_prepare() {
 	eapply ${FILESDIR}/glibc-modulemap.patch
 	eapply ${FILESDIR}/shared-support.patch
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
-	eapply ${FILESDIR}/fix-ndebug.patch
 	eapply ${FILESDIR}/llvm-4.0.patch
 	default
 }
@@ -60,6 +59,7 @@ src_configure() {
 		-DSWIFT_HOST_TRIPLE=${CHOST}
 		-DSWIFT_BUILD_SOURCEKIT=TRUE
 		-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=TRUE
+		-DHAVE_DISPATCH_BLOCK_CREATE=TRUE
 	)
 
 	cmake-utils_src_configure
