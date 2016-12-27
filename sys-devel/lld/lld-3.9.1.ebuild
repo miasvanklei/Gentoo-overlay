@@ -40,6 +40,9 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
+	# this patch does not work, packages segfault
+	eapply "${FILESDIR}"/0001-revert-add-retain-symbols-file.patch
+
 	# support local symbols without wildcard
 	eapply "${FILESDIR}"/0002-support-anonymous-local-symbols.patch
 
@@ -48,13 +51,13 @@ src_prepare() {
 	eapply "${FILESDIR}"/0004-ignore-options.patch
 
 	# strip comment section
-	eapply "${FILESDIR}"/0012-strip-comment-section.patch
+	eapply "${FILESDIR}"/0005-strip-comment-section.patch
 
 	# add -z muldefs
-	eapply "${FILESDIR}"/0013-add-muldefs-option.patch
+	eapply "${FILESDIR}"/0006-add-muldefs-option.patch
 
 	# do not strip
-	eapply "${FILESDIR}"/0014-add-nostrip-option.patch
+	eapply "${FILESDIR}"/0007-add-nostrip-option.patch
 
 	# User patches
 	eapply_user
