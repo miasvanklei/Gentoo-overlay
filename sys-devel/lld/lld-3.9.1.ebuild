@@ -59,6 +59,9 @@ src_prepare() {
 	# do not strip
 	eapply "${FILESDIR}"/0007-add-nostrip-option.patch
 
+	# fix compile to null part 2
+	eapply "${FILESDIR}"/0008-fix-usage-of-null.patch
+
 	# User patches
 	eapply_user
 

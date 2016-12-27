@@ -1,0 +1,302 @@
+--- a/include/llvm/Support/FileOutputBuffer.h
++++ b/include/llvm/Support/FileOutputBuffer.h
+@@ -30,6 +30,12 @@
+ /// not committed, the file will be deleted in the FileOutputBuffer destructor.
+ class FileOutputBuffer {
+ public:
++  class BaseFile {
++  public:
++    virtual ~BaseFile() {}
++    virtual uint8_t *getBufferStart() = 0;
++    virtual std::error_code commit() = 0;
++  };
+ 
+   enum  {
+     F_executable = 1  /// set the 'x' bit on the resulting file
+@@ -42,47 +48,34 @@
+   create(StringRef FilePath, size_t Size, unsigned Flags = 0);
+ 
+   /// Returns a pointer to the start of the buffer.
+-  uint8_t *getBufferStart() {
+-    return (uint8_t*)Region->data();
+-  }
++  uint8_t *getBufferStart() { return File->getBufferStart(); }
+ 
+   /// Returns a pointer to the end of the buffer.
+-  uint8_t *getBufferEnd() {
+-    return (uint8_t*)Region->data() + Region->size();
+-  }
++  uint8_t *getBufferEnd() { return getBufferStart() + Size; }
+ 
+   /// Returns size of the buffer.
+-  size_t getBufferSize() const {
+-    return Region->size();
+-  }
++  size_t getBufferSize() const { return Size; }
+ 
+   /// Returns path where file will show up if buffer is committed.
+-  StringRef getPath() const {
+-    return FinalPath;
+-  }
++  StringRef getPath() const { return FinalPath; }
+ 
+   /// Flushes the content of the buffer to its file and deallocates the
+   /// buffer.  If commit() is not called before this object's destructor
+   /// is called, the file is deleted in the destructor. The optional parameter
+   /// is used if it turns out you want the file size to be smaller than
+   /// initially requested.
+-  std::error_code commit();
+-
+-  /// If this object was previously committed, the destructor just deletes
+-  /// this object.  If this object was not committed, the destructor
+-  /// deallocates the buffer and the target file is never written.
+-  ~FileOutputBuffer();
++  std::error_code commit() { return File->commit(); }
+ 
+ private:
++  FileOutputBuffer(StringRef Path, size_t Size, BaseFile *File)
++      : FinalPath(Path), Size(Size), File(File) {}
++
+   FileOutputBuffer(const FileOutputBuffer &) = delete;
+   FileOutputBuffer &operator=(const FileOutputBuffer &) = delete;
+ 
+-  FileOutputBuffer(std::unique_ptr<llvm::sys::fs::mapped_file_region> R,
+-                   StringRef Path, StringRef TempPath);
+-
+-  std::unique_ptr<llvm::sys::fs::mapped_file_region> Region;
+-  SmallString<128>    FinalPath;
+-  SmallString<128>    TempPath;
++  std::string FinalPath;
++  size_t Size;
++  std::unique_ptr<BaseFile> File;
+ };
+ } // end namespace llvm
+ 
+--- a/lib/Support/FileOutputBuffer.cpp
++++ b/lib/Support/FileOutputBuffer.cpp
+@@ -16,102 +16,155 @@
+ #include "llvm/ADT/SmallString.h"
+ #include "llvm/Support/Errc.h"
+ #include "llvm/Support/Signals.h"
++#include "llvm/Support/raw_ostream.h"
+ #include <system_error>
+ 
+ #if !defined(_MSC_VER) && !defined(__MINGW32__)
+ #include <unistd.h>
+ #else
+ #include <io.h>
+ #endif
+ 
+-using llvm::sys::fs::mapped_file_region;
++using namespace llvm::sys;
+ 
+ namespace llvm {
+-FileOutputBuffer::FileOutputBuffer(std::unique_ptr<mapped_file_region> R,
+-                                   StringRef Path, StringRef TmpPath)
+-    : Region(std::move(R)), FinalPath(Path), TempPath(TmpPath) {}
+-
+-FileOutputBuffer::~FileOutputBuffer() {
+-  // Close the mapping before deleting the temp file, so that the removal
+-  // succeeds.
+-  Region.reset();
+-  sys::fs::remove(Twine(TempPath));
+-}
+-
+-ErrorOr<std::unique_ptr<FileOutputBuffer>>
+-FileOutputBuffer::create(StringRef FilePath, size_t Size, unsigned Flags) {
+-  // If file already exists, it must be a regular file (to be mappable).
+-  sys::fs::file_status Stat;
+-  std::error_code EC = sys::fs::status(FilePath, Stat);
+-  switch (Stat.type()) {
+-    case sys::fs::file_type::file_not_found:
++namespace {
++
++// Represents a memory-mapped file.
++class MMappedFile : public FileOutputBuffer::BaseFile {
++public:
++  static ErrorOr<std::unique_ptr<MMappedFile>>
++  create(std::string Path, size_t Size, unsigned Flags) {
++    // If file already exists, it must be a regular file (to be mappable).
++    fs::file_status Stat;
++    std::error_code EC;
++    fs::status(Path, Stat);
++
++    switch (Stat.type()) {
++    case fs::file_type::file_not_found:
+       // If file does not exist, we'll create one.
+       break;
+-    case sys::fs::file_type::regular_file: {
+-        // If file is not currently writable, error out.
+-        // FIXME: There is no sys::fs:: api for checking this.
+-        // FIXME: In posix, you use the access() call to check this.
+-      }
++    case fs::file_type::regular_file:
++      // If file is not currently writable, error out.
++      // FIXME: There is no fs:: api for checking this.
++      // FIXME: In posix, you use the access() call to check this.
+       break;
+     default:
+       if (EC)
+         return EC;
+-      else
+-        return make_error_code(errc::operation_not_permitted);
+-  }
++      return make_error_code(errc::operation_not_permitted);
++    }
+ 
+-  // Delete target file.
+-  EC = sys::fs::remove(FilePath);
+-  if (EC)
+-    return EC;
++    // Delete target file.
++    if ((EC = fs::remove(Path)))
++      return EC;
+ 
+-  unsigned Mode = sys::fs::all_read | sys::fs::all_write;
+-  // If requested, make the output file executable.
+-  if (Flags & F_executable)
+-    Mode |= sys::fs::all_exe;
+-
+-  // Create new file in same directory but with random name.
+-  SmallString<128> TempFilePath;
+-  int FD;
+-  EC = sys::fs::createUniqueFile(Twine(FilePath) + ".tmp%%%%%%%", FD,
+-                                 TempFilePath, Mode);
+-  if (EC)
+-    return EC;
++    unsigned Mode = fs::all_read | fs::all_write;
++    // If requested, make the output file executable.
++    if (Flags & FileOutputBuffer::F_executable)
++      Mode |= fs::all_exe;
+ 
+-  sys::RemoveFileOnSignal(TempFilePath);
++    // Create new file in same directory but with random name.
++    SmallString<128> TempFilePath;
++    int FD;
++    if ((EC = fs::createUniqueFile(Twine(Path) + ".tmp%%%%%%%", FD,
++                                   TempFilePath, Mode)))
++      return EC;
++
++    sys::RemoveFileOnSignal(TempFilePath);
+ 
+ #ifndef LLVM_ON_WIN32
+-  // On Windows, CreateFileMapping (the mmap function on Windows)
+-  // automatically extends the underlying file. We don't need to
+-  // extend the file beforehand. _chsize (ftruncate on Windows) is
+-  // pretty slow just like it writes specified amount of bytes,
+-  // so we should avoid calling that.
+-  EC = sys::fs::resize_file(FD, Size);
+-  if (EC)
+-    return EC;
++    // On Windows, CreateFileMapping (the mmap function on Windows)
++    // automatically extends the underlying file. We don't need to
++    // extend the file beforehand. _chsize (ftruncate on Windows) is
++    // pretty slow just like it writes specified amount of bytes,
++    // so we should avoid calling that.
++    if ((EC = fs::resize_file(FD, Size)))
++      return EC;
+ #endif
+ 
+-  auto MappedFile = llvm::make_unique<mapped_file_region>(
+-      FD, mapped_file_region::readwrite, Size, 0, EC);
+-  int Ret = close(FD);
+-  if (EC)
+-    return EC;
+-  if (Ret)
+-    return std::error_code(errno, std::generic_category());
++    auto MappedFile = make_unique<fs::mapped_file_region>(
++        FD, fs::mapped_file_region::readwrite, Size, 0, EC);
++    int Ret = close(FD);
++    if (EC)
++      return EC;
++    if (Ret)
++      return std::error_code(errno, std::generic_category());
+ 
+-  std::unique_ptr<FileOutputBuffer> Buf(
+-      new FileOutputBuffer(std::move(MappedFile), FilePath, TempFilePath));
+-  return std::move(Buf);
+-}
++    return std::unique_ptr<MMappedFile>(
++        new MMappedFile(MappedFile, Path, TempFilePath.str()));
++  }
+ 
+-std::error_code FileOutputBuffer::commit() {
+-  // Unmap buffer, letting OS flush dirty pages to file on disk.
+-  Region.reset();
++  ~MMappedFile() override {
++    // Close the mapping before deleting the temp file, so that the removal
++    // succeeds.
++    Region.reset();
++    fs::remove(TempPath);
++  }
+ 
++  uint8_t *getBufferStart() override { return (uint8_t *)Region->data(); }
+ 
+-  // Rename file to final name.
+-  std::error_code EC = sys::fs::rename(Twine(TempPath), Twine(FinalPath));
+-  sys::DontRemoveFileOnSignal(TempPath);
+-  return EC;
++  std::error_code commit() override {
++    // Unmap buffer, letting OS flush dirty pages to file on disk.
++    Region.reset();
++
++    // Rename file to final name.
++    std::error_code EC = fs::rename(TempPath, FinalPath);
++    sys::DontRemoveFileOnSignal(TempPath);
++    return EC;
++  }
++
++private:
++  MMappedFile(std::unique_ptr<fs::mapped_file_region> &R, std::string Path,
++              std::string TempPath)
++      : Region(std::move(R)), FinalPath(Path), TempPath(TempPath) {}
++
++  std::unique_ptr<fs::mapped_file_region> Region;
++  std::string FinalPath;
++  std::string TempPath;
++};
++
++// Represents a non-memory-mapped file. We need this class
++// because not all files are mmap'able. For example, /dev/null
++// is not mmap'able.
++class NonMMappedFile : public FileOutputBuffer::BaseFile {
++public:
++  NonMMappedFile(std::string Path, size_t Size)
++      : FinalPath(Path), Buffer(Size) {}
++
++  uint8_t *getBufferStart() override { return Buffer.data(); }
++
++  std::error_code commit() override {
++    // Open a file and then write Buffer to it.
++    std::error_code EC;
++    raw_fd_ostream OS(FinalPath, EC, fs::F_None);
++    if (EC)
++      return EC;
++    OS.write((const char *)Buffer.data(), Buffer.size());
++    return std::error_code();
++  }
++
++private:
++  std::string FinalPath;
++  std::vector<uint8_t> Buffer;
++};
+ }
++
++ErrorOr<std::unique_ptr<FileOutputBuffer>>
++FileOutputBuffer::create(StringRef Path, size_t Size, unsigned Flags) {
++  // If it is not a regular file, do not use mmap.
++  fs::file_status Stat;
++  fs::status(Path, Stat);
++  if (fs::is_other(Stat))
++    return std::unique_ptr<FileOutputBuffer>(
++        new FileOutputBuffer(Path, Size, new NonMMappedFile(Path, Size)));
++
++  // Otherwise, use mmap.
++  auto FileOrErr = MMappedFile::create(Path, Size, Flags);
++  if (std::error_code EC = FileOrErr.getError())
++    return EC;
++  return std::unique_ptr<FileOutputBuffer>(
++      new FileOutputBuffer(Path, Size, FileOrErr->release()));
++}
++
+ } // namespace

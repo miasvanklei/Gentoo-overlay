@@ -115,6 +115,9 @@ src_prepare() {
 	# add swift support
 	eapply "${FILESDIR}"/0005-add-swift-support.patch
 
+	# fix usage of null
+	eapply "${FILESDIR}"/0006-fix-usage-of-null.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
