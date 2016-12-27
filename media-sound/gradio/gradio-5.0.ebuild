@@ -5,7 +5,7 @@ inherit autotools gnome2-utils vala
 MY_PV="${PV//_/-}"
 DESCRIPTION="A GTK3 app for finding and listening to internet radio stations"
 HOMEPAGE="https://github.com/haecker-felix/gradio"
-SRC_URI="https://github.com/haecker-felix/gradio/archive/v5.0.0-beta2.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/haecker-felix/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
