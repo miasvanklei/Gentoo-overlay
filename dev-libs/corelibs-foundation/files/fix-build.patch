@@ -87,26 +87,28 @@ diff --git a/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c b/CoreFoundation
 index a9ef705..cd92916 100644
 --- a/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
 +++ b/CoreFoundation/PlugIn.subproj/CFBundle_InfoPlist.c
-@@ -19,7 +19,6 @@
+@@ -19,7 +19,7 @@
  #if TARGET_OS_CYGWIN
  #else
  #include <dirent.h>
--#include <sys/sysctl.h>
+-#if !TARGET_OS_ANDROID
++#if !TARGET_OS_ANDROID && defined(__glibc__)
+ #include <sys/sysctl.h>
+ #endif
  #include <sys/mman.h>
- #endif
- #endif
 diff --git a/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c b/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
 index b82ec82..e709440 100644
 --- a/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
 +++ b/CoreFoundation/PlugIn.subproj/CFBundle_Resources.c
-@@ -27,7 +27,6 @@
+@@ -27,7 +27,7 @@
  
  #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI || DEPLOYMENT_TARGET_LINUX
  #include <unistd.h>
--#include <sys/sysctl.h>
- #include <sys/stat.h>
- #include <dirent.h>
+-#if !TARGET_OS_ANDROID
++#if !TARGET_OS_ANDROID && defined(__glibc__)
+ #include <sys/sysctl.h>
  #endif
+ #include <sys/stat.h>
 diff --git a/CoreFoundation/RunLoop.subproj/CFRunLoop.c b/CoreFoundation/RunLoop.subproj/CFRunLoop.c
 index b92c2bf..cf5df40 100644
 --- a/CoreFoundation/RunLoop.subproj/CFRunLoop.c
@@ -137,7 +139,7 @@ index d01151f..ad19ff4 100644
              }
              var hints = addrinfo()
              hints.ai_family = PF_UNSPEC
--#if os(OSX) || os(iOS)
+-#if os(OSX) || os(iOS) || os(Android)
              hints.ai_socktype = SOCK_STREAM
 -#else
 -            hints.ai_socktype = Int32(SOCK_STREAM.rawValue)
