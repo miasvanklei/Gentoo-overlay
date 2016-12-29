@@ -31,11 +31,6 @@ src_unpack() {
 	git-r3_checkout "${csources_repo}" "${WORKDIR}/${P}/csources"
 }
 
-src_prepare() {
-	eapply ${FILESDIR}/fix-nimfix.patch
-	eapply_user
-}
-
 nim_use_enable() {
 	[[ -z $2 ]] && die "usage: nim_use_enable <USE flag> <compiler flag>"
 	use $1 && echo "-d:$2"
