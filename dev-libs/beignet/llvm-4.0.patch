@@ -72,3 +72,38 @@ index 1c0d7eb9..7765f4fe 100644
      uint64_t u64 = static_cast<uint64_t>(v16);
      llvm::APInt apInt(16, u64, true);
      res.convertFromAPInt(apInt, true, llvm::APFloat::rmNearestTiesToEven);
+diff --git a/backend/src/llvm/llvm_passes.cpp b/backend/src/llvm/llvm_passes.cpp
+index f5d90521..d2d7f3f9 100644
+--- a/backend/src/llvm/llvm_passes.cpp
++++ b/backend/src/llvm/llvm_passes.cpp
+@@ -42,7 +42,7 @@ namespace gbe
+ {
+   bool isKernelFunction(const llvm::Function &F) {
+     bool bKernel = false;
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+     bKernel = F.getMetadata("kernel_arg_name") != NULL;
+ #else
+     const Module *module = F.getParent();
+@@ -74,7 +74,7 @@ namespace gbe
+     if(ops > 0) {
+       uint32_t major = 0, minor = 0;
+       MDNode* node = version->getOperand(0);
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6 || LLVM_VERSION_MAJOR == 4
+       major = mdconst::extract<ConstantInt>(node->getOperand(0))->getZExtValue();
+       minor = mdconst::extract<ConstantInt>(node->getOperand(1))->getZExtValue();
+ #else
+@@ -222,7 +222,11 @@ namespace gbe
+       AU.setPreservesCFG();
+     }
+ 
+-    virtual const char *getPassName() const {
++#if LLVM_VERSION_MAJOR == 4
++      virtual StringRef getPassName() const {
++#else
++      virtual const char *getPassName() const {
++#endif
+       return "SPIR backend: insert special spir instructions";
+     }
+ 

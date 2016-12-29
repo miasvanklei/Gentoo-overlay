@@ -559,9 +559,9 @@ index 42f24b3..fa3b16a 100644
      MPM.add(createBasicAAWrapperPass());
  #else
 @@ -149,7 +149,7 @@ namespace gbe
-     MPM.add(createBarrierNodupPass(false));   // remove noduplicate fnAttr before inlining.
-     MPM.add(createFunctionInliningPass(20000));
-     MPM.add(createBarrierNodupPass(true));    // restore noduplicate fnAttr after inlining.
+     MPM.add(createInstructionCombiningPass());// Clean up after IPCP & DAE
+     MPM.add(createCFGSimplificationPass());   // Clean up after IPCP & DAE
+     MPM.add(createPruneEHPass());             // Remove dead EH info
 -#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
 +#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
      MPM.add(createPostOrderFunctionAttrsLegacyPass());
@@ -804,32 +804,6 @@ index 6129909..4f6c420 100644
  add_one_lib("clangSerialization")
  add_one_lib("clangDriver")
  add_one_lib("clangCodeGen")
-diff --git a/backend/src/llvm/llvm_passes.cpp b/backend/src/llvm/llvm_passes.cpp
-index 02dd4bf..b675b03 100644
---- a/backend/src/llvm/llvm_passes.cpp
-+++ b/backend/src/llvm/llvm_passes.cpp
-@@ -42,7 +42,7 @@ namespace gbe
- {
-   bool isKernelFunction(const llvm::Function &F) {
-     bool bKernel = false;
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
-     bKernel = F.getMetadata("kernel_arg_name") != NULL;
- #else
-     const Module *module = F.getParent();
-@@ -201,7 +201,11 @@ namespace gbe
-       AU.setPreservesCFG();
-     }
- 
--    virtual const char *getPassName() const {
-+#if LLVM_VERSION_MAJOR == 4
-+      virtual StringRef getPassName() const {
-+#else
-+      virtual const char *getPassName() const {
-+#endif
-       return "SPIR backend: insert special spir instructions";
-     }
- 
 diff --git a/backend/src/CMakeLists.txt b/backend/src/CMakeLists.txt
 index 6ff25e7..1bd9bf2 100644
 --- a/backend/src/CMakeLists.txt
