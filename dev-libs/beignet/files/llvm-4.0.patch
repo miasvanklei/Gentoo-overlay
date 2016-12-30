@@ -469,214 +469,6 @@ index 8850abb..780fed5 100644
        initializeDominatorTreeWrapperPassPass(*PassRegistry::getPassRegistry());
  #else
        initializeDominatorTreePass(*PassRegistry::getPassRegistry());
-diff --git a/backend/src/llvm/llvm_to_gen.cpp b/backend/src/llvm/llvm_to_gen.cpp
-index 42f24b3..fa3b16a 100644
---- a/backend/src/llvm/llvm_to_gen.cpp
-+++ b/backend/src/llvm/llvm_to_gen.cpp
-@@ -46,14 +46,14 @@ namespace gbe
-   BVAR(OCL_OUTPUT_CFG_GEN_IR, false);
-   using namespace llvm;
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
-   llvm::LLVMContext& GBEGetLLVMContext() {
-     static llvm::LLVMContext GBEContext;
-     return GBEContext;
-   }
- #endif
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-   #define TARGETLIBRARY  TargetLibraryInfoImpl
- #else
-   #define TARGETLIBRARY  TargetLibraryInfo
-@@ -61,13 +61,13 @@ namespace gbe
- 
-   void runFuntionPass(Module &mod, TARGETLIBRARY *libraryInfo, const DataLayout &DL)
-   {
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-     legacy::FunctionPassManager FPM(&mod);
- #else
-     FunctionPassManager FPM(&mod);
- #endif
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
- #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
-     FPM.add(new DataLayoutPass());
- #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 5
-@@ -76,17 +76,17 @@ namespace gbe
-     FPM.add(new DataLayout(DL));
- #endif
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=5
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=5 || LLVM_VERSION_MAJOR == 4
-     FPM.add(createVerifierPass(true));
- #else
-     FPM.add(createVerifierPass());
- #endif
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-     FPM.add(new TargetLibraryInfoWrapperPass(*libraryInfo));
- #else
-     FPM.add(new TargetLibraryInfo(*libraryInfo));
- #endif
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
-     FPM.add(createTypeBasedAAWrapperPass());
-     FPM.add(createBasicAAWrapperPass());
- #else
-@@ -108,13 +108,13 @@ namespace gbe
- 
-   void runModulePass(Module &mod, TARGETLIBRARY *libraryInfo, const DataLayout &DL, int optLevel, bool strictMath)
-   {
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-     legacy::PassManager MPM;
- #else
-     PassManager MPM;
- #endif
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
- #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
-     MPM.add(new DataLayoutPass());
- #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 5
-@@ -123,12 +123,12 @@ namespace gbe
-     MPM.add(new DataLayout(DL));
- #endif
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-     MPM.add(new TargetLibraryInfoWrapperPass(*libraryInfo));
- #else
-     MPM.add(new TargetLibraryInfo(*libraryInfo));
- #endif
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
-     MPM.add(createTypeBasedAAWrapperPass());
-     MPM.add(createBasicAAWrapperPass());
- #else
-@@ -149,7 +149,7 @@ namespace gbe
-     MPM.add(createInstructionCombiningPass());// Clean up after IPCP & DAE
-     MPM.add(createCFGSimplificationPass());   // Clean up after IPCP & DAE
-     MPM.add(createPruneEHPass());             // Remove dead EH info
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
-     MPM.add(createPostOrderFunctionAttrsLegacyPass());
- #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
-     MPM.add(createPostOrderFunctionAttrsPass());       // Set readonly/readnone attrs
-@@ -159,7 +159,7 @@ namespace gbe
- 
-     //MPM.add(createScalarReplAggregatesPass(64, true, -1, -1, 64))
-     if(optLevel > 0)
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
-       MPM.add(createSROAPass());
- #else
-       MPM.add(createSROAPass(/*RequiresDomTree*/ false));
-@@ -182,14 +182,14 @@ namespace gbe
-     MPM.add(createLoopDeletionPass());          // Delete dead loops
-     MPM.add(createLoopUnrollPass(640)); //1024, 32, 1024, 512)); //Unroll loops
-     if(optLevel > 0) {
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
-       MPM.add(createSROAPass());
- #else
-       MPM.add(createSROAPass(/*RequiresDomTree*/ false));
- #endif
-       MPM.add(createGVNPass());                 // Remove redundancies
-     }
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 5
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 5 || LLVM_VERSION_MAJOR == 4
-     // FIXME Workaround: we find that CustomLoopUnroll may increase register pressure greatly,
-     // and it may even make som cl kernel cannot compile because of limited scratch memory for spill.
-     // As we observe this under strict math. So we disable CustomLoopUnroll if strict math is enabled.
-@@ -199,7 +199,7 @@ namespace gbe
- #endif
-       MPM.add(createLoopUnrollPass()); //1024, 32, 1024, 512)); //Unroll loops
-       if(optLevel > 0) {
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
-         MPM.add(createSROAPass());
- #else
-         MPM.add(createSROAPass(/*RequiresDomTree*/ false));
-@@ -230,7 +230,7 @@ namespace gbe
-   }
- 
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
- #define OUTPUT_BITCODE(STAGE, MOD)  do {         \
-   legacy::PassManager passes__;           \
-    if (OCL_OUTPUT_LLVM_##STAGE) {                \
-@@ -303,12 +303,12 @@ namespace gbe
-     if (module) {
-       cl_mod = reinterpret_cast<Module*>(const_cast<void*>(module));
-     } else if (fileName){
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
-       llvm::LLVMContext& c = GBEGetLLVMContext();
- #else
-       llvm::LLVMContext& c = llvm::getGlobalContext();
- #endif
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6 || LLVM_VERSION_MAJOR == 4
-       cl_mod = parseIRFile(fileName, Err, c).release();
- #else
-       cl_mod = ParseIRFile(fileName, Err, c);
-@@ -334,7 +334,7 @@ namespace gbe
-     gbeDiagnosticContext dc;
-     mod.getContext().setDiagnosticHandler(&gbeDiagnosticHandler,&dc);
- 
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-     mod.setDataLayout(DL);
- #endif
-     Triple TargetTriple(mod.getTargetTriple());
-@@ -345,12 +345,12 @@ namespace gbe
- 
-     runFuntionPass(mod, libraryInfo, DL);
-     runModulePass(mod, libraryInfo, DL, optLevel, strictMath);
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-     legacy::PassManager passes;
- #else
-     PassManager passes;
- #endif
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
- #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
-     passes.add(new DataLayoutPass());
- #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 5
-@@ -362,7 +362,7 @@ namespace gbe
-     passes.add(createIntrinsicLoweringPass());
-     passes.add(createStripAttributesPass());     // Strip unsupported attributes and calling conventions.
-     passes.add(createFunctionInliningPass(20000));
--#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
-+#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
-     passes.add(createSROAPass());
- #else
-     passes.add(createScalarReplAggregatesPass(64, true, -1, -1, 64));
-@@ -390,9 +390,17 @@ namespace gbe
-     passes.add(createScalarizePass());             // Expand all vector ops
- 
-     if(OCL_OUTPUT_CFG)
-+#if LLVM_VERSION_MAJOR == 4
-+      passes.add(createCFGPrinterLegacyPassPass());
-+#else
-       passes.add(createCFGPrinterPass());
-+#endif
-     if(OCL_OUTPUT_CFG_ONLY)
-+#if LLVM_VERSION_MAJOR == 4
-+      passes.add(createCFGOnlyPrinterLegacyPassPass());
-+#else
-       passes.add(createCFGOnlyPrinterPass());
-+#endif
-     passes.add(createGenPass(unit));
-     passes.run(mod);
-     errors = dc.str();
 diff --git a/backend/src/llvm/llvm_to_gen.hpp b/backend/src/llvm/llvm_to_gen.hpp
 index d3928c6..8b65036 100644
 --- a/backend/src/llvm/llvm_to_gen.hpp
@@ -758,9 +550,9 @@ index 8a492d6..13eb313 100644
          LoopInfo &loopInfo = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
  #else
 @@ -207,7 +207,7 @@ namespace gbe {
-           }
            if (parentTripCount != 0 && currTripCount * parentTripCount > 32) {
-             setUnrollID(parentL, false);
+             //Don't change the unrollID if doesn't force unroll.
+             //setUnrollID(parentL, false);
 -#if LLVM_VERSION_MAJOR == 3 &&  LLVM_VERSION_MINOR >= 8
 +#if LLVM_VERSION_MAJOR == 3 &&  LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
              loopInfo.markAsRemoved(parentL);
@@ -1021,3 +813,267 @@ index 1c0d7eb9..7765f4fe 100644
      uint64_t u64 = static_cast<uint64_t>(v16);
      llvm::APInt apInt(16, u64, true);
      res.convertFromAPInt(apInt, true, llvm::APFloat::rmNearestTiesToEven);
+diff --git a/backend/src/llvm/llvm_device_enqueue.cpp b/backend/src/llvm/llvm_device_enqueue.cpp
+index ff6fbbbe..d4450031 100644
+--- a/backend/src/llvm/llvm_device_enqueue.cpp
++++ b/backend/src/llvm/llvm_device_enqueue.cpp
+@@ -148,7 +148,7 @@ namespace gbe {
+     }
+ 
+     //If run to here, llvm version always > 3.9, add the version check just for build.
+-#if (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR >= 9)
++#if (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR >= 9) || LLVM_VERSION_MAJOR == 4
+     NewFn->setMetadata("kernel_arg_addr_space",
+                     llvm::MDNode::get(Context, addressQuals));
+     NewFn->setMetadata("kernel_arg_access_qual",
+diff --git a/backend/src/llvm/llvm_to_gen.cpp b/backend/src/llvm/llvm_to_gen.cpp
+index bef4df1b..573c71ad 100644
+--- a/backend/src/llvm/llvm_to_gen.cpp
++++ b/backend/src/llvm/llvm_to_gen.cpp
+@@ -46,14 +46,14 @@ namespace gbe
+   BVAR(OCL_OUTPUT_CFG_GEN_IR, false);
+   using namespace llvm;
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+   llvm::LLVMContext& GBEGetLLVMContext() {
+     static llvm::LLVMContext GBEContext;
+     return GBEContext;
+   }
+ #endif
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+   #define TARGETLIBRARY  TargetLibraryInfoImpl
+ #else
+   #define TARGETLIBRARY  TargetLibraryInfo
+@@ -61,13 +61,13 @@ namespace gbe
+ 
+   void runFuntionPass(Module &mod, TARGETLIBRARY *libraryInfo, const DataLayout &DL)
+   {
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     legacy::FunctionPassManager FPM(&mod);
+ #else
+     FunctionPassManager FPM(&mod);
+ #endif
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+ #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
+     FPM.add(new DataLayoutPass());
+ #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 5
+@@ -76,17 +76,17 @@ namespace gbe
+     FPM.add(new DataLayout(DL));
+ #endif
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=5
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >=5 || LLVM_VERSION_MAJOR == 4
+     FPM.add(createVerifierPass(true));
+ #else
+     FPM.add(createVerifierPass());
+ #endif
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     FPM.add(new TargetLibraryInfoWrapperPass(*libraryInfo));
+ #else
+     FPM.add(new TargetLibraryInfo(*libraryInfo));
+ #endif
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
+     FPM.add(createTypeBasedAAWrapperPass());
+     FPM.add(createBasicAAWrapperPass());
+ #else
+@@ -108,13 +108,13 @@ namespace gbe
+ 
+   void runModulePass(Module &mod, TARGETLIBRARY *libraryInfo, const DataLayout &DL, int optLevel, bool strictMath)
+   {
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     legacy::PassManager MPM;
+ #else
+     PassManager MPM;
+ #endif
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+ #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
+     MPM.add(new DataLayoutPass());
+ #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 5
+@@ -123,12 +123,12 @@ namespace gbe
+     MPM.add(new DataLayout(DL));
+ #endif
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     MPM.add(new TargetLibraryInfoWrapperPass(*libraryInfo));
+ #else
+     MPM.add(new TargetLibraryInfo(*libraryInfo));
+ #endif
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
+     MPM.add(createTypeBasedAAWrapperPass());
+     MPM.add(createBasicAAWrapperPass());
+ #else
+@@ -149,7 +149,7 @@ namespace gbe
+     MPM.add(createInstructionCombiningPass());// Clean up after IPCP & DAE
+     MPM.add(createCFGSimplificationPass());   // Clean up after IPCP & DAE
+     MPM.add(createPruneEHPass());             // Remove dead EH info
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+     MPM.add(createPostOrderFunctionAttrsLegacyPass());
+ #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
+     MPM.add(createPostOrderFunctionAttrsPass());       // Set readonly/readnone attrs
+@@ -159,7 +159,7 @@ namespace gbe
+ 
+     //MPM.add(createScalarReplAggregatesPass(64, true, -1, -1, 64))
+     if(optLevel > 0)
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
+       MPM.add(createSROAPass());
+ #else
+       MPM.add(createSROAPass(/*RequiresDomTree*/ false));
+@@ -182,14 +182,14 @@ namespace gbe
+     MPM.add(createLoopDeletionPass());          // Delete dead loops
+     MPM.add(createLoopUnrollPass(640)); //1024, 32, 1024, 512)); //Unroll loops
+     if(optLevel > 0) {
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
+       MPM.add(createSROAPass());
+ #else
+       MPM.add(createSROAPass(/*RequiresDomTree*/ false));
+ #endif
+       MPM.add(createGVNPass());                 // Remove redundancies
+     }
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 5
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 5 || LLVM_VERSION_MAJOR == 4
+     // FIXME Workaround: we find that CustomLoopUnroll may increase register pressure greatly,
+     // and it may even make som cl kernel cannot compile because of limited scratch memory for spill.
+     // As we observe this under strict math. So we disable CustomLoopUnroll if strict math is enabled.
+@@ -199,7 +199,7 @@ namespace gbe
+ #endif
+       MPM.add(createLoopUnrollPass()); //1024, 32, 1024, 512)); //Unroll loops
+       if(optLevel > 0) {
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 8 || LLVM_VERSION_MAJOR == 4
+         MPM.add(createSROAPass());
+ #else
+         MPM.add(createSROAPass(/*RequiresDomTree*/ false));
+@@ -230,7 +230,7 @@ namespace gbe
+   }
+ 
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+ #define OUTPUT_BITCODE(STAGE, MOD)  do {         \
+   legacy::PassManager passes__;           \
+    if (OCL_OUTPUT_LLVM_##STAGE) {                \
+@@ -303,12 +303,12 @@ namespace gbe
+     if (module) {
+       cl_mod = reinterpret_cast<Module*>(const_cast<void*>(module));
+     } else if (fileName){
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+       llvm::LLVMContext& c = GBEGetLLVMContext();
+ #else
+       llvm::LLVMContext& c = llvm::getGlobalContext();
+ #endif
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6 || LLVM_VERSION_MAJOR == 4
+       cl_mod = parseIRFile(fileName, Err, c).release();
+ #else
+       cl_mod = ParseIRFile(fileName, Err, c);
+@@ -318,7 +318,7 @@ namespace gbe
+     if (!cl_mod) return false;
+ 
+     OUTPUT_BITCODE(BEFORE_LINK, (*cl_mod));
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     legacy::PassManager passes__;
+ #else
+     PassManager passes__;
+@@ -346,7 +346,7 @@ namespace gbe
+     gbeDiagnosticContext dc;
+     mod.getContext().setDiagnosticHandler(&gbeDiagnosticHandler,&dc);
+ 
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     mod.setDataLayout(DL);
+ #endif
+     Triple TargetTriple(mod.getTargetTriple());
+@@ -357,12 +357,12 @@ namespace gbe
+ 
+     runFuntionPass(mod, libraryInfo, DL);
+     runModulePass(mod, libraryInfo, DL, optLevel, strictMath);
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     legacy::PassManager passes;
+ #else
+     PassManager passes;
+ #endif
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+ #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
+     passes.add(new DataLayoutPass());
+ #elif LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR == 5
+@@ -374,7 +374,7 @@ namespace gbe
+     passes.add(createIntrinsicLoweringPass());
+     passes.add(createStripAttributesPass());     // Strip unsupported attributes and calling conventions.
+     passes.add(createFunctionInliningPass(20000));
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 7 || LLVM_VERSION_MAJOR == 4
+     passes.add(createSROAPass());
+ #else
+     passes.add(createScalarReplAggregatesPass(64, true, -1, -1, 64));
+@@ -402,9 +402,17 @@ namespace gbe
+     passes.add(createScalarizePass());             // Expand all vector ops
+ 
+     if(OCL_OUTPUT_CFG)
++#if LLVM_VERSION_MAJOR == 4
++      passes.add(createCFGPrinterLegacyPassPass());
++#else
+       passes.add(createCFGPrinterPass());
++#endif
+     if(OCL_OUTPUT_CFG_ONLY)
++#if LLVM_VERSION_MAJOR == 4
++      passes.add(createCFGOnlyPrinterLegacyPassPass());
++#else
+       passes.add(createCFGOnlyPrinterPass());
++#endif
+     passes.add(createGenPass(unit));
+     passes.run(mod);
+     errors = dc.str();
+diff --git a/backend/src/llvm/llvm_passes.cpp b/backend/src/llvm/llvm_passes.cpp
+index f5d90521..1e9504ba 100644
+--- a/backend/src/llvm/llvm_passes.cpp
++++ b/backend/src/llvm/llvm_passes.cpp
+@@ -42,7 +42,7 @@ namespace gbe
+ {
+   bool isKernelFunction(const llvm::Function &F) {
+     bool bKernel = false;
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 9 || LLVM_VERSION_MAJOR == 4
+     bKernel = F.getMetadata("kernel_arg_name") != NULL;
+ #else
+     const Module *module = F.getParent();
+@@ -74,7 +74,7 @@ namespace gbe
+     if(ops > 0) {
+       uint32_t major = 0, minor = 0;
+       MDNode* node = version->getOperand(0);
+-#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6
++#if LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 6 || LLVM_VERSION_MAJOR == 4
+       major = mdconst::extract<ConstantInt>(node->getOperand(0))->getZExtValue();
+       minor = mdconst::extract<ConstantInt>(node->getOperand(1))->getZExtValue();
+ #else
+@@ -222,7 +222,11 @@ namespace gbe
+       AU.setPreservesCFG();
+     }
+ 
++#if LLVM_VERSION_MAJOR > 3
++    virtual StringRef getPassName() const {
++#else
+     virtual const char *getPassName() const {
++#endif
+       return "SPIR backend: insert special spir instructions";
+     }
+ 
