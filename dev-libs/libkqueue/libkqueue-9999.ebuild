@@ -4,7 +4,7 @@
 
 EAPI=6
 
-inherit autotools git-r3
+inherit cmake-utils git-r3
 
 DESCRIPTION="Portable implementation of the kqueue() and kevent() system calls"
 HOMEPAGE="https://github.com/mheily/${PN}"
@@ -17,15 +17,3 @@ IUSE=""
 
 RDEPEND=""
 DEPEND="${RDEPEND}"
-
-src_prepare() {
-	default
-	eautoreconf
-}
-
-src_install() {
-	default
-	rm ${D}/usr/lib/libkqueue.la
-	mv ${D}/usr/include/kqueue/* ${D}/usr/include
-	rmdir ${D}/usr/include/kqueue
-}
