@@ -49,7 +49,6 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-missing-symbol.patch
 	eapply ${FILESDIR}/disable-fatal-warnings.patch
 	eapply ${FILESDIR}/fix-segfault.patch
-	eapply ${FILESDIR}/fix-fetch.patch
 
 	local i
 	if use nls ; then
