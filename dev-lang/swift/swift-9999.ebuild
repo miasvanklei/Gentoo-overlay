@@ -41,6 +41,7 @@ src_prepare() {
 	eapply ${FILESDIR}/shared-support.patch
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 	eapply ${FILESDIR}/llvm-4.0.patch
+	eapply ${FILESDIR}/dirty-fix.patch
 	default
 }
 
