@@ -13,8 +13,8 @@ inherit cmake-utils git-r3 python-single-r1 toolchain-funcs
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
-EGIT_BRANCH="master-next"
+EGIT_REPO_URI="http://llvm.org/git/lldb.git
+        https://github.com/llvm-mirror/lldb.git"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -39,17 +39,17 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-src_prepare() {
-	eapply ${FILESDIR}/cmake-cleanup.patch
-	eapply ${FILESDIR}/fix-swift.patch
-	eapply ${FILESDIR}/fix-iohandler.cpp.patch
-	eapply ${FILESDIR}/fix-includes.patch
-	eapply ${FILESDIR}/fix-resourcedir.patch
-	eapply ${FILESDIR}/add-d-support.patch
-	eapply ${FILESDIR}/llvm-4.0.patch
-	eapply ${FILESDIR}/update-swift.patch
-	eapply_user
-}
+#src_prepare() {
+#	eapply ${FILESDIR}/cmake-cleanup.patch
+#	eapply ${FILESDIR}/fix-swift.patch
+#	eapply ${FILESDIR}/fix-iohandler.cpp.patch
+#	eapply ${FILESDIR}/fix-includes.patch
+#	eapply ${FILESDIR}/fix-resourcedir.patch
+#	eapply ${FILESDIR}/add-d-support.patch
+#	eapply ${FILESDIR}/llvm-4.0.patch
+#	eapply ${FILESDIR}/update-swift.patch
+#	eapply_user
+#}
 
 src_configure() {
 	local libdir=$(get_libdir)
