@@ -22,7 +22,7 @@ HOMEPAGE="https://www.freedesktop.org/wiki/Software/systemd"
 
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
-IUSE="acl apparmor audit cryptsetup curl doc elfutils +gcrypt +gnuefi http
+IUSE="acl apparmor audit build cryptsetup curl doc elfutils +gcrypt +gnuefi http
 	idn importd +kmod +lz4 lzma nat pam policykit
 	qrcode -seccomp selinux ssl sysv-utils test vanilla xkb"
 
@@ -58,6 +58,11 @@ COMMON_DEPEND=">=sys-apps/util-linux-2.27.1:0=[${MULTILIB_USEDEP}]
 	qrcode? ( media-gfx/qrencode:0= )
 	seccomp? ( >=sys-libs/libseccomp-2.3.1:0= )
 	selinux? ( sys-libs/libselinux:0= )
+	!build? ( || (
+		sys-apps/util-linux[kill(-)]
+		sys-process/procps[kill(+)]
+		sys-apps/coreutils[kill(-)]
+	) )
 	sysv-utils? (
 		!sys-apps/systemd-sysv-utils
 		!sys-apps/sysvinit )
@@ -146,6 +151,7 @@ src_prepare() {
 	sed -i -e 's/GROUP="dialout"/GROUP="uucp"/' rules/*.rules || die
 
 	local PATCHES=(
+		"${FILESDIR}/232-lz4-version.patch"
 	)
 
 	if ! use vanilla; then
