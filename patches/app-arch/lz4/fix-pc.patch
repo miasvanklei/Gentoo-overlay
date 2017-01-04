@@ -1,0 +1,18 @@
+--- a/contrib/cmake_unofficial/CMakeLists.txt	2017-01-04 19:27:17.263571183 +0100
++++ b/contrib/cmake_unofficial/CMakeLists.txt	2017-01-04 19:27:46.319452593 +0100
+@@ -21,13 +21,14 @@
+ string(REGEX REPLACE "^#define LZ4_VERSION_RELEASE +([0-9]+) +.*$" "\\1" LZ4_VERSION_RELEASE "${LZ4_VERSION_RELEASE}")
+ set(LZ4_VERSION_STRING "${LZ4_VERSION_MAJOR}.${LZ4_VERSION_MINOR}.${LZ4_VERSION_RELEASE}")
+ mark_as_advanced(LZ4_VERSION_STRING LZ4_VERSION_MAJOR LZ4_VERSION_MINOR LZ4_VERSION_RELEASE)
++set(VERSION ${LZ4_VERSION_STRING})
+ 
+ if("${CMAKE_VERSION}" VERSION_LESS "3.0")
+   project(LZ4 C)
+ else()
+   cmake_policy (SET CMP0048 NEW)
+   project(LZ4
+-    VERSION ${LZ4_VERSION_STRING}
++    VERSION ${VERSION}
+     LANGUAGES C)
+ endif()
+ 
