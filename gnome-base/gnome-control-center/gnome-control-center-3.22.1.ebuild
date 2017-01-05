@@ -12,7 +12,7 @@ HOMEPAGE="https://git.gnome.org/browse/gnome-control-center/"
 
 LICENSE="GPL-2+"
 SLOT="2"
-IUSE="+bluetooth +colord +cups debug +gnome-online-accounts +i18n input_devices_wacom kerberos modemmanager networkmanager v4l wayland"
+IUSE="+bluetooth +colord +cups debug +gnome-online-accounts +i18n input_devices_wacom kerberos modemmanager networkmanager samba v4l wayland"
 KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~ppc ~ppc64 ~sh ~x86 ~x86-fbsd ~x86-freebsd ~amd64-linux ~x86-linux ~x86-solaris"
 
 # False positives caused by nested configure scripts
@@ -55,7 +55,8 @@ COMMON_DEPEND="
 		>=x11-misc/colord-0.1.34:0=
 		>=x11-libs/colord-gtk-0.1.24 )
 	cups? (
-		>=net-print/cups-1.4[dbus]
+		>=net-print/cups-1.4[dbus] )
+	samba? (
 		|| (
 			( >=net-fs/samba-3.6.14-r1[smbclient] <net-fs/samba-4.0.0[smbclient] )
 			>=net-fs/samba-4.0.0[client]
