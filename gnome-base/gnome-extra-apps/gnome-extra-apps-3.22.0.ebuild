@@ -20,6 +20,7 @@ KEYWORDS="~amd64 ~x86"
 RDEPEND="
 	>=gnome-base/gnome-core-libs-${PV}
 
+	>=gnome-extra/gnome-logs-${PV}
 	>=app-arch/file-roller-${PV}
 	>=app-dicts/gnome-dictionary-3.20.0
 	>=gnome-base/dconf-editor-${PV}
