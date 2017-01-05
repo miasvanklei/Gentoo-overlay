@@ -580,7 +580,7 @@
 +  ///
 +  /// \returns The abbreviation code for the newly-registered record type.
 +  static unsigned emitAbbrev(llvm::BitstreamWriter &out) {
-+    auto *abbrev = new llvm::BitCodeAbbrev();
++    auto abbrev = std::make_shared<BitCodeAbbrev>();
 +    impl::emitOps<IDField, Fields...>(*abbrev);
 +    return out.EmitAbbrev(abbrev);
 +  }
