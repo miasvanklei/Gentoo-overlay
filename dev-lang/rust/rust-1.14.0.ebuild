@@ -4,7 +4,7 @@
 
 EAPI=6
 
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python3_5 )
 
 inherit python-any-r1 versionator toolchain-funcs
 

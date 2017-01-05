@@ -6,7 +6,7 @@ EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 CMAKE_MIN_VERSION=3.4.3
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python3_5 )
 
 inherit cmake-utils flag-o-matic python-any-r1 toolchain-funcs git-r3
 

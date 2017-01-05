@@ -25,7 +25,6 @@ DEPEND="
 	>=x11-libs/gtk+-2.24.8-r1:2
 	>=dev-util/electron-1.3.4
 	x11-libs/cairo
-	gnome-base/gconf
 	x11-libs/libXtst
 	=net-libs/nodejs-6.3.0
 "

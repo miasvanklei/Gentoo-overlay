@@ -19,7 +19,6 @@ IUSE=""
 RDEPEND="dev-lang/swift
 	dev-libs/corelibs-foundation
         dev-libs/corelibs-xctest
-	dev-python/lit
 	dev-util/llbuild"
 DEPEND="${RDEPEND}"
 
@@ -27,6 +26,7 @@ src_prepare()
 {
 	eapply ${FILESDIR}/fix-opaque.patch
 	eapply ${FILESDIR}/fix-debug.patch
+	eapply ${FILESDIR}/musl.patch
 	eapply_user
 }
 

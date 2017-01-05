@@ -17,7 +17,7 @@ inherit git-r3
 LICENSE="LGPL-2.1"
 SLOT="0"
 KEYWORDS=""
-IUSE="nls"
+IUSE="help nls"
 
 DEPEND="
 	>=app-crypt/gcr-3.10.1[gtk,introspection,vala]
@@ -37,7 +37,7 @@ RDEPEND="${DEPEND}
 	nls? ( virtual/libintl )
 "
 DEPEND="${DEPEND}
-	app-text/gnome-doc-utils
+	help? ( app-text/gnome-doc-utils )
 	dev-util/desktop-file-utils
 	nls? ( sys-devel/gettext )
 	$(vala_depend)
@@ -49,6 +49,7 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-missing-symbol.patch
 	eapply ${FILESDIR}/disable-fatal-warnings.patch
 	eapply ${FILESDIR}/fix-segfault.patch
+	eapply ${FILESDIR}/remove-tests.patch
 
 	local i
 	if use nls ; then
@@ -74,9 +75,9 @@ src_configure() {
 		-DGSETTINGS_COMPILE=OFF
 		-DICON_UPDATE=OFF
 		-DVALA_EXECUTABLE="${VALAC}"
-		-DWITH_UNITY=OFF
 		-DDESKTOP_VALIDATE=OFF
 		-DNO_FATAL_WARNINGS=TRUE
+		-DTRANSLATE_HELP=$(usex help)
 	)
 
 	cmake-utils_src_configure

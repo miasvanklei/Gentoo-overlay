@@ -4,7 +4,7 @@
 
 EAPI=6
 
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python3_5 )
 CMAKE_BUILD_TYPE="Release"
 
 inherit python-any-r1 cmake-multilib toolchain-funcs
