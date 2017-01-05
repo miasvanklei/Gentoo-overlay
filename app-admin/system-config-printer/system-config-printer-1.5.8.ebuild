@@ -99,4 +99,11 @@ src_install() {
 	gnome2_src_install
 	use doc && dohtml -r html/
 	python_fix_shebang "${ED}"
+
+	# Compile *.pyc
+	find "${D}" -name '*.py' -exec python -mpy_compile {} +
+	# Compile *.py
+	find "${D}" -name '*.py' -exec python -O -mpy_compile {} +
+	# new cups 2.0.0 service naming
+	sed -i "s|cups.socket|org.cups.cupsd.socket|g" ${D}/usr/lib/systemd/system/configure-printer@.service
 }
