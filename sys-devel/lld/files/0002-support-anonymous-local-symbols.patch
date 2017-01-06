@@ -1,53 +1,43 @@
-diff --git a/ELF/Symbols.h b/ELF/Symbols.h
-index 192433e..aec12e9 100644
---- a/ELF/Symbols.h
-+++ b/ELF/Symbols.h
-@@ -406,6 +406,9 @@ struct Symbol {
-   // Version definition index.
-   uint16_t VersionId;
+diff --git a/ELF/Config.h b/ELF/Config.h
+index b828cdb2..1a8a7ae3 100644
+--- a/ELF/Config.h
++++ b/ELF/Config.h
+@@ -62,6 +62,7 @@ struct VersionDefinition {
+   llvm::StringRef Name;
+   uint16_t Id;
+   std::vector<SymbolVersion> Globals;
++  std::vector<SymbolVersion> Locals;
+   size_t NameOff; // Offset in string table.
+ };
  
-+  // If a symbol has been processed.
-+  bool VersionScriptProcessed = false;
-+
-   // Symbol visibility. This is the computed minimum visibility of all
-   // observed non-DSO symbols.
-   unsigned Visibility : 2;
-diff --git a/ELF/SymbolTable.h b/ELF/SymbolTable.h
-index 2bf9abc..fc97d8e 100644
---- a/ELF/SymbolTable.h
-+++ b/ELF/SymbolTable.h
-@@ -102,7 +102,7 @@ private:
-   std::vector<SymbolBody *> findAllByVersion(SymbolVersion Ver);
- 
-   llvm::StringMap<std::vector<SymbolBody *>> &getDemangledSyms();
--  void handleAnonymousVersion();
-+  void handleAnonymousVersion(std::vector<SymbolVersion> &symbolversions, size_t Version);
-   void assignExactVersion(SymbolVersion Ver, uint16_t VersionId,
-                           StringRef VersionName);
-   void assignWildcardVersion(SymbolVersion Ver, uint16_t VersionId);
 diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
-index a9a5a0b..39c1ad2 100644
+index ccc10599..e22294ab 100644
 --- a/ELF/LinkerScript.cpp
 +++ b/ELF/LinkerScript.cpp
-@@ -1827,14 +1827,8 @@ void ScriptParser::readAnonymousDeclaration() {
-     Config->VersionScriptGlobals = readSymbols();
- 
-   // Next, read local symbols.
--  if (consume("local:")) {
--    if (consume("*")) {
--      Config->DefaultSymbolVersion = VER_NDX_LOCAL;
--      expect(";");
--    } else {
+@@ -1849,7 +1849,7 @@ void ScriptParser::readAnonymousDeclaration() {
+       Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+       expect(";");
+     } else {
 -      setError("local symbol list for anonymous version is not supported");
--    }
--  }
-+  if (consume("local:"))
-+    Config->VersionScriptLocals = readSymbols();
++      Config->VersionScriptLocals = readSymbols();
+     }
+   }
    expect("}");
-   expect(";");
- }
+@@ -1872,10 +1872,8 @@ void ScriptParser::readVersionDeclaration(StringRef VerStr) {
+     if (consume("*")) {
+       Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+       expect(";");
+-    } else {
+-      for (SymbolVersion V : readSymbols())
+-        Config->VersionScriptLocals.push_back(V);
+-    }
++    } else
++      Config->VersionDefinitions.back().Locals = readSymbols();
+   }
+   expect("}");
+ 
 diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
-index 2d727358..4dbcdfcb 100644
+index f08fa622..90cfc0c1 100644
 --- a/ELF/SymbolTable.cpp
 +++ b/ELF/SymbolTable.cpp
 @@ -608,15 +608,22 @@ SymbolTable<ELFT>::findAllByVersion(SymbolVersion Ver) {
@@ -79,7 +69,7 @@ index 2d727358..4dbcdfcb 100644
    }
  }
  
-@@ -679,10 +687,16 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+@@ -673,10 +680,16 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
        Sym->body()->parseSymbolVersion();
  
    // Handle edge cases first.
@@ -99,11 +89,54 @@ index 2d727358..4dbcdfcb 100644
  
    if (Config->VersionDefinitions.empty())
      return;
+@@ -687,21 +700,23 @@ template <class ELFT> void SymbolTable<ELFT>::scanVersionScript() {
+ 
+   // First, we assign versions to exact matching symbols,
+   // i.e. version definitions not containing any glob meta-characters.
+-  for (SymbolVersion &Ver : Config->VersionScriptLocals)
+-    assignExactVersion(Ver, VER_NDX_LOCAL, "local");
+-  for (VersionDefinition &V : Config->VersionDefinitions)
++  for (VersionDefinition &V : Config->VersionDefinitions) {
+     for (SymbolVersion &Ver : V.Globals)
+       assignExactVersion(Ver, V.Id, V.Name);
++    for (SymbolVersion &Ver : V.Locals)
++      assignExactVersion(Ver, VER_NDX_LOCAL, "local");
++  }
+ 
+   // Next, we assign versions to fuzzy matching symbols,
+   // i.e. version definitions containing glob meta-characters.
+   // Note that because the last match takes precedence over previous matches,
+   // we iterate over the definitions in the reverse order.
+-  for (SymbolVersion &Ver : Config->VersionScriptLocals)
+-    assignWildcardVersion(Ver, VER_NDX_LOCAL);
+-  for (VersionDefinition &V : llvm::reverse(Config->VersionDefinitions))
++  for (VersionDefinition &V : llvm::reverse(Config->VersionDefinitions)) {
+     for (SymbolVersion &Ver : V.Globals)
+       assignWildcardVersion(Ver, V.Id);
++    for (SymbolVersion &Ver : V.Locals)
++      assignWildcardVersion(Ver, VER_NDX_LOCAL);
++  }
+ }
+ 
+ template class elf::SymbolTable<ELF32LE>;
+diff --git a/ELF/SymbolTable.h b/ELF/SymbolTable.h
+index 1e5a335a..92ea10c7 100644
+--- a/ELF/SymbolTable.h
++++ b/ELF/SymbolTable.h
+@@ -98,7 +98,7 @@ private:
+   std::vector<SymbolBody *> findAllByVersion(SymbolVersion Ver);
+ 
+   llvm::StringMap<std::vector<SymbolBody *>> &getDemangledSyms();
+-  void handleAnonymousVersion();
++  void handleAnonymousVersion(std::vector<SymbolVersion> &symbolversions, size_t Version);
+   void assignExactVersion(SymbolVersion Ver, uint16_t VersionId,
+                           StringRef VersionName);
+   void assignWildcardVersion(SymbolVersion Ver, uint16_t VersionId);
 diff --git a/ELF/Symbols.cpp b/ELF/Symbols.cpp
-index ba1f2189..919be03d 100644
+index 72bcff4e..e873167e 100644
 --- a/ELF/Symbols.cpp
 +++ b/ELF/Symbols.cpp
-@@ -213,6 +213,7 @@ void SymbolBody::parseSymbolVersion() {
+@@ -216,6 +216,7 @@ void SymbolBody::parseSymbolVersion() {
        symbol()->VersionId = Ver.Id;
      else
        symbol()->VersionId = Ver.Id | VERSYM_HIDDEN;
@@ -111,3 +144,17 @@ index ba1f2189..919be03d 100644
      return;
    }
  
+diff --git a/ELF/Symbols.h b/ELF/Symbols.h
+index 38889571..e50f398a 100644
+--- a/ELF/Symbols.h
++++ b/ELF/Symbols.h
+@@ -390,6 +390,9 @@ struct Symbol {
+   // Version definition index.
+   uint16_t VersionId;
+ 
++  // If a symbol has been processed.
++  bool VersionScriptProcessed = false;
++
+   // Symbol visibility. This is the computed minimum visibility of all
+   // observed non-DSO symbols.
+   unsigned Visibility : 2;
