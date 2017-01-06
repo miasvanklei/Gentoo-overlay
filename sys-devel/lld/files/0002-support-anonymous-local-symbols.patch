@@ -10,32 +10,6 @@ index b828cdb2..1a8a7ae3 100644
    size_t NameOff; // Offset in string table.
  };
  
-diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
-index ccc10599..e22294ab 100644
---- a/ELF/LinkerScript.cpp
-+++ b/ELF/LinkerScript.cpp
-@@ -1849,7 +1849,7 @@ void ScriptParser::readAnonymousDeclaration() {
-       Config->DefaultSymbolVersion = VER_NDX_LOCAL;
-       expect(";");
-     } else {
--      setError("local symbol list for anonymous version is not supported");
-+      Config->VersionScriptLocals = readSymbols();
-     }
-   }
-   expect("}");
-@@ -1872,10 +1872,8 @@ void ScriptParser::readVersionDeclaration(StringRef VerStr) {
-     if (consume("*")) {
-       Config->DefaultSymbolVersion = VER_NDX_LOCAL;
-       expect(";");
--    } else {
--      for (SymbolVersion V : readSymbols())
--        Config->VersionScriptLocals.push_back(V);
--    }
-+    } else
-+      Config->VersionDefinitions.back().Locals = readSymbols();
-   }
-   expect("}");
- 
 diff --git a/ELF/SymbolTable.cpp b/ELF/SymbolTable.cpp
 index f08fa622..90cfc0c1 100644
 --- a/ELF/SymbolTable.cpp
@@ -158,3 +132,42 @@ index 38889571..e50f398a 100644
    // Symbol visibility. This is the computed minimum visibility of all
    // observed non-DSO symbols.
    unsigned Visibility : 2;
+diff --git a/ELF/LinkerScript.cpp b/ELF/LinkerScript.cpp
+index ccc10599..5dd73229 100644
+--- a/ELF/LinkerScript.cpp
++++ b/ELF/LinkerScript.cpp
+@@ -1844,14 +1844,8 @@ void ScriptParser::readAnonymousDeclaration() {
+     Config->VersionScriptGlobals = readSymbols();
+ 
+   // Next, read local symbols.
+-  if (consume("local:")) {
+-    if (consume("*")) {
+-      Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+-      expect(";");
+-    } else {
+-      setError("local symbol list for anonymous version is not supported");
+-    }
+-  }
++  if (consume("local:"))
++      Config->VersionScriptLocals = readSymbols();
+   expect("}");
+   expect(";");
+ }
+@@ -1868,15 +1862,8 @@ void ScriptParser::readVersionDeclaration(StringRef VerStr) {
+     Config->VersionDefinitions.back().Globals = readSymbols();
+ 
+   // Read local symbols.
+-  if (consume("local:")) {
+-    if (consume("*")) {
+-      Config->DefaultSymbolVersion = VER_NDX_LOCAL;
+-      expect(";");
+-    } else {
+-      for (SymbolVersion V : readSymbols())
+-        Config->VersionScriptLocals.push_back(V);
+-    }
+-  }
++  if (consume("local:"))
++      Config->VersionDefinitions.back().Locals = readSymbols();
+   expect("}");
+ 
+   // Each version may have a parent version. For example, "Ver2"
