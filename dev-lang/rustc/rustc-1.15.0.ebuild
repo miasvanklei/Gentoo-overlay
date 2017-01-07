@@ -57,10 +57,9 @@ EOF
 	fi
 
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
-	eapply "${FILESDIR}"/fix-configure.patch
 
 	# llvm 4.0
-#	eapply "${FILESDIR}"/llvm-4.0.patch
+	eapply "${FILESDIR}"/llvm-4.0.patch
 
 	eapply_user
 }
