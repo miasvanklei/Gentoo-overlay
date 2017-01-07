@@ -1,0 +1,40 @@
+--- src/rustllvm/RustWrapper.cpp.bak	2017-01-07 16:16:43.312097767 +0100
++++ src/rustllvm/RustWrapper.cpp	2017-01-07 16:19:38.759545523 +0100
+@@ -477,6 +477,16 @@
+     const char* Flags,
+     unsigned RuntimeVer,
+     const char* SplitName) {
++#if LLVM_VERSION_GE(4, 0)
++    auto FileDir = Builder->createFile(File, Dir);
++    return wrap(Builder->createCompileUnit(Lang,
++                                           FileDir,
++                                           Producer,
++                                           isOptimized,
++                                           Flags,
++                                           RuntimeVer,
++                                           SplitName));
++#else
+     return wrap(Builder->createCompileUnit(Lang,
+                                            File,
+                                            Dir,
+@@ -485,6 +495,7 @@
+                                            Flags,
+                                            RuntimeVer,
+                                            SplitName));
++#endif
+ }
+ 
+ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateFile(
+@@ -663,9 +674,11 @@
+         InitExpr = Builder->createConstantValueExpression(
+                 FPVal->getValueAPF().bitcastToAPInt().getZExtValue());
+     }
+-#endif
+ 
++    return wrap(Builder->createGlobalVariableExpression(unwrapDI<DIDescriptor>(Context),
++#else
+     return wrap(Builder->createGlobalVariable(unwrapDI<DIDescriptor>(Context),
++#endif
+         Name,
+         LinkageName,
+         unwrapDI<DIFile>(File),

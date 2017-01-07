@@ -1,0 +1,22 @@
+--- a/src/libunwind/build.rs	2016-11-10 16:33:04.611193849 +0100
++++ b/src/libunwind/build.rs	2016-11-10 16:33:23.011113762 +0100
+@@ -17,7 +17,7 @@
+ 
+     if target.contains("linux") {
+         if target.contains("musl") && !target.contains("mips") {
+-            println!("cargo:rustc-link-lib=static=unwind");
++            println!("cargo:rustc-link-lib=unwind");
+         } else if !target.contains("android") {
+             println!("cargo:rustc-link-lib=gcc_s");
+         }
+--- a/src/libunwind/libunwind.rs	2016-11-10 16:33:46.215014104 +0100
++++ b/src/libunwind/libunwind.rs	2016-11-10 16:34:14.035896495 +0100
+@@ -251,7 +251,7 @@
+                target_env = "musl",
+                any(target_arch = "x86", target_arch = "x86_64"),
+                not(test)),
+-           link(name = "unwind", kind = "static"))]
++           link(name = "unwind"))]
+ #[cfg_attr(target_os = "fuchsia",
+            link(name = "unwind"))]
+ #[cfg_attr(any(target_os = "android", target_os = "openbsd"),
