@@ -10,7 +10,6 @@ DESCRIPTION="The libdispatch Project, (a.k.a. Grand Central Dispatch), for concu
 HOMEPAGE="https://github.com/apple/swift-corelibs-libdispatch"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-corelibs-libdispatch.git"
-#EGIT_BRANCH="swift-3.0-preview-1-branch"
 EGIT_SUBMODULES=()
 
 LICENSE="UoI-NCSA"
@@ -18,7 +17,7 @@ SLOT="0"
 KEYWORDS=""
 IUSE=""
 
-RDEPEND="sys-libs/compiler-rt
+RDEPEND="dev-lang/swift
 	dev-libs/libbsd
 	dev-libs/libkqueue
 	dev-libs/libpthread_workqueue"
