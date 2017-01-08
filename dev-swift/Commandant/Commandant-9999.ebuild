@@ -27,6 +27,7 @@ DEPEND="${RDEPEND}"
 src_prepare() {
         eapply ${FILESDIR}/remove-dependency.patch
         eapply ${FILESDIR}/install-lib.patch
+        eapply ${FILESDIR}/corefoundation.patch
         eapply_user
 }
 
