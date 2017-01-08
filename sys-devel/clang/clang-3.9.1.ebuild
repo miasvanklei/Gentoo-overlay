@@ -136,6 +136,9 @@ src_prepare() {
 	# add swift support
         eapply "${FILESDIR}"/0023-add-swift-support.patch
 
+	# revert test for swift
+        eapply "${FILESDIR}"/revert-shared_ptr.patch
+
 	# User patches
 	eapply_user
 
@@ -174,6 +177,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
+		-DLLVM_ENABLE_CXX1Y=ON
 	)
 
 	if multilib_is_native_abi; then
