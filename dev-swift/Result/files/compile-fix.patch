@@ -1,0 +1,15 @@
+diff --git a/Result/Result.swift b/Result/Result.swift
+index a9f2bbe..0b55624 100644
+--- a/Result/Result.swift
++++ b/Result/Result.swift
+@@ -129,8 +129,8 @@ public func materialize<T>(_ f: () throws -> T) -> Result<T, NSError> {
+ public func materialize<T>(_ f: @autoclosure () throws -> T) -> Result<T, NSError> {
+ 	do {
+ 		return .success(try f())
+-	} catch let error as NSError {
+-		return .failure(error)
++	} catch {
++		return .failure(error as! NSError)
+ 	}
+ }
+ 
