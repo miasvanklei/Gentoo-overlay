@@ -137,7 +137,7 @@ src_prepare() {
         eapply "${FILESDIR}"/0023-add-swift-support.patch
 
 	# revert test for swift
-        eapply "${FILESDIR}"/revert-shared_ptr.patch
+#        eapply "${FILESDIR}"/revert-shared_ptr.patch
 
 	# User patches
 	eapply_user
