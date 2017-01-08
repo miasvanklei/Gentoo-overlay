@@ -34,6 +34,7 @@ src_configure() {
 	local mycmakeargs=(
 		-DD_VERSION=2
 		-DBUILD_SHARED_LIBS=ON
+		-DLLVM_ENABLE_CXX1Y=ON
 	)
 	cmake-utils_src_configure
 }

@@ -23,7 +23,7 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	eapply ${FILESDIR}/compile-fix.patch
+	eapply ${FILESDIR}/corefoundation.patch
 	eapply ${FILESDIR}/install-lib.patch
 	mv Sources/YAML Sources/Yaml || die
 	eapply_user

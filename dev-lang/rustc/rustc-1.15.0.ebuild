@@ -8,28 +8,14 @@ PYTHON_COMPAT=( python3_5 )
 
 inherit python-any-r1 versionator toolchain-funcs
 
-if [[ ${PV} = *beta* ]]; then
-	betaver=${PV//*beta}
-	BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
-	MY_P="rustc-beta"
-	SLOT="beta/${PV}"
-	SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.gz"
-	KEYWORDS=""
-else
-	ABI_VER="$(get_version_component_range 1-2)"
-	SLOT="stable/${ABI_VER}"
-	MY_P="rustc-${PV}"
-	SRC="${MY_P}-src.tar.gz"
-	KEYWORDS="~amd64"
-fi
-
-STAGE0_VERSION="1.$(($(get_version_component_range 2) - 1)).0"
-RUST_STAGE0_amd64="rustc-${STAGE0_VERSION}-x86_64-unknown-linux-gnu"
+ABI_VER="$(get_version_component_range 1-2)"
+SLOT="stable/${ABI_VER}"
+KEYWORDS="~amd64"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/${SRC} -> rustc-${PV}-src.tar.gz"
+SRC_URI="https://static.rust-lang.org/dist/rustc-beta-src.tar.gz -> ${P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
@@ -49,7 +35,7 @@ DEPEND="${RDEPEND}
 
 PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
 
-S="${WORKDIR}/${MY_P}"
+S=${WORKDIR}/${PN}-beta-src
 
 src_prepare() {
 	find mk -name '*.mk' -exec \
@@ -70,14 +56,10 @@ EOF
 		eapply "${FILESDIR}"/dont-install-crtfiles.patch
 	fi
 
-	eapply "${FILESDIR}"/link-llvm-shared.patch
-	eapply "${FILESDIR}"/llvm-with-ffi.patch
-	eapply "${FILESDIR}"/link-with-libcxx.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 
 	# llvm 4.0
-	eapply "${FILESDIR}"/llvm-4.0-support.patch
-	eapply "${FILESDIR}"/llvm-4.0-support-1.patch
+	eapply "${FILESDIR}"/llvm-4.0.patch
 
 	eapply_user
 }
@@ -106,6 +88,7 @@ src_configure() {
 		--build=${target} \
 		--enable-rustbuild \
 		--enable-local-rust \
+		--enable-llvm-link-shared \
 		$(use_enable clang) \
 		$(use_enable debug) \
 		$(use_enable debug llvm-assertions) \

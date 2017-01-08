@@ -73,6 +73,7 @@ src_configure() {
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
+		-DLLVM_ENABLE_CXX1=ON
 	)
 
 	cmake-utils_src_configure

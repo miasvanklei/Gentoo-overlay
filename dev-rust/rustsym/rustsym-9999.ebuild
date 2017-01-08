@@ -15,7 +15,7 @@ SLOT="0"
 KEYWORDS=""
 IUSE=""
 
-COMMON_DEPEND="dev-lang/rust"
+COMMON_DEPEND="dev-lang/rustc"
 DEPEND="${COMMON_DEPEND}
 	dev-util/cargo"
 RDEPEND="${COMMON_DEPEND}"

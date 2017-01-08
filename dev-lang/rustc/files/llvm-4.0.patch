@@ -1,0 +1,62 @@
+--- src/rustllvm/RustWrapper.cpp.bak	2017-01-07 16:16:43.312097767 +0100
++++ src/rustllvm/RustWrapper.cpp	2017-01-07 16:19:38.759545523 +0100
+@@ -477,6 +477,16 @@
+     const char* Flags,
+     unsigned RuntimeVer,
+     const char* SplitName) {
++#if LLVM_VERSION_GE(4, 0)
++    auto FileDir = Builder->createFile(File, Dir);
++    return wrap(Builder->createCompileUnit(Lang,
++                                           FileDir,
++                                           Producer,
++                                           isOptimized,
++                                           Flags,
++                                           RuntimeVer,
++                                           SplitName));
++#else
+     return wrap(Builder->createCompileUnit(Lang,
+                                            File,
+                                            Dir,
+@@ -485,6 +495,7 @@
+                                            Flags,
+                                            RuntimeVer,
+                                            SplitName));
++#endif
+ }
+ 
+ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateFile(
+@@ -663,9 +674,11 @@
+         InitExpr = Builder->createConstantValueExpression(
+                 FPVal->getValueAPF().bitcastToAPInt().getZExtValue());
+     }
+-#endif
+ 
++    return wrap(Builder->createGlobalVariableExpression(unwrapDI<DIDescriptor>(Context),
++#else
+     return wrap(Builder->createGlobalVariable(unwrapDI<DIDescriptor>(Context),
++#endif
+         Name,
+         LinkageName,
+         unwrapDI<DIFile>(File),
+--- a/configure	2017-01-07 16:11:57.432055430 +0100
++++ b/configure	2017-01-07 16:12:50.463870789 +0100
+@@ -794,9 +794,6 @@
+ fi
+ 
+ python_version=$($CFG_PYTHON -V 2>&1)
+-if [ $(echo $python_version | grep -c '^Python 2\.7') -ne 1 ]; then
+-    err "Found $python_version, but Python 2.7 is required"
+-fi
+ 
+ # If we have no git directory then we are probably a tarball distribution
+ # and shouldn't attempt to load submodules
+@@ -1069,6 +1066,9 @@
+         (3.[7-9]*)
+             msg "found ok version of LLVM: $LLVM_VERSION"
+             ;;
++        (4.[0]*)
++            msg "found ok version of LLVM: $LLVM_VERSION"
++            ;;
+         (*)
+             err "bad LLVM version: $LLVM_VERSION, need >=3.7"
+             ;;

@@ -151,6 +151,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DWITH_POLLY=OFF # TODO
 		-DLLVM_ENABLE_LLD=ON
+		-DLLVM_ENABLE_CXX1Y=ON
 
 		-DFFI_INCLUDE_DIR="${ffi_cflags#-I}"
 		-DFFI_LIBRARY_DIR="${ffi_ldflags#-L}"

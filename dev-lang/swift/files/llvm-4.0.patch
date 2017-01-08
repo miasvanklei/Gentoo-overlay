@@ -2373,106 +2373,6 @@ index 6e16ed4ca3..98bcaf8728 100644
         llvm::cl::init(ActionType::DumpReflectionSections));
  
  static llvm::cl::list<std::string>
-diff --git a/lib/IDE/Utils.cpp b/lib/IDE/Utils.cpp
-index 8f592443dc..1b712be568 100644
---- a/lib/IDE/Utils.cpp
-+++ b/lib/IDE/Utils.cpp
-@@ -246,7 +246,7 @@ bool ide::initInvocationByClangArguments(ArrayRef<const char *> ArgList,
-   ClangArgList.insert(ClangArgList.end(), ArgList.begin(), ArgList.end());
- 
-   // Create a new Clang compiler invocation.
--  llvm::IntrusiveRefCntPtr<clang::CompilerInvocation> ClangInvok{
-+  std::unique_ptr<clang::CompilerInvocation> ClangInvok{
-     clang::createInvocationFromCommandLine(ClangArgList, ClangDiags)
-   };
-   if (!ClangInvok || ClangDiags->hasErrorOccurred()) {
-@@ -342,7 +342,7 @@ bool ide::initInvocationByClangArguments(ArrayRef<const char *> ArgList,
-     CCArgs.push_back(Entry);
-   }
- 
--  if (!ClangInvok->getLangOpts()->CompilingModule) {
-+  if (!ClangInvok->getLangOpts()->isCompilingModule()) {
-     CCArgs.push_back("-Xclang");
-     llvm::SmallString<64> Str;
-     Str += "-fmodule-name=";
-diff --git a/lib/ClangImporter/ClangImporter.cpp b/lib/ClangImporter/ClangImporter.cpp
-index a5d5c105d7..1bf9243062 100644
---- a/lib/ClangImporter/ClangImporter.cpp
-+++ b/lib/ClangImporter/ClangImporter.cpp
-@@ -157,8 +157,8 @@ namespace {
-            /*null-terminated=*/true);
-     }
- 
--    const char *getBufferIdentifier() const override {
--      return name.c_str();
-+    StringRef getBufferIdentifier() const override {
-+      return name;
-     }
- 
-     BufferKind getBufferKind() const override {
-@@ -623,7 +623,7 @@ ClangImporter::create(ASTContext &ctx,
-     invocationArgs.push_back(argStr.c_str());
- 
-   // FIXME: These can't be controlled from the command line.
--  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagnosticOpts{
-+  std::shared_ptr<clang::DiagnosticOptions> diagnosticOpts{
-     new clang::DiagnosticOptions
-   };
- 
-@@ -635,7 +635,7 @@ ClangImporter::create(ASTContext &ctx,
-                                                         diagClient.release());
- 
-   // Create a new Clang compiler invocation.
--  llvm::IntrusiveRefCntPtr<CompilerInvocation> invocation{
-+  std::shared_ptr<CompilerInvocation> invocation{
-     clang::createInvocationFromCommandLine(invocationArgs, clangDiags)
-   };
-   if (!invocation)
-@@ -662,7 +662,7 @@ ClangImporter::create(ASTContext &ctx,
- 
-   // Install a Clang module file extension to build Swift name lookup tables.
-   invocation->getFrontendOpts().ModuleFileExtensions.push_back(
--      new SwiftNameLookupExtension(importer->Impl.LookupTables,
-+      std::make_shared<SwiftNameLookupExtension>(importer->Impl.LookupTables,
-                                    importer->Impl.SwiftContext,
-                                    importer->Impl.platformAvailability,
-                                    importer->Impl.InferImportAsMember));
-@@ -677,7 +677,7 @@ ClangImporter::create(ASTContext &ctx,
-   importer->Impl.Instance.reset(new CompilerInstance(PCHContainerOperations));
-   auto &instance = *importer->Impl.Instance;
-   instance.setDiagnostics(&*clangDiags);
--  instance.setInvocation(&*invocation);
-+  instance.setInvocation(invocation);
- 
-   // Create the associated action.
-   importer->Impl.Action.reset(new ParsingAction);
-@@ -950,7 +950,7 @@ bool ClangImporter::importBridgingHeader(StringRef header, Module *adapter,
- std::string ClangImporter::getBridgingHeaderContents(StringRef headerPath,
-                                                      off_t &fileSize,
-                                                      time_t &fileModTime) {
--  llvm::IntrusiveRefCntPtr<clang::CompilerInvocation> invocation{
-+  std::shared_ptr<clang::CompilerInvocation> invocation{
-     new clang::CompilerInvocation(*Impl.Invocation)
-   };
-   invocation->getFrontendOpts().DisableFree = false;
-@@ -962,7 +962,7 @@ std::string ClangImporter::getBridgingHeaderContents(StringRef headerPath,
- 
-   clang::CompilerInstance rewriteInstance(
-     Impl.Instance->getPCHContainerOperations());
--  rewriteInstance.setInvocation(&*invocation);
-+  rewriteInstance.setInvocation(invocation);
-   rewriteInstance.createDiagnostics(new clang::IgnoringDiagConsumer);
- 
-   clang::FileManager &fileManager = Impl.Instance->getFileManager();
-@@ -2245,7 +2245,7 @@ StringRef ClangModuleUnit::getFilename() const {
-   if (!clangModule)
-     return "<imports>";
-   if (const clang::FileEntry *F = clangModule->getASTFile())
--    if (F->getName())
-+    if (!F->getName().empty())
-       return F->getName();
-   return StringRef();
- }
 diff --git a/lib/ClangImporter/ImportDecl.cpp b/lib/ClangImporter/ImportDecl.cpp
 index 93d36ebfb9..76a18515b0 100644
 --- a/lib/ClangImporter/ImportDecl.cpp
@@ -2500,8 +2400,82 @@ index 93d36ebfb9..76a18515b0 100644
          return std::make_pair(Type(), "");
        break;
  
+diff --git a/lib/ClangImporter/ClangImporter.cpp b/lib/ClangImporter/ClangImporter.cpp
+index 1356fb6c0d..8e5c7a215e 100644
+--- a/lib/ClangImporter/ClangImporter.cpp
++++ b/lib/ClangImporter/ClangImporter.cpp
+@@ -157,8 +157,8 @@ namespace {
+            /*null-terminated=*/true);
+     }
+ 
+-    const char *getBufferIdentifier() const override {
+-      return name.c_str();
++    StringRef getBufferIdentifier() const override {
++      return name;
+     }
+ 
+     BufferKind getBufferKind() const override {
+@@ -635,7 +635,7 @@ ClangImporter::create(ASTContext &ctx,
+                                                         diagClient.release());
+ 
+   // Create a new Clang compiler invocation.
+-  llvm::IntrusiveRefCntPtr<CompilerInvocation> invocation{
++  std::shared_ptr<CompilerInvocation> invocation{
+     clang::createInvocationFromCommandLine(invocationArgs, clangDiags)
+   };
+   if (!invocation)
+@@ -662,10 +662,11 @@ ClangImporter::create(ASTContext &ctx,
+ 
+   // Install a Clang module file extension to build Swift name lookup tables.
+   invocation->getFrontendOpts().ModuleFileExtensions.push_back(
+-      new SwiftNameLookupExtension(importer->Impl.LookupTables,
++      std::make_shared<SwiftNameLookupExtension>(SwiftNameLookupExtension(
++                                   importer->Impl.LookupTables,
+                                    importer->Impl.SwiftContext,
+                                    importer->Impl.platformAvailability,
+-                                   importer->Impl.InferImportAsMember));
++                                   importer->Impl.InferImportAsMember)));
+ 
+   // Create a compiler instance.
+   auto PCHContainerOperations =
+@@ -677,7 +678,7 @@ ClangImporter::create(ASTContext &ctx,
+   importer->Impl.Instance.reset(new CompilerInstance(PCHContainerOperations));
+   auto &instance = *importer->Impl.Instance;
+   instance.setDiagnostics(&*clangDiags);
+-  instance.setInvocation(&*invocation);
++  instance.setInvocation(std::move(invocation));
+ 
+   // Create the associated action.
+   importer->Impl.Action.reset(new ParsingAction);
+@@ -950,7 +951,7 @@ bool ClangImporter::importBridgingHeader(StringRef header, Module *adapter,
+ std::string ClangImporter::getBridgingHeaderContents(StringRef headerPath,
+                                                      off_t &fileSize,
+                                                      time_t &fileModTime) {
+-  llvm::IntrusiveRefCntPtr<clang::CompilerInvocation> invocation{
++  std::shared_ptr<clang::CompilerInvocation> invocation{
+     new clang::CompilerInvocation(*Impl.Invocation)
+   };
+   invocation->getFrontendOpts().DisableFree = false;
+@@ -962,7 +963,7 @@ std::string ClangImporter::getBridgingHeaderContents(StringRef headerPath,
+ 
+   clang::CompilerInstance rewriteInstance(
+     Impl.Instance->getPCHContainerOperations());
+-  rewriteInstance.setInvocation(&*invocation);
++  rewriteInstance.setInvocation(invocation);
+   rewriteInstance.createDiagnostics(new clang::IgnoringDiagConsumer);
+ 
+   clang::FileManager &fileManager = Impl.Instance->getFileManager();
+@@ -2245,7 +2246,7 @@ StringRef ClangModuleUnit::getFilename() const {
+   if (!clangModule)
+     return "<imports>";
+   if (const clang::FileEntry *F = clangModule->getASTFile())
+-    if (F->getName())
++    if (!F->getName().empty())
+       return F->getName();
+   return StringRef();
+ }
 diff --git a/lib/ClangImporter/ImporterImpl.h b/lib/ClangImporter/ImporterImpl.h
-index b0ef4a6146..39c9a9f0d8 100644
+index 7296dd9a24..543770c499 100644
 --- a/lib/ClangImporter/ImporterImpl.h
 +++ b/lib/ClangImporter/ImporterImpl.h
 @@ -36,7 +36,6 @@
@@ -2521,3 +2495,25 @@ index b0ef4a6146..39c9a9f0d8 100644
  
    /// \brief Clang compiler instance, which is used to actually load Clang
    /// modules.
+diff --git a/lib/IDE/Utils.cpp b/lib/IDE/Utils.cpp
+index 0a68bbb97c..0713eee483 100644
+--- a/lib/IDE/Utils.cpp
++++ b/lib/IDE/Utils.cpp
+@@ -246,7 +246,7 @@ bool ide::initInvocationByClangArguments(ArrayRef<const char *> ArgList,
+   ClangArgList.insert(ClangArgList.end(), ArgList.begin(), ArgList.end());
+ 
+   // Create a new Clang compiler invocation.
+-  llvm::IntrusiveRefCntPtr<clang::CompilerInvocation> ClangInvok{
++  std::unique_ptr<clang::CompilerInvocation> ClangInvok{
+     clang::createInvocationFromCommandLine(ClangArgList, ClangDiags)
+   };
+   if (!ClangInvok || ClangDiags->hasErrorOccurred()) {
+@@ -342,7 +342,7 @@ bool ide::initInvocationByClangArguments(ArrayRef<const char *> ArgList,
+     CCArgs.push_back(Entry);
+   }
+ 
+-  if (!ClangInvok->getLangOpts()->CompilingModule) {
++  if (!ClangInvok->getLangOpts()->isCompilingModule()) {
+     CCArgs.push_back("-Xclang");
+     llvm::SmallString<64> Str;
+     Str += "-fmodule-name=";

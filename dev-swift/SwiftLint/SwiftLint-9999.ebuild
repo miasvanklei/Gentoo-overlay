@@ -30,7 +30,6 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
         eapply ${FILESDIR}/remove-dependencies.patch
-        eapply ${FILESDIR}/install-lib.patch
         eapply ${FILESDIR}/foundation.patch
         eapply_user
 }
@@ -46,9 +45,6 @@ src_compile() {
 }
 
 src_install() {
-        mkdir -p ${D}/usr/lib/swift/linux/x86_64 || die
         mkdir -p ${D}/usr/bin || die
-        cp .build/release/*.swift* ${D}/usr/lib/swift/linux/x86_64 || die
-        cp .build/release/lib* ${D}/usr/lib/swift/linux || die
         cp .build/release/swiftlint ${D}/usr/bin || die
 }
