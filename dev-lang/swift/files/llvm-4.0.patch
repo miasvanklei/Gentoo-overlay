@@ -2401,6 +2401,20 @@ index a5d5c105d7..1bf9243062 100644
      }
  
      BufferKind getBufferKind() const override {
+@@ -662,10 +662,11 @@ ClangImporter::create(ASTContext &ctx,
+ 
+   // Install a Clang module file extension to build Swift name lookup tables.
+   invocation->getFrontendOpts().ModuleFileExtensions.push_back(
+-      new SwiftNameLookupExtension(importer->Impl.LookupTables,
++      std::make_shared<SwiftNameLookupExtension>(SwiftNameLookupExtension(
++                                   importer->Impl.LookupTables,
+                                    importer->Impl.SwiftContext,
+                                    importer->Impl.platformAvailability,
+-                                   importer->Impl.InferImportAsMember));
++                                   importer->Impl.InferImportAsMember)));
+ 
+   // Create a compiler instance.
+   auto PCHContainerOperations =
 @@ -2245,7 +2245,7 @@ StringRef ClangModuleUnit::getFilename() const {
    if (!clangModule)
      return "<imports>";
