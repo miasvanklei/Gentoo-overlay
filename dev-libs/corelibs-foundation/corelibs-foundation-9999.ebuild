@@ -29,11 +29,13 @@ RDEPEND="dev-libs/libdispatch
 	elibc_musl? ( sys-libs/fts-standalone )
 	net-misc/curl
 	dev-libs/libxml2"
+
 DEPEND="${RDEPEND}"
 
 src_prepare() {
 	eapply ${FILESDIR}/fix-build.patch
 	eapply ${FILESDIR}/fix-queue.patch
+
 	eapply_user
 }
 

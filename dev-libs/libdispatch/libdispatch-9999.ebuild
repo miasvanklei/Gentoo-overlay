@@ -40,5 +40,11 @@ src_configure() {
 }
 
 src_compile() {
+	# race conditions
 	emake -j1
+}
+
+src_install() {
+	default
+	rm ${D}/usr/lib/swift/linux/libdispatch.la
 }
