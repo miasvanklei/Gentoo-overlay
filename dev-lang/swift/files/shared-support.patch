@@ -2,22 +2,26 @@ diff --git a/cmake/modules/AddSwift.cmake b/cmake/modules/AddSwift.cmake
 index 86c0839e26..2de83ae5f2 100644
 --- a/cmake/modules/AddSwift.cmake
 +++ b/cmake/modules/AddSwift.cmake
-@@ -914,11 +874,11 @@ function(_add_swift_library_single target name)
+@@ -952,17 +912,11 @@ function(_add_swift_library_single target name)
    # specified with this syntax, which breaks linking.
    set(prefixed_link_libraries)
    foreach(dep ${SWIFTLIB_SINGLE_LINK_LIBRARIES})
 -    if("${dep}" MATCHES "^clang")
--      set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
--    endif()
-+    #if("${dep}" MATCHES "^clang")
-+    #  set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
-+    #endif()
-     if("${dep}" STREQUAL "cmark")
--      set(dep "${CMARK_LIBRARY_DIR}/lib${dep}.a")
-+      set(dep "-lcmark")
+-      if("${SWIFT_HOST_VARIANT_SDK}" STREQUAL "WINDOWS")
+-        set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/${dep}.lib")
+-      else()
+-        set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
+-      endif()
+-    elseif("${dep}" STREQUAL "cmark")
++    if("${dep}" STREQUAL "cmark")
+       if("${SWIFT_HOST_VARIANT_SDK}" STREQUAL "WINDOWS")
+         set(dep "${CMARK_LIBRARY_DIR}/${dep}.lib")
+       else()
+-        set(dep "${CMARK_LIBRARY_DIR}/lib${dep}.a")
++        set(dep "-lcmark")
+       endif()
      endif()
      list(APPEND prefixed_link_libraries "${dep}")
-   endforeach()
 diff --git a/tools/driver/CMakeLists.txt b/tools/driver/CMakeLists.txt
 index 902b9fe97c..f6986f9a1c 100644
 --- a/tools/driver/CMakeLists.txt

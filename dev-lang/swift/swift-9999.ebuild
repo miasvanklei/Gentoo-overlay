@@ -40,8 +40,7 @@ src_prepare() {
 	eapply ${FILESDIR}/glibc-modulemap.patch
 	eapply ${FILESDIR}/shared-support.patch
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
-	eapply ${FILESDIR}/llvm-4.0.patch
-	eapply ${FILESDIR}/dirty-fix.patch
+	eapply ${FILESDIR}/llvm-clang-4.0.patch
 	default
 }
 

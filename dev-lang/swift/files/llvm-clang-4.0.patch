@@ -973,7 +973,7 @@ index f64301a583..47584d44b0 100644
    if (auto SF = dyn_cast<SourceFile>(DC))
 -    return SF->getFilename().data();
 +    return SF->getFilename();
-   else if (auto M = dyn_cast<Module>(DC))
+   else if (auto M = dyn_cast<ModuleDecl>(DC))
 -    return M->getModuleFilename().data();
 +    return M->getModuleFilename();
    else
@@ -2415,48 +2415,69 @@ index 1356fb6c0d..8e5c7a215e 100644
      }
  
      BufferKind getBufferKind() const override {
-@@ -635,7 +635,7 @@ ClangImporter::create(ASTContext &ctx,
+@@ -635,12 +635,10 @@ ClangImporter::create(ASTContext &ctx,
                                                          diagClient.release());
  
    // Create a new Clang compiler invocation.
 -  llvm::IntrusiveRefCntPtr<CompilerInvocation> invocation{
-+  std::shared_ptr<CompilerInvocation> invocation{
-     clang::createInvocationFromCommandLine(invocationArgs, clangDiags)
-   };
-   if (!invocation)
-@@ -662,10 +662,11 @@ ClangImporter::create(ASTContext &ctx,
+-    clang::createInvocationFromCommandLine(invocationArgs, clangDiags)
+-  };
+-  if (!invocation)
++  importer->Impl.Invocation =
++      clang::createInvocationFromCommandLine(invocationArgs, clangDiags);
++  if (!importer->Impl.Invocation)
+     return nullptr;
+-  importer->Impl.Invocation = invocation;
+ 
+   // Don't stop emitting messages if we ever can't load a module.
+   // FIXME: This is actually a general problem: any "fatal" error could mess up
+@@ -656,16 +654,17 @@ ClangImporter::create(ASTContext &ctx,
+   auto sourceBuffer = llvm::MemoryBuffer::getMemBuffer(
+     "extern int __swift __attribute__((unavailable));",
+     Implementation::moduleImportBufferName);
+-  clang::PreprocessorOptions &ppOpts = invocation->getPreprocessorOpts();
++  clang::PreprocessorOptions &ppOpts =
++      importer->Impl.Invocation->getPreprocessorOpts();
+   ppOpts.addRemappedFile(Implementation::moduleImportBufferName,
+                          sourceBuffer.release());
  
    // Install a Clang module file extension to build Swift name lookup tables.
-   invocation->getFrontendOpts().ModuleFileExtensions.push_back(
+-  invocation->getFrontendOpts().ModuleFileExtensions.push_back(
 -      new SwiftNameLookupExtension(importer->Impl.LookupTables,
-+      std::make_shared<SwiftNameLookupExtension>(SwiftNameLookupExtension(
-+                                   importer->Impl.LookupTables,
-                                    importer->Impl.SwiftContext,
-                                    importer->Impl.platformAvailability,
+-                                   importer->Impl.SwiftContext,
+-                                   importer->Impl.platformAvailability,
 -                                   importer->Impl.InferImportAsMember));
-+                                   importer->Impl.InferImportAsMember)));
++  importer->Impl.Invocation->getFrontendOpts().ModuleFileExtensions.push_back(
++      std::make_shared<SwiftNameLookupExtension>(
++          importer->Impl.LookupTables, importer->Impl.SwiftContext,
++          importer->Impl.platformAvailability,
++          importer->Impl.InferImportAsMember));
  
    // Create a compiler instance.
    auto PCHContainerOperations =
-@@ -677,7 +678,7 @@ ClangImporter::create(ASTContext &ctx,
+@@ -677,7 +676,7 @@ ClangImporter::create(ASTContext &ctx,
    importer->Impl.Instance.reset(new CompilerInstance(PCHContainerOperations));
    auto &instance = *importer->Impl.Instance;
    instance.setDiagnostics(&*clangDiags);
 -  instance.setInvocation(&*invocation);
-+  instance.setInvocation(std::move(invocation));
++  instance.setInvocation(importer->Impl.Invocation);
  
    // Create the associated action.
    importer->Impl.Action.reset(new ParsingAction);
-@@ -950,7 +951,7 @@ bool ClangImporter::importBridgingHeader(StringRef header, Module *adapter,
+@@ -950,9 +949,9 @@ bool ClangImporter::importBridgingHeader(StringRef header, ModuleDecl *adapter,
  std::string ClangImporter::getBridgingHeaderContents(StringRef headerPath,
                                                       off_t &fileSize,
                                                       time_t &fileModTime) {
 -  llvm::IntrusiveRefCntPtr<clang::CompilerInvocation> invocation{
-+  std::shared_ptr<clang::CompilerInvocation> invocation{
-     new clang::CompilerInvocation(*Impl.Invocation)
-   };
+-    new clang::CompilerInvocation(*Impl.Invocation)
+-  };
++  auto invocation =
++      std::make_shared<clang::CompilerInvocation>(*Impl.Invocation);
++
    invocation->getFrontendOpts().DisableFree = false;
-@@ -962,7 +963,7 @@ std::string ClangImporter::getBridgingHeaderContents(StringRef headerPath,
+   invocation->getFrontendOpts().Inputs.clear();
+   invocation->getFrontendOpts().Inputs.push_back(
+@@ -962,7 +961,7 @@ std::string ClangImporter::getBridgingHeaderContents(StringRef headerPath,
  
    clang::CompilerInstance rewriteInstance(
      Impl.Instance->getPCHContainerOperations());
@@ -2499,15 +2520,18 @@ diff --git a/lib/IDE/Utils.cpp b/lib/IDE/Utils.cpp
 index 0a68bbb97c..0713eee483 100644
 --- a/lib/IDE/Utils.cpp
 +++ b/lib/IDE/Utils.cpp
-@@ -246,7 +246,7 @@ bool ide::initInvocationByClangArguments(ArrayRef<const char *> ArgList,
+@@ -246,9 +246,8 @@ bool ide::initInvocationByClangArguments(ArrayRef<const char *> ArgList,
    ClangArgList.insert(ClangArgList.end(), ArgList.begin(), ArgList.end());
  
    // Create a new Clang compiler invocation.
 -  llvm::IntrusiveRefCntPtr<clang::CompilerInvocation> ClangInvok{
-+  std::unique_ptr<clang::CompilerInvocation> ClangInvok{
-     clang::createInvocationFromCommandLine(ClangArgList, ClangDiags)
-   };
+-    clang::createInvocationFromCommandLine(ClangArgList, ClangDiags)
+-  };
++  std::unique_ptr<clang::CompilerInvocation> ClangInvok =
++      clang::createInvocationFromCommandLine(ClangArgList, ClangDiags);
    if (!ClangInvok || ClangDiags->hasErrorOccurred()) {
+     for (auto I = DiagBuf.err_begin(), E = DiagBuf.err_end(); I != E; ++I) {
+       Error += I->second;
 @@ -342,7 +342,7 @@ bool ide::initInvocationByClangArguments(ArrayRef<const char *> ArgList,
      CCArgs.push_back(Entry);
    }
@@ -2517,3 +2541,63 @@ index 0a68bbb97c..0713eee483 100644
      CCArgs.push_back("-Xclang");
      llvm::SmallString<64> Str;
      Str += "-fmodule-name=";
+diff --git a/include/swift/AST/Builtins.h b/include/swift/AST/Builtins.h
+index bfc31ae..5380db2 100644
+--- a/include/swift/AST/Builtins.h
++++ b/include/swift/AST/Builtins.h
+@@ -82,7 +82,7 @@ StringRef getBuiltinBaseName(ASTContext &C, StringRef Name,
+ /// Given an LLVM IR intrinsic name with argument types remove (e.g. like
+ /// "bswap") return the LLVM IR IntrinsicID for the intrinsic or 0 if the
+ /// intrinsic name doesn't match anything.
+-unsigned getLLVMIntrinsicID(StringRef Name, bool HasArgTypes);
++unsigned getLLVMIntrinsicID(StringRef Name);
+ 
+ /// Get the LLVM intrinsic ID that corresponds to the given builtin with
+ /// overflow.
+diff --git a/lib/AST/Builtins.cpp b/lib/AST/Builtins.cpp
+index 996c580..b7e526d 100644
+--- a/lib/AST/Builtins.cpp
++++ b/lib/AST/Builtins.cpp
+@@ -1137,7 +1137,7 @@ static const char *const IntrinsicNameTable[] = {
+ /// getLLVMIntrinsicID - Given an LLVM IR intrinsic name with argument types
+ /// removed (e.g. like "bswap") return the LLVM IR IntrinsicID for the intrinsic
+ /// or 0 if the intrinsic name doesn't match anything.
+-unsigned swift::getLLVMIntrinsicID(StringRef InName, bool hasArgTypes) {
++unsigned swift::getLLVMIntrinsicID(StringRef InName) {
+   using namespace llvm;
+ 
+   // Swift intrinsic names start with int_.
+@@ -1150,9 +1150,7 @@ unsigned swift::getLLVMIntrinsicID(StringRef InName, bool hasArgTypes) {
+   NameS.append("llvm.");
+   for (char C : InName)
+     NameS.push_back(C == '_' ? '.' : C);
+-  if (hasArgTypes)
+-    NameS.push_back('.');
+-  
++
+   const char *Name = NameS.c_str();
+   ArrayRef<const char *> NameTable(&IntrinsicNameTable[1],
+                                    TargetInfos[1].Offset);
+@@ -1345,7 +1343,7 @@ ValueDecl *swift::getBuiltinValueDecl(ASTContext &Context, Identifier Id) {
+ 
+   // If this is the name of an LLVM intrinsic, cons up a swift function with a
+   // type that matches the IR types.
+-  if (unsigned ID = getLLVMIntrinsicID(OperationName, !Types.empty())) {
++  if (unsigned ID = getLLVMIntrinsicID(OperationName)) {
+     SmallVector<Type, 8> ArgElts;
+     Type ResultTy;
+     FunctionType::ExtInfo Info;
+diff --git a/lib/SIL/SILModule.cpp b/lib/SIL/SILModule.cpp
+index a403194..32058b5 100644
+--- a/lib/SIL/SILModule.cpp
++++ b/lib/SIL/SILModule.cpp
+@@ -432,8 +432,7 @@ const IntrinsicInfo &SILModule::getIntrinsicInfo(Identifier ID) {
+ 
+   // Otherwise, lookup the ID and Type and store them in the map.
+   StringRef NameRef = getBuiltinBaseName(getASTContext(), ID.str(), Info.Types);
+-  Info.ID =
+-    (llvm::Intrinsic::ID)getLLVMIntrinsicID(NameRef, !Info.Types.empty());
++  Info.ID = (llvm::Intrinsic::ID)getLLVMIntrinsicID(NameRef);
+ 
+   return Info;
+ }
