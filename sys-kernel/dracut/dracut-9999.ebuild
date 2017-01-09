@@ -91,7 +91,7 @@ src_prepare() {
 
 	if use systemd; then
 		local systemdutildir="$(systemd_get_utildir)"
-		local systemdsystemunitdir="$(systemd_get_unitdir)"
+		local systemdsystemunitdir="$(systemd_get_systemunitdir)"
 		local systemdsystemconfdir="$("$(tc-getPKG_CONFIG)" systemd \
 			--variable=systemdsystemconfdir)"
 		[[ ${systemdsystemconfdir} ]] \
@@ -113,7 +113,7 @@ src_prepare() {
 			-i "${S}/dracut.conf.d/gentoo.conf.example" || die
 	fi
 
-	epatch_user
+	eapply_user
 }
 
 src_configure() {
@@ -122,7 +122,7 @@ src_configure() {
 	myconf+=" --bashcompletiondir=$(get_bashcompdir)"
 
 	if use systemd; then
-		myconf+=" --systemdsystemunitdir='$(systemd_get_unitdir)'"
+		myconf+=" --systemdsystemunitdir='$(systemd_get_systemunitdir)'"
 	fi
 
 	econf ${myconf}
