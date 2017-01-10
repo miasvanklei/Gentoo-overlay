@@ -23,7 +23,7 @@ RDEPEND="dev-libs/libdispatch
 	sys-libs/zlib
 	dev-libs/openssl
 	net-nds/openldap
-	elibc_musl? ( sys-libs/fts-standalone )
+	elibc_musl? ( sys-libs/musl-fts )
 	net-misc/curl
 	dev-libs/libxml2"
 DEPEND="${RDEPEND}"

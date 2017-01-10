@@ -31,7 +31,7 @@ RDEPEND="${CDEPEND}
 	>=sys-apps/util-linux-2.21
 
 	debug? ( dev-util/strace )
-	elibc_musl? ( sys-libs/fts-standalone )
+	elibc_musl? ( sys-libs/musl-fts )
 	selinux? (
 		sys-libs/libselinux
 		sys-libs/libsepol
