@@ -12,10 +12,10 @@ index 9860cd8..ef01bfa 100644
 -    FILES "${SWIFT_PATH_TO_LLVM_BUILD}/bin/FileCheck"
 -    DESTINATION bin)
 diff --git a/stdlib/public/SwiftShims/CMakeLists.txt b/stdlib/public/SwiftShims/CMakeLists.txt
-index 1993212..7d45ac6 100644
+index ebbe806daa..6e99c1688b 100644
 --- a/stdlib/public/SwiftShims/CMakeLists.txt
 +++ b/stdlib/public/SwiftShims/CMakeLists.txt
-@@ -51,67 +51,6 @@ if ("${LLVM_PACKAGE_VERSION}" STREQUAL "")
+@@ -51,73 +51,6 @@ if ("${LLVM_PACKAGE_VERSION}" STREQUAL "")
            "LLVM_PACKAGE_VERSION must be set before including subdirectories")
  endif()
  
@@ -47,11 +47,17 @@ index 1993212..7d45ac6 100644
 -  set(clang_headers_location "${LLVM_LIBRARY_DIR}/clang/${CLANG_VERSION}")
 -endif()
 -
+-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
+-  set(cmake_symlink_option "copy_directory")
+-else()
+-  set(cmake_symlink_option "create_symlink")
+-endif()
+-
 -add_custom_command_target(unused_var
 -    COMMAND
 -      "${CMAKE_COMMAND}" "-E" "make_directory" "${SWIFTLIB_DIR}"
 -    COMMAND
--      "${CMAKE_COMMAND}" "-E" "create_symlink"
+-      "${CMAKE_COMMAND}" "-E" "${cmake_symlink_option}"
 -      "${clang_headers_location}"
 -      "${SWIFTLIB_DIR}/clang"
 -

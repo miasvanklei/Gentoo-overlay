@@ -383,7 +383,7 @@ index 0fd375cdc4..cc11796e4f 100644
 -  const UTF8* End = reinterpret_cast<const UTF8*>(Text.end());
 +  const llvm::UTF8* Data = reinterpret_cast<const llvm::UTF8*>(Text.begin());
 +  const llvm::UTF8* End = reinterpret_cast<const llvm::UTF8*>(Text.end());
-   StringRef Replacement = "\ufffd";
+   StringRef Replacement = u8"\ufffd";
    while (Data < End) {
 -    auto Step = getNumBytesForUTF8(*Data);
 +    auto Step = llvm::getNumBytesForUTF8(*Data);
@@ -2340,12 +2340,12 @@ index 81663f93d6..357654608a 100644
 --- a/tools/swift-ide-test/swift-ide-test.cpp
 +++ b/tools/swift-ide-test/swift-ide-test.cpp
 @@ -212,8 +212,7 @@ Action(llvm::cl::desc("Mode:"), llvm::cl::init(ActionType::None),
-                       "Print group names in a module"),
-            clEnumValN(ActionType::Range,
-                       "range",
--                      "Print information about a given range"),
+                       "Print information about a given range"),
+            clEnumValN(ActionType::PrintIndexedSymbols,
+                       "print-indexed-symbols",
+-                      "Print indexed symbol information"),
 -           clEnumValEnd));
-+                      "Print information about a given range")));
++                      "Print indexed symbol information")));
  
  static llvm::cl::opt<std::string>
  SourceFilename("source-filename", llvm::cl::desc("Name of the source file"));

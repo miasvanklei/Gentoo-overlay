@@ -1,8 +1,8 @@
 diff --git a/stdlib/public/Platform/glibc.modulemap.gyb b/stdlib/public/Platform/glibc.modulemap.gyb
-index a2f325e03f..8b672eefc3 100644
+index 0455203cc8..9d9b2d503c 100644
 --- a/stdlib/public/Platform/glibc.modulemap.gyb
 +++ b/stdlib/public/Platform/glibc.modulemap.gyb
-@@ -18,397 +18,294 @@
+@@ -18,419 +18,294 @@
  ///
  /// It's not named just Glibc so that it doesn't conflict in the event of a
  /// future official glibc modulemap.
@@ -14,7 +14,9 @@ index a2f325e03f..8b672eefc3 100644
 -  link "util"
 -% end
 -
+-% if CMAKE_SDK != "FREEBSD":
 -  link "dl"
+-% end
 -
 -  // C standard library
 -  module C {
@@ -23,12 +25,24 @@ index a2f325e03f..8b672eefc3 100644
 -      header "${GLIBC_INCLUDE_PATH}/complex.h"
 -      export *
 -    }
+-% end
+-% if CMAKE_SDK in ["LINUX", "CYGWIN"]:
 -    module pty {
 -      header "${GLIBC_INCLUDE_PATH}/pty.h"
 -      export *
 -    }
 -    module utmp {
 -      header "${GLIBC_INCLUDE_PATH}/utmp.h"
+-      export *
+-    }
+-% end
+-% if CMAKE_SDK == "FREEBSD":
+-    module pty {
+-      header "${GLIBC_INCLUDE_PATH}/libutil.h"
+-      export *
+-    }
+-    module utmp {
+-      header "${GLIBC_INCLUDE_PATH}/utmpx.h"
 -      export *
 -    }
 -% end
@@ -348,10 +362,12 @@ index a2f325e03f..8b672eefc3 100644
 -        header "${GLIBC_ARCH_INCLUDE_PATH}/sys/select.h"
 -        export *
 -      }
+-% if CMAKE_SDK != "FREEBSD":
 -      module sendfile {
 -        header "${GLIBC_ARCH_INCLUDE_PATH}/sys/sendfile.h"
 -        export *
 -      }
+-% end
 -      module socket {
 -        header "${GLIBC_ARCH_INCLUDE_PATH}/sys/socket.h"
 -        export *
@@ -372,6 +388,12 @@ index a2f325e03f..8b672eefc3 100644
 -        header "${GLIBC_ARCH_INCLUDE_PATH}/sys/types.h"
 -        export *
 -      }
+-% if CMAKE_SDK in ["FREEBSD"]:
+-      module event {
+-        header "${GLIBC_ARCH_INCLUDE_PATH}/sys/event.h"
+-        export *
+-      }
+-% end
 -      module uio {
 -        header "${GLIBC_ARCH_INCLUDE_PATH}/sys/uio.h"
 -        export *

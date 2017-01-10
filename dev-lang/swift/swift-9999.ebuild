@@ -21,7 +21,7 @@ KEYWORDS=""
 IUSE=""
 
 RDEPEND="
-	dev-libs/libcmark
+	app-text/cmark
 	sys-libs/zlib
 	sys-libs/ncurses
 	>=sys-devel/clang-3.9.0
