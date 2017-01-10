@@ -24,12 +24,12 @@
 -  return "LLD " + std::string(LLD_VERSION_STRING) + getRepository();
 +  return "GNU gold " + std::string(LLD_VERSION_STRING) + getRepository();
  }
---- a/ELF/Driver.cpp	2016-11-11 19:48:19.308726806 +0100
-+++ b/ELF/Driver.cpp	2016-11-11 19:53:59.125750362 +0100
+--- a/ELF/InputFiles.cpp	2016-11-11 19:48:19.308726806 +0100
++++ b/ELF/InputFiles.cpp	2016-11-11 19:53:59.125750362 +0100
 @@ -165,14 +165,17 @@
  }
  
- Optional<MemoryBufferRef> LinkerDriver::readFile(StringRef Path) {
+ Optional<MemoryBufferRef> elf::readFile(StringRef Path) {
 -  if (Config->Verbose)
 -    outs() << Path << "\n";
 +  StringRef attempt = "attempt to open ";
