@@ -43,9 +43,6 @@ src_prepare() {
 	# this patch does not work, packages segfault
 	eapply "${FILESDIR}"/0001-revert-add-retain-symbols-file.patch
 
-	# support local symbols without wildcard
-	eapply "${FILESDIR}"/0002-support-anonymous-local-symbols.patch
-
 	# compat with gnu gold
 	eapply "${FILESDIR}"/0003-gnu-ld-compat.patch
 	eapply "${FILESDIR}"/0004-ignore-options.patch
