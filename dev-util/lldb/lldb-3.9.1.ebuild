@@ -23,6 +23,7 @@ IUSE="+libedit ncurses +python test"
 
 RDEPEND="
 	dev-lang/swift
+	app-text/cmark
 	libedit? ( dev-libs/libedit:0= )
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0= )
 	python? ( dev-python/six[${PYTHON_USEDEP}]
