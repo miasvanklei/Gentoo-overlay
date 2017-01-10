@@ -1,3 +1,26 @@
+--- a/ELF/InputFiles.cpp	2016-10-16 21:11:38.801434288 +0200
++++ b/ELF/InputFiles.cpp	2016-10-16 21:14:22.001420860 +0200
+@@ -313,7 +313,7 @@
+     return &InputSection<ELFT>::Discarded;
+   }
+ 
+-  if (Config->Strip != StripPolicy::None && Name.startswith(".debug"))
++  if (Config->Strip != StripPolicy::None && (Name.startswith(".debug") || Name.startswith(".comment")))
+     return &InputSection<ELFT>::Discarded;
+ 
+   // The linker merges EH (exception handling) frames and creates a
+--- a/ELF/Writer.cpp
++++ b/ELF/Writer.cpp
+@@ -279,7 +279,7 @@ template <class ELFT> void Writer<ELFT>::createSyntheticSections() {
+     In<ELFT>::Interp = nullptr;
+   }
+ 
+-  if (!Config->Relocatable)
++  if (!Config->Relocatable && Config->Strip != StripPolicy::None)
+     Symtab<ELFT>::X->Sections.push_back(createCommentSection<ELFT>());
+ 
+   if (Config->Strip != StripPolicy::All) {
+
 --- a/ELF/Options.td	2016-11-07 16:50:58.392900038 +0100
 +++ b/ELF/Options.td	2016-11-07 16:52:37.554769701 +0100
 @@ -145,6 +145,8 @@

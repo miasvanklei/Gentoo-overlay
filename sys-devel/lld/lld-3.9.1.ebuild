@@ -40,23 +40,19 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
-	# this patch does not work, packages segfault
-	eapply "${FILESDIR}"/0001-revert-add-retain-symbols-file.patch
+	# strip in lld, including comment section
+	eapply "${FILESDIR}"/0001-strip-lld.patch
 
 	# compat with gnu gold
-	eapply "${FILESDIR}"/0003-gnu-ld-compat.patch
-	eapply "${FILESDIR}"/0004-ignore-options.patch
-
-	# strip comment section
-	eapply "${FILESDIR}"/0005-strip-comment-section.patch
+	eapply "${FILESDIR}"/0002-gnu-ld-compat.patch
+	eapply "${FILESDIR}"/0003-ignore-option.patch
 
 	# add -z muldefs
-	eapply "${FILESDIR}"/0006-add-muldefs-option.patch
+	eapply "${FILESDIR}"/0004-add-muldefs-option.patch
 
-	# do not strip
-	eapply "${FILESDIR}"/0007-add-nostrip-option.patch
-
-	eapply "${FILESDIR}"/does-not-work.patch
+	# remove broken commits
+	eapply "${FILESDIR}"/0005-revert-add-retain-symbols-file.patch
+	eapply "${FILESDIR}"/0006-does-not-work.patch
 
 	# User patches
 	eapply_user
