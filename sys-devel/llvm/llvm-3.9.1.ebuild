@@ -91,6 +91,15 @@ pkg_setup() {
 	check_space
 }
 
+src_unpack() {
+        git-r3_fetch "http://llvm.org/git/polly.git
+                https://github.com/llvm-mirror/polly.git"
+        git-r3_fetch
+
+        git-r3_checkout http://llvm.org/git/polly.git \
+                "${S}"/tools/polly
+        git-r3_checkout
+}
 
 src_prepare() {
 	# Python is needed to run tests using lit
@@ -146,9 +155,12 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
-		-DWITH_POLLY=OFF # TODO
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
+
+		# enable polly
+		-DLINK_POLLY_INTO_TOOLS=ON
+		-DWITH_POLLY=ON
 
 		-DFFI_INCLUDE_DIR="${ffi_cflags#-I}"
 		-DFFI_LIBRARY_DIR="${ffi_ldflags#-L}"
