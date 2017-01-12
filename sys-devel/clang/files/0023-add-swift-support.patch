@@ -12897,15 +12897,13 @@ index 559b212..9212175 100644
  };
  
  /// Language specific sub-kinds.
-@@ -64,6 +65,28 @@ enum class SymbolSubKind {
-   None,
-   CXXCopyConstructor,
+@@ -64,6 +65,26 @@ enum class SymbolSubKind {
    CXXMoveConstructor,
+   AccessorGetter,
+   AccessorSetter,
 +
 +  // Swift sub-kinds
 +
-+  SwiftAccessorGetter,
-+  SwiftAccessorSetter,
 +  SwiftAccessorWillSet,
 +  SwiftAccessorDidSet,
 +  SwiftAccessorAddressor,
@@ -12930,12 +12928,10 @@ diff --git a/lib/Index/IndexSymbol.cpp b/lib/Index/IndexSymbol.cpp
 index be847e7..e60cfc4 100644
 --- a/lib/Index/IndexSymbol.cpp
 +++ b/lib/Index/IndexSymbol.cpp
-@@ -375,6 +375,22 @@ StringRef index::getSymbolSubKindString(SymbolSubKind K) {
-   case SymbolSubKind::None: return "<none>";
-   case SymbolSubKind::CXXCopyConstructor: return "cxx-copy-ctor";
+@@ -375,6 +375,20 @@ StringRef index::getSymbolSubKindString(SymbolSubKind K) {
    case SymbolSubKind::CXXMoveConstructor: return "cxx-move-ctor";
-+  case SymbolSubKind::SwiftAccessorGetter: return "acc-get";
-+  case SymbolSubKind::SwiftAccessorSetter: return "acc-set";
+   case SymbolSubKind::AccessorGetter: return "acc-get";
+   case SymbolSubKind::AccessorSetter: return "acc-set";
 +  case SymbolSubKind::SwiftAccessorWillSet: return "acc-willset";
 +  case SymbolSubKind::SwiftAccessorDidSet: return "acc-didset";
 +  case SymbolSubKind::SwiftAccessorAddressor: return "acc-addr";

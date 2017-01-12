@@ -91,7 +91,7 @@ src_unpack() {
 	git-r3_fetch
 
 	git-r3_checkout http://llvm.org/git/clang-tools-extra.git \
-		"${S}"/tools/clang/tools/extra
+		"${S}"/tools/extra
 	git-r3_checkout
 }
 
@@ -131,10 +131,11 @@ src_prepare() {
 	eapply "${FILESDIR}"/0021-dont-use-__dso_handle.patch
 
 	# needed in linux kernel
-        eapply "${FILESDIR}"/0022-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0022-add-fno-delete-null-pointer-checks.patch
 
 	# add swift support
-        eapply "${FILESDIR}"/0023-add-swift-support.patch
+	eapply "${FILESDIR}"/0023-add-swift-support.patch
+	eapply "${FILESDIR}"/0024-revert-commit.patch
 
 	# User patches
 	eapply_user
@@ -175,6 +176,8 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
+
+		# enable polly
 		-DWITH_POLLY=ON
 		-DLINK_POLLY_INTO_TOOLS=ON
 	)
