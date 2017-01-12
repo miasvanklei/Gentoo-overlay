@@ -5,7 +5,7 @@
 EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
-CMAKE_MIN_VERSION=3.4.3
+CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python3_5 )
 
 inherit cmake-utils git-r3 python-single-r1 toolchain-funcs
@@ -51,6 +51,8 @@ REQUIRED_USE=${PYTHON_REQUIRED_USE}
 #	eapply ${FILESDIR}/update-swift.patch
 #	eapply_user
 #}
+
+CMAKE_BUILD_TYPE=Release
 
 src_configure() {
 	local libdir=$(get_libdir)

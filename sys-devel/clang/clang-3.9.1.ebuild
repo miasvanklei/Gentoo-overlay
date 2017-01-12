@@ -5,7 +5,7 @@
 EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
-CMAKE_MIN_VERSION=3.4.3
+CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python3_5 )
 
 inherit check-reqs cmake-utils flag-o-matic git-r3 multilib-minimal \
@@ -49,6 +49,8 @@ PDEPEND="
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
+
+CMAKE_BUILD_TYPE=Release
 
 check_space() {
 	local build_size=650

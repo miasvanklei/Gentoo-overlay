@@ -5,7 +5,7 @@
 EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
-CMAKE_MIN_VERSION=3.6.1-r1
+CMAKE_MIN_VERSION=3.7.0-r1
 DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python3_5 )
 
@@ -52,6 +52,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
+CMAKE_BUILD_TYPE=Release
 
 check_space() {
 	# in megs
@@ -104,9 +105,6 @@ src_unpack() {
 src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
-
-	# Allow custom cmake build types (like 'Gentoo')
-	eapply "${FILESDIR}"/0001-cmake-Remove-the-CMAKE_BUILD_TYPE-assertion.patch
 
 	# Fix llvm-config for shared linking and sane flags
 	# https://bugs.gentoo.org/show_bug.cgi?id=565358

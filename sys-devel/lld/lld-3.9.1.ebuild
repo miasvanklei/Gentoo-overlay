@@ -5,7 +5,7 @@
 EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
-CMAKE_MIN_VERSION=3.6.1-r1
+CMAKE_MIN_VERSION=3.7.0-r1
 DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python3_5 )
 
@@ -35,6 +35,8 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+
+CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
 	# Python is needed to run tests using lit
