@@ -241,9 +241,11 @@ index ccd9bf1..9c490c2 100644
 +++ b/String.script	2016-11-16 14:23:09.535803848 +0100
 @@ -0,0 +1 @@
 +__CFConstantStringClassReference = _TMC10Foundation19_NSCFConstantString;
---- a/lib/script.py	2017-01-07 19:32:18.058017670 +0100
-+++ b/lib/script.py	2017-01-07 19:32:41.369961256 +0100
-@@ -103,8 +103,6 @@
+diff --git a/lib/script.py b/lib/script.py
+index 4f6a39f..a923fbb 100644
+--- a/lib/script.py
++++ b/lib/script.py
+@@ -103,14 +103,12 @@ TARGET_CFLAGS         = -fcolor-diagnostics -fdollars-in-identifiers -fblocks -f
          c_flags += Configuration.current.extra_c_flags
  
          swift_flags = "\nTARGET_SWIFTCFLAGS    = -I${SDKROOT}/lib/swift/" + Configuration.current.target.swift_sdk_name + " -Xcc -fblocks -resource-dir ${SDKROOT}/lib/swift "
@@ -252,3 +254,10 @@ index ccd9bf1..9c490c2 100644
          if Configuration.current.system_root is not None:
              swift_flags += "-sdk ${SYSROOT} "
  
+         if Configuration.current.bootstrap_directory is not None:
+             swift_flags += """  -I${BOOTSTRAP_DIR}/usr/include -I${BOOTSTRAP_DIR}/usr/local/include """
+-            swift_flags += """  -I${TARGET_BOOTSTRAP_DIR}/usr/include -I${TARGET_BOOTSTRAP_DIR}/usr/local/include """
++            swift_flags += """  -I${TARGET_BOOTSTRAP_DIR}/usr/include -Xcc -fmodule-map-file=Build/Foundation${PREFIX}/lib/swift/CoreFoundation/module.modulemap -I${TARGET_BOOTSTRAP_DIR}/usr/local/include """
+ 
+         if Configuration.current.build_mode == Configuration.Debug:
+             swift_flags += "-g -Onone "
