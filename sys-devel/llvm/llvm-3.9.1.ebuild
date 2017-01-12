@@ -92,13 +92,13 @@ pkg_setup() {
 }
 
 src_unpack() {
-        git-r3_fetch "http://llvm.org/git/polly.git
-                https://github.com/llvm-mirror/polly.git"
-        git-r3_fetch
+	git-r3_fetch "http://llvm.org/git/polly.git
+		https://github.com/llvm-mirror/polly.git"
+	git-r3_fetch
 
-        git-r3_checkout http://llvm.org/git/polly.git \
-                "${S}"/tools/polly
-        git-r3_checkout
+	git-r3_checkout http://llvm.org/git/polly.git \
+		"${S}"/tools/polly
+	git-r3_checkout
 }
 
 src_prepare() {
