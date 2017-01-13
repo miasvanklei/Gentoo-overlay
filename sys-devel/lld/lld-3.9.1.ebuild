@@ -17,6 +17,7 @@ HOMEPAGE="http://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="http://llvm.org/git/lld.git
         https://github.com/llvm-mirror/lld.git"
+EGIT_COMMIT="d6802083ef382d75c6d2c93ec63ae8cbae5f402e"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
@@ -51,9 +52,6 @@ src_prepare() {
 
 	# add -z muldefs
 	eapply "${FILESDIR}"/0004-add-muldefs-option.patch
-
-	# patch for emit-relocs, needed by linux kernel
-	eapply "${FILESDIR}"/0005-implement-emit-relocs.patch
 
 	# remove broken commits
 	eapply "${FILESDIR}"/0006-revert-add-retain-symbols-file.patch
