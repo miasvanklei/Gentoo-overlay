@@ -22,7 +22,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~mips ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
 IUSE="+experimental +libunwind +static-libs"
 
-RDEPEND="~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
+RDEPEND="~sys-libs/libcxxabi-${PV}[static-libs?,${MULTILIB_USEDEP}]"
 DEPEND="${RDEPEND}
 	app-arch/xz-utils
 	>=sys-devel/clang-3.9.0"
