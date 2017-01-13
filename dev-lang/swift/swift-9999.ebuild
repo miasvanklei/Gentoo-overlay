@@ -13,7 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_COMMIT="ca7021e2698164add4e3b089143f07deb8d3b611"
+#EGIT_COMMIT="ca7021e2698164add4e3b089143f07deb8d3b611"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -23,6 +23,7 @@ IUSE=""
 RDEPEND="
 	app-text/cmark
 	sys-libs/zlib
+	dev-libs/libbsd
 	sys-libs/ncurses
 	>=sys-devel/clang-3.9.0
 	>=sys-devel/llvm-3.9.0
@@ -35,6 +36,7 @@ src_prepare() {
 	eapply ${FILESDIR}/musl-fixes.patch
 	eapply ${FILESDIR}/add-destructor.patch
 	eapply ${FILESDIR}/fix-segfault.patch
+	eapply ${FILESDIR}/fix-segfault-1.patch
 	eapply ${FILESDIR}/fix-garbage.patch
 	eapply ${FILESDIR}/fix-toolchain.patch
 	eapply ${FILESDIR}/glibc-modulemap.patch

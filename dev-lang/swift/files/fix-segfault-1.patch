@@ -1,0 +1,216 @@
+--- b/include/swift/AST/DiagnosticsCommon.def
++++ a/include/swift/AST/DiagnosticsCommon.def
+@@ -79,8 +79,6 @@
+ NOTE(convert_let_to_var,none,
+      "change 'let' to 'var' to make it mutable", ())
+ 
+-NOTE(note_typo_candidate,none,
+-     "did you mean '%0'?", (StringRef))
+ 
+ #ifndef DIAG_NO_UNDEF
+ # if defined(DIAG)
+--- b/include/swift/AST/DiagnosticsSema.def
++++ a/include/swift/AST/DiagnosticsSema.def
+@@ -595,6 +595,8 @@
+       "use of undeclared type %0", (Identifier))
+ ERROR(use_undeclared_type_did_you_mean,none,
+       "use of undeclared type %0; did you mean to use '%1'?", (Identifier, StringRef))
++NOTE(note_typo_candidate,none,
++     "did you mean '%0'?", (StringRef))
+ NOTE(note_typo_candidate_implicit_member,none,
+      "did you mean the implicitly-synthesized %1 '%0'?", (StringRef, StringRef))
+ NOTE(note_remapped_type,none,
+--- b/include/swift/Basic/LangOptions.h
++++ a/include/swift/Basic/LangOptions.h
+@@ -26,7 +26,6 @@
+ #include "llvm/ADT/StringRef.h"
+ #include "llvm/ADT/Triple.h"
+ #include <string>
+-#include <vector>
+ 
+ namespace swift {
+   /// \brief A collection of options that affect the language dialect and
+@@ -240,27 +239,15 @@
+     ///
+     /// Note that this also canonicalizes the OS name if the check returns
+     /// true.
++    static bool checkPlatformConditionOS(StringRef &OSName);
+-    ///
+-    /// \param suggestions Populated with suggested replacements
+-    /// if a match is not found.
+-    static bool checkPlatformConditionOS(
+-      StringRef &OSName, std::vector<StringRef> &suggestions);
+ 
+     /// Returns true if the 'arch' platform condition argument represents
+     /// a supported target architecture.
++    static bool isPlatformConditionArchSupported(StringRef ArchName);
+-    ///
+-    /// \param suggestions Populated with suggested replacements
+-    /// if a match is not found.
+-    static bool isPlatformConditionArchSupported(
+-      StringRef ArchName, std::vector<StringRef> &suggestions);
+ 
+     /// Returns true if the 'endian' platform condition argument represents
+     /// a supported target endianness.
++    static bool isPlatformConditionEndiannessSupported(StringRef endianness);
+-    ///
+-    /// \param suggestions Populated with suggested replacements
+-    /// if a match is not found.
+-    static bool isPlatformConditionEndiannessSupported(
+-      StringRef endianness, std::vector<StringRef> &suggestions);
+ 
+   private:
+     llvm::SmallVector<std::pair<std::string, std::string>, 3>
+--- b/lib/Basic/LangOptions.cpp
++++ a/lib/Basic/LangOptions.cpp
+@@ -20,13 +20,11 @@
+ #include "swift/Config.h"
+ #include "llvm/ADT/SmallString.h"
+ #include "llvm/Support/raw_ostream.h"
+-#include <limits.h>
+ 
+ using namespace swift;
+ 
+ static const StringRef SupportedConditionalCompilationOSs[] = {
+   "OSX",
+-  "macOS",
+   "tvOS",
+   "watchOS",
+   "iOS",
+@@ -52,52 +50,25 @@
+   "big"
+ };
+ 
++template <typename Type, size_t N>
++bool contains(const Type (&Array)[N], const Type &V) {
++  return std::find(std::begin(Array), std::end(Array), V) != std::end(Array);
+-template <size_t N>
+-bool contains(const StringRef (&Array)[N], const StringRef &V,
+-              std::vector<StringRef> &suggestions) {
+-  // Compare against known values, ignoring case to avoid penalizing
+-  // characters with incorrect case.
+-  unsigned minDistance = std::numeric_limits<unsigned>::max();
+-  std::string lower = V.lower();
+-  for (const StringRef& candidate : Array) {
+-    if (candidate == V) {
+-      suggestions.clear();
+-      return true;
+-    }
+-    unsigned distance = StringRef(lower).edit_distance(candidate.lower());
+-    if (distance < minDistance) {
+-      suggestions.clear();
+-      minDistance = distance;
+-    }
+-    if (distance == minDistance)
+-      suggestions.emplace_back(candidate);
+-  }
+-  return false;
+ }
+ 
++bool LangOptions::checkPlatformConditionOS(StringRef &OSName) {
+-bool LangOptions::checkPlatformConditionOS(
+-  StringRef &OSName, std::vector<StringRef> &suggestions) {
+   if (OSName == "macOS")
+     OSName = "OSX";
++  return contains(SupportedConditionalCompilationOSs, OSName);
+-  return contains(SupportedConditionalCompilationOSs,
+-                  OSName,
+-                  suggestions);
+ }
+ 
+ bool
++LangOptions::isPlatformConditionArchSupported(StringRef ArchName) {
++  return contains(SupportedConditionalCompilationArches, ArchName);
+-LangOptions::isPlatformConditionArchSupported(
+-  StringRef ArchName, std::vector<StringRef> &suggestions) {
+-  return contains(SupportedConditionalCompilationArches,
+-                  ArchName,
+-                  suggestions);
+ }
+ 
+ bool
++LangOptions::isPlatformConditionEndiannessSupported(StringRef Endianness) {
++  return contains(SupportedConditionalCompilationEndianness, Endianness);
+-LangOptions::isPlatformConditionEndiannessSupported(
+-  StringRef Endianness, std::vector<StringRef> &suggestions) {
+-  return contains(SupportedConditionalCompilationEndianness,
+-                  Endianness,
+-                  suggestions);
+ }
+ 
+ StringRef
+--- b/lib/Parse/ParseStmt.cpp
++++ a/lib/Parse/ParseStmt.cpp
+@@ -17,7 +17,6 @@
+ #include "swift/Parse/Parser.h"
+ #include "swift/AST/Attr.h"
+ #include "swift/AST/Decl.h"
+-#include "swift/Basic/Defer.h"
+ #include "swift/Basic/Fallthrough.h"
+ #include "swift/Basic/Version.h"
+ #include "swift/Parse/Lexer.h"
+@@ -1710,32 +1709,20 @@
+                      diag::unsupported_platform_runtime_condition_argument);
+           return ConditionalCompilationExprState::error();
+         }
+-
+-        std::vector<StringRef> suggestions;
+-        SWIFT_DEFER {
+-          for (const StringRef& suggestion : suggestions) {
+-            D.diagnose(UDRE->getLoc(), diag::note_typo_candidate,
+-                       suggestion)
+-            .fixItReplace(UDRE->getSourceRange(), suggestion);
+-          }
+-        };
+         if (fnName == "os") {
++          if (!LangOptions::checkPlatformConditionOS(argument)) {
+-          if (!LangOptions::checkPlatformConditionOS(argument,
+-                                                     suggestions)) {
+             D.diagnose(UDRE->getLoc(), diag::unknown_platform_condition_argument,
+                        "operating system", fnName);
+             return ConditionalCompilationExprState::error();
+           }
+         } else if (fnName == "arch") {
++          if (!LangOptions::isPlatformConditionArchSupported(argument)) {
+-          if (!LangOptions::isPlatformConditionArchSupported(argument,
+-                                                             suggestions)) {
+             D.diagnose(UDRE->getLoc(), diag::unknown_platform_condition_argument,
+                        "architecture", fnName);
+             return ConditionalCompilationExprState::error();
+           }
+         } else if (fnName == "_endian") {
++          if (!LangOptions::isPlatformConditionEndiannessSupported(argument)) {
+-          if (!LangOptions::isPlatformConditionEndiannessSupported(argument,
+-                                                                   suggestions)) {
+             D.diagnose(UDRE->getLoc(), diag::unknown_platform_condition_argument,
+                        "endianness", fnName);
+           }
+--- b/test/Parse/ConditionalCompilation/basicParseErrors.swift
++++ a/test/Parse/ConditionalCompilation/basicParseErrors.swift
+@@ -56,23 +56,13 @@
+ #else
+ #endif
+ 
++#if os(youOS) // expected-warning {{unknown operating system for build configuration 'os'}}
+-#if os(ios) // expected-warning {{unknown operating system for build configuration 'os'}} expected-note{{did you mean 'iOS'?}} {{8-11=iOS}}
+ #endif
+ 
++#if arch(leg) // expected-warning {{unknown architecture for build configuration 'arch'}}
+-#if os(uOS) // expected-warning {{unknown operating system for build configuration 'os'}} expected-note{{did you mean 'iOS'?}} {{8-11=iOS}}
+ #endif
+ 
++#if _endian(mid) // expected-warning {{unknown endianness for build configuration '_endian'}}
+-#if os(xxxxxxd) // expected-warning {{unknown operating system for build configuration 'os'}}
+-// expected-note@-1{{did you mean 'Linux'?}} {{8-15=Linux}}
+-// expected-note@-2{{did you mean 'FreeBSD'?}} {{8-15=FreeBSD}}
+-// expected-note@-3{{did you mean 'Android'?}} {{8-15=Android}}
+-// expected-note@-4{{did you mean 'OSX'?}} {{8-15=OSX}}
+-#endif
+-
+-#if arch(leg) // expected-warning {{unknown architecture for build configuration 'arch'}} expected-note{{did you mean 'arm'?}} {{10-13=arm}}
+-#endif
+-
+-#if _endian(mid) // expected-warning {{unknown endianness for build configuration '_endian'}} expected-note{{did you mean 'big'?}} {{13-16=big}}
+ #endif
+ 
+ LABEL: #if true // expected-error {{expected statement}}
