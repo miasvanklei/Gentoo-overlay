@@ -6,12 +6,14 @@ EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 
-inherit cmake-multilib
+inherit cmake-multilib git-r3
 
 MY_P=openmp-${PV}
 DESCRIPTION="OpenMP runtime library for LLVM/clang compiler"
 HOMEPAGE="http://openmp.llvm.org"
-SRC_URI="http://llvm.org/releases/${PV}/${MY_P}.src.tar.xz"
+SRC_URI=""
+EGIT_REPO_URI="http://llvm.org/git/openmp.git
+        https://github.com/llvm-mirror/openmp.git"
 
 LICENSE="UoI-NCSA"
 SLOT="0/3.9"
@@ -21,14 +23,6 @@ IUSE="hwloc +ompt"
 RDEPEND="hwloc? ( sys-apps/hwloc:0=[${MULTILIB_USEDEP}] )"
 DEPEND="${RDEPEND}
 	dev-lang/perl"
-
-S="${WORKDIR}/${MY_P}.src"
-
-PATCHES=(
-	"${FILESDIR}"/glibc-incompat.patch
-	"${FILESDIR}"/wrong-page-size.patch
-	"${FILESDIR}"/use-va_copy-macro.patch
-)
 
 multilib_src_configure() {
 	local libdir="$(get_libdir)"
