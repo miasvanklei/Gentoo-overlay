@@ -13,6 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
+EGIT_COMMIT="ca7021e2698164add4e3b089143f07deb8d3b611"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -40,6 +41,7 @@ src_prepare() {
 	eapply ${FILESDIR}/shared-support.patch
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 	eapply ${FILESDIR}/llvm-clang-4.0.patch
+	eapply ${FILESDIR}/have-libedit.patch
 	default
 }
 
