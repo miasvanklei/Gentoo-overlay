@@ -137,7 +137,7 @@ src_prepare() {
 
 	# add swift support
 	eapply "${FILESDIR}"/0023-add-swift-support.patch
-	eapply "${FILESDIR}"/0024-revert-commit.patch
+	eapply "${FILESDIR}"/0024-fix-import-module.patch
 
 	# User patches
 	eapply_user
