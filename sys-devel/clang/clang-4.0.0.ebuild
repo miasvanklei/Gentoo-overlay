@@ -15,6 +15,7 @@ DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
 EGIT_REPO_URI="http://llvm.org/git/clang.git
         https://github.com/llvm-mirror/clang.git"
+EGIT_BRANCH="release_40"
 
 SRC_URI=""
 
@@ -88,10 +89,8 @@ pkg_setup() {
 }
 
 src_unpack() {
-	EGIT_COMMIT="35d88f66254e0da41db5234c916a9e388738193f"
 	git-r3_fetch "http://llvm.org/git/clang-tools-extra.git
 		https://github.com/llvm-mirror/clang-tools-extra.git"
-	EGIT_COMMIT="b35448f92677177a624601333335983e9b0db4b9"
 	git-r3_fetch
 
 	git-r3_checkout http://llvm.org/git/clang-tools-extra.git \

@@ -17,6 +17,7 @@ HOMEPAGE="http://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="http://llvm.org/git/llvm.git
         https://github.com/llvm-mirror/llvm.git"
+EGIT_BRANCH="release_40"
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
 	NVPTX PowerPC RISCV Sparc SystemZ X86 XCore )

@@ -15,6 +15,7 @@ HOMEPAGE="http://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="http://llvm.org/git/lldb.git
         https://github.com/llvm-mirror/lldb.git"
+EGIT_BRANCH="release_40"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
