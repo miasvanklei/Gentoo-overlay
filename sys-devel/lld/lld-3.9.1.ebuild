@@ -52,9 +52,12 @@ src_prepare() {
 	# add -z muldefs
 	eapply "${FILESDIR}"/0004-add-muldefs-option.patch
 
+	# patch for emit-relocs, needed by linux kernel
+	eapply "${FILESDIR}"/0005-implement-emit-relocs.patch
+
 	# remove broken commits
-	eapply "${FILESDIR}"/0005-revert-add-retain-symbols-file.patch
-	eapply "${FILESDIR}"/0006-does-not-work.patch
+	eapply "${FILESDIR}"/0006-revert-add-retain-symbols-file.patch
+	eapply "${FILESDIR}"/0007-does-not-work.patch
 
 	# User patches
 	eapply_user
