@@ -8,28 +8,23 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python3_5 )
 
-inherit cmake-multilib
+inherit cmake-multilib git-r3
 
 DESCRIPTION="Low level support for a standard C++ library"
 HOMEPAGE="http://libcxxabi.llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
+EGIT_REPO_URI="http://llvm.org/git/libcxxabi.git
+        https://github.com/llvm-mirror/libcxxabi.git"
+EGIT_BRANCH="release_40"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="+compiler-rt +libunwind +static-libs"
+IUSE="+compiler-rt +static-libs"
 
-DEPEND="libunwind? ( sys-libs/libunwind[static-libs?,${MULTILIB_USEDEP}] )
+DEPEND="sys-libs/libunwind[static-libs?,${MULTILIB_USEDEP}]
 	compiler-rt? ( ~sys-libs/compiler-rt-${PV} )
 	~sys-libs/libcxx-${PV}[static-libs?,${MULTILIB_USEDEP}]"
 RDEPEND="${DEPEND}"
-
-S="${WORKDIR}/${P}.src"
-
-PATCHES=(
-	"${FILESDIR}"/libcxxabi-3.9-cmake.patch
-	"${FILESDIR}"/dont-build-test-when-standalone.patch
-)
 
 src_configure() {
 	NATIVE_LIBDIR=$(get_libdir)
@@ -43,10 +38,12 @@ multilib_src_configure() {
 		-DLIBCXXABI_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXXABI_ENABLE_SHARED=ON
 		-DLIBCXXABI_ENABLE_STATIC=$(usex static-libs)
-		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
 		-DLIBCXXABI_USE_COMPILER_RT==$(usex compiler-rt)
 		-DLIBCXXABI_LIBCXX_INCLUDES="/usr/include/c++/v1"
-		-DLIBCXXABI_BUILT_STANDALONE=ON
+		-DLIBCXXABI_USE_LLVM_UNWINDER=ON
+		# this only needs to exist, it does not have to make sense
+		-DLIBCXXABI_LIBUNWIND_SOURCES="${T}"
+		-DLIBCXXABI_LIBUNWIND_INCLUDES_INTERNAL="${T}"
 	)
 
 	cmake-utils_src_configure
