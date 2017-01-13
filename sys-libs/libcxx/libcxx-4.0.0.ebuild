@@ -8,11 +8,14 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python3_5 )
 
-inherit cmake-multilib toolchain-funcs
+inherit cmake-multilib toolchain-funcs git-r3
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="http://libcxx.llvm.org/"
-SRC_URI="http://llvm.org/releases/${PV}/${P}.src.tar.xz"
+SRC_URI=""
+EGIT_REPO_URI="http://llvm.org/git/libcxx.git
+        https://github.com/llvm-mirror/libcxx.git"
+EGIT_BRANCH="release_40"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -25,18 +28,6 @@ DEPEND="${RDEPEND}
 	>=sys-devel/clang-3.9.0"
 
 DOCS=( CREDITS.TXT )
-
-S="${WORKDIR}/${P}.src"
-
-PATCHES=(
-	# Add link flag "-Wl,-z,defs" to avoid underlinking; this is needed in a
-	# out-of-tree build.
-	"${FILESDIR}"/${PN}-3.9-cmake-link-flags.patch
-
-	# Back-port of https://reviews.llvm.org/D23232, allowing building both
-	# shared and static libs in one run.
-	"${FILESDIR}"/${PN}-3.9-cmake-static-lib.patch
-)
 
 src_configure() {
 	NATIVE_LIBDIR=$(get_libdir)
