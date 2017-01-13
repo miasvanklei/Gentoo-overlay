@@ -93,8 +93,10 @@ pkg_setup() {
 }
 
 src_unpack() {
+	EGIT_COMMIT="989c12be08a0712fa940912e6efddd29fada9bce"
 	git-r3_fetch "http://llvm.org/git/polly.git
 		https://github.com/llvm-mirror/polly.git"
+	EGIT_COMMIT="79af0051777660d178cfcd3af61c5a02e61b5f73"
 	git-r3_fetch
 
 	git-r3_checkout http://llvm.org/git/polly.git \
