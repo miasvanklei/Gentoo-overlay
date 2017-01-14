@@ -61,8 +61,8 @@ src_prepare() {
 	# strip when needed, call export-dynamic, etc.
 	eapply ${FILESDIR}/fix-toolchain.patch
 
-	# fix build when using shared llvm libraries and use libobjc
-	eapply ${FILESDIR}/shared-support.patch
+	# fix build: missing llvm libraries and use libobjc
+	eapply ${FILESDIR}/fix-linking.patch
 
 	# use same code as on darwin
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
