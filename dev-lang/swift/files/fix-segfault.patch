@@ -1,9 +1,26 @@
-diff --git a/lib/Parse/CMakeLists.txt b/lib/Parse/CMakeLists.txt
-index 0e08012..fbe0e65 100644
---- a/lib/Parse/CMakeLists.txt
-+++ b/lib/Parse/CMakeLists.txt
-@@ -15,3 +15,4 @@ add_swift_library(swiftParse STATIC
-     swiftAST
- )
+diff --git a/lib/Parse/ParseDecl.cpp b/lib/Parse/ParseDecl.cpp
+index bad29325da..fb8ac43a64 100644
+--- a/lib/Parse/ParseDecl.cpp
++++ b/lib/Parse/ParseDecl.cpp
+@@ -4047,7 +4047,7 @@ ParserStatus Parser::parseDeclVar(ParseDeclOptions Flags,
+                                   SmallVectorImpl<Decl *> &Decls,
+                                   SourceLoc StaticLoc,
+                                   StaticSpellingKind StaticSpelling,
+-                                  SourceLoc TryLoc) {
++                                  SourceLoc TryLoc) __attribute__ ((optnone)) {
+   assert(StaticLoc.isInvalid() || StaticSpelling != StaticSpellingKind::None);
  
-+set_source_files_properties(ParseDecl.cpp PROPERTIES COMPILE_FLAGS -O0)
+   if (StaticLoc.isValid()) {
+diff --git a/lib/Parse/ParseStmt.cpp b/lib/Parse/ParseStmt.cpp
+index ab152e9f81..866ea4af95 100644
+--- a/lib/Parse/ParseStmt.cpp
++++ b/lib/Parse/ParseStmt.cpp
+@@ -1525,7 +1525,7 @@ ParserResult<Stmt> Parser::parseStmtGuard() {
+ ConditionalCompilationExprState
+ Parser::classifyConditionalCompilationExpr(Expr *condition,
+                                            ASTContext &Context,
+-                                           DiagnosticEngine &D) {
++                                           DiagnosticEngine &D) __attribute__ ((optnone)) {
+   assert(condition && "Cannot classify a NULL condition expression!");
+ 
+   // Evaluate a ParenExpr.

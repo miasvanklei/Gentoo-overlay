@@ -49,11 +49,8 @@ src_prepare() {
 	# incorrect c++ code
 	eapply ${FILESDIR}/add-destructor.patch
 
-	# segfault in clang
+	# segfault in clang: SWIFT_DEFER
 	eapply ${FILESDIR}/fix-segfault.patch
-
-	# can probably be removed later on
-	eapply ${FILESDIR}/fix-segfault-1.patch
 
 	# do not install headers from clang multiple times
 	eapply ${FILESDIR}/fix-garbage.patch
