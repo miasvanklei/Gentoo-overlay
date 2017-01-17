@@ -6,23 +6,21 @@ EAPI=6
 
 inherit git-r3
 
-DESCRIPTION="Cross-platform event loop library of asynchronous objects"
-HOMEPAGE="https://github.com/etcimon/libasync"
+DESCRIPTION="Overhead allocators, allocator-aware containers and lifetime management for D objects"
+HOMEPAGE="https://github.com/etcimon/memutils"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/etcimon/libasync.git"
+EGIT_REPO_URI="https://github.com/etcimon/memutils.git"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 
-DEPEND="dev-util/dub
-	dev-libs/libkqueue"
+DEPEND="dev-util/dub"
 RDEPEND="${DEPEND}"
 
 src_prepare()
 {
 	eapply ${FILESDIR}/shared.patch
-	eapply ${FILESDIR}/musl.patch
 	eapply_user
 }
 
@@ -31,7 +29,7 @@ src_compile() {
 }
 
 src_install() {
-	dolib build/libasync.so
+	dolib libmemutils.so
 	insinto /usr/include/d
 	doins -r source/*
 }
