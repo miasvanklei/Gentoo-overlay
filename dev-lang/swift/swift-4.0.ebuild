@@ -13,6 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
+EGIT_BRANCH="swift-4.0-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -63,9 +64,6 @@ src_prepare() {
 
 	# use same code as on darwin
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
-
-	# let it build with llvm/clang 4.0
-	eapply ${FILESDIR}/llvm-clang-4.0.patch
 
 	# wcslcat is in libbsd, otherwise no sourcekitd-repl
 	eapply ${FILESDIR}/have-libedit.patch
