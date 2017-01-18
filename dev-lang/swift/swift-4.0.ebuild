@@ -95,6 +95,10 @@ src_configure() {
 src_install() {
 	cmake-utils_src_install
 
+	# needed when using musl
+	insinto /usr/include
+	doins ${FILESDIR}/swift-macros.h
+
 	if use lldb; then
 		# copy libraries
 		cp -r ${BUILD_DIR}/lib/*.a ${D}/usr/lib
