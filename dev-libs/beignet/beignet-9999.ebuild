@@ -35,6 +35,7 @@ PATCHES=(
 	"${FILESDIR}"/beignet-1.2.0_no-hardcoded-cflags.patch
 	"${FILESDIR}"/musl-fixes.patch
 	"${FILESDIR}"/llvm-4.0.patch
+	"${FILESDIR}"/fix-bad-commit.patch
 )
 
 DOCS=(
