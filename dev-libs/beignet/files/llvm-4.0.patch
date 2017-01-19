@@ -722,19 +722,6 @@ index 1c0d7eb9..7765f4fe 100644
      uint64_t u64 = static_cast<uint64_t>(v16);
      llvm::APInt apInt(16, u64, true);
      res.convertFromAPInt(apInt, true, llvm::APFloat::rmNearestTiesToEven);
-diff --git a/backend/src/llvm/llvm_device_enqueue.cpp b/backend/src/llvm/llvm_device_enqueue.cpp
-index ff6fbbbe..d4450031 100644
---- a/backend/src/llvm/llvm_device_enqueue.cpp
-+++ b/backend/src/llvm/llvm_device_enqueue.cpp
-@@ -148,7 +148,7 @@ namespace gbe {
-     }
- 
-     //If run to here, llvm version always > 3.9, add the version check just for build.
--#if (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR >= 9)
-+#if (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR >= 9) || LLVM_VERSION_MAJOR == 4
-     NewFn->setMetadata("kernel_arg_addr_space",
-                     llvm::MDNode::get(Context, addressQuals));
-     NewFn->setMetadata("kernel_arg_access_qual",
 diff --git a/backend/src/llvm/llvm_to_gen.cpp b/backend/src/llvm/llvm_to_gen.cpp
 index bef4df1b..573c71ad 100644
 --- a/backend/src/llvm/llvm_to_gen.cpp
@@ -1095,3 +1082,16 @@ index 85d0aa97..e835b1e4 100644
        llvm::llvm_shutdown();
  #endif
      }
+diff --git a/backend/src/llvm/llvm_device_enqueue.cpp b/backend/src/llvm/llvm_device_enqueue.cpp
+index ee236def..e729d71d 100644
+--- a/backend/src/llvm/llvm_device_enqueue.cpp
++++ b/backend/src/llvm/llvm_device_enqueue.cpp
+@@ -84,7 +84,7 @@ namespace gbe {
+ 
+   Function* setFunctionAsKernel(Module *mod, Function *Fn)
+   {
+-#if (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR >= 9)
++#if (LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR >= 9) || LLVM_VERSION_MAJOR == 4
+     LLVMContext &Context = mod->getContext();
+     Type *intTy = IntegerType::get(mod->getContext(), 32);
+     SmallVector<llvm::Metadata *, 5> kernelMDArgs;
