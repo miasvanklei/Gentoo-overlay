@@ -7,7 +7,7 @@ EAPI=6
 PYTHON_COMPAT=( python3_5 )
 CMAKE_BUILD_TYPE="Release"
 
-inherit python-any-r1 cmake-multilib toolchain-funcs
+inherit python-any-r1 cmake-multilib toolchain-funcs git-r3
 
 DESCRIPTION="OpenCL implementation for Intel GPUs"
 HOMEPAGE="https://01.org/beignet"
@@ -15,15 +15,8 @@ HOMEPAGE="https://01.org/beignet"
 LICENSE="LGPL-2.1+"
 SLOT="0"
 
-if [[ "${PV}" == "9999" ]]; then
-	inherit git-r3
-	EGIT_REPO_URI="git://anongit.freedesktop.org/beignet"
-	KEYWORDS=""
-else
-	KEYWORDS="~amd64"
-	SRC_URI="https://01.org/sites/default/files/${P}-source.tar.gz"
-	S=${WORKDIR}/Beignet-${PV}-Source
-fi
+EGIT_REPO_URI="git://anongit.freedesktop.org/beignet"
+KEYWORDS=""
 
 COMMON="${PYTHON_DEPS}
 	media-libs/mesa
@@ -47,17 +40,6 @@ PATCHES=(
 DOCS=(
 	docs/.
 )
-
-pkg_pretend() {
-	if [[ ${MERGE_TYPE} != "binary" ]]; then
-		if tc-is-gcc; then
-			if [[ $(gcc-major-version) -eq 4 ]] && [[ $(gcc-minor-version) -lt 6 ]]; then
-				eerror "Compilation with gcc older than 4.6 is not supported"
-				die "Too old gcc found."
-			fi
-		fi
-	fi
-}
 
 pkg_setup() {
 	python_setup

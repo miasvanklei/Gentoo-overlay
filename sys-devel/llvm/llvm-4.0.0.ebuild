@@ -107,9 +107,8 @@ src_prepare() {
 	# Python is needed to run tests using lit
 	python_setup
 
-	# Fix llvm-config for shared linking and sane flags
-	# https://bugs.gentoo.org/show_bug.cgi?id=565358
-	eapply "${FILESDIR}"/0002-llvm-config-Clean-up-exported-values-update-for-shar.patch
+	# remove one suffix
+	eapply "${FILESDIR}"/0001-shared-library-suffix.patch
 
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/musl-fixes.patch
