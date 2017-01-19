@@ -11,3 +11,16 @@ index 51738b41..22fb61d4 100644
        #endif
          // Install the new handler.
          sigaction(SIGINT, &action, &oldAction)
+diff --git a/Sources/Commands/SwiftTool.swift b/Sources/Commands/SwiftTool.swift
+index 79bf5d1f..60c20e2a 100644
+--- a/Sources/Commands/SwiftTool.swift
++++ b/Sources/Commands/SwiftTool.swift
+@@ -173,7 +173,7 @@ public class SwiftTool<Options: ToolOptions> {
+               #if os(macOS)
+                 action.__sigaction_u.__sa_handler = SIG_DFL
+               #else
+-                action.__sigaction_handler = unsafeBitCast(SIG_DFL, to: sigaction.__Unnamed_union___sigaction_handler.self)
++                action.__sa_handler = unsafeBitCast(SIG_DFL, to: sigaction.__Unnamed_union___sa_handler.self)
+               #endif
+                 sigaction(SIGINT, &action, nil)
+ 
