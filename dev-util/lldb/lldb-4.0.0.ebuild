@@ -41,17 +41,10 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-#src_prepare() {
-#	eapply ${FILESDIR}/cmake-cleanup.patch
-#	eapply ${FILESDIR}/fix-swift.patch
-#	eapply ${FILESDIR}/fix-iohandler.cpp.patch
-#	eapply ${FILESDIR}/fix-includes.patch
-#	eapply ${FILESDIR}/fix-resourcedir.patch
-#	eapply ${FILESDIR}/add-d-support.patch
-#	eapply ${FILESDIR}/llvm-4.0.patch
-#	eapply ${FILESDIR}/update-swift.patch
-#	eapply_user
-#}
+src_prepare() {
+	eapply ${FILESDIR}/add-swift-support.patch
+	eapply_user
+}
 
 CMAKE_BUILD_TYPE=Release
 
