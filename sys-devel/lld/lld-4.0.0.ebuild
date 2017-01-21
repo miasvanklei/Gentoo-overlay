@@ -53,12 +53,11 @@ src_prepare() {
 	# add -z muldefs
 	eapply "${FILESDIR}"/0004-add-muldefs-option.patch
 
-	# fix local symbols with protected symbols
-	eapply "${FILESDIR}"/0005-fix-protected-symbols.patch
+	# install shared libraries
+	eapply "${FILESDIR}"/0005-install-libraries.patch
 
 	# remove broken commits
 	eapply "${FILESDIR}"/0006-revert-add-retain-symbols-file.patch
-	eapply "${FILESDIR}"/0007-does-not-work.patch
 
 	# User patches
 	eapply_user
