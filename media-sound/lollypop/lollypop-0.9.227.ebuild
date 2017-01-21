@@ -32,6 +32,7 @@ DEPEND="
 	dev-python/pygobject:3[${PYTHON_USEDEP}]
 	dev-libs/gobject-introspection[cairo]
 	dev-python/pycairo
+	dev-python/python-wikipedia
 	dev-python/dbus-python
 	dev-libs/totem-pl-parser
 	dev-util/itstool
