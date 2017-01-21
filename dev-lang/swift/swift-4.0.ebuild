@@ -18,7 +18,7 @@ EGIT_BRANCH="swift-4.0-branch"
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS=""
-IUSE="lldb"
+IUSE="+lldb"
 
 RDEPEND="
 	app-text/cmark
