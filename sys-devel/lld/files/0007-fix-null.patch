@@ -1,0 +1,15 @@
+diff --git a/ELF/Writer.cpp b/ELF/Writer.cpp
+index 4f2f9199..98e52207 100644
+--- a/ELF/Writer.cpp
++++ b/ELF/Writer.cpp
+@@ -1647,6 +1641,10 @@ static void unlinkAsync(StringRef Path) {
+   if (!Config->Threads || !sys::fs::exists(Config->OutputFile))
+     return;
+ 
++  // do not recreate /dev/null as regular file, actual fix should be in llvm
++  if (Path == "/dev/null")
++    return;
++
+   // First, rename Path to avoid race condition. We cannot remove
+   // Path from a different thread because we are now going to create
+   // Path as a new file. If we do that in a different thread, the new

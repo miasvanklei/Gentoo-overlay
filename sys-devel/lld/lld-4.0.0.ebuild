@@ -59,6 +59,9 @@ src_prepare() {
 	# remove broken commits
 	eapply "${FILESDIR}"/0006-revert-add-retain-symbols-file.patch
 
+	# do not recreate /dev/null as regular file
+	eapply "${FILESDIR}"/0007-fix-null.patch
+
 	# User patches
 	eapply_user
 
