@@ -20,7 +20,7 @@ EGIT_BRANCH="release_40"
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS=""
-IUSE="+libedit ncurses +python test"
+IUSE="+libedit ncurses +python"
 
 RDEPEND="
 	dev-lang/swift
@@ -36,23 +36,20 @@ RDEPEND="
 # upstream: https://github.com/swig/swig/issues/769
 DEPEND="${RDEPEND}
 	python? ( <dev-lang/swig-3.0.9 )
-	test? ( dev-python/lit[${PYTHON_USEDEP}] )
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
+
+CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
 	eapply ${FILESDIR}/add-swift-support.patch
 	eapply_user
 }
 
-CMAKE_BUILD_TYPE=Release
-
 src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
-		# used to find cmake modules
-		-DLLVM_LIBDIR_SUFFIX="${libdir#lib}"
 		-DBUILD_SHARED_LIBS=ON
 		-DLLDB_DISABLE_CURSES=$(usex !ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)
@@ -74,11 +71,6 @@ src_configure() {
 	)
 
 	cmake-utils_src_configure
-}
-
-src_test() {
-	cmake-utils_src_make check-lldb-lit
-	use python && cmake-utils_src_make check-lldb
 }
 
 src_install() {

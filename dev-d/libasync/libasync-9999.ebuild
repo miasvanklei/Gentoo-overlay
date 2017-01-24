@@ -16,7 +16,7 @@ KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 
 DEPEND="dev-util/dub
-	dev-libs/libkqueue"
+	dev-d/memutils"
 RDEPEND="${DEPEND}"
 
 src_prepare()

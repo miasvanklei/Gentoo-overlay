@@ -6,7 +6,6 @@ EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 CMAKE_MIN_VERSION=3.7.0-r1
-DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python3_5 )
 
 inherit check-reqs cmake-utils flag-o-matic git-r3 \
@@ -26,7 +25,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="debug -doc -gold +libedit +libffi multitarget +ncurses test
+IUSE="debug -doc -gold +libedit +libffi multitarget +ncurses
 	video_cards_radeon kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 # python is needed for llvm-lit (which is installed)
@@ -145,7 +144,6 @@ multilib_src_configure() {
 		-DBUILD_SHARED_LIBS=ON
 
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
-		-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DLLVM_ENABLE_FFI=$(usex libffi)
 		-DLLVM_ENABLE_TERMINFO=$(usex ncurses)
@@ -186,7 +184,7 @@ multilib_src_configure() {
 		)
 
 		use doc && mycmakeargs+=(
-			-DLLVM_INSTALL_HTML="${EPREFIX}/usr/share/doc/${PF}/html"
+			-DLLVM_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
 		)
 		use gold && mycmakeargs+=(
@@ -212,18 +210,6 @@ multilib_src_compile() {
 	pax-mark m "${BUILD_DIR}"/bin/llvm-rtdyld
 	pax-mark m "${BUILD_DIR}"/bin/lli
 	pax-mark m "${BUILD_DIR}"/bin/lli-child-target
-
-	if use test; then
-		pax-mark m "${BUILD_DIR}"/unittests/ExecutionEngine/Orc/OrcJITTests
-		pax-mark m "${BUILD_DIR}"/unittests/ExecutionEngine/MCJIT/MCJITTests
-		pax-mark m "${BUILD_DIR}"/unittests/Support/SupportTests
-	fi
-}
-
-multilib_src_test() {
-	# respect TMPDIR!
-	local -x LIT_PRESERVES_TMP=1
-	cmake-utils_src_make check
 }
 
 src_install() {
