@@ -28,7 +28,7 @@ LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
 IUSE="debug +default-compiler-rt +default-libcxx -doc multitarget python
-	+static-analyzer test xml video_cards_radeon kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
+	+static-analyzer xml video_cards_radeon kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
 	~sys-devel/llvm-${PV}:=[debug=,${LLVM_TARGET_USEDEPS// /,},${MULTILIB_USEDEP}]
@@ -142,23 +142,19 @@ src_prepare() {
 
 	# User patches
 	eapply_user
-
-	# Native libdir is used to hold LLVMgold.so
-	NATIVE_LIBDIR=$(get_libdir)
 }
 
 multilib_src_configure() {
-	local clang_version=4.0.0
-	local libdir=$(get_libdir)
+	local llvm_version=$(llvm-config --version) || die
+	local clang_version=$(get_version_component_range 1-3 "${llvm_version}")
 	local mycmakeargs=(
-		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
-		-DBUILD_SHARED_LIBS=ON
-		# relative to bindir
+                # ensure that the correct llvm-config is used
+                -DLLVM_CONFIG="${EPREFIX}/usr/bin/${CHOST}-llvm-config"
+                # relative to bindir
                 -DCLANG_RESOURCE_DIR="../lib/clang/${clang_version}"
 
+		-DBUILD_SHARED_LIBS=ON
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
-		# TODO: get them properly conditional
-		#-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DCMAKE_DISABLE_FIND_PACKAGE_LibXml2=$(usex !xml)
 		# libgomp support fails to find headers without explicit -I
@@ -192,7 +188,7 @@ multilib_src_configure() {
 			-DLLVM_ENABLE_DOXYGEN=OFF
 		)
 		use doc && mycmakeargs+=(
-			-DCLANG_INSTALL_HTML="${EPREFIX}/usr/share/doc/${PF}/clang"
+			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/clang"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
 		)
 	else
@@ -217,12 +213,6 @@ multilib_src_compile() {
 	cmake-utils_src_compile
 }
 
-multilib_src_test() {
-	# respect TMPDIR!
-	local -x LIT_PRESERVES_TMP=1
-	cmake-utils_src_make check-clang
-}
-
 src_install() {
 	MULTILIB_WRAPPED_HEADERS+=(
 		/usr/include/clang/Config/config.h
@@ -230,13 +220,15 @@ src_install() {
 
 	multilib-minimal_src_install
 
-	# Move runtime headers to /usr/lib/clang, where they belong
+	 # Move runtime headers to /usr/lib/clang, where they belong
 	dodir /usr/lib
 	mv "${ED}usr/include/clangrt" "${ED}usr/lib/clang" || die
 
 	# Apply CHOST and version suffix to clang tools
-	local clang_version=4.0
-	local clang_tools=( clang clang++ clang-cl clang-cpp)
+	# note: we use two version components here (vs 3 in runtime path)
+	local llvm_version=$(llvm-config --version) || die
+	local clang_version=$(get_version_component_range 1-2 "${llvm_version}")
+	local clang_tools=( clang clang++ clang-cl clang-cpp )
 	local abi i
 
 	# cmake gives us:
@@ -249,7 +241,7 @@ src_install() {
 	# - clang, clang++, clang-cl, clang-cpp -> clang*-X.Y
 	# also in CHOST variant
 	for i in "${clang_tools[@]:1}"; do
-		rm -f "${ED%/}/usr/bin/${i}" || die
+		rm "${ED%/}/usr/bin/${i}" || die
 		dosym "clang-${clang_version}" "/usr/bin/${i}-${clang_version}"
 		dosym "${i}-${clang_version}" "/usr/bin/${i}"
 	done

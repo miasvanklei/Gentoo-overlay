@@ -6,7 +6,6 @@ EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 CMAKE_MIN_VERSION=3.7.0-r1
-DISTUTILS_OPTIONAL=1
 PYTHON_COMPAT=( python3_5 )
 
 inherit cmake-utils flag-o-matic git-r3 \
@@ -22,7 +21,7 @@ EGIT_BRANCH="release_40"
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="debug"
+IUSE=""
 
 # python is needed for llvm-lit (which is installed)
 RDEPEND="sys-libs/zlib:0=
@@ -72,7 +71,6 @@ src_prepare() {
 src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
-		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DBUILD_SHARED_LIBS=ON
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
@@ -81,20 +79,5 @@ src_configure() {
 		-DLLVM_ENABLE_CXX1Y=ON
 	)
 
-	if tc-is-cross-compiler; then
-		[[ -x "/usr/bin/llvm-tblgen" ]] \
-			|| die "/usr/bin/llvm-tblgen not found or usable"
-		mycmakeargs+=(
-			-DCMAKE_CROSSCOMPILING=ON
-			-DLLVM_TABLEGEN=/usr/bin/llvm-tblgen
-		)
-	fi
-
 	cmake-utils_src_configure
-}
-
-src_test() {
-	# respect TMPDIR!
-	local -x LIT_PRESERVES_TMP=1
-	cmake-utils_src_make check
 }
