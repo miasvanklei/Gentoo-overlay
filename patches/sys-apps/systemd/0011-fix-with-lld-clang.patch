@@ -7,7 +7,7 @@
 -	$(AM_V_CCLD)$(LD) $(efi_ldflags) $(systemd_boot_objects) \
 -		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name); \
 -	nm -D -u $@ | grep ' U ' && exit 1 || :
-+	$(AM_V_CCLD)$(LD) -nostrip $(efi_ldflags) $(systemd_boot_objects) \
++	$(AM_V_CCLD)ld.bfd -nostrip $(efi_ldflags) $(systemd_boot_objects) \
 +		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name);
  
  $(systemd_boot): $(systemd_boot_solib)
@@ -19,7 +19,7 @@
 -	$(AM_V_CCLD)$(LD) $(efi_ldflags) $(stub_objects) \
 -		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name); \
 -	nm -D -u $@ | grep ' U ' && exit 1 || :
-+	$(AM_V_CCLD)$(LD) -nostrip $(efi_ldflags) $(stub_objects) \
++	$(AM_V_CCLD)ld.bfd -nostrip $(efi_ldflags) $(stub_objects) \
 +		-o $@ -lefi -lgnuefi $(shell $(CC) -print-libgcc-file-name);
  
  $(stub): $(stub_solib)
