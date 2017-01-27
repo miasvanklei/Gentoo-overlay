@@ -52,14 +52,13 @@ src_prepare() {
 	# add -z muldefs
 	eapply "${FILESDIR}"/0004-add-muldefs-option.patch
 
-	# install shared libraries
+	# known upstream
 	eapply "${FILESDIR}"/0005-install-libraries.patch
-
-	# remove broken commits
-	eapply "${FILESDIR}"/0006-revert-add-retain-symbols-file.patch
+	eapply "${FILESDIR}"/0006-rpath-link-shared.patch
+	eapply "${FILESDIR}"/0007-fix-retain-symbols.patch
 
 	# do not recreate /dev/null as regular file
-	eapply "${FILESDIR}"/0007-fix-null.patch
+	eapply "${FILESDIR}"/0008-fix-null.patch
 
 	# User patches
 	eapply_user

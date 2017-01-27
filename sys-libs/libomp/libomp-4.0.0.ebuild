@@ -14,9 +14,10 @@ HOMEPAGE="http://openmp.llvm.org"
 SRC_URI=""
 EGIT_REPO_URI="http://llvm.org/git/openmp.git
         https://github.com/llvm-mirror/openmp.git"
+EGIT_BRANCH="release_40"
 
 LICENSE="UoI-NCSA"
-SLOT="0/3.9"
+SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE="hwloc +ompt"
 
