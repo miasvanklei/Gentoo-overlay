@@ -46,7 +46,6 @@ DEPEND="${DEPEND}
 
 src_prepare() {
 	eapply ${FILESDIR}/vapigen.patch
-	eapply ${FILESDIR}/fix-missing-symbol.patch
 	eapply ${FILESDIR}/disable-fatal-warnings.patch
 	eapply ${FILESDIR}/fix-segfault.patch
 	eapply ${FILESDIR}/remove-tests.patch
