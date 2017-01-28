@@ -33,7 +33,6 @@ test_compiler() {
 }
 
 PATCHES=(
-	"${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
 	"${FILESDIR}"/compiler-rt-0002-sanitizers-musl-support.patch
 )
 

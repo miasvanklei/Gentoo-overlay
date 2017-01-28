@@ -11,7 +11,7 @@ SRC_URI=""
 LICENSE="metapackage"
 SLOT="0"
 KEYWORDS=""
-IUSE="+compiler-rt +libcxx +openmp -sanitize"
+IUSE="+compiler-rt +libcxx +openmp +sanitize"
 
 RDEPEND="
 	compiler-rt? (
