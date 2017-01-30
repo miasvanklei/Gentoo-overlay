@@ -6,8 +6,9 @@ EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 CMAKE_MIN_VERSION=3.4.3
+PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils git-r3
+inherit cmake-utils git-r3 python-single-r1
 
 DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"

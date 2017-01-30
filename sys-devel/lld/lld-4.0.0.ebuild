@@ -6,7 +6,7 @@ EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 CMAKE_MIN_VERSION=3.7.0-r1
-PYTHON_COMPAT=( python3_5 )
+PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-utils flag-o-matic git-r3 \
 	pax-utils python-any-r1 toolchain-funcs
@@ -53,12 +53,10 @@ src_prepare() {
 	eapply "${FILESDIR}"/0004-add-muldefs-option.patch
 
 	# known upstream
-	eapply "${FILESDIR}"/0005-install-libraries.patch
-	eapply "${FILESDIR}"/0006-rpath-link-shared.patch
-	eapply "${FILESDIR}"/0007-fix-retain-symbols.patch
+	eapply "${FILESDIR}"/0005-fix-retain-symbols.patch
 
 	# do not recreate /dev/null as regular file
-	eapply "${FILESDIR}"/0008-fix-null.patch
+	eapply "${FILESDIR}"/0006-fix-null.patch
 
 	# User patches
 	eapply_user

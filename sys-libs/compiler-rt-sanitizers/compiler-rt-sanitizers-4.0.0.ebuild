@@ -33,7 +33,7 @@ test_compiler() {
 }
 
 PATCHES=(
-	"${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
+	"${FILESDIR}"/compiler-rt-0002-sanitizers-musl-support.patch
 )
 
 src_configure() {
@@ -59,11 +59,11 @@ src_configure() {
 		-DCOMPILER_RT_OUTPUT_DIR="${BUILD_DIR}/lib/clang/${clang_version}"
 
 		# currently lit covers only sanitizer tests
+		-DCOMPILER_RT_BUILD_BUILTINS=OFF
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF
-		-DCOMPILER_RT_BUILD_BUILTINS=ON
-		-DCOMPILER_RT_BUILD_SANITIZERS=OFF
+		-DCOMPILER_RT_BUILD_SANITIZERS=ON
 		-DCOMPILER_RT_MUSL=$(usex elibc_musl)
-		-DCOMPILER_RT_BUILD_XRAY=OFF
+		-DCOMPILER_RT_BUILD_XRAY=ON
 	)
 
 	cmake-utils_src_configure
