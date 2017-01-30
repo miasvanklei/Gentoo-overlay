@@ -5160,148 +5160,6 @@ index 08166d208..61290d65c 100644
              return true;
            }
          }
-diff --git a/source/Core/IOHandler.cpp b/source/Core/IOHandler.cpp
-index 9c5e6ca80..241c2190e 100644
---- a/source/Core/IOHandler.cpp
-+++ b/source/Core/IOHandler.cpp
-@@ -28,9 +28,7 @@
- #include "lldb/Core/State.h"
- #include "lldb/Core/StreamFile.h"
- #include "lldb/Core/ValueObjectRegister.h"
--#ifndef LLDB_DISABLE_LIBEDIT
- #include "lldb/Host/Editline.h"
--#endif
- #include "lldb/Interpreter/CommandCompletions.h"
- #include "lldb/Interpreter/CommandInterpreter.h"
- #include "lldb/Symbol/Block.h"
-@@ -275,16 +273,12 @@ IOHandlerEditline::IOHandlerEditline(
-     IOHandlerDelegate &delegate)
-     : IOHandler(debugger, type, input_sp, output_sp, error_sp, flags),
- #ifndef LLDB_DISABLE_LIBEDIT
--      m_editline_ap(),
--#endif
--      m_delegate(delegate), m_prompt(), m_continuation_prompt(),
--      m_current_lines_ptr(nullptr), m_base_line_number(line_number_start),
--      m_curr_line_idx(UINT32_MAX), m_multi_line(multi_line),
--      m_color_prompts(color_prompts), m_interrupt_exits(true),
--      m_editing(false) {
-+      m_editline_ap(), m_delegate(delegate), m_prompt(),
-+      m_continuation_prompt(), m_current_lines_ptr(nullptr),
-+      m_base_line_number(line_number_start), m_curr_line_idx(UINT32_MAX),
-+      m_multi_line(multi_line), m_color_prompts(color_prompts),
-+      m_interrupt_exits(true), m_editing(false) {
-   SetPrompt(prompt);
--
--#ifndef LLDB_DISABLE_LIBEDIT
-   bool use_editline = false;
- 
-   use_editline = m_input_sp->GetFile().GetIsRealTerminal();
-@@ -293,6 +287,7 @@ IOHandlerEditline::IOHandlerEditline(
-     m_editline_ap.reset(new Editline(editline_name, GetInputFILE(),
-                                      GetOutputFILE(), GetErrorFILE(),
-                                      m_color_prompts));
-+    SetBaseLineNumber(m_base_line_number);
-     m_editline_ap->SetIsInputCompleteCallback(IsInputCompleteCallback, this);
-     m_editline_ap->SetAutoCompleteCallback(AutoCompleteCallback, this);
-     // See if the delegate supports fixing indentation
-@@ -311,11 +306,7 @@ IOHandlerEditline::IOHandlerEditline(
-   SetContinuationPrompt(continuation_prompt);
- }
- 
--IOHandlerEditline::~IOHandlerEditline() {
--#ifndef LLDB_DISABLE_LIBEDIT
--  m_editline_ap.reset();
--#endif
--}
-+IOHandlerEditline::~IOHandlerEditline() { m_editline_ap.reset(); }
- 
- void IOHandlerEditline::Activate() {
-   IOHandler::Activate();
-@@ -328,11 +319,9 @@ void IOHandlerEditline::Deactivate() {
- }
- 
- bool IOHandlerEditline::GetLine(std::string &line, bool &interrupted) {
--#ifndef LLDB_DISABLE_LIBEDIT
-   if (m_editline_ap) {
-     return m_editline_ap->GetLine(line, interrupted);
-   } else {
--#endif
-     line.clear();
- 
-     FILE *in = GetInputFILE();
-@@ -394,9 +383,7 @@ bool IOHandlerEditline::GetLine(std::string &line, bool &interrupted) {
-       SetIsDone(true);
-     }
-     return false;
--#ifndef LLDB_DISABLE_LIBEDIT
-   }
--#endif
- }
- 
- #ifndef LLDB_DISABLE_LIBEDIT
-@@ -430,18 +417,16 @@ int IOHandlerEditline::AutoCompleteCallback(const char *current_line,
-         max_matches, matches);
-   return 0;
- }
--#endif
- 
- const char *IOHandlerEditline::GetPrompt() {
- #ifndef LLDB_DISABLE_LIBEDIT
--  if (m_editline_ap) {
-+  if (m_editline_ap)
-     return m_editline_ap->GetPrompt();
--  } else {
--#endif
--    if (m_prompt.empty())
--      return nullptr;
--#ifndef LLDB_DISABLE_LIBEDIT
--  }
-+  else if (m_prompt.empty())
-+    return nullptr;
-+#else
-+  if (m_prompt.empty())
-+    return nullptr;
- #endif
-   return m_prompt.c_str();
- }
-@@ -488,7 +473,6 @@ bool IOHandlerEditline::GetLines(StringList &lines, bool &interrupted) {
-   m_current_lines_ptr = &lines;
- 
-   bool success = false;
--#ifndef LLDB_DISABLE_LIBEDIT
-   if (m_editline_ap) {
-     return m_editline_ap->GetLines(m_base_line_number, lines, interrupted);
-   } else {
-@@ -517,9 +501,8 @@ bool IOHandlerEditline::GetLines(StringList &lines, bool &interrupted) {
-       }
-     }
-     success = lines.GetSize() > 0;
--#ifndef LLDB_DISABLE_LIBEDIT
-   }
--#endif
-+  m_current_lines_ptr = NULL;
-   return success;
- }
- 
-@@ -569,18 +552,14 @@ bool IOHandlerEditline::Interrupt() {
-   if (m_delegate.IOHandlerInterrupt(*this))
-     return true;
- 
--#ifndef LLDB_DISABLE_LIBEDIT
-   if (m_editline_ap)
-     return m_editline_ap->Interrupt();
--#endif
-   return false;
- }
- 
- void IOHandlerEditline::GotEOF() {
--#ifndef LLDB_DISABLE_LIBEDIT
-   if (m_editline_ap)
-     m_editline_ap->Interrupt();
--#endif
- }
- 
- void IOHandlerEditline::PrintAsync(Stream *stream, const char *s, size_t len) {
 diff --git a/source/Core/Mangled.cpp b/source/Core/Mangled.cpp
 index c2c63b665..8b00df0c0 100644
 --- a/source/Core/Mangled.cpp
@@ -20081,7 +19939,7 @@ new file mode 100644
 index 000000000..a73e8b220
 --- /dev/null
 +++ b/source/Plugins/Language/Swift/SwiftLanguage.cpp
-@@ -0,0 +1,1748 @@
+@@ -0,0 +1,1749 @@
 +//===-- SwiftLanguage.cpp ---------------------------------------*- C++ -*-===//
 +//
 +// This source file is part of the Swift.org open source project
@@ -20105,6 +19963,7 @@ index 000000000..a73e8b220
 +#include "lldb/DataFormatters/FormattersHelpers.h"
 +#include "lldb/DataFormatters/StringPrinter.h"
 +
++#include "lldb/Symbol/ClangASTContext.h"
 +#include "lldb/Symbol/CompileUnit.h"
 +#include "lldb/Symbol/Function.h"
 +#include "lldb/Symbol/Variable.h"
@@ -20112,7 +19971,7 @@ index 000000000..a73e8b220
 +
 +#include "lldb/Target/SwiftLanguageRuntime.h"
 +
-+#include "ObjCRuntimeSyntheticProvider.cpp"
++#include "ObjCRuntimeSyntheticProvider.h"
 +#include "SwiftFormatters.h"
 +
 +#include <functional>
@@ -20131,7 +19990,7 @@ index 000000000..a73e8b220
 +using namespace lldb;
 +using namespace lldb_private;
 +
-+#ifdef LLDB_DISABLE_PYTHON
++#ifndef LLDB_DISABLE_PYTHON
 +using lldb_private::formatters::AddCXXSummary;
 +using lldb_private::formatters::AddCXXSynthetic;
 +#endif
@@ -20309,7 +20168,7 @@ index 000000000..a73e8b220
 +  basic_synth_flags.SetCascades(true).SetSkipPointers(true).SetSkipReferences(
 +      true);
 +
-+#ifdef LLDB_DISABLE_PYTHON
++#ifndef LLDB_DISABLE_PYTHON
 +  AddCXXSummary(swift_category_sp,
 +                lldb_private::formatters::swift::ObjC_Selector_SummaryProvider,
 +                "ObjectiveC.Selector", ConstString("ObjectiveC.Selector"),
@@ -20766,54 +20625,54 @@ index 000000000..a73e8b220
 +      .SetHideItemNames(false)
 +      .SetShowMembersOneLiner(false);
 +
-+#ifdef LLDB_DISABLE_PYTHON
-+  lldb_private::formatters::AddCXXSummary(
++#ifndef LLDB_DISABLE_PYTHON
++  AddCXXSummary(
 +      swift_category_sp, lldb_private::formatters::swift::Date_SummaryProvider,
 +      "Foundation.Date summary provider", ConstString("Foundation.Date"),
 +      TypeSummaryImpl::Flags(summary_flags).SetDontShowChildren(true));
 +
-+  lldb_private::formatters::AddCXXSummary(
++  AddCXXSummary(
 +      swift_category_sp,
 +      lldb_private::formatters::swift::NotificationName_SummaryProvider,
 +      "Notification.Name summary provider",
 +      ConstString("Foundation.Notification.Type.Name"),
 +      TypeSummaryImpl::Flags(summary_flags).SetDontShowChildren(true));
-+  lldb_private::formatters::AddCXXSummary(
++  AddCXXSummary(
 +      swift_category_sp,
 +      lldb_private::formatters::swift::NotificationName_SummaryProvider,
 +      "Notification.Name summary provider",
 +      ConstString("Foundation.Notification.Name"),
 +      TypeSummaryImpl::Flags(summary_flags).SetDontShowChildren(true));
 +
-+  lldb_private::formatters::AddCXXSummary(
++  AddCXXSummary(
 +      swift_category_sp, lldb_private::formatters::swift::URL_SummaryProvider,
 +      "URL summary provider", ConstString("Foundation.URL"),
 +      TypeSummaryImpl::Flags(summary_flags).SetDontShowChildren(true));
 +
-+  lldb_private::formatters::AddCXXSummary(
++  AddCXXSummary(
 +      swift_category_sp,
 +      lldb_private::formatters::swift::IndexPath_SummaryProvider,
 +      "IndexPath summary provider", ConstString("Foundation.IndexPath"),
 +      summary_flags);
 +
-+  lldb_private::formatters::AddCXXSummary(
++  AddCXXSummary(
 +      swift_category_sp,
 +      lldb_private::formatters::swift::Measurement_SummaryProvider,
 +      "Measurement summary provider",
 +      ConstString("Foundation.Measurement<Foundation.Unit>"),
 +      TypeSummaryImpl::Flags(summary_flags).SetDontShowChildren(true));
 +
-+  lldb_private::formatters::AddCXXSummary(
++  AddCXXSummary(
 +      swift_category_sp, lldb_private::formatters::swift::UUID_SummaryProvider,
 +      "UUID summary provider", ConstString("Foundation.UUID"),
 +      TypeSummaryImpl::Flags(summary_flags).SetDontShowChildren(true));
 +
-+  lldb_private::formatters::AddCXXSummary(
++  AddCXXSummary(
 +      swift_category_sp, lldb_private::formatters::swift::Data_SummaryProvider,
 +      "Data summary provider", ConstString("Foundation.Data"),
 +      TypeSummaryImpl::Flags(summary_flags).SetDontShowChildren(true));
 +
-+  lldb_private::formatters::AddCXXSynthetic(
++  AddCXXSynthetic(
 +      swift_category_sp,
 +      lldb_private::formatters::swift::URLComponentsSyntheticFrontEndCreator,
 +      "URLComponents synthetic children",
