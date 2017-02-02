@@ -471,34 +471,34 @@
    return res;
  }
  
-+#if LIBC_MUSL
++#if !LIBC_MUSL
  INTERCEPTOR(int, mallopt, int cmd, int value) {
    return -1;
  }
 +#endif
+ #endif // SANITIZER_INTERCEPT_MALLOPT_AND_MALLINFO
  
  INTERCEPTOR(int, posix_memalign, void **memptr, uptr alignment, uptr size) {
-   GET_STACK_TRACE_MALLOC;
 --- a/lib/lsan/lsan_interceptors.cc
 +++ b/lib/lsan/lsan_interceptors.cc
 @@ -137,9 +137,11 @@
-   return res;
  }
- 
+ #define LSAN_MAYBE_INTERCEPT_MALLINFO INTERCEPT_FUNCTION(mallinfo)
+
 +#if !LIBC_MUSL
  INTERCEPTOR(int, mallopt, int cmd, int value) {
    return -1;
  }
 +#endif
- 
- INTERCEPTOR(void*, pvalloc, uptr size) {
-   ENSURE_LSAN_INITED;
+ #define LSAN_MAYBE_INTERCEPT_MALLOPT INTERCEPT_FUNCTION(mallopt)
+ #else
+ #define LSAN_MAYBE_INTERCEPT_MALLINFO
 @@ -287,7 +289,9 @@
    INTERCEPT_FUNCTION(pvalloc);
    INTERCEPT_FUNCTION(malloc_usable_size);
-   INTERCEPT_FUNCTION(mallinfo);
+   LSAN_MAYBE_INTERCEPT_MALLINFO;
 +#if !LIBC_MUSL
-   INTERCEPT_FUNCTION(mallopt);
+   LSAN_MAYBE_INTERCEPT_MALLOPT;
 +#endif
    INTERCEPT_FUNCTION(pthread_create);
    INTERCEPT_FUNCTION(pthread_join);
@@ -562,7 +562,7 @@
  #include <malloc.h>
  #include <mntent.h>
  #include <netinet/ether.h>
-+#ifndef LIBC_MUSL
++#if !LIBC_MUSL
  #include <sys/sysinfo.h>
 +#endif
  #include <sys/vt.h>

@@ -5,7 +5,8 @@
 EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
-CMAKE_MIN_VERSION=3.4.3
+# (needed due to CMAKE_BUILD_TYPE != Gentoo)
+CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-multilib toolchain-funcs git-r3
@@ -19,15 +20,18 @@ EGIT_BRANCH="release_40"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="~amd64 ~mips ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="+experimental +libunwind +static-libs"
 
-RDEPEND="~sys-libs/libcxxabi-${PV}[static-libs?,${MULTILIB_USEDEP}]"
+RDEPEND="~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
+# LLVM 4 required for llvm-config --cmakedir
 DEPEND="${RDEPEND}
 	app-arch/xz-utils
-	>=sys-devel/clang-3.9.0"
+	>=sys-devel/llvm-4"
 
 DOCS=( CREDITS.TXT )
+
+CMAKE_BUILD_TYPE=Release
 
 src_configure() {
 	NATIVE_LIBDIR=$(get_libdir)
