@@ -72,6 +72,9 @@ src_configure() {
 src_install() {
 	cmake-utils_src_install
 
+	# includes are mistakenly installed for all sanitizers and xray
+        rm -rf "${ED}"usr/lib/clang/*/include || die
+
 	local clang_version=4.0.0
 
 	mkdir -p "${ED}"etc/env.d

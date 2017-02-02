@@ -1,9 +1,9 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 # Build written by Andrew John Hughes (gnu_andrew@member.fsf.org)
 
-EAPI="5"
+EAPI="6"
 SLOT="8"
 
 inherit check-reqs gnome2-utils java-pkg-2 java-vm-2 multiprocessing pax-utils prefix versionator
@@ -13,15 +13,15 @@ ICEDTEA_BRANCH=$(get_version_component_range 1-2)
 ICEDTEA_PKG=icedtea-${ICEDTEA_VER}
 ICEDTEA_PRE=$(get_version_component_range _)
 
-CORBA_TARBALL="9d3757e6da35.tar.xz"
-JAXP_TARBALL="81c2773fbb0d.tar.xz"
-JAXWS_TARBALL="f57f3ddddff6.tar.xz"
-JDK_TARBALL="0cc71de3df18.tar.xz"
-LANGTOOLS_TARBALL="a553c153d376.tar.xz"
-OPENJDK_TARBALL="200203ccf4bb.tar.xz"
-NASHORN_TARBALL="0fb33c8b64d1.tar.xz"
-HOTSPOT_TARBALL="be4aeaa327f7.tar.xz"
-SHENANDOAH_TARBALL="24002f5b584e.tar.xz"
+CORBA_TARBALL="8eb9dd5fe2fb.tar.xz"
+JAXP_TARBALL="faf1c4a9a51d.tar.xz"
+JAXWS_TARBALL="5f5237104669.tar.xz"
+JDK_TARBALL="3642a826880b.tar.xz"
+LANGTOOLS_TARBALL="d10a13bdc98c.tar.xz"
+OPENJDK_TARBALL="d5760f7cce54.tar.xz"
+NASHORN_TARBALL="8c0fe384c4e7.tar.xz"
+HOTSPOT_TARBALL="6efaf77e82a1.tar.xz"
+SHENANDOAH_TARBALL="d9a978177779.tar.xz"
 
 CACAO_TARBALL="cacao-c182f119eaad.tar.xz"
 JAMVM_TARBALL="jamvm-ec18fb9e49e62dce16c5094ef1527eed619463aa.tar.gz"
@@ -60,9 +60,9 @@ SRC_URI="
 	${DROP_URL}/jamvm/${JAMVM_TARBALL} -> ${JAMVM_GENTOO_TARBALL}"
 
 LICENSE="Apache-1.1 Apache-2.0 GPL-1 GPL-2 GPL-2-with-linking-exception LGPL-2 MPL-1.0 MPL-1.1 public-domain W3C"
-KEYWORDS="~amd64 ~arm ~ppc64 ~x86"
+KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86"
 
-IUSE="+alsa cacao +cups doc examples +gtk headless-awt infinality
+IUSE="+alsa cacao +cups doc examples +gtk headless-awt
 	jamvm +jbootstrap kerberos libressl nsplugin pax_kernel +pch
 	pulseaudio sctp selinux shenandoah smartcard +source +sunec test +webstart zero"
 
@@ -74,7 +74,7 @@ ALSA_COMMON_DEP="
 CUPS_COMMON_DEP="
 	>=net-print/cups-1.2.12"
 X_COMMON_DEP="
-	>=media-libs/giflib-4.1.6:=
+	>=media-libs/giflib-4.1.6:0=
 	>=media-libs/libpng-1.2:0=
 	>=x11-libs/libX11-1.1.3
 	>=x11-libs/libXext-1.1.1
@@ -93,11 +93,11 @@ X_DEPEND="
 
 # The Javascript requirement is obsolete; OpenJDK 8+ has Nashorn
 COMMON_DEP="
-	>=dev-libs/glib-2.26:2
-	media-libs/fontconfig
-	>=media-libs/freetype-2.5.3:2=[infinality?]
-	>=media-libs/lcms-2.5
-	>=sys-libs/zlib-1.2.3:=
+	>=dev-libs/glib-2.26:2=
+	media-libs/fontconfig:1.0=
+	>=media-libs/freetype-2.5.3:2=
+	>=media-libs/lcms-2.5:2=
+	>=sys-libs/zlib-1.2.3
 	virtual/jpeg:0=
 	kerberos? ( virtual/krb5 )
 	sctp? ( net-misc/lksctp-tools )
@@ -115,9 +115,9 @@ RDEPEND="${COMMON_DEP}
 	cups? ( ${CUPS_COMMON_DEP} )
 	gtk? (
 		>=dev-libs/atk-1.30.0
-		>=x11-libs/cairo-1.8.8:=
+		>=x11-libs/cairo-1.8.8
 		x11-libs/gdk-pixbuf:2
-		>=x11-libs/gtk+-2.8:2=
+		>=x11-libs/gtk+-2.8:2
 		>=x11-libs/pango-1.24.5
 	)
 	!headless-awt? ( ${X_COMMON_DEP} )
@@ -141,8 +141,8 @@ DEPEND="${COMMON_DEP} ${ALSA_COMMON_DEP} ${CUPS_COMMON_DEP} ${X_COMMON_DEP} ${X_
 	app-arch/zip
 	app-misc/ca-certificates
 	dev-lang/perl
-	!libressl? ( dev-libs/openssl )
-	libressl? ( dev-libs/libressl )
+	!libressl? ( dev-libs/openssl:0 )
+	libressl? ( dev-libs/libressl:0 )
 	sys-apps/attr
 	sys-apps/lsb-release
 	x11-libs/libXt
@@ -188,7 +188,7 @@ src_unpack() {
 	unpack ${SRC_PKG}
 }
 
-java_prepare() {
+src_configure() {
 	# For bootstrap builds as the sandbox control file might not yet exist.
 	addpredict /proc/self/coredump_filter
 
@@ -204,9 +204,8 @@ java_prepare() {
 	ln -s "${FILESDIR}/${PN}8-jdk-musl.patch" patches || die
 	ln -s "${FILESDIR}/${PN}8-gcc-triples.patch" patches || die
 	ln -s "${FILESDIR}/${PN}8-new-gnuconfig.patch" patches || die
-}
+	ln -s "${FILESDIR}/${PN}8-clang.patch" patches || die
 
-src_configure() {
 	local cacao_config config hotspot_port hs_config jamvm_config use_cacao use_jamvm use_zero zero_config
 	local vm=$(java-pkg_get-current-vm)
 
@@ -222,6 +221,7 @@ src_configure() {
 	DISTRIBUTION_PATCHES+="patches/${PN}8-jdk-musl.patch "
 	DISTRIBUTION_PATCHES+="patches/${PN}8-gcc-triples.patch "
 	DISTRIBUTION_PATCHES+="patches/${PN}8-new-gnuconfig.patch "
+	DISTRIBUTION_PATCHES+="patches/${PN}8-clang.patch "
 	export DISTRIBUTION_PATCHES
 
 	# gcj-jdk ensures ecj is present.
@@ -301,6 +301,9 @@ src_configure() {
 	# Warn about potential problems with ccache enabled
 	if has ccache ${FEATURES}; then
 		ewarn 'ccache has been known to break IcedTea. Disable it before filing bugs.'
+		config+=" --enable-ccache"
+	else
+		config+=" --disable-ccache"
 	fi
 
 	config+=" --with-parallel-jobs=$(makeopts_jobs)"
@@ -326,11 +329,11 @@ src_configure() {
 		--disable-downloading --disable-Werror --disable-tests \
 		--enable-system-lcms --enable-system-jpeg \
 		--enable-system-zlib --disable-systemtap-tests \
+		--enable-improved-font-rendering \
 		$(use_enable headless-awt headless) \
 		$(use_enable !headless-awt system-gif) \
 		$(use_enable !headless-awt system-png) \
 		$(use_enable doc docs) \
-		$(use_enable infinality) \
 		$(use_enable kerberos system-kerberos) \
 		$(use_with pax_kernel pax "${EPREFIX}/usr/sbin/paxmark.sh") \
 		$(use_enable pch precompiled-headers) \

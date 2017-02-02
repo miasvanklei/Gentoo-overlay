@@ -1,0 +1,33 @@
+--- openjdk/hotspot/src/share/vm/runtime/virtualspace.cpp	2017-01-30 19:57:58.664771346 +0100
++++ openjdk/hotspot/src/share/vm/runtime/virtualspace.cpp	2017-01-30 19:58:05.728767825 +0100
+@@ -342,7 +342,7 @@
+                 (UseCompressedOops && (Universe::narrow_oop_base() != NULL) &&
+                  Universe::narrow_oop_use_implicit_null_checks()) ?
+                   lcm(os::vm_page_size(), alignment) : 0) {
+-  if (base() > 0) {
++  if (base()) {
+     MemTracker::record_virtual_memory_type((address)base(), mtJavaHeap);
+   }
+ 
+--- openjdk/hotspot/src/share/vm/opto/lcm.cpp	2017-01-30 19:54:12.480912067 +0100
++++ openjdk/hotspot/src/share/vm/opto/lcm.cpp	2017-01-30 19:54:27.128900774 +0100
+@@ -51,7 +51,7 @@
+ // Check whether val is not-null-decoded compressed oop,
+ // i.e. will grab into the base of the heap if it represents NULL.
+ static bool accesses_heap_base_zone(Node *val) {
+-  if (Universe::narrow_oop_base() > 0) { // Implies UseCompressedOops.
++  if (Universe::narrow_oop_base()) { // Implies UseCompressedOops.
+     if (val && val->is_Mach()) {
+       if (val->as_Mach()->ideal_Opcode() == Op_DecodeN) {
+         // This assumes all Decodes with TypePtr::NotNull are matched to nodes that
+--- openjdk/hotspot/make/linux/makefiles/jsig.make	2017-01-30 20:10:53.872346006 +0100
++++ openjdk/hotspot/make/linux/makefiles/jsig.make	2017-01-30 21:22:21.374269241 +0100
+@@ -54,7 +54,7 @@
+ $(LIBJSIG): $(JSIGSRCDIR)/jsig.c $(LIBJSIG_MAPFILE)
+ 	@echo Making signal interposition lib...
+ 	$(QUIETLY) $(CC) $(SYMFLAG) $(ARCHFLAG) $(SHARED_FLAG) $(PICFLAG) \
+-                         $(LFLAGS_JSIG) $(JSIG_DEBUG_CFLAGS) $(EXTRA_CFLAGS) -o $@ $< -ldl
++                         $(LFLAGS_JSIG) $(JSIG_DEBUG_CFLAGS) -o $@ $< -ldl
+ ifeq ($(ENABLE_FULL_DEBUG_SYMBOLS),1)
+   ifneq ($(STRIP_POLICY),no_strip)
+ 	$(QUIETLY) $(OBJCOPY) --only-keep-debug $@ $(LIBJSIG_DEBUGINFO)
