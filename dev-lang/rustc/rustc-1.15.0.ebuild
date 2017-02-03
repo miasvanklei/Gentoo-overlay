@@ -35,7 +35,7 @@ DEPEND="${RDEPEND}
 
 PDEPEND=">=app-eselect/eselect-rust-0.3_pre20150425"
 
-S=${WORKDIR}/${PN}-beta-src
+S=${WORKDIR}/${P}-src
 
 src_prepare() {
 	find mk -name '*.mk' -exec \
