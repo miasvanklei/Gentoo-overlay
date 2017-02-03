@@ -55,7 +55,7 @@ multilib_src_configure() {
 		-DLIBCXXABI_LIBUNWIND_INCLUDES_INTERNAL="${T}"
 	)
 
-	cmake-utils_src_configur
+	cmake-utils_src_configure
 }
 
 multilib_src_install_all() {
