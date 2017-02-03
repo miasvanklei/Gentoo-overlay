@@ -48,7 +48,6 @@ src_prepare() {
 	eapply ${FILESDIR}/vapigen.patch
 	eapply ${FILESDIR}/disable-fatal-warnings.patch
 	eapply ${FILESDIR}/fix-segfault.patch
-	eapply ${FILESDIR}/remove-tests.patch
 
 	local i
 	if use nls ; then
