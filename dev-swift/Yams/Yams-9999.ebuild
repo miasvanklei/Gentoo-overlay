@@ -10,7 +10,6 @@ DESCRIPTION="A Sweet and Swifty YAML parser."
 HOMEPAGE="https://github.com/jpsim/Yams"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/jpsim/Yams.git"
-EGIT_COMMIT="e087b0765fac5fb8a9ce08396f1af4e0e75181fc"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -25,6 +24,7 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
         eapply ${FILESDIR}/fix-compilation.patch
+        eapply ${FILESDIR}/foundation.patch
         eapply ${FILESDIR}/install-lib.patch
         eapply_user
 }
