@@ -52,9 +52,9 @@ src_compile()
 	node_compile native-keymap
 	node_compile gc-signals
 	node_compile oniguruma
-	node_compile pty.js
+	node_compile node-pty
 
-        rm -r resources/app/node_modules/{native-keymap,gc-signals,oniguruma,pty.js} || die
+        rm -r resources/app/node_modules/{native-keymap,gc-signals,oniguruma,node-pty} || die
         find node_modules/* -name "*obj.target*" -exec rm -r "{}" \;
         cp -r node_modules/* resources/app/node_modules || die
 }

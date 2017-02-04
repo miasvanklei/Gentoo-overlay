@@ -18,6 +18,9 @@ IUSE=""
 DEPEND=""
 RDEPEND="${DEPEND}"
 
+PATCHES=( "${FILESDIR}"/fix-configure.patch
+)
+
 src_install() {
 	mkdir -p ${D}/usr/lib || die
 	mkdir -p ${D}/usr/include || die

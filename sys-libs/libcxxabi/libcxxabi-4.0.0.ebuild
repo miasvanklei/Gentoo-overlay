@@ -19,9 +19,18 @@ EGIT_BRANCH="release_40"
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="+compiler-rt +static-libs"
+IUSE="+libunwind +compiler-rt +static-libs"
 
-DEPEND="sys-libs/libunwind[static-libs?,${MULTILIB_USEDEP}]
+RDEPEND="
+	libunwind? (
+		|| (
+			>=sys-libs/libunwind-1.0.1-r1[static-libs?,${MULTILIB_USEDEP}]
+			>=sys-libs/llvm-libunwind-3.9.0-r1[static-libs?,${MULTILIB_USEDEP}]
+		)
+	)"
+# LLVM 4 required for llvm-config --cmakedir
+DEPEND="${RDEPEND}
+	>=sys-devel/llvm-4
 	compiler-rt? ( ~sys-libs/compiler-rt-${PV} )
 	~sys-libs/libcxx-${PV}[static-libs?,${MULTILIB_USEDEP}]"
 RDEPEND="${DEPEND}"
@@ -40,7 +49,7 @@ multilib_src_configure() {
 		-DLIBCXXABI_ENABLE_STATIC=$(usex static-libs)
 		-DLIBCXXABI_USE_COMPILER_RT==$(usex compiler-rt)
 		-DLIBCXXABI_LIBCXX_INCLUDES="/usr/include/c++/v1"
-		-DLIBCXXABI_USE_LLVM_UNWINDER=ON
+		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
 		# this only needs to exist, it does not have to make sense
 		-DLIBCXXABI_LIBUNWIND_SOURCES="${T}"
 		-DLIBCXXABI_LIBUNWIND_INCLUDES_INTERNAL="${T}"
