@@ -4,21 +4,21 @@
 
 EAPI=6
 
-DESCRIPTION="Numix Circle icon theme"
+DESCRIPTION="Numix icon theme"
 HOMEPAGE="https://numixproject.org"
 
-inherit git-r3
+inherit git-r3 autotools
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/numixproject/${PN}.git"
+EGIT_REPO_URI="https://github.com/snwh/${PN}.git"
 KEYWORDS=""
 
 LICENSE="GPL-3.0+"
 SLOT="0"
 
-DEPEND="x11-themes/numix-icon-theme"
+DEPEND=""
 RDEPEND="${DEPEND}"
 
-src_install() {
-	insinto /usr/share/icons
-	doins -r Numix-Circle Numix-Circle-Light
+src_prepare() {
+	eautoreconf
+	eapply_user
 }
