@@ -1,6 +1,15 @@
---- a/project/cmake/scripts/linux/Macros.cmake	2017-01-19 19:27:14.830368107 +0100
-+++ b/project/cmake/scripts/linux/Macros.cmake	2017-01-19 19:28:24.374098597 +0100
-@@ -73,12 +73,12 @@
+--- a/project/cmake/scripts/linux/Macros.cmake	2017-02-05 14:57:02.489779420 +0100
++++ b/project/cmake/scripts/linux/Macros.cmake	2017-02-05 14:57:39.304758224 +0100
+@@ -65,7 +65,7 @@
+       set(link_lib -l${${lib}_LIBRARIES})
+     endif()
+   endif()
+-  execute_process(COMMAND ${CMAKE_C_COMPILER} -nostdlib -o /dev/null -Wl,-M ${link_lib} 
++  execute_process(COMMAND ${CMAKE_C_COMPILER} -nostdlib -o /dev/null -Wl,-M ${link_lib}
+                   COMMAND grep LOAD.*${liblow}
+                   ERROR_QUIET
+                   OUTPUT_VARIABLE ${lib}_FILENAME)
+@@ -73,16 +73,16 @@
    string(STRIP "${${lib}_FILENAME}" ${lib}_FILENAME)
    if(NOT ${lib}_FILENAME)
      execute_process(COMMAND ${CMAKE_C_COMPILER} -nostdlib -o /dev/null -Wl,-t ${link_lib}
@@ -14,5 +23,10 @@
 -    execute_process(COMMAND objdump -p ${${lib}_FILENAME}
 +    execute_process(COMMAND readelf -d ${${lib}_FILENAME}
                      COMMAND grep SONAME.*${liblow}
++                    COMMAND grep -oP "\\(\\K[^)]+"
                      ERROR_QUIET
                      OUTPUT_VARIABLE ${lib}_SONAME)
+-    string(REPLACE "SONAME " "" ${lib}_SONAME ${${lib}_SONAME})
+     string(STRIP ${${lib}_SONAME} ${lib}_SONAME)
+     if(VERBOSE)
+       message(STATUS "${lib} soname: ${${lib}_SONAME}")
