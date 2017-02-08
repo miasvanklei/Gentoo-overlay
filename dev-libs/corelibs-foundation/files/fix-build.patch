@@ -261,3 +261,21 @@ index 4f6a39f..a923fbb 100644
  
          if Configuration.current.build_mode == Configuration.Debug:
              swift_flags += "-g -Onone "
+diff --git a/CoreFoundation/Base.subproj/CFPlatform.c b/CoreFoundation/Base.subproj/CFPlatform.c
+index 5f67510..1c9e9ae 100644
+--- a/CoreFoundation/Base.subproj/CFPlatform.c
++++ b/CoreFoundation/Base.subproj/CFPlatform.c
+@@ -1322,9 +1322,12 @@ CF_SWIFT_EXPORT int _CFThreadGetName(char *buf, int length) {
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI
+     return pthread_getname_np(pthread_self(), buf, length);
+ #elif DEPLOYMENT_TARGET_LINUX
++#if defined(__GLIBC__)
+     return pthread_getname_np(pthread_self(), buf, length);
+-#endif
++#else
+     return -1;
++#endif
++#endif
+ }
+ 
+ CF_EXPORT char **_CFEnviron(void) {
