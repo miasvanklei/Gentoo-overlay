@@ -16,13 +16,13 @@ inherit check-reqs chromium-2 eutils gnome2-utils flag-o-matic multilib \
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent/VERSION
 CHROMIUM_VERSION="52.0.2743.82"
 # Keep this in sync with vendor/brightray
-BRIGHTRAY_COMMIT="554946c7873bbc6930779c871fe230856575049a"
+BRIGHTRAY_COMMIT="ee26c5218eeec199c54c92a7517a72d2dbd0adbf"
 # Keep this in sync with vendor/node
-NODE_COMMIT="ee8c429deaee0adeeef069c3ad34c0defe53a567"
+NODE_COMMIT="c47e9bf9011de682d07c82f7f610a467f30cca60"
 # Keep this in sync with vendor/native_mate
 NATIVE_MATE_COMMIT="b5e5de626c6a57e44c7e6448d8bbaaac475d493c"
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent
-LIBCHROMIUMCONTENT_COMMIT="c5cf295ef93d4ee88bff0c4b06b28ff0969a890e"
+LIBCHROMIUMCONTENT_COMMIT="27add4cfef98f21d5910539bebb47ae175f024c2"
 # Keep this in sync with package.json#devDependencies
 ASAR_VERSION="0.12.1"
 
@@ -256,7 +256,7 @@ src_prepare() {
 	ln -s "${WORKDIR}/${ASAR_P}/node_modules" "${S}/node_modules" || die
 
 	# electron patches
-	epatch "${FILESDIR}/${P}.patch"
+	epatch "${FILESDIR}/${PN}-1.3.6.patch"
 
 	# node patches
 	cd "${NODE_S}" || die
@@ -281,11 +281,11 @@ src_prepare() {
 
 	# brightray patches
 	cd "${BRIGHTRAY_S}" || die
-	epatch "${FILESDIR}/${P}-vendor-brightray.patch"
+	epatch "${FILESDIR}/${PN}-1.3.6-vendor-brightray.patch"
 
 	# libcc patches
 	cd "${LIBCC_S}" || die
-	epatch "${FILESDIR}/${P}-vendor-libchromiumcontent.patch"
+	epatch "${FILESDIR}/${PN}-1.3.6-vendor-libchromiumcontent.patch"
 
 	# chromium patches
 	cd "${S}" || die
@@ -372,6 +372,7 @@ src_prepare() {
 		'third_party/google_input_tools/third_party/closure_library/third_party/closure' \
 		'third_party/hunspell' \
 		'third_party/iccjpeg' \
+		'third_party/jinja2' \
 		'third_party/jstemplate' \
 		'third_party/khronos' \
 		'third_party/leveldatabase' \
@@ -392,6 +393,7 @@ src_prepare() {
 		'third_party/libyuv' \
 		'third_party/lss' \
 		'third_party/lzma_sdk' \
+		'third_party/markupsafe' \
 		'third_party/mesa' \
 		'third_party/modp_b64' \
 		'third_party/mt19937ar' \
@@ -410,6 +412,7 @@ src_prepare() {
 		'third_party/pdfium/third_party/libpng16' \
 		'third_party/pdfium/third_party/libtiff' \
 		'third_party/pdfium/third_party/zlib_v128' \
+		'third_party/ply' \
 		'third_party/polymer' \
 		'third_party/protobuf' \
 		'third_party/protobuf/third_party/six' \
