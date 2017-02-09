@@ -1,0 +1,32 @@
+From ea4eb816dcd93f2f277f2826250c7dac087d1d11 Mon Sep 17 00:00:00 2001
+From: root <root@jtcswift3.in.ibm.com>
+Date: Thu, 9 Feb 2017 14:26:50 +0530
+Subject: [PATCH] Fix for https://bugs.swift.org/browse/SR-3536
+
+---
+ Foundation/NSString.swift | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/Foundation/NSString.swift b/Foundation/NSString.swift
+index 0fe1339..6212a58 100644
+--- a/Foundation/NSString.swift
++++ b/Foundation/NSString.swift
+@@ -111,12 +111,14 @@ internal func _createRegexForPattern(_ pattern: String, _ options: NSRegularExpr
+         }()
+     }
+     let key = "\(options):\(pattern)"
+-    if let regex = local.__NSRegularExpressionCache.object(forKey: key._nsObject) {
+-        return regex
+-    }
++
++//   Disabling cache until [SR-3904] is fixed.	
++//    if let regex = local.__NSRegularExpressionCache.object(forKey: key._nsObject) {
++//        return regex
++//    }
+     do {
+         let regex = try NSRegularExpression(pattern: pattern, options: options)
+-        local.__NSRegularExpressionCache.setObject(regex, forKey: key._nsObject)
++//        local.__NSRegularExpressionCache.setObject(regex, forKey: key._nsObject)
+         return regex
+     } catch {
+         
