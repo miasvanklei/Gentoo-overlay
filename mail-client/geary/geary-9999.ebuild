@@ -11,7 +11,6 @@ HOMEPAGE="https://wiki.gnome.org/Apps/Geary"
 SRC_URI=""
 
 EGIT_REPO_URI="git://git.gnome.org/geary"
-EGIT_BRANCH="wip/728002-webkit2"
 inherit git-r3
 
 LICENSE="LGPL-2.1"
