@@ -558,16 +558,6 @@
            "Root set: include regions added via __lsan_register_root_region().")
 --- a/lib/sanitizer_common/sanitizer_platform_limits_posix.cc
 +++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.cc
-@@ -65,7 +65,9 @@
- #include <malloc.h>
- #include <mntent.h>
- #include <netinet/ether.h>
-+#if !LIBC_MUSL
- #include <sys/sysinfo.h>
-+#endif
- #include <sys/vt.h>
- #include <linux/cdrom.h>
- #include <linux/fd.h>
 @@ -140,12 +142,15 @@ typedef struct user_fpregs elf_fpregset_t;
  
  #if SANITIZER_LINUX && !SANITIZER_ANDROID
@@ -615,9 +605,9 @@
  #if SANITIZER_LINUX && !SANITIZER_ANDROID && \
      (defined(__i386) || defined(__x86_64) || defined(__mips64) || \
 @@ -422,7 +430,9 @@ unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
-   unsigned struct_input_absinfo_sz = sizeof(struct input_absinfo);
    unsigned struct_input_id_sz = sizeof(struct input_id);
    unsigned struct_mtpos_sz = sizeof(struct mtpos);
+   unsigned struct_rtentry_sz = sizeof(struct rtentry);
 +#if !LIBC_MUSL
    unsigned struct_termio_sz = sizeof(struct termio);
 +#endif
