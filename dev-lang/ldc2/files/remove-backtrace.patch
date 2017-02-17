@@ -1,5 +1,5 @@
---- a/runtime/druntime/src/rt/backtrace/dwarf.d	2016-10-23 22:59:51.775888144 +0200
-+++ b/runtime/druntime/src/rt/backtrace/dwarf.d	2016-10-23 23:00:33.975886968 +0200
+--- a/runtime/druntime/src/rt/backtrace/dwarf.d
++++ b/runtime/druntime/src/rt/backtrace/dwarf.d
 @@ -12,8 +12,7 @@
  
  module rt.backtrace.dwarf;
@@ -10,29 +10,27 @@
  
  version(linux_or_freebsd):
  
---- a/runtime/druntime/src/core/runtime.d	2016-10-23 23:03:57.752881290 +0200
-+++ b/runtime/druntime/src/core/runtime.d	2016-10-23 23:04:17.577880738 +0200
+--- a/runtime/druntime/src/core/runtime.d
++++ b/runtime/druntime/src/core/runtime.d
 @@ -401,9 +401,7 @@
  extern (C) bool runModuleUnitTests()
  {
      // backtrace
 -    version( CRuntime_Glibc )
 -        import core.sys.linux.execinfo;
--    else version( OSX )
-+    version( OSX )
-         import core.sys.osx.execinfo;
+-    else version( Darwin )
++    version( Darwin )
+         import core.sys.darwin.execinfo;
      else version( FreeBSD )
          import core.sys.freebsd.execinfo;
---- a/runtime/druntime/src/core/runtime.d	2016-10-23 23:19:12.158855811 +0200
-+++ b/runtime/druntime/src/core/runtime.d	2016-10-23 23:20:30.333853633 +0200
 @@ -481,9 +481,7 @@
  Throwable.TraceInfo defaultTraceHandler( void* ptr = null )
  {
      // backtrace
 -    version( CRuntime_Glibc )
 -        import core.sys.linux.execinfo;
--    else version( OSX )
-+    version( OSX )
-         import core.sys.osx.execinfo;
+-    else version( Darwin )
++    version( Darwin )
+         import core.sys.darwin.execinfo;
      else version( FreeBSD )
          import core.sys.freebsd.execinfo;

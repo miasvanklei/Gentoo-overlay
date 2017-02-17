@@ -1,5 +1,5 @@
---- a/runtime/druntime/src/rt/sections_elf_shared.d	2016-01-03 21:18:32.000000000 +0100
-+++ b/runtime/druntime/src/rt/sections_elf_shared.d	2016-01-26 13:03:31.281469463 +0100
+--- a/runtime/druntime/src/rt/sections_elf_shared.d
++++ b/runtime/druntime/src/rt/sections_elf_shared.d
 @@ -646,8 +646,6 @@
              if (dyn.d_tag == DT_STRTAB)
              {
@@ -9,8 +9,8 @@
                      strtab = cast(const(char)*)(info.dlpi_addr + dyn.d_un.d_ptr); // relocate
                  else
                      static assert(0, "unimplemented");
---- a/runtime/phobos/std/socket.d  2016-06-18 19:58:41.097486391 +0200
-+++ b/runtime/phobos/std/socket.d  2016-06-18 20:02:07.097496533 +0200
+--- a/runtime/phobos/std/socket.d
++++ b/runtime/phobos/std/socket.d
 @@ -159,52 +159,11 @@
      {
          char[80] buf;
@@ -68,27 +68,8 @@
  
          auto len = strlen(cs);
  
---- a/runtime/phobos/std/exception.d	2016-05-28 11:16:02.120157309 +0200
-+++ b/runtime/phobos/std/exception.d	2016-05-28 11:30:43.935200725 +0200
-@@ -1491,15 +1491,7 @@
-     this(string msg, string file = null, size_t line = 0) @trusted
-     {
-         _errno = .errno;
--        version (CRuntime_Glibc)
--        {
--            char[1024] buf = void;
--            auto s = core.stdc.string.strerror_r(errno, buf.ptr, buf.length);
--        }
--        else
--        {
--            auto s = core.stdc.string.strerror(errno);
--        }
-+        auto s = core.stdc.string.strerror(errno);
-         super(msg ~ " (" ~ s[0..s.strlen].idup ~ ")", file, line);
-     }
- }
---- a/runtime/druntime/src/core/stdc/string.d	2016-05-28 11:16:41.970159271 +0200
-+++ b/runtime/druntime/src/core/stdc/string.d	2016-05-28 11:30:45.677200811 +0200
+--- a/runtime/druntime/src/core/stdc/string.d
++++ b/runtime/druntime/src/core/stdc/string.d
 @@ -67,32 +67,8 @@
  char*  strtok(char* s1, in char* s2);
  ///
@@ -98,7 +79,7 @@
 -    ///
 -    const(char)* strerror_r(int errnum, char* buf, size_t buflen);
 -}
--else version (OSX)
+-else version (Darwin)
 -{
 -    int strerror_r(int errnum, char* buf, size_t buflen);
 -}
@@ -124,3 +105,28 @@
  ///
  pure size_t strlen(in char* s);
  ///
+--- a/runtime/phobos/std/exception.d
++++ b/runtime/phobos/std/exception.d
+@@ -1457,20 +1457,10 @@
+     this(string msg, string file = null, size_t line = 0) @trusted
+     {
+         import core.stdc.errno : errno;
+-        import core.stdc.string : strlen;
++        import core.stdc.string : strlen, strerror;
+ 
+         _errno = errno;
+-        version (CRuntime_Glibc)
+-        {
+-            import core.stdc.string : strerror_r;
+-            char[1024] buf = void;
+-            auto s = strerror_r(errno, buf.ptr, buf.length);
+-        }
+-        else
+-        {
+-            import core.stdc.string : strerror;
+-            auto s = strerror(errno);
+-        }
++        auto s = strerror(errno);
+         super(msg ~ " (" ~ s[0..s.strlen].idup ~ ")", file, line);
+     }
+ }
