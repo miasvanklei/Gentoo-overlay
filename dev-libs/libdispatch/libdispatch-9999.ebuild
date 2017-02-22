@@ -19,13 +19,11 @@ IUSE=""
 
 RDEPEND="dev-lang/swift
 	dev-libs/libbsd
-	dev-libs/libkqueue
 	dev-libs/libpthread_workqueue"
 DEPEND="${RDEPEND}"
 
 src_prepare() {
 	rmdir libpwq
-	rmdir libkqueue
 	eapply ${FILESDIR}/fix-compile.patch
 	eapply ${FILESDIR}/fix-segfault.patch
 	eautoreconf
@@ -34,9 +32,9 @@ src_prepare() {
 
 src_configure() {
 	# fix use of nostdlib
-	append-ldflags -lkqueue -L/usr/lib/swift/linux -lswiftCore
+	append-ldflags -L/usr/lib/swift/linux -lswiftCore
 	find ./ -type f -exec sed -i -e 's/-nostdlib//g' {} \;
-	econf --with-swift-toolchain=/usr --enable-embedded-blocks-runtime=off --disable-libkqueue-install --disable-libpwq-install
+	econf --with-swift-toolchain=/usr --enable-embedded-blocks-runtime=off --disable-libpwq-install
 }
 
 src_compile() {
