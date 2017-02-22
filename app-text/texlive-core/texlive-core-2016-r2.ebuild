@@ -1,12 +1,12 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 # $Id$
 
 EAPI=5
 
 #TL_UPSTREAM_PATCHLEVEL="1"
-PATCHLEVEL="52"
-TL_SOURCE_VERSION=20150521
+PATCHLEVEL="64"
+TL_SOURCE_VERSION=20160523
 
 inherit eutils flag-o-matic toolchain-funcs libtool texlive-common
 
@@ -24,31 +24,37 @@ SRC_URI="${SRC_URI} mirror://gentoo/${PN}-patches-${PATCHLEVEL}.tar.xz"
 #	mirror://gentoo/texlive-core-upstream-patches-${TL_UPSTREAM_PATCHLEVEL}.tar.xz"
 
 TL_CORE_BINEXTRA_MODULES="
-	a2ping adhocfilelist asymptote bundledoc ctanify ctanupload ctie cweb
-	de-macro dtl dtxgen dvi2tty dviasm dvicopy dvidvi dviljk dvipos findhyph
-	fragmaster hyphenex installfont lacheck latex-git-log latex2man
-	latexfileversion latexpand latexindent ltxfileinfo ltximg listings-ext
-	match_parens mkjobtexmf patgen pdfcrop pdftools pfarrei pkfix pkfix-helper
-	purifyeps seetexk sty2dtx synctex texcount texdef texdiff texdirflatten
-	texdoc texliveonfly texloganalyser texware tie tpic2pdftex typeoutfileinfo
+	a2ping adhocfilelist arara asymptote bundledoc checklistings ctan_chk
+	ctanify ctanupload ctie cweb de-macro dtl dtxgen dvi2tty dviasm dvicopy
+	dvidvi dviljk dvipos findhyph fragmaster hook-pre-commit-pkg hyphenex
+	installfont lacheck latex-git-log latex-papersize latex2man latex2nemeth
+	latexfileversion latexpand latexindent ltxfileinfo ltximg listings-ext make4ht
+	match_parens mflua mkjobtexmf patgen pdfbook2 pdfcrop pdflatexpicscale pdftools
+	pdfxup pfarrei pkfix pkfix-helper purifyeps seetexk srcredact sty2dtx
+	synctex tex4ebook texcount texdef texdiff texdirflatten texdoc texfot
+	texliveonfly texloganalyser texosquery texware tie tpic2pdftex typeoutfileinfo
 	web collection-binextra
 	"
 TL_CORE_BINEXTRA_DOC_MODULES="
-	a2ping.doc adhocfilelist.doc asymptote.doc bundledoc.doc ctanify.doc
-	ctanupload.doc ctie.doc cweb.doc de-macro.doc dtxgen.doc dvi2tty.doc
-	dvicopy.doc	dviljk.doc dvipos.doc findhyph.doc fragmaster.doc
-	installfont.doc	latex-git-log.doc latex2man.doc latexfileversion.doc
+	a2ping.doc adhocfilelist.doc arara.doc asymptote.doc bundledoc.doc
+	checklistings.doc ctan_chk.doc ctanify.doc ctanupload.doc ctie.doc
+	cweb.doc de-macro.doc dtl.doc dtxgen.doc dvi2tty.doc dviasm.doc dvicopy.doc
+	dvidvi.doc dviljk.doc dvipos.doc findhyph.doc fragmaster.doc
+	hook-pre-commit-pkg.doc installfont.doc lacheck.doc latex-git-log.doc
+	latex-papersize.doc latex2man.doc latex2nemeth.doc latexfileversion.doc
 	latexpand.doc latexindent.doc ltxfileinfo.doc ltximg.doc listings-ext.doc
-	match_parens.doc mkjobtexmf.doc patgen.doc pdfcrop.doc pdftools.doc
-	pfarrei.doc pkfix.doc pkfix-helper.doc purifyeps.doc sty2dtx.doc synctex.doc
-	texcount.doc texdef.doc texdiff.doc texdirflatten.doc texdoc.doc
-	texliveonfly.doc texloganalyser.doc texware.doc tie.doc tpic2pdftex.doc
-	typeoutfileinfo.doc web.doc
-	"
+	make4ht.doc match_parens.doc mkjobtexmf.doc patgen.doc pdfbook2.doc pdfcrop.doc
+	pdflatexpicscale.doc pdftools.doc pdfxup.doc pfarrei.doc pkfix.doc
+	pkfix-helper.doc purifyeps.doc pythontex.doc seetexk.doc srcredact.doc
+	sty2dtx.doc synctex.doc tex4ebook.doc texcount.doc texdef.doc texdiff.doc
+	texdirflatten.doc texdoc.doc texfot.doc texliveonfly.doc texloganalyser.doc
+	texosquery.doc texware.doc tie.doc tpic2pdftex.doc typeoutfileinfo.doc web.doc
+"
 TL_CORE_BINEXTRA_SRC_MODULES="
-	adhocfilelist.source hyphenex.source listings-ext.source mkjobtexmf.source
-	pfarrei.source texdef.source
-	"
+	adhocfilelist.source arara.source checklistings.source hyphenex.source
+	listings-ext.source mkjobtexmf.source pfarrei.source pythontex.source
+	texdef.source texosquery.source
+"
 
 TL_CORE_EXTRA_MODULES="tetex hyphen-base texconfig gsftopk texlive.infra ${TL_CORE_BINEXTRA_MODULES}"
 TL_CORE_EXTRA_DOC_MODULES="tetex.doc texconfig.doc gsftopk.doc texlive.infra.doc ${TL_CORE_BINEXTRA_DOC_MODULES}"
@@ -69,7 +75,7 @@ for i in ${TL_CORE_EXTRA_SRC_MODULES}; do
 done
 SRC_URI="${SRC_URI} )"
 
-KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~x86-freebsd ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~x64-solaris ~x86-solaris"
+KEYWORDS="~alpha ~amd64 ~arm ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~x64-solaris ~x86-solaris"
 IUSE="cjk X doc source tk +luajittex xetex"
 
 TEXMF_PATH=/usr/share/texmf-dist
@@ -111,17 +117,18 @@ COMMON_DEPEND="${MODULAR_X_DEPEND}
 	)
 	media-libs/freetype:2
 	>=dev-libs/kpathsea-6.2.1
-	cjk? ( >=dev-libs/ptexenc-1.3.3_p20150521 )"
+	cjk? ( >=dev-libs/ptexenc-1.3.4_p20160523 )"
 
 DEPEND="${COMMON_DEPEND}
 	virtual/pkgconfig
+	sys-apps/ed
 	sys-devel/flex
 	app-arch/xz-utils"
 
 RDEPEND="${COMMON_DEPEND}
-	>=app-text/ps2pkm-1.7_p20150521
-	>=app-text/dvipsk-5.995_p20150521
-	>=dev-tex/bibtexu-3.71_p20150521
+	>=app-text/ps2pkm-1.8_p20160523
+	>=app-text/dvipsk-5.996_p20160523
+	>=dev-tex/bibtexu-3.71_p20160523
 	virtual/perl-Getopt-Long
 	tk? ( dev-perl/Tk )"
 
@@ -137,6 +144,8 @@ RELOC_TARGET=texmf-dist
 
 src_prepare() {
 	cd "${WORKDIR}"
+
+	epatch ${FILESDIR}/c++11-compat.patch
 	# From texlive-module.eclass.
 	grep -H RELOC tlpkg/tlpobj/* | awk '{print $2}' | sed 's#^RELOC/##' > "${T}/reloclist"
 	{ for i in $(<"${T}/reloclist"); do  dirname $i; done; } | uniq > "${T}/dirlist"
@@ -150,9 +159,6 @@ src_prepare() {
 	mv "${WORKDIR}"/texmf* "${B}" || die "failed to move texmf files"
 
 	cd "${B}"
-
-	epatch ${FILESDIR}/c++11-compat.patch
-
 	#EPATCH_MULTI_MSG="Applying patches from upstream bugfix branch..." EPATCH_SUFFIX="patch" epatch "${WORKDIR}/gentoo_branch2011_patches"
 	EPATCH_SUFFIX="patch" epatch "${WORKDIR}/patches"
 
@@ -231,6 +237,7 @@ src_configure() {
 		--disable-native-texlive-build \
 		--disable-largefile \
 		$(use_enable luajittex) \
+		$(use_enable luajittex mfluajit) \
 		$(use_enable xetex) \
 		$(use_enable cjk ptex) \
 		$(use_enable cjk eptex) \
