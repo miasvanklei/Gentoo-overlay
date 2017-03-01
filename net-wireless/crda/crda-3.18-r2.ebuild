@@ -1,6 +1,5 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=5
 
@@ -26,7 +25,7 @@ RDEPEND="!gcrypt? (
 	net-wireless/wireless-regdb"
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
-	$(python_gen_any_dep 'dev-python/pycrypto[${PYTHON_USEDEP}]')
+	$(python_gen_any_dep 'dev-python/pycryptodome[${PYTHON_USEDEP}]')
 	virtual/pkgconfig"
 
 src_prepare() {

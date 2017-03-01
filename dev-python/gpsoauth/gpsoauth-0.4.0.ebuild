@@ -1,6 +1,5 @@
 # Copyright 1999-2015 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 EAPI=6
 PYTHON_COMPAT=(python3_5)
@@ -15,6 +14,8 @@ SLOT="0"
 KEYWORDS="~amd64"
 IUSE=""
 
+PATCHES=(${FILESDIR}/pycryptodome.patch)
+
 RDEPEND="dev-python/requests[${PYTHON_USEDEP}]
-	dev-python/pycrypto[${PYTHON_USEDEP}]
+	dev-python/pycryptodome[${PYTHON_USEDEP}]
 	dev-python/python-dateutil[${PYTHON_USEDEP}]"
