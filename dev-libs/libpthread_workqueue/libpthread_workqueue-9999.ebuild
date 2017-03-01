@@ -17,14 +17,3 @@ IUSE=""
 
 DEPEND=""
 RDEPEND="${DEPEND}"
-
-PATCHES=( "${FILESDIR}"/fix-configure.patch
-)
-
-src_install() {
-	mkdir -p ${D}/usr/lib || die
-	mkdir -p ${D}/usr/include || die
-	cp ${BUILD_DIR}/libpthread_workqueue.so ${D}/usr/lib || die
-	cp include/pthread_workqueue.h ${D}/usr/include || die
-	dodoc ChangeLog
-}
