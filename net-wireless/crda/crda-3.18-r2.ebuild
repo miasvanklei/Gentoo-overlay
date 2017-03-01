@@ -25,7 +25,7 @@ RDEPEND="!gcrypt? (
 	net-wireless/wireless-regdb"
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
-	$(python_gen_any_dep 'dev-python/pycrypto[${PYTHON_USEDEP}]')
+	$(python_gen_any_dep 'dev-python/pycryptodome[${PYTHON_USEDEP}]')
 	virtual/pkgconfig"
 
 src_prepare() {
