@@ -1,0 +1,83 @@
+diff --git a/include/net/if_arp.h b/include/net/if_arp.h
+index 361ecfc9..a8cee0fd 100644
+--- a/include/net/if_arp.h
++++ b/include/net/if_arp.h
+@@ -19,6 +19,8 @@ extern "C" {
+ #define	ARPOP_InREPLY	9
+ #define	ARPOP_NAK	10
+ 
++#if !defined(HAVE_ARP_H)
++#define HAVE_ARP_H
+ struct arphdr {
+ 	uint16_t ar_hrd;
+ 	uint16_t ar_pro;
+@@ -110,6 +112,7 @@ struct arpreq_old {
+ 	int arp_flags;
+ 	struct sockaddr arp_netmask;
+ };
++#endif
+ 
+ #define ATF_COM		0x02
+ #define	ATF_PERM	0x04
+diff --git a/include/netinet/if_ether.h b/include/netinet/if_ether.h
+index 11ee6582..73f3d6a7 100644
+--- a/include/netinet/if_ether.h
++++ b/include/netinet/if_ether.h
+@@ -98,11 +98,14 @@
+ #define ETH_P_CAIF	0x00F7
+ #define ETH_P_XDSA	0x00F8
+ 
++#if !defined(HAVE_IF_ETHER)
++#define HAVE_IF_ETHER
+ struct ethhdr {
+ 	uint8_t h_dest[ETH_ALEN];
+ 	uint8_t h_source[ETH_ALEN];
+ 	uint16_t h_proto;
+ };
++#endif
+ 
+ #include <net/ethernet.h>
+ #include <net/if_arp.h>
+diff --git a/include/netinet/in.h b/include/netinet/in.h
+index 0d4d04aa..37bd28e5 100644
+--- a/include/netinet/in.h
++++ b/include/netinet/in.h
+@@ -20,6 +20,8 @@ struct sockaddr_in {
+ 	uint8_t sin_zero[8];
+ };
+ 
++#if !defined(HAVE_IN6)
++#define HAVE_IN6
+ struct in6_addr {
+ 	union {
+ 		uint8_t __s6_addr[16];
+@@ -43,6 +45,7 @@ struct ipv6_mreq {
+ 	struct in6_addr ipv6mr_multiaddr;
+ 	unsigned        ipv6mr_interface;
+ };
++#endif
+ 
+ #define INADDR_ANY        ((in_addr_t) 0x00000000)
+ #define INADDR_BROADCAST  ((in_addr_t) 0xffffffff)
+@@ -385,21 +388,6 @@ struct ip6_mtuinfo {
+ 
+ #define IPV6_RTHDR_TYPE_0       0
+ 
+-#define __UAPI_DEF_IN_ADDR      0
+-#define __UAPI_DEF_IN_IPPROTO   0
+-#define __UAPI_DEF_IN_PKTINFO   0
+-#define __UAPI_DEF_IP_MREQ      0
+-#define __UAPI_DEF_SOCKADDR_IN  0
+-#define __UAPI_DEF_IN_CLASS     0
+-#define __UAPI_DEF_IN6_ADDR     0
+-#define __UAPI_DEF_IN6_ADDR_ALT 0
+-#define __UAPI_DEF_SOCKADDR_IN6 0
+-#define __UAPI_DEF_IPV6_MREQ    0
+-#define __UAPI_DEF_IPPROTO_V6   0
+-#define __UAPI_DEF_IPV6_OPTIONS 0
+-#define __UAPI_DEF_IN6_PKTINFO  0
+-#define __UAPI_DEF_IP6_MTUINFO  0
+-
+ #ifdef __cplusplus
+ }
+ #endif
