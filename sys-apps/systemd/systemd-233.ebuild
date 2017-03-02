@@ -57,11 +57,6 @@ COMMON_DEPEND=">=sys-apps/util-linux-2.27.1:0=[${MULTILIB_USEDEP}]
 	qrcode? ( media-gfx/qrencode:0= )
 	seccomp? ( >=sys-libs/libseccomp-2.3.1:0= )
 	selinux? ( sys-libs/libselinux:0= )
-	!build? ( || (
-		sys-apps/util-linux[kill(-)]
-		sys-process/procps[kill(+)]
-		sys-apps/coreutils[kill(-)]
-	) )
 	sysv-utils? (
 		!sys-apps/systemd-sysv-utils
 		!sys-apps/sysvinit )
@@ -73,13 +68,18 @@ COMMON_DEPEND=">=sys-apps/util-linux-2.27.1:0=[${MULTILIB_USEDEP}]
 RDEPEND="${COMMON_DEPEND}
 	>=sys-apps/baselayout-2.2
 	selinux? ( sec-policy/selinux-base-policy[systemd] )
+	!build? ( || (
+		sys-apps/util-linux[kill(-)]
+		sys-process/procps[kill(+)]
+		sys-apps/coreutils[kill(-)]
+	) )
 	!sys-auth/nss-myhostname
 	!<sys-kernel/dracut-044
 	!sys-fs/eudev
 	!sys-fs/udev"
 
 # sys-apps/dbus: the daemon only (+ build-time lib dep for tests)
-PDEPEND=">=sys-apps/dbus-1.8.8:0[systemd]
+PDEPEND=">=sys-apps/dbus-1.9.8[systemd]
 	>=sys-apps/hwids-20150417[udev]
 	>=sys-fs/udev-init-scripts-25
 	policykit? ( sys-auth/polkit )
@@ -94,7 +94,7 @@ DEPEND="${COMMON_DEPEND}
 	>=sys-kernel/linux-headers-${MINKV}
 	virtual/pkgconfig
 	gnuefi? ( >=sys-boot/gnu-efi-3.0.2 )
-	test? ( >=sys-apps/dbus-1.6.8-r1:0 )
+	test? ( sys-apps/dbus )
 	app-text/docbook-xml-dtd:4.2
 	app-text/docbook-xml-dtd:4.5
 	app-text/docbook-xsl-stylesheets
@@ -111,6 +111,7 @@ pkg_pretend() {
 		~CHECKPOINT_RESTORE ~DEVTMPFS ~DMIID ~EPOLL ~FANOTIFY ~FHANDLE
 		~INOTIFY_USER ~IPV6 ~NET ~NET_NS ~PROC_FS ~SIGNALFD ~SYSFS
 		~TIMERFD ~TMPFS_XATTR ~UNIX
+		~CRYPTO_HMAC ~CRYPTO_SHA256 ~CRYPTO_USER_API_HASH
 		~!FW_LOADER_USER_HELPER ~!GRKERNSEC_PROC ~!IDE ~!SYSFS_DEPRECATED
 		~!SYSFS_DEPRECATED_V2"
 
@@ -150,14 +151,13 @@ src_prepare() {
 	sed -i -e 's/GROUP="dialout"/GROUP="uucp"/' rules/*.rules || die
 
 	local PATCHES=(
-		"${FILESDIR}/232-lz4-version.patch"
 	)
 
 	if ! use vanilla; then
 		PATCHES+=(
 			"${FILESDIR}/218-Dont-enable-audit-by-default.patch"
 			"${FILESDIR}/228-noclean-tmp.patch"
-			"${FILESDIR}/232-systemd-user-pam.patch"
+			"${FILESDIR}/233-systemd-user-pam.patch"
 		)
 	fi
 
