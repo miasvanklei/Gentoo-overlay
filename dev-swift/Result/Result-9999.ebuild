@@ -22,7 +22,7 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	eapply ${FILESDIR}/compile-fix.patch
+#	eapply ${FILESDIR}/compile-fix.patch
 	eapply ${FILESDIR}/install-lib.patch
 	eapply_user
 }
