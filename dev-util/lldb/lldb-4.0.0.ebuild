@@ -7,14 +7,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils git-r3 python-single-r1 toolchain-funcs
+inherit cmake-utils python-single-r1 toolchain-funcs
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="http://llvm.org/git/lldb.git
-        https://github.com/llvm-mirror/lldb.git"
-EGIT_BRANCH="release_40"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -40,6 +37,8 @@ DEPEND="${RDEPEND}
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
 CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/${P/_/}.src
 
 src_prepare() {
 	eapply ${FILESDIR}/add-swift-support.patch

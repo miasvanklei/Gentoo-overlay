@@ -7,13 +7,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib git-r3
+inherit cmake-multilib
 
 DESCRIPTION="Low level support for a standard C++ library"
 HOMEPAGE="http://libcxxabi.llvm.org/"
-EGIT_REPO_URI="http://llvm.org/git/libcxxabi.git
-        https://github.com/llvm-mirror/libcxxabi.git"
-EGIT_BRANCH="release_40"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -33,6 +31,10 @@ DEPEND="${RDEPEND}
 	compiler-rt? ( ~sys-libs/compiler-rt-${PV} )
 	~sys-libs/libcxx-${PV}[static-libs?,${MULTILIB_USEDEP}]"
 RDEPEND="${DEPEND}"
+
+CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/${P/_/}.src
 
 src_configure() {
 	NATIVE_LIBDIR=$(get_libdir)

@@ -7,16 +7,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic git-r3 multilib-minimal \
+inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
 	python-single-r1 toolchain-funcs pax-utils
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-EGIT_REPO_URI="http://llvm.org/git/clang.git
-        https://github.com/llvm-mirror/clang.git"
-EGIT_BRANCH="release_40"
-
-SRC_URI=""
+SRC_URI="http://releases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
+        http://releases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz"
 
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
 	NVPTX PowerPC RISCV Sparc SystemZ X86 XCore )
@@ -51,6 +48,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
 CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/cfe-${PV/_/}.src
 
 check_space() {
 	local build_size=650
@@ -88,13 +87,9 @@ pkg_setup() {
 }
 
 src_unpack() {
-	git-r3_fetch "http://llvm.org/git/clang-tools-extra.git
-		https://github.com/llvm-mirror/clang-tools-extra.git"
-	git-r3_fetch
+	default
 
-	git-r3_checkout http://llvm.org/git/clang-tools-extra.git \
-		"${S}"/tools/extra
-	git-r3_checkout
+	mv clang-tools-extra-* "${S}"/tools/extra || die
 }
 
 src_prepare() {

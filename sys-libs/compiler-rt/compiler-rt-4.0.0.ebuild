@@ -7,14 +7,12 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic python-any-r1 toolchain-funcs git-r3
+inherit cmake-utils flag-o-matic python-any-r1 toolchain-funcs
 
 DESCRIPTION="Compiler runtime libraries for clang"
 HOMEPAGE="http://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="http://llvm.org/git/compiler-rt.git
-        https://github.com/llvm-mirror/compiler-rt.git"
-EGIT_BRANCH="release_40"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+
 LICENSE="UoI-NCSA"
 SLOT="0/${PV%.*}"
 KEYWORDS=""
@@ -34,6 +32,10 @@ test_compiler() {
 PATCHES=(
 	"${FILESDIR}"/compiler-rt-0001-add-blocks-support.patch
 )
+
+CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/${P/_/}.src
 
 src_configure() {
 	# pre-set since we need to pass it to cmake

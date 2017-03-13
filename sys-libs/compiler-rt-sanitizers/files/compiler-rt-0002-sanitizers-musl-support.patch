@@ -737,3 +737,15 @@
  COMPILER_CHECK(sizeof(__sanitizer__obstack_chunk) <= sizeof(_obstack_chunk));
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, limit);
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, prev);
+--- a/lib/sanitizer_common/sanitizer_platform_limits_posix.cc
++++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.cc
+@@ -64,7 +64,9 @@
+ #include <malloc.h>
+ #include <mntent.h>
+ #include <netinet/ether.h>
++#if !LIBC_MUSL
+ #include <sys/sysinfo.h>
++#endif
+ #include <sys/vt.h>
+ #include <linux/cdrom.h>
+ #include <linux/fd.h>

@@ -7,15 +7,12 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic git-r3 \
+inherit cmake-utils flag-o-matic \
 	pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="LLD linker"
 HOMEPAGE="http://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="http://llvm.org/git/lld.git
-        https://github.com/llvm-mirror/lld.git"
-EGIT_BRANCH="release_40"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
@@ -36,6 +33,8 @@ DEPEND="${RDEPEND}
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/${P/_/}.src
 
 src_prepare() {
 	# Python is needed to run tests using lit

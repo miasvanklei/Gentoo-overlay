@@ -8,14 +8,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib toolchain-funcs git-r3
+inherit cmake-multilib toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="http://libcxx.llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="http://llvm.org/git/libcxx.git
-        https://github.com/llvm-mirror/libcxx.git"
-EGIT_BRANCH="release_40"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -31,6 +28,8 @@ DEPEND="${RDEPEND}
 DOCS=( CREDITS.TXT )
 
 CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/${P/_/}.src
 
 src_configure() {
 	NATIVE_LIBDIR=$(get_libdir)
