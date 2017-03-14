@@ -23,6 +23,11 @@ DEPEND="${RDEPEND}
 
 S=${WORKDIR}/${MY_PV}
 
+src_prepare() {
+	eapply "${FILESDIR}"/${P}-use-va_copy-macro.patch
+	default
+}
+
 multilib_src_configure() {
 	local libdir="$(get_libdir)"
 	local mycmakeargs=(
