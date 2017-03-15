@@ -34,7 +34,6 @@ DEPEND="${RDEPEND}"
 src_prepare() {
 	eapply ${FILESDIR}/fix-build.patch
 	eapply ${FILESDIR}/fix-queue.patch
-	eapply ${FILESDIR}/temp-memleak-fix.patch
 	eapply_user
 }
 
