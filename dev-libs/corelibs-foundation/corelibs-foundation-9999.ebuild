@@ -32,6 +32,7 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 src_prepare() {
+	eapply ${FILESDIR}/revert-mangling.patch
 	eapply ${FILESDIR}/fix-build.patch
 	eapply ${FILESDIR}/fix-queue.patch
 	eapply_user
