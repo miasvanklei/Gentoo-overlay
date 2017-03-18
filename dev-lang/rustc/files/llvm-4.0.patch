@@ -1,45 +1,101 @@
---- a/src/rustllvm/RustWrapper.cpp	2017-01-07 16:16:43.312097767 +0100
-+++ b/src/rustllvm/RustWrapper.cpp	2017-01-07 16:19:38.759545523 +0100
-@@ -477,6 +477,16 @@
-     const char* Flags,
-     unsigned RuntimeVer,
-     const char* SplitName) {
+--- a/src/librustc_llvm/ffi.rs
++++ b/src/librustc_llvm/ffi.rs
+@@ -8,6 +8,12 @@
+ // option. This file may not be copied, modified, or distributed
+ // except according to those terms.
+ 
++// FIXME: Rename 'DIGlobalVariable' to 'DIGlobalVariableExpression'
++// once support for LLVM 3.9 is dropped.
++//
++// This method was changed in this LLVM patch:
++// https://reviews.llvm.org/D26769
++
+ use debuginfo::{DIBuilderRef, DIDescriptor, DIFile, DILexicalBlock, DISubprogram, DIType,
+                 DIBasicType, DIDerivedType, DICompositeType, DIScope, DIVariable,
+                 DIGlobalVariable, DIArray, DISubrange, DITemplateTypeParameter, DIEnumerator,
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -588,7 +588,11 @@ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateStaticVariable(
+   }
+ #endif
+ 
 +#if LLVM_VERSION_GE(4, 0)
-+    auto FileDir = Builder->createFile(File, Dir);
-+    return wrap(Builder->createCompileUnit(Lang,
-+                                           FileDir,
-+                                           Producer,
-+                                           isOptimized,
-+                                           Flags,
-+                                           RuntimeVer,
-+                                           SplitName));
++  return wrap(Builder->createGlobalVariableExpression(
 +#else
-     return wrap(Builder->createCompileUnit(Lang,
-                                            File,
-                                            Dir,
-@@ -485,6 +495,7 @@
-                                            Flags,
-                                            RuntimeVer,
-                                            SplitName));
+   return wrap(Builder->createGlobalVariable(
++#endif
+       unwrapDI<DIDescriptor>(Context), Name, LinkageName,
+       unwrapDI<DIFile>(File), LineNo, unwrapDI<DIType>(Ty), IsLocalToUnit,
+ #if LLVM_VERSION_GE(4, 0)
+--- a/src/librustc_llvm/ffi.rs
++++ b/src/librustc_llvm/ffi.rs
+@@ -1334,8 +1334,7 @@ extern "C" {
+ 
+     pub fn LLVMRustDIBuilderCreateCompileUnit(Builder: DIBuilderRef,
+                                               Lang: c_uint,
+-                                              File: *const c_char,
+-                                              Dir: *const c_char,
++                                              File: DIFile,
+                                               Producer: *const c_char,
+                                               isOptimized: bool,
+                                               Flags: *const c_char,
+--- a/src/librustc_trans/debuginfo/metadata.rs
++++ b/src/librustc_trans/debuginfo/metadata.rs
+@@ -787,17 +787,20 @@ pub fn compile_unit_metadata(scc: &SharedCrateContext,
+                            (option_env!("CFG_VERSION")).expect("CFG_VERSION"));
+ 
+     let compile_unit_name = compile_unit_name.as_ptr();
+-    let work_dir = path2cstr(&work_dir);
+-    let producer = CString::new(producer).unwrap();
++    let work_dir = path2cstr(&work_dir).as_ptr();
++    let producer = CString::new(producer).unwrap().as_ptr();
+     let flags = "\0";
+     let split_name = "\0";
+-    return unsafe {
+-        llvm::LLVMRustDIBuilderCreateCompileUnit(
++
++    unsafe {
++        let file_metadata = llvm::LLVMRustDIBuilderCreateFile(
++            debug_context.builder, compile_unit_name, work_dir);
++
++        return llvm::LLVMRustDIBuilderCreateCompileUnit(
+             debug_context.builder,
+             DW_LANG_RUST,
+-            compile_unit_name,
+-            work_dir.as_ptr(),
+-            producer.as_ptr(),
++            file_metadata,
++            producer,
+             sess.opts.optimize != config::OptLevel::No,
+             flags.as_ptr() as *const _,
+             0,
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -474,11 +474,19 @@ extern "C" void LLVMRustDIBuilderFinalize(LLVMRustDIBuilderRef Builder) {
+ }
+ 
+ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateCompileUnit(
+-    LLVMRustDIBuilderRef Builder, unsigned Lang, const char *File,
+-    const char *Dir, const char *Producer, bool isOptimized, const char *Flags,
++    LLVMRustDIBuilderRef Builder, unsigned Lang, LLVMRustMetadataRef FileRef,
++    const char *Producer, bool isOptimized, const char *Flags,
+     unsigned RuntimeVer, const char *SplitName) {
+-  return wrap(Builder->createCompileUnit(Lang, File, Dir, Producer, isOptimized,
++  auto *File = unwrapDI<DIFile>(FileRef);
++
++#if LLVM_VERSION_GE(4, 0)
++  return wrap(Builder->createCompileUnit(Lang, File, Producer, isOptimized,
+                                          Flags, RuntimeVer, SplitName));
++#else
++  return wrap(Builder->createCompileUnit(Lang, File->getFilename(),
++      File->getDirectory(), Producer, isOptimized,
++      Flags, RuntimeVer, SplitName));
 +#endif
  }
  
- extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateFile(
-@@ -663,9 +674,11 @@
-         InitExpr = Builder->createConstantValueExpression(
-                 FPVal->getValueAPF().bitcastToAPInt().getZExtValue());
-     }
--#endif
- 
-+    return wrap(Builder->createGlobalVariableExpression(unwrapDI<DIDescriptor>(Context),
-+#else
-     return wrap(Builder->createGlobalVariable(unwrapDI<DIDescriptor>(Context),
-+#endif
-         Name,
-         LinkageName,
-         unwrapDI<DIFile>(File),
---- a/configure	2017-01-07 16:11:57.432055430 +0100
-+++ b/configure	2017-01-07 16:12:50.463870789 +0100
+ extern "C" LLVMRustMetadataRef
+--- a/configure 2017-01-07 16:11:57.432055430 +0100
++++ b/configure 2017-01-07 16:12:50.463870789 +0100
 @@ -794,9 +794,6 @@
  fi
  
