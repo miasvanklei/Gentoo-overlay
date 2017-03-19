@@ -125,7 +125,8 @@ src_prepare() {
 	# Make some panels and dependencies optional; requires eautoreconf
 	# https://bugzilla.gnome.org/686840, 697478, 700145
 	eapply "${FILESDIR}"/${PN}-3.22.0-optional.patch
-	eapply "${FILESDIR}"/${PN}-3.22.0-make-wayland-optional.patch
+	eapply "${FILESDIR}"/${P}-make-wayland-optional.patch
+	eapply "${FILESDIR}"/${PV}-fix-dual-gpu-crash.patch
 	eapply "${FILESDIR}"/${PN}-3.22.0-keep-panels-optional.patch
 	eapply "${FILESDIR}"/${PN}-3.22.0-make-networkmanager-optional.patch
 	eapply "${FILESDIR}"/${PN}-3.22.0-make-modemmanager-optional.patch
