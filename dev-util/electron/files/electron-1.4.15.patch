@@ -1,22 +1,24 @@
-From d6b2c31fe1b21d171ecedcd2a198bd5b8347bd98 Mon Sep 17 00:00:00 2001
+From 3c549a540bd14495bbcf7b1a4a29ba869e03c3d4 Mon Sep 17 00:00:00 2001
 From: Elvis Pranskevichus <elvis@magic.io>
 Date: Mon, 8 Feb 2016 15:16:40 -0500
 Subject: [PATCH] electron build fixes
 
 ---
- common.gypi               | 52 ++++++++++++++++++++++++++++++++------
- electron.gyp              | 63 ++++++++++++++++++++++++++++++++++++-----------
+ common.gypi               | 52 ++++++++++++++++++++++++++----
+ electron.gyp              | 82 +++++++++++++++++++++++++++++++----------------
  filenames.gypi            |  1 -
- toolchain.gypi            | 47 +----------------------------------
- tools/atom_source_root.py |  5 ++++
+ toolchain.gypi            | 47 +--------------------------
+ tools/atom_source_root.py |  5 +++
+ tools/browserify.py       | 25 +++++++++++++++
  tools/get-endianness.py   |  4 +++
- tools/js2asar.py          | 13 +++++-----
- 7 files changed, 110 insertions(+), 75 deletions(-)
+ tools/js2asar.py          | 13 ++++----
+ 8 files changed, 142 insertions(+), 87 deletions(-)
  create mode 100644 tools/atom_source_root.py
+ create mode 100644 tools/browserify.py
  create mode 100644 tools/get-endianness.py
 
 diff --git a/common.gypi b/common.gypi
-index 52eba31..55f061a 100644
+index a8028b5f4..17444d415 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -17,24 +17,20 @@
@@ -45,9 +47,9 @@ index 52eba31..55f061a 100644
 -    'node_use_v8_platform': 'false',
 +    'node_use_v8_platform': 'true',
      'node_use_bundled_v8': 'false',
+     'node_enable_d8': 'false',
      'uv_library': 'static_library',
-     'uv_parent_path': 'vendor/node/deps/uv',
-@@ -43,10 +39,37 @@
+@@ -44,10 +40,37 @@
      'v8_postmortem_support': 'false',
      'v8_enable_i18n_support': 'false',
      'v8_inspector': 'false',
@@ -85,7 +87,7 @@ index 52eba31..55f061a 100644
        ['_target_name in ["libuv", "http_parser", "openssl", "openssl-cli", "cares", "node", "zlib"]', {
          'msvs_disabled_warnings': [
            4003,  # not enough actual parameters for macro 'V'
-@@ -253,6 +276,21 @@
+@@ -265,6 +288,21 @@
            }],  # OS=="win"
          ],
        }],
@@ -108,10 +110,10 @@ index 52eba31..55f061a 100644
      'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
      'msvs_disabled_warnings': [
 diff --git a/electron.gyp b/electron.gyp
-index eb671fd..7253b37 100644
+index f9a3bf757..c6295e9b8 100644
 --- a/electron.gyp
 +++ b/electron.gyp
-@@ -30,6 +30,7 @@
+@@ -31,6 +31,7 @@
        'dependencies': [
          'js2asar',
          'app2asar',
@@ -119,7 +121,7 @@ index eb671fd..7253b37 100644
          '<(project_name)_lib',
        ],
        'sources': [
-@@ -164,7 +165,7 @@
+@@ -165,7 +166,7 @@
            ],
          }, {
            'dependencies': [
@@ -128,7 +130,7 @@ index eb671fd..7253b37 100644
            ],
          }],  # OS=="win"
          ['OS=="linux"', {
-@@ -181,7 +182,7 @@
+@@ -182,7 +183,7 @@
                    }, {
                      'copied_libraries': [
                        '<(PRODUCT_DIR)/lib/libnode.so',
@@ -137,7 +139,7 @@ index eb671fd..7253b37 100644
                      ],
                    }],
                  ],
-@@ -189,13 +190,8 @@
+@@ -190,13 +191,8 @@
                'destination': '<(PRODUCT_DIR)',
                'files': [
                  '<@(copied_libraries)',
@@ -152,7 +154,7 @@ index eb671fd..7253b37 100644
                  '<(libchromiumcontent_dir)/natives_blob.bin',
                  '<(libchromiumcontent_dir)/snapshot_blob.bin',
                ],
-@@ -230,15 +226,14 @@
+@@ -231,15 +227,14 @@
          '<@(lib_sources)',
        ],
        'include_dirs': [
@@ -169,7 +171,7 @@ index eb671fd..7253b37 100644
          'vendor/node/deps/uv/include',
          # The `node.h` is using `#include"v8.h"`.
          '<(libchromiumcontent_src_dir)/v8/include',
-@@ -289,8 +284,8 @@
+@@ -292,8 +287,8 @@
              'vendor/node/deps/uv/uv.gyp:libuv',
              'vendor/node/deps/zlib/zlib.gyp:zlib',
              # Build with breakpad support.
@@ -180,7 +182,7 @@ index eb671fd..7253b37 100644
            ],
          }],  # OS=="win"
          ['OS=="mac" and mas_build==0', {
-@@ -328,7 +323,7 @@
+@@ -331,7 +326,7 @@
                # Make binary search for libraries under current directory, so we
                # don't have to manually set $LD_LIBRARY_PATH:
                # http://serverfault.com/questions/279068/cant-find-so-in-the-same-directory-as-the-executable
@@ -189,7 +191,7 @@ index eb671fd..7253b37 100644
                # Make native module dynamic loading work.
                '-rdynamic',
              ],
-@@ -339,10 +334,10 @@
+@@ -342,10 +337,10 @@
              '-Wno-reserved-user-defined-literal',
            ],
            'include_dirs': [
@@ -202,7 +204,7 @@ index eb671fd..7253b37 100644
            ],
          }],  # OS=="linux"
        ],
-@@ -350,6 +345,9 @@
+@@ -353,6 +348,9 @@
      {
        'target_name': 'js2asar',
        'type': 'none',
@@ -212,7 +214,7 @@ index eb671fd..7253b37 100644
        'actions': [
          {
            'action_name': 'js2asar',
-@@ -371,6 +369,7 @@
+@@ -374,6 +372,7 @@
            'action': [
              'python',
              'tools/js2asar.py',
@@ -220,7 +222,7 @@ index eb671fd..7253b37 100644
              '<@(_outputs)',
              'lib',
              '<@(_inputs)',
-@@ -381,6 +380,9 @@
+@@ -384,6 +383,9 @@
      {
        'target_name': 'app2asar',
        'type': 'none',
@@ -230,7 +232,7 @@ index eb671fd..7253b37 100644
        'actions': [
          {
            'action_name': 'app2asar',
-@@ -402,6 +404,7 @@
+@@ -405,6 +407,7 @@
            'action': [
              'python',
              'tools/js2asar.py',
@@ -238,7 +240,49 @@ index eb671fd..7253b37 100644
              '<@(_outputs)',
              'default_app',
              '<@(_inputs)',
-@@ -430,6 +433,36 @@
+@@ -430,6 +433,7 @@
+       'dependencies': [
+         # depend on this target to ensure the '<(js2c_input_dir)' is created
+         'atom_js2c_copy',
++        'nodebin'
+       ],
+       'actions': [
+         {
+@@ -441,13 +445,10 @@
+             '<(js2c_input_dir)/preload_bundle.js',
+           ],
+           'action': [
+-            'npm',
+-            'run',
+-            '--silent',
+-            'browserify',
+-            '--',
++            'python',
++            'tools/browserify.py',
++            '<(PRODUCT_DIR)/nodebin',
+             'lib/sandboxed_renderer/init.js',
+-            '-o',
+             '<@(_outputs)',
+           ],
+         },
+@@ -460,13 +461,10 @@
+             '<(js2c_input_dir)/isolated_bundle.js',
+           ],
+           'action': [
+-            'npm',
+-            'run',
+-            '--silent',
+-            'browserify',
+-            '--',
++            'python',
++            'tools/browserify.py',
++            '<(PRODUCT_DIR)/nodebin',
+             'lib/isolated_renderer/init.js',
+-            '-o',
+             '<@(_outputs)',
+           ],
+         },
+@@ -500,6 +498,36 @@
          }
        ],
      },  # target atom_js2c
@@ -276,10 +320,10 @@ index eb671fd..7253b37 100644
    'conditions': [
      ['OS=="mac"', {
 diff --git a/filenames.gypi b/filenames.gypi
-index 9e20582..c7960a9 100644
+index 6fe7612a5..27cba1f0e 100644
 --- a/filenames.gypi
 +++ b/filenames.gypi
-@@ -558,7 +558,6 @@
+@@ -594,7 +594,6 @@
        'chromium_src/extensions/browser/app_window/size_constraints.h',
        'chromium_src/extensions/common/url_pattern.cc',
        'chromium_src/extensions/common/url_pattern.h',
@@ -288,7 +332,7 @@ index 9e20582..c7960a9 100644
        'chromium_src/net/test/embedded_test_server/stream_listen_socket.cc',
        'chromium_src/net/test/embedded_test_server/stream_listen_socket.h',
 diff --git a/toolchain.gypi b/toolchain.gypi
-index 1c5f8a7..2af11f5 100644
+index 1c5f8a713..2af11f56b 100644
 --- a/toolchain.gypi
 +++ b/toolchain.gypi
 @@ -16,7 +16,7 @@
@@ -361,7 +405,7 @@ index 1c5f8a7..2af11f5 100644
        'target_defaults': {
 diff --git a/tools/atom_source_root.py b/tools/atom_source_root.py
 new file mode 100644
-index 0000000..316e997
+index 000000000..316e99701
 --- /dev/null
 +++ b/tools/atom_source_root.py
 @@ -0,0 +1,5 @@
@@ -370,9 +414,40 @@ index 0000000..316e997
 +import os.path
 +
 +print(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+diff --git a/tools/browserify.py b/tools/browserify.py
+new file mode 100644
+index 000000000..65e2a10b8
+--- /dev/null
++++ b/tools/browserify.py
+@@ -0,0 +1,25 @@
++#!/usr/bin/env python
++
++import os
++import subprocess
++import sys
++
++SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
++
++
++def main():
++  node = sys.argv[1]
++  source = sys.argv[2]
++  output = sys.argv[3]
++
++  call_browserify(node, source, output)
++
++
++def call_browserify(node, source, output):
++  browserify = os.path.join(
++    SOURCE_ROOT, 'node_modules_browserify', '.bin', 'browserify')
++  subprocess.check_call([node, browserify, source, '-o', output])
++
++
++if __name__ == '__main__':
++  sys.exit(main())
 diff --git a/tools/get-endianness.py b/tools/get-endianness.py
 new file mode 100644
-index 0000000..3150793
+index 000000000..31507936f
 --- /dev/null
 +++ b/tools/get-endianness.py
 @@ -0,0 +1,4 @@
@@ -381,7 +456,7 @@ index 0000000..3150793
 +import sys
 +print(sys.byteorder)
 diff --git a/tools/js2asar.py b/tools/js2asar.py
-index adad175..ca76868 100755
+index adad1751e..ca7686893 100755
 --- a/tools/js2asar.py
 +++ b/tools/js2asar.py
 @@ -11,13 +11,14 @@ SOURCE_ROOT = os.path.dirname(os.path.dirname(__file__))
@@ -418,5 +493,5 @@ index adad175..ca76868 100755
  
  def safe_mkdir(path):
 -- 
-2.7.3
+2.11.0
 

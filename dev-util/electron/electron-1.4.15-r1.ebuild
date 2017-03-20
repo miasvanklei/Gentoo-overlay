@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="5"
@@ -9,21 +9,22 @@ CHROMIUM_LANGS="am ar bg bn ca cs da de el en-GB es es-419 et fa fi fil fr gu he
 	sv sw ta te th tr uk vi zh-CN zh-TW"
 
 inherit check-reqs chromium-2 eutils gnome2-utils flag-o-matic multilib \
-	multiprocessing pax-utils portability python-any-r1 readme.gentoo-r1 \
-	toolchain-funcs versionator virtualx xdg-utils
+	multiprocessing pax-utils portability python-any-r1 toolchain-funcs \
+	versionator virtualx xdg-utils
 
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent/VERSION
-CHROMIUM_VERSION="52.0.2743.82"
+CHROMIUM_VERSION="53.0.2785.143"
 # Keep this in sync with vendor/brightray
-BRIGHTRAY_COMMIT="ee26c5218eeec199c54c92a7517a72d2dbd0adbf"
+BRIGHTRAY_COMMIT="5333d0e64b897c8584cee85bfcf7c045a7ca1e66"
 # Keep this in sync with vendor/node
-NODE_COMMIT="c47e9bf9011de682d07c82f7f610a467f30cca60"
+NODE_COMMIT="811cfe3fcd360179d3dd436e3d80e1b045adf633"
 # Keep this in sync with vendor/native_mate
 NATIVE_MATE_COMMIT="b5e5de626c6a57e44c7e6448d8bbaaac475d493c"
 # Keep this in sync with vendor/brightray/vendor/libchromiumcontent
-LIBCHROMIUMCONTENT_COMMIT="27add4cfef98f21d5910539bebb47ae175f024c2"
+LIBCHROMIUMCONTENT_COMMIT="97e32dafa4a1112f14eef61a663cf39a03ed4c97"
 # Keep this in sync with package.json#devDependencies
 ASAR_VERSION="0.12.1"
+BROWSERIFY_VERSION="14.0.0"
 
 CHROMIUM_P="chromium-${CHROMIUM_VERSION}"
 BRIGHTRAY_P="brightray-${BRIGHTRAY_COMMIT}"
@@ -31,6 +32,7 @@ NODE_P="node-${NODE_COMMIT}"
 NATIVE_MATE_P="native-mate-${NATIVE_MATE_COMMIT}"
 LIBCHROMIUMCONTENT_P="libchromiumcontent-${LIBCHROMIUMCONTENT_COMMIT}"
 ASAR_P="asar-${ASAR_VERSION}"
+BROWSERIFY_P="browserify-${BROWSERIFY_VERSION}"
 
 DESCRIPTION="Cross platform application development framework based on web technologies"
 HOMEPAGE="http://electron.atom.io/"
@@ -42,6 +44,7 @@ SRC_URI="
 	https://github.com/zcbenz/native-mate/archive/${NATIVE_MATE_COMMIT}.tar.gz -> ${NATIVE_MATE_P}.tar.gz
 	https://github.com/electron/libchromiumcontent/archive/${LIBCHROMIUMCONTENT_COMMIT}.tar.gz -> ${LIBCHROMIUMCONTENT_P}.tar.gz
 	https://github.com/elprans/asar/releases/download/v${ASAR_VERSION}-gentoo/asar-build.tar.gz -> ${ASAR_P}.tar.gz
+	https://github.com/elprans/node-browserify/releases/download/${BROWSERIFY_VERSION}-gentoo/browserify-build.tar.gz -> ${BROWSERIFY_P}.tar.gz
 "
 
 S="${WORKDIR}/${CHROMIUM_P}"
@@ -54,7 +57,7 @@ LIBCC_S="${BRIGHTRAY_S}/vendor/libchromiumcontent"
 LICENSE="BSD"
 SLOT="$(get_version_component_range 1-2)"
 KEYWORDS="~amd64"
-IUSE="custom-cflags cups gnome gnome-keyring hidpi kerberos lto neon pic +proprietary-codecs pulseaudio selinux +system-ffmpeg +tcmalloc"
+IUSE="cups custom-cflags gnome gnome-keyring kerberos lto +proprietary-codecs pulseaudio selinux +system-ffmpeg +tcmalloc"
 RESTRICT="!system-ffmpeg? ( proprietary-codecs? ( bindist ) )"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
@@ -70,7 +73,6 @@ RDEPEND="!<dev-util/electron-0.36.12-r4
 	app-arch/snappy:=
 	>=app-eselect/eselect-electron-1.0.0
 	cups? ( >=net-print/cups-1.3.11:= )
-	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
 	dev-libs/glib:=
 	>=dev-libs/icu-55.1:=
@@ -123,9 +125,8 @@ RDEPEND="!<dev-util/electron-0.36.12-r4
 	>=dev-libs/libuv-1.8.0:=
 	>=dev-libs/openssl-1.0.2g:0=[-bindist]"
 DEPEND="${RDEPEND}
-	!arm? (
-		dev-lang/yasm
-	)
+	>=app-arch/gzip-1.7
+	dev-lang/yasm
 	dev-lang/perl
 	dev-perl/JSON
 	>=dev-util/gperf-3.0.3
@@ -148,17 +149,13 @@ RDEPEND+="
 DEPEND+=" $(python_gen_any_dep '
 	dev-python/beautifulsoup:4[${PYTHON_USEDEP}]
 	dev-python/html5lib[${PYTHON_USEDEP}]
-	dev-python/jinja[${PYTHON_USEDEP}]
 	dev-python/jsmin[${PYTHON_USEDEP}]
-	dev-python/ply[${PYTHON_USEDEP}]
 	dev-python/simplejson[${PYTHON_USEDEP}]
 ')"
 python_check_deps() {
 	has_version --host-root ">=dev-python/beautifulsoup-4.3.2:4[${PYTHON_USEDEP}]" &&
 	has_version --host-root "dev-python/html5lib[${PYTHON_USEDEP}]" &&
-	has_version --host-root "dev-python/jinja[${PYTHON_USEDEP}]" &&
 	has_version --host-root "dev-python/jsmin[${PYTHON_USEDEP}]" &&
-	has_version --host-root "dev-python/ply[${PYTHON_USEDEP}]" &&
 	has_version --host-root "dev-python/simplejson[${PYTHON_USEDEP}]"
 }
 
@@ -167,7 +164,7 @@ if ! has chromium_pkg_die ${EBUILD_DEATH_HOOKS}; then
 fi
 
 pkg_pretend() {
-	if [[ $(tc-getCC)$ == *gcc* ]] && \
+	if [[ $(tc-getCC) == *gcc* ]] && \
 		[[ $(gcc-major-version)$(gcc-minor-version) -lt 48 ]]; then
 		die 'At least gcc 4.8 is required, see bugs: #535730, #525374, #518668.'
 	fi
@@ -253,14 +250,16 @@ src_prepare() {
 	rm -r "${S}/vendor/breakpad" &&
 		ln -s "../breakpad" "${S}/vendor/breakpad" || die
 	ln -s "${WORKDIR}/${ASAR_P}/node_modules" "${S}/node_modules" || die
+	ln -s "${WORKDIR}/${BROWSERIFY_P}/node_modules" \
+	"${S}/node_modules_browserify" || die
 
 	# electron patches
-	epatch "${FILESDIR}/${PN}-1.3.6.patch"
+	epatch "${FILESDIR}/${P}.patch"
 
 	# node patches
 	cd "${NODE_S}" || die
 	epatch "${FILESDIR}/${P}-vendor-node.patch"
-	epatch "${FILESDIR}/electron-vendor-node-external-snapshots-r0.patch"
+	epatch "${FILESDIR}/${PN}-vendor-node-external-snapshots-r1.patch"
 	# make sure node uses the correct version of v8
 	rm -r deps/v8 || die
 	ln -s ../../../v8 deps/ || die
@@ -280,27 +279,24 @@ src_prepare() {
 
 	# brightray patches
 	cd "${BRIGHTRAY_S}" || die
-	epatch "${FILESDIR}/${PN}-1.3.6-vendor-brightray.patch"
+	epatch "${FILESDIR}/${P}-vendor-brightray.patch"
 
 	# libcc patches
 	cd "${LIBCC_S}" || die
-	epatch "${FILESDIR}/${PN}-1.3.6-vendor-libchromiumcontent.patch"
+	epatch "${FILESDIR}/${P}-vendor-libchromiumcontent.patch"
 
 	# chromium patches
 	cd "${S}" || die
 	epatch "${FILESDIR}/chromium-system-ffmpeg-r2.patch"
-	epatch "${FILESDIR}/chromium-system-jinja-r9.patch"
 	epatch "${FILESDIR}/chromium-disable-widevine.patch"
 	epatch "${FILESDIR}/chromium-last-commit-position-r0.patch"
-	epatch "${FILESDIR}/chromium-snapshot-toolchain-r1.patch"
-	epatch "${FILESDIR}/chromium-remove-gardiner-mod-font.patch"
-	epatch "${FILESDIR}/chromium-pdfium-r0.patch"
+	epatch "${FILESDIR}/chromium-remove-gardiner-mod-font-r0.patch"
 	epatch "${FILESDIR}/chromium-system-zlib-r0.patch"
-	epatch "${FILESDIR}/chromium-linker-warnings-r0.patch"
-	epatch "${FILESDIR}/chromium-ffmpeg-license-r0.patch"
 	epatch "${FILESDIR}/chromium-shared-v8-r1.patch"
-	epatch "${FILESDIR}/chromium-lto-fixes-r1.patch"
-#	epatch "${FILESDIR}/chromium-icu-58-r1.patch"
+	epatch "${FILESDIR}/chromium-lto-fixes-r2.patch"
+	epatch "${FILESDIR}/chromium-icu-58-r1.patch"
+	epatch "${FILESDIR}/chromium-cups-fix.patch"
+	epatch "${FILESDIR}/chromium-jinja-fix.patch"
 
 	# libcc chromium patches
 	_unnest_patches "${LIBCC_S}/patches"
@@ -343,6 +339,7 @@ src_prepare() {
 		'third_party/WebKit' \
 		'third_party/analytics' \
 		'third_party/angle' \
+		'third_party/angle/src/common/third_party/numerics' \
 		'third_party/angle/src/third_party/compiler' \
 		'third_party/angle/src/third_party/libXNVCtrl' \
 		'third_party/angle/src/third_party/murmurhash' \
@@ -358,6 +355,7 @@ src_prepare() {
 		'third_party/catapult/tracing/third_party/d3' \
 		'third_party/catapult/tracing/third_party/gl-matrix' \
 		'third_party/catapult/tracing/third_party/jszip' \
+		'third_party/catapult/tracing/third_party/mannwhitneyu' \
 		'third_party/cld_2' \
 		'third_party/cros_system_api' \
 		'third_party/cython/python_flags.py' \
@@ -488,17 +486,12 @@ src_configure() {
 		-Duse_system_snappy=1
 		-Duse_system_speex=1
 		-Duse_system_xdg_utils=1
+		-Duse_system_yasm=1
 		-Duse_system_zlib=1"
 
 	# Needed for system icu - we don't need additional data files.
 	myconf+=" -Dicu_use_data_file_flag=0"
 	myconf+=" -Dgenerate_character_data=0"
-
-	# TODO: patch gyp so that this arm conditional is not needed.
-	if ! use arm; then
-		myconf+="
-			-Duse_system_yasm=1"
-	fi
 
 	# Optional dependencies.
 	# TODO: linux_link_kerberos, bug #381289.
@@ -507,7 +500,6 @@ src_configure() {
 		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
-		$(gyp_use hidpi enable_hidpi)
 		$(gyp_use kerberos)
 		$(gyp_use lto)
 		$(gyp_use pulseaudio)
@@ -522,12 +514,9 @@ src_configure() {
 		-Dlibspeechd_h_prefix=speech-dispatcher/"
 
 	# TODO: use the file at run time instead of effectively compiling it in.
-	myconf+="
-		-Dusb_ids_path=/usr/share/misc/usb.ids"
+	myconf+=" -Dusb_ids_path=/usr/share/misc/usb.ids"
 
-	# Save space by removing DLOG and DCHECK messages (about 6% reduction).
-	myconf+="
-		-Dlogging_like_official_build=1"
+	myconf+=" -Dfieldtrial_testing_like_official_build=1"
 
 	if [[ $(tc-getCC) == *clang* ]]; then
 		myconf+=" -Dclang=1"
@@ -563,32 +552,6 @@ src_configure() {
 	if [[ $myarch = amd64 ]] ; then
 		target_arch=x64
 		ffmpeg_target_arch=x64
-	elif [[ $myarch = x86 ]] ; then
-		target_arch=ia32
-		ffmpeg_target_arch=ia32
-	elif [[ $myarch = arm64 ]] ; then
-		target_arch=arm64
-		ffmpeg_target_arch=arm64
-	elif [[ $myarch = arm ]] ; then
-		target_arch=arm
-		ffmpeg_target_arch=$(usex neon arm-neon arm)
-		# TODO: re-enable NaCl (NativeClient).
-		local CTARGET=${CTARGET:-${CHOST}}
-		if [[ $(tc-is-softfloat) == "no" ]]; then
-
-			myconf_gyp+=" -Darm_float_abi=hard"
-		fi
-		filter-flags "-mfpu=*"
-		use neon || myconf_gyp+=" -Darm_fpu=${ARM_FPU:-vfpv3-d16}"
-
-		if [[ ${CTARGET} == armv[78]* ]]; then
-			myconf_gyp+=" -Darmv7=1"
-		else
-			myconf_gyp+=" -Darmv7=0"
-		fi
-		myconf_gyp+=" -Dsysroot=
-			$(gyp_use neon arm_neon)
-			-Ddisable_nacl=1"
 	else
 		die "Failed to determine target arch, got '$myarch'."
 	fi
@@ -603,6 +566,7 @@ src_configure() {
 	# Disable fatal linker warnings, bug 506268.
 	myconf+=" -Ddisable_fatal_linker_warnings=1"
 
+	# needed for musl
 	myconf+=" -Duse_experimental_allocator_shim=0"
 
 	# Avoid CFLAGS problems, bug #352457, bug #390147.
@@ -610,13 +574,8 @@ src_configure() {
 		replace-flags "-Os" "-O2"
 		strip-flags
 
-		# Prevent linker from running out of address space, bug #471810 .
-		if use x86; then
-			filter-flags "-g*"
-		fi
-
 		# Prevent libvpx build failures. Bug 530248, 544702, 546984.
-		if [[ ${myarch} == amd64 || ${myarch} == x86 ]]; then
+		if [[ ${myarch} == amd64 ]]; then
 			filter-flags -mno-mmx -mno-sse2 -mno-ssse3 -mno-sse4.1 \
 						 -mno-avx -mno-avx2
 		fi
@@ -639,9 +598,6 @@ src_configure() {
 
 	if ! use system-ffmpeg; then
 		local build_ffmpeg_args=""
-		if use pic && [[ "${ffmpeg_target_arch}" == "ia32" ]]; then
-			build_ffmpeg_args+=" --disable-asm"
-		fi
 
 		# Re-configure bundled ffmpeg. See bug #491378 for example reasons.
 		einfo "Configuring bundled ffmpeg..."
@@ -664,9 +620,9 @@ src_configure() {
 	# --shared-libuv cannot be used as electron's node fork
 	# patches uv_loop structure.
 	./configure --shared --without-bundled-v8 --shared-openssl \
-				--shared-http-parser --shared-zlib --without-npm \
-				--with-intl=system-icu --without-dtrace \
-				--dest-cpu=${target_arch} --prefix="" || die
+		--shared-http-parser --shared-zlib --without-npm \
+		--with-intl=system-icu --without-dtrace \
+		--dest-cpu=${target_arch} --prefix="" || die
 	popd > /dev/null || die
 
 	# libchromiumcontent configuration
