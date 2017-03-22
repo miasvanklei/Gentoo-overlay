@@ -3,7 +3,7 @@
 
 EAPI=6
 
-inherit multilib-minimal git-r3
+inherit multilib-minimal
 
 DESCRIPTION="GtkD is a D binding and OO wrapper of GTK+"
 HOMEPAGE="https://github.com/gtkd-developers/GtkD"
@@ -13,8 +13,7 @@ SLOT="3"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/gtkd-developers/GtkD.git"
+SRC_URI="https://github.com/gtkd-developers/GtkD/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 DEPEND=""
 RDEPEND="${DEPEND}
@@ -28,7 +27,7 @@ GTKD_LIB_NAMES=(gtkd gtkdgl gtkdsv gstreamerd vted peasd)
 GTKD_SRC_DIRS=(src srcgl srcsv srcgstreamer srcvte srcpeas)
 
 MAJOR=3
-MINOR=3.0
+MINOR=5.1
 
 IUSE="static-libs"
 
