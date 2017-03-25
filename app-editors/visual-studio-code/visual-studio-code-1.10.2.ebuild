@@ -26,7 +26,7 @@ DEPEND="
 	>=dev-util/electron-1.3.4
 	x11-libs/cairo
 	x11-libs/libXtst
-	=net-libs/nodejs-6.5.0
+	net-libs/nodejs
 "
 
 RDEPEND="
