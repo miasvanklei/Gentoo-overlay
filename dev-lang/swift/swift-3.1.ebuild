@@ -7,13 +7,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils git-r3 python-single-r1
+inherit cmake-utils python-single-r1
 
 DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_BRANCH="swift-3.1-branch"
+SRC_URI="https://github.com/apple/${PN}/archive/${P}-RELEASE.tar.gz"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -32,6 +30,8 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/swift-swift-3.1-RELEASE
 
 src_prepare() {
 	# we prefer own optimization
