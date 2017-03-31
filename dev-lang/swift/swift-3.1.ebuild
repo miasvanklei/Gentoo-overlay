@@ -13,7 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_BRANCH="swift-4.0-branch"
+EGIT_BRANCH="swift-3.1-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -70,6 +70,9 @@ src_prepare() {
 
 	# install files: libraries, headers, cmake
 	eapply ${FILESDIR}/install-files.patch
+
+	# llvm/clang 4.0 patch
+	eapply ${FILESDIR}/llvm-clang-4.0.patch
 
 	default
 }
