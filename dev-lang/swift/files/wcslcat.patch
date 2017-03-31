@@ -1,0 +1,42 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 2afb3dc..b47c464 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -895,11 +895,7 @@ option(SWIFT_HAVE_LIBXML
+ cmake_push_check_state()
+ list(APPEND CMAKE_REQUIRED_LIBRARIES "edit")
+ check_symbol_exists(el_wgets "histedit.h" HAVE_EL_WGETS)
+-check_symbol_exists(wcslcat wchar.h HAVE_WCSLCAT)
+-# FIXME: UNICODE_LIBEDIT shouldn't need BSD's wcslcat function,
+-#        rewrite the usages in terms of wcsncat to get the REPL
+-#        building on linux.
+-if(HAVE_EL_WGETS AND HAVE_WCSLCAT)
++if(HAVE_EL_WGETS)
+   set(HAVE_UNICODE_LIBEDIT 1)
+ endif()
+ cmake_pop_check_state()
+diff --git a/lib/Immediate/REPL.cpp b/lib/Immediate/REPL.cpp
+index 4d56144..7a50e21 100644
+--- a/lib/Immediate/REPL.cpp
++++ b/lib/Immediate/REPL.cpp
+@@ -37,6 +37,7 @@
+ 
+ #if HAVE_UNICODE_LIBEDIT
+ #include <histedit.h>
++#include <wchar.h>
+ #endif
+ 
+ using namespace swift;
+@@ -361,10 +362,11 @@ class REPLInput {
+         CurrentLines.append(indent, ' ');
+       }
+       
+-      convertToUTF8(llvm::makeArrayRef(WLine, WLine + wcslen(WLine)),
++      size_t WLineLength = wcslen(WLine);
++      convertToUTF8(llvm::makeArrayRef(WLine, WLine + WLineLength),
+                     CurrentLines);
+ 
+-      wcslcat(TotalLine, WLine, sizeof(TotalLine) / sizeof(*TotalLine));
++      wcsncat(TotalLine, WLine, WLineLength);
+ 
+       ++CurChunkLines;

@@ -66,7 +66,7 @@ src_prepare() {
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 
 	# wcslcat is in libbsd, otherwise no sourcekitd-repl
-	eapply ${FILESDIR}/have-libedit.patch
+	eapply ${FILESDIR}/wcslcat.patch
 
 	# install files: libraries, headers, cmake
 	eapply ${FILESDIR}/install-files.patch
