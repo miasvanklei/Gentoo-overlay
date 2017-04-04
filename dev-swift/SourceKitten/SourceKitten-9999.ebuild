@@ -31,7 +31,7 @@ src_prepare() {
         eapply ${FILESDIR}/fix-run.patch
         eapply ${FILESDIR}/remove-dependencies.patch
         eapply ${FILESDIR}/install-lib.patch
-        eapply ${FILESDIR}/corefoundation.patch
+#        eapply ${FILESDIR}/corefoundation.patch
 	rm ${S}/Source/SourceKittenFramework/clang-c/module.modulemap
         eapply_user
 }
