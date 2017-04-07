@@ -22,7 +22,7 @@ RDEPEND="dev-libs/libdispatch
 	dev-libs/corelibs-foundation
 	dev-swift/Commandant
 	dev-swift/Result
-	dev-swift/YamlSwift
+	dev-swift/Yams
 	dev-swift/SwiftyTextTable
 	dev-swift/SourceKitten"
 DEPEND="${RDEPEND}"
@@ -39,7 +39,7 @@ src_compile() {
 	-Xlinker -lCommandant \
 	-Xlinker -lSourceKittenFramework \
 	-Xlinker -lSwiftyTextTable \
-	-Xlinker -lYaml \
+	-Xlinker -lYams \
 	-Xlinker -lResult || die
 }
 
