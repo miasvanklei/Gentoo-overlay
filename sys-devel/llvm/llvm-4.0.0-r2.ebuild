@@ -7,8 +7,8 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic \
-	multilib-minimal pax-utils python-any-r1 toolchain-funcs
+inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
+	python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
@@ -53,44 +53,6 @@ CMAKE_BUILD_TYPE=Release
 
 S=${WORKDIR}/${P/_/}.src
 
-check_space() {
-	# in megs
-	# !debug !multitarget -O2       400
-	# !debug  multitarget -O2       550
-	#  debug  multitarget -O2      5G
-
-	local build_size=550
-
-	if use debug; then
-		ewarn "USE=debug is known to increase the size of package considerably"
-		ewarn "and cause the tests to fail."
-		ewarn
-
-		(( build_size *= 14 ))
-	elif is-flagq '-g?(gdb)?([1-9])'; then
-		ewarn "The C++ compiler -g option is known to increase the size of the package"
-		ewarn "considerably. If you run out of space, please consider removing it."
-		ewarn
-
-		(( build_size *= 10 ))
-	fi
-
-	# Multiply by number of ABIs :).
-	local abis=( $(multilib_get_enabled_abis) )
-	(( build_size *= ${#abis[@]} ))
-
-	local CHECKREQS_DISK_BUILD=${build_size}M
-	check-reqs_pkg_pretend
-}
-
-pkg_pretend() {
-	check_space
-}
-
-pkg_setup() {
-	check_space
-}
-
 src_unpack() {
 	default
 
@@ -98,8 +60,6 @@ src_unpack() {
 }
 
 src_prepare() {
-	# Python is needed to run tests using lit
-	python_setup
 
 	# remove one suffix
 	eapply "${FILESDIR}"/0001-shared-library-suffix.patch

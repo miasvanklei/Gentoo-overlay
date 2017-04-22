@@ -7,7 +7,7 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic multilib-minimal \
+inherit cmake-utils flag-o-matic multilib-minimal \
 	python-single-r1 toolchain-funcs pax-utils
 
 DESCRIPTION="C language family frontend for LLVM"
@@ -23,7 +23,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 LICENSE="UoI-NCSA"
 SLOT="0/${PV}"
 KEYWORDS=""
-IUSE="debug +default-compiler-rt +default-libcxx -doc multitarget python
+IUSE="debug +default-compiler-rt +default-libcxx multitarget python
 	+static-analyzer xml video_cards_radeon kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
@@ -34,7 +34,6 @@ RDEPEND="
 	${PYTHON_DEPS}"
 # configparser-3.2 breaks the build (3.3 or none at all are fine)
 DEPEND="${RDEPEND}
-	doc? ( dev-python/sphinx )
 	xml? ( virtual/pkgconfig )
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
@@ -51,38 +50,7 @@ CMAKE_BUILD_TYPE=Release
 
 S=${WORKDIR}/cfe-${PV/_/}.src
 
-check_space() {
-	local build_size=650
-
-	if use debug; then
-		ewarn "USE=debug is known to increase the size of package considerably"
-		ewarn "and cause the tests to fail."
-		ewarn
-
-		(( build_size *= 14 ))
-	elif is-flagq '-g?(gdb)?([1-9])'; then
-		ewarn "The C++ compiler -g option is known to increase the size of the package"
-		ewarn "considerably. If you run out of space, please consider removing it."
-		ewarn
-
-		(( build_size *= 10 ))
-	fi
-
-	# Multiply by number of ABIs :).
-	local abis=( $(multilib_get_enabled_abis) )
-	(( build_size *= ${#abis[@]} ))
-
-	local CHECKREQS_DISK_BUILD=${build_size}M
-	check-reqs_pkg_pretend
-}
-
-pkg_pretend() {
-	check_space
-}
-
 pkg_setup() {
-	check_space
-
 	python-single-r1_pkg_setup
 }
 
@@ -163,6 +131,7 @@ multilib_src_configure() {
 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 
 		# llvm options
+		-DLLVM_ENABLE_ASSERTIONS=$(usex debug)
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
@@ -176,13 +145,7 @@ multilib_src_configure() {
 
 	if multilib_is_native_abi; then
 		mycmakeargs+=(
-			-DLLVM_BUILD_DOCS=$(usex doc)
-			-DLLVM_ENABLE_SPHINX=$(usex doc)
 			-DLLVM_ENABLE_DOXYGEN=OFF
-		)
-		use doc && mycmakeargs+=(
-			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/clang"
-			-DSPHINX_WARNINGS_AS_ERRORS=OFF
 		)
 	else
 		mycmakeargs+=(
