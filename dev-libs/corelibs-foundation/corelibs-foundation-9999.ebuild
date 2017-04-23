@@ -13,6 +13,7 @@ DESCRIPTION="The Foundation Project, providing core utilities, internationalizat
 HOMEPAGE="https://github.com/apple/swift-corelibs-foundation"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-corelibs-foundation.git"
+EGIT_BRANCH="swift-3.1-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -32,7 +33,6 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 src_prepare() {
-	eapply ${FILESDIR}/revert-mangling.patch
 	eapply ${FILESDIR}/fix-build.patch
 	eapply ${FILESDIR}/fix-queue.patch
 	eapply_user

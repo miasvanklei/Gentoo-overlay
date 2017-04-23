@@ -131,22 +131,6 @@ index b92c2bf..cf5df40 100644
  #define _dispatch_get_main_queue_port_4CF _dispatch_get_main_queue_handle_4CF
  #define _dispatch_main_queue_callback_4CF(x) _dispatch_main_queue_callback_4CF(x)
  #endif
-diff --git a/Foundation/Host.swift b/Foundation/Host.swift
-index d01151f..ad19ff4 100644
---- a/Foundation/Host.swift
-+++ b/Foundation/Host.swift
-@@ -74,11 +74,7 @@ open class Host: NSObject {
-             }
-             var hints = addrinfo()
-             hints.ai_family = PF_UNSPEC
--#if os(OSX) || os(iOS) || os(Android)
-             hints.ai_socktype = SOCK_STREAM
--#else
--            hints.ai_socktype = Int32(SOCK_STREAM.rawValue)
--#endif
-     
-             hints.ai_flags = flags
-             
 diff --git a/Foundation/NSThread.swift b/Foundation/NSThread.swift
 index 3b46fac..d4c132d 100644
 --- a/Foundation/NSThread.swift
@@ -261,21 +245,20 @@ index 4f6a39f..a923fbb 100644
  
          if Configuration.current.build_mode == Configuration.Debug:
              swift_flags += "-g -Onone "
-diff --git a/CoreFoundation/Base.subproj/CFPlatform.c b/CoreFoundation/Base.subproj/CFPlatform.c
-index 5f67510..1c9e9ae 100644
---- a/CoreFoundation/Base.subproj/CFPlatform.c
-+++ b/CoreFoundation/Base.subproj/CFPlatform.c
-@@ -1322,9 +1322,12 @@ CF_SWIFT_EXPORT int _CFThreadGetName(char *buf, int length) {
- #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI
-     return pthread_getname_np(pthread_self(), buf, length);
- #elif DEPLOYMENT_TARGET_LINUX
-+#if defined(__GLIBC__)
-     return pthread_getname_np(pthread_self(), buf, length);
+diff --git a/Foundation/NSHost.swift b/Foundation/NSHost.swift
+index d01151f..ad19ff4 100644
+--- a/Foundation/NSHost.swift
++++ b/Foundation/NSHost.swift
+@@ -74,11 +74,7 @@ open class Host: NSObject {
+             }
+             var hints = addrinfo()
+             hints.ai_family = PF_UNSPEC
+-#if os(OSX) || os(iOS) || os(Android)
+             hints.ai_socktype = SOCK_STREAM
+-#else
+-            hints.ai_socktype = Int32(SOCK_STREAM.rawValue)
 -#endif
-+#else
-     return -1;
-+#endif
-+#endif
- }
- 
- CF_EXPORT char **_CFEnviron(void) {
+     
+             hints.ai_flags = flags
+             
+
