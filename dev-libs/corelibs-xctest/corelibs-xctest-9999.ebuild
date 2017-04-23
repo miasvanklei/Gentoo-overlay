@@ -9,6 +9,7 @@ DESCRIPTION="The XCTest Project, A Swift core library for providing unit test su
 HOMEPAGE="https://github.com/apple/swift-corelibs-xctest"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-corelibs-xctest.git"
+EGIT_BRANCH="swift-3.1-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
