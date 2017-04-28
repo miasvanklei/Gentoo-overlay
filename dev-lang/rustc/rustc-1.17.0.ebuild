@@ -44,9 +44,6 @@ src_prepare() {
 	fi
 
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
-
-	# llvm 4.0
-	eapply "${FILESDIR}"/llvm-4.0.patch
 	eapply "${FILESDIR}"/link-llvm-shared.patch
 
 	eapply_user
