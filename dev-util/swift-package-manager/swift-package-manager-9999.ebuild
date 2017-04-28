@@ -24,6 +24,7 @@ DEPEND="${RDEPEND}"
 src_prepare()
 {
 	eapply ${FILESDIR}/musl.patch
+	eapply ${FILESDIR}/fix-version.patch
 	eapply_user
 }
 
