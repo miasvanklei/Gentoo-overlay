@@ -74,6 +74,9 @@ src_prepare() {
 	# llvm/clang 4.0 patch
 	eapply ${FILESDIR}/llvm-clang-4.0.patch
 
+	# fix use in libdispatch
+	eapply ${FILESDIR}/fix-attribute.patch
+
 	default
 }
 
