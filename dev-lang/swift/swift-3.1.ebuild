@@ -74,6 +74,9 @@ src_prepare() {
 	# llvm/clang 4.0 patch
 	eapply ${FILESDIR}/llvm-clang-4.0.patch
 
+	# fix use in libdispatch
+	eapply ${FILESDIR}/fix-attribute.patch
+
 	default
 }
 
@@ -93,6 +96,8 @@ src_configure() {
 		-DSWIFT_BUILD_SOURCEKIT=TRUE
 		-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=TRUE
 		-DHAVE_DISPATCH_BLOCK_CREATE=TRUE
+		-DSWIFT_COMPILER_VERSION=3.1
+		-DCLANG_COMPILER_VERSION=4.0
 	)
 
 	cmake-utils_src_configure

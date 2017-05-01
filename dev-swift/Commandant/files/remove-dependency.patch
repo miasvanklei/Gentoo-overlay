@@ -1,14 +1,23 @@
 diff --git a/Package.swift b/Package.swift
-index eaa5afc..06db510 100644
+index f55d17a..852a302 100644
 --- a/Package.swift
 +++ b/Package.swift
-@@ -1,8 +1,5 @@
- import PackageDescription
+@@ -6,17 +6,5 @@ var isSwiftPackagerManagerTest: Bool {
+ }
  
  let package = Package(
 -    name: "Commandant",
--    dependencies: [
--        .Package(url: "https://github.com/antitypical/Result.git", versions: Version(3, 2, 1)..<Version(3, .max, .max)),
--    ]
+-    dependencies: {
+-        var deps: [Package.Dependency] = [
+-            .Package(url: "https://github.com/antitypical/Result.git", versions: Version(3, 2, 1)..<Version(3, .max, .max)),
+-        ]
+-        if isSwiftPackagerManagerTest {
+-            deps += [
+-                .Package(url: "https://github.com/Quick/Quick.git", majorVersion: 1, minor: 1),
+-                .Package(url: "https://github.com/Quick/Nimble.git", majorVersion: 6, minor: 1),
+-            ]
+-        }
+-        return deps
+-    }()
 +    name: "Commandant"
  )

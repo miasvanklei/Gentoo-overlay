@@ -23,7 +23,6 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
         eapply ${FILESDIR}/fix-compilation.patch
-#        eapply ${FILESDIR}/foundation.patch
         eapply ${FILESDIR}/install-lib.patch
         eapply_user
 }
