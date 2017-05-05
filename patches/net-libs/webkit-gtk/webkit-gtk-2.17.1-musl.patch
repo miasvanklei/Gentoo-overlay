@@ -1,0 +1,88 @@
+--- a/Source/JavaScriptCore/runtime/Options.h	2017-01-21 14:57:59.074116976 -0800
++++ b/Source/JavaScriptCore/runtime/Options.h	2017-01-21 15:01:36.813797195 -0800
+@@ -112,9 +112,9 @@
+     \
+     v(bool, reportMustSucceedExecutableAllocations, false, Normal, nullptr) \
+     \
+-    v(unsigned, maxPerThreadStackUsage, 4 * MB, Normal, "Max allowed stack usage by the VM") \
+-    v(unsigned, softReservedZoneSize, 128 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
+-    v(unsigned, reservedZoneSize, 64 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
++    v(unsigned, maxPerThreadStackUsage, 80 * KB, Normal, "Max allowed stack usage by the VM") \
++    v(unsigned, softReservedZoneSize, 32 * KB, Normal, "A buffer greater than reservedZoneSize that reserves space for stringifying exceptions.") \
++    v(unsigned, reservedZoneSize, 16 * KB, Normal, "The amount of stack space we guarantee to our clients (and to interal VM code that does not call out to clients).") \
+     \
+     v(bool, crashIfCantAllocateJITMemory, false, Normal, nullptr) \
+     v(unsigned, jitMemoryReservationSize, 0, Normal, "Set this number to change the executable allocation size in ExecutableAllocatorFixedVMPool. (In bytes.)") \
+--- a/Source/WTF/wtf/StackTrace.cpp	2017-05-03 20:47:35.243705190 +0200
++++ b/Source/WTF/wtf/StackTrace.cpp	2017-05-03 20:48:01.403359561 +0200
+@@ -30,9 +30,11 @@
+ #include <wtf/Assertions.h>
+ #include <wtf/PrintStream.h>
+ 
+-#if HAVE(BACKTRACE_SYMBOLS) || HAVE(DLADDR)
++#if HAVE(DLADDR)
+ #include <cxxabi.h>
+ #include <dlfcn.h>
++#endif
++#if HAVE(BACKTRACE_SYMBOLS)
+ #include <execinfo.h>
+ #endif
+ 
+--- a/Source/WTF/wtf/Platform.h	2017-05-03 20:56:29.845673016 +0200
++++ b/Source/WTF/wtf/Platform.h	2017-05-03 20:57:55.499555924 +0200
+@@ -670,7 +670,7 @@
+ #define HAVE_CFNETWORK_STORAGE_PARTITIONING 1
+ #endif
+ 
+-#if OS(DARWIN) || ((OS(FREEBSD) || defined(__GLIBC__)) && (CPU(X86) || CPU(X86_64) || CPU(ARM) || CPU(ARM64) || CPU(MIPS)))
++#if OS(DARWIN) || ((OS(FREEBSD) || OS(LINUX)) && (CPU(X86) || CPU(X86_64) || CPU(ARM) || CPU(ARM64) || CPU(MIPS)))
+ #define HAVE_MACHINE_CONTEXT 1
+ #endif
+ 
+--- a/Source/JavaScriptCore/runtime/MachineContext.h	2017-05-03 21:09:29.259613425 +0200
++++ b/Source/JavaScriptCore/runtime/MachineContext.h	2017-05-03 21:10:33.250794072 +0200
+@@ -143,7 +143,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif defined(__GLIBC__)
++#elif OS(LINUX)
+ 
+ #if CPU(X86)
+     return reinterpret_cast<void*&>((uintptr_t&) machineContext.gregs[REG_ESP]);
+@@ -248,7 +248,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif defined(__GLIBC__)
++#elif OS(LINUX)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)
+@@ -351,7 +351,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif defined(__GLIBC__)
++#elif OS(LINUX)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)
+@@ -463,7 +463,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif defined(__GLIBC__)
++#elif OS(LINUX)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)
+@@ -580,7 +580,7 @@
+ #error Unknown Architecture
+ #endif
+ 
+-#elif defined(__GLIBC__)
++#elif OS(LINUX)
+ 
+ // The following sequence depends on glibc's sys/ucontext.h.
+ #if CPU(X86)

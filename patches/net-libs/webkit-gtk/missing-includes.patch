@@ -1,20 +1,40 @@
---- a/Source/WebCore/platform/linux/MemoryPressureHandlerLinux.cpp	2016-09-02 15:03:41.097828820 +0200
-+++ b/Source/WebCore/platform/linux/MemoryPressureHandlerLinux.cpp	2016-09-02 15:03:54.270827122 +0200
-@@ -33,6 +33,7 @@
+--- a/Source/WebCore/platform/PlatformPasteboard.h	2016-10-01 20:32:00.235819478 +0200
++++ b/Source/WebCore/platform/PlatformPasteboard.h	2016-10-01 20:32:37.084816446 +0200
+@@ -30,6 +30,7 @@
+ #include <wtf/RefCounted.h>
+ #include <wtf/RetainPtr.h>
+ #include <wtf/Vector.h>
++#include <functional>
  
- #include <fcntl.h>
- #include <malloc.h>
-+#include <stdio.h>
- #include <sys/eventfd.h>
- #include <sys/stat.h>
- #include <sys/types.h>
---- a/Source/WebKit2/UIProcess/linux/MemoryPressureMonitor.cpp	2016-09-14 14:26:00.253663597 +0200
-+++ b/Source/WebKit2/UIProcess/linux/MemoryPressureMonitor.cpp	2016-09-14 14:26:11.126642591 +0200
-@@ -33,6 +33,7 @@
- #include <fcntl.h>
- #include <mutex>
- #include <stdlib.h>
-+#include <stdio.h>
- #include <string.h>
- #include <sys/eventfd.h>
- #include <sys/stat.h>
+ #if PLATFORM(MAC)
+ OBJC_CLASS NSPasteboard;
+--- a/Source/WebCore/platform/gtk/PasteboardHelper.h	2016-10-01 20:31:10.160823598 +0200
++++ b/Source/WebCore/platform/gtk/PasteboardHelper.h	2016-10-01 20:31:25.284822354 +0200
+@@ -29,6 +29,7 @@
+ #include <wtf/Noncopyable.h>
+ #include <wtf/Vector.h>
+ #include <wtf/glib/GRefPtr.h>
++#include <functional>
+ 
+ namespace WebCore {
+ 
+--- a/Source/WTF/wtf/text/StringCommon.h	2017-05-04 14:05:19.375884708 +0200
++++ b/Source/WTF/wtf/text/StringCommon.h	2017-05-04 14:06:04.544075816 +0200
+@@ -26,6 +26,7 @@
+ #ifndef StringCommon_h
+ #define StringCommon_h
+ 
++#include <algorithm>
+ #include <unicode/uchar.h>
+ #include <wtf/ASCIICType.h>
+ #include <wtf/NotFound.h>
+--- a/Source/WebCore/crypto/algorithms/CryptoAlgorithmAES_GCM.cpp       2017-05-04 14:32:25.858251419 +0200
++++ b/Source/WebCore/crypto/algorithms/CryptoAlgorithmAES_GCM.cpp       2017-05-04 14:32:45.880049123 +0200
+@@ -28,6 +28,7 @@
+ 
+ #if ENABLE(SUBTLE_CRYPTO)
+ 
++#include <sys/user.h>
+ #include "CryptoAlgorithmAesGcmParams.h"
+ #include "CryptoAlgorithmAesKeyParams.h"
+ #include "CryptoKeyAES.h"
