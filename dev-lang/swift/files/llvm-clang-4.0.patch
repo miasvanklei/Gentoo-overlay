@@ -2521,6 +2521,17 @@ index da36b42075..d81ead6239 100644
      }
  
      BufferKind getBufferKind() const override {
+@@ -221,8 +221,8 @@
+     void operator=(const ZeroFilledMemoryBuffer &) = delete;
+     void operator=(ZeroFilledMemoryBuffer &&) = delete;
+ 
+-    const char *getBufferIdentifier() const override {
+-      return name.c_str();
++    StringRef getBufferIdentifier() const override {
++      return name;
+     }
+     BufferKind getBufferKind() const override {
+       return MemoryBuffer_MMap;
 @@ -690,12 +690,10 @@ ClangImporter::create(ASTContext &ctx,
                                                          diagClient.release());
  

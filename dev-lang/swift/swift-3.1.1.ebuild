@@ -31,7 +31,7 @@ DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
 
-S=${WORKDIR}/swift-swift-3.1-RELEASE
+S=${WORKDIR}/${PN}-${P}-RELEASE
 
 src_prepare() {
 	# we prefer own optimization
