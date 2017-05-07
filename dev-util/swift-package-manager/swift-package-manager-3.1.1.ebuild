@@ -3,12 +3,9 @@
 
 EAPI=6
 
-inherit git-r3
-
 DESCRIPTION="The Package Manager for the Swift Programming Language"
 HOMEPAGE="http://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/apple/swift-package-manager.git"
+SRC_URI="https://github.com/apple/${PN}/archive/swift-${PV}-RELEASE.tar.gz -> ${P}.tar.gz"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -21,13 +18,11 @@ RDEPEND="dev-lang/swift
 	dev-util/llbuild"
 DEPEND="${RDEPEND}"
 
-src_prepare()
-{
-	eapply ${FILESDIR}/musl.patch
-	eapply ${FILESDIR}/fix-version.patch
-	eapply_user
-}
+S=${WORKDIR}/${PN}-swift-${PV}-RELEASE
 
+PATCHES=(
+	${FILESDIR}/musl.patch
+)
 src_install() {
 	./Utilities/bootstrap install \
 	--swiftc /usr/bin/swiftc \
