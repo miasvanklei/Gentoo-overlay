@@ -26,4 +26,5 @@ src_prepare() {
 src_install() {
 	emake install prefix=${D}/usr
 	rm ${D}/usr/bin/ldconfig
+	rm ${D}/usr/include/sys/queue.h
 }
