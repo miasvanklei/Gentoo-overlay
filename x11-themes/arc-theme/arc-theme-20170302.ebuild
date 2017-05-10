@@ -11,7 +11,7 @@ SRC_URI="https://github.com/horst3180/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~x86"
-IUSE="cinnamon dark darker gnome-shell +gtk2 +gtk3 mate xfce"
+IUSE="cinnamon dark +darker gnome-shell +gtk2 +gtk3 mate xfce"
 
 # Supports various GTK+3 versions and uses pkg-config to determine which
 # set of files to install. Updates will break it but only this fix will
@@ -25,7 +25,6 @@ RDEPEND="gtk2? ( x11-themes/gnome-themes-standard
 	x11-themes/gtk-engines-murrine )"
 
 src_prepare() {
-	eapply "${FILESDIR}"/dont-install-gtk-dark.patch
 	eapply "${FILESDIR}"/fix-padding.patch
 
 	eapply_user
