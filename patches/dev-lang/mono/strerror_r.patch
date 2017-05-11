@@ -1,11 +1,11 @@
---- a/support/errno.c	2015-10-13 23:44:21.612911612 +0200
-+++ b/support/errno.c	2015-10-13 23:44:49.112812561 +0200
-@@ -35,7 +35,7 @@
-  * we assume that the XPG version is present.
-  */
+--- a/support/errno.c	2017-05-11 16:07:24.991627923 +0200
++++ b/support/errno.c	2017-05-11 16:08:03.362643120 +0200
+@@ -86,7 +86,7 @@
+ 	mph_return_if_size_t_overflow (n);
  
--#ifdef _GNU_SOURCE
-+#ifdef __GLIBC__
- #define mph_min(x,y) ((x) <= (y) ? (x) : (y))
- 
- /* If you pass an invalid errno value to glibc 2.3.2's strerror_r, you get
+ 	/* first, check for valid errnum */
+-#if PLATFORM_ANDROID
++#ifndef __GLIBC__
+ 	/* Android NDK defines _GNU_SOURCE but strerror_r follows the XSI semantics
+ 	 * not the GNU one. XSI version returns an integer, as opposed to the GNU one
+ 	 * which returns pointer to the buffer.
