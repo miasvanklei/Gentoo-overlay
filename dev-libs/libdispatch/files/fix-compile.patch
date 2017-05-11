@@ -14,36 +14,3 @@ index 8934b2c..a25756e 100644
  #include <sys/socket.h>
  #include <sys/time.h>
  #include <sys/mman.h>
-diff --git a/Makefile.am b/Makefile.am
-index ffc82df..b0682ca 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -14,7 +14,6 @@ endif
- 
- SUBDIRS=						\
- 	dispatch					\
--	$(MAYBE_PTHREAD_WORKQUEUES)	\
- 	man							\
- 	os							\
- 	private						\
-diff --git a/os/linux_base.h b/os/linux_base.h
-index d0048d6..e4fd90f 100644
---- a/os/linux_base.h
-+++ b/os/linux_base.h
-@@ -15,6 +15,16 @@
- 
- #include <sys/param.h>
- 
-+#ifndef __BEGIN_DECLS
-+#if defined(__cplusplus)
-+#define __BEGIN_DECLS extern "C" {
-+#define __END_DECLS }
-+#else
-+#define __BEGIN_DECLS
-+#define __END_DECLS
-+#endif
-+#endif
-+
- #if __GNUC__
- #define OS_EXPECT(x, v) __builtin_expect((x), (v))
- #define OS_UNUSED __attribute__((__unused__))
