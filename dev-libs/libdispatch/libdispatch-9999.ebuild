@@ -22,7 +22,7 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
 	eapply ${FILESDIR}/fix-compile.patch
-#	eapply ${FILESDIR}/fix-segfault.patch
+	eapply ${FILESDIR}/fix-segfault.patch
 	eautoreconf
 	eapply_user
 }
