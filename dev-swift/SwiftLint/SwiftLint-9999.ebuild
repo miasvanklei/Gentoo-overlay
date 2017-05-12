@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -9,7 +9,6 @@ DESCRIPTION="A tool to enforce Swift style and conventions"
 HOMEPAGE="https://github.com/realm/SwiftLint"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/realm/SwiftLint.git"
-EGIT_SUBMODULES=()
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -27,10 +26,9 @@ RDEPEND="dev-libs/libdispatch
 	dev-swift/SourceKitten"
 DEPEND="${RDEPEND}"
 
-src_prepare() {
-        eapply ${FILESDIR}/remove-dependencies.patch
-        eapply_user
-}
+PATCHES=(
+	${FILESDIR}/remove-dependencies.patch
+)
 
 src_compile() {
 	swift build --verbose \

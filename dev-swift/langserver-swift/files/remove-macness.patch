@@ -1,0 +1,187 @@
+diff --git a/Sources/BaseProtocol/Types/Request.swift b/Sources/BaseProtocol/Types/Request.swift
+index 34203be..d1fc726 100644
+--- a/Sources/BaseProtocol/Types/Request.swift
++++ b/Sources/BaseProtocol/Types/Request.swift
+@@ -10,10 +10,6 @@ import Argo
+ import Curry
+ import Foundation
+ import Runes
+-import os.log
+-
+-@available(macOS 10.12, *)
+-private let log = OSLog(subsystem: "me.lovelett.langserver-swift", category: "Request")
+ 
+ /// A JSON-RPC
+ public enum Request {
+@@ -82,10 +78,6 @@ public enum Request {
+             throw PredefinedError.parse
+         }
+ 
+-        if #available(macOS 10.12, *) {
+-            os_log("%{public}@", log: log, type: .default, String(bytes: data, encoding: .utf8)!)
+-        }
+-
+         let json = JSON(serialized)
+ 
+         let dMethod: Decoded<String> = (json <| "method")
+diff --git a/Sources/BaseProtocol/Types/RequestBuffer.swift b/Sources/BaseProtocol/Types/RequestBuffer.swift
+index 2425524..9a4f730 100644
+--- a/Sources/BaseProtocol/Types/RequestBuffer.swift
++++ b/Sources/BaseProtocol/Types/RequestBuffer.swift
+@@ -7,10 +7,8 @@
+ //
+ 
+ import Foundation
+-import os.log
+ 
+ @available(macOS 10.12, *)
+-private let log = OSLog(subsystem: "me.lovelett.langserver-swift", category: "RequestBuffer")
+ private let terminatorPattern = Data(bytes: [0x0D, 0x0A, 0x0D, 0x0A]) // "\r\n\r\n"
+ 
+ public class RequestBuffer {
+@@ -22,14 +20,7 @@ public class RequestBuffer {
+     }
+ 
+     public func append(_ data: Data) {
+-        if #available(macOS 10.12, *) {
+-            os_log("Adding %{iec-bytes}d to the request buffer which has %{iec-bytes}d", log: log, type: .default, data.count, buffer.count)
+-        }
+         buffer.append(data)
+-        if #available(macOS 10.12, *), let new = String(bytes: data, encoding: .utf8), let buffer = String(bytes: buffer, encoding: .utf8) {
+-            os_log("Added: %{public}@", log: log, type: .default, new)
+-            os_log("Buffer: %{public}@", log: log, type: .default, buffer)
+-        }
+     }
+ 
+ }
+@@ -46,11 +37,6 @@ extension RequestBuffer : IteratorProtocol {
+         }
+         defer {
+             buffer.removeSubrange(Range<Data.Index>(buffer.startIndex..<index))
+-            if #available(macOS 10.12, *) {
+-                let bytes = buffer.startIndex.distance(to: index)
+-                os_log("Removing %{iec-bytes}d from the request buffer which has %{iec-bytes}d", log: log, type: .default, bytes, buffer.count)
+-            }
+-
+         }
+         return buffer.subdata(in: Range<Data.Index>(separatorRange.upperBound..<index))
+     }
+diff --git a/Sources/BaseProtocol/Types/Response.swift b/Sources/BaseProtocol/Types/Response.swift
+index 3145ab5..19ed100 100644
+--- a/Sources/BaseProtocol/Types/Response.swift
++++ b/Sources/BaseProtocol/Types/Response.swift
+@@ -9,13 +9,10 @@
+ import Argo
+ import Foundation
+ import Ogra
+-import os.log
+ 
+ fileprivate let headerSeparator = "\r\n"
+ fileprivate let headerTerminator = "\r\n\r\n"
+ fileprivate let pattern = headerTerminator.data(using: .utf8)!
+-@available(macOS 10.12, *)
+-private let log = OSLog(subsystem: "me.lovelett.langserver-swift", category: "Response")
+ 
+ public struct Response {
+ 
+@@ -90,9 +87,6 @@ public struct Response {
+         headerData?.append(jsonData)
+ 
+         let response = headerData ?? pattern
+-        if #available(macOS 10.12, *), let msg = String(bytes: response, encoding: .utf8) {
+-            os_log("%{public}@", log: log, type: .default, msg)
+-        }
+         return response
+     }
+ 
+diff --git a/Sources/LanguageServerProtocol/Extenstions/URL.swift b/Sources/LanguageServerProtocol/Extenstions/URL.swift
+index 5efb410..58f94d8 100644
+--- a/Sources/LanguageServerProtocol/Extenstions/URL.swift
++++ b/Sources/LanguageServerProtocol/Extenstions/URL.swift
+@@ -48,7 +48,7 @@ extension URL : Decodable {
+     public static func decode(_ json: JSON) -> Decoded<URL> {
+         switch json {
+         case .string(let uri):
+-            let isDirectory = (uri as NSString).pathExtension.isEmpty
++            let isDirectory = (NSString(string: uri)).pathExtension.isEmpty
+             // Bar is here to handle a URI prefixed with a `file://` scheme
+             // e.g., file:///Users/ryan/Source/langserver-swift/Fixtures/ValidLayouts/Simple/Sources/main.swift
+             // and
+diff --git a/Sources/LanguageServerProtocol/Functions/Convert.swift b/Sources/LanguageServerProtocol/Functions/Convert.swift
+index b829a23..c6a72b0 100644
+--- a/Sources/LanguageServerProtocol/Functions/Convert.swift
++++ b/Sources/LanguageServerProtocol/Functions/Convert.swift
+@@ -25,11 +25,18 @@ fileprivate let regex = try! NSRegularExpression(pattern: "<#T##([^#]+)#(?:#[^#]
+ /// - Parameter sourceKit: A `String` possibly containing an SourceKit style snippet.
+ /// - Returns: A `String` where any SourceKit style snippets have been converted to TextMate
+ /// snippets.
++
++extension TextCheckingResult {
++    public func rangeAt(_ index: Int) -> NSRange {
++        return range(at: index)
++    }
++}
++
+ func convert(_ sourceKit: String) -> Decoded<String> {
+     var result = ""
+     var lastRange = sourceKit.startIndex..<sourceKit.startIndex
+     var cursorIndex = 0
+-    regex.enumerateMatches(in: sourceKit, options: [], range: sourceKit.nsrange) { (x: NSTextCheckingResult?, _, _) -> Void in
++    regex.enumerateMatches(in: sourceKit, options: [], range: sourceKit.nsrange) { (x: TextCheckingResult?, _, _) -> Void in
+         guard
+             let matchRange = (x?.rangeAt(0)).flatMap({ sourceKit.range(from: $0) }),
+             let group = (x?.rangeAt(1)).flatMap({ sourceKit.substring(with: $0) })
+diff --git a/Sources/LanguageServerProtocol/Types/Workspace.swift b/Sources/LanguageServerProtocol/Types/Workspace.swift
+index b1d31a7..e0d8e43 100644
+--- a/Sources/LanguageServerProtocol/Types/Workspace.swift
++++ b/Sources/LanguageServerProtocol/Types/Workspace.swift
+@@ -8,12 +8,8 @@
+ 
+ import Argo
+ import Foundation
+-import os.log
+ import SourceKitter
+ 
+-@available(macOS 10.12, *)
+-private let log = OSLog(subsystem: "me.lovelett.langserver-swift", category: "Workspace")
+-
+ /// A directory on the local filesystem that contains all of the sources of the Swift project.
+ public struct Workspace {
+ 
+@@ -203,11 +199,6 @@ public struct Workspace {
+         let url = at.textDocument.uri
+         let (module, source) = try getSource(url)
+         let offset = try Int64(source.lines.byteOffset(at: at.position))
+-        if #available(macOS 10.12, *) {
+-            os_log("%{public}@", log: log, type: .default, url as NSURL)
+-            os_log("Line %d, character %d, byte %d", log: log, type: .default, at.position.line, at.position.character, offset)
+-            os_log("%{public}@", log: log, type: .default, module.arguments.joined(separator: ", "))
+-        }
+         let result = SourceKit.CodeComplete(source: source.text, source: url, offset: offset, args: module.arguments)
+             .request()
+             .flatMap({ decodedJSON($0, forKey: "key.results") })
+diff --git a/Sources/SourceKitter/Types/SourceKit.swift b/Sources/SourceKitter/Types/SourceKit.swift
+index 13b5c92..3a73e28 100644
+--- a/Sources/SourceKitter/Types/SourceKit.swift
++++ b/Sources/SourceKitter/Types/SourceKit.swift
+@@ -8,12 +8,8 @@
+ 
+ import Argo
+ import Foundation
+-import os.log
+ import SourceKit
+ 
+-@available(macOS 10.12, *)
+-private let log = OSLog(subsystem: "me.lovelett.langserver-swift", category: "SourceKit")
+-
+ /// Provides a convience wrapper to safely make calls to SourceKit.
+ public final class SourceKit {
+ 
+@@ -92,7 +88,6 @@ public final class SourceKit {
+             let description = descPtr
+                 .map({ (UnsafeMutableRawPointer($0), Int(strlen($0))) })
+                 .flatMap({ String(bytesNoCopy: $0.0, length: $0.1, encoding: .utf8, freeWhenDone: true) })!
+-            os_log("%{public}@", log: log, type: .default, description)
+         }
+ 
+         let response = sourcekitd_send_request_sync(obj)!

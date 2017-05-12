@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -26,11 +26,15 @@ RDEPEND="dev-libs/libdispatch
 	dev-swift/SourceKit"
 DEPEND="${RDEPEND}"
 
+
+PATCHES=(
+        ${FILESDIR}/fix-crash.patch
+        ${FILESDIR}/fix-run.patch
+	${FILESDIR}/remove-dependencies.patch
+        ${FILESDIR}/install-lib.patch
+)
+
 src_prepare() {
-        eapply ${FILESDIR}/fix-crash.patch
-        eapply ${FILESDIR}/fix-run.patch
-        eapply ${FILESDIR}/remove-dependencies.patch
-        eapply ${FILESDIR}/install-lib.patch
 	rm ${S}/Source/SourceKittenFramework/clang-c/module.modulemap
         eapply_user
 }

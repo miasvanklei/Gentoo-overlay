@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -19,23 +19,19 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
-	dev-swift/Core
 	dev-swift/Engine
 	dev-swift/Node"
 DEPEND="${RDEPEND}"
 
-src_prepare() {
-	eapply ${FILESDIR}/remove-dependencies.patch
-	eapply ${FILESDIR}/install-lib.patch
-	eapply_user
-}
+PATCHES=(
+	${FILESDIR}/remove-dependencies.patch
+        ${FILESDIR}/install-lib.patch
+)
 
 src_compile() {
 	swift build -c release \
 	-Xlinker -lNode \
-	-Xlinker -lCore \
-	-Xlinker -lHTTP \
-	-Xlinker -lWebSockets \
+	-Xlinker -lEngine \
 	--verbose || die
 }
 

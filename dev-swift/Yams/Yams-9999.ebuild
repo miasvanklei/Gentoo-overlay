@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -21,11 +21,11 @@ RDEPEND="dev-libs/libdispatch
 	dev-libs/corelibs-foundation"
 DEPEND="${RDEPEND}"
 
-src_prepare() {
-        eapply ${FILESDIR}/fix-compilation.patch
-        eapply ${FILESDIR}/install-lib.patch
-        eapply_user
-}
+PATCHES=(
+        ${FILESDIR}/fix-compilation.patch
+	${FILESDIR}/remove-dependencies.patch
+        ${FILESDIR}/install-lib.patch
+)
 
 src_compile() {
 	swift build --verbose \

@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -18,18 +18,21 @@ IUSE=""
 RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
-	dev-libs/corelibs-foundation"
+	dev-libs/corelibs-foundation
+	dev-swift/Bits
+	dev-swift/Debugging"
 DEPEND="${RDEPEND}"
 
-src_prepare() {
-	eapply ${FILESDIR}/install-lib.patch
-	eapply ${FILESDIR}/musl.patch
-	eapply_user
-}
+PATCHES=(
+	${FILESDIR}/remove-dependencies.patch
+	${FILESDIR}/install-lib.patch
+)
 
 src_compile() {
 	swift build -c release \
-	--verbose || die
+	--verbose \
+	-Xlinker -lBits \
+	-Xlinker -lDebugging || die
 }
 
 src_install() {

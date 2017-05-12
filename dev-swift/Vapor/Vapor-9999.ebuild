@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -19,33 +19,28 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
-	dev-swift/Crypto
-	dev-swift/Fluent
 	dev-swift/Engine
 	dev-swift/Console
 	dev-swift/JSON
-	dev-swift/Turnstile
-	dev-swift/Leaf
-	dev-swift/Routing"
+	dev-swift/Routing
+	dev-swift/Multipart
+	dev-swift/BCrypt"
 DEPEND="${RDEPEND}"
 
-src_prepare() {
-        eapply ${FILESDIR}/dependencies-add-libs.patch
-        eapply ${FILESDIR}/fix-compile.patch
-	eapply_user
-}
+PATCHES=(
+        ${FILESDIR}/fix-compile.patch
+	${FILESDIR}/remove-dependencies.patch
+        ${FILESDIR}/install-lib.patch
+)
 
 src_compile() {
 	swift build -c release \
-	-Xlinker -lFluent \
+	-Xlinker -lEngine \
 	-Xlinker -lConsole \
 	-Xlinker -lJSON \
-	-Xlinker -lTurnstile \
-	-Xlinker -lLeaf \
 	-Xlinker -lRouting \
-	-Xlinker -lTypeSafeRouting \
-	-Xlinker -lHMAC \
-	-Xlinker -lCipher \
+	-Xlinker -lMultipart \
+	-Xlinker -lBCrypt \
 	--verbose || die
 }
 

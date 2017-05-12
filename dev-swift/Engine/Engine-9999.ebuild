@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -22,21 +22,21 @@ RDEPEND="dev-libs/libdispatch
 	dev-swift/Core
 	dev-swift/Crypto
 	dev-swift/TLS
-	dev-swift/Socks"
+	dev-swift/Sockets"
 DEPEND="${RDEPEND}"
 
-src_prepare() {
-	eapply ${FILESDIR}/remove-dependencies.patch
-	eapply ${FILESDIR}/install-lib.patch
-	eapply_user
-}
+PATCHES=(
+	${FILESDIR}/remove-dependencies.patch
+        ${FILESDIR}/install-lib.patch
+)
 
 src_compile() {
 	swift build -c release \
 	--verbose \
+	-Xlinker -L/usr/lib/swift/linux \
         -Xlinker -lTLS \
-        -Xlinker -lSocksCore \
-        -Xlinker -lHash \
+        -Xlinker -lSockets \
+        -Xlinker -lCrypto \
         -Xlinker -lCore || die
 }
 
@@ -44,4 +44,8 @@ src_install() {
         mkdir -p ${D}/usr/lib/swift/linux/x86_64 || die
         cp .build/release/*.swift* ${D}/usr/lib/swift/linux/x86_64 || die
         cp .build/release/lib*.so ${D}/usr/lib/swift/linux || die
+        mkdir -p ${D}/usr/lib/swift/CHTTP || die
+        cp .build/release/CHTTP.build/module.modulemap ${D}/usr/lib/swift/CHTTP || die
+        sed -i -e 's|'${S}'/Sources/CHTTP/include|/usr/lib/swift/CHTTP|g' ${D}/usr/lib/swift/CHTTP/module.modulemap || die
+	cp Sources/CHTTP/include/http_parser.h ${D}/usr/lib/swift/CHTTP || die
 }
