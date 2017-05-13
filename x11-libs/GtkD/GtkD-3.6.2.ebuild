@@ -24,10 +24,9 @@ RDEPEND="${DEPEND}
 	dev-libs/libpeas"
 
 GTKD_LIB_NAMES=(gtkd gtkdgl gtkdsv gstreamerd vted peasd)
-GTKD_SRC_DIRS=(src srcgl srcsv srcgstreamer srcvte srcpeas)
+GTKD_SRC_DIRS=(gtkd gtkdgl sourceview gstreamer vte peas)
 
 MAJOR=3
-MINOR=5.1
 
 IUSE="static-libs"
 
@@ -46,12 +45,8 @@ multilib_src_compile() {
 	compile_libs() {
 
 		# Build the shared library version of the component
-                dlang_exec ${DC} -O5 -op -Isrc ${GTKD_SRC_DIRS[$i]}/*/*.d -shared \
-		-of=lib${LIB_NAME}-${MAJOR}.so.0.${MINOR} -L=-soname=lib${LIB_NAME}-${MAJOR}.so.0
-		#${DC} -v -op -Isrc ${GTKD_SRC_DIRS[$i]}/*/*.d \
-		#${LDFLAGS} -shared -relocation-model=pic \
-		#-L=-soname=lib${LIB_NAME}-${MAJOR}.so.0 \
-		#-of=lib${LIB_NAME}-${MAJOR}.so.0.${MINOR}
+                dlang_exec ${DC} -O5 -op -Isrc -Igenerated/gtkd generated/${GTKD_SRC_DIRS[$i]}/*/*.d -shared \
+		-of=lib${LIB_NAME}-${MAJOR}.so -L=-soname=lib${LIB_NAME}-${MAJOR}.so
 
 		# Build the static library version
 		if use static-libs; then
@@ -68,9 +63,7 @@ multilib_src_install() {
 	install_libs() {
 		# Install the shared library version of the component
 		local libfile="lib${LIB_NAME}-${MAJOR}.so"
-		dolib.so "${libfile}.0.${MINOR}"
-		dosym "${libfile}.0.${MINOR}" "/usr/$(get_libdir)/${libfile}.0"
-		dosym "${libfile}.0.${MINOR}" "/usr/$(get_libdir)/${libfile}"
+		dolib.so "${libfile}"
 
 		# Install the static library version
 		if use static-libs; then
@@ -83,13 +76,13 @@ multilib_src_install() {
 
 multilib_src_install_all() {
 	# Obligatory docs
-	dodoc AUTHORS README
+	dodoc AUTHORS README.md
 
 	# Include files
 	insinto "/usr/include/d/gtkd-${MAJOR}"
 
 	install_headers() {
-		files="${SRC_DIR}/*"
+		files="generated/${SRC_DIR}/*"
 		doins -r ${files}
 	}
 
