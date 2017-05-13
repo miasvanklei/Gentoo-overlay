@@ -34,11 +34,6 @@ PATCHES=(
         ${FILESDIR}/install-lib.patch
 )
 
-src_prepare() {
-	rm ${S}/Source/SourceKittenFramework/clang-c/module.modulemap
-        eapply_user
-}
-
 src_compile() {
 	swift build --verbose \
 	-c release \
