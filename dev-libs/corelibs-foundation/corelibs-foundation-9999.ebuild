@@ -34,7 +34,6 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
 	eapply ${FILESDIR}/fix-build.patch
-	eapply ${FILESDIR}/fix-queue.patch
 	eapply_user
 }
 
@@ -43,8 +42,4 @@ src_configure() {
 	export SWIFT_TARGET=${CHOST}
 	export LIBDISPATCH_SOURCE_DIR=/usr/lib/swift
 	econf --target=${CHOST} release
-}
-
-pkg_preinst() {
-	rm -r ${D}/usr/local
 }
