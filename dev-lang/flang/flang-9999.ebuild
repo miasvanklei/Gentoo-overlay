@@ -26,6 +26,10 @@ DEPEND="${RDEPEND}
 
 CMAKE_BUILD_TYPE=Release
 
+PATCHES=(
+	${FILESDIR}/fix-compile.patch
+)
+
 src_configure() {
 	local clang_version=4.0.0
 	local libdir=$(get_libdir)
