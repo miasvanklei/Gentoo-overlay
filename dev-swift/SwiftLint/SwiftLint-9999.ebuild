@@ -9,7 +9,7 @@ DESCRIPTION="A tool to enforce Swift style and conventions"
 HOMEPAGE="https://github.com/realm/SwiftLint"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/realm/SwiftLint.git"
-EGIT_MODULES=()
+EGIT_SUBMODULES=()
 
 LICENSE="Apache-2.0"
 SLOT="0"
