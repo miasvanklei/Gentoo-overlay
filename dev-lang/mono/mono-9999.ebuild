@@ -3,18 +3,19 @@
 
 EAPI=6
 
-inherit autotools eutils linux-info mono-env flag-o-matic pax-utils versionator multilib-minimal
+inherit autotools eutils linux-info mono-env flag-o-matic pax-utils versionator multilib-minimal git-r3
 
 DESCRIPTION="Mono runtime and class libraries, a C# compiler/interpreter"
 HOMEPAGE="http://www.mono-project.com/Main_Page"
-SRC_URI="http://download.mono-project.com/sources/${PN}/${P}.tar.bz2"
+SRC_URI=""
+EGIT_REPO_URI="git://github.com/mono/${PN}.git"
 
 LICENSE="MIT LGPL-2.1 GPL-2 BSD-4 NPL-1.1 Ms-PL GPL-2-with-linking-exception IDPL"
 SLOT="0"
 
 KEYWORDS="~amd64 ~ppc ~ppc64 ~x86 ~amd64-linux"
 
-IUSE="nls minimal pax_kernel xen doc"
+IUSE="+interpreter nls minimal pax_kernel xen doc"
 
 COMMONDEPEND="
 	!minimal? ( >=dev-dotnet/libgdiplus-2.10 )
@@ -53,6 +54,8 @@ pkg_setup() {
 }
 
 src_prepare() {
+	cat "${S}/mono/mini/Makefile.am.in" > "${S}/mono/mini/Makefile.am" || die
+
 	# we need to sed in the paxctl-ng -mr in the runtime/mono-wrapper.in so it don't
 	# get killed in the build proces when MPROTECT is enable. #286280
 	# RANDMMAP kill the build proces to #347365
@@ -88,7 +91,8 @@ multilib_src_configure() {
                 --without-sigaltstack
                 $(use_with xen xen_opt)
                 $(use_with doc mcs-docs)
-                $(use_enable nls)
+                $(use_enable amd64 big-array)
+                $(use_enable interpreter)
         )
 
 	econf "${myeconfargs[@]}"
