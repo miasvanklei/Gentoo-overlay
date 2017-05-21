@@ -9,10 +9,7 @@ inherit elisp-common eutils multilib pax-utils toolchain-funcs
 
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="http://julialang.org/"
-SRC_URI="
-	https://github.com/JuliaLang/${PN}/archive/v${PV//_/-}.tar.gz
-	https://dev.gentoo.org/~tamiko/distfiles/${PN}-0.5.0-bundled.tar.gz
-"
+SRC_URI="https://github.com/JuliaLang/${PN}/releases/download/v${PV//_/-}/${P//_/-}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
@@ -26,6 +23,9 @@ RDEPEND="
 	dev-libs/libgit2:0=
 	dev-libs/mpfr:0=
 	dev-libs/openspecfun
+	dev-libs/libpcre2
+	dev-libs/utf8proc
+	dev-libs/libuv
 	sci-libs/arpack:0=
 	sci-libs/camd:0=
 	sci-libs/cholmod:0=
@@ -50,15 +50,13 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-0.6.0-fix_build_system.patch
 	"${FILESDIR}"/add-compilerrt.patch
 	"${FILESDIR}"/fix-compile.patch
+	"${FILESDIR}"/system-libs.patch
+	"${FILESDIR}"/musl.patch
 )
 
 S=${WORKDIR}/${P//_/-}
 
 src_prepare() {
-	mkdir deps/srccache || die
-	mv "${WORKDIR}"/bundled/* deps/srccache || die
-	rmdir "${WORKDIR}"/bundled || die
-
 	epatch "${PATCHES[@]}"
 
 	eapply_user
@@ -115,13 +113,12 @@ src_prepare() {
 
 src_configure() {
 	# julia does not play well with the system versions of
-	# dsfmt, libuv, pcre2 and utf8proc
+	# dsfmt
 	cat <<-EOF > Make.user
 		USE_SYSTEM_DSFMT=0
-		USE_SYSTEM_LIBUV=0
-		USE_SYSTEM_PCRE=0
-		USE_SYSTEM_RMATH=0
-		USE_SYSTEM_UTF8PROC=0
+		USE_SYSTEM_LIBUV=1
+		USE_SYSTEM_PCRE=1
+		USE_SYSTEM_UTF8PROC=1
 		USE_LLVM_SHLIB=1
 		USE_SYSTEM_ARPACK=1
 		USE_SYSTEM_BLAS=1

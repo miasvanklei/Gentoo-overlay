@@ -1,0 +1,32 @@
+--- a/src/runtime_ccall.cpp	2017-05-19 05:08:40.000000000 +0200
++++ b/src/runtime_ccall.cpp	2017-05-21 14:03:22.151582727 +0200
+@@ -100,7 +100,14 @@
+ extern "C" JL_DLLEXPORT const char *jl_lookup_soname(const char *pfx, size_t n)
+ {
+     if (!got_sonames) {
++#if defined(__linux__)
++#  if !defined(__GLIBC__)
++#  else
+         jl_read_sonames();
++#  endif
++#else
++        jl_read_sonames();
++#endif
+         got_sonames = true;
+     }
+     const char *res = nullptr;
+@@ -115,7 +122,14 @@
+ extern "C" void *jl_dlopen_soname(const char *pfx, size_t n, unsigned flags)
+ {
+     if (!got_sonames) {
++#if defined(__linux__)
++#  if !defined(__GLIBC__)
++#  else
++        jl_read_sonames();
++#  endif
++#else
+         jl_read_sonames();
++#endif
+         got_sonames = true;
+     }
+     void *res = nullptr;
