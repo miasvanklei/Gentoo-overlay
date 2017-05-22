@@ -29,18 +29,3 @@ CMAKE_BUILD_TYPE=Release
 PATCHES=(
 	${FILESDIR}/fix-compile.patch
 )
-
-src_configure() {
-	local clang_version=4.0.0
-	local libdir=$(get_libdir)
-	local mycmakeargs=(
-		# used to find cmake modules
-		-DLLVM_LIBDIR_SUFFIX="${libdir#lib}"
-	)
-
-	cmake-utils_src_configure
-}
-
-src_install() {
-	cmake-utils_src_install
-}

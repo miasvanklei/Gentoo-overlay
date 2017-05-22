@@ -11,19 +11,6 @@ index ae4320c..dfdcabe 100644
                    OUTPUT_VARIABLE TARGET_ARCHITECTURE)
    execute_process(COMMAND uname -s OUTPUT_STRIP_TRAILING_WHITESPACE
                    OUTPUT_VARIABLE TARGET_OS)
-diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
-index beca342..537b100 100644
---- a/runtime/flang/CMakeLists.txt
-+++ b/runtime/flang/CMakeLists.txt
-@@ -14,7 +14,7 @@
- # limitations under the License.
- #
- 
--enable_language(C ASM Fortran) # Enable assembly and Fortran
-+enable_language(C Fortran) # Enable assembly and Fortran
- 
- SET(ASM_OPTIONS "-DLINUX_ELF")
- SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
 diff --git a/runtime/flang/hand.c b/runtime/flang/hand.c
 index bc8b0b6..86335e9 100644
 --- a/runtime/flang/hand.c
@@ -142,3 +129,29 @@ index aeeb05a..94be815 100644
  }
  
  int
+diff --git a/tools/flang1/flang1exe/semsmp.c b/tools/flang1/flang1exe/semsmp.c
+index 5478ba9..3c8b0c5 100644
+--- a/tools/flang1/flang1exe/semsmp.c
++++ b/tools/flang1/flang1exe/semsmp.c
+@@ -5759,7 +5759,7 @@ validate_if(int type, char *nm)
+   default:
+     if (type == (IF_TARGET | IF_PARALLEL)) {
+       if ((mp_iftype != IF_DEFAULT) &&
+-          (mp_iftype & type != (IF_TARGET | IF_PARALLEL))) {
++          ((mp_iftype & type) != (IF_TARGET | IF_PARALLEL))) {
+         error(155, ERR_Severe, gbl.lineno, "Unexpected directive in if clause",
+               NULL);
+       }
+diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
+index beca342..537b100 100644
+--- a/runtime/flang/CMakeLists.txt
++++ b/runtime/flang/CMakeLists.txt
+@@ -14,7 +14,7 @@
+ # limitations under the License.
+ #
+ 
+-enable_language(C ASM Fortran) # Enable assembly and Fortran
++enable_language(C Fortran) # Enable assembly and Fortran
+ 
+ SET(ASM_OPTIONS "-DLINUX_ELF")
+ SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
