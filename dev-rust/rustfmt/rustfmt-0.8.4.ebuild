@@ -3,15 +3,15 @@
 
 EAPI=6
 
-inherit eutils git-r3
+inherit eutils
 
 DESCRIPTION="Format Rust code"
 HOMEPAGE="https://github.com/rust-lang-nursery/rustfmt"
-EGIT_REPO_URI="https://github.com/rust-lang-nursery/rustfmt.git"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS=""
 IUSE=""
+SRC_URI="https://github.com/rust-lang-nursery/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
 COMMON_DEPEND="dev-lang/rustc"
 DEPEND="${COMMON_DEPEND}
