@@ -129,19 +129,6 @@ index aeeb05a..94be815 100644
  }
  
  int
-diff --git a/tools/flang1/flang1exe/semsmp.c b/tools/flang1/flang1exe/semsmp.c
-index 5478ba9..3c8b0c5 100644
---- a/tools/flang1/flang1exe/semsmp.c
-+++ b/tools/flang1/flang1exe/semsmp.c
-@@ -5759,7 +5759,7 @@ validate_if(int type, char *nm)
-   default:
-     if (type == (IF_TARGET | IF_PARALLEL)) {
-       if ((mp_iftype != IF_DEFAULT) &&
--          (mp_iftype & type != (IF_TARGET | IF_PARALLEL))) {
-+          ((mp_iftype & type) != (IF_TARGET | IF_PARALLEL))) {
-         error(155, ERR_Severe, gbl.lineno, "Unexpected directive in if clause",
-               NULL);
-       }
 diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
 index beca342..537b100 100644
 --- a/runtime/flang/CMakeLists.txt
