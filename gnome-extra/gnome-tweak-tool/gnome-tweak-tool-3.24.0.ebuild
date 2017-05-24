@@ -1,7 +1,7 @@
 # Copyright 1999-2016 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI="6"
 GNOME2_LA_PUNT="yes"
 PYTHON_COMPAT=( python3_5 )
 
@@ -12,11 +12,10 @@ HOMEPAGE="https://wiki.gnome.org/action/show/Apps/GnomeTweakTool"
 
 LICENSE="GPL-2+"
 SLOT="0"
+KEYWORDS="*"
 
 IUSE=""
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
-
-KEYWORDS="~alpha ~amd64 ~arm ~ia64 ~ppc ~ppc64 ~sparc ~x86"
 
 # Newer pygobject needed due upstream bug #723951
 COMMON_DEPEND="
