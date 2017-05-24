@@ -1,30 +1,28 @@
---- a/camel/camel-iconv.c
-+++ b/camel/camel-iconv.c
-@@ -38,6 +38,10 @@
- #include "camel-iconv.h"
- #include "iconv-detect.h"
+--- a/CMakeLists.txt	2017-05-24 15:40:44.190769214 +0200
++++ b/CMakeLists.txt	2017-05-24 15:41:26.118720079 +0200
+@@ -524,10 +524,6 @@
+ CHECK_C_SOURCE_RUNS("#include \"${CMAKE_SOURCE_DIR}/iconv-detect.c\"" _correct_iconv)
+ unset(CMAKE_REQUIRED_LIBRARIES)
  
+-if(NOT _correct_iconv)
+-	message(FATAL_ERROR "You need to install a working iconv implementation, such as ftp://ftp.gnu.org/pub/gnu/libiconv")
+-endif(NOT _correct_iconv)
+-
+ # ******************************
+ # Backtraces for debugging
+ # ******************************
+--- /dev/null	2017-05-17 14:53:00.046982910 +0200
++++ b/src/camel/iconv-detect.h	2017-05-24 15:48:07.893229000 +0200
+@@ -0,0 +1,12 @@
 +#ifndef ICONV_10646
 +#define ICONV_10646 "iso-10646"
 +#endif /*ICONV_10646*/
 +
- #define cd(x)
- 
- G_LOCK_DEFINE_STATIC (iconv);
---- a/configure
-+++ b/configure
-@@ -22511,11 +22511,11 @@
- 
- 			cd = iconv_open ("UTF-8", "ISO-2022-JP");
- 			if (cd == (iconv_t) -1)
--				exit (1);
-+				exit (0);
- 			if (iconv (cd, &jp, &jp_len, &trans, &utf8_len) == -1 || jp_len != 0)
--				exit (1);
-+				exit (0);
- 			if (memcmp (utf8, transbuf, utf8_real_len) != 0)
--				exit (1);
-+				exit (0);
- 			return (0);}
- 
- 
++#ifndef ICONV_ISO_D_FORMAT
++#define ICONV_ISO_D_FORMAT "iso-%d-%d"
++#endif /*ICONV_ISO_D_FORMAT*/
++
++#ifndef ICONV_ISO_S_FORMAT
++#define ICONV_ISO_S_FORMAT "iso-%d-%s"
++#endif /*ICONV_ISO_S_FORMAT*/
++
