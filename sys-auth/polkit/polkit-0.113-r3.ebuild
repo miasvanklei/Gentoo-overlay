@@ -11,10 +11,11 @@ SRC_URI="https://www.freedesktop.org/software/${PN}/releases/${P}.tar.gz"
 LICENSE="LGPL-2"
 SLOT="0"
 KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86"
-IUSE="examples gtk +introspection jit kde nls pam selinux systemd test"
+IUSE="elogind examples gtk +introspection jit kde nls pam selinux systemd test"
+REQUIRED_USE="systemd? ( !elogind )"
 
 CDEPEND="
-	dev-lang/spidermonkey:24[-debug]
+	dev-lang/spidermonkey:38[-debug]
 	>=dev-libs/glib-2.32:2
 	>=dev-libs/expat-2:=
 	introspection? ( >=dev-libs/gobject-introspection-1:= )
@@ -23,6 +24,7 @@ CDEPEND="
 		virtual/pam
 		)
 	systemd? ( sys-apps/systemd:0= )
+	elogind? ( sys-auth/elogind )
 "
 DEPEND="${CDEPEND}
 	app-text/docbook-xml-dtd:4.1.2
@@ -45,7 +47,7 @@ PDEPEND="
 		kde-plasma/polkit-kde-agent
 		sys-auth/polkit-kde-agent
 		) )
-	!systemd? ( sys-auth/consolekit[policykit] )
+	!systemd? ( !elogind? ( sys-auth/consolekit[policykit] ) )
 "
 
 QA_MULTILIB_PATHS="
@@ -67,6 +69,8 @@ src_prepare() {
 	epatch ${FILESDIR}/port-to-mozjs24-1.patch
 	epatch ${FILESDIR}/port-to-mozjs24-2.patch
 	epatch ${FILESDIR}/port-to-mozjs24-3.patch
+	epatch ${FILESDIR}/port-to-mozjs38.patch
+	epatch ${FILESDIR}/elogind.patch
 	epatch ${FILESDIR}/polkit-make-netgroup-support-optional.patch
 
 	sed -i -e 's|unix-group:wheel|unix-user:0|' src/polkitbackend/*-default.rules || die #401513
@@ -90,6 +94,7 @@ src_configure() {
 		--enable-man-pages \
 		--disable-gtk-doc \
 		$(use_enable systemd libsystemd-login) \
+		$(use_enable elogind) \
 		$(use_enable introspection) \
 		--disable-examples \
 		$(use_enable nls) \

@@ -43,16 +43,18 @@ index bc2fe22..b84c110 100644
  
  #include <polkit/polkit.h>
  #include "polkitbackendjsauthority.h"
-@@ -1450,13 +1451,16 @@ js_polkit_user_is_in_netgroup (JSContext  *cx,
-   JSBool ret = JS_FALSE;
+@@ -1486,8 +1486,6 @@
+   bool ret = false;
    JSString *user_str;
    JSString *netgroup_str;
 -  char *user;
 -  char *netgroup;
-   JSBool is_in_netgroup = JS_FALSE;
+   bool is_in_netgroup = false;
+   JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
  
-   if (!JS_ConvertArguments (cx, argc, JS_ARGV (cx, vp), "SS", &user_str, &netgroup_str))
-     goto out;
+@@ -1497,6 +1495,11 @@
+   user_str = JS::ToString(cx, args[0]);
+   netgroup_str = JS::ToString(cx, args[1]);
  
 +#if defined(HAVE_INNETGR)
 +  {
@@ -62,12 +64,12 @@ index bc2fe22..b84c110 100644
    user = JS_EncodeString (cx, user_str);
    netgroup = JS_EncodeString (cx, netgroup_str);
  
-@@ -1470,6 +1474,8 @@ js_polkit_user_is_in_netgroup (JSContext  *cx,
+@@ -1507,6 +1509,8 @@
  
    JS_free (cx, netgroup);
    JS_free (cx, user);
 +  }
 +#endif
  
-   ret = JS_TRUE;
+   ret = true;
  
