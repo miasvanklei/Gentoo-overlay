@@ -1,0 +1,27 @@
+From 1b32d6bd3e470253367114733e749f703af84f19 Mon Sep 17 00:00:00 2001
+From: Enno Boland <g@s01.de>
+Date: Wed, 24 May 2017 13:19:32 +0200
+Subject: [PATCH] musl-fix: faccessat does not support AT_SYMLINK_NOFOLLOW with
+ musl.
+
+---
+ src/basic/fs-util.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/basic/fs-util.h b/src/basic/fs-util.h
+index 294d617cd..2000b38a9 100644
+--- a/src/basic/fs-util.h
++++ b/src/basic/fs-util.h
+@@ -51,7 +51,12 @@ int fchmod_umask(int fd, mode_t mode);
+ 
+ int fd_warn_permissions(const char *path, int fd);
+ 
++#ifdef __GLIBC__
+ #define laccess(path, mode) faccessat(AT_FDCWD, (path), (mode), AT_SYMLINK_NOFOLLOW)
++#else
++#define laccess(path, mode) faccessat(AT_FDCWD, (path), (mode), 0)
++#endif
++
+ 
+ int touch_file(const char *path, bool parents, usec_t stamp, uid_t uid, gid_t gid, mode_t mode);
+ int touch(const char *path);
