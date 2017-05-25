@@ -10,7 +10,7 @@ inherit cmake-multilib
 MY_PV=openmp-${PV/_/}.src
 DESCRIPTION="OpenMP runtime library for LLVM/clang compiler"
 HOMEPAGE="http://openmp.llvm.org"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_PV}.tar.xz"
+SRC_URI="http://llvm.org/pre-releases/${PV/_//}/${MY_PV}.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -24,7 +24,7 @@ DEPEND="${RDEPEND}
 S=${WORKDIR}/${MY_PV}
 
 src_prepare() {
-	eapply "${FILESDIR}"/${P}-use-va_copy-macro.patch
+	eapply "${FILESDIR}"/0001-use-va_copy-macro.patch
 	default
 }
 

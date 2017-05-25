@@ -1,15 +1,11 @@
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -37,6 +37,12 @@
+@@ -37,6 +37,8 @@
  mark_as_advanced(COMPILER_RT_BUILD_SANITIZERS)
  option(COMPILER_RT_BUILD_XRAY "Build xray" ON)
  mark_as_advanced(COMPILER_RT_BUILD_XRAY)
-+option(COMPILER_RT_MUSL "Build with Musl" OFF)
-+mark_as_advanced(COMPILER_RT_MUSL)
 +
-+if(COMPILER_RT_MUSL)
-+  add_definitions(-DLIBC_MUSL)
-+endif()
++add_definitions(-DLIBC_MUSL)
  
  if (COMPILER_RT_STANDALONE_BUILD)
    if (NOT LLVM_CONFIG_PATH)

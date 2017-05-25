@@ -34,7 +34,7 @@ RDEPEND="
 	sci-libs/spqr:0=
 	sci-libs/umfpack:0=
 	sci-mathematics/glpk:0=
-	>=sys-devel/llvm-3.9:0=
+	sys-devel/llvm
 	sys-libs/llvm-libunwind:0=
 	sys-libs/readline:0=
 	sys-libs/zlib:0=

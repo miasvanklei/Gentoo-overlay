@@ -12,14 +12,14 @@ inherit cmake-multilib toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="http://libcxx.llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+SRC_URI="http://llvm.org/pre-releases/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="+experimental +libunwind +static-libs"
 
-RDEPEND="~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
+RDEPEND="~sys-libs/libcxxabi-4.0.0[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
 # LLVM 4 required for llvm-config --cmakedir
 DEPEND="${RDEPEND}
 	app-arch/xz-utils

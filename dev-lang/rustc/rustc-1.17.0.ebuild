@@ -52,6 +52,8 @@ src_prepare() {
 src_configure() {
 	einfo "Setting up config.toml for target"
 
+	local bindir=$(llvm-config --bindir)
+
 	cat > config.toml <<EOF
 [build]
 cargo = "/usr/bin/cargo"
@@ -69,16 +71,18 @@ use-jemalloc = false
 channel = "stable"
 
 [target.x86_64-unknown-linux-musl]
-llvm-config = "/usr/bin/llvm-config"
+llvm-config = "${bindir}/llvm-config"
 EOF
 }
 
 src_compile() {
-	./x.py build || die
+	local llvmlibdir=-L$(llvm-config --libdir)
+	RUSTFLAGS=-Clink-arg=${llvmlibdir} ./x.py build || die
 }
 
 src_install() {
-	./x.py dist --install || die
+	local llvmlibdir=-L$(llvm-config --libdir)
+	RUSTFLAGS=-Clink-arg=${llvmlibdir} ./x.py dist --install || die
 
 	pushd ${D}/usr/lib || die
 
