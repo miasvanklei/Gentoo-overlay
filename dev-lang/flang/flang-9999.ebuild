@@ -20,8 +20,8 @@ IUSE=""
 
 RDEPEND=""
 DEPEND="${RDEPEND}
-	~sys-devel/llvm-4.0.0
-	~sys-devel/clang-4.0.0
+	>=sys-devel/llvm-3.9
+	>=sys-devel/clang-3.9
 	${PYTHON_DEPS}"
 
 CMAKE_BUILD_TYPE=Release
