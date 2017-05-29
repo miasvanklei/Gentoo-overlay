@@ -97,6 +97,8 @@ PATCHES=(
         # Patch in elogind support
         # Bug #607352
         "${FILESDIR}"/${P}-enable-elogind-r1.patch
+
+	"${FILESDIR}"/0003-fix-sd_event_child_handler_t-declaration.patch
 )
 
 python_check_deps() {
