@@ -220,6 +220,7 @@ src_install() {
 	dosym ranlib "/usr/lib/llvm/${SLOT}/bin/llvm-ranlib"
 	dosym nm "/usr/lib/llvm/${SLOT}/bin/llvm-nm"
 	dosym strings "/usr/lib/llvm/${SLOT}/bin/llvm-strings"
+	dosym readelf "/usr/lib/llvm/${SLOT}/bin/llvm-readobj"
 
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
