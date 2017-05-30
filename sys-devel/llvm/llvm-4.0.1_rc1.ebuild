@@ -222,6 +222,7 @@ src_install() {
 	dosym strings "/usr/lib/llvm/${SLOT}/bin/llvm-strings"
 	dosym readelf "/usr/lib/llvm/${SLOT}/bin/llvm-readobj"
 	dosym objdump "/usr/lib/llvm/${SLOT}/bin/llvm-objdump"
+	dosym cxxfilt "/usr/lib/llvm/${SLOT}/bin/llvm-cxxfilt"
 
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
