@@ -280,6 +280,7 @@ src_install() {
 	dosym g++ "/usr/lib/llvm/${SLOT}/bin/clang"
 	dosym cc "/usr/lib/llvm/${SLOT}/bin/clang"
 	dosym c++ "/usr/lib/llvm/${SLOT}/bin/clang"
+	dosym cpp "/usr/lib/llvm/${SLOT}/bin/clang"
 
 	# Remove unnecessary headers on FreeBSD, bug #417171
 	if use kernel_FreeBSD; then
