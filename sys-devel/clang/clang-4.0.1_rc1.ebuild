@@ -276,10 +276,10 @@ src_install() {
 	done
 
 	# make gcc/cc symlink
-	dosym gcc "/usr/lib/llvm/${SLOT}/bin/clang"
-	dosym g++ "/usr/lib/llvm/${SLOT}/bin/clang"
-	dosym cc "/usr/lib/llvm/${SLOT}/bin/clang"
-	dosym c++ "/usr/lib/llvm/${SLOT}/bin/clang"
+	dosym "/usr/lib/llvm/${SLOT}/bin/clang" gcc
+	dosym "/usr/lib/llvm/${SLOT}/bin/clang" g++
+	dosym "/usr/lib/llvm/${SLOT}/bin/clang" cc
+	dosym "/usr/lib/llvm/${SLOT}/bin/clang" c++
 
 	# Remove unnecessary headers on FreeBSD, bug #417171
 	if use kernel_FreeBSD; then
