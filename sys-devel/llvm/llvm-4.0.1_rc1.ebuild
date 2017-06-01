@@ -216,11 +216,13 @@ src_install() {
 	multilib-minimal_src_install
 
 	# binutils symlinks
-	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-ar" ar
-	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-ranlib" ranlib
-	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-nm" nm
-	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-strings" strings
-	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-readobj" readelf
+	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-ar" "/usr/lib/llvm/${SLOT}/bin/ar"
+	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-ranlib" "/usr/lib/llvm/${SLOT}/bin/ranlib"
+	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-nm" "/usr/lib/llvm/${SLOT}/bin/nm"
+	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-strings" "/usr/lib/llvm/${SLOT}/bin/strings"
+	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/readelf"
+	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-objdump" "/usr/lib/llvm/${SLOT}/bin/objdump"
+	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-cxxfilt" "/usr/lib/llvm/${SLOT}/bin/cxxfilt"
 
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die

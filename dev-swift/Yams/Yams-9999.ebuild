@@ -23,7 +23,6 @@ DEPEND="${RDEPEND}"
 
 PATCHES=(
         ${FILESDIR}/fix-compilation.patch
-	${FILESDIR}/remove-dependencies.patch
         ${FILESDIR}/install-lib.patch
 )
 
