@@ -89,3 +89,13 @@ src_configure() {
 src_test() {
 	cmake-utils_src_make check-lld
 }
+
+src_install() {
+	default
+
+	# binutils symlinks
+	dosym "/usr/bin/lld" "/usr/bin/${CHOST}-lld"
+	dosym "/usr/bin/lld" "/usr/bin/${CHOST}-ld.lld"
+	dosym "/usr/bin/lld" "/usr/bin/${CHOST}-ld"
+	dosym "/usr/bin/lld" "/usr/bin/ld"
+}
