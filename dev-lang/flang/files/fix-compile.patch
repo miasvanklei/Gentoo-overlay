@@ -63,32 +63,6 @@ index a316326..0670a67 100644
  }
  
  /*
-diff --git a/tools/flang1/flang1exe/semfin.c b/tools/flang1/flang1exe/semfin.c
-index 137cd3c..be5676c 100644
---- a/tools/flang1/flang1exe/semfin.c
-+++ b/tools/flang1/flang1exe/semfin.c
-@@ -1455,7 +1455,7 @@ do_equiv(void)
-       SOCPTRP(sptr, 0);
-     }
-     maxa = size = 0;
--    saveflg = sem.savall | (!flg.recursive & 1);
-+    saveflg = sem.savall | (!(flg.recursive & 1));
-     nmld = vold = dinitd = FALSE;
-     for (sptr = psect_base[ps].memlist; sptr != NOSYM; sptr = SYMLKG(sptr)) {
-       assert(sptr, "equiv:bsym", 1, 3);
-diff --git a/tools/flang2/flang2exe/ll_write.c b/tools/flang2/flang2exe/ll_write.c
-index ab27ba7..93aecc0 100644
---- a/tools/flang2/flang2exe/ll_write.c
-+++ b/tools/flang2/flang2exe/ll_write.c
-@@ -423,7 +423,7 @@ ll_write_instruction(FILE *out, struct LL_Instruction_ *inst)
-       }
-     }
-     fprintf(out, ")");
--    if (!inst->flags & IN_MODULE_CALL) {
-+    if (!(inst->flags & IN_MODULE_CALL)) {
-       add_prototype(inst);
-     }
-     break;
 diff --git a/runtime/flangrti/iostdinit.c b/runtime/flangrti/iostdinit.c
 index c2e5ad1..7b1874b 100644
 --- a/runtime/flangrti/iostdinit.c
