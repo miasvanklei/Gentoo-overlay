@@ -1,0 +1,118 @@
+--- a/src/cxa_exception.cpp
++++ b/src/cxa_exception.cpp
+@@ -234,15 +234,16 @@ __cxa_throw(void *thrown_object, std::ty
+     exception_header->unwindHeader.exception_cleanup = exception_cleanup_func;
+ #ifdef __USING_SJLJ_EXCEPTIONS__
+     _Unwind_SjLj_RaiseException(&exception_header->unwindHeader);
+-#else
++#elif !LIBCXXABI_ARM_EHABI
+     _Unwind_RaiseException(&exception_header->unwindHeader);
++#else
++    _Unwind_RaiseException(exception_header->unwindHeader);
+ #endif
+     //  This only happens when there is no handler, or some unexpected unwinding
+     //     error happens.
+     failed_throw(exception_header);
+ }
+ 
+-
+ // 2.5.3 Exception Handlers
+ /*
+ The adjusted pointer is computed by the personality routine during phase 1
+@@ -405,11 +406,7 @@ __cxa_begin_catch(void* unwind_arg) thro
+             globals->caughtExceptions = exception_header;
+         }
+         globals->uncaughtExceptions -= 1;   // Not atomically, since globals are thread-local
+-#if LIBCXXABI_ARM_EHABI
+-        return reinterpret_cast<void*>(exception_header->unwindHeader.barrier_cache.bitpattern[0]);
+-#else
+-        return exception_header->adjustedPtr;
+-#endif
++        return __cxa_get_exception_ptr((void*)&exception_header->unwindHeader);
+     }
+     // Else this is a foreign exception
+     // If the caughtExceptions stack is not empty, terminate
+@@ -507,7 +504,11 @@ _LIBCXXABI_FUNC_VIS void __cxa_end_catch
+             //    to touch a foreign exception in any way, that is undefined
+             //     behavior.  They likely can't since the only way to catch
+             //     a foreign exception is with catch (...)!
++#if !LIBCXXABI_ARM_EHABI
+             _Unwind_DeleteException(&globals->caughtExceptions->unwindHeader);
++#else
++            _Unwind_DeleteException(globals->caughtExceptions->unwindHeader);
++#endif
+             globals->caughtExceptions = 0;
+         }
+     }
+@@ -564,8 +565,10 @@ _LIBCXXABI_FUNC_VIS LIBCXXABI_NORETURN v
+     }
+ #ifdef __USING_SJLJ_EXCEPTIONS__
+     _Unwind_SjLj_RaiseException(&exception_header->unwindHeader);
+-#else
++#elif !LIBCXXABI_ARM_EHABI
+     _Unwind_RaiseException(&exception_header->unwindHeader);
++#else
++    _Unwind_RaiseException(exception_header->unwindHeader);
+ #endif
+ 
+     //  If we get here, some kind of unwinding error has occurred.
+@@ -689,8 +692,10 @@ __cxa_rethrow_primary_exception(void* th
+         dep_exception_header->unwindHeader.exception_cleanup = dependent_exception_cleanup;
+ #ifdef __USING_SJLJ_EXCEPTIONS__
+         _Unwind_SjLj_RaiseException(&dep_exception_header->unwindHeader);
++#elif !LIBCXXABI_ARM_EHABI
++	_Unwind_RaiseException(&dep_exception_header->unwindHeader);
+ #else
+-        _Unwind_RaiseException(&dep_exception_header->unwindHeader);
++	_Unwind_RaiseException(dep_exception_header->unwindHeader);
+ #endif
+         // Some sort of unwinding error.  Note that terminate is a handler.
+         __cxa_begin_catch(&dep_exception_header->unwindHeader);
+--- a/src/cxa_exception.hpp
++++ b/src/cxa_exception.hpp
+@@ -26,6 +26,45 @@ static const uint64_t kOurExceptionClass
+ static const uint64_t kOurDependentExceptionClass = 0x434C4E47432B2B01; // CLNGC++\1
+ static const uint64_t get_vendor_and_language     = 0xFFFFFFFFFFFFFF00; // mask for CLNGC++
+ 
++#if LIBCXXABI_ARM_EHABI
++// GCC has _Unwind_Control_Block in unwind.h (unwind_arm_common.h)
++#if defined(__clang__)
++struct _Unwind_Control_Block
++{
++	uint64_t exception_class;
++	void (*exception_cleanup)(_Unwind_Reason_Code, _Unwind_Control_Block *);
++	struct {
++		_Unwind_Word reserved1;
++		_Unwind_Word reserved2;
++		_Unwind_Word reserved3;
++		_Unwind_Word reserved4;
++		_Unwind_Word reserved5;
++	} unwinder_cache;
++	struct {
++		_Unwind_Word sp;
++		_Unwind_Word bitpattern[5];
++	} barrier_cache;
++	struct {
++		_Unwind_Word bitpattern[4];
++	} cleanup_cache;
++	struct {
++		_Unwind_Word fnstart;
++		_Unwind_Word *ehtp;
++		_Unwind_Word additional;
++		_Unwind_Word reserved1;
++	} pr_cache;
++	long long int :0;
++	operator _Unwind_Exception*() noexcept
++	{
++		return reinterpret_cast<_Unwind_Exception*>(this);
++	}
++};
++
++#endif
++
++#define _Unwind_Exception _Unwind_Control_Block
++#endif
++
+ struct __cxa_exception {
+ #if defined(__LP64__) || LIBCXXABI_ARM_EHABI
+     // This is a new field to support C++ 0x exception_ptr.
