@@ -219,8 +219,8 @@ src_install() {
 	local llvm_tools=( ar ranlib nm strings objdump cxxfilt )
 
 	for i in "${llvm_tools[@]}"; do
-                dosym "llvm-${llvm_tools}" "/usr/lib/llvm/${SLOT}/bin/${i}"
-                dosym "llvm-${llvm_tools}" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-${i}"
+                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${i}"
+                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-${i}"
         done
 
 	# different name
