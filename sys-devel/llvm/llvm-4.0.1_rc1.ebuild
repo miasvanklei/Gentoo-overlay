@@ -220,10 +220,12 @@ src_install() {
 
 	for i in "${llvm_tools[@]}"; do
                 dosym "llvm-${llvm_tools}" "/usr/lib/llvm/${SLOT}/bin/${i}"
+                dosym "llvm-${llvm_tools}" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-${i}"
         done
 
 	# different name
-	dosym "/usr/lib/llvm/${SLOT}/bin/llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/readelf"
+	dosym "llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/readelf"
+	dosym "llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-readelf"
 
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
