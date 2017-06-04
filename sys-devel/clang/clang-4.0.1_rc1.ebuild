@@ -247,6 +247,7 @@ src_install() {
 	local clang_version=$(get_version_component_range 1-2 "${llvm_version}")
 	local clang_full_version=$(get_version_component_range 1-3 "${llvm_version}")
 	local clang_tools=( clang clang++ clang-cl clang-cpp )
+	local gcc_tools=( gcc g++ cc c++ cpp )
 	local abi i
 
 	# cmake gives us:
@@ -257,12 +258,18 @@ src_install() {
 	# - clang-X.Y
 	# - clang++-X.Y, clang-cl-X.Y, clang-cpp-X.Y -> clang-X.Y
 	# - clang, clang++, clang-cl, clang-cpp -> clang*-X.Y
+	# - gcc, g++, cc, c++, cpp -> clang*-X.Y
 	# also in CHOST variant
 	for i in "${clang_tools[@]:1}"; do
 		rm "${ED%/}/usr/lib/llvm/${SLOT}/bin/${i}" || die
 		dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}-${clang_version}"
 		dosym "${i}-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}"
 	done
+
+	for i in "${gcc_tools[@]}"; do
+		dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}"
+	done
+
 
 	# now create target symlinks for all supported ABIs
 	for abi in $(get_all_abis); do
@@ -273,14 +280,12 @@ src_install() {
 			dosym "${abi_chost}-${i}-${clang_version}" \
 				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
 		done
-	done
 
-	# make gcc/cc symlink
-	dosym "/usr/lib/llvm/${SLOT}/bin/clang" "/usr/lib/llvm/${SLOT}/bin/gcc"
-	dosym "/usr/lib/llvm/${SLOT}/bin/clang" "/usr/lib/llvm/${SLOT}/bin/g++"
-	dosym "/usr/lib/llvm/${SLOT}/bin/clang" "/usr/lib/llvm/${SLOT}/bin/cc"
-	dosym "/usr/lib/llvm/${SLOT}/bin/clang" "/usr/lib/llvm/${SLOT}/bin/c++"
-	dosym "/usr/lib/llvm/${SLOT}/bin/clang" "/usr/lib/llvm/${SLOT}/bin/cpp"
+		for i in "${gcc_tools[@]}"; do
+			dosym "${i}-${clang_version}" \
+				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
+		done
+	done
 
 	# Remove unnecessary headers on FreeBSD, bug #417171
 	if use kernel_FreeBSD; then

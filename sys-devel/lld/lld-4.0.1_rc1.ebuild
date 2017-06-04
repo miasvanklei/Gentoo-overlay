@@ -91,7 +91,7 @@ src_test() {
 }
 
 src_install() {
-	default
+	cmake-utils_src_install
 
 	# binutils symlinks
 	dosym "/usr/bin/lld" "/usr/bin/${CHOST}-lld"
