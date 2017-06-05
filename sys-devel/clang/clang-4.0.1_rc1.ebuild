@@ -247,7 +247,7 @@ src_install() {
 	local clang_version=$(get_version_component_range 1-2 "${llvm_version}")
 	local clang_full_version=$(get_version_component_range 1-3 "${llvm_version}")
 	local clang_tools=( clang clang++ clang-cl clang-cpp )
-	local gcc_tools=( gcc g++ cc c++ cpp )
+	local gcc_tools=( gcc g++ cc c++ cpp gfortran )
 	local abi i
 
 	# cmake gives us:
@@ -282,7 +282,7 @@ src_install() {
 		done
 
 		for i in "${gcc_tools[@]}"; do
-			dosym "${i}-${clang_version}" \
+			dosym "clang-${clang_version}" \
 				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
 		done
 	done
