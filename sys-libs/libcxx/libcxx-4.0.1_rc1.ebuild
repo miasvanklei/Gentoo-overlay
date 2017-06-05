@@ -39,6 +39,15 @@ src_configure() {
 multilib_src_configure() {
 	local libdir=$(get_libdir)
 
+	local libclang_dir=$(clang -print-file-name=)
+	local libcompiler_rt
+
+	if [[ ${ARCH} == 'arm' ]]; then
+		libcompiler_rt="${libclang_dir}"lib/linux/libclang_rt.builtins-${ARCH}hf.a
+	fi
+
+	local libunwind=$(usex libunwind "-lunwind" "")
+
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${NATIVE_LIBDIR#lib}
 		-DLIBCXX_LIBDIR_SUFFIX=${libdir#lib}
@@ -50,7 +59,7 @@ multilib_src_configure() {
 		-DLIBCXX_HAS_GCC_S_LIB=$(usex !libunwind)
 		-DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=ON
 		-DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=OFF
-		-DCMAKE_SHARED_LINKER_FLAGS=$(usex libunwind "-lunwind" "")
+		-DCMAKE_SHARED_LINKER_FLAGS="${libunwind} ${libcompiler_rt}"
 	)
 	cmake-utils_src_configure
 }
