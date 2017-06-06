@@ -1,0 +1,20 @@
+--- /var/tmp/portage/net-misc/networkmanager-1.8.0/work/NetworkManager-1.8.0/tools/create-exports-NetworkManager.sh	2017-06-06 15:43:58.306966811 +0200
++++ /create-exports-NetworkManager.sh	2017-06-06 15:43:40.573967222 +0200
+@@ -30,7 +30,7 @@
+ }
+ 
+ call_nm() {
+-    "${BINUTILS_NM:-${NM:-nm}}" "$1" |
++    "${BINUTILS_NM:-${NM:-nm}}" "$1" "$2" |
+         sed -n 's/.* \([^ ]\) \([^ ]*\)$/\1 \2/p'
+ }
+ 
+@@ -50,7 +50,7 @@
+     (for f in $(find ./src/settings/plugins/*/.libs/ \
+               ./src/devices/*/.libs/ \
+               ./src/ppp/.libs/ -name '*.so'); do
+-        call_nm "$f" |
++        call_nm "$f" "-D" |
+             sed -n 's/^\([U]\) \(\(nm_\|nmp_\|_nm\|NM\|_NM\).*\)$/\2/p'
+     done) |
+         _sort |
