@@ -216,13 +216,16 @@ src_install() {
 	multilib-minimal_src_install
 
 	# binutils symlinks
-	dosym ar "/usr/lib/llvm/${SLOT}/bin/llvm-ar"
-	dosym ranlib "/usr/lib/llvm/${SLOT}/bin/llvm-ranlib"
-	dosym nm "/usr/lib/llvm/${SLOT}/bin/llvm-nm"
-	dosym strings "/usr/lib/llvm/${SLOT}/bin/llvm-strings"
-	dosym readelf "/usr/lib/llvm/${SLOT}/bin/llvm-readobj"
-	dosym objdump "/usr/lib/llvm/${SLOT}/bin/llvm-objdump"
-	dosym cxxfilt "/usr/lib/llvm/${SLOT}/bin/llvm-cxxfilt"
+	local llvm_tools=( ar ranlib nm strings objdump cxxfilt )
+
+	for i in "${llvm_tools[@]}"; do
+                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${i}"
+                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-${i}"
+        done
+
+	# different name
+	dosym "llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/readelf"
+	dosym "llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-readelf"
 
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
