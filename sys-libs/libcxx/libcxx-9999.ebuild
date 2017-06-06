@@ -22,7 +22,7 @@ KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="+compiler-rt +experimental +libunwind +static-libs"
 
 RDEPEND="~sys-libs/libcxxabi-9999[libunwind=,static-libs?,${MULTILIB_USEDEP}]
-	compiler-rt? ( ~sys-libs/compiler-rt-4.0.0 )"
+	compiler-rt? ( sys-libs/compiler-rt )"
 # LLVM 4 required for llvm-config --cmakedir
 DEPEND="${RDEPEND}
 	app-arch/xz-utils

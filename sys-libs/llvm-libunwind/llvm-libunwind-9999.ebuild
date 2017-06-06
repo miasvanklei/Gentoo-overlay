@@ -21,7 +21,8 @@ IUSE="+compiler-rt debug +static-libs"
 
 RDEPEND="!sys-libs/libunwind"
 # LLVM 4 required for llvm-config --cmakedir
-DEPEND=">=sys-devel/llvm-4"
+DEPEND=">=sys-devel/llvm-4
+	compiler-rt? ( sys-libs/compiler-rt )"
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
