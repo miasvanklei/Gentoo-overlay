@@ -22,6 +22,7 @@ RDEPEND="
 	app-text/cmark
 	sys-libs/zlib
 	dev-libs/libbsd
+	dev-libs/icu
 	sys-libs/ncurses
 	>sys-devel/clang-3.9.0
 	>sys-devel/llvm-3.9.0
