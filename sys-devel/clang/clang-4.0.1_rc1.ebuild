@@ -120,7 +120,6 @@ src_prepare() {
 	# remove dependency on crtbegin* and crtend*
 	eapply "${FILESDIR}"/0014-remove-crtfiles.patch
 	eapply "${FILESDIR}"/0015-fuse-init-array.patch
-	eapply "${FILESDIR}"/0016-dont-use-__dso_handle.patch
 
 	# needed in linux kernel
 	eapply "${FILESDIR}"/0017-add-fno-delete-null-pointer-checks.patch

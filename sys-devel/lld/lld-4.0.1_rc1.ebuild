@@ -63,6 +63,9 @@ src_prepare() {
 	# do not recreate /dev/null as regular file
 	eapply "${FILESDIR}"/0006-fix-null.patch
 
+	# add __dso_handle symbol
+	eapply "${FILESDIR}"/0007-add-__dso_handle.patch
+
 	eapply_user
 }
 
