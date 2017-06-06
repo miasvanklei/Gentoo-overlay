@@ -19,7 +19,7 @@ EGIT_REPO_URI="http://llvm.org/git/libcxxabi.git
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS=""
-IUSE="+libunwind +static-libs test"
+IUSE="+compiler-rt +libunwind +static-libs test"
 
 RDEPEND="
 	libunwind? (
@@ -66,6 +66,7 @@ multilib_src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLIBCXXABI_LIBDIR_SUFFIX=${libdir#lib}
+		-DLIBCXXABI_USE_COMPILER_RT=$(usex compiler-rt)
 		-DLIBCXXABI_ENABLE_SHARED=ON
 		-DLIBCXXABI_ENABLE_STATIC=$(usex static-libs)
 		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
