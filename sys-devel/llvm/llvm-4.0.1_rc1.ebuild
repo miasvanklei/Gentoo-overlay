@@ -96,6 +96,9 @@ src_prepare() {
 	# add swift support
 	eapply "${FILESDIR}"/0004-add-swift-support.patch
 
+	# install config.h, needed for swift
+	eapply "${FILESDIR"/0005-install-config.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
@@ -210,6 +213,7 @@ src_install() {
 
 	local MULTILIB_WRAPPED_HEADERS=(
 		/usr/include/llvm/Config/llvm-config.h
+		/usr/include/llvm/Config/config.h
 	)
 
 	local LLVM_LDPATHS=()

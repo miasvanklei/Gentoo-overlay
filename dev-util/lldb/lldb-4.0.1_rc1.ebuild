@@ -18,7 +18,7 @@ SRC_URI="http://llvm.org/pre-releases/${PV/_//}/${P/_/}.src.tar.xz
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="libedit ncurses python test"
+IUSE="libedit ncurses python swift test"
 
 RDEPEND="
 	libedit? ( dev-libs/libedit:0= )
@@ -33,6 +33,7 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	python? ( <dev-lang/swig-3.0.9 )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
+	swift? ( dev-lang/swift )
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
@@ -59,8 +60,10 @@ src_prepare() {
 	# fix tests in stand-alone build
 	eapply "${FILESDIR}"/0001-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
 
-	# add swift support
-	eapply "${FILESDIR}"/0002-add-swift-support.patch
+	if use swift; then
+		# add swift support
+		eapply "${FILESDIR}"/0002-add-swift-support.patch
+	fi
 
 	eapply_user
 }
