@@ -97,7 +97,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0004-add-swift-support.patch
 
 	# install config.h, needed for swift
-	eapply "${FILESDIR"/0005-install-config.patch
+	eapply "${FILESDIR}"/0005-install-config.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
