@@ -24,10 +24,9 @@ RDEPEND="
 	dev-libs/libbsd
 	dev-libs/icu
 	sys-libs/ncurses
-	>sys-devel/clang-3.9.0
-	>sys-devel/llvm-3.9.0
-	gnustep-base/libobjc2
-	lldb? ( >dev-util/lldb-3.9.0 )"
+	>=sys-devel/clang-4.0.0
+	>=sys-devel/llvm-4.0.0
+	lldb? ( >=dev-util/lldb-4.0.0[swift] )"
 DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
@@ -60,8 +59,11 @@ src_prepare() {
 	# strip when needed, call export-dynamic, etc.
 	eapply ${FILESDIR}/fix-toolchain.patch
 
-	# fix build: missing llvm libraries and use libobjc
+	# link with libLLVMSupport and cmark
 	eapply ${FILESDIR}/fix-linking.patch
+
+	# remove __gnu_objc_personality_v0 by building Reflection.mm with -fno-exceptions
+	eapply ${FILESDIR}/remove-dep-libobjc.patch
 
 	# use same code as on darwin
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
@@ -75,7 +77,7 @@ src_prepare() {
 	# llvm/clang 4.0 patch
 	eapply ${FILESDIR}/llvm-clang-4.0.patch
 
-	# fix use in libdispatch
+	# fix version attribute in libdispatch
 	eapply ${FILESDIR}/fix-attribute.patch
 
 	default

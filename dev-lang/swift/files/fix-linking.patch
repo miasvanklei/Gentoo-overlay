@@ -1,45 +1,3 @@
-diff --git a/lib/Immediate/CMakeLists.txt b/lib/Immediate/CMakeLists.txt
-index f6919cddf0..ebaf85a0e8 100644
---- a/lib/Immediate/CMakeLists.txt
-+++ b/lib/Immediate/CMakeLists.txt
-@@ -8,5 +8,9 @@ add_swift_library(swiftImmediate STATIC
-     swiftSILOptimizer
-     swiftIRGen
-   LLVM_COMPONENT_DEPENDS
--    linker mcjit)
-+    linker
-+    mcjit
-+    ExecutionEngine
-+    TransformUtils
-+)
- 
-diff --git a/lib/IRGen/CMakeLists.txt b/lib/IRGen/CMakeLists.txt
-index 3749f7cd32..b080c03450 100644
---- a/lib/IRGen/CMakeLists.txt
-+++ b/lib/IRGen/CMakeLists.txt
-@@ -52,4 +52,6 @@ add_swift_library(swiftIRGen STATIC
-     # FIXME: Clang should really export these in some reasonable manner.
-     clangCodeGen
-     clangAST
-+  LLVM_COMPONENT_DEPENDS
-+    TransformUtils
- )
-diff --git a/tools/swift-llvm-opt/CMakeLists.txt b/tools/swift-llvm-opt/CMakeLists.txt
-index 628d7bddb8..ce60754756 100644
---- a/tools/swift-llvm-opt/CMakeLists.txt
-+++ b/tools/swift-llvm-opt/CMakeLists.txt
-@@ -13,6 +13,11 @@ add_swift_host_tool(swift-llvm-opt
- 
-   LLVM_COMPONENT_DEPENDS
-     DebugInfoCodeView
-+    ScalarOpts
-+    Vectorize
-+    InstCombine
-+    Target
-+    CodeGen
- 
-   SWIFT_COMPONENT tools
- )
 diff --git a/cmake/modules/AddSwift.cmake b/cmake/modules/AddSwift.cmake
 index 86c0839e26..2de83ae5f2 100644
 --- a/cmake/modules/AddSwift.cmake
@@ -85,7 +43,7 @@ index fc49842db8..e5210337be 100644
    SWIFT_COMPILE_FLAGS ${swift_stdlib_compile_flags}
    LINK_FLAGS ${swift_core_link_flags}
 -  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries}
-+  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries} "-lLLVMSupport -lobjc"
++  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries} "-lLLVMSupport"
    INCORPORATE_OBJECT_LIBRARIES swiftRuntime swiftStdlibStubs
    FRAMEWORK_DEPENDS ${swift_core_framework_depends}
    INSTALL_IN_COMPONENT stdlib)
