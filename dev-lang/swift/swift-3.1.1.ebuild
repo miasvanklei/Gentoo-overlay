@@ -26,7 +26,7 @@ RDEPEND="
 	sys-libs/ncurses
 	>=sys-devel/clang-4.0.0
 	>=sys-devel/llvm-4.0.0
-	lldb? ( >=dev-util/lldb-4.0.0[swift] )"
+	lldb? ( >=dev-util/lldb-4.0.0[swift,libedit,python] )"
 DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
