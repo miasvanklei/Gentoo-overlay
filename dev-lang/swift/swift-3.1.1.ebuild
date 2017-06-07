@@ -16,7 +16,7 @@ SRC_URI="https://github.com/apple/${PN}/archive/${P}-RELEASE.tar.gz"
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS=""
-IUSE="+lldb"
+IUSE="+lldb sourcekit"
 
 RDEPEND="
 	app-text/cmark
@@ -26,7 +26,8 @@ RDEPEND="
 	sys-libs/ncurses
 	>=sys-devel/clang-4.0.0
 	>=sys-devel/llvm-4.0.0
-	lldb? ( >=dev-util/lldb-4.0.0[swift,libedit,python] )"
+	lldb? ( >=dev-util/lldb-4.0.0[swift,libedit,python] )
+	sourcekit? ( dev-libs/libdispatch )"
 DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
@@ -65,6 +66,9 @@ src_prepare() {
 	# remove __gnu_objc_personality_v0 by building Reflection.mm with -fno-exceptions
 	eapply ${FILESDIR}/remove-dep-libobjc.patch
 
+	# recent libcxx change, broke build, use builtin feature
+	eapply ${FILESDIR}/fix-libcxx.patch
+
 	# use same code as on darwin
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 
@@ -96,9 +100,9 @@ src_configure() {
 		-DLLVM_ENABLE_LLD=ON
 		-DCMARK_LIBRARY_DIR=/usr/lib
 		-DSWIFT_HOST_TRIPLE=${CHOST}
-		-DSWIFT_BUILD_SOURCEKIT=TRUE
-		-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=TRUE
-		-DHAVE_DISPATCH_BLOCK_CREATE=TRUE
+		-DSWIFT_BUILD_SOURCEKIT=$(usex sourcekit)
+		-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=$(usex sourcekit)
+		-DHAVE_DISPATCH_BLOCK_CREATE=$(usex sourcekit)
 		-DSWIFT_COMPILER_VERSION=3.1
 		-DCLANG_COMPILER_VERSION=4.0
 	)
