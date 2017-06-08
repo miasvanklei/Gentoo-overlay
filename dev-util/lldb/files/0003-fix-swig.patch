@@ -1,0 +1,52 @@
+From fbd415182009e573f34f87a3d99f15a140c97c77 Mon Sep 17 00:00:00 2001
+From: Pavel Labath <labath@google.com>
+Date: Tue, 23 May 2017 10:55:17 +0000
+Subject: [PATCH] Add support for new (3.0.11+) swigs
+
+Summary:
+A change in swig 3.0.9 has caused it to generate modules incompatible
+with us using them as __init__.py (bug #769). Swig 3.0.11 adds a setting to help
+fix this problem, so use that. Support for older versions of swig remains
+unaffected.
+
+Reviewers: zturner
+
+Subscribers: lldb-commits
+
+Differential Revision: https://reviews.llvm.org/D33409
+
+git-svn-id: https://llvm.org/svn/llvm-project/lldb/trunk@303627 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ scripts/lldb.swig | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/scripts/lldb.swig b/scripts/lldb.swig
+index b0325e611d..8f1b59c32d 100644
+--- a/scripts/lldb.swig
++++ b/scripts/lldb.swig
+@@ -31,8 +31,24 @@ o SBLineEntry: Specifies an association with a contiguous range of instructions
+       and a source file location. SBCompileUnit contains SBLineEntry(s)."
+ %enddef
+ 
++/*
++Since version 3.0.9, swig's logic for importing the native module has changed in
++a way that is incompatible with our usage of the python module as __init__.py
++(See swig bug #769).  Fortunately, since version 3.0.11, swig provides a way for
++us to override the module import logic to suit our needs. This does that.
++
++Older swig versions will simply ignore this setting.
++*/
++%define MODULEIMPORT
++"from . import $module"
++%enddef
++// These versions will not generate working python modules, so error out early.
++#if SWIG_VERSION >= 0x030009 && SWIG_VERSION < 0x030011
++#error Swig versions 3.0.9 and 3.0.10 are incompatible with lldb.
++#endif
++
+ // The name of the module to be created.
+-%module(docstring=DOCSTRING) lldb
++%module(docstring=DOCSTRING, moduleimport=MODULEIMPORT) lldb
+ 
+ // Parameter types will be used in the autodoc string.
+ %feature("autodoc", "1");

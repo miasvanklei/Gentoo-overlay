@@ -18,7 +18,7 @@ SRC_URI="http://llvm.org/pre-releases/${PV/_//}/${P/_/}.src.tar.xz
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="libedit ncurses python swift test"
+IUSE="+libedit ncurses +python +swift test"
 
 RDEPEND="
 	libedit? ( dev-libs/libedit:0= )
@@ -31,7 +31,8 @@ RDEPEND="
 # swig-3.0.9+ generates invalid wrappers, #598708
 # upstream: https://github.com/swig/swig/issues/769
 DEPEND="${RDEPEND}
-	python? ( <dev-lang/swig-3.0.9 )
+	python? ( || ( <dev-lang/swig-3.0.9
+		  >dev-lang/swig-3.0.10 ) )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
 	swift? ( dev-lang/swift )
 	${PYTHON_DEPS}"
@@ -59,6 +60,10 @@ src_unpack() {
 src_prepare() {
 	# fix tests in stand-alone build
 	eapply "${FILESDIR}"/0001-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
+
+	# fix swig, broken in 3.0.9 and 3.0.10
+	eapply "${FILESDIR}"/0001-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
+
 
 	if use swift; then
 		# add swift support
