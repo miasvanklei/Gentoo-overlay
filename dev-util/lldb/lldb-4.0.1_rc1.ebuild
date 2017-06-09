@@ -62,7 +62,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0001-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
 
 	# fix swig, broken in 3.0.9 and 3.0.10
-	eapply "${FILESDIR}"/0001-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
+	eapply "${FILESDIR}"/0003-fix-swig.patch
 
 
 	if use swift; then
