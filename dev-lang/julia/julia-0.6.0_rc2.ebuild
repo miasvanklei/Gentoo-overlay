@@ -25,7 +25,6 @@ RDEPEND="
 	dev-libs/openspecfun
 	dev-libs/libpcre2
 	dev-libs/utf8proc
-	dev-libs/libuv
 	sci-libs/arpack:0=
 	sci-libs/camd:0=
 	sci-libs/cholmod:0=
@@ -113,10 +112,10 @@ src_prepare() {
 
 src_configure() {
 	# julia does not play well with the system versions of
-	# dsfmt
+	# libuv
 	cat <<-EOF > Make.user
 		USE_SYSTEM_DSFMT=0
-		USE_SYSTEM_LIBUV=1
+		USE_SYSTEM_LIBUV=0
 		USE_SYSTEM_PCRE=1
 		USE_SYSTEM_UTF8PROC=1
 		USE_LLVM_SHLIB=1
