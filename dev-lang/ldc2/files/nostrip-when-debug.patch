@@ -1,10 +1,14 @@
 diff --git a/driver/linker.cpp b/driver/linker.cpp
 index 496fd877..faabfba5 100644
---- a/driver/linker.cpp
-+++ b/driver/linker.cpp
-@@ -335,6 +335,12 @@ static int linkObjToBinaryGcc(bool sharedLib, bool fullyStatic) {
-   // create path to exe
-   CreateDirectoryOnDisk(gExePath);
+--- a/driver/linker-gcc.cpp
++++ b/driver/linker-gcc.cpp
+diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
+index 0d7a8e33..2445f772 100644
+--- a/driver/linker-gcc.cpp
++++ b/driver/linker-gcc.cpp
+@@ -209,6 +209,13 @@ void ArgsBuilder::build(llvm::StringRef outputPath,
+ 
+   addSanitizers();
  
 +  // we strip by default, we do not want this when debugging
 +  // so pass -nostrip when debugging
@@ -12,9 +16,10 @@ index 496fd877..faabfba5 100644
 +    args.push_back("-Wl,-nostrip");
 +  }
 +
-   // Pass sanitizer arguments to linker. Requires clang.
-   if (opts::sanitize == opts::AddressSanitizer) {
-     args.push_back("-fsanitize=address");
++
+ #if LDC_LLVM_VER >= 309
+   // Add LTO link flags before adding the user link switches, such that the user
+   // can pass additional options to the LTO plugin.
 diff --git a/runtime/CMakeLists.txt b/runtime/CMakeLists.txt
 index d4c6838e..304448e1 100644
 --- a/runtime/CMakeLists.txt
