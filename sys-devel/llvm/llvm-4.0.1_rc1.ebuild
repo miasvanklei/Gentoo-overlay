@@ -99,6 +99,9 @@ src_prepare() {
 	# install config.h, needed for swift
 	eapply "${FILESDIR}"/0005-install-config.patch
 
+	# some arm relocations, needed for swift
+	eapply "${FILESDIR}"/0006-arm-relocation.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
