@@ -27,7 +27,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 LICENSE="UoI-NCSA"
 SLOT="$(get_major_version)"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="debug +default-compiler-rt +default-libcxx +doc multitarget
+IUSE="debug +default-compiler-rt +default-libcxx +doc +fortran multitarget
 	+static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
@@ -48,7 +48,8 @@ RDEPEND="${RDEPEND}
 PDEPEND="
 	~sys-devel/clang-runtime-${PV}
 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
-	default-libcxx? ( sys-libs/libcxx )"
+	default-libcxx? ( sys-libs/libcxx )
+	fortran? ( dev-lang/fortran )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )
@@ -128,7 +129,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0018-add-swift-support.patch
 
 	# add fortran support
-	eapply "${FILESDIR}"/0019-add-fortran-support.patch
+	use fortran && eapply "${FILESDIR}"/0019-add-fortran-support.patch
 
 	# User patches
 	eapply_user
