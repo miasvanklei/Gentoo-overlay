@@ -4,8 +4,8 @@
  tryldflag LDFLAGS_AUTO -Wl,-Bsymbolic-functions
  
  # Find compiler runtime library
-+test -z "$LIBCC" && try_libcc=`$CC -print-file-name=  2>/dev/null` \
-+                 && tryldflag LIBCC "$try_libcc"/lib/linux/libclang_rt.builtins-$ARCH.a
++test -z "$LIBCC" && try_libcc=`$CC $CFLAGS clang -print-libgcc-file-name 2>/dev/null` \
++                 && tryldflag LIBCC "$try_libcc"
  test -z "$LIBCC" && tryldflag LIBCC -lgcc && tryldflag LIBCC -lgcc_eh
  test -z "$LIBCC" && tryldflag LIBCC -lcompiler_rt
  test -z "$LIBCC" && try_libcc=`$CC -print-file-name=libpcc.a 2>/dev/null` \
