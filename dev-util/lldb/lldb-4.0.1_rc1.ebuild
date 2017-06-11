@@ -58,8 +58,11 @@ src_unpack() {
 }
 
 src_prepare() {
+	# fix musl/arm combination
+	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
+
 	# fix tests in stand-alone build
-	eapply "${FILESDIR}"/0001-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
+	eapply "${FILESDIR}"/0002-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
 
 	# fix swig, broken in 3.0.9 and 3.0.10
 	eapply "${FILESDIR}"/0003-fix-swig.patch
@@ -67,7 +70,7 @@ src_prepare() {
 
 	if use swift; then
 		# add swift support
-		eapply "${FILESDIR}"/0002-add-swift-support.patch
+		eapply "${FILESDIR}"/0004-add-swift-support.patch
 	fi
 
 	eapply_user
