@@ -14,3 +14,33 @@
      return true;
  
    return false;
+--- a/source/Core/ArchSpec.cpp
++++ b/source/Core/ArchSpec.cpp
+@@ -75,6 +75,8 @@
+      "armv6m"},
+     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7,
+      "armv7"},
++    {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7a,
++     "armv7a"},
+     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7f,
+      "armv7f"},
+     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7s,
+@@ -419,6 +421,8 @@
+      0xFFFFFFFFu, 0xFFFFFFFFu}, // PowerPC64
+     {ArchSpec::eCore_arm_generic, llvm::ELF::EM_ARM, LLDB_INVALID_CPUTYPE,
+      0xFFFFFFFFu, 0xFFFFFFFFu}, // ARM
++    {ArchSpec::eCore_arm_armv7a, llvm::ELF::EM_ARM, LLDB_INVALID_CPUTYPE,
++     0xFFFFFFFFu, 0xFFFFFFFFu}, // ARMv7
+     {ArchSpec::eCore_arm_aarch64, llvm::ELF::EM_AARCH64, LLDB_INVALID_CPUTYPE,
+      0xFFFFFFFFu, 0xFFFFFFFFu}, // ARM64
+     {ArchSpec::eCore_s390x_generic, llvm::ELF::EM_S390, LLDB_INVALID_CPUTYPE,
+--- a/include/lldb/Core/ArchSpec.h
++++ b/include/lldb/Core/ArchSpec.h
+@@ -101,6 +101,7 @@
+     eCore_arm_armv6,
+     eCore_arm_armv6m,
+     eCore_arm_armv7,
++    eCore_arm_armv7a,
+     eCore_arm_armv7f,
+     eCore_arm_armv7s,
+     eCore_arm_armv7k,
