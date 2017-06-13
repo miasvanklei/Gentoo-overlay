@@ -84,6 +84,9 @@ src_prepare() {
 	# fix version attribute in libdispatch
 	eapply ${FILESDIR}/fix-attribute.patch
 
+	# fix triple with arm, swift, llvm, clang, lldb
+	eapply ${FILESDIR}/arm-swift.patch
+
 	default
 }
 
