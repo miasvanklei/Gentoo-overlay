@@ -25,6 +25,7 @@ src_prepare() {
 	eapply ${FILESDIR}/nostrip-when-debug.patch
 	eapply ${FILESDIR}/remove-backtrace.patch
 	eapply ${FILESDIR}/remove-qsort_r.patch
+
 	default
 }
 
@@ -33,6 +34,7 @@ src_configure() {
 		-DD_VERSION=2
 		-DBUILD_SHARED_LIBS=ON
 		-DLLVM_ENABLE_CXX1Y=ON
+		-DD_FLAGS="${LDCFLAGS// /;}"
 	)
 	cmake-utils_src_configure
 }
