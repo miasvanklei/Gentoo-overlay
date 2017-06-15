@@ -295,6 +295,7 @@ src_prepare() {
 	epatch "${FILESDIR}/chromium-shared-v8-r1.patch"
 	epatch "${FILESDIR}/chromium-lto-fixes-r2.patch"
 	epatch "${FILESDIR}/chromium-icu-58-r1.patch"
+	epatch "${FILESDIR}/chromium-icu-59.patch"
 	epatch "${FILESDIR}/chromium-cups-fix.patch"
 	epatch "${FILESDIR}/chromium-jinja-fix.patch"
 

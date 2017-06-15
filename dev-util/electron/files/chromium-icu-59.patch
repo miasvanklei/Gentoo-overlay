@@ -1,0 +1,65 @@
+--- a/v8/src/runtime/runtime-i18n.cc	2017-05-15 09:05:55.589999999 +0200
++++ b/v8/src/runtime/runtime-i18n.cc	2017-05-15 09:06:19.283333333 +0200
+@@ -33,6 +33,7 @@
+ #include "unicode/unistr.h"
+ #include "unicode/unum.h"
+ #include "unicode/uversion.h"
++#include "unicode/ustring.h"
+ 
+ 
+ namespace v8 {
+--- a/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp	2017-06-15 19:39:48.021879450 +0200
++++ b/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp	2017-06-15 19:41:35.997870565 +0200
+@@ -58,7 +58,7 @@
+ // For the NSS PKCS#12 library, must convert PRUnichars (shorts) to
+ // a buffer of octets.  Must handle byte order correctly.
+ // TODO: Is there a Mozilla way to do this?  In the string lib?
+-void unicodeToItem(const PRUnichar *uni, SECItem *item)
++void unicodeToItem(const char16_t *uni, SECItem *item)
+ {
+   int len = 0;
+   while (uni[len++] != 0);
+--- a/third_party/WebKit/public/platform/WebCommon.h	2017-06-15 19:07:16.228040049 +0200
++++ b/third_party/WebKit/public/platform/WebCommon.h	2017-06-15 19:07:43.812037780 +0200
+@@ -87,7 +87,7 @@
+ #if defined(WIN32)
+ typedef wchar_t WebUChar;
+ #else
+-typedef unsigned short WebUChar;
++typedef char16_t WebUChar;
+ #endif
+ 
+ // Latin-1 character type
+--- a/base/strings/string16.h	2017-06-15 19:45:21.861851980 +0200
++++ b/base/strings/string16.h	2017-06-15 19:03:17.772059670 +0200
+@@ -52,7 +52,7 @@
+ 
+ namespace base {
+ 
+-typedef uint16_t char16;
++typedef char16_t char16;
+ 
+ // char16 versions of the functions required by string16_char_traits; these
+ // are based on the wide character functions of similar names ("w" or "wcs"
+--- a/ui/base/accelerators/accelerator.cc	2017-06-15 19:46:27.757846558 +0200
++++ b/ui/base/accelerators/accelerator.cc	2017-06-15 19:47:10.581843034 +0200
+@@ -225,7 +225,7 @@
+         UsLayoutKeyboardCodeToDomCode(key_code_), false);
+     if (c != 0)
+       shortcut +=
+-          static_cast<base::string16::value_type>(base::ToUpperASCII(c));
++          static_cast<base::string16::value_type>(base::ToUpperASCII((base::char16)c));
+ #endif
+     if (key_code_ > VKEY_F1 && key_code_ <= VKEY_F24)
+       shortcut += base::UTF8ToUTF16(
+--- a/ui/base/x/selection_utils.cc	2017-06-15 19:48:29.365836552 +0200
++++ b/ui/base/x/selection_utils.cc	2017-06-15 19:49:56.845829354 +0200
+@@ -231,7 +231,7 @@
+     // UTF-16, otherwise assume UTF-8.
+     if (size >= 2 &&
+         reinterpret_cast<const uint16_t*>(data)[0] == 0xFEFF) {
+-      markup.assign(reinterpret_cast<const uint16_t*>(data) + 1,
++      markup.assign(reinterpret_cast<const char16_t*>(data) + 1,
+                     (size / 2) - 1);
+     } else {
+       base::UTF8ToUTF16(reinterpret_cast<const char*>(data), size, &markup);
