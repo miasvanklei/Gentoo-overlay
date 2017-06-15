@@ -49,7 +49,7 @@ PDEPEND="
 	~sys-devel/clang-runtime-${PV}
 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
 	default-libcxx? ( sys-libs/libcxx )
-	fortran? ( dev-lang/fortran )"
+	fortran? ( dev-lang/flang )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )
@@ -149,6 +149,7 @@ multilib_src_configure() {
 		-DBUILD_SHARED_LIBS=ON
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DLLVM_BUILD_TESTS=$(usex test)
+		-DCLANG_INCLUDE_TESTS=$(usex test)
 
 		# these are not propagated reliably, so redefine them
 		-DLLVM_ENABLE_EH=ON
