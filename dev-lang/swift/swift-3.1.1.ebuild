@@ -87,6 +87,8 @@ src_prepare() {
 	# fix triple with arm, swift, llvm, clang, lldb
 	eapply ${FILESDIR}/arm-swift.patch
 
+	# fix compilation with icu-59
+	eapply ${FILESDIR}/icu-59.patch
 	default
 }
 
