@@ -108,15 +108,15 @@ COMMON_DEPEND="${MODULAR_X_DEPEND}
 	dev-libs/gmp:0
 	dev-libs/mpfr:0
 	xetex? (
-		>=media-libs/harfbuzz-0.9.20[icu,graphite]
+		>=media-libs/harfbuzz-1.4.5[icu,graphite]
 		>=dev-libs/icu-50:=
 		>=app-text/teckit-2.5.3
 		media-libs/fontconfig
 		media-gfx/graphite2
 	)
 	media-libs/freetype:2
-	>=dev-libs/kpathsea-6.2.1
-	cjk? ( >=dev-libs/ptexenc-1.3.4_p20160523 )"
+	>=dev-libs/kpathsea-6.2.3
+	cjk? ( >=dev-libs/ptexenc-1.3.5 )"
 
 DEPEND="${COMMON_DEPEND}
 	virtual/pkgconfig
@@ -125,9 +125,9 @@ DEPEND="${COMMON_DEPEND}
 	app-arch/xz-utils"
 
 RDEPEND="${COMMON_DEPEND}
-	>=app-text/ps2pkm-1.8_p20160523
-	>=app-text/dvipsk-5.996_p20160523
-	>=dev-tex/bibtexu-3.71_p20160523
+	>=app-text/ps2pkm-1.8_p20170524
+	>=app-text/dvipsk-5.997
+	>=dev-tex/bibtexu-3.71_p20170524
 	virtual/perl-Getopt-Long
 	tk? ( dev-perl/Tk )"
 
@@ -342,6 +342,9 @@ src_install() {
 
 pkg_postinst() {
 	etexmf-update
+
+	einfo "Regenerating TeX formats"
+	fmtutil-sys --all &> /dev/null
 
 	elog
 	elog "If you have configuration files in ${EPREFIX}/etc/texmf to merge,"
