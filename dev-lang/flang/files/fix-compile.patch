@@ -103,3 +103,25 @@ index beca342..537b100 100644
  
  SET(ASM_OPTIONS "-DLINUX_ELF")
  SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
+diff --git a/runtime/flang/async.c b/runtime/flang/async.c
+index 3fd0e22..9f10aae 100644
+--- a/runtime/flang/async.c
++++ b/runtime/flang/async.c
+@@ -320,7 +320,7 @@ Fio_asy_read(struct asy *asy, void *adr, long len)
+   asy->aiocb[tn].aio_reqprio = 0;
+   asy->aiocb[tn].aio_buf = adr;
+   asy->aiocb[tn].aio_nbytes = len;
+-  memset(&(asy->aiocb[tn].aio_sigevent), 0, sizeof(sigevent_t));
++  memset(&(asy->aiocb[tn].aio_sigevent), 0, sizeof(struct sigevent));
+   asy->aiocb[tn].aio_offset = asy->atd[tn].off;
+   n = aio_read(&(asy->aiocb[tn]));
+ #endif
+@@ -374,7 +374,7 @@ Fio_asy_write(struct asy *asy, void *adr, long len)
+   asy->aiocb[tn].aio_reqprio = 0;
+   asy->aiocb[tn].aio_buf = adr;
+   asy->aiocb[tn].aio_nbytes = len;
+-  memset(&(asy->aiocb[tn].aio_sigevent), 0, sizeof(sigevent_t));
++  memset(&(asy->aiocb[tn].aio_sigevent), 0, sizeof(struct sigevent));
+   asy->aiocb[tn].aio_offset = asy->atd[tn].off;
+   n = aio_write(&(asy->aiocb[tn]));
+ #endif
