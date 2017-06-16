@@ -17,6 +17,10 @@ SRC_URI="${GITHUB_URI}/${PN}/tar.gz/v${PV} -> ${PN}-${PV}.tar.gz"
 DEPEND="net-misc/curl"
 RDEPEND="${DEPEND}"
 
+PATCHES=(
+	"${FILESDIR}"/fix-output.patch
+)
+
 src_compile() {
 	./build.sh || die
 }
