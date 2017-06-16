@@ -8,21 +8,18 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib toolchain-funcs git-r3
+inherit cmake-multilib toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="http://libcxx.llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="http://llvm.org/git/libcxx.git
-        https://github.com/llvm-mirror/libcxx.git"
+SRC_URI="http://llvm.org/pre-releases/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+compiler-rt +experimental +libunwind +static-libs"
+IUSE="+experimental +libunwind +static-libs"
 
-RDEPEND="~sys-libs/libcxxabi-9999[libunwind=,static-libs?,${MULTILIB_USEDEP}]
-	compiler-rt? ( sys-libs/compiler-rt )"
+RDEPEND="~sys-libs/libcxxabi-4.0.0[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
 # LLVM 4 required for llvm-config --cmakedir
 DEPEND="${RDEPEND}
 	app-arch/xz-utils
@@ -32,9 +29,7 @@ DOCS=( CREDITS.TXT )
 
 CMAKE_BUILD_TYPE=Release
 
-PATCHES=(
-	"${FILESDIR}"/fix-cflags.patch
-)
+S=${WORKDIR}/${P/_/}.src
 
 src_configure() {
 	NATIVE_LIBDIR=$(get_libdir)
@@ -44,6 +39,9 @@ src_configure() {
 multilib_src_configure() {
 	local libdir=$(get_libdir)
 
+	local libcompiler_rt=$(clang -print-libgcc-file-name)
+	local libunwind=$(usex libunwind "-lunwind" "")
+
 	local mycmakeargs=(
 		-DLLVM_LIBDIR_SUFFIX=${NATIVE_LIBDIR#lib}
 		-DLIBCXX_LIBDIR_SUFFIX=${libdir#lib}
@@ -52,10 +50,10 @@ multilib_src_configure() {
 		-DLIBCXX_CXX_ABI=libcxxabi
 		-DLIBCXX_CXX_ABI_INCLUDE_PATHS="${EPREFIX}/usr/include/libcxxabi"
 		-DLIBCXX_HAS_MUSL_LIBC=$(usex elibc_musl)
-		-DLIBCXX_USE_COMPILER_RT=$(usex compiler-rt)
-		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
+		-DLIBCXX_HAS_GCC_S_LIB=$(usex !libunwind)
 		-DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=ON
 		-DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=OFF
+		-DCMAKE_SHARED_LINKER_FLAGS="${libunwind} ${libcompiler_rt}"
 	)
 	cmake-utils_src_configure
 }
