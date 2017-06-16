@@ -66,6 +66,9 @@ src_prepare() {
 	# add __dso_handle symbol
 	eapply "${FILESDIR}"/0007-add-__dso_handle.patch
 
+	# add --defsym option
+	eapply "${FILESDIR}"/0008-add---defsym.patch
+
 	eapply_user
 }
 

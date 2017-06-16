@@ -1,32 +1,3 @@
-From 366d3b63de37d6c091e39d4c46cbe37c96384370 Mon Sep 17 00:00:00 2001
-From: Rafael Espindola <rafael.espindola@gmail.com>
-Date: Wed, 25 Jan 2017 21:23:06 +0000
-Subject: [PATCH] Change the --retain-symbols-file implementation.
-
-It now uses the same infrastructure as symbol versions. This fixes us
-creating a dynamic relocation without a corresponding dynamic symbol.
-
-This also means that unlike gold and bfd we keep a STB_LOCAL in the
-static symbol table. It seems an odd feature to offer precise control
-over what is in a symbol table that is not used by the dynamic
-linker. We can bring this back if needed, but it would probably be
-better to just have --discard option that tells the linker to keep in
-the static symbol table only what is in the dynamic one.
-
-Should fix the eog build.
-
-git-svn-id: https://llvm.org/svn/llvm-project/lld/trunk@293093 91177308-0d34-0410-b5e6-96231b3b80d8
----
- ELF/Config.h                   |  5 ++---
- ELF/Driver.cpp                 |  5 +++--
- ELF/Writer.cpp                 |  6 ------
- test/ELF/retain-symbols-file.s | 17 +++++++++++++----
- test/ELF/retain-und.s          | 18 ++++++++++++++++++
- 5 files changed, 36 insertions(+), 15 deletions(-)
- create mode 100644 test/ELF/retain-und.s
-
-diff --git a/ELF/Config.h b/ELF/Config.h
-index d7b78ae..af4390e 100644
 --- a/ELF/Config.h
 +++ b/ELF/Config.h
 @@ -34,8 +34,8 @@ enum ELFKind {
@@ -48,8 +19,6 @@ index d7b78ae..af4390e 100644
    std::string RPath;
    std::vector<VersionDefinition> VersionDefinitions;
    std::vector<llvm::StringRef> AuxiliaryList;
-diff --git a/ELF/Driver.cpp b/ELF/Driver.cpp
-index b6b417e..d92d163 100644
 --- a/ELF/Driver.cpp
 +++ b/ELF/Driver.cpp
 @@ -614,10 +614,11 @@ void LinkerDriver::readConfigs(opt::InputArgList &Args) {
@@ -66,8 +35,6 @@ index b6b417e..d92d163 100644
    }
  
    for (auto *Arg : Args.filtered(OPT_export_dynamic_symbol))
-diff --git a/ELF/Writer.cpp b/ELF/Writer.cpp
-index d19d2c4..0715bf0 100644
 --- a/ELF/Writer.cpp
 +++ b/ELF/Writer.cpp
 @@ -425,12 +425,6 @@ template <class ELFT> static bool includeInSymtab(const SymbolBody &B) {
@@ -83,9 +50,6 @@ index d19d2c4..0715bf0 100644
    if (auto *D = dyn_cast<DefinedRegular<ELFT>>(&B)) {
      // Always include absolute symbols.
      if (!D->Section)
-diff --git a/test/ELF/retain-und.s b/test/ELF/retain-und.s
-new file mode 100644
-index 0000000..2f34675
 --- /dev/null
 +++ b/test/ELF/retain-und.s
 @@ -0,0 +1,18 @@

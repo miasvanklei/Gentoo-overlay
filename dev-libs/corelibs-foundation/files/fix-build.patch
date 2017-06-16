@@ -170,15 +170,6 @@ diff --git a/build.py b/build.py
 index ccd9bf1..9c490c2 100644
 --- a/build.py
 +++ b/build.py
-@@ -16,7 +16,7 @@ foundation.GCC_PREFIX_HEADER = 'CoreFoundation/Base.subproj/CoreFoundation_Prefi
- swift_cflags = []
- if Configuration.current.target.sdk == OSType.Linux:
- 	foundation.CFLAGS = '-DDEPLOYMENT_TARGET_LINUX -D_GNU_SOURCE -DCF_CHARACTERSET_DATA_DIR="CoreFoundation/CharacterSets"'
--	foundation.LDFLAGS = '${SWIFT_USE_LINKER} -Wl,@./CoreFoundation/linux.ld -lswiftGlibc `${PKG_CONFIG} icu-uc icu-i18n --libs` -Wl,-defsym,__CFConstantStringClassReference=_TMC10Foundation19_NSCFConstantString -Wl,-Bsymbolic '
-+	foundation.LDFLAGS = '${SWIFT_USE_LINKER} -Wl,@./CoreFoundation/linux.ld -lswiftGlibc `${PKG_CONFIG} icu-uc icu-i18n --libs` -Wl,-Bsymbolic '
- 	Configuration.current.requires_pkg_config = True
- elif Configuration.current.target.sdk == OSType.FreeBSD:
- 	foundation.CFLAGS = '-DDEPLOYMENT_TARGET_FREEBSD -I/usr/local/include -I/usr/local/include/libxml2 -I/usr/local/include/curl '
 @@ -89,22 +89,18 @@ if triple == "armv7-none-linux-androideabi":
  else:
  	foundation.LDFLAGS += '-lpthread '
@@ -221,19 +212,6 @@ index ccd9bf1..9c490c2 100644
  foundation_tests.add_dependency(foundation_tests_resources)
  foundation.add_phase(foundation_tests_resources)
  foundation.add_phase(foundation_tests)
-diff --git a/CoreFoundation/Base.subproj/CFInternal.h b/CoreFoundation/Base.subproj/CFInternal.h
-index 5a272d52f9..a5e0eeecf1 100644
---- a/CoreFoundation/Base.subproj/CFInternal.h
-+++ b/CoreFoundation/Base.subproj/CFInternal.h
-@@ -349,7 +349,7 @@ CF_EXPORT void * __CFConstantStringClassReferencePtr;
- 
- #if DEPLOYMENT_RUNTIME_SWIFT
- 
--CF_EXPORT void *__CFConstantStringClassReference[];
-+CF_EXPORT void *__CFConstantStringClassReference[] asm("_TMaC10Foundation19_NSCFConstantString");
- 
- #if __CF_BIG_ENDIAN__
- #define CF_CONST_STRING_INFO {0x00, 0x00, 0x07, 0xc8}
 diff --git a/lib/script.py b/lib/script.py
 index 4f6a39f..a923fbb 100644
 --- a/lib/script.py
