@@ -67,6 +67,8 @@ src_prepare() {
 	# fix swig, broken in 3.0.9 and 3.0.10
 	eapply "${FILESDIR}"/0003-fix-swig.patch
 
+	# fix use with libedit-2017
+	eapply "${FILESDIR}"/0005-Fix-bug-28898.patch
 
 	if use swift; then
 		# add swift support
