@@ -33,5 +33,5 @@ src_install() {
 	--swiftc /usr/bin/swiftc \
 	--foundation-build-dir / \
 	--library-install-path ${D}/usr/lib/swift/linux \
-	--module-install-path ${D}/usr/lib/swift/linux/x86_64 || die
+	--module-install-path ${D}/usr/lib/swift/linux/${ARCH} || die
 }
