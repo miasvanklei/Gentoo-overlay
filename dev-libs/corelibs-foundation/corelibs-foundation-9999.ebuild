@@ -34,6 +34,7 @@ DEPEND="${RDEPEND}"
 
 src_prepare() {
 	eapply ${FILESDIR}/fix-build.patch
+	eapply ${FILESDIR}/fix-arm.patch
 	eapply_user
 }
 
