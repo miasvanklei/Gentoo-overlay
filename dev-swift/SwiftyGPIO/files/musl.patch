@@ -1,0 +1,64 @@
+diff --git a/Sources/Mailbox.swift b/Sources/Mailbox.swift
+index fb2aa93..95de73c 100644
+--- a/Sources/Mailbox.swift
++++ b/Sources/Mailbox.swift
+@@ -174,8 +174,7 @@ public struct MailBox {
+         filename = "/tmp/swifty-mailbox-" + String(getpid())
+         unlink(filename)
+ 
+-        //makedev is a macro not imported by Swift that resolves to gnu_dev_makedev
+-        if mknod(filename, S_IFCHR|0600, gnu_dev_makedev(100, 0)) < 0 {
++        if mknod(filename, S_IFCHR|0600, makedev(100, 0)) < 0 {
+             perror("Failed to create mailbox device\n")
+             return -1
+         }
+@@ -191,6 +190,14 @@ public struct MailBox {
+         return file_desc
+     }
+ 
++    private func makedev(_ x: UInt64, _ y: UInt64) -> UInt64 {
++        let x1: UInt64 =  (x)&0xfffff000 << 32
++        let x2: UInt64 =  (x)&0x00000fff << 8
++        let y1: UInt64 =  (x)&0xffffff00 << 12
++        let y2: UInt64 =  (x)&0x000000ff
++        return x1 | x2 | y1 | y2
++    }
++
+     /// Closes the mailbox
+     private func mailboxClose(_ fileDesc: Int32) {
+         close(fileDesc)
+diff --git a/Sources/SPI.swift b/Sources/SPI.swift
+index 1f93345..7aaf7b8 100644
+--- a/Sources/SPI.swift
++++ b/Sources/SPI.swift
+@@ -356,9 +356,9 @@ public final class VirtualSPI: SPIInterface {
+         //Begin transmission cs=LOW
+         csGPIO.value = 0
+ 
+-        let fpmosi: UnsafeMutablePointer<FILE>! = fopen(mosipath, "w")
+-        let fpmiso: UnsafeMutablePointer<FILE>! = fopen(misopath, "r")
+-        let fpsclk: UnsafeMutablePointer<FILE>! = fopen(sclkpath, "w")
++        let fpmosi: OpaquePointer! = fopen(mosipath, "w")
++        let fpmiso: OpaquePointer! = fopen(misopath, "r")
++        let fpsclk: OpaquePointer! = fopen(sclkpath, "w")
+ 
+         guard (fpmosi != nil)&&(fpsclk != nil) else {
+             perror("Error while opening gpio")
+@@ -403,7 +403,7 @@ public final class VirtualSPI: SPIInterface {
+         return rx
+     }
+ 
+-    private func writeToFP(_ fp: UnsafeMutablePointer<FILE>, value: String) {
++    private func writeToFP(_ fp: OpaquePointer, value: String) {
+         let ret = fwrite(value, MemoryLayout<CChar>.stride, 1, fp)
+         if ret<1 {
+             if ferror(fp) != 0 {
+@@ -413,7 +413,7 @@ public final class VirtualSPI: SPIInterface {
+         }
+     }
+ 
+-    private func readFromFP(_ fp: UnsafeMutablePointer<FILE>) -> UInt8 {
++    private func readFromFP(_ fp: OpaquePointer) -> UInt8 {
+         var value: UInt8 = 0
+         let ret = fread(&value, MemoryLayout<CChar>.stride, 1, fp)
+         if ret<1 {
