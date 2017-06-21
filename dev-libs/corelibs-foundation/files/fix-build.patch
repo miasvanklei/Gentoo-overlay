@@ -141,7 +141,7 @@ index 3b46fac..d4c132d 100644
      }
 -    
 +
-     internal var _main: (Void) -> Void = {}
+     internal var _main: () -> Void = {}
  #if os(OSX) || os(iOS) || CYGWIN
      private var _thread: pthread_t? = nil
  #elseif os(Linux) || os(Android)
@@ -232,10 +232,10 @@ index 4f6a39f..a923fbb 100644
  
          if Configuration.current.build_mode == Configuration.Debug:
              swift_flags += "-g -Onone "
-diff --git a/Foundation/NSHost.swift b/Foundation/NSHost.swift
+diff --git a/Foundation/Host.swift b/Foundation/Host.swift
 index d01151f..ad19ff4 100644
---- a/Foundation/NSHost.swift
-+++ b/Foundation/NSHost.swift
+--- a/Foundation/Host.swift
++++ b/Foundation/Host.swift
 @@ -74,11 +74,7 @@ open class Host: NSObject {
              }
              var hints = addrinfo()
@@ -248,3 +248,70 @@ index d01151f..ad19ff4 100644
      
              hints.ai_flags = flags
              
+diff --git a/CoreFoundation/Base.subproj/CFPlatform.c b/CoreFoundation/Base.subproj/CFPlatform.c
+index 5f67510..89810ba 100644
+--- a/CoreFoundation/Base.subproj/CFPlatform.c
++++ b/CoreFoundation/Base.subproj/CFPlatform.c
+@@ -1318,15 +1318,6 @@ CF_SWIFT_EXPORT void _CFThreadSetName(const char *_Nullable name) {
+ #endif
+ }
+ 
+-CF_SWIFT_EXPORT int _CFThreadGetName(char *buf, int length) {
+-#if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI
+-    return pthread_getname_np(pthread_self(), buf, length);
+-#elif DEPLOYMENT_TARGET_LINUX
+-    return pthread_getname_np(pthread_self(), buf, length);
+-#endif
+-    return -1;
+-}
+-
+ CF_EXPORT char **_CFEnviron(void) {
+ #if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED
+     return *_NSGetEnviron();
+diff --git a/CoreFoundation/Base.subproj/ForSwiftFoundationOnly.h b/CoreFoundation/Base.subproj/ForSwiftFoundationOnly.h
+index d6d28ff..367c0a4 100644
+--- a/CoreFoundation/Base.subproj/ForSwiftFoundationOnly.h
++++ b/CoreFoundation/Base.subproj/ForSwiftFoundationOnly.h
+@@ -306,7 +306,6 @@ typedef pthread_t _CFThreadRef;
+ CF_EXPORT _CFThreadRef _CFThreadCreate(const _CFThreadAttributes attrs, void *_Nullable (* _Nonnull startfn)(void *_Nullable), void *restrict _Nullable context);
+ 
+ CF_SWIFT_EXPORT void _CFThreadSetName(const char *_Nullable name);
+-CF_SWIFT_EXPORT int _CFThreadGetName(char *buf, int length);
+ 
+ CF_EXPORT Boolean _CFCharacterSetIsLongCharacterMember(CFCharacterSetRef theSet, UTF32Char theChar);
+ CF_EXPORT CFCharacterSetRef _CFCharacterSetCreateCopy(CFAllocatorRef alloc, CFCharacterSetRef theSet);
+diff --git a/TestFoundation/TestThread.swift b/TestFoundation/TestThread.swift
+index 5630059..7a714da 100644
+--- a/TestFoundation/TestThread.swift
++++ b/TestFoundation/TestThread.swift
+@@ -58,30 +58,17 @@ class TestThread : XCTestCase {
+         let thread = Thread()
+         XCTAssertNil(thread.name)
+ 
+-        func getPThreadName() -> String? {
+-            var buf = [Int8](repeating: 0, count: 16)
+-            let r = _CFThreadGetName(&buf, Int32(buf.count))
+-
+-            guard r == 0 else {
+-                return nil
+-            }
+-            return String(cString: buf)
+-        }
+-
+         let thread2 = Thread() {
+             Thread.current.name = "Thread2"
+             XCTAssertEqual(Thread.current.name, "Thread2")
+-            XCTAssertEqual(Thread.current.name, getPThreadName())
+         }
+ 
+         thread2.start()
+ 
+         Thread.current.name = "CurrentThread"
+-        XCTAssertEqual(Thread.current.name, getPThreadName())
+ 
+         let thread3 = Thread()
+         thread3.name = "Thread3"
+         XCTAssertEqual(thread3.name, "Thread3")
+-        XCTAssertNotEqual(thread3.name, getPThreadName())
+     }
+ }

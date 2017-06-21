@@ -95,3 +95,22 @@
    if (U_FAILURE(ErrorCode) && ErrorCode != U_BUFFER_OVERFLOW_ERROR) {
      swift::crash("u_strToLower: Unexpected error lowercasing unicode string.");
    }
+--- a/stdlib/public/SwiftShims/UnicodeShims.h	2017-06-21 15:55:07.456951431 +0200
++++ b/stdlib/public/SwiftShims/UnicodeShims.h	2017-06-21 15:54:20.808951673 +0200
+@@ -17,6 +17,7 @@
+ #ifndef SWIFT_STDLIB_SHIMS_UNICODESHIMS_H_
+ #define SWIFT_STDLIB_SHIMS_UNICODESHIMS_H_
+ 
++#include <uchar.h>
+ #include "SwiftStdint.h"
+ #include "SwiftStdbool.h"
+ #include "Visibility.h"
+@@ -294,7 +295,7 @@
+ } __swift_stdlib_UBreakIteratorType;
+ 
+ typedef struct __swift_stdlib_UBreakIterator __swift_stdlib_UBreakIterator;
+-typedef __swift_uint16_t __swift_stdlib_UChar;
++typedef char16_t __swift_stdlib_UChar;
+ 
+ SWIFT_RUNTIME_STDLIB_INTERFACE
+ void __swift_stdlib_ubrk_close(__swift_stdlib_UBreakIterator *bi);

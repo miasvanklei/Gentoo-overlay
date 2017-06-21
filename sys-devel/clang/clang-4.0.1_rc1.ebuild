@@ -92,44 +92,46 @@ src_unpack() {
 
 src_prepare() {
 	# fix stand-alone doc build
-#	eapply "${FILESDIR}"/0001-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
+	eapply "${FILESDIR}"/0001-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
 
 	# optimizations like ssp, pie, relro
-#	eapply "${FILESDIR}"/0002-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
-#	eapply "${FILESDIR}"/0003-Enable-PIE-by-default-for-gentoo-linux.patch
-#	eapply "${FILESDIR}"/0004-use-ssp-by-default.patch
+	eapply "${FILESDIR}"/0002-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
+	eapply "${FILESDIR}"/0003-Enable-PIE-by-default-for-gentoo-linux.patch
+	eapply "${FILESDIR}"/0004-use-ssp-by-default.patch
 
 	# link libunwind
-#	eapply "${FILESDIR}"/0005-link-libunwind.patch
+	eapply "${FILESDIR}"/0005-link-libunwind.patch
 
 	# remove gcc quirks
-#	eapply "${FILESDIR}"/0006-fix-ada-in-configure.patch
-#	eapply "${FILESDIR}"/0007-increase-gcc-version.patch
-#	eapply "${FILESDIR}"/0008-remove-gcc-detection.patch
+	eapply "${FILESDIR}"/0006-fix-ada-in-configure.patch
+	eapply "${FILESDIR}"/0007-increase-gcc-version.patch
+	eapply "${FILESDIR}"/0008-remove-gcc-detection.patch
 
 	# rtm is not available on all haswell
-#	eapply "${FILESDIR}"/0009-remove-rtm-haswell.patch
+	eapply "${FILESDIR}"/0009-remove-rtm-haswell.patch
 
         # patches for c++
-#	eapply "${FILESDIR}"/0010-update-default-cxx-standard.patch
-#	eapply "${FILESDIR}"/0011-link-libcxxabi.patch
+	eapply "${FILESDIR}"/0010-update-default-cxx-standard.patch
+	eapply "${FILESDIR}"/0011-link-libcxxabi.patch
 
 	# fixes for musl
-#	eapply "${FILESDIR}"/0012-dont-define-on-musl.patch
-#	eapply "${FILESDIR}"/0013-define__std_iso_10646__.patch
+	eapply "${FILESDIR}"/0012-dont-define-on-musl.patch
+	eapply "${FILESDIR}"/0013-define__std_iso_10646__.patch
 
 	# remove dependency on crtbegin* and crtend*
-#	eapply "${FILESDIR}"/0014-remove-crtfiles.patch
-#	eapply "${FILESDIR}"/0015-fuse-init-array.patch
+	eapply "${FILESDIR}"/0014-remove-crtfiles.patch
+	eapply "${FILESDIR}"/0015-fuse-init-array.patch
 
 	# needed in linux kernel
-#	eapply "${FILESDIR}"/0017-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0017-add-fno-delete-null-pointer-checks.patch
 
 	# add swift support
-#	eapply "${FILESDIR}"/0018-add-swift-support.patch
+	eapply "${FILESDIR}"/0018-add-swift-support.patch
+	eapply "${FILESDIR}"/0020-clang-5.0.patch
 
 	# add fortran support
-#	use fortran && eapply "${FILESDIR}"/0019-add-fortran-support.patch
+	use fortran && eapply "${FILESDIR}"/0019-add-fortran-support.patch
+
 
 	# User patches
 	eapply_user

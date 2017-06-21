@@ -101,3 +101,45 @@ index d0c91e100a..8b6e5d426e 100644
  
  /// Block-based wrapper for `pthread_join`.
  public func _stdlib_pthread_join<Result>(
+diff --git a/stdlib/public/runtime/ImageInspectionELF.cpp b/stdlib/public/runtime/ImageInspectionELF.cpp
+index 54fb123071..16ad27891a 100644
+--- a/stdlib/public/runtime/ImageInspectionELF.cpp
++++ b/stdlib/public/runtime/ImageInspectionELF.cpp
+@@ -21,7 +21,6 @@
+ #if defined(__ELF__) || defined(__ANDROID__)
+ 
+ #include "ImageInspection.h"
+-#include "swift/Runtime/Debug.h"
+ #include <dlfcn.h>
+ #include <elf.h>
+ #include <link.h>
+@@ -66,19 +65,17 @@ static InspectArgs TypeMetadataRecordArgs = {
+ static SectionInfo getSectionInfo(const char *imageName,
+                                   const char *sectionName) {
+   SectionInfo sectionInfo = { 0, nullptr };
+-  void *handle = dlopen(imageName, RTLD_LAZY | RTLD_NOLOAD);
+-  if (!handle) {
+-    fatalError(/* flags = */ 0, "dlopen() failed on `%s': %s", imageName,
+-               dlerror());
+-  }
+-  void *symbol = dlsym(handle, sectionName);
+-  if (symbol) {
+-    // Extract the size of the section data from the head of the section.
+-    const char *section = reinterpret_cast<const char *>(symbol);
+-    memcpy(&sectionInfo.size, section, sizeof(uint64_t));
+-    sectionInfo.data = section + sizeof(uint64_t);
++  void *handle = dlopen(imageName, RTLD_LAZY);
++  if (handle) {
++    void *symbol = dlsym(handle, sectionName);
++    if (symbol) {
++      // Extract the size of the section data from the head of the section.
++      const char *section = reinterpret_cast<const char *>(symbol);
++      memcpy(&sectionInfo.size, section, sizeof(uint64_t));
++      sectionInfo.data = section + sizeof(uint64_t);
++    }
++    dlclose(handle);
+   }
+-  dlclose(handle);
+   return sectionInfo;
+ }
+ 

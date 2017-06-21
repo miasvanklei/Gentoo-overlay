@@ -3,13 +3,12 @@
 
 EAPI=6
 
-inherit git-r3
+inherit git-r3 user
 
 DESCRIPTION="The XCTest Project, A Swift core library for providing unit test support"
 HOMEPAGE="https://github.com/apple/swift-corelibs-xctest"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-corelibs-xctest.git"
-EGIT_BRANCH="swift-3.1-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -29,9 +28,15 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 src_install() {
+	local arch=${ARCH}
+
+	if use amd64 ; then
+		arch="x86_64"
+	fi
+
 	./build_script.py \
 	--swiftc /usr/bin/swiftc \
 	--foundation-build-dir / \
 	--library-install-path ${D}/usr/lib/swift/linux \
-	--module-install-path ${D}/usr/lib/swift/linux/${ARCH} || die
+	--module-install-path ${D}/usr/lib/swift/linux/${arch} || die
 }

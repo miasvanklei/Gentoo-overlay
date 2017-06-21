@@ -1,8 +1,8 @@
 diff --git a/stdlib/public/Platform/glibc.modulemap.gyb b/stdlib/public/Platform/glibc.modulemap.gyb
-index 59c6bfd50c..4a2204670e 100644
+index 59c6bfd50c..8f847340ea 100644
 --- a/stdlib/public/Platform/glibc.modulemap.gyb
 +++ b/stdlib/public/Platform/glibc.modulemap.gyb
-@@ -19,17 +19,7 @@
+@@ -19,18 +19,13 @@
  /// It's not named just Glibc so that it doesn't conflict in the event of a
  /// future official glibc modulemap.
  module SwiftGlibc [system] {
@@ -19,5 +19,37 @@ index 59c6bfd50c..4a2204670e 100644
 -
 +  header "/usr/include/swift/Macros.h"
    // C standard library
++
++  module inttypes {
++    header "${GLIBC_INCLUDE_PATH}/inttypes.h"
++    export *
++  }
    module C {
  % if CMAKE_SDK in ["LINUX", "FREEBSD", "CYGWIN"]:
+     module complex {
+@@ -86,11 +81,6 @@ module SwiftGlibc [system] {
+     //   export *
+     // }
+ 
+-    module inttypes {
+-      header "${GLIBC_INCLUDE_PATH}/inttypes.h"
+-      export *
+-    }
+-
+     // note: potentially supplied by compiler
+     // module iso646 {
+     //   header "${GLIBC_INCLUDE_PATH}/iso646.h"
+@@ -164,13 +154,6 @@ module SwiftGlibc [system] {
+ 
+   // POSIX
+   module POSIX {
+-% if CMAKE_SDK in ["LINUX", "CYGWIN"]:
+-    module wait {
+-      header "${GLIBC_INCLUDE_PATH}/wait.h"
+-      export *
+-    }
+-% end
+-
+ % if CMAKE_SDK in ["LINUX", "FREEBSD"]:
+     module aio {
+       header "${GLIBC_INCLUDE_PATH}/aio.h"

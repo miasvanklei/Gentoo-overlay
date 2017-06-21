@@ -63,9 +63,6 @@ src_prepare() {
 	# remove __gnu_objc_personality_v0 by building Reflection.mm with -fno-exceptions
 	eapply ${FILESDIR}/remove-dep-libobjc.patch
 
-	# recent libcxx change, broke build, use builtin feature
-	eapply ${FILESDIR}/fix-libcxx.patch
-
 	# use same code as on darwin
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 
@@ -77,6 +74,10 @@ src_prepare() {
 
 	# fix compilation with icu-59
 	eapply ${FILESDIR}/icu-59.patch
+
+	# swift uses newer version of llvm/clang
+	eapply ${FILESDIR}/clang-4.0.patch
+
 	default
 }
 
