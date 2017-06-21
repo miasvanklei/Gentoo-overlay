@@ -20,30 +20,6 @@ index ee44637fe0..10e6500c92 100644
  
    // Configure the toolchain.
    // By default, use the system clang++ to link.
-@@ -1317,12 +1310,6 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
-     Arguments.push_back(context.Args.MakeArgString(A->getValue()));
-   }
- 
--  std::string Target = getTargetForLinker();
--  if (!Target.empty()) {
--    Arguments.push_back("-target");
--    Arguments.push_back(context.Args.MakeArgString(Target));
--  }
--
-   // Add the runtime library link path, which is platform-specific and found
-   // relative to the compiler.
-   llvm::SmallString<128> RuntimeLibPath;
-@@ -1383,10 +1370,6 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
-     Arguments.push_back(context.Args.MakeArgString(RuntimeLibPath));
-   }
- 
--
--  // Explicitly pass the target to the linker
--  Arguments.push_back(context.Args.MakeArgString("--target=" + getTriple().str()));
--
-   if (context.Args.hasArg(options::OPT_profile_generate)) {
-     SmallString<128> LibProfile(RuntimeLibPath);
-     llvm::sys::path::remove_filename(LibProfile); // remove platform name
 @@ -1419,6 +1402,12 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
      Arguments.push_back(context.Args.MakeArgString(PostInputObjectPath));
    }

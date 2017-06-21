@@ -7,11 +7,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils python-single-r1
+inherit cmake-utils python-single-r1 git-r3
 
 DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
-SRC_URI="https://github.com/apple/${PN}/archive/${P}-RELEASE.tar.gz"
+SRC_URI=""
+EGIT_REPO_URI="https://github.com/apple/swift.git"
+EGIT_BRANCH="swift-4.0-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -32,8 +34,6 @@ DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
 
-S=${WORKDIR}/${PN}-${P}-RELEASE
-
 src_prepare() {
 	# we prefer own optimization
 	eapply ${FILESDIR}/fix-cflags.patch
@@ -50,9 +50,6 @@ src_prepare() {
 
 	# incorrect c++ code
 	eapply ${FILESDIR}/add-destructor.patch
-
-	# segfault in clang: SWIFT_DEFER
-	eapply ${FILESDIR}/fix-segfault.patch
 
 	# do not install headers from clang multiple times
 	eapply ${FILESDIR}/fix-garbage.patch
@@ -72,17 +69,8 @@ src_prepare() {
 	# use same code as on darwin
 	eapply ${FILESDIR}/sourcekitd-fixes.patch
 
-	# wcslcat is in libbsd, otherwise no sourcekitd-repl
-	eapply ${FILESDIR}/wcslcat.patch
-
 	# install files: libraries, headers, cmake
 	eapply ${FILESDIR}/install-files.patch
-
-	# llvm/clang 4.0 patch
-	eapply ${FILESDIR}/llvm-clang-4.0.patch
-
-	# fix version attribute in libdispatch
-	eapply ${FILESDIR}/fix-attribute.patch
 
 	# fix triple with arm, swift, llvm, clang, lldb
 	eapply ${FILESDIR}/arm-swift.patch

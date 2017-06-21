@@ -40,30 +40,6 @@ index 628d7bddb8..ce60754756 100644
  
    SWIFT_COMPONENT tools
  )
-diff --git a/cmake/modules/AddSwift.cmake b/cmake/modules/AddSwift.cmake
-index 86c0839e26..2de83ae5f2 100644
---- a/cmake/modules/AddSwift.cmake
-+++ b/cmake/modules/AddSwift.cmake
-@@ -952,17 +912,11 @@ function(_add_swift_library_single target name)
-   # specified with this syntax, which breaks linking.
-   set(prefixed_link_libraries)
-   foreach(dep ${SWIFTLIB_SINGLE_LINK_LIBRARIES})
--    if("${dep}" MATCHES "^clang")
--      if("${SWIFT_HOST_VARIANT_SDK}" STREQUAL "WINDOWS")
--        set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/${dep}.lib")
--      else()
--        set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
--      endif()
--    elseif("${dep}" STREQUAL "cmark")
-+    if("${dep}" STREQUAL "cmark")
-       if("${SWIFT_HOST_VARIANT_SDK}" STREQUAL "WINDOWS")
-         set(dep "${CMARK_LIBRARY_DIR}/${dep}.lib")
-       else()
--        set(dep "${CMARK_LIBRARY_DIR}/lib${dep}.a")
-+        set(dep "-lcmark")
-       endif()
-     endif()
-     list(APPEND prefixed_link_libraries "${dep}")
 diff --git a/stdlib/public/SwiftRemoteMirror/CMakeLists.txt b/stdlib/public/SwiftRemoteMirror/CMakeLists.txt
 index 260d04e0f9..0d7f8cf1f3 100644
 --- a/stdlib/public/SwiftRemoteMirror/CMakeLists.txt
@@ -89,3 +65,51 @@ index fc49842db8..e5210337be 100644
    INCORPORATE_OBJECT_LIBRARIES swiftRuntime swiftStdlibStubs
    FRAMEWORK_DEPENDS ${swift_core_framework_depends}
    INSTALL_IN_COMPONENT stdlib)
+diff --git a/cmake/modules/AddSwift.cmake b/cmake/modules/AddSwift.cmake
+index 5dd80da545..ab7b6570aa 100644
+--- a/cmake/modules/AddSwift.cmake
++++ b/cmake/modules/AddSwift.cmake
+@@ -977,23 +977,6 @@ function(_add_swift_library_single target name)
+         "${swift_module_dependency_target}"
+         ${LLVM_COMMON_DEPENDS})
+ 
+-  # HACK: On some systems or build directory setups, CMake will not find static
+-  # archives of Clang libraries in the Clang build directory, and it will pass
+-  # them as '-lclangFoo'.  Some other logic in CMake would reorder libraries
+-  # specified with this syntax, which breaks linking.
+-  set(prefixed_link_libraries)
+-  foreach(dep ${SWIFTLIB_SINGLE_LINK_LIBRARIES})
+-    if("${dep}" MATCHES "^clang")
+-      if("${SWIFT_HOST_VARIANT_SDK}" STREQUAL "WINDOWS")
+-        set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/${dep}.lib")
+-      else()
+-        set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
+-      endif()
+-    endif()
+-    list(APPEND prefixed_link_libraries "${dep}")
+-  endforeach()
+-  set(SWIFTLIB_SINGLE_LINK_LIBRARIES "${prefixed_link_libraries}")
+-
+   if("${libkind}" STREQUAL "SHARED")
+     target_link_libraries("${target}" PRIVATE ${SWIFTLIB_SINGLE_LINK_LIBRARIES})
+   elseif("${libkind}" STREQUAL "OBJECT")
+--- a/tools/SourceKit/lib/SwiftLang/CMakeLists.txt      2017-06-21 13:12:15.138995828 +0200
++++ b/tools/SourceKit/lib/SwiftLang/CMakeLists.txt      2017-06-21 13:11:42.028996595 +0200
+@@ -10,7 +10,7 @@
+   SwiftSourceDocInfo.cpp
+   DEPENDS SourceKitCore swiftDriver swiftFrontend swiftClangImporter swiftIDE
+           swiftAST swiftMarkup swiftParse swiftSIL swiftSILGen swiftSILOptimizer
+-          swiftIRGen swiftSema swiftBasic swiftSerialization swiftOption libcmark_static
++          swiftIRGen swiftSema swiftBasic swiftSerialization swiftOption cmark
+     # Clang dependencies.
+       clangIndex
+       clangFormat
+--- a/lib/Markup/CMakeLists.txt 2017-06-21 13:12:12.516995889 +0200
++++ b/lib/Markup/CMakeLists.txt 2017-06-21 13:11:40.437996632 +0200
+@@ -4,5 +4,5 @@
+   Markup.cpp
+   
+   LINK_LIBRARIES
+-    libcmark_static)
++    cmark)
+ 

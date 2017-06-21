@@ -1,13 +1,12 @@
 diff --git a/cmake/modules/AddSwift.cmake b/cmake/modules/AddSwift.cmake
-index 64902335dd..ce8fae4d4d 100644
+index 5dd80da545..43a2191d5a 100644
 --- a/cmake/modules/AddSwift.cmake
 +++ b/cmake/modules/AddSwift.cmake
-@@ -198,8 +198,6 @@ function(_add_variant_c_compile_flags)
+@@ -180,7 +180,6 @@ function(_add_variant_c_compile_flags)
  
    is_build_type_optimized("${CFLAGS_BUILD_TYPE}" optimized)
-   if(optimized)
+   if(optimized OR CFLAGS_FORCE_BUILD_OPTIMIZED)
 -    list(APPEND result "-O2")
--
-     # Add -momit-leaf-frame-pointer on x86.
-     if("${CFLAGS_ARCH}" STREQUAL "i386" OR "${CFLAGS_ARCH}" STREQUAL "x86_64")
-       list(APPEND result "-momit-leaf-frame-pointer")
+ 
+     # Omit leaf frame pointers on x86.
+     if("${CFLAGS_ARCH}" STREQUAL "i386" OR "${CFLAGS_ARCH}" STREQUAL "i686")

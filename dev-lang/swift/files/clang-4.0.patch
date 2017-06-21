@@ -1,0 +1,212 @@
+--- b/lib/ClangImporter/ClangImporter.cpp
++++ a/lib/ClangImporter/ClangImporter.cpp
+@@ -2633,7 +2633,7 @@
+ }
+ 
+ std::string ClangImporter::getClangModuleHash() const {
++  return Impl.Invocation->getModuleHash();
+-  return Impl.Invocation->getModuleHash(Impl.Instance->getDiagnostics());
+ }
+ 
+ Decl *ClangImporter::importDeclCached(const clang::NamedDecl *ClangDecl) {
+reverted:
+--- b/lib/ClangImporter/ImportDecl.cpp
++++ a/lib/ClangImporter/ImportDecl.cpp
+@@ -998,7 +998,7 @@
+                                                        clang::VK_RValue,
+                                                        clang::OK_Ordinary,
+                                                        clang::SourceLocation(),
++                                                       /*fpContractable=*/ false);
+-                                                       clang::FPOptions());
+     
+     cSetterDecl->setBody(cSetterExpr);
+--- a/cmake/modules/SwiftSharedCMakeConfig.cmake	2017-06-21 13:12:15.052995830 +0200
++++ b/cmake/modules/SwiftSharedCMakeConfig.cmake	2017-06-21 13:11:40.126996639 +0200
+@@ -202,9 +202,6 @@
+   set(CMARK_BUILD_INCLUDE_DIR "${PATH_TO_CMARK_BUILD}/src")
+   include_directories("${CMARK_MAIN_INCLUDE_DIR}"
+                       "${CMARK_BUILD_INCLUDE_DIR}")
+-
+-  include(${${product}_PATH_TO_CMARK_BUILD}/src/CMarkExports.cmake)
+-  add_definitions(-DCMARK_STATIC_DEFINE)
+ endmacro()
+ 
+ # Common cmake project config for standalone builds.
+--- a/lib/AST/USRGeneration.cpp	2017-06-21 13:12:12.454995890 +0200
++++ b/lib/AST/USRGeneration.cpp	2017-06-21 13:11:40.326996634 +0200
+@@ -46,27 +46,14 @@
+ }
+ 
+ static bool printObjCUSRFragment(const ValueDecl *D, StringRef ObjCName,
+-                                 const ExtensionDecl *ExtContextD,
+-                                 raw_ostream &OS) {
++                                 raw_ostream &OS) {
+   if (!D)
+     return true;
+ 
+-  // The Swift module name that the decl originated from. If the decl is
+-  // originating from ObjC code (ObjC module or the bridging header) then this
+-  // will be empty.
+-  StringRef ModuleName;
+-  if (!D->hasClangNode())
+-    ModuleName = D->getModuleContext()->getNameStr();
+-
+   if (isa<ClassDecl>(D)) {
+-    StringRef extContextName;
+-    if (ExtContextD) {
+-      extContextName = ExtContextD->getModuleContext()->getNameStr();
+-    }
+-    clang::index::generateUSRForObjCClass(ObjCName, OS,
+-                                          ModuleName, extContextName);
++    clang::index::generateUSRForObjCClass(ObjCName, OS);
+   } else if (isa<ProtocolDecl>(D)) {
+-    clang::index::generateUSRForObjCProtocol(ObjCName, OS, ModuleName);
++    clang::index::generateUSRForObjCProtocol(ObjCName, OS);
+   } else if (isa<VarDecl>(D)) {
+     clang::index::generateUSRForObjCProperty(ObjCName, D->isStatic(), OS);
+   } else if (isa<ConstructorDecl>(D)) {
+@@ -76,33 +63,18 @@
+   } else if (isa<AbstractFunctionDecl>(D)) {
+     clang::index::generateUSRForObjCMethod(ObjCName, D->isInstanceMember(), OS);
+   } else if (isa<EnumDecl>(D)) {
+-    clang::index::generateUSRForGlobalEnum(ObjCName, OS, ModuleName);
++    OS << "@E@" << ObjCName; // FIXME: expose clang API to handle enum names
+   } else if (isa<EnumElementDecl>(D)) {
+-    clang::index::generateUSRForEnumConstant(ObjCName, OS);
++    OS << "@" << ObjCName;
+   } else {
+     llvm_unreachable("Unexpected value decl");
+   }
+   return false;
+ }
+ 
+-static bool printObjCUSRContext(const Decl *D, raw_ostream &OS) {
+-  OS << clang::index::getUSRSpacePrefix();
+-  auto *DC = D->getDeclContext();
+-  if (auto *Parent = DC->getAsNominalTypeOrNominalTypeExtensionContext()) {
+-    auto *extContextD = dyn_cast<ExtensionDecl>(DC);
+-    auto ObjCName = objc_translation::getObjCNameForSwiftDecl(Parent);
+-    if (printObjCUSRFragment(Parent, ObjCName.first.str(), extContextD, OS))
+-      return true;
+-  }
+-  return false;
+-}
+-
+ static bool printObjCUSRForAccessor(const AbstractStorageDecl *ASD,
+                                     AccessorKind Kind,
+                                     raw_ostream &OS) {
+-  if (printObjCUSRContext(ASD, OS))
+-    return true;
+-
+   ObjCSelector Selector;
+   switch (Kind) {
+     case swift::AccessorKind::IsGetter:
+@@ -122,19 +94,23 @@
+ }
+ 
+ static bool printObjCUSR(const ValueDecl *D, raw_ostream &OS) {
+-  if (printObjCUSRContext(D, OS))
+-    return true;
+-  auto *extContextD = dyn_cast<ExtensionDecl>(D->getDeclContext());
++  OS << clang::index::getUSRSpacePrefix();
++
++  if (auto *Parent = D->getDeclContext()->
++        getAsNominalTypeOrNominalTypeExtensionContext()) {
++    auto ObjCName = objc_translation::getObjCNameForSwiftDecl(Parent);
++    if (printObjCUSRFragment(Parent, ObjCName.first.str(), OS))
++      return true;
++  }
+ 
+   auto ObjCName = objc_translation::getObjCNameForSwiftDecl(D);
+ 
+   if (!ObjCName.first.empty())
+-    return printObjCUSRFragment(D, ObjCName.first.str(), extContextD, OS);
++    return printObjCUSRFragment(D, ObjCName.first.str(), OS);
+ 
+   assert(ObjCName.second);
+   llvm::SmallString<128> Buf;
+-  return printObjCUSRFragment(D, ObjCName.second.getString(Buf),
+-                              extContextD, OS);
++  return printObjCUSRFragment(D, ObjCName.second.getString(Buf), OS);
+ }
+ 
+ static bool shouldUseObjCUSR(const Decl *D) {
+@@ -215,9 +191,13 @@
+     auto &Importer = *D->getASTContext().getClangModuleLoader();
+ 
+     auto ClangMacroInfo = ClangN.getAsMacro();
+-    bool Ignore = clang::index::generateUSRForMacro(D->getNameStr(),
+-        ClangMacroInfo->getDefinitionLoc(),
+-        Importer.getClangASTContext().getSourceManager(), Buf);
++    auto PPRecord = Importer.getClangPreprocessor().getPreprocessingRecord();
++    assert(PPRecord && "Clang importer should be created with "
++                       "-detailed-preprocessing-record option");
++    auto ClangMacroDef = PPRecord->findMacroDefinition(ClangMacroInfo);
++
++    bool Ignore = clang::index::generateUSRForMacro(
++        ClangMacroDef, Importer.getClangASTContext().getSourceManager(), Buf);
+     if (!Ignore)
+       OS << Buf.str();
+     return Ignore;
+--- a/lib/ClangImporter/ClangImporter.cpp	2017-06-21 13:12:12.462995890 +0200
++++ b/lib/ClangImporter/ClangImporter.cpp	2017-06-21 13:11:40.338996634 +0200
+@@ -731,7 +731,6 @@
+                          *clangDiags,
+                          CI.getLangOpts(),
+                          clangSrcMgr,
+-                         CI.getPCMCache(),
+                          CI.getPreprocessor().getHeaderSearchInfo(), CI,
+                          /*IILookup=*/nullptr,
+                          /*OwnsHeaderSearch=*/false);
+@@ -2633,7 +2632,7 @@
+ }
+ 
+ std::string ClangImporter::getClangModuleHash() const {
+-  return Impl.Invocation->getModuleHash(Impl.Instance->getDiagnostics());
++  return Impl.Invocation->getModuleHash();
+ }
+ 
+ Decl *ClangImporter::importDeclCached(const clang::NamedDecl *ClangDecl) {
+--- a/lib/PrintAsObjC/PrintAsObjC.cpp	2017-06-21 13:12:12.526995888 +0200
++++ b/lib/PrintAsObjC/PrintAsObjC.cpp	2017-06-21 13:11:40.451996631 +0200
+@@ -2335,22 +2335,6 @@
+            "#if !defined(__has_warning)\n"
+            "# define __has_warning(x) 0\n"
+            "#endif\n"
+-           "\n"
+-           "#if __has_attribute(external_source_symbol)\n"
+-           "# define SWIFT_STRINGIFY(str) #str\n"
+-           "# define SWIFT_MODULE_NAMESPACE_PUSH(module_name) "
+-             "_Pragma(SWIFT_STRINGIFY(clang attribute "
+-             "push(__attribute__((external_source_symbol(language=\"Swift\", "
+-             "defined_in=module_name, generated_declaration))), "
+-             "apply_to=any(function, enum, objc_interface, objc_category, "
+-             "objc_protocol))))\n"
+-           "# define SWIFT_MODULE_NAMESPACE_POP "
+-             "_Pragma(\"clang attribute pop\")\n"
+-           "#else\n"
+-           "# define SWIFT_MODULE_NAMESPACE_PUSH(module_name)\n"
+-           "# define SWIFT_MODULE_NAMESPACE_POP\n"
+-           "#endif\n"
+-           "\n"
+            "#if __has_include(<swift/objc-prologue.h>)\n"
+            "# include <swift/objc-prologue.h>\n"
+            "#endif\n"
+@@ -2714,11 +2698,7 @@
+         "#endif\n"
+         "#pragma clang diagnostic ignored \"-Wunknown-pragmas\"\n"
+         "#pragma clang diagnostic ignored \"-Wnullability\"\n"
+-        "\n"
+-        "SWIFT_MODULE_NAMESPACE_PUSH(\"" << M.getNameStr() << "\")\n"
+-      << os.str()
+-      << "SWIFT_MODULE_NAMESPACE_POP\n"
+-         "#pragma clang diagnostic pop\n";
++        "#pragma clang diagnostic pop\n";
+     return false;
+   }
+ };
+--- a/test/Index/Inputs/cross_language_bridge_head.h	2017-06-21 13:12:13.496995866 +0200
++++ b/test/Index/Inputs/cross_language_bridge_head.h	1970-01-01 01:00:00.000000000 +0100
+@@ -1,2 +0,0 @@
+-@interface SomeObjCClass
+-@end

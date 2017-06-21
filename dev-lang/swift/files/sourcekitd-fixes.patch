@@ -41,7 +41,7 @@ index 094b54ead7..1843410e89 100644
 -if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
 -  set(SOURCEKITD_TEST_DEPEND ${SOURCEKITD_TEST_DEPEND} dispatch swiftCore)
 +if(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
-+set(SOURCEKITD_TEST_DEPEND ${SOURCEKITD_TEST_DEPEND} dispatch swiftCore)
++  set(SOURCEKITD_TEST_DEPEND ${SOURCEKITD_TEST_DEPEND} dispatch swiftCore)
  endif()
  
  add_sourcekit_executable(complete-test
@@ -114,38 +114,8 @@ index 212c582165..a54b9ec8d4 100644
 +  DEPENDS  SourceKitSupport SourceKitSwiftLang swiftBasic clangRewrite clangRewriteFrontend dispatch
 +  SHARED
  )
-diff --git a/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-InProc.cpp b/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-InProc.cpp
-index 92b8c0512d..f9cb8b823a 100644
---- a/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-InProc.cpp
-+++ b/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-InProc.cpp
-@@ -14,6 +14,7 @@
- #include "sourcekitd/sourcekitd.h"
- #include "sourcekitd/Internal.h"
- #include "sourcekitd/CodeCompletionResultsArray.h"
-+#include "sourcekitd/DocStructureArray.h"
- #include "sourcekitd/DocSupportAnnotationArray.h"
- #include "sourcekitd/TokenAnnotationsArray.h"
- #include "sourcekitd/Logging.h"
-@@ -249,6 +250,7 @@ public:
-       case CustomBufferKind::TokenAnnotationsArray:
-       case CustomBufferKind::DocSupportAnnotationArray:
-       case CustomBufferKind::CodeCompletionResultsArray:
-+      case CustomBufferKind::DocStructureArray:
-         return SOURCEKITD_VARIANT_TYPE_ARRAY;
-     }
-     llvm::report_fatal_error("sourcekitd object did not resolve to a known type");
-@@ -927,6 +929,9 @@ static sourcekitd_variant_t variantFromSKDObject(SKDObjectRef Object) {
-       case CustomBufferKind::CodeCompletionResultsArray:
-         return {{ (uintptr_t)getVariantFunctionsForCodeCompletionResultsArray(),
-           (uintptr_t)DataObject->getDataPtr(), 0 }};
-+      case CustomBufferKind::DocStructureArray:
-+        return {{ (uintptr_t)getVariantFunctionsForDocStructureArray(),
-+          (uintptr_t)DataObject->getDataPtr(), ~size_t(0)}};
-     }
-   }
-   
 diff --git a/tools/SourceKit/CMakeLists.txt b/tools/SourceKit/CMakeLists.txt
-index 0c37547008..37ef2ba493 100644
+index bd9e7a8fde..1e555918a8 100644
 --- a/tools/SourceKit/CMakeLists.txt
 +++ b/tools/SourceKit/CMakeLists.txt
 @@ -20,8 +20,6 @@ configure_file(
@@ -165,30 +135,19 @@ index 0c37547008..37ef2ba493 100644
    endif()
  
    # Convert variables to space-separated strings.
-@@ -171,11 +168,8 @@ macro(add_sourcekit_library name)
+@@ -169,15 +166,6 @@ macro(add_sourcekit_library name)
+     add_dependencies(${name} ${LLVM_COMMON_DEPENDS})
+   endif(LLVM_COMMON_DEPENDS)
  
-   set(prefixed_link_libraries)
-   foreach(dep ${SOURCEKITLIB_DEPENDS})
+-  set(prefixed_link_libraries)
+-  foreach(dep ${SOURCEKITLIB_DEPENDS})
 -    if("${dep}" MATCHES "^clang")
 -      set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
 -    endif()
-     if("${dep}" STREQUAL "cmark")
--      set(dep "${CMARK_LIBRARY_DIR}/lib${dep}.a")
-+      set(dep "-lcmark")
-     endif()
-     list(APPEND prefixed_link_libraries "${dep}")
-   endforeach()
-@@ -508,11 +502,11 @@ include_directories(BEFORE
- )
- 
- if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
--  include_directories(AFTER ${SWIFT_PATH_TO_LIBDISPATCH_SOURCE})
-+  include_directories(AFTER /usr/lib/swift)
- 
-   add_library(dispatch SHARED IMPORTED)
-   set_target_properties(dispatch PROPERTIES
--                        IMPORTED_LOCATION ${SWIFT_PATH_TO_LIBDISPATCH_BUILD}/src/.libs/libdispatch.so)
-+                        IMPORTED_LOCATION /usr/lib/swift/linux/libdispatch.so)
- 
-   add_library(swiftCore SHARED IMPORTED)
-   set_target_properties(swiftCore PROPERTIES
+-    list(APPEND prefixed_link_libraries "${dep}")
+-  endforeach()
+-  set(SOURCEKITLIB_DEPENDS "${prefixed_link_libraries}")
+-
+   if("${libkind}" STREQUAL "SHARED")
+     target_link_libraries("${name}" PRIVATE ${SOURCEKITLIB_DEPENDS})
+   else()
