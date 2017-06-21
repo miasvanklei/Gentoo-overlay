@@ -8,12 +8,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils llvm python-single-r1 toolchain-funcs
+inherit cmake-utils llvm python-single-r1 toolchain-funcs git-r3
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV/_//}/${P/_/}.src.tar.xz
-	test? ( http://llvm.org/pre-releases/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+SRC_URI="test? ( http://llvm.org/pre-releases/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
+EGIT_BRANCH="swift-4.0-branch"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -34,15 +35,12 @@ DEPEND="${RDEPEND}
 	python? ( || ( <dev-lang/swig-3.0.9
 		  >dev-lang/swig-3.0.10 ) )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
-	swift? ( dev-lang/swift )
+	dev-lang/swift
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-S=${WORKDIR}/${P/_/}.src
-
-# least intrusive of all
-CMAKE_BUILD_TYPE=RelWithDebInfo
+CMAKE_BUILD_TYPE=Release
 
 pkg_setup() {
 	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
@@ -50,7 +48,8 @@ pkg_setup() {
 }
 
 src_unpack() {
-	default
+	git-r3_fetch
+	git-r3_checkout
 
 	if use test; then
 		mv llvm-* llvm || die
@@ -70,10 +69,10 @@ src_prepare() {
 	# fix use with libedit-2017
 	eapply "${FILESDIR}"/0005-Fix-bug-28898.patch
 
-	if use swift; then
-		# add swift support
-		eapply "${FILESDIR}"/0004-add-swift-support.patch
-	fi
+	# fix apple/swift cmake mess
+	eapply "${FILESDIR}"/fix-cmake.patch
+	eapply "${FILESDIR}"/fix-includes.patch
+	eapply "${FILESDIR}"/fix-resourcedir.patch
 
 	eapply_user
 }
@@ -101,6 +100,10 @@ src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
+
+		# swift garbage
+		-DLLDB_PATH_TO_SWIFT_BUILD=/usr
+		-DLLDB_PATH_TO_CMARK_BUILD=/usr
 
 		# normally we'd have to set LLVM_ENABLE_TERMINFO, HAVE_TERMINFO
 		# and TERMINFO_LIBS... so just force FindCurses.cmake to use
