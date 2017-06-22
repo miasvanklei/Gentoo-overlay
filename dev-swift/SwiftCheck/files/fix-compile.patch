@@ -1,0 +1,168 @@
+diff --git a/Sources/Arbitrary.swift b/Sources/Arbitrary.swift
+index fdb3645..a9cb9f3 100644
+--- a/Sources/Arbitrary.swift
++++ b/Sources/Arbitrary.swift
+@@ -61,7 +61,7 @@ extension Arbitrary {
+ 	}
+ }
+ 
+-extension Integer {
++extension FixedWidthInteger {
+ 	/// Shrinks any `IntegerType`.
+ 	public var shrinkIntegral : [Self] {
+ 		return unfoldr({ i in
+@@ -70,7 +70,7 @@ extension Integer {
+ 			}
+ 			let n = i / 2
+ 			return .some((n, n))
+-		}, initial: self < 0 ? (Self.multiplyWithOverflow(self, -1).0) : self)
++		}, initial: self < 0 ? (self.multipliedReportingOverflow(by: -1).0) : self)
+ 	}
+ }
+ 
+diff --git a/Sources/Gen.swift b/Sources/Gen.swift
+index a266096..9a3de4a 100644
+--- a/Sources/Gen.swift
++++ b/Sources/Gen.swift
+@@ -45,7 +45,7 @@ public struct Gen<A> {
+ 	///
+ 	/// The input collection is required to be non-empty.
+ 	public static func fromElements<S : Collection>(of xs : S) -> Gen<S._Element>
+-		where S.Index : Comparable & RandomType
++		where S.Index : RandomType
+ 	{
+ 		return Gen.fromElements(in: xs.startIndex...xs.index(xs.endIndex, offsetBy: -1)).map { i in
+ 			return xs[i]
+@@ -120,7 +120,7 @@ public struct Gen<A> {
+ 	/// If control over the distribution of generators is needed, see
+ 	/// `Gen.frequency` or `Gen.weighted`.
+ 	public static func one<S : BidirectionalCollection>(of gs : S) -> Gen<A>
+-		where S.Iterator.Element == Gen<A>, S.Index : RandomType & Comparable
++		where S.Iterator.Element == Gen<A>, S.Index : RandomType
+ 	{
+ 		assert(gs.count != 0, "oneOf used with empty list")
+ 
+@@ -278,7 +278,7 @@ extension Gen {
+ extension Gen {
+ 	@available(*, unavailable, renamed: "fromElements(of:)")
+ 	public static func fromElementsOf<S : Collection>(_ xs : S) -> Gen<S._Element>
+-		where S.Index : Comparable & RandomType
++		where S.Index : RandomType
+ 	{
+ 		return Gen.fromElements(of: xs)
+ 	}
+@@ -302,7 +302,7 @@ extension Gen {
+ 
+ 	@available(*, unavailable, renamed: "one(of:)")
+ 	public static func oneOf<S : BidirectionalCollection>(_ gs : S) -> Gen<A>
+-		where S.Iterator.Element == Gen<A>, S.Index : RandomType & Comparable
++		where S.Iterator.Element == Gen<A>, S.Index : RandomType
+ 	{
+ 		return Gen.one(of: gs)
+ 	}
+diff --git a/Sources/Modifiers.swift b/Sources/Modifiers.swift
+index 8806934..8e34882 100644
+--- a/Sources/Modifiers.swift
++++ b/Sources/Modifiers.swift
+@@ -398,7 +398,7 @@ extension IsoOf : CustomReflectable {
+ 
+ /// By default, SwiftCheck generates values drawn from a small range. `Large`
+ /// gives you values drawn from the entire range instead.
+-public struct Large<A : RandomType & LatticeType & Integer> : Arbitrary {
++public struct Large<A : RandomType & LatticeType & FixedWidthInteger> : Arbitrary {
+ 	/// Retrieves the underlying large value.
+ 	public let getLarge : A
+ 
+diff --git a/Sources/Property.swift b/Sources/Property.swift
+index 4ded58a..9716ede 100644
+--- a/Sources/Property.swift
++++ b/Sources/Property.swift
+@@ -597,7 +597,7 @@ private func protectResult(_ r : @escaping () throws -> TestResult) -> (() -> Te
+ 	return { protect(exception("Exception"), x: r) }
+ }
+ 
+-internal func unionWith<K : Hashable, V>(_ f : (V, V) -> V, l : Dictionary<K, V>, r : Dictionary<K, V>) -> Dictionary<K, V> {
++internal func unionWith<K, V>(_ f : (V, V) -> V, l : Dictionary<K, V>, r : Dictionary<K, V>) -> Dictionary<K, V> {
+ 	var map = l
+ 	r.forEach { (k, v) in
+ 		if let val = map.updateValue(v, forKey: k) {
+@@ -607,7 +607,7 @@ internal func unionWith<K : Hashable, V>(_ f : (V, V) -> V, l : Dictionary<K, V>
+ 	return map
+ }
+ 
+-private func insertWith<K : Hashable, V>(_ f : (V, V) -> V, k : K, v : V, m : Dictionary<K, V>) -> Dictionary<K, V> {
++private func insertWith<K, V>(_ f : (V, V) -> V, k : K, v : V, m : Dictionary<K, V>) -> Dictionary<K, V> {
+ 	var res = m
+ 	let oldV = res[k]
+ 	if let existV = oldV {
+diff --git a/Sources/WitnessedArbitrary.swift b/Sources/WitnessedArbitrary.swift
+index f99b1fa..6e0db26 100644
+--- a/Sources/WitnessedArbitrary.swift
++++ b/Sources/WitnessedArbitrary.swift
+@@ -192,8 +192,9 @@ extension Dictionary where Key : Arbitrary, Value : Arbitrary {
+ 	/// The default shrinking function for `Dictionary`s of arbitrary `Key`s and
+ 	/// `Value`s.
+ 	public static func shrink(_ d : Dictionary<Key, Value>) -> [Dictionary<Key, Value>] {
+-		return d.map { Dictionary(zip(Key.shrink($0), Value.shrink($1)).map({ (k, v) -> (key: Key, value: Value) in
+-			(key: k, value: v)
++		return d.map { Dictionary(zip(Key.shrink($0.key), Value.shrink($0.value)).map({ keyValuePair in
++			let (k, v) = keyValuePair
++			return (key: k, value: v)
+ 		})) }
+ 	}
+ }
+@@ -205,7 +206,7 @@ extension EmptyCollection : Arbitrary {
+ 	}
+ }
+ 
+-extension Range where Bound : Comparable & Arbitrary {
++extension Range where Bound : Arbitrary {
+ 	/// Returns a generator of `HalfOpenInterval`s of arbitrary `Bound`s.
+ 	public static var arbitrary : Gen<Range<Bound>> {
+ 		return Bound.arbitrary.flatMap { l in
+@@ -221,14 +222,14 @@ extension Range where Bound : Comparable & Arbitrary {
+ 	}
+ }
+ 
+-extension LazyCollection where Base : Collection & Arbitrary, Base.Index : Comparable {
++extension LazyCollection where Base : Arbitrary {
+ 	/// Returns a generator of `LazyCollection`s of arbitrary `Base`s.
+ 	public static var arbitrary : Gen<LazyCollection<Base>> {
+ 		return LazyCollection<Base>.arbitrary
+ 	}
+ }
+ 
+-extension LazySequence where Base : Sequence & Arbitrary {
++extension LazySequence where Base : Arbitrary {
+ 	/// Returns a generator of `LazySequence`s of arbitrary `Base`s.
+ 	public static var arbitrary : Gen<LazySequence<Base>> {
+ 		return LazySequence<Base>.arbitrary
+@@ -259,7 +260,7 @@ extension Repeated : WitnessedArbitrary {
+ 	}
+ }
+ 
+-extension Set where Element : Arbitrary & Hashable {
++extension Set where Element : Arbitrary {
+ 	/// Returns a generator of `Set`s of arbitrary `Element`s.
+ 	public static var arbitrary : Gen<Set<Element>> {
+ 		return Gen.sized { n in
+diff --git a/Tests/SwiftCheckTests/PathSpec.swift b/Tests/SwiftCheckTests/PathSpec.swift
+index 9a5af12..bfe6ba1 100644
+--- a/Tests/SwiftCheckTests/PathSpec.swift
++++ b/Tests/SwiftCheckTests/PathSpec.swift
+@@ -52,13 +52,13 @@ struct Extremal<A : Arbitrary & LatticeType> : Arbitrary {
+ }
+ 
+ class PathSpec : XCTestCase {
+-	private static func smallProp<A : Integer & Arbitrary>(_ pth : Path<A>) -> Bool {
++	private static func smallProp<A : Integer>(_ pth : Path<A>) -> Bool {
+ 		return path({ x in
+ 			return (x >= -100 || -100 >= 0) && x <= 100
+ 		}, pth)
+ 	}
+ 
+-	private static func largeProp<A : Integer & Arbitrary>(_ pth : Path<A>) -> Property {
++	private static func largeProp<A : Integer>(_ pth : Path<A>) -> Property {
+ 		return somePath({ x in
+ 			return (x < -1000000 || x > 1000000)
+ 		}, pth)

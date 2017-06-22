@@ -10,6 +10,7 @@ HOMEPAGE="https://github.com/realm/SwiftLint"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/realm/SwiftLint.git"
 EGIT_SUBMODULES=()
+EGIT_BRANCH="jp-swift-4"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -27,9 +28,9 @@ RDEPEND="dev-libs/libdispatch
 	dev-swift/SourceKitten"
 DEPEND="${RDEPEND}"
 
-PATCHES=(
-	${FILESDIR}/remove-dependencies.patch
-)
+#PATCHES=(
+#	${FILESDIR}/remove-dependencies.patch
+#)
 
 src_compile() {
 	swift build --verbose \

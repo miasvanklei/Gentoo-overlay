@@ -22,6 +22,7 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 PATCHES=(
+        ${FILESDIR}/fix-compile.patch
         ${FILESDIR}/install-lib.patch
 )
 
