@@ -203,6 +203,18 @@ index ccd9bf1..9c490c2 100644
  
  foundation.SWIFTCFLAGS = " ".join(swift_cflags)
  
+@@ -297,11 +293,6 @@ sources = CompileSources([
+        'CoreFoundation/URL.subproj/CFURLSessionInterface.c',
+ ])
+ 
+-# This code is already in libdispatch so is only needed if libdispatch is
+-# NOT being used
+-if "LIBDISPATCH_SOURCE_DIR" not in Configuration.current.variables:
+-    sources += (['closure/data.c', 'closure/runtime.c'])
+-
+ sources.add_dependency(headers)
+ foundation.add_phase(sources)
+ 
 @@ -480,8 +476,6 @@ foundation_tests = SwiftExecutable('TestFoundation', [
          'Foundation/ProgressFraction.swift',
  ] + glob.glob('./TestFoundation/Test*.swift')) # all TestSomething.swift are considered sources to the test project in the TestFoundation directory
