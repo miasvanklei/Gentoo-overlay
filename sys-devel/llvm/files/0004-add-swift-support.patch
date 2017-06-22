@@ -701,3 +701,29 @@
    if (Tag == dwarf::DW_TAG_enumeration_type ||
        Tag == dwarf::DW_TAG_class_type || Tag == dwarf::DW_TAG_structure_type ||
        Tag == dwarf::DW_TAG_union_type) {
+--- a/CMakeLists.txt	2017-06-22 21:16:42.629031640 +0200
++++ b/CMakeLists.txt	2017-06-22 21:17:18.083028723 +0200
+@@ -414,9 +414,6 @@
+ set(LLVM_ABI_BREAKING_CHECKS "WITH_ASSERTS" CACHE STRING
+   "Enable abi-breaking checks.  Can be WITH_ASSERTS, FORCE_ON or FORCE_OFF.")
+ 
+-option(LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING
+-  "Disable abi-breaking checks mismatch detection at link-tim." OFF)
+-
+ option(LLVM_FORCE_USE_OLD_HOST_TOOLCHAIN
+        "Set to ON to force using an old, unsupported host toolchain." OFF)
+ 
+--- a/include/llvm/Config/abi-breaking.h.cmake	2017-06-22 21:17:50.742026035 +0200
++++ b/include/llvm/Config/abi-breaking.h.cmake	2017-06-22 21:18:47.742021345 +0200
+@@ -15,9 +15,8 @@
+ /* Define to enable checks that alter the LLVM C++ ABI */
+ #cmakedefine01 LLVM_ENABLE_ABI_BREAKING_CHECKS
+ 
+-/* Define to disable the link-time checking of mismatch for
+-   LLVM_ENABLE_ABI_BREAKING_CHECKS */
+-#cmakedefine01 LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING
++/* Allow selectively disabling link-time mismatch checking so that header-only
++   ADT content from LLVM can be used without linking libSupport. */
+ #if !LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING
+ 
+ // ABI_BREAKING_CHECKS protection: provides link-time failure when clients build

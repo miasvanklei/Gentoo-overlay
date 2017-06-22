@@ -40,31 +40,6 @@ index 628d7bddb8..ce60754756 100644
  
    SWIFT_COMPONENT tools
  )
-diff --git a/stdlib/public/SwiftRemoteMirror/CMakeLists.txt b/stdlib/public/SwiftRemoteMirror/CMakeLists.txt
-index 260d04e0f9..0d7f8cf1f3 100644
---- a/stdlib/public/SwiftRemoteMirror/CMakeLists.txt
-+++ b/stdlib/public/SwiftRemoteMirror/CMakeLists.txt
-@@ -5,6 +5,6 @@ if(SWIFT_BUILD_DYNAMIC_STDLIB OR SWIFT_BUILD_REMOTE_MIRROR)
-       SwiftRemoteMirror.cpp
-       LINK_LIBRARIES swiftReflection
-       C_COMPILE_FLAGS ${SWIFT_RUNTIME_CXX_FLAGS}
--      LINK_FLAGS ${SWIFT_RUNTIME_LINK_FLAGS}
-+      LINK_FLAGS ${SWIFT_RUNTIME_LINK_FLAGS} "-lLLVMSupport"
-       INSTALL_IN_COMPONENT swift-remote-mirror)
- endif()
-diff --git a/stdlib/public/core/CMakeLists.txt b/stdlib/public/core/CMakeLists.txt
-index fc49842db8..e5210337be 100644
---- a/stdlib/public/core/CMakeLists.txt
-+++ b/stdlib/public/core/CMakeLists.txt
-@@ -222,7 +222,7 @@ add_swift_library(swiftCore ${SWIFT_STDLIB_LIBRARY_BUILD_TYPES} IS_STDLIB IS_STD
-     ${GROUP_INFO_JSON_FILE}
-   SWIFT_COMPILE_FLAGS ${swift_stdlib_compile_flags}
-   LINK_FLAGS ${swift_core_link_flags}
--  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries}
-+  PRIVATE_LINK_LIBRARIES ${swift_core_private_link_libraries} "-lLLVMSupport"
-   INCORPORATE_OBJECT_LIBRARIES swiftRuntime swiftStdlibStubs
-   FRAMEWORK_DEPENDS ${swift_core_framework_depends}
-   INSTALL_IN_COMPONENT stdlib)
 diff --git a/cmake/modules/AddSwift.cmake b/cmake/modules/AddSwift.cmake
 index 5dd80da545..ab7b6570aa 100644
 --- a/cmake/modules/AddSwift.cmake
