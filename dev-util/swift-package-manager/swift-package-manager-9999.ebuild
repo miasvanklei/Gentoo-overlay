@@ -22,7 +22,7 @@ RDEPEND="dev-lang/swift
 DEPEND="${RDEPEND}"
 
 PATCHES=(
-#	${FILESDIR}/musl.patch
+	${FILESDIR}/musl.patch
 	${FILESDIR}/target.patch
 )
 
