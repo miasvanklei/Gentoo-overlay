@@ -1,0 +1,248 @@
+diff --git a/source/Plugins/Process/mach-core/ProcessMachCore.cpp b/source/Plugins/Process/mach-core/ProcessMachCore.cpp
+index 089dd8840..ea5ebede7 100644
+--- a/source/Plugins/Process/mach-core/ProcessMachCore.cpp
++++ b/source/Plugins/Process/mach-core/ProcessMachCore.cpp
+@@ -291,26 +291,11 @@ Error ProcessMachCore::DoLoadCore() {
+ 
+   bool found_main_binary_definitively = false;
+ 
+-  addr_t objfile_binary_addr;
+-  UUID objfile_binary_uuid;
+-  if (core_objfile->GetCorefileMainBinaryInfo (objfile_binary_addr, objfile_binary_uuid))
+-  {
+-    if (objfile_binary_addr != LLDB_INVALID_ADDRESS)
+-    {
+-        m_mach_kernel_addr = objfile_binary_addr;
+-        found_main_binary_definitively = true;
+-        if (log)
+-            log->Printf ("ProcessMachCore::DoLoadCore: using kernel address 0x%" PRIx64
+-                         " from LC_NOTE 'main bin spec' load command.", m_mach_kernel_addr);
+-    }
+-  }
+-  
+   // This checks for the presence of an LC_IDENT string in a core file;
+   // LC_IDENT is very obsolete and should not be used in new code, but
+   // if the load command is present, let's use the contents.
+   std::string corefile_identifier = core_objfile->GetIdentifierString();
+-  if (found_main_binary_definitively == false 
+-      && corefile_identifier.find("Darwin Kernel") != std::string::npos) {
++  if (corefile_identifier.find("Darwin Kernel") != std::string::npos) {
+       UUID uuid;
+       addr_t addr = LLDB_INVALID_ADDRESS;
+       if (corefile_identifier.find("UUID=") != std::string::npos) {
+@@ -332,7 +317,7 @@ Error ProcessMachCore::DoLoadCore() {
+           found_main_binary_definitively = true;
+           if (log)
+             log->Printf("ProcessMachCore::DoLoadCore: Using the kernel address 0x%" PRIx64
+-                        " from LC_IDENT/LC_NOTE 'kern ver str' string: '%s'", addr, corefile_identifier.c_str());
++                        " from LC_IDENT string: '%s'", addr, corefile_identifier.c_str());
+       }
+   }
+ 
+diff --git a/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp b/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
+index 436dc5f51..3dbfdbf76 100644
+--- a/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
++++ b/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.cpp
+@@ -58,8 +58,6 @@
+ 
+ #ifndef __APPLE__
+ #include "Utility/UuidCompatibility.h"
+-#else
+-#include <uuid/uuid.h>
+ #endif
+ 
+ #define THUMB_ADDRESS_BIT_MASK 0xfffffffffffffffeull
+@@ -5560,62 +5558,19 @@ uint32_t ObjectFileMachO::GetNumThreadContexts() {
+   return m_thread_context_offsets.GetSize();
+ }
+ 
++// The LC_IDENT load command has been obsoleted for a very
++// long time and it should not occur in Mach-O files.  But
++// if it is there, it may contain a hint about where to find
++// the main binary in a core file, so we'll use it.
+ std::string ObjectFileMachO::GetIdentifierString() {
+   std::string result;
+   ModuleSP module_sp(GetModule());
+   if (module_sp) {
+     std::lock_guard<std::recursive_mutex> guard(module_sp->GetMutex());
+ 
+-    // First, look over the load commands for an LC_NOTE load command
+-    // with data_owner string "kern ver str" & use that if found.
+     lldb::offset_t offset = MachHeaderSizeFromMagic(m_header.magic);
+     for (uint32_t i = 0; i < m_header.ncmds; ++i) {
+       const uint32_t cmd_offset = offset;
+-      load_command lc;
+-      if (m_data.GetU32(&offset, &lc.cmd, 2) == NULL)
+-          break;
+-      if (lc.cmd == LC_NOTE)
+-      {
+-          char data_owner[17];
+-          m_data.CopyData (offset, 16, data_owner);
+-          data_owner[16] = '\0';
+-          offset += 16;
+-          uint64_t fileoff = m_data.GetU64_unchecked (&offset);
+-          uint64_t size = m_data.GetU64_unchecked (&offset);
+-
+-          // "kern ver str" has a uint32_t version and then a
+-          // nul terminated c-string.
+-          if (strcmp ("kern ver str", data_owner) == 0)
+-          {
+-              offset = fileoff;
+-              uint32_t version;
+-              if (m_data.GetU32 (&offset, &version, 1) != nullptr)
+-              {
+-                  if (version == 1)
+-                  {
+-                      uint32_t strsize = size - sizeof (uint32_t);
+-                      char *buf = (char*) malloc (strsize);
+-                      if (buf)
+-                      {
+-                          m_data.CopyData (offset, strsize, buf);
+-                          buf[strsize - 1] = '\0';
+-                          result = buf;
+-                          if (buf)
+-                              free (buf);
+-                          return result;
+-                      }
+-                  }
+-              }
+-          }
+-      }
+-      offset = cmd_offset + lc.cmdsize;
+-    }
+-
+-    // Second, make a pass over the load commands looking for an
+-    // obsolete LC_IDENT load command.
+-    offset = MachHeaderSizeFromMagic(m_header.magic);
+-    for (uint32_t i = 0; i < m_header.ncmds; ++i) {
+-      const uint32_t cmd_offset = offset;
+       struct ident_command ident_command;
+       if (m_data.GetU32(&offset, &ident_command, 2) == NULL)
+         break;
+@@ -5636,60 +5591,6 @@ std::string ObjectFileMachO::GetIdentifierString() {
+   return result;
+ }
+ 
+-bool ObjectFileMachO::GetCorefileMainBinaryInfo (addr_t &address, UUID &uuid) {
+-  address = LLDB_INVALID_ADDRESS;
+-  uuid.Clear();
+-  ModuleSP module_sp(GetModule());
+-  if (module_sp) {
+-    std::lock_guard<std::recursive_mutex> guard(module_sp->GetMutex());
+-    lldb::offset_t offset = MachHeaderSizeFromMagic(m_header.magic);
+-    for (uint32_t i = 0; i < m_header.ncmds; ++i) {
+-      const uint32_t cmd_offset = offset;
+-      load_command lc;
+-      if (m_data.GetU32(&offset, &lc.cmd, 2) == NULL)
+-          break;
+-      if (lc.cmd == LC_NOTE)
+-      {
+-          char data_owner[17];
+-          memset (data_owner, 0, sizeof (data_owner));
+-          m_data.CopyData (offset, 16, data_owner);
+-          offset += 16;
+-          uint64_t fileoff = m_data.GetU64_unchecked (&offset);
+-          uint64_t size = m_data.GetU64_unchecked (&offset);
+-
+-          // "main bin spec" (main binary specification) data payload is formatted:
+-          //    uint32_t version       [currently 1]
+-          //    uint32_t type          [0 == unspecified, 1 == kernel, 2 == user process]
+-          //    uint64_t address       [ UINT64_MAX if address not specified ]
+-          //    uuid_t   uuid          [ all zero's if uuid not specified ]
+-          //    uint32_t log2_pagesize [ process page size in log base 2, e.g. 4k pages are 12.  0 for unspecified ]
+-
+-          if (strcmp ("main bin spec", data_owner) == 0 && size >= 32)
+-          {
+-              offset = fileoff;
+-              uint32_t version;
+-              if (m_data.GetU32 (&offset, &version, 1) != nullptr && version == 1)
+-              {
+-                  uint32_t type = 0;
+-                  uuid_t raw_uuid;
+-                  memset (raw_uuid, 0, sizeof (uuid_t));
+-
+-                  if (m_data.GetU32 (&offset, &type, 1)
+-                      && m_data.GetU64 (&offset, &address, 1)
+-                      && m_data.CopyData (offset, sizeof (uuid_t), raw_uuid) != 0
+-                      && uuid.SetBytes (raw_uuid, sizeof (uuid_t)))
+-                  {
+-                      return true;
+-                  }
+-              }
+-          }
+-      }
+-      offset = cmd_offset + lc.cmdsize;
+-    }
+-  }
+-  return false;
+-}
+-
+ lldb::RegisterContextSP
+ ObjectFileMachO::GetThreadContextAtIndex(uint32_t idx,
+                                          lldb_private::Thread &thread) {
+diff --git a/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.h b/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.h
+index 05aeca678..cf3de7899 100644
+--- a/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.h
++++ b/source/Plugins/ObjectFile/Mach-O/ObjectFileMachO.h
+@@ -17,7 +17,6 @@
+ #include "lldb/Core/Address.h"
+ #include "lldb/Core/FileSpecList.h"
+ #include "lldb/Core/RangeMap.h"
+-#include "lldb/Core/UUID.h"
+ #include "lldb/Host/FileSpec.h"
+ #include "lldb/Symbol/ObjectFile.h"
+ #include "lldb/Utility/SafeMachO.h"
+@@ -114,8 +113,6 @@ public:
+ 
+   std::string GetIdentifierString() override;
+ 
+-  bool GetCorefileMainBinaryInfo (lldb::addr_t &address, lldb_private::UUID &uuid) override;
+-
+   lldb::RegisterContextSP
+   GetThreadContextAtIndex(uint32_t idx, lldb_private::Thread &thread) override;
+ 
+diff --git a/include/lldb/Symbol/ObjectFile.h b/include/lldb/Symbol/ObjectFile.h
+index e2c4e3829..75ed00aa2 100644
+--- a/include/lldb/Symbol/ObjectFile.h
++++ b/include/lldb/Symbol/ObjectFile.h
+@@ -14,7 +14,6 @@
+ #include "lldb/Core/FileSpecList.h"
+ #include "lldb/Core/ModuleChild.h"
+ #include "lldb/Core/PluginInterface.h"
+-#include "lldb/Core/UUID.h"
+ #include "lldb/Host/Endian.h"
+ #include "lldb/Host/FileSpec.h"
+ #include "lldb/Symbol/Symtab.h"
+@@ -577,32 +576,6 @@ public:
+       return std::string(); 
+   }
+ 
+-  //------------------------------------------------------------------
+-  /// When the ObjectFile is a core file, lldb needs to locate the
+-  /// "binary" in the core file.  lldb can iterate over the pages looking
+-  /// for a valid binary, but some core files may have metadata 
+-  /// describing where the main binary is exactly which removes ambiguity
+-  /// when there are multiple binaries present in the captured memory pages.
+-  ///
+-  /// @param[out] address
+-  ///   If the address of the binary is specified, this will be set.
+-  ///   This is an address is the virtual address space of the core file
+-  ///   memory segments; it is not an offset into the object file.
+-  ///   If no address is available, will be set to LLDB_INVALID_ADDRESS.
+-  ///
+-  /// @param[out] uuid
+-  ///   If the uuid of the binary is specified, this will be set.
+-  ///   If no UUID is available, will be cleared.
+-  ///
+-  /// @return
+-  ///   Returns true if either address or uuid has been set.
+-  //------------------------------------------------------------------
+-  virtual bool GetCorefileMainBinaryInfo (lldb::addr_t &address, UUID &uuid) {
+-      address = LLDB_INVALID_ADDRESS;
+-      uuid.Clear();
+-      return false;
+-  }
+-
+   virtual lldb::RegisterContextSP
+   GetThreadContextAtIndex(uint32_t idx, lldb_private::Thread &thread) {
+     return lldb::RegisterContextSP();

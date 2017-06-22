@@ -67,12 +67,15 @@ src_prepare() {
 	eapply "${FILESDIR}"/0003-fix-swig.patch
 
 	# fix use with libedit-2017
-	eapply "${FILESDIR}"/0005-Fix-bug-28898.patch
+	eapply "${FILESDIR}"/0004-fix-bug-28898.patch
 
 	# fix apple/swift cmake mess
-	eapply "${FILESDIR}"/fix-cmake.patch
-	eapply "${FILESDIR}"/fix-includes.patch
-	eapply "${FILESDIR}"/fix-resourcedir.patch
+	eapply "${FILESDIR}"/0005-fix-cmake.patch
+	eapply "${FILESDIR}"/0006-fix-includes.patch
+	eapply "${FILESDIR}"/0007-fix-resourcedir.patch
+
+	# fix compilation with llvm 4.0
+	eapply "${FILESDIR}"/0008-llvm-4.0.patch
 
 	eapply_user
 }
