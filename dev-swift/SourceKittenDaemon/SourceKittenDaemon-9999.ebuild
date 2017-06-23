@@ -24,7 +24,7 @@ RDEPEND="dev-libs/libdispatch
 	dev-swift/SourceKitten
 	dev-swift/Embassy
 	dev-swift/FileSystemWatcher
-	dev-swift/Xcode"
+	dev-swift/XcodeEdit"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
@@ -36,11 +36,11 @@ src_compile() {
 	-Xlinker -lCommandant \
 	-Xlinker -lSourceKittenFramework \
 	-Xlinker -lEmbassy \
-	-Xlinker -lXcode \
+	-Xlinker -lXcodeEdit \
 	-Xlinker -lFileSystemWatcher \
 	--verbose || die
 }
 
 src_install() {
-	dobin .build/release/sourcekittend
+	newbin .build/release/sourcekittend SourceKittenDaemon
 }

@@ -6,12 +6,11 @@ EAPI=6
 inherit git-r3
 
 DESCRIPTION="Swift library for reading and writing Xcode project files in OpenStep format"
-HOMEPAGE="https://github.com/nanzhong/Xcode.swift"
+HOMEPAGE="https://github.com/felix91gr/XcodeEdit"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/nanzhong/Xcode.swift.git"
-EGIT_BRANCH="swift3"
+EGIT_REPO_URI="https://github.com/felix91gr/XcodeEdit.git"
 
-LICENSE="Apache-2.0"
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS=""
 IUSE=""
