@@ -12,7 +12,7 @@ inherit cmake-utils llvm python-single-r1 toolchain-funcs git-r3
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="test? ( http://llvm.org/pre-releases/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+SRC_URI="test? ( http://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
 EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
 EGIT_BRANCH="swift-4.0-branch"
 

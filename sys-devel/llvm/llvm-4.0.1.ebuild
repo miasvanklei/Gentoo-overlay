@@ -13,8 +13,8 @@ inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://llvm.org/pre-releases/${PV/_//}/${P/_/}.src.tar.xz
-	 http://llvm.org/pre-releases/${PV/_//}/polly-${PV/_/}.src.tar.xz
+SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
+	 http://releases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz
 	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm-manpages-4.0.0.tar.bz2 )"
 
 # Keep in sync with CMakeLists.txt
@@ -178,11 +178,12 @@ multilib_src_configure() {
 	fi
 
 	if tc-is-cross-compiler; then
-		[[ -x "/usr/bin/llvm-tblgen" ]] \
-			|| die "/usr/bin/llvm-tblgen not found or usable"
-		mycmakeargs+=(
+		local tblgen="${EPREFIX}/usr/lib/llvm/${SLOT}/bin/llvm-tblgen"
+		[[ -x "${tblgen}" ]] \
+			|| die "${tblgen} not found or usable"
+			mycmakeargs+=(
 			-DCMAKE_CROSSCOMPILING=ON
-			-DLLVM_TABLEGEN=/usr/bin/llvm-tblgen
+			-DLLVM_TABLEGEN="${tblgen}"
 		)
 	fi
 
