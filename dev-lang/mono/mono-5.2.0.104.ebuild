@@ -3,19 +3,18 @@
 
 EAPI=6
 
-inherit autotools eutils linux-info mono-env flag-o-matic pax-utils versionator multilib-minimal git-r3
+inherit autotools eutils linux-info mono-env flag-o-matic pax-utils versionator multilib-minimal
 
 DESCRIPTION="Mono runtime and class libraries, a C# compiler/interpreter"
 HOMEPAGE="http://www.mono-project.com/Main_Page"
-SRC_URI=""
-EGIT_REPO_URI="git://github.com/mono/${PN}.git"
+SRC_URI="http://download.mono-project.com/sources/${PN}/${P}.tar.bz2"
 
 LICENSE="MIT LGPL-2.1 GPL-2 BSD-4 NPL-1.1 Ms-PL GPL-2-with-linking-exception IDPL"
 SLOT="0"
 
 KEYWORDS="~amd64 ~ppc ~ppc64 ~x86 ~amd64-linux"
 
-IUSE="+interpreter nls minimal pax_kernel xen doc"
+IUSE="nls minimal pax_kernel xen doc"
 
 COMMONDEPEND="
 	!minimal? ( >=dev-dotnet/libgdiplus-2.10 )
@@ -23,7 +22,7 @@ COMMONDEPEND="
 	nls? ( sys-devel/gettext )
 "
 RDEPEND="${COMMONDEPEND}
-	|| ( www-client/w3m www-client/links www-client/lynx )
+	|| ( www-client/links www-client/lynx )
 "
 DEPEND="${COMMONDEPEND}
 	sys-devel/bc
@@ -33,7 +32,11 @@ DEPEND="${COMMONDEPEND}
 	!dev-lang/mono-basic
 "
 
-S="${WORKDIR}/${PN}-$(get_version_component_range 1-3)"
+PATCHES=(
+	"${FILESDIR}"/${PN}-5.0.1.1-x86_32.patch
+)
+
+#S="${WORKDIR}/${PN}-$(get_version_component_range 1-3)"
 
 pkg_pretend() {
 	linux-info_pkg_setup
@@ -54,8 +57,6 @@ pkg_setup() {
 }
 
 src_prepare() {
-	cat "${S}/mono/mini/Makefile.am.in" > "${S}/mono/mini/Makefile.am" || die
-
 	# we need to sed in the paxctl-ng -mr in the runtime/mono-wrapper.in so it don't
 	# get killed in the build proces when MPROTECT is enable. #286280
 	# RANDMMAP kill the build proces to #347365
@@ -81,19 +82,17 @@ src_prepare() {
 }
 
 multilib_src_configure() {
-        local myeconfargs=(
-                --disable-silent-rules
-                --without-ikvm-native
-                --disable-dtrace
-                --disable-boehm
-                --enable-parallel-mark
-                --with-mcs-docs=no
-                --without-sigaltstack
-                $(use_with xen xen_opt)
-                $(use_with doc mcs-docs)
-                $(use_enable amd64 big-array)
-                $(use_enable interpreter)
-        )
+	local myeconfargs=(
+		--disable-silent-rules
+		--without-ikvm-native
+		--disable-dtrace
+		--disable-boehm
+		--enable-parallel-mark
+		--without-sigaltstack
+		$(use_with xen xen_opt)
+		$(use_with doc mcs-docs)
+		$(use_enable nls)
+	)
 
 	econf "${myeconfargs[@]}"
 }
