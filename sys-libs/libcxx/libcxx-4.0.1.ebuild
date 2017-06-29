@@ -19,7 +19,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="+experimental +libunwind +static-libs"
 
-RDEPEND="~sys-libs/libcxxabi-4.0.0[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
+RDEPEND="~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}]"
 # LLVM 4 required for llvm-config --cmakedir
 DEPEND="${RDEPEND}
 	app-arch/xz-utils
