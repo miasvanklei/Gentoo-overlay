@@ -32,10 +32,6 @@ DEPEND="${COMMONDEPEND}
 	!dev-lang/mono-basic
 "
 
-PATCHES=(
-	"${FILESDIR}"/${PN}-5.0.1.1-x86_32.patch
-)
-
 #S="${WORKDIR}/${PN}-$(get_version_component_range 1-3)"
 
 pkg_pretend() {
