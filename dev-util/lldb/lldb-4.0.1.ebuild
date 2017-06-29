@@ -19,7 +19,7 @@ EGIT_BRANCH="swift-4.0-branch"
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+libedit ncurses +python +swift test"
+IUSE="+libedit ncurses +python test"
 
 RDEPEND="
 	libedit? ( dev-libs/libedit:0= )
@@ -103,10 +103,6 @@ src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
-
-		# swift garbage
-		-DLLDB_PATH_TO_SWIFT_BUILD=/usr
-		-DLLDB_PATH_TO_CMARK_BUILD=/usr
 
 		# normally we'd have to set LLVM_ENABLE_TERMINFO, HAVE_TERMINFO
 		# and TERMINFO_LIBS... so just force FindCurses.cmake to use
