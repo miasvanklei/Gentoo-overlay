@@ -28,7 +28,7 @@ RDEPEND="
 	sys-libs/ncurses
 	>=sys-devel/clang-4.0.0
 	>=sys-devel/llvm-4.0.0
-	lldb? ( >=dev-util/lldb-4.0.0[swift,libedit,python] )
+	lldb? ( >=dev-util/lldb-4.0.0[libedit,python] )
 	sourcekit? ( dev-libs/libdispatch )"
 DEPEND="${RDEPEND}"
 
