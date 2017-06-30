@@ -30,8 +30,7 @@ DEPEND="${RDEPEND}"
 PATCHES=(
         ${FILESDIR}/fix-crash.patch
         ${FILESDIR}/fix-run.patch
-	${FILESDIR}/remove-dependencies.patch
-        ${FILESDIR}/install-lib.patch
+	${FILESDIR}/fix-package.swift.patch
 )
 
 src_compile() {
@@ -43,9 +42,9 @@ src_compile() {
 }
 
 src_install() {
-        mkdir -p ${D}/usr/lib/swift/linux/x86_64 || die
+        mkdir -p ${D}/usr/lib/swift/linux/${CARCH} || die
         mkdir -p ${D}/usr/bin || die
-        cp .build/release/*.swift* ${D}/usr/lib/swift/linux/x86_64 || die
+        cp .build/release/*.swift* ${D}/usr/lib/swift/linux/${CARCH} || die
         cp .build/release/lib* ${D}/usr/lib/swift/linux || die
         cp .build/release/sourcekitten ${D}/usr/bin || die
 }

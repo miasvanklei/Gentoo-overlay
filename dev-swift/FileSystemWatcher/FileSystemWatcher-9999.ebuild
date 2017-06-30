@@ -32,8 +32,8 @@ src_compile() {
 }
 
 src_install() {
-        mkdir -p ${D}/usr/lib/swift/linux/x86_64 || die
-        cp .build/release/*.swift* ${D}/usr/lib/swift/linux/x86_64 || die
+        mkdir -p ${D}/usr/lib/swift/linux/${CARCH} || die
+        cp .build/release/*.swift* ${D}/usr/lib/swift/linux/${CARCH} || die
         cp .build/release/lib* ${D}/usr/lib/swift/linux || die
         mkdir -p ${D}/usr/lib/swift/inotify || die
         find .build/checkouts -name module.modulemap -exec cp {} ${D}/usr/lib/swift/inotify \; || die
