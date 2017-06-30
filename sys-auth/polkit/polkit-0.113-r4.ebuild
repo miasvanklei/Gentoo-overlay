@@ -70,7 +70,7 @@ src_prepare() {
 	epatch ${FILESDIR}/port-to-mozjs24-2.patch
 	epatch ${FILESDIR}/port-to-mozjs24-3.patch
 	epatch ${FILESDIR}/port-to-mozjs38.patch
-	epatch ${FILESDIR}/elogind.patch
+	epatch ${FILESDIR}/polkit-0.114-elogind.patch
 	epatch ${FILESDIR}/polkit-make-netgroup-support-optional.patch
 
 	sed -i -e 's|unix-group:wheel|unix-user:0|' src/polkitbackend/*-default.rules || die #401513

@@ -152,14 +152,32 @@ index e48b739..c2b1695 100644
   * SECTION:polkitunixsession
 --- a/src/polkitbackend/polkitbackendjsauthority.cpp
 +++ b/src/polkitbackend/polkitbackendjsauthority.cpp
-@@ -43,6 +43,10 @@
+@@ -40,6 +40,10 @@
  #include <systemd/sd-login.h>
  #endif /* HAVE_LIBSYSTEMD */
-
+ 
 +#ifdef HAVE_LIBELOGIND
 +#include <elogind/sd-login.h>
 +#endif /* HAVE_LIBELOGIND */
 +
+ #pragma GCC diagnostic ignored "-Winvalid-offsetof"
  #include <jsapi.h>
-
- #include "initjs.h" /* init.js */
+ #pragma GCC diagnostic error "-Winvalid-offsetof"
+@@ -771,7 +775,7 @@
+       g_assert_not_reached ();
+     }
+ 
+-#ifdef HAVE_LIBSYSTEMD
++#if defined(HAVE_LIBSYSTEMD) || defined(HAVE_LIBELOGIND)
+   if (sd_pid_get_session (pid, &session_str) == 0)
+     {
+       if (sd_session_get_seat (session_str, &seat_str) == 0)
+@@ -779,7 +783,7 @@
+           /* do nothing */
+         }
+     }
+-#endif /* HAVE_LIBSYSTEMD */
++#endif /* HAVE_LIBSYSTEMD OR HAVE_LIBELOGIND */
+ 
+   g_assert (POLKIT_IS_UNIX_USER (user_for_subject));
+   uid = polkit_unix_user_get_uid (POLKIT_UNIX_USER (user_for_subject));
