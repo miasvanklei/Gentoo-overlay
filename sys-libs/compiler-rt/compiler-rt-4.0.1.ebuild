@@ -37,6 +37,7 @@ CMAKE_BUILD_TYPE=Release
 PATCHES=(
 	"${FILESDIR}"/0001-add-blocks-support.patch
 	"${FILESDIR}"/0002-fix-arm.patch
+	"${FILESDIR}"/0003-thumb.patch
 )
 
 pkg_setup() {
