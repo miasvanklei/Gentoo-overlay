@@ -13,6 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
+EGIT_BRANCH="swift-4.0-branch"
 EGIT_COMMIT="73128fce442147366d41da7c547b533abd7f2aac"
 
 LICENSE="Apache-2.0"
