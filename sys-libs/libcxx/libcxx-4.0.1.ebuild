@@ -39,7 +39,7 @@ src_configure() {
 multilib_src_configure() {
 	local libdir=$(get_libdir)
 
-	local libcompiler_rt=$(clang -print-libgcc-file-name)
+	local libcompiler_rt=$(${CC} -print-libgcc-file-name)
 	local libunwind=$(usex libunwind "-lunwind" "")
 
 	local mycmakeargs=(

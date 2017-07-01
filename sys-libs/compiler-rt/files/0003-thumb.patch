@@ -1,0 +1,45 @@
+--- a/cmake/base-config-ix.cmake	1481584442.000000000
++++ b/cmake/base-config-ix.cmake	1498903658.475383815
+@@ -170,8 +170,7 @@
+       if(WIN32)
+         test_target_arch(arm "" "" "")
+       else()
+-        test_target_arch(arm "" "-march=armv7-a" "-mfloat-abi=soft")
+-        test_target_arch(armhf "" "-march=armv7-a" "-mfloat-abi=hard")
++        test_target_arch(thumbv7 "" "-march=armv7-a" "-mfloat-abi=hard" "-mthumb")
+       endif()
+     elseif("${COMPILER_RT_DEFAULT_TARGET_ARCH}" MATCHES "aarch32")
+       test_target_arch(aarch32 "" "-march=armv8-a")
+--- a/cmake/builtin-config-ix.cmake	1480386700.000000000
++++ b/cmake/builtin-config-ix.cmake	1498903658.475383815
+@@ -24,7 +24,7 @@
+ 
+ 
+ set(ARM64 aarch64)
+-set(ARM32 arm armhf)
++set(ARM32 thumbv7)
+ set(X86 i386 i686)
+ set(X86_64 x86_64)
+ set(MIPS32 mips mipsel)
+--- a/cmake/config-ix.cmake	1484066376.000000000
++++ b/cmake/config-ix.cmake	1498903658.475383815
+@@ -142,7 +142,7 @@
+ endmacro()
+ 
+ set(ARM64 aarch64)
+-set(ARM32 arm armhf)
++set(ARM32 thumv7)
+ set(X86 i386 i686)
+ set(X86_64 x86_64)
+ set(MIPS32 mips mipsel)
+--- a/lib/builtins/CMakeLists.txt	1498903798.215383881
++++ b/lib/builtins/CMakeLists.txt	1498903668.095383819
+@@ -426,7 +426,7 @@
+   trunctfsf2.c
+   ${GENERIC_SOURCES})
+ 
+-set(armhf_SOURCES ${arm_SOURCES})
++set(thumbv7_SOURCES ${arm_SOURCES})
+ set(armv7_SOURCES ${arm_SOURCES})
+ set(armv7s_SOURCES ${arm_SOURCES})
+ set(armv7k_SOURCES ${arm_SOURCES})
