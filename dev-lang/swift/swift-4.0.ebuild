@@ -14,7 +14,6 @@ HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
 EGIT_BRANCH="swift-4.0-branch"
-EGIT_COMMIT="73128fce442147366d41da7c547b533abd7f2aac"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -36,6 +35,9 @@ DEPEND="${RDEPEND}"
 CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
+	# revert huge patch
+	eapply ${FILESDIR}/revert-index.patch
+
 	# we prefer own optimization
 	eapply ${FILESDIR}/fix-cflags.patch
 
