@@ -1,22 +1,30 @@
 diff --git a/lib/target.py b/lib/target.py
-index bdeecdf..8bcf72b 100644
+index bdeecdf..606f9f9 100644
 --- a/lib/target.py
 +++ b/lib/target.py
-@@ -59,7 +59,7 @@ class ArchType:
-     @staticmethod
-     def to_string(value):
-         if value == ArchType.armv7:
--            return "armv7"
-+            return "arm"
-         if value == ArchType.armv6:
-             return "armv6"
-         if value == ArchType.armeb:
-@@ -150,6 +150,8 @@ class ArchType:
-             return ArchType.armv7
-         if string == "armv7":
-             return ArchType.armv7
-+        if string == "armv7a":
-+            return ArchType.armv7
-         if string == "armv7l":
-             return ArchType.armv7
-         if string == "armv6":
+@@ -53,6 +53,7 @@ class ArchType:
+     shave       = 39
+     armv6       = 40
+     s390x       = 41
++    thumbv7     = 42
+ # Do not assume that these are 1:1 mapping.  This should follow
+ # canonical naming conventions for arm, etc. architectures.
+ # See apple/swift PR #608    
+@@ -106,6 +107,8 @@ class ArchType:
+             return "tce"
+         if value == ArchType.thumb:
+             return "armv7"
++        if value == ArchType.thumbv7:
++            return "thumbv7"
+         if value == ArchType.thumbeb:
+             return "thumbeb"
+         if value == ArchType.x86:
+@@ -198,6 +201,8 @@ class ArchType:
+             return ArchType.tce
+         if string == "thumb":
+             return ArchType.thumb
++        if string == "thumbv7":
++            return ArchType.thumbv7
+         if string == "thumbeb":
+             return ArchType.thumbeb
+         if string == "x86":

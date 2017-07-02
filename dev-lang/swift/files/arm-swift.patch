@@ -5,7 +5,7 @@
    switch (Triple.getSubArch()) {
    case llvm::Triple::SubArchType::ARMSubArch_v7:
 -    OS << "armv7"; break;
-+    OS << "armv7a"; break;
++    OS << "thumbv7"; break;
    case llvm::Triple::SubArchType::ARMSubArch_v7s:
      OS << "armv7s"; break;
    case llvm::Triple::SubArchType::ARMSubArch_v7k:
@@ -25,7 +25,7 @@
      set(SWIFT_HOST_VARIANT_ARCH_default "armv6")
    elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "armv7l")
 -    set(SWIFT_HOST_VARIANT_ARCH_default "armv7")
-+    set(SWIFT_HOST_VARIANT_ARCH_default "arm")
++    set(SWIFT_HOST_VARIANT_ARCH_default "thumbv7")
    elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "AMD64")
      set(SWIFT_HOST_VARIANT_ARCH_default "x86_64")
    elseif("${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "IA64")
@@ -35,7 +35,7 @@
        set(SWIFT_HOST_TRIPLE "s390x-unknown-linux-gnu")
 -    elseif("${SWIFT_HOST_VARIANT_ARCH}" MATCHES "(armv6|armv7)")
 -      set(SWIFT_HOST_TRIPLE "${SWIFT_HOST_VARIANT_ARCH}-unknown-linux-gnueabihf")
-+    elseif("${SWIFT_HOST_VARIANT_ARCH}" MATCHES "arm")
++    elseif("${SWIFT_HOST_VARIANT_ARCH}" MATCHES "thumbv7")
 +      set(SWIFT_HOST_TRIPLE "${SWIFT_HOST_VARIANT_ARCH}-gentoo-linux-musleabihf")
      else()
        message(FATAL_ERROR "Unable to calculate triple for linux host on ${SWIFT_HOST_VARIANT_ARCH}")
@@ -47,21 +47,29 @@
       "${SIA_ARCH}" STREQUAL "x86" OR
       "${SIA_ARCH}" STREQUAL "armv6" OR
 -     "${SIA_ARCH}" STREQUAL "armv7" OR
-+     "${SIA_ARCH}" STREQUAL "arm" OR
++     "${SIA_ARCH}" STREQUAL "thumbv7" OR
       "${SIA_ARCH}" STREQUAL "armv7k" OR
       "${SIA_ARCH}" STREQUAL "armv7s")
      set("${var_name}" "${SIA_CASE_32_BIT}" PARENT_SCOPE)
 --- a/lib/Basic/Platform.cpp
 +++ b/lib/Basic/Platform.cpp
-@@ -133,10 +133,8 @@
-       return Triple.getArchName();
-       break;
-     case llvm::Triple::SubArchType::ARMSubArch_v7:
+@@ -139,19 +139,5 @@ StringRef swift::getPlatformNameForTriple(const llvm::Triple &triple) {
+ }
+ 
+ StringRef swift::getMajorArchitectureName(const llvm::Triple &Triple) {
+-  if (Triple.isOSLinux()) {
+-    switch(Triple.getSubArch()) {
+-    default:
+-      return Triple.getArchName();
+-      break;
+-    case llvm::Triple::SubArchType::ARMSubArch_v7:
 -      return "armv7";
 -      break;
-     case llvm::Triple::SubArchType::ARMSubArch_v6:
+-    case llvm::Triple::SubArchType::ARMSubArch_v6:
 -      return "armv6";
-+      return "arm";
-       break;
-     }
-   } else {
+-      break;
+-    }
+-  } else {
+     return Triple.getArchName();
+-  }
+ }
