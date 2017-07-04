@@ -3,7 +3,9 @@
 
 EAPI=6
 
-inherit autotools git-r3 flag-o-matic
+: ${CMAKE_MAKEFILE_GENERATOR:=ninja}
+
+inherit cmake-utils git-r3
 
 DESCRIPTION="The libdispatch Project, (a.k.a. Grand Central Dispatch), for concurrency on multicore hardware"
 HOMEPAGE="https://github.com/apple/swift-corelibs-libdispatch"
@@ -13,32 +15,42 @@ EGIT_REPO_URI="https://github.com/apple/swift-corelibs-libdispatch.git"
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS=""
-IUSE=""
+IUSE="+swift test"
 
-RDEPEND="dev-lang/swift
+RDEPEND="swift? ( dev-lang/swift )
 	dev-libs/libbsd"
 DEPEND="${RDEPEND}"
 
-src_prepare() {
-	eapply ${FILESDIR}/fix-compile.patch
-	eapply ${FILESDIR}/fix-segfault.patch
-	eautoreconf
-	eapply_user
-}
+PATCHES=(
+	${FILESDIR}/fix-compile.patch
+	${FILESDIR}/fix-segfault.patch
+	${FILESDIR}/fix-cmake.patch
+)
+
+CMAKE_BUILD_TYPE=Release
 
 src_configure() {
-#	# fix use of nostdlib, link in libswiftCore
-	find ./ -type f -exec sed -i -e 's|-nostdlib|-L/usr/lib/swift/linux -lswiftCore|g' {} \;
-	econf --with-swift-toolchain=/usr --enable-embedded-blocks-runtime=off
-}
+	local mycmakeargs=(
+		-DUSE_GOLD_LINKER=OFF
+		-DENABLE_TESTING=$(usex test)
+	)
 
-src_compile() {
-	# race conditions
-	emake -j1
+	if use swift; then
+		mycmakeargs+=(
+			-DCMAKE_SWIFT_COMPILER=/usr/bin/swiftc
+			-DENABLE_SWIFT=TRUE
+		)
+	fi
+	cmake-utils_src_configure
 }
 
 src_install() {
-	default
-	# not needed
-	rm ${D}/usr/lib/swift/linux/libdispatch.la
+	cmake-utils_src_install
+
+	# cmake is far from perfect
+	mkdir -p ${D}/usr/lib/swift/linux/${CARCH} || die
+        cp ${BUILD_DIR}/src/swift/*.swift* ${D}/usr/lib/swift/linux/${CARCH} || die
+	mv ${D}/usr/include/* ${D}/usr/lib/swift || die
+	rmdir ${D}/usr/include || die
+	mv ${D}/usr/lib/*.so ${D}/usr/lib/swift/linux || die
 }

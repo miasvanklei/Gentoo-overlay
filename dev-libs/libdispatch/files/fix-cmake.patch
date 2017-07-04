@@ -1,0 +1,112 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f6b078e..0ee764a 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -69,27 +69,6 @@ else()
+   endif()
+ endif()
+ 
+-if(CMAKE_SYSTEM_NAME STREQUAL Linux OR
+-   CMAKE_SYSTEM_NAME STREQUAL Android OR
+-   CMAKE_SYSTEM_NAME STREQUAL Windows)
+-  add_library(BlocksRuntime
+-              STATIC
+-                ${CMAKE_SOURCE_DIR}/src/BlocksRuntime/data.c
+-                ${CMAKE_SOURCE_DIR}/src/BlocksRuntime/runtime.c)
+-  set_target_properties(BlocksRuntime
+-                        PROPERTIES
+-                          POSITION_INDEPENDENT_CODE TRUE)
+-  if(HAVE_OBJC AND CMAKE_DL_LIBS)
+-    set_target_properties(BlocksRuntime
+-                          PROPERTIES
+-                            INTERFACE_LINK_LIBRARIES ${CMAKE_DL_LIBS})
+-  endif()
+-  set(WITH_BLOCKS_RUNTIME "${CMAKE_SOURCE_DIR}/src/BlocksRuntime" CACHE PATH "Path to blocks runtime" FORCE)
+-else()
+-  # TODO(compnerd) support system installed BlocksRuntime
+-  # find_package(BlocksRuntime REQUIRED)
+-endif()
+-
+ check_symbol_exists(__GNU_LIBRARY__ "features.h" _GNU_SOURCE)
+ if(_GNU_SOURCE)
+   set(CMAKE_REQUIRED_DEFINITIONS ${CMAKE_REQUIRED_DEFINITIONS} -D_GNU_SOURCE)
+@@ -115,7 +94,7 @@ check_function_exists(pthread_workqueue_setdispatch_np HAVE_PTHREAD_WORKQUEUE_SE
+ check_function_exists(strlcpy HAVE_STRLCPY)
+ check_function_exists(sysconf HAVE_SYSCONF)
+ 
+-if(NOT HAVE_STRLCPY AND NOT HAVE_GETPROGNAME)
++if(NOT HAVE_STRLCPY OR NOT HAVE_GETPROGNAME)
+   include(FindPkgConfig)
+   pkg_check_modules(BSD_OVERLAY libbsd-overlay)
+   if(BSD_OVERLAY_FOUND)
+@@ -198,21 +177,17 @@ if(leaks_EXECUTABLE)
+ endif()
+ 
+ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+-  add_custom_command(OUTPUT
+-                       "${CMAKE_SOURCE_DIR}/dispatch/module.modulemap"
+-                       "${CMAKE_SOURCE_DIR}/private/module.modulemap"
++  add_custom_target(mSymlink ALL
+                      COMMAND
+-                       ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/darwin/module.modulemap" "${CMAKE_SOURCE_DIR}/dispatch/module.modulemap"
++                       ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dispatch/darwin/module.modulemap" "${CMAKE_SOURCE_DIR}/dispatch/module.modulemap"
+                      COMMAND
+-                       ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/darwin/module.modulemap" "${CMAKE_SOURCE_DIR}/private/module.modulemap")
++                       ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/private/darwin/module.modulemap" "${CMAKE_SOURCE_DIR}/private/module.modulemap")
+ else()
+-  add_custom_command(OUTPUT
+-                       "${CMAKE_SOURCE_DIR}/dispatch/module.modulemap"
+-                       "${CMAKE_SOURCE_DIR}/private/module.modulemap"
++  add_custom_target(mSymlink ALL
+                      COMMAND
+-                       ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/generic/module.modulemap" "${CMAKE_SOURCE_DIR}/dispatch/module.modulemap"
++                       ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/dispatch/generic/module.modulemap" "${CMAKE_SOURCE_DIR}/dispatch/module.modulemap"
+                      COMMAND
+-                       ${CMAKE_COMMAND} -E create_symlink "${CMAKE_SOURCE_DIR}/generic/module.modulemap" "${CMAKE_SOURCE_DIR}/private/module.modulemap")
++                       ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/private/generic/module.modulemap" "${CMAKE_SOURCE_DIR}/private/module.modulemap")
+ endif()
+ configure_file("${CMAKE_SOURCE_DIR}/cmake/config.h.in"
+                "${CMAKE_BINARY_DIR}/config/config_ac.h")
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 2ec2691..127d510 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -98,11 +98,13 @@ if(CMAKE_SWIFT_COMPILER)
+                       -fmodule-map-file=${CMAKE_SOURCE_DIR}/dispatch/module.modulemap
+                     SWIFT_FLAGS
+                       -I ${CMAKE_SOURCE_DIR}
++                      -I /usr/lib/swift
+                       ${swift_optimization_flags})
+   target_sources(dispatch
+                  PRIVATE
+                    swift/DispatchStubs.cc
+                    ${CMAKE_CURRENT_BINARY_DIR}/swiftDispatch.o)
++  add_dependencies(swiftDispatch mSymlink)
+ endif()
+ if(dtrace_EXECUTABLE)
+   dtrace_usdt_probe(${CMAKE_CURRENT_SOURCE_DIR}/provider.d
+@@ -172,6 +174,12 @@ target_link_libraries(dispatch PRIVATE Threads::Threads)
+ if(WITH_BLOCKS_RUNTIME)
+   target_link_libraries(dispatch PRIVATE BlocksRuntime)
+ endif()
++if(ENABLE_SWIFT)
++  target_link_libraries(dispatch PRIVATE /usr/lib/swift/linux/libswiftCore.so)
++  if(NOT CMAKE_BUILD_TYPE MATCHES Release)
++    target_link_libraries(dispatch PRIVATE /usr/lib/swift/linux/libswiftSwiftOnoneSupport.so)
++  endif()
++endif()
+ if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+   set_property(TARGET dispatch
+                APPEND_STRING
+diff --git a/dispatch/CMakeLists.txt b/dispatch/CMakeLists.txt
+index dbfb866..04f9112 100644
+--- a/dispatch/CMakeLists.txt
++++ b/dispatch/CMakeLists.txt
+@@ -19,6 +19,6 @@ if(ENABLE_SWIFT)
+   install(FILES
+             module.modulemap
+           DESTINATION
+-            ${CMAKE_INSTALL_FULL_INCLUEDIR}/dispatch/)
++            ${CMAKE_INSTALL_FULL_INCLUDEDIR}/dispatch/)
+ endif()
+ 
