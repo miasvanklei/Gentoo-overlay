@@ -41,5 +41,4 @@ src_install() {
 	default
 	# not needed
 	rm ${D}/usr/lib/swift/linux/libdispatch.la
-	use arm && mv ${D}/usr/lib/swift/armv7a ${D}/usr/lib/swift/arm
 }

@@ -14,24 +14,3 @@
      return true;
  
    return false;
---- a/source/Host/common/HostInfoBase.cpp
-+++ b/source/Host/common/HostInfoBase.cpp
-@@ -373,6 +373,18 @@
-   arch_32.Clear();
-   arch_64.Clear();
- 
-+  // Canonicalize armv7l and armv6l to their alias targets.  The 'l' is a linux addition.
-+  if (triple.getOS() == llvm::Triple::Linux && triple.getArch() == llvm::Triple::arm) {
-+    switch(triple.getSubArch()) {
-+    default:
-+      break;
-+    case llvm::Triple::SubArchType::ARMSubArch_v6:
-+    case llvm::Triple::SubArchType::ARMSubArch_v7:
-+      triple.setArchName("arm");
-+       break;
-+    }
-+  }
-+
-   switch (triple.getArch()) {
-   default:
-     arch_32.SetTriple(triple);
