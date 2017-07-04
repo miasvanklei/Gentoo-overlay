@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index f6b078e..0ee764a 100644
+index f6b078e..a68c820 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -69,27 +69,6 @@ else()
@@ -67,11 +67,55 @@ index f6b078e..0ee764a 100644
  endif()
  configure_file("${CMAKE_SOURCE_DIR}/cmake/config.h.in"
                 "${CMAKE_BINARY_DIR}/config/config_ac.h")
+diff --git a/cmake/modules/SwiftSupport.cmake b/cmake/modules/SwiftSupport.cmake
+index 1965939..295211c 100644
+--- a/cmake/modules/SwiftSupport.cmake
++++ b/cmake/modules/SwiftSupport.cmake
+@@ -66,4 +66,10 @@ function(add_swift_library library)
+                        ${ASL_OUTPUT}
+                        ${ASL_MODULE_PATH}
+                        ${module_directory}/${ASL_MODULE_NAME}.swiftdoc)
++
++  install(FILES
++            ${module_directory}/${ASL_MODULE_NAME}.swiftdoc
++            ${module_directory}/${ASL_MODULE_NAME}.swiftmodule
++          DESTINATION
++           "${SWIFT_RUNTIME_LIBDIR}/${SWIFT_ARCH}")
+ endfunction()
+diff --git a/dispatch/CMakeLists.txt b/dispatch/CMakeLists.txt
+index dbfb866..27a79ee 100644
+--- a/dispatch/CMakeLists.txt
++++ b/dispatch/CMakeLists.txt
+@@ -14,11 +14,11 @@ install(FILES
+           source.h
+           time.h
+         DESTINATION
+-          ${CMAKE_INSTALL_FULL_INCLUDEDIR}/dispatch/)
++          ${SWIFT_RUNTIME_LIBDIR}/../dispatch)
+ if(ENABLE_SWIFT)
+   install(FILES
+             module.modulemap
+           DESTINATION
+-            ${CMAKE_INSTALL_FULL_INCLUEDIR}/dispatch/)
++            ${SWIFT_RUNTIME_LIBDIR}/../dispatch)
+ endif()
+ 
+diff --git a/os/CMakeLists.txt b/os/CMakeLists.txt
+index 6e2b415..c614662 100644
+--- a/os/CMakeLists.txt
++++ b/os/CMakeLists.txt
+@@ -6,5 +6,5 @@ install(FILES
+           object.h
+           linux_base.h
+         DESTINATION
+-          "${CMAKE_INSTALL_FULL_INCLUDEDIR}/os")
++          "${SWIFT_RUNTIME_LIBDIR}/../os")
+ 
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index 2ec2691..127d510 100644
+index 2ec2691..5b3e8ea 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -98,11 +98,13 @@ if(CMAKE_SWIFT_COMPILER)
+@@ -98,6 +98,7 @@ if(CMAKE_SWIFT_COMPILER)
                        -fmodule-map-file=${CMAKE_SOURCE_DIR}/dispatch/module.modulemap
                      SWIFT_FLAGS
                        -I ${CMAKE_SOURCE_DIR}
@@ -79,34 +123,23 @@ index 2ec2691..127d510 100644
                        ${swift_optimization_flags})
    target_sources(dispatch
                   PRIVATE
-                    swift/DispatchStubs.cc
-                    ${CMAKE_CURRENT_BINARY_DIR}/swiftDispatch.o)
-+  add_dependencies(swiftDispatch mSymlink)
- endif()
- if(dtrace_EXECUTABLE)
-   dtrace_usdt_probe(${CMAKE_CURRENT_SOURCE_DIR}/provider.d
-@@ -172,6 +174,12 @@ target_link_libraries(dispatch PRIVATE Threads::Threads)
+@@ -172,6 +173,12 @@ target_link_libraries(dispatch PRIVATE Threads::Threads)
  if(WITH_BLOCKS_RUNTIME)
    target_link_libraries(dispatch PRIVATE BlocksRuntime)
  endif()
 +if(ENABLE_SWIFT)
-+  target_link_libraries(dispatch PRIVATE /usr/lib/swift/linux/libswiftCore.so)
++  target_link_libraries(dispatch PRIVATE ${SWIFT_RUNTIME_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}swiftCore${CMAKE_SHARED_LIBRARY_SUFFIX})
 +  if(NOT CMAKE_BUILD_TYPE MATCHES Release)
-+    target_link_libraries(dispatch PRIVATE /usr/lib/swift/linux/libswiftSwiftOnoneSupport.so)
++    target_link_libraries(dispatch PRIVATE ${SWIFT_RUNTIME_LIBDIR}/${CMAKE_SHARED_LIBRARY_PREFIX}swiftSwiftOnoneSupport${CMAKE_SHARED_LIBRARY_SUFFIX})
 +  endif()
 +endif()
  if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
    set_property(TARGET dispatch
                 APPEND_STRING
-diff --git a/dispatch/CMakeLists.txt b/dispatch/CMakeLists.txt
-index dbfb866..04f9112 100644
---- a/dispatch/CMakeLists.txt
-+++ b/dispatch/CMakeLists.txt
-@@ -19,6 +19,6 @@ if(ENABLE_SWIFT)
-   install(FILES
-             module.modulemap
-           DESTINATION
--            ${CMAKE_INSTALL_FULL_INCLUEDIR}/dispatch/)
-+            ${CMAKE_INSTALL_FULL_INCLUDEDIR}/dispatch/)
- endif()
+@@ -200,5 +207,5 @@ add_custom_command(TARGET dispatch POST_BUILD
+ install(TARGETS
+           dispatch
+         DESTINATION
+-          "${CMAKE_INSTALL_FULL_LIBDIR}")
++          "${SWIFT_RUNTIME_LIBDIR}")
  

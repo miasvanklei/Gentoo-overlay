@@ -39,18 +39,9 @@ src_configure() {
 		mycmakeargs+=(
 			-DCMAKE_SWIFT_COMPILER=/usr/bin/swiftc
 			-DENABLE_SWIFT=TRUE
+			-DSWIFT_RUNTIME_LIBDIR=/usr/lib/swift/linux
+			-DSWIFT_ARCH=${CARCH}
 		)
 	fi
 	cmake-utils_src_configure
-}
-
-src_install() {
-	cmake-utils_src_install
-
-	# cmake is far from perfect
-	mkdir -p ${D}/usr/lib/swift/linux/${CARCH} || die
-        cp ${BUILD_DIR}/src/swift/*.swift* ${D}/usr/lib/swift/linux/${CARCH} || die
-	mv ${D}/usr/include/* ${D}/usr/lib/swift || die
-	rmdir ${D}/usr/include || die
-	mv ${D}/usr/lib/*.so ${D}/usr/lib/swift/linux || die
 }
