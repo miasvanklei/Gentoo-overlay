@@ -1,0 +1,115 @@
+From e2520914c446d8646088bc3aa061b5723aa52036 Mon Sep 17 00:00:00 2001
+From: "A. Wilcox" <awilfox@adelielinux.org>
+Date: Wed, 20 Jul 2016 21:19:14 -0500
+Subject: [PATCH] Determine if _nl_msg_cat_cntr exists before use
+
+GNU gettext does not guarantee that GNU libintl will be used.  This
+assumption breaks the build against the musl libc.
+
+BUG: 365917
+---
+ .gitignore              |  1 +
+ CMakeLists.txt          |  3 +++
+ cmake/FindLibIntl.cmake |  3 +++
+ src/config.h.in         | 25 +++++++++++++++++++++++++
+ src/kcatalog.cpp        |  5 +++--
+ 5 files changed, 35 insertions(+), 2 deletions(-)
+ create mode 100644 src/config.h.in
+
+diff --git a/.gitignore b/.gitignore
+index 1a6b0c4..42a96a7 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1 +1,2 @@
+ doc-gen/
++src/config.h
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 00e4001..09dc6af 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -59,6 +59,9 @@ endif()
+ add_subdirectory(src)
+ add_subdirectory(autotests)
+ 
++configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/config.h.in"
++	"${CMAKE_CURRENT_SOURCE_DIR}/src/config.h")
++
+ # create a Config.cmake and a ConfigVersion.cmake file and install them
+ set(CMAKECONFIG_INSTALL_DIR "${KDE_INSTALL_CMAKEPACKAGEDIR}/KF5I18n")
+ 
+diff --git a/cmake/FindLibIntl.cmake b/cmake/FindLibIntl.cmake
+index cde5da8..a457112 100644
+--- a/cmake/FindLibIntl.cmake
++++ b/cmake/FindLibIntl.cmake
+@@ -56,3 +56,6 @@ else()
+     message(STATUS "libintl is a separate library.")
+     find_package_handle_standard_args(LibIntl REQUIRED_VARS LibIntl_INCLUDE_DIRS LibIntl_LIBRARIES)
+ endif()
++
++set(CMAKE_REQUIRED_LIBRARIES ${LibIntl_LIBRARIES})
++check_cxx_source_compiles("extern \"C\" int _nl_msg_cat_cntr; int main(void) { ++_nl_msg_cat_cntr; return 0; }" HAVE_NL_MSG_CAT_CNTR)
+diff --git a/src/config.h.in b/src/config.h.in
+new file mode 100644
+index 0000000..f445f88
+--- /dev/null
++++ b/src/config.h.in
+@@ -0,0 +1,25 @@
++/* This file is part of the KDE libraries
++   Copyright (c) 2016 A. Wilcox <awilfox@adelielinux.org>
++
++   This library is free software; you can redistribute it and/or
++   modify it under the terms of the GNU Library General Public
++   License as published by the Free Software Foundation; either
++   version 2 of the License, or (at your option) any later version.
++
++   This library is distributed in the hope that it will be useful,
++   but WITHOUT ANY WARRANTY; without even the implied warranty of
++   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++   Library General Public License for more details.
++
++   You should have received a copy of the GNU Library General Public License
++   along with this library; see the file COPYING.LIB.  If not, write to
++   the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
++   Boston, MA 02110-1301, USA.
++*/
++
++#ifndef CONFIG_H
++#define CONFIG_H
++
++#cmakedefine HAS_NL_MSG_CAT_CNTR
++
++#endif
+diff --git a/src/kcatalog.cpp b/src/kcatalog.cpp
+index 6682d62..a15e661 100644
+--- a/src/kcatalog.cpp
++++ b/src/kcatalog.cpp
+@@ -21,6 +21,7 @@
+ #include <stdlib.h>
+ #include <locale.h>
+ #include "gettext.h"
++#include "config.h"
+ 
+ #include <qstandardpaths.h>
+ #include <QByteArray>
+@@ -41,7 +42,7 @@
+ #endif
+ #endif
+ 
+-#if defined(__USE_GNU_GETTEXT)
++#if defined(HAS_NL_MSG_CAT_CNTR)
+ extern "C" int Q_DECL_IMPORT _nl_msg_cat_cntr;
+ #endif
+ 
+@@ -171,9 +172,9 @@ void KCatalogPrivate::setupGettextEnv()
+         //qDebug() << "bindtextdomain" << domain << localeDir;
+         bindtextdomain(domain, localeDir);
+ 
++#if defined(HAS_NL_MSG_CAT_CNTR)
+         // Magic to make sure GNU Gettext doesn't use stale cached translation
+         // from previous language.
+-#if defined(__USE_GNU_GETTEXT)
+         ++_nl_msg_cat_cntr;
+ #endif
+     }
+-- 
+2.9.2
