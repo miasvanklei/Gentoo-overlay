@@ -7,8 +7,7 @@ PYTHON_COMPAT=( python3_5 )
 
 inherit python-any-r1 versionator toolchain-funcs llvm
 
-ABI_VER="$(get_version_component_range 1-2)"
-SLOT="stable/${ABI_VER}"
+SLOT="0"
 KEYWORDS="~amd64"
 
 DESCRIPTION="Systems programming language from Mozilla"
@@ -126,8 +125,8 @@ src_install() {
 
 	if use source; then
 		pushd ${S}/src
-		mkdir -p ${D}/usr/src/${P}
-		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${P} \; || die
+		mkdir -p ${D}/usr/src/${PN}
+		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${PN} \; || die
 		popd >/dev/null
 	fi
 }
