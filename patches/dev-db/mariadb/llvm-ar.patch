@@ -1,0 +1,20 @@
+--- a/cmake/merge_archives_unix.cmake.in	2017-07-07 14:37:03.785807653 +0200
++++ b/cmake/merge_archives_unix.cmake.in	2017-07-07 14:37:18.905808397 +0200
+@@ -32,7 +32,7 @@
+   SET(TEMP_SUBDIR ${TEMP_DIR}/${NAME_NO_EXT})
+   MAKE_DIRECTORY(${TEMP_SUBDIR})
+   EXECUTE_PROCESS(
+-    COMMAND ${CMAKE_AR} -x ${LIB}
++    COMMAND ${CMAKE_AR} x ${LIB}
+     WORKING_DIRECTORY ${TEMP_SUBDIR}
+   )
+ 
+@@ -51,7 +51,7 @@
+ FILE(TO_NATIVE_PATH ${TARGET_LOCATION} ${TARGET_LOCATION})
+ # Now pack the objects into library with ar.
+ EXECUTE_PROCESS(
+-  COMMAND ${CMAKE_AR} -r ${TARGET_LOCATION} ${ALL_OBJECTS}
++  COMMAND ${CMAKE_AR} r ${TARGET_LOCATION} ${ALL_OBJECTS}
+   WORKING_DIRECTORY ${TEMP_DIR}
+ )
+ EXECUTE_PROCESS(
