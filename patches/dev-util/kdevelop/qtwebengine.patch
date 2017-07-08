@@ -1,0 +1,154 @@
+From 8a1536caf85f402d6d1c2d6cb00b0b94d34196bb Mon Sep 17 00:00:00 2001
+From: Aleix Pol <aleixpol@kde.org>
+Date: Tue, 14 Mar 2017 02:56:55 +0100
+Subject: [PATCH] Port away from QtWebKit into QtWebEngine
+
+Summary:
+It's unmaintained
+We now have in place what we needed to implement QtHelp
+
+Test Plan: manual testing
+
+Reviewers: kfunk, #kdevelop
+
+Subscribers: kfunk, ltoscano, mwolff, kossebau, brauch, nalvarez, tcberner, kdevelop-devel
+
+Differential Revision: https://phabricator.kde.org/D5042
+---
+ CMakeLists.txt                                 |  2 +-
+ documentation/manpage/manpagedocumentation.cpp |  9 +++------
+ documentation/qthelp/qthelpdocumentation.cpp   | 15 +++++----------
+ documentation/qthelp/qthelpdocumentation.h     |  6 +++---
+ projectmanagers/cmake/cmakedocumentation.cpp   |  1 +
+ 5 files changed, 13 insertions(+), 20 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4230cbfa34..22d9b1ca8c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -33,7 +33,7 @@ include(KDEInstallDirs)
+ include(KDECMakeSettings)
+ 
+ set(QT_MIN_VERSION "5.4.0")
+-find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED Widgets Concurrent Quick QuickWidgets WebKitWidgets Test)
++find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED Widgets Concurrent Quick QuickWidgets WebEngineWidgets Test)
+ set(KF5_DEP_VERSION "5.15.0") # we need KCrash::initialize
+ find_package(KF5 ${KF5_DEP_VERSION} REQUIRED COMPONENTS
+   Config
+diff --git a/documentation/manpage/manpagedocumentation.cpp b/documentation/manpage/manpagedocumentation.cpp
+index 15c91e6b0e..69e9009dda 100644
+--- a/documentation/manpage/manpagedocumentation.cpp
++++ b/documentation/manpage/manpagedocumentation.cpp
+@@ -32,7 +32,6 @@
+ 
+ ManPagePlugin* ManPageDocumentation::s_provider=nullptr;
+ 
+-
+ ManPageDocumentation::ManPageDocumentation(const QString& name, const QUrl& url)
+     : m_url(url), m_name(name)
+ {
+@@ -66,14 +65,12 @@ QWidget* ManPageDocumentation::documentationWidget(KDevelop::DocumentationFindWi
+ {
+     KDevelop::StandardDocumentationView* view = new KDevelop::StandardDocumentationView(findWidget, parent);
+     view->setDocumentation(IDocumentation::Ptr(this));
++    view->setDelegateLinks(true);
++    QObject::connect(view, &KDevelop::StandardDocumentationView::linkClicked, ManPageDocumentation::s_provider->model(), &ManPageModel::showItemFromUrl);
+ 
+     // apply custom style-sheet to normalize look of the page
+     const QString cssFile = QStandardPaths::locate(QStandardPaths::GenericDataLocation, "kdevmanpage/manpagedocumentation.css");
+-    QWebSettings* settings = view->settings();
+-    settings->setUserStyleSheetUrl(QUrl::fromLocalFile(cssFile));
+-
+-    view->page()->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
+-    QObject::connect(view, &KDevelop::StandardDocumentationView::linkClicked, ManPageDocumentation::s_provider->model(), &ManPageModel::showItemFromUrl);
++    view->setOverrideCss(QUrl::fromLocalFile(cssFile));
+     return view;
+ }
+ 
+diff --git a/documentation/qthelp/qthelpdocumentation.cpp b/documentation/qthelp/qthelpdocumentation.cpp
+index a1f292bca9..dc8850faf4 100644
+--- a/documentation/qthelp/qthelpdocumentation.cpp
++++ b/documentation/qthelp/qthelpdocumentation.cpp
+@@ -224,7 +224,7 @@ QString QtHelpDocumentation::description() const
+     return QStringList(m_info.keys()).join(", ");
+ }
+ 
+-void QtHelpDocumentation::setUserStyleSheet(QWebView* view, const QUrl& url)
++void QtHelpDocumentation::setUserStyleSheet(StandardDocumentationView* view, const QUrl& url)
+ {
+ 
+     QTemporaryFile* file = new QTemporaryFile(view);
+@@ -237,7 +237,7 @@ void QtHelpDocumentation::setUserStyleSheet(QWebView* view, const QUrl& url)
+           << "#qtdocheader .qtref { position: absolute !important; top: 5px !important; right: 0 !important; }\n";
+     }
+     file->close();
+-    view->settings()->setUserStyleSheetUrl(QUrl::fromLocalFile(file->fileName()));
++    view->setOverrideCss(QUrl::fromLocalFile(file->fileName()));
+ 
+     delete m_lastStyleSheet.data();
+     m_lastStyleSheet = file;
+@@ -250,20 +250,15 @@ QWidget* QtHelpDocumentation::documentationWidget(DocumentationFindWidget* findW
+     } else {
+         StandardDocumentationView* view = new StandardDocumentationView(findWidget, parent);
+         // QCH files created by doxygen can come with JavaScript
+-        view->settings()->setAttribute(QWebSettings::JavascriptEnabled, true);
+         if (!m_sharedQNAM) {
+             m_sharedQNAM.reset(new HelpNetworkAccessManager(m_provider->engine()));
+         }
+-        view->page()->setNetworkAccessManager(m_sharedQNAM.data());
+-        view->page()->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
++        view->setNetworkAccessManager(m_sharedQNAM.data());
+         view->setContextMenuPolicy(Qt::CustomContextMenu);
+         connect(view, &StandardDocumentationView::customContextMenuRequested, this, &QtHelpDocumentation::viewContextMenuRequested);
+ 
+-        QObject::connect(view, &StandardDocumentationView::linkClicked, this, &QtHelpDocumentation::jumpedTo);
+-
+         setUserStyleSheet(view, m_current.value());
+-        view->setHtml(m_provider->engine()->fileData(m_current.value()));
+-        view->setUrl(m_current.value());
++        view->load(m_current.value());
+         lastView = view;
+         return view;
+     }
+@@ -276,7 +271,7 @@ void QtHelpDocumentation::viewContextMenuRequested(const QPoint& pos)
+         return;
+ 
+     QMenu menu;
+-    QAction* copyAction = view->pageAction(QWebPage::Copy);
++    QAction* copyAction = view->copyAction();
+     copyAction->setIcon(QIcon::fromTheme("edit-copy"));
+     menu.addAction(copyAction);
+ 
+diff --git a/documentation/qthelp/qthelpdocumentation.h b/documentation/qthelp/qthelpdocumentation.h
+index 97f27aa72d..99690e7313 100644
+--- a/documentation/qthelp/qthelpdocumentation.h
++++ b/documentation/qthelp/qthelpdocumentation.h
+@@ -28,9 +28,9 @@
+ #include <QAction>
+ #include <interfaces/idocumentation.h>
+ 
++namespace KDevelop { class StandardDocumentationView; }
+ class QModelIndex;
+ class QNetworkAccessManager;
+-class QWebView;
+ class QtHelpProviderAbstract;
+ class QTemporaryFile;
+ 
+@@ -61,7 +61,7 @@ class QtHelpDocumentation : public KDevelop::IDocumentation
+         void jumpedTo(const QUrl& newUrl);
+ 
+     private:
+-        void setUserStyleSheet(QWebView* view, const QUrl& url);
++        void setUserStyleSheet(KDevelop::StandardDocumentationView* view, const QUrl& url);
+ 
+     private:
+         QtHelpProviderAbstract *m_provider;
+@@ -69,7 +69,7 @@ class QtHelpDocumentation : public KDevelop::IDocumentation
+         const QMap<QString, QUrl> m_info;
+         const QMap<QString, QUrl>::const_iterator m_current;
+ 
+-        QWebView* lastView;
++        KDevelop::StandardDocumentationView* lastView;
+         QPointer<QTemporaryFile> m_lastStyleSheet;
+         QScopedPointer<QNetworkAccessManager> m_sharedQNAM;
+ };
