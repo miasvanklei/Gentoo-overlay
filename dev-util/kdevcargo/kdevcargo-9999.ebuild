@@ -10,7 +10,7 @@ EGIT_MIRROR="https://github.com/Noughmad"
 
 inherit python-single-r1 kde5
 
-DESCRIPTION="Python plugin for KDevelop"
+DESCRIPTION="Cargo plugin for KDevelop"
 IUSE=""
 [[ ${KDE_BUILD_TYPE} = release ]] && KEYWORDS="~amd64 ~x86"
 

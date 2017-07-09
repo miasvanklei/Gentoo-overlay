@@ -10,7 +10,7 @@ EGIT_MIRROR="https://github.com/michalsrb"
 
 inherit python-single-r1 kde5
 
-DESCRIPTION="Python plugin for KDevelop"
+DESCRIPTION="Rust plugin for KDevelop"
 IUSE=""
 [[ ${KDE_BUILD_TYPE} = release ]] && KEYWORDS="~amd64 ~x86"
 
