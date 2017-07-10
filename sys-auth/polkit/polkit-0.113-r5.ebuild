@@ -1,8 +1,9 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=5
-inherit eutils libtool multilib pam pax-utils systemd user xdg-utils autotools
+EAPI=6
+
+inherit autotools pam pax-utils systemd user xdg-utils
 
 DESCRIPTION="Policy framework for controlling privileges for system-wide services"
 HOMEPAGE="https://www.freedesktop.org/wiki/Software/polkit"
@@ -12,19 +13,20 @@ LICENSE="LGPL-2"
 SLOT="0"
 KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86"
 IUSE="elogind examples gtk +introspection jit kde nls pam selinux systemd test"
-REQUIRED_USE="systemd? ( !elogind )"
+
+REQUIRED_USE="?? ( elogind systemd )"
 
 CDEPEND="
 	dev-lang/spidermonkey:38[-debug]
-	>=dev-libs/glib-2.32:2
-	>=dev-libs/expat-2:=
-	introspection? ( >=dev-libs/gobject-introspection-1:= )
+	dev-libs/glib:2
+	dev-libs/expat
+	elogind? ( sys-auth/elogind )
+	introspection? ( dev-libs/gobject-introspection )
 	pam? (
 		sys-auth/pambase
 		virtual/pam
-		)
+	)
 	systemd? ( sys-apps/systemd:0= )
-	elogind? ( sys-auth/elogind )
 "
 DEPEND="${CDEPEND}
 	app-text/docbook-xml-dtd:4.1.2
@@ -41,14 +43,23 @@ RDEPEND="${CDEPEND}
 PDEPEND="
 	gtk? ( || (
 		>=gnome-extra/polkit-gnome-0.105
-		lxde-base/lxpolkit
-		) )
-	kde? ( || (
-		kde-plasma/polkit-kde-agent
-		sys-auth/polkit-kde-agent
-		) )
+		>=lxde-base/lxsession-0.5.2
+	) )
+	kde? ( kde-plasma/polkit-kde-agent )
 	!systemd? ( !elogind? ( sys-auth/consolekit[policykit] ) )
 "
+
+DOCS=( docs/TODO HACKING NEWS README )
+
+PATCHES=(
+	"${FILESDIR}"/port-to-mozjs24.patch
+	"${FILESDIR}"/port-to-mozjs24-1.patch
+	"${FILESDIR}"/port-to-mozjs24-2.patch
+	"${FILESDIR}"/port-to-mozjs24-3.patch
+	"${FILESDIR}"/port-to-mozjs38.patch
+	"${FILESDIR}"/${PN}-0.114-elogind.patch
+	"${FILESDIR}"/${PN}-make-netgroup-support-optional.patch
+)
 
 QA_MULTILIB_PATHS="
 	usr/lib/polkit-1/polkit-agent-helper-1
@@ -65,13 +76,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	epatch ${FILESDIR}/port-to-mozjs24.patch
-	epatch ${FILESDIR}/port-to-mozjs24-1.patch
-	epatch ${FILESDIR}/port-to-mozjs24-2.patch
-	epatch ${FILESDIR}/port-to-mozjs24-3.patch
-	epatch ${FILESDIR}/port-to-mozjs38.patch
-	epatch ${FILESDIR}/polkit-0.114-elogind.patch
-	epatch ${FILESDIR}/polkit-make-netgroup-support-optional.patch
+	default
 
 	sed -i -e 's|unix-group:wheel|unix-user:0|' src/polkitbackend/*-default.rules || die #401513
 
@@ -81,7 +86,10 @@ src_prepare() {
 		-e 's/@ENABLE_GTK_DOC_FALSE@install-data-local://' \
 		docs/polkit/Makefile.in || die
 
-	# Fix cross-building, bug #590764
+	# disable broken test - bug #624022
+	sed -i -e "/^SUBDIRS/s/polkitbackend//" test/Makefile.am || die
+
+	# Fix cross-building, bug #590764, elogind patch, bug #598615
 	eautoreconf
 }
 
@@ -93,14 +101,15 @@ src_configure() {
 		--disable-static \
 		--enable-man-pages \
 		--disable-gtk-doc \
-		$(use_enable systemd libsystemd-login) \
-		$(use_enable elogind) \
-		$(use_enable introspection) \
 		--disable-examples \
+		--with-mozjs=mozjs185 \
+		$(use_enable elogind libelogind) \
+		$(use_enable introspection) \
 		$(use_enable nls) \
-		"$(systemd_with_unitdir)" \
-		--with-authfw=$(usex pam pam shadow) \
 		$(use pam && echo --with-pam-module-dir="$(getpam_mod_dir)") \
+		--with-authfw=$(usex pam pam shadow) \
+		$(use_enable systemd libsystemd-login) \
+		--with-systemdsystemunitdir="$(systemd_get_systemunitdir)" \
 		$(use_enable test) \
 		--with-os-type=gentoo
 }
@@ -113,9 +122,7 @@ src_compile() {
 }
 
 src_install() {
-	emake DESTDIR="${D}" install
-
-	dodoc docs/TODO HACKING NEWS README
+	default
 
 	fowners -R polkitd:root /{etc,usr/share}/polkit-1/rules.d
 
@@ -127,7 +134,7 @@ src_install() {
 		doins src/examples/{*.c,*.policy*}
 	fi
 
-	prune_libtool_files
+	find "${D}" -name '*.la' -delete || die
 }
 
 pkg_postinst() {
