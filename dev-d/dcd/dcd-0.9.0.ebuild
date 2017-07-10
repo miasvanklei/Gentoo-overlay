@@ -11,10 +11,10 @@ SLOT="0"
 KEYWORDS="x86 amd64"
 IUSE="systemd"
 
-CONTAINERS="c9853bbca9f0840df32a46edebbb9b17c8216cd4"
-DSYMBOL="0605a90a84ac287f879530420c7046cded566b74"
-LIBDPARSE="4d876562b4862a98bf1b6b6bf4fd07af96506a54"
-MSGPACK="878fcb1852160d1c3d206df933f6becba18aa222"
+CONTAINERS="2892cfc1e7a205d4f81af3970cbb53e4f365a765"
+DSYMBOL="e9aae0594739d002009cd34dd3edeb38f1f0893b"
+LIBDPARSE="5e81535d0aff4ceec2cbf03f5b02a31ae6d3fec2"
+MSGPACK="e6a5a69d2f86f2a0f7f7dad9de7080a55a929e46"
 
 SRC_URI="
 	https://github.com/Hackerpilot/DCD/archive/v${PV}.tar.gz -> DCD-${PV}.tar.gz
@@ -32,7 +32,6 @@ inherit systemd
 
 src_prepare()
 {
-#	eapply ${FILESDIR}/fix-compile.patch
 	default
         mv -T ../containers-${CONTAINERS}            containers                        || die
 	mv -T ../dsymbol-${DSYMBOL}                  dsymbol                           || die
