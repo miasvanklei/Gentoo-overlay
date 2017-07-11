@@ -75,6 +75,7 @@ RESTRICT+=" test"
 
 PATCHES=(
 	"${FILESDIR}"/qtwebengine.patch
+	"${FILESDIR}"/qt-5.9.1-clang.patch
 )
 
 src_prepare() {
