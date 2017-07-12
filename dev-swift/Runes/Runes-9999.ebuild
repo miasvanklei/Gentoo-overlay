@@ -26,6 +26,7 @@ PATCHES=(
 )
 
 src_compile() {
+	touch Tests/LinuxMain.swift
 	swift build -c release \
 	--verbose || die
 }
