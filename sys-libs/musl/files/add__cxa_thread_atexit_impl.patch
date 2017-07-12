@@ -1,83 +1,99 @@
-diff --git a/src/internal/pthread_impl.h b/src/internal/pthread_impl.h
-index 757b86ad..e1f5f5be 100644
+--- a/src/exit/exit.c
++++ b/src/exit/exit.c
+@@ -27,6 +27,7 @@ weak_alias(libc_exit_fini, __libc_exit_fini);
+ 
+ _Noreturn void exit(int code)
+ {
++	__tls_run_dtors();
+ 	__funcs_on_exit();
+ 	__libc_exit_fini();
+ 	__stdio_exit();
+--- a/src/internal/libc.h
++++ b/src/internal/libc.h
+@@ -46,6 +46,8 @@ extern size_t __hwcap ATTR_LIBC_VISIBILITY;
+ extern size_t __sysinfo ATTR_LIBC_VISIBILITY;
+ extern char *__progname, *__progname_full;
+ 
++void __tls_run_dtors(void) ATTR_LIBC_VISIBILITY;
++
+ /* Designed to avoid any overhead in non-threaded processes */
+ void __lock(volatile int *) ATTR_LIBC_VISIBILITY;
+ void __unlock(volatile int *) ATTR_LIBC_VISIBILITY;
 --- a/src/internal/pthread_impl.h
 +++ b/src/internal/pthread_impl.h
 @@ -12,6 +12,8 @@
  
  #define pthread __pthread
  
-+struct thread_local_dtor;
++struct tls_dtor;
 +
  struct pthread {
  	struct pthread *self;
  	void **dtv, *unused1, *unused2;
-@@ -48,6 +50,7 @@ struct pthread {
- 	void *stdio_locks;
- 	uintptr_t canary_at_end;
- 	void **dtv_copy;
-+       struct thread_local_dtor* thread_local_dtors;
- };
- 
- struct __timer {
-diff --git a/src/thread/__cxa_thread_atexit_impl.c b/src/thread/__cxa_thread_atexit_impl.c
-new file mode 100644
-index 00000000..e7af14eb
---- /dev/null
-+++ b/src/thread/__cxa_thread_atexit_impl.c
-@@ -0,0 +1,35 @@
-+#include <stddef.h>
-+#include "pthread_impl.h"
-+#include <malloc.h>
-+
-+struct thread_local_dtor {
-+  void (*func) (void *);
-+  void *arg;
-+  void *dso_handle; // unused...
-+  struct thread_local_dtor* next;
-+};
-+
-+int __cxa_thread_atexit_impl(void (*func) (void *), void *arg, void *dso_handle) {
-+  struct thread_local_dtor *dtor = malloc(sizeof *dtor);
-+
-+  dtor->func = func;
-+  dtor->arg = arg;
-+  dtor->dso_handle = dso_handle;
-+
-+  pthread_t self = __pthread_self();
-+  dtor->next = self->thread_local_dtors;
-+  self->thread_local_dtors = dtor;
-+
-+  return 0;
-+}
-+
-+__attribute__((__visibility__("hidden"))) void __cxa_thread_finalize() {
-+  pthread_t self = __pthread_self();
-+  while (self->thread_local_dtors != NULL) {
-+    struct thread_local_dtor* current = self->thread_local_dtors;
-+    self->thread_local_dtors = current->next;
-+
-+    current->func(current->arg);
-+    free(current);
-+  }
-+}
-diff --git a/src/thread/pthread_create.c b/src/thread/pthread_create.c
-index 49f2f729..b31137b3 100644
+@@ -29,6 +31,7 @@ struct pthread {
+ 	void *(*start)(void *);
+ 	void *result;
+ 	struct __ptcb *cancelbuf;
++	struct tls_dtor *tls_dtors;
+ 	void **tsd;
+ 	volatile int dead;
+ 	struct {
 --- a/src/thread/pthread_create.c
 +++ b/src/thread/pthread_create.c
-@@ -9,6 +9,7 @@
- void *__mmap(void *, size_t, int, int, int, off_t);
- int __munmap(void *, size_t);
- int __mprotect(void *, size_t, int);
-+void __cxa_thread_finalize();
+@@ -35,6 +35,8 @@ _Noreturn void __pthread_exit(void *result)
+ 		f(x);
+ 	}
  
- static void dummy_0()
- {
-@@ -21,6 +22,8 @@ weak_alias(dummy_0, __dl_thread_cleanup);
- 
- _Noreturn void __pthread_exit(void *result)
- {
-+	__cxa_thread_finalize();
++	__tls_run_dtors();
 +
- 	pthread_t self = __pthread_self();
- 	sigset_t set;
+ 	__pthread_tsd_run_dtors();
  
+ 	__lock(self->exitlock);
+--- /dev/null
++++ b/src/exit/__cxa_thread_atexit.c
+@@ -0,0 +1,45 @@
++// Copyright 2017 The Fuchsia Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#define _ALL_SOURCE
++#include "libc.h"
++#include "pthread_impl.h"
++#include <stdint.h>
++#include <stdlib.h>
++#include <threads.h>
++
++struct tls_dtor {
++    struct tls_dtor* next;
++    void (*func)(void*);
++    void* arg;
++};
++
++void __tls_run_dtors(void) {
++    struct tls_dtor *cur;
++    pthread_t self = __pthread_self();
++    while (self->tls_dtors) {
++        cur = self->tls_dtors;
++        self->tls_dtors = self->tls_dtors->next;
++        cur->func(cur->arg);
++        free(cur);
++    }
++}
++
++int __cxa_thread_atexit_impl(void (*func)(void*), void* arg, void* dso) {
++    struct tls_dtor* new_td = malloc(sizeof(struct tls_dtor));
++    if (!new_td) {
++        return -1;
++    }
++    new_td->func = func;
++    new_td->arg = arg;
++
++    // Prepend function to the list, the thread local destructors have to be
++    // called in an order determined by the sequenced-before rule according to
++    // C++ standard [basic.start.term].
++    pthread_t self = __pthread_self();
++    new_td->next = self->tls_dtors;
++    self->tls_dtors = new_td;
++
++    return 0;
++}
