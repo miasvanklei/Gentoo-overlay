@@ -33,5 +33,5 @@ src_install() {
 	--prefix ${D}/usr \
 	--release \
 	--verbose || die
-	rm -r ${D}/usr/libexec
+	rm -r ${D}/usr/libexec || die
 }
