@@ -1,0 +1,82 @@
+--- a/src/color.c	2017-05-13 11:02:52.000000000 +0200
++++ b/src/color.c	2017-07-12 20:32:46.027056812 +0200
+@@ -132,8 +132,6 @@
+ 	fprintf(stderr, "init_pair(): fg = %hd, bg = %hd\n", foreground, background);
+ #endif
+     }
+-
+-    have_palette = TRUE;
+ }
+ 
+ /* Try to match the given shibboleth string with one of the regexes in
+--- a/src/files.c	2017-05-18 10:55:13.000000000 +0200
++++ b/src/files.c	2017-07-12 20:32:46.027056812 +0200
+@@ -589,15 +589,14 @@
+ 	titlebar(NULL);
+ 
+ #ifndef DISABLE_COLOR
++    color_init();
+     /* If there are multiline coloring regexes, and there is no
+      * multiline cache data yet, precalculate it now. */
+     if (openfile->syntax && openfile->syntax->nmultis > 0 &&
+ 		openfile->fileage->multidata == NULL)
+ 	precalc_multicolorinfo();
+-
+-    have_palette = FALSE;
+ #endif
+-    refresh_needed = TRUE;
++    edit_refresh();
+ }
+ 
+ #ifdef ENABLE_MULTIBUFFER
+--- a/src/global.c	2017-06-25 09:31:28.000000000 +0200
++++ b/src/global.c	2017-07-12 20:32:46.027056812 +0200
+@@ -52,11 +52,6 @@
+ int editwincols = -1;
+ 	/* The number of usable columns in the edit window: COLS - margin. */
+ 
+-#ifndef DISABLE_COLOR
+-bool have_palette = FALSE;
+-	/* Whether the colors for the current syntax have been initialized. */
+-#endif
+-
+ bool suppress_cursorpos = FALSE;
+ 	/* Should we skip constant position display for current keystroke? */
+ 
+--- a/src/proto.h	2017-06-25 09:31:28.000000000 +0200
++++ b/src/proto.h	2017-07-12 20:32:46.027056812 +0200
+@@ -43,10 +43,6 @@
+ extern int margin;
+ extern int editwincols;
+ 
+-#ifndef DISABLE_COLOR
+-extern bool have_palette;
+-#endif
+-
+ extern bool suppress_cursorpos;
+ 
+ extern message_type lastmessage;
+--- a/src/winio.c	2017-06-25 09:31:28.000000000 +0200
++++ b/src/winio.c	2017-07-12 20:32:46.028056812 +0200
+@@ -2071,7 +2071,7 @@
+ 
+     wattroff(topwin, interface_color_pair[TITLE_BAR]);
+ 
+-    wrefresh(topwin);
++    wnoutrefresh(topwin);
+ }
+ 
+ /* Display a normal message on the statusbar, quietly. */
+@@ -3062,12 +3062,6 @@
+     filestruct *line;
+     int row = 0;
+ 
+-#ifndef DISABLE_COLOR
+-    /* When needed, initialize the colors for the current syntax. */
+-    if (!have_palette)
+-	color_init();
+-#endif
+-
+     /* If the current line is out of view, get it back on screen. */
+     if (current_is_offscreen()) {
+ #ifdef DEBUG
