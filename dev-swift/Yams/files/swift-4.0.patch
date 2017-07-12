@@ -1,0 +1,31 @@
+diff --git a/Sources/Yams/String+Yams.swift b/Sources/Yams/String+Yams.swift
+index dd2200e..04ecc50 100644
+--- a/Sources/Yams/String+Yams.swift
++++ b/Sources/Yams/String+Yams.swift
+@@ -51,7 +51,7 @@ extension String {
+                      for: startIndex..<startIndex)
+         while outEndIndex <= index && outEndIndex < endIndex {
+             number += 1
+-            let range = outEndIndex..<outEndIndex
++            let range: Range<Index> = outEndIndex..<outEndIndex
+             getLineStart(&outStartIndex, end: &outEndIndex, contentsEnd: &outContentsEndIndex,
+                          for: range)
+         }
+@@ -59,7 +59,7 @@ extension String {
+         let utf16Index = index.samePosition(in: utf16)
+         return (
+             number,
+-            utf16.distance(from: utf16StartIndex, to: utf16Index),
++            utf16.distance(from: utf16StartIndex!, to: utf16Index!),
+             substring(with: outStartIndex..<outEndIndex)
+         )
+     }
+@@ -75,7 +75,7 @@ extension String {
+                      for: startIndex..<startIndex)
+         while number < line && outEndIndex < endIndex {
+             number += 1
+-            let range = outEndIndex..<outEndIndex
++            let range: Range<Index> = outEndIndex..<outEndIndex
+             getLineStart(&outStartIndex, end: &outEndIndex, contentsEnd: &outContentsEndIndex,
+                          for: range)
+         }

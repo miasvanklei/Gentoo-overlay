@@ -28,9 +28,10 @@ RDEPEND="dev-libs/libdispatch
 	dev-swift/SourceKitten"
 DEPEND="${RDEPEND}"
 
-#PATCHES=(
-#	${FILESDIR}/remove-dependencies.patch
-#)
+PATCHES=(
+	${FILESDIR}/remove-dependencies.patch
+	${FILESDIR}/swift-4.0.patch
+)
 
 src_compile() {
 	swift build --verbose \

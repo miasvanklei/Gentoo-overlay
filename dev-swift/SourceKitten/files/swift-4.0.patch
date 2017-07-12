@@ -1,0 +1,22 @@
+diff --git a/Source/SourceKittenFramework/String+SourceKitten.swift b/Source/SourceKittenFramework/String+SourceKitten.swift
+index f3ff9bf..19d71c6 100644
+--- a/Source/SourceKittenFramework/String+SourceKitten.swift
++++ b/Source/SourceKittenFramework/String+SourceKitten.swift
+@@ -541,7 +541,7 @@ extension String {
+ 
+         return lineComponents.map { line in
+             if line.characters.count >= minLeadingCharacters {
+-                let range = line.index(line.startIndex, offsetBy: minLeadingCharacters)..<line.endIndex
++                let range: Range<Index> = line.index(line.startIndex, offsetBy: minLeadingCharacters)..<line.endIndex
+                 return line.substring(with: range)
+             }
+             return line
+@@ -578,7 +578,7 @@ extension String {
+             return 0
+         }
+         let utf8pos = index(after: range.lowerBound).samePosition(in: utf8)
+-        return Int64(utf8.distance(from: utf8.startIndex, to: utf8pos))
++        return Int64(utf8.distance(from: utf8.startIndex, to: utf8pos!))
+     }
+ }
+ 

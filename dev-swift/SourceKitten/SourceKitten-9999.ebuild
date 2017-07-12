@@ -31,6 +31,7 @@ PATCHES=(
         ${FILESDIR}/fix-crash.patch
         ${FILESDIR}/fix-run.patch
 	${FILESDIR}/fix-package.swift.patch
+	${FILESDIR}/swift-4.0.patch
 )
 
 src_compile() {
