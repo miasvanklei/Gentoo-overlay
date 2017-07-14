@@ -1,24 +1,8 @@
 diff --git a/Sources/Commands/Destination.swift b/Sources/Commands/Destination.swift
-index 51a52c76..f582e19c 100644
+index f5dc5093..77af5ddb 100644
 --- a/Sources/Commands/Destination.swift
 +++ b/Sources/Commands/Destination.swift
-@@ -34,7 +34,7 @@ public struct Destination {
-     ///  - abi = eabi, gnu, android, macho, elf, etc.
-     ///
-     /// for more information see //https://clang.llvm.org/docs/CrossCompilation.html
--    public let target: String
-+    public let target: String?
- 
-     /// The SDK used to compile for the destination.
-     public let sdk: AbsolutePath
-@@ -117,13 +117,13 @@ public struct Destination {
-         )
-       #else
-         return Destination(
--            target: "x86_64-unknown-linux",
-+            target: nil,
-             sdk: .root,
-             binDir: binDir,
+@@ -123,7 +123,7 @@ public struct Destination {
              dynamicLibraryExtension: "so",
              extraCCFlags: ["-fPIC"],
              extraSwiftCFlags: [],
@@ -27,32 +11,20 @@ index 51a52c76..f582e19c 100644
          )
        #endif
      }
+diff --git a/Sources/Commands/UserToolchain.swift b/Sources/Commands/UserToolchain.swift
+index 38d0fae5..be5dd404 100644
 --- a/Sources/Commands/UserToolchain.swift
 +++ b/Sources/Commands/UserToolchain.swift
-@@ -105,16 +105,22 @@ public struct UserToolchain: Toolchain {
-             throw Error.invalidToolchain(problem: "could not find `clang` at expected path \(clangCompiler.asString)")
+@@ -111,12 +111,10 @@ public struct UserToolchain: Toolchain {
          }
  
--        self.extraSwiftCFlags = [
+         self.extraSwiftCFlags = [
 -            "-target", destination.target,
-+        let extraSwiftCFlags = [
              "-sdk", destination.sdk.asString
          ] + destination.extraSwiftCFlags
  
--        self.extraCCFlags = [
+         self.extraCCFlags = [
 -            "-target", destination.target,
-+        let extraCCFlags = [
              "--sysroot", destination.sdk.asString
          ] + destination.extraCCFlags
  
-+        if let target =  destination.target {
-+               self.extraSwiftCFlags = extraSwiftCFlags + [ "-target", target ]
-+               self.extraCCFlags  = extraCCFlags + [ "-target", target ]
-+	} else {
-+               self.extraSwiftCFlags = extraSwiftCFlags
-+               self.extraCCFlags  = extraCCFlags
-+	}
-+
-         manifestResources = UserManifestResources(
-             swiftCompiler: swiftCompiler,
-             libDir: binDir.parentDirectory.appending(components: "lib", "swift", "pm"),
