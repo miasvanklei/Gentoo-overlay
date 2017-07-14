@@ -1,0 +1,176 @@
+diff --git a/lib/gks/Makefile b/lib/gks/Makefile
+index c888ed8..0eccd2a 100644
+--- a/lib/gks/Makefile
++++ b/lib/gks/Makefile
+@@ -15,7 +15,7 @@ UNAME := $(shell uname)
+      X11DEFS =
+      XFTDEFS =
+       FTDEFS =
+-       FTINC = -I../../3rdparty/freetype/include
++       FTINC = -I/usr/include/freetype2
+ ifeq ($(UNAME), Darwin)
+       X11INC = -I/opt/X11/include
+ else
+@@ -37,11 +37,11 @@ INSTALL_NAME =
+      SOFLAGS = -shared
+ endif
+         LIBS = -lpthread -ldl -lc -lm
+-      FTLIBS = ../../3rdparty/freetype/libfreetype.a
++      FTLIBS = -lfreetype
+      XFTLIBS = -lXft -lfontconfig
+      X11LIBS = $(X11PATH) $(XFTLIBS) -lXt -lX11
+         ZINC = -I../../3rdparty/zlib
+-       ZLIBS = ../../3rdparty/zlib/libz.a
++       ZLIBS = -lz
+ 
+ .c.o:
+ 	$(CC) -c -DGRDIR=\"$(GRDIR)\" $(DEFINES) $(FTINC) $(X11INC) $(ZINC) $(CFLAGS) $<
+@@ -59,10 +59,7 @@ else
+ 	@make targets
+ endif
+ 
+-targets: prerequisites libGKS.a libGKS.so demo gksm plugins
+-
+-prerequisites:
+-	@for d in bzip2 freetype jpeg libpng16 zlib; do make -C ../../3rdparty/$$d; done
++targets: libGKS.a libGKS.so demo gksm plugins
+ 
+ libGKS.a: $(GKSOBJS)
+ 	$(AR) crv $@ $?
+diff --git a/lib/gks/ft.c b/lib/gks/ft.c
+index df32098..7b4150e 100644
+--- a/lib/gks/ft.c
++++ b/lib/gks/ft.c
+@@ -6,7 +6,7 @@
+ 
+ #ifndef NO_FT
+ 
+-#include <ft2build.h>
++#include <freetype/config/ftheader.h>
+ #include FT_FREETYPE_H
+ #include FT_GLYPH_H
+ #include FT_XFREE86_H
+diff --git a/lib/gks/io.c b/lib/gks/io.c
+index 43c815d..ec6fdb2 100644
+--- a/lib/gks/io.c
++++ b/lib/gks/io.c
+@@ -18,6 +18,7 @@
+ 
+ #include <sys/stat.h>
+ #include <sys/types.h>
++#include <fcntl.h>
+ 
+ #include "gkscore.h"
+ 
+diff --git a/lib/gks/plugin/Makefile b/lib/gks/plugin/Makefile
+index 99e63cb..3c8b5bb 100644
+--- a/lib/gks/plugin/Makefile
++++ b/lib/gks/plugin/Makefile
+@@ -49,9 +49,9 @@ endif
+     GTKDEFS =
+      GTKINC = `$(GTK_CONFIG) gtk+-2.0 --cflags 2>/dev/null`
+     GTKLIBS = `$(GTK_CONFIG) gtk+-2.0 --libs 2>/dev/null`
+-   JPEGLIBS = ../../../3rdparty/jpeg/libjpeg.a
+-    PNGLIBS = ../../../3rdparty/libpng16/libpng.a
+-    BZ2LIBS = ../../../3rdparty/bzip2/libbz2.a
++   JPEGLIBS = -ljpeg
++    PNGLIBS = -lpng
++    BZ2LIBS = -lbz2
+      GSDEFS =
+       GSINC =
+      GSLIBS = -lgs
+@@ -66,7 +66,7 @@ endif
+     XFTDEFS =
+      FTDEFS =
+       FTINC = -I../../../3rdparty/freetype/include
+-     FTLIBS = ../../../3rdparty/freetype/libfreetype.a
++     FTLIBS = -lfreetype
+      AVDEFS =
+      AVLIBS = -lavdevice -lavformat -lavfilter -lavcodec -lswscale -lavutil -ltheora -logg -lvpx
+   MUPDFDEFS =
+@@ -91,7 +91,7 @@ endif
+   EXTRALIBS =
+        LIBS = -lc -lm
+        ZINC = -I../../../3rdparty/zlib
+-      ZLIBS = ../../../3rdparty/zlib/libz.a
++      ZLIBS = -lz
+ 
+ .SUFFIXES: .o .m .cxx
+ 
+@@ -106,14 +106,10 @@ default:
+ 	@make -C ../../.. Makedefs
+ 	@make `cat ../../../Makedefs`
+ 
+-targets: prerequisites \
+-         wxplugin.so qtplugin.so qt5plugin.so svgplugin.so gtkplugin.so \
++targets: wxplugin.so qtplugin.so qt5plugin.so svgplugin.so gtkplugin.so \
+          figplugin.so gsplugin.so wmfplugin.so glplugin.so zmqplugin.so \
+          movplugin.so htmplugin.so pgfplugin.so cairoplugin.so
+ 
+-prerequisites:
+-	@for d in libpng16; do make -C ../../../3rdparty/$$d; done
+-
+ Darwin:
+ 	@make targets quartzplugin.so \
+ 	EXTRALIBS="-framework VideoDecodeAcceleration -framework CoreVideo -framework CoreFoundation" LIBS="-liconv"
+diff --git a/lib/gr/Makefile b/lib/gr/Makefile
+index 411a6e6..b3adaf3 100644
+--- a/lib/gr/Makefile
++++ b/lib/gr/Makefile
+@@ -27,17 +27,17 @@ INSTALL_NAME =
+      SOFLAGS = -shared
+ endif
+         LIBS = -lpthread -ldl -lc -lm
+-    JPEGLIBS = ../../3rdparty/jpeg/libjpeg.a
+-     BZ2LIBS = ../../3rdparty/bzip2/libbz2.a
+-     PNGLIBS = ../../3rdparty/libpng16/libpng.a
++    JPEGLIBS = -ljpeg
++     BZ2LIBS = -lbz2
++     PNGLIBS = -lpng
+      GKSLIBS = ../gks/libGKS.a
+-      FTLIBS = ../../3rdparty/freetype/libfreetype.a
++      FTLIBS = -lfreetype
+      XFTLIBS = -lXft -lfontconfig
+    MUPDFLIBS = -lmupdf -ljbig2dec $(JPEGLIBS) -lopenjp2 $(BZ2LIBS)
+      SSLLIBS = -lssl -lcrypto
+      X11LIBS = $(X11PATH) $(XFTLIBS) -lXt -lX11
+-       ZLIBS = ../../3rdparty/zlib/libz.a
+-      QHLIBS = ../../3rdparty/qhull/libqhull.a
++       ZLIBS = -lz
++      QHLIBS = -lqhull
+ 
+ .c.o:
+ 	$(CC) -c $(INCLUDES) $(CFLAGS) $<
+@@ -54,7 +54,6 @@ Darwin:
+ targets: prerequisites libGR.a libGR.so demo libqtgr
+ 
+ prerequisites:
+-	@for d in bzip2 freetype jpeg libpng16 zlib qhull; do make -C ../../3rdparty/$$d; done
+ 	@for d in gks gks/plugin; do make -C ../$$d; done
+ 
+ libGR.a: $(GROBJS)
+@@ -92,7 +91,6 @@ install:
+ clean:
+ 	@make -C qtgr clean
+ 	@for d in gks gks/plugin; do make -C ../$$d clean; done
+-	@for d in bzip2 freetype jpeg libpng16 zlib qhull; do make -C ../../3rdparty/$$d clean; done
+ 	rm -f so_locations demo *.so *.a *.o *.bak *~
+ 
+ depend:
+diff --git a/lib/gr3/Makefile b/lib/gr3/Makefile
+index 7f3766d..b5ecd4a 100644
+--- a/lib/gr3/Makefile
++++ b/lib/gr3/Makefile
+@@ -7,9 +7,9 @@ UNAME := $(shell uname)
+ 
+     INCLUDES = -I../../3rdparty -I../../3rdparty/jpeg -I../gr
+       GRLIBS = -L../gr -lGR
+-     PNGLIBS = ../../3rdparty/libpng16/libpng.a
+-    JPEGLIBS = ../../3rdparty/jpeg/libjpeg.a
+-       ZLIBS = ../../3rdparty/zlib/libz.a
++     PNGLIBS = -lpng
++    JPEGLIBS = -ljpeg
++       ZLIBS = -lz
+       CFLAGS = -O3 -Wall -Wextra -pedantic -g -fPIC $(EXTRA_CFLAGS)
+ ifeq ($(UNAME), Darwin)
+       GLLIBS = -framework OpenGL -framework Cocoa
