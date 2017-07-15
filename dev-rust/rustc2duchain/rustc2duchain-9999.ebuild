@@ -19,6 +19,10 @@ DEPEND="${COMMON_DEPEND}
 	dev-util/cargo"
 RDEPEND="${COMMON_DEPEND}"
 
+PATCHES=(
+	"${FILESDIR}"/rust-1.19.patch
+)
+
 src_compile() {
 	RUSTFLAGS="-L/usr/lib/llvm/4/lib" cargo build --release --verbose || die
 }

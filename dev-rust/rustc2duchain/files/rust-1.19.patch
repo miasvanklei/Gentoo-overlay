@@ -1,0 +1,105 @@
+diff --git a/src/analyzer.rs b/src/analyzer.rs
+index fbe4213..08b1730 100644
+--- a/src/analyzer.rs
++++ b/src/analyzer.rs
+@@ -24,6 +24,9 @@
+  *
+  */
+ 
++extern crate rustc_typeck;
++extern crate syntax_pos;
++
+ use rustc::hir;
+ use rustc::hir::def::Def;
+ use rustc::hir::map::Node;
+@@ -35,6 +38,7 @@ use rustc::ty::{ Ty as RustTy, TyCtxt, TypeckTables, TypeVariants };
+ 
+ use rustc_driver::{ self, CompilerCalls, Compilation };
+ use rustc_driver::driver::{ CompileController };
++use self::rustc_typeck::hir_ty_to_ty;
+ 
+ use getopts;
+ 
+@@ -42,6 +46,7 @@ use syntax::ast::*;
+ use syntax::codemap::*;
+ use syntax::print::*;
+ use syntax::visit::{ self, FnKind, Visitor };
++use self::syntax_pos::DUMMY_SP;
+ 
+ use std;
+ use std::convert::Into;
+@@ -239,9 +244,7 @@ impl<'a, 'gcx, 'tcx, DUW> DeclarationBuilder<'a, 'gcx, 'tcx, DUW> where DUW: DUC
+ 
+     fn call_build_type_for_defid(&mut self, def_id: Option<DefId>) -> bool {
+         if let Some(def_id) = def_id {
+-            let ty_maps = self.tcx.maps.ty.borrow();
+-
+-            if let Some(ty) = ty_maps.get(&def_id) {
++            if let Ok(ty) = ty::queries::type_of::try_get(self.tcx.global_tcx(), DUMMY_SP, def_id) {
+                 self.call_build_type_with_ty(&ty);
+                 return true;
+             }
+@@ -313,15 +316,11 @@ impl<'a, 'gcx, 'tcx, DUW> DeclarationBuilder<'a, 'gcx, 'tcx, DUW> where DUW: DUC
+               DUW: DUChainWriter
+     {
+         let item_def_id = self.tcx.hir.local_def_id(item_id);
+-        match self.tcx.maps.typeck_tables.borrow().get(&item_def_id) {
+-            Some(tables) => {
+-                let old_tables = self.tables;
+-                self.tables = tables;
+-                f(self);
+-                self.tables = old_tables;
+-            }
+-            None => f(self),
+-        }
++        let tables = self.tcx.typeck_tables_of(item_def_id);
++        let old_tables = self.tables;
++        self.tables = tables;
++        f(self);
++        self.tables = old_tables;
+     }
+ 
+     // Copied from librustc_save_analysis
+@@ -344,23 +343,26 @@ impl<'a, 'gcx, 'tcx, DUW> DeclarationBuilder<'a, 'gcx, 'tcx, DUW> where DUW: DUC
+                 Def::Local(def_id)
+             }
+ 
+-            Node::NodeTy(&hir::Ty { node: hir::TyPath(ref qpath), .. }) => {
+-                match *qpath {
+-                    hir::QPath::Resolved(_, ref path) => path.def,
+-                    hir::QPath::TypeRelative(..) => {
+-                        if let Some(ty) = self.tcx.ast_ty_to_ty_cache.borrow().get(&id) {
++            Node::NodeTy(ty) => {
++                if let hir::Ty { node: hir::TyPath(ref qpath), .. } = *ty {
++                    match *qpath {
++                        hir::QPath::Resolved(_, ref path) => path.def,
++                        hir::QPath::TypeRelative(..) => {
++                            let ty = hir_ty_to_ty(self.tcx.global_tcx(), ty);
+                             if let ty::TyProjection(proj) = ty.sty {
+                                 for item in self.tcx.associated_items(proj.trait_ref.def_id) {
+                                     if item.kind == ty::AssociatedKind::Type {
+-                                        if item.name == proj.item_name {
++                                        if item.name == proj.item_name(self.tcx.global_tcx()) {
+                                             return Def::AssociatedTy(item.def_id);
+                                         }
+                                     }
+                                 }
+                             }
++                            Def::Err
+                         }
+-                        Def::Err
+                     }
++                } else {
++                    Def::Err
+                 }
+             }
+ 
+@@ -439,7 +441,7 @@ impl<'ast, 'a, 'gcx, 'tcx, DUW> Visitor<'ast> for DeclarationBuilder<'a, 'gcx, '
+                 self.call_build_declaration(DeclarationKind::Namespace, def_id, item.ident, &item.span, true, false, false);
+ 
+                 self.call_open_context(ContextKind::Namespace, Some(item.ident), &item.span, true);
+-                self.visit_mod(module, item.span, item.id);
++                self.visit_mod(module, item.span, &item.attrs, item.id);
+                 self.call_close_context();
+             }
+             _ => {
