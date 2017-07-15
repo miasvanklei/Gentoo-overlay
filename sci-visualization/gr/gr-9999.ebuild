@@ -20,7 +20,9 @@ REQUIRED_USE="
 	python?  ( ${PYTHON_REQUIRED_USE} )"
 
 RDEPEND=""
-DEPEND="python? (
+DEPEND="
+	media-libs/qhull
+	python? (
 		${PYTHON_DEPS}
 		dev-python/numpy[${PYTHON_USEDEP}]
 		dev-python/matplotlib[${PYTHON_USEDEP}]
@@ -64,5 +66,7 @@ src_install() {
 		rm -r "${D}"/usr/lib/*.a
 	fi
 
-	rm -r "${D}"/usr/fonts
+	mkdir "${D}"/usr/lib/julia/fonts
+	mv "${D}"/usr/fonts "${D}"/usr/lib/julia/fonts/
+	ln -s /usr/lib/julia/fonts "${D}"/usr/share/julia/site/deps/gr/
 }
