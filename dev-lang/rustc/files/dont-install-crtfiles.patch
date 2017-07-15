@@ -1,15 +1,20 @@
 --- a/src/bootstrap/compile.rs	2016-10-08 14:32:50.900901529 +0200
 +++ b/src/bootstrap/compile.rs	2016-10-08 14:33:04.700902208 +0200
-@@ -89,19 +89,6 @@
-         t!(fs::create_dir_all(&libdir));
-     }
-     add_to_sysroot(&out_dir, &libdir);
--
+@@ -114,10 +114,6 @@
+     let libdir = build.sysroot_libdir(target_compiler, target);
+     add_to_sysroot(&libdir, &libstd_stamp(build, compiler, target));
+ 
 -    if target.contains("musl") && !target.contains("mips") {
 -        copy_musl_third_party_objects(build, target, &libdir);
 -    }
--}
 -
+     if build.config.sanitizers && compiler.stage != 0 && target == "x86_64-apple-darwin" {
+         // The sanitizers are only built in stage1 or above, so the dylibs will
+         // be missing in stage0 and causes panic. See the `std()` function above
+@@ -126,15 +122,6 @@
+     }
+ }
+ 
 -/// Copies the crt(1,i,n).o startup objects
 -///
 -/// Only required for musl targets that statically link to libc
@@ -17,6 +22,8 @@
 -    for &obj in &["crt1.o", "crti.o", "crtn.o"] {
 -        copy(&build.musl_root(target).unwrap().join("lib").join(obj), &into.join(obj));
 -    }
- }
- 
- /// Build and prepare startup objects like rsbegin.o and rsend.o
+-}
+-
+ fn copy_apple_sanitizer_dylibs(native_dir: &Path, platform: &str, into: &Path) {
+     for &sanitizer in &["asan", "tsan"] {
+         let filename = format!("libclang_rt.{}_{}_dynamic.dylib", sanitizer, platform);

@@ -13,7 +13,7 @@ KEYWORDS="~amd64"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/rustc-${PV}-src.tar.gz -> ${P}-src.tar.gz"
+SRC_URI="https://static.rust-lang.org/dist/rustc-beta-src.tar.gz -> ${P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
@@ -31,7 +31,7 @@ DEPEND="${RDEPEND}
 	clang? ( sys-devel/clang )
 "
 
-S=${WORKDIR}/${P}-src
+S=${WORKDIR}/rustc-beta-src
 
 toml_usex() {
 	usex "$1" true false
@@ -51,9 +51,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/dont-install-crtfiles.patch
 	fi
 
-	eapply "${FILESDIR}"/configured-cargo-rust.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
-	eapply "${FILESDIR}"/link-llvm-shared.patch
 
 	eapply_user
 }
@@ -109,12 +107,16 @@ EOF
 src_compile() {
 	export RUST_BACKTRACE=1
 	export LLVM_LINK_SHARED=1
+	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
 
 	./x.py build --verbose || die
 }
 
 src_install() {
-	env DESTDIR="${D}" ./x.py dist --install || die
+	export RUST_BACKTRACE=1
+        export LLVM_LINK_SHARED=
+	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
+	DESTDIR="${D}" ./x.py install || die
 
 	pushd ${D}/usr/lib || die
 
