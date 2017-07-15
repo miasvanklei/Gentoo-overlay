@@ -13,6 +13,7 @@ RDEPEND="
 	$(add_kdeapps_dep kate)
 	$(add_kdeapps_dep kdeadmin-meta)
 	$(add_kdeapps_dep kdecore-meta)
+	$(add_kdeapps_dep kdeedu-meta)
 	$(add_kdeapps_dep kdegraphics-meta)
 	$(add_kdeapps_dep kdemultimedia-meta)
 	$(add_kdeapps_dep kdenetwork-meta)
