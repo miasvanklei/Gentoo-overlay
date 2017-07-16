@@ -3,7 +3,6 @@
 
 EAPI=6
 
-EGIT_BRANCH="5.1"
 KDE_HANDBOOK="forceoptional"
 KDE_TEST="forceoptional-recursive"
 VIRTUALX_REQUIRED="test"
@@ -58,6 +57,7 @@ COMMON_DEPEND="
 "
 DEPEND="${COMMON_DEPEND}
 	$(add_qt_dep qtconcurrent)
+	dev-util/cmake[server]
 "
 RDEPEND="${COMMON_DEPEND}
 	$(add_kdeapps_dep kapptemplate)
@@ -76,7 +76,6 @@ RESTRICT+=" test"
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-5.0.2-ninja-optional.patch
-	"${FILESDIR}"/qtwebengine.patch
 )
 
 src_configure() {

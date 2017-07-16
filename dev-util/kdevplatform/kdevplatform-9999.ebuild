@@ -3,7 +3,6 @@
 
 EAPI=6
 
-EGIT_BRANCH="5.1"
 KDEBASE="kdevelop"
 KDE_TEST="forceoptional-recursive"
 VIRTUALDBUS_TEST="true"
@@ -72,11 +71,6 @@ RDEPEND="${COMMON_DEPEND}
 REQUIRED_USE="test? ( welcomepage )"
 
 RESTRICT+=" test"
-
-PATCHES=(
-	"${FILESDIR}"/qtwebengine.patch
-	"${FILESDIR}"/qt-5.9.1-clang.patch
-)
 
 src_prepare() {
 	kde5_src_prepare

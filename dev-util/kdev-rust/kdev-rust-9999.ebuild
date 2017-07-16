@@ -6,7 +6,6 @@ EAPI=6
 KDEBASE="kdevelop"
 KNAME="kdev-rust"
 PYTHON_COMPAT=( python3_{4,5,6} )
-EGIT_MIRROR="https://github.com/michalsrb"
 
 inherit python-single-r1 kde5
 
@@ -25,7 +24,7 @@ DEPEND="${PYTHON_DEPS}
 	$(add_qt_dep qtdeclarative)
 	$(add_qt_dep qtgui)
 	$(add_qt_dep qtwidgets)
-	dev-rust/rustc2duchain
+	dev-rust/ast-redux
 	dev-util/kdevplatform:5
 "
 RDEPEND="${DEPEND}
@@ -34,9 +33,9 @@ RDEPEND="${DEPEND}
 
 RESTRICT+=" test"
 
-PATCHES=(
-	"${FILESDIR}"/fix-configure.patch
-)
+#PATCHES=(
+#	"${FILESDIR}"/fix-configure.patch
+#)
 
 pkg_setup() {
 	python-single-r1_pkg_setup

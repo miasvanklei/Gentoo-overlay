@@ -5,9 +5,9 @@ EAPI=6
 
 inherit eutils git-r3
 
-DESCRIPTION="Tool that parses Rust code for kdev-rust plugin"
-HOMEPAGE="https://github.com/michalsrb/rustc2duchain"
-EGIT_REPO_URI="https://github.com/michalsrb/rustc2duchain"
+DESCRIPTION="Library that parses Rust code for kdev-rust plugin"
+HOMEPAGE="https://cgit.kde.org/scratch/egospodinova/ast-redux.git"
+EGIT_REPO_URI="https://anongit.kde.org/scratch/egospodinova/ast-redux.git"
 
 LICENSE="MIT"
 SLOT="0"
@@ -19,14 +19,10 @@ DEPEND="${COMMON_DEPEND}
 	dev-util/cargo"
 RDEPEND="${COMMON_DEPEND}"
 
-PATCHES=(
-	"${FILESDIR}"/rust-1.19.patch
-)
-
 src_compile() {
 	RUSTFLAGS="-L/usr/lib/llvm/4/lib" cargo build --release --verbose || die
 }
 
 src_install() {
-	dobin target/release/rustc2duchain
+	dolib target/release/libast_redux.so
 }
