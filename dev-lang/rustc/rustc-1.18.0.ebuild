@@ -13,7 +13,7 @@ KEYWORDS="~amd64"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/rustc-beta-src.tar.gz -> ${P}-src.tar.gz"
+SRC_URI="https://static.rust-lang.org/dist/rustc-${PV}-src.tar.gz -> ${P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
@@ -31,7 +31,7 @@ DEPEND="${RDEPEND}
 	clang? ( sys-devel/clang )
 "
 
-S=${WORKDIR}/rustc-beta-src
+S=${WORKDIR}/${P}-src
 
 toml_usex() {
 	usex "$1" true false
@@ -43,14 +43,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	if use elibc_musl; then
-		eapply "${FILESDIR}"/link-musl-dynamically.patch
-		eapply "${FILESDIR}"/libunwind-shared.patch
-		eapply "${FILESDIR}"/no-compiler-rt.patch
-		eapply "${FILESDIR}"/dont-use-no_default_libraries.patch
-		eapply "${FILESDIR}"/dont-install-crtfiles.patch
-	fi
-
+	eapply "${FILESDIR}"/musl.patch
+	eapply "${FILESDIR}"/configured-cargo-rustc.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 
 	eapply_user
@@ -58,10 +52,6 @@ src_prepare() {
 
 src_configure() {
 	einfo "Setting up config.toml for target"
-
-	local cbuild="${CBUILD//-/ }"
-	read -a arr <<<$cbuild
-	local rust_target="${arr[0]}-unknown-${arr[2]}-${arr[3]}"
 
 	local archiver="$(tc-getAR)"
 	local linker="$(tc-getCC)"
@@ -78,15 +68,15 @@ src_configure() {
 [build]
 cargo = "/usr/bin/cargo"
 rustc = "/usr/bin/rustc"
-build = "${rust_target}"
-host = ["${rust_target}"]
-target = ["${rust_target}"]
+build = "${CBUILD}"
+host = ["${CHOST}"]
+target = ["${CBUILD}"]
 
 [install]
 prefix = "${EPREFIX}/usr"
 libdir = "$(get_libdir)"
-docdir = "share/doc/${P}"
-mandir = "share/${P}/man"
+docdir = "share/doc/${PN}"
+mandir = "share/${PN}/man"
 
 [rust]
 optimize = $(toml_usex !debug)
@@ -97,7 +87,7 @@ default-linker = "${linker}"
 default-ar = "${archiver}"
 rpath = false
 
-[target.${rust_target}]
+[target.${CBUILD}]
 cc = "${c_compiler}"
 cxx = "${cxx_compiler}"
 llvm-config = "${llvm_config}"
@@ -108,20 +98,20 @@ src_compile() {
 	export RUST_BACKTRACE=1
 	export LLVM_LINK_SHARED=1
 	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
-
 	./x.py build --verbose || die
 }
 
 src_install() {
 	export RUST_BACKTRACE=1
-        export LLVM_LINK_SHARED=
+	export LLVM_LINK_SHARED=1
 	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
-	DESTDIR="${D}" ./x.py install || die
+
+	DESTDIR="${D}" ./x.py dist --install --verbose || die
 
 	pushd ${D}/usr/lib || die
 
-	# symlinks instead of copies
-	ln -sf rustlib/*/lib/*.so . || die
+	# remove copy
+	rm -r *.so || die
 
 	popd >/dev/null
 
@@ -131,6 +121,11 @@ src_install() {
 		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${PN} \; || die
 		popd >/dev/null
 	fi
+
+        cat <<-_EOF_ > "${T}/10rust" || die
+LDPATH=/usr/lib/rustlib/${CHOST}/lib
+_EOF_
+        doenvd "${T}/10rust"
 }
 
 pkg_postinst() {
