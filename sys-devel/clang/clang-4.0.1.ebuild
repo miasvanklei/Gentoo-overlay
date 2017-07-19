@@ -123,17 +123,16 @@ src_prepare() {
 
 	# remove dependency on crtbegin* and crtend*
 	eapply "${FILESDIR}"/0015-remove-crtfiles.patch
-	eapply "${FILESDIR}"/0016-fuse-init-array.patch
 
 	# needed in linux kernel
-	eapply "${FILESDIR}"/0017-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0016-add-fno-delete-null-pointer-checks.patch
 
 	# add swift support
-	eapply "${FILESDIR}"/0018-add-swift-support.patch
-	eapply "${FILESDIR}"/0020-clang-5.0.patch
+	eapply "${FILESDIR}"/0017-add-swift-support.patch
+	eapply "${FILESDIR}"/0019-clang-5.0.patch
 
 	# add fortran support
-	use fortran && eapply "${FILESDIR}"/0019-add-fortran-support.patch
+	use fortran && eapply "${FILESDIR}"/0018-add-fortran-support.patch
 
 
 	# User patches

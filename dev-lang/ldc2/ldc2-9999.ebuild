@@ -21,7 +21,6 @@ src_prepare() {
 	eapply ${FILESDIR}/fix-libunwind-alignment.patch
 	eapply ${FILESDIR}/fix-musl.patch
 	eapply ${FILESDIR}/link-libunwind.patch
-	eapply ${FILESDIR}/use-init-array.patch
 	eapply ${FILESDIR}/nostrip-when-debug.patch
 	eapply ${FILESDIR}/remove-backtrace.patch
 	eapply ${FILESDIR}/remove-qsort_r.patch

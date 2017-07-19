@@ -84,20 +84,23 @@ src_unpack() {
 }
 
 src_prepare() {
+	# use init-array as default
+	eapply "${FILESDIR}"/0001-use-init-array.patch
+
 	# change library suffix for shared libraries
-	eapply "${FILESDIR}"/0001-shared-library-suffix.patch
+	eapply "${FILESDIR}"/0002-shared-library-suffix.patch
 
 	# support building llvm against musl-libc
-	use elibc_musl && eapply "${FILESDIR}"/0002-musl-fixes.patch
+	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
 
 	# retain compability with binutils
-	eapply "${FILESDIR}"/0003-llvm-readobj-binutils-compat.patch
+	eapply "${FILESDIR}"/0004-llvm-readobj-binutils-compat.patch
 
 	# some arm relocations, needed for swift
-	eapply "${FILESDIR}"/0004-arm-relocation.patch
+	eapply "${FILESDIR}"/0005-arm-relocation.patch
 
 	# add swift support
-	eapply "${FILESDIR}"/0005-add-swift-support.patch
+	eapply "${FILESDIR}"/0006-add-swift-support.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
