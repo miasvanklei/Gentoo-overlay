@@ -1,0 +1,104 @@
+diff --git a/backend/src/libocl/include/ocl_image.h b/backend/src/libocl/include/ocl_image.h
+index 5a679aa8..d2afb239 100644
+--- a/backend/src/libocl/include/ocl_image.h
++++ b/backend/src/libocl/include/ocl_image.h
+@@ -22,6 +22,7 @@
+ 
+ #define int1 int
+ #define float1 float
++#pragma OPENCL EXTENSION cl_khr_3d_image_writes: enable
+ 
+ #define DECL_IMAGE_READ_SAMPLE_RETTYPE(IMG_TYPE, DATA_YPE, SUFFIX, N) \
+   OVERLOADABLE DATA_YPE read_image ## SUFFIX(IMG_TYPE cl_image, const sampler_t sampler, int##N coord); \
+diff --git a/backend/src/llvm/PromoteIntegers.cpp b/backend/src/llvm/PromoteIntegers.cpp
+index a500311b..5e18bc3b 100644
+--- a/backend/src/llvm/PromoteIntegers.cpp
++++ b/backend/src/llvm/PromoteIntegers.cpp
+@@ -605,8 +605,8 @@ static void convertInstruction(Instruction *Inst, ConversionState &State) {
+     for (SwitchInst::CaseIt I = Switch->case_begin(),
+              E = Switch->case_end();
+          I != E; ++I) {
+-      NewInst->addCase(cast<ConstantInt>(convertConstant(I.getCaseValue())),
+-                       I.getCaseSuccessor());
++      NewInst->addCase(cast<ConstantInt>(convertConstant(I->getCaseValue())),
++                       I->getCaseSuccessor());
+     }
+     Switch->eraseFromParent();
+   } else {
+diff --git a/backend/src/llvm/llvm_barrier_nodup.cpp b/backend/src/llvm/llvm_barrier_nodup.cpp
+index a7d0d1ad..62b6e431 100644
+--- a/backend/src/llvm/llvm_barrier_nodup.cpp
++++ b/backend/src/llvm/llvm_barrier_nodup.cpp
+@@ -74,7 +74,7 @@ namespace gbe {
+               if (F.hasFnAttribute(Attribute::NoDuplicate)) {
+                 auto attrs = F.getAttributes();
+                 F.setAttributes(attrs.removeAttribute(M.getContext(),
+-                                AttributeSet::FunctionIndex,
++                                AttributeList::FunctionIndex,
+                                 Attribute::NoDuplicate));
+                 changed = true;
+               }
+diff --git a/backend/src/llvm/llvm_gen_backend.cpp b/backend/src/llvm/llvm_gen_backend.cpp
+index a9df6525..c873409b 100644
+--- a/backend/src/llvm/llvm_gen_backend.cpp
++++ b/backend/src/llvm/llvm_gen_backend.cpp
+@@ -1121,7 +1121,7 @@ namespace gbe
+           pointerBaseMap.insert(std::make_pair(ptr, basePhi));
+           return basePhi;
+       } else {
+-        ptr->dump();
++        //ptr->dump();
+         GBE_ASSERT(0 && "Unhandled instruction in getPointerBase\n");
+         return ptr;
+       }
+@@ -1202,7 +1202,7 @@ namespace gbe
+           BtiValueMap.insert(std::make_pair(Val, btiPhi));
+           return btiPhi;
+         } else {
+-          Val->dump();
++          //Val->dump();
+           GBE_ASSERT(0 && "Unhandled instruction in getBtiRegister\n");
+           return Val;
+         }
+@@ -1656,7 +1656,7 @@ namespace gbe
+         }
+       default:
+         {
+-          c->dump();
++          //c->dump();
+           NOT_IMPLEMENTED;
+         }
+     }
+@@ -1908,7 +1908,7 @@ namespace gbe
+   ir::ImmediateIndex GenWriter::processConstantImmIndex(Constant *CPV, int32_t index) {
+     if (dyn_cast<ConstantExpr>(CPV) == NULL)
+       return processConstantImmIndexImpl(CPV, index);
+-    CPV->dump();
++    //CPV->dump();
+     GBE_ASSERT(0 && "unsupported constant.\n");
+     return ctx.newImmediate((uint32_t)0);
+   }
+diff --git a/backend/src/llvm/llvm_profiling.cpp b/backend/src/llvm/llvm_profiling.cpp
+index f7e4cc53..3b56f2dc 100644
+--- a/backend/src/llvm/llvm_profiling.cpp
++++ b/backend/src/llvm/llvm_profiling.cpp
+@@ -165,8 +165,7 @@ namespace gbe
+       builder->CreateCall(cast<llvm::Function>(module->getOrInsertFunction(
+               "__gen_ocl_calc_timestamp", Type::getVoidTy(module->getContext()),
+               IntegerType::getInt32Ty(module->getContext()),
+-              IntegerType::getInt32Ty(module->getContext()),
+-              NULL)),
++              IntegerType::getInt32Ty(module->getContext()))),
+               ArrayRef<Value*>(Args));
+     }
+     /* We insert one store_profiling at the end of the last block to hold the place. */
+@@ -180,8 +179,7 @@ namespace gbe
+     builder->CreateCall(cast<llvm::Function>(module->getOrInsertFunction(
+             "__gen_ocl_store_profiling", Type::getVoidTy(module->getContext()),
+             ptrTy,
+-            IntegerType::getInt32Ty(module->getContext()),
+-            NULL)),
++            IntegerType::getInt32Ty(module->getContext()))),
+             ArrayRef<Value*>(Args2));
+ 
+     delete builder;
