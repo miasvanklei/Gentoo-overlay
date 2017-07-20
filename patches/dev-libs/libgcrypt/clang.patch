@@ -1,0 +1,25 @@
+--- a/random/jitterentropy-base.c	2017-07-19 15:35:47.779903865 +0200
++++ b/random/jitterentropy-base.c	2017-07-19 15:53:12.515056781 +0200
+@@ -50,14 +50,20 @@
+  */
+ 
+ #undef _FORTIFY_SOURCE
++#ifndef __clang__
+ #pragma GCC optimize ("O0")
++#else
++#pragma clang optimize off
++#endif
+ 
+ #include "jitterentropy.h"
+ 
+ #ifndef CONFIG_CRYPTO_CPU_JITTERENTROPY_STAT
+  /* only check optimization in a compilation for real work */
+- #ifdef __OPTIMIZE__
+-  #error "The CPU Jitter random number generator must not be compiled with optimizations. See documentation. Use the compiler switch -O0 for compiling jitterentropy-base.c."
++ #ifndef __clang__
++  #ifdef __OPTIMIZE__
++   #error "The CPU Jitter random number generator must not be compiled with optimizations. See documentation. Use the compiler switch -O0 for compiling jitterentropy-base.c."
++  #endif
+  #endif
+ #endif
+ 
