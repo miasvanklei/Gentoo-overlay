@@ -111,6 +111,24 @@
  
 --- b/src/librustc_trans/back/write.rs	2017-07-20 19:30:41.411999923 +0200
 +++ a/src/librustc_trans/back/write.rs	2017-07-20 19:30:45.315993289 +0200
+@@ -364,7 +364,7 @@
+ }
+ 
+ struct HandlerFreeVars<'a> {
+-    llcx: ContextRef,
++    _llcx: ContextRef,
+     cgcx: &'a CodegenContext<'a>,
+ }
+ 
+@@ -401,7 +401,7 @@
+ }
+ 
+ unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_void) {
+-    let HandlerFreeVars { llcx, cgcx } = *(user as *const HandlerFreeVars);
++    let HandlerFreeVars { _llcx, cgcx } = *(user as *const HandlerFreeVars);
+ 
+     match llvm::diagnostic::Diagnostic::unpack(info) {
+         llvm::diagnostic::InlineAsm(inline) => {
 @@ -417,11 +417,10 @@
              };
  
@@ -124,6 +142,15 @@
                                                  opt.message));
              }
          }
+@@ -441,7 +441,7 @@
+ 
+     // llcx doesn't outlive this function, so we can put this on the stack.
+     let fv = HandlerFreeVars {
+-        llcx: llcx,
++        _llcx: llcx,
+         cgcx: cgcx,
+     };
+     let fv = &fv as *const HandlerFreeVars as *mut c_void;
 --- b/src/librustc_trans/builder.rs	2017-07-20 19:30:41.412999921 +0200
 +++ a/src/librustc_trans/builder.rs	2017-07-20 19:30:45.316993286 +0200
 @@ -11,7 +11,7 @@
@@ -151,9 +178,11 @@
  // Namespace Handling.
  
 -use super::metadata::{file_metadata, unknown_file_metadata, UNKNOWN_LINE_NUMBER};
- use super::utils::{DIB, debug_context, span_start};
+-use super::utils::{DIB, debug_context, span_start};
++use super::utils::{DIB, debug_context};
  
  use llvm;
+ use llvm::debuginfo::DIScope;
 @@ -19,10 +18,8 @@
  use rustc::hir::map::DefPathData;
  use common::CrateContext;
