@@ -1,0 +1,361 @@
+--- b/src/librustc_llvm/diagnostic.rs	2017-07-20 19:30:41.398999949 +0200
++++ a/src/librustc_llvm/diagnostic.rs	2017-07-20 19:30:45.315993289 +0200
+@@ -17,7 +17,6 @@
+ use std::ptr;
+ 
+ use {DiagnosticInfoRef, TwineRef, ValueRef};
+-use ffi::DebugLocRef;
+ 
+ #[derive(Copy, Clone)]
+ pub enum OptimizationDiagnosticKind {
+@@ -47,7 +47,6 @@
+     pub kind: OptimizationDiagnosticKind,
+     pub pass_name: String,
+     pub function: ValueRef,
+-    pub debug_loc: DebugLocRef,
+     pub message: String,
+ }
+ 
+@@ -56,7 +55,6 @@
+                      di: DiagnosticInfoRef)
+                      -> OptimizationDiagnostic {
+         let mut function = ptr::null_mut();
+-        let mut debug_loc = ptr::null_mut();
+ 
+         let mut message = None;
+         let pass_name = super::build_string(|pass_name|
+@@ -64,7 +62,6 @@
+                 super::LLVMRustUnpackOptimizationDiagnostic(di,
+                                                             pass_name,
+                                                             &mut function,
+-                                                            &mut debug_loc,
+                                                             message)
+             )
+         );
+@@ -73,7 +70,6 @@
+             kind: kind,
+             pass_name: pass_name.expect("got a non-UTF8 pass name from LLVM"),
+             function: function,
+-            debug_loc: debug_loc,
+             message: message.expect("got a non-UTF8 OptimizationDiagnostic message from LLVM")
+         }
+     }
+--- b/src/librustc_llvm/ffi.rs	2017-07-20 19:30:41.398999949 +0200
++++ a/src/librustc_llvm/ffi.rs	2017-07-20 19:31:26.653924652 +0200
+@@ -224,13 +224,13 @@
+     SequentiallyConsistent = 7,
+ }
+ 
++/// LLVMRustSyncScope
+-/// LLVMRustSynchronizationScope
+ #[derive(Copy, Clone)]
+ #[repr(C)]
++pub enum SyncScope {
+-pub enum SynchronizationScope {
+     Other,
+     SingleThread,
++    System,
+-    CrossThread,
+ }
+ 
+ /// LLVMRustFileType
+@@ -1202,7 +1202,7 @@
+ 
+     pub fn LLVMRustBuildAtomicFence(B: BuilderRef,
+                                     Order: AtomicOrdering,
++                                    Scope: SyncScope);
+-                                    Scope: SynchronizationScope);
+ 
+ 
+     // Selected entries from the downcasts.
+@@ -1526,9 +1526,7 @@
+ 
+     pub fn LLVMRustDIBuilderCreateNameSpace(Builder: DIBuilderRef,
+                                             Scope: DIScope,
++                                            Name: *const c_char)
+-                                            Name: *const c_char,
+-                                            File: DIFile,
+-                                            LineNo: c_uint)
+                                             -> DINameSpace;
+     pub fn LLVMRustDICompositeTypeSetTypeArray(Builder: DIBuilderRef,
+                                                CompositeType: DIType,
+@@ -1618,7 +1616,6 @@
+     pub fn LLVMRustUnpackOptimizationDiagnostic(DI: DiagnosticInfoRef,
+                                                 pass_name_out: RustStringRef,
+                                                 function_out: *mut ValueRef,
+-                                                debugloc_out: *mut DebugLocRef,
+                                                 message_out: RustStringRef);
+     pub fn LLVMRustUnpackInlineAsmDiagnostic(DI: DiagnosticInfoRef,
+                                              cookie_out: *mut c_uint,
+@@ -1628,7 +1625,7 @@
+     pub fn LLVMRustWriteDiagnosticInfoToString(DI: DiagnosticInfoRef, s: RustStringRef);
+     pub fn LLVMRustGetDiagInfoKind(DI: DiagnosticInfoRef) -> DiagnosticKind;
+ 
++    pub fn LLVMRustWriteDebugLocToString(C: ContextRef, s: RustStringRef);
+-    pub fn LLVMRustWriteDebugLocToString(C: ContextRef, DL: DebugLocRef, s: RustStringRef);
+ 
+     pub fn LLVMRustSetInlineAsmDiagnosticHandler(C: ContextRef,
+                                                  H: InlineAsmDiagHandler,
+--- b/src/librustc_llvm/lib.rs	2017-07-20 19:30:41.398999949 +0200
++++ a/src/librustc_llvm/lib.rs	2017-07-20 19:30:45.315993289 +0200
+@@ -299,8 +299,8 @@
+     build_string(|s| LLVMRustWriteTwineToString(tr, s)).expect("got a non-UTF8 Twine from LLVM")
+ }
+ 
++pub unsafe fn debug_loc_to_string(c: ContextRef) -> String {
++    build_string(|s| LLVMRustWriteDebugLocToString(c, s))
+-pub unsafe fn debug_loc_to_string(c: ContextRef, tr: DebugLocRef) -> String {
+-    build_string(|s| LLVMRustWriteDebugLocToString(c, tr, s))
+         .expect("got a non-UTF8 DebugLoc from LLVM")
+ }
+ 
+--- b/src/librustc_trans/back/write.rs	2017-07-20 19:30:41.411999923 +0200
++++ a/src/librustc_trans/back/write.rs	2017-07-20 19:30:45.315993289 +0200
+@@ -417,11 +417,10 @@
+             };
+ 
+             if enabled {
+-                let loc = llvm::debug_loc_to_string(llcx, opt.debug_loc);
+                 cgcx.handler.note_without_error(&format!("optimization {} for {} at {}: {}",
+                                                 opt.kind.describe(),
+                                                 opt.pass_name,
++                                                "[unknown]",
+-                                                if loc.is_empty() { "[unknown]" } else { &*loc },
+                                                 opt.message));
+             }
+         }
+--- b/src/librustc_trans/builder.rs	2017-07-20 19:30:41.412999921 +0200
++++ a/src/librustc_trans/builder.rs	2017-07-20 19:30:45.316993286 +0200
+@@ -11,7 +11,7 @@
+ #![allow(dead_code)] // FFI wrappers
+ 
+ use llvm;
++use llvm::{AtomicRmwBinOp, AtomicOrdering, SyncScope, AsmDialect};
+-use llvm::{AtomicRmwBinOp, AtomicOrdering, SynchronizationScope, AsmDialect};
+ use llvm::{Opcode, IntPredicate, RealPredicate, False, OperandBundleDef};
+ use llvm::{ValueRef, BasicBlockRef, BuilderRef, ModuleRef};
+ use common::*;
+@@ -1133,7 +1133,7 @@
+         }
+     }
+ 
++    pub fn atomic_fence(&self, order: AtomicOrdering, scope: SyncScope) {
+-    pub fn atomic_fence(&self, order: AtomicOrdering, scope: SynchronizationScope) {
+         unsafe {
+             llvm::LLVMRustBuildAtomicFence(self.llbuilder, order, scope);
+         }
+--- b/src/librustc_trans/debuginfo/namespace.rs	2017-07-20 19:30:41.411999923 +0200
++++ a/src/librustc_trans/debuginfo/namespace.rs	2017-07-20 19:30:45.316993286 +0200
+@@ -10,7 +10,6 @@
+ 
+ // Namespace Handling.
+ 
+-use super::metadata::{file_metadata, unknown_file_metadata, UNKNOWN_LINE_NUMBER};
+ use super::utils::{DIB, debug_context, span_start};
+ 
+ use llvm;
+@@ -19,10 +18,8 @@
+ use rustc::hir::map::DefPathData;
+ use common::CrateContext;
+ 
+-use libc::c_uint;
+ use std::ffi::CString;
+ use std::ptr;
+-use syntax_pos::DUMMY_SP;
+ 
+ pub fn mangled_name_of_item(ccx: &CrateContext, def_id: DefId, extra: &str) -> String {
+     fn fill_nested(ccx: &CrateContext, def_id: DefId, extra: &str, output: &mut String) {
+@@ -69,21 +66,12 @@
+     };
+ 
+     let namespace_name = CString::new(namespace_name.as_bytes()).unwrap();
+-    let span = ccx.tcx().def_span(def_id);
+-    let (file, line) = if span != DUMMY_SP {
+-        let loc = span_start(ccx, span);
+-        (file_metadata(ccx, &loc.file.name, &loc.file.abs_path), loc.line as c_uint)
+-    } else {
+-        (unknown_file_metadata(ccx), UNKNOWN_LINE_NUMBER)
+-    };
+ 
+     let scope = unsafe {
+         llvm::LLVMRustDIBuilderCreateNameSpace(
+             DIB(ccx),
+             parent_scope,
++            namespace_name.as_ptr())
+-            namespace_name.as_ptr(),
+-            file,
+-            line as c_uint)
+     };
+ 
+     debug_context(ccx).namespace_map.borrow_mut().insert(def_id, scope);
+--- b/src/librustc_trans/intrinsic.rs	2017-07-20 19:30:41.412999921 +0200
++++ a/src/librustc_trans/intrinsic.rs	2017-07-20 19:30:45.316993286 +0200
+@@ -444,12 +444,12 @@
+                 }
+ 
+                 "fence" => {
++                    bcx.atomic_fence(order, llvm::SyncScope::System);
+-                    bcx.atomic_fence(order, llvm::SynchronizationScope::CrossThread);
+                     C_nil(ccx)
+                 }
+ 
+                 "singlethreadfence" => {
++                    bcx.atomic_fence(order, llvm::SyncScope::SingleThread);
+-                    bcx.atomic_fence(order, llvm::SynchronizationScope::SingleThread);
+                     C_nil(ccx)
+                 }
+ 
+--- b/src/rustllvm/RustWrapper.cpp	2017-07-20 19:30:41.573999607 +0200
++++ a/src/rustllvm/RustWrapper.cpp	2017-07-20 19:30:45.316993286 +0200
+@@ -165,8 +165,7 @@
+   Attribute Attr = Attribute::get(Call->getContext(), fromRust(RustAttr));
+   AttrBuilder B(Attr);
+   Call.setAttributes(Call.getAttributes().addAttributes(
++      Call->getContext(), Index, B));
+-      Call->getContext(), Index,
+-      AttributeSet::get(Call->getContext(), Index, B)));
+ }
+ 
+ extern "C" void LLVMRustAddDereferenceableCallSiteAttr(LLVMValueRef Instr,
+@@ -176,8 +175,7 @@
+   AttrBuilder B;
+   B.addDereferenceableAttr(Bytes);
+   Call.setAttributes(Call.getAttributes().addAttributes(
++      Call->getContext(), Index, B));
+-      Call->getContext(), Index,
+-      AttributeSet::get(Call->getContext(), Index, B)));
+ }
+ 
+ extern "C" void LLVMRustAddFunctionAttribute(LLVMValueRef Fn, unsigned Index,
+@@ -185,7 +183,7 @@
+   Function *A = unwrap<Function>(Fn);
+   Attribute Attr = Attribute::get(A->getContext(), fromRust(RustAttr));
+   AttrBuilder B(Attr);
++  A->addAttributes(Index, B);
+-  A->addAttributes(Index, AttributeSet::get(A->getContext(), Index, B));
+ }
+ 
+ extern "C" void LLVMRustAddDereferenceableAttr(LLVMValueRef Fn, unsigned Index,
+@@ -193,7 +191,7 @@
+   Function *A = unwrap<Function>(Fn);
+   AttrBuilder B;
+   B.addDereferenceableAttr(Bytes);
++  A->addAttributes(Index, B);
+-  A->addAttributes(Index, AttributeSet::get(A->getContext(), Index, B));
+ }
+ 
+ extern "C" void LLVMRustAddFunctionAttrStringValue(LLVMValueRef Fn,
+@@ -203,18 +201,18 @@
+   Function *F = unwrap<Function>(Fn);
+   AttrBuilder B;
+   B.addAttribute(Name, Value);
++  F->addAttributes(Index, B);
+-  F->addAttributes(Index, AttributeSet::get(F->getContext(), Index, B));
+ }
+ 
+ extern "C" void LLVMRustRemoveFunctionAttributes(LLVMValueRef Fn,
+                                                  unsigned Index,
+                                                  LLVMRustAttribute RustAttr) {
+   Function *F = unwrap<Function>(Fn);
++  const AttributeList PAL = F->getAttributes();
+-  const AttributeSet PAL = F->getAttributes();
+   Attribute Attr = Attribute::get(F->getContext(), fromRust(RustAttr));
+   AttrBuilder B(Attr);
++  const AttributeList PALNew = PAL.removeAttributes(
++      F->getContext(), Index, B);
+-  const AttributeSet PALNew = PAL.removeAttributes(
+-      F->getContext(), Index, AttributeSet::get(F->getContext(), Index, B));
+   F->setAttributes(PALNew);
+ }
+ 
+@@ -257,26 +255,26 @@
+   return wrap(ACXI);
+ }
+ 
++enum class LLVMRustSyncScope {
+-enum class LLVMRustSynchronizationScope {
+   Other,
+   SingleThread,
++  System,
+-  CrossThread,
+ };
+ 
++static llvm::SyncScope::ID fromRust(LLVMRustSyncScope Scope) {
+-static SynchronizationScope fromRust(LLVMRustSynchronizationScope Scope) {
+   switch (Scope) {
++  case LLVMRustSyncScope::SingleThread:
++    return llvm::SyncScope::SingleThread;
++  case LLVMRustSyncScope::System:
++    return llvm::SyncScope::System;
+-  case LLVMRustSynchronizationScope::SingleThread:
+-    return SingleThread;
+-  case LLVMRustSynchronizationScope::CrossThread:
+-    return CrossThread;
+   default:
++    llvm_unreachable("bad SyncScope.");
+-    llvm_unreachable("bad SynchronizationScope.");
+   }
+ }
+ 
+ extern "C" LLVMValueRef
+ LLVMRustBuildAtomicFence(LLVMBuilderRef B, LLVMAtomicOrdering Order,
++                         LLVMRustSyncScope Scope) {
+-                         LLVMRustSynchronizationScope Scope) {
+   return wrap(unwrap(B)->CreateFence(fromRust(Order), fromRust(Scope)));
+ }
+ 
+@@ -320,14 +318,6 @@
+ 
+ typedef struct LLVMOpaqueMetadata *LLVMRustMetadataRef;
+ 
+-namespace llvm {
+-DEFINE_ISA_CONVERSION_FUNCTIONS(Metadata, LLVMRustMetadataRef)
+-
+-inline Metadata **unwrap(LLVMRustMetadataRef *Vals) {
+-  return reinterpret_cast<Metadata **>(Vals);
+-}
+-}
+-
+ template <typename DIT> DIT *unwrapDIPtr(LLVMRustMetadataRef Ref) {
+   return (DIT *)(Ref ? unwrap<MDNode>(Ref) : nullptr);
+ }
+@@ -551,7 +541,7 @@
+     LLVMRustDIBuilderRef Builder, LLVMRustMetadataRef PointeeTy,
+     uint64_t SizeInBits, uint32_t AlignInBits, const char *Name) {
+   return wrap(Builder->createPointerType(unwrapDI<DIType>(PointeeTy),
++                                         SizeInBits, AlignInBits, None, Name));
+-                                         SizeInBits, AlignInBits, Name));
+ }
+ 
+ extern "C" LLVMRustMetadataRef LLVMRustDIBuilderCreateStructType(
+@@ -736,10 +726,9 @@
+ 
+ extern "C" LLVMRustMetadataRef
+ LLVMRustDIBuilderCreateNameSpace(LLVMRustDIBuilderRef Builder,
++                                 LLVMRustMetadataRef Scope, const char *Name) {
+-                                 LLVMRustMetadataRef Scope, const char *Name,
+-                                 LLVMRustMetadataRef File, unsigned LineNo) {
+   return wrap(Builder->createNameSpace(
++      unwrapDI<DIDescriptor>(Scope), Name
+-      unwrapDI<DIDescriptor>(Scope), Name, unwrapDI<DIFile>(File), LineNo
+ #if LLVM_VERSION_GE(4, 0)
+       ,
+       false // ExportSymbols (only relevant for C++ anonymous namespaces)
+@@ -871,8 +860,7 @@
+ 
+ extern "C" void LLVMRustUnpackOptimizationDiagnostic(
+     LLVMDiagnosticInfoRef DI, RustStringRef PassNameOut,
++    LLVMValueRef *FunctionOut, RustStringRef MessageOut) {
+-    LLVMValueRef *FunctionOut, LLVMDebugLocRef *DebugLocOut,
+-    RustStringRef MessageOut) {
+   // Undefined to call this not on an optimization diagnostic!
+   llvm::DiagnosticInfoOptimizationBase *Opt =
+       static_cast<llvm::DiagnosticInfoOptimizationBase *>(unwrap(DI));
+@@ -880,7 +868,6 @@
+   RawRustStringOstream PassNameOS(PassNameOut);
+   PassNameOS << Opt->getPassName();
+   *FunctionOut = wrap(&Opt->getFunction());
+-  *DebugLocOut = wrap(&Opt->getDebugLoc());
+   RawRustStringOstream MessageOS(MessageOut);
+   MessageOS << Opt->getMsg();
+ }

@@ -17,12 +17,11 @@ SRC_URI="https://static.rust-lang.org/dist/rustc-${PV}-src.tar.gz -> ${P}-src.ta
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clang debug doc -jemalloc +libcxx +source +system-llvm"
+IUSE="+clang -debug doc -jemalloc +libcxx +source +system-llvm"
 REQUIRED_USE="libcxx? ( clang )"
 
 RDEPEND="libcxx? ( sys-libs/libcxx )
-	system-llvm? ( >=sys-devel/llvm-3.8.1-r2:=
-		<sys-devel/llvm-5.0.0:= )
+	system-llvm? ( sys-devel/llvm:4 )
 "
 
 DEPEND="${RDEPEND}
@@ -43,6 +42,7 @@ pkg_setup() {
 }
 
 src_prepare() {
+	eapply "${FILESDIR}"/llvm-5.0.patch
 	eapply "${FILESDIR}"/musl.patch
 	eapply "${FILESDIR}"/configured-cargo-rustc.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
@@ -52,6 +52,8 @@ src_prepare() {
 
 src_configure() {
 	einfo "Setting up config.toml for target"
+
+	local rtarget="x86_64-unknown-linux-musl"
 
 	local archiver="$(tc-getAR)"
 	local linker="$(tc-getCC)"
@@ -68,9 +70,9 @@ src_configure() {
 [build]
 cargo = "/usr/bin/cargo"
 rustc = "/usr/bin/rustc"
-build = "${CBUILD}"
-host = ["${CHOST}"]
-target = ["${CBUILD}"]
+build = "${rtarget}"
+host = ["${rtarget}"]
+target = ["${rtarget}"]
 
 [install]
 prefix = "${EPREFIX}/usr"
@@ -87,7 +89,7 @@ default-linker = "${linker}"
 default-ar = "${archiver}"
 rpath = false
 
-[target.${CBUILD}]
+[target.${rtarget}]
 cc = "${c_compiler}"
 cxx = "${cxx_compiler}"
 llvm-config = "${llvm_config}"
