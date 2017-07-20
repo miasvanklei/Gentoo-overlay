@@ -8,7 +8,7 @@ PYTHON_COMPAT=( python2_7 )
 inherit git-r3 python-single-r1
 
 DESCRIPTION="GR framework: a graphics library for visualisation applications"
-HOMEPAGE="https://github.com/llvm-mirror/libunwind"
+HOMEPAGE="https://github.com/jheinen/gr"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/jheinen/gr"
 
@@ -27,7 +27,7 @@ DEPEND="
 		dev-python/numpy[${PYTHON_USEDEP}]
 		dev-python/matplotlib[${PYTHON_USEDEP}]
 	)
-	julia? ( =dev-lang/julia-0.6.0 )"
+	julia? ( dev-lang/julia )"
 
 PATCHES=(
 	"${FILESDIR}"/system-libs.patch
