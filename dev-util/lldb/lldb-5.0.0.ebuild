@@ -12,9 +12,9 @@ inherit cmake-utils llvm python-single-r1 toolchain-funcs git-r3
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="test? ( http://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+#SRC_URI="test? ( http://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
 EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
-EGIT_BRANCH="swift-4.0-branch"
+EGIT_BRANCH="upstream-with-swift"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -60,22 +60,10 @@ src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
 
-	# fix tests in stand-alone build
-	eapply "${FILESDIR}"/0002-test-Fix-finding-LLDB-tools-when-building-stand-alon.patch
-
-	# fix swig, broken in 3.0.9 and 3.0.10
-	eapply "${FILESDIR}"/0003-fix-swig.patch
-
-	# fix use with libedit-2017
-	eapply "${FILESDIR}"/0004-fix-bug-28898.patch
-
 	# fix apple/swift cmake mess
-	eapply "${FILESDIR}"/0005-fix-cmake.patch
-	eapply "${FILESDIR}"/0006-fix-includes.patch
-	eapply "${FILESDIR}"/0007-fix-resourcedir.patch
-
-	# fix compilation with llvm 4.0
-	eapply "${FILESDIR}"/0008-llvm-4.0.patch
+	eapply "${FILESDIR}"/0002-fix-cmake.patch
+	eapply "${FILESDIR}"/0003-fix-includes.patch
+	eapply "${FILESDIR}"/0004-fix-resourcedir.patch
 
 	eapply_user
 }
