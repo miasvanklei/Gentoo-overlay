@@ -94,7 +94,7 @@
  }
 --- /dev/null
 +++ b/src/librustc_back/target/x86_64_gentoo_linux_musl.rs
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,33 @@
 +// Copyright 2014 The Rust Project Developers. See the COPYRIGHT
 +// file at the top-level directory of this distribution and at
 +// http://rust-lang.org/COPYRIGHT.
@@ -113,7 +113,6 @@
 +    base.cpu = "x86-64".to_string();
 +    base.max_atomic_width = Some(64);
 +    base.crt_static_default = false;
-+    base.no_default_libraries = false;
 +    base.pre_link_args.get_mut(&LinkerFlavor::Gcc).unwrap().push("-m64".to_string());
 +
 +    Ok(Target {
@@ -131,16 +130,21 @@
 +}
 --- a/src/bootstrap/compile.rs
 +++ b/src/bootstrap/compile.rs
-@@ -111,19 +111,6 @@
+@@ -114,10 +114,6 @@
+     let libdir = build.sysroot_libdir(target_compiler, target);
+     add_to_sysroot(&libdir, &libstd_stamp(build, compiler, target));
  
-     t!(fs::create_dir_all(&libdir));
-     add_to_sysroot(&out_dir, &libdir);
--
 -    if target.contains("musl") && !target.contains("mips") {
 -        copy_musl_third_party_objects(build, target, &libdir);
 -    }
--}
 -
+     if build.config.sanitizers && compiler.stage != 0 && target == "x86_64-apple-darwin" {
+         // The sanitizers are only built in stage1 or above, so the dylibs will
+         // be missing in stage0 and causes panic. See the `std()` function above
+@@ -126,15 +122,6 @@
+     }
+ }
+ 
 -/// Copies the crt(1,i,n).o startup objects
 -///
 -/// Only required for musl targets that statically link to libc
@@ -148,17 +152,18 @@
 -    for &obj in &["crt1.o", "crti.o", "crtn.o"] {
 -        copy(&build.musl_root(target).unwrap().join("lib").join(obj), &into.join(obj));
 -    }
- }
- 
- /// Build and prepare startup objects like rsbegin.o and rsend.o
+-}
+-
+ fn copy_apple_sanitizer_dylibs(native_dir: &Path, platform: &str, into: &Path) {
+     for &sanitizer in &["asan", "tsan"] {
+         let filename = format!("libclang_rt.{}_{}_dynamic.dylib", sanitizer, platform);
 --- a/src/librustc_back/target/x86_64_unknown_linux_musl.rs
 +++ b/src/librustc_back/target/x86_64_unknown_linux_musl.rs
-@@ -15,6 +15,8 @@
+@@ -15,6 +15,7 @@
      let mut base = super::linux_musl_base::opts();
      base.cpu = "x86-64".to_string();
      base.max_atomic_width = Some(64);
 +    base.crt_static_default = false;
-+    base.no_default_libraries = false;
      base.pre_link_args.get_mut(&LinkerFlavor::Gcc).unwrap().push("-m64".to_string());
  
      Ok(Target {
@@ -189,21 +194,11 @@
          !self.target.target.options.eliminate_frame_pointer
 --- a/src/librustc_driver/target_features.rs
 +++ b/src/librustc_driver/target_features.rs
-@@ -12,7 +12,6 @@
- use llvm::LLVMRustHasFeature;
- use rustc::session::Session;
- use rustc_trans::back::write::create_target_machine;
--use syntax::feature_gate::UnstableFeatures;
- use syntax::symbol::Symbol;
- use libc::c_char;
- 
-@@ -48,31 +49,7 @@
-         }
+@@ -25,21 +25,7 @@
+         cfg.insert((tf, Some(feat)));
      }
  
 -    let requested_features = sess.opts.cg.target_feature.split(',');
--    let unstable_options = sess.opts.debugging_opts.unstable_options;
--    let is_nightly = UnstableFeatures::from_environment().is_nightly_build();
 -    let found_negative = requested_features.clone().any(|r| r == "-crt-static");
 -    let found_positive = requested_features.clone().any(|r| r == "+crt-static");
 -
@@ -217,49 +212,11 @@
 -        found_positive
 -    };
 -
--    // If we switched from the default then that's only allowed on nightly, so
--    // gate that here.
--    if (found_positive || found_negative) && (!is_nightly || !unstable_options) {
--        sess.fatal("specifying the `crt-static` target feature is only allowed \
--                    on the nightly channel with `-Z unstable-options` passed \
--                    as well");
--    }
--
 -    if crt_static {
 +    if sess.crt_static() {
          cfg.insert((tf, Some(Symbol::intern("crt-static"))));
      }
  }
---- a/src/librustc_driver/lib.rs
-+++ b/src/librustc_driver/lib.rs
-@@ -635,11 +635,24 @@
-                             node: ast::MetaItemKind::Word,
-                             span: DUMMY_SP,
-                         });
--                        if !allow_unstable_cfg && gated_cfg.is_some() {
--                            continue;
-+
-+                        // Note that crt-static is a specially recognized cfg
-+                        // directive that's printed out here as part of
-+                        // rust-lang/rust#37406, but in general the
-+                        // `target_feature` cfg is gated under
-+                        // rust-lang/rust#29717. For now this is just
-+                        // specifically allowing the crt-static cfg and that's
-+                        // it, this is intended to get into Cargo and then go
-+                        // through to build scripts.
-+                        let value = value.as_ref().map(|s| s.as_str());
-+                        let value = value.as_ref().map(|s| s.as_ref());
-+                        if name != "target_feature" || value != Some("crt-static") {
-+                            if !allow_unstable_cfg && gated_cfg.is_some() {
-+                                continue;
-+                            }
-                         }
- 
--                        cfgs.push(if let &Some(ref value) = value {
-+                        cfgs.push(if let Some(value) = value {
-                             format!("{}=\"{}\"", name, value)
-                         } else {
-                             format!("{}", name)
 --- a/src/bootstrap/bin/rustc.rs
 +++ b/src/bootstrap/bin/rustc.rs
 @@ -218,6 +218,15 @@

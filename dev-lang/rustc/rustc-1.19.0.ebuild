@@ -44,7 +44,6 @@ pkg_setup() {
 src_prepare() {
 	eapply "${FILESDIR}"/llvm-5.0.patch
 	eapply "${FILESDIR}"/musl.patch
-	eapply "${FILESDIR}"/configured-cargo-rustc.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 
 	eapply_user
@@ -53,12 +52,10 @@ src_prepare() {
 src_configure() {
 	einfo "Setting up config.toml for target"
 
-	local rtarget="x86_64-unknown-linux-musl"
-
 	local archiver="$(tc-getAR)"
 	local linker="$(tc-getCC)"
 
-	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
+	local llvm_config="$(get_llvm_prefix 4)/bin/${CBUILD}-llvm-config"
 	local c_compiler="$(tc-getBUILD_CC)"
 	local cxx_compiler="$(tc-getBUILD_CXX)"
 	if use clang ; then
@@ -70,9 +67,9 @@ src_configure() {
 [build]
 cargo = "/usr/bin/cargo"
 rustc = "/usr/bin/rustc"
-build = "${rtarget}"
-host = ["${rtarget}"]
-target = ["${rtarget}"]
+build = "${CBUILD}"
+host = ["${CHOST}"]
+target = ["${CBUILD}"]
 
 [install]
 prefix = "${EPREFIX}/usr"
@@ -87,9 +84,9 @@ debug-assertions = $(toml_usex debug)
 use-jemalloc = $(toml_usex jemalloc)
 default-linker = "${linker}"
 default-ar = "${archiver}"
-rpath = false
+rpath = true
 
-[target.${rtarget}]
+[target.${CBUILD}]
 cc = "${c_compiler}"
 cxx = "${cxx_compiler}"
 llvm-config = "${llvm_config}"
@@ -99,16 +96,16 @@ EOF
 src_compile() {
 	export RUST_BACKTRACE=1
 	export LLVM_LINK_SHARED=1
-	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
+	export RUSTFLAGS="-L$(get_llvm_prefix 4)/lib"
 	./x.py build --verbose || die
 }
 
 src_install() {
 	export RUST_BACKTRACE=1
 	export LLVM_LINK_SHARED=1
-	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
+	export RUSTFLAGS="-L$(get_llvm_prefix 4)/lib"
 
-	DESTDIR="${D}" ./x.py dist --install --verbose || die
+	DESTDIR="${D}" ./x.py install --verbose || die
 
 	pushd ${D}/usr/lib || die
 
