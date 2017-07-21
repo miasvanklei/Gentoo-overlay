@@ -52,14 +52,14 @@ src_install() {
 	# musl provides ldd through its linker
 	local arch=$("${D}"usr/lib/libc.so 2>&1 | sed -n '1s/^musl libc (\(.*\))$/\1/p')
 
-	#move ld-musl and create linkerscript to directly link with libc.so
+	# move ld-musl and create linkerscript to directly link with libc.so
         mv -f "${D}"/usr/lib/libc.so "${D}"/lib/ld-musl-${arch}.so.1 || die
 
 	pushd "${D}" >/dev/null
-	dosym ld-musl-${arch}.so.1 /lib/libc.so
+	dosym /lib/ld-musl-${arch}.so.1 /usr/lib/libc.so
 	popd >/dev/null
 
-	gen_ldscript "/lib/libc.so" > "${ED}/usr/lib/libc.so"
+	#gen_ldscript "/lib/libc.so" > "${ED}/usr/lib/libc.so"
 
 
 	# needed for ldd under pax kernel
