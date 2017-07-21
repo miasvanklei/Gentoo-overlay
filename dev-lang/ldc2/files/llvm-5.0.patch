@@ -1,0 +1,793 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9878cdad..7dd57a13 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -335,6 +335,7 @@ set(DRV_SRC
+     driver/cache.cpp
+     driver/cl_options.cpp
+     driver/cl_options_sanitizers.cpp
++    driver/cl_options-llvm.cpp
+     driver/codegenerator.cpp
+     driver/configfile.cpp
+     driver/dcomputecodegenerator.cpp
+@@ -354,6 +355,7 @@ set(DRV_HDR
+     driver/cache_pruning.h
+     driver/cl_options.h
+     driver/cl_options_sanitizers.h
++    driver/cl_options-llvm.h
+     driver/codegenerator.h
+     driver/configfile.h
+     driver/dcomputecodegenerator.h
+@@ -449,21 +451,6 @@ endif()
+ # LLD integration (requires LLVM >= 3.9 with LLD headers & libs)
+ #
+ set(LDC_WITH_LLD OFF)
+-if(LDC_LLVM_VER GREATER 308)
+-    # check for LLD header
+-    unset(LDC_WITH_LLD)
+-    if(NOT MSVC)
+-        set(CMAKE_REQUIRED_FLAGS -std=c++11)
+-    endif()
+-    set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS})
+-    CHECK_INCLUDE_FILE_CXX(lld/Driver/Driver.h LDC_WITH_LLD)
+-    unset(CMAKE_REQUIRED_FLAGS)
+-    unset(CMAKE_REQUIRED_INCLUDES)
+-    if(LDC_WITH_LLD)
+-        message(STATUS "Building LDC with LLD support")
+-        append("-DLDC_WITH_LLD" LDC_CXXFLAGS)
+-    endif()
+-endif()
+ 
+ #
+ # Enable building with riscv-llvm, for full RISC-V support.
+diff --git a/driver/cache.cpp b/driver/cache.cpp
+index 2f538070..4f9540fd 100644
+--- a/driver/cache.cpp
++++ b/driver/cache.cpp
+@@ -302,14 +302,18 @@ void outputIR2ObjRelevantCmdlineArgs(llvm::raw_ostream &hash_os) {
+   // sharing the cache).
+   outputOptimizationSettings(hash_os);
+   opts::outputSanitizerSettings(hash_os);
+-  hash_os << opts::mCPU;
+-  for (auto &attr : opts::mAttrs) {
+-    hash_os << attr;
+-  }
+-  hash_os << opts::mFloatABI;
+-  hash_os << opts::mRelocModel;
+-  hash_os << opts::mCodeModel;
+-  hash_os << opts::disableFpElim;
++  hash_os << opts::getCPUStr();
++  hash_os << opts::getFeaturesStr();
++  hash_os << opts::floatABI;
++#if LDC_LLVM_VER >= 309
++  const auto relocModel = opts::getRelocModel();
++  if (relocModel.hasValue())
++    hash_os << relocModel.getValue();
++#else
++  hash_os << opts::getRelocModel();
++#endif
++  hash_os << opts::getCodeModel();
++  hash_os << opts::disableFPElim();
+ }
+ 
+ // Output to `hash_os` all environment flags that influence object code output
+diff --git a/driver/cl_options-llvm.cpp b/driver/cl_options-llvm.cpp
+index e69de29b..8df9ba3c 100644
+--- a/driver/cl_options-llvm.cpp
++++ b/driver/cl_options-llvm.cpp
+@@ -0,0 +1,51 @@
++//===-- cl_options-llvm.cpp -----------------------------------------------===//
++//
++//                         LDC – the LLVM D compiler
++//
++// This file is distributed under the BSD-style LDC license. See the LICENSE
++// file for details.
++//
++//===----------------------------------------------------------------------===//
++
++#include "driver/cl_options-llvm.h"
++
++// Pull in command-line options and helper functions from special LLVM header
++// shared by multiple LLVM tools.
++#include "llvm/CodeGen/CommandFlags.h"
++
++static cl::opt<bool>
++    DisableRedZone("disable-red-zone", cl::ZeroOrMore,
++                   cl::desc("Do not emit code that uses the red zone."));
++
++// Now expose the helper functions (with static linkage) via external wrappers
++// in the opts namespace, including some additional helper functions.
++namespace opts {
++
++std::string getArchStr() { return ::MArch; }
++
++#if LDC_LLVM_VER >= 309
++Optional<Reloc::Model> getRelocModel() { return ::getRelocModel(); }
++#else
++Reloc::Model getRelocModel() { return ::RelocModel; }
++#endif
++
++CodeModel::Model getCodeModel() { return ::CMModel; }
++
++bool disableFPElim() { return ::DisableFPElim; }
++
++bool disableRedZone() { return ::DisableRedZone; }
++
++bool printTargetFeaturesHelp() {
++  if (MCPU == "help")
++    return true;
++  return std::any_of(MAttrs.begin(), MAttrs.end(),
++                     [](const std::string &a) { return a == "help"; });
++}
++
++TargetOptions InitTargetOptionsFromCodeGenFlags() {
++  return ::InitTargetOptionsFromCodeGenFlags();
++}
++
++std::string getCPUStr() { return ::getCPUStr(); }
++std::string getFeaturesStr() { return ::getFeaturesStr(); }
++}
+diff --git a/driver/cl_options-llvm.h b/driver/cl_options-llvm.h
+index e69de29b..b249cbfc 100644
+--- a/driver/cl_options-llvm.h
++++ b/driver/cl_options-llvm.h
+@@ -0,0 +1,36 @@
++//===-- driver/cl_options-llvm.h - LLVM command line options ----*- C++ -*-===//
++//
++//                         LDC – the LLVM D compiler
++//
++// This file is distributed under the BSD-style LDC license. See the LICENSE
++// file for details.
++//
++//===----------------------------------------------------------------------===//
++
++#ifndef LDC_DRIVER_CL_OPTIONS_LLVM_H
++#define LDC_DRIVER_CL_OPTIONS_LLVM_H
++
++#include "llvm/ADT/Optional.h"
++#include "llvm/Support/CommandLine.h"
++#include "llvm/Support/CodeGen.h"
++#include "llvm/Target/TargetOptions.h"
++
++namespace opts {
++
++std::string getArchStr();
++#if LDC_LLVM_VER >= 309
++llvm::Optional<llvm::Reloc::Model> getRelocModel();
++#else
++llvm::Reloc::Model getRelocModel();
++#endif
++llvm::CodeModel::Model getCodeModel();
++bool disableFPElim();
++bool disableRedZone();
++bool printTargetFeaturesHelp();
++
++llvm::TargetOptions InitTargetOptionsFromCodeGenFlags();
++std::string getCPUStr();
++std::string getFeaturesStr();
++}
++
++#endif
+diff --git a/driver/cl_options.cpp b/driver/cl_options.cpp
+index b1e27dac..7706a130 100644
+--- a/driver/cl_options.cpp
++++ b/driver/cl_options.cpp
+@@ -130,10 +130,6 @@ static cl::opt<ubyte, true> debugInfo(
+         clEnumValN(3, "gline-tables-only", "Add line tables only")),
+     cl::location(global.params.symdebug), cl::init(0));
+ 
+-static cl::opt<unsigned, true>
+-    dwarfVersion("dwarf-version", cl::desc("Dwarf version"), cl::ZeroOrMore,
+-                 cl::location(global.params.dwarfVersion), cl::Hidden);
+-
+ cl::opt<bool> noAsm("noasm", cl::desc("Disallow use of inline assembler"),
+                     cl::ZeroOrMore);
+ 
+@@ -171,12 +167,6 @@ static cl::opt<bool, true>
+                        cl::desc("Remove generated object files on success"),
+                        cl::location(global.params.cleanupObjectFiles));
+ 
+-// Disabling Red Zone
+-cl::opt<bool, true>
+-    disableRedZone("disable-red-zone", cl::ZeroOrMore,
+-                   cl::desc("Do not emit code that uses the red zone."),
+-                   cl::location(global.params.disableRedZone));
+-
+ // DDoc options
+ static cl::opt<bool, true> doDdoc("D", cl::desc("Generate documentation"),
+                                   cl::location(global.params.doDocComments),
+@@ -292,21 +282,10 @@ cl::opt<std::string>
+                         "'-deps' alone prints module dependencies "
+                         "(imports/file/version/debug/lib)"));
+ 
+-cl::opt<std::string> mArch("march", cl::ZeroOrMore,
+-                           cl::desc("Architecture to generate code for:"));
+-
+ cl::opt<bool> m32bits("m32", cl::desc("32 bit target"), cl::ZeroOrMore);
+ 
+ cl::opt<bool> m64bits("m64", cl::desc("64 bit target"), cl::ZeroOrMore);
+ 
+-cl::opt<std::string>
+-    mCPU("mcpu", cl::ZeroOrMore, cl::value_desc("cpu-name"), cl::init(""),
+-         cl::desc("Target a specific cpu type (-mcpu=help for details)"));
+-
+-cl::list<std::string>
+-    mAttrs("mattr", cl::CommaSeparated, cl::value_desc("a1,+a2,-a3,..."),
+-           cl::desc("Target specific attributes (-mattr=help for details)"));
+-
+ cl::opt<std::string> mTargetTriple("mtriple", cl::ZeroOrMore,
+                                    cl::desc("Override target triple"));
+ 
+@@ -321,49 +300,7 @@ static cl::list<std::string, StringsAdapter> modFileAliasStrings(
+     cl::value_desc("<package.module>=<filespec>"),
+     cl::location(modFileAliasStringsStore));
+ 
+-cl::opt<llvm::Reloc::Model> mRelocModel(
+-    "relocation-model", cl::desc("Relocation model"), cl::ZeroOrMore,
+-#if LDC_LLVM_VER < 309
+-    cl::init(llvm::Reloc::Default),
+-#endif
+-    clEnumValues(
+-#if LDC_LLVM_VER < 309
+-        clEnumValN(llvm::Reloc::Default, "default",
+-                   "Target default relocation model"),
+-#endif
+-        clEnumValN(llvm::Reloc::Static, "static", "Non-relocatable code"),
+-        clEnumValN(llvm::Reloc::PIC_, "pic",
+-                   "Fully relocatable, position independent code"),
+-        clEnumValN(llvm::Reloc::DynamicNoPIC, "dynamic-no-pic",
+-                   "Relocatable external references, non-relocatable code")));
+-
+-cl::opt<llvm::CodeModel::Model> mCodeModel(
+-    "code-model", cl::desc("Code model"), cl::ZeroOrMore,
+-    cl::init(llvm::CodeModel::Default),
+-    clEnumValues(
+-        clEnumValN(llvm::CodeModel::Default, "default",
+-                   "Target default code model"),
+-        clEnumValN(llvm::CodeModel::Small, "small", "Small code model"),
+-        clEnumValN(llvm::CodeModel::Kernel, "kernel", "Kernel code model"),
+-        clEnumValN(llvm::CodeModel::Medium, "medium", "Medium code model"),
+-        clEnumValN(llvm::CodeModel::Large, "large", "Large code model")));
+-
+-cl::opt<FloatABI::Type> mFloatABI(
+-    "float-abi", cl::desc("ABI/operations to use for floating-point types:"),
+-    cl::ZeroOrMore, cl::init(FloatABI::Default),
+-    clEnumValues(
+-        clEnumValN(FloatABI::Default, "default",
+-                   "Target default floating-point ABI"),
+-        clEnumValN(FloatABI::Soft, "soft",
+-                   "Software floating-point ABI and operations"),
+-        clEnumValN(FloatABI::SoftFP, "softfp",
+-                   "Soft-float ABI, but hardware floating-point instructions"),
+-        clEnumValN(FloatABI::Hard, "hard",
+-                   "Hardware floating-point ABI and instructions")));
+-
+-cl::opt<bool>
+-    disableFpElim("disable-fp-elim", cl::ZeroOrMore,
+-                  cl::desc("Disable frame pointer elimination optimization"));
++FloatABI::Type floatABI; // Storage for the dynamically created float-abi option.
+ 
+ static cl::opt<bool, true, FlagParser<bool>>
+     asserts("asserts", cl::ZeroOrMore, cl::desc("(*) Enable assertions"),
+@@ -428,12 +365,10 @@ cl::opt<bool> disableLinkerStripDead(
+ // Math options
+ bool fFastMath; // Storage for the dynamically created ffast-math option.
+ llvm::FastMathFlags defaultFMF;
+-void setDefaultMathOptions(llvm::TargetMachine &target) {
++void setDefaultMathOptions(llvm::TargetOptions &targetOptions) {
+   if (fFastMath) {
+     defaultFMF.setUnsafeAlgebra();
+-
+-    llvm::TargetOptions &TO = target.Options;
+-    TO.UnsafeFPMath = true;
++    targetOptions.UnsafeFPMath = true;
+   }
+ }
+ 
+@@ -546,6 +481,7 @@ void createClashingOptions() {
+   // is a clash in the command line options.
+   renameAndHide("color", "llvm-color");
+   renameAndHide("ffast-math", "llvm-ffast-math");
++  renameAndHide("float-abi", "llvm-float-abi");
+ 
+   // Step 2. Add the LDC options.
+   new cl::opt<bool, true, FlagParser<bool>>(
+@@ -553,6 +489,19 @@ void createClashingOptions() {
+       cl::desc("(*) Force colored console output"));
+   new cl::opt<bool, true>("ffast-math", cl::ZeroOrMore, cl::location(fFastMath),
+                           cl::desc("Set @fastmath for all functions."));
++  new cl::opt<FloatABI::Type, true>(
++      "float-abi", cl::desc("ABI/operations to use for floating-point types:"),
++      cl::ZeroOrMore, cl::location(floatABI), cl::init(FloatABI::Default),
++      clEnumValues(
++          clEnumValN(FloatABI::Default, "default",
++                     "Target default floating-point ABI"),
++          clEnumValN(FloatABI::Soft, "soft",
++                     "Software floating-point ABI and operations"),
++          clEnumValN(
++              FloatABI::SoftFP, "softfp",
++              "Soft-float ABI, but hardware floating-point instructions"),
++          clEnumValN(FloatABI::Hard, "hard",
++                     "Hardware floating-point ABI and instructions")));
+ }
+ 
+ /// Hides command line options exposed from within LLVM that are unlikely
+@@ -586,6 +535,16 @@ void hideLLVMOptions() {
+       "verify-region-info", "verify-scev", "verify-scev-maps",
+       "x86-early-ifcvt", "x86-use-vzeroupper", "x86-recip-refinement-steps",
+ 
++      "thread-model", "exception-model", "enable-fp-mad",
++      "enable-unsafe-fp-math", "enable-no-infs-fp-math",
++      "enable-no-nans-fp-math", "enable-no-trapping-fp-math",
++      "denormal-fp-math", "soft-float", "recip", "nozero-initialized-in-bss",
++      "tailcallopt", "stack-symbol-ordering", "stack-alignment", "enable-pie",
++      "use-ctors", "use-init-array", "emulated-tls", "unique-section-names",
++      "jump-table-type", "meabi", "debugger-tune", "asm-instrumentation",
++      "mc-relax-all", "incremental-linker-compatible", "asm-show-inst", "fcfi",
++      "cfi-type", "cfi-enforcing", "cfi-func-name", "pie-copy-relocations",
++
+       // We enable -fdata-sections/-ffunction-sections by default where it makes
+       // sense for reducing code size, so hide them to avoid confusion.
+       //
+@@ -594,7 +553,20 @@ void hideLLVMOptions() {
+       // on the target triple (and thus we do not know it until after the
+       // command
+       // line has been parsed).
+-      "fdata-sections", "ffunction-sections"};
++      "fdata-sections", "ffunction-sections", "data-sections",
++      "function-sections"};
++
++  // pulled in from shared LLVM headers, but unused or not desired in LDC
++  static const char *const removedOptions[] = {"disable-tail-calls",
++                                               "fatal-warnings",
++                                               "filetype",
++                                               "no-deprecated-warn",
++                                               "no-warn",
++                                               "stackrealign",
++                                               "start-after",
++                                               "stop-after",
++                                               "trap-func",
++                                               "W"};
+ 
+   llvm::StringMap<cl::Option *> &map = cl::getRegisteredOptions();
+   for (const auto name : hiddenOptions) {
+@@ -605,6 +577,13 @@ void hideLLVMOptions() {
+       it->second->setHiddenFlag(cl::Hidden);
+     }
+   }
++
++  for (const auto name : removedOptions) {
++    auto it = map.find(name);
++    if (it != map.end()) {
++      map.erase(it);
++    }
++  }
+ }
+ 
+ } // namespace opts
+diff --git a/driver/cl_options.h b/driver/cl_options.h
+index 93c23348..aee51cc3 100644
+--- a/driver/cl_options.h
++++ b/driver/cl_options.h
+@@ -15,6 +15,7 @@
+ #ifndef LDC_DRIVER_CL_OPTIONS_H
+ #define LDC_DRIVER_CL_OPTIONS_H
+ 
++#include "driver/cl_options-llvm.h"
+ #include "driver/targetmachine.h"
+ #include "gen/cl_helpers.h"
+ #include "llvm/ADT/SmallVector.h"
+@@ -69,24 +70,18 @@ extern cl::opt<std::string> cacheDir;
+ extern cl::list<std::string> linkerSwitches;
+ extern cl::list<std::string> ccSwitches;
+ 
+-extern cl::opt<std::string> mArch;
+ extern cl::opt<bool> m32bits;
+ extern cl::opt<bool> m64bits;
+-extern cl::opt<std::string> mCPU;
+-extern cl::list<std::string> mAttrs;
+ extern cl::opt<std::string> mTargetTriple;
+ extern cl::opt<std::string> mABI;
+-extern cl::opt<llvm::Reloc::Model> mRelocModel;
+-extern cl::opt<llvm::CodeModel::Model> mCodeModel;
+-extern cl::opt<bool> disableFpElim;
+-extern cl::opt<FloatABI::Type> mFloatABI;
++extern FloatABI::Type floatABI;
+ extern cl::opt<bool> linkonceTemplates;
+ extern cl::opt<bool> disableLinkerStripDead;
+ 
+ // Math options
+ extern bool fFastMath;
+ extern llvm::FastMathFlags defaultFMF;
+-void setDefaultMathOptions(llvm::TargetMachine &target);
++void setDefaultMathOptions(llvm::TargetOptions &targetOptions);
+ 
+ extern cl::opt<BOUNDSCHECK> boundsCheck;
+ extern bool nonSafeBoundsChecks;
+diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
+index ec420850..8100c726 100644
+--- a/driver/linker-gcc.cpp
++++ b/driver/linker-gcc.cpp
+@@ -112,8 +112,9 @@ void ArgsBuilder::addLTOGoldPluginFlags() {
+   if (opts::isUsingThinLTO())
+     addLdFlag("-plugin-opt=thinlto");
+ 
+-  if (!opts::mCPU.empty())
+-    addLdFlag(llvm::Twine("-plugin-opt=mcpu=") + opts::mCPU);
++  const auto cpu = gTargetMachine->getTargetCPU();
++  if (!cpu.empty())
++    addLdFlag(llvm::Twine("-plugin-opt=mcpu=") + cpu);
+ 
+   // Use the O-level passed to LDC as the O-level for LTO, but restrict it to
+   // the [0, 3] range that can be passed to the linker plugin.
+diff --git a/driver/main.cpp b/driver/main.cpp
+index bfe9a93a..9765fef8 100644
+--- a/driver/main.cpp
++++ b/driver/main.cpp
+@@ -104,18 +104,6 @@ static cl::opt<bool> linkDebugLib(
+     "link-debuglib", cl::ZeroOrMore,
+     cl::desc("Link with libraries specified in -debuglib, not -defaultlib"));
+ 
+-#if LDC_LLVM_VER >= 309
+-static inline llvm::Optional<llvm::Reloc::Model> getRelocModel() {
+-  if (mRelocModel.getNumOccurrences()) {
+-    llvm::Reloc::Model R = mRelocModel;
+-    return R;
+-  }
+-  return llvm::None;
+-}
+-#else
+-static inline llvm::Reloc::Model getRelocModel() { return mRelocModel; }
+-#endif
+-
+ // This function exits the program.
+ void printVersion(llvm::raw_ostream &OS) {
+   OS << "LDC - the LLVM D compiler (" << global.ldc_version << "):\n";
+@@ -374,8 +362,7 @@ void parseCommandLine(int argc, char **argv, Strings &sourceFiles,
+                               const_cast<char **>(allArguments.data()),
+                               "LDC - the LLVM D compiler\n");
+ 
+-  helpOnly = mCPU == "help" ||
+-             (std::find(mAttrs.begin(), mAttrs.end(), "help") != mAttrs.end());
++  helpOnly = opts::printTargetFeaturesHelp();
+   if (helpOnly) {
+     auto triple = llvm::Triple(cfg_triple);
+     std::string errMsg;
+@@ -601,19 +588,12 @@ void parseCommandLine(int argc, char **argv, Strings &sourceFiles,
+     error(Loc(), "-lib and -shared switches cannot be used together");
+   }
+ 
+-#if LDC_LLVM_VER >= 309
+-  if (global.params.dll && !mRelocModel.getNumOccurrences()) {
+-#else
+-  if (global.params.dll && mRelocModel == llvm::Reloc::Default) {
+-#endif
+-    mRelocModel = llvm::Reloc::PIC_;
+-  }
+-
+   if (soname.getNumOccurrences() > 0 && !global.params.dll) {
+     error(Loc(), "-soname can be used only when building a shared library");
+   }
+ 
+   global.params.hdrStripPlainFunctions = !opts::hdrKeepAllBodies;
++  global.params.disableRedZone = opts::disableRedZone();
+ }
+ 
+ void initializePasses() {
+@@ -1009,7 +989,8 @@ int cppmain(int argc, char **argv) {
+   }
+ 
+   // Set up the TargetMachine.
+-  if ((m32bits || m64bits) && (!mArch.empty() || !mTargetTriple.empty())) {
++  const auto arch = getArchStr();
++  if ((m32bits || m64bits) && (!arch.empty() || !mTargetTriple.empty())) {
+     error(Loc(), "-m32 and -m64 switches cannot be used together with -march "
+                  "and -mtriple switches");
+   }
+@@ -1024,9 +1005,21 @@ int cppmain(int argc, char **argv) {
+     fatal();
+   }
+ 
++  auto relocModel = getRelocModel();
++#if LDC_LLVM_VER >= 309
++  if (global.params.dll && !relocModel.hasValue()) {
++#else
++  if (global.params.dll && relocModel == llvm::Reloc::Default) {
++#endif
++    relocModel = llvm::Reloc::PIC_;
++  }
++
+   gTargetMachine = createTargetMachine(
+-      mTargetTriple, mArch, mCPU, mAttrs, bitness, mFloatABI, getRelocModel(),
+-      mCodeModel, codeGenOptLevel(), disableFpElim, disableLinkerStripDead);
++      mTargetTriple, arch, opts::getCPUStr(), opts::getFeaturesStr(), bitness,
++      floatABI, relocModel, opts::getCodeModel(), codeGenOptLevel(),
++      disableLinkerStripDead);
++
++  opts::setDefaultMathOptions(gTargetMachine->Options);
+ 
+ #if LDC_LLVM_VER >= 308
+   static llvm::DataLayout DL = gTargetMachine->createDataLayout();
+@@ -1042,6 +1035,7 @@ int cppmain(int argc, char **argv) {
+     global.params.isLP64 = gDataLayout->getPointerSizeInBits() == 64;
+     global.params.is64bit = triple->isArch64Bit();
+     global.params.hasObjectiveC = objc_isSupported(*triple);
++    global.params.dwarfVersion = gTargetMachine->Options.MCOptions.DwarfVersion;
+     // mscoff enables slightly different handling of interface functions
+     // in the front end
+     global.params.mscoff = triple->isKnownWindowsMSVCEnvironment();
+@@ -1049,8 +1043,6 @@ int cppmain(int argc, char **argv) {
+       global.obj_ext = "obj";
+   }
+ 
+-  opts::setDefaultMathOptions(*gTargetMachine);
+-
+   // allocate the target abi
+   gABI = TargetABI::getTarget();
+ 
+diff --git a/driver/targetmachine.cpp b/driver/targetmachine.cpp
+index 99ce714a..78a8be6d 100644
+--- a/driver/targetmachine.cpp
++++ b/driver/targetmachine.cpp
+@@ -15,6 +15,7 @@
+ 
+ #include "driver/cl_options.h"
+ #include "driver/targetmachine.h"
++#include "llvm/ADT/StringExtras.h"
+ #include "llvm/ADT/StringSwitch.h"
+ #include "llvm/ADT/Triple.h"
+ #include "llvm/MC/SubtargetFeature.h"
+@@ -197,28 +198,13 @@ static std::string getAArch64TargetCPU(const llvm::Triple &triple) {
+   return "generic";
+ }
+ 
+-/// Returns the LLVM name of the target CPU to use given the provided
+-/// -mcpu argument and target triple.
+-static std::string getTargetCPU(const std::string &cpu,
+-                                const llvm::Triple &triple) {
+-  if (!cpu.empty()) {
+-    if (cpu != "native") {
+-      return cpu;
+-    }
+-
+-    // FIXME: Reject attempts to use -mcpu=native unless the target matches
+-    // the host.
+-    std::string hostCPU = llvm::sys::getHostCPUName();
+-    if (!hostCPU.empty() && hostCPU != "generic") {
+-      return hostCPU;
+-    }
+-  }
+-
++/// Returns the LLVM name of the default CPU for the provided target triple.
++static std::string getTargetCPU(const llvm::Triple &triple) {
+   switch (triple.getArch()) {
+   default:
+     // We don't know about the specifics of this platform, just return the
+     // empty string and let LLVM decide.
+-    return cpu;
++    return "";
+   case llvm::Triple::x86:
+   case llvm::Triple::x86_64:
+     return getX86TargetCPU(triple);
+@@ -355,17 +341,18 @@ const llvm::Target *lookupTarget(const std::string &arch, llvm::Triple &triple,
+ }
+ 
+ llvm::TargetMachine *
+-createTargetMachine(std::string targetTriple, std::string arch, std::string cpu,
+-                    std::vector<std::string> attrs,
+-                    ExplicitBitness::Type bitness, FloatABI::Type floatABI,
++createTargetMachine(const std::string targetTriple, const std::string arch,
++                    std::string cpu, const std::string featuresString,
++                    const ExplicitBitness::Type bitness,
++                    FloatABI::Type floatABI,
+ #if LDC_LLVM_VER >= 309
+                     llvm::Optional<llvm::Reloc::Model> relocModel,
+ #else
+                     llvm::Reloc::Model relocModel,
+ #endif
+-                    llvm::CodeModel::Model codeModel,
+-                    llvm::CodeGenOpt::Level codeGenOptLevel,
+-                    bool noFramePointerElim, bool noLinkerStripDead) {
++                    const llvm::CodeModel::Model codeModel,
++                    const llvm::CodeGenOpt::Level codeGenOptLevel,
++                    const bool noLinkerStripDead) {
+   // Determine target triple. If the user didn't explicitly specify one, use
+   // the one set at LLVM configure time.
+   llvm::Triple triple;
+@@ -398,49 +385,42 @@ createTargetMachine(std::string targetTriple, std::string arch, std::string cpu,
+     fatal();
+   }
+ 
+-  // Package up features to be passed to target/subtarget.
+-  llvm::SubtargetFeatures features;
+-  features.getDefaultSubtargetFeatures(triple);
+-  if (cpu == "native") {
+-    llvm::StringMap<bool> hostFeatures;
+-    if (llvm::sys::getHostCPUFeatures(hostFeatures)) {
+-      for (const auto &hf : hostFeatures) {
+-        features.AddFeature(
+-            std::string(hf.second ? "+" : "-").append(hf.first()));
+-      }
+-    }
+-  }
+-  for (auto &attr : attrs) {
+-    features.AddFeature(attr);
+-  }
+-
+   // With an empty CPU string, LLVM will default to the host CPU, which is
+   // usually not what we want (expected behavior from other compilers is
+   // to default to "generic").
+-  cpu = getTargetCPU(cpu, triple);
++  if (cpu.empty() || cpu == "generic") {
++    cpu = getTargetCPU(triple);
++    if (cpu.empty())
++      cpu = "generic";
++  }
++
++  // Package up features to be passed to target/subtarget.
++  llvm::SmallVector<llvm::StringRef, 8> features;
++
++  // NOTE: needs a persistent (non-temporary) string+
++  auto splitAndAddFeatures = [&features](llvm::StringRef str) {
++    str.split(features, ",", -1, /* KeepEmpty */ false);
++  };
++
++  llvm::SubtargetFeatures defaultSubtargetFeatures;
++  defaultSubtargetFeatures.getDefaultSubtargetFeatures(triple);
++  const std::string defaultSubtargetFeaturesString =
++      defaultSubtargetFeatures.getString();
++  splitAndAddFeatures(defaultSubtargetFeaturesString);
++
++  splitAndAddFeatures(featuresString);
+ 
+   // cmpxchg16b is not available on old 64bit CPUs. Enable code generation
+   // if the user did not make an explicit choice.
+   if (cpu == "x86-64") {
+-    const char *cx16_plus = "+cx16";
+-    const char *cx16_minus = "-cx16";
+-    bool cx16 = false;
+-    for (auto &attr : attrs) {
+-      if (attr == cx16_plus || attr == cx16_minus) {
+-        cx16 = true;
+-      }
+-    }
+-    if (!cx16) {
+-      features.AddFeature(cx16_plus);
++    const bool has_cx16 =
++        std::any_of(features.begin(), features.end(),
++                   [](llvm::StringRef f) { return f.substr(1) == "cx16"; });
++    if (!has_cx16) {
++      features.push_back("+cx16");
+     }
+   }
+ 
+-  if (Logger::enabled()) {
+-    Logger::println("Targeting '%s' (CPU '%s' with features '%s')",
+-                    triple.str().c_str(), cpu.c_str(),
+-                    features.getString().c_str());
+-  }
+-
+ // Handle cases where LLVM picks wrong default relocModel
+ #if LDC_LLVM_VER >= 309
+   if (!relocModel.hasValue()) {
+@@ -473,26 +453,29 @@ createTargetMachine(std::string targetTriple, std::string arch, std::string cpu,
+     }
+   }
+ 
+-  if (floatABI == FloatABI::Default) {
++  llvm::TargetOptions targetOptions = opts::InitTargetOptionsFromCodeGenFlags();
++
++  if (targetOptions.MCOptions.ABIName.empty())
++    targetOptions.MCOptions.ABIName = getABI(triple);
++
++  auto ldcFloatABI = floatABI;
++  if (ldcFloatABI == FloatABI::Default) {
+     switch (triple.getArch()) {
+     default: // X86, ...
+-      floatABI = FloatABI::Hard;
++      ldcFloatABI = FloatABI::Hard;
+       break;
+     case llvm::Triple::arm:
+     case llvm::Triple::thumb:
+-      floatABI = getARMFloatABI(triple, getLLVMArchSuffixForARM(cpu));
++      ldcFloatABI = getARMFloatABI(triple, getLLVMArchSuffixForARM(cpu));
+       break;
+     }
+   }
+ 
+-  llvm::TargetOptions targetOptions;
+-  targetOptions.MCOptions.ABIName = getABI(triple);
+-
+-  switch (floatABI) {
++  switch (ldcFloatABI) {
+   default:
+     llvm_unreachable("Floating point ABI type unknown.");
+   case FloatABI::Soft:
+-    features.AddFeature("+soft-float");
++    features.push_back("+soft-float");
+     targetOptions.FloatABIType = llvm::FloatABI::Soft;
+     break;
+   case FloatABI::SoftFP:
+@@ -514,11 +497,20 @@ createTargetMachine(std::string targetTriple, std::string arch, std::string cpu,
+     targetOptions.DataSections = true;
+   }
+ 
+-  return target->createTargetMachine(triple.str(), cpu, features.getString(),
+-                                     targetOptions, relocModel, codeModel,
++  const std::string finalFeaturesString =
++      llvm::join(features.begin(), features.end(), ",");
++
++  if (Logger::enabled()) {
++    Logger::println("Targeting '%s' (CPU '%s' with features '%s')",
++                    triple.str().c_str(), cpu.c_str(),
++                    finalFeaturesString.c_str());
++  }
++
++  return target->createTargetMachine(triple.str(), cpu, finalFeaturesString,
++                                     targetOptions, relocModel, opts::getCodeModel(),
+                                      codeGenOptLevel);
+ }
+-    
++
+ ComputeBackend::Type getComputeTargetType(llvm::Module* m) {
+   llvm::Triple::ArchType a = llvm::Triple(m->getTargetTriple()).getArch();
+   if (a == llvm::Triple::spir || a == llvm::Triple::spir64)
+diff --git a/driver/targetmachine.h b/driver/targetmachine.h
+index 91af5412..6033694b 100644
+--- a/driver/targetmachine.h
++++ b/driver/targetmachine.h
+@@ -52,18 +52,19 @@ ComputeBackend::Type getComputeTargetType(llvm::Module*);
+  * parameters and the host platform defaults.
+  *
+  * Does not depend on any global state.
+- */
+-llvm::TargetMachine *createTargetMachine(
+-    std::string targetTriple, std::string arch, std::string cpu,
+-    std::vector<std::string> attrs, ExplicitBitness::Type bitness,
+-    FloatABI::Type floatABI,
++*/
++llvm::TargetMachine *
++createTargetMachine(std::string targetTriple, std::string arch, std::string cpu,
++                    std::string featuresString, ExplicitBitness::Type bitness,
++                    FloatABI::Type floatABI,
+ #if LDC_LLVM_VER >= 309
+-    llvm::Optional<llvm::Reloc::Model> relocModel,
++                    llvm::Optional<llvm::Reloc::Model> relocModel,
+ #else
+-    llvm::Reloc::Model relocModel,
++                    llvm::Reloc::Model relocModel,
+ #endif
+-    llvm::CodeModel::Model codeModel, llvm::CodeGenOpt::Level codeGenOptLevel,
+-    bool noFramePointerElim, bool noLinkerStripDead);
++                    llvm::CodeModel::Model codeModel,
++                    llvm::CodeGenOpt::Level codeGenOptLevel,
++                    bool noLinkerStripDead);
+ 
+ /**
+  * Returns the Mips ABI which is used for code generation.
+diff --git a/gen/dcompute/targetCUDA.cpp b/gen/dcompute/targetCUDA.cpp
+index 1d2d190a..fc0be369 100644
+--- a/gen/dcompute/targetCUDA.cpp
++++ b/gen/dcompute/targetCUDA.cpp
+@@ -54,7 +54,7 @@ public:
+         is64 ? "nvptx64-nvidia-cuda" : "nvptx-nvidia-cuda",
+         is64 ? "nvptx64" : "nvptx", buf, {},
+         is64 ? ExplicitBitness::M64 : ExplicitBitness::M32, ::FloatABI::Hard,
+-        llvm::Reloc::Static, llvm::CodeModel::Medium, codeGenOptLevel(), false,
++        llvm::Reloc::Static, llvm::CodeModel::Medium, codeGenOptLevel(),
+         false);
+   }
+ 
+diff --git a/gen/functions.cpp b/gen/functions.cpp
+index 9bc5e536..a2a111a6 100644
+--- a/gen/functions.cpp
++++ b/gen/functions.cpp
+@@ -460,7 +460,7 @@ void applyTargetMachineAttributes(llvm::Function &func,
+ 
+   // Frame pointer elimination
+   func.addFnAttr("no-frame-pointer-elim",
+-                 opts::disableFpElim ? "true" : "false");
++                 opts::disableFPElim() ? "true" : "false");
+ }
+ 
+ } // anonymous namespace

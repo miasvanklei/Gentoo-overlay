@@ -1,7 +1,3 @@
-diff --git a/driver/linker.cpp b/driver/linker.cpp
-index 496fd877..faabfba5 100644
---- a/driver/linker-gcc.cpp
-+++ b/driver/linker-gcc.cpp
 diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
 index 0d7a8e33..2445f772 100644
 --- a/driver/linker-gcc.cpp
@@ -11,9 +7,9 @@ index 0d7a8e33..2445f772 100644
    addSanitizers();
  
 +  // we strip by default, we do not want this when debugging
-+  // so pass -nostrip when debugging
++  // so pass -strip-none when debugging
 +  if (global.params.symdebug) {
-+    args.push_back("-Wl,-nostrip");
++    args.push_back("-Wl,-strip-none");
 +  }
 +
 +
@@ -29,7 +25,7 @@ index d4c6838e..304448e1 100644
          "${d_flags};${D_FLAGS};${D_FLAGS_DEBUG}"
          "${c_flags}"
 -        "${ld_flags}"
-+        "${ld_flags} -Wl,-nostrip"
++        "${ld_flags} -Wl,-strip-none"
          "-debug"
          "${path_suffix}"
          ${outlist_targets}
