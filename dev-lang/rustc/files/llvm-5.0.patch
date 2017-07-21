@@ -1,7 +1,7 @@
 From c9787296f8198b50c89a5e655bbd81576c3e1d06 Mon Sep 17 00:00:00 2001
 From: Tim Neumann <mail@timnn.me>
 Date: Fri, 21 Jul 2017 13:13:37 +0200
-Subject: [PATCH 1/6] rustllvm: define LLVM_VERSION_LT
+Subject: [PATCH 1/8] rustllvm: define LLVM_VERSION_LT
 
 ---
  src/rustllvm/rustllvm.h | 2 ++
@@ -24,7 +24,7 @@ index 0baf5528e935..20816af2f1c2 100644
 From 2c9c8dc5f46bd2db5a5b81acca72a23de75502ec Mon Sep 17 00:00:00 2001
 From: Tim Neumann <mail@timnn.me>
 Date: Fri, 21 Jul 2017 13:15:36 +0200
-Subject: [PATCH 2/6] rustllvm: use LLVMMetadataRef
+Subject: [PATCH 2/8] rustllvm: use LLVMMetadataRef
 
 ---
  src/rustllvm/RustWrapper.cpp | 148 ++++++++++++++++++++++---------------------
@@ -57,7 +57,7 @@ index c11c5f4186ec..401bd99f7bcd 100644
 +template <typename DIT> DIT *unwrapDIPtr(LLVMMetadataRef Ref) {
    return (DIT *)(Ref ? unwrap<MDNode>(Ref) : nullptr);
  }
-
+ 
 @@ -482,8 +484,8 @@ extern "C" void LLVMRustDIBuilderFinalize(LLVMRustDIBuilderRef Builder) {
    Builder->finalize();
  }
@@ -351,7 +351,7 @@ index c11c5f4186ec..401bd99f7bcd 100644
 From 5f9e432534d54aebc2fa45f83becd13bccafa2d7 Mon Sep 17 00:00:00 2001
 From: Tim Neumann <mail@timnn.me>
 Date: Fri, 21 Jul 2017 13:26:41 +0200
-Subject: [PATCH 3/6] rustllvm: adjust usage of createPointerType
+Subject: [PATCH 3/8] rustllvm: adjust usage of createPointerType
 
 ---
  src/rustllvm/RustWrapper.cpp | 10 +++++++++-
@@ -389,7 +389,7 @@ index 401bd99f7bcd..7c3746c4c2ad 100644
 From 48424c97490b3a449c57d8540529af4971386c4a Mon Sep 17 00:00:00 2001
 From: Tim Neumann <mail@timnn.me>
 Date: Fri, 21 Jul 2017 13:31:19 +0200
-Subject: [PATCH 4/6] rustllvm: adjust usage of createNameSpace
+Subject: [PATCH 4/8] rustllvm: adjust usage of createNameSpace
 
 ---
  src/rustllvm/RustWrapper.cpp | 6 +++++-
@@ -416,7 +416,7 @@ index 7c3746c4c2ad..1e39a0d6b33e 100644
 From a53676762bbe492154926393b187f0ee49df6e98 Mon Sep 17 00:00:00 2001
 From: Tim Neumann <mail@timnn.me>
 Date: Fri, 21 Jul 2017 14:02:52 +0200
-Subject: [PATCH 5/6] rustllvm: update to SyncScope::ID
+Subject: [PATCH 5/8] rustllvm: update to SyncScope::ID
 
 ---
  src/rustllvm/RustWrapper.cpp | 13 +++++++++++++
@@ -454,17 +454,17 @@ index 1e39a0d6b33e..896c82245083 100644
  extern "C" LLVMValueRef
  LLVMRustBuildAtomicFence(LLVMBuilderRef B, LLVMAtomicOrdering Order,
 
-From 99a07db5ce98309d53e1a5015c6dfd3c12e9ff81 Mon Sep 17 00:00:00 2001
+From 1ee87b3765b4cc0ab78aec25009e4e5295024f93 Mon Sep 17 00:00:00 2001
 From: Tim Neumann <mail@timnn.me>
 Date: Fri, 21 Jul 2017 14:29:23 +0200
-Subject: [PATCH 6/6] rustllvm: split DebugLoc in UnpackOptimizationDiagnostic
+Subject: [PATCH 6/8] rustllvm: split DebugLoc in UnpackOptimizationDiagnostic
 
 ---
  src/librustc_llvm/diagnostic.rs  | 32 +++++++++++++++++++++++---------
  src/librustc_llvm/ffi.rs         |  4 +++-
- src/librustc_trans/back/write.rs | 13 +++++++------
+ src/librustc_trans/back/write.rs | 14 ++++++--------
  src/rustllvm/RustWrapper.cpp     | 23 ++++++++++++++++++++---
- 4 files changed, 53 insertions(+), 19 deletions(-)
+ 4 files changed, 52 insertions(+), 21 deletions(-)
 
 diff --git a/src/librustc_llvm/diagnostic.rs b/src/librustc_llvm/diagnostic.rs
 index cef6199a74af..c5276e0c9710 100644
@@ -550,19 +550,27 @@ index 9f0ee95b5a60..24d4040ccb08 100644
      pub fn LLVMRustUnpackInlineAsmDiagnostic(DI: DiagnosticInfoRef,
                                               cookie_out: *mut c_uint,
 diff --git a/src/librustc_trans/back/write.rs b/src/librustc_trans/back/write.rs
-index 5e227ec467ab..c78a92f8fcb2 100644
+index 5e227ec467ab..26553c85023b 100644
 --- a/src/librustc_trans/back/write.rs
 +++ b/src/librustc_trans/back/write.rs
-@@ -307,7 +307,7 @@ pub struct CodegenContext<'a> {
+@@ -16,7 +16,7 @@ use rustc::session::config::{self, OutputFilenames, OutputType, OutputTypes, Pas
+                              AllPasses, Sanitizer};
+ use rustc::session::Session;
+ use llvm;
+-use llvm::{ModuleRef, TargetMachineRef, PassManagerRef, DiagnosticInfoRef, ContextRef};
++use llvm::{ModuleRef, TargetMachineRef, PassManagerRef, DiagnosticInfoRef};
+ use llvm::SMDiagnosticRef;
+ use {CrateTranslation, ModuleLlvm, ModuleSource, ModuleTranslation};
+ use rustc::hir::def_id::CrateNum;
+@@ -307,7 +307,6 @@ pub struct CodegenContext<'a> {
  }
  
  struct HandlerFreeVars<'a> {
 -    llcx: ContextRef,
-+    _llcx: ContextRef,
      cgcx: &'a CodegenContext<'a>,
  }
  
-@@ -329,7 +329,7 @@ unsafe extern "C" fn inline_asm_handler(diag: SMDiagnosticRef,
+@@ -329,7 +328,7 @@ unsafe extern "C" fn inline_asm_handler(diag: SMDiagnosticRef,
  }
  
  unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_void) {
@@ -571,7 +579,7 @@ index 5e227ec467ab..c78a92f8fcb2 100644
  
      match llvm::diagnostic::Diagnostic::unpack(info) {
          llvm::diagnostic::InlineAsm(inline) => {
-@@ -345,11 +345,12 @@ unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_vo
+@@ -345,11 +344,12 @@ unsafe extern "C" fn diagnostic_handler(info: DiagnosticInfoRef, user: *mut c_vo
              };
  
              if enabled {
@@ -587,12 +595,13 @@ index 5e227ec467ab..c78a92f8fcb2 100644
                                                  opt.message));
              }
          }
-@@ -372,7 +373,7 @@ unsafe fn optimize_and_codegen(cgcx: &CodegenContext,
+@@ -370,9 +370,7 @@ unsafe fn optimize_and_codegen(cgcx: &CodegenContext,
+     let llcx = mllvm.llcx;
+     let tm = config.tm;
  
-     // llcx doesn't outlive this function, so we can put this on the stack.
+-    // llcx doesn't outlive this function, so we can put this on the stack.
      let fv = HandlerFreeVars {
 -        llcx: llcx,
-+        _llcx: llcx,
          cgcx: cgcx,
      };
      let fv = &fv as *const HandlerFreeVars as *mut c_void;
@@ -637,70 +646,82 @@ index 896c82245083..94185b5432df 100644
    RawRustStringOstream MessageOS(MessageOut);
    MessageOS << Opt->getMsg();
  }
---- a/src/rustllvm/RustWrapper.cpp	2017-07-21 17:04:14.494351894 +0200
-+++ b/src/rustllvm/RustWrapper.cpp	2017-07-21 17:26:56.801955380 +0200
-@@ -168,9 +168,14 @@
+
+From b022d54641586ae1de72cd6325eb09aee7753cca Mon Sep 17 00:00:00 2001
+From: Alex Crichton <alex@alexcrichton.com>
+Date: Fri, 21 Jul 2017 18:15:03 +0200
+Subject: [PATCH 7/8] update attributes API usage
+
+---
+ src/rustllvm/RustWrapper.cpp | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
+
+diff --git a/src/rustllvm/RustWrapper.cpp b/src/rustllvm/RustWrapper.cpp
+index 94185b5432df..15a04ba00e2a 100644
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -167,10 +167,14 @@ extern "C" void LLVMRustAddCallSiteAttribute(LLVMValueRef Instr, unsigned Index,
+                                              LLVMRustAttribute RustAttr) {
    CallSite Call = CallSite(unwrap<Instruction>(Instr));
    Attribute Attr = Attribute::get(Call->getContext(), fromRust(RustAttr));
++#if LLVM_VERSION_GE(5, 0)
++  Call.addAttribute(Index, Attr);
++#else
    AttrBuilder B(Attr);
-+#if LLVM_VERSION_LT(5,0)
    Call.setAttributes(Call.getAttributes().addAttributes(
        Call->getContext(), Index,
        AttributeSet::get(Call->getContext(), Index, B)));
-+#else
-+  Call.setAttributes(Call.getAttributes().addAttributes(
-+      Call->getContext(), Index, B));
 +#endif
  }
  
  extern "C" void LLVMRustAddDereferenceableCallSiteAttr(LLVMValueRef Instr,
-@@ -179,9 +184,14 @@
+@@ -179,9 +183,14 @@ extern "C" void LLVMRustAddDereferenceableCallSiteAttr(LLVMValueRef Instr,
    CallSite Call = CallSite(unwrap<Instruction>(Instr));
    AttrBuilder B;
    B.addDereferenceableAttr(Bytes);
-+#if LLVM_VERSION_LT(5,0)
++#if LLVM_VERSION_GE(5, 0)
++  Call.setAttributes(Call.getAttributes().addAttributes(
++      Call->getContext(), Index, B));
++#else
    Call.setAttributes(Call.getAttributes().addAttributes(
        Call->getContext(), Index,
        AttributeSet::get(Call->getContext(), Index, B)));
-+#else
-+  Call.setAttributes(Call.getAttributes().addAttributes(
-+      Call->getContext(), Index, B));
 +#endif
  }
  
  extern "C" void LLVMRustAddFunctionAttribute(LLVMValueRef Fn, unsigned Index,
-@@ -189,7 +199,11 @@
+@@ -189,7 +198,11 @@ extern "C" void LLVMRustAddFunctionAttribute(LLVMValueRef Fn, unsigned Index,
    Function *A = unwrap<Function>(Fn);
    Attribute Attr = Attribute::get(A->getContext(), fromRust(RustAttr));
    AttrBuilder B(Attr);
-+#if LLVM_VERSION_LT(5,0)
-   A->addAttributes(Index, AttributeSet::get(A->getContext(), Index, B));
-+#else
++#if LLVM_VERSION_GE(5, 0)
 +  A->addAttributes(Index, B);
++#else
+   A->addAttributes(Index, AttributeSet::get(A->getContext(), Index, B));
 +#endif
  }
  
  extern "C" void LLVMRustAddDereferenceableAttr(LLVMValueRef Fn, unsigned Index,
-@@ -197,7 +211,11 @@
+@@ -197,7 +210,11 @@ extern "C" void LLVMRustAddDereferenceableAttr(LLVMValueRef Fn, unsigned Index,
    Function *A = unwrap<Function>(Fn);
    AttrBuilder B;
    B.addDereferenceableAttr(Bytes);
-+#if LLVM_VERSION_LT(5,0)
-   A->addAttributes(Index, AttributeSet::get(A->getContext(), Index, B));
-+#else
++#if LLVM_VERSION_GE(5, 0)
 +  A->addAttributes(Index, B);
++#else
+   A->addAttributes(Index, AttributeSet::get(A->getContext(), Index, B));
 +#endif
  }
  
  extern "C" void LLVMRustAddFunctionAttrStringValue(LLVMValueRef Fn,
-@@ -207,19 +225,29 @@
+@@ -207,18 +224,26 @@ extern "C" void LLVMRustAddFunctionAttrStringValue(LLVMValueRef Fn,
    Function *F = unwrap<Function>(Fn);
    AttrBuilder B;
    B.addAttribute(Name, Value);
-+#if LLVM_VERSION_LT(5,0)
-   F->addAttributes(Index, AttributeSet::get(F->getContext(), Index, B));
-+#else
++#if LLVM_VERSION_GE(5, 0)
 +  F->addAttributes(Index, B);
++#else
+   F->addAttributes(Index, AttributeSet::get(F->getContext(), Index, B));
 +#endif
  }
  
@@ -708,18 +729,48 @@ index 896c82245083..94185b5432df 100644
                                                   unsigned Index,
                                                   LLVMRustAttribute RustAttr) {
    Function *F = unwrap<Function>(Fn);
-+#if LLVM_VERSION_LT(5,0)
-   const AttributeSet PAL = F->getAttributes();
+-  const AttributeSet PAL = F->getAttributes();
    Attribute Attr = Attribute::get(F->getContext(), fromRust(RustAttr));
    AttrBuilder B(Attr);
++  auto PAL = F->getAttributes();
++#if LLVM_VERSION_GE(5, 0)
++  auto PALNew = PAL.removeAttributes(F->getContext(), Index, B);
++#else
    const AttributeSet PALNew = PAL.removeAttributes(
        F->getContext(), Index, AttributeSet::get(F->getContext(), Index, B));
-   F->setAttributes(PALNew);
-+#else
-+  Attribute Attr = Attribute::get(F->getContext(), fromRust(RustAttr));
-+  AttrBuilder B(Attr);
-+  F->removeAttributes(Index, B);
 +#endif
+   F->setAttributes(PALNew);
  }
  
- // enable fpmath flag UnsafeAlgebra
+
+From fb217afe86a5b9fccf8565d2d15afc83fceb91b6 Mon Sep 17 00:00:00 2001
+From: Alex Crichton <alex@alexcrichton.com>
+Date: Fri, 21 Jul 2017 09:41:29 -0700
+Subject: [PATCH 8/8] Fix archive member names on 5.0
+
+---
+ src/rustllvm/ArchiveWrapper.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
+index f04251136f45..7f76861c0777 100644
+--- a/src/rustllvm/ArchiveWrapper.cpp
++++ b/src/rustllvm/ArchiveWrapper.cpp
+@@ -12,6 +12,7 @@
+ 
+ #include "llvm/Object/Archive.h"
+ #include "llvm/Object/ArchiveWriter.h"
++#include "llvm/Support/Path.h"
+ 
+ using namespace llvm;
+ using namespace llvm::object;
+@@ -256,6 +257,9 @@ LLVMRustWriteArchive(char *Dst, size_t NumMembers,
+         LLVMRustSetLastError(toString(MOrErr.takeError()).c_str());
+         return LLVMRustResult::Failure;
+       }
++#if LLVM_VERSION_GE(5, 0)
++      MOrErr->MemberName = sys::path::filename(MOrErr->MemberName);
++#endif
+       Members.push_back(std::move(*MOrErr));
+ #elif LLVM_VERSION_EQ(3, 8)
+       Members.push_back(NewArchiveIterator(Member->Filename));
