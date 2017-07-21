@@ -9,14 +9,14 @@ CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-utils flag-o-matic llvm multilib-minimal \
-	python-single-r1 toolchain-funcs pax-utils versionator
+	python-single-r1 toolchain-funcs pax-utils versionator git-r3
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
-	http://releases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm-manpages-4.0.0.tar.bz2 )
-	test? ( http://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/clang.git
+        https://github.com/llvm-mirror/clang.git"
+EGIT_BRANCH="release_50"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -56,7 +56,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/cfe-${PV/_/}.src
+S=${WORKDIR}/x/y/cfe-${PV/_/}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -78,16 +78,26 @@ pkg_setup() {
 }
 
 src_unpack() {
-	# create extra parent dirs for CLANG_RESOURCE_DIR
-	mkdir -p x/y || die
-	cd x/y || die
+        # create extra parent dir for CLANG_RESOURCE_DIR
+        mkdir -p x/y || die
+        cd x/y || die
 
-	default
+        git-r3_fetch "https://git.llvm.org/git/clang-tools-extra.git
+                https://github.com/llvm-mirror/clang-tools-extra.git"
+        if use test; then
+                # needed for patched gtest
+                git-r3_fetch "https://git.llvm.org/git/llvm.git
+                        https://github.com/llvm-mirror/llvm.git"
+        fi
+        git-r3_fetch
 
-	mv clang-tools-extra-* "${S}"/tools/extra || die
-	if use test; then
-		mv llvm-* "${WORKDIR}"/llvm || die
-	fi
+        git-r3_checkout https://llvm.org/git/clang-tools-extra.git \
+                "${S}"/tools/extra
+        if use test; then
+                git-r3_checkout https://llvm.org/git/llvm.git \
+                        "${WORKDIR}"/llvm
+        fi
+        git-r3_checkout "${EGIT_REPO_URI}" "${S}"
 }
 
 src_prepare() {
@@ -97,43 +107,39 @@ src_prepare() {
 	# fix use with arm
 	eapply "${FILESDIR}"/0002-fix-unwind.patch
 
-	# optimizations like ssp, pie, relro
-	eapply "${FILESDIR}"/0003-Use-z-relro_now-and-hashstyle-gnu-on-gentoo-linux.patch
-	eapply "${FILESDIR}"/0004-Enable-PIE-by-default-for-gentoo-linux.patch
-	eapply "${FILESDIR}"/0005-use-ssp-by-default.patch
+	# cleanup and gentoo patches(SSP,PIE,FULLRELRO)
+	eapply "${FILESDIR}"/0003-add-gentoo-distro.patch
+	eapply "${FILESDIR}"/0004-gentoo-linux-changes.patch
 
 	# link libunwind
-	eapply "${FILESDIR}"/0006-link-libunwind.patch
+	eapply "${FILESDIR}"/0005-link-libunwind.patch
 
 	# remove gcc quirks
-	eapply "${FILESDIR}"/0007-fix-ada-in-configure.patch
-	eapply "${FILESDIR}"/0008-increase-gcc-version.patch
-	eapply "${FILESDIR}"/0009-remove-gcc-detection.patch
+	eapply "${FILESDIR}"/0006-fix-ada-in-configure.patch
+	eapply "${FILESDIR}"/0007-increase-gcc-version.patch
 
 	# rtm is not available on all haswell
-	eapply "${FILESDIR}"/0010-remove-rtm-haswell.patch
+	eapply "${FILESDIR}"/0008-remove-rtm-haswell.patch
 
         # patches for c++
-	eapply "${FILESDIR}"/0011-update-default-cxx-standard.patch
-	eapply "${FILESDIR}"/0012-link-libcxxabi.patch
+	eapply "${FILESDIR}"/0009-update-default-cxx-standard.patch
+	eapply "${FILESDIR}"/0010-link-libcxxabi.patch
 
 	# fixes for musl
-	eapply "${FILESDIR}"/0013-dont-define-on-musl.patch
-	eapply "${FILESDIR}"/0014-define__std_iso_10646__.patch
-
-	# remove dependency on crtbegin* and crtend*
-	eapply "${FILESDIR}"/0015-remove-crtfiles.patch
+	eapply "${FILESDIR}"/0011-dont-define-on-musl.patch
+	eapply "${FILESDIR}"/0012-define__std_iso_10646__.patch
 
 	# needed in linux kernel
-	eapply "${FILESDIR}"/0016-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0013-add-fno-delete-null-pointer-checks.patch
 
 	# add swift support
-	eapply "${FILESDIR}"/0017-add-swift-support.patch
-	eapply "${FILESDIR}"/0019-clang-5.0.patch
+	eapply "${FILESDIR}"/0014-add-swift-support.patch
 
 	# add fortran support
-	use fortran && eapply "${FILESDIR}"/0018-add-fortran-support.patch
+	use fortran && eapply "${FILESDIR}"/0015-add-fortran-support.patch
 
+        # test patch for rust
+        eapply "${FILESDIR}"/revert-DINamespace.patch
 
 	# User patches
 	eapply_user
@@ -272,7 +278,7 @@ src_install() {
 		dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}"
 	done
 
-        use fortran && dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/gfortan"
+        use fortran && dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/gfortran"
 
 	# now create target symlinks for all supported ABIs
 	for abi in $(get_all_abis); do
@@ -314,13 +320,7 @@ multilib_src_install_all() {
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
 	fi
 
-	# install pre-generated manpages
-	if ! use doc; then
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/x/y/llvm-manpages-4.0.0/clang"/*.1
-	fi
 
-	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression
 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
 	# +x for some reason; TODO: investigate

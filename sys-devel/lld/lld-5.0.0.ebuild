@@ -8,12 +8,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils llvm python-any-r1
+inherit cmake-utils llvm python-any-r1 git-r3
 
 DESCRIPTION="The LLVM linker (link editor)"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	test? ( http://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+EGIT_REPO_URI="https://git.llvm.org/git/lld.git
+        https://github.com/llvm-mirror/lld.git"
+EGIT_BRANCH="release_50"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -24,7 +25,7 @@ RDEPEND="~sys-devel/llvm-${PV}"
 DEPEND="${RDEPEND}
 	test? ( $(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]") )"
 
-S=${WORKDIR}/${P/_/}.src
+S=${WORKDIR}/${P/_/}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -39,35 +40,26 @@ pkg_setup() {
 }
 
 src_unpack() {
-	default
+        if use test; then
+                # needed for patched gtest
+                git-r3_fetch "https://git.llvm.org/git/llvm.git
+                        https://github.com/llvm-mirror/llvm.git"
+        fi
+        git-r3_fetch
 
-	if use test; then
-		mv llvm-* llvm || die
-	fi
+        if use test; then
+                git-r3_checkout https://llvm.org/git/llvm.git \
+                        "${WORKDIR}"/llvm
+        fi
+        git-r3_checkout
 }
 
 src_prepare() {
 	# strip in lld, including comment section
 	eapply "${FILESDIR}"/0001-strip-lld.patch
 
-	# compat with gnu gold
-	eapply "${FILESDIR}"/0002-gnu-ld-compat.patch
-	eapply "${FILESDIR}"/0003-ignore-option.patch
-
 	# add -z muldefs
-	eapply "${FILESDIR}"/0004-add-muldefs-option.patch
-
-	# known upstream
-	eapply "${FILESDIR}"/0005-fix-retain-symbols.patch
-
-	# do not recreate /dev/null as regular file
-	eapply "${FILESDIR}"/0006-fix-null.patch
-
-	# add __dso_handle symbol
-	eapply "${FILESDIR}"/0007-add-__dso_handle.patch
-
-	# add --defsym option
-	eapply "${FILESDIR}"/0008-add---defsym.patch
+	eapply "${FILESDIR}"/0002-add-muldefs-option.patch
 
 	eapply_user
 }

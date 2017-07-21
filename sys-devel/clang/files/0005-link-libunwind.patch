@@ -1,0 +1,14 @@
+--- a/lib/Driver/ToolChains/CommonArgs.cpp	2017-07-19 17:23:23.662560385 +0200
++++ b/lib/Driver/ToolChains/CommonArgs.cpp	2017-07-19 17:26:51.774228781 +0200
+@@ -1005,7 +1005,10 @@
+     case llvm::Triple::Win32:
+     case llvm::Triple::Linux:
+     case llvm::Triple::Fuchsia:
+-      CmdArgs.push_back(TC.getCompilerRTArgString(Args, "builtins"));
++      CmdArgs.push_back("--as-needed");
++      CmdArgs.push_back(TC.getCompilerRTArgString(Args, "builtins"));
++      CmdArgs.push_back("-lunwind");
++      CmdArgs.push_back("--no-as-needed");
+       break;
+     }
+     break;

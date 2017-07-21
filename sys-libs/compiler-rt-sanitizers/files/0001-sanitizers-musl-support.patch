@@ -12,9 +12,9 @@
 --- a/lib/asan/asan_internal.h
 +++ b/lib/asan/asan_internal.h
 @@ -75,7 +75,6 @@ void NORETURN ShowStatsAndAbort();
- void ReplaceSystemMalloc();
  
  // asan_linux.cc / asan_mac.cc / asan_win.cc
+ uptr FindDynamicShadowStart();
 -void *AsanDoesNotSupportStaticLinkage();
  void AsanCheckDynamicRTPrereqs();
  void AsanCheckIncompatibleRT();
@@ -381,17 +381,6 @@
    extern unsigned IOCTL_TIOCGSERIAL;
    extern unsigned IOCTL_TIOCSERGETMULTI;
    extern unsigned IOCTL_TIOCSERSETMULTI;
---- a/lib/tsan/rtl/tsan_platform_linux.cc
-+++ b/lib/tsan/rtl/tsan_platform_linux.cc
-@@ -289,7 +289,7 @@ void InitializePlatform() {
- int ExtractResolvFDs(void *state, int *fds, int nfd) {
- #if SANITIZER_LINUX && !SANITIZER_ANDROID
-   int cnt = 0;
--  __res_state *statp = (__res_state*)state;
-+  struct __res_state *statp = (struct __res_state*)state;
-   for (int i = 0; i < MAXNS && cnt < nfd; i++) {
-     if (statp->_u._ext.nsaddrs[i] && statp->_u._ext.nssocks[i] != -1)
-       fds[cnt++] = statp->_u._ext.nssocks[i];
 --- a/lib/sanitizer_common/sanitizer_linux_libcdep.cc
 +++ b/lib/sanitizer_common/sanitizer_linux_libcdep.cc
 @@ -156,7 +156,7 @@
@@ -406,9 +395,9 @@
 @@ -188,7 +188,7 @@
  
  #if (defined(__x86_64__) || defined(__i386__) || defined(__mips__) \
-     || defined(__aarch64__) || defined(__powerpc64__) || defined(__s390__)) \
--    && SANITIZER_LINUX && !SANITIZER_ANDROID
-+    && SANITIZER_LINUX && !SANITIZER_ANDROID && !LIBC_MUSL
+     || defined(__aarch64__) || defined(__powerpc64__) || defined(__s390__) \
+-    || defined(__arm__)) && SANITIZER_LINUX && !SANITIZER_ANDROID
++    || defined(__arm__)) && SANITIZER_LINUX && !SANITIZER_ANDROID && !LIBC_MUSL
  // sizeof(struct pthread) from glibc.
  static atomic_uintptr_t kThreadDescriptorSize;
  

@@ -9,13 +9,14 @@ CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
-	python-any-r1 toolchain-funcs versionator
+	python-any-r1 toolchain-funcs versionator git-r3
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="http://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	 http://releases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm-manpages-4.0.0.tar.bz2 )"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/llvm.git
+        https://github.com/llvm-mirror/llvm.git"
+EGIT_BRANCH="release_50"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -67,7 +68,7 @@ PDEPEND="sys-devel/llvm-common
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
-S=${WORKDIR}/${P/_/}.src
+S=${WORKDIR}/${P/_/}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -78,9 +79,12 @@ python_check_deps() {
 }
 
 src_unpack() {
-	default
+        git-r3_fetch "https://git.llvm.org/git/polly.git
+                https://github.com/llvm-mirror/polly.git"
+        git-r3_fetch
 
-        mv polly-* "${S}"/tools/polly || die
+        git-r3_checkout https://llvm.org/git/polly.git "${S}"/tools/polly
+        git-r3_checkout
 }
 
 src_prepare() {
@@ -93,9 +97,6 @@ src_prepare() {
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
 
-	# retain compability with binutils
-	eapply "${FILESDIR}"/0004-llvm-readobj-binutils-compat.patch
-
 	# some arm relocations, needed for swift
 	eapply "${FILESDIR}"/0005-arm-relocation.patch
 
@@ -104,6 +105,9 @@ src_prepare() {
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
+
+	# test patch for rust
+	eapply "${FILESDIR}"/revert-DINamespace.patch
 
 	# User patches
 	eapply_user
@@ -224,16 +228,12 @@ src_install() {
 	multilib-minimal_src_install
 
 	# binutils symlinks
-	local llvm_tools=( ar ranlib nm strings objdump cxxfilt )
+	local llvm_tools=( ar ranlib nm strings objdump cxxfilt readelf )
 
 	for i in "${llvm_tools[@]}"; do
                 dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${i}"
                 dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-${i}"
         done
-
-	# different name
-	dosym "llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/readelf"
-	dosym "llvm-readobj" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-readelf"
 
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
@@ -259,13 +259,4 @@ multilib_src_install_all() {
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 _EOF_
 	doenvd "${T}/10llvm-${revord}"
-
-	# install pre-generated manpages
-	if ! use doc; then
-		# (doman does not support custom paths)
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/llvm-manpages-4.0.0/llvm"/*.1
-	fi
-
-	docompress "/usr/lib/llvm/${SLOT}/share/man"
 }

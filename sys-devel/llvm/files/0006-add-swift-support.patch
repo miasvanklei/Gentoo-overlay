@@ -1,9 +1,9 @@
 --- a/include/llvm/ADT/DenseMapInfo.h	2016-11-15 10:59:17.848800074 +0100
 +++ b/include/llvm/ADT/DenseMapInfo.h	2016-11-15 10:56:16.450271245 +0100
 @@ -19,6 +19,7 @@
- #include "llvm/ADT/StringRef.h"
- #include "llvm/Support/PointerLikeTypeTraits.h"
- #include "llvm/Support/type_traits.h"
+ #include <cstddef>
+ #include <cstdint>
+ #include <utility>
 +#include <tuple>
  
  namespace llvm {
@@ -701,42 +701,6 @@
    if (Tag == dwarf::DW_TAG_enumeration_type ||
        Tag == dwarf::DW_TAG_class_type || Tag == dwarf::DW_TAG_structure_type ||
        Tag == dwarf::DW_TAG_union_type) {
-diff --git a/include/llvm/Config/abi-breaking.h.cmake b/include/llvm/Config/abi-breaking.h.cmake
-index e5697f79e93..9c3bfb48953 100644
---- a/include/llvm/Config/abi-breaking.h.cmake
-+++ b/include/llvm/Config/abi-breaking.h.cmake
-@@ -17,7 +17,9 @@
- 
- /* Define to disable the link-time checking of mismatch for
-    LLVM_ENABLE_ABI_BREAKING_CHECKS */
-+#ifndef LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING
- #cmakedefine01 LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING
-+#endif
- #if !LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING
- 
- // ABI_BREAKING_CHECKS protection: provides link-time failure when clients build
-diff --git a/include/llvm/Support/Timer.h b/include/llvm/Support/Timer.h
-index 80e8f13dccf..198855ae037 100644
---- a/include/llvm/Support/Timer.h
-+++ b/include/llvm/Support/Timer.h
-@@ -207,6 +207,9 @@ class TimerGroup {
-   /// This static method prints all timers and clears them all out.
-   static void printAll(raw_ostream &OS);
- 
-+  /// Prints all timers as JSON key/value pairs, and clears them all out.
-+  static const char *printAllJSONValues(raw_ostream &OS, const char *delim);
-+
-   /// Ensure global timer group lists are initialized. This function is mostly
-   /// used by the Statistic code to influence the construction and destruction
-   /// order of the global timer lists.
-@@ -221,7 +224,6 @@ class TimerGroup {
-   void printJSONValue(raw_ostream &OS, const PrintRecord &R,
-                       const char *suffix, double Value);
-   const char *printJSONValues(raw_ostream &OS, const char *delim);
--  static const char *printAllJSONValues(raw_ostream &OS, const char *delim);
- };
- 
- } // end namespace llvm
 --- a/CMakeLists.txt    2017-03-23 20:17:39.000000000 +0100
 +++ b/CMakeLists.txt    2017-06-07 16:39:29.737510861 +0200
 @@ -938,7 +938,6 @@

@@ -8,20 +8,21 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic llvm python-any-r1 versionator
+inherit check-reqs cmake-utils flag-o-matic git-r3 llvm python-any-r1 versionator
 
 DESCRIPTION="Compiler runtime libraries for clang (sanitizers & xray)"
-HOMEPAGE="http://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/compiler-rt-${PV/_/}.src.tar.xz
-	test? ( http://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+HOMEPAGE="https://llvm.org/"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/compiler-rt.git
+	https://github.com/llvm-mirror/compiler-rt.git"
 
+EGIT_BRANCH="release_50"
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="${PV%_*}"
-KEYWORDS="~amd64 ~arm64 ~x86"
+KEYWORDS=""
 IUSE="test"
 
 LLVM_SLOT=${SLOT%%.*}
-RDEPEND="!=sys-libs/compiler-rt-sanitizers-${SLOT}*:0"
 # llvm-4 needed for --cmakedir
 DEPEND="
 	>=sys-devel/llvm-4
@@ -32,9 +33,6 @@ DEPEND="
 		sys-libs/compiler-rt:${SLOT} )
 	${PYTHON_DEPS}"
 
-S=${WORKDIR}/compiler-rt-${PV/_/}.src
-
-# least intrusive of all
 CMAKE_BUILD_TYPE=Release
 
 PATCHES=(
@@ -59,11 +57,18 @@ pkg_setup() {
 }
 
 src_unpack() {
-	default
+	if use test; then
+		# needed for patched gtest
+		git-r3_fetch "https://git.llvm.org/git/llvm.git
+			https://github.com/llvm-mirror/llvm.git"
+	fi
+	git-r3_fetch
 
 	if use test; then
-		mv llvm-* llvm || die
+		git-r3_checkout https://llvm.org/git/llvm.git \
+			"${WORKDIR}"/llvm
 	fi
+	git-r3_checkout
 }
 
 src_configure() {

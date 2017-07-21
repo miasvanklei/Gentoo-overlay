@@ -1,11 +1,11 @@
 --- a/ELF/Driver.cpp	2016-07-17 20:27:17.000000000 +0200
 +++ b/ELF/Driver.cpp	2016-10-25 20:01:31.959162243 +0200
 @@ -338,7 +338,7 @@
-     Config->Emulation = S;
-   }
  
+ // Initializes Config members by the command line options.
+ void LinkerDriver::readConfigs(opt::InputArgList &Args) {
 -  Config->AllowMultipleDefinition = Args.hasArg(OPT_allow_multiple_definition);
 +  Config->AllowMultipleDefinition = Args.hasArg(OPT_allow_multiple_definition) || hasZOption(Args, "muldefs");
+   Config->AuxiliaryList = getArgs(Args, OPT_auxiliary);
    Config->Bsymbolic = Args.hasArg(OPT_Bsymbolic);
    Config->BsymbolicFunctions = Args.hasArg(OPT_Bsymbolic_functions);
-   Config->Demangle = !Args.hasArg(OPT_no_demangle);
