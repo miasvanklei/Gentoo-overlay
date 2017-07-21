@@ -13,7 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_BRANCH="swift-4.0-branch"
+EGIT_BRANCH="master-next"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -35,9 +35,6 @@ DEPEND="${RDEPEND}"
 CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
-	# revert huge patch
-	eapply ${FILESDIR}/revert-index.patch
-
 	# we prefer own optimization
 	eapply ${FILESDIR}/fix-cflags.patch
 
@@ -78,9 +75,6 @@ src_prepare() {
 	# fix compilation with icu-59
 	eapply ${FILESDIR}/icu-59.patch
 
-	# swift uses newer version of llvm/clang
-	eapply ${FILESDIR}/clang-4.0.patch
-
 	default
 }
 
@@ -100,7 +94,7 @@ src_configure() {
 		-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=$(usex sourcekit)
 		-DHAVE_DISPATCH_BLOCK_CREATE=$(usex sourcekit)
 		-DSWIFT_COMPILER_VERSION=4.0
-		-DCLANG_COMPILER_VERSION=4.0
+		-DCLANG_COMPILER_VERSION=5.0
 	)
 
 	cmake-utils_src_configure
