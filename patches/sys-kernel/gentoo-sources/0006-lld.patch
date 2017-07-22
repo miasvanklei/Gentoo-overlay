@@ -1,0 +1,22 @@
+--- a/scripts/link-vmlinux.sh	2017-07-03 01:07:02.000000000 +0200
++++ b/scripts/link-vmlinux.sh	2017-07-22 16:47:57.424969004 +0200
+@@ -92,7 +92,7 @@
+ 				${1}"
+ 		fi
+ 
+-		${LD} ${LDFLAGS} ${LDFLAGS_vmlinux} -o ${2}		\
++		ld.bfd ${LDFLAGS} ${LDFLAGS_vmlinux} -o ${2}		\
+ 			-T ${lds} ${objects}
+ 	else
+ 		if [ -n "${CONFIG_THIN_ARCHIVES}" ]; then
+--- a/Makefile	2017-07-22 12:09:48.417355414 +0200
++++ b/Makefile	2017-07-22 16:47:30.330018437 +0200
+@@ -347,7 +347,7 @@
+ 
+ # Make variables (CC, etc...)
+ AS		= $(CROSS_COMPILE)as
+-LD		= $(CROSS_COMPILE)ld
++LD		= $(CROSS_COMPILE)ld -nostrip
+ CC		= $(CROSS_COMPILE)gcc
+ CPP		= $(CC) -E
+ AR		= $(CROSS_COMPILE)ar
