@@ -106,9 +106,6 @@ src_prepare() {
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
-	# test patch for rust
-	eapply "${FILESDIR}"/revert-DINamespace.patch
-
 	# User patches
 	eapply_user
 }

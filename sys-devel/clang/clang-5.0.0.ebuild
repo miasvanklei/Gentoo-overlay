@@ -138,9 +138,6 @@ src_prepare() {
 	# add fortran support
 	use fortran && eapply "${FILESDIR}"/0015-add-fortran-support.patch
 
-        # test patch for rust
-        eapply "${FILESDIR}"/revert-DINamespace.patch
-
 	# User patches
 	eapply_user
 }
