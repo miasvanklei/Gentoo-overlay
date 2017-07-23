@@ -1,59 +1,19 @@
---- a/Make.inc	2017-05-18 21:28:49.895715686 +0200
-+++ b/Make.inc	2017-05-18 21:29:05.519694544 +0200
-@@ -740,7 +740,7 @@
- else
- ifeq ($(USE_SYSTEM_LIBUNWIND), 1)
- ifneq ($(OS),Darwin)
--LIBUNWIND:=-lunwind-generic -lunwind
-+LIBUNWIND:=-lunwind
- # Only for linux since we want to use not yet released libunwind features
- JCFLAGS+=-DSYSTEM_LIBUNWIND
- JCPPFLAGS+=-DSYSTEM_LIBUNWIND
---- a/src/debuginfo.cpp	2017-05-18 21:30:11.031605946 +0200
-+++ b/src/debuginfo.cpp	2017-05-18 21:30:39.367567641 +0200
-@@ -1401,11 +1401,13 @@
-     frame0->fromC = !isSysImg;
-     if (isSysImg && sysimg_fvars) {
- #ifdef _OS_LINUX_
-+#if defined(__GLIBC__)
-         unw_proc_info_t pip;
-         if (!saddr && unw_get_proc_info_by_ip(unw_local_addr_space,
-                                               pointer, &pip, NULL) == 0)
-             saddr = (void*)pip.start_ip;
- #endif
-+#endif
- #if defined(_OS_WINDOWS_) && defined(_CPU_X86_64_)
-         if (!saddr) {
-             DWORD64 ImageBase;
---- a/src/support/Makefile	2017-05-18 21:32:19.472432407 +0200
-+++ b/src/support/Makefile	2017-05-18 21:32:51.111393795 +0200
-@@ -64,11 +64,11 @@
+--- a/doc/Makefile	2017-07-23 15:34:14.372994303 +0200
++++ b/doc/Makefile	2017-07-24 01:00:23.780456834 +0200
+@@ -30,15 +30,7 @@
+ cleanall: clean
  
- $(BUILDDIR)/libsupport.a: $(OBJS)
- 	rm -rf $@
--	@$(call PRINT_LINK, $(AR) -rcs $@ $^)
-+	@$(call PRINT_LINK, $(AR) rcs $@ $^)
+ html: deps
+-	@echo "Building HTML documentation."
+-ifneq ($(OS),WINNT)
+-	$(JULIA_EXECUTABLE) $(call cygpath_w,$(SRCDIR)/make.jl)
+-else
+-# work around issue #11727, windows output redirection breaking on buildbot
+-	$(JULIA_EXECUTABLE) $(call cygpath_w,$(SRCDIR)/make.jl) > docbuild.log 2>&1
+-	@cat docbuild.log
+-endif
+-	@echo "Build finished. The HTML pages are in _build/html."
++	@echo "NOOP"
  
- $(BUILDDIR)/libsupport-debug.a: $(DOBJS)
- 	rm -rf $@
--	@$(call PRINT_LINK, $(AR) -rcs $@ $^)
-+	@$(call PRINT_LINK, $(AR) rcs $@ $^)
- 
- clean:
- 	rm -f $(BUILDDIR)/*.o
---- a/src/flisp/Makefile	2017-05-18 21:32:27.776421194 +0200
-+++ b/src/flisp/Makefile	2017-05-18 21:32:38.711406659 +0200
-@@ -64,11 +64,11 @@
- 
- $(BUILDDIR)/$(LIBTARGET)-debug.a: $(DOBJS) | $(BUILDDIR)
- 	rm -rf $@
--	@$(call PRINT_LINK, $(AR) -rcs $@ $(DOBJS))
-+	@$(call PRINT_LINK, $(AR) rcs $@ $(DOBJS))
- 
- $(BUILDDIR)/$(LIBTARGET).a: $(OBJS) | $(BUILDDIR)
- 	rm -rf $@
--	@$(call PRINT_LINK, $(AR) -rcs $@ $(OBJS))
-+	@$(call PRINT_LINK, $(AR) rcs $@ $(OBJS))
- 
- ifneq ($(USEMSVC), 1)
- CCLD := $(CC)
+ pdf: deps
+ 	@echo "Building PDF documentation."

@@ -38,6 +38,7 @@ PATCHES=(
         "${FILESDIR}"/0001-add-blocks-support.patch
         "${FILESDIR}"/0002-fix-arm.patch
         "${FILESDIR}"/0003-thumb.patch
+        "${FILESDIR}"/0004-fix-hidden.patch
 )
 
 pkg_pretend() {
