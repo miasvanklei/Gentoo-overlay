@@ -1467,14 +1467,6 @@ index 7ae2708..5f5e206 100644
  void Clang::ConstructJob(Compilation &C, const JobAction &JA,
                           const InputInfo &Output, const InputInfoList &Inputs,
                           const ArgList &Args, const char *LinkingOutput) const {
-@@ -1918,6 +1918,7 @@
-           Inputs.size() == 1) &&
-          "Unable to handle multiple inputs.");
- 
-+  const bool IsFlang = D.IsFortranMode();
-   bool IsWindowsGNU = getToolChain().getTriple().isWindowsGNUEnvironment();
-   bool IsWindowsCygnus =
-       getToolChain().getTriple().isWindowsCygwinEnvironment();
 --- a/lib/Driver/ToolChain.cpp	2017-07-20 09:29:42.166553667 +0200
 +++ b/lib/Driver/ToolChain.cpp	2017-07-20 09:35:39.518943426 +0200
 @@ -130,6 +130,7 @@
