@@ -55,7 +55,7 @@ src_configure() {
 	local archiver="$(tc-getAR)"
 	local linker="$(tc-getCC)"
 
-	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
+	local llvm_config="$(get_llvm_prefix 4)/bin/${CBUILD}-llvm-config"
 	local c_compiler="$(tc-getBUILD_CC)"
 	local cxx_compiler="$(tc-getBUILD_CXX)"
 	if use clang ; then
@@ -96,14 +96,14 @@ EOF
 src_compile() {
 	export RUST_BACKTRACE=1
 	export LLVM_LINK_SHARED=1
-	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
+	export RUSTFLAGS="-L$(get_llvm_prefix 4)/lib"
 	./x.py build --verbose || die
 }
 
 src_install() {
 	export RUST_BACKTRACE=1
 	export LLVM_LINK_SHARED=1
-	export RUSTFLAGS="-L$(get_llvm_prefix)/lib"
+	export RUSTFLAGS="-L$(get_llvm_prefix 4)/lib"
 
 	DESTDIR="${D}" ./x.py install --verbose || die
 
