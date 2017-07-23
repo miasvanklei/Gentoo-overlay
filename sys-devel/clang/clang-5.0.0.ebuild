@@ -8,11 +8,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic llvm multilib-minimal \
-	python-single-r1 toolchain-funcs pax-utils versionator git-r3
+inherit cmake-utils flag-o-matic git-r3 llvm multilib-minimal \
+	python-single-r1 toolchain-funcs pax-utils versionator
 
 DESCRIPTION="C language family frontend for LLVM"
-HOMEPAGE="http://llvm.org/"
+HOMEPAGE="https://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="https://git.llvm.org/git/clang.git
         https://github.com/llvm-mirror/clang.git"
@@ -28,11 +28,14 @@ LICENSE="UoI-NCSA"
 SLOT="$(get_major_version)"
 KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="debug +default-compiler-rt +default-libcxx +doc +fortran multitarget
-	+static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
+	+static-analyzer test xml kernel_FreeBSD z3 ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
 	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${LLVM_TARGET_USEDEPS// /,},${MULTILIB_USEDEP}]
-	static-analyzer? ( dev-lang/perl:* )
+	static-analyzer? (
+		dev-lang/perl:*
+		z3? ( sci-mathematics/z3:0= )
+	)
 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
 	${PYTHON_DEPS}"
 # configparser-3.2 breaks the build (3.3 or none at all are fine)
@@ -56,10 +59,10 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	multitarget? ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/cfe-${PV/_/}
+S=${WORKDIR}/x/y/${P}
 
 # least intrusive of all
-CMAKE_BUILD_TYPE=RelWithDebInfo
+CMAKE_BUILD_TYPE=Release
 
 # Multilib notes:
 # 1. ABI_* flags control ABIs libclang* is built for only.
@@ -78,26 +81,26 @@ pkg_setup() {
 }
 
 src_unpack() {
-        # create extra parent dir for CLANG_RESOURCE_DIR
-        mkdir -p x/y || die
-        cd x/y || die
+	# create extra parent dir for CLANG_RESOURCE_DIR
+	mkdir -p x/y || die
+	cd x/y || die
 
-        git-r3_fetch "https://git.llvm.org/git/clang-tools-extra.git
-                https://github.com/llvm-mirror/clang-tools-extra.git"
-        if use test; then
-                # needed for patched gtest
-                git-r3_fetch "https://git.llvm.org/git/llvm.git
-                        https://github.com/llvm-mirror/llvm.git"
-        fi
-        git-r3_fetch
+	git-r3_fetch "https://git.llvm.org/git/clang-tools-extra.git
+		https://github.com/llvm-mirror/clang-tools-extra.git"
+	if use test; then
+		# needed for patched gtest
+		git-r3_fetch "https://git.llvm.org/git/llvm.git
+			https://github.com/llvm-mirror/llvm.git"
+	fi
+	git-r3_fetch
 
-        git-r3_checkout https://llvm.org/git/clang-tools-extra.git \
-                "${S}"/tools/extra
-        if use test; then
-                git-r3_checkout https://llvm.org/git/llvm.git \
-                        "${WORKDIR}"/llvm
-        fi
-        git-r3_checkout "${EGIT_REPO_URI}" "${S}"
+	git-r3_checkout https://llvm.org/git/clang-tools-extra.git \
+		"${S}"/tools/extra
+	if use test; then
+		git-r3_checkout https://llvm.org/git/llvm.git \
+			"${WORKDIR}"/llvm
+	fi
+	git-r3_checkout "${EGIT_REPO_URI}" "${S}"
 }
 
 src_prepare() {
@@ -180,6 +183,9 @@ multilib_src_configure() {
 
 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
+		# z3 is not multilib-friendly
+		-DCLANG_ANALYZER_BUILD_Z3=$(multilib_native_usex z3)
+		-DZ3_INCLUDE_DIR="${EPREFIX}/usr/include/z3"
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
@@ -317,7 +323,7 @@ multilib_src_install_all() {
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
 	fi
 
-
+	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression
 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
 	# +x for some reason; TODO: investigate

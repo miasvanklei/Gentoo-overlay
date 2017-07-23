@@ -8,15 +8,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic git-r3 multilib-minimal pax-utils \
+inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
 	python-any-r1 toolchain-funcs versionator
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/llvm.git
-        https://github.com/llvm-mirror/llvm.git"
-EGIT_BRANCH="release_50"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -68,7 +66,7 @@ PDEPEND="sys-devel/llvm-common
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
-S=${WORKDIR}/${P/_/}
+S=${WORKDIR}/${P/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -76,15 +74,6 @@ CMAKE_BUILD_TYPE=Release
 python_check_deps() {
 	! use test \
 		|| has_version "dev-python/lit[${PYTHON_USEDEP}]"
-}
-
-src_unpack() {
-        git-r3_fetch "https://git.llvm.org/git/polly.git
-                https://github.com/llvm-mirror/polly.git"
-        git-r3_fetch
-
-        git-r3_checkout https://llvm.org/git/polly.git "${S}"/tools/polly
-        git-r3_checkout
 }
 
 src_prepare() {
@@ -95,13 +84,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0002-shared-library-suffix.patch
 
 	# support building llvm against musl-libc
-	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
-
-	# some arm relocations, needed for swift
-	eapply "${FILESDIR}"/0005-arm-relocation.patch
-
-	# add swift support
-	eapply "${FILESDIR}"/0006-add-swift-support.patch
+	use elibc_musl && eapply "${FILESDIR}"/0003-llvm-4.0.1-musl-fixes.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
@@ -119,7 +102,6 @@ multilib_src_configure() {
 
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
-		-DLLVM_APPEND_VC_REV=OFF
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${SLOT}"
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 
@@ -137,9 +119,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
 
-		# enable polly
-		-DLINK_POLLY_INTO_TOOLS=ON
-		-DWITH_POLLY=ON
+		-DWITH_POLLY=OFF # TODO
 
 		-DLLVM_HOST_TRIPLE="${CHOST}"
 
@@ -219,19 +199,10 @@ src_install() {
 
 	local MULTILIB_WRAPPED_HEADERS=(
 		/usr/include/llvm/Config/llvm-config.h
-		/usr/include/llvm/Config/config.h
 	)
 
 	local LLVM_LDPATHS=()
 	multilib-minimal_src_install
-
-	# binutils symlinks
-	local llvm_tools=( ar ranlib nm strings objdump cxxfilt readelf )
-
-	for i in "${llvm_tools[@]}"; do
-                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${i}"
-                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-${i}"
-        done
 
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
@@ -257,4 +228,13 @@ multilib_src_install_all() {
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 _EOF_
 	doenvd "${T}/10llvm-${revord}"
+
+	# install pre-generated manpages
+	if ! use doc; then
+		# (doman does not support custom paths)
+		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+		doins "${WORKDIR}/llvm-manpages-${PV}/llvm"/*.1
+	fi
+
+	docompress "/usr/lib/llvm/${SLOT}/share/man"
 }

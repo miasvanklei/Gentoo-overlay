@@ -8,10 +8,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils llvm python-any-r1 git-r3
+inherit cmake-utils git-r3 llvm python-any-r1
 
 DESCRIPTION="The LLVM linker (link editor)"
-HOMEPAGE="http://llvm.org/"
+HOMEPAGE="https://llvm.org/"
+SRC_URI=""
 EGIT_REPO_URI="https://git.llvm.org/git/lld.git
         https://github.com/llvm-mirror/lld.git"
 EGIT_BRANCH="release_50"
@@ -24,8 +25,6 @@ IUSE="test"
 RDEPEND="~sys-devel/llvm-${PV}"
 DEPEND="${RDEPEND}
 	test? ( $(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]") )"
-
-S=${WORKDIR}/${P/_/}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -40,18 +39,18 @@ pkg_setup() {
 }
 
 src_unpack() {
-        if use test; then
-                # needed for patched gtest
-                git-r3_fetch "https://git.llvm.org/git/llvm.git
-                        https://github.com/llvm-mirror/llvm.git"
-        fi
-        git-r3_fetch
+	if use test; then
+		# needed for patched gtest
+		git-r3_fetch "https://git.llvm.org/git/llvm.git
+			https://github.com/llvm-mirror/llvm.git"
+	fi
+	git-r3_fetch
 
-        if use test; then
-                git-r3_checkout https://llvm.org/git/llvm.git \
-                        "${WORKDIR}"/llvm
-        fi
-        git-r3_checkout
+	if use test; then
+		git-r3_checkout https://llvm.org/git/llvm.git \
+			"${WORKDIR}"/llvm
+	fi
+	git-r3_checkout
 }
 
 src_prepare() {
