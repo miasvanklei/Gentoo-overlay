@@ -14,7 +14,7 @@ IUSE=""
 
 RDEPEND=""
 DEPEND=">=dev-util/cmake-2.8
-	sys-devel/llvm
+	sys-devel/llvm:=
 	${RDEPEND}"
 
 src_prepare() {
