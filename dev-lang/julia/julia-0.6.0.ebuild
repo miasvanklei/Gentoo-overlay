@@ -52,6 +52,7 @@ PATCHES=(
 	"${FILESDIR}"/system-libs.patch
 	"${FILESDIR}"/musl.patch
 	"${FILESDIR}"/llvm-5.0.patch
+	"${FILESDIR}"/nodebug-install.patch
 )
 
 S=${WORKDIR}/${P//_/-}
@@ -168,10 +169,6 @@ src_install() {
 	EOF
 	doenvd 99julia
 
-	if use emacs; then
-		elisp-install "${PN}" contrib/julia-mode.el
-		elisp-site-file-install "${FILESDIR}"/63julia-gentoo.el
-	fi
 	dodoc README.md
 
 	mv "${ED}"/usr/etc/julia "${ED}"/etc || die

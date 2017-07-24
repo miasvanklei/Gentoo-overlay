@@ -23,10 +23,10 @@ index 0c4ba6a..19292c1 100644
 +// Resolve compiler-rt functions in rtlib.jl
 +static uint64_t resolve_libcalls(const char *name)
 +{
-+    static void *compiler_rt_hdl = jl_load_dynamic_library_e("compiler-rt",
++    static void *compiler_rt_hdl = jl_load_dynamic_library_e("libcompiler-rt",
 +                                                             JL_RTLD_LOCAL | JL_RTLD_LAZY);
 +    static const char *const prefix = "__";
-+    if (!compiler-rt_hdl) {
++    if (!compiler_rt_hdl) {
 +        jl_printf(JL_STDERR, "WARNING: Unable to load compiler-rt\n");
 +        return 0;
 +    }
@@ -40,7 +40,7 @@ index 0c4ba6a..19292c1 100644
 +        ++name;
 +    }
 +#endif
-+    return (uintptr_t)jl_dlsym_e(compiler-rt_hdl, name);
++    return (uintptr_t)jl_dlsym_e(compiler_rt_hdl, name);
 +}
 +
  #if defined(_OS_LINUX_)

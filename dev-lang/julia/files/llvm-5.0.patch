@@ -1,33 +1,51 @@
---- a/src/codegen.cpp	2017-07-23 15:36:48.828758440 +0200
-+++ b/src/codegen.cpp	2017-07-23 16:00:02.212371694 +0200
-@@ -1422,8 +1422,12 @@
-     uint64_t addr = getAddressForFunction(llvmf);
- #ifdef USE_ORCJIT
-     if (!addr)
-+#if JL_LLVM_VERSION >= 50000
-+        addr = jl_ExecutionEngine->findUnmangledSymbol(llvmf->getName()).getAddress().get();
-+#else
-         addr = jl_ExecutionEngine->findUnmangledSymbol(llvmf->getName()).getAddress();
- #endif
-+#endif
-     return addr;
- }
- 
---- a/src/cgutils.cpp	2017-07-23 15:53:22.692066858 +0200
-+++ b/src/cgutils.cpp	2017-07-23 15:54:38.387943157 +0200
-@@ -2390,7 +2390,9 @@
-     builder.CreateCall(InlineAsm::get(FunctionType::get(T_void, false), "",
-                                       "~{memory}", true));
+--- a/src/debuginfo.cpp	2017-06-19 19:48:45.000000000 +0200
++++ a/src/debuginfo.cpp	2017-07-24 08:47:20.947512263 +0200
+@@ -301,7 +301,7 @@
+     virtual void _NotifyObjectEmitted(const object::ObjectFile &obj,
+                                       const object::ObjectFile &debugObj,
+                                       const RuntimeDyld::LoadedObjectInfo &L,
+-                                      RTDyldMemoryManager *memmgr)
++                                      std::shared_ptr<RTDyldMemoryManager> memmgr)
  #else
--#  if JL_LLVM_VERSION >= 30900
-+#  if JL_LLVM_VERSION >= 50000
-+    builder.CreateFence(AtomicOrdering::SequentiallyConsistent, llvm::SyncScope::SingleThread);
-+#  elif JL_LLVM_VERSION >= 30900
-     builder.CreateFence(AtomicOrdering::SequentiallyConsistent, SingleThread);
- #  else
-     builder.CreateFence(SequentiallyConsistent, SingleThread);
---- a/src/ccall.cpp	2017-07-23 16:00:09.820358633 +0200
-+++ b/src/ccall.cpp	2017-07-23 16:06:02.570735535 +0200
+     virtual void NotifyObjectEmitted(const ObjectImage &obj)
+ #endif
+@@ -689,7 +689,7 @@
+                                          const object::ObjectFile &obj,
+                                          const object::ObjectFile &debugObj,
+                                          const RuntimeDyld::LoadedObjectInfo &L,
+-                                         RTDyldMemoryManager *memmgr)
++                                         std::shared_ptr<RTDyldMemoryManager> memmgr)
+ {
+     ((JuliaJITEventListener*)Listener)->_NotifyObjectEmitted(obj,debugObj,L,memmgr);
+ }
+@@ -1009,7 +1009,11 @@
+ 
+     auto error_splitobj = object::ObjectFile::createObjectFile(
+             SplitFile.get().get()->getMemBufferRef(),
++#if JL_LLVM_VERSION >= 50000
++            file_magic::unknown);
++#else
+             sys::fs::file_magic::unknown);
++#endif
+     if (!error_splitobj) {
+ #if JL_LLVM_VERSION >= 30900
+         return error_splitobj.takeError();
+@@ -1181,7 +1185,12 @@
+         std::unique_ptr<MemoryBuffer> membuf = MemoryBuffer::getMemBuffer(
+                 StringRef((const char *)fbase, msize), "", false);
+         auto origerrorobj = llvm::object::ObjectFile::createObjectFile(
+-            membuf->getMemBufferRef(), sys::fs::file_magic::unknown);
++            membuf->getMemBufferRef(),
++#if JL_LLVM_VERSION >= 50000
++            file_magic::unknown);
++#else
++            sys::fs::file_magic::unknown);
++#endif
+ #elif JL_LLVM_VERSION >= 30500
+         MemoryBuffer *membuf = MemoryBuffer::getMemBuffer(
+             StringRef((const char *)fbase, msize), "", false);
+--- a/src/ccall.cpp	2017-06-19 19:48:45.000000000 +0200
++++ a/src/ccall.cpp	2017-07-24 08:46:45.283558120 +0200
 @@ -1275,7 +1275,7 @@
      assert(rt && !jl_is_abstract_ref_type(rt));
  
@@ -77,52 +95,8 @@
      }
      if (rt == jl_bottom_type) {
          attributes = attributes.addAttribute(jl_LLVMContext,
---- a/src/disasm.cpp	2017-07-23 17:37:48.784007175 +0200
-+++ b/src/disasm.cpp	2017-07-23 17:39:03.607872838 +0200
-@@ -28,8 +28,13 @@
- 
- #include "llvm-version.h"
- #include <llvm/Object/ObjectFile.h>
-+#if JL_LLVM_VERSION >= 50000
-+#include <llvm/BinaryFormat/MachO.h>
-+#include <llvm/BinaryFormat/COFF.h>
-+#else
- #include <llvm/Support/MachO.h>
- #include <llvm/Support/COFF.h>
-+#endif
- #include <llvm/MC/MCInst.h>
- #include <llvm/MC/MCStreamer.h>
- #include <llvm/MC/MCSubtargetInfo.h>
---- a/src/debuginfo.cpp	2017-07-23 17:39:26.487832598 +0200
-+++ b/src/debuginfo.cpp	2017-07-23 17:40:35.031711913 +0200
-@@ -1009,7 +1009,11 @@
- 
-     auto error_splitobj = object::ObjectFile::createObjectFile(
-             SplitFile.get().get()->getMemBufferRef(),
-+#if JL_LLVM_VERSION >= 50000
-+            file_magic::unknown);
-+#else
-             sys::fs::file_magic::unknown);
-+#endif
-     if (!error_splitobj) {
- #if JL_LLVM_VERSION >= 30900
-         return error_splitobj.takeError();
-@@ -1181,7 +1185,12 @@
-         std::unique_ptr<MemoryBuffer> membuf = MemoryBuffer::getMemBuffer(
-                 StringRef((const char *)fbase, msize), "", false);
-         auto origerrorobj = llvm::object::ObjectFile::createObjectFile(
--            membuf->getMemBufferRef(), sys::fs::file_magic::unknown);
-+            membuf->getMemBufferRef(),
-+#if JL_LLVM_VERSION >= 50000
-+            file_magic::unknown);
-+#else
-+            sys::fs::file_magic::unknown);
-+#endif
- #elif JL_LLVM_VERSION >= 30500
-         MemoryBuffer *membuf = MemoryBuffer::getMemBuffer(
-             StringRef((const char *)fbase, msize), "", false);
---- a/src/cgmemmgr.cpp	2017-07-23 17:41:49.479581648 +0200
-+++ b/src/cgmemmgr.cpp	2017-07-23 17:42:44.799484730 +0200
+--- a/src/cgmemmgr.cpp	2017-06-19 19:48:45.000000000 +0200
++++ a/src/cgmemmgr.cpp	2017-07-24 08:46:15.755596068 +0200
 @@ -744,8 +744,6 @@
      }
      void registerEHFrames(uint8_t *Addr, uint64_t LoadAddr,
@@ -147,9 +121,53 @@
  }
  
  #if JL_LLVM_VERSION < 30800
---- a/jitlayers.cpp	2017-07-23 16:06:37.115674272 +0200
-+++ b/jitlayers.cpp	2017-07-24 00:18:55.086041693 +0200
-@@ -385,16 +385,22 @@
+--- a/src/cgutils.cpp	2017-06-19 19:48:45.000000000 +0200
++++ a/src/cgutils.cpp	2017-07-24 08:46:36.811568833 +0200
+@@ -2390,7 +2390,9 @@
+     builder.CreateCall(InlineAsm::get(FunctionType::get(T_void, false), "",
+                                       "~{memory}", true));
+ #else
+-#  if JL_LLVM_VERSION >= 30900
++#  if JL_LLVM_VERSION >= 50000
++    builder.CreateFence(AtomicOrdering::SequentiallyConsistent, llvm::SyncScope::SingleThread);
++#  elif JL_LLVM_VERSION >= 30900
+     builder.CreateFence(AtomicOrdering::SequentiallyConsistent, SingleThread);
+ #  else
+     builder.CreateFence(SequentiallyConsistent, SingleThread);
+--- a/src/codegen.cpp	2017-06-19 19:48:45.000000000 +0200
++++ a/src/codegen.cpp	2017-07-24 08:46:27.547580948 +0200
+@@ -1422,8 +1422,12 @@
+     uint64_t addr = getAddressForFunction(llvmf);
+ #ifdef USE_ORCJIT
+     if (!addr)
++#if JL_LLVM_VERSION >= 50000
++        addr = jl_ExecutionEngine->findUnmangledSymbol(llvmf->getName()).getAddress().get();
++#else
+         addr = jl_ExecutionEngine->findUnmangledSymbol(llvmf->getName()).getAddress();
+ #endif
++#endif
+     return addr;
+ }
+ 
+--- a/src/disasm.cpp	2017-06-19 19:48:45.000000000 +0200
++++ a/src/disasm.cpp	2017-07-24 08:47:07.083530122 +0200
+@@ -28,8 +28,13 @@
+ 
+ #include "llvm-version.h"
+ #include <llvm/Object/ObjectFile.h>
++#if JL_LLVM_VERSION >= 50000
++#include <llvm/BinaryFormat/MachO.h>
++#include <llvm/BinaryFormat/COFF.h>
++#else
+ #include <llvm/Support/MachO.h>
+ #include <llvm/Support/COFF.h>
++#endif
+ #include <llvm/MC/MCInst.h>
+ #include <llvm/MC/MCStreamer.h>
+ #include <llvm/MC/MCSubtargetInfo.h>
+--- a/src/jitlayers.cpp	2017-06-19 19:48:46.000000000 +0200
++++ a/src/jitlayers.cpp	2017-07-24 08:46:20.971589572 +0200
+@@ -362,16 +385,22 @@
                                           const object::ObjectFile &obj,
                                           const object::ObjectFile &debugObj,
                                           const RuntimeDyld::LoadedObjectInfo &L,
@@ -173,7 +191,7 @@
      auto oit = Objects.begin();
      auto lit = LOS.begin();
      for (; oit != Objects.end(); ++oit, ++lit) {
-@@ -404,8 +410,15 @@
+@@ -381,8 +410,15 @@
          auto &Object = *oit;
  #endif
          auto &LO = *lit;
@@ -189,7 +207,7 @@
  
          // If the debug object is unavailable, save (a copy of) the original object
          // for our backtraces
-@@ -428,7 +441,11 @@
+@@ -405,7 +441,11 @@
          ORCNotifyObjectEmitted(JuliaListener.get(),
                  *Object,
                  *SavedObjects.back().getBinary(),
@@ -201,7 +219,7 @@
  
          // record all of the exported symbols defined in this object
          // in the primary hash table for the enclosing JIT
-@@ -446,9 +463,18 @@
+@@ -423,9 +463,18 @@
              // note: calling getAddress here eagerly finalizes H
              // as an alternative, we could store the JITSymbol instead
              // (which would present a lazy-initializer functor interface instead)
@@ -220,14 +238,13 @@
  }
  
  void JuliaOJIT::DebugObjectRegistrar::NotifyGDB(OwningBinary<object::ObjectFile> &DebugObj)
-@@ -475,7 +501,14 @@
+@@ -452,7 +501,13 @@
      DL(TM.createDataLayout()),
      ObjStream(ObjBufferSV),
      MemMgr(createRTDyldMemoryManager()),
 +#if JL_LLVM_VERSION >= 50000
 +    DebugObjectRegistrar(*this),
-+    ObjectLayer([this]() { return this->MemMgr; }, [=] (RTDyldObjectLinkingLayerBase::ObjHandleT H,
-+                            const RTDyldObjectLinkingLayerBase::ObjectPtr &Obj, const LoadedObjectInfo &Info) {
++    ObjectLayer([this]() { return this->MemMgr; }, [=] (auto H, auto &Obj, auto &Info) {
 +                            DebugObjectRegistrar.operator()(H, Obj, Info); } ),
 +#else
      ObjectLayer(DebugObjectRegistrar(*this)),
@@ -235,7 +252,7 @@
      CompileLayer(
              ObjectLayer,
              [this](Module &M) {
-@@ -606,18 +639,26 @@
+@@ -576,18 +631,26 @@
                        },
                        [](const std::string &S) { return nullptr; }
                      );
@@ -261,9 +278,9 @@
      CompileLayer.removeModuleSet(H);
 +#endif
  }
- 
+
  JL_JITSymbol JuliaOJIT::findSymbol(const std::string &Name, bool ExportedSymbolsOnly)
-@@ -640,12 +681,32 @@
+@@ -615,12 +680,32 @@
  
  uint64_t JuliaOJIT::getGlobalValueAddress(const std::string &Name)
  {
@@ -296,8 +313,8 @@
  }
  
  Function *JuliaOJIT::FindFunctionNamed(const std::string &Name)
---- a/jitlayers.h	2017-07-23 15:39:27.164505777 +0200
-+++ b/jitlayers.h	2017-07-24 00:21:21.477771089 +0200
+--- a/src/jitlayers.h	2017-06-19 19:48:46.000000000 +0200
++++ a/src/jitlayers.h	2017-07-24 08:46:20.971589572 +0200
 @@ -6,6 +6,7 @@
  #include <llvm/IR/Value.h>
  
@@ -333,13 +350,12 @@
      private:
          void NotifyGDB(object::OwningBinary<object::ObjectFile> &DebugObj);
          std::vector<object::OwningBinary<object::ObjectFile>> SavedObjects;
-@@ -195,9 +204,17 @@
+@@ -195,9 +204,16 @@
      };
  
  public:
 +#if JL_LLVM_VERSION >= 50000
 +    typedef RTDyldObjectLinkingLayer ObjLayerT;
-+    using NotifyFinalizedFtor = std::function<void(RTDyldObjectLinkingLayerBase::ObjHandleT)>;
 +    typedef std::function<object::OwningBinary<object::ObjectFile>(Module &)> CompileFtor;
 +    typedef orc::IRCompileLayer<ObjLayerT, CompileFtor> CompileLayerT;
 +    typedef CompileLayerT::ModuleHandleT ModuleHandleT;
@@ -351,7 +367,7 @@
      typedef StringMap<void*> SymbolTableT;
      typedef object::OwningBinary<object::ObjectFile> OwningObj;
  
-@@ -229,7 +246,10 @@
+@@ -229,7 +245,10 @@
      raw_svector_ostream ObjStream;
      legacy::PassManager PM;
      MCContext *Ctx;
