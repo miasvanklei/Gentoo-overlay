@@ -17,18 +17,13 @@ SRC_URI="https://static.rust-lang.org/dist/rustc-${PV}-src.tar.gz -> ${P}-src.ta
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clang -debug doc -jemalloc +libcxx +source +system-llvm"
-REQUIRED_USE="libcxx? ( clang )"
+IUSE="-debug doc -jemalloc +source"
 
-RDEPEND="libcxx? ( sys-libs/libcxx )
-	system-llvm? ( sys-devel/llvm:4 )
-"
+RDEPEND="sys-devel/llvm:4"
 
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
-	>=dev-lang/perl-5.0
-	clang? ( sys-devel/clang )
-"
+	>=dev-lang/perl-5.0"
 
 S=${WORKDIR}/${P}-src
 
@@ -52,67 +47,57 @@ src_prepare() {
 src_configure() {
 	einfo "Setting up config.toml for target"
 
-	local archiver="$(tc-getAR)"
-	local linker="$(tc-getCC)"
-
 	local llvm_config="$(get_llvm_prefix 4)/bin/${CBUILD}-llvm-config"
-	local c_compiler="$(tc-getBUILD_CC)"
-	local cxx_compiler="$(tc-getBUILD_CXX)"
-	if use clang ; then
-		c_compiler="${CBUILD}-clang"
-		cxx_compiler="${CBUILD}-clang++"
-	fi
 
-	cat > config.toml <<EOF
-[build]
-cargo = "/usr/bin/cargo"
-rustc = "/usr/bin/rustc"
-build = "${CBUILD}"
-host = ["${CHOST}"]
-target = ["${CBUILD}"]
-
-[install]
-prefix = "${EPREFIX}/usr"
-libdir = "$(get_libdir)"
-docdir = "share/doc/${PN}"
-mandir = "share/${PN}/man"
-
-[rust]
-optimize = $(toml_usex !debug)
-debuginfo = $(toml_usex debug)
-debug-assertions = $(toml_usex debug)
-use-jemalloc = $(toml_usex jemalloc)
-default-linker = "${linker}"
-default-ar = "${archiver}"
-rpath = true
-
-[target.${CBUILD}]
-cc = "${c_compiler}"
-cxx = "${cxx_compiler}"
-llvm-config = "${llvm_config}"
-EOF
+	cat <<- EOF > config.toml
+	[build]
+	cargo = "/usr/bin/cargo"
+	rustc = "/usr/bin/rustc"
+	build = "${CBUILD}"
+	host = ["${CHOST}"]
+	target = ["${CBUILD}"]
+	[install]
+	prefix = "${EPREFIX}/usr"
+	libdir = "$(get_libdir)/${PN}"
+	mandir = "share/${PN}/man"
+	docdir = "share/${PN}/doc"
+	[rust]
+	optimize = $(toml_usex !debug)
+	debuginfo = $(toml_usex debug)
+	debug-assertions = $(toml_usex debug)
+	codegen-units = 0
+	use-jemalloc = $(toml_usex jemalloc)
+	default-linker = "$(tc-getBUILD_CC)"
+	default-ar = "$(tc-getBUILD_AR)"
+	rpath = false
+	[target.${CBUILD}]
+	cc = "$(tc-getBUILD_CC)"
+	cxx = "$(tc-getBUILD_CXX)"
+	llvm-config = "${llvm_config}"
+	EOF
 }
 
 src_compile() {
-	export RUST_BACKTRACE=1
 	export LLVM_LINK_SHARED=1
-	export RUSTFLAGS="-L$(get_llvm_prefix 4)/lib"
-	./x.py build --verbose || die
+	${EPYTHON} x.py build --verbose || die
 }
 
 src_install() {
-	export RUST_BACKTRACE=1
-	export LLVM_LINK_SHARED=1
-	export RUSTFLAGS="-L$(get_llvm_prefix 4)/lib"
+	default
 
-	DESTDIR="${D}" ./x.py install --verbose || die
+	local obj="build/${CBUILD}/stage2"
+	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
+	dobin src/etc/rust-gdb src/etc/rust-lldb
+	insinto "/usr/$(get_libdir)"
+	doins -r "${obj}/lib/rustlib"
+	dodoc COPYRIGHT
+	doman man/*
 
-	pushd ${D}/usr/lib || die
-
-	# remove copy
-	rm -r *.so || die
-
-	popd >/dev/null
+	cat <<-EOF > "${T}"/50${PN}
+	LDPATH="/usr/$(get_libdir)/rusrlib/${CBUILD}/lib"
+	MANPATH="/usr/share/${PN}/man"
+	EOF
+	doenvd "${T}"/50${PN}
 
 	if use source; then
 		pushd ${S}/src
@@ -120,16 +105,11 @@ src_install() {
 		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${PN} \; || die
 		popd >/dev/null
 	fi
-
-        cat <<-_EOF_ > "${T}/10rust" || die
-LDPATH=/usr/lib/rustlib/${CHOST}/lib
-_EOF_
-        doenvd "${T}/10rust"
 }
 
 pkg_postinst() {
 	elog "Rust installs a helper script for calling GDB now,"
-	elog "for your convenience it is installed under /usr/bin/rust-gdb"
+	elog "for your convenience it is installed under /usr/bin/rust-gdb-${PV}."
 
 	if has_version app-editors/emacs || has_version app-editors/emacs-vcs; then
 		elog "install app-emacs/rust-mode to get emacs support for rust."
