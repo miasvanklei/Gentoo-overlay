@@ -93,6 +93,11 @@ src_install() {
 	dodoc COPYRIGHT
 	doman man/*
 
+	# pretty printers
+	insinto "/usr/$(get_libdir)/rustlib/etc"
+	doins src/etc/*pretty*
+	doins lldb_rust_formatters.py
+
 	cat <<-EOF > "${T}"/50${PN}
 	LDPATH="/usr/$(get_libdir)/rusrlib/${CBUILD}/lib"
 	MANPATH="/usr/share/${PN}/man"
