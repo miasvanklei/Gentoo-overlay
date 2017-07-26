@@ -19,7 +19,7 @@ LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
 IUSE="-debug doc -jemalloc +source"
 
-RDEPEND="sys-devel/llvm:4"
+RDEPEND="sys-devel/llvm:="
 
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
@@ -40,6 +40,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/llvm-5.0.patch
 	eapply "${FILESDIR}"/musl.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
+	eapply "${FILESDIR}"/debug-hack.patch
 
 	eapply_user
 }
@@ -47,7 +48,7 @@ src_prepare() {
 src_configure() {
 	einfo "Setting up config.toml for target"
 
-	local llvm_config="$(get_llvm_prefix 4)/bin/${CBUILD}-llvm-config"
+	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
 
 	cat <<- EOF > config.toml
 	[build]
@@ -65,7 +66,7 @@ src_configure() {
 	optimize = $(toml_usex !debug)
 	debuginfo = $(toml_usex debug)
 	debug-assertions = $(toml_usex debug)
-	codegen-units = 0
+	codegen-units = 1
 	use-jemalloc = $(toml_usex jemalloc)
 	default-linker = "$(tc-getBUILD_CC)"
 	default-ar = "$(tc-getBUILD_AR)"
@@ -96,10 +97,10 @@ src_install() {
 	# pretty printers
 	insinto "/usr/$(get_libdir)/rustlib/etc"
 	doins src/etc/*pretty*
-	doins lldb_rust_formatters.py
+	doins src/etc/lldb_rust_formatters.py
 
 	cat <<-EOF > "${T}"/50${PN}
-	LDPATH="/usr/$(get_libdir)/rusrlib/${CBUILD}/lib"
+	LDPATH="/usr/$(get_libdir)/rustlib/${CBUILD}/lib"
 	MANPATH="/usr/share/${PN}/man"
 	EOF
 	doenvd "${T}"/50${PN}
