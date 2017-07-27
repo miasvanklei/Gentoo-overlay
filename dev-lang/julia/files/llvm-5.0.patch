@@ -136,12 +136,18 @@
      builder.CreateFence(SequentiallyConsistent, SingleThread);
 --- a/src/codegen.cpp	2017-06-19 19:48:45.000000000 +0200
 +++ a/src/codegen.cpp	2017-07-24 08:46:27.547580948 +0200
-@@ -1422,8 +1422,12 @@
+@@ -1422,8 +1422,18 @@
      uint64_t addr = getAddressForFunction(llvmf);
  #ifdef USE_ORCJIT
      if (!addr)
 +#if JL_LLVM_VERSION >= 50000
-+        addr = jl_ExecutionEngine->findUnmangledSymbol(llvmf->getName()).getAddress().get();
++    if (Sym = l_ExecutionEngine->findUnmangledSymbol(llvmf->getName())) {
++        if (auto AddrOrErr = Sym.getAddress())
++            return *AddrOrErr;
++        else
++            report_fatal_error(AddrOrErr.takeError());
++    } else
++        report_fatal_error(Sym.takeError());
 +#else
          addr = jl_ExecutionEngine->findUnmangledSymbol(llvmf->getName()).getAddress();
  #endif
