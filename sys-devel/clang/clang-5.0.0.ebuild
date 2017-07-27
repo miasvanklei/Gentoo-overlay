@@ -28,7 +28,7 @@ LICENSE="UoI-NCSA"
 SLOT="$(get_major_version)"
 KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="debug +default-compiler-rt +default-libcxx +doc +fortran multitarget
-	+static-analyzer test xml kernel_FreeBSD z3 ${ALL_LLVM_TARGETS[*]}"
+	+static-analyzer +swift test xml kernel_FreeBSD z3 ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
 	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${LLVM_TARGET_USEDEPS// /,},${MULTILIB_USEDEP}]
@@ -136,7 +136,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0013-add-fno-delete-null-pointer-checks.patch
 
 	# add swift support
-	eapply "${FILESDIR}"/0014-add-swift-support.patch
+	use swift && eapply "${FILESDIR}"/0014-add-swift-support.patch
 
 	# add fortran support
 	use fortran && eapply "${FILESDIR}"/0015-add-fortran-support.patch

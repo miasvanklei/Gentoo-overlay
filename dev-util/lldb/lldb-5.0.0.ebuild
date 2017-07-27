@@ -20,7 +20,7 @@ EGIT_BRANCH="release_50"
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+libedit ncurses +python test"
+IUSE="+libedit ncurses +python +swift test"
 
 RDEPEND="
 	libedit? ( dev-libs/libedit:0= )
@@ -36,7 +36,7 @@ DEPEND="${RDEPEND}
 	python? ( || ( <dev-lang/swig-3.0.9
 		  >dev-lang/swig-3.0.10 ) )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
-	dev-lang/swift
+	swift? ( dev-lang/swift )
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
@@ -67,8 +67,8 @@ src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
 
-	# add swift support (cleanup comes later)
-	eapply "${FILESDIR}"/0002-add-swift-support.patch
+	# add swift support (cleanup comes later
+	use swift && eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	eapply_user
 }
