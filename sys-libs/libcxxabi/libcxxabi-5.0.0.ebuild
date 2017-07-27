@@ -26,8 +26,8 @@ RDEPEND="
 	compiler-rt? ( sys-libs/compiler-rt )
 	libunwind? (
 		|| (
-			>=sys-libs/libunwind-1.0.1-r1[static-libs?,${MULTILIB_USEDEP}]
 			>=sys-libs/llvm-libunwind-3.9.0-r1[static-libs?,${MULTILIB_USEDEP}]
+			>=sys-libs/libunwind-1.0.1-r1[static-libs?,${MULTILIB_USEDEP}]
 		)
 	)"
 # LLVM 4 required for llvm-config --cmakedir
