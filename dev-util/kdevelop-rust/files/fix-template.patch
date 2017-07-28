@@ -1,0 +1,73 @@
+diff --git a/duchain/contextbuilder.cpp b/duchain/contextbuilder.cpp
+index a115834..3766a05 100644
+--- a/duchain/contextbuilder.cpp
++++ b/duchain/contextbuilder.cpp
+@@ -5,7 +5,6 @@
+ #include <interfaces/idocumentcontroller.h>
+ 
+ #include "rustducontext.h"
+-#include "nodetraits.h"
+ 
+ namespace Rust
+ {
+@@ -61,23 +60,6 @@ RSVisitResult ContextBuilder::visitNode(RustNode *node, RustNode *parent)
+     return Recurse;
+ }
+ 
+-template <RSNodeKind Kind>
+-RSVisitResult ContextBuilder::buildContext(RustNode *node, RustNode *parent)
+-{
+-    Q_UNUSED(parent);
+-
+-    constexpr bool hasContext = NodeTraits::hasContext(Kind);
+-    RustPath name(node);
+-
+-    if (hasContext) {
+-        openContext(node, NodeTraits::contextType(Kind), &name);
+-        visitChildren(node);
+-        closeContext();
+-        return Continue;
+-    }
+-    return Recurse;
+-}
+-
+ void ContextBuilder::visitChildren(RustNode *node)
+ {
+     visit_children(node->data(), visitCallback, this);
+diff --git a/duchain/contextbuilder.h b/duchain/contextbuilder.h
+index b045823..78bb669 100644
+--- a/duchain/contextbuilder.h
++++ b/duchain/contextbuilder.h
+@@ -5,6 +5,7 @@
+ 
+ #include "rustnode.h"
+ #include "parsesession.h"
++#include "nodetraits.h"
+ 
+ namespace Rust
+ {
+@@ -22,8 +23,22 @@ public:
+ protected:
+     KDevelop::RangeInRevision editorFindSpellingRange(RustNode *node, const QString &identifier);
+ 
+-    template <RSNodeKind>
+-    RSVisitResult buildContext(RustNode *node, RustNode *parent);
++    template <RSNodeKind Kind>
++    RSVisitResult buildContext(RustNode *node, RustNode *parent)
++    {
++        Q_UNUSED(parent);
++
++        constexpr bool hasContext = NodeTraits::hasContext(Kind);
++        RustPath name(node);
++
++        if (hasContext) {
++            openContext(node, NodeTraits::contextType(Kind), &name);
++            visitChildren(node);
++            closeContext();
++            return Continue;
++        }
++        return Recurse;
++    }
+ 
+     template<RSNodeKind Kind>
+     KDevelop::DUContext *createContext(RSNode *node, const KDevelop::QualifiedIdentifier& scopeId);

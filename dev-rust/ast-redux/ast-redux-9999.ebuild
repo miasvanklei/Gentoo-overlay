@@ -20,7 +20,7 @@ DEPEND="${COMMON_DEPEND}
 RDEPEND="${COMMON_DEPEND}"
 
 src_compile() {
-	RUSTFLAGS="-L/usr/lib/llvm/4/lib" cargo build --release --verbose || die
+	cargo build --release --verbose || die
 }
 
 src_install() {

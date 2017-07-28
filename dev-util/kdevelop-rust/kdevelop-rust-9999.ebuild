@@ -34,9 +34,9 @@ RDEPEND="${DEPEND}
 
 RESTRICT+=" test"
 
-#PATCHES=(
-#	"${FILESDIR}"/fix-configure.patch
-#)
+PATCHES=(
+	"${FILESDIR}"/fix-template.patch
+)
 
 pkg_setup() {
 	python-single-r1_pkg_setup
