@@ -5,11 +5,12 @@ EAPI=6
 
 RESTRICT="test"
 
-inherit elisp-common eutils multilib pax-utils toolchain-funcs
+inherit elisp-common eutils git-r3 multilib pax-utils toolchain-funcs
 
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="http://julialang.org/"
-SRC_URI="https://github.com/JuliaLang/${PN}/releases/download/v${PV//_/-}/${P//_/-}.tar.gz"
+SRC_URI=""
+EGIT_REPO_URI="https://github.com/JuliaLang/julia"
 
 LICENSE="MIT"
 SLOT="0"
@@ -46,7 +47,7 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-0.6.0-fix_build_system.patch
+	"${FILESDIR}"/${PN}-9999-fix_build_system.patch
 	"${FILESDIR}"/add-compilerrt.patch
 	"${FILESDIR}"/fix-compile.patch
 	"${FILESDIR}"/system-libs.patch
@@ -116,6 +117,7 @@ src_configure() {
 	# julia does not play well with the system versions of
 	# libuv
 	cat <<-EOF > Make.user
+		DISABLE_LIBUNWIND=1
 		USE_SYSTEM_DSFMT=0
 		USE_SYSTEM_LIBUV=0
 		USE_SYSTEM_PCRE=1

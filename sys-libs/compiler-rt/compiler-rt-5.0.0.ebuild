@@ -38,7 +38,6 @@ PATCHES=(
         "${FILESDIR}"/0001-add-blocks-support.patch
         "${FILESDIR}"/0002-fix-arm.patch
         "${FILESDIR}"/0003-thumb.patch
-        "${FILESDIR}"/0004-fix-hidden.patch
 )
 
 pkg_pretend() {
@@ -94,6 +93,13 @@ src_configure() {
 	fi
 
 	cmake-utils_src_configure
+}
+
+src_install() {
+        cmake-utils_src_install
+
+	# needed for julia, only one symbol
+	${CC} ${FILESDIR}/compiler-rt.c -shared -o ${D}/usr/lib/libcompiler-rt.so
 }
 
 src_test() {
