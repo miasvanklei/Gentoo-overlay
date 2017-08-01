@@ -15,7 +15,7 @@ HOMEPAGE="https://libcxxabi.llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="https://git.llvm.org/git/libcxxabi.git
 	https://github.com/llvm-mirror/libcxxabi.git"
-EGIT_BRANCH="release_50"
+#EGIT_BRANCH="release_50"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
