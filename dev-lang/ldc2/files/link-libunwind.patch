@@ -1,5 +1,5 @@
---- a/driver/linker-gcc.cpp	2016-08-11 20:00:04.168447085 +0200
-+++ b/driver/linker-gcc.cpp	2016-08-11 20:00:47.892445867 +0200
+--- a/driver/linker-gcc.cpp
++++ b/driver/linker-gcc.cpp
 @@ -250,6 +250,7 @@
        break;
      }
@@ -8,14 +8,14 @@
    // fallthrough
    case llvm::Triple::Darwin:
    case llvm::Triple::MacOSX:
---- a/runtime/CMakeLists.txt	2016-08-11 20:01:08.768445285 +0200
-+++ b/runtime/CMakeLists.txt	2016-08-11 20:03:21.143441596 +0200
-@@ -425,7 +425,7 @@
- 
-     if(BUILD_SHARED_LIBS)
-         if(${CMAKE_SYSTEM} MATCHES "Linux")
--            set(dso_system_libs "m" "pthread" "rt" "dl")
-+            set(dso_system_libs "unwind")
-         else()
-             set(dso_system_libs "m" "pthread")
-         endif()
+--- a/runtime/CMakeLists.txt
++++ b/runtime/CMakeLists.txt
+@@ -84,7 +84,7 @@
+ # Auto-detect C system libraries
+ if("${C_SYSTEM_LIBS}" STREQUAL "AUTO")
+     if("${TARGET_SYSTEM}" MATCHES "Linux")
+-        set(C_SYSTEM_LIBS m pthread rt dl)
++        set(C_SYSTEM_LIBS m pthread rt dl unwind)
+     else()
+         set(C_SYSTEM_LIBS m pthread)
+     endif()

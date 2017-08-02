@@ -68,53 +68,12 @@
  
          auto len = strlen(cs);
  
---- a/runtime/druntime/src/core/stdc/string.d
-+++ b/runtime/druntime/src/core/stdc/string.d
-@@ -76,36 +76,8 @@ pure char*  strstr(in char* s1, in char* s2);
- char*  strtok(char* s1, in char* s2);
- ///
- char*  strerror(int errnum);
--version (CRuntime_Glibc)
--{
--    ///
--    const(char)* strerror_r(int errnum, char* buf, size_t buflen);
--}
--else version (Darwin)
--{
--    int strerror_r(int errnum, char* buf, size_t buflen);
--}
--else version (FreeBSD)
--{
--    int strerror_r(int errnum, char* buf, size_t buflen);
--}
--else version (NetBSD)
--{
--    int strerror_r(int errnum, char* buf, size_t buflen);
--}
--else version (OpenBSD)
--{
--    int strerror_r(int errnum, char* buf, size_t buflen);
--}
--else version (Solaris)
--{
--    int strerror_r(int errnum, char* buf, size_t buflen);
--}
--else version (CRuntime_Bionic)
--{
--    ///
--    int strerror_r(int errnum, char* buf, size_t buflen);
--}
-+///
-+int strerror_r(int errnum, char* buf, size_t buflen);
- ///
- pure size_t strlen(in char* s);
- ///
 --- a/runtime/phobos/std/exception.d
 +++ b/runtime/phobos/std/exception.d
-@@ -1457,20 +1457,10 @@
-     this(string msg, string file = null, size_t line = 0) @trusted
+@@ -1494,20 +1494,10 @@
+     }
+     this(string msg, int errno, string file = null, size_t line = 0) @trusted
      {
-         import core.stdc.errno : errno;
 -        import core.stdc.string : strlen;
 +        import core.stdc.string : strlen, strerror;
  
@@ -131,6 +90,51 @@
 -            auto s = strerror(errno);
 -        }
 +        auto s = strerror(errno);
-         super(msg ~ " (" ~ s[0..s.strlen].idup ~ ")", file, line);
+         super(msg ~ " (" ~ s[0 .. s.strlen].idup ~ ")", file, line);
      }
- }
+ 
+--- a/runtime/druntime/src/core/stdc/string.d
++++ b/runtime/druntime/src/core/stdc/string.d
+@@ -76,40 +76,8 @@
+ char*  strtok(return char* s1, scope const char* s2);
+ ///
+ char*  strerror(int errnum);
+-version (CRuntime_Glibc)
+-{
+-    ///
+-    const(char)* strerror_r(int errnum, return char* buf, size_t buflen);
+-}
+-else version (Darwin)
+-{
+-    int strerror_r(int errnum, scope char* buf, size_t buflen);
+-}
+-else version (FreeBSD)
+-{
+-    int strerror_r(int errnum, scope char* buf, size_t buflen);
+-}
+-else version (NetBSD)
+-{
+-    int strerror_r(int errnum, char* buf, size_t buflen);
+-}
+-else version (NetBSD)
+-{
+-    int strerror_r(int errnum, char* buf, size_t buflen);
+-}
+-else version (OpenBSD)
+-{
+-    int strerror_r(int errnum, scope char* buf, size_t buflen);
+-}
+-else version (Solaris)
+-{
+-    int strerror_r(int errnum, scope char* buf, size_t buflen);
+-}
+-else version (CRuntime_Bionic)
+-{
+-    ///
+-    int strerror_r(int errnum, scope char* buf, size_t buflen);
+-}
++///
++int strerror_r(int errnum, scope char* buf, size_t buflen);
+ ///
+ pure size_t strlen(scope const char* s);
+ ///
