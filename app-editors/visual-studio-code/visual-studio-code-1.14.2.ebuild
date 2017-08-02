@@ -10,14 +10,13 @@ DESCRIPTION="Multiplatform Visual Studio Code from Microsoft"
 HOMEPAGE="https://code.visualstudio.com"
 BASE_URI="https://vscode-update.azurewebsites.net/${PV}"
 SRC_URI="
-	x86? ( ${BASE_URI}/linux-ia32/stable ->  ${P}-x86.tar.gz )
 	amd64? ( ${BASE_URI}/linux-x64/stable -> ${P}-amd64.tar.gz )
 	"
 RESTRICT="mirror strip"
 
 LICENSE="Microsoft"
 SLOT="0"
-KEYWORDS="~x86 ~amd64"
+KEYWORDS="~amd64"
 IUSE=""
 
 DEPEND="
@@ -38,12 +37,11 @@ RDEPEND="
 ARCH=$(uname -m)
 
 [[ ${ARCH} == "x86_64" ]] && S="${WORKDIR}/VSCode-linux-x64"
-[[ ${ARCH} != "x86_64" ]] && S="${WORKDIR}/VSCode-linux-ia32"
 
 
 node_compile()
 {
-	npm install $@ --nodedir=/usr/include/electron/node || die
+	npm install $@ --nodedir=/usr/include/electron-1.4/node || die
 }
 
 src_compile()
