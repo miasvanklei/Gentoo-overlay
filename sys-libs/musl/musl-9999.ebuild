@@ -10,13 +10,16 @@ EGIT_REPO_URI="git://git.musl-libc.org/musl"
 
 DESCRIPTION="Lightweight, fast and simple C library focused on standards-conformance and safety"
 HOMEPAGE="http://www.musl-libc.org/"
+SRC_URI="
+        http://dev.gentoo.org/~blueness/musl-misc/getconf.c
+        http://dev.gentoo.org/~blueness/musl-misc/getent.c
+        http://dev.gentoo.org/~blueness/musl-misc/iconv.c"
 
 LICENSE="MIT LGPL-2 GPL-2"
 SLOT="0"
 IUSE="+compat"
 
-RDEPEND="!sys-apps/getent
-	 compat? ( sys-libs/musl-compat )"
+RDEPEND="!sys-apps/getent"
 
 src_prepare() {
 	eapply ${FILESDIR}/
@@ -72,6 +75,14 @@ src_install() {
         sed -e "s|@@ARCH@@|${arch}|" "${T}"/ldconfig.in > "${T}"/ldconfig || die
         into /
         dosbin "${T}"/ldconfig
+
+	$(tc-getCC) ${CFLAGS} "${DISTDIR}"/getconf.c -o "${T}"/getconf || die
+	$(tc-getCC) ${CFLAGS} "${DISTDIR}"/getent.c -o "${T}"/getent || die
+	$(tc-getCC) ${CFLAGS} "${DISTDIR}"/iconv.c -o "${T}"/iconv || die
+	into /usr
+	dobin "${T}"/getconf
+	dobin "${T}"/getent
+	dobin "${T}"/iconv
 
 	echo 'LDPATH="include ld.so.conf.d/*.conf"' > "${T}"/00musl || die
 	doenvd "${T}"/00musl || die
