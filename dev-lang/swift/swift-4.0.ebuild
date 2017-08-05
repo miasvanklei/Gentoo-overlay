@@ -13,12 +13,11 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_BRANCH="swift-4.0-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS=""
-IUSE="+lldb +sourcekit"
+IUSE="+lldb -sourcekit"
 
 RDEPEND="
 	app-text/cmark
@@ -74,12 +73,6 @@ src_prepare() {
 
 	# fix compilation with icu-59
 	eapply ${FILESDIR}/icu-59.patch
-
-	# fix undefined symbol with Explosion
-	eapply ${FILESDIR}/fix-undefined.patch
-
-	# llvm 5.0
-	eapply ${FILESDIR}/llvm-5.0.patch
 
 	default
 }

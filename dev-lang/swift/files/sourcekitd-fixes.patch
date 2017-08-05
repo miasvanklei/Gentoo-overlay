@@ -8,7 +8,7 @@ index bd9e7a8fde..6dd0b86190 100644
  
 -swift_is_installing_component(sourcekit-inproc SOURCEKIT_INSTALLING_INPROC)
 -
- if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
+ if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" AND NOT CMAKE_CROSSCOMPILING)
    set(CMAKE_OSX_SYSROOT "${SWIFT_SDK_${SWIFT_HOST_VARIANT_SDK}_PATH}")
    set(CMAKE_OSX_ARCHITECTURES "${SWIFT_HOST_VARIANT_ARCH}")
 @@ -97,7 +95,6 @@ function(add_sourcekit_default_compiler_flags target)
@@ -19,23 +19,23 @@ index bd9e7a8fde..6dd0b86190 100644
    endif()
  
    # Convert variables to space-separated strings.
-@@ -169,15 +166,6 @@ macro(add_sourcekit_library name)
-     add_dependencies(${name} ${LLVM_COMMON_DEPENDS})
-   endif(LLVM_COMMON_DEPENDS)
+@@ -174,15 +171,6 @@ macro(add_sourcekit_library name)
+     add_dependencies(${name} ${SOURCEKITLIB_DEPENDS})
+   endif(SOURCEKITLIB_DEPENDS)
  
 -  set(prefixed_link_libraries)
--  foreach(dep ${SOURCEKITLIB_DEPENDS})
+-  foreach(dep ${SOURCEKITLIB_LINK_LIBS})
 -    if("${dep}" MATCHES "^clang")
 -      set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
 -    endif()
 -    list(APPEND prefixed_link_libraries "${dep}")
 -  endforeach()
--  set(SOURCEKITLIB_DEPENDS "${prefixed_link_libraries}")
+-  set(SOURCEKITLIB_LINK_LIBS "${prefixed_link_libraries}")
 -
    if("${libkind}" STREQUAL "SHARED")
-     target_link_libraries("${name}" PRIVATE ${SOURCEKITLIB_DEPENDS})
+     target_link_libraries("${name}" PRIVATE ${SOURCEKITLIB_LINK_LIBS})
    else()
-@@ -512,29 +500,11 @@ include_directories(BEFORE
+@@ -517,29 +505,11 @@ include_directories(BEFORE
  )
  
  if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -58,7 +58,7 @@ index bd9e7a8fde..6dd0b86190 100644
 -  endif()
 -
 -  include_directories(AFTER ${SWIFT_PATH_TO_LIBDISPATCH_SOURCE})
-+  include_directories(AFTER "/usr/lib/swift")
++  include_directories(AFTER /usr/lib/swift)
  
    add_library(dispatch SHARED IMPORTED)
    set_target_properties(dispatch PROPERTIES
@@ -81,30 +81,8 @@ index 1122ebf5fc..82fbaf3237 100644
    Context.cpp
    LangSupport.cpp
    NotificationCenter.cpp
--  DEPENDS SourceKitSupport
-+  DEPENDS ${SOURCEKIT_CORE_DEPEND}
-+  LLVM_COMPONENT_DEPENDS
-+    Support
-+  SHARED
- )
-diff --git a/tools/SourceKit/lib/Support/CMakeLists.txt b/tools/SourceKit/lib/Support/CMakeLists.txt
-index 0287179796..f6297d5939 100644
---- a/tools/SourceKit/lib/Support/CMakeLists.txt
-+++ b/tools/SourceKit/lib/Support/CMakeLists.txt
-@@ -8,12 +8,15 @@ set(SourceKitSupport_sources
-   UIDRegistry.cpp
- )
- 
--set(SOURCEKIT_SUPPORT_DEPEND swiftBasic clangBasic clangRewrite)
-+set(SOURCEKIT_SUPPORT_DEPEND swiftBasic clangBasic clangRewrite)
- if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
--  list(APPEND SOURCEKIT_SUPPORT_DEPEND dispatch BlocksRuntime)
-+  list(APPEND SOURCEKIT_SUPPORT_DEPEND dispatch)
- endif()
- 
- add_sourcekit_library(SourceKitSupport
-   ${SourceKitSupport_sources}
-   DEPENDS ${SOURCEKIT_SUPPORT_DEPEND}
+-  LINK_LIBS SourceKitSupport
++  LINK_LIBS ${SOURCEKIT_CORE_DEPEND}
 +  LLVM_COMPONENT_DEPENDS
 +    Support
 +  SHARED
@@ -114,11 +92,11 @@ index 8513bff510..04d5f0f7dd 100644
 --- a/tools/SourceKit/lib/SwiftLang/CMakeLists.txt
 +++ b/tools/SourceKit/lib/SwiftLang/CMakeLists.txt
 @@ -10,7 +10,7 @@ add_sourcekit_library(SourceKitSwiftLang
-   SwiftSourceDocInfo.cpp
-   DEPENDS SourceKitCore swiftDriver swiftFrontend swiftClangImporter swiftIDE
-           swiftAST swiftMarkup swiftParse swiftSIL swiftSILGen swiftSILOptimizer
--          swiftIRGen swiftSema swiftBasic swiftSerialization swiftOption libcmark_static
-+          swiftIRGen swiftSema swiftBasic swiftSerialization swiftOption cmark
+     SourceKitCore swiftDriver swiftFrontend swiftClangImporter swiftIDE
+     swiftAST swiftMarkup swiftParse swiftParseSIL swiftSIL swiftSILGen
+     swiftSILOptimizer swiftIRGen swiftSema swiftBasic swiftSerialization
+-    swiftSyntax swiftOption libcmark_static
++    swiftSyntax swiftOption cmark
      # Clang dependencies.
        clangIndex
        clangFormat
@@ -134,16 +112,16 @@ index 181b45d134..09af4be960 100644
 +++ b/tools/SourceKit/tools/complete-test/CMakeLists.txt
 @@ -1,11 +1,11 @@
  if(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
--  set(SOURCEKITD_TEST_DEPEND sourcekitdInProc)
-+  set(SOURCEKITD_TEST_DEPEND sourcekitdInProc sourcekitdAPI swiftCore)
+-  set(SOURCEKITD_TEST_LINK_LIBS sourcekitdInProc)
++  set(SOURCEKITD_TEST_LINK_LIBS sourcekitdInProc sourcekitdAPI swiftCore)
  else()
--  set(SOURCEKITD_TEST_DEPEND sourcekitd)
-+  set(SOURCEKITD_TEST_DEPEND sourcekitd sourcekitdAPI swiftCore)
+-  set(SOURCEKITD_TEST_LINK_LIBS sourcekitd)
++  set(SOURCEKITD_TEST_LINK_LIBS sourcekitd sourcekitdAPI swiftCore)
  endif()
  
  if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
--  set(SOURCEKITD_TEST_DEPEND ${SOURCEKITD_TEST_DEPEND} dispatch swiftCore)
-+ list(APPEND SOURCEKITD_TEST_DEPEND dispatch)
+-  set(SOURCEKITD_TEST_LINK_LIBS ${SOURCEKITD_TEST_LINK_LIBS} dispatch swiftCore)
++ list(APPEND SOURCEKITD_TEST_LINK_LIBS dispatch)
  endif()
  
  add_sourcekit_executable(complete-test
@@ -155,11 +133,11 @@ index ca87cf95e4..b947e87ab8 100644
  
  if(HAVE_UNICODE_LIBEDIT)
    if(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
--    set(SOURCEKITD_REPL_DEPEND sourcekitdInProc)
-+    set(SOURCEKITD_REPL_DEPEND sourcekitdInProc sourcekitdAPI)
+-    set(SOURCEKITD_REPL_LINK_LIBS sourcekitdInProc)
++    set(SOURCEKITD_REPL_LINK_LIBS sourcekitdInProc sourcekitdAPI)
    else()
--    set(SOURCEKITD_REPL_DEPEND sourcekitd)
-+    set(SOURCEKITD_REPL_DEPEND sourcekitd sourcekitdAPI)
+-    set(SOURCEKITD_REPL_LINK_LIBS sourcekitd)
++    set(SOURCEKITD_REPL_LINK_LIBS sourcekitd sourcekitdAPI)
    endif()
  
    if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
@@ -171,11 +149,11 @@ index 14877263f2..eb89c521a1 100644
  swift_add_public_tablegen_target(sourcekitdTestOptionsTableGen)
  
  if(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
--  set(SOURCEKITD_TEST_DEPEND sourcekitdInProc)
-+  set(SOURCEKITD_TEST_DEPEND sourcekitdInProc sourcekitdAPI)
+-  set(SOURCEKITD_TEST_LINK_LIBS sourcekitdInProc)
++  set(SOURCEKITD_TEST_LINK_LIBS sourcekitdInProc sourcekitdAPI)
  else()
--  set(SOURCEKITD_TEST_DEPEND sourcekitd)
-+  set(SOURCEKITD_TEST_DEPEND sourcekitd sourcekitdAPI)
+-  set(SOURCEKITD_TEST_LINK_LIBS sourcekitd)
++  set(SOURCEKITD_TEST_LINK_LIBS sourcekitd sourcekitdAPI)
  endif()
  
  if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
@@ -194,8 +172,8 @@ index 3af8204809..44a5be0c26 100644
 +
  set(sourcekitdInProc_args
    sourcekitdInProc.cpp
--  DEPENDS SourceKitSwiftLang sourcekitdAPI
-+  DEPENDS ${SOURCEKITD_InProc_DEPEND}
+-  LINK_LIBS SourceKitSwiftLang sourcekitdAPI
++  LINK_LIBS ${SOURCEKITD_InProc_DEPEND}
    LLVM_COMPONENT_DEPENDS support coverage
  )
  
@@ -225,9 +203,28 @@ index cda578df53..a340d3d7b3 100644
 +
  add_sourcekit_library(sourcekitdAPI
    ${sourcekitdAPI_sources}
--  DEPENDS
+-  LINK_LIBS
 -      SourceKitSupport SourceKitSwiftLang
-+  DEPENDS ${SOURCEKITD_API_DEPEND}
++  LINK_LIBS ${SOURCEKITD_API_DEPEND}
 +  LLVM_COMPONENT_DEPENDS ${LLVM_TARGETS_TO_BUILD}
++  SHARED
+ )
+diff --git a/tools/SourceKit/lib/Support/CMakeLists.txt b/tools/SourceKit/lib/Support/CMakeLists.txt
+index 4ecd7b8adb..f5bfdce419 100644
+--- a/tools/SourceKit/lib/Support/CMakeLists.txt
++++ b/tools/SourceKit/lib/Support/CMakeLists.txt
+@@ -10,11 +10,13 @@ set(SourceKitSupport_sources
+ 
+ set(SOURCEKIT_SUPPORT_DEPEND swiftBasic swiftSyntax clangBasic clangRewrite)
+ if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
+-  list(APPEND SOURCEKIT_SUPPORT_DEPEND dispatch BlocksRuntime)
++  list(APPEND SOURCEKIT_SUPPORT_DEPEND)
+ endif()
+ 
+ add_sourcekit_library(SourceKitSupport
+   ${SourceKitSupport_sources}
+   DEPENDS swift-syntax-generated-headers
+   LINK_LIBS ${SOURCEKIT_SUPPORT_DEPEND}
++  LLVM_COMPONENT_DEPENDS Support
 +  SHARED
  )
