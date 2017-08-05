@@ -1,0 +1,72 @@
+From efaf5e66ba690ddb5518ccd63725c7b5c10bc473 Mon Sep 17 00:00:00 2001
+From: John McCall <rjmccall@apple.com>
+Date: Wed, 26 Jul 2017 21:21:45 -0400
+Subject: [PATCH 31/54] Now that the Clang importer honors and expects -O, make
+ sure we pass it to the PCH-generation job.
+
+This depends on the merge-modules patch because we don't want merging
+modules when optimization is enabled to re-run the optimizer.
+(Thanks, Jordan!)
+
+rdar://33541306
+---
+ lib/Driver/ToolChains.cpp      | 10 +---------
+ test/Driver/bridging-pch.swift |  5 +++++
+ 2 files changed, 6 insertions(+), 9 deletions(-)
+
+diff --git a/lib/Driver/ToolChains.cpp b/lib/Driver/ToolChains.cpp
+index be862786d88..f83b5a817ab 100644
+--- a/lib/Driver/ToolChains.cpp
++++ b/lib/Driver/ToolChains.cpp
+@@ -153,6 +153,7 @@ static void addCommonFrontendArgs(const ToolChain &TC,
+   inputArgs.AddLastArg(arguments, options::OPT_stats_output_dir);
+   inputArgs.AddLastArg(arguments,
+                        options::OPT_solver_shrink_unsolved_threshold);
++  inputArgs.AddLastArg(arguments, options::OPT_O_Group);
+ 
+   // Pass on any build config options
+   inputArgs.AddAllArgs(arguments, options::OPT_D);
+@@ -384,9 +385,6 @@ ToolChain::constructInvocation(const CompileJobAction &job,
+     }
+   }
+ 
+-  // Pass the optimization level down to the frontend.
+-  context.Args.AddLastArg(Arguments, options::OPT_O_Group);
+-
+   if (context.Args.hasArg(options::OPT_parse_as_library) ||
+       context.Args.hasArg(options::OPT_emit_library))
+     Arguments.push_back("-parse-as-library");
+@@ -503,9 +501,6 @@ ToolChain::constructInvocation(const InterpretJobAction &job,
+                         Arguments);
+   context.Args.AddLastArg(Arguments, options::OPT_import_objc_header);
+ 
+-  // Pass the optimization level down to the frontend.
+-  context.Args.AddLastArg(Arguments, options::OPT_O_Group);
+-
+   context.Args.AddLastArg(Arguments, options::OPT_parse_sil);
+ 
+   Arguments.push_back("-module-name");
+@@ -633,9 +628,6 @@ ToolChain::constructInvocation(const BackendJobAction &job,
+ 
+   context.Args.AddLastArg(Arguments, options::OPT_parse_stdlib);
+ 
+-  // Pass the optimization level down to the frontend.
+-  context.Args.AddLastArg(Arguments, options::OPT_O_Group);
+-
+   Arguments.push_back("-module-name");
+   Arguments.push_back(context.Args.MakeArgString(context.OI.ModuleName));
+ 
+diff --git a/test/Driver/bridging-pch.swift b/test/Driver/bridging-pch.swift
+index dbb4a288e1f..7067438ff3d 100644
+--- a/test/Driver/bridging-pch.swift
++++ b/test/Driver/bridging-pch.swift
+@@ -62,3 +62,8 @@
+ 
+ // RUN: %swiftc_driver -typecheck -disable-bridging-pch  -driver-print-jobs -import-objc-header %S/Inputs/bridging-header.h -pch-output-dir %t/pch %s 2>&1 | %FileCheck %s -check-prefix=NOPCHJOB
+ // RUN: %swiftc_driver -typecheck -incremental -enable-bridging-pch -output-file-map %t.json -import-objc-header %S/Inputs/bridging-header.h -pch-output-dir %t/pch %s
++
++// RUN: %swiftc_driver -### -typecheck -O -import-objc-header %S/Inputs/bridging-header.h %s 2>&1 | %FileCheck %s -check-prefix=OPTPCH
++// OPTPCH: swift -frontend
++// OPTPCH-SAME: -O{{ }}
++// OPTPCH-SAME: -emit-pch
+

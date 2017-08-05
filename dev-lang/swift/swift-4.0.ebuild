@@ -13,6 +13,7 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
+EGIT_COMMIT="d02673eed63328b2eccbad8b22dd1fda3611b532"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -56,14 +57,14 @@ src_prepare() {
 	# strip when needed, call export-dynamic, etc.
 	eapply ${FILESDIR}/fix-toolchain.patch
 
-	# link with libLLVMSupport and cmark
+	# link with some llvm libraries and cmark
 	eapply ${FILESDIR}/fix-linking.patch
 
 	# remove __gnu_objc_personality_v0 by building Reflection.mm with -fno-exceptions
 	eapply ${FILESDIR}/remove-dep-libobjc.patch
 
-	# use same code as on darwin
-	eapply ${FILESDIR}/sourcekitd-fixes.patch
+	# fix linking
+	#eapply ${FILESDIR}/sourcekitd-fixes.patch
 
 	# install files: libraries, headers, cmake
 	eapply ${FILESDIR}/install-files.patch
@@ -73,6 +74,15 @@ src_prepare() {
 
 	# fix compilation with icu-59
 	eapply ${FILESDIR}/icu-59.patch
+
+	# revert one patch to build with system llvm
+	#eapply ${FILESDIR}/llvm-5.0.patch
+
+	# one of these patches is broken
+	eapply ${FILESDIR}/08.patch
+	#eapply ${FILESDIR}/29.patch
+	#eapply ${FILESDIR}/30.patch
+	eapply ${FILESDIR}/31.patch
 
 	default
 }
