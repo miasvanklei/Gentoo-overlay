@@ -158,7 +158,6 @@ multilib_src_configure() {
 
 		-DBUILD_SHARED_LIBS=ON
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
-		-DLLVM_BUILD_TESTS=$(usex test)
 		-DCLANG_INCLUDE_TESTS=$(usex test)
 
 		# these are not propagated reliably, so redefine them
