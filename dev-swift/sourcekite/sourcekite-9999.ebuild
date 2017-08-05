@@ -16,7 +16,7 @@ KEYWORDS=""
 IUSE=""
 
 RDEPEND="dev-libs/libdispatch
-        dev-lang/swift
+        dev-lang/swift[sourcekit]
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation"
 DEPEND="${RDEPEND}"
