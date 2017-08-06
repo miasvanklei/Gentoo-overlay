@@ -1,0 +1,76 @@
+--- a/stdlib/public/core/FloatingPointParsing.swift.gyb
++++ b/stdlib/public/core/FloatingPointParsing.swift.gyb
+@@ -123,7 +123,7 @@
+   /// - Parameter text: The input string to convert to a `${Self}` instance. If
+   ///   `text` has invalid characters or is in an invalid format, the result
+   ///   is `nil`.
+-  public init?<S: StringProtocol>(_ text: S) {
++  public init?(_ text: String) {
+     let u16 = text.utf16
+     func parseNTBS(_ chars: UnsafePointer<CChar>) -> (${Self}, Int) {
+       var result: ${Self} = 0
+@@ -133,7 +133,7 @@
+       return (result, endPtr == nil ? 0 : endPtr! - chars)
+     }
+ 
+-    let (result, n) = text._ephemeralString.withCString(parseNTBS)
++    let (result, n) = text.withCString(parseNTBS)
+ 
+     if n == 0 || n != u16.count
+     || u16.contains(where: { $0 > 127 || _isspace_clocale($0) }) {
+--- a/stdlib/public/core/IntegerParsing.swift
++++ b/stdlib/public/core/IntegerParsing.swift
+@@ -131,10 +131,10 @@
+   ///   - radix: The radix, or base, to use for converting `text` to an integer
+   ///     value. `radix` must be in the range `2...36`. The default is 10.
+   @_semantics("optimize.sil.specialize.generic.partial.never")
+-  public init?<S : StringProtocol>(_ text: S, radix: Int = 10) {
++  public init?/*<S : StringProtocol>*/(_ text: String, radix: Int = 10) {
+     _precondition(2...36 ~= radix, "Radix not in range 2...36")
+     let r = Self(radix)
+-    let s = text._ephemeralString
++    let s = text// ._ephemeralString
+     defer { _fixLifetime(s) }
+     
+     let c = s._core
+--- a/stdlib/public/core/String.swift
++++ b/stdlib/public/core/String.swift
+@@ -880,7 +880,7 @@
+   }
+ }
+ 
+-extension Sequence where Element: StringProtocol {
++extension Sequence where Element == String {
+ 
+   /// Returns a new string by concatenating the elements of the sequence,
+   /// adding the given separator between each element.
+@@ -914,7 +914,7 @@
+       for chunk in self {
+         // FIXME(performance): this code assumes UTF-16 in-memory representation.
+         // It should be switched to low-level APIs.
+-        r += separatorSize + chunk._ephemeralString.utf16.count
++        r += separatorSize + chunk.utf16.count
+       }
+       return r - separatorSize
+     }
+@@ -925,17 +925,17 @@
+ 
+     if separatorSize == 0 {
+       for x in self {
+-        result.append(x._ephemeralString)
++        result.append(x)
+       }
+       return result
+     }
+ 
+     var iter = makeIterator()
+     if let first = iter.next() {
+-      result.append(first._ephemeralString)
++      result.append(first)
+       while let next = iter.next() {
+         result.append(separator)
+-        result.append(next._ephemeralString)
++        result.append(next)
+       }
+     }
+ 
