@@ -13,12 +13,11 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_COMMIT="d02673eed63328b2eccbad8b22dd1fda3611b532"
 
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS=""
-IUSE="+lldb -sourcekit"
+IUSE="+lldb +sourcekit"
 
 RDEPEND="
 	app-text/cmark
@@ -28,8 +27,8 @@ RDEPEND="
 	sys-libs/ncurses
 	=sys-devel/clang-5.0.0:=
         =sys-devel/llvm-5.0.0:=
-	lldb? ( =dev-util/lldb-5.0.0:=[libedit,python] )
 	sourcekit? ( dev-libs/libdispatch )"
+PDEPEND="lldb? ( =dev-util/lldb-5.0.0:=[libedit,python] )"
 DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
@@ -64,7 +63,7 @@ src_prepare() {
 	eapply ${FILESDIR}/remove-dep-libobjc.patch
 
 	# fix linking
-	#eapply ${FILESDIR}/sourcekitd-fixes.patch
+	eapply ${FILESDIR}/sourcekitd-fixes.patch
 
 	# install files: libraries, headers, cmake
 	eapply ${FILESDIR}/install-files.patch
@@ -76,13 +75,10 @@ src_prepare() {
 	eapply ${FILESDIR}/icu-59.patch
 
 	# revert one patch to build with system llvm
-	#eapply ${FILESDIR}/llvm-5.0.patch
+	eapply ${FILESDIR}/llvm-5.0.patch
 
-	# one of these patches is broken
-	eapply ${FILESDIR}/08.patch
-	#eapply ${FILESDIR}/29.patch
-	#eapply ${FILESDIR}/30.patch
-	eapply ${FILESDIR}/31.patch
+	# potentially breaks swift
+	eapply ${FILESDIR}/broken.patch
 
 	default
 }
