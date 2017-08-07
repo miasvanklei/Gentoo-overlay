@@ -1,0 +1,33 @@
+--- a/sal/osl/unx/backtrace.c	2017-08-07 14:52:14.933750858 +0200
++++ b/sal/osl/unx/backtrace.c	2017-08-07 14:52:45.853706395 +0200
+@@ -282,7 +282,7 @@
+     }
+ }
+ 
+-#elif !defined LINUX
++#else
+ 
+ int backtrace( void **buffer, int max_frames )
+ {
+--- a/sal/osl/unx/backtrace.h	2017-08-07 15:00:12.278052703 +0200
++++ b/sal/osl/unx/backtrace.h	2017-08-07 14:45:01.948384513 +0200
+@@ -20,7 +20,7 @@
+ #ifndef INCLUDED_SAL_OSL_UNX_BACKTRACE_H
+ #define INCLUDED_SAL_OSL_UNX_BACKTRACE_H
+ 
+-#if defined (LINUX)
++#if defined (LINUX) && defined (__GLIBC__)
+ 
+ #include <execinfo.h>
+ 
+--- a/sal/osl/unx/signal.cxx	2017-08-07 14:47:34.950160993 +0200
++++ b/sal/osl/unx/signal.cxx	2017-08-07 14:48:12.302106172 +0200
+@@ -35,7 +35,7 @@
+ 
+ #endif /* MACOSX */
+ 
+-#ifdef LINUX
++#if defined(__GLIBC__)
+ #include <execinfo.h>
+ #include <link.h>
+ #define INCLUDE_BACKTRACE
