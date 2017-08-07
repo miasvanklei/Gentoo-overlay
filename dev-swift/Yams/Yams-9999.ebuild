@@ -24,7 +24,6 @@ DEPEND="${RDEPEND}"
 PATCHES=(
         ${FILESDIR}/fix-compilation.patch
         ${FILESDIR}/install-lib.patch
-        ${FILESDIR}/swift-4.0.patch
 )
 
 src_compile() {
