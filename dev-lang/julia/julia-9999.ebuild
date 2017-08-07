@@ -52,7 +52,6 @@ PATCHES=(
 	"${FILESDIR}"/fix-compile.patch
 	"${FILESDIR}"/system-libs.patch
 	"${FILESDIR}"/musl.patch
-	"${FILESDIR}"/llvm-5.0.patch
 	"${FILESDIR}"/nodebug-install.patch
 )
 
