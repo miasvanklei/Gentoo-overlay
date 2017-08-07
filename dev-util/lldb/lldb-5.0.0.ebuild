@@ -8,13 +8,14 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils llvm python-single-r1 toolchain-funcs git-r3
+inherit cmake-utils git-r3 llvm python-single-r1 toolchain-funcs
 
 DESCRIPTION="The LLVM debugger"
-HOMEPAGE="http://llvm.org/"
-#SRC_URI="test? ( http://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
-EGIT_REPO_URI="https://github.com/apple/swift-lldb.git"
-EGIT_BRANCH="upstream-with-swift"
+HOMEPAGE="https://llvm.org/"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/lldb.git
+        https://github.com/llvm-mirror/lldb.git"
+EGIT_BRANCH="release_50"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -48,22 +49,26 @@ pkg_setup() {
 }
 
 src_unpack() {
-	git-r3_fetch
-	git-r3_checkout
+        if use test; then
+                # needed for patched gtest
+                git-r3_fetch "https://git.llvm.org/git/llvm.git
+                        https://github.com/llvm-mirror/llvm.git"
+        fi
+        git-r3_fetch
 
-	if use test; then
-		mv llvm-* llvm || die
-	fi
+        if use test; then
+                git-r3_checkout https://llvm.org/git/llvm.git \
+                        "${WORKDIR}"/llvm
+        fi
+        git-r3_checkout
 }
 
 src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
 
-	# fix apple/swift cmake mess
-	eapply "${FILESDIR}"/0002-fix-cmake.patch
-	eapply "${FILESDIR}"/0003-fix-includes.patch
-	eapply "${FILESDIR}"/0004-fix-resourcedir.patch
+	# add swift support (cleanup comes later)
+	eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	eapply_user
 }
