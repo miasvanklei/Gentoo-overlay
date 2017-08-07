@@ -1,0 +1,136 @@
+--- a/vendor/third_party/lss/linux_syscall_support.h
++++ b/vendor/third_party/lss/linux_syscall_support.h
+@@ -1127,6 +1127,12 @@
+ #ifndef __NR_fallocate
+ #define __NR_fallocate          285
+ #endif
++
++#undef __NR_pread
++#define __NR_pread __NR_pread64
++#undef __NR_pwrite
++#define __NR_pwrite __NR_pwrite64
++
+ /* End of x86-64 definitions                                                 */
+ #elif defined(__mips__)
+ #if _MIPS_SIM == _MIPS_SIM_ABI32
+@@ -2930,7 +2936,7 @@
+ 
+     /* Need to make sure __off64_t isn't truncated to 32-bits under x32.  */
+     LSS_INLINE void* LSS_NAME(mmap)(void *s, size_t l, int p, int f, int d,
+-                                    __off64_t o) {
++                                    off64_t o) {
+       LSS_BODY(6, void*, mmap, LSS_SYSCALL_ARG(s), LSS_SYSCALL_ARG(l),
+                                LSS_SYSCALL_ARG(p), LSS_SYSCALL_ARG(f),
+                                LSS_SYSCALL_ARG(d), (uint64_t)(o));
+--- a/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
++++ b/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
+@@ -49,7 +49,7 @@
+ }
+ 
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                                    const struct _libc_fpstate* fp) {
++                                    const struct _fpstate* fp) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
+   out->context_flags = MD_CONTEXT_X86_FULL |
+@@ -97,7 +97,7 @@
+ }
+ 
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                                    const struct _libc_fpstate* fpregs) {
++                                    const struct _fpstate* fpregs) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
+   out->context_flags = MD_CONTEXT_AMD64_FULL;
+--- a/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.h
++++ b/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.h
+@@ -50,7 +50,7 @@
+   //   info: the collection of register structures.
+ #if defined(__i386__) || defined(__x86_64)
+   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                             const struct _libc_fpstate* fp);
++                             const struct _fpstate* fp);
+ #elif defined(__aarch64__)
+   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+                              const struct fpsimd_context* fpregs);
+--- a/vendor/breakpad/src/client/linux/minidump_writer/minidump_writer.h
++++ b/vendor/breakpad/src/client/linux/minidump_writer/minidump_writer.h
+@@ -48,7 +48,7 @@
+ #if defined(__aarch64__)
+ typedef struct fpsimd_context fpstate_t;
+ #elif !defined(__ARM_EABI__) && !defined(__mips__)
+-typedef struct _libc_fpstate fpstate_t;
++typedef struct _fpstate fpstate_t;
+ #endif
+ 
+ // These entries store a list of memory regions that the client wants included
+--- a/vendor/breakpad/src/common/linux/elf_core_dump.h
++++ b/vendor/breakpad/src/common/linux/elf_core_dump.h
+@@ -36,6 +36,7 @@
+ #include <elf.h>
+ #include <link.h>
+ #include <stddef.h>
++#include <sys/user.h>
+ 
+ #include "common/memory_range.h"
+ 
+--- a/vendor/breakpad/src/common/stabs_reader.h	2017-07-31 21:31:12.244449890 +0200
++++ b/vendor/breakpad/src/common/stabs_reader.h	2017-07-31 21:40:08.017437479 +0200
+@@ -55,10 +55,10 @@
+ 
+ #ifdef HAVE_MACH_O_NLIST_H
+ #include <mach-o/nlist.h>
+-#elif defined(HAVE_A_OUT_H)
+-#include <a.out.h>
+ #endif
+ 
++#define N_UNDF 0
++
+ #include <string>
+ #include <vector>
+ 
+--- a/vendor/breakpad/src/common/linux/dump_symbols.cc	2017-07-31 21:33:10.476447151 +0200
++++ b/vendor/breakpad/src/common/linux/dump_symbols.cc	2017-07-31 21:33:20.265446924 +0200
+@@ -46,6 +46,7 @@
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <libgen.h>
+ 
+ #include <iostream>
+ #include <set>
+--- a/breakpad/src/common/dwarf/elf_reader.cc	2016-10-18 19:57:46.288920812 +0200
++++ b/breakpad/src/common/dwarf/elf_reader.cc	2016-10-18 19:58:12.012918695 +0200
+@@ -36,6 +36,7 @@
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <string.h>
++#include <sys/user.h>
+ 
+ #include <algorithm>
+ #include <map>
+--- a/vendor/breakpad/src/client/linux/handler/exception_handler.cc	2017-07-31 22:31:20.590366309 +0200
++++ b/vendor/breakpad/src/client/linux/handler/exception_handler.cc	2017-07-31 22:33:09.635363783 +0200
+@@ -476,8 +476,10 @@
+   // ExceptionHandler::HandleSignal().
+   siginfo.si_code = SI_USER;
+   siginfo.si_pid = getpid();
+-   struct ucontext context;
++  struct ucontext context = {0};
++#if defined(__GLIBC__)
+   getcontext(&context);
++#endif
+   return HandleSignal(sig, &siginfo, &context);
+ }
+ 
+@@ -647,9 +646,11 @@
+   sys_prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
+ 
+   CrashContext context;
++#if defined(__GLIBC__)
+  int getcontext_result = getcontext(&context.context);
+  if (getcontext_result)
+     return false;
++#endif
+ 
+ #if defined(__i386__)

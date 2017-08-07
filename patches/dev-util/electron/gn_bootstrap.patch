@@ -1,0 +1,141 @@
+--- a/chromium/tools/gn/bootstrap/bootstrap.py	2016-11-17 00:15:29.112867732 +0100
++++ b/chromium/tools/gn/bootstrap/bootstrap.py	2016-11-17 00:43:54.712718406 +0100
+@@ -159,7 +159,7 @@
+   mkdir_p(root_gen_dir)
+
+   write_buildflag_header_manually(root_gen_dir, 'base/allocator/features.h',
+-      {'USE_EXPERIMENTAL_ALLOCATOR_SHIM': 'true' if is_linux else 'false'})
++      {'USE_EXPERIMENTAL_ALLOCATOR_SHIM': 'false'})
+
+   write_buildflag_header_manually(root_gen_dir, 'base/debug/debugging_flags.h',
+       {'ENABLE_PROFILING': 'false'})
+@@ -366,8 +366,6 @@
+       'base/third_party/superfasthash/superfasthash.c',
+   ])
+   static_libraries['base']['sources'].extend([
+-      'base/allocator/allocator_check.cc',
+-      'base/allocator/allocator_extension.cc',
+       'base/at_exit.cc',
+       'base/base_paths.cc',
+       'base/base_switches.cc',
+@@ -383,6 +383,7 @@
+       'base/base_switches.cc',
+       'base/build_time.cc',
+       'base/callback_internal.cc',
++      'base/callback_helpers.cc',
+       'base/command_line.cc',
+       'base/debug/activity_tracker.cc',
+       'base/debug/alias.cc',
+@@ -563,7 +563,7 @@
+     }
+ 
+   if is_linux:
+-    libs.extend(['-lrt', '-latomic'])
++    libs.extend(['-lrt'])
+     ldflags.extend(['-pthread'])
+ 
+     static_libraries['xdg_user_dirs'] = {
+@@ -573,8 +551,6 @@
+         'tool': 'cxx',
+     }
+     static_libraries['base']['sources'].extend([
+-        'base/allocator/allocator_shim.cc',
+-        'base/allocator/allocator_shim_default_dispatch_to_glibc.cc',
+         'base/memory/shared_memory_posix.cc',
+         'base/nix/xdg_util.cc',
+         'base/process/internal_linux.cc',
+@@ -712,9 +712,6 @@
+   cmd.append('gn')
+   check_call(cmd)
+ 
+-  if not options.debug and not is_win:
+-    check_call(['strip', os.path.join(build_dir, 'gn')])
+-
+ 
+ if __name__ == '__main__':
+   sys.exit(main(sys.argv[1:]))
+--- a/chromium/base/native_library_posix.cc	2016-11-17 01:45:50.032002326 +0100
++++ b/chromium/base/native_library_posix.cc	2016-11-17 01:46:23.729001549 +0100
+@@ -12,6 +12,10 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/threading/thread_restrictions.h"
+
++#ifndef RTLD_DEEPBIND
++#define RTLD_DEEPBIND 0
++#endif
++
+ namespace base {
+
+ std::string NativeLibraryLoadError::ToString() const {
+--- a/chromium/base/BUILD.gn	2017-07-30 19:47:14.452881352 +0200
++++ b/chromium/base/BUILD.gn	2017-07-30 19:47:41.199880732 +0200
+@@ -1065,11 +1065,6 @@
+     ":debugging_flags",
+   ]
+ 
+-  # Needed for <atomic> if using newer C++ library than sysroot
+-  if (!use_sysroot && (is_android || is_linux)) {
+-    libs = [ "atomic" ]
+-  }
+-
+   if (use_experimental_allocator_shim) {
+     # The allocator shim is part of the base API. This is to allow clients of
+     # base should to install hooks into the allocator path.
+--- a/chromium/build/config/allocator.gni	2017-07-30 20:06:45.719854222 +0200
++++ b/chromium/build/config/allocator.gni	2017-07-30 19:58:38.846865499 +0200
+@@ -10,7 +10,7 @@
+     (is_linux && target_cpu == "arm64")) {
+   _default_allocator = "none"
+ } else {
+-  _default_allocator = "tcmalloc"
++  _default_allocator = "none"
+ }
+ 
+ # The debug CRT on Windows has some debug features that are incompatible with
+@@ -18,7 +18,7 @@
+ # against the debug CRT with "is_nacl=false".
+ if ((is_linux || is_android || (is_win && !is_component_build && !is_debug)) &&
+      !is_asan && !is_lsan && !is_tsan && !is_msan) {
+-  _default_use_experimental_allocator_shim = true
++  _default_use_experimental_allocator_shim = false
+ } else {
+   _default_use_experimental_allocator_shim = false
+ }
+--- a/chromium/chrome/browser/ui/libgtkui/BUILD.gn	2017-07-31 14:46:27.896012390 +0200
++++ b/chromium/chrome/browser/ui/libgtkui/BUILD.gn	2017-07-31 14:46:44.309012010 +0200
+@@ -135,17 +135,3 @@
+     "//chrome/browser:theme_properties",
+   ]
+ }
+-
+-component("libgtk3ui") {
+-  sources = common_sources
+-  configs += common_configs
+-  defines = [ "LIBGTKUI_IMPLEMENTATION" ]
+-
+-  deps = common_deps + [
+-           "//build/config/linux/gtk3",
+-           "//build/config/linux/gtk3:gtkprint3",
+-         ]
+-  public_deps = [
+-    "//chrome/browser:theme_properties",
+-  ]
+-}
+--- a/chromium/BUILD.gn	2017-07-31 14:59:00.827994950 +0200
++++ b/chromium/BUILD.gn	2017-07-31 14:59:37.981994089 +0200
+@@ -360,9 +360,12 @@
+   }
+ 
+   if (is_linux && !is_chromeos && !is_chromecast && !use_ozone) {
+-    # TODO(thomasanderson): Remove this once we build using
+-    # GTK3 by default. (crbug.com/132847, crbug.com/79722)
+-    deps += [ "//chrome/browser/ui/libgtkui:libgtk3ui" ]
++    # These are the only components that can interact with gtk.
++    if (use_gtk3) {
++      deps += [ "//chrome/browser/ui/libgtkui:libgtk3ui" ]
++    } else {
++      deps += [ "//chrome/browser/ui/libgtkui:libgtk2ui" ]
++    }
+   }
+ 
+   if (use_ozone) {

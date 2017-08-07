@@ -1,75 +1,917 @@
---- a/v8/src/runtime/runtime-i18n.cc	2017-05-15 09:05:55.589999999 +0200
-+++ b/v8/src/runtime/runtime-i18n.cc	2017-05-15 09:06:19.283333333 +0200
-@@ -33,6 +33,7 @@
- #include "unicode/unistr.h"
- #include "unicode/unum.h"
- #include "unicode/uversion.h"
-+#include "unicode/ustring.h"
+From 363741cffb565dd6cfc2f95054c25a434b101dba Mon Sep 17 00:00:00 2001
+From: Allan Sandfeld Jensen <allan.jensen@qt.io>
+Date: Fri, 9 Jun 2017 14:04:45 +0200
+Subject: [PATCH] Fix compilation with system ICU 59
+
+ICU 59 changed the UChar type to be char16_t instead of uint16_t and
+that causes a mismatch of types all over Chromium.
+
+Unfortunately the upstream patches can not be used as Chromium only
+got part way in https://codereview.chromium.org/2740673002, and
+then gave up and simply patched their copy of ICU 59 to not change
+that.
+
+Task-number: QTBUG-60886
+Change-Id: I5d082a9ee47e34f37c33e6b27542aa7631933acc
+Reviewed-by: Peter Varga <pvarga@inf.u-szeged.hu>
+---
+ base/BUILD.gn                             |  9 +++++++
+ base/i18n/bidi_line_iterator.cc           |  2 +-
+ base/i18n/break_iterator.cc               |  8 +++----
+ base/i18n/case_conversion.cc              |  4 ++--
+ base/i18n/icu_string_conversions.cc       |  8 +++----
+ base/i18n/message_formatter.cc            |  5 ++--
+ base/i18n/number_formatting.cc            |  5 ++--
+ base/i18n/rtl.cc                          |  8 +++----
+ base/i18n/string_compare.cc               |  5 ++--
+ base/i18n/string_search.cc                |  6 ++---
+ base/i18n/time_formatting.cc              |  9 ++++---
+ base/i18n/time_formatting_unittest.cc     |  1 +
+ base/i18n/timezone.cc                     |  4 ++--
+ base/i18n/unicodestring.h                 | 28 ++++++++++++++++++++++
+ .../core/browser/autofill_profile_comparator.cc    |  3 ++-
+ .../autofill/core/browser/credit_card.cc           |  5 ++--
+ components/url_formatter/url_formatter.cc |  6 ++---
+ .../browser/android/date_time_chooser_android.cc   |  4 ++--
+ .../content/child/browser_font_resource_trusted.cc |  2 +-
+ .../content/renderer/android/email_detector.cc     |  4 ++--
+ net/ftp/ftp_util.cc                       |  5 ++--
+ .../mozilla_security_manager/nsPKCS12Blob.cpp      |  2 +-
+ ppapi/proxy/pdf_resource.cc               |  8 +++----
+ .../WebKit/Source/platform/LinkHash.cpp            |  2 +-
+ .../platform/exported/FilePathConversion.cpp       |  2 +-
+ .../Source/platform/exported/URLConversion.cpp     |  2 +-
+ .../WebKit/Source/platform/exported/WebString.cpp  |  4 ++--
+ .../WebKit/Source/platform/weborigin/KURL.cpp      | 14 +++++------
+ .../Source/platform/weborigin/SecurityOrigin.cpp   |  2 +-
+ .../WebKit/Source/wtf/text/AtomicString.h          |  3 ++-
+ .../WebKit/Source/wtf/text/StringView.h            |  2 ++
+ .../third_party/WebKit/Source/wtf/text/WTFString.h |  7 ++++++
+ .../src/cpp/src/sample/subsetter_impl.cc  |  1 +
+ ui/base/accelerators/accelerator.cc       |  2 +-
+ ui/base/l10n/l10n_util.cc                 |  2 +-
+ ui/base/l10n/time_format.cc               |  2 +-
+ ui/base/x/selection_utils.cc              |  4 ++--
+ url/url_canon_icu.cc                      |  4 ++--
+ v8/src/runtime/runtime-i18n.cc            |  1 +
+ 39 files changed, 125 insertions(+), 70 deletions(-)
+ create mode 100644 base/i18n/unicodestring.h
+
+diff --git a/base/BUILD.gn b/base/BUILD.gn
+index f2672cba79..97f62fd699 100644
+--- a/base/BUILD.gn
++++ b/base/BUILD.gn
+@@ -103,6 +103,10 @@ if (is_nacl) {
  
+     configs += [ ":base_implementation" ]
  
- namespace v8 {
---- a/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp	2017-06-15 19:39:48.021879450 +0200
-+++ b/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp	2017-06-15 19:41:35.997870565 +0200
-@@ -58,7 +58,7 @@
++    if (!is_win) {
++      deps = [ "//third_party/icu:icuuc" ]
++    }
++
+     visibility = [ ":base" ]
+   }
+ }
+@@ -1065,6 +1069,10 @@ component("base") {
+     ":debugging_flags",
+   ]
+ 
++  if (!is_win) {
++    public_deps += [ "//third_party/icu:icuuc" ]
++  }
++
+   # Needed for <atomic> if using newer C++ library than sysroot
+   if (!use_sysroot && (is_android || is_linux) && !use_qt) {
+     libs = [ "atomic" ]
+@@ -1564,6 +1572,7 @@ component("i18n") {
+     "i18n/time_formatting.h",
+     "i18n/timezone.cc",
+     "i18n/timezone.h",
++    "i18n/unicodestring.h",
+     "i18n/utf8_validator_tables.cc",
+     "i18n/utf8_validator_tables.h",
+   ]
+diff --git a/base/i18n/bidi_line_iterator.cc b/base/i18n/bidi_line_iterator.cc
+index 216129e8b8..e7121935f8 100644
+--- a/base/i18n/bidi_line_iterator.cc
++++ b/base/i18n/bidi_line_iterator.cc
+@@ -44,7 +44,7 @@ bool BiDiLineIterator::Open(const string16& text, TextDirection direction) {
+   bidi_ = ubidi_openSized(static_cast<int>(text.length()), 0, &error);
+   if (U_FAILURE(error))
+     return false;
+-  ubidi_setPara(bidi_, text.data(), static_cast<int>(text.length()),
++  ubidi_setPara(bidi_, reinterpret_cast<const UChar*>(text.data()), static_cast<int>(text.length()),
+                 GetParagraphLevelForDirection(direction), NULL, &error);
+   return (U_SUCCESS(error) == TRUE);
+ }
+diff --git a/base/i18n/break_iterator.cc b/base/i18n/break_iterator.cc
+index 869390fec3..3ee6e7cf19 100644
+--- a/base/i18n/break_iterator.cc
++++ b/base/i18n/break_iterator.cc
+@@ -59,9 +59,9 @@ bool BreakIterator::Init() {
+       return false;
+   }
+   if (break_type_ == RULE_BASED) {
+-    iter_ = ubrk_openRules(rules_.c_str(),
++    iter_ = ubrk_openRules(reinterpret_cast<const UChar*>(rules_.c_str()),
+                            static_cast<int32_t>(rules_.length()),
+-                           string_.data(),
++                           reinterpret_cast<const UChar*>(string_.data()),
+                            static_cast<int32_t>(string_.size()),
+                            &parse_error,
+                            &status);
+@@ -72,7 +72,7 @@ bool BreakIterator::Init() {
+   } else {
+     iter_ = ubrk_open(break_type,
+                       NULL,
+-                      string_.data(),
++                      reinterpret_cast<const UChar*>(string_.data()),
+                       static_cast<int32_t>(string_.size()),
+                       &status);
+     if (U_FAILURE(status)) {
+@@ -128,7 +128,7 @@ bool BreakIterator::Advance() {
+ bool BreakIterator::SetText(const base::char16* text, const size_t length) {
+   UErrorCode status = U_ZERO_ERROR;
+   ubrk_setText(static_cast<UBreakIterator*>(iter_),
+-               text, length, &status);
++               reinterpret_cast<const UChar*>(text), length, &status);
+   pos_ = 0;  // implicit when ubrk_setText is done
+   prev_ = npos;
+   if (U_FAILURE(status)) {
+diff --git a/base/i18n/case_conversion.cc b/base/i18n/case_conversion.cc
+index 9b7ce80537..0ff369084f 100644
+--- a/base/i18n/case_conversion.cc
++++ b/base/i18n/case_conversion.cc
+@@ -64,8 +64,8 @@ string16 CaseMap(StringPiece16 string, CaseMapperFunction case_mapper) {
+     // terminator, but will otherwise. So we don't need to save room for that.
+     // Don't use WriteInto, which assumes null terminators.
+     int32_t new_length = case_mapper(
+-        &dest[0], saturated_cast<int32_t>(dest.size()),
+-        string.data(), saturated_cast<int32_t>(string.size()),
++        reinterpret_cast<UChar*>(&dest[0]), saturated_cast<int32_t>(dest.size()),
++        reinterpret_cast<const UChar*>(string.data()), saturated_cast<int32_t>(string.size()),
+         &error);
+     dest.resize(new_length);
+   } while (error == U_BUFFER_OVERFLOW_ERROR);
+diff --git a/base/i18n/icu_string_conversions.cc b/base/i18n/icu_string_conversions.cc
+index be82db2a95..1db3c508bb 100644
+--- a/base/i18n/icu_string_conversions.cc
++++ b/base/i18n/icu_string_conversions.cc
+@@ -151,7 +151,7 @@ bool UTF16ToCodepage(const string16& utf16,
+   if (!U_SUCCESS(status))
+     return false;
+ 
+-  return ConvertFromUTF16(converter, utf16.c_str(),
++  return ConvertFromUTF16(converter, reinterpret_cast<const UChar*>(utf16.c_str()),
+                           static_cast<int>(utf16.length()), on_error, encoded);
+ }
+ 
+@@ -178,7 +178,7 @@ bool CodepageToUTF16(const std::string& encoded,
+ 
+   SetUpErrorHandlerForToUChars(on_error, converter, &status);
+   std::unique_ptr<char16[]> buffer(new char16[uchar_max_length]);
+-  int actual_size = ucnv_toUChars(converter, buffer.get(),
++  int actual_size = ucnv_toUChars(converter, reinterpret_cast<UChar*>(buffer.get()),
+       static_cast<int>(uchar_max_length), encoded.data(),
+       static_cast<int>(encoded.length()), &status);
+   ucnv_close(converter);
+@@ -205,8 +205,8 @@ bool ConvertToUtf8AndNormalize(const std::string& text,
+   string16 normalized_utf16;
+   std::unique_ptr<char16[]> buffer(new char16[max_length]);
+   int actual_length = unorm_normalize(
+-      utf16.c_str(), utf16.length(), UNORM_NFC, 0,
+-      buffer.get(), static_cast<int>(max_length), &status);
++      reinterpret_cast<const UChar*>(utf16.c_str()), utf16.length(), UNORM_NFC, 0,
++      reinterpret_cast<UChar*>(buffer.get()), static_cast<int>(max_length), &status);
+   if (!U_SUCCESS(status))
+     return false;
+   normalized_utf16.assign(buffer.get(), actual_length);
+diff --git a/base/i18n/message_formatter.cc b/base/i18n/message_formatter.cc
+index 702e51b94a..6962a28297 100644
+--- a/base/i18n/message_formatter.cc
++++ b/base/i18n/message_formatter.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "base/i18n/message_formatter.h"
+ 
++#include "base/i18n/unicodestring.h"
+ #include "base/logging.h"
+ #include "base/numerics/safe_conversions.h"
+ #include "base/time/time.h"
+@@ -91,7 +92,7 @@ string16 MessageFormatter::FormatWithNumberedArgs(
+                << u_errorName(error);
+     return string16();
+   }
+-  return string16(formatted.getBuffer(), formatted.length());
++  return i18n::UnicodeStringToString16(formatted);
+ }
+ 
+ string16 MessageFormatter::FormatWithNamedArgs(
+@@ -134,7 +135,7 @@ string16 MessageFormatter::FormatWithNamedArgs(
+                << u_errorName(error);
+     return string16();
+   }
+-  return string16(formatted.getBuffer(), formatted.length());
++  return i18n::UnicodeStringToString16(formatted);
+ }
+ 
+ }  // namespace i18n
+diff --git a/base/i18n/number_formatting.cc b/base/i18n/number_formatting.cc
+index b510833484..5a0503f77d 100644
+--- a/base/i18n/number_formatting.cc
++++ b/base/i18n/number_formatting.cc
+@@ -10,6 +10,7 @@
+ 
+ #include "base/format_macros.h"
+ #include "base/i18n/message_formatter.h"
++#include "base/i18n/unicodestring.h"
+ #include "base/lazy_instance.h"
+ #include "base/logging.h"
+ #include "base/strings/string_util.h"
+@@ -60,7 +61,7 @@ string16 FormatNumber(int64_t number) {
+   icu::UnicodeString ustr;
+   number_format->format(number, ustr);
+ 
+-  return string16(ustr.getBuffer(), static_cast<size_t>(ustr.length()));
++  return i18n::UnicodeStringToString16(ustr);
+ }
+ 
+ string16 FormatDouble(double number, int fractional_digits) {
+@@ -76,7 +77,7 @@ string16 FormatDouble(double number, int fractional_digits) {
+   icu::UnicodeString ustr;
+   number_format->format(number, ustr);
+ 
+-  return string16(ustr.getBuffer(), static_cast<size_t>(ustr.length()));
++  return i18n::UnicodeStringToString16(ustr);
+ }
+ 
+ string16 FormatPercent(int number) {
+diff --git a/base/i18n/rtl.cc b/base/i18n/rtl.cc
+index 095d66c6d8..26d83599c9 100644
+--- a/base/i18n/rtl.cc
++++ b/base/i18n/rtl.cc
+@@ -198,7 +198,7 @@ TextDirection GetTextDirectionForLocale(const char* locale_name) {
+ }
+ 
+ TextDirection GetFirstStrongCharacterDirection(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t length = text.length();
+   size_t position = 0;
+   while (position < length) {
+@@ -214,7 +214,7 @@ TextDirection GetFirstStrongCharacterDirection(const string16& text) {
+ }
+ 
+ TextDirection GetLastStrongCharacterDirection(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t position = text.length();
+   while (position > 0) {
+     UChar32 character;
+@@ -229,7 +229,7 @@ TextDirection GetLastStrongCharacterDirection(const string16& text) {
+ }
+ 
+ TextDirection GetStringDirection(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t length = text.length();
+   size_t position = 0;
+ 
+@@ -360,7 +360,7 @@ bool UnadjustStringForLocaleDirection(string16* text) {
+ #endif  // !OS_WIN
+ 
+ bool StringContainsStrongRTLChars(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t length = text.length();
+   size_t position = 0;
+   while (position < length) {
+diff --git a/base/i18n/string_compare.cc b/base/i18n/string_compare.cc
+index 2851e7d2dc..649c28119f 100644
+--- a/base/i18n/string_compare.cc
++++ b/base/i18n/string_compare.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "base/logging.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "third_party/icu/source/common/unicode/unistr.h"
+ 
+ namespace base {
+ namespace i18n {
+@@ -17,8 +18,8 @@ UCollationResult CompareString16WithCollator(const icu::Collator& collator,
+                                              const string16& rhs) {
+   UErrorCode error = U_ZERO_ERROR;
+   UCollationResult result = collator.compare(
+-      static_cast<const UChar*>(lhs.c_str()), static_cast<int>(lhs.length()),
+-      static_cast<const UChar*>(rhs.c_str()), static_cast<int>(rhs.length()),
++      icu::UnicodeString(FALSE, lhs.c_str(), static_cast<int>(lhs.length())),
++      icu::UnicodeString(FALSE, rhs.c_str(), static_cast<int>(rhs.length())),
+       error);
+   DCHECK(U_SUCCESS(error));
+   return result;
+diff --git a/base/i18n/string_search.cc b/base/i18n/string_search.cc
+index 779e4d9976..2441c81d01 100644
+--- a/base/i18n/string_search.cc
++++ b/base/i18n/string_search.cc
+@@ -20,8 +20,8 @@ FixedPatternStringSearchIgnoringCaseAndAccents(const string16& find_this)
+   const string16& dummy = find_this_;
+ 
+   UErrorCode status = U_ZERO_ERROR;
+-  search_ = usearch_open(find_this_.data(), find_this_.size(),
+-                         dummy.data(), dummy.size(),
++  search_ = usearch_open(reinterpret_cast<const UChar*>(find_this_.data()), find_this_.size(),
++                         reinterpret_cast<const UChar*>(dummy.data()), dummy.size(),
+                          uloc_getDefault(),
+                          NULL,  // breakiter
+                          &status);
+@@ -41,7 +41,7 @@ FixedPatternStringSearchIgnoringCaseAndAccents::
+ bool FixedPatternStringSearchIgnoringCaseAndAccents::Search(
+     const string16& in_this, size_t* match_index, size_t* match_length) {
+   UErrorCode status = U_ZERO_ERROR;
+-  usearch_setText(search_, in_this.data(), in_this.size(), &status);
++  usearch_setText(search_, reinterpret_cast<const UChar *>(in_this.data()), in_this.size(), &status);
+ 
+   // Default to basic substring search if usearch fails. According to
+   // http://icu-project.org/apiref/icu4c/usearch_8h.html, usearch_open will fail
+diff --git a/base/i18n/time_formatting.cc b/base/i18n/time_formatting.cc
+index 024b86510b..ae1c59eb41 100644
+--- a/base/i18n/time_formatting.cc
++++ b/base/i18n/time_formatting.cc
+@@ -8,6 +8,7 @@
+ 
+ #include <memory>
+ 
++#include "base/i18n/unicodestring.h"
+ #include "base/logging.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/time/time.h"
+@@ -26,8 +27,7 @@ string16 TimeFormat(const icu::DateFormat* formatter,
+   icu::UnicodeString date_string;
+ 
+   formatter->format(static_cast<UDate>(time.ToDoubleT() * 1000), date_string);
+-  return string16(date_string.getBuffer(),
+-                  static_cast<size_t>(date_string.length()));
++  return i18n::UnicodeStringToString16(date_string);
+ }
+ 
+ string16 TimeFormatWithoutAmPm(const icu::DateFormat* formatter,
+@@ -46,8 +46,7 @@ string16 TimeFormatWithoutAmPm(const icu::DateFormat* formatter,
+       begin--;
+     time_string.removeBetween(begin, ampm_field.getEndIndex());
+   }
+-  return string16(time_string.getBuffer(),
+-                  static_cast<size_t>(time_string.length()));
++  return i18n::UnicodeStringToString16(time_string);
+ }
+ 
+ icu::SimpleDateFormat CreateSimpleDateFormatter(const char* pattern) {
+@@ -168,7 +167,7 @@ string16 TimeDurationFormat(const TimeDelta& time,
+   icu::UnicodeString formatted;
+   icu::FieldPosition ignore(icu::FieldPosition::DONT_CARE);
+   measure_format.formatMeasures(measures, 2, formatted, ignore, status);
+-  return base::string16(formatted.getBuffer(), formatted.length());
++  return i18n::UnicodeStringToString16(formatted);
+ }
+ 
+ HourClockType GetHourClockType() {
+diff --git a/base/i18n/time_formatting_unittest.cc b/base/i18n/time_formatting_unittest.cc
+index 51a48513ac..fa0ccf460a 100644
+--- a/base/i18n/time_formatting_unittest.cc
++++ b/base/i18n/time_formatting_unittest.cc
+@@ -7,6 +7,7 @@
+ #include <memory>
+ 
+ #include "base/i18n/rtl.h"
++#include "base/i18n/unicodestring.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/test/icu_test_util.h"
+ #include "base/time/time.h"
+diff --git a/base/i18n/timezone.cc b/base/i18n/timezone.cc
+index e881c9d680..95e7aee34c 100644
+--- a/base/i18n/timezone.cc
++++ b/base/i18n/timezone.cc
+@@ -610,9 +610,9 @@ std::string CountryCodeForCurrentTimezone() {
+   std::unique_ptr<icu::TimeZone> zone(icu::TimeZone::createDefault());
+   icu::UnicodeString id;
+   zone->getID(id);
+-  string16 olson_code(id.getBuffer(), id.length());
++  std::string olson_code;
+   return TimezoneMap::GetInstance()->CountryCodeForTimezone(
+-      UTF16ToUTF8(olson_code));
++      id.toUTF8String(olson_code));
+ }
+ 
+ }  // namespace base
+diff --git a/base/i18n/unicodestring.h b/base/i18n/unicodestring.h
+new file mode 100644
+index 0000000000..abdfd53dd9
+--- /dev/null
++++ b/base/i18n/unicodestring.h
+@@ -0,0 +1,28 @@
++// Copyright (c) 2017 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef BASE_I18N_UNICODESTRING_H_
++#define BASE_I18N_UNICODESTRING_H_
++
++#include "base/strings/string16.h"
++#include "third_party/icu/source/common/unicode/unistr.h"
++#include "third_party/icu/source/common/unicode/uvernum.h"
++
++namespace base {
++namespace i18n {
++
++inline string16 UnicodeStringToString16(const icu::UnicodeString& unistr) {
++#if U_ICU_VERSION_MAJOR_NUM >= 59
++  return base::string16(reinterpret_cast<const char16*>(unistr.getBuffer()),
++                        static_cast<size_t>(unistr.length()));
++#else
++  return base::string16(unistr.getBuffer(),
++                        static_cast<size_t>(unistr.length()));
++#endif
++}
++
++}  // namespace i18n
++}  // namespace base
++
++#endif  // BASE_UNICODESTRING_H_
+diff --git a/components/autofill/core/browser/autofill_profile_comparator.cc b/components/autofill/core/browser/autofill_profile_comparator.cc
+index edfe2450d6..227a5901c6 100644
+--- a/components/autofill/core/browser/autofill_profile_comparator.cc
++++ b/components/autofill/core/browser/autofill_profile_comparator.cc
+@@ -9,6 +9,7 @@
+ 
+ #include "base/i18n/case_conversion.h"
+ #include "base/i18n/char_iterator.h"
++#include "base/i18n/unicodestring.h"
+ #include "base/strings/string_piece.h"
+ #include "base/strings/string_split.h"
+ #include "base/strings/string_util.h"
+@@ -128,7 +129,7 @@ base::string16 AutofillProfileComparator::NormalizeForComparison(
+ 
+   icu::UnicodeString value = icu::UnicodeString(result.data(), result.length());
+   transliterator_->transliterate(value);
+-  return base::string16(value.getBuffer(), value.length());
++  return base::i18n::UnicodeStringToString16(value);
+ }
+ 
+ bool AutofillProfileComparator::AreMergeable(const AutofillProfile& p1,
+diff --git a/components/autofill/core/browser/credit_card.cc b/components/autofill/core/browser/credit_card.cc
+index 75a34c75a2..5c418b4174 100644
+--- a/components/autofill/core/browser/credit_card.cc
++++ b/components/autofill/core/browser/credit_card.cc
+@@ -806,7 +806,8 @@ bool CreditCard::ConvertMonth(const base::string16& month,
+   int32_t num_months;
+   const icu::UnicodeString* months = date_format_symbols.getMonths(num_months);
+   for (int32_t i = 0; i < num_months; ++i) {
+-    const base::string16 icu_month(months[i].getBuffer(), months[i].length());
++    const base::string16 icu_month(
++        base::i18n::UnicodeStringToString16(months[i]));
+     if (compare.StringsEqual(icu_month, month)) {
+       *num = i + 1;  // Adjust from 0-indexed to 1-indexed.
+       return true;
+@@ -819,7 +820,7 @@ bool CreditCard::ConvertMonth(const base::string16& month,
+   base::string16 trimmed_month;
+   base::TrimString(month, ASCIIToUTF16("."), &trimmed_month);
+   for (int32_t i = 0; i < num_months; ++i) {
+-    base::string16 icu_month(months[i].getBuffer(), months[i].length());
++    base::string16 icu_month(base::i18n::UnicodeStringToString16(months[i]));
+     base::TrimString(icu_month, ASCIIToUTF16("."), &icu_month);
+     if (compare.StringsEqual(icu_month, trimmed_month)) {
+       *num = i + 1;  // Adjust from 0-indexed to 1-indexed.
+diff --git a/components/url_formatter/url_formatter.cc b/components/url_formatter/url_formatter.cc
+index 3d5740fd37..20248eec80 100644
+--- a/components/url_formatter/url_formatter.cc
++++ b/components/url_formatter/url_formatter.cc
+@@ -343,7 +343,7 @@ IDNSpoofChecker::IDNSpoofChecker() {
+ 
+ bool IDNSpoofChecker::Check(base::StringPiece16 label, bool is_tld_ascii) {
+   UErrorCode status = U_ZERO_ERROR;
+-  int32_t result = uspoof_check(checker_, label.data(),
++  int32_t result = uspoof_check(checker_, (const UChar*)label.data(),
+                                 base::checked_cast<int32_t>(label.size()),
+                                 NULL, &status);
+   // If uspoof_check fails (due to library failure), or if any of the checks
+@@ -351,7 +351,7 @@ bool IDNSpoofChecker::Check(base::StringPiece16 label, bool is_tld_ascii) {
+   if (U_FAILURE(status) || (result & USPOOF_ALL_CHECKS))
+     return false;
+ 
+-  icu::UnicodeString label_string(FALSE, label.data(),
++  icu::UnicodeString label_string(FALSE, (const UChar*)label.data(),
+                                   base::checked_cast<int32_t>(label.size()));
+ 
+   // A punycode label with 'xn--' prefix is not subject to the URL
+@@ -595,7 +595,7 @@ bool IDNToUnicodeOneComponent(const base::char16* comp,
+       // code units, |status| will be U_BUFFER_OVERFLOW_ERROR and we'll try
+       // the conversion again, but with a sufficiently large buffer.
+       output_length = uidna_labelToUnicode(
+-          uidna, comp, static_cast<int32_t>(comp_len), &(*out)[original_length],
++          uidna, (const UChar*)comp, static_cast<int32_t>(comp_len), (UChar*)&(*out)[original_length],
+           output_length, &info, &status);
+     } while ((status == U_BUFFER_OVERFLOW_ERROR && info.errors == 0));
+ 
+diff --git a/content/browser/android/date_time_chooser_android.cc b/content/browser/android/date_time_chooser_android.cc
+index ba20ad53bd..28b6d03344 100644
+--- a/content/browser/android/date_time_chooser_android.cc
++++ b/content/browser/android/date_time_chooser_android.cc
+@@ -9,6 +9,7 @@
+ #include "base/android/jni_android.h"
+ #include "base/android/jni_string.h"
+ #include "base/i18n/char_iterator.h"
++#include "base/i18n/unicodestring.h"
+ #include "content/common/date_time_suggestion.h"
+ #include "content/common/view_messages.h"
+ #include "content/public/browser/render_view_host.h"
+@@ -36,8 +37,7 @@ base::string16 SanitizeSuggestionString(const base::string16& string) {
+       sanitized.append(c);
+     sanitized_iterator.Advance();
+   }
+-  return base::string16(sanitized.getBuffer(),
+-                        static_cast<size_t>(sanitized.length()));
++  return base::i18n::UnicodeStringToString16(sanitized);
+ }
+ 
+ }  // namespace
+diff --git a/content/child/browser_font_resource_trusted.cc b/content/child/browser_font_resource_trusted.cc
+index 30bae9f179..0ad44015f9 100644
+--- a/content/child/browser_font_resource_trusted.cc
++++ b/content/child/browser_font_resource_trusted.cc
+@@ -75,7 +75,7 @@ class TextRunCollection {
+     } else {
+       bidi_ = ubidi_open();
+       UErrorCode uerror = U_ZERO_ERROR;
+-      ubidi_setPara(bidi_, text_.data(), text_.size(), run.rtl, NULL, &uerror);
++      ubidi_setPara(bidi_, reinterpret_cast<const UChar*>(text_.data()), text_.size(), run.rtl, NULL, &uerror);
+       if (U_SUCCESS(uerror))
+         num_runs_ = ubidi_countRuns(bidi_, &uerror);
+     }
+diff --git a/content/renderer/android/email_detector.cc b/content/renderer/android/email_detector.cc
+index 564f341730..1a0db8b07a 100644
+--- a/content/renderer/android/email_detector.cc
++++ b/content/renderer/android/email_detector.cc
+@@ -62,8 +62,8 @@ bool EmailDetector::FindContent(const base::string16::const_iterator& begin,
+     DCHECK(U_SUCCESS(status));
+     icu::UnicodeString content_ustr(matcher->group(status));
+     DCHECK(U_SUCCESS(status));
+-    base::UTF16ToUTF8(content_ustr.getBuffer(), content_ustr.length(),
+-        content_text);
++    content_text->clear();
++    content_ustr.toUTF8String(*content_text);
+     return true;
+   }
+ 
+diff --git a/net/ftp/ftp_util.cc b/net/ftp/ftp_util.cc
+index 00b23b7c10..e9331ab381 100644
+--- a/net/ftp/ftp_util.cc
++++ b/net/ftp/ftp_util.cc
+@@ -9,6 +9,7 @@
+ 
+ #include "base/i18n/case_conversion.h"
+ #include "base/i18n/char_iterator.h"
++#include "base/i18n/unicodestring.h"
+ #include "base/logging.h"
+ #include "base/macros.h"
+ #include "base/memory/singleton.h"
+@@ -175,8 +176,8 @@ class AbbreviatedMonthsMap {
+           format_symbols.getShortMonths(months_count);
+ 
+       for (int32_t month = 0; month < months_count; month++) {
+-        base::string16 month_name(months[month].getBuffer(),
+-                            static_cast<size_t>(months[month].length()));
++        base::string16 month_name(
++            base::i18n::UnicodeStringToString16(months[month]));
+ 
+         // Ignore the case of the month names. The simplest way to handle that
+         // is to make everything lowercase.
+diff --git a/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp b/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp
+index 0cf3500c6d..6a152ebfda 100644
+--- a/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp
++++ b/net/third_party/mozilla_security_manager/nsPKCS12Blob.cpp
+@@ -58,7 +58,7 @@ namespace {
  // For the NSS PKCS#12 library, must convert PRUnichars (shorts) to
  // a buffer of octets.  Must handle byte order correctly.
  // TODO: Is there a Mozilla way to do this?  In the string lib?
 -void unicodeToItem(const PRUnichar *uni, SECItem *item)
-+void unicodeToItem(const char16_t *uni, SECItem *item)
++void unicodeToItem(const base::char16 *uni, SECItem *item)
  {
    int len = 0;
    while (uni[len++] != 0);
---- a/third_party/WebKit/public/platform/WebCommon.h	2017-06-15 19:07:16.228040049 +0200
-+++ b/third_party/WebKit/public/platform/WebCommon.h	2017-06-15 19:07:43.812037780 +0200
-@@ -87,7 +87,7 @@
- #if defined(WIN32)
- typedef wchar_t WebUChar;
- #else
--typedef unsigned short WebUChar;
-+typedef char16_t WebUChar;
+diff --git a/ppapi/proxy/pdf_resource.cc b/ppapi/proxy/pdf_resource.cc
+index 565c23ddf8..ff3028ec48 100644
+--- a/ppapi/proxy/pdf_resource.cc
++++ b/ppapi/proxy/pdf_resource.cc
+@@ -58,10 +58,10 @@ void PDFResource::SearchString(const unsigned short* input_string,
+                                PP_PrivateFindResult** results, int* count) {
+   if (locale_.empty())
+     locale_ = GetLocale();
+-  const base::char16* string =
+-      reinterpret_cast<const base::char16*>(input_string);
+-  const base::char16* term =
+-      reinterpret_cast<const base::char16*>(input_term);
++  const UChar* string =
++      reinterpret_cast<const UChar*>(input_string);
++  const UChar* term =
++      reinterpret_cast<const UChar*>(input_term);
+ 
+   UErrorCode status = U_ZERO_ERROR;
+   UStringSearch* searcher = usearch_open(term, -1, string, -1, locale_.c_str(),
+diff --git a/third_party/WebKit/Source/platform/LinkHash.cpp b/third_party/WebKit/Source/platform/LinkHash.cpp
+index f397c9a9a8..36868d51b7 100644
+--- a/third_party/WebKit/Source/platform/LinkHash.cpp
++++ b/third_party/WebKit/Source/platform/LinkHash.cpp
+@@ -51,7 +51,7 @@ static bool resolveRelative(const KURL& base,
+                                 relativeUTF8.length(), 0, buffer, &parsed);
+   }
+   return url::ResolveRelative(baseUTF8.data(), baseUTF8.length(), base.parsed(),
+-                              relative.characters16(), relative.length(), 0,
++                              (const base::char16*)relative.characters16(), relative.length(), 0,
+                               buffer, &parsed);
+ }
+ 
+diff --git a/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp b/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp
+index bd394f3894..295f31b247 100644
+--- a/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp
++++ b/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp
+@@ -18,7 +18,7 @@ base::FilePath WebStringToFilePath(const WebString& webString) {
+   String str = webString;
+   if (!str.is8Bit()) {
+     return base::FilePath::FromUTF16Unsafe(
+-        base::StringPiece16(str.characters16(), str.length()));
++        base::StringPiece16((const base::char16*)str.characters16(), str.length()));
+   }
+ 
+ #if OS(POSIX)
+diff --git a/third_party/WebKit/Source/platform/exported/URLConversion.cpp b/third_party/WebKit/Source/platform/exported/URLConversion.cpp
+index bf01013aa2..ba3842a649 100644
+--- a/third_party/WebKit/Source/platform/exported/URLConversion.cpp
++++ b/third_party/WebKit/Source/platform/exported/URLConversion.cpp
+@@ -23,7 +23,7 @@ GURL WebStringToGURL(const WebString& webString) {
+   }
+ 
+   // GURL can consume UTF-16 directly.
+-  return GURL(base::StringPiece16(str.characters16(), str.length()));
++  return GURL(base::StringPiece16((const base::char16*)str.characters16(), str.length()));
+ }
+ 
+ }  // namespace blink
+diff --git a/third_party/WebKit/Source/platform/exported/WebString.cpp b/third_party/WebKit/Source/platform/exported/WebString.cpp
+index 8e1c81c3d8..de0cfb5f2c 100644
+--- a/third_party/WebKit/Source/platform/exported/WebString.cpp
++++ b/third_party/WebKit/Source/platform/exported/WebString.cpp
+@@ -49,7 +49,7 @@ void WebString::assign(const WebString& other) {
+ }
+ 
+ void WebString::assign(const WebUChar* data, size_t length) {
+-  assign(StringImpl::create8BitIfPossible(data, length).get());
++  assign(StringImpl::create8BitIfPossible((const UChar*)data, length).get());
+ }
+ 
+ size_t WebString::length() const {
+@@ -65,7 +65,7 @@ const WebLChar* WebString::data8() const {
+ }
+ 
+ const WebUChar* WebString::data16() const {
+-  return !m_private.isNull() && !is8Bit() ? m_private->characters16() : 0;
++  return !m_private.isNull() && !is8Bit() ? (const WebUChar*)m_private->characters16() : 0;
+ }
+ 
+ std::string WebString::utf8() const {
+diff --git a/third_party/WebKit/Source/platform/weborigin/KURL.cpp b/third_party/WebKit/Source/platform/weborigin/KURL.cpp
+index 48edd0ef58..1fa872b6ad 100644
+--- a/third_party/WebKit/Source/platform/weborigin/KURL.cpp
++++ b/third_party/WebKit/Source/platform/weborigin/KURL.cpp
+@@ -103,7 +103,7 @@ class KURLCharsetConverter final : public url::CharsetConverter {
+                         int inputLength,
+                         url::CanonOutput* output) override {
+     CString encoded = m_encoding->encode(
+-        String(input, inputLength), WTF::URLEncodedEntitiesForUnencodables);
++        String((const UChar*)input, inputLength), WTF::URLEncodedEntitiesForUnencodables);
+     output->Append(encoded.data(), static_cast<int>(encoded.length()));
+   }
+ 
+@@ -326,7 +326,7 @@ String KURL::lastPathComponent() const {
+   if (m_string.is8Bit())
+     url::ExtractFileName(asURLChar8Subtle(m_string), path, &file);
+   else
+-    url::ExtractFileName(m_string.characters16(), path, &file);
++    url::ExtractFileName((const base::char16*)m_string.characters16(), path, &file);
+ 
+   // Bug: https://bugs.webkit.org/show_bug.cgi?id=21015 this function returns
+   // a null string when the path is empty, which we duplicate here.
+@@ -355,7 +355,7 @@ unsigned short KURL::port() const {
+   ASSERT(!m_string.isNull());
+   int port = m_string.is8Bit()
+                  ? url::ParsePort(asURLChar8Subtle(m_string), m_parsed.port)
+-                 : url::ParsePort(m_string.characters16(), m_parsed.port);
++                 : url::ParsePort((const base::char16*)m_string.characters16(), m_parsed.port);
+   ASSERT(port != url::PORT_UNSPECIFIED);  // Checked port.len <= 0 before.
+ 
+   if (port == url::PORT_INVALID ||
+@@ -647,7 +647,7 @@ bool KURL::isHierarchical() const {
+     return false;
+   return m_string.is8Bit()
+              ? url::IsStandard(asURLChar8Subtle(m_string), m_parsed.scheme)
+-             : url::IsStandard(m_string.characters16(), m_parsed.scheme);
++             : url::IsStandard((const base::char16*)m_string.characters16(), m_parsed.scheme);
+ }
+ 
+ bool equalIgnoringFragmentIdentifier(const KURL& a, const KURL& b) {
+@@ -700,7 +700,7 @@ unsigned KURL::pathAfterLastSlash() const {
+   if (m_string.is8Bit())
+     url::ExtractFileName(asURLChar8Subtle(m_string), m_parsed.path, &filename);
+   else
+-    url::ExtractFileName(m_string.characters16(), m_parsed.path, &filename);
++    url::ExtractFileName((const base::char16*)m_string.characters16(), m_parsed.path, &filename);
+   return filename.begin;
+ }
+ 
+@@ -711,7 +711,7 @@ bool protocolIs(const String& url, const char* protocol) {
+   if (url.is8Bit())
+     return url::FindAndCompareScheme(asURLChar8Subtle(url), url.length(),
+                                      protocol, 0);
+-  return url::FindAndCompareScheme(url.characters16(), url.length(), protocol,
++  return url::FindAndCompareScheme((const base::char16*)url.characters16(), url.length(), protocol,
+                                    0);
+ }
+ 
+@@ -744,7 +744,7 @@ void KURL::init(const KURL& base,
+                                      charsetConverter, &output, &m_parsed);
+   } else {
+     m_isValid = url::ResolveRelative(baseUTF8.data(), baseUTF8.length(),
+-                                     base.m_parsed, relative.characters16(),
++                                     base.m_parsed, (const base::char16*)relative.characters16(),
+                                      clampTo<int>(relative.length()),
+                                      charsetConverter, &output, &m_parsed);
+   }
+diff --git a/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp b/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp
+index 2e08f00a30..b0d6aad653 100644
+--- a/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp
++++ b/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp
+@@ -610,7 +610,7 @@ String SecurityOrigin::canonicalizeHost(const String& host, bool* success) {
+     *success = url::CanonicalizeHost(
+         utf8.data(), url::Component(0, utf8.length()), &canonOutput, &outHost);
+   } else {
+-    *success = url::CanonicalizeHost(host.characters16(),
++    *success = url::CanonicalizeHost(reinterpret_cast<const base::char16 *>(host.characters16()),
+                                      url::Component(0, host.length()),
+                                      &canonOutput, &outHost);
+   }
+diff --git a/third_party/WebKit/Source/wtf/text/AtomicString.h b/third_party/WebKit/Source/wtf/text/AtomicString.h
+index 9fc2eb654d..b09e5d9ad8 100644
+--- a/third_party/WebKit/Source/wtf/text/AtomicString.h
++++ b/third_party/WebKit/Source/wtf/text/AtomicString.h
+@@ -50,9 +50,10 @@ class WTF_EXPORT AtomicString {
+   AtomicString(const LChar* chars, unsigned length);
+   AtomicString(const UChar* chars, unsigned length);
+   AtomicString(const UChar* chars);
++#if U_ICU_VERSION_MAJOR_NUM < 59
+   AtomicString(const char16_t* chars)
+       : AtomicString(reinterpret_cast<const UChar*>(chars)) {}
+-
++#endif
+   template <size_t inlineCapacity>
+   explicit AtomicString(const Vector<UChar, inlineCapacity>& vector)
+       : AtomicString(vector.data(), vector.size()) {}
+diff --git a/third_party/WebKit/Source/wtf/text/StringView.h b/third_party/WebKit/Source/wtf/text/StringView.h
+index 17680d9a28..2bd0a5d190 100644
+--- a/third_party/WebKit/Source/wtf/text/StringView.h
++++ b/third_party/WebKit/Source/wtf/text/StringView.h
+@@ -83,8 +83,10 @@ class WTF_EXPORT StringView {
+         m_characters16(chars),
+         m_length(length) {}
+   StringView(const UChar* chars);
++#if U_ICU_VERSION_MAJOR_NUM < 59
+   StringView(const char16_t* chars)
+       : StringView(reinterpret_cast<const UChar*>(chars)) {}
++#endif
+ 
+ #if DCHECK_IS_ON()
+   ~StringView();
+diff --git a/third_party/WebKit/Source/wtf/text/WTFString.h b/third_party/WebKit/Source/wtf/text/WTFString.h
+index c2b55e4b31..7ca06f79aa 100644
+--- a/third_party/WebKit/Source/wtf/text/WTFString.h
++++ b/third_party/WebKit/Source/wtf/text/WTFString.h
+@@ -35,6 +35,8 @@
+ #include <algorithm>
+ #include <iosfwd>
+ 
++#include "third_party/icu/source/common/unicode/uvernum.h"
++
+ #ifdef __OBJC__
+ #include <objc/objc.h>
  #endif
+@@ -84,8 +86,13 @@ class WTF_EXPORT String {
  
- // Latin-1 character type
---- a/base/strings/string16.h	2017-06-15 19:45:21.861851980 +0200
-+++ b/base/strings/string16.h	2017-06-15 19:03:17.772059670 +0200
-@@ -52,7 +52,7 @@
+   // Construct a string with UTF-16 data, from a null-terminated source.
+   String(const UChar*);
++#if U_ICU_VERSION_MAJOR_NUM < 59
+   String(const char16_t* chars)
+       : String(reinterpret_cast<const UChar*>(chars)) {}
++#else
++  String(const uint16_t* chars)
++      : String(reinterpret_cast<const UChar*>(chars)) {}
++#endif
  
- namespace base {
+   // Construct a string with latin1 data.
+   String(const LChar* characters, unsigned length);
+diff --git a/third_party/sfntly/src/cpp/src/sample/chromium/subsetter_impl.cc b/third_party/sfntly/src/cpp/src/sample/chromium/subsetter_impl.cc
+index c53e60729f..91953270a2 100644
+--- a/third_party/sfntly/src/cpp/src/sample/chromium/subsetter_impl.cc
++++ b/third_party/sfntly/src/cpp/src/sample/chromium/subsetter_impl.cc
+@@ -23,6 +23,7 @@
+ #include <map>
+ #include <set>
  
--typedef uint16_t char16;
-+typedef char16_t char16;
- 
- // char16 versions of the functions required by string16_char_traits; these
- // are based on the wide character functions of similar names ("w" or "wcs"
---- a/ui/base/accelerators/accelerator.cc	2017-06-15 19:46:27.757846558 +0200
-+++ b/ui/base/accelerators/accelerator.cc	2017-06-15 19:47:10.581843034 +0200
-@@ -225,7 +225,7 @@
++#include "base/i18n/unicodestring.h"
+ #include "sfntly/table/bitmap/eblc_table.h"
+ #include "sfntly/table/bitmap/ebdt_table.h"
+ #include "sfntly/table/bitmap/index_sub_table.h"
+diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
+index f338a9501c..b0ca945540 100644
+--- a/ui/base/accelerators/accelerator.cc
++++ b/ui/base/accelerators/accelerator.cc
+@@ -216,7 +216,7 @@ base::string16 Accelerator::GetShortcutText() const {
+       key = LOWORD(::MapVirtualKeyW(key_code_, MAPVK_VK_TO_CHAR));
+     shortcut += key;
+ #elif defined(USE_AURA) || defined(OS_MACOSX)
+-    const uint16_t c = DomCodeToUsLayoutCharacter(
++    const base::char16 c = DomCodeToUsLayoutCharacter(
          UsLayoutKeyboardCodeToDomCode(key_code_), false);
      if (c != 0)
        shortcut +=
--          static_cast<base::string16::value_type>(base::ToUpperASCII(c));
-+          static_cast<base::string16::value_type>(base::ToUpperASCII((base::char16)c));
- #endif
-     if (key_code_ > VKEY_F1 && key_code_ <= VKEY_F24)
-       shortcut += base::UTF8ToUTF16(
---- a/ui/base/x/selection_utils.cc	2017-06-15 19:48:29.365836552 +0200
-+++ b/ui/base/x/selection_utils.cc	2017-06-15 19:49:56.845829354 +0200
-@@ -231,7 +231,7 @@
+diff --git a/ui/base/l10n/l10n_util.cc b/ui/base/l10n/l10n_util.cc
+index 746931a395..b7d7f61846 100644
+--- a/ui/base/l10n/l10n_util.cc
++++ b/ui/base/l10n/l10n_util.cc
+@@ -562,7 +562,7 @@ base::string16 GetDisplayNameForLocale(const std::string& locale,
+ 
+     int actual_size = uloc_getDisplayName(
+         locale_code.c_str(), display_locale.c_str(),
+-        base::WriteInto(&display_name, kBufferSize), kBufferSize - 1, &error);
++        (UChar*)base::WriteInto(&display_name, kBufferSize), kBufferSize - 1, &error);
+     DCHECK(U_SUCCESS(error));
+     display_name.resize(actual_size);
+   }
+diff --git a/ui/base/l10n/time_format.cc b/ui/base/l10n/time_format.cc
+index 1f03599ebf..4820d63e31 100644
+--- a/ui/base/l10n/time_format.cc
++++ b/ui/base/l10n/time_format.cc
+@@ -109,7 +109,7 @@ base::string16 TimeFormat::Detailed(TimeFormat::Format format,
+   DCHECK_GT(capacity, 1);
+   base::string16 result;
+   UErrorCode error = U_ZERO_ERROR;
+-  time_string.extract(static_cast<UChar*>(base::WriteInto(&result, capacity)),
++  time_string.extract(reinterpret_cast<UChar*>(base::WriteInto(&result, capacity)),
+                       capacity, error);
+   DCHECK(U_SUCCESS(error));
+   return result;
+diff --git a/ui/base/x/selection_utils.cc b/ui/base/x/selection_utils.cc
+index 2d57e49656..f8144c75ea 100644
+--- a/ui/base/x/selection_utils.cc
++++ b/ui/base/x/selection_utils.cc
+@@ -230,8 +230,8 @@ base::string16 SelectionData::GetHtml() const {
+     // If the data starts with 0xFEFF, i.e., Byte Order Mark, assume it is
      // UTF-16, otherwise assume UTF-8.
      if (size >= 2 &&
-         reinterpret_cast<const uint16_t*>(data)[0] == 0xFEFF) {
+-        reinterpret_cast<const uint16_t*>(data)[0] == 0xFEFF) {
 -      markup.assign(reinterpret_cast<const uint16_t*>(data) + 1,
-+      markup.assign(reinterpret_cast<const char16_t*>(data) + 1,
++        reinterpret_cast<const base::char16*>(data)[0] == 0xFEFF) {
++      markup.assign(reinterpret_cast<const base::char16*>(data) + 1,
                      (size / 2) - 1);
      } else {
        base::UTF8ToUTF16(reinterpret_cast<const char*>(data), size, &markup);
---- a/third_party/sfntly/src/cpp/src/sample/chromium/subsetter_impl.cc	2017-07-09 11:56:35.555480851 +0200
-+++ b/third_party/sfntly/src/cpp/src/sample/chromium/subsetter_impl.cc	2017-07-09 11:59:53.043490574 +0200
-@@ -22,6 +22,7 @@
- #include <iterator>
- #include <map>
- #include <set>
-+#include <unicode/unistr.h>
+diff --git a/url/url_canon_icu.cc b/url/url_canon_icu.cc
+index d0468cccaf..ffa623f264 100644
+--- a/url/url_canon_icu.cc
++++ b/url/url_canon_icu.cc
+@@ -133,7 +133,7 @@ void ICUCharsetConverter::ConvertFromUTF16(const base::char16* input,
+     UErrorCode err = U_ZERO_ERROR;
+     char* dest = &output->data()[begin_offset];
+     int required_capacity = ucnv_fromUChars(converter_, dest, dest_capacity,
+-                                            input, input_len, &err);
++                                            (const UChar*)input, input_len, &err);
+     if (err != U_BUFFER_OVERFLOW_ERROR) {
+       output->set_length(begin_offset + required_capacity);
+       return;
+@@ -170,7 +170,7 @@ bool IDNToASCII(const base::char16* src, int src_len, CanonOutputW* output) {
+   while (true) {
+     UErrorCode err = U_ZERO_ERROR;
+     UIDNAInfo info = UIDNA_INFO_INITIALIZER;
+-    int output_length = uidna_nameToASCII(uidna, src, src_len, output->data(),
++    int output_length = uidna_nameToASCII(uidna, (const UChar*)src, src_len, (UChar*)output->data(),
+                                           output->capacity(), &info, &err);
+     if (U_SUCCESS(err) && info.errors == 0) {
+       output->set_length(output_length);
+diff --git a/v8/src/runtime/runtime-i18n.cc b/v8/src/runtime/runtime-i18n.cc
+index d4574c2b68..bd240e2ba9 100644
+--- a/v8/src/runtime/runtime-i18n.cc
++++ b/v8/src/runtime/runtime-i18n.cc
+@@ -41,6 +41,7 @@
+ #include "unicode/uloc.h"
+ #include "unicode/unistr.h"
+ #include "unicode/unum.h"
++#include "unicode/ustring.h"
+ #include "unicode/uversion.h"
  
- #include "sfntly/table/bitmap/eblc_table.h"
- #include "sfntly/table/bitmap/ebdt_table.h"
+ 
