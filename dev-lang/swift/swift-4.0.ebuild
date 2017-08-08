@@ -85,7 +85,6 @@ src_configure() {
 	local mycmakeargs=(
 		# used to find cmake modules
 		-DLLVM_LIBDIR_SUFFIX="${libdir#lib}"
-                -DBUILD_SHARED_LIBS=ON
 
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
