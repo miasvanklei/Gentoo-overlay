@@ -123,7 +123,8 @@ multilib_src_configure() {
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${SLOT}"
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 
-		-DBUILD_SHARED_LIBS=ON
+		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DLLVM_DYLIB_COMPONENTS="all"
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DLLVM_BUILD_TESTS=$(usex test)
 

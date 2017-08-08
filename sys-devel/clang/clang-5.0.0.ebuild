@@ -156,7 +156,8 @@ multilib_src_configure() {
 		# relative to bindir
 		-DCLANG_RESOURCE_DIR="../../../../lib/clang/${clang_version}"
 
-		-DBUILD_SHARED_LIBS=ON
+		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DLLVM_DYLIB_COMPONENTS="all"
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DCLANG_INCLUDE_TESTS=$(usex test)
 

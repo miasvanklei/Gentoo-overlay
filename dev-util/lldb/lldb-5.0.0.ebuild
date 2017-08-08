@@ -75,6 +75,9 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=(
+		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DLLVM_DYLIB_COMPONENTS="all"
+
 		-DLLDB_DISABLE_CURSES=$(usex !ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)
 		-DLLDB_DISABLE_PYTHON=$(usex !python)

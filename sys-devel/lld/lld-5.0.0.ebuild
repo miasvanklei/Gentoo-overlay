@@ -65,7 +65,8 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=(
-		-DBUILD_SHARED_LIBS=ON
+		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DLLVM_DYLIB_COMPONENTS="all"
 
 		-DLLVM_INCLUDE_TESTS=$(usex test)
 		-DLLVM_ENABLE_EH=ON
