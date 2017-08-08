@@ -77,9 +77,6 @@ src_prepare() {
 	# revert one patch to build with system llvm
 	eapply ${FILESDIR}/llvm-5.0.patch
 
-	# potentially breaks swift
-	eapply ${FILESDIR}/broken.patch
-
 	default
 }
 

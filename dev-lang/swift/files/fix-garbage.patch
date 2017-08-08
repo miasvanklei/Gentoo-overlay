@@ -1,8 +1,6 @@
-diff --git a/utils/CMakeLists.txt b/utils/CMakeLists.txt
-index 9860cd8..ef01bfa 100644
 --- a/utils/CMakeLists.txt
 +++ b/utils/CMakeLists.txt
-@@ -7,8 +7,3 @@ swift_install_in_component(editor-integration
+@@ -7,8 +7,3 @@
  swift_install_in_component(tools
      FILES swift-api-dump.py
      DESTINATION bin)
@@ -11,11 +9,21 @@ index 9860cd8..ef01bfa 100644
 -swift_install_in_component(toolchain-dev-tools
 -    FILES "${SWIFT_PATH_TO_LLVM_BUILD}/bin/FileCheck"
 -    DESTINATION bin)
-diff --git a/stdlib/public/SwiftShims/CMakeLists.txt b/stdlib/public/SwiftShims/CMakeLists.txt
-index ebbe806daa..6e99c1688b 100644
+--- a/cmake/modules/SwiftSharedCMakeConfig.cmake
++++ b/cmake/modules/SwiftSharedCMakeConfig.cmake
+@@ -202,9 +202,6 @@
+   set(CMARK_BUILD_INCLUDE_DIR "${PATH_TO_CMARK_BUILD}/src")
+   include_directories("${CMARK_MAIN_INCLUDE_DIR}"
+                       "${CMARK_BUILD_INCLUDE_DIR}")
+-
+-  include(${${product}_PATH_TO_CMARK_BUILD}/src/CMarkExports.cmake)
+-  add_definitions(-DCMARK_STATIC_DEFINE)
+ endmacro()
+ 
+ # Common cmake project config for standalone builds.
 --- a/stdlib/public/SwiftShims/CMakeLists.txt
 +++ b/stdlib/public/SwiftShims/CMakeLists.txt
-@@ -51,73 +51,6 @@ if ("${LLVM_PACKAGE_VERSION}" STREQUAL "")
+@@ -73,92 +73,6 @@
            "LLVM_PACKAGE_VERSION must be set before including subdirectories")
  endif()
  
@@ -64,7 +72,20 @@ index ebbe806daa..6e99c1688b 100644
 -    CUSTOM_TARGET_NAME "symlink_clang_headers"
 -    OUTPUT "${SWIFTLIB_DIR}/clang"
 -    COMMENT "Symlinking Clang resource headers into ${SWIFTLIB_DIR}/clang")
--add_dependencies(copy_shim_headers symlink_clang_headers)
+-
+-# Adding LLVM symlink at compile time.
+-add_custom_command_target(unused_var2
+-    COMMAND
+-      "${CMAKE_COMMAND}" "-E" "make_directory" "${SWIFTLIB_DIR}"
+-    COMMAND
+-      "${CMAKE_COMMAND}" "-E" "${cmake_symlink_option}"
+-      "${LLVM_LIBRARY_DIR}"
+-      "${SWIFTLIB_DIR}/llvm"
+-
+-    CUSTOM_TARGET_NAME "symlink_llvm_headers"
+-    OUTPUT "${SWIFTLIB_DIR}/llvm"
+-    COMMENT "Symlinking LLVM resource headers into ${SWIFTLIB_DIR}/llvm")
+-add_dependencies(copy_shim_headers symlink_clang_headers symlink_llvm_headers)
 -
  swift_install_in_component(compiler
      FILES ${sources}
@@ -82,6 +103,12 @@ index ebbe806daa..6e99c1688b 100644
 -  TARGET ../clang/${CLANG_VERSION}
 -  DESTINATION "lib/swift")
 -
+-# Adding link to "llvm" at install time.
+-swift_install_symlink_component(llvm-resource-dir-symlink
+-  LINK_NAME llvm
+-  TARGET ../
+-  DESTINATION "lib/swift")
+-
 -# Possibly install Clang headers under Clang's resource directory in case we
 -# need to use a different version of the headers than the installed Clang. This
 -# should be used in conjunction with clang-resource-dir-symlink.
@@ -89,16 +116,3 @@ index ebbe806daa..6e99c1688b 100644
 -    DIRECTORY "${SWIFT_PATH_TO_CLANG_BUILD}/lib/clang"
 -    DESTINATION "lib"
 -    PATTERN "*.h")
---- a/cmake/modules/SwiftSharedCMakeConfig.cmake        2017-06-21 13:12:15.052995830 +0200
-+++ b/cmake/modules/SwiftSharedCMakeConfig.cmake        2017-06-21 13:11:40.126996639 +0200
-@@ -202,9 +202,6 @@
-   set(CMARK_BUILD_INCLUDE_DIR "${PATH_TO_CMARK_BUILD}/src")
-   include_directories("${CMARK_MAIN_INCLUDE_DIR}"
-                       "${CMARK_BUILD_INCLUDE_DIR}")
--
--  include(${${product}_PATH_TO_CMARK_BUILD}/src/CMarkExports.cmake)
--  add_definitions(-DCMARK_STATIC_DEFINE)
- endmacro()
- 
- # Common cmake project config for standalone builds.
-
