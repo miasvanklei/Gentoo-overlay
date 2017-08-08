@@ -19,10 +19,9 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 DEPEND="${PYTHON_DEPS}
 	$(add_frameworks_dep kitemmodels)
-	dev-util/kdevplatform:5
+	dev-util/kdevelop:5
 "
 RDEPEND="${DEPEND}
-	dev-util/kdevelop:5
 "
 
 RESTRICT+=" test"
