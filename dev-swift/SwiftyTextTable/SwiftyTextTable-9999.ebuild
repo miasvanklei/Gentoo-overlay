@@ -22,7 +22,6 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}"
 
 PATCHES=(
-	${FILESDIR}/corefoundation.patch
         ${FILESDIR}/install-lib.patch
 )
 
