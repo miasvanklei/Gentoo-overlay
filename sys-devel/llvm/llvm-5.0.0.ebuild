@@ -35,7 +35,7 @@ LICENSE="UoI-NCSA rc BSD public-domain
 	llvm_targets_ARM? ( LLVM-Grant )"
 SLOT="$(get_major_version)"
 KEYWORDS="~amd64 ~arm ~arm64 ~x86"
-IUSE="debug +doc gold libedit +libffi ncurses test
+IUSE="debug +doc gold libedit +libffi ncurses +swift test
 	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
@@ -101,7 +101,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0004-arm-relocation.patch
 
 	# add swift support
-	eapply "${FILESDIR}"/0005-add-swift-support.patch
+	use swift && eapply "${FILESDIR}"/0005-add-swift-support.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
