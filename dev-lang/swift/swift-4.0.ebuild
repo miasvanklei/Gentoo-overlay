@@ -25,10 +25,10 @@ RDEPEND="
 	dev-libs/libbsd
 	dev-libs/icu
 	sys-libs/ncurses
-	=sys-devel/clang-5.0.0:=
-        =sys-devel/llvm-5.0.0:=
+	=sys-devel/clang-5.0.0:=[swift]
+        =sys-devel/llvm-5.0.0:=[swift]
 	sourcekit? ( dev-libs/libdispatch )"
-PDEPEND="lldb? ( =dev-util/lldb-5.0.0:=[libedit,python] )"
+PDEPEND="lldb? ( =dev-util/lldb-5.0.0:=[libedit,python,swift] )"
 DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
