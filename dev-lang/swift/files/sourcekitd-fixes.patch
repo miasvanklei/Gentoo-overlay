@@ -63,7 +63,7 @@ index bd9e7a8fde..6dd0b86190 100644
    add_library(dispatch SHARED IMPORTED)
    set_target_properties(dispatch PROPERTIES
 -                        IMPORTED_LOCATION ${SWIFT_PATH_TO_LIBDISPATCH_BUILD}/src/.libs/libdispatch.so)
-+                        IMPORTED_LOCATION /usr/lib//swift/linux/libdispatch.so)
++                        IMPORTED_LOCATION /usr/lib/swift/linux/libdispatch.so)
  
    add_library(swiftCore SHARED IMPORTED)
    set_target_properties(swiftCore PROPERTIES
@@ -71,7 +71,7 @@ diff --git a/tools/SourceKit/lib/Core/CMakeLists.txt b/tools/SourceKit/lib/Core/
 index 1122ebf5fc..82fbaf3237 100644
 --- a/tools/SourceKit/lib/Core/CMakeLists.txt
 +++ b/tools/SourceKit/lib/Core/CMakeLists.txt
-@@ -1,7 +1,14 @@
+@@ -1,7 +1,12 @@
 +set(SOURCEKIT_CORE_DEPEND SourceKitSupport)
 +if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
 +  list(APPEND SOURCEKIT_CORE_DEPEND dispatch)
@@ -83,8 +83,6 @@ index 1122ebf5fc..82fbaf3237 100644
    NotificationCenter.cpp
 -  LINK_LIBS SourceKitSupport
 +  LINK_LIBS ${SOURCEKIT_CORE_DEPEND}
-+  LLVM_COMPONENT_DEPENDS
-+    Support
 +  SHARED
  )
 diff --git a/tools/SourceKit/lib/SwiftLang/CMakeLists.txt b/tools/SourceKit/lib/SwiftLang/CMakeLists.txt
@@ -192,7 +190,7 @@ diff --git a/tools/SourceKit/tools/sourcekitd/lib/API/CMakeLists.txt b/tools/Sou
 index cda578df53..a340d3d7b3 100644
 --- a/tools/SourceKit/tools/sourcekitd/lib/API/CMakeLists.txt
 +++ b/tools/SourceKit/tools/sourcekitd/lib/API/CMakeLists.txt
-@@ -29,8 +29,14 @@ elseif(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
+@@ -29,8 +29,13 @@ elseif(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
    list(APPEND sourcekitdAPI_sources ${sourcekitdAPI_NonDarwin_InProc_sources})
  endif()
  
@@ -206,14 +204,13 @@ index cda578df53..a340d3d7b3 100644
 -  LINK_LIBS
 -      SourceKitSupport SourceKitSwiftLang
 +  LINK_LIBS ${SOURCEKITD_API_DEPEND}
-+  LLVM_COMPONENT_DEPENDS ${LLVM_TARGETS_TO_BUILD}
 +  SHARED
  )
 diff --git a/tools/SourceKit/lib/Support/CMakeLists.txt b/tools/SourceKit/lib/Support/CMakeLists.txt
 index 4ecd7b8adb..f5bfdce419 100644
 --- a/tools/SourceKit/lib/Support/CMakeLists.txt
 +++ b/tools/SourceKit/lib/Support/CMakeLists.txt
-@@ -10,11 +10,13 @@ set(SourceKitSupport_sources
+@@ -10,11 +10,12 @@ set(SourceKitSupport_sources
  
  set(SOURCEKIT_SUPPORT_DEPEND swiftBasic swiftSyntax clangBasic clangRewrite)
  if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
@@ -225,6 +222,5 @@ index 4ecd7b8adb..f5bfdce419 100644
    ${SourceKitSupport_sources}
    DEPENDS swift-syntax-generated-headers
    LINK_LIBS ${SOURCEKIT_SUPPORT_DEPEND}
-+  LLVM_COMPONENT_DEPENDS Support
 +  SHARED
  )
