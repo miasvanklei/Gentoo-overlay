@@ -86,7 +86,6 @@ src_configure() {
 		-DBUILD_ninjabuilder=$(usex ninja)
 		$(cmake-utils_use_find_package okteta OktetaKastenControllers)
 		$(cmake-utils_use_find_package qmake KDevelop-PG-Qt)
-		-DBUILD_qthelp=$(usex qthelp)
 	)
 
 	kde5_src_configure
