@@ -1,38 +1,27 @@
-From 610ee2681f9532a13f63edf78aab55b1dcb8abf2 Mon Sep 17 00:00:00 2001
-From: Elvis Pranskevichus <elvis@magic.io>
-Date: Mon, 8 Feb 2016 15:14:58 -0500
-Subject: [PATCH] brightray build fixes
-
----
- brightray.gyp  | 66 ++++++++++++++++++++++++++++++++++++++++++++++++++++++----
- brightray.gypi | 14 ++-----------
- 2 files changed, 64 insertions(+), 16 deletions(-)
-
-diff --git a/brightray.gyp b/brightray.gyp
-index e60d17a..37e5159 100644
 --- a/brightray.gyp
 +++ b/brightray.gyp
 @@ -1,7 +1,7 @@
  {
    'variables': {
      # The libraries brightray will be compiled to.
--    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss'
-+    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gmodule-2.0 nss'
+-    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss'
++    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gmodule-2.0 nss'
    },
    'includes': [
      'filenames.gypi',
-@@ -9,6 +9,10 @@
+@@ -9,6 +9,11 @@
    'targets': [
      {
        'target_name': 'brightray',
 +      'dependencies': [
 +        'cups',
 +        'gconf',
++        '<(libchromiumcontent_src_dir)/chromiumcontent/chromiumcontent.gyp:chromiumcontent_all'
 +      ],
        'type': 'static_library',
        'include_dirs': [
          '.',
-@@ -130,18 +134,30 @@
+@@ -105,12 +110,9 @@
              }, {
                'link_settings': {
                  'libraries': [
@@ -45,28 +34,7 @@ index e60d17a..37e5159 100644
                    '-lrt',
                    '-ldl',
                    '-lresolv',
-                   '-lfontconfig',
-                   '-lfreetype',
-                   '-lexpat',
-+                  '-lre2',
-+                  '-ljpeg',
-+                  '-lsnappy',
-+                  '-lharfbuzz',
-+                  '-lpng',
-+                  '-lxml2',
-+                  '-lxslt',
-+                  '-lwebp',
-+                  '-lwebpdemux',
-+                  '-lavcodec',
-+                  '-lavformat',
-+                  '-lavutil',
-+                  '-lvpx',
-+                  '-lFLAC',
-+                  '-lminizip',
-                 ],
-               },
-             }],
-@@ -390,5 +406,47 @@
+@@ -337,5 +339,47 @@
          }],  # OS=="win"
        ],
      },
@@ -114,28 +82,26 @@ index e60d17a..37e5159 100644
 +    },
    ],
  }
-diff --git a/brightray.gypi b/brightray.gypi
-index 064ae1a..95d6f14 100644
 --- a/brightray.gypi
 +++ b/brightray.gypi
-@@ -1,6 +1,6 @@
+@@ -1,9 +1,13 @@
  {
-   'includes': [
+-  'includes': [
 -    'vendor/download/libchromiumcontent/filenames.gypi',
-+    'vendor/libchromiumcontent/dist/main/filenames.gypi',
-   ],
+-  ],
    'variables': {
      'libchromiumcontent_component%': 1,
-@@ -14,7 +14,7 @@
-       }, {
-         'libchromiumcontent_dir%': '<(libchromiumcontent_static_libraries_dir)',
-         'libchromiumcontent_libraries%': '<(libchromiumcontent_static_libraries)',
--        'libchromiumcontent_v8_libraries%': '<(libchromiumcontent_static_v8_libraries)',
-+        'libchromiumcontent_v8_libraries%': '<(libchromiumcontent_shared_v8_libraries)',
-       }],
-     ],
-   },
-@@ -235,22 +235,12 @@
++    'libchromiumcontent_src_dir': '<(DEPTH)',
++    'libchromiumcontent_shared_libraries_dir': '<(SHARED_INTERMEDIATE_DIR)',
++    'libchromiumcontent_static_libraries_dir': '<(SHARED_INTERMEDIATE_DIR)',
++    'libchromiumcontent_shared_libraries': [],
++    'libchromiumcontent_static_libraries': [],
++    'libchromiumcontent_shared_v8_libraries': [],
++    'libchromiumcontent_static_v8_libraries': [],
+     'pkg-config%': 'pkg-config',
+     'conditions': [
+       # The "libchromiumcontent_component" is defined when calling "gyp".
+@@ -235,22 +239,12 @@
          'conditions': [
            ['OS=="linux"', {
              'cflags': [
@@ -158,6 +124,3 @@ index 064ae1a..95d6f14 100644
                '-Wl,--gc-sections',
              ],
            }],  # OS=="linux"
--- 
-2.13.3
-
