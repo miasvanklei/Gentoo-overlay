@@ -1,0 +1,29 @@
+--- a/cmake/Modules/HandleCompilerRT.cmake
++++ b/cmake/Modules/HandleCompilerRT.cmake
+@@ -4,7 +4,7 @@ function(find_compiler_rt_library name dest)
+   endif()
+   set(dest "" PARENT_SCOPE)
+   set(CLANG_COMMAND ${CMAKE_CXX_COMPILER} ${LIBCXXABI_COMPILE_FLAGS}
+-      "--rtlib=compiler-rt" "--print-libgcc-file-name")
++      "--rtlib=compiler-rt" "--print-libgcc-file-name" "-mfloat-abi=hard")
+   if (CMAKE_CXX_COMPILER_ID MATCHES Clang AND CMAKE_CXX_COMPILER_TARGET)
+     list(APPEND CLANG_COMMAND "--target=${CMAKE_CXX_COMPILER_TARGET}")
+   endif()
+--- a/cmake/config-ix.cmake
++++ b/cmake/config-ix.cmake
+@@ -14,6 +14,7 @@ endif ()
+ # required during compilation (which has the -nodefaultlibs). libc is
+ # required for the link to go through. We remove sanitizers from the
+ # configuration checks to avoid spurious link errors.
++check_c_compiler_flag(-funwind-tables         LIBCXXABI_HAS_FUNWIND_TABLES)
+ check_c_compiler_flag(-nodefaultlibs LIBCXXABI_HAS_NODEFAULTLIBS_FLAG)
+ if (LIBCXXABI_HAS_NODEFAULTLIBS_FLAG)
+   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -nodefaultlibs")
+@@ -49,7 +50,6 @@ if (LIBCXXABI_HAS_NODEFAULTLIBS_FLAG)
+ endif ()
+ 
+ # Check compiler flags
+-check_c_compiler_flag(-funwind-tables         LIBCXXABI_HAS_FUNWIND_TABLES)
+ check_cxx_compiler_flag(-fno-exceptions       LIBCXXABI_HAS_NO_EXCEPTIONS_FLAG)
+ check_cxx_compiler_flag(-fno-rtti             LIBCXXABI_HAS_NO_RTTI_FLAG)
+ check_cxx_compiler_flag(-fstrict-aliasing     LIBCXXABI_HAS_FSTRICT_ALIASING_FLAG)

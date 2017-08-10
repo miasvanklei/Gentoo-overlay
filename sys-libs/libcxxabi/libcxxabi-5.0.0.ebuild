@@ -37,6 +37,11 @@ DEPEND="${RDEPEND}
 		~sys-libs/libcxx-${PV}[libcxxabi(-)]
 		$(python_gen_any_dep 'dev-python/lit[${PYTHON_USEDEP}]') )"
 
+PATCHES=(
+	"${FILESDIR}"/0001-fix-armhf.patch
+)
+
+
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
 

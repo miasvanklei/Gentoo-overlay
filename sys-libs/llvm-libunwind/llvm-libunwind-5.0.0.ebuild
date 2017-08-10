@@ -24,6 +24,10 @@ RDEPEND="!sys-libs/libunwind"
 # LLVM 4 required for llvm-config --cmakedir
 DEPEND=">=sys-devel/llvm-4"
 
+PATCHES=(
+	"${FILESDIR}"/0001-fix-arm.patch
+)
+
 CMAKE_BUILD_TYPE=Release
 
 multilib_src_configure() {
