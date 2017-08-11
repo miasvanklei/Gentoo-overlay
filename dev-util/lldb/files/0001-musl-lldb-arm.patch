@@ -1,5 +1,14 @@
 --- a/source/Core/ArchSpec.cpp
 +++ b/source/Core/ArchSpec.cpp
+@@ -72,6 +72,8 @@ static const CoreDefinition g_core_definitions[] = {
+      "armv6"},
+     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv6m,
+      "armv6m"},
++    {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7a,
++     "armv7a"},
+     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7,
+      "armv7"},
+     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7f,
 @@ -1125,8 +1125,12 @@
        (rhs == llvm::Triple::Android && lhs == llvm::Triple::EABI) ||
        (lhs == llvm::Triple::GNUEABI && rhs == llvm::Triple::EABI) ||
@@ -14,3 +23,21 @@
      return true;
  
    return false;
+@@ -1319,6 +1321,7 @@ static bool cores_match(const ArchSpec::Core core1, const ArchSpec::Core core2,
+     }
+     break;
+ 
++  case ArchSpec::eCore_arm_armv7a:
+   case ArchSpec::eCore_arm_armv7f:
+   case ArchSpec::eCore_arm_armv7k:
+   case ArchSpec::eCore_arm_armv7s:
+--- a/include/lldb/Core/ArchSpec.h
++++ b/include/lldb/Core/ArchSpec.h
+@@ -119,6 +119,7 @@ public:
+     eCore_arm_armv6,
+     eCore_arm_armv6m,
+     eCore_arm_armv7,
++    eCore_arm_armv7a,
+     eCore_arm_armv7f,
+     eCore_arm_armv7s,
+     eCore_arm_armv7k,
