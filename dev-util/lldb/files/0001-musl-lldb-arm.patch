@@ -1,37 +1,5 @@
-diff --git a/include/lldb/Core/ArchSpec.h b/include/lldb/Core/ArchSpec.h
-index 75c7079be..b453bf297 100644
---- a/include/lldb/Core/ArchSpec.h
-+++ b/include/lldb/Core/ArchSpec.h
-@@ -119,6 +119,7 @@ public:
-     eCore_arm_armv6,
-     eCore_arm_armv6m,
-     eCore_arm_armv7,
-+    eCore_arm_armv7a,
-     eCore_arm_armv7f,
-     eCore_arm_armv7s,
-     eCore_arm_armv7k,
-diff --git a/source/Core/ArchSpec.cpp b/source/Core/ArchSpec.cpp
-index bfe9750f7..f3552be6b 100644
 --- a/source/Core/ArchSpec.cpp
 +++ b/source/Core/ArchSpec.cpp
-@@ -72,6 +72,8 @@ static const CoreDefinition g_core_definitions[] = {
-      "armv6"},
-     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv6m,
-      "armv6m"},
-+    {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7a,
-+     "armv7a"},
-     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7,
-      "armv7"},
-     {eByteOrderLittle, 4, 2, 4, llvm::Triple::arm, ArchSpec::eCore_arm_armv7f,
-@@ -418,6 +420,8 @@ static const ArchDefinitionEntry g_elf_arch_entries[] = {
-      0xFFFFFFFFu, 0xFFFFFFFFu}, // PowerPC64
-     {ArchSpec::eCore_arm_generic, llvm::ELF::EM_ARM, LLDB_INVALID_CPUTYPE,
-      0xFFFFFFFFu, 0xFFFFFFFFu}, // ARM
-+    {ArchSpec::eCore_arm_armv7a, llvm::ELF::EM_ARM, LLDB_INVALID_CPUTYPE,
-+     0xFFFFFFFFu, 0xFFFFFFFFu}, // ARMv7a
-     {ArchSpec::eCore_arm_aarch64, llvm::ELF::EM_AARCH64, LLDB_INVALID_CPUTYPE,
-      0xFFFFFFFFu, 0xFFFFFFFFu}, // ARM64
-     {ArchSpec::eCore_s390x_generic, llvm::ELF::EM_S390, LLDB_INVALID_CPUTYPE,
 @@ -1114,8 +1118,12 @@ static bool isCompatibleEnvironment(llvm::Triple::EnvironmentType lhs,
        (rhs == llvm::Triple::Android && lhs == llvm::Triple::EABI) ||
        (lhs == llvm::Triple::GNUEABI && rhs == llvm::Triple::EABI) ||
@@ -46,24 +14,24 @@ index bfe9750f7..f3552be6b 100644
      return true;
  
    return false;
-@@ -1319,6 +1327,7 @@ static bool cores_match(const ArchSpec::Core core1, const ArchSpec::Core core2,
-     }
-     break;
+--- a/source/Host/common/HostInfoBase.cpp
++++ b/source/Host/common/HostInfoBase.cpp
+@@ -373,6 +373,18 @@
+   arch_32.Clear();
+   arch_64.Clear();
  
-+  case ArchSpec::eCore_arm_armv7a:
-   case ArchSpec::eCore_arm_armv7f:
-   case ArchSpec::eCore_arm_armv7k:
-   case ArchSpec::eCore_arm_armv7s:
-diff --git a/source/Plugins/Instruction/ARM/EmulateInstructionARM.cpp b/source/Plugins/Instruction/ARM/EmulateInstructionARM.cpp
-index d0ef688f0..a9ad98aad 100644
---- a/source/Plugins/Instruction/ARM/EmulateInstructionARM.cpp
-+++ b/source/Plugins/Instruction/ARM/EmulateInstructionARM.cpp
-@@ -13930,6 +13930,8 @@ bool EmulateInstructionARM::SetArchitecture(const ArchSpec &arch) {
-       m_arm_isa = ARMv6;
-     else if (0 == ::strncasecmp(arch_cstr, "armv7", 5))
-       m_arm_isa = ARMv7;
-+    else if (0 == ::strncasecmp(arch_cstr, "armv7a", 5))
-+      m_arm_isa = ARMv7;
-     else if (0 == ::strncasecmp(arch_cstr, "armv8", 5))
-       m_arm_isa = ARMv8;
-   }
++  // Canonicalize armv7l and armv6l to their alias targets.  The 'l' is a linux addition.
++  if (triple.getOS() == llvm::Triple::Linux && triple.getArch() == llvm::Triple::arm) {
++    switch(triple.getSubArch()) {
++    default:
++      break;
++    case llvm::Triple::SubArchType::ARMSubArch_v6:
++    case llvm::Triple::SubArchType::ARMSubArch_v7:
++      triple.setArchName("arm");
++       break;
++    }
++  }
++
+   switch (triple.getArch()) {
+   default:
+     arch_32.SetTriple(triple);
