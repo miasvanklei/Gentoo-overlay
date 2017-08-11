@@ -92,8 +92,8 @@ src_install() {
 	cmake-utils_src_install
 
 	# binutils symlinks
-	dosym "/usr/bin/lld" "/usr/bin/${CHOST}-lld"
-	dosym "/usr/bin/lld" "/usr/bin/${CHOST}-ld.lld"
-	dosym "/usr/bin/lld" "/usr/bin/${CHOST}-ld"
-	dosym "/usr/bin/lld" "/usr/bin/ld"
+	dosym "lld" "/usr/bin/${CHOST}-lld"
+	dosym "lld" "/usr/bin/${CHOST}-ld.lld"
+	dosym "lld" "/usr/bin/${CHOST}-ld"
+	dosym "ld" "/usr/bin/ld"
 }
