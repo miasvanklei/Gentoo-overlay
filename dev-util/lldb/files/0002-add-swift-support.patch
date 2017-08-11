@@ -47,15 +47,6 @@ diff --git a/cmake/modules/LLDBConfig.cmake b/cmake/modules/LLDBConfig.cmake
 index 726552675..063c0f41c 100644
 --- a/cmake/modules/LLDBConfig.cmake
 +++ b/cmake/modules/LLDBConfig.cmake
-@@ -28,6 +28,8 @@ endif()
- 
- set(LLDB_DISABLE_PYTHON ${LLDB_DEFAULT_DISABLE_PYTHON} CACHE BOOL
-   "Disables the Python scripting integration.")
-+set(LLDB_ALLOW_STATIC_BINDINGS FALSE CACHE BOOL
-+  "Enable using static/baked language bindings if swig is not present.")
- set(LLDB_DISABLE_CURSES ${LLDB_DEFAULT_DISABLE_CURSES} CACHE BOOL
-   "Disables the Curses integration.")
- 
 @@ -203,6 +205,15 @@ else ()
  endif ()
  include_directories("${CMAKE_CURRENT_BINARY_DIR}/../clang/include")
@@ -144,7 +135,7 @@ index 23da02102..936fcaaac 100644
    lldb::LanguageType GetLanguage();
  
    bool GetIsOptimized();
-+  
++
 +  bool GetCanThrow();
  
    bool operator==(const lldb::SBFunction &rhs) const;
@@ -1294,7 +1285,7 @@ index 9d376007a..5ed664694 100644
 -           const AddressRange &range);
 -
 +           const AddressRange &range, bool can_throw = false);
-+           
++
    //------------------------------------------------------------------
    /// Destructor.
    //------------------------------------------------------------------
@@ -1302,7 +1293,7 @@ index 9d376007a..5ed664694 100644
    ///     'false' otherwise.
    //------------------------------------------------------------------
    bool IsTopLevelFunction();
-+  
++
 +  bool CanThrow() const { return m_flags.Test(flagsFunctionCanThrow); }
  
    lldb::DisassemblerSP GetInstructions(const ExecutionContext &exe_ctx,
@@ -2783,7 +2774,7 @@ index 98db94166..3d0371369 100644
    virtual bool GetIRPasses(LLVMUserExpression::IRPasses &custom_passes) {
      return false;
    }
-+  
++
 +  static bool
 +  IsSymbolAnyRuntimeThunk(lldb::ProcessSP process, Symbol &symbol);
  
@@ -3129,17 +3120,17 @@ index e69de29bb..ce2f14021 100644
 +
 +  static std::string DemangleSymbolAsString(const ConstString &symbol, 
 +                                            bool simplified = false);
-+  
++
 +  // Use these passthrough functions rather than calling into Swift directly,
 +  // since some day we may want to support more than one swift variant.
 +  static bool IsSwiftMangledName(const char *name);
-+  
++
 +  static bool IsSwiftClassName(const char *name);
-+  
++
 +  static bool IsMetadataSymbol(const char *symbol);
-+  
++
 +  static bool IsIvarOffsetSymbol(const char *symbol);
-+  
++
 +  static const std::string GetCurrentMangledName(const char *mangled_name);
 +
 +  struct SwiftErrorDescriptor {
@@ -3203,7 +3194,7 @@ index e69de29bb..ce2f14021 100644
 +                                                         bool persistent);
 +
 +  llvm::Optional<Value> GetErrorReturnLocationAfterReturn(lldb::StackFrameSP frame_sp);
-+  
++
 +  llvm::Optional<Value> GetErrorReturnLocationBeforeReturn(lldb::StackFrameSP frame_sp,
 +                                              bool &need_to_check_after_return);
 +
@@ -3283,7 +3274,7 @@ index e69de29bb..ce2f14021 100644
 +  // This API's task is to strip those bits if necessary and return
 +  // a pure pointer (or a tagged pointer)
 +  lldb::addr_t MaybeMaskNonTrivialReferencePointer(
-+      lldb::addr_t, 
++      lldb::addr_t,
 +      SwiftASTContext::NonTriviallyManagedReferenceStrategy strategy);
 +
 +  ConstString GetErrorBackstopName();
@@ -4098,7 +4089,7 @@ index 684a707dd..2ad4f9483 100644
 +bool SBFrame::IsSwiftThunk() const {
 +  std::unique_lock<std::recursive_mutex> lock;
 +  ExecutionContext exe_ctx(m_opaque_sp.get(), lock);
-+  
++
 +  StackFrame *frame = nullptr;
 +  Target *target = exe_ctx.GetTargetPtr();
 +  Process *process = exe_ctx.GetProcessPtr();
@@ -4280,7 +4271,7 @@ index e2ef07cf5..ab5c00e97 100644
 +  // I'll work around that here.  The only Swift types that have a value
 +  // are reference types.  All other Swift types are complex.  So use that
 +  // as the discriminator.
-+  CompilerType type = m_opaque_sp->GetCompilerType(true); 
++  CompilerType type = m_opaque_sp->GetCompilerType(true);
 +  uint32_t flags = type.GetTypeInfo();
 +  if (flags & eTypeIsSwift)
 +    return flags & eTypeHasValue;
