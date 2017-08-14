@@ -281,8 +281,6 @@ src_install() {
 		dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}"
 	done
 
-        use fortran && dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/gfortran"
-
 	# now create target symlinks for all supported ABIs
 	for abi in $(get_all_abis); do
 		local abi_chost=$(get_abi_CHOST "${abi}")
@@ -297,8 +295,6 @@ src_install() {
 			dosym "clang-${clang_version}" \
 				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
 		done
-
-		use fortran && dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${abi_chost}-gfortran"
 	done
 
 	# Remove unnecessary headers on FreeBSD, bug #417171
