@@ -117,29 +117,27 @@ src_prepare() {
 	# link libunwind
 	eapply "${FILESDIR}"/0005-link-libunwind.patch
 
-	# remove gcc quirks
+	# dont recurse to itself when clang > gcc symlink
 	eapply "${FILESDIR}"/0006-fix-ada-in-configure.patch
+
+	# increase gcc version
 	eapply "${FILESDIR}"/0007-increase-gcc-version.patch
 
-	# rtm is not available on all haswell
-	eapply "${FILESDIR}"/0008-remove-rtm-haswell.patch
+	# define __STDC_ISO_10646__ and undefine __gnu_linux__
+	eapply "${FILESDIR}"/0008-defines-musl.patch
 
         # patches for c++
 	eapply "${FILESDIR}"/0009-update-default-cxx-standard.patch
 	eapply "${FILESDIR}"/0010-link-libcxxabi.patch
 
-	# fixes for musl
-	eapply "${FILESDIR}"/0011-dont-define-on-musl.patch
-	eapply "${FILESDIR}"/0012-define__std_iso_10646__.patch
-
 	# needed in linux kernel
-	eapply "${FILESDIR}"/0013-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0011-add-fno-delete-null-pointer-checks.patch
 
 	# add swift support
-	use swift && eapply "${FILESDIR}"/0014-add-swift-support.patch
+	use swift && eapply "${FILESDIR}"/0012-add-swift-support.patch
 
 	# add fortran support
-	use fortran && eapply "${FILESDIR}"/0015-add-fortran-support.patch
+	use fortran && eapply "${FILESDIR}"/0013-add-fortran-support.patch
 
 	# User patches
 	eapply_user
