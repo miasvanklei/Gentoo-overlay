@@ -79,7 +79,7 @@ PATCHES=(
 
 src_configure() {
 	local mycmakeargs=(
-		-DBUILDING_TESTING=OFF
+		-DBUILD_TESTING=OFF
 		$(cmake-utils_use_find_package gdbui KF5SysGuard)
 		-DBUILD_executeplasmoid=$(usex plasma)
 		$(cmake-utils_use_find_package plasma KF5Plasma)
