@@ -34,9 +34,12 @@ RDEPEND="dev-libs/libdispatch
 DEPEND="${RDEPEND}
 	dev-lang/python:2.7"
 
-PATCHES=(
-	"${FILESDIR}"/fix-build.patch
-)
+src_prepare() {
+	eapply "${FILESDIR}"/fix-build.patch
+	eapply_user
+}
+
+
 src_configure() {
 	export DSTROOT=${D}
 	export SWIFT_TARGET=${CHOST}
