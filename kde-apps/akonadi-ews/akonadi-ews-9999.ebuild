@@ -4,6 +4,7 @@
 EAPI=6
 
 EGIT_MIRROR="https://github.com/KrissN"
+KDE_BUILD_TYPE=live
 inherit kde5
 
 DESCRIPTION="Akonadi resource agent for Microsoft Exchange using Exchange Web Services (EWS) protocol"
@@ -13,20 +14,20 @@ KEYWORDS=""
 IUSE=""
 
 COMMON_DEPEND="
-	$(add_frameworks_dep kcmutils)
-	$(add_frameworks_dep kcodecs)
-	$(add_frameworks_dep kconfig)
-	$(add_frameworks_dep kconfigwidgets)
-	$(add_frameworks_dep kcoreaddons)
-	$(add_frameworks_dep kdelibs4support)
-	$(add_frameworks_dep kio)
-	$(add_frameworks_dep krunner)
-	$(add_kdeapps_dep akonadi)
-	$(add_kdeapps_dep akonadi-mime)
-	$(add_kdeapps_dep kcalcore)
-	$(add_kdeapps_dep kcontacts)
-	$(add_kdeapps_dep kmime)
-	$(add_qt_dep qtcore)
+	kde-frameworks/kcmutils
+	kde-frameworks/kcodecs
+	kde-frameworks/kconfig
+	kde-frameworks/kconfigwidgets
+	kde-frameworks/kcoreaddons
+	kde-frameworks/kdelibs4support
+	kde-frameworks/kio
+	kde-frameworks/krunner
+	kde-apps/akonadi
+	kde-apps/akonadi-mime
+	kde-apps/kcalcore
+	kde-apps/kcontacts
+	kde-apps/kmime
+	dev-qt/qtcore
 "
 DEPEND="${COMMON_DEPEND}
 "
