@@ -13,10 +13,7 @@ IUSE="nls ppp -qt4 telepathy vpn"
 
 RDEPEND="
 	$(add_kdeapps_dep kdenetwork-filesharing)
-	vpn? (
-		$(add_kdeapps_dep krdc)
-		$(add_kdeapps_dep krfb)
-        )
+	$(add_kdeapps_dep krdc)
 	telepathy? ( $(add_kdeapps_dep plasma-telepathy-meta) )
 	qt4? (
 		$(add_kdeapps_dep kget)
