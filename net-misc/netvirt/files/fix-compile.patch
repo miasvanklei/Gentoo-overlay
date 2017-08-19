@@ -1,0 +1,26 @@
+--- a/tapcfg/SConstruct
++++ b/tapcfg/SConstruct
+@@ -1,3 +1,4 @@
++import os
+ 
+ AddOption('--force-mingw32',
+           action='store_true', dest='mingw32', default=False,
+@@ -20,7 +21,7 @@ AddOption('--build-universal',
+           help='Create Mac 32-bit and 64-bit universal binaries')
+ 
+ VariantDir('build', 'src')
+-env = Environment()
++env = Environment(ENV = os.environ)
+ env.Tool('gmcs', toolpath = ['scons-tools'])
+ 
+ if env['PLATFORM'] == 'win32' or GetOption('mingw32') or GetOption('mingw64'):
+--- a/tapcfg/src/daemon/daemon.c
++++ b/tapcfg/src/daemon/daemon.c
+@@ -18,6 +18,7 @@
+ #include <assert.h>
+ #include <unistd.h>
+ #include <string.h>
++#include <sys/select.h>
+ 
+ #include "daemon.h"
+ #include "serversock.h"
