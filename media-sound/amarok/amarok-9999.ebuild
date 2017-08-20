@@ -89,6 +89,10 @@ RDEPEND="${COMMONDEPEND}
 	!media-sound/amarok:4
 "
 
+PATCHES=(
+	${FILESDIR}/fix-configure.patch
+)
+
 src_configure() {
 	# Append minimal-toc cflag for ppc64, see bug 280552 and 292707
 	#  use ppc64 && append-flags -mminimal-toc
