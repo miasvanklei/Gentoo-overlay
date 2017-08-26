@@ -15,6 +15,6 @@ IUSE=""
 RDEPEND="dev-qt/qtwebengine
 	x11-libs/libX11
 	x11-libs/libXext
-	virtual/pkg-config"
+	virtual/pkgconfig"
 DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
