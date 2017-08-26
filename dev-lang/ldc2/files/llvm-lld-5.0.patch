@@ -292,7 +292,7 @@ index 5ada148ec..750b776fd 100644
  cl::opt<std::string> mTargetTriple("mtriple", cl::ZeroOrMore,
                                     cl::desc("Override target triple"));
  
-@@ -325,49 +304,7 @@ static cl::list<std::string, StringsAdapter> modFileAliasStrings(
+@@ -325,54 +304,7 @@ static cl::list<std::string, StringsAdapter> modFileAliasStrings(
      cl::value_desc("<package.module>=<filespec>"),
      cl::location(modFileAliasStringsStore));
  
@@ -314,10 +314,15 @@ index 5ada148ec..750b776fd 100644
 -
 -cl::opt<llvm::CodeModel::Model> mCodeModel(
 -    "code-model", cl::desc("Code model"), cl::ZeroOrMore,
+-#if LDC_LLVM_VER < 600
 -    cl::init(llvm::CodeModel::Default),
 -    clEnumValues(
 -        clEnumValN(llvm::CodeModel::Default, "default",
 -                   "Target default code model"),
+-#else
+-    cl::init(llvm::CodeModel::Small),
+-    clEnumValues(
+-#endif
 -        clEnumValN(llvm::CodeModel::Small, "small", "Small code model"),
 -        clEnumValN(llvm::CodeModel::Kernel, "kernel", "Kernel code model"),
 -        clEnumValN(llvm::CodeModel::Medium, "medium", "Medium code model"),
@@ -571,31 +576,6 @@ index d9ee91fad..5379d89d1 100644
  // This function exits the program.
  void printVersion(llvm::raw_ostream &OS) {
    OS << "LDC - the LLVM D compiler (" << global.ldc_version << "):\n";
-@@ -139,11 +127,7 @@ void printVersion(llvm::raw_ostream &OS) {
-   // redirecting stdout to a file.
-   OS.flush();
- 
--  llvm::TargetRegistry::printRegisteredTargetsForVersion(
--#if LDC_LLVM_VER >= 500
--      OS
--#endif
--      );
-+  llvm::TargetRegistry::printRegisteredTargetsForVersion();
- 
-   exit(EXIT_SUCCESS);
- }
-@@ -361,11 +345,7 @@ void parseCommandLine(int argc, char **argv, Strings &sourceFiles,
-   // finalize by expanding response files specified in config file
-   expandResponseFiles(allocator, allArguments);
- 
--#if LDC_LLVM_VER >= 500
--  cl::SetVersionPrinter(&printVersion);
--#else
-   cl::SetVersionPrinter(&printVersionStdout);
--#endif
- 
-   opts::hideLLVMOptions();
-   opts::createClashingOptions();
 @@ -376,8 +364,7 @@ void parseCommandLine(int argc, char **argv, Strings &sourceFiles,
                                const_cast<char **>(allArguments.data()),
                                "LDC - the LLVM D compiler\n");

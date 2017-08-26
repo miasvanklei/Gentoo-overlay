@@ -31,13 +31,14 @@ RDEPEND="dev-libs/libdispatch
 	net-misc/curl
 	dev-libs/libxml2"
 
-DEPEND="${RDEPEND}"
+DEPEND="${RDEPEND}
+	dev-lang/python:2.7"
 
 src_prepare() {
-	eapply ${FILESDIR}/fix-build.patch
-	eapply ${FILESDIR}/fix-arm.patch
+	eapply "${FILESDIR}"/fix-build.patch
 	eapply_user
 }
+
 
 src_configure() {
 	export DSTROOT=${D}

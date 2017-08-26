@@ -64,12 +64,8 @@ src_prepare() {
 		sed '/exec "/ i\paxmark.sh -mr "$r/@mono_runtime@"' -i "${S}"/runtime/mono-wrapper.in || die "Failed to sed mono-wrapper.in"
 	fi
 
-	# mono build system can fail otherwise
-	strip-flags
-
-	#TODO: resolve problem with newer binutils
-	#bug: https://bugs.gentoo.org/show_bug.cgi?id=600664
-	#append-flags -fPIC
+	eapply ${FILESDIR}/remove-sigcontext-include.patch
+	eapply ${FILESDIR}/strerror_r.patch
 
 	default
 	# PATCHES contains configure.ac patch

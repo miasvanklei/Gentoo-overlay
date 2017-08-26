@@ -17,6 +17,6 @@ RDEPEND="
 	$(add_kdeapps_dep kalzium)
 	$(add_kdeapps_dep kig)
 	$(add_kdeapps_dep kiten)
-	$(add_kdeapps_dep kmplot)
 	$(add_kdeapps_dep marble)
+	$(add_kdeapps_dep kmplot)
 "

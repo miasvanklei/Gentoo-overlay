@@ -1,5 +1,5 @@
 diff --git a/duchain/contextbuilder.cpp b/duchain/contextbuilder.cpp
-index a115834..3766a05 100644
+index 6aa5577..07d4934 100644
 --- a/duchain/contextbuilder.cpp
 +++ b/duchain/contextbuilder.cpp
 @@ -5,7 +5,6 @@
@@ -10,7 +10,7 @@ index a115834..3766a05 100644
  
  namespace Rust
  {
-@@ -61,23 +60,6 @@ RSVisitResult ContextBuilder::visitNode(RustNode *node, RustNode *parent)
+@@ -63,23 +62,6 @@ RSVisitResult ContextBuilder::visitNode(RustNode *node, RustNode *parent)
      return Recurse;
  }
  
@@ -35,7 +35,7 @@ index a115834..3766a05 100644
  {
      visit_children(node->data(), visitCallback, this);
 diff --git a/duchain/contextbuilder.h b/duchain/contextbuilder.h
-index b045823..78bb669 100644
+index 4ac4db6..3e4e215 100644
 --- a/duchain/contextbuilder.h
 +++ b/duchain/contextbuilder.h
 @@ -5,6 +5,7 @@
@@ -44,9 +44,9 @@ index b045823..78bb669 100644
  #include "parsesession.h"
 +#include "nodetraits.h"
  
- namespace Rust
- {
-@@ -22,8 +23,22 @@ public:
+ #include "kdevrustduchain_export.h"
+ 
+@@ -24,8 +25,22 @@ public:
  protected:
      KDevelop::RangeInRevision editorFindSpellingRange(RustNode *node, const QString &identifier);
  
@@ -71,3 +71,67 @@ index b045823..78bb669 100644
  
      template<RSNodeKind Kind>
      KDevelop::DUContext *createContext(RSNode *node, const KDevelop::QualifiedIdentifier& scopeId);
+diff --git a/duchain/rustnode.cpp b/duchain/rustnode.cpp
+index a85fcc6..d3c19d4 100644
+--- a/duchain/rustnode.cpp
++++ b/duchain/rustnode.cpp
+@@ -28,29 +28,4 @@ RustNode::~RustNode()
+ {
+ }
+ 
+-template<typename RustObjectType, void (*RustDestructor)(RustObjectType *)>
+-RustAllocatedObject<RustObjectType, RustDestructor>::RustAllocatedObject(RustObjectType *object)
+-    : object(object)
+-{
+-}
+-
+-template<typename RustObjectType, void (*RustDestructor)(RustObjectType *)>
+-RustAllocatedObject<RustObjectType, RustDestructor>::~RustAllocatedObject()
+-{
+-    RustDestructor(object);
+-    object = nullptr;
+-}
+-
+-template<typename RustObjectType, void (*RustDestructor)(RustObjectType *)>
+-RustObjectType *RustAllocatedObject<RustObjectType, RustDestructor>::data()
+-{
+-    return object;
+-}
+-
+-template<typename RustObjectType, void (*RustDestructor)(RustObjectType *)>
+-RustObjectType *RustAllocatedObject<RustObjectType, RustDestructor>::operator *()
+-{
+-    return object;
+-}
+-
+ }
+diff --git a/duchain/rustnode.h b/duchain/rustnode.h
+index c2bd6be..8ac1576 100644
+--- a/duchain/rustnode.h
++++ b/duchain/rustnode.h
+@@ -14,11 +14,21 @@ template <typename RustObjectType, void (*RustDestructor)(RustObjectType *)>
+ class KDEVRUSTDUCHAIN_EXPORT RustAllocatedObject
+ {
+ public:
+-    RustAllocatedObject(RustObjectType *object);
+-    ~RustAllocatedObject();
++    RustAllocatedObject(RustObjectType *object) : object(object) {}
++    ~RustAllocatedObject()
++    {
++        RustDestructor(object);
++        object = nullptr;
++    }
+ 
+-    RustObjectType *data();
+-    RustObjectType *operator *();
++    RustObjectType *data()
++    {
++        return object;
++    }
++    RustObjectType *operator *()
++    {
++        return object;
++    }
+ 
+ private:
+     RustObjectType *object;

@@ -1,12 +1,14 @@
 --- a/lib/Basic/Targets.cpp	2016-09-13 10:37:16.170347952 +0200
 +++ b/lib/Basic/Targets.cpp	2016-09-13 10:38:24.043780461 +0200
-@@ -445,7 +445,8 @@
+@@ -445,7 +445,10 @@
      // Linux defines; list based off of gcc output
      DefineStd(Builder, "unix", Opts);
      DefineStd(Builder, "linux", Opts);
 -    Builder.defineMacro("__gnu_linux__");
 +    if (!Triple.isMusl())
 +      Builder.defineMacro("__gnu_linux__");
++    else
++      Builder.defineMacro("__STDC_ISO_10646__", "201206L");
      Builder.defineMacro("__ELF__");
      if (Triple.isAndroid()) {
        Builder.defineMacro("__ANDROID__", "1");

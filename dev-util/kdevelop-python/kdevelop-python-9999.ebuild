@@ -42,10 +42,10 @@ pkg_setup() {
 	kde5_pkg_setup
 }
 
-src_compile() {
-	pushd "${WORKDIR}"/${P}_build > /dev/null || die
-	emake parser
-	popd > /dev/null || die
+src_configure() {
+        local mycmakeargs=(
+		-DBUILD_TESTING=OFF
+        )
 
-	kde5_src_compile
+        kde5_src_configure
 }
