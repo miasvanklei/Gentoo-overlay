@@ -1,0 +1,22 @@
+diff --git a/Makefile b/Makefile
+index 7d2a77b..8bf8ce5 100644
+--- a/Makefile
++++ b/Makefile
+@@ -3,7 +3,7 @@ bindir=$(prefix)/bin
+ includedir=$(prefix)/include
+ libdir=$(prefix)/lib
+ sysconfdir=$(prefix)/etc
+-tinydir=$(prefix)/share/gettext-tiny
++tinydir=$(prefix)/share/gettext
+ 
+ ifeq ($(LIBINTL), MUSL)
+ 	LIBSRC = libintl/libintl-musl.c
+@@ -41,8 +41,8 @@ BUILDCFLAGS=$(CFLAGS)
+ all: $(ALL_LIBS) $(ALL_TOOLS)
+ 
+ install: $(ALL_LIBS:lib%=$(DESTDIR)$(libdir)/lib%) $(ALL_INCLUDES:%=$(DESTDIR)$(includedir)/%) $(ALL_TOOLS:%=$(DESTDIR)$(bindir)/%) $(ALL_M4S:%=$(DESTDIR)$(tinydir)/%)
+-	cp -a src/Makefile.in.in $(DESTDIR)$(tinydir)/
++	rsync -a src/Makefile.in.in $(DESTDIR)$(tinydir)/po/
+ 
+ clean:
+ 	rm -f $(ALL_LIBS)

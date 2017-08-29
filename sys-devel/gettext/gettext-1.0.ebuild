@@ -20,6 +20,7 @@ RDEPEND="${DEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/fix-cflags.patch
+	"${FILESDIR}"/fix-install.patch
 	"${FILESDIR}"/remove-garbage.patch
 )
 
@@ -29,6 +30,5 @@ src_compile() {
 
 src_install() {
 	emake LIBINTL=MUSL DESTDIR=${D} prefix=/usr install
-	mv ${D}/usr/share/gettext-tiny/m4 ${D}/usr/share/aclocal
-	rmdir ${D}/usr/share/gettext-tiny
+	mv ${D}/usr/share/gettext/m4 ${D}/usr/share/aclocal
 }
