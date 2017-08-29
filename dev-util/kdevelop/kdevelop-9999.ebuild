@@ -75,6 +75,7 @@ RESTRICT+=" test"
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-5.0.2-ninja-optional.patch
+	"${FILESDIR}"/fix-build.patch
 )
 
 src_configure() {
