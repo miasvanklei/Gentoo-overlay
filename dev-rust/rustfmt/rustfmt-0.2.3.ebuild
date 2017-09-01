@@ -11,12 +11,14 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS=""
 IUSE=""
-SRC_URI="https://github.com/rust-lang-nursery/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/rust-lang-nursery/${PN}/archive/nightly-${PV}.tar.gz -> ${P}.tar.gz"
 
 COMMON_DEPEND="dev-lang/rustc"
 DEPEND="${COMMON_DEPEND}
 	dev-util/cargo"
 RDEPEND="${COMMON_DEPEND}"
+
+S=${WORKDIR}/${PN}-nightly-${PV}
 
 src_compile() {
 	cargo build --release --verbose || die
