@@ -25,10 +25,10 @@ PATCHES=(
 )
 
 src_compile() {
-	emake LIBINTL=MUSL
+	emake LIBINTL=MUSL prefix=/usr
 }
 
 src_install() {
 	emake LIBINTL=MUSL DESTDIR=${D} prefix=/usr install
-	mv ${D}/usr/share/gettext/m4 ${D}/usr/share/aclocal
+	mv ${D}/usr/share/gettext/m4 ${D}/usr/share/aclocal || die
 }
