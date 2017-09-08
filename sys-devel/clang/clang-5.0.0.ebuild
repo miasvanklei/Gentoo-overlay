@@ -8,15 +8,14 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic git-r3 llvm multilib-minimal \
+inherit cmake-utils flag-o-matic llvm multilib-minimal \
 	python-single-r1 toolchain-funcs pax-utils versionator
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/clang.git
-        https://github.com/llvm-mirror/clang.git"
-EGIT_BRANCH="release_50"
+SRC_URI="https://releases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
+        https://releases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
+        test? ( https://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -58,7 +57,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/${P}
+S=${WORKDIR}/x/y/cfe-${PV/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -80,26 +79,16 @@ pkg_setup() {
 }
 
 src_unpack() {
-	# create extra parent dir for CLANG_RESOURCE_DIR
+	# create extra parent dirs for CLANG_RESOURCE_DIR
 	mkdir -p x/y || die
 	cd x/y || die
 
-	git-r3_fetch "https://git.llvm.org/git/clang-tools-extra.git
-		https://github.com/llvm-mirror/clang-tools-extra.git"
-	if use test; then
-		# needed for patched gtest
-		git-r3_fetch "https://git.llvm.org/git/llvm.git
-			https://github.com/llvm-mirror/llvm.git"
-	fi
-	git-r3_fetch
+	default
 
-	git-r3_checkout https://llvm.org/git/clang-tools-extra.git \
-		"${S}"/tools/extra
+	mv clang-tools-extra-*.src "${S}"/tools/extra || die
 	if use test; then
-		git-r3_checkout https://llvm.org/git/llvm.git \
-			"${WORKDIR}"/llvm
+		mv llvm-*.src "${WORKDIR}"/llvm || die
 	fi
-	git-r3_checkout "${EGIT_REPO_URI}" "${S}"
 }
 
 src_prepare() {

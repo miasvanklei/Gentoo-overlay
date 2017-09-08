@@ -8,15 +8,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic git-r3 multilib-minimal pax-utils \
+inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
 	python-any-r1 toolchain-funcs versionator
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/llvm.git
-        https://github.com/llvm-mirror/llvm.git"
-EGIT_BRANCH="release_50"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
+	https://releases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -68,7 +66,7 @@ PDEPEND="sys-devel/llvm-common
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
-S=${WORKDIR}/${P/_/}
+S=${WORKDIR}/${P/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -79,12 +77,9 @@ python_check_deps() {
 }
 
 src_unpack() {
-        git-r3_fetch "https://git.llvm.org/git/polly.git
-                https://github.com/llvm-mirror/polly.git"
-        git-r3_fetch
+	default
 
-        git-r3_checkout https://llvm.org/git/polly.git "${S}"/tools/polly
-        git-r3_checkout
+	mv polly-*.src "${S}"/tools/polly || die
 }
 
 src_prepare() {
