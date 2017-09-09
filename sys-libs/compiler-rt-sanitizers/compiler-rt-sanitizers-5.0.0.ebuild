@@ -17,7 +17,7 @@ SRC_URI="https://releases.llvm.org/${PV/_//}/compiler-rt-${PV/_/}.src.tar.xz
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="${PV%_*}"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="test"
 
 LLVM_SLOT=${SLOT%%.*}
@@ -63,7 +63,6 @@ src_unpack() {
 		mv llvm-* llvm || die
 	fi
 }
-
 
 src_configure() {
 	# pre-set since we need to pass it to cmake

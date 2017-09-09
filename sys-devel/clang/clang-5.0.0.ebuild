@@ -14,8 +14,9 @@ inherit cmake-utils flag-o-matic llvm multilib-minimal \
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
 SRC_URI="https://releases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
-        https://releases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
-        test? ( https://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+	https://releases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -79,7 +80,7 @@ pkg_setup() {
 }
 
 src_unpack() {
-	# create extra parent dirs for CLANG_RESOURCE_DIR
+	# create extra parent dir for CLANG_RESOURCE_DIR
 	mkdir -p x/y || die
 	cd x/y || die
 
@@ -309,6 +310,12 @@ multilib_src_install_all() {
 	python_fix_shebang "${ED}"
 	if use static-analyzer; then
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
+	fi
+
+	# install pre-generated manpages
+	if ! use doc; then
+		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+		doins "${WORKDIR}/x/y/llvm-manpages-${PV}/clang"/*.1
 	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
