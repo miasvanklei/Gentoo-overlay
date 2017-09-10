@@ -67,24 +67,6 @@ index bd9e7a8fde..6dd0b86190 100644
  
    add_library(swiftCore SHARED IMPORTED)
    set_target_properties(swiftCore PROPERTIES
-diff --git a/tools/SourceKit/lib/Core/CMakeLists.txt b/tools/SourceKit/lib/Core/CMakeLists.txt
-index 1122ebf5fc..82fbaf3237 100644
---- a/tools/SourceKit/lib/Core/CMakeLists.txt
-+++ b/tools/SourceKit/lib/Core/CMakeLists.txt
-@@ -1,7 +1,12 @@
-+set(SOURCEKIT_CORE_DEPEND SourceKitSupport)
-+if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
-+  list(APPEND SOURCEKIT_CORE_DEPEND dispatch)
-+endif()
- 
- add_sourcekit_library(SourceKitCore
-   Context.cpp
-   LangSupport.cpp
-   NotificationCenter.cpp
--  LINK_LIBS SourceKitSupport
-+  LINK_LIBS ${SOURCEKIT_CORE_DEPEND}
-+  SHARED
- )
 diff --git a/tools/SourceKit/lib/SwiftLang/CMakeLists.txt b/tools/SourceKit/lib/SwiftLang/CMakeLists.txt
 index 8513bff510..04d5f0f7dd 100644
 --- a/tools/SourceKit/lib/SwiftLang/CMakeLists.txt
@@ -98,12 +80,6 @@ index 8513bff510..04d5f0f7dd 100644
      # Clang dependencies.
        clangIndex
        clangFormat
-@@ -43,4 +43,5 @@ add_sourcekit_library(SourceKitSwiftLang
-       option
-       objcarcopts
-       profiledata
-+  SHARED
- )
 diff --git a/tools/SourceKit/tools/complete-test/CMakeLists.txt b/tools/SourceKit/tools/complete-test/CMakeLists.txt
 index 181b45d134..09af4be960 100644
 --- a/tools/SourceKit/tools/complete-test/CMakeLists.txt
@@ -190,7 +166,7 @@ diff --git a/tools/SourceKit/tools/sourcekitd/lib/API/CMakeLists.txt b/tools/Sou
 index cda578df53..a340d3d7b3 100644
 --- a/tools/SourceKit/tools/sourcekitd/lib/API/CMakeLists.txt
 +++ b/tools/SourceKit/tools/sourcekitd/lib/API/CMakeLists.txt
-@@ -29,8 +29,13 @@ elseif(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
+@@ -29,8 +29,12 @@ elseif(SWIFT_SOURCEKIT_USE_INPROC_LIBRARY)
    list(APPEND sourcekitdAPI_sources ${sourcekitdAPI_NonDarwin_InProc_sources})
  endif()
  
@@ -204,13 +180,12 @@ index cda578df53..a340d3d7b3 100644
 -  LINK_LIBS
 -      SourceKitSupport SourceKitSwiftLang
 +  LINK_LIBS ${SOURCEKITD_API_DEPEND}
-+  SHARED
  )
 diff --git a/tools/SourceKit/lib/Support/CMakeLists.txt b/tools/SourceKit/lib/Support/CMakeLists.txt
 index 4ecd7b8adb..f5bfdce419 100644
 --- a/tools/SourceKit/lib/Support/CMakeLists.txt
 +++ b/tools/SourceKit/lib/Support/CMakeLists.txt
-@@ -10,11 +10,12 @@ set(SourceKitSupport_sources
+@@ -10,7 +10,7 @@ set(SourceKitSupport_sources
  
  set(SOURCEKIT_SUPPORT_DEPEND swiftBasic swiftSyntax clangBasic clangRewrite)
  if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
@@ -219,8 +194,21 @@ index 4ecd7b8adb..f5bfdce419 100644
  endif()
  
  add_sourcekit_library(SourceKitSupport
-   ${SourceKitSupport_sources}
-   DEPENDS swift-syntax-generated-headers
-   LINK_LIBS ${SOURCEKIT_SUPPORT_DEPEND}
-+  SHARED
+diff --git a/tools/SourceKit/lib/Core/CMakeLists.txt b/tools/SourceKit/lib/Core/CMakeLists.txt
+index ce80d3bbea..fc09465c6f 100644
+--- a/tools/SourceKit/lib/Core/CMakeLists.txt
++++ b/tools/SourceKit/lib/Core/CMakeLists.txt
++set(SOURCEKIT_CORE_DEPEND SourceKitSupport)
++if(SOURCEKIT_NEED_EXPLICIT_LIBDISPATCH)
++  list(APPEND SOURCEKIT_CORE_DEPEND dispatch)
++endif()
+ 
+ add_sourcekit_library(SourceKitCore
+   Context.cpp
+   LangSupport.cpp
+   NotificationCenter.cpp
+-  LINK_LIBS SourceKitSupport
++  LINK_LIBS ${SOURCEKIT_CORE_DEPEND}
++  LLVM_COMPONENT_DEPENDS support
  )
+

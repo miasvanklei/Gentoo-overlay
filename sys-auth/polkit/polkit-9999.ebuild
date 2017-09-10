@@ -3,11 +3,12 @@
 
 EAPI=6
 
-inherit autotools pam pax-utils systemd user xdg-utils
+inherit autotools pam pax-utils systemd user xdg-utils git-r3
 
 DESCRIPTION="Policy framework for controlling privileges for system-wide services"
 HOMEPAGE="https://www.freedesktop.org/wiki/Software/polkit"
-SRC_URI="https://www.freedesktop.org/software/${PN}/releases/${P}.tar.gz"
+SRC_URI=""
+EGIT_REPO_URI="https://anongit.freedesktop.org/git/polkit.git"
 
 LICENSE="LGPL-2"
 SLOT="0"
@@ -52,10 +53,10 @@ PDEPEND="
 DOCS=( docs/TODO HACKING NEWS README )
 
 PATCHES=(
-	"${FILESDIR}"/port-to-mozjs24.patch
-	"${FILESDIR}"/port-to-mozjs24-1.patch
-	"${FILESDIR}"/port-to-mozjs24-2.patch
-	"${FILESDIR}"/port-to-mozjs24-3.patch
+#	"${FILESDIR}"/port-to-mozjs24.patch
+#	"${FILESDIR}"/port-to-mozjs24-1.patch
+#	"${FILESDIR}"/port-to-mozjs24-2.patch
+#	"${FILESDIR}"/port-to-mozjs24-3.patch
 	"${FILESDIR}"/port-to-mozjs38.patch
 	"${FILESDIR}"/${PN}-0.114-elogind.patch
 	"${FILESDIR}"/${PN}-make-netgroup-support-optional.patch
@@ -81,10 +82,10 @@ src_prepare() {
 	sed -i -e 's|unix-group:wheel|unix-user:0|' src/polkitbackend/*-default.rules || die #401513
 
 	# Workaround upstream hack around standard gtk-doc behavior, bug #552170
-	sed -i -e 's/@ENABLE_GTK_DOC_TRUE@\(TARGET_DIR\)/\1/' \
-		-e '/install-data-local:/,/uninstall-local:/ s/@ENABLE_GTK_DOC_TRUE@//' \
-		-e 's/@ENABLE_GTK_DOC_FALSE@install-data-local://' \
-		docs/polkit/Makefile.in || die
+#	sed -i -e 's/@ENABLE_GTK_DOC_TRUE@\(TARGET_DIR\)/\1/' \
+#		-e '/install-data-local:/,/uninstall-local:/ s/@ENABLE_GTK_DOC_TRUE@//' \
+#		-e 's/@ENABLE_GTK_DOC_FALSE@install-data-local://' \
+#		docs/polkit/Makefile.in || die
 
 	# disable broken test - bug #624022
 	sed -i -e "/^SUBDIRS/s/polkitbackend//" test/Makefile.am || die

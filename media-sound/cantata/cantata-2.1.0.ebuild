@@ -34,6 +34,7 @@ RDEPEND="
 	dev-qt/qtwidgets:5
 	dev-qt/qtxml:5
         kde-frameworks/solid
+	media-sound/mpd
 	|| ( kde-frameworks/breeze-icons:5 kde-frameworks/oxygen-icons:* )
 	sys-libs/zlib
 	virtual/libudev:=

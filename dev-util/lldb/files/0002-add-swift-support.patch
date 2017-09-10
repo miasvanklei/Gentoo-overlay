@@ -1,3 +1,6 @@
+diff --git a/91e418989ae1a92e75f93291d21d206d2f9be322.patch b/91e418989ae1a92e75f93291d21d206d2f9be322.patch
+deleted file mode 100644
+index e69de29bb..000000000
 diff --git a/CMakeLists.txt b/CMakeLists.txt
 index ada293811..058e4db9c 100644
 --- a/CMakeLists.txt
@@ -44,10 +47,10 @@ index 55ce37908..ac08f27c1 100644
  
  if (NOT LLDB_DISABLE_PYTHON AND NOT LLVM_BUILD_STATIC)
 diff --git a/cmake/modules/LLDBConfig.cmake b/cmake/modules/LLDBConfig.cmake
-index 726552675..063c0f41c 100644
+index 726552675..6d001f6e6 100644
 --- a/cmake/modules/LLDBConfig.cmake
 +++ b/cmake/modules/LLDBConfig.cmake
-@@ -203,6 +205,15 @@ else ()
+@@ -203,6 +203,15 @@ else ()
  endif ()
  include_directories("${CMAKE_CURRENT_BINARY_DIR}/../clang/include")
  
@@ -63,7 +66,7 @@ index 726552675..063c0f41c 100644
  # Disable GCC warnings
  check_cxx_compiler_flag("-Wno-deprecated-declarations"
                          CXX_SUPPORTS_NO_DEPRECATED_DECLARATIONS)
-@@ -327,6 +338,7 @@ if (APPLE)
+@@ -327,6 +336,7 @@ if (APPLE)
         ${SECURITY_LIBRARY}
         ${DEBUG_SYMBOLS_LIBRARY})
  
@@ -128,18 +131,18 @@ index 58339750d..9aa611cd1 100644
    ///
    /// See also GetFunctionName().
 diff --git a/include/lldb/API/SBFunction.h b/include/lldb/API/SBFunction.h
-index 23da02102..936fcaaac 100644
+index 23da02102..4ab7c3443 100644
 --- a/include/lldb/API/SBFunction.h
 +++ b/include/lldb/API/SBFunction.h
-@@ -54,6 +54,8 @@ public:
-   lldb::LanguageType GetLanguage();
+@@ -55,6 +55,8 @@ public:
  
    bool GetIsOptimized();
-+
-+  bool GetCanThrow();
  
++  bool GetCanThrow();
++
    bool operator==(const lldb::SBFunction &rhs) const;
  
+   bool operator!=(const lldb::SBFunction &rhs) const;
 diff --git a/include/lldb/API/SBModule.h b/include/lldb/API/SBModule.h
 index bcc3997a2..5bc4529a7 100644
 --- a/include/lldb/API/SBModule.h
@@ -1253,7 +1256,7 @@ index c5bca54ed..7391df5c6 100644
    void DumpSummary(ExecutionContext *exe_ctx, Stream *s,
                     const DataExtractor &data, lldb::offset_t data_offset,
 diff --git a/include/lldb/Symbol/Function.h b/include/lldb/Symbol/Function.h
-index 9d376007a..5ed664694 100644
+index 9d376007a..7cf30a361 100644
 --- a/include/lldb/Symbol/Function.h
 +++ b/include/lldb/Symbol/Function.h
 @@ -346,10 +346,14 @@ public:
@@ -1272,7 +1275,7 @@ index 9d376007a..5ed664694 100644
  
    //------------------------------------------------------------------
    /// Construct with a compile unit, function UID, function type UID,
-@@ -381,11 +385,14 @@ public:
+@@ -381,10 +385,13 @@ public:
    ///
    /// @param[in] range
    ///     The section offset based address for this function.
@@ -1283,21 +1286,19 @@ index 9d376007a..5ed664694 100644
    Function(CompileUnit *comp_unit, lldb::user_id_t func_uid,
             lldb::user_id_t func_type_uid, const char *mangled, Type *func_type,
 -           const AddressRange &range);
--
 +           const AddressRange &range, bool can_throw = false);
-+
+ 
    //------------------------------------------------------------------
    /// Destructor.
-   //------------------------------------------------------------------
-@@ -595,6 +602,8 @@ public:
-   ///     'false' otherwise.
+@@ -596,6 +603,8 @@ public:
    //------------------------------------------------------------------
    bool IsTopLevelFunction();
-+
-+  bool CanThrow() const { return m_flags.Test(flagsFunctionCanThrow); }
  
++  bool CanThrow() const { return m_flags.Test(flagsFunctionCanThrow); }
++
    lldb::DisassemblerSP GetInstructions(const ExecutionContext &exe_ctx,
                                         const char *flavor,
+                                        bool prefer_file_cache);
 @@ -606,7 +615,9 @@ public:
  protected:
    enum {
@@ -2755,7 +2756,7 @@ index b4f84c0dd..cb71d3e19 100644
  protected:
    // This function does not take the map mutex, and should only be called from
 diff --git a/include/lldb/Target/LanguageRuntime.h b/include/lldb/Target/LanguageRuntime.h
-index 98db94166..3d0371369 100644
+index 98db94166..75f1a6575 100644
 --- a/include/lldb/Target/LanguageRuntime.h
 +++ b/include/lldb/Target/LanguageRuntime.h
 @@ -128,6 +128,11 @@ public:
@@ -2770,16 +2771,16 @@ index 98db94166..3d0371369 100644
    Target &GetTargetRef() { return m_process->GetTarget(); }
  
    virtual lldb::BreakpointResolverSP
-@@ -159,6 +164,9 @@ public:
-   virtual bool GetIRPasses(LLVMUserExpression::IRPasses &custom_passes) {
+@@ -160,6 +165,9 @@ public:
      return false;
    }
-+
+ 
 +  static bool
 +  IsSymbolAnyRuntimeThunk(lldb::ProcessSP process, Symbol &symbol);
- 
++
  protected:
    //------------------------------------------------------------------
+   // Classes that inherit from LanguageRuntime can see and modify these
 diff --git a/include/lldb/Target/Process.h b/include/lldb/Target/Process.h
 index df0957005..e5c681e43 100644
 --- a/include/lldb/Target/Process.h
@@ -2894,7 +2895,7 @@ index c99877cbd..0b812a0fa 100644
    static lldb::ExpressionVariableSP
    GetExpressionVariable(lldb::StopInfoSP &stop_info_sp);
 diff --git a/include/lldb/Target/SwiftLanguageRuntime.h b/include/lldb/Target/SwiftLanguageRuntime.h
-index e69de29bb..ce2f14021 100644
+index e69de29bb..b710d02a4 100644
 --- a/include/lldb/Target/SwiftLanguageRuntime.h
 +++ b/include/lldb/Target/SwiftLanguageRuntime.h
 @@ -0,0 +1,513 @@
@@ -4071,7 +4072,7 @@ index e26fa1165..9588987a8 100644
    return m_opaque_ap->GetGenerateDebugInfo();
  }
 diff --git a/source/API/SBFrame.cpp b/source/API/SBFrame.cpp
-index 684a707dd..2ad4f9483 100644
+index 684a707dd..202d50931 100644
 --- a/source/API/SBFrame.cpp
 +++ b/source/API/SBFrame.cpp
 @@ -37,6 +37,7 @@
@@ -4257,7 +4258,7 @@ index b34489603..bfc0ed665 100644
      } else {
        if (log)
 diff --git a/source/API/SBType.cpp b/source/API/SBType.cpp
-index e2ef07cf5..ab5c00e97 100644
+index e2ef07cf5..4cf139ccf 100644
 --- a/source/API/SBType.cpp
 +++ b/source/API/SBType.cpp
 @@ -131,6 +131,18 @@ bool SBType::IsVectorType() {
@@ -4913,10 +4914,10 @@ index 2d4271cab..e73965c61 100644
        languages.push_back(Language::FindPlugin(m_command_options.m_language));
      }
 diff --git a/source/Core/CMakeLists.txt b/source/Core/CMakeLists.txt
-index c5105bd9a..de5dcd991 100644
+index c345afb40..100797eec 100644
 --- a/source/Core/CMakeLists.txt
 +++ b/source/Core/CMakeLists.txt
-@@ -49,6 +49,9 @@ add_lldb_library(lldbCore
+@@ -58,6 +58,9 @@ add_lldb_library(lldbCore
    ValueObjectVariable.cpp
  
    LINK_LIBS
@@ -9858,7 +9859,7 @@ index e69de29bb..a15400aa0 100644
 +    Analysis
 +  )
 diff --git a/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.cpp b/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.cpp
-index e69de29bb..2609bfa87 100644
+index e69de29bb..2bddbabf3 100644
 --- a/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.cpp
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftASTManipulator.cpp
 @@ -0,0 +1,1638 @@
@@ -10446,10 +10447,10 @@ index e69de29bb..2609bfa87 100644
 +      is_static, specifier, is_capture_list, source_loc, name, swift::Type(),
 +      new_decl_context);
 +  result_loc_info.tmp_var_decl->setImplicit();
-+  result_loc_info.tmp_var_decl->setAccessibility(
-+      swift::Accessibility::Internal);
-+  result_loc_info.tmp_var_decl->setSetterAccessibility(
-+      swift::Accessibility::Internal);
++  result_loc_info.tmp_var_decl->setAccess(
++      swift::AccessLevel::Internal);
++  result_loc_info.tmp_var_decl->setSetterAccess(
++      swift::AccessLevel::Internal);
 +
 +  swift::NamedPattern *var_pattern =
 +      new (ast_context) swift::NamedPattern(result_loc_info.tmp_var_decl, true);
@@ -10700,16 +10701,16 @@ index e69de29bb..2609bfa87 100644
 +    virtual bool walkToDeclPre(swift::Decl *decl) {
 +      if (swift::ValueDecl *value_decl =
 +              llvm::dyn_cast<swift::ValueDecl>(decl)) {
-+        auto access = swift::Accessibility::Public;
++        auto access = swift::AccessLevel::Public;
 +        if (swift::isa<swift::ClassDecl>(value_decl) ||
 +            swift::isa<swift::ClassDecl>(value_decl->getDeclContext())) {
-+          access = swift::Accessibility::Open;
++          access = swift::AccessLevel::Open;
 +        }
 +
-+        value_decl->overwriteAccessibility(access);
++        value_decl->overwriteAccess(access);
 +        if (swift::AbstractStorageDecl *var_decl =
 +                llvm::dyn_cast<swift::AbstractStorageDecl>(decl))
-+          var_decl->overwriteSetterAccessibility(access);
++          var_decl->overwriteSetterAccess(access);
 +      }
 +
 +      return true;
@@ -10845,8 +10846,8 @@ index e69de29bb..2609bfa87 100644
 +
 +  CompilerType return_ast_type(&ast_context, result_type.getPointer());
 +
-+  result_var->overwriteAccessibility(swift::Accessibility::Public);
-+  result_var->overwriteSetterAccessibility(swift::Accessibility::Public);
++  result_var->overwriteAccess(swift::AccessLevel::Public);
++  result_var->overwriteSetterAccess(swift::AccessLevel::Public);
 +
 +  // Finally, go reset the return expression to the new result variable for each
 +  // of the return expressions.
@@ -10886,8 +10887,8 @@ index e69de29bb..2609bfa87 100644
 +
 +  CompilerType error_ast_type(&ast_context, error_type.getPointer());
 +
-+  error_var->overwriteAccessibility(swift::Accessibility::Public);
-+  error_var->overwriteSetterAccessibility(swift::Accessibility::Public);
++  error_var->overwriteAccess(swift::AccessLevel::Public);
++  error_var->overwriteSetterAccess(swift::AccessLevel::Public);
 +
 +  // Finally, go reset the return expression to the new result variable for each
 +  // of the return expressions.
@@ -10993,8 +10994,8 @@ index e69de29bb..2609bfa87 100644
 +  swift::VarDecl *result_var =
 +      AddExternalVariable(result_var_name, return_ast_type, metadata_sp);
 +
-+  result_var->overwriteAccessibility(swift::Accessibility::Public);
-+  result_var->overwriteSetterAccessibility(swift::Accessibility::Public);
++  result_var->overwriteAccess(swift::AccessLevel::Public);
++  result_var->overwriteSetterAccess(swift::AccessLevel::Public);
 +
 +  // Finally, go reset the return expression to the new result variable for each
 +  // of the return expressions.
@@ -11035,9 +11036,9 @@ index e69de29bb..2609bfa87 100644
 +            swift::VarDecl *error_var = AddExternalVariable(
 +                error_var_name, error_ast_type, error_metadata_sp);
 +
-+            error_var->overwriteAccessibility(swift::Accessibility::Public);
-+            error_var->overwriteSetterAccessibility(
-+                swift::Accessibility::Public);
++            error_var->overwriteAccess(swift::AccessLevel::Public);
++            error_var->overwriteSetterAccess(
++                swift::AccessLevel::Public);
 +
 +            InsertError(error_var, error_type);
 +            break;
@@ -11410,7 +11411,7 @@ index e69de29bb..2609bfa87 100644
 +
 +  if (type_alias_decl) {
 +    if (make_private) {
-+      type_alias_decl->overwriteAccessibility(swift::Accessibility::Private);
++      type_alias_decl->overwriteAccess(swift::AccessLevel::Private);
 +    }
 +    m_source_file.Decls.push_back(type_alias_decl);
 +  }

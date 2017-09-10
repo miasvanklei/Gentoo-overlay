@@ -37,7 +37,6 @@ pkg_setup() {
 }
 
 src_prepare() {
-	eapply "${FILESDIR}"/llvm-5.0.patch
 	eapply "${FILESDIR}"/musl.patch
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 	eapply "${FILESDIR}"/debug-hack.patch

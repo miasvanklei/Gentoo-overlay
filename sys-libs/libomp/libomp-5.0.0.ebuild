@@ -8,14 +8,11 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib git-r3 python-any-r1
+inherit cmake-multilib python-any-r1
 
 DESCRIPTION="OpenMP runtime library for LLVM/clang compiler"
-HOMEPAGE="http://openmp.llvm.org"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/openmp.git
-        https://github.com/llvm-mirror/openmp.git"
-EGIT_BRANCH="release_50"
+HOMEPAGE="https://openmp.llvm.org"
+SRC_URI="https://releases.llvm.org/${PV/_//}/openmp-${PV/_/}.src.tar.xz"
 
 # Additional licenses:
 # - MIT-licensed Intel code,
@@ -23,7 +20,7 @@ EGIT_BRANCH="release_50"
 
 LICENSE="|| ( UoI-NCSA MIT ) MIT LLVM-Grant"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="hwloc ompt test"
 
 RDEPEND="hwloc? ( sys-apps/hwloc:0=[${MULTILIB_USEDEP}] )"
@@ -38,6 +35,11 @@ DEPEND="${RDEPEND}
                 sys-devel/llvm
                 >=sys-devel/clang-3.9.0
         )"
+
+S=${WORKDIR}/openmp-${PV/_/}.src
+
+# least intrusive of all
+CMAKE_BUILD_TYPE=Release
 
 python_check_deps() {
         has_version "dev-python/lit[${PYTHON_USEDEP}]"
