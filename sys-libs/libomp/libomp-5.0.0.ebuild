@@ -41,6 +41,11 @@ S=${WORKDIR}/openmp-${PV/_/}.src
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
 
+S=${WORKDIR}/openmp-${PV/_/}.src
+
+# least intrusive of all
+CMAKE_BUILD_TYPE=Release
+
 python_check_deps() {
 	has_version "dev-python/lit[${PYTHON_USEDEP}]"
 }

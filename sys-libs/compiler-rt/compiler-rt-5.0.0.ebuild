@@ -8,18 +8,15 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic git-r3 llvm python-any-r1 toolchain-funcs
+inherit cmake-utils flag-o-matic llvm python-any-r1 toolchain-funcs
 
 DESCRIPTION="Compiler runtime library for clang (built-in part)"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/compiler-rt.git
-	https://github.com/llvm-mirror/compiler-rt.git"
-EGIT_BRANCH="release_50"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="${PV%_*}"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="+clang test"
 
 LLVM_SLOT=${SLOT%%.*}
@@ -31,6 +28,8 @@ DEPEND="
 		$(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]")
 		=sys-devel/clang-${PV%_*}*:${LLVM_SLOT} )
 	${PYTHON_DEPS}"
+
+S=${WORKDIR}/${P/_/}.src
 
 CMAKE_BUILD_TYPE=Release
 

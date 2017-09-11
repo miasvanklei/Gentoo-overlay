@@ -8,15 +8,15 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic git-r3 llvm multilib-minimal \
+inherit cmake-utils flag-o-matic llvm multilib-minimal \
 	python-single-r1 toolchain-funcs pax-utils versionator
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/clang.git
-        https://github.com/llvm-mirror/clang.git"
-EGIT_BRANCH="release_50"
+SRC_URI="https://releases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
+	https://releases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -58,7 +58,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/${P}
+S=${WORKDIR}/x/y/cfe-${PV/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -84,59 +84,46 @@ src_unpack() {
 	mkdir -p x/y || die
 	cd x/y || die
 
-	git-r3_fetch "https://git.llvm.org/git/clang-tools-extra.git
-		https://github.com/llvm-mirror/clang-tools-extra.git"
-	if use test; then
-		# needed for patched gtest
-		git-r3_fetch "https://git.llvm.org/git/llvm.git
-			https://github.com/llvm-mirror/llvm.git"
-	fi
-	git-r3_fetch
+	default
 
-	git-r3_checkout https://llvm.org/git/clang-tools-extra.git \
-		"${S}"/tools/extra
+	mv clang-tools-extra-*.src "${S}"/tools/extra || die
 	if use test; then
-		git-r3_checkout https://llvm.org/git/llvm.git \
-			"${WORKDIR}"/llvm
+		mv llvm-*.src "${WORKDIR}"/llvm || die
 	fi
-	git-r3_checkout "${EGIT_REPO_URI}" "${S}"
 }
 
 src_prepare() {
-	# fix stand-alone doc build
-	eapply "${FILESDIR}"/0001-cmake-Support-stand-alone-Sphinx-doxygen-doc-build.patch
-
 	# fix use with arm
-	eapply "${FILESDIR}"/0002-fix-unwind.patch
+	eapply "${FILESDIR}"/0001-fix-unwind.patch
 
 	# cleanup and gentoo patches(SSP,PIE,FULLRELRO)
-	eapply "${FILESDIR}"/0003-add-gentoo-distro.patch
-	eapply "${FILESDIR}"/0004-gentoo-linux-changes.patch
+	eapply "${FILESDIR}"/0002-add-gentoo-distro.patch
+	eapply "${FILESDIR}"/0003-gentoo-linux-changes.patch
 
 	# link libunwind
-	eapply "${FILESDIR}"/0005-link-libunwind.patch
+	eapply "${FILESDIR}"/0004-link-libunwind.patch
 
 	# dont recurse to itself when clang > gcc symlink
-	eapply "${FILESDIR}"/0006-fix-ada-in-configure.patch
+	eapply "${FILESDIR}"/0005-fix-ada-in-configure.patch
 
 	# increase gcc version
-	eapply "${FILESDIR}"/0007-increase-gcc-version.patch
+	eapply "${FILESDIR}"/0006-increase-gcc-version.patch
 
 	# define __STDC_ISO_10646__ and undefine __gnu_linux__
-	eapply "${FILESDIR}"/0008-defines-musl.patch
+	eapply "${FILESDIR}"/0007-defines-musl.patch
 
         # patches for c++
-	eapply "${FILESDIR}"/0009-update-default-cxx-standard.patch
-	eapply "${FILESDIR}"/0010-link-libcxxabi.patch
+	eapply "${FILESDIR}"/0008-update-default-cxx-standard.patch
+	eapply "${FILESDIR}"/0009-link-libcxxabi.patch
 
 	# needed in linux kernel
-	eapply "${FILESDIR}"/0011-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0010-add-fno-delete-null-pointer-checks.patch
 
 	# add swift support
-	use swift && eapply "${FILESDIR}"/0012-add-swift-support.patch
+	use swift && eapply "${FILESDIR}"/0011-add-swift-support.patch
 
 	# add fortran support
-	use fortran && eapply "${FILESDIR}"/0013-add-fortran-support.patch
+	use fortran && eapply "${FILESDIR}"/0012-add-fortran-support.patch
 
 	# User patches
 	eapply_user
@@ -182,7 +169,6 @@ multilib_src_configure() {
 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 		# z3 is not multilib-friendly
 		-DCLANG_ANALYZER_BUILD_Z3=$(multilib_native_usex z3)
-		-DZ3_INCLUDE_DIR="${EPREFIX}/usr/include/z3"
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
@@ -191,14 +177,20 @@ multilib_src_configure() {
 
 	if multilib_is_native_abi; then
 		mycmakeargs+=(
-			-DLLVM_BUILD_DOCS=$(usex doc)
-			-DLLVM_ENABLE_SPHINX=$(usex doc)
-			-DLLVM_ENABLE_DOXYGEN=OFF
+			# normally copied from LLVM_INCLUDE_DOCS but the latter
+			# is lacking value in stand-alone builds
+			-DCLANG_INCLUDE_DOCS=$(usex doc)
+			-DCLANG_TOOLS_EXTRA_INCLUDE_DOCS=$(usex doc)
 		)
 		use doc && mycmakeargs+=(
+			-DLLVM_BUILD_DOCS=ON
+			-DLLVM_ENABLE_SPHINX=ON
 			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
 			-DCLANG-TOOLS_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/tools-extra"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
+		)
+		use z3 && mycmakeargs+=(
+			-DZ3_INCLUDE_DIR="${EPREFIX}/usr/include/z3"
 		)
 	else
 		mycmakeargs+=(
@@ -234,7 +226,11 @@ multilib_src_test() {
 	# respect TMPDIR!
 	local -x LIT_PRESERVES_TMP=1
 	cmake-utils_src_make check-clang
-	multilib_is_native_abi && cmake-utils_src_make check-clang-tools
+	# clang-tidy requires [static-analyzer] and tests are not split
+	# correctly, so they are all disabled when static-analyzer is off
+	if multilib_is_native_abi && use static-analyzer; then
+		cmake-utils_src_make check-clang-tools
+	fi
 }
 
 src_install() {
@@ -316,9 +312,27 @@ multilib_src_install_all() {
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
 	fi
 
+	# install pre-generated manpages
+	if ! use doc; then
+		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+		doins "${WORKDIR}/x/y/llvm-manpages-${PV}/clang"/*.1
+	fi
+
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression
 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
 	# +x for some reason; TODO: investigate
 	use static-analyzer && fperms a-x "/usr/lib/llvm/${SLOT}/share/man/man1/scan-build.1"
+}
+
+pkg_postinst() {
+	if [[ ${ROOT} == / && -f ${EPREFIX}/usr/share/eselect/modules/compiler-shadow.eselect ]] ; then
+		eselect compiler-shadow update all
+	fi
+}
+
+pkg_postrm() {
+	if [[ ${ROOT} == / && -f ${EPREFIX}/usr/share/eselect/modules/compiler-shadow.eselect ]] ; then
+		eselect compiler-shadow clean all
+	fi
 }
