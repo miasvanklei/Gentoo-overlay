@@ -22,6 +22,7 @@ IUSE=""
 DEPEND="
 	>=media-libs/libpng-1.2.46
 	>=x11-libs/gtk+-2.24.8-r1:2
+	app-crypt/libsecret
 	>=dev-util/electron-1.3.4
 	x11-libs/cairo
 	x11-libs/libXtst
@@ -48,11 +49,14 @@ src_compile()
 {
         elog "recompile node modules with binaries"
 	node_compile native-keymap
+	node_compile native-watchdog
 	node_compile gc-signals
 	node_compile oniguruma
 	node_compile node-pty
+	node_compile keytar
+	node_compile nsfw
 
-        rm -r resources/app/node_modules/{native-keymap,gc-signals,oniguruma,node-pty} || die
+        rm -r resources/app/node_modules/{native-keymap,gc-signals,oniguruma,node-pty,keytar,native-watchdog,nsfw} || die
         find node_modules/* -name "*obj.target*" -exec rm -r "{}" \;
         cp -r node_modules/* resources/app/node_modules || die
 }
