@@ -74,7 +74,6 @@ RESTRICT+=" test"
 # see bug 366471
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-5.0.2-ninja-optional.patch
 	"${FILESDIR}"/fix-build.patch
 )
 
