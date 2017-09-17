@@ -36,6 +36,7 @@ src_install() {
 
 	./build_script.py \
 	--swiftc /usr/bin/swiftc \
+	--libdispatch-build-dir / \
 	--foundation-build-dir / \
 	--library-install-path ${D}/usr/lib/swift/linux \
 	--module-install-path ${D}/usr/lib/swift/linux/${arch} || die

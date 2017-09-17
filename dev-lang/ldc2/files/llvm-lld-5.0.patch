@@ -27,28 +27,6 @@ index 1213fdfd6..f02f381a7 100644
      driver/codegenerator.h
      driver/configfile.h
      driver/dcomputecodegenerator.h
-@@ -449,21 +451,6 @@ endif()
- # LLD integration (requires LLVM >= 3.9 with LLD headers & libs)
- #
- set(LDC_WITH_LLD OFF)
--if(LDC_LLVM_VER GREATER 308)
--    # check for LLD header
--    unset(LDC_WITH_LLD)
--    if(NOT MSVC)
--        set(CMAKE_REQUIRED_FLAGS -std=c++11)
--    endif()
--    set(CMAKE_REQUIRED_INCLUDES ${LLVM_INCLUDE_DIRS})
--    CHECK_INCLUDE_FILE_CXX(lld/Driver/Driver.h LDC_WITH_LLD)
--    unset(CMAKE_REQUIRED_FLAGS)
--    unset(CMAKE_REQUIRED_INCLUDES)
--    if(LDC_WITH_LLD)
--        message(STATUS "Building LDC with LLD support")
--        append("-DLDC_WITH_LLD" LDC_CXXFLAGS)
--    endif()
--endif()
- 
- #
- # Enable building with riscv-llvm, for full RISC-V support.
 @@ -572,9 +572,9 @@ add_custom_target(${LDMD_EXE} ALL DEPENDS ${LDMD_EXE_FULL})
  set(LDC_LINKERFLAG_LIST "${SANITIZE_LDFLAGS};${LLVM_LIBRARIES};${LLVM_LDFLAGS}")
  if(LDC_WITH_LLD)
