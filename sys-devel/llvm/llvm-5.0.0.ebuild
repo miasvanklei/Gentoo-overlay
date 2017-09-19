@@ -122,6 +122,7 @@ multilib_src_configure() {
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
+		-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
 		-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DLLVM_ENABLE_FFI=$(usex libffi)
