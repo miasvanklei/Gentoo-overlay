@@ -6,31 +6,22 @@ EAPI=6
 inherit git-r3
 
 DESCRIPTION="QuickCheck for Swift"
-HOMEPAGE="https://github.com/typelift/SwiftCheck"
+HOMEPAGE="https://github.com/typelift/Operadics"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/typelift/SwiftCheck.git"
+EGIT_REPO_URI="https://github.com/typelift/Operadics"
 
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS=""
 IUSE=""
 
-RDEPEND="dev-libs/libdispatch
-	dev-swift/Operadics
-        dev-lang/swift
-	dev-util/swift-package-manager
-	dev-libs/corelibs-foundation"
+RDEPEND="dev-lang/swift
+	dev-util/swift-package-manager"
 DEPEND="${RDEPEND}"
-
-PATCHES=(
-        ${FILESDIR}/remove-dependencies.patch
-        ${FILESDIR}/install-lib.patch
-)
 
 src_compile() {
 	swift build --verbose \
-	-c release \
-	-Xlinker -lOperadics || die
+	-c release || die
 }
 
 src_install() {
