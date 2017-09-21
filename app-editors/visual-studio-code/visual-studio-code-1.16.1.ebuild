@@ -8,10 +8,7 @@ inherit eutils pax-utils
 
 DESCRIPTION="Multiplatform Visual Studio Code from Microsoft"
 HOMEPAGE="https://code.visualstudio.com"
-BASE_URI="https://vscode-update.azurewebsites.net/${PV}"
-SRC_URI="
-	amd64? ( ${BASE_URI}/linux-x64/stable -> ${P}-amd64.tar.gz )
-	"
+SRC_URI="https://vscode-update.azurewebsites.net/${PV}/linux-x64/stable -> ${P}-amd64.tar.gz"
 RESTRICT="mirror strip"
 
 LICENSE="Microsoft"
@@ -35,10 +32,7 @@ RDEPEND="
 	x11-libs/libnotify
 "
 
-ARCH=$(uname -m)
-
-[[ ${ARCH} == "x86_64" ]] && S="${WORKDIR}/VSCode-linux-x64"
-
+S="${WORKDIR}/VSCode-linux-x64"
 
 node_compile()
 {
