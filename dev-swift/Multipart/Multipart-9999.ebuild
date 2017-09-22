@@ -31,7 +31,7 @@ PATCHES=(
 src_compile() {
 	swift build -c release \
 	-Xlinker -lCore \
-	-Xlinker -lEngine \
+	-Xlinker -lHTTP \
 	--verbose || die
 }
 

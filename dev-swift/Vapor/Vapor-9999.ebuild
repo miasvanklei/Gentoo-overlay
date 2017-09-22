@@ -35,12 +35,19 @@ PATCHES=(
 
 src_compile() {
 	swift build -c release \
-	-Xlinker -lEngine \
-	-Xlinker -lConsole \
-	-Xlinker -lJSON \
-	-Xlinker -lRouting \
-	-Xlinker -lMultipart \
+	-Xlinker -lCore \
 	-Xlinker -lBCrypt \
+	-Xlinker -lConsole \
+	-Xlinker -lCookies \
+	-Xlinker -lCrypto \
+	-Xlinker -lFormData \
+	-Xlinker -lHTTP \
+	-Xlinker -lJSON \
+	-Xlinker -lMultipart \
+	-Xlinker -lNode \
+	-Xlinker -lRouting \
+	-Xlinker -lSMTP \
+	-Xlinker -lWebSockets \
 	--verbose || die
 }
 

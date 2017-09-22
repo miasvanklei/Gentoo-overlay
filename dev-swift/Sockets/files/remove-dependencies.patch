@@ -1,14 +1,18 @@
-diff --git a/Package.swift b/Package.swift
-index a9443d0..b6ec3dc 100644
---- a/Package.swift
-+++ b/Package.swift
-@@ -5,9 +5,5 @@ let package = Package(
-     targets: [
-         Target(name: "Transport"),
-         Target(name: "Sockets", dependencies: ["Transport"])
--    ],
+diff --git a/Package@swift-4.swift b/Package@swift-4.swift
+index 8bbcc0d..f22893a 100644
+--- a/Package@swift-4.swift
++++ b/Package@swift-4.swift
+@@ -7,12 +7,8 @@ let package = Package(
+         .library(name: "Transport", targets: ["Transport"]),
+         .library(name: "Sockets", targets: ["Sockets"]),
+     ],
 -    dependencies: [
 -        // Core extensions, type-aliases, and functions that facilitate common tasks.
--        .Package(url: "https://github.com/vapor/core.git", Version(2,0,0, prereleaseIdentifiers: ["beta"]))
+-        .package(url: "https://github.com/vapor/core.git", .upToNextMajor(from: "2.1.1")),
+-    ],
+     targets: [
+-        .target(name: "Transport", dependencies: ["Core"]),
++        .target(name: "Transport"),
+         .target(name: "Sockets", dependencies: ["Transport"]),
+         .testTarget(name: "SocketsTests", dependencies: ["Sockets"]),
      ]
- )
