@@ -99,6 +99,9 @@ src_prepare() {
 	# add swift support
 	use swift && eapply "${FILESDIR}"/0005-add-swift-support.patch
 
+	# add Haiku
+	eapply "${FILESDIR}"/0006-add-haiku.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
