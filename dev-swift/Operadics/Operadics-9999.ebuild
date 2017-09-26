@@ -19,6 +19,10 @@ RDEPEND="dev-lang/swift
 	dev-util/swift-package-manager"
 DEPEND="${RDEPEND}"
 
+PATCHES=(
+	${FILESDIR}/install-lib.patch
+)
+
 src_compile() {
 	swift build --verbose \
 	-c release || die
