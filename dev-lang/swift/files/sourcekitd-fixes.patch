@@ -11,30 +11,6 @@ index bd9e7a8fde..6dd0b86190 100644
  if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" AND NOT CMAKE_CROSSCOMPILING)
    set(CMAKE_OSX_SYSROOT "${SWIFT_SDK_${SWIFT_HOST_VARIANT_SDK}_PATH}")
    set(CMAKE_OSX_ARCHITECTURES "${SWIFT_HOST_VARIANT_ARCH}")
-@@ -97,7 +95,6 @@ function(add_sourcekit_default_compiler_flags target)
- 
-   if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-     list(APPEND c_compile_flags "-fblocks")
--    list(APPEND link_flags "-lBlocksRuntime")
-   endif()
- 
-   # Convert variables to space-separated strings.
-@@ -174,15 +171,6 @@ macro(add_sourcekit_library name)
-     add_dependencies(${name} ${SOURCEKITLIB_DEPENDS})
-   endif(SOURCEKITLIB_DEPENDS)
- 
--  set(prefixed_link_libraries)
--  foreach(dep ${SOURCEKITLIB_LINK_LIBS})
--    if("${dep}" MATCHES "^clang")
--      set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
--    endif()
--    list(APPEND prefixed_link_libraries "${dep}")
--  endforeach()
--  set(SOURCEKITLIB_LINK_LIBS "${prefixed_link_libraries}")
--
-   if("${libkind}" STREQUAL "SHARED")
-     target_link_libraries("${name}" PRIVATE ${SOURCEKITLIB_LINK_LIBS})
-   else()
 @@ -517,31 +505,11 @@ include_directories(BEFORE
  )
  
@@ -70,6 +46,34 @@ index bd9e7a8fde..6dd0b86190 100644
  
    add_library(swiftCore SHARED IMPORTED)
    set_target_properties(swiftCore PROPERTIES
+diff --git a/tools/SourceKit/CMakeLists.txt b/tools/SourceKit/CMakeLists.txt
+index bd9e7a8fde..6dd0b86190 100644
+--- a/tools/SourceKit/cmake/modules/AddSwiftSourceKit.cmake
++++ b/tools/SourceKit/cmake/modules/AddSwiftSourceKit.cmake
+@@ -97,7 +95,6 @@ function(add_sourcekit_default_compiler_flags target)
+ 
+   if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+     list(APPEND c_compile_flags "-fblocks")
+-    list(APPEND link_flags "-lBlocksRuntime")
+   endif()
+ 
+   # Convert variables to space-separated strings.
+@@ -174,15 +171,6 @@ macro(add_sourcekit_library name)
+     add_dependencies(${name} ${SOURCEKITLIB_DEPENDS})
+   endif(SOURCEKITLIB_DEPENDS)
+ 
+-  set(prefixed_link_libraries)
+-  foreach(dep ${SOURCEKITLIB_LINK_LIBS})
+-    if("${dep}" MATCHES "^clang")
+-      set(dep "${LLVM_LIBRARY_OUTPUT_INTDIR}/lib${dep}.a")
+-    endif()
+-    list(APPEND prefixed_link_libraries "${dep}")
+-  endforeach()
+-  set(SOURCEKITLIB_LINK_LIBS "${prefixed_link_libraries}")
+-
+   if("${libkind}" STREQUAL "SHARED")
+     target_link_libraries("${name}" PRIVATE ${SOURCEKITLIB_LINK_LIBS})
+   else()
 diff --git a/tools/SourceKit/lib/SwiftLang/CMakeLists.txt b/tools/SourceKit/lib/SwiftLang/CMakeLists.txt
 index 8513bff510..04d5f0f7dd 100644
 --- a/tools/SourceKit/lib/SwiftLang/CMakeLists.txt

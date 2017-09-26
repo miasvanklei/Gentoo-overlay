@@ -1,8 +1,8 @@
 diff --git a/stdlib/public/Platform/glibc.modulemap.gyb b/stdlib/public/Platform/glibc.modulemap.gyb
-index 59c6bfd50c..4e0f221495 100644
+index bedfa531e9..41d7e68227 100644
 --- a/stdlib/public/Platform/glibc.modulemap.gyb
 +++ b/stdlib/public/Platform/glibc.modulemap.gyb
-@@ -19,17 +19,11 @@
+@@ -19,23 +19,18 @@
  /// It's not named just Glibc so that it doesn't conflict in the event of a
  /// future official glibc modulemap.
  module SwiftGlibc [system] {
@@ -13,19 +13,26 @@ index 59c6bfd50c..4e0f221495 100644
 -  link "util"
 -% end
 -
--% if CMAKE_SDK != "FREEBSD":
+-% if CMAKE_SDK != "FREEBSD" and CMAKE_SDK != "HAIKU":
 -  link "dl"
 -% end
 -
+ % if CMAKE_SDK == "HAIKU":
+   link "network"
+   link "bsd"
+   link "execinfo"
+ % end
+ 
 +  header "${GLIBC_INCLUDE_PATH}/swift/Macros.h"
 +  module types {
 +    header "${GLIBC_ARCH_INCLUDE_PATH}/sys/types.h"
 +    export *
 +  }
++
    // C standard library
    module C {
- % if CMAKE_SDK in ["LINUX", "FREEBSD", "CYGWIN"]:
-@@ -164,13 +158,6 @@ module SwiftGlibc [system] {
+ % if CMAKE_SDK in ["LINUX", "FREEBSD", "CYGWIN", "HAIKU"]:
+@@ -176,13 +171,6 @@ module SwiftGlibc [system] {
  
    // POSIX
    module POSIX {
@@ -39,7 +46,7 @@ index 59c6bfd50c..4e0f221495 100644
  % if CMAKE_SDK in ["LINUX", "FREEBSD"]:
      module aio {
        header "${GLIBC_INCLUDE_PATH}/aio.h"
-@@ -395,10 +382,6 @@ module SwiftGlibc [system] {
+@@ -451,10 +439,6 @@ module SwiftGlibc [system] {
          header "${GLIBC_ARCH_INCLUDE_PATH}/sys/times.h"
          export *
        }
