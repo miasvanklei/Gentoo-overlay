@@ -119,3 +119,14 @@
    void* trace[100];
    int size = backtrace(trace, sizeof(trace) / sizeof(*trace));
    char** symbols = backtrace_symbols(trace, size);
+--- a/src/3rdparty/chromium/base/debug/stack_trace.cc
++++ b/src/3rdparty/chromium/base/debug/stack_trace.cc
+@@ -33,7 +33,7 @@
+ 
+ std::string StackTrace::ToString() const {
+   std::stringstream stream;
+-#if !defined(__UCLIBC__)
++#if defined(__GLIBC__)
+   OutputToStream(&stream);
+ #endif
+   return stream.str(); 
