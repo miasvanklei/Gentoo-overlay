@@ -9,6 +9,7 @@ DESCRIPTION="QuickCheck for Swift"
 HOMEPAGE="https://github.com/typelift/SwiftCheck"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/typelift/SwiftCheck.git"
+EGIT_SUBMODULES=()
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -29,8 +30,7 @@ PATCHES=(
 
 src_compile() {
 	swift build --verbose \
-	-c release \
-	-Xlinker -lOperadics || die
+	-c release || die
 }
 
 src_install() {
