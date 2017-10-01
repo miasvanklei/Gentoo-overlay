@@ -17,7 +17,6 @@ KEYWORDS=""
 IUSE=""
 
 RDEPEND="dev-libs/libdispatch
-	dev-swift/Operadics
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation"
