@@ -74,6 +74,9 @@ src_prepare() {
 	# revert one patch to build with system llvm
 	eapply ${FILESDIR}/llvm-5.0.patch
 
+	# fix compile
+	eapply ${FILESDIR}/fix-compile.patch
+
 	default
 }
 
