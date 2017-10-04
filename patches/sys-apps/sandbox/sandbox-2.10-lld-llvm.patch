@@ -1,13 +1,15 @@
---- a/configure	2016-10-15 00:34:47.940379742 +0200
-+++ b/configure	2016-10-15 00:36:26.191371658 +0200
-@@ -14961,8 +14961,8 @@
- $CC $CFLAGS $CPPFLAGS $LDFLAGS -o libctest libctest.c
- LIBC_VERSION=$(
- 	$READELF -d libctest | \
--	$EGREP 'NEEDED.* \[libc\.so' | \
--	$AWK '{print $NF}' | sed -e 's:\[::' -e 's:\]::'
-+	$EGREP 'NEEDED.* \(libc\.so' | \
-+	$AWK '{print $NF}' | sed 's/.*(\(.*\)).*/\1/g'
- )
- rm -f libctest*
- if test "$LIBC_VERSION"x = x ; then
+--- a/libsandbox/Makefile.in	2017-10-04 13:49:17.567421709 +0200
++++ b/libsandbox/Makefile.in	2017-10-04 13:49:30.374407387 +0200
+@@ -769,10 +769,10 @@
+ wrappers.c: symbols.h
+ 
+ libsandbox.map: $(SYMBOLS_FILE) $(GEN_VERSION_MAP_SCRIPT)
+-	$(AM_V_GEN)$(READELF) -s $(LIBC_PATH) | $(SB_AWK) $(GEN_VERSION_MAP_SCRIPT) > $@
++	$(AM_V_GEN)$(READELF) -t $(LIBC_PATH) | $(SB_AWK) $(GEN_VERSION_MAP_SCRIPT) > $@
+ 
+ symbols.h: $(SYMBOLS_FILE) $(GEN_HEADER_SCRIPT)
+-	$(AM_V_GEN)$(READELF) -s $(LIBC_PATH) | $(SB_AWK) $(GEN_HEADER_SCRIPT) > $@
++	$(AM_V_GEN)$(READELF) -t $(LIBC_PATH) | $(SB_AWK) $(GEN_HEADER_SCRIPT) > $@
+ sb_nr.h: symbols.h $(SB_NR_FILE)
+ 	$(AM_V_GEN)$(EGREP) -h '^\#define SB_' $^ > $@
+ trace_syscalls.h: $(GEN_TRACE_SCRIPT) $(SB_SCHIZO_HEADERS)
