@@ -1,0 +1,84 @@
+From b145f47f000978b9d39edc1882849ec7f6b3ef79 Mon Sep 17 00:00:00 2001
+From: Heinz Wiesinger <pprkut@liwjatan.at>
+Date: Sun, 17 Sep 2017 10:56:44 +0200
+Subject: Only remove init connections to the database on server shutdown.
+
+Summary:
+With MariaDB 10.2 libmysqlclient was replaced with libmariadb that
+changed how establishing database connections behaves. The MySQL
+QSQL driver calls mysql_server_end() on QSqlDatabase::removeDatabase()
+if the overall connection count dropped to 0 (which it does when
+the init connection is removed).
+A future QSqlDatabase:addDatabase() would call mysql_server_init()
+again, but this no longer works with libmariadb as that one only
+allows calling mysql_server_init() once. Future calls are simply
+ignored.
+
+In order to prevent this from happening we have to keep the
+init connection open until the server shuts down, so the connection
+count only drops to 0 at shutdown and mysql_server_end() isn't
+called before.
+
+This is a workaround for QTBUG-63108
+
+CCBUG: 383991
+
+Reviewers: dvratil, mlaurent
+
+Reviewed By: dvratil
+
+Subscribers: #kde_pim
+
+Tags: #kde_pim
+
+Differential Revision: https://phabricator.kde.org/D7858
+---
+ src/server/akonadi.cpp               | 3 ++-
+ src/server/storage/dbconfigmysql.cpp | 4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/server/akonadi.cpp b/src/server/akonadi.cpp
+index 4364e63..bcb7e88 100644
+--- a/src/server/akonadi.cpp
++++ b/src/server/akonadi.cpp
+@@ -423,13 +423,14 @@ bool AkonadiServer::createDatabase()
+             success = false;
+         }
+     }
+-    QSqlDatabase::removeDatabase(initCon);
+     return success;
+ }
+ 
+ void AkonadiServer::stopDatabaseProcess()
+ {
+     if (!DbConfig::configuredDatabase()->useInternalServer()) {
++        // closing initConnection this late to work around QTBUG-63108
++        QSqlDatabase::removeDatabase(QStringLiteral("initConnection"));
+         return;
+     }
+ 
+diff --git a/src/server/storage/dbconfigmysql.cpp b/src/server/storage/dbconfigmysql.cpp
+index 2bd231d..d565706 100644
+--- a/src/server/storage/dbconfigmysql.cpp
++++ b/src/server/storage/dbconfigmysql.cpp
+@@ -492,7 +492,6 @@ bool DbConfigMysql::startInternalServer()
+         }
+     }
+ 
+-    QSqlDatabase::removeDatabase(initCon);
+     return success;
+ }
+ 
+@@ -520,6 +519,9 @@ void DbConfigMysql::stopInternalServer()
+         return;
+     }
+ 
++    // closing initConnection this late to work around QTBUG-63108
++    QSqlDatabase::removeDatabase(QStringLiteral("initConnection"));
++
+     disconnect(mDatabaseProcess, static_cast<void(QProcess::*)(int,QProcess::ExitStatus)>(&QProcess::finished),
+                this, &DbConfigMysql::processFinished);
+ 
+-- 
+cgit v0.11.2
+
