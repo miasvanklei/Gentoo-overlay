@@ -41,17 +41,13 @@ node_compile()
 
 src_compile()
 {
+	local n_p=(native-keymap native-watchdog gc-signals oniguruma node-pty keytar v8-profiler nsfw)
         elog "recompile node modules with binaries"
-	node_compile native-keymap
-	node_compile native-watchdog
-	node_compile gc-signals
-	node_compile oniguruma
-	node_compile node-pty
-	node_compile keytar
-	node_compile nsfw
+	for i in "${n_p[@]}"; do
+		node_compile $i || die
+		rm -r resources/app/node_modules/$i || die
+	done
 
-        rm -r resources/app/node_modules/{native-keymap,gc-signals,oniguruma,node-pty,keytar,native-watchdog,nsfw} || die
-        find node_modules/* -name "*obj.target*" -exec rm -r "{}" \;
         cp -r node_modules/* resources/app/node_modules || die
 }
 
