@@ -60,6 +60,7 @@ src_install(){
 	doicon ${FILESDIR}/vscode.png
 	insinto "/usr/share/licenses/${PN}"
 	newins "resources/app/LICENSE.txt" "LICENSE"
+	find ${D} -name "var" -exec rm -r {} \;
 }
 
 pkg_postinst(){
