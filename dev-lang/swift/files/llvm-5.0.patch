@@ -27,3 +27,58 @@
                    DVI->getDebugLoc(), &*CurBB->getFirstInsertionPt());
              else
                // Found all dbg.value intrinsics describing this location.
+diff --git a/lib/AST/CMakeLists.txt b/lib/AST/CMakeLists.txt
+index df45aecf10..62ce6dc4f2 100644
+--- a/lib/AST/CMakeLists.txt
++++ b/lib/AST/CMakeLists.txt
+@@ -99,9 +99,14 @@ add_swift_library(swiftAST STATIC
+ 
+ # intrinsics_gen is the LLVM tablegen target that generates the include files
+ # where intrinsics and attributes are declared. swiftAST depends on these
+-# headers.
+-# For more information see the comment at the top of lib/CMakeLists.txt.
+-add_dependencies(swiftAST intrinsics_gen clang-tablegen-targets)
++# headers. When we build swift out of tree, this is not an issue since LLVM must
++# finish building before we build Swift. But when we are in tree, the build
++# system must be made aware of the dependency between swiftAST and
++# intrinsics_gen.
++if(NOT SWIFT_BUILT_STANDALONE)
++  get_property(CLANG_TABLEGEN_TARGETS GLOBAL PROPERTY CLANG_TABLEGEN_TARGETS)
++  add_dependencies(swiftAST intrinsics_gen ${CLANG_TABLEGEN_TARGETS})
++endif()
+ 
+ set(swift_ast_verifier_flag)
+ if(SWIFT_AST_VERIFIER)
+diff --git a/lib/SIL/CMakeLists.txt b/lib/SIL/CMakeLists.txt
+index 25f9052c7f..160f0c1cd4 100644
+--- a/lib/SIL/CMakeLists.txt
++++ b/lib/SIL/CMakeLists.txt
+@@ -41,7 +41,9 @@ add_swift_library(swiftSIL STATIC
+ )
+ 
+ # intrinsics_gen is the LLVM tablegen target that generates the include files
+-# where intrinsics and attributes are declared. swiftSIL depends on these
+-# headers.
+-# For more information see the comment at the top of lib/CMakeLists.txt.
+-add_dependencies(swiftSIL intrinsics_gen clang-tablegen-targets)
++# where intrinsics and attributes are declared. See the comment in lib/AST for
++# more detail.
++if(NOT SWIFT_BUILT_STANDALONE)
++  get_property(CLANG_TABLEGEN_TARGETS GLOBAL PROPERTY CLANG_TABLEGEN_TARGETS)
++  add_dependencies(swiftSIL intrinsics_gen ${CLANG_TABLEGEN_TARGETS})
++endif()
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index 80ce81d942..b89ea7b802 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -8,7 +8,9 @@
+ # executables generated when it is set. CMake's scoping rules enforce that these
+ # new dependencies will only be added to targets created under Swift's lib
+ # directory.
+-list(APPEND LLVM_COMMON_DEPENDS intrinsics_gen clang-tablegen-targets)
++if(NOT SWIFT_BUILT_STANDALONE)
++  list(APPEND LLVM_COMMON_DEPENDS intrinsics_gen clang-tablegen-targets)
++endif()
+ 
+ add_subdirectory(AST)
+ add_subdirectory(ASTSectionImporter)

@@ -1,14 +1,18 @@
-diff --git a/Package.swift b/Package.swift
-index 378a1b0..68c28c6 100644
---- a/Package.swift
-+++ b/Package.swift
-@@ -6,9 +6,6 @@ let package = Package(
-         Target(name: "Console"),
-         // Target(name: "ConsoleExample", dependencies: ["Console"])
+diff --git a/Package@swift-4.swift b/Package@swift-4.swift
+index 28d4d3e..492436b 100644
+--- a/Package@swift-4.swift
++++ b/Package@swift-4.swift
+@@ -6,12 +6,8 @@ let package = Package(
+     products: [
+         .library(name: "Console", targets: ["Console"]),
      ],
 -    dependencies: [
--        .Package(url: "https://github.com/vapor/core.git", Version(2,0,0, prereleaseIdentifiers: ["beta"])),
+-        // Core utilities
+-        .package(url: "https://github.com/vapor/core.git", .upToNextMajor(from: "2.1.2")),
 -    ],
-     exclude: [
-         "Sources/ConsoleExample"
+     targets: [
+-        .target(name: "Console", dependencies: ["Core"]),
++        .target(name: "Console"),
+         .testTarget(name: "ConsoleTests", dependencies: ["Console"]),
      ]
+ )

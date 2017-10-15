@@ -19,8 +19,8 @@ index 1b88d7b..97f8c74 100644
  //
  //===----------------------------------------------------------------------===//
  
--#if defined(__CYGWIN__) || defined(__ANDROID__) || defined(_WIN32)
-+#if defined(__CYGWIN__) || defined(__ANDROID__) || defined(_WIN32) || !defined(__GLIBC__)
+-#if defined(__CYGWIN__) || defined(__ANDROID__) || defined(_WIN32) || defined(__HAIKU__)
++#if defined(__CYGWIN__) || defined(__ANDROID__) || defined(_WIN32) || defined(__HAIKU__) || !defined(__GLIBC__)
  #  define SWIFT_SUPPORTS_BACKTRACE_REPORTING 0
  #else
  #  define SWIFT_SUPPORTS_BACKTRACE_REPORTING 1
@@ -62,7 +62,7 @@ index a3284be..eefa60e 100644
 @@ -368,8 +368,6 @@ public var SIG_IGN: sig_t { return unsafeBitCast(1, to: sig_t.self) }
  public var SIG_ERR: sig_t { return unsafeBitCast(-1, to: sig_t.self) }
  public var SIG_HOLD: sig_t { return unsafeBitCast(5, to: sig_t.self) }
- #elseif os(Linux) || os(FreeBSD) || os(PS4) || os(Android)
+ #elseif os(Linux) || os(FreeBSD) || os(PS4) || os(Android) || os(Haiku)
 -public typealias sighandler_t = __sighandler_t
 -
  public var SIG_DFL: sighandler_t? { return nil }
@@ -76,7 +76,7 @@ index 7014efd..8fadfaa 100644
  typedef pthread_mutex_t MutexHandle;
  typedef pthread_rwlock_t ReadWriteLockHandle;
  
--#if defined(__CYGWIN__) || defined(__ANDROID__)
+-#if defined(__CYGWIN__) || defined(__ANDROID__) || defined(__HAIKU__)
 +#if !defined(__GLIBC__)
  // At the moment CYGWIN pthreads implementation doesn't support the use of
  // constexpr for static allocation versions. The way they define things

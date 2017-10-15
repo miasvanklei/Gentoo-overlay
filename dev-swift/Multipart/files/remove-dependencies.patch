@@ -1,17 +1,21 @@
-diff --git a/Package.swift b/Package.swift
-index d5902c2..2de4ebc 100644
---- a/Package.swift
-+++ b/Package.swift
-@@ -10,12 +10,5 @@ let package = Package(
- 
- 		// RFC 2388
-         Target(name: "FormData", dependencies: ["Multipart"])
--    ],
+diff --git a/Package@swift-4.swift b/Package@swift-4.swift
+index fce8430..e491cc7 100644
+--- a/Package@swift-4.swift
++++ b/Package@swift-4.swift
+@@ -7,14 +7,10 @@ let package = Package(
+         .library(name: "Multipart", targets: ["Multipart"]),
+         .library(name: "FormData", targets: ["FormData"]),
+     ],
 -    dependencies: [
--        // Core extensions, type-aliases, and functions that facilitate common tasks
--        .Package(url: "https://github.com/vapor/core.git", beta),
--
--        // HTTP package for HeaderKey type
--        .Package(url: "https://github.com/vapor/engine.git", beta),
+-        .package(url: "https://github.com/vapor/core.git", .upToNextMajor(from: "2.1.2")),
+-        .package(url: "https://github.com/vapor/engine.git", .upToNextMajor(from: "2.2.0")),
+-    ],
+     targets: [
+-        .target(name: "Multipart", dependencies: ["Core", "HTTP"]),
++        .target(name: "Multipart"),
+         .testTarget(name: "MultipartTests", dependencies: ["Multipart"]),
+-        .target(name: "FormData", dependencies: ["Multipart", "Core"]),
++        .target(name: "FormData", dependencies: ["Multipart"]),
+         .testTarget(name: "FormDataTests", dependencies: ["FormData"]),
      ]
  )

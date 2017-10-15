@@ -103,3 +103,23 @@ index beca342..537b100 100644
  
  SET(ASM_OPTIONS "-DLINUX_ELF")
  SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
+diff --git a/runtime/flangrti/ktrap.c b/runtime/flangrti/ktrap.c
+index 75676d7..6e3830a 100644
+--- a/runtime/flangrti/ktrap.c
++++ b/runtime/flangrti/ktrap.c
+@@ -35,6 +35,7 @@ extern int __ktrapval __attribute__ ((weak));
+ void
+ __ktrap(void)
+ {
++#ifdef __GLIBC__
+   if (&__ktrapval != 0) {
+     int bv = __ktrapval;
+     if (bv != 0) {
+@@ -63,6 +64,7 @@ __ktrap(void)
+       feenableexcept(excepts);  /* glibc 2.2 extension to fenv.h */
+     }
+   }
++#endif
+ }
+ 
+ #else

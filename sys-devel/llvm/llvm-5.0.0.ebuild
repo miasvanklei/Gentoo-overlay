@@ -99,6 +99,9 @@ src_prepare() {
 	# add swift support
 	use swift && eapply "${FILESDIR}"/0005-add-swift-support.patch
 
+	# add Haiku
+	eapply "${FILESDIR}"/0006-add-haiku.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
@@ -122,6 +125,7 @@ multilib_src_configure() {
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
+		-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
 		-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DLLVM_ENABLE_FFI=$(usex libffi)

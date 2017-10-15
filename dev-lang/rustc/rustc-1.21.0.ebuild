@@ -13,11 +13,11 @@ KEYWORDS="~amd64"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/rustc-beta-src.tar.gz -> ${P}-src.tar.gz"
+SRC_URI="https://static.rust-lang.org/dist/${P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="-debug doc -jemalloc +source"
+IUSE="-debug doc -jemalloc"
 
 RDEPEND="sys-devel/llvm:="
 
@@ -25,7 +25,7 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	>=dev-lang/perl-5.0"
 
-S=${WORKDIR}/${PN}-beta-src
+S=${WORKDIR}/${P}-src
 
 toml_usex() {
 	usex "$1" true false
@@ -56,6 +56,7 @@ src_configure() {
 	build = "${CBUILD}"
 	host = ["${CHOST}"]
 	target = ["${CBUILD}"]
+        extended = true
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)/${PN}"
@@ -85,12 +86,25 @@ src_compile() {
 src_install() {
 	default
 
-	local obj="build/${CBUILD}/stage2"
-	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
+	local rcbuild="build/${CBUILD}"
+	local obj="${rcbuild}/stage2"
+	local robj="${rcbuild}/stage2-tools/${CBUILD}"
+	local sobj="${rcbuild}/stage1-std/${CBUILD}"
+
+	# install binaries
+	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc" "${robj}/release/rls"
 	dobin src/etc/rust-gdb src/etc/rust-lldb
+
+	# install libraries
 	insinto "/usr/$(get_libdir)"
 	doins -r "${obj}/lib/rustlib"
-	dodoc COPYRIGHT
+
+	# install analysis for rls
+	insinto "/usr/$(get_libdir)/rustlib/${CBUILD}/analysis"
+	doins -r "${sobj}/release/deps/save-analysis/*"
+
+	# install documentation
+	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
 	doman man/*
 
 	# pretty printers
@@ -98,18 +112,19 @@ src_install() {
 	doins src/etc/*pretty*
 	doins src/etc/lldb_rust_formatters.py
 
+	# setup environment
 	cat <<-EOF > "${T}"/50${PN}
 	LDPATH="/usr/$(get_libdir)/rustlib/${CBUILD}/lib"
 	MANPATH="/usr/share/${PN}/man"
+	RUST_SRC_PATH="/usr/src/rust"
 	EOF
 	doenvd "${T}"/50${PN}
 
-	if use source; then
-		pushd ${S}/src
-		mkdir -p ${D}/usr/src/${PN}
-		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${PN} \; || die
-		popd >/dev/null
-	fi
+	# install source needed for racer
+	pushd ${S}/src
+	mkdir -p ${D}/usr/src/${PN}
+	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${PN} \; || die
+	popd >/dev/null
 }
 
 pkg_postinst() {

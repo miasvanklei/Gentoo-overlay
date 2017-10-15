@@ -39,8 +39,6 @@ src_configure() {
 		mycmakeargs+=(
 			-DCMAKE_SWIFT_COMPILER=/usr/bin/swiftc
 			-DENABLE_SWIFT=TRUE
-			-DSWIFT_RUNTIME_LIBDIR=/usr/lib/swift/linux
-			-DSWIFT_ARCH=${CARCH}
 		)
 	fi
 	cmake-utils_src_configure

@@ -19,10 +19,9 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
-	dev-swift/path-indexable
-	dev-swift/core
-	dev-swift/bits
-	dev-swift/debugging"
+	dev-swift/Core
+	dev-swift/Bits
+	dev-swift/Debugging"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
@@ -32,7 +31,6 @@ PATCHES=(
 
 src_compile() {
 	swift build -c release \
-	-Xlinker -lPathIndexable \
 	-Xlinker -lCore \
 	-Xlinker -lBits \
 	-Xlinker -lDebugging \

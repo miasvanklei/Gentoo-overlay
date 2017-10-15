@@ -59,13 +59,16 @@ PATCHES=(
 	"${FILESDIR}/coreclr-${CORECLR_V1_0}-llvm4.patch"
 	"${FILESDIR}/coreclr-${CORECLR_V1_0}-llvm4-intsafe.patch"
 	"${FILESDIR}/coreclr-${CORECLR_V1_0}-musl.patch"
+	"${FILESDIR}/coreclr-${CORECLR_V1_0}-werror.patch"
 	"${FILESDIR}/coreclr-${PV}-clang39-commit-9db7fb1.patch"
 	"${FILESDIR}/coreclr-${PV}-exceptionhandling.patch"
 	"${FILESDIR}/coreclr-${PV}-builtin-redefinition.patch"
 	"${FILESDIR}/corefx-${PV}-init-tools-script.patch"
 	"${FILESDIR}/coreclr-${PV}-llvm4.patch"
+	"${FILESDIR}/coreclr-${PV}-llvm5.patch"
 	"${FILESDIR}/coreclr-${PV}-llvm4-intsafe.patch"
 	"${FILESDIR}/coreclr-${PV}-musl.patch"
+	"${FILESDIR}/coreclr-${PV}-werror.patch"
 	"${FILESDIR}/corefx-${COREFX_V1_0}-werror.patch"
 	"${FILESDIR}/corefx-${PV}-run-script.patch"
 	"${FILESDIR}/corefx-${PV}-werror.patch"
@@ -109,12 +112,12 @@ CRYPTO_FILES=(
 	'System.Security.Cryptography.Native.OpenSsl.so'
 )
 
-pkg_pretend() {
-	# If FEATURES="-sandbox -usersandbox" are not set dotnet will hang while compiling.
-	if has sandbox $FEATURES || has usersandbox $FEATURES ; then
-		die ".NET core command-line (CLI) tools require sandbox and usersandbox to be disabled in FEATURES."
-	fi
-}
+#pkg_pretend() {
+#	# If FEATURES="-sandbox -usersandbox" are not set dotnet will hang while compiling.
+#	if has sandbox $FEATURES || has usersandbox $FEATURES ; then
+#		die ".NET core command-line (CLI) tools require sandbox and usersandbox to be disabled in FEATURES."
+#	fi
+#}
 
 src_unpack() {
 	unpack "coreclr-${CORECLR_V1_0}.tar.gz" "corefx-${COREFX_V1_0}.tar.gz" "coreclr-${PV}.tar.gz" "corefx-${PV}.tar.gz" "core-setup-${PV}.tar.gz"
@@ -176,8 +179,11 @@ src_compile() {
 	cd "${S}" || die
 	rm -rf "${COREFX_1_0_S}" || die
 
+	local cbuildargs=""
+	cbuildargs="${cbuildargs} cmakeargs -DCLR_CMAKE_BUILD_TESTS=OFF"
+
 	cd "${CORECLR_1_0_S}" || die
-	./build.sh x64 release || die
+	./build.sh x64 release ${cbuildargs} || die
 
 	for file in "${CORECLR_FILES[@]}"; do
 		cp -pP "${CORECLR_1_0_S}/bin/Product/Linux.x64.Release/${file}" "${dest}" || die
@@ -190,7 +196,7 @@ src_compile() {
 	./src/Native/build-native.sh x64 release ${buildargs} || die
 
 	cd "${CORECLR_S}" || die
-	./build.sh x64 release || die
+	./build.sh x64 release ${cbuildargs} || die
 
 	cd "${CORESETUP_S}" || die
 	./build.sh --arch amd64 --hostver ${PV} --fxrver ${PV} --policyver ${PV} --commithash 005db40cd1 --rid debian.8-x64
