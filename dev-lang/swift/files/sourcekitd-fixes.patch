@@ -76,7 +76,7 @@ index 0afea0be65..2b01c7ad05 100644
  if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin" AND NOT CMAKE_CROSSCOMPILING)
    set(CMAKE_OSX_SYSROOT "${SWIFT_SDK_${SWIFT_HOST_VARIANT_SDK}_PATH}")
    set(CMAKE_OSX_ARCHITECTURES "${SWIFT_HOST_VARIANT_ARCH}")
-@@ -87,68 +85,5 @@ include_directories(BEFORE
+@@ -87,70 +85,5 @@ include_directories(BEFORE
    ${SOURCEKIT_SOURCE_DIR}/include
  )
  
@@ -91,6 +91,7 @@ index 0afea0be65..2b01c7ad05 100644
 -                        CMAKE_ARGS
 -                          -DCMAKE_C_COMPILER=${PATH_TO_CLANG_BUILD}/bin/clang
 -                          -DCMAKE_CXX_COMPILER=${PATH_TO_CLANG_BUILD}/bin/clang++
+-                          -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
 -                          -DCMAKE_SWIFT_COMPILER=$<TARGET_FILE:swift>c
 -                          -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR>
 -                          -DENABLE_SWIFT=YES
@@ -115,6 +116,7 @@ index 0afea0be65..2b01c7ad05 100644
 -                          ${SWIFT_PATH_TO_LIBDISPATCH_SOURCE})
 -    add_dependencies(libdispatch
 -                       swift
+-                       copy_shim_headers
 -                       swiftCore-${SWIFT_SDK_${SWIFT_HOST_VARIANT_SDK}_LIB_SUBDIR}-${SWIFT_HOST_VARIANT_ARCH}
 -                       swiftSwiftOnoneSupport-${SWIFT_SDK_${SWIFT_HOST_VARIANT_SDK}_LIB_SUBDIR}-${SWIFT_HOST_VARIANT_ARCH}
 -                       swiftCore-swiftmodule-${SWIFT_SDK_${SWIFT_HOST_VARIANT_SDK}_LIB_SUBDIR}-${SWIFT_HOST_VARIANT_ARCH}
