@@ -1,5 +1,5 @@
---- a/include/llvm/ADT/DenseMapInfo.h	2016-11-15 10:59:17.848800074 +0100
-+++ b/include/llvm/ADT/DenseMapInfo.h	2016-11-15 10:56:16.450271245 +0100
+--- a/include/llvm/ADT/DenseMapInfo.h
++++ b/include/llvm/ADT/DenseMapInfo.h
 @@ -19,6 +19,7 @@
  #include <cstddef>
  #include <cstdint>
@@ -109,8 +109,8 @@
  // Provide DenseMapInfo for StringRefs.
  template <> struct DenseMapInfo<StringRef> {
    static inline StringRef getEmptyKey() {
---- a/include/llvm/ADT/Hashing.h	2016-11-15 10:59:17.849800134 +0100
-+++ b/include/llvm/ADT/Hashing.h	2016-11-15 10:56:16.451271204 +0100
+--- a/include/llvm/ADT/Hashing.h
++++ b/include/llvm/ADT/Hashing.h
 @@ -53,6 +53,7 @@
  #include <cassert>
  #include <cstring>
@@ -146,15 +146,15 @@
 +template <typename ...Ts>
 +hash_code hash_value(const std::tuple<Ts...> &arg) {
 +  return hash_value_tuple_helper(
-+           arg, 
++           arg,
 +           typename MakeUnsignedConstantIndexSet<0, sizeof...(Ts)>::Type());
 +}
 +
  } // namespace llvm
  
  #endif
---- a/include/llvm/Bitcode/RecordLayout.h	1970-01-01 01:00:00.000000000 +0100
-+++ b/include/llvm/Bitcode/RecordLayout.h	2016-11-15 10:56:16.462270749 +0100
+--- a/include/llvm/Bitcode/RecordLayout.h
++++ b/include/llvm/Bitcode/RecordLayout.h
 @@ -0,0 +1,529 @@
 +//===--- RecordLayout.h - Convenience wrappers for bitcode ------*- C++ -*-===//
 +//
@@ -685,8 +685,8 @@
 +} // end namespace llvm
 +
 +#endif
---- a/lib/CodeGen/AsmPrinter/DwarfUnit.cpp	2016-11-15 10:59:17.950806194 +0100
-+++ b/lib/CodeGen/AsmPrinter/DwarfUnit.cpp	2016-11-15 10:56:16.536267686 +0100
+--- a/lib/CodeGen/AsmPrinter/DwarfUnit.cp
++++ b/lib/CodeGen/AsmPrinter/DwarfUnit.cpp
 @@ -987,6 +989,13 @@
    if (!Name.empty())
      addString(Buffer, dwarf::DW_AT_name, Name);
@@ -701,8 +701,8 @@
    if (Tag == dwarf::DW_TAG_enumeration_type ||
        Tag == dwarf::DW_TAG_class_type || Tag == dwarf::DW_TAG_structure_type ||
        Tag == dwarf::DW_TAG_union_type) {
---- a/CMakeLists.txt    2017-03-23 20:17:39.000000000 +0100
-+++ b/CMakeLists.txt    2017-06-07 16:39:29.737510861 +0200
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
 @@ -938,7 +938,6 @@
      PATTERN "*.inc"
      # Exclude include/llvm/CMakeFiles/intrinsics_gen.dir, matched by "*.def"
@@ -711,3 +711,95 @@
      PATTERN ".svn" EXCLUDE
  
 
+--- a/include/llvm/Support/SourceMgr.h
++++ b/include/llvm/Support/SourceMgr.h
+@@ -43,7 +43,8 @@
+   enum DiagKind {
+     DK_Error,
+     DK_Warning,
+-    DK_Note
++    DK_Remark,
++    DK_Note,
+   };
+ 
+   /// Clients that want to handle their own diagnostics in a custom way can
+--- a/lib/CodeGen/MIRParser/MIRParser.cpp
++++ b/lib/CodeGen/MIRParser/MIRParser.cpp
+@@ -214,6 +214,9 @@
+   case SourceMgr::DK_Note:
+     Kind = DS_Note;
+     break;
++  case SourceMgr::DK_Remark:
++    llvm_unreachable("remark unexpected");
++    break;
+   }
+   Context.diagnose(DiagnosticInfoMIRParser(Kind, Diag));
+ }
+--- a/lib/Support/SourceMgr.cpp
++++ b/lib/Support/SourceMgr.cpp
+@@ -384,6 +384,11 @@
+         S.changeColor(raw_ostream::BLACK, true);
+       S << "note: ";
+       break;
++    case SourceMgr::DK_Remark:
++      if (ShowColors)
++        S.changeColor(raw_ostream::BLUE, true);
++      S << "remark: ";
++      break;
+     }
+ 
+     if (ShowColors) {
+--- a/unittests/Support/SourceMgrTest.cpp
++++ b/unittests/Support/SourceMgrTest.cpp
+@@ -67,6 +67,16 @@
+             Output);
+ }
+ 
++TEST_F(SourceMgrTest, BasicRemark) {
++  setMainBuffer("aaa bbb\nccc ddd\n", "file.in");
++  printMessage(getLoc(4), SourceMgr::DK_Remark, "message", None, None);
++
++  EXPECT_EQ("file.in:1:5: remark: message\n"
++            "aaa bbb\n"
++            "    ^\n",
++            Output);
++}
++
+ TEST_F(SourceMgrTest, BasicNote) {
+   setMainBuffer("aaa bbb\nccc ddd\n", "file.in");
+   printMessage(getLoc(4), SourceMgr::DK_Note, "message", None, None);
+--- a/include/llvm/ADT/Triple.h
++++ b/include/llvm/ADT/Triple.h
+@@ -504,6 +504,11 @@ class Triple {
+     return getOS() == Triple::Contiki;
+   }
+ 
++  /// Tests whether the OS is Haiku.
++  bool isOSHaiku() const {
++    return getOS() == Triple::Haiku;
++  }
++
+   /// Checks if the environment could be MSVC.
+   bool isWindowsMSVCEnvironment() const {
+     return getOS() == Triple::Win32 &&
+--- a/unittests/ADT/TripleTest.cpp
++++ b/unittests/ADT/TripleTest.cpp
+@@ -296,6 +296,18 @@ TEST(TripleTest, ParsedIDs) {
+   EXPECT_EQ(Triple::Linux, T.getOS());
+   EXPECT_EQ(Triple::GNUEABI, T.getEnvironment());
+ 
++  T = Triple("i586-pc-haiku");
++  EXPECT_EQ(Triple::x86, T.getArch());
++  EXPECT_EQ(Triple::PC, T.getVendor());
++  EXPECT_EQ(Triple::Haiku, T.getOS());
++  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
++
++  T = Triple("x86_64-unknown-haiku");
++  EXPECT_EQ(Triple::x86_64, T.getArch());
++  EXPECT_EQ(Triple::UnknownVendor, T.getVendor());
++  EXPECT_EQ(Triple::Haiku, T.getOS());
++  EXPECT_EQ(Triple::UnknownEnvironment, T.getEnvironment());
++
+   T = Triple("huh");
+   EXPECT_EQ(Triple::UnknownArch, T.getArch());
+ }
