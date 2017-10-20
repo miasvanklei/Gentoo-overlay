@@ -1,0 +1,29 @@
+--- a/src/cmd/go/internal/work/build.go	2017-10-04 20:48:09.000000000 +0200
++++ b/src/cmd/go/internal/work/build.go	2017-10-20 14:00:33.352929900 +0200
+@@ -3201,11 +3201,11 @@
+ // -no-pie must be passed when doing a partial link with -Wl,-r.
+ // But -no-pie is not supported by all compilers, and clang spells it -nopie.
+ func (b *Builder) gccNoPie() string {
+-	if b.gccSupportsFlag("-no-pie") {
+-		return "-no-pie"
++	if b.gccSupportsFlag("-fno-pie") {
++		return "-fno-pie"
+ 	}
+-	if b.gccSupportsFlag("-nopie") {
+-		return "-nopie"
++	if b.gccSupportsFlag("-fnopie") {
++		return "-fnopie"
+ 	}
+ 	return ""
+ }
+--- a/src/cmd/link/internal/ld/lib.go	2017-10-04 20:48:09.000000000 +0200
++++ b/src/cmd/link/internal/ld/lib.go	2017-10-20 14:01:31.625928551 +0200
+@@ -1257,7 +1257,7 @@
+ 		}
+ 
+ 		// GCC uses -no-pie, clang uses -nopie.
+-		for _, nopie := range []string{"-no-pie", "-nopie"} {
++		for _, nopie := range []string{"-fno-pie", "-fnopie"} {
+ 			cmd := exec.Command(argv[0], nopie, "trivial.c")
+ 			cmd.Dir = *flagTmpdir
+ 			cmd.Env = append([]string{"LC_ALL=C"}, os.Environ()...)
