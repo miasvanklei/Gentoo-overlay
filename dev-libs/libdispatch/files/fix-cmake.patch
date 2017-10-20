@@ -60,36 +60,6 @@ index c58bd89..6ac4c01 100644
  endif()
  configure_file("${CMAKE_SOURCE_DIR}/cmake/config.h.in"
                 "${CMAKE_BINARY_DIR}/config/config_ac.h")
-diff --git a/dispatch/CMakeLists.txt b/dispatch/CMakeLists.txt
-index b50b1ba..59403a4 100644
---- a/dispatch/CMakeLists.txt
-+++ b/dispatch/CMakeLists.txt
-@@ -14,12 +14,12 @@ install(FILES
-           source.h
-           time.h
-         DESTINATION
--          ${CMAKE_INSTALL_FULL_INCLUDEDIR}/dispatch)
-+          ${CMAKE_INSTALL_FULL_LIBDIR}/swift/dispatch)
- if(ENABLE_SWIFT)
-   get_filename_component(MODULE_MAP module.modulemap REALPATH)
-   install(FILES
-             ${MODULE_MAP}
-           DESTINATION
--            ${CMAKE_INSTALL_FULL_INCLUDEDIR}/dispatch)
-+            ${CMAKE_INSTALL_FULL_LIBDIR}/swift/dispatch)
- endif()
- 
-diff --git a/os/CMakeLists.txt b/os/CMakeLists.txt
-index 6e2b415..7494d8e 100644
---- a/os/CMakeLists.txt
-+++ b/os/CMakeLists.txt
-@@ -6,5 +6,5 @@ install(FILES
-           object.h
-           linux_base.h
-         DESTINATION
--          "${CMAKE_INSTALL_FULL_INCLUDEDIR}/os")
-+          "${CMAKE_INSTALL_FULL_LIBDIR}/swift/os")
- 
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
 index 475902d..607c3df 100644
 --- a/src/CMakeLists.txt
@@ -102,12 +72,3 @@ index 475902d..607c3df 100644
  if(BSD_OVERLAY_FOUND)
    target_link_libraries(dispatch PRIVATE ${BSD_OVERLAY_LDFLAGS})
  endif()
-@@ -202,7 +203,7 @@ add_custom_command(TARGET dispatch POST_BUILD
- install(TARGETS
-           dispatch
-         DESTINATION
--          "${CMAKE_INSTALL_LIBDIR}")
-+          "${CMAKE_INSTALL_LIBDIR}/swift/${SWIFT_OS}")
- if(ENABLE_SWIFT)
-   install(FILES
-             ${CMAKE_CURRENT_BINARY_DIR}/swift/Dispatch.swiftmodule

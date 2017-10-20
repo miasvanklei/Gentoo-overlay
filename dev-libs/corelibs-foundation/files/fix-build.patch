@@ -135,21 +135,53 @@ diff --git a/Foundation/Thread.swift b/Foundation/Thread.swift
 index 3b46fac..d4c132d 100644
 --- a/Foundation/Thread.swift
 +++ b/Foundation/Thread.swift
-@@ -129,12 +129,12 @@ open class Thread : NSObject {
-     open class func exit() {
-         pthread_exit(nil)
      }
--    
-+
+ 
      internal var _main: () -> Void = {}
- #if os(OSX) || os(iOS) || CYGWIN
+-#if os(OSX) || os(iOS) || CYGWIN
      private var _thread: pthread_t? = nil
- #elseif os(Linux) || os(Android)
+-#elseif os(Linux) || os(Android)
 -    private var _thread = pthread_t()
-+    private var _thread : pthread_t? = nil
- #endif
+-#endif
  #if CYGWIN
      internal var _attr : pthread_attr_t? = nil
+ #else
+@@ -256,11 +252,7 @@ open class Thread : NSObject {
+         let maxSupportedStackDepth = 128;
+         let addrs = UnsafeMutablePointer<UnsafeMutableRawPointer?>.allocate(capacity: maxSupportedStackDepth)
+         defer { addrs.deallocate(capacity: maxSupportedStackDepth) }
+-#if os(Android)
+         let count = 0
+-#else
+-        let count = backtrace(addrs, Int32(maxSupportedStackDepth))
+-#endif
+         let addressCount = max(0, min(Int(count), maxSupportedStackDepth))
+         return body(addrs, addressCount)
+     }
+@@ -274,23 +266,7 @@ open class Thread : NSObject {
+     }
+ 
+     open class var callStackSymbols: [String] {
+-#if os(Android)
+         return []
+-#else
+-        return backtraceAddresses({ (addrs, count) in
+-            var symbols: [String] = []
+-            if let bs = backtrace_symbols(addrs, Int32(count)) {
+-                symbols = UnsafeBufferPointer(start: bs, count: count).map {
+-                    guard let symbol = $0 else {
+-                        return "<null>"
+-                    }
+-                    return String(cString: symbol)
+-                }
+-                free(bs)
+-            }
+-            return symbols
+-        })
+-#endif
+     }
+ }
+ 
 diff --git a/Foundation/Process.swift b/Foundation/Process.swift
 index c0e1518..9197e2f 100644
 --- a/Foundation/Process.swift
@@ -264,13 +296,14 @@ diff --git a/CoreFoundation/Base.subproj/CFPlatform.c b/CoreFoundation/Base.subp
 index 5f67510..89810ba 100644
 --- a/CoreFoundation/Base.subproj/CFPlatform.c
 +++ b/CoreFoundation/Base.subproj/CFPlatform.c
-@@ -1318,15 +1318,6 @@ CF_SWIFT_EXPORT void _CFThreadSetName(const char *_Nullable name) {
+@@ -1324,16 +1324,6 @@ CF_SWIFT_EXPORT void _CFThreadSetName(const char *_Nullable name) {
  #endif
  }
  
 -CF_SWIFT_EXPORT int _CFThreadGetName(char *buf, int length) {
 -#if DEPLOYMENT_TARGET_MACOSX || DEPLOYMENT_TARGET_EMBEDDED || DEPLOYMENT_TARGET_EMBEDDED_MINI
 -    return pthread_getname_np(pthread_self(), buf, length);
+-#elif DEPLOYMENT_TARGET_ANDROID
 -#elif DEPLOYMENT_TARGET_LINUX
 -    return pthread_getname_np(pthread_self(), buf, length);
 -#endif

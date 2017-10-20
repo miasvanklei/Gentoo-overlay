@@ -5,12 +5,13 @@ EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 
-inherit cmake-utils git-r3
+inherit cmake-utils git-r3 multilib
 
 DESCRIPTION="The libdispatch Project, (a.k.a. Grand Central Dispatch), for concurrency on multicore hardware"
 HOMEPAGE="https://github.com/apple/swift-corelibs-libdispatch"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-corelibs-libdispatch.git"
+EGIT_BRANCH="swift-4.1-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -33,6 +34,7 @@ src_configure() {
 	local mycmakeargs=(
 		-DUSE_GOLD_LINKER=OFF
 		-DENABLE_TESTING=$(usex test)
+		-DINSTALL_LIBDIR=/usr/$(get_libdir)
 	)
 
 	if use swift; then
