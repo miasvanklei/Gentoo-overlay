@@ -2,17 +2,17 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
-inherit golang-build golang-vcs-snapshot
+inherit golang-build golang-vcs-snapshot user
 
-EGO_PN="gitlab.com/gitlab-org/gitlab-ci-multi-runner"
+EGO_PN="gitlab.com/gitlab-org/gitlab-runner"
 
-GITLAB_COMMIT="3df822b2"
+GITLAB_COMMIT="c1ecf97f"
 
 DESCRIPTION="Official GitLab CI Runner written in Go"
-HOMEPAGE="https://gitlab.com/gitlab-org/gitlab-ci-multi-runner"
-SRC_URI="https://gitlab.com/gitlab-org/${PN}/repository/archive.tar.gz?ref=v${PV} -> ${P}.tar.gz
-	!docker-build? ( https://dev.gentoo.org/~mrueg/files/gitlab-ci-multi-runner-${PV}-prebuilt-x86_64.tar.xz
-		https://dev.gentoo.org/~mrueg/files/gitlab-ci-multi-runner-${PV}-prebuilt-arm.tar.xz )"
+HOMEPAGE="https://gitlab.com/gitlab-org/gitlab-runner"
+SRC_URI="https://gitlab.com/gitlab-org/${PN}/repository/v${PV}/archive.tar.gz -> ${PV}.tar.gz
+	!docker-build? ( https://${PN}-downloads.s3.amazonaws.com/v${PV}/docker/prebuilt-x86_64.tar.xz -> ${P}-prebuilt-x86_64.tar.xz
+		https://${PN}-downloads.s3.amazonaws.com/v${PV}/docker/prebuilt-arm.tar.xz -> ${P}-prebuilt-arm.tar.xz )"
 
 KEYWORDS="~amd64"
 LICENSE="MIT"
@@ -21,17 +21,22 @@ IUSE="docker-build"
 
 DEPEND="dev-go/gox
 	dev-go/go-bindata
-	docker-build? ( >=app-emulation/docker-1.5 )"
+	>=app-emulation/docker-1.5"
 
 RESTRICT="test"
+
+pkg_setup() {
+	enewgroup gitlab-runner
+	enewuser gitlab-runner -1 -1 -1 "users,gitlab-runner,docker"
+}
 
 src_prepare() {
 	default
 	pushd src/${EGO_PN} || die
 	if ! use docker-build; then
 		mkdir -p out/docker || die
-		cp "${DISTDIR}"/gitlab-ci-multi-runner-${PV}-prebuilt-x86_64.tar.xz out/docker/prebuilt-x86_64.tar.xz || die
-		cp "${DISTDIR}"/gitlab-ci-multi-runner-${PV}-prebuilt-arm.tar.xz out/docker/prebuilt-arm.tar.xz || die
+		cp "${DISTDIR}"/${P}-prebuilt-x86_64.tar.xz out/docker/prebuilt-x86_64.tar.xz || die
+		cp "${DISTDIR}"/${P}-prebuilt-arm.tar.xz out/docker/prebuilt-arm.tar.xz || die
 		sed -i -e "s/docker info/echo false/" Makefile || die
 	else
 		einfo "You need to have docker running on your system during build time"
@@ -51,9 +56,7 @@ src_compile() {
 }
 
 src_install() {
-	newbin src/${EGO_PN}/out/binaries/gitlab-ci-multi-runner gitlab-runner
+	newbin src/${EGO_PN}/out/binaries/gitlab-runner gitlab-runner
 	dodoc src/${EGO_PN}/README.md src/${EGO_PN}/CHANGELOG.md
-	enewgroup gitlab-runner
-	enewuser gitlab-runner -1 -1 -1 "users gitlab-runner docker"
-	doinitd ${FILEDIR}/gitlab-runner
+	doinitd ${FILESDIR}/gitlab-runner
 }
