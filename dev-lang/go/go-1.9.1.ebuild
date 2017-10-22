@@ -138,6 +138,11 @@ src_unpack()
 	default
 }
 
+src_prepare() {
+	eapply "${FILESDIR}"/fix-pie.patch
+	eapply_user
+}
+
 src_compile()
 {
 	export GOROOT_BOOTSTRAP="/usr/lib/go"
