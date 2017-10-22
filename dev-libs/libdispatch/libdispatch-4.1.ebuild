@@ -35,6 +35,7 @@ src_configure() {
 		-DUSE_GOLD_LINKER=OFF
 		-DENABLE_TESTING=$(usex test)
 		-DINSTALL_LIBDIR=/usr/$(get_libdir)
+		-DENABLE_DTRACE=false
 	)
 
 	if use swift; then
