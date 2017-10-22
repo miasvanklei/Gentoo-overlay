@@ -53,4 +53,7 @@ src_compile() {
 src_install() {
 	newbin src/${EGO_PN}/out/binaries/gitlab-ci-multi-runner gitlab-runner
 	dodoc src/${EGO_PN}/README.md src/${EGO_PN}/CHANGELOG.md
+	enewgroup gitlab-runner
+	enewuser gitlab-runner -1 -1 -1 "users gitlab-runner docker"
+	doinitd ${FILEDIR}/gitlab-runner
 }
