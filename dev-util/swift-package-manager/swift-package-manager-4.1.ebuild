@@ -9,6 +9,7 @@ DESCRIPTION="The Package Manager for the Swift Programming Language"
 HOMEPAGE="http://llvm.org/"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift-package-manager.git"
+EGIT_BRANCH="swift-4.1-branch"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
