@@ -27,7 +27,7 @@ RESTRICT="test"
 
 pkg_setup() {
 	enewgroup gitlab-runner
-	enewuser gitlab-runner -1 -1 -1 "users,gitlab-runner,docker"
+	enewuser gitlab-runner -1 -1 -1 "gitlab-runner,docker"
 }
 
 src_prepare() {
