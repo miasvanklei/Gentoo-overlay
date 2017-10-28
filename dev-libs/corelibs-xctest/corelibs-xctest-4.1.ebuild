@@ -28,6 +28,11 @@ RDEPEND="dev-libs/libdispatch
 	dev-libs/libxml2"
 DEPEND="${RDEPEND}"
 
+src_prepare() {
+	eapply ${FILESDIR}/remove-open.patch
+	eapply_user
+}
+
 src_install() {
 	local arch=${ARCH}
 
