@@ -18,12 +18,12 @@ RDEPEND="
 	dev-libs/glib:2
 	dev-libs/nspr
 	dev-libs/nss
-	~dev-qt/qtcore-${PV}
-	~dev-qt/qtdeclarative-${PV}
-	~dev-qt/qtgui-${PV}
-	~dev-qt/qtnetwork-${PV}
-	~dev-qt/qtprintsupport-${PV}
-	~dev-qt/qtwebchannel-${PV}[qml]
+	~dev-qt/qtcore-5.9.2
+	~dev-qt/qtdeclarative-5.9.2
+	~dev-qt/qtgui-5.9.2
+	~dev-qt/qtnetwork-5.9.2
+	~dev-qt/qtprintsupport-5.9.2
+	~dev-qt/qtwebchannel-5.9.2[qml]
 	dev-libs/expat
 	dev-libs/libevent:=
 	dev-libs/libxml2
@@ -57,11 +57,11 @@ RDEPEND="
 	x11-libs/libXScrnSaver
 	x11-libs/libXtst
 	alsa? ( media-libs/alsa-lib )
-	geolocation? ( ~dev-qt/qtpositioning-${PV} )
+	geolocation? ( ~dev-qt/qtpositioning-5.9.2 )
 	pulseaudio? ( media-sound/pulseaudio:= )
 	system-ffmpeg? ( media-video/ffmpeg:0= )
 	system-icu? ( dev-libs/icu:= )
-	widgets? ( ~dev-qt/qtwidgets-${PV} )
+	widgets? ( ~dev-qt/qtwidgets-5.9.2 )
 "
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
