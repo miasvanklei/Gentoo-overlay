@@ -9,7 +9,7 @@ DESCRIPTION="Format Rust code"
 HOMEPAGE="https://github.com/rust-lang-nursery/rustfmt"
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE=""
 SRC_URI="https://github.com/rust-lang-nursery/${PN}/archive/nightly-${PV}.tar.gz -> ${P}.tar.gz"
 
