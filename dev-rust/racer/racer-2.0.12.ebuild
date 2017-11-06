@@ -10,7 +10,7 @@ HOMEPAGE="https://github.com/phildawes/racer"
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE=""
 SRC_URI="https://github.com/phildawes/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
