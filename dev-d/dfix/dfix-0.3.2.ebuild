@@ -5,7 +5,7 @@ EAPI=6
 
 DESCRIPTION="Dfmt is a formatter for D source code"
 HOMEPAGE="https://github.com/Hackerpilot/dfmt"
-LIBDPARSE="4d876562b4862a98bf1b6b6bf4fd07af96506a54"
+LIBDPARSE="ca51bd13cf68646eaf9d6987db100cc3b288cffe"
 SRC_URI="
 	https://github.com/dlang-community/dfix/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/dlang-community/libdparse/archive/${LIBDPARSE}.tar.gz -> libdparse-${LIBDPARSE}.tar.gz
