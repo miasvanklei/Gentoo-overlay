@@ -1,0 +1,86 @@
+--- a/jaxml.py	2010-08-08 00:33:56.000000000 +0200
++++ b/jaxml.py	2017-11-04 10:20:59.148949430 +0100
+@@ -226,7 +226,7 @@
+ import sys
+ import os
+ import string
+-import cStringIO
++from io import StringIO
+ import time
+ 
+ __version__ = "3.02"
+@@ -379,7 +379,7 @@
+                         nsargs = ""
+                         lg = len(nsattributes)
+                         if (lg > 1) :
+-                                raise ValueError, "jaxml: Invalid attributes %s" % str(nsattributes[0])
++                               raise ValueError("jaxml: Invalid attributes %s" % str(nsattributes[0]))
+                         elif lg :    
+                                 nsattr = nsattributes[0]
+                                 try :
+@@ -391,15 +391,14 @@
+                                                 except AttributeError :                
+                                                         nsargs = nsargs + ' %s="%s"' % (ns, str(tags))
+                                 except AttributeError :                        
+-                                        raise ValueError, "jaxml: Invalid attributes %s" % str(nsattr)
+-                                        
++                                        raise ValueError("jaxml: Invalid attributes %s" % str(nsattr))
+                         # first, we compute the attributes string
+                         # we vonluntarily do the test because of the speed optimisation
+                         # it gives when there's no attribute
+                         if attributes :
+                                 # interestingly the "reduce" line is much more slower than the "string.join + map" one
+                                 # arg = reduce(lambda s,x,a=attributes: '%s %s="%s"' % (s, x, str(a[x])), attributes.keys(), "")
+-                                arg = string.join(map(lambda x,a=attributes: ' %s="%s"' % (x, str(a[x])), attributes.keys()), "")
++                                arg = str.join("", map(lambda x,a=attributes: ' %s="%s"' % (x, str(a[x])), attributes.keys()))
+                         else :
+                                 arg = ""
+ 
+@@ -466,9 +465,9 @@
+                    allows constructs like: mydoc * 3
+                 """        
+                 if type(number) != type(1) :
+-                        raise TypeError, "jaxml.py: __mul__ operation not permitted on these operands."
++                        raise TypeError("jaxml.py: __mul__ operation not permitted on these operands.")
+                 if number < 0 :
+-                        raise ValueError, "jaxml.py: can't repeat a document a negative number of times."
++                        raise ValueError("jaxml.py: can't repeat a document a negative number of times.")
+ 
+                 if number == 0 :
+                         # returns an empty document
+@@ -503,7 +502,7 @@
+                    Also allows constructs like: mydoc + "some text"
+                 """
+                 if (not isinstance(other, _TAGGED_document)) and (type(other) != type("")) :
+-                        raise TypeError, "jaxml.py: __add__ operation not permitted on these operands."
++                        raise TypeError("jaxml.py: __add__ operation not permitted on these operands.")
+ 
+                 # first we make a copy of the original
+                 new = self.__copy__()
+@@ -583,7 +582,7 @@
+ 
+         def __str__(self) :
+                 """returns the document as a string of text"""
+-                outstr = cStringIO.StringIO()
++                outstr = StringIO()
+                 indentation = ""
+                 lgindent = len(self.__indentstring)
+                 lastopened = None
+@@ -668,7 +667,7 @@
+                                         index = self.__pusheddict[name]
+                                         del self.__pusheddict[name]
+                                 except KeyError :        
+-                                        raise KeyError, "jaxml named position %s doesn't exist" % name
++                                        raise KeyError("jaxml named position %s doesn't exist" % name)
+                         else :
+                                 index = maxindex
+                         while maxindex >= index :
+@@ -709,7 +708,7 @@
+                         self.__mapping.update(newmap)
+                         return self.__mapping
+                 else :
+-                        raise TypeError, "jaxml.py: _updatemapping's parameter must be a Python mapping object."
++                        raise TypeError("jaxml.py: _updatemapping's parameter must be a Python mapping object.")
+ 
+         def _output(self, file = "-") :
+                 """Ouput the page, with indentation.
