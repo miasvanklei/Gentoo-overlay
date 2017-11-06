@@ -17,7 +17,7 @@ EGIT_BRANCH="swift-4.1-branch"
 
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE="+lldb +sourcekit"
 
 RDEPEND="

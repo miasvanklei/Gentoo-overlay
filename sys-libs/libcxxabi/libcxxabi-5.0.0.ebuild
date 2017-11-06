@@ -18,7 +18,7 @@ EGIT_REPO_URI="https://git.llvm.org/git/libcxxabi.git
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm64 ~x86 ~arm"
 IUSE="+compiler-rt +libunwind +static-libs test"
 
 RDEPEND="

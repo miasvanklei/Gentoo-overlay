@@ -63,14 +63,11 @@ src_prepare() {
 	eapply_user
 
 	# Sledgehammer:
-	# - prevent fetching of bundled stuff in compile and install phase
 	# - respect CFLAGS
 	# - respect EPREFIX and Gentoo specific paths
 	# - fix BLAS and LAPACK link interface
 
 	sed -i \
-		-e 's|$(JLDOWNLOAD)|${EPREFIX}/bin/true|' \
-		-e 's|git submodule|${EPREFIX}/bin/true|g' \
 		-e "s|GENTOOCFLAGS|${CFLAGS}|g" \
 		-e "s|/usr/include|${EPREFIX%/}/usr/include|g" \
 		deps/Makefile || die

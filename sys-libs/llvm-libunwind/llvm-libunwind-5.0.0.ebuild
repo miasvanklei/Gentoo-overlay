@@ -16,7 +16,7 @@ EGIT_REPO_URI="https://git.llvm.org/git/libunwind.git
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm64 ~x86 ~arm"
 IUSE="debug +static-libs"
 
 RDEPEND="!sys-libs/libunwind"

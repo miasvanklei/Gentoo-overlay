@@ -15,7 +15,7 @@ EGIT_REPO_URI="https://github.com/flang-compiler/flang.git"
 
 LICENSE="UoI-NCSA"
 SLOT="0/${PV%.*}"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE=""
 
 RDEPEND=""

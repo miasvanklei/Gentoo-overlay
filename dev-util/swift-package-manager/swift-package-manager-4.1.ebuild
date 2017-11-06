@@ -13,7 +13,7 @@ EGIT_BRANCH="swift-4.1-branch"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE=""
 
 RDEPEND="dev-lang/swift

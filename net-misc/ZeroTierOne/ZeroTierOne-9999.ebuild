@@ -11,7 +11,7 @@ EGIT_REPO_URI="https://github.com/zerotier/ZeroTierOne"
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm"
 IUSE=""
 
 src_compile() {

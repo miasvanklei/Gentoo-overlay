@@ -10,7 +10,7 @@ inherit kde5
 DESCRIPTION="Akonadi resource agent for Microsoft Exchange using Exchange Web Services (EWS) protocol"
 HOMEPAGE="https://github.com/KrissN/akonadi-ews"
 LICENSE="GPL-2+ LGPL-2.1+"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE=""
 
 COMMON_DEPEND="

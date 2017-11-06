@@ -13,7 +13,7 @@ EGIT_COMMIT="f8ff964ca464ea0812c07c874826c9d00dca629a"
 
 LICENSE="Apache-2.0"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE=""
 
 RDEPEND="dev-libs/libdispatch
