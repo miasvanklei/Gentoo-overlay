@@ -14,7 +14,7 @@ if [[ ${PV} == *9999* ]];then
 	inherit git-r3
 	SRC_URI=""
 	EGIT_REPO_URI="https://github.com/goldsmith/wikipedia"
-	KEYWORDS=""
+	KEYWORDS="~amd64"
 else
 	MY_PN="wikipedia"
 	MY_P="${MY_PN}-${PV}"
