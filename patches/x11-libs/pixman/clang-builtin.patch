@@ -1,0 +1,14 @@
+--- a/test/utils-prng.c	2017-11-08 18:18:45.094511556 +0000
++++ b/test/utils-prng.c	2017-11-08 18:19:53.461331977 +0000
+@@ -204,7 +204,11 @@
+             {
+                 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12
+             };
++#ifdef __clang__
++            randdata.vb = __builtin_shufflevector (randdata.vb, bswap_shufflemask);
++#else
+             randdata.vb = __builtin_shuffle (randdata.vb, bswap_shufflemask);
++#endif
+             store_rand_128_data (buf, &randdata, aligned);
+             buf += 16;
+ #else
