@@ -34,6 +34,7 @@ DEPEND="${CDEPEND}
 	app-text/docbook-xsl-stylesheets
 	dev-libs/libxslt
 	dev-util/gtk-doc-am
+	dev-util/gtk-doc
 	dev-util/intltool
 	sys-devel/gettext
 	virtual/pkgconfig
@@ -53,10 +54,6 @@ PDEPEND="
 DOCS=( docs/TODO HACKING NEWS README )
 
 PATCHES=(
-#	"${FILESDIR}"/port-to-mozjs24.patch
-#	"${FILESDIR}"/port-to-mozjs24-1.patch
-#	"${FILESDIR}"/port-to-mozjs24-2.patch
-#	"${FILESDIR}"/port-to-mozjs24-3.patch
 	"${FILESDIR}"/port-to-mozjs38.patch
 	"${FILESDIR}"/${PN}-0.114-elogind.patch
 	"${FILESDIR}"/${PN}-make-netgroup-support-optional.patch
