@@ -32,5 +32,5 @@ src_test() {
 
 src_install() {
         cmake-utils_src_configure
-	dodoc README Changelog AUTHORS
+	dodoc README.md Changelog AUTHORS
 }
