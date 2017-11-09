@@ -88,5 +88,5 @@ src_install() {
 	dosym "lld" "/usr/bin/${CHOST}-lld"
 	dosym "lld" "/usr/bin/${CHOST}-ld.lld"
 	dosym "lld" "/usr/bin/${CHOST}-ld"
-	dosym "ld" "/usr/bin/ld"
+	dosym "lld" "/usr/bin/ld"
 }
