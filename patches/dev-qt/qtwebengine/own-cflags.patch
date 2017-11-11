@@ -1,0 +1,47 @@
+--- a/src/3rdparty/chromium/build/config/compiler/BUILD.gn	2017-11-11 14:05:09.499494497 +0100
++++ b/src/3rdparty/chromium/build/config/compiler/BUILD.gn	2017-11-11 14:05:56.370377079 +0100
+@@ -140,7 +140,7 @@
+ 
+ config("compiler") {
+   asmflags = []
+-  cflags = []
++  cflags = [ "-march=core-avx2" ]
+   cflags_c = []
+   cflags_cc = []
+   cflags_objc = []
+@@ -1360,7 +1360,7 @@
+     # Favor size over speed.
+     cflags = [ "-Os" ] + common_optimize_on_cflags
+   } else {
+-    cflags = [ "-O2" ] + common_optimize_on_cflags
++    cflags = [ "-O3" ] + common_optimize_on_cflags
+   }
+   ldflags = common_optimize_on_ldflags
+ }
+@@ -1377,7 +1377,7 @@
+   } else if (optimize_for_fuzzing) {
+     cflags = [ "-O1" ] + common_optimize_on_cflags
+   } else {
+-    cflags = [ "-O2" ] + common_optimize_on_cflags
++    cflags = [ "-O3" ] + common_optimize_on_cflags
+   }
+   ldflags = common_optimize_on_ldflags
+ }
+@@ -1438,7 +1438,7 @@
+     } else if (optimize_for_fuzzing) {
+       cflags = [ "-O1" ] + common_optimize_on_cflags
+     } else {
+-      cflags = [ "-O2" ] + common_optimize_on_cflags
++      cflags = [ "-O3" ] + common_optimize_on_cflags
+     }
+   }
+ }
+@@ -1446,7 +1446,7 @@
+ # This config can be used to override the default settings for per-component
+ # and whole-program optimization, optimizing the particular target for speed
+ # instead of code size. This config is exactly the same as "optimize_max"
+-# except that we use -O3 instead of -O2 on non-win, non-IRT platforms.
++# except that we use -O3 instead of -O3 on non-win, non-IRT platforms.
+ #
+ # TODO(crbug.com/621335) - rework how all of these configs are related
+ # so that we don't need this disclaimer.
