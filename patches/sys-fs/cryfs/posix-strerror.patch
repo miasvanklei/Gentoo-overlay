@@ -1,0 +1,12 @@
+--- a/vendor/spdlog/spdlog/details/os.h	2017-11-09 12:36:09.372561968 +0000
++++ b/vendor/spdlog/spdlog/details/os.h	2017-11-09 12:36:51.030435834 +0000
+@@ -377,8 +377,7 @@
+     else
+         return "Unkown error";
+ 
+-#elif defined(__FreeBSD__) || defined(__APPLE__) || defined(ANDROID) || defined(__SUNPRO_CC) || \
+-      ((_POSIX_C_SOURCE >= 200112L) && ! defined(_GNU_SOURCE)) // posix version
++#elif !defined(__GLIBC__)
+ 
+     if (strerror_r(err_num, buf, buf_size) == 0)
+         return std::string(buf);

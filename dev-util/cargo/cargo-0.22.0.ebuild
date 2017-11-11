@@ -25,6 +25,7 @@ RDEPEND="${COMMON_DEPEND}
 DEPEND="${COMMON_DEPEND}
 	>=dev-lang/rustc-1.9.0
 	dev-util/cmake
+	dev-util/cargo
 	sys-apps/coreutils
 	sys-apps/diffutils
 	sys-apps/findutils

@@ -14,6 +14,12 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm"
 IUSE=""
 
+src_prepare()
+{
+	eapply ${FILESDIR}/remove-strip.patch
+	eapply_user
+}
+
 src_compile() {
 	emake
 }

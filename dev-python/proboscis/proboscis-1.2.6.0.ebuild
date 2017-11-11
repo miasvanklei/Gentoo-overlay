@@ -1,32 +1,21 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2014 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
+# $Header: $
 
-EAPI=5
-
-PYTHON_COMPAT=( python2_7 python3_{4,5} pypy pypy3 )
+EAPI=6
+PYTHON_COMPAT=(python3_5)
 
 inherit distutils-r1
 
-DESCRIPTION="Pythonic argument parser, that will make you smile"
-HOMEPAGE="https://pypi.python.org/pypi/docopt https://github.com/docopt/docopt"
-SRC_URI="
-	mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz
-	https://github.com/docopt/docopt/archive/${PV}.tar.gz -> ${P}.tar.gz"
+DESCRIPTION="Extends Nose with certain TestNG like features"
+HOMEPAGE="https://github.com/rackerlabs/python-proboscis"
+SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
 
+LICENSE="Apache-2.0"
 SLOT="0"
-LICENSE="MIT"
-KEYWORDS="amd64 ~arm x86 ~amd64-linux ~x86-linux"
+KEYWORDS="~amd64"
 IUSE="test"
 
-RDEPEND=""
+RDEPEND="dev-python/nose[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}
-	!!dev-python/docopt
-	dev-python/setuptools[${PYTHON_USEDEP}]
-	test? ( dev-python/pytest[${PYTHON_USEDEP}] )"
-
-# not implemented in this version, git already has it
-RESTRICT=test
-
-python_test() {
-	esetup.py test
-}
+	dev-python/setuptools[${PYTHON_USEDEP}]"
