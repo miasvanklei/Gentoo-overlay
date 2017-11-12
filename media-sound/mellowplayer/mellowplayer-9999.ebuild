@@ -18,3 +18,6 @@ RDEPEND="dev-qt/qtwebengine
 	virtual/pkgconfig"
 DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
+PATCHES=(
+	${FILESDIR}/musl-strerror.patch
+)
