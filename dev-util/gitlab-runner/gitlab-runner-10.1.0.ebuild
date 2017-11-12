@@ -56,6 +56,7 @@ src_compile() {
 }
 
 src_install() {
+	mkdir -p ${D}/var/lib/gitlab-runner
 	newbin src/${EGO_PN}/out/binaries/gitlab-runner gitlab-runner
 	dodoc src/${EGO_PN}/README.md src/${EGO_PN}/CHANGELOG.md
 	doinitd ${FILESDIR}/gitlab-runner
