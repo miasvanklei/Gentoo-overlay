@@ -68,31 +68,6 @@
  
          auto len = strlen(cs);
  
---- a/runtime/phobos/std/exception.d
-+++ b/runtime/phobos/std/exception.d
-@@ -1494,20 +1494,10 @@
-     }
-     this(string msg, int errno, string file = null, size_t line = 0) @trusted
-     {
--        import core.stdc.string : strlen;
-+        import core.stdc.string : strlen, strerror;
- 
-         _errno = errno;
--        version (CRuntime_Glibc)
--        {
--            import core.stdc.string : strerror_r;
--            char[1024] buf = void;
--            auto s = strerror_r(errno, buf.ptr, buf.length);
--        }
--        else
--        {
--            import core.stdc.string : strerror;
--            auto s = strerror(errno);
--        }
-+        auto s = strerror(errno);
-         super(msg ~ " (" ~ s[0 .. s.strlen].idup ~ ")", file, line);
-     }
- 
 --- a/runtime/druntime/src/core/stdc/string.d
 +++ b/runtime/druntime/src/core/stdc/string.d
 @@ -76,40 +76,8 @@
@@ -138,3 +113,20 @@
  ///
  pure size_t strlen(scope const char* s);
  ///
+--- a/runtime/phobos/std/exception.d
++++ b/runtime/phobos/std/exception.d
+@@ -1483,13 +1483,7 @@ private bool isUnionAliasedImpl(T)(size_t offset)
+ package string errnoString(int errno) nothrow @trusted
+ {
+     import core.stdc.string : strlen;
+-    version (CRuntime_Glibc)
+-    {
+-        import core.stdc.string : strerror_r;
+-        char[1024] buf = void;
+-        auto s = strerror_r(errno, buf.ptr, buf.length);
+-    }
+-    else version (Posix)
++    version (Posix)
+     {
+         // XSI-compliant
+         import core.stdc.string : strerror_r;
