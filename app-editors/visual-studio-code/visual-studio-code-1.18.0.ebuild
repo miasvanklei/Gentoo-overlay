@@ -34,24 +34,27 @@ RDEPEND="
 
 S="${WORKDIR}/VSCode-linux-x64"
 
-node_compile()
-{
+node_compile() {
 	npm install $@ --nodedir=/usr/include/electron-1.4/node || die
 }
 
-src_compile()
-{
+src_compile() {
 	local n_p=(native-keymap native-watchdog gc-signals oniguruma node-pty keytar v8-profiler nsfw)
-        elog "recompile node modules with binaries"
 	for i in "${n_p[@]}"; do
+		elog "recompiling $i"
 		node_compile $i || die
 		rm -r resources/app/node_modules/$i || die
 	done
 
+	elog "deleting object and dep files"
+	find ${S} -name .deps -exec rm -rf "{}" \;
+	find ${S} -name obj.target -exec rm -rf "{}" \;
+
+	elog "copying node_modules"
         cp -r node_modules/* resources/app/node_modules || die
 }
 
-src_install(){
+src_install() {
 	insinto "/opt/${PN}"
 	doins -r resources/app
         dobin ${FILESDIR}/vscode
@@ -60,10 +63,12 @@ src_install(){
 	doicon ${FILESDIR}/vscode.png
 	insinto "/usr/share/licenses/${PN}"
 	newins "resources/app/LICENSE.txt" "LICENSE"
-	find ${D} -name "var" -exec rm -r {} \;
+
+	elog "fix EACESS error"
+	chmod +x ${D}/opt/visual-studio-code/app/node_modules/vscode-ripgrep/bin/rg || die
 }
 
-pkg_postinst(){
+pkg_postinst() {
 	elog "You may install some additional utils, so check them in:"
 	elog "https://code.visualstudio.com/Docs/setup#_additional-tools"
 }
