@@ -13,7 +13,7 @@ HOMEPAGE="https://01.org/beignet"
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
-IUSE="ocl-icd ocl20 swift"
+IUSE="ocl-icd ocl20 +swift"
 
 if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
