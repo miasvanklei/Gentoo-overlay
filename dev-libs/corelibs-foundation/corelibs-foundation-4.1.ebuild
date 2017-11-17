@@ -22,7 +22,6 @@ IUSE=""
 
 RDEPEND="dev-libs/libdispatch
 	dev-libs/icu
-	dev-libs/corelibs-xctest
 	sys-libs/zlib
         dev-lang/swift
 	dev-libs/openssl
