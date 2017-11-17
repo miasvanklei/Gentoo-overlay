@@ -7,7 +7,7 @@ EAPI=6
 CMAKE_MIN_VERSION=3.4.3
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils python-single-r1 git-r3
+inherit cmake-utils git-r3 python-single-r1
 
 DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
@@ -18,7 +18,7 @@ EGIT_BRANCH="swift-4.1-branch"
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="+lldb +sourcekit"
+IUSE="+sourcekit"
 
 RDEPEND="
 	app-text/cmark
@@ -29,7 +29,7 @@ RDEPEND="
 	=sys-devel/clang-5.0.0:=[swift]
         =sys-devel/llvm-5.0.0:=[swift]
 	sourcekit? ( dev-libs/libdispatch )"
-PDEPEND="lldb? ( =dev-util/lldb-5.0.0:=[libedit,python,swift] )"
+PDEPEND=""
 DEPEND="${RDEPEND}"
 
 CMAKE_BUILD_TYPE=Release
@@ -46,6 +46,7 @@ src_prepare() {
 
 	# assumes glibc
 	eapply ${FILESDIR}/musl-fixes.patch
+	eapply ${FILESDIR}/define-_GNU_SOURCE.patch
 	eapply ${FILESDIR}/glibc-modulemap.patch
 
 	# incorrect c++ code
@@ -78,7 +79,7 @@ src_prepare() {
 	# fix compile
 	eapply ${FILESDIR}/fix-compile.patch
 
-	default
+	cmake-utils_src_prepare
 }
 
 src_configure() {
@@ -92,20 +93,17 @@ src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DSWIFT_HOST_TRIPLE=${CHOST}
-		-DSWIFT_BUILD_SOURCEKIT=$(usex sourcekit)
-		-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=$(usex sourcekit)
-		-DHAVE_DISPATCH_BLOCK_CREATE=$(usex sourcekit)
-		-DSWIFT_COMPILER_VERSION=4.0
+		-DSWIFT_COMPILER_VERSION=4.1
 		-DCLANG_COMPILER_VERSION=5.0
 	)
 
+	if use sourcekit; then
+		mycmakeargs+=(
+			-DSWIFT_BUILD_SOURCEKIT=$(usex sourcekit)
+			-DSWIFT_SOURCEKIT_USE_INPROC_LIBRARY=$(usex sourcekit)
+			-DHAVE_DISPATCH_BLOCK_CREATE=$(usex sourcekit)
+		)
+	fi
+
 	cmake-utils_src_configure
-}
-
-src_install() {
-	cmake-utils_src_install
-
-	# needed when using musl
-	insinto /usr/include/swift
-	doins ${FILESDIR}/Macros.h
 }

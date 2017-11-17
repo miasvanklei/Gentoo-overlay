@@ -1,32 +1,38 @@
---- b/lib/IRGen/IRGenDebugInfo.cpp
-+++ a/lib/IRGen/IRGenDebugInfo.cpp
-@@ -2007,13 +2007,13 @@
+--- a/lib/IRGen/IRGenDebugInfo.cpp
++++ b/lib/IRGen/IRGenDebugInfo.cpp
+@@ -45,7 +45,6 @@
+ #include "llvm/Config/config.h"
+ #include "llvm/IR/DIBuilder.h"
+ #include "llvm/IR/DebugInfo.h"
+-#include "llvm/IR/IntrinsicInst.h"
+ #include "llvm/IR/Module.h"
+ #include "llvm/Support/CommandLine.h"
+ #include "llvm/Support/Debug.h"
+@@ -2004,7 +2003,7 @@ void IRGenDebugInfoImpl::emitDbgIntrinsic(
+   auto *BB = Builder.GetInsertBlock();
+ 
+   // An alloca may only be described by exactly one dbg.declare.
+-  if (isa<llvm::AllocaInst>(Storage) && !llvm::FindDbgAddrUses(Storage).empty())
++  if (isa<llvm::AllocaInst>(Storage) && llvm::FindAllocaDbgDeclare(Storage))
+     return;
+ 
+   // A dbg.declare is only meaningful if there is a single alloca for
+@@ -2028,13 +2027,13 @@ void IRGenDebugInfoImpl::emitDbgIntrinsic(
      while (InsPt != E && isa<llvm::PHINode>(&*InsPt))
        ++InsPt;
      if (InsPt != E) {
-+      DBuilder.insertDbgValueIntrinsic(Storage, 0, Var, Expr, DL, &*InsPt);
 -      DBuilder.insertDbgValueIntrinsic(Storage, Var, Expr, DL, &*InsPt);
++      DBuilder.insertDbgValueIntrinsic(Storage, 0, Var, Expr, DL, &*InsPt);
        return;
      }
    }
  
    // Otherwise just insert it at the current insertion point.
-+  DBuilder.insertDbgValueIntrinsic(Storage, 0, Var, Expr, DL, BB);
 -  DBuilder.insertDbgValueIntrinsic(Storage, Var, Expr, DL, BB);
++  DBuilder.insertDbgValueIntrinsic(Storage, 0, Var, Expr, DL, BB);
  }
  
  void IRGenDebugInfoImpl::emitGlobalVariableDeclaration(
---- b/lib/IRGen/IRGenSIL.cpp
-+++ a/lib/IRGen/IRGenSIL.cpp
-@@ -637,7 +637,7 @@
-             auto *DVI = dyn_cast<llvm::DbgValueInst>(I);
-             if (DVI && DVI->getValue() == Value)
-               IGM.DebugInfo->getBuilder().insertDbgValueIntrinsic(
-+                  DVI->getValue(), 0, DVI->getVariable(), DVI->getExpression(),
--                  DVI->getValue(), DVI->getVariable(), DVI->getExpression(),
-                   DVI->getDebugLoc(), &*CurBB->getFirstInsertionPt());
-             else
-               // Found all dbg.value intrinsics describing this location.
 diff --git a/lib/AST/CMakeLists.txt b/lib/AST/CMakeLists.txt
 index df45aecf10..62ce6dc4f2 100644
 --- a/lib/AST/CMakeLists.txt
@@ -82,3 +88,32 @@ index 80ce81d942..b89ea7b802 100644
  
  add_subdirectory(AST)
  add_subdirectory(ASTSectionImporter)
+--- b/lib/IRGen/IRGenSIL.cpp
++++ a/lib/IRGen/IRGenSIL.cpp
+@@ -637,7 +637,7 @@
+             auto *DVI = dyn_cast<llvm::DbgValueInst>(I);
+             if (DVI && DVI->getValue() == Value)
+               IGM.DebugInfo->getBuilder().insertDbgValueIntrinsic(
+-                  DVI->getValue(), DVI->getVariable(), DVI->getExpression(),
++                  DVI->getValue(), 0, DVI->getVariable(), DVI->getExpression(),
+                   DVI->getDebugLoc(), &*CurBB->getFirstInsertionPt());
+             else
+               // Found all dbg.value intrinsics describing this location.
+--- a/lib/Immediate/Immediate.cpp
++++ b/lib/Immediate/Immediate.cpp
+@@ -195,11 +195,12 @@ bool swift::immediate::linkLLVMModules(llvm::Module *Module,
+                             /*, llvm::Linker::LinkerMode LinkerMode */)
+ {
+   llvm::LLVMContext &Ctx = SubModule->getContext();
+-  auto OldHandler = Ctx.getDiagnosticHandlerCallBack();
++  auto OldHandler = Ctx.getDiagnosticHandler();
+   void *OldDiagnosticContext = Ctx.getDiagnosticContext();
+-  Ctx.setDiagnosticHandlerCallBack(linkerDiagnosticHandler, nullptr);
++  Ctx.setDiagnosticHandler(linkerDiagnosticHandler, nullptr);
+   bool Failed = llvm::Linker::linkModules(*Module, std::move(SubModule));
+-  Ctx.setDiagnosticHandlerCallBack(OldHandler, OldDiagnosticContext);
++  Ctx.setDiagnosticHandler(OldHandler, OldDiagnosticContext);
++
+   return !Failed;
+ }
+ 
