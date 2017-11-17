@@ -1,0 +1,52 @@
+diff --git a/Source/SwiftLintFramework/Extensions/Configuration+Merging.swift b/Source/SwiftLintFramework/Extensions/Configuration+Merging.swift
+index fec53995..63bf4602 100644
+--- a/Source/SwiftLintFramework/Extensions/Configuration+Merging.swift
++++ b/Source/SwiftLintFramework/Extensions/Configuration+Merging.swift
+@@ -53,14 +53,7 @@ extension Configuration {
+             return nil
+         }
+ 
+-        let isDirectory: Bool
+-        #if os(Linux)
+-            isDirectory = isDirectoryObjC
+-        #else
+-            isDirectory = isDirectoryObjC.boolValue
+-        #endif
+-
+-        if isDirectory {
++        if isDirectoryObjC.boolValue {
+             return rootPath
+         } else {
+             return rootPath.bridge().deletingLastPathComponent
+diff --git a/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift b/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift
+index 08ca721a..f010ec7d 100644
+--- a/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift
++++ b/Source/SwiftLintFramework/Extensions/String+SwiftLint.swift
+@@ -83,11 +83,7 @@ extension String {
+     internal var isFile: Bool {
+         var isDirectoryObjC: ObjCBool = false
+         if FileManager.default.fileExists(atPath: self, isDirectory: &isDirectoryObjC) {
+-            #if os(Linux)
+-                return !isDirectoryObjC
+-            #else
+                 return !isDirectoryObjC.boolValue
+-            #endif
+         }
+         return false
+     }
+diff --git a/Source/SwiftLintFramework/Models/Configuration.swift b/Source/SwiftLintFramework/Models/Configuration.swift
+index 0a11d8f0..11afd850 100644
+--- a/Source/SwiftLintFramework/Models/Configuration.swift
++++ b/Source/SwiftLintFramework/Models/Configuration.swift
+@@ -247,11 +247,7 @@ private extension String {
+     func isDirectory() -> Bool {
+         var isDir: ObjCBool = false
+         if FileManager.default.fileExists(atPath: self, isDirectory: &isDir) {
+-            #if os(Linux)
+-                return isDir
+-            #else
+                 return isDir.boolValue
+-            #endif
+         }
+ 
+         return false
