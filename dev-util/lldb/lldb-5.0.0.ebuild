@@ -18,7 +18,7 @@ SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+libedit ncurses +python +swift test"
+IUSE="+libedit ncurses +python test"
 
 RDEPEND="
 	libedit? ( dev-libs/libedit:0= )
@@ -59,9 +59,6 @@ src_unpack() {
 src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
-
-	# add swift support (cleanup comes later
-	use swift && eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	eapply_user
 }
