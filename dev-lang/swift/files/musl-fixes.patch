@@ -41,20 +41,6 @@ index 39c2d36..30a062e 100644
  #endif
  
  static Lazy<std::mt19937> theGlobalMT19937;
-diff --git a/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift b/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift
-index 24531f5..595886a 100644
---- a/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift
-+++ b/stdlib/private/SwiftPrivateLibcExtras/Subprocess.swift
-@@ -291,7 +291,7 @@ internal func _getEnviron() -> UnsafeMutablePointer<UnsafeMutablePointer<CChar>?
- #elseif os(Android)
-   return environ
- #else
--  return __environ
-+  return environ
- #endif
- }
- #endif
-
 diff --git a/stdlib/public/Platform/Platform.swift b/stdlib/public/Platform/Platform.swift
 index a3284be..eefa60e 100644
 --- a/stdlib/public/Platform/Platform.swift
@@ -81,69 +67,22 @@ index 7014efd..8fadfaa 100644
  // At the moment CYGWIN pthreads implementation doesn't support the use of
  // constexpr for static allocation versions. The way they define things
  // results in a reinterpret_cast which violates constexpr. Similarly, Android's
-diff --git a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
-index d0c91e100a..8b6e5d426e 100644
---- a/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
-+++ b/stdlib/private/SwiftPrivatePthreadExtras/SwiftPrivatePthreadExtras.swift
-@@ -80,15 +80,9 @@ public func _stdlib_pthread_create_block<Argument, Result>(
-   }
- }
- 
--#if os(Linux) || os(Android)
--internal func _make_pthread_t() -> pthread_t {
--  return pthread_t()
--}
--#else
- internal func _make_pthread_t() -> pthread_t? {
-   return nil
- }
--#endif
- 
- /// Block-based wrapper for `pthread_join`.
- public func _stdlib_pthread_join<Result>(
 diff --git a/stdlib/public/runtime/ImageInspectionELF.cpp b/stdlib/public/runtime/ImageInspectionELF.cpp
-index 54fb123071..16ad27891a 100644
+index 7d89704ef1..432731cbe6 100644
 --- a/stdlib/public/runtime/ImageInspectionELF.cpp
 +++ b/stdlib/public/runtime/ImageInspectionELF.cpp
-@@ -21,7 +21,6 @@
- #if defined(__ELF__) || defined(__ANDROID__)
- 
- #include "ImageInspection.h"
--#include "swift/Runtime/Debug.h"
- #include <dlfcn.h>
- #include <elf.h>
- #include <link.h>
-@@ -70,26 +69,16 @@ static InspectArgs TypeMetadataRecordArgs = {
+@@ -70,7 +70,7 @@ static InspectArgs TypeMetadataRecordArgs = {
  static SectionInfo getSectionInfo(const char *imageName,
                                    const char *sectionName) {
    SectionInfo sectionInfo = { 0, nullptr };
 -  void *handle = dlopen(imageName, RTLD_LAZY | RTLD_NOLOAD);
--  if (!handle) {
--#ifdef __ANDROID__
--    llvm::StringRef imagePath = llvm::StringRef(imageName);
--    if (imagePath.startswith("/system/lib") ||
--        (imageName && !imagePath.endswith(".so"))) {
--      return sectionInfo;
--    }
--#endif
--    fatalError(/* flags = */ 0, "dlopen() failed on `%s': %s", imageName,
--               dlerror());
--  }
--  void *symbol = dlsym(handle, sectionName);
--  if (symbol) {
--    // Extract the size of the section data from the head of the section.
--    const char *section = reinterpret_cast<const char *>(symbol);
--    memcpy(&sectionInfo.size, section, sizeof(uint64_t));
--    sectionInfo.data = section + sizeof(uint64_t);
 +  void *handle = dlopen(imageName, RTLD_LAZY);
-+  if (handle) {
-+      void *symbol = dlsym(handle, sectionName);
-+      if (symbol) {
-+        // Extract the size of the section data from the head of the section.
-+        const char *section = reinterpret_cast<const char *>(symbol);
-+        memcpy(&sectionInfo.size, section, sizeof(uint64_t));
-+        sectionInfo.data = section + sizeof(uint64_t);
-+      }
+   if (!handle) {
+ #ifdef __ANDROID__
+     llvm::StringRef imagePath = llvm::StringRef(imageName);
+@@ -89,7 +89,6 @@ static SectionInfo getSectionInfo(const char *imageName,
+     memcpy(&sectionInfo.size, section, sizeof(uint64_t));
+     sectionInfo.data = section + sizeof(uint64_t);
    }
 -  dlclose(handle);
    return sectionInfo;

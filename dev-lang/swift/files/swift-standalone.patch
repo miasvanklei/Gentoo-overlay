@@ -159,6 +159,21 @@
  endmacro()
  
  macro(swift_common_standalone_build_config_cmark product)
+@@ -297,8 +313,12 @@ endmacro()
+ function(swift_common_llvm_config target)
+   set(link_components ${ARGN})
+ 
+-  if((SWIFT_BUILT_STANDALONE OR SOURCEKIT_BUILT_STANDALONE) AND NOT "${CMAKE_CFG_INTDIR}" STREQUAL ".")
+-    llvm_map_components_to_libnames(libnames ${link_components})
++  if(SWIFT_BUILT_STANDALONE OR SOURCEKIT_BUILT_STANDALONE)
++    if (LLVM_LINK_LLVM_DYLIB AND NOT ARG_DISABLE_LLVM_LINK_LLVM_DYLIB)
++      set(libnames LLVM)
++    else()
++      llvm_map_components_to_libnames(libnames ${link_components})
++    endif()
+ 
+     get_target_property(target_type "${target}" TYPE)
+     if("${target_type}" STREQUAL "STATIC_LIBRARY")
 --- a/lib/Basic/CMakeLists.txt
 +++ b/lib/Basic/CMakeLists.txt
 @@ -27,7 +27,8 @@
