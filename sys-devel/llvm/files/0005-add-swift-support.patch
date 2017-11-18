@@ -803,3 +803,47 @@
    T = Triple("huh");
    EXPECT_EQ(Triple::UnknownArch, T.getArch());
  }
+--- a/lib/Support/CommandLine.cpp
++++ b/lib/Support/CommandLine.cpp
+@@ -129,11 +129,8 @@
+   void addLiteralOption(Option &Opt, SubCommand *SC, StringRef Name) {
+     if (Opt.hasArgStr())
+       return;
+-    if (!SC->OptionsMap.insert(std::make_pair(Name, &Opt)).second) {
+-      errs() << ProgramName << ": CommandLine Error: Option '" << Name
+-             << "' registered more than once!\n";
+-      report_fatal_error("inconsistency in registered CommandLine options");
+-    }
++    if (!SC->OptionsMap.insert(std::make_pair(Name, &Opt)).second
++      return;
+ 
+     // If we're adding this to all sub-commands, add it to the ones that have
+     // already been registered.
+@@ -159,11 +156,8 @@
+     bool HadErrors = false;
+     if (O->hasArgStr()) {
+       // Add argument to the argument map!
+-      if (!SC->OptionsMap.insert(std::make_pair(O->ArgStr, O)).second) {
+-        errs() << ProgramName << ": CommandLine Error: Option '" << O->ArgStr
+-               << "' registered more than once!\n";
+-        HadErrors = true;
+-      }
++      if (!SC->OptionsMap.insert(std::make_pair(O->ArgStr, O)).second)
++        return;
+     }
+ 
+     // Remember information about positional options.
+@@ -266,11 +260,8 @@
+ 
+   void updateArgStr(Option *O, StringRef NewName, SubCommand *SC) {
+     SubCommand &Sub = *SC;
+-    if (!Sub.OptionsMap.insert(std::make_pair(NewName, O)).second) {
+-      errs() << ProgramName << ": CommandLine Error: Option '" << O->ArgStr
+-             << "' registered more than once!\n";
+-      report_fatal_error("inconsistency in registered CommandLine options");
+-    }
++    if (!Sub.OptionsMap.insert(std::make_pair(NewName, O)).second)
++      return;
+     Sub.OptionsMap.erase(O->ArgStr);
+   }
+ 
