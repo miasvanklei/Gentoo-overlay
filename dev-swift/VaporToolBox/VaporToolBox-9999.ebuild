@@ -19,21 +19,36 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
+        dev-swift/Bits
+        dev-swift/Core
+        dev-swift/CloudModels
+        dev-swift/CloudClients
         dev-swift/Console
-        dev-swift/JSON"
+        dev-swift/JSON
+        dev-swift/Node
+        dev-swift/Vapor
+        dev-swift/Redis
+        dev-swift/Sockets"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
 	${FILESDIR}/remove-dependencies.patch
+	${FILESDIR}/corelibs-foundation.patch
 )
 
 src_compile() {
 	swift build -c release \
+	-Xlinker -lBits \
+	-Xlinker -lCore \
+	-Xlinker -lCloudClients \
+	-Xlinker -lCloudModels \
 	-Xlinker -lConsole \
+	-Xlinker -lHTTP \
 	-Xlinker -lJSON \
 	-Xlinker -lNode \
-	-Xlinker -lCore \
-	-Xlinker -lBits \
+	-Xlinker -lVapor \
+	-Xlinker -lRedis \
+	-Xlinker -lSockets \
 	--verbose || die
 }
 

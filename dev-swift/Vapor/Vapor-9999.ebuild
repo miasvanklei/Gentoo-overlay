@@ -30,6 +30,7 @@ DEPEND="${RDEPEND}"
 PATCHES=(
         ${FILESDIR}/fix-compile.patch
 	${FILESDIR}/remove-dependencies.patch
+	${FILESDIR}/corelibs-foundation.patch
         ${FILESDIR}/install-lib.patch
 )
 

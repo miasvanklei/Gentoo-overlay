@@ -20,6 +20,7 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
+	dev-swift/CSQLite
 	dev-swift/Core
 	dev-swift/Node"
 DEPEND="${RDEPEND}"

@@ -19,7 +19,8 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
-	dev-swift/Core"
+	dev-swift/Core
+	dev-swift/Node"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
@@ -30,6 +31,7 @@ PATCHES=(
 src_compile() {
 	swift build -c release \
 	-Xlinker -lCore \
+	-Xlinker -lNode \
 	--verbose || die
 }
 

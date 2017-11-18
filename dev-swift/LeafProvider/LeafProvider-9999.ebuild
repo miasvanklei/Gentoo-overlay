@@ -5,10 +5,10 @@ EAPI=6
 
 inherit git-r3
 
-DESCRIPTION="Swift models, relationships, and querying for NoSQL and SQL databases"
-HOMEPAGE="https://github.com/vapor/fluent"
+DESCRIPTION="Add leaf templating into your vapor app"
+HOMEPAGE="https://github.com/vapor/leaf-provider"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/vapor/fluent.git"
+EGIT_REPO_URI="https://github.com/vapor/leaf-provider.git"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -19,10 +19,8 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
-	dev-swift/Core
-	dev-swift/Node
-	dev-swift/Random
-	dev-swift/SQLite"
+	dev-swift/Vapor
+	dev-swift/Leaf"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
@@ -32,10 +30,8 @@ PATCHES=(
 
 src_compile() {
 	swift build -c release \
-	-Xlinker -lCore \
-	-Xlinker -lNode \
-	-Xlinker -lRandom \
-	-Xlinker -lSQLite \
+	-Xlinker -lVapor \
+	-Xlinker -lLeaf \
 	--verbose || die
 }
 

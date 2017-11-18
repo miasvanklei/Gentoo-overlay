@@ -20,6 +20,7 @@ RDEPEND="dev-libs/libdispatch
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
 	dev-swift/Core
+	dev-swift/CTLS
 	dev-swift/Random"
 DEPEND="${RDEPEND}"
 

@@ -5,12 +5,12 @@ EAPI=6
 
 inherit git-r3
 
-DESCRIPTION="Swift models, relationships, and querying for NoSQL and SQL databases"
-HOMEPAGE="https://github.com/vapor/fluent"
+DESCRIPTION="⚡️Pure Swift Redis client built on top of vapor/sockets."
+HOMEPAGE="https://github.com/vapor/redis"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/vapor/fluent.git"
+EGIT_REPO_URI="https://github.com/vapor/redis.git"
 
-LICENSE="Apache-2.0"
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE=""
@@ -22,11 +22,11 @@ RDEPEND="dev-libs/libdispatch
 	dev-swift/Core
 	dev-swift/Node
 	dev-swift/Random
-	dev-swift/SQLite"
+	dev-swift/Sockets"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
-	${FILESDIR}/remove-dependencies.patch
+        ${FILESDIR}/remove-dependencies.patch
         ${FILESDIR}/install-lib.patch
 )
 
@@ -35,7 +35,7 @@ src_compile() {
 	-Xlinker -lCore \
 	-Xlinker -lNode \
 	-Xlinker -lRandom \
-	-Xlinker -lSQLite \
+	-Xlinker -lSockets \
 	--verbose || die
 }
 

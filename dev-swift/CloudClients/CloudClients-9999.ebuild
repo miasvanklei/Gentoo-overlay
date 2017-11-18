@@ -5,12 +5,12 @@ EAPI=6
 
 inherit git-r3
 
-DESCRIPTION="Swift models, relationships, and querying for NoSQL and SQL databases"
-HOMEPAGE="https://github.com/vapor/fluent"
+DESCRIPTION="Convenience protocols for working with API clients"
+HOMEPAGE="https://github.com/vapor-cloud/clients"
 SRC_URI=""
-EGIT_REPO_URI="https://github.com/vapor/fluent.git"
+EGIT_REPO_URI="https://github.com/vapor-cloud/clients.git"
 
-LICENSE="Apache-2.0"
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE=""
@@ -19,23 +19,22 @@ RDEPEND="dev-libs/libdispatch
         dev-lang/swift
 	dev-util/swift-package-manager
 	dev-libs/corelibs-foundation
-	dev-swift/Core
-	dev-swift/Node
-	dev-swift/Random
-	dev-swift/SQLite"
+	dev-swift/Models
+	dev-swift/JWT
+	dev-swift/Vapor"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
-	${FILESDIR}/remove-dependencies.patch
+        ${FILESDIR}/remove-dependencies.patch
         ${FILESDIR}/install-lib.patch
 )
 
 src_compile() {
 	swift build -c release \
-	-Xlinker -lCore \
-	-Xlinker -lNode \
-	-Xlinker -lRandom \
-	-Xlinker -lSQLite \
+	-Xlinker -lCloudModels \
+	-Xlinker -lHTTP \
+	-Xlinker -lVapor \
+	-Xlinker -lJWT \
 	--verbose || die
 }
 
