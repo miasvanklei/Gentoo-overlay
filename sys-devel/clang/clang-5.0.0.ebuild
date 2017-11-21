@@ -125,6 +125,9 @@ src_prepare() {
 	# add fortran support
 	use fortran && eapply "${FILESDIR}"/0012-add-fortran-support.patch
 
+	# fixed in 5.0.1: enable __declspec(selectany) on any platform
+	eapply "${FILESDIR}"/0013-33285.patch
+
 	# User patches
 	eapply_user
 }

@@ -1,0 +1,92 @@
+From d8199c9eaa2e16c7b64b6c18fe88d4339321496e Mon Sep 17 00:00:00 2001
+From: Tom Stellard <tstellar@redhat.com>
+Date: Tue, 14 Nov 2017 02:38:20 +0000
+Subject: [PATCH] Merging r313278:
+
+------------------------------------------------------------------------
+r313278 | prazek | 2017-09-14 10:33:08 -0700 (Thu, 14 Sep 2017) | 11 lines
+
+Enable __declspec(selectany) on any platform
+
+Summary:
+This feature was disabled probably by mistake in rL300562
+This fixes bug https://bugs.llvm.org/show_bug.cgi?id=33285
+
+Reviewers: davide, rnk
+
+Subscribers: cfe-commits
+
+Differential Revision: https://reviews.llvm.org/D33852
+------------------------------------------------------------------------
+
+git-svn-id: https://llvm.org/svn/llvm-project/cfe/branches/release_50@318133 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ include/clang/Basic/Attr.td     |  4 ++--
+ include/clang/Basic/AttrDocs.td | 15 +++++++++++++++
+ test/Sema/attr-selectany.c      |  2 ++
+ test/SemaCXX/attr-selectany.cpp |  3 +++
+ 4 files changed, 22 insertions(+), 2 deletions(-)
+
+diff --git a/include/clang/Basic/Attr.td b/include/clang/Basic/Attr.td
+index f13e13b0107..5c69635b949 100644
+--- a/include/clang/Basic/Attr.td
++++ b/include/clang/Basic/Attr.td
+@@ -2459,9 +2459,9 @@ def DLLImport : InheritableAttr, TargetSpecificAttr<TargetWindows> {
+   let Documentation = [DLLImportDocs];
+ }
+ 
+-def SelectAny : InheritableAttr, TargetSpecificAttr<TargetWindows> {
++def SelectAny : InheritableAttr {
+   let Spellings = [Declspec<"selectany">, GCC<"selectany">];
+-  let Documentation = [Undocumented];
++  let Documentation = [SelectAnyDocs];
+ }
+ 
+ def Thread : Attr {
+diff --git a/include/clang/Basic/AttrDocs.td b/include/clang/Basic/AttrDocs.td
+index 33ef3ea4cad..567c7a3a53b 100644
+--- a/include/clang/Basic/AttrDocs.td
++++ b/include/clang/Basic/AttrDocs.td
+@@ -3106,3 +3106,18 @@ This attribute can be added to an Objective-C ``@interface`` declaration to
+ ensure that this class cannot be subclassed.
+   }];
+ }
++
++
++def SelectAnyDocs : Documentation {
++  let Category = DocCatType;
++  let Content = [{
++This attribute appertains to a global symbol, causing it to have a weak
++definition (
++`linkonce <https://llvm.org/docs/LangRef.html#linkage-types>`_
++), allowing the linker to select any definition.
++
++For more information see
++`gcc documentation <https://gcc.gnu.org/onlinedocs/gcc-7.2.0/gcc/Microsoft-Windows-Variable-Attributes.html>`_
++or `msvc documentation <https://docs.microsoft.com/pl-pl/cpp/cpp/selectany>`_.
++}];
++}
+diff --git a/test/Sema/attr-selectany.c b/test/Sema/attr-selectany.c
+index 9fa2fcade53..9d574d524f0 100644
+--- a/test/Sema/attr-selectany.c
++++ b/test/Sema/attr-selectany.c
+@@ -1,5 +1,7 @@
+ // RUN: %clang_cc1 -triple x86_64-win32 -fdeclspec -verify %s
+ // RUN: %clang_cc1 -triple x86_64-mingw32 -verify %s
++// RUN: %clang_cc1 -triple x86_64-unknown-linux -verify -fdeclspec %s
++// RUN: %clang_cc1 -triple x86_64-win32-macho -verify -fdeclspec %s
+ 
+ extern __declspec(selectany) const int x1 = 1; // no warning, const means we need extern in C++
+ 
+diff --git a/test/SemaCXX/attr-selectany.cpp b/test/SemaCXX/attr-selectany.cpp
+index 62fca09ab36..4afcb8130a1 100644
+--- a/test/SemaCXX/attr-selectany.cpp
++++ b/test/SemaCXX/attr-selectany.cpp
+@@ -1,4 +1,7 @@
+ // RUN: %clang_cc1 -triple x86_64-win32 -fms-compatibility -fms-extensions -fsyntax-only -verify -std=c++11 %s
++// RUN: %clang_cc1 -triple x86_64-unknown-linux -fms-compatibility -fms-extensions -fsyntax-only -verify -std=c++11 %s
++// RUN: %clang_cc1 -triple x86_64-win32-macho -fms-compatibility -fms-extensions -fsyntax-only -verify -std=c++11 %s
++
+ // MSVC produces similar diagnostics.
+ 
+ __declspec(selectany) void foo() { } // expected-error{{'selectany' can only be applied to data items with external linkage}}
