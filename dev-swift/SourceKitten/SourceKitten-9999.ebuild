@@ -28,9 +28,10 @@ DEPEND="${RDEPEND}"
 
 
 PATCHES=(
+	${FILESDIR}/remove-dependencies.patch
+	${FILESDIR}/install-lib.patch
         ${FILESDIR}/fix-crash.patch
         ${FILESDIR}/fix-run.patch
-	${FILESDIR}/fix-package.swift.patch
 )
 
 src_compile() {
