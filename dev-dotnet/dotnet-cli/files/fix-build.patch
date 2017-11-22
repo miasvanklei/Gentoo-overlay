@@ -1,43 +1,5 @@
-diff -ur coreclr-2.0.3/CMakeLists.txt coreclr-2.0.3-new/CMakeLists.txt
---- coreclr-2.0.3/CMakeLists.txt	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/CMakeLists.txt	2017-11-20 21:23:25.198368286 +0100
-@@ -617,7 +617,7 @@
-   remove_definitions(-DUNICODE)
-   remove_definitions(-D_UNICODE)
- 
--  add_subdirectory(tests)
-+  #add_subdirectory(tests)
- endif(CLR_CMAKE_BUILD_TESTS)
- 
- include(definitionsconsistencycheck.cmake)
-Only in coreclr-2.0.3-new: bin
-diff -ur coreclr-2.0.3/compileoptions.cmake coreclr-2.0.3-new/compileoptions.cmake
---- coreclr-2.0.3/compileoptions.cmake	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/compileoptions.cmake	2017-11-20 20:38:45.016144228 +0100
-@@ -25,7 +25,7 @@
- 
-   if (CLR_CMAKE_WARNINGS_ARE_ERRORS)
-     # All warnings that are not explicitly disabled are reported as errors
--    add_compile_options(-Werror)
-+    #add_compile_options(-Werror)
-   endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
- 
-   # Disabled warnings
-diff -ur coreclr-2.0.3/src/CMakeLists.txt coreclr-2.0.3-new/src/CMakeLists.txt
---- coreclr-2.0.3/src/CMakeLists.txt	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/CMakeLists.txt	2017-11-20 19:45:25.052746463 +0100
-@@ -54,7 +54,7 @@
- endif(WIN32)
- 
- if(CLR_CMAKE_WARNINGS_ARE_ERRORS)
--    set(PYTHON_WARNING_FLAGS -Wall -Werror)
-+    set(PYTHON_WARNING_FLAGS -Wall)
- else()
-     set(PYTHON_WARNING_FLAGS -Wall)
- endif(CLR_CMAKE_WARNINGS_ARE_ERRORS)
-diff -ur coreclr-2.0.3/src/ToolBox/SOS/Strike/strike.cpp coreclr-2.0.3-new/src/ToolBox/SOS/Strike/strike.cpp
---- coreclr-2.0.3/src/ToolBox/SOS/Strike/strike.cpp	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/ToolBox/SOS/Strike/strike.cpp	2017-11-20 21:31:51.175439867 +0100
+--- a/src/ToolBox/SOS/Strike/strike.cpp
++++ b/src/ToolBox/SOS/Strike/strike.cpp
 @@ -82,6 +82,7 @@
  #include <dbghelp.h>
  
@@ -46,9 +8,8 @@ diff -ur coreclr-2.0.3/src/ToolBox/SOS/Strike/strike.cpp coreclr-2.0.3-new/src/T
  #include <stdlib.h>
  #include <string.h>
  #include <stddef.h>
-diff -ur coreclr-2.0.3/src/ToolBox/superpmi/superpmi-shared/methodcontext.cpp coreclr-2.0.3-new/src/ToolBox/superpmi/superpmi-shared/methodcontext.cpp
---- coreclr-2.0.3/src/ToolBox/superpmi/superpmi-shared/methodcontext.cpp	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/ToolBox/superpmi/superpmi-shared/methodcontext.cpp	2017-11-20 20:59:20.583899424 +0100
+--- a/src/ToolBox/superpmi/superpmi-shared/methodcontext.cpp
++++ b/src/ToolBox/superpmi/superpmi-shared/methodcontext.cpp
 @@ -297,8 +297,6 @@
  
  void MethodContext::MethodInitHelper(unsigned char* buff2, unsigned int totalLen)
@@ -58,9 +19,8 @@ diff -ur coreclr-2.0.3/src/ToolBox/superpmi/superpmi-shared/methodcontext.cpp co
      unsigned int   buffIndex = 0;
      unsigned int   localsize = 0;
      unsigned char  canary    = 0xff;
-diff -ur coreclr-2.0.3/src/debug/createdump/crashinfo.cpp coreclr-2.0.3-new/src/debug/createdump/crashinfo.cpp
---- coreclr-2.0.3/src/debug/createdump/crashinfo.cpp	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/debug/createdump/crashinfo.cpp	2017-11-20 20:44:19.104509567 +0100
+--- a/src/debug/createdump/crashinfo.cpp
++++ b/src/debug/createdump/crashinfo.cpp
 @@ -3,6 +3,7 @@
  // See the LICENSE file in the project root for more information.
  
@@ -69,9 +29,8 @@ diff -ur coreclr-2.0.3/src/debug/createdump/crashinfo.cpp coreclr-2.0.3-new/src/
  
  CrashInfo::CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos) :
      m_ref(1),
-diff -ur coreclr-2.0.3/src/debug/createdump/crashinfo.h coreclr-2.0.3-new/src/debug/createdump/crashinfo.h
---- coreclr-2.0.3/src/debug/createdump/crashinfo.h	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/debug/createdump/crashinfo.h	2017-11-20 19:47:18.988506222 +0100
+--- a/src/debug/createdump/crashinfo.h
++++ b/src/debug/createdump/crashinfo.h
 @@ -3,6 +3,9 @@
  // See the LICENSE file in the project root for more information.
  
@@ -82,9 +41,8 @@ diff -ur coreclr-2.0.3/src/debug/createdump/crashinfo.h coreclr-2.0.3-new/src/de
  #if defined(__i386) || defined(__ARM_EABI__) 
  typedef Elf32_auxv_t elf_aux_entry;
  #elif defined(__x86_64) || defined(__aarch64__)
-diff -ur coreclr-2.0.3/src/debug/createdump/main.cpp coreclr-2.0.3-new/src/debug/createdump/main.cpp
---- coreclr-2.0.3/src/debug/createdump/main.cpp	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/debug/createdump/main.cpp	2017-11-20 21:30:53.222547370 +0100
+--- a/src/debug/createdump/main.cpp
++++ b/src/debug/createdump/main.cpp
 @@ -3,6 +3,7 @@
  // See the LICENSE file in the project root for more information.
  
@@ -93,9 +51,8 @@ diff -ur coreclr-2.0.3/src/debug/createdump/main.cpp coreclr-2.0.3-new/src/debug
  
  const char* g_help = "createdump [options] pid\n" 
  "-f, --name - dump path and file name. The pid can be placed in the name with %d. The default is '/tmp/coredump.%d'\n"
-diff -ur coreclr-2.0.3/src/debug/createdump/memoryregion.h coreclr-2.0.3-new/src/debug/createdump/memoryregion.h
---- coreclr-2.0.3/src/debug/createdump/memoryregion.h	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/debug/createdump/memoryregion.h	2017-11-20 19:49:06.164280055 +0100
+--- a/src/debug/createdump/memoryregion.h
++++ b/src/debug/createdump/memoryregion.h
 @@ -2,6 +2,8 @@
  // The .NET Foundation licenses this file to you under the MIT license.
  // See the LICENSE file in the project root for more information.
@@ -105,9 +62,8 @@ diff -ur coreclr-2.0.3/src/debug/createdump/memoryregion.h coreclr-2.0.3-new/src
  enum MEMORY_REGION_FLAGS : uint32_t
  {
      // PF_X        = 0x01,      // Execute
-diff -ur coreclr-2.0.3/src/debug/createdump/threadinfo.cpp coreclr-2.0.3-new/src/debug/createdump/threadinfo.cpp
---- coreclr-2.0.3/src/debug/createdump/threadinfo.cpp	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/debug/createdump/threadinfo.cpp	2017-11-20 20:44:05.232533459 +0100
+--- a/src/debug/createdump/threadinfo.cpp
++++ b/src/debug/createdump/threadinfo.cpp
 @@ -4,6 +4,10 @@
  
  #include "createdump.h"
@@ -119,9 +75,8 @@ diff -ur coreclr-2.0.3/src/debug/createdump/threadinfo.cpp coreclr-2.0.3-new/src
  #define FPREG_ErrorOffset(fpregs) *(DWORD*)&((fpregs).rip)
  #define FPREG_ErrorSelector(fpregs) *(((WORD*)&((fpregs).rip)) + 2)
  #define FPREG_DataOffset(fpregs) *(DWORD*)&((fpregs).rdp)
-diff -ur coreclr-2.0.3/src/debug/daccess/nidump.cpp coreclr-2.0.3-new/src/debug/daccess/nidump.cpp
---- coreclr-2.0.3/src/debug/daccess/nidump.cpp	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/debug/daccess/nidump.cpp	2017-11-20 21:30:01.335643413 +0100
+--- a/src/debug/daccess/nidump.cpp
++++ b/src/debug/daccess/nidump.cpp
 @@ -9239,7 +9239,7 @@
  #define assert(a)
  #define NOTHROW
@@ -151,9 +106,8 @@ diff -ur coreclr-2.0.3/src/debug/daccess/nidump.cpp coreclr-2.0.3-new/src/debug/
  #endif // !_TARGET_X86_
  
  #ifdef __MSC_VER
-diff -ur coreclr-2.0.3/src/dlls/mscoree/coreclr/CMakeLists.txt coreclr-2.0.3-new/src/dlls/mscoree/coreclr/CMakeLists.txt
---- coreclr-2.0.3/src/dlls/mscoree/coreclr/CMakeLists.txt	2017-10-14 00:43:04.000000000 +0200
-+++ coreclr-2.0.3-new/src/dlls/mscoree/coreclr/CMakeLists.txt	2017-11-20 20:54:44.840393643 +0100
+--- a/src/dlls/mscoree/coreclr/CMakeLists.txt
++++ b/src/dlls/mscoree/coreclr/CMakeLists.txt
 @@ -28,7 +28,7 @@
      if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
          # This option is necessary to ensure that the overloaded delete operator defined inside
@@ -163,3 +117,22 @@ diff -ur coreclr-2.0.3/src/dlls/mscoree/coreclr/CMakeLists.txt coreclr-2.0.3-new
  
          # The following linked options can be inserted into the linker libraries list to 
          # ensure proper resolving of circular references between a subset of the libraries.
+--- a/src/pal/tools/clang-compiler-override.txt
++++ b/src/pal/tools/clang-compiler-override.txt
+@@ -1,16 +1,5 @@
+ SET (CMAKE_C_FLAGS_INIT                "-Wall -std=c11")
+-SET (CMAKE_C_FLAGS_DEBUG_INIT          "-g -O0")
+-SET (CLR_C_FLAGS_CHECKED_INIT          "-g -O2")
+-# Refer to the below instruction to support __thread with -O2/-O3 on Linux/ARM
+-# https://github.com/dotnet/coreclr/blob/master/Documentation/building/linux-instructions.md
+-SET (CMAKE_C_FLAGS_RELEASE_INIT        "-g -O3")
+-SET (CMAKE_C_FLAGS_RELWITHDEBINFO_INIT "-g -O2")
+-
+ SET (CMAKE_CXX_FLAGS_INIT                "-Wall -Wno-null-conversion -std=c++11")
+-SET (CMAKE_CXX_FLAGS_DEBUG_INIT          "-g -O0")
+-SET (CLR_CXX_FLAGS_CHECKED_INIT          "-g -O2")
+-SET (CMAKE_CXX_FLAGS_RELEASE_INIT        "-g -O3")
+-SET (CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "-g -O2")
+ 
+ SET (CLR_DEFINES_DEBUG_INIT              DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_CHECKED=1)
+ SET (CLR_DEFINES_CHECKED_INIT            DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_CHECKED=1)

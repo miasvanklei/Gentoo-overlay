@@ -92,6 +92,10 @@ src_prepare() {
 		rm "${CLI_S}/shared/Microsoft.NETCore.App/2.0.0/${file}"
 	done
 
+        cd "${COREFX_S}" || die
+	eapply ${FILESDIR}/remove-werror.patch
+        cd ..
+
         cd "${CORECLR_S}" || die
 	eapply ${FILESDIR}/fix-build.patch
         cd ..
@@ -104,14 +108,14 @@ src_compile() {
 
 	if use heimdal; then
 		# build uses mit-krb5 by default but lets override to heimdal
-		buildargs="${buildargs} cmakeargs -DHeimdalGssApi=ON"
+		buildargs="${buildargs} -cmakeargs -DHeimdalGssApi=ON"
 	fi
 
 	cd "${COREFX_S}" || die
-	./src/Native/build-native.sh x64 release ${buildargs} || die
+	./src/Native/build-native.sh x64 release verbose ${buildargs} || die
 
 	cd "${CORECLR_S}" || die
-	./build.sh x64 release || die
+	./build.sh x64 release verbose skiptests cmakeargs -DCLR_CMAKE_WARNINGS_ARE_ERRORS=FALSE || die
 
 	cd "${CORESETUP_S}" || die
 	./src/corehost/build.sh --arch amd64 --hostver 2.0.0 \
