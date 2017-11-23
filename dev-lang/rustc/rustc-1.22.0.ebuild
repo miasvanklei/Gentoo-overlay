@@ -41,6 +41,9 @@ src_prepare() {
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 	eapply "${FILESDIR}"/debug-hack.patch
 
+	# llvm-5 thinlto: fixed in 1.23.0
+	eapply "${FILESDIR}"/llvm-5-thinlto.patch
+
 	eapply_user
 }
 
@@ -101,11 +104,10 @@ src_install() {
 
 	# install analysis for rls
 	insinto "/usr/$(get_libdir)/rustlib/${CBUILD}/analysis"
-	doins -r "${sobj}/release/deps/save-analysis/*"
+	doins "${sobj}/release/deps/save-analysis/"*
 
-	# install documentation
+	# install COPYRIGHT and LICENSE
 	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
-	doman man/*
 
 	# pretty printers
 	insinto "/usr/$(get_libdir)/rustlib/etc"
