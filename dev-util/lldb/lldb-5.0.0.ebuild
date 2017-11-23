@@ -38,7 +38,7 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-#S=${WORKDIR}/${P/_/}.src
+S=${WORKDIR}/${P/_/}.src
 
 CMAKE_BUILD_TYPE=Release
 
@@ -61,6 +61,10 @@ src_prepare() {
 
 	# add swift support
 	eapply "${FILESDIR}"/0002-add-swift-support.patch
+
+	# fixed in 5.0.1
+	eapply "${FILESDIR}"/0003-remove-orc.patch
+
 
 	eapply_user
 }
