@@ -38,7 +38,7 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-S=${WORKDIR}/${P/_/}.src
+#S=${WORKDIR}/${P/_/}.src
 
 CMAKE_BUILD_TYPE=Release
 
@@ -58,6 +58,9 @@ src_unpack() {
 src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
+
+	# add swift support
+	eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	eapply_user
 }
