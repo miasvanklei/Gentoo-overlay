@@ -36,45 +36,48 @@ CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
 	# we prefer own optimization
-	eapply ${FILESDIR}/fix-cflags.patch
+	eapply "${FILESDIR}"/fix-cflags.patch
 
 	# use llvm-config
-	eapply ${FILESDIR}/swift-standalone.patch
+	eapply "${FILESDIR}"/swift-standalone.patch
 
 	# assumes glibc
-	eapply ${FILESDIR}/musl-fixes.patch
-	eapply ${FILESDIR}/define-_GNU_SOURCE.patch
-	eapply ${FILESDIR}/glibc-modulemap.patch
+	eapply "${FILESDIR}"/musl-fixes.patch
+	eapply "${FILESDIR}"/define-_GNU_SOURCE.patch
+	eapply "${FILESDIR}"/glibc-modulemap.patch
 
 	# do not install headers from clang multiple times
-	eapply ${FILESDIR}/fix-garbage.patch
+	eapply "${FILESDIR}"/fix-garbage.patch
 
 	# strip when needed, call export-dynamic, etc.
-	eapply ${FILESDIR}/fix-toolchain.patch
+	eapply "${FILESDIR}"/fix-toolchain.patch
 
 	# link with some llvm libraries and cmark
-	eapply ${FILESDIR}/fix-linking.patch
+	eapply "${FILESDIR}"/fix-linking.patch
 
 	# remove __gnu_objc_personality_v0 by building Reflection.mm with -fno-exceptions
-	eapply ${FILESDIR}/remove-dep-libobjc.patch
+	eapply "${FILESDIR}"/remove-dep-libobjc.patch
 
 	# build swiftGlibc as well when sdk is disabled
-	eapply ${FILESDIR}/enable-platform.patch
+	eapply "${FILESDIR}"/enable-platform.patch
 
 	# fix linking
-	eapply ${FILESDIR}/sourcekitd-standalone.patch
+	eapply "${FILESDIR}"/sourcekitd-standalone.patch
 
 	# install files: libraries, headers, cmake
-	eapply ${FILESDIR}/install-files.patch
+	eapply "${FILESDIR}"/install-files.patch
 
 	# fix triple with arm, swift, llvm, clang, lldb
-	eapply ${FILESDIR}/arm-swift.patch
+	eapply "${FILESDIR}"/arm-swift.patch
 
 	# revert some llvm changes to fix build with llvm 5.0
-	eapply ${FILESDIR}/llvm-5.0.patch
+	eapply "${FILESDIR}"/llvm-5.0.patch
 
 	# fix compile
-	eapply ${FILESDIR}/fix-compile.patch
+	eapply "${FILESDIR}"/fix-compile.patch
+
+	# fix compile with c++1y
+	eapply "${FILESDIR}"/fix-c++1y.patch
 
 	cmake-utils_src_prepare
 }
@@ -90,6 +93,8 @@ src_configure() {
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
+		-DLLVM_ENABLE_CXX1Y=ON
+
 		-DSWIFT_HOST_TRIPLE=${CHOST}
 		-DSWIFT_COMPILER_VERSION=4.1
 		-DCLANG_COMPILER_VERSION=5.0
