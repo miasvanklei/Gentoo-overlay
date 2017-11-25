@@ -99,6 +99,9 @@ src_prepare() {
 	# add swift support
 	use swift && eapply "${FILESDIR}"/0005-add-swift-support.patch
 
+	# support -rcs
+	eapply "${FILESDIR}"/0006-support-dashed-options.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
