@@ -1,0 +1,15 @@
+--- a/rts/ghc.mk        2016-05-16 19:08:53.000000000 +0200
++++ b/rts/ghc.mk        2016-10-04 00:34:01.467999480 +0200
+@@ -546,6 +538,12 @@
+        "$(DTRACE)" $(filter -I%,$(rts_CC_OPTS)) -C $(DTRACE_FLAGS) -h -o $@ -s $<
+ endif
+ 
++# clang compiles GC wrong, so disable all optimizations
++ifeq "$(CC_CLANG_BACKEND)" "1"
++rts/sm/GC_CC_OPTS += -O0
++rts/sm/GC_HC_OPTS += -O0
++endif
++
+ # -----------------------------------------------------------------------------
+ # The RTS package config
+

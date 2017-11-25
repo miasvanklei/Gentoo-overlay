@@ -1,0 +1,135 @@
+--- a/compiler/main/DynFlags.hs	2017-11-25 13:23:26.571225442 +0100
++++ b/compiler/main/DynFlags.hs	2017-11-25 13:26:11.930859136 +0100
+@@ -3629,16 +3629,7 @@
+     where platform = sTargetPlatform settings
+ 
+ default_PIC :: Platform -> [GeneralFlag]
+-default_PIC platform =
+-  case (platformOS platform, platformArch platform) of
+-    (OSDarwin, ArchX86_64) -> [Opt_PIC]
+-    (OSOpenBSD, ArchX86_64) -> [Opt_PIC] -- Due to PIE support in
+-                                         -- OpenBSD since 5.3 release
+-                                         -- (1 May 2013) we need to
+-                                         -- always generate PIC. See
+-                                         -- #10597 for more
+-                                         -- information.
+-    _                      -> []
++default_PIC platform = [Opt_PIC]
+ 
+ -- General flags that are switched on/off when other general flags are switched
+ -- on
+@@ -5008,7 +5008,6 @@
+     pieOpts
+       | gopt Opt_PICExecutable dflags       = ["-pie"]
+         -- See Note [No PIE when linking]
+-      | sGccSupportsNoPie (settings dflags) = ["-no-pie"]
+       | otherwise                           = []
+ 
+ 
+@@ -5017,7 +5016,7 @@
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ As of 2016 some Linux distributions (e.g. Debian) have started enabling -pie by
+ default in their gcc builds. This is incompatible with -r as it implies that we
+-are producing an executable. Consequently, we must manually pass -no-pie to gcc
++are producing an executable. Consequently, we must manually pass -fno-pie to gcc
+ when joining object files or linking dynamic libraries. Unless, of course, the
+ user has explicitly requested a PIE executable with -pie. See #12759.
+ -}
+--- a/compiler/main/SysTools.hs	2017-10-03 00:06:30.000000000 +0200
++++ b/compiler/main/SysTools.hs	2017-11-25 13:20:49.619581251 +0100
+@@ -256,7 +256,7 @@
+        -- to make that possible, so for now you can't.
+        gcc_prog <- getSetting "C compiler command"
+        gcc_args_str <- getSetting "C compiler flags"
+-       gccSupportsNoPie <- getBooleanSetting "C compiler supports -no-pie"
++       gccSupportsNoPie <- getBooleanSetting "C compiler supports -fno-pie"
+        cpp_prog <- getSetting "Haskell CPP command"
+        cpp_args_str <- getSetting "Haskell CPP flags"
+        let unreg_gcc_args = if targetUnregisterised
+--- a/compiler/main/DriverPipeline.hs	2017-11-25 13:24:56.340026512 +0100
++++ b/compiler/main/DriverPipeline.hs	2017-11-25 13:25:19.608974463 +0100
+@@ -2224,7 +2224,7 @@
+                      ]
+                         -- See Note [No PIE while linking] in SysTools
+                      ++ (if sGccSupportsNoPie mySettings
+-                          then [SysTools.Option "-no-pie"]
++                          then [SysTools.Option "-fno-pie"]
+                           else [])
+ 
+                      ++ (if any (cc ==) [Clang, AppleClang, AppleClang51]
+--- a/mk/ways.mk	2017-11-24 15:22:07.242174825 +0100
++++ b/mk/ways.mk	2017-11-24 15:23:13.309048017 +0100
+@@ -42,15 +42,15 @@
+ 
+ # Way 'v':
+ WAY_v_NAME=vanilla
+-WAY_v_HC_OPTS= -static
++WAY_v_HC_OPTS= -static -fPIC
+ 
+ # Way 'p':
+ WAY_p_NAME=profiling
+-WAY_p_HC_OPTS= -static -prof -eventlog
++WAY_p_HC_OPTS= -static -fPIC -prof -eventlog
+ 
+ # Way 'l':
+ WAY_l_NAME=event logging
+-WAY_l_HC_OPTS= -static -eventlog
++WAY_l_HC_OPTS= -static -fPIC -eventlog
+ 
+ #
+ # These ways apply to the RTS only:
+@@ -58,35 +58,35 @@
+ 
+ # Way 'thr':
+ WAY_thr_NAME=threaded
+-WAY_thr_HC_OPTS= -static -optc-DTHREADED_RTS
++WAY_thr_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS
+ 
+ # Way 'thr_p':
+ WAY_thr_p_NAME=threaded profiling
+-WAY_thr_p_HC_OPTS= -static -prof -eventlog -optc-DTHREADED_RTS
++WAY_thr_p_HC_OPTS= -static -fPIC -prof -eventlog -optc-DTHREADED_RTS
+ 
+ # Way 'thr_l':
+ WAY_thr_l_NAME=threaded event logging
+-WAY_thr_l_HC_OPTS= -static -optc-DTHREADED_RTS -eventlog
++WAY_thr_l_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS -eventlog
+ 
+ # Way 'debug':
+ WAY_debug_NAME=debug
+-WAY_debug_HC_OPTS= -static -optc-DDEBUG -ticky -DTICKY_TICKY -eventlog
++WAY_debug_HC_OPTS= -static -fPIC -optc-DDEBUG -ticky -DTICKY_TICKY -eventlog
+ 
+ # Way 'debug_p':
+ WAY_debug_p_NAME=debug profiled
+-WAY_debug_p_HC_OPTS= -static -optc-DDEBUG -prof -eventlog
++WAY_debug_p_HC_OPTS= -static -fPIC -optc-DDEBUG -prof -eventlog
+ 
+ # Way 'p':
+ WAY_p_NAME=profiling
+-WAY_p_HC_OPTS= -static -prof -eventlog
++WAY_p_HC_OPTS= -static -fPIC -prof -eventlog
+ 
+ # Way 'thr_debug':
+ WAY_thr_debug_NAME=threaded debug
+-WAY_thr_debug_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG -eventlog
++WAY_thr_debug_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS -optc-DDEBUG -eventlog
+ 
+ # Way 'thr_debug_p':
+ WAY_thr_debug_p_NAME=threaded debug profiling event logging
+-WAY_thr_debug_p_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG -prof -eventlog
++WAY_thr_debug_p_HC_OPTS= -static -fPIC -optc-DTHREADED_RTS -optc-DDEBUG -prof -eventlog
+ 
+ # Way 'dyn': build dynamic shared libraries
+ WAY_dyn_NAME=dyn
+--- a/settings.in	2017-11-25 14:41:09.908693065 +0100
++++ b/settings.in	2017-11-25 14:41:18.051676107 +0100
+@@ -2,7 +2,7 @@
+  ("C compiler command", "@SettingsCCompilerCommand@"),
+  ("C compiler flags", "@SettingsCCompilerFlags@"),
+  ("C compiler link flags", "@SettingsCCompilerLinkFlags@"),
+- ("C compiler supports -no-pie", "@SettingsCCompilerSupportsNoPie@"),
++ ("C compiler supports -fno-pie", "@SettingsCCompilerSupportsNoPie@"),
+  ("Haskell CPP command","@SettingsHaskellCPPCommand@"),
+  ("Haskell CPP flags","@SettingsHaskellCPPFlags@"),
+  ("ld command", "@SettingsLdCommand@"),
