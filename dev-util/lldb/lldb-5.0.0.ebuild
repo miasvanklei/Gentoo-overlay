@@ -65,6 +65,8 @@ src_prepare() {
 	# fixed in 5.0.1
 	eapply "${FILESDIR}"/0003-remove-orc.patch
 
+	# Use clang plugin for crystal
+	eapply "${FILESDIR}"/0004-crystal-debug.patch
 
 	eapply_user
 }
