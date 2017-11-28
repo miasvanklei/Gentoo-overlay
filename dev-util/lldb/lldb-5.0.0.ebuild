@@ -18,13 +18,14 @@ SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+libedit ncurses +python test"
+IUSE="+libedit ncurses +python +swift test"
 
 RDEPEND="
 	libedit? ( dev-libs/libedit:0= )
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0= )
 	python? ( dev-python/six[${PYTHON_USEDEP}]
 		${PYTHON_DEPS} )
+	swift? ( dev-lang/swift )
 	~sys-devel/clang-${PV}[xml]
 	~sys-devel/llvm-${PV}
 	!<sys-devel/llvm-4.0"
@@ -60,7 +61,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
 
 	# add swift support
-	eapply "${FILESDIR}"/0002-add-swift-support.patch
+	use swift && eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	# fixed in 5.0.1
 	eapply "${FILESDIR}"/0003-remove-orc.patch
