@@ -5,7 +5,7 @@ EAPI=6
 
 RESTRICT="test"
 
-inherit git-r3 elisp-common eutils multilib pax-utils toolchain-funcs
+inherit git-r3 llvm pax-utils toolchain-funcs
 
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
@@ -18,6 +18,10 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 RDEPEND="
+	>=sys-devel/llvm-4.0.0:=
+	>=sys-devel/clang-4.0.0:="
+
+RDEPEND+="
 	app-misc/pax-utils
 	dev-libs/double-conversion:0=
 	dev-libs/gmp:0=
@@ -34,7 +38,6 @@ RDEPEND="
 	>=dev-libs/libpcre2-10.23:0=[jit]
 	sci-libs/umfpack:0=
 	sci-mathematics/glpk:0=
-	sys-devel/llvm
 	sys-libs/llvm-libunwind:0=
 	sys-libs/readline:0=
 	sys-libs/zlib:0=
