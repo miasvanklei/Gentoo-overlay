@@ -1,0 +1,174 @@
+--- a/vendor/third_party/lss/linux_syscall_support.h
++++ b/vendor/third_party/lss/linux_syscall_support.h
+@@ -1127,6 +1127,12 @@
+ #ifndef __NR_fallocate
+ #define __NR_fallocate          285
+ #endif
++
++#undef __NR_pread
++#define __NR_pread __NR_pread64
++#undef __NR_pwrite
++#define __NR_pwrite __NR_pwrite64
++
+ /* End of x86-64 definitions                                                 */
+ #elif defined(__mips__)
+ #if _MIPS_SIM == _MIPS_SIM_ABI32
+@@ -2936,7 +2936,7 @@
+ 
+     /* Need to make sure __off64_t isn't truncated to 32-bits under x32.  */
+     LSS_INLINE void* LSS_NAME(mmap)(void *s, size_t l, int p, int f, int d,
+-                                    __off64_t o) {
++                                    off64_t o) {
+       LSS_BODY(6, void*, mmap, LSS_SYSCALL_ARG(s), LSS_SYSCALL_ARG(l),
+                                LSS_SYSCALL_ARG(p), LSS_SYSCALL_ARG(f),
+                                LSS_SYSCALL_ARG(d), (uint64_t)(o));
+--- a/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
++++ b/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
+@@ -49,7 +49,7 @@
+ }
+ 
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                                    const struct _libc_fpstate* fp) {
++                                    const struct _fpstate* fp) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
+   out->context_flags = MD_CONTEXT_X86_FULL |
+@@ -97,7 +97,7 @@
+ }
+ 
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                                    const struct _libc_fpstate* fpregs) {
++                                    const struct _fpstate* fpregs) {
+   const greg_t* regs = uc->uc_mcontext.gregs;
+ 
+   out->context_flags = MD_CONTEXT_AMD64_FULL;
+--- a/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.h
++++ b/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.h
+@@ -50,7 +50,7 @@
+   //   info: the collection of register structures.
+ #if defined(__i386__) || defined(__x86_64)
+   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+-                             const struct _libc_fpstate* fp);
++                             const struct _fpstate* fp);
+ #elif defined(__aarch64__)
+   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+                              const struct fpsimd_context* fpregs);
+--- a/vendor/breakpad/src/client/linux/minidump_writer/minidump_writer.h
++++ b/vendor/breakpad/src/client/linux/minidump_writer/minidump_writer.h
+@@ -48,7 +48,7 @@
+ #if defined(__aarch64__)
+ typedef struct fpsimd_context fpstate_t;
+ #elif !defined(__ARM_EABI__) && !defined(__mips__)
+-typedef struct _libc_fpstate fpstate_t;
++typedef struct _fpstate fpstate_t;
+ #endif
+ 
+ // These entries store a list of memory regions that the client wants included
+--- a/vendor/breakpad/src/common/linux/elf_core_dump.h
++++ b/vendor/breakpad/src/common/linux/elf_core_dump.h
+@@ -36,6 +36,7 @@
+ #include <elf.h>
+ #include <link.h>
+ #include <stddef.h>
++#include <limits.h>
+ 
+ #include "common/memory_range.h"
+ 
+@@ -51,9 +52,9 @@
+   typedef ElfW(Phdr) Phdr;
+   typedef ElfW(Word) Word;
+   typedef ElfW(Addr) Addr;
+-#if __WORDSIZE == 32
++#if ULONG_MAX == 0xffffffff
+   static const int kClass = ELFCLASS32;
+-#elif __WORDSIZE == 64
++#elif ULONG_MAX == 0xffffffffffffffff
+   static const int kClass = ELFCLASS64;
+ #else
+ #error "Unsupported __WORDSIZE for ElfCoreDump."
+--- a/vendor/breakpad/src/common/dwarf/elf_reader.cc
++++ b/vendor/breakpad/src/common/dwarf/elf_reader.cc
+@@ -36,6 +36,7 @@
+ #include <unistd.h>
+ #include <fcntl.h>
+ #include <string.h>
++#include <sys/user.h>
+ 
+ #include <algorithm>
+ #include <map>
+--- a/vendor/breakpad/src/common/stabs_reader.cc
++++ b/vendor/breakpad/src/common/stabs_reader.cc
+@@ -34,7 +34,6 @@
+ #include "common/stabs_reader.h"
+ 
+ #include <assert.h>
+-#include <stab.h>
+ #include <string.h>
+ 
+ #include <string>
+--- a/vendor/breakpad/src/common/stabs_reader_unittest.cc
++++ b/vendor/breakpad/src/common/stabs_reader_unittest.cc
+@@ -33,7 +33,6 @@
+ 
+ #include <assert.h>
+ #include <errno.h>
+-#include <stab.h>
+ #include <stdarg.h>
+ #include <stdlib.h>
+ #include <string.h>
+--- a/vendor/breakpad/src/common/stabs_reader.h
++++ b/vendor/breakpad/src/common/stabs_reader.h
+@@ -55,10 +55,19 @@
+ 
+ #ifdef HAVE_MACH_O_NLIST_H
+ #include <mach-o/nlist.h>
+-#elif defined(HAVE_A_OUT_H)
+-#include <a.out.h>
+ #endif
+ 
++// Definitions from <stab.h> and <a.out.h> for systems which
++// do not have them
++#undef N_UNDF
++#define N_UNDF  0x0
++#define N_FUN   0x24
++#define N_SLINE 0x44
++#define N_SO    0x64
++#define N_LSYM  0x80
++#define N_BINCL 0x82
++#define N_SOL   0x84
++
+ #include <string>
+ #include <vector>
+ 
+--- a/vendor/breakpad/src/common/linux/dump_symbols.cc
++++ b/vendor/breakpad/src/common/linux/dump_symbols.cc
+@@ -46,6 +46,7 @@
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
++#include <libgen.h>
+ 
+ #include <iostream>
+ #include <set>
+--- a/vendor/node/deps/uv/include/uv-unix.h
++++ b/vendor/node/deps/uv/include/uv-unix.h
+@@ -29,7 +29,6 @@
+ 
+ #include <sys/socket.h>
+ #include <netinet/in.h>
+-#include <netinet/tcp.h>
+ #include <arpa/inet.h>
+ #include <netdb.h>
+ 
+--- a/vendor/node/deps/uv/src/unix/tcp.c  
++++ b/vendor/node/deps/uv/src/unix/tcp.c
+@@ -26,7 +26,7 @@
+ #include <unistd.h>
+ #include <assert.h>
+ #include <errno.h>
+-
++#include <netinet/tcp.h>
+ 
+ static int maybe_new_socket(uv_tcp_t* handle, int domain, int flags) {
+   int sockfd;
+

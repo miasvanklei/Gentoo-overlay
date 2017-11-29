@@ -1,6 +1,6 @@
---- a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
-+++ b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
-@@ -115,23 +115,13 @@
+--- a/chromium/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
++++ b/chromium/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
+@@ -114,23 +114,13 @@
  // CLONE_VM, nor CLONE_THREAD, which includes all fork() implementations.
  ResultExpr RestrictCloneToThreadsAndEPERMFork() {
    const Arg<unsigned long> flags(0);
@@ -30,8 +30,8 @@
        .ElseIf((flags & (CLONE_VM | CLONE_THREAD)) == 0, Error(EPERM))
        .Else(CrashSIGSYSClone());
  }
---- a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc.orig
-+++ b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
+--- a/chromium/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
++++ b/chromium/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
 @@ -494,6 +494,7 @@
      case __NR_mlock:
      case __NR_munlock:

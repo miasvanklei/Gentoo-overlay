@@ -20,7 +20,7 @@ DEPEND="
 	>=media-libs/libpng-1.2.46
 	>=x11-libs/gtk+-2.24.8-r1:2
 	app-crypt/libsecret
-	>=dev-util/electron-1.3.4
+	>=dev-util/electron-1.7.6
 	x11-libs/cairo
 	x11-libs/libXtst
 	net-libs/nodejs
@@ -35,7 +35,7 @@ RDEPEND="
 S="${WORKDIR}/VSCode-linux-x64"
 
 node_compile() {
-	npm install $@ --nodedir=/usr/include/electron-1.4/node || die
+	npm install $@ --nodedir=/usr/include/electron-1.7/node || die
 }
 
 src_compile() {
