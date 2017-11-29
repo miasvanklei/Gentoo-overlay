@@ -24,7 +24,7 @@ RDEPEND="
 	app-text/cmark
 	sys-libs/zlib
 	dev-libs/libbsd
-	dev-libs/icu
+	dev-libs/icu:=
 	sys-libs/ncurses
 	=sys-devel/clang-5.0.0:=[swift]
         =sys-devel/llvm-5.0.0:=[swift]

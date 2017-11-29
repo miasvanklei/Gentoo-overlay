@@ -21,7 +21,7 @@ KEYWORDS="~amd64"
 IUSE=""
 
 RDEPEND="dev-libs/libdispatch
-	dev-libs/icu
+	dev-libs/icu:=
 	sys-libs/zlib
         dev-lang/swift
 	dev-libs/openssl

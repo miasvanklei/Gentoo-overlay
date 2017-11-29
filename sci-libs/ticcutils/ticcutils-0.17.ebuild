@@ -16,7 +16,7 @@ S="${WORKDIR}/${P/_/-}"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE="bzip2 tar zlib"
 DEPEND="dev-libs/libxml2
-	dev-libs/icu
+	dev-libs/icu:=
 	virtual/pkgconfig
 	bzip2? ( app-arch/bzip2 )
 	tar? ( dev-libs/libtar )

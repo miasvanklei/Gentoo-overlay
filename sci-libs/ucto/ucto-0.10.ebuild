@@ -16,7 +16,7 @@ S="${WORKDIR}/${P/_/-}"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 DEPEND="dev-libs/libxml2
-	dev-libs/icu
+	dev-libs/icu:=
 	sci-libs/ticcutils
 	sci-libs/libfolia
 	sci-libs/uctodata

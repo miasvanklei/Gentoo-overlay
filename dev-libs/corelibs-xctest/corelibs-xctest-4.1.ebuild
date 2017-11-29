@@ -17,7 +17,7 @@ KEYWORDS="~amd64"
 IUSE=""
 
 RDEPEND="dev-libs/libdispatch
-	dev-libs/icu
+	dev-libs/icu:=
 	dev-lang/swift
 	dev-libs/corelibs-foundation
 	sys-libs/zlib
