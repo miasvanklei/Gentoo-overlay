@@ -20,7 +20,7 @@ DEPEND="
 	>=media-libs/libpng-1.2.46
 	>=x11-libs/gtk+-2.24.8-r1:2
 	app-crypt/libsecret
-	>=dev-util/electron-1.7.6
+	>=dev-util/electron-1.6.15
 	x11-libs/cairo
 	x11-libs/libXtst
 	net-libs/nodejs
