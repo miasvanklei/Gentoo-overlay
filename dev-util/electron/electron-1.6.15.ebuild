@@ -188,6 +188,7 @@ CHROMIUM_PATCHES="
 	chromium-shared-v8-r2.patch
 	chromium-lto-fixes-r3.patch
 	chromium-python3-compat-r0.patch
+	chromium-gtk3.patch
 "
 
 
