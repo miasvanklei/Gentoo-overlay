@@ -1,20 +1,20 @@
-From be1dc97321ae8c01fe3ef1703d4a2387329664a5 Mon Sep 17 00:00:00 2001
+From 0352e8df546c58b85e79714f77c616832c8c72ac Mon Sep 17 00:00:00 2001
 From: Elvis Pranskevichus <elvis@magic.io>
 Date: Fri, 28 Apr 2017 17:22:38 -0400
 Subject: [PATCH] Gentoo build fixes
 
 ---
- chromiumcontent/BUILD.gn      |  8 ++------
+ chromiumcontent/BUILD.gn      |  9 +++------
  chromiumcontent/build_libs.py |  2 +-
- script/create-dist            | 30 +++++++++++++++++++-----------
+ script/create-dist            | 39 ++++++++++++++++++++++++++-------------
  script/lib/config.py          |  2 +-
- 4 files changed, 23 insertions(+), 19 deletions(-)
+ 4 files changed, 31 insertions(+), 21 deletions(-)
 
 diff --git a/chromiumcontent/BUILD.gn b/chromiumcontent/BUILD.gn
-index 1ae99bb..9ccb7b8 100644
+index e4e4166..f88fab3 100644
 --- a/chromiumcontent/BUILD.gn
 +++ b/chromiumcontent/BUILD.gn
-@@ -345,12 +345,8 @@ if (is_electron_build && !is_component_build) {
+@@ -343,12 +343,9 @@ if (is_electron_build && !is_component_build) {
      }
    }
  
@@ -26,14 +26,15 @@ index 1ae99bb..9ccb7b8 100644
 -    }
 +  shared_library("v8") {
 +    deps = [ "//v8:v8", "//v8:v8_libplatform" ]
++    ldflags = [ "-Wl,-rpath=\$ORIGIN/" ]
    }
  
  } else {
 diff --git a/chromiumcontent/build_libs.py b/chromiumcontent/build_libs.py
-index fbf02d6..eddb17f 100644
+index e10f320..716c5f2 100644
 --- a/chromiumcontent/build_libs.py
 +++ b/chromiumcontent/build_libs.py
-@@ -89,7 +89,7 @@ with open(args.out, 'w') as out:
+@@ -82,7 +82,7 @@ with open(args.out, 'w') as out:
              "third_party/usrsctp",
              "third_party/woff2",
              "third_party/zlib",
@@ -41,12 +42,12 @@ index fbf02d6..eddb17f 100644
 +            "tools/battor_agent",
              "ui",
              "url",
-         ] + additional_libchromiumcontent)
+         ])
 diff --git a/script/create-dist b/script/create-dist
-index c005fd8..f5340d9 100755
+index aec75e5..cf2f62c 100755
 --- a/script/create-dist
 +++ b/script/create-dist
-@@ -46,7 +46,6 @@ COMPONENTS = ['static_library', 'shared_library']
+@@ -45,7 +45,6 @@ COMPONENTS = ['static_library', 'shared_library']
  BINARIES = {
    'all': [
      'content_shell.pak',
@@ -54,7 +55,7 @@ index c005fd8..f5340d9 100755
      'natives_blob.bin',
      'snapshot_blob.bin',
      os.path.join('gen', 'blink', 'public', 'resources', 'blink_image_resources_200_percent.pak'),
-@@ -60,7 +59,6 @@ BINARIES = {
+@@ -59,7 +58,6 @@ BINARIES = {
      'libffmpeg.dylib',
    ],
    'linux': [
@@ -62,7 +63,13 @@ index c005fd8..f5340d9 100755
    ],
    'win32': [
      'd3dcompiler_47.dll',
-@@ -320,8 +318,6 @@ def main():
+@@ -308,12 +306,11 @@ def main():
+ 
+   for component in COMPONENTS:
+     if args.component == 'all' or args.component == component:
+-      copy_binaries(target_arch, component, create_debug_archive)
++      copy_binaries(target_arch, component, create_debug_archive,
++                    args.system_icu)
        copy_generated_sources(target_arch, component)
        copy_locales(target_arch, component)
  
@@ -71,7 +78,16 @@ index c005fd8..f5340d9 100755
    generate_licenses()
    if not args.no_zip:
      create_zip(create_debug_archive)
-@@ -365,7 +361,7 @@ def check_create_debug_archive(target_arch):
+@@ -331,6 +328,8 @@ def parse_args():
+                       help='static_library or shared_library or all')
+   parser.add_argument('--no_zip', action='store_true',
+                       help='Do not create zip distribution')
++  parser.add_argument('--system-icu', action='store_true', dest='system_icu',
++                      help='Use system icu.')
+   return parser.parse_args()
+ 
+ 
+@@ -355,15 +354,17 @@ def check_create_debug_archive(target_arch):
  def copy_with_blacklist(target_arch, src, dest):
    if os.path.basename(src) in ARCH_BLACKLIST[target_arch]:
      return
@@ -79,8 +95,19 @@ index c005fd8..f5340d9 100755
 +  link_or_copy(src, dest)
  
  
- def copy_binaries(target_arch, component, create_debug_archive):
-@@ -381,7 +377,7 @@ def copy_binaries(target_arch, component, create_debug_archive):
+-def copy_binaries(target_arch, component, create_debug_archive):
++def copy_binaries(target_arch, component, create_debug_archive, system_icu):
+   output_dir = get_output_dir(SOURCE_ROOT, target_arch, component)
+   target_dir = os.path.join(MAIN_DIR, component)
+   mkdir_p(target_dir)
+ 
+   binaries = BINARIES['all'] + BINARIES[TARGET_PLATFORM]
++  if not system_icu:
++    binaries.append('icudtl.dat')
+   if component == 'shared_library':
+     binaries += BINARIES_SHARED_LIBRARY[TARGET_PLATFORM]
+   for binary in binaries:
+@@ -371,7 +372,7 @@ def copy_binaries(target_arch, component, create_debug_archive):
  
    # Copy all static libraries from chromiumcontent
    for library in glob.glob(os.path.join(output_dir, 'obj', 'chromiumcontent', '*.' + STATIC_LIBRARY_SUFFIX)):
@@ -89,7 +116,7 @@ index c005fd8..f5340d9 100755
  
    if component == 'shared_library':
      match = '*.{0}'.format(SHARED_LIBRARY_SUFFIX)
-@@ -406,7 +402,7 @@ def copy_binaries(target_arch, component, create_debug_archive):
+@@ -396,7 +397,7 @@ def copy_binaries(target_arch, component, create_debug_archive):
        for root, _, filenames in os.walk(output_dir):
          for pdb in filenames:
            if pdb.endswith('.pdb'):
@@ -98,7 +125,7 @@ index c005fd8..f5340d9 100755
  
    if TARGET_PLATFORM == 'linux':
      if component == 'shared_library':
-@@ -445,7 +441,7 @@ def copy_binaries(target_arch, component, create_debug_archive):
+@@ -433,7 +434,7 @@ def copy_binaries(target_arch, component, create_debug_archive):
  
      ffmpeg_output_dir = get_output_dir(SOURCE_ROOT, target_arch, 'ffmpeg')
      for binary in binaries:
@@ -107,7 +134,7 @@ index c005fd8..f5340d9 100755
  
  
  def copy_generated_sources(target_arch, component):
-@@ -464,7 +460,7 @@ def copy_locales(target_arch, component):
+@@ -452,7 +453,7 @@ def copy_locales(target_arch, component):
    for src_file in glob.glob(os.path.join(src_dir, 'content_strings_*.pak')):
      filename = os.path.basename(src_file)
      new_name = re.sub('content_strings_', '', filename)
@@ -116,7 +143,7 @@ index c005fd8..f5340d9 100755
  
  def copy_sources():
    for include_path in INCLUDE_DIRS:
-@@ -489,7 +485,7 @@ def copy_ffmpeg(target_arch):
+@@ -477,7 +478,7 @@ def copy_ffmpeg(target_arch):
  
    target_dir = os.path.join(MAIN_DIR, 'ffmpeg')
    mkdir_p(target_dir)
@@ -125,7 +152,7 @@ index c005fd8..f5340d9 100755
  
  
  
-@@ -506,7 +502,7 @@ def copy_source_file(absolute_path, relative_to, destination):
+@@ -494,7 +495,7 @@ def copy_source_file(absolute_path, relative_to, destination):
    relative_path = os.path.relpath(absolute_path, start=relative_to)
    final_path = os.path.join(destination, relative_path)
    mkdir_p(os.path.dirname(final_path))
@@ -134,7 +161,7 @@ index c005fd8..f5340d9 100755
  
  
  def copy_dir(relative_path, relative_to, destination):
-@@ -543,6 +539,7 @@ def link_binary_to_debug_file(objcopy, binfile, symfile, dirname, env):
+@@ -531,6 +532,7 @@ def link_binary_to_debug_file(objcopy, binfile, symfile, dirname):
  def run_strip(target_arch, filename, create_debug_archive):
    # Static libraries are not stripped because it would remove
    # all the symbols in it.
@@ -142,7 +169,7 @@ index c005fd8..f5340d9 100755
    if filename.endswith('.a'):
      return
  
-@@ -642,6 +639,17 @@ def rm_rf(path):
+@@ -620,6 +622,17 @@ def rm_rf(path):
        raise
  
  
@@ -171,5 +198,5 @@ index 3455161..195b2a1 100644
 -  return os.path.join(source_root, 'src', 'out-' + target_arch, component)
 +  return os.environ.get('CHROMIUM_BUILD_DIR')
 -- 
-2.14.1
+2.13.6
 

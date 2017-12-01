@@ -1,258 +1,76 @@
-From 4f90951f6a7f43f9c579b0040868cf8992979708 Mon Sep 17 00:00:00 2001
+From 8aa9ca32e88f7b6e66ded532d3110f4e84e99a9b Mon Sep 17 00:00:00 2001
 From: Elvis Pranskevichus <elvis@magic.io>
 Date: Mon, 8 Feb 2016 15:16:40 -0500
 Subject: [PATCH] electron build fixes
 
 ---
- atom/browser/api/atom_api_browser_view.h |  2 +-
- brightray/brightray.gyp                  | 66 ++++++++++++++++++++++++--
- brightray/brightray.gypi                 | 51 +++++++--------------
- common.gypi                              | 41 ++++++++++++++---
- electron.gyp                             | 75 ++++++++++++++++++++++++------
- toolchain.gypi                           | 79 ++++++++++++--------------------
- tools/ar-flags.py                        | 15 ++++++
- tools/atom_source_root.py                |  5 ++
- tools/browserify.py                      | 24 ++++++++++
- tools/get-endianness.py                  |  4 ++
- tools/js2asar.py                         | 13 +++---
- 11 files changed, 259 insertions(+), 116 deletions(-)
+ common.gypi                   | 70 ++++++++++++++++++++++++++++++++++-----
+ electron.gyp                  | 70 +++++++++++++++++++++++++++++++--------
+ toolchain.gypi                | 76 +++++++++++++++++--------------------------
+ tools/ar-flags.py             | 15 +++++++++
+ tools/atom_source_root.py     |  5 +++
+ tools/browserify.py           | 24 ++++++++++++++
+ tools/get-endianness.py       |  4 +++
+ tools/js2asar.py              | 13 ++++----
+ tools/list-browserify-deps.py |  3 +-
+ 9 files changed, 204 insertions(+), 76 deletions(-)
  create mode 100644 tools/ar-flags.py
  create mode 100644 tools/atom_source_root.py
  create mode 100644 tools/browserify.py
  create mode 100644 tools/get-endianness.py
 
-diff --git a/atom/browser/api/atom_api_browser_view.h b/atom/browser/api/atom_api_browser_view.h
-index 36992bc69..dc58e1cd1 100644
---- a/atom/browser/api/atom_api_browser_view.h
-+++ b/atom/browser/api/atom_api_browser_view.h
-@@ -36,7 +36,7 @@ class BrowserView : public mate::TrackableObject<BrowserView> {
-   static void BuildPrototype(v8::Isolate* isolate,
-                              v8::Local<v8::FunctionTemplate> prototype);
- 
--  WebContents* web_contents() const { return api_web_contents_; }
-+  class WebContents* web_contents() const { return api_web_contents_; }
-   NativeBrowserView* view() const { return view_.get(); }
- 
-   int32_t ID() const;
-diff --git a/brightray/brightray.gyp b/brightray/brightray.gyp
-index efd2ba30a..ab688e132 100644
---- a/brightray/brightray.gyp
-+++ b/brightray/brightray.gyp
-@@ -1,7 +1,7 @@
- {
-   'variables': {
-     # The libraries brightray will be compiled to.
--    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gconf-2.0 gmodule-2.0 nss'
-+    'linux_system_libraries': 'gtk+-2.0 dbus-1 x11 x11-xcb xcb xi xcursor xdamage xrandr xcomposite xext xfixes xrender xtst xscrnsaver gmodule-2.0 nss'
-   },
-   'includes': [
-     'filenames.gypi',
-@@ -9,6 +9,10 @@
-   'targets': [
-     {
-       'target_name': 'brightray',
-+      'dependencies': [
-+        'cups',
-+        'gconf',
-+      ],
-       'type': 'static_library',
-       'include_dirs': [
-         '..',
-@@ -130,18 +134,30 @@
-             }, {
-               'link_settings': {
-                 'libraries': [
--                  # Link with ffmpeg.
--                  '<(libchromiumcontent_dir)/libffmpeg.so',
-                   # Following libraries are required by libchromiumcontent:
-                   '-lasound',
-                   '-lcap',
--                  '-lcups',
-                   '-lrt',
-                   '-ldl',
-                   '-lresolv',
-                   '-lfontconfig',
-                   '-lfreetype',
-                   '-lexpat',
-+                  '-lre2',
-+                  '-ljpeg',
-+                  '-lsnappy',
-+                  '-lharfbuzz',
-+                  '-lpng',
-+                  '-lxml2',
-+                  '-lxslt',
-+                  '-lwebp',
-+                  '-lwebpdemux',
-+                  '-lavcodec',
-+                  '-lavformat',
-+                  '-lavutil',
-+                  '-lvpx',
-+                  '-lFLAC',
-+                  '-lminizip',
-                 ],
-               },
-             }],
-@@ -394,5 +410,47 @@
-         }],  # OS=="win"
-       ],
-     },
-+    {
-+      'target_name': 'gconf',
-+      'type': 'none',
-+      'conditions': [
-+        ['use_gconf==1 and _toolset=="target"', {
-+          'direct_dependent_settings': {
-+            'cflags': [
-+              '<!@(<(pkg-config) --cflags gconf-2.0)',
-+            ],
-+            'defines': [
-+              'USE_GCONF',
-+            ],
-+          },
-+          'link_settings': {
-+            'ldflags': [
-+              '<!@(<(pkg-config) --libs-only-L --libs-only-other gconf-2.0)',
-+            ],
-+            'libraries': [
-+              '<!@(<(pkg-config) --libs-only-l gconf-2.0)',
-+            ],
-+          },
-+        }],
-+      ],
-+    },
-+    {
-+      'target_name': 'cups',
-+      'type': 'none',
-+      'conditions': [
-+        ['use_cups==1', {
-+          'direct_dependent_settings': {
-+            'defines': [
-+              'USE_CUPS',
-+            ],
-+            'link_settings': {
-+              'libraries': [
-+                '-lcups',
-+              ],
-+            },
-+          },
-+        }],
-+      ],
-+    },
-   ],
- }
-diff --git a/brightray/brightray.gypi b/brightray/brightray.gypi
-index c0dc92b98..32d3befb0 100644
---- a/brightray/brightray.gypi
-+++ b/brightray/brightray.gypi
-@@ -1,6 +1,6 @@
- {
-   'includes': [
--    '../vendor/download/libchromiumcontent/filenames.gypi',
-+    '../vendor/libchromiumcontent/dist/main/filenames.gypi',
-   ],
-   'variables': {
-     'libchromiumcontent_component%': 1,
-@@ -14,7 +14,7 @@
-       }, {
-         'libchromiumcontent_dir%': '<(libchromiumcontent_static_libraries_dir)',
-         'libchromiumcontent_libraries%': '<(libchromiumcontent_static_libraries)',
--        'libchromiumcontent_v8_libraries%': '<(libchromiumcontent_static_v8_libraries)',
-+        'libchromiumcontent_v8_libraries%': '<(libchromiumcontent_shared_v8_libraries)',
-       }],
-     ],
-   },
-@@ -136,6 +136,15 @@
-               '-D__STRICT_ANSI__',
-               '-fno-rtti',
-             ],
-+            'cflags': [
-+              # Put data and code in their own sections, so that unused symbols
-+              # can be removed at link time with --gc-sections.
-+              '-fdata-sections',
-+              '-ffunction-sections',
-+            ],
-+            'ldflags': [
-+              '-Wl,--gc-sections',
-+            ],
-           }],  # OS=="linux"
-           ['OS=="mac"', {
-             'defines': [
-@@ -230,40 +239,14 @@
-             'LinkIncremental': '1',  # /INCREMENTAL:NO
-           },
-         },
--        'conditions': [
--          ['OS=="linux"', {
--            'cflags': [
--              '-O2',
--              # Generate symbols, will be stripped later.
--              '-g',
--              # Don't emit the GCC version ident directives, they just end up
--              # in the .comment section taking up binary size.
--              '-fno-ident',
--              # Put data and code in their own sections, so that unused symbols
--              # can be removed at link time with --gc-sections.
--              '-fdata-sections',
--              '-ffunction-sections',
--            ],
--            'ldflags': [
--              # Specifically tell the linker to perform optimizations.
--              # See http://lwn.net/Articles/192624/ .
--              '-Wl,-O1',
--              '-Wl,--as-needed',
--              '-Wl,--gc-sections',
--            ],
--          }],  # OS=="linux"
--        ],
-       },  # Release_Base
-+      'D': {
-+        'inherit_from': ['Common_Base', 'Debug_Base'],
-+      },  # D (Debug)
-+      'R': {
-+        'inherit_from': ['Common_Base', 'Release_Base'],
-+      },  # R (Release)
-       'conditions': [
--        ['libchromiumcontent_component', {
--          'D': {
--            'inherit_from': ['Common_Base', 'Debug_Base'],
--          },  # D (Debug)
--        }, {
--          'R': {
--            'inherit_from': ['Common_Base', 'Release_Base'],
--          },  # R (Release)
--        }],  # libchromiumcontent_component
-         ['OS=="win"', {
-           'conditions': [
-             # gyp always assumes "_x64" targets on Windows.
 diff --git a/common.gypi b/common.gypi
-index fff12d9b3..efe1f2a92 100644
+index 7c1bf366a..7892926eb 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -2,6 +2,7 @@
    'includes': [
      'toolchain.gypi',
-     'brightray/brightray.gypi',
+     'vendor/brightray/brightray.gypi',
 +    'vendor/node/common.gypi',
    ],
    'variables': {
      # Tell crashpad to build as external project.
-@@ -17,25 +18,22 @@
+@@ -11,31 +12,44 @@
+     'chromeos': 0,
+     # Reflects node's config.gypi.
+     'component%': 'static_library',
+-    'python': 'python',
++    'python%': 'python',
+     'openssl_fips': '',
+     'openssl_no_asm': 1,
++
++    'host_arch': '<!(python <(DEPTH)/chromium/v8/gypfiles/detect_v8_host_arch.py)',
++
++    # ICU configuration for Node.
++    # Note: the use of icu-system.gyp does not necessarily
++    # indicate that the system ICU will be used, it merely
++    # disables the use of the version bundled with Node.
++    'icu_gyp_path': 'tools/icu/icu-system.gyp',
++    'icu_small': 'false',
++
      'use_openssl_def': 0,
      'OPENSSL_PRODUCT': 'libopenssl.a',
-     'node_release_urlbase': 'https://atom.io/download/electron',
+-    'node_release_urlbase': 'https://atom.io/download/atom-shell',
 -    'node_byteorder': '<!(node <(DEPTH)/tools/get-endianness.js)',
++    'node_release_urlbase': 'https://atom.io/download/electron',
 +    'node_byteorder': '<!(python <(DEPTH)/tools/get-endianness.py)',
      'node_target_type': 'shared_library',
 +    'node_module_version': '',
      'node_install_npm': 'false',
      'node_prefix': '',
      'node_shared': 'true',
--    'node_shared_cares': 'false',
+     'node_shared_cares': 'false',
 -    'node_shared_http_parser': 'false',
 -    'node_shared_libuv': 'false',
 -    'node_shared_openssl': 'false',
      'node_shared_v8': 'true',
 -    'node_shared_zlib': 'false',
++    'node_shared_http_parser': 'true',
++    # There are ABI-incompatible modifications to libuv
++    'node_shared_libuv': 'false',
++    'node_shared_openssl': 'true',
++    'node_shared_zlib': 'true',
      'node_tag': '',
      'node_use_dtrace': 'false',
      'node_use_etw': 'false',
@@ -266,10 +84,11 @@ index fff12d9b3..efe1f2a92 100644
      'node_enable_d8': 'false',
      'uv_library': 'static_library',
      'uv_parent_path': 'vendor/node/deps/uv',
-@@ -44,10 +42,16 @@
+@@ -44,10 +58,17 @@
      'v8_postmortem_support': 'false',
      'v8_enable_i18n_support': 'false',
-     'v8_inspector': 'true',
+     'v8_inspector': 'false',
++    'v8_host_byteorder': '<!(python <(DEPTH)/tools/get-endianness.py)',
 +    'v8_use_snapshot': 'true',
 +    'v8_use_external_startup_data': 1,
    },
@@ -283,7 +102,7 @@ index fff12d9b3..efe1f2a92 100644
        ['_target_name in ["libuv", "http_parser", "openssl", "openssl-cli", "cares", "node", "zlib"]', {
          'msvs_disabled_warnings': [
            4003,  # not enough actual parameters for macro 'V'
-@@ -128,6 +132,14 @@
+@@ -128,6 +149,20 @@
          ],
        }],
        ['_target_name=="node"', {
@@ -295,10 +114,27 @@ index fff12d9b3..efe1f2a92 100644
 +        'cflags_cc!': [
 +          '-fvisibility-inlines-hidden',
 +        ],
++        'libraries': [
++          '-lz',
++          '-lhttp_parser',
++          '-lcrypto',
++          '-lssl',
++        ],
          'include_dirs': [
            '<(libchromiumcontent_src_dir)',
            '<(libchromiumcontent_src_dir)/third_party/icu/source/common',
-@@ -228,6 +240,21 @@
+@@ -167,7 +202,9 @@
+               '-Wl,--no-whole-archive',
+             ],
+           }, {
+-            'libraries': [ '<@(libchromiumcontent_v8_libraries)' ],
++            'libraries': [
++              '<@(libchromiumcontent_v8_libraries)',
++            ],
+           }],
+         ],
+       }],
+@@ -228,6 +265,21 @@
            }],  # OS=="win"
          ],
        }],
@@ -321,10 +157,10 @@ index fff12d9b3..efe1f2a92 100644
      'msvs_cygwin_shell': 0, # Strangely setting it to 1 would make building under cygwin fail.
      'msvs_disabled_warnings': [
 diff --git a/electron.gyp b/electron.gyp
-index 17d416608..d549e6145 100644
+index f82de1e1f..2c398fe75 100644
 --- a/electron.gyp
 +++ b/electron.gyp
-@@ -197,7 +197,7 @@
+@@ -191,7 +191,7 @@
                    }, {
                      'copied_libraries': [
                        '<(PRODUCT_DIR)/lib/libnode.so',
@@ -333,27 +169,17 @@ index 17d416608..d549e6145 100644
                      ],
                    }],
                  ],
-@@ -206,7 +206,6 @@
-               'files': [
-                 '<@(copied_libraries)',
-                 '<(libchromiumcontent_dir)/locales',
--                '<(libchromiumcontent_dir)/icudtl.dat',
-                 '<(libchromiumcontent_dir)/blink_image_resources_200_percent.pak',
-                 '<(libchromiumcontent_dir)/content_resources_200_percent.pak',
-                 '<(libchromiumcontent_dir)/content_shell.pak',
-@@ -249,14 +248,17 @@
+@@ -244,8 +244,8 @@
          '<@(lib_sources)',
        ],
        'include_dirs': [
 -        '.',
          'chromium_src',
 +        '.',
-+        'brightray',
+         'vendor/brightray',
          'vendor/native_mate',
-+        # libicu headers shim.
-+        '<(SHARED_INTERMEDIATE_DIR)/shim_headers/icui18n_shim',
-+        '<(SHARED_INTERMEDIATE_DIR)/shim_headers/icuuc_shim',
-         # Include atom_natives.h.
+         # libicu headers shim.
+@@ -255,7 +255,6 @@
          '<(SHARED_INTERMEDIATE_DIR)',
          # Include directories for uv and node.
          'vendor/node/src',
@@ -361,7 +187,7 @@ index 17d416608..d549e6145 100644
          'vendor/node/deps/uv/include',
          # The `node.h` is using `#include"v8.h"`.
          '<(libchromiumcontent_src_dir)/v8/include',
-@@ -345,11 +347,12 @@
+@@ -344,11 +343,12 @@
              '<@(lib_sources_nss)',
            ],
            'link_settings': {
@@ -375,7 +201,7 @@ index 17d416608..d549e6145 100644
                # Make native module dynamic loading work.
                '-rdynamic',
              ],
-@@ -371,6 +374,9 @@
+@@ -370,6 +370,9 @@
      {
        'target_name': 'js2asar',
        'type': 'none',
@@ -385,7 +211,7 @@ index 17d416608..d549e6145 100644
        'actions': [
          {
            'action_name': 'js2asar',
-@@ -392,6 +398,7 @@
+@@ -391,6 +394,7 @@
            'action': [
              'python',
              'tools/js2asar.py',
@@ -393,7 +219,7 @@ index 17d416608..d549e6145 100644
              '<@(_outputs)',
              'lib',
              '<@(_inputs)',
-@@ -402,6 +409,9 @@
+@@ -401,6 +405,9 @@
      {
        'target_name': 'app2asar',
        'type': 'none',
@@ -403,7 +229,7 @@ index 17d416608..d549e6145 100644
        'actions': [
          {
            'action_name': 'app2asar',
-@@ -423,6 +433,7 @@
+@@ -422,6 +429,7 @@
            'action': [
              'python',
              'tools/js2asar.py',
@@ -411,7 +237,7 @@ index 17d416608..d549e6145 100644
              '<@(_outputs)',
              'default_app',
              '<@(_inputs)',
-@@ -448,6 +459,7 @@
+@@ -447,6 +455,7 @@
        'dependencies': [
          # depend on this target to ensure the '<(js2c_input_dir)' is created
          'atom_js2c_copy',
@@ -419,7 +245,7 @@ index 17d416608..d549e6145 100644
        ],
        'variables': {
          'sandbox_args': [
-@@ -477,11 +489,9 @@
+@@ -476,11 +485,9 @@
              '<(js2c_input_dir)/preload_bundle.js',
            ],
            'action': [
@@ -434,7 +260,7 @@ index 17d416608..d549e6145 100644
              '<@(sandbox_args)',
              '-o',
              '<@(_outputs)',
-@@ -496,12 +506,11 @@
+@@ -495,12 +502,11 @@
              '<(js2c_input_dir)/isolated_bundle.js',
            ],
            'action': [
@@ -451,7 +277,7 @@ index 17d416608..d549e6145 100644
              '-o',
              '<@(_outputs)',
            ],
-@@ -536,6 +545,42 @@
+@@ -535,6 +541,42 @@
          }
        ],
      },  # target atom_js2c
@@ -495,7 +321,7 @@ index 17d416608..d549e6145 100644
    'conditions': [
      ['OS=="mac"', {
 diff --git a/toolchain.gypi b/toolchain.gypi
-index b5b87ca41..c20ed1a0f 100644
+index 1c5f8a713..c20ed1a0f 100644
 --- a/toolchain.gypi
 +++ b/toolchain.gypi
 @@ -16,7 +16,7 @@
@@ -507,7 +333,7 @@ index b5b87ca41..c20ed1a0f 100644
      },
  
      # Copy conditionally-set variables out one scope.
-@@ -40,37 +40,6 @@
+@@ -40,34 +40,6 @@
          'mac_sdk%': '<!(python <(DEPTH)/tools/mac/find_sdk.py <(mac_sdk_min))',
        }],
  
@@ -522,9 +348,6 @@ index b5b87ca41..c20ed1a0f 100644
 -              # sysroot needs to be an absolute path otherwise it generates
 -              # incorrect results when passed to pkg-config
 -              'sysroot%': '<(source_root)/vendor/debian_wheezy_arm-sysroot',
--            }],
--            ['target_arch=="arm64"', {
--              'sysroot%': '<(source_root)/vendor/debian_jessie_arm64-sysroot',
 -            }],
 -            ['target_arch=="ia32"', {
 -              'sysroot%': '<(source_root)/vendor/debian_wheezy_i386-sysroot',
@@ -545,7 +368,7 @@ index b5b87ca41..c20ed1a0f 100644
        # Set default compiler flags depending on ARM version.
        ['arm_version==6', {
          'arm_arch%': 'armv6',
-@@ -139,23 +108,6 @@
+@@ -136,23 +108,6 @@
        },
      }],
  
@@ -569,7 +392,7 @@ index b5b87ca41..c20ed1a0f 100644
      # Setup cross-compilation on Linux.
      ['OS=="linux"', {
        'target_defaults': {
-@@ -182,6 +134,35 @@
+@@ -179,6 +134,35 @@
              'ldflags': [
                '-m64',
              ],
@@ -714,6 +537,20 @@ index adad1751e..ca7686893 100755
  
  
  def safe_mkdir(path):
+diff --git a/tools/list-browserify-deps.py b/tools/list-browserify-deps.py
+index c25007d2a..bbd921bc6 100755
+--- a/tools/list-browserify-deps.py
++++ b/tools/list-browserify-deps.py
+@@ -9,7 +9,8 @@ BROWSERIFY = os.path.join(SOURCE_ROOT, 'node_modules', '.bin', 'browserify')
+ if sys.platform == 'win32':
+   BROWSERIFY += '.cmd'
+ 
+-deps = subprocess.check_output([BROWSERIFY, '--list'] + sys.argv[1:])
++deps = subprocess.check_output([BROWSERIFY, '--list'] + sys.argv[1:],
++                               universal_newlines=True)
+ for dep in deps.split('\n'):
+     if dep:
+         dep = os.path.relpath(dep, SOURCE_ROOT)
 -- 
-2.14.1
+2.14.3
 

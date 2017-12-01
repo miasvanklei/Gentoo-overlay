@@ -12,23 +12,25 @@ inherit check-reqs chromium-2 eutils gnome2-utils flag-o-matic multilib \
 	multiprocessing pax-utils portability python-any-r1 toolchain-funcs \
 	versionator virtualx xdg-utils
 
-# Keep this in sync with vendor/libchromiumcontent/VERSION
-CHROMIUM_VERSION="58.0.3029.110"
+# Keep this in sync with vendor/brightray/vendor/libchromiumcontent/VERSION
+CHROMIUM_VERSION="56.0.2924.87"
 # Keep this in sync with vendor/breakpad
 BREAKPAD_COMMIT="c566c50d81f7b1edeaee9f11f5d07bda858d6b64"
 # Keep this in sync with vendor/breakpad/src (and find the corresponding
 # commit in https://github.com/google/breakpad/)
 BREAKPAD_SRC_COMMIT="e35167de7516448fcc2bf687ad580b9d8b6aedc2"
+# Keep this in sync with vendor/brightray
+BRIGHTRAY_COMMIT="909c49265493bd095c27cefd999567be2107899a"
 # Keep this in sync with vendor/node
-NODE_COMMIT="d5752d275beffda58473ef76f98bb46c7b6eaa78"
+NODE_COMMIT="9b1683e7000481ec6214eafa3eef7ac4594eb410"
 # Keep this in sync with vendor/native_mate
-NATIVE_MATE_COMMIT="7d9c1a80f025f4c46f7da8ea73246fe0f1968579"
+NATIVE_MATE_COMMIT="fd0e7dc4ab778f0d1ccda6c9640464ea06ee771e"
 # Keep this in sync with vendor/pdf_viewer
-PDF_VIEWER_COMMIT="beb36874a6b61d7a18b92bf7dcd1f0661e4c59cf"
+PDF_VIEWER_COMMIT="a050a339cfeabcfb5f07c313161d2ee27b6c3a39"
 # Keep this in sync with vendor/pdf_viewer/vendor/grit
 GRIT_COMMIT="9536fb6429147d27ef1563088341825db0a893cd"
-# Keep this in sync with vendor/libchromiumcontent
-LIBCHROMIUMCONTENT_COMMIT="8cfd08f84e415f3c8e5fde061f8e17400ef8aa7f"
+# Keep this in sync with script/lib/config.py:LIBCHROMIUMCONTENT_COMMIT
+LIBCHROMIUMCONTENT_COMMIT="a9b88fab38a8162bb485cc5854973f71ea0bc7a6"
 # Keep this in sync with package.json#devDependencies
 ASAR_VERSION="0.13.0"
 BROWSERIFY_VERSION="14.0.0"
@@ -36,6 +38,7 @@ BROWSERIFY_VERSION="14.0.0"
 CHROMIUM_P="chromium-${CHROMIUM_VERSION}"
 BREAKPAD_P="chromium-breakpad-${BREAKPAD_COMMIT}"
 BREAKPAD_SRC_P="breakpad-${BREAKPAD_SRC_COMMIT}"
+BRIGHTRAY_P="brightray-${BRIGHTRAY_COMMIT}"
 NODE_P="node-${NODE_COMMIT}"
 NATIVE_MATE_P="native-mate-${NATIVE_MATE_COMMIT}"
 PDF_VIEWER_P="pdf-viewer-${PDF_VIEWER_COMMIT}"
@@ -51,6 +54,7 @@ SRC_URI="
 	https://github.com/electron/electron/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/electron/chromium-breakpad/archive/${BREAKPAD_COMMIT}.tar.gz -> electron-${BREAKPAD_P}.tar.gz
 	https://github.com/google/breakpad/archive/${BREAKPAD_SRC_COMMIT}.tar.gz -> electron-${BREAKPAD_SRC_P}.tar.gz
+	https://github.com/electron/brightray/archive/${BRIGHTRAY_COMMIT}.tar.gz -> electron-${BRIGHTRAY_P}.tar.gz
 	https://github.com/electron/node/archive/${NODE_COMMIT}.tar.gz -> electron-${NODE_P}.tar.gz
 	https://github.com/zcbenz/native-mate/archive/${NATIVE_MATE_COMMIT}.tar.gz -> electron-${NATIVE_MATE_P}.tar.gz
 	https://github.com/electron/pdf-viewer/archive/${PDF_VIEWER_COMMIT}.tar.gz -> electron-${PDF_VIEWER_P}.tar.gz
@@ -65,16 +69,16 @@ CHROMIUM_S="${S}/chromium"
 NODE_S="${S}/vendor/node"
 BREAKPAD_S="${S}/vendor/breakpad"
 BREAKPAD_SRC_S="${BREAKPAD_S}/src"
+BRIGHTRAY_S="${S}/vendor/brightray"
 NATIVE_MATE_S="${S}/vendor/native_mate"
 PDF_VIEWER_S="${S}/vendor/pdf_viewer"
 GRIT_S="${PDF_VIEWER_S}/vendor/grit"
-LIBCC_S="${S}/vendor/libchromiumcontent"
+LIBCC_S="${BRIGHTRAY_S}/vendor/libchromiumcontent"
 
 LICENSE="BSD"
 SLOT="$(get_version_component_range 1-2)"
 KEYWORDS="~amd64"
-IUSE="cups custom-cflags debug gconf gnome-keyring kerberos lto neon pic \
-      +proprietary-codecs pulseaudio selinux +system-ffmpeg system-libvpx"
+IUSE="cups custom-cflags gnome gnome-keyring kerberos lto neon pic +proprietary-codecs pulseaudio selinux +system-ffmpeg +system-icu"
 RESTRICT="!system-ffmpeg? ( proprietary-codecs? ( bindist ) )"
 
 # Native Client binaries are compiled with different set of flags, bug #452066.
@@ -91,21 +95,20 @@ COMMON_DEPEND="
 	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
 	dev-libs/glib:2
-	dev-libs/icu:=
+	system-icu? ( >=dev-libs/icu-58:= )
 	>=dev-libs/jsoncpp-0.5.0-r1:=
 	dev-libs/nspr:=
 	>=dev-libs/nss-3.14.3:=
 	>=dev-libs/re2-0.2016.05.01:=
-	gconf? ( >=gnome-base/gconf-2.24.0:= )
+	gnome? ( >=gnome-base/gconf-2.24.0:= )
 	gnome-keyring? ( >=gnome-base/libgnome-keyring-3.12:= )
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/fontconfig:=
 	media-libs/freetype:=
-	>=media-libs/harfbuzz-1.3.1:=[icu(+)]
 	media-libs/libexif:=
 	media-libs/libjpeg-turbo:=
 	media-libs/libpng:=
-	system-libvpx? ( >=media-libs/libvpx-1.6.0:=[postproc,svc] )
+	media-libs/libvpx:=[svc]
 	media-libs/speex:=
 	pulseaudio? ( media-sound/pulseaudio:= )
 	system-ffmpeg? ( >=media-video/ffmpeg-3:= )
@@ -131,7 +134,10 @@ COMMON_DEPEND="
 	x11-libs/libXtst:=
 	x11-libs/pango:=
 	app-arch/snappy:=
+	dev-libs/libxml2:=[icu]
+	dev-libs/libxslt:=
 	media-libs/flac:=
+	>=media-libs/harfbuzz-1.3.1:=[icu(+)]
 	>=media-libs/libwebp-0.4.0:=
 	sys-libs/zlib:=[minizip]
 	kerberos? ( virtual/krb5 )
@@ -171,14 +177,19 @@ DEPEND="${COMMON_DEPEND}
 
 CHROMIUM_PATCHES="
 	chromium-FORTIFY_SOURCE.patch
+	chromium-glibc-2.24.patch
+	chromium-56-gcc4.patch
+	chromium-system-ffmpeg-r4.patch
+	chromium-system-icu-r0.patch
+	chromium-icu-59-r0.patch
+	chromium-v8-icu-59-r0.patch
 	chromium-disable-widevine.patch
-	chromium-gn-bootstrap-r2.patch
-	chromium-system-ffmpeg-r5.patch
+	chromium-remove-gardiner-mod-font-r1.patch
+	chromium-shared-v8-r2.patch
 	chromium-lto-fixes-r3.patch
-	chromium-shared-v8-r3.patch
-	chromium-icu-59.patch
-	skia-avx2.patch
+	chromium-python3-compat-r0.patch
 "
+
 
 # Keep this in sync with the python_gen_any_dep call.
 python_check_deps() {
@@ -224,12 +235,12 @@ pre_build_checks() {
 
 	# Check build requirements, bug #541816 and bug #471810 .
 	CHECKREQS_MEMORY="3G"
-	use lto && CHECKREQS_MEMORY="5G"
-	CHECKREQS_DISK_BUILD="7G"
+	use lto && CHECKREQS_MEMORY="7G"
+	CHECKREQS_DISK_BUILD="5G"
 	eshopts_push -s extglob
-	if is-flagq '-g?(gdb)?([1-9])' || use debug; then
-		CHECKREQS_DISK_BUILD="55G"
-		CHECKREQS_MEMORY="25G"
+	if is-flagq '-g?(gdb)?([1-9])'; then
+		CHECKREQS_DISK_BUILD="25G"
+		CHECKREQS_MEMORY="16G"
 	fi
 	eshopts_pop
 	check-reqs_pkg_pretend
@@ -249,12 +260,17 @@ pkg_setup() {
 }
 
 _unnest_patches() {
-	local _s="${1%/}/" relpath out
+	local _s="${1%/}/"
+	local path
+	local relpath
+	local out
 
-	for f in $(find "${_s}" -mindepth 2 -name *.patch -printf \"%P\"\\n); do
-		relpath="$(dirname ${f})"
-		out="${_s}/${relpath////_}_$(basename ${f})"
-		sed -r -e "s|^([-+]{3}) (.*)$|\1 ${relpath}/\2 ${f}|g" > "${out}"
+	(find "${_s}" -mindepth 2 -name '*.patch' -printf "%P\n" || die) \
+	| while read -r path; do
+		relpath="$(dirname ${path})"
+		out="${_s}/__${relpath////_}_$(basename ${path})"
+		sed -r -e "s|^([-+]{3}) [ab]/(.*)$|\1 ${relpath}/\2|g" \
+			"${_s}/${path}" > "${out}" || die
 	done
 }
 
@@ -303,6 +319,8 @@ src_prepare() {
 		mv "${WORKDIR}/${BREAKPAD_P}" "${BREAKPAD_S}" || die
 	rm -r "${BREAKPAD_SRC_S}" &&
 		mv "${WORKDIR}/${BREAKPAD_SRC_P}/src" "${BREAKPAD_SRC_S}" || die
+	rm -r "${BRIGHTRAY_S}" &&
+		mv "${WORKDIR}/${BRIGHTRAY_P}" "${BRIGHTRAY_S}" || die
 	rm -r "${NATIVE_MATE_S}" &&
 		mv "${WORKDIR}/${NATIVE_MATE_P}" "${NATIVE_MATE_S}" || die
 	rm -r "${PDF_VIEWER_S}" &&
@@ -319,9 +337,7 @@ src_prepare() {
 	# electron patches
 	cd "${ELECTRON_S}" || die
 	eapply "${FILESDIR}/${P}.patch"
-
-	# fix bug
-	eapply "${FILESDIR}/${PN}-fix-hang.patch"
+	use system-icu && eapply "${FILESDIR}/${PN}-system-icu-r0.patch"
 
 	# node patches
 	cd "${NODE_S}" || die
@@ -350,6 +366,10 @@ src_prepare() {
 	sed -i -e "s/'lib'/'${LIBDIR}'/" lib/module.js || die
 	sed -i -e "s|\"lib\"|\"${LIBDIR}\"|" deps/npm/lib/npm.js || die
 
+	# brightray patches
+	cd "${BRIGHTRAY_S}" || die
+	eapply "${FILESDIR}/${P}-vendor-brightray.patch"
+
 	# libchromiumcontent patches
 	cd "${LIBCC_S}" || die
 	eapply "${FILESDIR}/${P}-vendor-libchromiumcontent.patch"
@@ -363,7 +383,6 @@ src_prepare() {
 	EPATCH_SOURCE="${LIBCC_S}/patches" \
 	EPATCH_SUFFIX="patch" \
 	EPATCH_FORCE="yes" \
-	EPATCH_EXCLUDE="third_party_icu*" \
 	EPATCH_MULTI_MSG="Applying libchromiumcontent patches..." \
 		epatch
 
@@ -372,10 +391,6 @@ src_prepare() {
 	for p in ${CHROMIUM_PATCHES}; do
 		eapply "${FILESDIR}/${p}"
 	done
-
-	mkdir -p third_party/node/linux/node-linux-x64/bin || die
-	ln -s "${EPREFIX}"/usr/bin/node \
-		third_party/node/linux/node-linux-x64/bin/node || die
 
 	# Merge chromiumcontent component into chromium source tree.
 	mkdir -p "${CHROMIUM_S}/chromiumcontent" || die
@@ -426,7 +441,6 @@ src_prepare() {
 		third_party/fips181
 		third_party/flatbuffers
 		third_party/flot
-		third_party/gardiner_mod
 		third_party/google_input_tools
 		third_party/google_input_tools/third_party/closure_library
 		third_party/google_input_tools/third_party/closure_library/third_party/closure
@@ -454,8 +468,6 @@ src_prepare() {
 		third_party/mesa
 		third_party/modp_b64
 		third_party/mt19937ar
-		third_party/node
-		third_party/node/node_modules/vulcanize/third_party/UglifyJS2
 		third_party/openh264
 		third_party/openmax_dl
 		third_party/opus
@@ -504,14 +516,15 @@ src_prepare() {
 	if ! use system-ffmpeg; then
 		keeplibs+=( third_party/ffmpeg )
 	fi
-	if ! use system-libvpx; then
-		keeplibs+=( third_party/libvpx )
-		keeplibs+=( third_party/libvpx/source/libvpx/third_party/x86inc )
+	if ! use system-icu; then
+		keeplibs+=( third_party/icu )
 	fi
 
 	# Remove most bundled libraries. Some are still needed.
+	ebegin "Unbundling libraries"
 	build/linux/unbundle/remove_bundled_libraries.py \
 		"${keeplibs[@]}" --do-remove || die
+	eend
 
 	cd "${S}" || die
 
@@ -524,13 +537,8 @@ src_configure() {
 
 	cd "${CHROMIUM_S}" || die
 
-	# GN needs explicit config for Debug/Release
-	# as opposed to inferring it from build directory.
-	if use debug; then
-		myconf_gn+=" is_debug=true"
-	else
-		myconf_gn+=" is_debug=false"
-	fi
+	# GN needs explicit config for Debug/Release as opposed to inferring it from build directory.
+	myconf_gn+=" is_debug=false"
 
 	# Disable nacl, we can't build without pnacl (http://crbug.com/269560).
 	myconf_gn+=" enable_nacl=false"
@@ -545,32 +553,30 @@ src_configure() {
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 
 	# libevent: https://bugs.gentoo.org/593458
-	local gn_system_libraries=(
+	local gn_system_libraries="
 		flac
 		harfbuzz-ng
-		icu
 		libjpeg
 		libpng
+		libvpx
 		libwebp
 		libxml
 		libxslt
 		re2
 		snappy
 		yasm
-		zlib
-	)
+		zlib"
 	if use system-ffmpeg; then
-		gn_system_libraries+=( ffmpeg )
+		gn_system_libraries+=" ffmpeg"
 	fi
-	if use system-libvpx; then
-		gn_system_libraries+=( libvpx )
+	if use system-icu; then
+		gn_system_libraries+=" icu"
 	fi
-	build/linux/unbundle/replace_gn_files.py \
-		--system-libraries "${gn_system_libraries[@]}" || die
+	build/linux/unbundle/replace_gn_files.py --system-libraries ${gn_system_libraries} || die
 
 	# Optional dependencies.
 	myconf_gn+=" use_cups=$(usex cups true false)"
-	myconf_gn+=" use_gconf=$(usex gconf true false)"
+	myconf_gn+=" use_gconf=$(usex gnome true false)"
 	myconf_gn+=" use_gnome_keyring=$(usex gnome-keyring true false)"
 	myconf_gn+=" use_gtk3=false"
 	myconf_gn+=" use_kerberos=$(usex kerberos true false)"
@@ -584,10 +590,6 @@ src_configure() {
 		myconf_gn+=" is_clang=true clang_base_path=\"/usr/lib/llvm/5\" clang_use_chrome_plugins=false"
 	else
 		myconf_gn+=" is_clang=false"
-	fi
-
-	if use lto; then
-		myconf_gn+=" allow_posix_link_time_opt=true"
 	fi
 
 	# Never use bundled gold binary. Disable gold linker flags for now.
@@ -625,17 +627,12 @@ src_configure() {
 	# Disable fatal linker warnings, bug 506268.
 	myconf_gn+=" fatal_linker_warnings=false"
 
-	use debug && append-ldflags "-Wl,-fuse-ld=bfd"
-
 	# Avoid CFLAGS problems, bug #352457, bug #390147.
 	if ! use custom-cflags; then
-		if use debug; then
-			filter-flags "-O*"
-		else
-			replace-flags "-Os" "-O2"
-		fi
-
+		replace-flags "-Os" "-O2"
 		strip-flags
+
+		filter-flags "-Wl,--as-needed"
 
 		# Prevent linker from running out of address space, bug #471810 .
 		if use x86; then
@@ -656,6 +653,8 @@ src_configure() {
 
 	# Define a custom toolchain for GN
 	myconf_gn+=" custom_toolchain=\"${FILESDIR}/toolchain:default\""
+
+	myconf_gn+=" icu_use_data_file=$(usex system-icu false true)"
 
 	use lto && myconf_gn+=" allow_posix_link_time_opt=true"
 
@@ -708,7 +707,7 @@ src_configure() {
 	myconf_gn+=" is_electron_build = true"
 	myconf_gn+=" is_component_build = false"
 	myconf_gn+=" use_experimental_allocator_shim = false"
-	myconf_gn+=" use_allocator=\"none\""
+	myconf_gn+=" use_allocator= \"none\""
 
 	einfo "Configuring chromiumcontent..."
 	tools/gn/bootstrap/bootstrap.py -v --gn-gen-args "${myconf_gn}" || die
@@ -736,27 +735,22 @@ eninja() {
 }
 
 src_compile() {
-	if use debug; then
-		local compile_target="${S}/out/D"
-	else
-		local compile_target="${S}/out/R"
-	fi
+	local compile_target="${S}/out/R"
 	local myconf_gyp=""
 	local chromium_target="${CHROMIUM_S}/out/Release"
-	local libcc_path="${LIBCC_S}"
+	local libcc_path="${S}/vendor/brightray/vendor/libchromiumcontent"
 	local libcc_dist_path="${libcc_path}/dist/main"
 	local libcc_dist_static_path="${libcc_dist_path}/static_library"
 	local libcc_dist_shared_path="${libcc_dist_path}/shared_library"
 	local libcc_output="${CHROMIUM_S}/out/Release/obj/chromiumcontent"
 	local libcc_output_shared="${libcc_output}-shared"
 	local target_arch=$(_get_target_arch)
+	local l=""
+	local create_dist_args=""
 
 	tc-export AR CC CXX NM
 
 	mkdir -p "${compile_target}" || die
-
-	# Make sure the build system will use the right tools, bug #340795.
-	tc-export AR CC CXX NM
 
 	cd "${CHROMIUM_S}" || die
 
@@ -774,16 +768,21 @@ src_compile() {
 	cd "${S}" || die
 
 	# Gather and prepare built components of libchromiumcontent.
+	create_dist_args+=" --target_arch=${target_arch} --component=static_library"
+	create_dist_args+=" --no_zip"
+	use system-icu && create_dist_args+=" --system-icu"
 	CHROMIUM_BUILD_DIR="${chromium_target}" \
-	python2 "${libcc_path}"/script/create-dist \
-		--target_arch=${target_arch} \
-		--component=static_library \
-		--no_zip || die
+	python2 "${libcc_path}"/script/create-dist ${create_dist_args} || die
 
 	# v8 is built as a shared library, so copy it manually
 	# for generate_filenames_gypi to find.
 	mkdir -p "${libcc_dist_shared_path}" || die
 	cp "${chromium_target}/libv8.so" "${libcc_dist_shared_path}" || die
+	if ! use system-icu; then
+		for l in libicui18n.so libicuuc.so; do
+			cp "${chromium_target}/${l}" "${libcc_dist_shared_path}" || die
+		done
+	fi
 
 	python2 "${libcc_path}"/tools/generate_filenames_gypi.py \
 		"${libcc_dist_path}/filenames.gypi" \
@@ -793,11 +792,12 @@ src_compile() {
 
 	# Configure electron.
 	myconf_gyp+="
-		$(gyp_use lto)
 		$(gyp_use cups)
-		$(gyp_use gconf)
+		$(gyp_use gnome use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
-		$(gyp_use gnome-keyring linux_link_gnome_keyring)"
+		$(gyp_use gnome-keyring linux_link_gnome_keyring)
+		$(gyp_use lto)
+		$(gyp_use system-icu use_system_icu)"
 
 	if [[ $(tc-getCC) == *clang* ]]; then
 		myconf_gyp+=" -Dclang=1"
@@ -816,6 +816,7 @@ src_compile() {
 		-Dsysroot="
 
 	myconf_gyp+=" -Dtarget_arch=${target_arch}"
+	myconf_gyp+=" -Dpython=python2"
 
 	# Make sure that -Werror doesn't get added to CFLAGS by the build system.
 	# Depending on GCC version the warnings are different and we don't want
@@ -825,23 +826,29 @@ src_compile() {
 	# Disable fatal linker warnings, bug 506268.
 	myconf_gyp+=" -Ddisable_fatal_linker_warnings=1"
 
-	# Needed for system icu - we don't need additional data files.
-	myconf_gyp+=" -Dicu_use_data_file_flag=0"
+	myconf_gyp+=" -Dicu_use_data_file_flag=$(usex system-icu 0 1)"
 	myconf_gyp+=" -Dgenerate_character_data=0"
 
 	myconf_gyp+=" -Dlibchromiumcontent_component=0"
 	myconf_gyp+=" -Dcomponent=static_library"
 	myconf_gyp+=" -Dlibrary=static_library"
-	myconf_gyp+=" -Ivendor/node/config.gypi -Icommon.gypi electron.gyp"
+	myconf_gyp+=" -Icommon.gypi electron.gyp"
 
 	EGYP_CHROMIUM_COMMAND="${CHROMIUM_S}/build/gyp_chromium" \
 		egyp_chromium ${myconf_gyp} || die
 
-	# Copy libv8 and snapshot files so the node binary can find them.
 	mkdir -p "${compile_target}/lib/" || die
+	# Copy libv8 and snapshot files so the node binary can find them.
 	cp "${chromium_target}/libv8.so" "${compile_target}/lib/" || die
 	cp "${chromium_target}/natives_blob.bin" "${compile_target}" || die
 	cp "${chromium_target}/snapshot_blob.bin" "${compile_target}" || die
+	# Same for ICU if not using the system one.
+	if ! use system-icu; then
+		for l in libicui18n.so libicuuc.so icudtl.dat; do
+			cp "${chromium_target}/${l}" "${compile_target}/lib/" || die
+		done
+		cp "${chromium_target}/icudtl.dat" "${compile_target}/" || die
+	fi
 
 	# Copy generated shim headers.
 	mkdir -p "${compile_target}/gen" || die
@@ -876,7 +883,12 @@ src_install() {
 	doexe out/R/chromedriver
 	doins out/R/libv8.so
 	doins out/R/libnode.so
-	fperms +x "${install_dir}/libv8.so" "${install_dir}/libnode.so"
+	if ! use system-icu; then
+		for l in libicui18n.so libicuuc.so; do
+			doins "out/R/${l}"
+		done
+	fi
+	use system-icu || doins icudtl.dat
 	doins out/R/natives_blob.bin
 	doins out/R/snapshot_blob.bin
 	doins out/R/blink_image_resources_200_percent.pak

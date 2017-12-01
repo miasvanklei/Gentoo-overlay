@@ -35,7 +35,7 @@ RDEPEND="
 S="${WORKDIR}/VSCode-linux-x64"
 
 node_compile() {
-	npm install $@ --nodedir=/usr/include/electron-1.7/node || die
+	npm install $@ --nodedir=/usr/include/electron-1.6/node || die
 }
 
 src_compile() {

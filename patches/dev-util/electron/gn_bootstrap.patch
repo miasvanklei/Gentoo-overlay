@@ -1,17 +1,17 @@
---- a/chromium/base/BUILD.gn  2017-11-29 20:42:52.500690029 +0100
-+++ b/chromium/base/BUILD.gn  2017-11-29 20:43:25.771627748 +0100
-@@ -1126,11 +1126,6 @@
+--- a/chromium/base/BUILD.gn	2017-07-30 19:47:14.452881352 +0200
++++ b/chromium/base/BUILD.gn	2017-07-30 19:47:41.199880732 +0200
+@@ -1065,11 +1065,6 @@
      ":debugging_flags",
    ]
  
 -  # Needed for <atomic> if using newer C++ library than sysroot
--  if (!use_sysroot && (is_android || (is_linux && !is_chromecast))) {
+-  if (!use_sysroot && (is_android || is_linux)) {
 -    libs = [ "atomic" ]
 -  }
 -
    if (use_experimental_allocator_shim) {
-     # TODO(primiano): support other platforms, currently this works only on
-     # Linux/CrOS/Android. http://crbug.com/550886 .
+     # The allocator shim is part of the base API. This is to allow clients of
+     # base should to install hooks into the allocator path.
 --- a/chromium/tools/gn/bootstrap/bootstrap.py   2016-11-17 00:15:29.112867732 +0100
 +++ b/chromium/tools/gn/bootstrap/bootstrap.py	2016-11-17 00:43:54.712718406 +0100
 @@ -166,7 +166,7 @@
