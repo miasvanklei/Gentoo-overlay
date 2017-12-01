@@ -1,0 +1,64 @@
+From 14840f889232ae3a896505b734d409f6acfcd536 Mon Sep 17 00:00:00 2001
+From: Leo Li <aoli@google.com>
+Date: Thu, 24 Aug 2017 01:51:51 +0000
+Subject: [PATCH] [Driver] Register effective triple before get arm float abi.
+
+Summary:
+We need to register effective triple before calling `getARMFloatABI`.
+Add missing code when `--print-libgcc-file-name` is passed.
+
+Reviewers: atanasyan, rsmith, mgorny, peter.smith, kristof.beyls, compnerd, jroelofs
+
+Reviewed By: compnerd
+
+Subscribers: llvm-commits, aemerson, javed.absar, srhines, kristof.beyls, pirama
+
+Differential Revision: https://reviews.llvm.org/D35742
+
+git-svn-id: https://llvm.org/svn/llvm-project/cfe/trunk@311624 91177308-0d34-0410-b5e6-96231b3b80d8
+---
+ lib/Driver/Driver.cpp                        |  2 ++
+ test/Driver/print-libgcc-file-name-clangrt.c | 20 ++++++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/lib/Driver/Driver.cpp b/lib/Driver/Driver.cpp
+index b11629aacef..6b275c52d04 100644
+--- a/lib/Driver/Driver.cpp
++++ b/lib/Driver/Driver.cpp
+@@ -1299,6 +1299,8 @@ bool Driver::HandleImmediateArgs(const Compilation &C) {
+ 
+   if (C.getArgs().hasArg(options::OPT_print_libgcc_file_name)) {
+     ToolChain::RuntimeLibType RLT = TC.GetRuntimeLibType(C.getArgs());
++    const llvm::Triple Triple(TC.ComputeEffectiveClangTriple(C.getArgs()));
++    RegisterEffectiveTriple TripleRAII(TC, Triple);
+     switch (RLT) {
+     case ToolChain::RLT_CompilerRT:
+       llvm::outs() << TC.getCompilerRT(C.getArgs(), "builtins") << "\n";
+diff --git a/test/Driver/print-libgcc-file-name-clangrt.c b/test/Driver/print-libgcc-file-name-clangrt.c
+index 9f8120c31d9..fb4545af308 100644
+--- a/test/Driver/print-libgcc-file-name-clangrt.c
++++ b/test/Driver/print-libgcc-file-name-clangrt.c
+@@ -9,3 +9,23 @@
+ // RUN:     --target=i686-pc-linux \
+ // RUN:   | FileCheck --check-prefix=CHECK-CLANGRT-I686 %s
+ // CHECK-CLANGRT-I686: libclang_rt.builtins-i686.a
++
++// RUN: %clang -rtlib=compiler-rt -print-libgcc-file-name 2>&1 \
++// RUN:     --target=arm-linux-gnueabi \
++// RUN:   | FileCheck --check-prefix=CHECK-CLANGRT-ARM %s
++// CHECK-CLANGRT-ARM: libclang_rt.builtins-arm.a
++
++// RUN: %clang -rtlib=compiler-rt -print-libgcc-file-name 2>&1 \
++// RUN:     --target=arm-linux-androideabi \
++// RUN:   | FileCheck --check-prefix=CHECK-CLANGRT-ARM-ANDROID %s
++// CHECK-CLANGRT-ARM-ANDROID: libclang_rt.builtins-arm-android.a
++
++// RUN: %clang -rtlib=compiler-rt -print-libgcc-file-name 2>&1 \
++// RUN:     --target=arm-linux-gnueabihf \
++// RUN:   | FileCheck --check-prefix=CHECK-CLANGRT-ARMHF %s
++// CHECK-CLANGRT-ARMHF: libclang_rt.builtins-armhf.a
++
++// RUN: %clang -rtlib=compiler-rt -print-libgcc-file-name 2>&1 \
++// RUN:     --target=arm-linux-gnueabi -mfloat-abi=hard \
++// RUN:   | FileCheck --check-prefix=CHECK-CLANGRT-ARM-ABI %s
++// CHECK-CLANGRT-ARM-ABI: libclang_rt.builtins-armhf.a
