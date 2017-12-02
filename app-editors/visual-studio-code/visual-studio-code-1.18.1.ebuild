@@ -63,6 +63,7 @@ src_install() {
 	doicon ${FILESDIR}/vscode.png
 	insinto "/usr/share/licenses/${PN}"
 	newins "resources/app/LICENSE.txt" "LICENSE"
+	chmod +x ${D}/opt/visual-studio-code/app/node_modules/vscode-ripgrep/bin/rg || die
 }
 
 pkg_postinst() {
