@@ -1,6 +1,5 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 2017 Mias vn Klei
 # Distributed under the terms of the GNU General Public License v2
-# $Id$
 
 #BASED ON https://aur.archlinux.org/cgit/aur.git/tree/PKGBUILD?h=dotnet-cli
 
@@ -10,10 +9,8 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-DOTNET_PV="2.0.2"
-
 IUSE="heimdal"
-SRC_URI="https://download.microsoft.com/download/7/3/A/73A3E4DC-F019-47D1-9951-0453676E059B/dotnet-sdk-${DOTNET_PV}-linux-x64.tar.gz
+SRC_URI="https://download.microsoft.com/download/D/7/2/D725E47F-A4F1-4285-8935-A91AE2FCC06A/dotnet-sdk-${PV}-linux-x64.tar.gz
 	https://github.com/dotnet/coreclr/archive/v${PV}.tar.gz -> coreclr-${PV}.tar.gz
 	https://github.com/dotnet/corefx/archive/v${PV}.tar.gz -> corefx-${PV}.tar.gz
 	https://github.com/dotnet/core-setup/archive/v${PV}.tar.gz -> core-setup-${PV}.tar.gz"
@@ -79,7 +76,7 @@ src_unpack() {
 	unpack "coreclr-${PV}.tar.gz" "corefx-${PV}.tar.gz" "core-setup-${PV}.tar.gz"
 	mkdir "${CLI_S}" || die
 	cd "${CLI_S}" || die
-        unpack "dotnet-sdk-${DOTNET_PV}-linux-x64.tar.gz"
+        unpack "dotnet-sdk-${PV}-linux-x64.tar.gz"
 }
 
 src_prepare() {
