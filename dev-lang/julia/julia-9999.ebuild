@@ -58,7 +58,7 @@ PATCHES=(
 )
 
 src_prepare() {
-	epatch "${PATCHES[@]}"
+	eapply "${PATCHES[@]}"
 
 	eapply_user
 
