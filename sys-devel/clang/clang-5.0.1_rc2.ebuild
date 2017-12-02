@@ -13,10 +13,10 @@ inherit cmake-utils flag-o-matic llvm multilib-minimal \
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
-	https://releases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
-	test? ( https://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
+SRC_URI="http://prereleases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
+	http://prereleases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
+	test? ( https://prereleases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+#	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -125,11 +125,8 @@ src_prepare() {
 	# add fortran support
 	use fortran && eapply "${FILESDIR}"/0012-add-fortran-support.patch
 
-	# fixed in 5.0.1: enable __declspec(selectany) on any platform. Needed for dotnet
-	eapply "${FILESDIR}"/0013-33285.patch
-
 	# fixed in master: Print correct path to clang_rt. Needed for arm
-	eapply "${FILESDIR}"/0014-35742.patch
+	eapply "${FILESDIR}"/0013-35742.patch
 
 	# User patches
 	eapply_user

@@ -26,8 +26,8 @@ RDEPEND="
 	dev-libs/libbsd
 	dev-libs/icu:=
 	sys-libs/ncurses
-	=sys-devel/clang-5.0.0:=[swift]
-        =sys-devel/llvm-5.0.0:=[swift]
+	=sys-devel/clang-5.0.1_rc2:=[swift]
+        =sys-devel/llvm-5.0.1_rc2:=[swift]
 	sourcekit? ( dev-libs/libdispatch )"
 PDEPEND=""
 DEPEND="${RDEPEND}"

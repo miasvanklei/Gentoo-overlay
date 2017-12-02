@@ -12,8 +12,8 @@ inherit cmake-utils llvm python-single-r1 toolchain-funcs
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	test? ( https://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+SRC_URI="http://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
+	test? ( http://prereleases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -63,11 +63,8 @@ src_prepare() {
 	# add swift support
 	use swift && eapply "${FILESDIR}"/0002-add-swift-support.patch
 
-	# fixed in 5.0.1
-	eapply "${FILESDIR}"/0003-remove-orc.patch
-
 	# Use clang plugin for crystal
-	eapply "${FILESDIR}"/0004-crystal-debug.patch
+	eapply "${FILESDIR}"/0003-crystal-debug.patch
 
 	eapply_user
 }

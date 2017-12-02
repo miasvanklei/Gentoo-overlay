@@ -13,9 +13,9 @@ inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	https://releases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
+SRC_URI="http://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
+	http://prereleases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz"
+#	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430

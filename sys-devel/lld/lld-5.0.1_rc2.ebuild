@@ -12,8 +12,8 @@ inherit cmake-utils llvm python-any-r1
 
 DESCRIPTION="The LLVM linker (link editor)"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	test? ( https://releases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+SRC_URI="http://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
+	test? ( http://prereleases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -65,8 +65,8 @@ src_configure() {
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
-		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
+		-DLLVM_ENABLE_LLD=ON
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_BUILD_TESTS=ON
