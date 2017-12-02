@@ -55,6 +55,7 @@ PATCHES=(
         "${FILESDIR}"/0004-cflags.patch
         "${FILESDIR}"/0005-add-compilerrt.patch
         "${FILESDIR}"/0006-ldconfig-compat.patch
+        "${FILESDIR}"/0007-fix-sandbox.patch
 )
 
 src_prepare() {
