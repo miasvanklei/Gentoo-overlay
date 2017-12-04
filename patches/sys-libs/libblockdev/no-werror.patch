@@ -85,9 +85,9 @@
  endif
  
  if WITH_KBD
--libbd_kbd_la_CFLAGS = $(GLIB_CFLAGS) $(KMOD_CFLAGS) $(BYTESIZE_CFLAGS) -Wall -Wextra -Werror
-+libbd_kbd_la_CFLAGS = $(GLIB_CFLAGS) $(KMOD_CFLAGS) $(BYTESIZE_CFLAGS) -Wall -Wextra
- libbd_kbd_la_LIBADD = $(GLIB_LIBS) $(KMOD_LIBS) $(BYTESIZE_LIBS) ${builddir}/../utils/libbd_utils.la
+-libbd_kbd_la_CFLAGS = $(GLIB_CFLAGS) $(BYTESIZE_CFLAGS) -Wall -Wextra -Werror
++libbd_kbd_la_CFLAGS = $(GLIB_CFLAGS) $(BYTESIZE_CFLAGS) -Wall -Wextra
+ libbd_kbd_la_LIBADD = $(GLIB_LIBS) $(BYTESIZE_LIBS) ${builddir}/../utils/libbd_utils.la
  libbd_kbd_la_LDFLAGS = -L${srcdir}/../utils/ -version-info 2:0:0 -Wl,--no-undefined
  libbd_kbd_la_CPPFLAGS = -I${builddir}/../../include/
 @@ -140,7 +140,7 @@
@@ -108,15 +108,6 @@
  libbd_part_la_LIBADD = -lm $(GLIB_LIBS) $(PARTED_LIBS) ${builddir}/../utils/libbd_utils.la ${builddir}/libbd_part_err.la
  libbd_part_la_LDFLAGS = -L${srcdir}/../utils/ -version-info 2:0:0 -Wl,--no-undefined
  libbd_part_la_CPPFLAGS = -I${builddir}/../../include/
-@@ -157,7 +157,7 @@
- endif
- 
- if WITH_FS
--libbd_fs_la_CFLAGS = $(GLIB_CFLAGS) $(BLKID_CFLAGS) $(PARTED_CFLAGS) $(PARTED_FS_CFLAGS) $(MOUNT_CFLAGS) -Wall -Wextra -Werror
-+libbd_fs_la_CFLAGS = $(GLIB_CFLAGS) $(BLKID_CFLAGS) $(PARTED_CFLAGS) $(PARTED_FS_CFLAGS) $(MOUNT_CFLAGS) -Wall -Wextra
- libbd_fs_la_LIBADD = $(GLIB_LIBS) $(BLKID_LIBS) $(PARTED_LIBS) $(PARTED_FS_LIBS) $(MOUNT_LIBS) ${builddir}/../utils/libbd_utils.la ${builddir}/libbd_part_err.la
- libbd_fs_la_LDFLAGS = -L${srcdir}/../utils/ -version-info 2:0:0 -Wl,--no-undefined
- libbd_fs_la_CPPFLAGS = -I${builddir}/../../include/
 @@ -165,7 +165,7 @@
  endif
  
@@ -126,12 +117,23 @@
  libbd_part_err_la_LIBADD = $(GLIB_LIBS) $(PARTED_LIBS) $(PARTED_FS_LIBS) ${builddir}/../utils/libbd_utils.la
  libbd_part_err_la_LDFLAGS = -L${srcdir}/ -version-info 2:0:0 -Wl,--no-undefined
  libbd_part_err_la_CPPFLAGS = -I${builddir}/../../include/
+--- a/src/plugins/fs/Makefile.am	2017-12-03 21:15:00.933111113 +0100
++++ b/src/plugins/fs/Makefile.am	2017-12-03 21:15:06.155100239 +0100
+@@ -2,7 +2,7 @@
+ 
+ lib_LTLIBRARIES = libbd_fs.la
+ 
+-libbd_fs_la_CFLAGS   = $(GLIB_CFLAGS) $(BLKID_CFLAGS) $(PARTED_CFLAGS) $(PARTED_FS_CFLAGS) $(MOUNT_CFLAGS) -Wall -Wextra -Werror
++libbd_fs_la_CFLAGS   = $(GLIB_CFLAGS) $(BLKID_CFLAGS) $(PARTED_CFLAGS) $(PARTED_FS_CFLAGS) $(MOUNT_CFLAGS) -Wall -Wextra
+ libbd_fs_la_LIBADD   = $(GLIB_LIBS) $(BLKID_LIBS) $(PARTED_LIBS) $(PARTED_FS_LIBS) $(MOUNT_LIBS) ${builddir}/../../utils/libbd_utils.la ${builddir}/../libbd_part_err.la
+ libbd_fs_la_LDFLAGS	 = -L${srcdir}/../../utils/ -version-info 2:0:0 -Wl,--no-undefined
+ libbd_fs_la_CPPFLAGS = -I${builddir}/../../../include/ -I${srcdir}/../
 --- a/src/utils/Makefile.am	2017-11-09 22:37:54.488871594 +0000
 +++ b/src/utils/Makefile.am	2017-11-09 22:38:04.232844605 +0000
 @@ -1,5 +1,5 @@
  lib_LTLIBRARIES = libbd_utils.la
--libbd_utils_la_CFLAGS = $(GLIB_CFLAGS) $(UDEV_CFLAGS) -Wall -Wextra -Werror
-+libbd_utils_la_CFLAGS = $(GLIB_CFLAGS) $(UDEV_CFLAGS) -Wall -Wextra
+-libbd_utils_la_CFLAGS = $(GLIB_CFLAGS) $(UDEV_CFLAGS) $(KMOD_CFLAGS) -Wall -Wextra -Werror
++libbd_utils_la_CFLAGS = $(GLIB_CFLAGS) $(UDEV_CFLAGS) $(KMOD_CFLAGS) -Wall -Wextra
  libbd_utils_la_LDFLAGS = -version-info 3:0:1 -Wl,--no-undefined
- libbd_utils_la_LIBADD = $(GLIB_LIBS) -lm $(GIO_LIBS) $(UDEV_LIBS)
- libbd_utils_la_SOURCES = utils.h exec.c exec.h sizes.h extra_arg.c extra_arg.h dev_utils.c dev_utils.h
+ libbd_utils_la_LIBADD = $(GLIB_LIBS) -lm $(GIO_LIBS) $(UDEV_LIBS) $(KMOD_LIBS)
+ libbd_utils_la_SOURCES = utils.h exec.c exec.h sizes.h extra_arg.c extra_arg.h dev_utils.c dev_utils.h module.c module.h
