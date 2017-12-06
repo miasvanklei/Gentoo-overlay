@@ -17,17 +17,10 @@
      return;
  
    // A dbg.declare is only meaningful if there is a single alloca for
-@@ -2028,13 +2027,13 @@ void IRGenDebugInfoImpl::emitDbgIntrinsic(
-     while (InsPt != E && isa<llvm::PHINode>(&*InsPt))
-       ++InsPt;
-     if (InsPt != E) {
--      DBuilder.insertDbgValueIntrinsic(Storage, Var, Expr, DL, &*InsPt);
-+      DBuilder.insertDbgValueIntrinsic(Storage, 0, Var, Expr, DL, &*InsPt);
-       return;
-     }
+@@ -1985,7 +1984,7 @@ void IRGenDebugInfoImpl::emitDbgIntrinsic(
    }
  
-   // Otherwise just insert it at the current insertion point.
+   // Insert a dbg.value at the current insertion point.
 -  DBuilder.insertDbgValueIntrinsic(Storage, Var, Expr, DL, BB);
 +  DBuilder.insertDbgValueIntrinsic(Storage, 0, Var, Expr, DL, BB);
  }
@@ -117,3 +110,61 @@ index 80ce81d942..b89ea7b802 100644
    return !Failed;
  }
  
+diff --git a/lib/Basic/Platform.cpp b/lib/Basic/Platform.cpp
+index 206aaca587..68d49d5030 100644
+--- a/lib/Basic/Platform.cpp
++++ b/lib/Basic/Platform.cpp
+@@ -18,37 +18,25 @@ using namespace swift;
+ bool swift::tripleIsiOSSimulator(const llvm::Triple &triple) {
+   llvm::Triple::ArchType arch = triple.getArch();
+   return (triple.isiOS() &&
+-          // FIXME: transitional, this should eventually stop testing arch, and
+-          // switch to only checking the -environment field.
+-          (triple.isSimulatorEnvironment() ||
+-           arch == llvm::Triple::x86 || arch == llvm::Triple::x86_64));
++          (arch == llvm::Triple::x86 || arch == llvm::Triple::x86_64));
+ }
+ 
+ bool swift::tripleIsAppleTVSimulator(const llvm::Triple &triple) {
+   llvm::Triple::ArchType arch = triple.getArch();
+   return (triple.isTvOS() &&
+-          // FIXME: transitional, this should eventually stop testing arch, and
+-          // switch to only checking the -environment field.
+-          (triple.isSimulatorEnvironment() ||
+-           arch == llvm::Triple::x86 || arch == llvm::Triple::x86_64));
++         (arch == llvm::Triple::x86 || arch == llvm::Triple::x86_64));
+ }
+ 
+ bool swift::tripleIsWatchSimulator(const llvm::Triple &triple) {
+   llvm::Triple::ArchType arch = triple.getArch();
+   return (triple.isWatchOS() &&
+-          // FIXME: transitional, this should eventually stop testing arch, and
+-          // switch to only checking the -environment field.
+-          (triple.isSimulatorEnvironment() ||
+-           arch == llvm::Triple::x86 || arch == llvm::Triple::x86_64));
++         (arch == llvm::Triple::x86 || arch == llvm::Triple::x86_64));
+ }
+ 
+ bool swift::tripleIsAnySimulator(const llvm::Triple &triple) {
+-  // FIXME: transitional, this should eventually just use the -environment
+-  // field.
+-  return triple.isSimulatorEnvironment() ||
+-    tripleIsiOSSimulator(triple) ||
+-    tripleIsWatchSimulator(triple) ||
+-    tripleIsAppleTVSimulator(triple);
++  return tripleIsiOSSimulator(triple) ||
++      tripleIsWatchSimulator(triple) ||
++      tripleIsAppleTVSimulator(triple);
+ }
+ 
+ DarwinPlatformKind swift::getDarwinPlatformKind(const llvm::Triple &triple) {
+diff --git a/test/Parse/ConditionalCompilation/simulatorTargetEnv.swift b/test/Parse/ConditionalCompilation/simulatorTargetEnv.swift
+index 221077f9e0..7aa3c76a16 100644
+--- a/test/Parse/ConditionalCompilation/simulatorTargetEnv.swift
++++ b/test/Parse/ConditionalCompilation/simulatorTargetEnv.swift
+@@ -1,5 +1,4 @@
+ // RUN: %swift -swift-version 4 -typecheck %s -verify -target x86_64-apple-ios7.0 -parse-stdlib
+-// RUN: %swift -swift-version 4 -typecheck %s -verify -target x86_64-unknown-linux-simulator -parse-stdlib
+ // RUN: %swift-ide-test -swift-version 4 -test-input-complete -source-filename=%s -target x86_64-apple-ios7.0
+ 
+ #if !targetEnvironment(simulator)

@@ -1,13 +1,13 @@
 diff --git a/lib/ClangImporter/ClangImporter.cpp b/lib/ClangImporter/ClangImporter.cpp
-index fae21e9369..1b5e69bc3c 100644
+index 241f9ce9c7..709c2e04a2 100644
 --- a/lib/ClangImporter/ClangImporter.cpp
 +++ b/lib/ClangImporter/ClangImporter.cpp
-@@ -533,7 +533,7 @@ getNormalInvocationArguments(std::vector<std::string> &invocationArgStrs,
-       // not import Objective-C modules.
-       //
-       // Just use the most feature-rich C language mode.
--      "-x", "c", "-std=gnu11",
-+      "-x", "c", "-std=gnu11", "-D_GNU_SOURCE",
-     });
+@@ -472,7 +472,7 @@ getNormalInvocationArguments(std::vector<std::string> &invocationArgStrs,
+       invocationArgStrs.insert(invocationArgStrs.end(),
+                                {"-fobjc-runtime=ios-7.0"});
+   } else {
+-    invocationArgStrs.insert(invocationArgStrs.end(), {"-x", "c", "-std=gnu11"});
++    invocationArgStrs.insert(invocationArgStrs.end(), {"-x", "c", "-std=gnu11", "-D_GNU_SOURCE"});
+   }
  
-     // The module map used for Glibc depends on the target we're compiling for,
+   // Set C language options.
