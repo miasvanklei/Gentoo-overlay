@@ -1,0 +1,21 @@
+--- a/CMakeLists.txt	2017-12-04 17:46:22.299010773 +0100
++++ b/CMakeLists.txt	2017-12-04 17:52:06.143057062 +0100
+@@ -226,18 +226,6 @@
+ set(FCITX4_PACKAGE_NAME ${package})
+ 
+ function(_RESOLVE_LIBRARY_PATH _FILE_NAME _LIBRARY_PATH)
+-    if (CMAKE_OBJDUMP)
+-        execute_process (
+-            COMMAND ${CMAKE_OBJDUMP} -p "${_LIBRARY_PATH}"
+-            RESULT_VARIABLE STATUS
+-            OUTPUT_VARIABLE OBJDUMP_RESULT
+-            ERROR_QUIET
+-        )
+-        string(REGEX REPLACE ".*SONAME +([^ ]+)\n.*$" "\\1" SONAME_OUT "${OBJDUMP_RESULT}")
+-        if (SONAME_OUT)
+-            set(_FILE_NAME_OUT "${SONAME_OUT}")
+-        endif ()
+-    endif()
+     if (NOT _FILE_NAME_OUT)
+         get_filename_component(_FILE_NAME_OUT "${_LIBRARY_PATH}" NAME)
+     endif()
