@@ -15,7 +15,8 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 
-DEPEND="net-misc/curl"
+DEPEND="net-misc/curl
+	dev-lang/ldc2"
 RDEPEND="${DEPEND}"
 
 src_prepare() {

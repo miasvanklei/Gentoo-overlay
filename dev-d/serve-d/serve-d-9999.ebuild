@@ -18,7 +18,7 @@ DEPEND="dev-util/dub"
 RDEPEND="${DEPEND}"
 
 src_compile() {
-	dub build --build=release --parallel
+	dub build --build=release || die
 }
 
 src_install() {
