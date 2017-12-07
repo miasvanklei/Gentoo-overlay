@@ -11,8 +11,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE="debug"
 
-GITHUB_URI="https://codeload.github.com/D-Programming-Language"
-SRC_URI="${GITHUB_URI}/${PN}/tar.gz/v${PV} -> ${PN}-${PV}.tar.gz"
+SRC_URI="https://github.com/dlang/dub/archive/v${PV}.tar.gz -> ${PN}-${PV}.tar.gz"
 
 DEPEND="net-misc/curl"
 RDEPEND="${DEPEND}"
