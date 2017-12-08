@@ -17,6 +17,7 @@ KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 DEPEND="dev-libs/libxml2
 	dev-libs/icu:=
+	app-text/libexttextcat
 	sci-libs/ticcutils
 	sci-libs/libfolia
 	sci-libs/uctodata
