@@ -3868,6 +3868,7 @@ index 9dd21bcf2..d180a5225 100644
 +    swiftMarkup
 +    swiftOption
 +    swiftParseSIL
++    swiftSyntax
      ${LLDB_ALL_PLUGINS}
    LINK_COMPONENTS
 +    BitWriter
@@ -10853,7 +10854,7 @@ index e69de29bb..42679c3d4 100644
 +          swift::VarDecl(is_static, specifier, is_capture_list, loc, name,
 +                         var_type, containing_function);
 +      redirected_var_decl->setInterfaceType(
-+          containing_function->mapTypeOutOfContext(var_type));
++          var_type->mapTypeOutOfContext());
 +      redirected_var_decl->setDebuggerVar(true);
 +      redirected_var_decl->setImplicit(true);
 +
@@ -11421,7 +11422,7 @@ diff --git a/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.cpp b/s
 index e69de29bb..eb4ac0b49 100644
 --- a/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.cpp
 +++ b/source/Plugins/ExpressionParser/Swift/SwiftExpressionParser.cpp
-@@ -0,0 +1,2037 @@
+@@ -0,0 +1,2038 @@
 +//===-- SwiftExpressionParser.cpp -------------------------------*- C++ -*-===//
 +//
 +// This source file is part of the Swift.org open source project
@@ -12600,7 +12601,8 @@ index e69de29bb..eb4ac0b49 100644
 +    m_swift_ast_context->GetLanguageOptions().EnableThrowWithoutTry = true;
 +  }
 +
-+  m_swift_ast_context->GetIRGenOptions().Optimize = false;
++  m_swift_ast_context->GetIRGenOptions().OptMode
++          = swift::OptimizationMode::NoOptimization;
 +  m_swift_ast_context->GetIRGenOptions().Verify =
 +      false; // normally we'd like to verify, but unfortunately the verifier's
 +             // error mode is abort().
@@ -41851,7 +41853,7 @@ index f8c57cb94..b73ba2bf6 100644
  if (NOT LLDB_DISABLE_LIBEDIT)
    list(APPEND LLDB_SYSTEM_LIBS edit)
  endif()
-@@ -77,16 +83,31 @@ add_lldb_tool(lldb-server INCLUDE_IN_FRAMEWORK
+@@ -77,16 +83,32 @@ add_lldb_tool(lldb-server INCLUDE_IN_FRAMEWORK
      LLDBServerUtilities.cpp
  
      LINK_LIBS
@@ -41866,6 +41868,7 @@ index f8c57cb94..b73ba2bf6 100644
 +      swiftLLVMPasses
 +      swiftOption
 +      swiftParseSIL
++      swiftSyntax
        ${LLDB_PLUGINS}
        ${LLDB_SYSTEM_LIBS}
  
