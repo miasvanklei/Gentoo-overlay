@@ -101,7 +101,12 @@ src_configure() {
 
 		# Does not work, no benefit at all
 		-DSWIFT_BUILD_DYNAMIC_SDK_OVERLAY=FALSE
+
+		# build static as well
 		-DSWIFT_BUILD_STATIC_STDLIB=TRUE
+
+		# fails right now, with incorrect identation
+		-DSWIFT_INCLUDE_DOCS=FALSE
 	)
 
 	if use sourcekit; then
