@@ -182,6 +182,7 @@ CHROMIUM_PATCHES="
 	chromium-system-ffmpeg-r4.patch
 	chromium-system-icu-r0.patch
 	chromium-icu-59-r0.patch
+	chromium-icu-60.patch
 	chromium-v8-icu-59-r0.patch
 	chromium-disable-widevine.patch
 	chromium-remove-gardiner-mod-font-r1.patch
