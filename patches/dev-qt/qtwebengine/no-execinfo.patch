@@ -4,103 +4,86 @@
  #if !defined(USE_SYMBOLIZE)
  #include <cxxabi.h>
  #endif
--#if !defined(__UCLIBC__)
+-#if !defined(__UCLIBC__) && !defined(_AIX)
 +#if defined(__GLIBC__)
  #include <execinfo.h>
  #endif
  
-@@ -80,7 +80,7 @@
+@@ -82,7 +82,7 @@ void DemangleSymbols(std::string* text) {
    // Note: code in this function is NOT async-signal safe (std::string uses
    // malloc internally).
  
--#if defined(__GLIBCXX__) && !defined(__UCLIBC__)
-+#if defined(__GLIBCXX__) &&  defined(__GLIBC__)
- 
+-#if !defined(__UCLIBC__) && !defined(_AIX)
++#if defined(__GLIBC__)
    std::string::size_type search_from = 0;
    while (search_from < text->size()) {
-@@ -113,7 +113,7 @@
-     }
-   }
- 
--#endif  // defined(__GLIBCXX__) && !defined(__UCLIBC__)
-+#endif  // defined(__GLIBCXX__) && defined(__GLIBC__)
- }
- #endif  // !defined(USE_SYMBOLIZE)
- 
-@@ -128,7 +128,7 @@
+     // Look for the start of a mangled symbol, from search_from.
+@@ -129,7 +129,7 @@ class BacktraceOutputHandler {
    virtual ~BacktraceOutputHandler() {}
  };
  
--#if !defined(__UCLIBC__)
+-#if !defined(__UCLIBC__) && !defined(_AIX)
 +#if defined(__GLIBC__)
  void OutputPointer(void* pointer, BacktraceOutputHandler* handler) {
    // This should be more than enough to store a 64-bit number in hex:
    // 16 hex digits + 1 for null-terminator.
-@@ -205,7 +205,7 @@
-   }
- #endif  // defined(USE_SYMBOLIZE)
+@@ -705,6 +705,10 @@ class SandboxSymbolizeHelper {
+ }  // namespace
+ 
+ bool EnableInProcessStackDumping() {
++#if defined(OS_LINUX) && !defined(__GLIBC__)
++// let system handler deal with the dumps
++  return true;
++#else
+ #if defined(USE_SYMBOLIZE)
+   SandboxSymbolizeHelper::GetInstance();
+ #endif  // USE_SYMBOLIZE
+@@ -738,6 +742,7 @@ bool EnableInProcessStackDumping() {
+ #endif  // !defined(OS_LINUX)
+ 
+   return success;
++#endif
  }
--#endif  // !defined(__UCLIBC__)
-+#endif  // defined(__GLIBC__)
  
- void PrintToStderr(const char* output) {
-   // NOTE: This code MUST be async-signal safe (it's used by in-process
-@@ -718,7 +718,7 @@
-   // NOTE: This code MUST be async-signal safe (it's used by in-process
-   // stack dumping signal handler). NO malloc or stdio is allowed here.
+ void SetStackDumpFirstChanceCallback(bool (*handler)(int, void*, void*)) {
+@@ -749,7 +754,7 @@ StackTrace::StackTrace(size_t count) {
+ // NOTE: This code MUST be async-signal safe (it's used by in-process
+ // stack dumping signal handler). NO malloc or stdio is allowed here.
  
--#if !defined(__UCLIBC__)
+-#if !defined(__UCLIBC__) && !defined(_AIX)
 +#if defined(__GLIBC__)
+   count = std::min(arraysize(trace_), count);
+ 
    // Though the backtrace API man page does not list any possible negative
-   // return values, we take no chance.
-   count_ = base::saturated_cast<size_t>(backtrace(trace_, arraysize(trace_)));
-@@ -731,13 +731,13 @@
+@@ -764,13 +769,13 @@ void StackTrace::Print() const {
    // NOTE: This code MUST be async-signal safe (it's used by in-process
    // stack dumping signal handler). NO malloc or stdio is allowed here.
  
--#if !defined(__UCLIBC__)
+-#if !defined(__UCLIBC__) && !defined(_AIX)
 +#if defined(__GLIBC__)
    PrintBacktraceOutputHandler handler;
    ProcessBacktrace(trace_, count_, &handler);
  #endif
  }
  
--#if !defined(__UCLIBC__)
+-#if !defined(__UCLIBC__) && !defined(_AIX)
 +#if defined(__GLIBC__)
  void StackTrace::OutputToStream(std::ostream* os) const {
    StreamBacktraceOutputHandler handler(os);
    ProcessBacktrace(trace_, count_, &handler);
---- a/src/3rdparty/chromium/third_party/WebKit/Source/wtf/Assertions.cpp
-+++ b/src/3rdparty/chromium/third_party/WebKit/Source/wtf/Assertions.cpp
-@@ -60,7 +60,7 @@
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/Assertions.cpp
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/Assertions.cpp
+@@ -56,7 +56,7 @@
  #include <windows.h>
  #endif
  
--#if OS(MACOSX) || (OS(LINUX) && !defined(__UCLIBC__))
-+#if OS(MACOSX) || (OS(LINUX) && defined(__GLIBC__))
+-#if defined(OS_MACOSX) || (defined(OS_LINUX) && !defined(__UCLIBC__))
++#if defined(OS_MACOSX) || (defined(OS_LINUX) && defined(__GLIBC__))
  #include <cxxabi.h>
  #include <dlfcn.h>
  #include <execinfo.h>
-@@ -164,7 +164,7 @@
- }
- 
- void WTFGetBacktrace(void** stack, int* size) {
--#if OS(MACOSX) || (OS(LINUX) && !defined(__UCLIBC__))
-+#if OS(MACOSX) || (OS(LINUX) && defined(__GLIBC__))
-   *size = backtrace(stack, *size);
- #elif OS(WIN)
-   // The CaptureStackBackTrace function is available in XP, but it is not
-@@ -215,7 +215,7 @@
- };
- 
- FrameToNameScope::FrameToNameScope(void* addr) : m_name(0), m_cxaDemangled(0) {
--#if OS(MACOSX) || (OS(LINUX) && !defined(__UCLIBC__))
-+#if OS(MACOSX) || (OS(LINUX) && defined(__GLIBC__))
-   Dl_info info;
-   if (!dladdr(addr, &info) || !info.dli_sname)
-     return;
---- a/src/3rdparty/chromium/third_party/webrtc/base/checks.cc
-+++ b/src/3rdparty/chromium/third_party/webrtc/base/checks.cc
+--- a/src/3rdparty/chromium/third_party/webrtc/rtc_base/checks.cc
++++ b/src/3rdparty/chromium/third_party/webrtc/rtc_base/checks.cc
 @@ -16,7 +16,7 @@
  #include <cstdio>
  #include <cstdlib>
@@ -110,7 +93,7 @@
  #include <cxxabi.h>
  #include <execinfo.h>
  #endif
-@@ -55,7 +55,7 @@ void PrintError(const char* format, ...)
+@@ -60,7 +60,7 @@ void PrintError(const char* format, ...) {
  // to get usable symbols on Linux. This is copied from V8. Chromium has a more
  // advanced stace trace system; also more difficult to copy.
  void DumpBacktrace() {
@@ -119,14 +102,4 @@
    void* trace[100];
    int size = backtrace(trace, sizeof(trace) / sizeof(*trace));
    char** symbols = backtrace_symbols(trace, size);
---- a/src/3rdparty/chromium/base/debug/stack_trace.cc
-+++ b/src/3rdparty/chromium/base/debug/stack_trace.cc
-@@ -33,7 +33,7 @@
- 
- std::string StackTrace::ToString() const {
-   std::stringstream stream;
--#if !defined(__UCLIBC__)
-+#if defined(__GLIBC__)
-   OutputToStream(&stream);
- #endif
-   return stream.str(); 
+

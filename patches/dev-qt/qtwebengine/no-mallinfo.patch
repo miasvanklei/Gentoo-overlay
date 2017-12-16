@@ -1,14 +1,3 @@
---- a/src/3rdparty/chromium/base/trace_event/malloc_dump_provider.cc
-+++ b/src/3rdparty/chromium/base/trace_event/malloc_dump_provider.cc
-@@ -61,7 +61,7 @@ bool MallocDumpProvider::OnMemoryDump(co
-   resident_size = stats.max_size_in_use;
-   allocated_objects_size = all_heap_info.allocated_size;
-   allocated_objects_count = all_heap_info.block_count;
--#else
-+#elif defined(OS_LINUX) && defined(__GLIBC__)
-   struct mallinfo info = mallinfo();
-   DCHECK_GE(info.arena + info.hblkhd, info.uordblks);
- 
 --- a/src/3rdparty/chromium/content/child/content_child_helpers.cc
 +++ b/src/3rdparty/chromium/content/child/content_child_helpers.cc
 @@ -24,7 +24,7 @@ namespace content {
@@ -20,64 +9,34 @@
  size_t GetMemoryUsageKB() {
    struct mallinfo minfo = mallinfo();
    uint64_t mem_usage =
---- a/src/3rdparty/chromium/content/renderer/render_thread_impl.cc
-+++ b/src/3rdparty/chromium/content/renderer/render_thread_impl.cc
-@@ -1821,6 +1821,49 @@ static size_t GetMallocUsage() {
- }
+--- a/src/3rdparty/chromium/base/trace_event/malloc_dump_provider.cc
++++ b/src/3rdparty/chromium/base/trace_event/malloc_dump_provider.cc
+@@ -243,7 +243,7 @@
+   allocated_objects_count = main_heap_info.block_count;
+ #elif defined(OS_FUCHSIA)
+ // TODO(fuchsia): Port, see https://crbug.com/706592.
+-#else
++#elif defined(__GLIBC__)
+   struct mallinfo info = mallinfo();
+   DCHECK_GE(info.arena + info.hblkhd, info.uordblks);
  
- }  // namespace
-+#elif defined(OS_LINUX) && !defined(__GLIBC__)
-+namespace {
-+
-+static size_t GetMallocUsage() {
-+  char *line=NULL;
-+  size_t n,usage=0;
-+  FILE *f = fopen("/proc/self/maps", "r");
-+  char *path, *perm;
-+  if (f == NULL) {
-+    perror("/proc/self/maps");
-+    return 0;
-+  }
-+  path = (char *)malloc(PATH_MAX+16);
-+  if (path == NULL)
-+    goto out;
-+  perm = path + PATH_MAX;
-+
-+  while (getline(&line, &n, f) >=0) {
-+    size_t start,end,offset,inode;
-+    int devmaj, devmin, items;
-+
-+    items = sscanf(line, "%zx-%zx %s %zx %x:%x %zu %s",
-+                   &start, &end, perm, &offset,
-+                   &devmaj, &devmin, &inode, path);
-+
-+    if (items < 7)
-+      continue;
-+
-+    if (items < 8)
-+      path[0] = '\0';
-+
-+    if ((strcmp(perm, "rw-p") == 0 && devmaj+devmin == 0)
-+        && (path[0] == '\0' || strcmp(path, "[heap]") == 0))
-+      usage += end-start;
-+  }
-+  free(line);
-+  free(path);
-+out:
-+  fclose(f);
-+  return usage;
-+}
-+
-+}  // namespace
- #endif
- 
- // TODO(tasak): Once it is possible to use memory-infra without tracing,
-@@ -1839,7 +1882,7 @@ void RenderThreadImpl::RecordPurgeAndSuspendMetrics() const {
-                           blink_stats.partitionAllocTotalAllocatedBytes / 1024);
-   UMA_HISTOGRAM_MEMORY_KB("PurgeAndSuspend.Memory.BlinkGCKB",
-                           blink_stats.blinkGCTotalAllocatedBytes / 1024);
--#if defined(OS_LINUX) || defined(OS_ANDROID)
-+#if (defined(OS_LINUX) && defined(__GLIBC__)) || defined(OS_ANDROID)
+--- a/src/3rdparty/chromium/base/process/process_metrics_posix.cc
++++ b/src/3rdparty/chromium/base/process/process_metrics_posix.cc
+@@ -94,14 +94,14 @@ size_t ProcessMetrics::GetMallocUsage() {
+   malloc_statistics_t stats = {0};
+   malloc_zone_statistics(nullptr, &stats);
+   return stats.size_in_use;
+-#elif defined(OS_LINUX) || defined(OS_ANDROID)
++#elif defined(__GLIBC__) || defined(OS_ANDROID)
    struct mallinfo minfo = mallinfo();
  #if defined(USE_TCMALLOC)
-   size_t malloc_usage = minfo.uordblks;
+   return minfo.uordblks;
+ #else
+   return minfo.hblkhd + minfo.arena;
+ #endif
+-#elif defined(OS_FUCHSIA)
++#else
+   // TODO(fuchsia): Not currently exposed. https://crbug.com/735087.
+   return 0;
+ #endif
+
