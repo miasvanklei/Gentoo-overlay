@@ -3,7 +3,7 @@
 
 EAPI=5
 
-PYTHON_COMPAT=( python3_5 )
+PYTHON_COMPAT=( python3_6 )
 inherit eutils toolchain-funcs python-any-r1 udev
 
 DESCRIPTION="Central Regulatory Domain Agent for wireless networks"
