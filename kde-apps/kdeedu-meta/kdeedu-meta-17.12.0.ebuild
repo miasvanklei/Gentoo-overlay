@@ -15,4 +15,5 @@ RDEPEND="
 	$(add_kdeapps_dep cantor)
 	$(add_kdeapps_dep kiten)
 	$(add_kdeapps_dep marble)
+	$(add_kdeapps_dep parley)
 "
