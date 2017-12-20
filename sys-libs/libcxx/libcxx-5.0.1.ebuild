@@ -14,7 +14,7 @@ inherit cmake-multilib llvm python-any-r1 toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="https://libcxx.llvm.org/"
-SRC_URI="http://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -36,6 +36,8 @@ DEPEND="${RDEPEND}
 	app-arch/xz-utils
 	>=sys-devel/llvm-4"
 
+S=${WORKDIR}/${P/_/}.src
+
 DOCS=( CREDITS.TXT )
 
 PATCHES=(
@@ -43,8 +45,6 @@ PATCHES=(
 	# out-of-tree build.
 	"${FILESDIR}/${PN}-3.9-cmake-link-flags.patch"
 )
-
-S=${WORKDIR}/${P/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release

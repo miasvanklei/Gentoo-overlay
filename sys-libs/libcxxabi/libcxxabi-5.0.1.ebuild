@@ -10,10 +10,13 @@ PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-multilib llvm python-any-r1
 
+MY_P=${P/_/}.src
+LIBCXX_P=libcxx-${PV/_/}.src
+
 DESCRIPTION="Low level support for a standard C++ library"
 HOMEPAGE="https://libcxxabi.llvm.org/"
-SRC_URI="http://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-        http://preeleases.llvm.org/${PV/_//}/libcxx-${PV/_/}.src.tar.xz"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	https://releases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -35,7 +38,7 @@ DEPEND="${RDEPEND}
 		~sys-libs/libcxx-${PV}[libcxxabi(-)]
 		$(python_gen_any_dep 'dev-python/lit[${PYTHON_USEDEP}]') )"
 
-S=${WORKDIR}/${P/_/}.src
+S=${WORKDIR}/${MY_P}
 
 PATCHES=(
 	"${FILESDIR}"/0001-link-clang_rt.patch
@@ -54,9 +57,13 @@ pkg_setup() {
 }
 
 src_unpack() {
-        default
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
 
-        mv libcxx-* libcxx || die
+	einfo "Unpacking parts of ${LIBCXX_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${LIBCXX_P}.tar.xz" \
+		"${LIBCXX_P}"/{include,utils/libcxx} || die
+	mv "${LIBCXX_P}" libcxx || die
 }
 
 multilib_src_configure() {

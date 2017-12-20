@@ -10,10 +10,13 @@ PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-utils llvm python-single-r1 toolchain-funcs
 
+MY_P=${P/_/}.src
+LLVM_P=llvm-${PV/_/}.src
+
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="http://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	test? ( http://prereleases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -39,7 +42,7 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-S=${WORKDIR}/${P/_/}.src
+S=${WORKDIR}/${MY_P}
 
 CMAKE_BUILD_TYPE=Release
 
@@ -49,10 +52,14 @@ pkg_setup() {
 }
 
 src_unpack() {
-	default
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
 
 	if use test; then
-		mv llvm-* llvm || die
+		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
+		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
+			"${LLVM_P}"/{lib/Testing/Support,utils/unittest} || die
+		mv "${LLVM_P}" llvm || die
 	fi
 }
 

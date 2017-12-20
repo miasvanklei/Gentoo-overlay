@@ -13,9 +13,9 @@ inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="http://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	http://prereleases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz"
-#	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
+	https://releases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${P}-manpages.tar.bz2 )"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -34,7 +34,7 @@ LICENSE="UoI-NCSA rc BSD public-domain
 	llvm_targets_ARM? ( LLVM-Grant )"
 SLOT="$(get_major_version)"
 KEYWORDS="~amd64 ~arm ~arm64 ~x86"
-IUSE="debug +doc gold libedit +libffi ncurses +swift test
+IUSE="debug doc gold libedit +libffi ncurses +swift test
 	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 
 RDEPEND="
@@ -54,7 +54,6 @@ DEPEND="${RDEPEND}
 	doc? ( dev-python/sphinx )
 	gold? ( sys-libs/binutils-libs )
 	libffi? ( virtual/pkgconfig )
-	test? ( $(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]") )
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
 # There are no file collisions between these versions but having :0
@@ -71,11 +70,6 @@ S=${WORKDIR}/${P/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
-
-python_check_deps() {
-	! use test \
-		|| has_version "dev-python/lit[${PYTHON_USEDEP}]"
-}
 
 src_unpack() {
 	default
@@ -159,10 +153,6 @@ multilib_src_configure() {
 		)
 #	fi
 
-	use test && mycmakeargs+=(
-		-DLIT_COMMAND="${EPREFIX}/usr/bin/lit"
-	)
-
 	if multilib_is_native_abi; then
 		mycmakeargs+=(
 			-DLLVM_BUILD_DOCS=$(usex doc)
@@ -245,6 +235,11 @@ multilib_src_install() {
 	rm -rf "${ED%/}"/usr/include || die
 	mv "${ED%/}"/usr/lib/llvm/${SLOT}/include "${ED%/}"/usr/include || die
 
+	# install fuzzer libraries for clang (cmake rules were added in 6)
+	# https://bugs.gentoo.org/636840
+	into "/usr/lib/llvm/${SLOT}"
+	dolib.a "$(get_libdir)"/libLLVMFuzzer*.a
+
 	LLVM_LDPATHS+=( "${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)" )
 }
 
@@ -263,7 +258,7 @@ _EOF_
 	if ! use doc; then
 		# (doman does not support custom paths)
 		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/llvm-manpages-${PV}/llvm"/*.1
+		doins "${WORKDIR}/${P}-manpages/llvm"/*.1
 	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"

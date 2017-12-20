@@ -11,12 +11,16 @@ PYTHON_COMPAT=( python2_7 )
 inherit cmake-utils flag-o-matic llvm multilib-minimal \
 	python-single-r1 toolchain-funcs pax-utils versionator
 
+MY_P=cfe-${PV/_/}.src
+EXTRA_P=clang-tools-extra-${PV/_/}.src
+LLVM_P=llvm-${PV/_/}.src
+
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="http://prereleases.llvm.org/${PV/_//}/cfe-${PV/_/}.src.tar.xz
-	http://prereleases.llvm.org/${PV/_//}/clang-tools-extra-${PV/_/}.src.tar.xz
-	test? ( https://prereleases.llvm.org/${PV/_//}/llvm-${PV/_/}.src.tar.xz )"
-#	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-manpages-${PV}.tar.bz2 )"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	https://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -41,7 +45,6 @@ RDEPEND="
 # configparser-3.2 breaks the build (3.3 or none at all are fine)
 DEPEND="${RDEPEND}
 	doc? ( dev-python/sphinx )
-	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
 	xml? ( virtual/pkgconfig )
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
@@ -58,7 +61,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/cfe-${PV/_/}.src
+S=${WORKDIR}/x/y/${MY_P}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -84,11 +87,17 @@ src_unpack() {
 	mkdir -p x/y || die
 	cd x/y || die
 
-	default
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
+	einfo "Unpacking ${EXTRA_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${EXTRA_P}.tar.xz" || die
 
-	mv clang-tools-extra-*.src "${S}"/tools/extra || die
+	mv "${EXTRA_P}" "${S}"/tools/extra || die
 	if use test; then
-		mv llvm-*.src "${WORKDIR}"/llvm || die
+		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
+		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
+			"${LLVM_P}"/utils/{lit,unittest} || die
+		mv "${LLVM_P}" "${WORKDIR}"/llvm || die
 	fi
 }
 
@@ -175,7 +184,6 @@ multilib_src_configure() {
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
-		-DLIT_COMMAND="${EPREFIX}/usr/bin/lit"
 	)
 
 	if multilib_is_native_abi; then
@@ -318,7 +326,7 @@ multilib_src_install_all() {
 	# install pre-generated manpages
 	if ! use doc; then
 		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/x/y/llvm-manpages-${PV}/clang"/*.1
+		doins "${WORKDIR}/x/y/llvm-${PV}-manpages/clang"/*.1
 	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
