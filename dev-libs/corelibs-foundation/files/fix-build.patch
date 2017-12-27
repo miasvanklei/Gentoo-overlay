@@ -96,28 +96,6 @@ index b82ec82..e709440 100644
  #include <sys/sysctl.h>
  #endif
  #include <sys/stat.h>
-diff --git a/CoreFoundation/RunLoop.subproj/CFRunLoop.c b/CoreFoundation/RunLoop.subproj/CFRunLoop.c
-index b92c2bf..cf5df40 100644
---- a/CoreFoundation/RunLoop.subproj/CFRunLoop.c
-+++ b/CoreFoundation/RunLoop.subproj/CFRunLoop.c
-@@ -46,7 +46,6 @@ CF_INLINE uint64_t check_uint64_add(uint64_t x, uint64_t y, int32_t* err) {
- #include <dispatch/private.h>
- #elif __HAS_DISPATCH__
- extern dispatch_queue_t _dispatch_runloop_root_queue_create_4CF(const char *_Nullable label, unsigned long flags);
--extern mach_port_t _dispatch_runloop_root_queue_get_port_4CF(dispatch_queue_t queue);
- extern void _dispatch_source_set_runloop_timer_4CF(dispatch_source_t source, dispatch_time_t start, uint64_t interval, uint64_t leeway);
- #endif
- 
-@@ -90,9 +89,6 @@ DISPATCH_EXPORT void _dispatch_main_queue_callback_4CF(void);
- #include <sys/eventfd.h>
- #include <sys/timerfd.h>
- 
--dispatch_runloop_handle_t _dispatch_get_main_queue_handle_4CF(void);
--extern void _dispatch_main_queue_callback_4CF(void *_Null_unspecified msg);
--
- #define _dispatch_get_main_queue_port_4CF _dispatch_get_main_queue_handle_4CF
- #define _dispatch_main_queue_callback_4CF(x) _dispatch_main_queue_callback_4CF(x)
- #endif
 diff --git a/Foundation/Thread.swift b/Foundation/Thread.swift
 index 3b46fac..d4c132d 100644
 --- a/Foundation/Thread.swift
@@ -125,7 +103,7 @@ index 3b46fac..d4c132d 100644
 @@ -256,11 +252,7 @@ open class Thread : NSObject {
          let maxSupportedStackDepth = 128;
          let addrs = UnsafeMutablePointer<UnsafeMutableRawPointer?>.allocate(capacity: maxSupportedStackDepth)
-         defer { addrs.deallocate() }
+         defer { addrs.deallocate(capacity: maxSupportedStackDepth) }
 -#if os(Android)
          let count = 0
 -#else
@@ -302,4 +280,28 @@ index 06891b7f..e9667d17 100644
 +#include <sys/types.h>
  
  
+ 
+diff --git a/CoreFoundation/RunLoop.subproj/CFRunLoop.c b/CoreFoundation/RunLoop.subproj/CFRunLoop.c
+index da2e573a..9a332a58 100644
+--- a/CoreFoundation/RunLoop.subproj/CFRunLoop.c
++++ b/CoreFoundation/RunLoop.subproj/CFRunLoop.c
+@@ -48,7 +48,11 @@ CF_INLINE uint64_t check_uint64_add(uint64_t x, uint64_t y, int32_t* err) {
+ #include <dispatch/private.h>
+ #elif __HAS_DISPATCH__
+ extern dispatch_queue_t _dispatch_runloop_root_queue_create_4CF(const char *_Nullable label, unsigned long flags);
++#if DEPLOYMENT_TARGET_MACOSX
+ extern mach_port_t _dispatch_runloop_root_queue_get_port_4CF(dispatch_queue_t queue);
++#else
++extern int _dispatch_runloop_root_queue_get_port_4CF(dispatch_queue_t queue);
++#endif
+ extern void _dispatch_source_set_runloop_timer_4CF(dispatch_source_t source, dispatch_time_t start, uint64_t interval, uint64_t leeway);
+ #endif
+ 
+@@ -89,6 +93,7 @@ DISPATCH_EXPORT void _dispatch_main_queue_callback_4CF(void);
+ #include <sys/eventfd.h>
+ #include <sys/timerfd.h>
+ 
++typedef int dispatch_runloop_handle_t;
+ dispatch_runloop_handle_t _dispatch_get_main_queue_handle_4CF(void);
+ extern void _dispatch_main_queue_callback_4CF(void *_Null_unspecified msg);
  
