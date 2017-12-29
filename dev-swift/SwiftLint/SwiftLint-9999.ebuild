@@ -30,6 +30,7 @@ DEPEND="${RDEPEND}"
 PATCHES=(
 	${FILESDIR}/remove-dependencies.patch
 	${FILESDIR}/corelibs-foundation.patch
+	${FILESDIR}/sourcekitten-master.patch
 )
 
 src_compile() {

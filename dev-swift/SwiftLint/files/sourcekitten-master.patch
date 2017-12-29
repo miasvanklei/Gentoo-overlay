@@ -1,0 +1,13 @@
+diff --git a/Source/swiftlint/Commands/AutoCorrectCommand.swift b/Source/swiftlint/Commands/AutoCorrectCommand.swift
+index 33434b6f..b277d73f 100644
+--- a/Source/swiftlint/Commands/AutoCorrectCommand.swift
++++ b/Source/swiftlint/Commands/AutoCorrectCommand.swift
+@@ -28,7 +28,7 @@ struct AutoCorrectCommand: CommandProtocol {
+                 queuedPrint(correctionLogs.joined(separator: "\n"))
+             }
+             if options.format {
+-                let formattedContents = linter.file.format(trimmingTrailingWhitespace: true,
++                let formattedContents = try! linter.file.format(trimmingTrailingWhitespace: true,
+                                                            useTabs: options.useTabs, indentWidth: 4)
+                 _ = try? formattedContents
+                     .write(toFile: linter.file.path!, atomically: true, encoding: .utf8)
