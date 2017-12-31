@@ -44,6 +44,9 @@ src_prepare() {
 	# llvm-5 thinlto: fixed in 1.23.0
 	eapply "${FILESDIR}"/llvm-5-thinlto.patch
 
+	# rustdoc/rls fails to link with llvm shared
+	eapply "${FILESDIR}"/tools-llvm-shared.patch
+
 	eapply_user
 }
 
@@ -53,6 +56,8 @@ src_configure() {
 	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
 
 	cat <<- EOF > config.toml
+        [llvm]
+        link-shared = true
 	[build]
 	cargo = "/usr/bin/cargo"
 	rustc = "/usr/bin/rustc"
@@ -82,7 +87,6 @@ src_configure() {
 }
 
 src_compile() {
-	export LLVM_LINK_SHARED=1
 	${EPYTHON} x.py build --verbose || die
 }
 
