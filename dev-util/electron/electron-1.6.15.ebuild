@@ -92,7 +92,6 @@ COMMON_DEPEND="
 	app-arch/bzip2:=
 	>=app-eselect/eselect-electron-2.0
 	cups? ( >=net-print/cups-1.3.11:= )
-	>=dev-libs/elfutils-0.149
 	dev-libs/expat:=
 	dev-libs/glib:2
 	system-icu? ( >=dev-libs/icu-58:= )
