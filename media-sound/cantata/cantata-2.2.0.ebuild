@@ -64,7 +64,8 @@ DEPEND="${RDEPEND}
 RESTRICT="test"
 
 PATCHES=( "${FILESDIR}/${P}-headers.patch"
-	"${FILESDIR}/system-solid.patch" )
+	"${FILESDIR}/system-solid.patch"
+	"${FILESDIR}/qt5.10-sql.patch" )
 
 src_prepare() {
 	remove_locale() {
