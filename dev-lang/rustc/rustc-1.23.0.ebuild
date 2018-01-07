@@ -41,9 +41,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
 	eapply "${FILESDIR}"/debug-hack.patch
 
-	# llvm-5 thinlto: fixed in 1.23.0
-	eapply "${FILESDIR}"/llvm-5-thinlto.patch
-
 	# rustdoc/rls fails to link with llvm shared
 	eapply "${FILESDIR}"/tools-llvm-shared.patch
 
@@ -77,7 +74,6 @@ src_configure() {
 	codegen-units = 1
 	use-jemalloc = $(toml_usex jemalloc)
 	default-linker = "$(tc-getBUILD_CC)"
-	default-ar = "$(tc-getBUILD_AR)"
 	rpath = false
 	[target.${CBUILD}]
 	cc = "$(tc-getBUILD_CC)"
@@ -95,11 +91,12 @@ src_install() {
 
 	local rcbuild="build/${CBUILD}"
 	local obj="${rcbuild}/stage2"
-	local robj="${rcbuild}/stage2-tools/${CBUILD}"
+	local tobj="${rcbuild}/stage2-tools-bin"
 	local sobj="${rcbuild}/stage1-std/${CBUILD}"
 
 	# install binaries
-	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc" "${robj}/release/rls"
+	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc" "${tobj}/rls"
+        dobin "${tobj}/cargo" "${tobj}/clippy-driver" "${tobj}/rustfmt"
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
 	# install libraries

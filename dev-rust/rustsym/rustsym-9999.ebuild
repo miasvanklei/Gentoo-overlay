@@ -14,10 +14,8 @@ SLOT="0"
 KEYWORDS="~amd64"
 IUSE=""
 
-COMMON_DEPEND="dev-lang/rustc"
-DEPEND="${COMMON_DEPEND}
-	dev-util/cargo"
-RDEPEND="${COMMON_DEPEND}"
+DEPEND="dev-lang/rustc"
+RDEPEND="${DEPEND}"
 
 src_compile() {
 	cargo build --release --verbose || die

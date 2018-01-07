@@ -14,10 +14,8 @@ KEYWORDS="~amd64"
 IUSE=""
 SRC_URI="https://github.com/phildawes/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
-COMMON_DEPEND="dev-lang/rustc"
-DEPEND="${COMMON_DEPEND}
-	dev-util/cargo"
-RDEPEND="${COMMON_DEPEND}"
+DEPEND="dev-lang/rustc"
+RDEPEND="${DEPEND}"
 
 src_compile() {
 	cargo build --release --verbose || die
