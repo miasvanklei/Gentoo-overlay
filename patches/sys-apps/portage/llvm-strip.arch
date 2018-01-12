@@ -1,0 +1,31 @@
+--- a/bin/ebuild-helpers/prepstrip	2018-01-12 14:56:02.774460182 +0100
++++ b/bin/ebuild-helpers/prepstrip	2018-01-12 17:01:00.290911860 +0100
+@@ -75,7 +75,7 @@
+ *GNU*) # sys-devel/binutils
+ 	# We'll leave out -R .note for now until we can check out the relevance
+ 	# of the section when it has the ALLOC flag set on it ...
+-	SAFE_STRIP_FLAGS="--strip-unneeded"
++	SAFE_STRIP_FLAGS="-S"
+ 	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
+ 	SPLIT_STRIP_FLAGS=
+ 	;;
+@@ -347,18 +347,7 @@
+ 	# elf types though cause that stuff is good.
+ 
+ 	buildid=
+-	if [[ ${f} == *"current ar archive"* ]] ; then
+-		__vecho "   ${x:${#ED}}"
+-		if ${strip_this} ; then
+-			# If we have split debug enabled, then do not strip this.
+-			# There is no concept of splitdebug for objects not yet
+-			# linked in (only for finally linked ELFs), so we have to
+-			# retain the debug info in the archive itself.
+-			if ! ${FEATURES_splitdebug} || ${RESTRICT_splitdebug} ; then
+-				${STRIP} -g "${x}"
+-			fi
+-		fi
+-	elif [[ ${f} == *"SB executable"* || ${f} == *"SB shared object"* ]] ; then
++	if [[ ${f} == *"SB executable"* || ${f} == *"SB shared object"* ]] ; then
+ 		process_elf "${x}" "${inode_link}" ${PORTAGE_STRIP_FLAGS}
+ 	elif [[ ${f} == *"SB relocatable"* ]] ; then
+ 		process_elf "${x}" "${inode_link}" ${SAFE_STRIP_FLAGS}
