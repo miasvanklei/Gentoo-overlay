@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -8,19 +8,15 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic llvm multilib-minimal \
-	python-single-r1 toolchain-funcs pax-utils versionator
-
-MY_P=cfe-${PV/_/}.src
-EXTRA_P=clang-tools-extra-${PV/_/}.src
-LLVM_P=llvm-${PV/_/}.src
+inherit cmake-utils eapi7-ver flag-o-matic git-r3 llvm \
+	multilib-minimal pax-utils python-single-r1 toolchain-funcs
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	https://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
-	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/clang.git
+	https://github.com/llvm-mirror/clang.git"
+EGIT_BRANCH="release_60"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -29,10 +25,11 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 
 LICENSE="UoI-NCSA"
-SLOT="$(get_major_version)"
-KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="debug +default-compiler-rt +default-libcxx +doc +fortran
-	+static-analyzer +swift test xml kernel_FreeBSD z3 ${ALL_LLVM_TARGETS[*]}"
+SLOT="$(ver_cut 1)"
+KEYWORDS="~amd64"
+IUSE="debug +default-compiler-rt +default-libcxx doc +fortran +static-analyzer
+	+swift test xml z3 kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
+RESTRICT="!test? ( test )"
 
 RDEPEND="
 	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${LLVM_TARGET_USEDEPS// /,},${MULTILIB_USEDEP}]
@@ -54,14 +51,14 @@ RDEPEND="${RDEPEND}
 PDEPEND="
 	~sys-devel/clang-runtime-${PV}
 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
-	default-libcxx? ( sys-libs/libcxx )
-	fortran? ( dev-lang/flang )"
+	fortran? ( dev-lang/flang )
+	default-libcxx? ( sys-libs/libcxx )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/${MY_P}
+S=${WORKDIR}/x/y/${P}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -87,63 +84,61 @@ src_unpack() {
 	mkdir -p x/y || die
 	cd x/y || die
 
-	einfo "Unpacking ${MY_P}.tar.xz ..."
-	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
-	einfo "Unpacking ${EXTRA_P}.tar.xz ..."
-	tar -xf "${DISTDIR}/${EXTRA_P}.tar.xz" || die
-
-	mv "${EXTRA_P}" "${S}"/tools/extra || die
+	git-r3_fetch "https://git.llvm.org/git/clang-tools-extra.git
+		https://github.com/llvm-mirror/clang-tools-extra.git"
 	if use test; then
-		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
-		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
-			"${LLVM_P}"/utils/{lit,unittest} || die
-		mv "${LLVM_P}" "${WORKDIR}"/llvm || die
+		# needed for patched gtest
+		git-r3_fetch "https://git.llvm.org/git/llvm.git
+			https://github.com/llvm-mirror/llvm.git"
 	fi
+	git-r3_fetch
+
+	git-r3_checkout https://llvm.org/git/clang-tools-extra.git \
+		"${S}"/tools/extra
+	if use test; then
+		git-r3_checkout https://llvm.org/git/llvm.git \
+			"${WORKDIR}"/llvm '' utils/{lit,llvm-lit,unittest}
+	fi
+	git-r3_checkout "${EGIT_REPO_URI}" "${S}"
 }
 
 src_prepare() {
-	# fix use with arm
-	eapply "${FILESDIR}"/0001-fix-unwind.patch
+        # fix use with arm
+        eapply "${FILESDIR}"/0001-fix-unwind.patch
 
-	# cleanup and gentoo patches(SSP,PIE,FULLRELRO)
-	eapply "${FILESDIR}"/0002-add-gentoo-distro.patch
-	eapply "${FILESDIR}"/0003-gentoo-linux-changes.patch
+        # cleanup and gentoo patches(SSP,PIE,FULLRELRO)
+        eapply "${FILESDIR}"/0002-gentoo-linux-changes.patch
 
-	# link libunwind
-	eapply "${FILESDIR}"/0004-link-libunwind.patch
+        # link libunwind
+        eapply "${FILESDIR}"/0003-link-libunwind.patch
 
-	# dont recurse to itself when clang > gcc symlink
-	eapply "${FILESDIR}"/0005-fix-ada-in-configure.patch
+        # dont recurse to itself when clang > gcc symlink
+        eapply "${FILESDIR}"/0004-fix-ada-in-configure.patch
 
-	# increase gcc version
-	eapply "${FILESDIR}"/0006-increase-gcc-version.patch
+        # increase gcc version
+        eapply "${FILESDIR}"/0005-increase-gcc-version.patch
 
-	# define __STDC_ISO_10646__ and undefine __gnu_linux__
-	eapply "${FILESDIR}"/0007-defines-musl.patch
+        # define __STDC_ISO_10646__ and undefine __gnu_linux__
+        eapply "${FILESDIR}"/0006-defines-musl.patch
 
         # patches for c++
-	eapply "${FILESDIR}"/0008-update-default-cxx-standard.patch
-	eapply "${FILESDIR}"/0009-link-libcxxabi.patch
+        eapply "${FILESDIR}"/0007-link-libcxxabi.patch
 
-	# needed in linux kernel
-	eapply "${FILESDIR}"/0010-add-fno-delete-null-pointer-checks.patch
+        # needed in linux kernel
+        eapply "${FILESDIR}"/0008-add-fno-delete-null-pointer-checks.patch
 
-	# add swift support
-	use swift && eapply "${FILESDIR}"/0011-add-swift-support.patch
+	# add Swift support
+	use swift && eapply "${FILESDIR}"/0009-add-swift-support.patch
 
-	# add fortran support
-	use fortran && eapply "${FILESDIR}"/0012-add-fortran-support.patch
+        # add Fortran support
+        use fortran && eapply "${FILESDIR}"/0010-add-fortran-support.patch
 
-	# fixed in master: Print correct path to clang_rt. Needed for arm
-	eapply "${FILESDIR}"/0013-35742.patch
-
-	# User patches
-	eapply_user
+	cmake-utils_src_prepare
 }
 
 multilib_src_configure() {
 	local llvm_version=$(llvm-config --version) || die
-	local clang_version=$(get_version_component_range 1-3 "${llvm_version}")
+	local clang_version=$(ver_cut 1-3 "${llvm_version}")
 
 	local mycmakeargs=(
 		# ensure that the correct llvm-config is used
@@ -155,7 +150,7 @@ multilib_src_configure() {
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
-		-DCLANG_INCLUDE_TESTS=$(usex test)
+		-DLLVM_BUILD_TESTS=$(usex test)
 
 		# these are not propagated reliably, so redefine them
 		-DLLVM_ENABLE_EH=ON
@@ -163,10 +158,6 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
-
-		# enable polly
-		-DWITH_POLLY=ON
-		-DLINK_POLLY_INTO_TOOLS=ON
 
 		-DCMAKE_DISABLE_FIND_PACKAGE_LibXml2=$(usex !xml)
 		# libgomp support fails to find headers without explicit -I
@@ -184,6 +175,7 @@ multilib_src_configure() {
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
+		-DLLVM_LIT_ARGS="-vv"
 	)
 
 	if multilib_is_native_abi; then
@@ -237,11 +229,7 @@ multilib_src_test() {
 	# respect TMPDIR!
 	local -x LIT_PRESERVES_TMP=1
 	cmake-utils_src_make check-clang
-	# clang-tidy requires [static-analyzer] and tests are not split
-	# correctly, so they are all disabled when static-analyzer is off
-	if multilib_is_native_abi && use static-analyzer; then
-		cmake-utils_src_make check-clang-tools
-	fi
+	multilib_is_native_abi && cmake-utils_src_make check-clang-tools
 }
 
 src_install() {
@@ -259,8 +247,8 @@ src_install() {
 	# Apply CHOST and version suffix to clang tools
 	# note: we use two version components here (vs 3 in runtime path)
 	local llvm_version=$(llvm-config --version) || die
-	local clang_version=$(get_version_component_range 1-2 "${llvm_version}")
-	local clang_full_version=$(get_version_component_range 1-3 "${llvm_version}")
+	local clang_version=$(ver_cut 1-2 "${llvm_version}")
+	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
 	local clang_tools=( clang clang++ clang-cl clang-cpp )
 	local gcc_tools=( gcc g++ cc c++ cpp )
 	local abi i
@@ -321,12 +309,6 @@ multilib_src_install_all() {
 	python_fix_shebang "${ED}"
 	if use static-analyzer; then
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
-	fi
-
-	# install pre-generated manpages
-	if ! use doc; then
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/x/y/llvm-${PV}-manpages/clang"/*.1
 	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"

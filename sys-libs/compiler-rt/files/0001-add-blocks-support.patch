@@ -1,5 +1,26 @@
---- a/include/CMakeLists.txt    2017-07-19 19:57:20.795909023 +0200
-+++ b/include/CMakeLists.txt    2017-07-19 19:58:38.642776174 +0200
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4b953b212..c86782abb 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -384,3 +384,14 @@ if(COMPILER_RT_INCLUDE_TESTS)
+     endif()
+   endif()
+ endif()
++
++MESSAGE(STATUS "<<< Gentoo configuration >>>
++Build type      ${CMAKE_BUILD_TYPE}
++Install path    ${CMAKE_INSTALL_PREFIX}
++Compiler flags:
++C               ${CMAKE_C_FLAGS}
++C++             ${CMAKE_CXX_FLAGS}
++Linker flags:
++Executable      ${CMAKE_EXE_LINKER_FLAGS}
++Module          ${CMAKE_MODULE_LINKER_FLAGS}
++Shared          ${CMAKE_SHARED_LINKER_FLAGS}\n")
+diff --git a/include/CMakeLists.txt b/include/CMakeLists.txt
+index f7efb102a..c07f21b20 100644
+--- a/include/CMakeLists.txt
++++ b/include/CMakeLists.txt
 @@ -1,3 +1,7 @@
 +set(BLOCKS_HEADERS
 +  ../lib/BlocksRuntime/Block_private.h
@@ -8,26 +29,61 @@
  if (COMPILER_RT_BUILD_SANITIZERS)
    set(SANITIZER_HEADERS
      sanitizer/allocator_interface.h
-@@ -20,6 +24,7 @@
+@@ -22,6 +26,7 @@ if (COMPILER_RT_BUILD_XRAY)
  endif(COMPILER_RT_BUILD_XRAY)
  
  set(COMPILER_RT_HEADERS
 +  ${BLOCK_HEADERS}
    ${SANITIZER_HEADERS}
-        ${XRAY_HEADERS})
+   ${XRAY_HEADERS})
  
-@@ -49,3 +54,8 @@
- install(FILES ${XRAY_HEADERS}
+@@ -53,6 +58,10 @@ install(FILES ${XRAY_HEADERS}
+   COMPONENT compiler-rt-headers
    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
    DESTINATION ${COMPILER_RT_INSTALL_PATH}/include/xray)
-+
 +# Install block headers
 +install(FILES ${BLOCKS_HEADERS}
 +  PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ WORLD_READ
 +  DESTINATION ${COMPILER_RT_INSTALL_PATH}/include)
---- a/lib/builtins/CMakeLists.txt       2015-01-14 16:55:17.000000000 +0100
-+++ b/lib/builtins/CMakeLists.txt       2015-04-08 19:40:41.143179536 +0200
-@@ -134,7 +134,9 @@
+ 
+ if (NOT CMAKE_CONFIGURATION_TYPES) # don't add this for IDEs.
+   add_custom_target(install-compiler-rt-headers
+diff --git a/lib/BlocksRuntime/runtime.c b/lib/BlocksRuntime/runtime.c
+index a059c2234..de5d032d0 100644
+--- a/lib/BlocksRuntime/runtime.c
++++ b/lib/BlocksRuntime/runtime.c
+@@ -28,8 +28,6 @@
+ #include <string.h>
+ #include <stdint.h>
+ 
+-#include "config.h"
+-
+ #ifdef HAVE_AVAILABILITY_MACROS_H
+ #include <AvailabilityMacros.h>
+ #endif /* HAVE_AVAILABILITY_MACROS_H */
+@@ -67,7 +65,7 @@ static __inline bool OSAtomicCompareAndSwapInt(int oldi, int newi, int volatile
+  *
+  */
+ 
+-#elif defined(HAVE_SYNC_BOOL_COMPARE_AND_SWAP_INT) && defined(HAVE_SYNC_BOOL_COMPARE_AND_SWAP_LONG)
++#else
+ 
+ static __inline bool OSAtomicCompareAndSwapLong(long oldl, long newl, long volatile *dst) {
+   return __sync_bool_compare_and_swap(dst, oldl, newl);
+@@ -77,8 +75,6 @@ static __inline bool OSAtomicCompareAndSwapInt(int oldi, int newi, int volatile
+   return __sync_bool_compare_and_swap(dst, oldi, newi);
+ }
+ 
+-#else
+-#error unknown atomic compare-and-swap primitive
+ #endif /* HAVE_OSATOMIC_COMPARE_AND_SWAP_INT && HAVE_OSATOMIC_COMPARE_AND_SWAP_LONG */
+ 
+ 
+diff --git a/lib/builtins/CMakeLists.txt b/lib/builtins/CMakeLists.txt
+index 0b50b5bb8..6d918e3ef 100644
+--- a/lib/builtins/CMakeLists.txt
++++ b/lib/builtins/CMakeLists.txt
+@@ -150,7 +150,9 @@ set(GENERIC_SOURCES
    udivti3.c
    umoddi3.c
    umodsi3.c
@@ -36,16 +92,5 @@
 +  ../BlocksRuntime/runtime.c
 +  ../BlocksRuntime/data.c)
  
- if (HAVE_UNWIND_H)
-   set(GENERIC_SOURCES
---- /dev/null   2015-04-08 17:57:08.408096785 +0200
-+++ b/lib/BlocksRuntime/config.h        2015-04-08 19:40:14.066352552 +0200
-@@ -0,0 +1,7 @@
-+#ifndef _CONFIG_H_
-+#define _CONFIG_H_
-+
-+#define HAVE_SYNC_BOOL_COMPARE_AND_SWAP_INT 1
-+#define HAVE_SYNC_BOOL_COMPARE_AND_SWAP_LONG 1
-+
-+#endif /* _CONFIG_H_ */
-
+ set(GENERIC_TF_SOURCES
+   comparetf2.c

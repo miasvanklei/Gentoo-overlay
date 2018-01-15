@@ -1,6 +1,127 @@
---- a/lib/Driver/ToolChains/Linux.cpp	2017-07-19 17:08:46.456952151 +0200
-+++ b/lib/Driver/ToolChains/Linux.cpp	2017-07-19 17:18:06.073079513 +0200
-@@ -190,31 +190,22 @@
+diff --git a/include/clang/Driver/Distro.h b/include/clang/Driver/Distro.h
+index 4ab4e2ae99..73effab6ec 100644
+--- a/include/clang/Driver/Distro.h
++++ b/include/clang/Driver/Distro.h
+@@ -35,6 +35,7 @@ public:
+     DebianStretch,
+     DebianBuster,
+     Exherbo,
++    GentooLinux,
+     RHEL5,
+     RHEL6,
+     RHEL7,
+@@ -121,6 +122,10 @@ public:
+     return DistroVal == AlpineLinux;
+   }
+ 
++  bool IsGentoo() const {
++    return DistroVal == GentooLinux;
++  }
++
+   /// @}
+ };
+ 
+diff --git a/lib/Driver/Distro.cpp b/lib/Driver/Distro.cpp
+index f15c919b9a..af62eee299 100644
+--- a/lib/Driver/Distro.cpp
++++ b/lib/Driver/Distro.cpp
+@@ -135,6 +135,9 @@ static Distro::DistroType DetectDistro(vfs::FileSystem &VFS) {
+   if (VFS.exists("/etc/arch-release"))
+     return Distro::ArchLinux;
+ 
++  if (VFS.exists("/etc/gentoo-release"))
++    return Distro::GentooLinux;
++
+   return Distro::UnknownDistro;
+ }
+ 
+diff --git a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
+index 7845781f12..6b980767b8 100644
+--- a/lib/Driver/ToolChains/Gnu.cpp
++++ b/lib/Driver/ToolChains/Gnu.cpp
+@@ -18,6 +18,7 @@
+ #include "clang/Basic/VirtualFileSystem.h"
+ #include "clang/Config/config.h" // for GCC_INSTALL_PREFIX
+ #include "clang/Driver/Compilation.h"
++#include "clang/Driver/Distro.h"
+ #include "clang/Driver/Driver.h"
+ #include "clang/Driver/DriverDiagnostic.h"
+ #include "clang/Driver/Options.h"
+@@ -300,11 +301,11 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
+ }
+ 
+ static bool getPIE(const ArgList &Args, const toolchains::Linux &ToolChain) {
+-  if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_static))
++  if (Args.hasArg(options::OPT_shared))
+     return false;
+ 
+   Arg *A = Args.getLastArg(options::OPT_pie, options::OPT_no_pie,
+-                           options::OPT_nopie);
++                           options::OPT_nopie, options::OPT_r);
+   if (!A)
+     return ToolChain.isPIEDefault();
+   return A->getOption().matches(options::OPT_pie);
+@@ -318,6 +319,7 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+   const toolchains::Linux &ToolChain =
+       static_cast<const toolchains::Linux &>(getToolChain());
+   const Driver &D = ToolChain.getDriver();
++  Distro Distro(D.getVFS());
+ 
+   const llvm::Triple &Triple = getToolChain().getEffectiveTriple();
+ 
+@@ -391,6 +393,8 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+       CmdArgs.push_back("-Bstatic");
+     else
+       CmdArgs.push_back("-static");
++    if (IsPIE)
++      CmdArgs.push_back("-Bsymbolic");
+   } else if (Args.hasArg(options::OPT_shared)) {
+     CmdArgs.push_back("-shared");
+   }
+@@ -416,20 +420,25 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+       if (!Args.hasArg(options::OPT_shared)) {
+         if (Args.hasArg(options::OPT_pg))
+           crt1 = "gcrt1.o";
+-        else if (IsPIE)
+-          crt1 = "Scrt1.o";
++        else if (IsPIE) {
++          if (Args.hasArg(options::OPT_static))
++            crt1 = "rcrt1.o";
++          else
++            crt1 = "Scrt1.o";
++        }
+         else
+           crt1 = "crt1.o";
+       }
+       if (crt1)
+         CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crt1)));
+ 
+-      CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
++      if (!Distro.IsGentoo())
++        CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
+     }
+ 
+     if (IsIAMCU)
+       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crt0.o")));
+-    else {
++    else if (!Distro.IsGentoo()) {
+       const char *crtbegin;
+       if (Args.hasArg(options::OPT_static))
+         crtbegin = isAndroid ? "crtbegin_static.o" : "crtbeginT.o";
+@@ -531,7 +540,7 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+       }
+     }
+ 
+-    if (!Args.hasArg(options::OPT_nostartfiles) && !IsIAMCU) {
++    if (!Args.hasArg(options::OPT_nostartfiles) && !IsIAMCU && !Distro.IsGentoo()) {
+       const char *crtend;
+       if (Args.hasArg(options::OPT_shared))
+         crtend = isAndroid ? "crtend_so.o" : "crtendS.o";
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index 1301cdf114..239cea8e0b 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -190,32 +190,18 @@ static void addMultilibsFilePaths(const Driver &D, const MultilibSet &Multilibs,
  
  Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
      : Generic_ELF(D, Triple, Args) {
@@ -24,31 +145,28 @@
 -
    Distro Distro(D.getVFS());
  
--  if (Distro.IsOpenSUSE() || Distro.IsUbuntu()) {
-+  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsGentoo()) {
+-  if (Distro.IsAlpineLinux()) {
++  if (Distro.IsAlpineLinux() || Distro.IsGentoo()) {
+     ExtraOpts.push_back("-z");
+     ExtraOpts.push_back("now");
+   }
+ 
+-  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsAlpineLinux()) {
++  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsAlpineLinux() || Distro.IsGentoo()) {
      ExtraOpts.push_back("-z");
      ExtraOpts.push_back("relro");
    }
- 
-+  if (Distro.IsGentoo()) {
-+    ExtraOpts.push_back("-z");
-+    ExtraOpts.push_back("now");
-+  }
-+
-   if (Arch == llvm::Triple::arm || Arch == llvm::Triple::thumb)
-     ExtraOpts.push_back("-X");
- 
-@@ -232,7 +223,7 @@
+@@ -237,7 +223,7 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
    // Android loader does not support .gnu.hash.
    // Hexagon linker/loader does not support .gnu.hash
    if (!IsMips && !IsAndroid && !IsHexagon) {
--    if (Distro.IsRedhat() || Distro.IsOpenSUSE() ||
-+    if (Distro.IsRedhat() || Distro.IsOpenSUSE() || Distro.IsGentoo() ||
+-    if (Distro.IsRedhat() || Distro.IsOpenSUSE() || Distro.IsAlpineLinux() ||
++    if (Distro.IsRedhat() || Distro.IsOpenSUSE() || Distro.IsAlpineLinux() || Distro.IsGentoo() ||
          (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick))
        ExtraOpts.push_back("--hash-style=gnu");
  
-@@ -251,123 +242,12 @@
-   if (Distro.IsOpenSUSE())
+@@ -256,123 +242,12 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
+   if (IsAndroid || Distro.IsOpenSUSE())
      ExtraOpts.push_back("--enable-new-dtags");
  
 -  // The selection of paths to try here is designed to match the patterns which
@@ -173,18 +291,11 @@
    addPathIfExists(D, SysRoot + "/lib", Paths);
    addPathIfExists(D, SysRoot + "/usr/lib", Paths);
  }
-@@ -810,7 +698,7 @@
-   }
- }
- 
--bool Linux::isPIEDefault() const { return getSanitizerArgs().requiresPIE(); }
-+bool Linux::isPIEDefault() const { return true; }
- 
- SanitizerMask Linux::getSupportedSanitizers() const {
-   const bool IsX86 = getTriple().getArch() == llvm::Triple::x86;
---- a/lib/Driver/ToolChains/Linux.h	2017-07-19 17:13:33.568500062 +0200
-+++ b/lib/Driver/ToolChains/Linux.h	2017-07-19 17:14:13.432440297 +0200
-@@ -36,6 +36,9 @@
+diff --git a/lib/Driver/ToolChains/Linux.h b/lib/Driver/ToolChains/Linux.h
+index 9778c1832c..b41b2e1bf0 100644
+--- a/lib/Driver/ToolChains/Linux.h
++++ b/lib/Driver/ToolChains/Linux.h
+@@ -36,6 +36,9 @@ public:
    void AddIAMCUIncludeArgs(const llvm::opt::ArgList &DriverArgs,
                             llvm::opt::ArgStringList &CC1Args) const override;
    bool isPIEDefault() const override;
@@ -194,81 +305,3 @@
    SanitizerMask getSupportedSanitizers() const override;
    void addProfileRTLibs(const llvm::opt::ArgList &Args,
                          llvm::opt::ArgStringList &CmdArgs) const override;
---- a/lib/Driver/ToolChains/Gnu.cpp   2017-07-19 17:29:53.920942320 +0200
-+++ b/lib/Driver/ToolChains/Gnu.cpp   2017-07-19 17:39:03.800062644 +0200
-@@ -17,6 +17,7 @@
- #include "clang/Basic/VirtualFileSystem.h"
- #include "clang/Config/config.h" // for GCC_INSTALL_PREFIX
- #include "clang/Driver/Compilation.h"
-+#include "clang/Driver/Distro.h"
- #include "clang/Driver/Driver.h"
- #include "clang/Driver/DriverDiagnostic.h"
- #include "clang/Driver/Options.h"
-@@ -409,6 +409,7 @@
-   const toolchains::Linux &ToolChain =
-       static_cast<const toolchains::Linux &>(getToolChain());
-   const Driver &D = ToolChain.getDriver();
-+  Distro Distro(D.getVFS());
- 
-   const llvm::Triple &Triple = getToolChain().getEffectiveTriple();
- 
-@@ -416,8 +417,9 @@
-   const bool isAndroid = ToolChain.getTriple().isAndroid();
-   const bool IsIAMCU = ToolChain.getTriple().isOSIAMCU();
-   const bool IsPIE =
--      !Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_static) &&
--      (Args.hasArg(options::OPT_pie) || ToolChain.isPIEDefault());
-+      !Args.hasArg(options::OPT_shared) && !Args.hasArg(options::OPT_fno_pie) &&
-+      !Args.hasArg(options::OPT_r) && (Args.hasArg(options::OPT_pie) ||
-+      ToolChain.isPIEDefault());
-   const bool HasCRTBeginEndFiles =
-       ToolChain.getTriple().hasEnvironment() ||
-       (ToolChain.getTriple().getVendor() != llvm::Triple::MipsTechnologies);
-@@ -484,6 +486,8 @@
-       CmdArgs.push_back("-Bstatic");
-     else
-       CmdArgs.push_back("-static");
-+    if (IsPIE)
-+      CmdArgs.push_back("-Bsymbolic");
-   } else if (Args.hasArg(options::OPT_shared)) {
-     CmdArgs.push_back("-shared");
-   }
-@@ -509,20 +513,25 @@
-       if (!Args.hasArg(options::OPT_shared)) {
-         if (Args.hasArg(options::OPT_pg))
-           crt1 = "gcrt1.o";
--        else if (IsPIE)
--          crt1 = "Scrt1.o";
-+        else if (IsPIE) {
-+          if (Args.hasArg(options::OPT_static))
-+            crt1 = "rcrt1.o";
-+          else
-+            crt1 = "Scrt1.o";
-+        }
-         else
-           crt1 = "crt1.o";
-       }
-       if (crt1)
-         CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath(crt1)));
- 
--      CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
-+      if (!Distro.IsGentoo())
-+        CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crti.o")));
-     }
- 
-     if (IsIAMCU)
-       CmdArgs.push_back(Args.MakeArgString(ToolChain.GetFilePath("crt0.o")));
--    else {
-+    else if (!Distro.IsGentoo()) {
-       const char *crtbegin;
-       if (Args.hasArg(options::OPT_static))
-         crtbegin = isAndroid ? "crtbegin_static.o" : "crtbeginT.o";
-@@ -622,7 +631,7 @@
-       }
-     }
- 
--    if (!Args.hasArg(options::OPT_nostartfiles) && !IsIAMCU) {
-+    if (!Args.hasArg(options::OPT_nostartfiles) && !IsIAMCU && !Distro.IsGentoo()) {
-       const char *crtend;
-       if (Args.hasArg(options::OPT_shared))
-         crtend = isAndroid ? "crtend_so.o" : "crtendS.o";

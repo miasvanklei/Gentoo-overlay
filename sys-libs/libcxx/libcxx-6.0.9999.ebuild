@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -8,22 +8,38 @@ EAPI=6
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
+EGIT_REPO_URI="https://git.llvm.org/git/libcxx.git
+	https://github.com/llvm-mirror/libcxx.git"
+EGIT_BRANCH="release_60"
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib llvm python-any-r1 toolchain-funcs
+[[ ${PV} == *9999 ]] && SCM="git-r3" || SCM=""
+
+inherit ${SCM} cmake-multilib llvm python-any-r1 toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="https://libcxx.llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+if [[ ${PV} != *9999 ]] ; then
+	SRC_URI="https://llvm.org/releases/${PV}/${P}.src.tar.xz"
+	S="${WORKDIR}/${P}.src"
+else
+	SRC_URI=""
+fi
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+libcxxabi libcxxrt +libunwind +static-libs test"
+if [[ ${PV} != *9999 ]] ; then
+	KEYWORDS="~amd64 ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
+else
+	KEYWORDS="~amd64"
+fi
+IUSE="+compiler-rt +libcxxabi libcxxrt +libunwind +static-libs test"
 REQUIRED_USE="libunwind? ( || ( libcxxabi libcxxrt ) )
 	?? ( libcxxabi libcxxrt )"
+RESTRICT="!test? ( test )"
 
 RDEPEND="
+	compiler-rt? ( sys-libs/compiler-rt )
 	libcxxabi? ( ~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}] )
 	libcxxrt? ( sys-libs/libcxxrt[libunwind=,static-libs?,${MULTILIB_USEDEP}] )
 	!libcxxabi? ( !libcxxrt? ( >=sys-devel/gcc-4.7:=[cxx] ) )"
@@ -36,15 +52,7 @@ DEPEND="${RDEPEND}
 	app-arch/xz-utils
 	>=sys-devel/llvm-4"
 
-S=${WORKDIR}/${P/_/}.src
-
 DOCS=( CREDITS.TXT )
-
-PATCHES=(
-	# Add link flag "-Wl,-z,defs" to avoid underlinking; this is needed in a
-	# out-of-tree build.
-	"${FILESDIR}/${PN}-3.9-cmake-link-flags.patch"
-)
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -85,49 +93,25 @@ multilib_src_configure() {
 		cxxabi_incs="${gcc_inc};${gcc_inc}/${CHOST}"
 	fi
 
-	# we want -lgcc_s for unwinder, and for compiler runtime when using
-	# gcc, clang with gcc runtime (or any unknown compiler)
-	local extra_libs=() want_gcc_s=ON
-	if use libunwind; then
-		# work-around missing -lunwind upstream
-		extra_libs+=( -lunwind )
-		# if we're using libunwind and clang with compiler-rt, we want
-		# to link to compiler-rt instead of -lgcc_s
-		if tc-is-clang; then
-			# get the full library list out of 'pretend mode'
-			# and grep it for libclang_rt references
-			local args=( $($(tc-getCC) -### -x c - 2>&1 | tail -n 1) )
-			local i
-			for i in "${args[@]}"; do
-				if [[ ${i} == *libclang_rt* ]]; then
-					want_gcc_s=OFF
-					extra_libs+=( "${i}" )
-				fi
-			done
-		fi
-	fi
-
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
 		-DLIBCXX_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXX_ENABLE_SHARED=ON
 		-DLIBCXX_ENABLE_STATIC=$(usex static-libs)
+		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
+		-DLIBCXX_USE_COMPILER_RT=$(usex compiler-rt)
 		-DLIBCXX_CXX_ABI=${cxxabi}
 		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=${cxxabi_incs}
 		# we're using our own mechanism for generating linker scripts
 		-DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=OFF
 		-DLIBCXX_HAS_MUSL_LIBC=$(usex elibc_musl)
-		-DLIBCXX_HAS_GCC_S_LIB=${want_gcc_s}
 		-DLIBCXX_INCLUDE_TESTS=$(usex test)
-		-DCMAKE_SHARED_LINKER_FLAGS="${extra_libs[*]} ${LDFLAGS}"
 	)
 
 	if use test; then
 		mycmakeargs+=(
-			# this can be any directory, it just needs to exist...
-			# FIXME: remove this once https://reviews.llvm.org/D25093 is merged
-			-DLLVM_MAIN_SRC_DIR="${T}"
-			-DLIT_COMMAND="${EPREFIX}"/usr/bin/lit
+			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
+			-DLLVM_LIT_ARGS="-vv"
 		)
 	fi
 	cmake-utils_src_configure
@@ -140,4 +124,16 @@ multilib_src_test() {
 	sed -i -e "/cxx_under_test/s^\".*\"^\"${clang_path}\"^" test/lit.site.cfg || die
 
 	cmake-utils_src_make check-libcxx
+}
+
+multilib_src_install() {
+	cmake-utils_src_install
+}
+
+pkg_postinst() {
+	elog "This package (${PN}) is mainly intended as a replacement for the C++"
+	elog "standard library when using clang."
+	elog "To use it, instead of libstdc++, use:"
+	elog "    clang++ -stdlib=libc++"
+	elog "to compile your C++ programs."
 }

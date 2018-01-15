@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -8,14 +8,15 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic multilib-minimal pax-utils \
-	python-any-r1 toolchain-funcs versionator
+inherit cmake-utils eapi7-ver flag-o-matic git-r3 multilib-minimal \
+	pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	https://releases.llvm.org/${PV/_//}/polly-${PV/_/}.src.tar.xz
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${P}-manpages.tar.bz2 )"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/llvm.git
+	https://github.com/llvm-mirror/llvm.git"
+EGIT_BRANCH="release_60"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -32,10 +33,11 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 
 LICENSE="UoI-NCSA rc BSD public-domain
 	llvm_targets_ARM? ( LLVM-Grant )"
-SLOT="$(get_major_version)"
-KEYWORDS="~amd64 ~arm ~arm64 ~x86"
-IUSE="debug doc gold libedit +libffi ncurses +swift test
-	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
+SLOT="$(ver_cut 1)"
+KEYWORDS="~amd64"
+IUSE="debug doc gold libedit +libffi ncurses test
+	kernel_Darwin +swift ${ALL_LLVM_TARGETS[*]}"
+RESTRICT="!test? ( test )"
 
 RDEPEND="
 	sys-libs/zlib:0=
@@ -49,8 +51,10 @@ DEPEND="${RDEPEND}
 	|| ( >=sys-devel/gcc-3.0 >=sys-devel/llvm-3.5
 		( >=sys-freebsd/freebsd-lib-9.1-r10 sys-libs/libcxx )
 	)
-	|| ( >=sys-devel/lld-${PV}:= >=sys-devel/binutils-2.18 >=sys-devel/binutils-apple-5.1 )
-	kernel_Darwin? ( <sys-libs/libcxx-$(get_version_component_range 1-3).9999 )
+	kernel_Darwin? (
+		<sys-libs/libcxx-$(ver_cut 1-3).9999
+		>=sys-devel/binutils-apple-5.1
+	)
 	doc? ( dev-python/sphinx )
 	gold? ( sys-libs/binutils-libs )
 	libffi? ( virtual/pkgconfig )
@@ -66,23 +70,15 @@ PDEPEND="sys-devel/llvm-common
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
-S=${WORKDIR}/${P/_/}.src
-
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
-
-src_unpack() {
-	default
-
-	mv polly-*.src "${S}"/tools/polly || die
-}
 
 src_prepare() {
 	# use init-array as default
 	eapply "${FILESDIR}"/0001-use-init-array.patch
 
-	# change library suffix for shared libraries
-	eapply "${FILESDIR}"/0002-shared-library-suffix.patch
+	# add -S alias
+	eapply "${FILESDIR}"/0002-better-strip-support.patch
 
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
@@ -93,14 +89,11 @@ src_prepare() {
 	# add swift support
 	use swift && eapply "${FILESDIR}"/0005-add-swift-support.patch
 
-	# support -rcs
-	eapply "${FILESDIR}"/0006-support-dashed-options.patch
-
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
-	# User patches
-	eapply_user
+	# User patches + QA
+	cmake-utils_src_prepare
 }
 
 multilib_src_configure() {
@@ -112,14 +105,17 @@ multilib_src_configure() {
 
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
+		# disable appending VCS revision to the version to improve
+		# direct cache hit ratio
 		-DLLVM_APPEND_VC_REV=OFF
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${SLOT}"
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
+		-DLLVM_INSTALL_BINUTILS_SYMLINKS=ON
 
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
+
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
-		-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
 		-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DLLVM_ENABLE_FFI=$(usex libffi)
@@ -132,9 +128,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
 
-		# enable polly
-		-DLINK_POLLY_INTO_TOOLS=ON
-		-DWITH_POLLY=ON
+		-DWITH_POLLY=OFF # TODO
 
 		-DLLVM_HOST_TRIPLE="${CHOST}"
 
@@ -152,6 +146,10 @@ multilib_src_configure() {
 			-DGO_EXECUTABLE=GO_EXECUTABLE-NOTFOUND
 		)
 #	fi
+
+	use test && mycmakeargs+=(
+		-DLLVM_LIT_ARGS="-vv"
+	)
 
 	if multilib_is_native_abi; then
 		mycmakeargs+=(
@@ -216,14 +214,6 @@ src_install() {
 	local LLVM_LDPATHS=()
 	multilib-minimal_src_install
 
-	# binutils symlinks
-	local llvm_tools=( ar ranlib nm strings objdump cxxfilt readelf )
-
-	for i in "${llvm_tools[@]}"; do
-                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${i}"
-                dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${CHOST}-${i}"
-        done
-
 	# move wrapped headers back
 	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
 }
@@ -234,11 +224,6 @@ multilib_src_install() {
 	# move headers to /usr/include for wrapping
 	rm -rf "${ED%/}"/usr/include || die
 	mv "${ED%/}"/usr/lib/llvm/${SLOT}/include "${ED%/}"/usr/include || die
-
-	# install fuzzer libraries for clang (cmake rules were added in 6)
-	# https://bugs.gentoo.org/636840
-	into "/usr/lib/llvm/${SLOT}"
-	dolib.a "$(get_libdir)"/libLLVMFuzzer*.a
 
 	LLVM_LDPATHS+=( "${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)" )
 }
@@ -253,13 +238,6 @@ multilib_src_install_all() {
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 _EOF_
 	doenvd "${T}/10llvm-${revord}"
-
-	# install pre-generated manpages
-	if ! use doc; then
-		# (doman does not support custom paths)
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/${P}-manpages/llvm"/*.1
-	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 }

@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -8,20 +8,20 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib llvm python-any-r1
-
-MY_P=${P/_/}.src
-LIBCXX_P=libcxx-${PV/_/}.src
+inherit cmake-multilib git-r3 llvm python-any-r1
 
 DESCRIPTION="Low level support for a standard C++ library"
 HOMEPAGE="https://libcxxabi.llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	https://releases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/libcxxabi.git
+	https://github.com/llvm-mirror/libcxxabi.git"
+EGIT_BRANCH="release_60"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~x86 ~arm"
+KEYWORDS="~amd64"
 IUSE="+compiler-rt +libunwind +static-libs test"
+RESTRICT="!test? ( test )"
 
 RDEPEND="
 	compiler-rt? ( sys-libs/compiler-rt )
@@ -37,8 +37,6 @@ DEPEND="${RDEPEND}
 	test? ( >=sys-devel/clang-3.9.0
 		~sys-libs/libcxx-${PV}[libcxxabi(-)]
 		$(python_gen_any_dep 'dev-python/lit[${PYTHON_USEDEP}]') )"
-
-S=${WORKDIR}/${MY_P}
 
 PATCHES=(
 	"${FILESDIR}"/0001-link-clang_rt.patch
@@ -57,13 +55,14 @@ pkg_setup() {
 }
 
 src_unpack() {
-	einfo "Unpacking ${MY_P}.tar.xz ..."
-	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
+	# we need the headers
+	git-r3_fetch "https://git.llvm.org/git/libcxx.git
+		https://github.com/llvm-mirror/libcxx.git"
+	git-r3_fetch
 
-	einfo "Unpacking parts of ${LIBCXX_P}.tar.xz ..."
-	tar -xf "${DISTDIR}/${LIBCXX_P}.tar.xz" \
-		"${LIBCXX_P}"/{include,utils/libcxx} || die
-	mv "${LIBCXX_P}" libcxx || die
+	git-r3_checkout https://llvm.org/git/libcxx.git \
+		"${WORKDIR}"/libcxx '' include utils/libcxx
+	git-r3_checkout
 }
 
 multilib_src_configure() {
@@ -80,7 +79,8 @@ multilib_src_configure() {
 	)
 	if use test; then
 		mycmakeargs+=(
-			-DLIT_COMMAND="${EPREFIX}"/usr/bin/lit
+			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
+			-DLLVM_LIT_ARGS="-vv"
 		)
 	fi
 	cmake-utils_src_configure

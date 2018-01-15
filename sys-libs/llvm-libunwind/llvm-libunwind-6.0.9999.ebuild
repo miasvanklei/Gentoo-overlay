@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -6,27 +6,29 @@ EAPI=6
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
-inherit cmake-multilib llvm
+inherit cmake-multilib git-r3 llvm
 
 DESCRIPTION="C++ runtime stack unwinder from LLVM"
 HOMEPAGE="https://github.com/llvm-mirror/libunwind"
-SRC_URI="https://releases.llvm.org/${PV/_//}/libunwind-${PV/_/}.src.tar.xz"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/libunwind.git
+	https://github.com/llvm-mirror/libunwind.git"
+EGIT_BRANCH="release_60"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~x86 ~arm"
-IUSE="debug +static-libs"
+KEYWORDS="~amd64"
+IUSE="+compiler-rt debug +static-libs"
 
 RDEPEND="!sys-libs/libunwind"
 # LLVM 4 required for llvm-config --cmakedir
 DEPEND=">=sys-devel/llvm-4"
 
-S=${WORKDIR}/libunwind-${PV/_/}.src
-
 PATCHES=(
-	"${FILESDIR}"/0001-link-clang_rt.patch
+        "${FILESDIR}"/0001-link-clang_rt.patch
 )
 
+# least intrusive of all
 CMAKE_BUILD_TYPE=Release
 
 multilib_src_configure() {
@@ -36,7 +38,7 @@ multilib_src_configure() {
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBUNWIND_ENABLE_ASSERTIONS=$(usex debug)
 		-DLIBUNWIND_ENABLE_STATIC=$(usex static-libs)
-		-DLIBUNWIND_USE_COMPILER_RT=ON
+		-DLIBUNWIND_USE_COMPILER_RT=$(usex compiler-rt)
 	)
 
 	cmake-utils_src_configure

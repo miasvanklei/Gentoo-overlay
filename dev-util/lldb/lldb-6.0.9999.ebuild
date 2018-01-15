@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -8,72 +8,66 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils llvm python-single-r1 toolchain-funcs
-
-MY_P=${P/_/}.src
-LLVM_P=llvm-${PV/_/}.src
+inherit cmake-utils git-r3 llvm python-single-r1 toolchain-funcs
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
+SRC_URI=""
+EGIT_REPO_URI="https://git.llvm.org/git/lldb.git
+	https://github.com/llvm-mirror/lldb.git"
+EGIT_BRANCH="release_60"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+libedit ncurses +python +swift test"
+KEYWORDS="~amd64"
+IUSE="+libedit ncurses +python test"
+RESTRICT="!test? ( test )"
 
 RDEPEND="
 	libedit? ( dev-libs/libedit:0= )
 	ncurses? ( >=sys-libs/ncurses-5.9-r3:0= )
 	python? ( dev-python/six[${PYTHON_USEDEP}]
 		${PYTHON_DEPS} )
-	swift? ( dev-lang/swift )
 	~sys-devel/clang-${PV}[xml]
 	~sys-devel/llvm-${PV}
 	!<sys-devel/llvm-4.0"
 # swig-3.0.9+ generates invalid wrappers, #598708
 # upstream: https://github.com/swig/swig/issues/769
 DEPEND="${RDEPEND}
-	python? ( || ( <dev-lang/swig-3.0.9
-		  >dev-lang/swig-3.0.10 ) )
+	python? ( >dev-lang/swig-3.0.9 )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
-S=${WORKDIR}/${MY_P}
-
+# least intrusive of all
 CMAKE_BUILD_TYPE=Release
 
 pkg_setup() {
-	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
+	llvm_pkg_setup
 	python-single-r1_pkg_setup
 }
 
 src_unpack() {
-	einfo "Unpacking ${MY_P}.tar.xz ..."
-	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
+	if use test; then
+		# needed for patched gtest
+		git-r3_fetch "https://git.llvm.org/git/llvm.git
+			https://github.com/llvm-mirror/llvm.git"
+	fi
+	git-r3_fetch
 
 	if use test; then
-		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
-		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
-			"${LLVM_P}"/{lib/Testing/Support,utils/unittest} || die
-		mv "${LLVM_P}" llvm || die
+		git-r3_checkout https://llvm.org/git/llvm.git \
+			"${WORKDIR}"/llvm '' lib/Testing/Support utils/unittest
 	fi
+	git-r3_checkout
 }
 
 src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
 
-	# add swift support
-	use swift && eapply "${FILESDIR}"/0002-add-swift-support.patch
-
-	# Use clang plugin for crystal
-	eapply "${FILESDIR}"/0003-crystal-debug.patch
-
-	eapply_user
+	cmake-utils_src_prepare
 }
 
 src_configure() {
@@ -86,6 +80,7 @@ src_configure() {
 		-DLLDB_DISABLE_PYTHON=$(usex !python)
 		-DLLVM_ENABLE_TERMINFO=$(usex ncurses)
 
+		-DLLDB_INCLUDE_TESTS=$(usex test)
 		-DLLVM_BUILD_TESTS=$(usex test)
 		# compilers for lit tests
 		-DLLDB_TEST_C_COMPILER="$(type -P clang)"
@@ -93,15 +88,15 @@ src_configure() {
 		# compiler for ole' python tests
 		-DLLDB_TEST_COMPILER="$(type -P clang)"
 
-		# TODO: fix upstream to detect this properly
-		-DHAVE_LIBDL=ON
-		-DHAVE_LIBPTHREAD=ON
-
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
+
+		# TODO: fix upstream to detect this properly
+		-DHAVE_LIBDL=ON
+		-DHAVE_LIBPTHREAD=ON
 
 		# normally we'd have to set LLVM_ENABLE_TERMINFO, HAVE_TERMINFO
 		# and TERMINFO_LIBS... so just force FindCurses.cmake to use
@@ -111,7 +106,8 @@ src_configure() {
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
-		-DLIT_COMMAND="${EPREFIX}/usr/bin/lit"
+		-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
+		-DLLVM_LIT_ARGS="-vv"
 	)
 
 	cmake-utils_src_configure
