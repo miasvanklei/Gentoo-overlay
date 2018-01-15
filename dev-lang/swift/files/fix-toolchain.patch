@@ -21,13 +21,10 @@ index f0e03d0570..3a5a262226 100644
    default:
      // Otherwise, use the default BFD linker.
      return "";
-@@ -1743,6 +1737,12 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
+@@ -1743,6 +1737,9 @@ toolchains::GenericUnix::constructInvocation(const LinkJobAction &job,
      Arguments.push_back(context.Args.MakeArgString(PostInputObjectPath));
    }
  
-+  if (context.Args.getLastArg(options::OPT_g))
-+    Arguments.push_back("-Wl,-nostrip");
-+
 +  // Needed when using lld
 +    Arguments.push_back("-Wl,-export-dynamic");
 +

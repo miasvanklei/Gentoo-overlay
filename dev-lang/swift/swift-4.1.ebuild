@@ -13,7 +13,8 @@ DESCRIPTION="The Swift Programming Language"
 HOMEPAGE="https://github.com/apple/swift"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/apple/swift.git"
-EGIT_BRANCH="swift-4.1-branch"
+EGIT_BRANCH="master-next"
+EGIT_COMMIT="112a63f3d1b01174bdaa7fe28269b2330ae3d9ab"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -26,8 +27,8 @@ RDEPEND="
 	dev-libs/libbsd
 	dev-libs/icu:=
 	sys-libs/ncurses
-	=sys-devel/clang-5.0.1:=[swift]
-        =sys-devel/llvm-5.0.1:=[swift]
+	=sys-devel/clang-6.0.0:=[swift]
+        =sys-devel/llvm-6.0.0:=[swift]
 	sourcekit? ( dev-libs/libdispatch )"
 PDEPEND=""
 DEPEND="${RDEPEND}"
@@ -70,14 +71,8 @@ src_prepare() {
 	# fix triple with arm, swift, llvm, clang, lldb
 	eapply "${FILESDIR}"/arm-swift.patch
 
-	# revert some llvm changes to fix build with llvm 5.0
-	eapply "${FILESDIR}"/llvm-5.0.patch
-
 	# fix compile
 	eapply "${FILESDIR}"/fix-compile.patch
-
-	# fix compile with c++1y
-	eapply "${FILESDIR}"/fix-c++1y.patch
 
 	cmake-utils_src_prepare
 }
@@ -105,8 +100,9 @@ src_configure() {
 		# build static as well
 		-DSWIFT_BUILD_STATIC_STDLIB=TRUE
 
-		# fails right now, with incorrect identation
+		# fail both right now
 		-DSWIFT_INCLUDE_DOCS=FALSE
+		-DSWIFT_INCLUDE_TESTS=FALSE
 	)
 
 	if use sourcekit; then
