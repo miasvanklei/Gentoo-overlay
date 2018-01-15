@@ -37,8 +37,9 @@ pkg_setup() {
 }
 
 src_prepare() {
+	eapply "${FILESDIR}"/llvm-6.patch
 	eapply "${FILESDIR}"/musl.patch
-	eapply "${FILESDIR}"/do-not-strip-when-debug.patch
+	eapply "${FILESDIR}"/use-libc++.patch
 	eapply "${FILESDIR}"/debug-hack.patch
 
 	# rustdoc/rls fails to link with llvm shared

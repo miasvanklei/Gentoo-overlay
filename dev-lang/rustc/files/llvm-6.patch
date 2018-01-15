@@ -1,0 +1,148 @@
+--- a/src/librustc_llvm/lib.rs	2018-01-14 11:29:49.348909760 +0100
++++ b/src/librustc_llvm/lib.rs	2018-01-14 11:30:15.474847144 +0100
+@@ -108,7 +108,7 @@
+     fn from_str(s: &str) -> Result<Self, Self::Err> {
+         match s {
+             "gnu" => Ok(ArchiveKind::K_GNU),
+-            "mips64" => Ok(ArchiveKind::K_MIPS64),
++            "mips64" => Ok(ArchiveKind::K_GNU64),
+             "bsd" => Ok(ArchiveKind::K_BSD),
+             "coff" => Ok(ArchiveKind::K_COFF),
+             _ => Err(()),
+--- a/src/librustc_llvm/ffi.rs	2018-01-14 11:29:41.940927555 +0100
++++ b/src/librustc_llvm/ffi.rs	2018-01-14 11:37:35.003793726 +0100
+@@ -298,9 +298,6 @@
+ #[derive(Copy, Clone)]
+ #[repr(C)]
+ pub enum CodeModel {
+-    Other,
+-    Default,
+-    JITDefault,
+     Small,
+     Kernel,
+     Medium,
+@@ -331,7 +328,7 @@
+ pub enum ArchiveKind {
+     Other,
+     K_GNU,
+-    K_MIPS64,
++    K_GNU64,
+     K_BSD,
+     K_COFF,
+ }
+--- a/src/librustc_trans/back/write.rs	2018-01-14 19:12:31.124639399 +0100
++++ b/src/librustc_trans/back/write.rs	2018-01-14 19:13:03.619566019 +0100
+@@ -70,7 +70,7 @@
+ ];
+ 
+ pub const CODE_GEN_MODEL_ARGS : [(&'static str, llvm::CodeModel); 5] = [
+-    ("default", llvm::CodeModel::Default),
++    ("default", llvm::CodeModel::Small),
+     ("small", llvm::CodeModel::Small),
+     ("kernel", llvm::CodeModel::Kernel),
+     ("medium", llvm::CodeModel::Medium),
+--- a/src/rustllvm/ArchiveWrapper.cpp	2018-01-01 22:50:13.000000000 +0100
++++ b/src/rustllvm/ArchiveWrapper.cpp	2018-01-14 11:31:54.979608052 +0100
+@@ -50,7 +50,7 @@
+ enum class LLVMRustArchiveKind {
+   Other,
+   GNU,
+-  MIPS64,
++  GNU64,
+   BSD,
+   COFF,
+ };
+@@ -59,8 +59,12 @@
+   switch (Kind) {
+   case LLVMRustArchiveKind::GNU:
+     return Archive::K_GNU;
+-  case LLVMRustArchiveKind::MIPS64:
++  case LLVMRustArchiveKind::GNU64:
++#if LLVM_VERSION_GE(6, 0)
++    return Archive::K_GNU64;
++#else
+     return Archive::K_MIPS64;
++#endif
+   case LLVMRustArchiveKind::BSD:
+     return Archive::K_BSD;
+   case LLVMRustArchiveKind::COFF:
+@@ -285,8 +289,16 @@
+ #else
+   auto Pair = writeArchive(Dst, Members, WriteSymbtab, Kind, true);
+ #endif
++#if LLVM_VERSION_GE(6, 0)
++  if (!Pair)
++#else
+   if (!Pair.second)
++#endif
+     return LLVMRustResult::Success;
++#if LLVM_VERSION_GE(6, 0)
++  LLVMRustSetLastError("Write archive failed");
++#else
+   LLVMRustSetLastError(Pair.second.message().c_str());
++#endif
+   return LLVMRustResult::Failure;
+ }
+--- a/src/rustllvm/PassWrapper.cpp	2018-01-01 22:50:13.000000000 +0100
++++ b/src/rustllvm/PassWrapper.cpp	2018-01-14 11:40:16.722407258 +0100
+@@ -22,7 +22,11 @@
+ #include "llvm/Support/FileSystem.h"
+ #include "llvm/Support/Host.h"
+ #include "llvm/Target/TargetMachine.h"
++#if LLVM_VERSION_GE(6, 0)
++#include "llvm/CodeGen/TargetSubtargetInfo.h"
++#else
+ #include "llvm/Target/TargetSubtargetInfo.h"
++#endif
+ #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+ 
+ #if LLVM_VERSION_GE(4, 0)
+@@ -211,21 +213,14 @@
+ }
+ 
+ enum class LLVMRustCodeModel {
+-  Other,
+-  Default,
+-  JITDefault,
+   Small,
+   Kernel,
+   Medium,
+   Large,
+ };
+ 
+-static CodeModel::Model fromRust(LLVMRustCodeModel Model) {
++static Optional<CodeModel::Model> fromRust(LLVMRustCodeModel Model) {
+   switch (Model) {
+-  case LLVMRustCodeModel::Default:
+-    return CodeModel::Default;
+-  case LLVMRustCodeModel::JITDefault:
+-    return CodeModel::JITDefault;
+   case LLVMRustCodeModel::Small:
+     return CodeModel::Small;
+   case LLVMRustCodeModel::Kernel:
+@@ -413,7 +408,11 @@
+   }
+ 
+   TargetMachine *TM = TheTarget->createTargetMachine(
++#if LLVM_VERSION_GE(6, 0)
+       Trip.getTriple(), RealCPU, Feature, Options, RM, CM, OptLevel);
++#else
++      Trip.getTriple(), RealCPU, Feature, Options, RM, CM, OptLevel, false);
++#endif
+   return wrap(TM);
+ }
+ 
+--- a/src/rustllvm/RustWrapper.cpp	2018-01-01 22:50:13.000000000 +0100
++++ b/src/rustllvm/RustWrapper.cpp	2018-01-14 11:23:51.029772099 +0100
+@@ -251,7 +251,11 @@
+ // enable fpmath flag UnsafeAlgebra
+ extern "C" void LLVMRustSetHasUnsafeAlgebra(LLVMValueRef V) {
+   if (auto I = dyn_cast<Instruction>(unwrap<Value>(V))) {
++#if LLVM_VERSION_GE(6, 0)
++    I->setFast(true);
++#else
+     I->setHasUnsafeAlgebra(true);
++#endif
+   }
+ }
+ 
