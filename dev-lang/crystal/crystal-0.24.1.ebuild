@@ -37,10 +37,6 @@ RDEPEND="${DEPEND}
 	yaml? ( dev-libs/libyaml )
 "
 
-PATCHES=(
-	"${FILESDIR}"/nostrip-when-debug.patch
-)
-
 src_prepare() {
 	default
 
@@ -63,6 +59,7 @@ src_compile() {
 		CRYSTAL_PATH=src \
 		CRYSTAL_CONFIG_VERSION=${PV} \
 		CRYSTAL_CONFIG_PATH="lib:${EPREFIX}/usr/$(get_libdir)/crystal"
+		LLVM_CONFIG="llvm-config-6.0 --link-static"
 	use doc && emake doc
 }
 
