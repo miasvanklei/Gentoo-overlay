@@ -40,6 +40,9 @@ DEPEND="${RDEPEND}
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
 
+# Do not strip, swift REPL will not work when stripped
+QA_PRESTRIPPED="/usr/bin/repl_swift"
+
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
 
@@ -66,6 +69,7 @@ src_unpack() {
 src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
+	eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	cmake-utils_src_prepare
 }
