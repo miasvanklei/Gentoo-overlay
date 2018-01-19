@@ -36,7 +36,7 @@ index f15c919b9a..af62eee299 100644
  }
  
 diff --git a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
-index 7845781f12..6b980767b8 100644
+index 7845781f12..3d417850dc 100644
 --- a/lib/Driver/ToolChains/Gnu.cpp
 +++ b/lib/Driver/ToolChains/Gnu.cpp
 @@ -18,6 +18,7 @@
@@ -47,7 +47,7 @@ index 7845781f12..6b980767b8 100644
  #include "clang/Driver/Driver.h"
  #include "clang/Driver/DriverDiagnostic.h"
  #include "clang/Driver/Options.h"
-@@ -300,11 +301,11 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
+@@ -300,7 +301,7 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
  }
  
  static bool getPIE(const ArgList &Args, const toolchains::Linux &ToolChain) {
@@ -56,11 +56,6 @@ index 7845781f12..6b980767b8 100644
      return false;
  
    Arg *A = Args.getLastArg(options::OPT_pie, options::OPT_no_pie,
--                           options::OPT_nopie);
-+                           options::OPT_nopie, options::OPT_r);
-   if (!A)
-     return ToolChain.isPIEDefault();
-   return A->getOption().matches(options::OPT_pie);
 @@ -318,6 +319,7 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
    const toolchains::Linux &ToolChain =
        static_cast<const toolchains::Linux &>(getToolChain());

@@ -103,35 +103,35 @@ src_unpack() {
 }
 
 src_prepare() {
-        # fix use with arm
-        eapply "${FILESDIR}"/0001-fix-unwind.patch
+	# fix use with arm
+	eapply "${FILESDIR}"/0001-fix-unwind.patch
 
-        # cleanup and gentoo patches(SSP,PIE,FULLRELRO)
-        eapply "${FILESDIR}"/0002-gentoo-linux-changes.patch
+	# cleanup and gentoo patches(SSP,PIE,FULLRELRO)
+	eapply "${FILESDIR}"/0002-gentoo-linux-changes.patch
 
-        # link libunwind
-        eapply "${FILESDIR}"/0003-link-libunwind.patch
+	# link libunwind
+	eapply "${FILESDIR}"/0003-link-libunwind.patch
 
-        # dont recurse to itself when clang > gcc symlink
-        eapply "${FILESDIR}"/0004-fix-ada-in-configure.patch
+	# dont recurse to itself when clang > gcc symlink
+	eapply "${FILESDIR}"/0004-fix-ada-in-configure.patch
 
-        # increase gcc version
-        eapply "${FILESDIR}"/0005-increase-gcc-version.patch
+	# increase gcc version
+	eapply "${FILESDIR}"/0005-increase-gcc-version.patch
 
-        # define __STDC_ISO_10646__ and undefine __gnu_linux__
-        eapply "${FILESDIR}"/0006-defines-musl.patch
+	# define __STDC_ISO_10646__ and undefine __gnu_linux__
+	eapply "${FILESDIR}"/0006-defines-musl.patch
 
-        # patches for c++
-        eapply "${FILESDIR}"/0007-link-libcxxabi.patch
+	# patches for c++
+	eapply "${FILESDIR}"/0007-link-libcxxabi.patch
 
-        # needed in linux kernel
-        eapply "${FILESDIR}"/0008-add-fno-delete-null-pointer-checks.patch
+	# needed in linux kernel
+	eapply "${FILESDIR}"/0008-add-fno-delete-null-pointer-checks.patch
 
 	# add Swift support
 	use swift && eapply "${FILESDIR}"/0009-add-swift-support.patch
 
-        # add Fortran support
-        use fortran && eapply "${FILESDIR}"/0010-add-fortran-support.patch
+	# add Fortran support
+	use fortran && eapply "${FILESDIR}"/0010-add-fortran-support.patch
 
 	cmake-utils_src_prepare
 }

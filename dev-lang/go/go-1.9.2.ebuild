@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -136,11 +136,6 @@ src_unpack()
 		git-r3_src_unpack
 	fi
 	default
-}
-
-src_prepare() {
-	eapply "${FILESDIR}"/fix-pie.patch
-	eapply_user
 }
 
 src_compile()
