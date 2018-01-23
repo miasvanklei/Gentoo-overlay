@@ -18,7 +18,6 @@ DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
 
 src_prepare() {
-	eapply ${FILESDIR}/llvm-6.0.patch
 	eapply ${FILESDIR}/fix-musl.patch
 	eapply ${FILESDIR}/link-libunwind.patch
 	eapply ${FILESDIR}/remove-backtrace.patch
