@@ -20,7 +20,7 @@ EGIT_BRANCH="release_60"
 LICENSE="|| ( UoI-NCSA MIT )"
 # Note: this needs to be updated to match version of clang-9999
 SLOT="6.0.0"
-KEYWORDS=""
+KEYWORDS="~amd64"
 IUSE="+clang +compiler-rt test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 
