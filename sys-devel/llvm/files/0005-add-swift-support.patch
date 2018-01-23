@@ -711,3 +711,184 @@
      PATTERN ".svn" EXCLUDE
  
  
+--- a/include/llvm/CodeGen/MachineBasicBlock.h
++++ b/include/llvm/CodeGen/MachineBasicBlock.h
+@@ -225,6 +225,14 @@ class MachineBasicBlock
+     return make_range(getFirstTerminator(), end());
+   }
+ 
++  /// Returns a range that iterates over the phis in the basic block.
++  inline iterator_range<iterator> phis() {
++    return make_range(begin(), getFirstNonPHI());
++  }
++  inline iterator_range<const_iterator> phis() const {
++    return const_cast<MachineBasicBlock *>(this)->phis();
++  }
++
+   // Machine-CFG iterators
+   using pred_iterator = std::vector<MachineBasicBlock *>::iterator;
+   using const_pred_iterator = std::vector<MachineBasicBlock *>::const_iterator;
+--- a/include/llvm/Transforms/Utils/SSAUpdaterImpl.h
++++ b/include/llvm/Transforms/Utils/SSAUpdaterImpl.h
+@@ -389,12 +389,8 @@ class SSAUpdaterImpl {
+   /// FindExistingPHI - Look through the PHI nodes in a block to see if any of
+   /// them match what is needed.
+   void FindExistingPHI(BlkT *BB, BlockListTy *BlockList) {
+-    for (typename BlkT::iterator BBI = BB->begin(), BBE = BB->end();
+-         BBI != BBE; ++BBI) {
+-      PhiT *SomePHI = Traits::InstrIsPHI(&*BBI);
+-      if (!SomePHI)
+-        break;
+-      if (CheckIfPHIMatches(SomePHI)) {
++    for (auto &SomePHI : BB->phis()) {
++      if (CheckIfPHIMatches(&SomePHI)) {
+         RecordMatchingPHIs(BlockList);
+         break;
+       }
+--- a/lib/CodeGen/MachinePipeliner.cpp
++++ b/lib/CodeGen/MachinePipeliner.cpp
+@@ -808,11 +808,9 @@ bool MachinePipeliner::canPipelineLoop(MachineLoop &L) {
+   // because we don't know how to maintain subreg information in the
+   // VMap structure.
+   MachineBasicBlock *MBB = L.getHeader();
+-  for (MachineBasicBlock::iterator BBI = MBB->instr_begin(),
+-                                   BBE = MBB->getFirstNonPHI();
+-       BBI != BBE; ++BBI)
+-    for (unsigned i = 1; i != BBI->getNumOperands(); i += 2)
+-      if (BBI->getOperand(i).getSubReg() != 0)
++  for (auto &PHI : MBB->phis())
++    for (unsigned i = 1; i != PHI.getNumOperands(); i += 2)
++      if (PHI.getOperand(i).getSubReg() != 0)
+         return false;
+ 
+   return true;
+@@ -2924,10 +2922,8 @@ void SwingSchedulerDAG::splitLifetimes(MachineBasicBlock *KernelBB,
+                                        MBBVectorTy &EpilogBBs,
+                                        SMSchedule &Schedule) {
+   const TargetRegisterInfo *TRI = MF.getSubtarget().getRegisterInfo();
+-  for (MachineBasicBlock::iterator BBI = KernelBB->instr_begin(),
+-                                   BBF = KernelBB->getFirstNonPHI();
+-       BBI != BBF; ++BBI) {
+-    unsigned Def = BBI->getOperand(0).getReg();
++  for (auto &PHI : KernelBB->phis()) {
++    unsigned Def = PHI.getOperand(0).getReg();
+     // Check for any Phi definition that used as an operand of another Phi
+     // in the same block.
+     for (MachineRegisterInfo::use_instr_iterator I = MRI.use_instr_begin(Def),
+@@ -2935,7 +2931,7 @@ void SwingSchedulerDAG::splitLifetimes(MachineBasicBlock *KernelBB,
+          I != E; ++I) {
+       if (I->isPHI() && I->getParent() == KernelBB) {
+         // Get the loop carried definition.
+-        unsigned LCDef = getLoopPhiReg(*BBI, KernelBB);
++        unsigned LCDef = getLoopPhiReg(PHI, KernelBB);
+         if (!LCDef)
+           continue;
+         MachineInstr *MI = MRI.getVRegDef(LCDef);
+@@ -3249,13 +3245,11 @@ void SwingSchedulerDAG::rewritePhiValues(MachineBasicBlock *NewBB,
+                                          SMSchedule &Schedule,
+                                          ValueMapTy *VRMap,
+                                          InstrMapTy &InstrMap) {
+-  for (MachineBasicBlock::iterator BBI = BB->instr_begin(),
+-                                   BBE = BB->getFirstNonPHI();
+-       BBI != BBE; ++BBI) {
++  for (auto &PHI : BB->phis()) {
+     unsigned InitVal = 0;
+     unsigned LoopVal = 0;
+-    getPhiRegs(*BBI, BB, InitVal, LoopVal);
+-    unsigned PhiDef = BBI->getOperand(0).getReg();
++    getPhiRegs(PHI, BB, InitVal, LoopVal);
++    unsigned PhiDef = PHI.getOperand(0).getReg();
+ 
+     unsigned PhiStage =
+         (unsigned)Schedule.stageScheduled(getSUnit(MRI.getVRegDef(PhiDef)));
+@@ -3269,7 +3263,7 @@ void SwingSchedulerDAG::rewritePhiValues(MachineBasicBlock *NewBB,
+           getPrevMapVal(StageNum - np, PhiStage, LoopVal, LoopStage, VRMap, BB);
+       if (!NewVal)
+         NewVal = InitVal;
+-      rewriteScheduledInstr(NewBB, Schedule, InstrMap, StageNum - np, np, &*BBI,
++      rewriteScheduledInstr(NewBB, Schedule, InstrMap, StageNum - np, np, &PHI,
+                             PhiDef, NewVal);
+     }
+   }
+--- a/unittests/CodeGen/MachineInstrTest.cpp
++++ b/unittests/CodeGen/MachineInstrTest.cpp
+@@ -8,6 +8,7 @@
+ //===----------------------------------------------------------------------===//
+ 
+ #include "llvm/CodeGen/MachineInstr.h"
++#include "llvm/CodeGen/MachineInstrBuilder.h"
+ #include "llvm/CodeGen/MachineFunction.h"
+ #include "llvm/CodeGen/MachineModuleInfo.h"
+ #include "llvm/CodeGen/TargetFrameLowering.h"
+@@ -244,4 +245,71 @@ TEST(MachineInstrExpressionTraitTest, IsEqualAgreesWithGetHashValue) {
+ 
+   checkHashAndIsEqualMatch(VD2PU, VD2PD);
+ }
++
++TEST(MachineBasicBlockTest, PhiRange) {
++  auto MF = createMachineFunction();
++
++  // Create the main block.
++  auto BB = MF->CreateMachineBasicBlock();
++
++  // Create some predecessors of it.
++  auto BB1 = MF->CreateMachineBasicBlock();
++  BB1->addSuccessor(BB);
++  auto BB2 = MF->CreateMachineBasicBlock();
++  BB2->addSuccessor(BB);
++
++  // Make sure this doesn't crash if there are no phis.
++  for (auto &PN : BB->phis()) {
++    (void)PN;
++    ASSERT_TRUE(false) << "empty block should have no phis";
++  }
++
++  // Make it a cycle.
++  BB->addSuccessor(BB);
++
++  // Now insert some PHI nodes.
++  MCOperandInfo OpInfo[] = { { -1, 0, MCOI::OPERAND_UNKNOWN, 0} };
++  MCInstrDesc PHIMCID = {
++      TargetOpcode::PHI, 1, 1, 0, 0,
++      (1ULL << MCID::Pseudo) | (1ULL << MCID::Variadic), 0,
++      nullptr, nullptr, OpInfo, -1, nullptr};
++  auto P1 = BuildMI(*BB, BB->end(), DebugLoc(), PHIMCID, -101);
++  auto P2 = BuildMI(*BB, BB->end(), DebugLoc(), PHIMCID, -102);
++  auto P3 = BuildMI(*BB, BB->end(), DebugLoc(), PHIMCID, -103);
++
++  // A non-PHI node.
++  MCInstrDesc ImpDefMCID = {
++      TargetOpcode::IMPLICIT_DEF, 1, 1, 0, 0,
++      (1ULL << MCID::Pseudo), 0,
++      nullptr, nullptr, OpInfo, -1, nullptr};
++  BuildMI(*BB, BB->end(), DebugLoc(), ImpDefMCID, -104);
++
++  // Now wire up the incoming values that are interesting.
++  P1.addReg(-102).addMBB(BB);
++  P2.addReg(-101).addMBB(BB);
++  P3.addReg(-104).addMBB(BB);
++
++  // Finally, let's iterate them, which is the thing we're trying to test.
++  // We'll use this to wire up the rest of the incoming values.
++  for (auto &PN : BB->phis()) {
++    EXPECT_TRUE(PN.isPHI());
++    PN.addOperand(*MF, MachineOperand::CreateReg(-100, /*isDef*/ false));
++    PN.addOperand(*MF, MachineOperand::CreateMBB(BB1));
++    PN.addOperand(*MF, MachineOperand::CreateReg(-100, /*isDef*/ false));
++    PN.addOperand(*MF, MachineOperand::CreateMBB(BB2));
++  }
++
++  // Test that we can use const iterators and generally that the iterators
++  // behave like iterators.
++  MachineBasicBlock::const_iterator CI;
++  CI = BB->phis().begin();
++  EXPECT_NE(CI, BB->phis().end());
++
++  // And iterate a const range.
++  for (const auto &PN : const_cast<const MachineBasicBlock *>(BB)->phis()) {
++    EXPECT_EQ(BB, PN.getOperand(2).getMBB());
++    EXPECT_EQ(BB1, PN.getOperand(4).getMBB());
++    EXPECT_EQ(BB2, PN.getOperand(6).getMBB());
++  }
++}
+ } // end namespace

@@ -1,0 +1,747 @@
+diff --git a/include/swift/AST/ConcreteDeclRef.h b/include/swift/AST/ConcreteDeclRef.h
+index 6dc315931f..d9c378e003 100644
+--- a/include/swift/AST/ConcreteDeclRef.h
++++ b/include/swift/AST/ConcreteDeclRef.h
+@@ -71,7 +71,7 @@ class ConcreteDeclRef {
+ 
+   llvm::PointerUnion<ValueDecl *, SpecializedDeclRef *> Data;
+ 
+-  friend class llvm::PointerLikeTypeTraits<ConcreteDeclRef>;
++  friend struct llvm::PointerLikeTypeTraits<ConcreteDeclRef>;
+ 
+ public:
+   /// Create an empty declaration reference.
+@@ -140,7 +140,7 @@ public:
+ } // end namespace swift
+ 
+ namespace llvm {
+-  template<> class PointerLikeTypeTraits<swift::ConcreteDeclRef> {
++  template<> struct PointerLikeTypeTraits<swift::ConcreteDeclRef> {
+     typedef llvm::PointerUnion<swift::ValueDecl *,
+                                swift::ConcreteDeclRef::SpecializedDeclRef *>
+       DataPointer;
+diff --git a/include/swift/AST/Identifier.h b/include/swift/AST/Identifier.h
+index 3b1c7de3fa..ab488a1374 100644
+--- a/include/swift/AST/Identifier.h
++++ b/include/swift/AST/Identifier.h
+@@ -191,9 +191,9 @@ namespace llvm {
+   };
+   
+   // An Identifier is "pointer like".
+-  template<typename T> class PointerLikeTypeTraits;
++  template<typename T> struct PointerLikeTypeTraits;
+   template<>
+-  class PointerLikeTypeTraits<swift::Identifier> {
++  struct PointerLikeTypeTraits<swift::Identifier> {
+   public:
+     static inline void *getAsVoidPointer(swift::Identifier I) {
+       return const_cast<void *>(I.getAsOpaquePointer());
+@@ -333,8 +333,8 @@ template<> struct DenseMapInfo<swift::DeclBaseName> {
+ };
+ 
+ // A DeclBaseName is "pointer like".
+-template <typename T> class PointerLikeTypeTraits;
+-template <> class PointerLikeTypeTraits<swift::DeclBaseName> {
++template <typename T> struct PointerLikeTypeTraits;
++template <> struct PointerLikeTypeTraits<swift::DeclBaseName> {
+ public:
+   static inline void *getAsVoidPointer(swift::DeclBaseName D) {
+     return const_cast<void *>(D.getAsOpaquePointer());
+@@ -687,9 +687,9 @@ public:
+ 
+ namespace llvm {
+   // A DeclName is "pointer like".
+-  template<typename T> class PointerLikeTypeTraits;
++  template<typename T> struct PointerLikeTypeTraits;
+   template<>
+-  class PointerLikeTypeTraits<swift::DeclName> {
++  struct PointerLikeTypeTraits<swift::DeclName> {
+   public:
+     static inline void *getAsVoidPointer(swift::DeclName name) {
+       return name.getOpaqueValue();
+@@ -717,9 +717,9 @@ namespace llvm {
+   };
+ 
+   // An ObjCSelector is "pointer like".
+-  template<typename T> class PointerLikeTypeTraits;
++  template<typename T> struct PointerLikeTypeTraits;
+   template<>
+-  class PointerLikeTypeTraits<swift::ObjCSelector> {
++  struct PointerLikeTypeTraits<swift::ObjCSelector> {
+   public:
+     static inline void *getAsVoidPointer(swift::ObjCSelector name) {
+       return name.getOpaqueValue();
+diff --git a/include/swift/AST/LayoutConstraint.h b/include/swift/AST/LayoutConstraint.h
+index ef0561cd7a..961fa8ae2f 100644
+--- a/include/swift/AST/LayoutConstraint.h
++++ b/include/swift/AST/LayoutConstraint.h
+@@ -395,7 +395,7 @@ template <> struct DenseMapInfo<swift::LayoutConstraint> {
+ };
+ 
+ // A LayoutConstraint is "pointer like".
+-template <> class PointerLikeTypeTraits<swift::LayoutConstraint> {
++template <> struct PointerLikeTypeTraits<swift::LayoutConstraint> {
+ public:
+   static inline void *getAsVoidPointer(swift::LayoutConstraint I) {
+     return (void *)I.getPointer();
+diff --git a/include/swift/AST/Type.h b/include/swift/AST/Type.h
+index 7453691cea..3b849f06d9 100644
+--- a/include/swift/AST/Type.h
++++ b/include/swift/AST/Type.h
+@@ -639,7 +639,7 @@ namespace llvm {
+ 
+   // A Type is "pointer like".
+   template<>
+-  class PointerLikeTypeTraits<swift::Type> {
++  struct PointerLikeTypeTraits<swift::Type> {
+   public:
+     static inline void *getAsVoidPointer(swift::Type I) {
+       return (void*)I.getPointer();
+@@ -651,7 +651,7 @@ namespace llvm {
+   };
+   
+   template<>
+-  class PointerLikeTypeTraits<swift::CanType> :
++  struct PointerLikeTypeTraits<swift::CanType> :
+     public PointerLikeTypeTraits<swift::Type> {
+   public:
+     static inline swift::CanType getFromVoidPointer(void *P) {
+@@ -660,7 +660,7 @@ namespace llvm {
+   };
+ 
+   template<>
+-  class PointerLikeTypeTraits<swift::CanGenericSignature> {
++  struct PointerLikeTypeTraits<swift::CanGenericSignature> {
+   public:
+     static inline swift::CanGenericSignature getFromVoidPointer(void *P) {
+       return swift::CanGenericSignature((swift::GenericSignature*)P);
+diff --git a/include/swift/AST/TypeAlignments.h b/include/swift/AST/TypeAlignments.h
+index e021da0ad5..6b4971e88e 100644
+--- a/include/swift/AST/TypeAlignments.h
++++ b/include/swift/AST/TypeAlignments.h
+@@ -71,14 +71,14 @@ namespace llvm {
+     }
+   };
+ 
+-  template <class T> class PointerLikeTypeTraits;
++  template <class T> struct PointerLikeTypeTraits;
+ }
+ 
+ /// Declare the expected alignment of pointers to the given type.
+ /// This macro should be invoked from a top-level file context.
+ #define LLVM_DECLARE_TYPE_ALIGNMENT(CLASS, ALIGNMENT)     \
+ namespace llvm {                                          \
+-template <> class PointerLikeTypeTraits<CLASS*>           \
++template <> struct PointerLikeTypeTraits<CLASS*>          \
+   : public MoreAlignedPointerTraits<CLASS, ALIGNMENT> {}; \
+ }
+ 
+diff --git a/include/swift/Basic/DiverseStack.h b/include/swift/Basic/DiverseStack.h
+index 94039124fa..744551293e 100644
+--- a/include/swift/Basic/DiverseStack.h
++++ b/include/swift/Basic/DiverseStack.h
+@@ -378,7 +378,7 @@ public:
+ /// Allow stable_iterators to be put in things like TinyPtrVectors.
+ namespace llvm {
+   template <>
+-  class PointerLikeTypeTraits<
++  struct PointerLikeTypeTraits<
+                       swift::DiverseStackBase::stable_iterator::AsPointer> {
+     using AsPointer = swift::DiverseStackBase::stable_iterator::AsPointer;
+   public:
+diff --git a/include/swift/Basic/FlaggedPointer.h b/include/swift/Basic/FlaggedPointer.h
+index b409f477cf..5b5743d742 100644
+--- a/include/swift/Basic/FlaggedPointer.h
++++ b/include/swift/Basic/FlaggedPointer.h
+@@ -152,7 +152,7 @@ public:
+ 
+ // Teach SmallPtrSet that FlaggedPointer is "basically a pointer".
+ template <typename PointerTy, unsigned BitPosition, typename PtrTraits>
+-class llvm::PointerLikeTypeTraits<
++struct llvm::PointerLikeTypeTraits<
+   swift::FlaggedPointer<PointerTy, BitPosition, PtrTraits>> {
+ public:
+   static inline void *
+diff --git a/include/swift/SIL/Dominance.h b/include/swift/SIL/Dominance.h
+index 79e20d8314..0bab509af9 100644
+--- a/include/swift/SIL/Dominance.h
++++ b/include/swift/SIL/Dominance.h
+@@ -30,10 +30,8 @@ namespace DomTreeBuilder {
+ using SILDomTree = llvm::DomTreeBase<swift::SILBasicBlock>;
+ using SILPostDomTree = llvm::PostDomTreeBase<swift::SILBasicBlock>;
+ 
+-extern template void Calculate<SILDomTree, swift::SILFunction>(
+-    SILDomTree &DT, swift::SILFunction &F);
+-extern template void Calculate<SILPostDomTree, swift::SILFunction>(
+-    SILPostDomTree &DT, swift::SILFunction &F);
++extern template void Calculate<SILDomTree>(SILDomTree &DT);
++extern template void Calculate<SILPostDomTree>(SILPostDomTree &DT);
+ } // namespace DomTreeBuilder
+ } // namespace llvm
+ 
+diff --git a/include/swift/SIL/SILBasicBlock.h b/include/swift/SIL/SILBasicBlock.h
+index 8fd8e18df2..36cd5ba392 100644
+--- a/include/swift/SIL/SILBasicBlock.h
++++ b/include/swift/SIL/SILBasicBlock.h
+@@ -161,6 +161,36 @@ public:
+   const_arg_iterator args_begin() const { return ArgumentList.begin(); }
+   const_arg_iterator args_end() const { return ArgumentList.end(); }
+ 
++  /// Iterator over the PHI arguments of a basic block.
++  /// Defines an implicit cast operator on the iterator, so that this iterator
++  /// can be used in the SSAUpdaterImpl.
++  template <typename PHIArgT = SILPHIArgument,
++            typename IteratorT = arg_iterator>
++  class phi_iterator_impl {
++  private:
++    IteratorT It;
++
++  public:
++    explicit phi_iterator_impl(IteratorT A) : It(A) {}
++    phi_iterator_impl &operator++() { ++It; return *this; }
++
++    operator PHIArgT *() { return cast<PHIArgT>(*It); }
++    bool operator==(const phi_iterator_impl& x) const { return It == x.It; }
++    bool operator!=(const phi_iterator_impl& x) const { return !operator==(x); }
++  };
++  typedef phi_iterator_impl<> phi_iterator;
++  typedef phi_iterator_impl<const SILPHIArgument,
++                            SILBasicBlock::const_arg_iterator>
++      const_phi_iterator;
++
++  inline iterator_range<phi_iterator> phis() {
++    return make_range(phi_iterator(args_begin()), phi_iterator(args_end()));
++  }
++  inline iterator_range<const_phi_iterator> phis() const {
++    return make_range(const_phi_iterator(args_begin()),
++                      const_phi_iterator(args_end()));
++  }
++
+   ArrayRef<SILArgument *> getArguments() const { return ArgumentList; }
+   using PHIArgumentArrayRefTy =
+       TransformArrayRef<std::function<SILPHIArgument *(SILArgument *)>>;
+diff --git a/include/swift/SIL/SILInstruction.h b/include/swift/SIL/SILInstruction.h
+index 27f9c0cbe8..26e973c2cc 100644
+--- a/include/swift/SIL/SILInstruction.h
++++ b/include/swift/SIL/SILInstruction.h
+@@ -166,7 +166,7 @@ public:
+   reverse_range getReversedValues() const;
+ 
+   using type_range = llvm::iterator_range<
+-      llvm::mapped_iterator<iterator, std::function<SILType(SILValue)>>>;
++      llvm::mapped_iterator<iterator, std::function<SILType(SILValue)>, SILType>>;
+   type_range getTypes() const;
+ 
+   bool operator==(const SILInstructionResultArray &rhs);
+diff --git a/include/swift/SIL/SILNode.h b/include/swift/SIL/SILNode.h
+index 8b383c8e13..c2b1573ed1 100644
+--- a/include/swift/SIL/SILNode.h
++++ b/include/swift/SIL/SILNode.h
+@@ -316,7 +316,7 @@ struct cast_convert_val<To, const swift::SILNode, From>;
+ /// ValueBase * is always at least eight-byte aligned; make the three tag bits
+ /// available through PointerLikeTypeTraits.
+ template<>
+-class PointerLikeTypeTraits<swift::SILNode *> {
++struct PointerLikeTypeTraits<swift::SILNode *> {
+ public:
+   static inline void *getAsVoidPointer(swift::SILNode *I) {
+     return (void*)I;
+diff --git a/include/swift/SIL/SILType.h b/include/swift/SIL/SILType.h
+index 5d2b1352f0..7fd3a0bcbd 100644
+--- a/include/swift/SIL/SILType.h
++++ b/include/swift/SIL/SILType.h
+@@ -612,7 +612,7 @@ namespace llvm {
+ // Allow the low bit of SILType to be used for nefarious purposes, e.g. putting
+ // a SILType into a PointerUnion.
+ template<>
+-class PointerLikeTypeTraits<swift::SILType> {
++struct PointerLikeTypeTraits<swift::SILType> {
+ public:
+   static inline void *getAsVoidPointer(swift::SILType T) {
+     return T.getOpaqueValue();
+diff --git a/include/swift/SIL/SILValue.h b/include/swift/SIL/SILValue.h
+index e76db69faf..4468b58a4c 100644
+--- a/include/swift/SIL/SILValue.h
++++ b/include/swift/SIL/SILValue.h
+@@ -254,7 +254,7 @@ namespace llvm {
+ /// ValueBase * is always at least eight-byte aligned; make the three tag bits
+ /// available through PointerLikeTypeTraits.
+ template<>
+-class PointerLikeTypeTraits<swift::ValueBase *> {
++struct PointerLikeTypeTraits<swift::ValueBase *> {
+ public:
+   static inline void *getAsVoidPointer(swift::ValueBase *I) {
+     return (void*)I;
+@@ -834,7 +834,7 @@ namespace llvm {
+   };
+ 
+   /// SILValue is a PointerLikeType.
+-  template<> class PointerLikeTypeTraits<::swift::SILValue> {
++  template<> struct PointerLikeTypeTraits<::swift::SILValue> {
+     using SILValue = ::swift::SILValue;
+   public:
+     static void *getAsVoidPointer(SILValue v) {
+diff --git a/lib/Basic/Platform.cpp b/lib/Basic/Platform.cpp
+index 206aaca587..2c90231706 100644
+--- a/lib/Basic/Platform.cpp
++++ b/lib/Basic/Platform.cpp
+@@ -113,7 +113,6 @@ StringRef swift::getPlatformNameForTriple(const llvm::Triple &triple) {
+   case llvm::Triple::RTEMS:
+   case llvm::Triple::NaCl:
+   case llvm::Triple::CNK:
+-  case llvm::Triple::Bitrig:
+   case llvm::Triple::AIX:
+   case llvm::Triple::CUDA:
+   case llvm::Triple::NVCL:
+@@ -121,6 +120,7 @@ StringRef swift::getPlatformNameForTriple(const llvm::Triple &triple) {
+   case llvm::Triple::ELFIAMCU:
+   case llvm::Triple::Mesa3D:
+   case llvm::Triple::Contiki:
++  case llvm::Triple::AMDPAL:
+     return "";
+   case llvm::Triple::Darwin:
+   case llvm::Triple::MacOSX:
+diff --git a/lib/ClangImporter/ClangAdapter.cpp b/lib/ClangImporter/ClangAdapter.cpp
+index 04daaf81ee..6ed0bf4958 100644
+--- a/lib/ClangImporter/ClangAdapter.cpp
++++ b/lib/ClangImporter/ClangAdapter.cpp
+@@ -337,6 +337,7 @@ OmissionTypeName importer::getClangTypeNameForOmission(clang::ASTContext &ctx,
+     // FIXME: Types that can be mapped, but aren't yet.
+     case clang::BuiltinType::Half:
+     case clang::BuiltinType::LongDouble:
++    case clang::BuiltinType::Float16:
+     case clang::BuiltinType::Float128:
+     case clang::BuiltinType::NullPtr:
+       return OmissionTypeName();
+diff --git a/lib/ClangImporter/ImportType.cpp b/lib/ClangImporter/ImportType.cpp
+index 3b143360b0..aa9dc8b2f1 100644
+--- a/lib/ClangImporter/ImportType.cpp
++++ b/lib/ClangImporter/ImportType.cpp
+@@ -235,6 +235,7 @@ namespace {
+       // FIXME: Types that can be mapped, but aren't yet.
+       case clang::BuiltinType::Half:
+       case clang::BuiltinType::LongDouble:
++      case clang::BuiltinType::Float16:
+       case clang::BuiltinType::Float128:
+       case clang::BuiltinType::NullPtr:
+         return Type();
+diff --git a/lib/IRGen/GenCall.cpp b/lib/IRGen/GenCall.cpp
+index 929d176f3c..3f9e494a69 100644
+--- a/lib/IRGen/GenCall.cpp
++++ b/lib/IRGen/GenCall.cpp
+@@ -663,6 +663,9 @@ namespace {
+         return convertFloatingType(Ctx.getTargetInfo().getDoubleFormat());
+       case clang::BuiltinType::LongDouble:
+         return convertFloatingType(Ctx.getTargetInfo().getLongDoubleFormat());
++      case clang::BuiltinType::Float16:
++        llvm_unreachable("When upstream support is added for Float16 in "
++                         "clang::TargetInfo, use the implementation here");
+       case clang::BuiltinType::Float128:
+         return convertFloatingType(Ctx.getTargetInfo().getFloat128Format());
+ 
+diff --git a/lib/IRGen/IRBuilder.h b/lib/IRGen/IRBuilder.h
+index 8b17048c1c..bc7a9a8a61 100644
+--- a/lib/IRGen/IRBuilder.h
++++ b/lib/IRGen/IRBuilder.h
+@@ -307,7 +307,7 @@ public:
+ } // end namespace swift
+ 
+ namespace llvm {
+-  template <> class PointerLikeTypeTraits<swift::irgen::IRBuilder::StableIP> {
++  template <> struct PointerLikeTypeTraits<swift::irgen::IRBuilder::StableIP> {
+     typedef swift::irgen::IRBuilder::StableIP type;
+   public:
+     static void *getAsVoidPointer(type IP) {
+diff --git a/lib/IRGen/IRGen.cpp b/lib/IRGen/IRGen.cpp
+index ec76528f76..55122521da 100644
+--- a/lib/IRGen/IRGen.cpp
++++ b/lib/IRGen/IRGen.cpp
+@@ -41,6 +41,7 @@
+ #include "llvm/Bitcode/BitcodeWriter.h"
+ #include "llvm/Bitcode/BitcodeWriterPass.h"
+ #include "llvm/CodeGen/BasicTTIImpl.h"
++#include "llvm/CodeGen/TargetSubtargetInfo.h"
+ #include "llvm/IR/Constants.h"
+ #include "llvm/IR/DataLayout.h"
+ #include "llvm/IR/IRPrintingPasses.h"
+@@ -62,7 +63,6 @@
+ #include "llvm/Support/Path.h"
+ #include "llvm/Support/TargetRegistry.h"
+ #include "llvm/Target/TargetMachine.h"
+-#include "llvm/Target/TargetSubtargetInfo.h"
+ #include "llvm/Transforms/IPO.h"
+ #include "llvm/Transforms/IPO/AlwaysInliner.h"
+ #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+@@ -547,7 +547,7 @@ swift::createTargetMachine(IRGenOptions &Opts, ASTContext &Ctx) {
+   // Create a target machine.
+   llvm::TargetMachine *TargetMachine =
+       Target->createTargetMachine(Triple.str(), CPU, targetFeatures, TargetOpts,
+-                                  Reloc::PIC_, CodeModel::Default, OptLevel);
++                                  Reloc::PIC_, CodeModel::Small, OptLevel);
+   if (!TargetMachine) {
+     Ctx.Diags.diagnose(SourceLoc(), diag::no_llvm_target,
+                        Triple.str(), "no LLVM target machine");
+diff --git a/lib/Index/Index.cpp b/lib/Index/Index.cpp
+index 5c6bd6bfbc..ed0fae3964 100644
+--- a/lib/Index/Index.cpp
++++ b/lib/Index/Index.cpp
+@@ -1211,7 +1211,7 @@ bool IndexSwiftASTWalker::indexComment(const Decl *D) {
+     IndexSymbol Info;
+     Info.decl = nullptr;
+     Info.symInfo = SymbolInfo{ SymbolKind::CommentTag, SymbolSubKind::None,
+-      SymbolPropertySet(), SymbolLanguage::Swift };
++      SymbolLanguage::Swift, SymbolPropertySet() };
+     Info.roles |= (unsigned)SymbolRole::Definition;
+     Info.name = StringRef();
+     SmallString<128> storage;
+diff --git a/lib/Index/IndexSymbol.cpp b/lib/Index/IndexSymbol.cpp
+index f9774da057..d22c9790ef 100644
+--- a/lib/Index/IndexSymbol.cpp
++++ b/lib/Index/IndexSymbol.cpp
+@@ -138,7 +138,7 @@ static SymbolKind getVarSymbolKind(const VarDecl *VD) {
+ 
+ SymbolInfo index::getSymbolInfoForDecl(const Decl *D) {
+   SymbolInfo info{ SymbolKind::Unknown, SymbolSubKind::None,
+-                   SymbolPropertySet(), SymbolLanguage::Swift };
++                   SymbolLanguage::Swift, SymbolPropertySet() };
+   switch (D->getKind()) {
+     case DeclKind::Enum:             info.Kind = SymbolKind::Enum; break;
+     case DeclKind::Struct:           info.Kind = SymbolKind::Struct; break;
+diff --git a/lib/LLVMPasses/LLVMSwiftAA.cpp b/lib/LLVMPasses/LLVMSwiftAA.cpp
+index 4b349b4c34..c187560851 100644
+--- a/lib/LLVMPasses/LLVMSwiftAA.cpp
++++ b/lib/LLVMPasses/LLVMSwiftAA.cpp
+@@ -13,7 +13,7 @@
+ #include "swift/LLVMPasses/Passes.h"
+ #include "LLVMARCOpts.h"
+ #include "llvm/Analysis/TargetLibraryInfo.h"
+-#include "llvm/IR/LegacyPassManager.h" 
++#include "llvm/IR/LegacyPassManager.h"
+ #include "llvm/IR/Module.h"
+ 
+ using namespace llvm;
+@@ -25,7 +25,7 @@ using namespace swift;
+ 
+ static ModRefInfo getConservativeModRefForKind(const llvm::Instruction &I) {
+   switch (classifyInstruction(I)) {
+-#define KIND(Name, MemBehavior) case RT_ ## Name: return MRI_ ## MemBehavior;
++#define KIND(Name, MemBehavior) case RT_ ## Name: return ModRefInfo:: MemBehavior;
+ #include "LLVMSwift.def"
+   }
+ 
+@@ -37,8 +37,9 @@ ModRefInfo SwiftAAResult::getModRefInfo(llvm::ImmutableCallSite CS,
+   // We know at compile time that certain entry points do not modify any
+   // compiler-visible state ever. Quickly check if we have one of those
+   // instructions and return if so.
+-  if (MRI_NoModRef == getConservativeModRefForKind(*CS.getInstruction()))
+-    return MRI_NoModRef;
++  if (ModRefInfo::NoModRef ==
++      getConservativeModRefForKind(*CS.getInstruction()))
++    return ModRefInfo::NoModRef;
+ 
+   // Otherwise, delegate to the rest of the AA ModRefInfo machinery.
+   return AAResultBase::getModRefInfo(CS, Loc);
+diff --git a/lib/SIL/Dominance.cpp b/lib/SIL/Dominance.cpp
+index eb27420a24..88e034ca64 100644
+--- a/lib/SIL/Dominance.cpp
++++ b/lib/SIL/Dominance.cpp
+@@ -24,10 +24,8 @@ template class llvm::DomTreeNodeBase<SILBasicBlock>;
+ 
+ namespace llvm {
+ namespace DomTreeBuilder {
+-template void Calculate<SILDomTree, swift::SILFunction>(
+-    SILDomTree &DT, swift::SILFunction &F);
+-template void Calculate<SILPostDomTree, swift::SILFunction>(
+-    SILPostDomTree &DT, swift::SILFunction &F);
++template void Calculate<SILDomTree>(SILDomTree &DT);
++template void Calculate<SILPostDomTree>(SILPostDomTree &DT);
+ } // namespace DomTreeBuilder
+ } // namespace llvm
+ 
+diff --git a/lib/SIL/SILOwnershipVerifier.cpp b/lib/SIL/SILOwnershipVerifier.cpp
+index e200b03796..fed30a750b 100644
+--- a/lib/SIL/SILOwnershipVerifier.cpp
++++ b/lib/SIL/SILOwnershipVerifier.cpp
+@@ -150,7 +150,7 @@ SILBasicBlock *GeneralizedUser::getParent() const {
+ 
+ namespace llvm {
+ 
+-template <> class PointerLikeTypeTraits<GeneralizedUser> {
++template <> struct PointerLikeTypeTraits<GeneralizedUser> {
+ 
+ public:
+   static void *getAsVoidPointer(GeneralizedUser v) {
+diff --git a/lib/SILOptimizer/Utils/SILSSAUpdater.cpp b/lib/SILOptimizer/Utils/SILSSAUpdater.cpp
+index 994d128486..00e1f9e687 100644
+--- a/lib/SILOptimizer/Utils/SILSSAUpdater.cpp
++++ b/lib/SILOptimizer/Utils/SILSSAUpdater.cpp
+@@ -248,29 +248,6 @@ public:
+   static BlkSucc_iterator BlkSucc_begin(BlkT *BB) { return BB->succ_begin(); }
+   static BlkSucc_iterator BlkSucc_end(BlkT *BB) { return BB->succ_end(); }
+ 
+-  /// Iterator over the arguments (phis) of a basic block.
+-  /// Defines an implicit cast operator on the iterator. So that this iterator
+-  /// can be used in the SSAUpdaterImpl.
+-  class PhiIt {
+-  private:
+-    SILBasicBlock::arg_iterator It;
+-
+-  public:
+-    explicit PhiIt(SILBasicBlock *B) // begin iterator
+-        : It(B->args_begin()) {}
+-    PhiIt(SILBasicBlock *B, bool) // end iterator
+-        : It(B->args_end()) {}
+-    PhiIt &operator++() { ++It; return *this; }
+-
+-    operator SILPHIArgument *() { return cast<SILPHIArgument>(*It); }
+-    bool operator==(const PhiIt& x) const { return It == x.It; }
+-    bool operator!=(const PhiIt& x) const { return !operator==(x); }
+-  };
+-
+-  typedef PhiIt PhiItT;
+-  static PhiItT PhiItT_begin(BlkT *BB) { return PhiIt(BB); }
+-  static PhiItT PhiItT_end(BlkT *BB) { return PhiIt(BB, true); }
+-
+   /// Iterator for PHI operands.
+   class PHI_iterator {
+   private:
+diff --git a/tools/SourceKit/include/SourceKit/Core/LangSupport.h b/tools/SourceKit/include/SourceKit/Core/LangSupport.h
+index 117fc800c0..d246099a98 100644
+--- a/tools/SourceKit/include/SourceKit/Core/LangSupport.h
++++ b/tools/SourceKit/include/SourceKit/Core/LangSupport.h
+@@ -286,7 +286,7 @@ struct CursorInfoData {
+   StringRef ModuleInterfaceName;
+   /// This is an (offset,length) pair.
+   /// It is set only if the declaration has a source location.
+-  llvm::Optional<std::pair<unsigned, unsigned>> DeclarationLoc;
++  llvm::Optional<std::pair<unsigned, unsigned>> DeclarationLoc = None;
+   /// Set only if the declaration has a source location.
+   StringRef Filename;
+   /// For methods this lists the USRs of the overrides in the class hierarchy.
+diff --git a/tools/SourceKit/lib/Support/ImmutableTextBuffer.cpp b/tools/SourceKit/lib/Support/ImmutableTextBuffer.cpp
+index b42a3ed17c..66cc6daba5 100644
+--- a/tools/SourceKit/lib/Support/ImmutableTextBuffer.cpp
++++ b/tools/SourceKit/lib/Support/ImmutableTextBuffer.cpp
+@@ -177,7 +177,8 @@ getMemBufferFromRope(StringRef Filename, const RewriteRope &Rope) {
+     Length += I.piece().size();
+   }
+ 
+-  auto MemBuf = llvm::MemoryBuffer::getNewUninitMemBuffer(Length, Filename);
++  auto MemBuf =
++     llvm::WritableMemoryBuffer::getNewUninitMemBuffer(Length, Filename);
+   char *Ptr = (char*)MemBuf->getBufferStart();
+   for (RewriteRope::iterator I = Rope.begin(), E = Rope.end(); I != E;
+        I.MoveToNextPiece()) {
+diff --git a/tools/SourceKit/lib/SwiftLang/SwiftCompletion.cpp b/tools/SourceKit/lib/SwiftLang/SwiftCompletion.cpp
+index 16e08fa332..dcdfacd63e 100644
+--- a/tools/SourceKit/lib/SwiftLang/SwiftCompletion.cpp
++++ b/tools/SourceKit/lib/SwiftLang/SwiftCompletion.cpp
+@@ -157,7 +157,8 @@ static bool swiftCodeCompleteImpl(SwiftLangSupport &Lang,
+ 
+   const char *Position = InputFile->getBufferStart() + CodeCompletionOffset;
+   std::unique_ptr<llvm::MemoryBuffer> NewBuffer =
+-      llvm::MemoryBuffer::getNewUninitMemBuffer(InputFile->getBufferSize() + 1,
++      llvm::WritableMemoryBuffer::getNewUninitMemBuffer(
++                                              InputFile->getBufferSize() + 1,
+                                               InputFile->getBufferIdentifier());
+   char *NewBuf = const_cast<char*>(NewBuffer->getBufferStart());
+   char *NewPos = std::copy(InputFile->getBufferStart(), Position, NewBuf);
+diff --git a/tools/SourceKit/lib/SwiftLang/SwiftSourceDocInfo.cpp b/tools/SourceKit/lib/SwiftLang/SwiftSourceDocInfo.cpp
+index a96492b9dd..7aaa022d4c 100644
+--- a/tools/SourceKit/lib/SwiftLang/SwiftSourceDocInfo.cpp
++++ b/tools/SourceKit/lib/SwiftLang/SwiftSourceDocInfo.cpp
+@@ -1218,7 +1218,7 @@ static void resolveCursor(SwiftLangSupport &Lang,
+       SourceLoc Loc =
+         Lexer::getLocForStartOfToken(SM, BufferID, Offset);
+       if (Loc.isInvalid()) {
+-        Receiver({});
++        Receiver(CursorInfoData());
+         return;
+       }
+ 
+@@ -1281,7 +1281,7 @@ static void resolveCursor(SwiftLangSupport &Lang,
+       CursorInfoResolver Resolver(AstUnit->getPrimarySourceFile());
+       ResolvedCursorInfo CursorInfo = Resolver.resolve(Loc);
+       if (CursorInfo.isInvalid()) {
+-        Receiver({});
++        Receiver(CursorInfoData());
+         return;
+       }
+       CompilerInvocation CompInvok;
+@@ -1313,7 +1313,7 @@ static void resolveCursor(SwiftLangSupport &Lang,
+                           /*TryExistingAST=*/false, CancelOnSubsequentRequest,
+                           Receiver);
+           } else {
+-            Receiver({});
++            Receiver(CursorInfoData());
+           }
+         }
+         return;
+@@ -1343,7 +1343,7 @@ static void resolveCursor(SwiftLangSupport &Lang,
+           }
+         }
+ 
+-        Receiver({});
++        Receiver(CursorInfoData());
+         return;
+       }
+       case CursorInfoKind::Invalid: {
+@@ -1360,7 +1360,7 @@ static void resolveCursor(SwiftLangSupport &Lang,
+ 
+     void failed(StringRef Error) override {
+       LOG_WARN_FUNC("cursor info failed: " << Error);
+-      Receiver({});
++      Receiver(CursorInfoData());
+     }
+   };
+ 
+@@ -1595,7 +1595,7 @@ void SwiftLangSupport::getCursorInfo(
+               {}, *this, Invok, {}, Receiver);
+         }
+       } else {
+-        Receiver({});
++        Receiver(CursorInfoData());
+       }
+     });
+     return;
+@@ -1606,7 +1606,7 @@ void SwiftLangSupport::getCursorInfo(
+   if (!Invok) {
+     // FIXME: Report it as failed request.
+     LOG_WARN_FUNC("failed to create an ASTInvocation: " << Error);
+-    Receiver({});
++    Receiver(CursorInfoData());
+     return;
+   }
+ 
+@@ -1752,7 +1752,7 @@ resolveCursorFromUSR(SwiftLangSupport &Lang, StringRef InputFile, StringRef USR,
+ 
+       if (USR.startswith("c:")) {
+         LOG_WARN_FUNC("lookup for C/C++/ObjC USRs not implemented");
+-        Receiver({});
++        Receiver(CursorInfoData());
+         return;
+       }
+ 
+@@ -1761,7 +1761,7 @@ resolveCursorFromUSR(SwiftLangSupport &Lang, StringRef InputFile, StringRef USR,
+       Decl *D = ide::getDeclFromUSR(context, USR, error);
+ 
+       if (!D) {
+-        Receiver({});
++        Receiver(CursorInfoData());
+         return;
+       }
+ 
+@@ -1790,7 +1790,7 @@ resolveCursorFromUSR(SwiftLangSupport &Lang, StringRef InputFile, StringRef USR,
+                                  /*TryExistingAST=*/false,
+                                  CancelOnSubsequentRequest, Receiver);
+           } else {
+-            Receiver({});
++            Receiver(CursorInfoData());
+           }
+         }
+       }
+@@ -1804,7 +1804,7 @@ resolveCursorFromUSR(SwiftLangSupport &Lang, StringRef InputFile, StringRef USR,
+ 
+     void failed(StringRef Error) override {
+       LOG_WARN_FUNC("cursor info failed: " << Error);
+-      Receiver({});
++      Receiver(CursorInfoData());
+     }
+   };
+ 
+@@ -1824,7 +1824,7 @@ void SwiftLangSupport::getCursorInfoFromUSR(
+     std::function<void(const CursorInfoData &)> receiver) {
+   if (auto IFaceGenRef = IFaceGenContexts.get(filename)) {
+     LOG_WARN_FUNC("info from usr for generated interface not implemented yet");
+-    receiver({});
++    receiver(CursorInfoData());
+     return;
+   }
+ 
+@@ -1833,7 +1833,7 @@ void SwiftLangSupport::getCursorInfoFromUSR(
+   if (!invok) {
+     // FIXME: Report it as failed request.
+     LOG_WARN_FUNC("failed to create an ASTInvocation: " << error);
+-    receiver({});
++    receiver(CursorInfoData());
+     return;
+   }
+ 
+diff --git a/tools/SourceKit/tools/sourcekitd/lib/API/CompactArray.cpp b/tools/SourceKit/tools/sourcekitd/lib/API/CompactArray.cpp
+index 8f9f9788f6..f2ec65d341 100644
+--- a/tools/SourceKit/tools/sourcekitd/lib/API/CompactArray.cpp
++++ b/tools/SourceKit/tools/sourcekitd/lib/API/CompactArray.cpp
+@@ -72,7 +72,7 @@ unsigned CompactArrayBuilderImpl::getOffsetForString(StringRef Str) {
+ std::unique_ptr<llvm::MemoryBuffer>
+ CompactArrayBuilderImpl::createBuffer() const {
+   std::unique_ptr<llvm::MemoryBuffer> Buf;
+-  Buf = llvm::MemoryBuffer::getNewUninitMemBuffer(sizeInBytes());
++  Buf = llvm::WritableMemoryBuffer::getNewUninitMemBuffer(sizeInBytes());
+   copyInto(const_cast<char *>(Buf->getBufferStart()), Buf->getBufferSize());
+   return Buf;
+ }
+diff --git a/tools/SourceKit/tools/sourcekitd/lib/API/DocStructureArray.cpp b/tools/SourceKit/tools/sourcekitd/lib/API/DocStructureArray.cpp
+index c03f0d829d..d6c898c7ac 100644
+--- a/tools/SourceKit/tools/sourcekitd/lib/API/DocStructureArray.cpp
++++ b/tools/SourceKit/tools/sourcekitd/lib/API/DocStructureArray.cpp
+@@ -249,7 +249,7 @@ std::unique_ptr<llvm::MemoryBuffer> DocStructureArrayBuilder::createBuffer() {
+   // * offset of top structure array (relative to structure array section) (1)
+   size_t headerSize = sizeof(uint64_t) * 6;
+ 
+-  auto result = llvm::MemoryBuffer::getNewUninitMemBuffer(
++  auto result = llvm::WritableMemoryBuffer::getNewUninitMemBuffer(
+       inheritedTypesBufferSize + attrsBufferSize + elementsBufferSize +
+       structureArrayBufferSize + structureBufferSize + headerSize);
+ 
+diff --git a/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-XPC.cpp b/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-XPC.cpp
+index 4dedc75712..60dffda485 100644
+--- a/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-XPC.cpp
++++ b/tools/SourceKit/tools/sourcekitd/lib/API/sourcekitdAPI-XPC.cpp
+@@ -245,7 +245,7 @@ void ResponseBuilder::Dictionary::setCustomBuffer(
+       CustomBufferKind Kind, std::unique_ptr<llvm::MemoryBuffer> MemBuf) {
+ 
+   std::unique_ptr<llvm::MemoryBuffer> CustomBuf;
+-  CustomBuf = llvm::MemoryBuffer::getNewUninitMemBuffer(
++  CustomBuf = llvm::WritableMemoryBuffer::getNewUninitMemBuffer(
+       sizeof(uint64_t) + MemBuf->getBufferSize());
+   char *BufPtr = (char*)CustomBuf->getBufferStart();
+   *reinterpret_cast<uint64_t*>(BufPtr) = (uint64_t)Kind;
+diff --git a/tools/swift-llvm-opt/LLVMOpt.cpp b/tools/swift-llvm-opt/LLVMOpt.cpp
+index cba627fddb..ed66980265 100644
+--- a/tools/swift-llvm-opt/LLVMOpt.cpp
++++ b/tools/swift-llvm-opt/LLVMOpt.cpp
+@@ -37,7 +37,7 @@
+ #include "llvm/Analysis/TargetLibraryInfo.h"
+ #include "llvm/Analysis/TargetTransformInfo.h"
+ #include "llvm/Bitcode/BitcodeWriterPass.h"
+-#include "llvm/CodeGen/CommandFlags.h"
++#include "llvm/CodeGen/CommandFlags.def"
+ #include "llvm/CodeGen/TargetPassConfig.h"
+ #include "llvm/IR/DataLayout.h"
+ #include "llvm/IR/DebugInfo.h"
+@@ -136,7 +136,7 @@ getTargetMachine(llvm::Triple TheTriple, StringRef CPUStr,
+ 
+   return TheTarget->createTargetMachine(
+       TheTriple.getTriple(), CPUStr, FeaturesStr, Options,
+-      Optional<Reloc::Model>(RelocModel), CMModel, GetCodeGenOptLevel());
++      Optional<Reloc::Model>(RelocModel), getCodeModel(), GetCodeGenOptLevel());
+ }
+ 
+ static void dumpOutput(llvm::Module &M, llvm::raw_ostream &os) {
+@@ -270,14 +270,14 @@ int main(int argc, char **argv) {
+     M->setTargetTriple(llvm::Triple::normalize(TargetTriple));
+ 
+   // Figure out what stream we are supposed to write to...
+-  std::unique_ptr<llvm::tool_output_file> Out;
++  std::unique_ptr<llvm::ToolOutputFile> Out;
+   // Default to standard output.
+   if (OutputFilename.empty())
+     OutputFilename = "-";
+ 
+   std::error_code EC;
+   Out.reset(
+-      new llvm::tool_output_file(OutputFilename, EC, llvm::sys::fs::F_None));
++      new llvm::ToolOutputFile(OutputFilename, EC, llvm::sys::fs::F_None));
+   if (EC) {
+     errs() << EC.message() << '\n';
+     return 1;
