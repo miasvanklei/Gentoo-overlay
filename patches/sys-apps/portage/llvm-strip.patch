@@ -1,17 +1,20 @@
---- a/bin/ebuild-helpers/prepstrip	2018-01-12 14:56:02.774460182 +0100
-+++ b/bin/ebuild-helpers/prepstrip	2018-01-12 17:01:00.290911860 +0100
-@@ -75,8 +75,8 @@
- *GNU*) # sys-devel/binutils
- 	# We'll leave out -R .note for now until we can check out the relevance
- 	# of the section when it has the ALLOC flag set on it ...
--	SAFE_STRIP_FLAGS="--strip-unneeded"
--	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
-+	SAFE_STRIP_FLAGS=""
-+	DEF_STRIP_FLAGS="-S -R .comment -R .GCC.command.line -R .note.gnu.gold-version"
+--- a/bin/ebuild-helpers/prepstrip	2018-01-23 00:04:29.980196218 +0100
++++ b/bin/ebuild-helpers/prepstrip	2018-01-23 00:06:06.162048346 +0100
+@@ -79,6 +79,13 @@
+ 	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
  	SPLIT_STRIP_FLAGS=
  	;;
++*) # sys-devel/llvm
++	# We'll leave out -R .note for now until we can check out the relevance
++	# of the section when it has the ALLOC flag set on it ...
++	SAFE_STRIP_FLAGS=""
++	DEF_STRIP_FLAGS="-S -R .comment -R .GCC.command.line -R .note.gnu.gold-version"
++	SPLIT_STRIP_FLAGS=
++	;;
  esac
-@@ -347,18 +347,7 @@
+ : ${PORTAGE_STRIP_FLAGS=${SAFE_STRIP_FLAGS} ${DEF_STRIP_FLAGS}}
+ 
+@@ -347,18 +354,7 @@
  	# elf types though cause that stuff is good.
  
  	buildid=
