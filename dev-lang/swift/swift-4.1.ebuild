@@ -35,6 +35,9 @@ DEPEND="${RDEPEND}"
 CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
+	# enable llvm 6
+	eapply "${FILESDIR}"/llvm-6.patch
+
 	# we prefer own optimization
 	eapply "${FILESDIR}"/fix-cflags.patch
 
