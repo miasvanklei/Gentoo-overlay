@@ -21,14 +21,11 @@ KEYWORDS="~amd64"
 RDEPEND="
 	>=sys-devel/llvm-4.0
 	>=dev-util/lldb-4.0
-	|| (
-		>=sys-libs/libunwind-1.1-r1
-		sys-libs/llvm-libunwind
-	)
 	>=dev-libs/icu-57.1
 	>=dev-util/lttng-ust-2.8.1
 	>=dev-libs/openssl-1.0.2h-r2
 	>=net-misc/curl-7.49.0
+	sys-libs/llvm-libunwind
 	heimdal? (
 		>=app-crypt/heimdal-1.5.3-r2
 	)
