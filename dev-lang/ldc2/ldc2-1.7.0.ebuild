@@ -2,9 +2,9 @@
 # Distributed under the terms of the GNU General Public License v2
 EAPI=6
 
-inherit cmake-utils git-r3
+inherit cmake-utils
 
-EGIT_REPO_URI="https://github.com/ldc-developers/ldc.git"
+SRC_URI="https://github.com/ldc-developers/ldc/releases/download/v${PV}/ldc-${PV}-src.tar.gz"
 DESCRIPTION="LLVM D Compiler"
 HOMEPAGE="https://ldc-developers.github.com/ldc"
 KEYWORDS="~x86 ~amd64 ~arm ~ppc ~ppc64"
@@ -17,7 +17,10 @@ DEPEND=">=dev-util/cmake-2.8
 	sys-devel/llvm:=
 	${RDEPEND}"
 
+S=${WORKDIR}/ldc-${PV}-src
+
 src_prepare() {
+	eapply ${FILESDIR}/llvm-6.patch
 	eapply ${FILESDIR}/fix-musl.patch
 	eapply ${FILESDIR}/link-libunwind.patch
 	eapply ${FILESDIR}/remove-backtrace.patch
