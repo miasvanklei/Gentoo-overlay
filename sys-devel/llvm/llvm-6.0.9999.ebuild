@@ -78,7 +78,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0001-use-init-array.patch
 
 	# add -S alias
-	eapply "${FILESDIR}"/0002-better-strip-support.patch
+	eapply "${FILESDIR}"/0002-improve-llvm-objcopy.patch
 
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
