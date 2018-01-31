@@ -27,7 +27,7 @@
 @@ -49,7 +49,7 @@
  }
  
- void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext_t *uc,
 -                                    const struct _libc_fpstate* fp) {
 +                                    const struct _fpstate* fp) {
    const greg_t* regs = uc->uc_mcontext.gregs;
@@ -36,7 +36,7 @@
 @@ -97,7 +97,7 @@
  }
  
- void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext *uc,
+ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext_t *uc,
 -                                    const struct _libc_fpstate* fpregs) {
 +                                    const struct _fpstate* fpregs) {
    const greg_t* regs = uc->uc_mcontext.gregs;
@@ -47,11 +47,11 @@
 @@ -50,7 +50,7 @@
    //   info: the collection of register structures.
  #if defined(__i386__) || defined(__x86_64)
-   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+   static void FillCPUContext(RawContextCPU *out, const ucontext_t *uc,
 -                             const struct _libc_fpstate* fp);
 +                             const struct _fpstate* fp);
  #elif defined(__aarch64__)
-   static void FillCPUContext(RawContextCPU *out, const ucontext *uc,
+   static void FillCPUContext(RawContextCPU *out, const ucontext_t *uc,
                               const struct fpsimd_context* fpregs);
 --- a/vendor/breakpad/src/client/linux/minidump_writer/minidump_writer.h
 +++ b/vendor/breakpad/src/client/linux/minidump_writer/minidump_writer.h
@@ -172,3 +172,30 @@
  static int maybe_new_socket(uv_tcp_t* handle, int domain, int flags) {
    int sockfd;
 
+--- a/vendor/node/src/node.cc	2018-01-27 17:08:12.475645058 +0100
++++ b/vendor/node/src/node.cc	2018-01-27 17:08:36.586600024 +0100
+@@ -4536,13 +4536,13 @@
+ 
+   if (fd == -1) {
+     fprintf(stderr, "could not open snapshot file '%s': %s\n",
+-            path, sys_errlist[errno]);
++            path, strerror(errno));
+     ABORT();
+   }
+ 
+   if (fstat(fd, &sb) == -1) {
+     fprintf(stderr, "could not stat snapshot file '%s': %s\n",
+-            path, sys_errlist[errno]);
++            path, strerror(errno));
+     ABORT();
+   }
+ 
+@@ -4552,7 +4552,7 @@
+             mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
+   if (*addr == MAP_FAILED) {
+     fprintf(stderr, "could not read snapshot file '%s': %s\n",
+-            path, sys_errlist[errno]);
++            path, strerror(errno));
+     ABORT();
+   }
+ 

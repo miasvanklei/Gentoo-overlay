@@ -1,9 +1,9 @@
 --- a/vendor/breakpad/src/client/linux/handler/exception_handler.cc
 +++ b/vendor/breakpad/src/client/linux/handler/exception_handler.cc
-@@ -477,7 +477,9 @@ bool ExceptionHandler::SimulateSignalDel
+@@ -477,7 +477,9 @@
    siginfo.si_code = SI_USER;
    siginfo.si_pid = getpid();
-   struct ucontext context;
+   ucontext_t context;
 +#if defined(__GLIBC__)
    getcontext(&context);
 +#endif
