@@ -19,21 +19,6 @@ index c6b082e10..1adcca0a0 100644
  # Define the LLDB_CONFIGURATION_xxx matching the build type
  if( uppercase_CMAKE_BUILD_TYPE STREQUAL "DEBUG" )
    add_definitions( -DLLDB_CONFIGURATION_DEBUG )
-@@ -132,3 +142,14 @@ if (NOT LLDB_DISABLE_PYTHON)
-             COMMENT "Copying Python DLL to LLDB binaries directory.")
-     endif ()
- endif ()
-+
-+MESSAGE(STATUS "<<< Gentoo configuration >>>
-+Build type      ${CMAKE_BUILD_TYPE}
-+Install path    ${CMAKE_INSTALL_PREFIX}
-+Compiler flags:
-+C               ${CMAKE_C_FLAGS}
-+C++             ${CMAKE_CXX_FLAGS}
-+Linker flags:
-+Executable      ${CMAKE_EXE_LINKER_FLAGS}
-+Module          ${CMAKE_MODULE_LINKER_FLAGS}
-+Shared          ${CMAKE_SHARED_LINKER_FLAGS}\n")
 diff --git a/cmake/modules/LLDBConfig.cmake b/cmake/modules/LLDBConfig.cmake
 index 8f75880df..097cc9102 100644
 --- a/cmake/modules/LLDBConfig.cmake
@@ -43527,20 +43512,6 @@ index a10fe7826..baea83165 100644
    }
    if (GetTriple().getEnvironment() == llvm::Triple::UnknownEnvironment &&
        !TripleVendorWasSpecified()) {
-@@ -1023,8 +1028,12 @@ static bool isCompatibleEnvironment(llvm::Triple::EnvironmentType lhs,
-       (rhs == llvm::Triple::Android && lhs == llvm::Triple::EABI) ||
-       (lhs == llvm::Triple::GNUEABI && rhs == llvm::Triple::EABI) ||
-       (rhs == llvm::Triple::GNUEABI && lhs == llvm::Triple::EABI) ||
-+      (lhs == llvm::Triple::MuslEABI && rhs == llvm::Triple::EABI) ||
-+      (rhs == llvm::Triple::MuslEABI && lhs == llvm::Triple::EABI) ||
-       (lhs == llvm::Triple::GNUEABIHF && rhs == llvm::Triple::EABIHF) ||
--      (rhs == llvm::Triple::GNUEABIHF && lhs == llvm::Triple::EABIHF))
-+      (rhs == llvm::Triple::GNUEABIHF && lhs == llvm::Triple::EABIHF) ||
-+      (lhs == llvm::Triple::MuslEABIHF && rhs == llvm::Triple::EABIHF) ||
-+      (rhs == llvm::Triple::MuslEABIHF && lhs == llvm::Triple::EABIHF))
-     return true;
- 
-   return false;
 diff --git a/source/Utility/ConstString.cpp b/source/Utility/ConstString.cpp
 index 49cf8a6d8..955e24cbc 100644
 --- a/source/Utility/ConstString.cpp
