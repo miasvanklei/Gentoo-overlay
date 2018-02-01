@@ -1,0 +1,23 @@
+diff --git a/make-linux.mk b/make-linux.mk
+index 87d29afe..22d8c75b 100644
+--- a/make-linux.mk
++++ b/make-linux.mk
+@@ -6,6 +6,10 @@ endif
+ ifeq ($(origin CXX),default)
+ 	CXX=$(shell if [ -e /usr/bin/clang++ ]; then echo clang++; else echo g++; fi)
+ endif
++ifeq ($(origin AS),default)
++	AS=$(shell if [ -e /usr/bin/clang++ ]; then echo clang; else echo gcc; fi)
++	ASFLAGS="-c"
++endif
+ 
+ INCLUDES?=
+ DEFS?=-D_FORTIFY_SOURCE=2
+@@ -193,7 +197,6 @@ all:	one
+ 
+ one:	$(OBJS) service/OneService.o one.o osdep/LinuxEthernetTap.o
+ 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o zerotier-one $(OBJS) service/OneService.o one.o osdep/LinuxEthernetTap.o $(LDLIBS)
+-	$(STRIP) zerotier-one
+ 	ln -sf zerotier-one zerotier-idtool
+ 	ln -sf zerotier-one zerotier-cli
+ 

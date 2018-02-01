@@ -16,7 +16,7 @@ IUSE=""
 
 src_prepare()
 {
-	eapply ${FILESDIR}/remove-strip.patch
+	eapply ${FILESDIR}/fix-makefile.patch
 	eapply_user
 }
 
