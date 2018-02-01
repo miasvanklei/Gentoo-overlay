@@ -10,7 +10,7 @@ HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
 IUSE="heimdal"
-SRC_URI="https://download.microsoft.com/download/D/7/2/D725E47F-A4F1-4285-8935-A91AE2FCC06A/dotnet-sdk-${PV}-linux-x64.tar.gz
+SRC_URI="https://download.microsoft.com/download/1/1/5/115B762D-2B41-4AF3-9A63-92D9680B9409/dotnet-sdk-2.1.4-linux-x64.tar.gz
 	https://github.com/dotnet/coreclr/archive/v${PV}.tar.gz -> coreclr-${PV}.tar.gz
 	https://github.com/dotnet/corefx/archive/v${PV}.tar.gz -> corefx-${PV}.tar.gz
 	https://github.com/dotnet/core-setup/archive/v${PV}.tar.gz -> core-setup-${PV}.tar.gz"
@@ -73,20 +73,20 @@ src_unpack() {
 	unpack "coreclr-${PV}.tar.gz" "corefx-${PV}.tar.gz" "core-setup-${PV}.tar.gz"
 	mkdir "${CLI_S}" || die
 	cd "${CLI_S}" || die
-        unpack "dotnet-sdk-${PV}-linux-x64.tar.gz"
+        unpack "dotnet-sdk-2.1.4-linux-x64.tar.gz"
 }
 
 src_prepare() {
 	for file in "${CORECLR_FILES[@]}"; do
-		rm "${CLI_S}/shared/Microsoft.NETCore.App/2.0.0/${file}"
+		rm "${CLI_S}/shared/Microsoft.NETCore.App/${PV}/${file}"
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		rm "${CLI_S}/shared/Microsoft.NETCore.App/2.0.0/${file}"
+		rm "${CLI_S}/shared/Microsoft.NETCore.App/${PV}/${file}"
 	done
 
 	for file in "${CRYPTO_FILES[@]}"; do
-		rm "${CLI_S}/shared/Microsoft.NETCore.App/2.0.0/${file}"
+		rm "${CLI_S}/shared/Microsoft.NETCore.App/${PV}/${file}"
 	done
 
         cd "${COREFX_S}" || die
@@ -115,8 +115,8 @@ src_compile() {
 	./build.sh x64 release verbose skiptests cmakeargs -DCLR_CMAKE_WARNINGS_ARE_ERRORS=FALSE || die
 
 	cd "${CORESETUP_S}" || die
-	./src/corehost/build.sh --arch amd64 --hostver 2.0.0 \
-        --fxrver 2.0.0 --policyver 2.0.0 --commithash a9190d4 --apphostver 2.0.0 || die
+	./src/corehost/build.sh --arch amd64 --hostver ${PV} \
+        --fxrver ${PV} --policyver ${PV} --commithash a9190d4 --apphostver ${PV} || die
 }
 
 src_install() {
@@ -128,19 +128,19 @@ src_install() {
 	cp -pPR "${CLI_S}"/* "${ddest}" || die
 
 	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${CORECLR_S}/bin/Product/Linux.x64.Release/${file}" "${ddest_core}/2.0.0/" || die
+		cp -pP "${CORECLR_S}/bin/Product/Linux.x64.Release/${file}" "${ddest_core}/${PV}/" || die
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/2.0.0/" || die
+		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/${PV}/" || die
 	done
 
 	for file in "${CRYPTO_FILES[@]}"; do
-		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/2.0.0/" || die
+		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/${PV}/" || die
 	done
 
-        cp -pP "${CORESETUP_S}/cli/fxr/libhostfxr.so" "${ddest}/host/fxr/2.0.0/" || die
-        cp -pP "${CORESETUP_S}/cli/dll/libhostpolicy.so" "${ddest_core}/2.0.0/" || die
+        cp -pP "${CORESETUP_S}/cli/fxr/libhostfxr.so" "${ddest}/host/fxr/${PV}/" || die
+        cp -pP "${CORESETUP_S}/cli/dll/libhostpolicy.so" "${ddest_core}/${PV}/" || die
 	cp -pP "${CORESETUP_S}/cli/exe/dotnet/dotnet" "${ddest}/dotnet" || die
 
 	dosym "../../opt/dotnet_cli/dotnet" "/usr/bin/dotnet"
