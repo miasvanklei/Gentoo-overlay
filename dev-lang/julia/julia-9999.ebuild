@@ -54,8 +54,9 @@ PATCHES=(
         "${FILESDIR}"/0003-no-clean-docs.patch
         "${FILESDIR}"/0004-cflags.patch
         "${FILESDIR}"/0005-add-compilerrt.patch
-        "${FILESDIR}"/0006-ldconfig-compat.patch
+        "${FILESDIR}"/0006-disable-splitdebug.patch
         "${FILESDIR}"/0007-fix-sandbox.patch
+        "${FILESDIR}"/0008-llvm-6.patch
 )
 
 src_prepare() {
@@ -173,8 +174,6 @@ src_install() {
 	doenvd 99julia
 
 	dodoc README.md
-
-	install -D ${FILESDIR}/find-syslibs ${D}/usr/share/julia/find-syslibs
 
 	mv "${ED}"/usr/etc/julia "${ED}"/etc || die
 	rmdir "${ED}"/usr/etc || die

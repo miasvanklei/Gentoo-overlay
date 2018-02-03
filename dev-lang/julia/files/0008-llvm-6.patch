@@ -1,0 +1,119 @@
+diff --git a/src/disasm.cpp b/src/disasm.cpp
+index 3aea61517..c7f74765c 100644
+--- a/src/disasm.cpp
++++ b/src/disasm.cpp
+@@ -683,7 +683,10 @@ static void jl_dump_asm_internal(
+     MCAsmBackend *MAB = 0;
+     if (ShowEncoding) {
+         CE = TheTarget->createMCCodeEmitter(*MCII, *MRI, Ctx);
+-#if JL_LLVM_VERSION >= 40000
++#if JL_LLVM_VERSION >= 60000
++        MCTargetOptions Options;
++        MAB = TheTarget->createMCAsmBackend(*STI, *MRI, Options);
++#elif JL_LLVM_VERSION >= 40000
+         MCTargetOptions Options;
+         MAB = TheTarget->createMCAsmBackend(*MRI, TripleName, cpu, Options);
+ #else
+diff --git a/src/codegen.cpp b/src/codegen.cpp
+index f4599b637..767b29c1d 100644
+--- a/src/codegen.cpp
++++ b/src/codegen.cpp
+@@ -38,7 +38,11 @@
+ #include <functional>
+ 
+ // target machine computation
++#if JL_LLVM_VERSION >= 60000
++#include <llvm/CodeGen/TargetSubtargetInfo.h>
++#else
+ #include <llvm/Target/TargetSubtargetInfo.h>
++#endif
+ #include <llvm/Support/TargetRegistry.h>
+ #include <llvm/Target/TargetOptions.h>
+ #include <llvm/Support/Host.h>
+diff --git a/src/intrinsics.cpp b/src/intrinsics.cpp
+index db06dc344156..d64c22b5b860 100644
+--- a/src/intrinsics.cpp
++++ b/src/intrinsics.cpp
+@@ -744,7 +744,11 @@ struct math_builder {
+         if (jl_options.fast_math != JL_OPTIONS_FAST_MATH_OFF &&
+             (always_fast ||
+              jl_options.fast_math == JL_OPTIONS_FAST_MATH_ON)) {
++#if JL_LLVM_VERSION >= 60000
++            fmf.setFast();
++#else
+             fmf.setUnsafeAlgebra();
++#endif
+         }
+ #if JL_LLVM_VERSION >= 50000
+         if (contract)
+diff --git a/src/llvm-muladd.cpp b/src/llvm-muladd.cpp
+index a8b635f9c34e..a720a9d9270d 100644
+--- a/src/llvm-muladd.cpp
++++ b/src/llvm-muladd.cpp
+@@ -65,15 +65,27 @@ static bool checkCombine(Module *m, Instruction *addOp, Value *maybeMul, Value *
+         auto newaddend = builder.CreateFNeg(addend);
+         // Might be a const
+         if (auto neginst = dyn_cast<Instruction>(newaddend))
++#if JL_LLVM_VERSION >= 60000
++            neginst->setFast(true);
++#else
+             neginst->setHasUnsafeAlgebra(true);
++#endif
+         addend = newaddend;
+     }
+     Instruction *newv = builder.CreateCall(muladdf, {mul1, mul2, addend});
++#if JL_LLVM_VERSION >= 60000
++    newv->setFast(true);
++#else
+     newv->setHasUnsafeAlgebra(true);
++#endif
+     if (negres) {
+         // Shouldn't be a constant
+         newv = cast<Instruction>(builder.CreateFNeg(newv));
++#if JL_LLVM_VERSION >= 60000
++        newv->setFast(true);
++#else
+         newv->setHasUnsafeAlgebra(true);
++#endif
+     }
+     addOp->replaceAllUsesWith(newv);
+     addOp->eraseFromParent();
+@@ -91,14 +103,22 @@ bool CombineMulAdd::runOnFunction(Function &F)
+             it++;
+             switch (I.getOpcode()) {
+             case Instruction::FAdd: {
++#if JL_LLVM_VERSION >= 60000
++                if (!I.isFast())
++#else
+                 if (!I.hasUnsafeAlgebra())
++#endif
+                     continue;
+                 checkCombine(m, &I, I.getOperand(0), I.getOperand(1), false, false) ||
+                     checkCombine(m, &I, I.getOperand(1), I.getOperand(0), false, false);
+                 break;
+             }
+             case Instruction::FSub: {
++#if JL_LLVM_VERSION >= 60000
++                if (!I.isFast())
++#else
+                 if (!I.hasUnsafeAlgebra())
++#endif
+                     continue;
+                 checkCombine(m, &I, I.getOperand(0), I.getOperand(1), true, false) ||
+                     checkCombine(m, &I, I.getOperand(1), I.getOperand(0), true, true);
+diff --git a/src/llvm-simdloop.cpp b/src/llvm-simdloop.cpp
+index 87f4d953b5fc..aef3d59cbf13 100644
+--- a/src/llvm-simdloop.cpp
++++ b/src/llvm-simdloop.cpp
+@@ -152,7 +152,11 @@ void LowerSIMDLoop::enableUnsafeAlgebraIfReduction(PHINode *Phi, Loop *L) const
+     }
+     for (chainVector::const_iterator K=chain.begin(); K!=chain.end(); ++K) {
+         DEBUG(dbgs() << "LSL: marking " << **K << "\n");
++#if JL_LLVM_VERSION >= 60000
++        (*K)->setFast(true);
++#else
+         (*K)->setHasUnsafeAlgebra(true);
++#endif
+     }
+ }
+ 
