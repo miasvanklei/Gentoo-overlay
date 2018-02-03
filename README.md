@@ -19,4 +19,4 @@ Some other ebuilds:
 A lot extra patches are in the patches directory, you can create a symlink for all patches, or only for specific packages.
 
 # arm
-Most packages can be built for arm with the clang toolchain: libuuid is broken(util-linux), gmake is broken with cmake.
+Most packages can be built for arm with the clang toolchain: gmake is broken with cmake.
