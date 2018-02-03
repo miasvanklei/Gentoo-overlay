@@ -1,12 +1,43 @@
---- a/Config.in	2016-03-17 21:35:49.000000000 +0100
-+++ b/Config.in	2016-10-31 19:15:52.050250202 +0100
-@@ -505,8 +505,7 @@
+--- a/Config.in	2018-02-03 20:07:21.414056331 +0100
++++ b/Config.in	2018-02-03 20:07:40.605013897 +0100
+@@ -368,8 +368,7 @@
  
  config PIE
- 	bool "Build BusyBox as a position independent executable"
+ 	bool "Build position independent executable"
 -	default n
 -	depends on !STATIC
 +	default y
  	help
- 	  Hardened code option. PIE binaries are loaded at a different
- 	  address at each invocation. This has some overhead,
+ 	Hardened code option. PIE binaries are loaded at a different
+ 	address at each invocation. This has some overhead,
+--- a/scripts/Makefile.build	2018-02-03 20:12:21.374415802 +0100
++++ b/scripts/Makefile.build	2018-02-03 20:16:07.675943015 +0100
+@@ -174,7 +174,7 @@
+ 		| $(GENKSYMS) -a $(ARCH)				\
+ 		> $(@D)/.tmp_$(@F:.o=.ver);				\
+ 									\
+-		$(LD) $(LDFLAGS) -r -o $@ $(@D)/.tmp_$(@F) 		\
++		$(LD) $(LDFLAGS) -r -nopie -o $@ $(@D)/.tmp_$(@F) 	\
+ 			-T $(@D)/.tmp_$(@F:.o=.ver);			\
+ 		rm -f $(@D)/.tmp_$(@F) $(@D)/.tmp_$(@F:.o=.ver);	\
+ 	else								\
+@@ -257,7 +257,7 @@
+ # If the list of objects to link is empty, just create an empty built-in.o
+ # -nostdlib is added to make "make LD=gcc ..." work (some people use that)
+ cmd_link_o_target = $(if $(strip $(obj-y)),\
+-		$(LD) -nostdlib $(ld_flags) -r -o $@ $(filter $(obj-y), $^),\
++		$(LD) -nostdlib $(ld_flags) -r -nopie -o $@ $(filter $(obj-y), $^),\
+ 		rm -f $@; $(AR) rcs $@)
+ 
+ $(builtin-target): $(obj-y) FORCE
+--- a/Makefile	2018-02-03 20:11:32.531517467 +0100
++++ b/Makefile	2018-02-03 20:11:51.308477838 +0100
+@@ -309,7 +309,7 @@
+ MODFLAGS	= -DMODULE
+ CFLAGS_MODULE   = $(MODFLAGS)
+ AFLAGS_MODULE   = $(MODFLAGS)
+-LDFLAGS_MODULE  = -r
++LDFLAGS_MODULE  = -r -nopie
+ CFLAGS_KERNEL	=
+ AFLAGS_KERNEL	=
+ 
