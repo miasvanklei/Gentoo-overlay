@@ -20,7 +20,7 @@ EGIT_BRANCH="release_60"
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="+libedit ncurses +python test"
+IUSE="+libedit ncurses +python +swift test"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
@@ -35,6 +35,7 @@ RDEPEND="
 # upstream: https://github.com/swig/swig/issues/769
 DEPEND="${RDEPEND}
 	python? ( >dev-lang/swig-3.0.9 )
+	swift? ( dev-lang/swift )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
 	${PYTHON_DEPS}"
 
@@ -69,7 +70,7 @@ src_unpack() {
 src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
-	eapply "${FILESDIR}"/0002-add-swift-support.patch
+	use swift && eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	cmake-utils_src_prepare
 }

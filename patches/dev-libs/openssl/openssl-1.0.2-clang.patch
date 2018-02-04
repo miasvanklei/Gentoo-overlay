@@ -15,24 +15,6 @@
  	vmov.i64	$k16, #0x000000000000ffff
  
  	vext.8		$t0#lo, $a, $a, #1	@ A1
---- a/crypto/modes/asm/ghash-armv4.pl	2015-03-19 06:30:36.000000000 -0700
-+++ b/crypto/modes/asm/ghash-armv4.pl	2015-06-18 17:08:11.251185168 -0700
-@@ -124,10 +124,15 @@
- #include "arm_arch.h"
- 
- .text
- .code	32
- 
-+#ifdef  __clang__
-+#define ldrplb  ldrbpl
-+#define ldrneb  ldrbne
-+#endif
-+
- .type	rem_4bit,%object
- .align	5
- rem_4bit:
- .short	0x0000,0x1C20,0x3840,0x2460
- .short	0x7080,0x6CA0,0x48C0,0x54E0
 --- a/crypto/sha/asm/sha256-armv4.pl	2015-07-09 04:57:15.000000000 -0700
 +++ b/crypto/sha/asm/sha256-armv4.pl	2015-08-04 10:33:16.561541526 -0700
 @@ -593,12 +593,23 @@
@@ -59,3 +41,14 @@
  .Loop_v8:
  	vld1.8		{@MSG[0]-@MSG[1]},[$inp]!
  	vld1.8		{@MSG[2]-@MSG[3]},[$inp]!
+--- a/Makefile.shared     2018-02-04 18:46:57.797214647 +0100
++++ b/Makefile.shared     2018-02-04 18:00:51.587213328 +0100
+@@ -153,7 +153,7 @@
+        SHLIB_SUFFIX=; \
+        ALLSYMSFLAGS='-Wl,--whole-archive'; \
+        NOALLSYMSFLAGS='-Wl,--no-whole-archive'; \
+-       SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared -Wl,-Bsymbolic -Wl,-soname=$$SHLIB$$SHLIB_SOVER$$SHLIB_SUFFIX"
++       SHAREDFLAGS="$(CFLAGS) $(SHARED_LDFLAGS) -shared -Wl,-z,notext -Wl,-Bsymbolic -Wl,-soname=$$SHLIB$$SHLIB_SOVER$$SHLIB_SUFFIX"
+ 
+ DO_GNU_APP=LDFLAGS="$(LDFLAGS) $(CFLAGS)"
+ 
