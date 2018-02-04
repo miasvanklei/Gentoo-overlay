@@ -1,0 +1,53 @@
+From df502da74998b45fbdd82455c7c9c98242db6d86 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Tapani=20P=C3=A4lli?= <tapani.palli@intel.com>
+Date: Mon, 18 Dec 2017 13:46:52 +0200
+Subject: [PATCH] AndroidIA: add temporary workaround for build_id
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This should be removed later when fixed in upstream.
+
+This fixes crash seen with Vulkan apps as well as 32bit
+GL applications.
+
+Signed-off-by: Tapani Pälli <tapani.palli@intel.com>
+---
+ src/intel/vulkan/anv_device.c | 3 ++-
+ src/util/build_id.c           | 2 ++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/intel/vulkan/anv_device.c b/src/intel/vulkan/anv_device.c
+index 680f5a752d..064b6ebd0f 100644
+--- a/src/intel/vulkan/anv_device.c
++++ b/src/intel/vulkan/anv_device.c
+@@ -230,12 +230,13 @@ anv_physical_device_init_uuids(struct anv_physical_device *device)
+    }
+ 
+    unsigned build_id_len = build_id_length(note);
++#ifndef ANDROID
+    if (build_id_len < 20) {
+       return vk_errorf(device->instance, device,
+                        VK_ERROR_INITIALIZATION_FAILED,
+                        "build-id too short.  It needs to be a SHA");
+    }
+-
++#endif
+    struct mesa_sha1 sha1_ctx;
+    uint8_t sha1[20];
+    STATIC_ASSERT(VK_UUID_SIZE <= sizeof(sha1));
+diff --git a/src/util/build_id.c b/src/util/build_id.c
+index 536c74360e..a4834355d6 100644
+--- a/src/util/build_id.c
++++ b/src/util/build_id.c
+@@ -58,8 +58,10 @@ build_id_find_nhdr_callback(struct dl_phdr_info *info, size_t size, void *data_)
+ {
+    struct callback_data *data = data_;
+ 
++#ifndef ANDROID
+    if ((void *)info->dlpi_addr != data->dli_fbase)
+       return 0;
++#endif
+ 
+    for (unsigned i = 0; i < info->dlpi_phnum; i++) {
+       if (info->dlpi_phdr[i].p_type != PT_NOTE)
