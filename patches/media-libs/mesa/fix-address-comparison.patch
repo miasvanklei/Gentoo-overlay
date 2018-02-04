@@ -1,0 +1,68 @@
+From 07b637bcef660b3bf12d6854153692026ef3c698 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan@gerhold.net>
+Date: Fri, 19 Jan 2018 21:02:42 +0100
+Subject: [PATCH] util/build-id: Fix address comparison for binaries with LOAD
+ vaddr > 0
+
+build_id_find_nhdr_for_addr() fails to find the build-id if the first LOAD
+segment has a virtual address other than 0x0.
+
+For most shared libraries, the first LOAD segment has vaddr=0x0:
+
+    Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+    LOAD           0x000000 0x00000000 0x00000000 0x2d2e26 0x2d2e26 R E 0x1000
+    LOAD           0x2d2e54 0x002d3e54 0x002d3e54 0x2e248 0x2f148 RW  0x1000
+
+However, compiling the Intel Vulkan driver as 32-bit binary on Android produces
+the following ELF header with vaddr=0x8000 instead:
+
+    Type           Offset   VirtAddr   PhysAddr   FileSiz MemSiz  Flg Align
+    PHDR           0x000034 0x00008034 0x00008034 0x00100 0x00100 R   0x4
+    LOAD           0x000000 0x00008000 0x00008000 0x224a04 0x224a04 R E 0x1000
+    LOAD           0x225710 0x0022e710 0x0022e710 0x25988 0x27364 RW  0x1000
+
+build_id_find_nhdr_callback() compares the address of dli_fbase from dladdr()
+and dlpi_addr from dl_iterate_phdr(). With vaddr > 0, these point to a
+different memory address, e.g.:
+
+    dli_fbase=0xd8395000 (offset 0x8000)
+    dlpi_addr=0xd838d000
+
+At least on glibc and bionic (Android) dli_fbase refers to the address where
+the shared object is mapped into the process space, whereas dlpi_addr is
+the base address for the vaddrs declared in the ELF header.
+
+To compare them correctly, we need to calculate the start of the mapping
+by adding the vaddr of the first LOAD segment to the base address.
+
+Cc: <mesa-stable@lists.freedesktop.org>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=104642
+Fixes: 5c98d38 "util: Query build-id by symbol address, not library name"
+---
+ src/util/build_id.c | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/src/util/build_id.c b/src/util/build_id.c
+index 536c74360e..ebb714eb3a 100644
+--- a/src/util/build_id.c
++++ b/src/util/build_id.c
+@@ -58,7 +58,18 @@ build_id_find_nhdr_callback(struct dl_phdr_info *info, size_t size, void *data_)
+ {
+    struct callback_data *data = data_;
+ 
+-   if ((void *)info->dlpi_addr != data->dli_fbase)
++   /* Calculate load address of the shared object using the base address
++    * and the virtual address of the first LOAD segment.
++    */
++   void *load_base = NULL;
++   for (unsigned i = 0; i < info->dlpi_phnum; i++) {
++      if (info->dlpi_phdr[i].p_type == PT_LOAD) {
++         load_base = (void *)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
++         break;
++      }
++   }
++
++   if (load_base != data->dli_fbase)
+       return 0;
+ 
+    for (unsigned i = 0; i < info->dlpi_phnum; i++) {
