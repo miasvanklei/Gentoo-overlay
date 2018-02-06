@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -34,14 +34,21 @@ QT5_TARGET_SUBDIRS=(
 
 QT5_GENTOO_CONFIG=(
 	gtk:gtk3:
+	::widgets
 	!:no-widgets:
+)
+
+QT5_GENTOO_PRIVATE_CONFIG=(
+	:widgets
 )
 
 src_configure() {
 	local myconf=(
 		-opengl $(usex gles2 es2 desktop)
 		$(qt_use gtk)
+		-gui
 		$(qt_use png libpng system)
+		-widgets
 		$(qt_use xcb xcb system)
 		$(qt_use xcb xkbcommon system)
 		$(usex xcb '-xcb-xlib -xinput2 -xkb' '')

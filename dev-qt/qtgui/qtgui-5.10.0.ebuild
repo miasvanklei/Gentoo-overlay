@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -54,7 +54,7 @@ RDEPEND="
 		x11-libs/libICE
 		x11-libs/libSM
 		x11-libs/libX11
-		>=x11-libs/libXi-1.7.4
+		>=x11-libs/libXi-1.7.5
 		>=x11-libs/libxcb-1.10:=[xkb]
 		>=x11-libs/libxkbcommon-0.4.1[X]
 		x11-libs/xcb-util-image
@@ -120,6 +120,10 @@ QT5_GENTOO_CONFIG=(
 	xcb::XKB
 )
 
+QT5_GENTOO_PRIVATE_CONFIG=(
+	:gui
+)
+
 src_prepare() {
 	# egl_x11 is activated when both egl and xcb are enabled
 	use egl && QT5_GENTOO_CONFIG+=(xcb:egl_x11) || QT5_GENTOO_CONFIG+=(egl:egl_x11)
@@ -149,6 +153,7 @@ src_configure() {
 		-fontconfig
 		-system-freetype
 		$(usex gif '' -no-gif)
+		-gui
 		-system-harfbuzz
 		$(qt_use jpeg libjpeg system)
 		$(qt_use libinput)

@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -34,6 +34,13 @@ QT5_TARGET_SUBDIRS=(
 	doc
 )
 
+QT5_GENTOO_PRIVATE_CONFIG=(
+	!:network
+	!:sql
+	!:testlib
+	!:xml
+)
+
 src_configure() {
 	local myconf=(
 		$(qt_use icu)
@@ -47,10 +54,10 @@ src_install() {
 	qt5-build_src_install
 
 	local flags=(
-			ALSA CUPS DBUS EGL EGLFS EGL_X11 EVDEV FONTCONFIG FREETYPE
-			HARFBUZZ IMAGEFORMAT_JPEG IMAGEFORMAT_PNG LIBPROXY MITSHM
-			OPENGL OPENSSL OPENVG PULSEAUDIO SHAPE SSL TSLIB XCURSOR
-			XFIXES XKB XRANDR XRENDER XSYNC ZLIB
+		ALSA CUPS DBUS EGL EGLFS EGL_X11 EVDEV FONTCONFIG FREETYPE
+		HARFBUZZ IMAGEFORMAT_JPEG IMAGEFORMAT_PNG LIBPROXY MITSHM
+		OPENGL OPENSSL OPENVG PULSEAUDIO SHAPE SSL TSLIB WIDGETS
+		XCURSOR	XFIXES XKB XRANDR XRENDER XSYNC ZLIB
 	)
 
 	for flag in ${flags[@]}; do

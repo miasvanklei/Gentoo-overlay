@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -30,7 +30,7 @@ RDEPEND="
 	~dev-qt/qtwebchannel-${PV}[qml]
 	dev-libs/expat
 	dev-libs/libevent:=
-	dev-libs/libxml2
+	dev-libs/libxml2[icu]
 	dev-libs/libxslt
 	dev-libs/protobuf:=
 	dev-libs/re2:=
@@ -92,8 +92,8 @@ src_prepare() {
 	# bug 620444 - ensure local headers are used
 	find "${S}" -type f -name "*.pr[fio]" | xargs sed -i -e 's|INCLUDEPATH += |&$$QTWEBENGINE_ROOT/include |' || die
 
-	qt_use_disable_config alsa alsa src/core/config/linux.pri
-	qt_use_disable_config pulseaudio pulseaudio src/core/config/linux.pri
+	qt_use_disable_config alsa webengine-alsa src/core/config/linux.pri
+	qt_use_disable_config pulseaudio webengine-pulseaudio src/core/config/linux.pri
 
 	qt_use_disable_mod geolocation positioning \
 		mkspecs/features/configure.prf \
