@@ -215,12 +215,12 @@ src_install() {
 	multilib-minimal_src_install
 
 	# binutils symlinks
-	local llvm_tools=( ranlib ar )
+	local llvm_tools=( ranlib ar nm )
 
 	for abi in $(get_all_abis); do
 		local abi_chost=$(get_abi_CHOST "${abi}")
 		for i in "${llvm_tools[@]}"; do
-			dosym "llvm-ar" "/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
+			dosym "llvm-{$i}" "/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
 		done
 	done
 
