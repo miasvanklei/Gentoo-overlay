@@ -89,6 +89,9 @@ src_prepare() {
 	# add swift support
 	use swift && eapply "${FILESDIR}"/0005-add-swift-support.patch
 
+	# two specific rust patches in one
+	eapply "${FILESDIR}"/0006-add-rust-support.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
@@ -220,7 +223,7 @@ src_install() {
 	for abi in $(get_all_abis); do
 		local abi_chost=$(get_abi_CHOST "${abi}")
 		for i in "${llvm_tools[@]}"; do
-			dosym "llvm-{$i}" "/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
+			dosym "llvm-${i}" "/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
 		done
 	done
 

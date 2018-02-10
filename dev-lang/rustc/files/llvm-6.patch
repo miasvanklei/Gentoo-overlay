@@ -1,117 +1,443 @@
---- a/src/librustc_llvm/lib.rs	2018-01-14 11:29:49.348909760 +0100
-+++ b/src/librustc_llvm/lib.rs	2018-01-14 11:30:15.474847144 +0100
-@@ -108,7 +108,7 @@
-     fn from_str(s: &str) -> Result<Self, Self::Err> {
-         match s {
-             "gnu" => Ok(ArchiveKind::K_GNU),
--            "mips64" => Ok(ArchiveKind::K_MIPS64),
-+            "mips64" => Ok(ArchiveKind::K_GNU64),
-             "bsd" => Ok(ArchiveKind::K_BSD),
-             "coff" => Ok(ArchiveKind::K_COFF),
-             _ => Err(()),
---- a/src/librustc_llvm/ffi.rs	2018-01-14 11:29:41.940927555 +0100
-+++ b/src/librustc_llvm/ffi.rs	2018-01-14 11:37:35.003793726 +0100
-@@ -298,9 +298,6 @@
- #[derive(Copy, Clone)]
+--- a/src/bootstrap/lib.rs	2018-02-10 14:39:03.019948140 +0100
++++ b/src/bootstrap/lib.rs	2018-02-10 14:39:12.121926258 +0100
+@@ -503,16 +503,6 @@
+         self.out.join(&*target).join("crate-docs")
+     }
+ 
+-    /// Returns true if no custom `llvm-config` is set for the specified target.
+-    ///
+-    /// If no custom `llvm-config` was specified then Rust's llvm will be used.
+-    fn is_rust_llvm(&self, target: Interned<String>) -> bool {
+-        match self.config.target_config.get(&target) {
+-            Some(ref c) => c.llvm_config.is_none(),
+-            None => true
+-        }
+-    }
+-
+     /// Returns the path to `llvm-config` for the specified target.
+     ///
+     /// If a custom `llvm-config` was specified for target then that's returned
+--- a/src/librustc/session/config.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc/session/config.rs	2018-02-10 12:59:20.113699437 +0100
+@@ -1000,8 +1000,6 @@
+         "gather borrowck statistics"),
+     no_landing_pads: bool = (false, parse_bool, [TRACKED],
+         "omit landing pads for unwinding"),
+-    debug_llvm: bool = (false, parse_bool, [UNTRACKED],
+-        "enable debug output from LLVM"),
+     meta_stats: bool = (false, parse_bool, [UNTRACKED],
+         "gather metadata statistics"),
+     print_link_args: bool = (false, parse_bool, [UNTRACKED],
+@@ -2613,8 +2611,6 @@
+         assert_eq!(reference.dep_tracking_hash(), opts.dep_tracking_hash());
+         opts.debugging_opts.borrowck_stats = true;
+         assert_eq!(reference.dep_tracking_hash(), opts.dep_tracking_hash());
+-        opts.debugging_opts.debug_llvm = true;
+-        assert_eq!(reference.dep_tracking_hash(), opts.dep_tracking_hash());
+         opts.debugging_opts.meta_stats = true;
+         assert_eq!(reference.dep_tracking_hash(), opts.dep_tracking_hash());
+         opts.debugging_opts.print_link_args = true;
+--- a/src/librustc_back/target/mod.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_back/target/mod.rs	2018-02-10 12:20:04.660579382 +0100
+@@ -312,8 +312,8 @@
+     /// Relocation model to use in object file. Corresponds to `llc
+     /// -relocation-model=$relocation_model`. Defaults to "pic".
+     pub relocation_model: String,
+-    /// Code model to use. Corresponds to `llc -code-model=$code_model`. Defaults to "default".
+-    pub code_model: String,
++    /// Code model to use. Corresponds to `llc -code-model=$code_model`.
++    pub code_model: Option<String>,
+     /// TLS model to use. Options are "global-dynamic" (default), "local-dynamic", "initial-exec"
+     /// and "local-exec". This is similar to the -ftls-model option in GCC/Clang.
+     pub tls_model: String,
+@@ -471,7 +471,7 @@
+             only_cdylib: false,
+             executables: false,
+             relocation_model: "pic".to_string(),
+-            code_model: "default".to_string(),
++            code_model: None,
+             tls_model: "global-dynamic".to_string(),
+             disable_redzone: false,
+             eliminate_frame_pointer: true,
+@@ -723,7 +723,7 @@
+         key!(only_cdylib, bool);
+         key!(executables, bool);
+         key!(relocation_model);
+-        key!(code_model);
++        key!(code_model, optional);
+         key!(tls_model);
+         key!(disable_redzone, bool);
+         key!(eliminate_frame_pointer, bool);
+--- a/src/librustc_driver/lib.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_driver/lib.rs	2018-02-10 13:00:12.961568391 +0100
+@@ -167,7 +167,6 @@
+     pub use rustc_trans_utils::trans_crate::TranslatedCrate as CrateTranslation;
+ 
+     pub fn init(_sess: &Session) {}
+-    pub fn enable_llvm_debug() {}
+     pub fn print_version() {}
+     pub fn print_passes() {}
+     pub fn print(_req: PrintRequest, _sess: &Session) {}
+@@ -205,10 +204,6 @@
+ 
+     let (sopts, cfg) = config::build_session_options_and_crate_config(&matches);
+ 
+-    if sopts.debugging_opts.debug_llvm {
+-        rustc_trans::enable_llvm_debug();
+-    }
+-
+     let descriptions = diagnostics_registry();
+ 
+     do_or_return!(callbacks.early_callback(&matches,
+--- a/src/librustc_llvm/ffi.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_llvm/ffi.rs	2018-02-10 13:06:19.976658416 +0100
+@@ -299,12 +299,11 @@
  #[repr(C)]
  pub enum CodeModel {
--    Other,
+     Other,
 -    Default,
 -    JITDefault,
      Small,
      Kernel,
      Medium,
-@@ -331,7 +328,7 @@
+     Large,
++    None,
+ }
+ 
+ /// LLVMRustDiagnosticKind
+@@ -331,7 +330,6 @@
  pub enum ArchiveKind {
      Other,
      K_GNU,
 -    K_MIPS64,
-+    K_GNU64,
      K_BSD,
      K_COFF,
  }
---- a/src/librustc_trans/back/write.rs	2018-01-14 19:12:31.124639399 +0100
-+++ b/src/librustc_trans/back/write.rs	2018-01-14 19:13:03.619566019 +0100
-@@ -70,7 +70,7 @@
+@@ -498,6 +496,10 @@
+             const FlagStaticMember        = (1 << 12);
+             const FlagLValueReference     = (1 << 13);
+             const FlagRValueReference     = (1 << 14);
++            const FlagExternalTypeRef     = (1 << 15);
++            const FlagIntroducedVirtual   = (1 << 18);
++            const FlagBitField            = (1 << 19);
++            const FlagNoReturn            = (1 << 20);
+             const FlagMainSubprogram      = (1 << 21);
+         }
+     }
+@@ -542,9 +544,6 @@
+     /// See llvm::LLVMTypeKind::getTypeID.
+     pub fn LLVMRustGetTypeKind(Ty: TypeRef) -> TypeKind;
+ 
+-    /// See llvm::Value::getContext
+-    pub fn LLVMRustGetValueContext(V: ValueRef) -> ContextRef;
+-
+     // Operations on integer types
+     pub fn LLVMInt1TypeInContext(C: ContextRef) -> TypeRef;
+     pub fn LLVMInt8TypeInContext(C: ContextRef) -> TypeRef;
+@@ -815,13 +814,12 @@
+                                Bundle: OperandBundleDefRef,
+                                Name: *const c_char)
+                                -> ValueRef;
+-    pub fn LLVMRustBuildLandingPad(B: BuilderRef,
+-                                   Ty: TypeRef,
+-                                   PersFn: ValueRef,
+-                                   NumClauses: c_uint,
+-                                   Name: *const c_char,
+-                                   F: ValueRef)
+-                                   -> ValueRef;
++    pub fn LLVMBuildLandingPad(B: BuilderRef,
++                               Ty: TypeRef,
++                               PersFn: ValueRef,
++                               NumClauses: c_uint,
++                               Name: *const c_char)
++                               -> ValueRef;
+     pub fn LLVMBuildResume(B: BuilderRef, Exn: ValueRef) -> ValueRef;
+     pub fn LLVMBuildUnreachable(B: BuilderRef) -> ValueRef;
+ 
+@@ -1346,9 +1344,6 @@
+                                 Count: c_uint)
+                                 -> ValueRef;
+ 
+-    /// Enables LLVM debug output.
+-    pub fn LLVMRustSetDebug(Enabled: c_int);
+-
+     /// Prepares inline assembly.
+     pub fn LLVMRustInlineAsm(Ty: TypeRef,
+                              AsmString: *const c_char,
+@@ -1580,7 +1575,7 @@
+                                                 InlinedAt: MetadataRef)
+                                                 -> ValueRef;
+     pub fn LLVMRustDIBuilderCreateOpDeref() -> i64;
+-    pub fn LLVMRustDIBuilderCreateOpPlus() -> i64;
++    pub fn LLVMRustDIBuilderCreateOpPlusUconst() -> i64;
+ 
+     pub fn LLVMRustWriteTypeToString(Type: TypeRef, s: RustStringRef);
+     pub fn LLVMRustWriteValueToString(value_ref: ValueRef, s: RustStringRef);
+@@ -1640,7 +1635,6 @@
+     pub fn LLVMRustSetNormalizedTarget(M: ModuleRef, triple: *const c_char);
+     pub fn LLVMRustAddAlwaysInlinePass(P: PassManagerBuilderRef, AddLifetimes: bool);
+     pub fn LLVMRustLinkInExternalBitcode(M: ModuleRef, bc: *const c_char, len: size_t) -> bool;
+-    pub fn LLVMRustLinkInParsedExternalBitcode(M: ModuleRef, M: ModuleRef) -> bool;
+     pub fn LLVMRustRunRestrictionPass(M: ModuleRef, syms: *const *const c_char, len: size_t);
+     pub fn LLVMRustMarkAllFunctionsNounwind(M: ModuleRef);
+ 
+@@ -1677,8 +1671,6 @@
+     pub fn LLVMRustWriteDiagnosticInfoToString(DI: DiagnosticInfoRef, s: RustStringRef);
+     pub fn LLVMRustGetDiagInfoKind(DI: DiagnosticInfoRef) -> DiagnosticKind;
+ 
+-    pub fn LLVMRustWriteDebugLocToString(C: ContextRef, DL: DebugLocRef, s: RustStringRef);
+-
+     pub fn LLVMRustSetInlineAsmDiagnosticHandler(C: ContextRef,
+                                                  H: InlineAsmDiagHandler,
+                                                  CX: *mut c_void);
+--- a/src/librustc_llvm/lib.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_llvm/lib.rs	2018-02-10 13:03:20.697102431 +0100
+@@ -108,7 +108,6 @@
+     fn from_str(s: &str) -> Result<Self, Self::Err> {
+         match s {
+             "gnu" => Ok(ArchiveKind::K_GNU),
+-            "mips64" => Ok(ArchiveKind::K_MIPS64),
+             "bsd" => Ok(ArchiveKind::K_BSD),
+             "coff" => Ok(ArchiveKind::K_COFF),
+             _ => Err(()),
+@@ -299,11 +298,6 @@
+     build_string(|s| LLVMRustWriteTwineToString(tr, s)).expect("got a non-UTF8 Twine from LLVM")
+ }
+ 
+-pub unsafe fn debug_loc_to_string(c: ContextRef, tr: DebugLocRef) -> String {
+-    build_string(|s| LLVMRustWriteDebugLocToString(c, tr, s))
+-        .expect("got a non-UTF8 DebugLoc from LLVM")
+-}
+-
+ pub fn initialize_available_targets() {
+     macro_rules! init_target(
+         ($cfg:meta, $($method:ident),*) => { {
+--- a/src/librustc_trans/back/write.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/back/write.rs	2018-02-10 12:20:04.668579366 +0100
+@@ -69,8 +69,7 @@
+     ("ropi-rwpi", llvm::RelocMode::ROPI_RWPI),
  ];
  
- pub const CODE_GEN_MODEL_ARGS : [(&'static str, llvm::CodeModel); 5] = [
+-pub const CODE_GEN_MODEL_ARGS : [(&'static str, llvm::CodeModel); 5] = [
 -    ("default", llvm::CodeModel::Default),
-+    ("default", llvm::CodeModel::Small),
++pub const CODE_GEN_MODEL_ARGS: &[(&str, llvm::CodeModel)] = &[
      ("small", llvm::CodeModel::Small),
      ("kernel", llvm::CodeModel::Kernel),
      ("medium", llvm::CodeModel::Medium),
+@@ -171,20 +170,23 @@
+     let ffunction_sections = sess.target.target.options.function_sections;
+     let fdata_sections = ffunction_sections;
+ 
+-    let code_model_arg = match sess.opts.cg.code_model {
+-        Some(ref s) => &s,
+-        None => &sess.target.target.options.code_model,
+-    };
+-
+-    let code_model = match CODE_GEN_MODEL_ARGS.iter().find(
+-        |&&arg| arg.0 == code_model_arg) {
+-        Some(x) => x.1,
+-        _ => {
+-            sess.err(&format!("{:?} is not a valid code model",
+-                              code_model_arg));
+-            sess.abort_if_errors();
+-            bug!();
++    let code_model_arg = sess.opts.cg.code_model.as_ref().or(
++        sess.target.target.options.code_model.as_ref(),
++    );
++
++    let code_model = match code_model_arg {
++        Some(s) => {
++            match CODE_GEN_MODEL_ARGS.iter().find(|arg| arg.0 == s) {
++                Some(x) => x.1,
++                _ => {
++                    sess.err(&format!("{:?} is not a valid code model",
++                                      code_model_arg));
++                    sess.abort_if_errors();
++                    bug!();
++                }
++            }
+         }
++        None => llvm::CodeModel::None,
+     };
+ 
+     let singlethread = sess.target.target.options.singlethread;
+@@ -731,7 +733,7 @@
+             // We can't use the same module for asm and binary output, because that triggers
+             // various errors like invalid IR or broken binaries, so we might have to clone the
+             // module to produce the asm output
+-            let llmod = if config.emit_obj {
++            let llmod = if config.emit_obj && !asm2wasm {
+                 llvm::LLVMCloneModule(llmod)
+             } else {
+                 llmod
+@@ -740,7 +742,7 @@
+                 write_output_file(diag_handler, tm, cpm, llmod, &path,
+                                   llvm::FileType::AssemblyFile)
+             })?;
+-            if config.emit_obj {
++            if config.emit_obj && !asm2wasm {
+                 llvm::LLVMDisposeModule(llmod);
+             }
+             timeline.record("asm");
+--- a/src/librustc_trans/builder.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/builder.rs	2018-02-10 12:18:51.707763990 +0100
+@@ -1015,12 +1015,11 @@
+     }
+ 
+     pub fn landing_pad(&self, ty: Type, pers_fn: ValueRef,
+-                       num_clauses: usize,
+-                       llfn: ValueRef) -> ValueRef {
++                       num_clauses: usize) -> ValueRef {
+         self.count_insn("landingpad");
+         unsafe {
+-            llvm::LLVMRustBuildLandingPad(self.llbuilder, ty.to_ref(), pers_fn,
+-                                          num_clauses as c_uint, noname(), llfn)
++            llvm::LLVMBuildLandingPad(self.llbuilder, ty.to_ref(), pers_fn,
++                                      num_clauses as c_uint, noname())
+         }
+     }
+ 
+--- a/src/librustc_trans/debuginfo/mod.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/debuginfo/mod.rs	2018-02-10 12:20:00.370590381 +0100
+@@ -271,6 +271,9 @@
+         }
+         None => {}
+     };
++    if sig.output().is_never() {
++        flags = flags | DIFlags::FlagNoReturn;
++    }
+ 
+     let fn_metadata = unsafe {
+         llvm::LLVMRustDIBuilderCreateFunction(
+--- a/src/librustc_trans/intrinsic.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/intrinsic.rs	2018-02-10 12:18:51.707763990 +0100
+@@ -903,7 +903,7 @@
+         // rust_try ignores the selector.
+         let lpad_ty = Type::struct_(ccx, &[Type::i8p(ccx), Type::i32(ccx)],
+                                     false);
+-        let vals = catch.landing_pad(lpad_ty, bcx.ccx.eh_personality(), 1, catch.llfn());
++        let vals = catch.landing_pad(lpad_ty, bcx.ccx.eh_personality(), 1);
+         catch.add_clause(vals, C_null(Type::i8p(ccx)));
+         let ptr = catch.extract_value(vals, 0);
+         catch.store(ptr, catch.bitcast(local_ptr, Type::i8p(ccx).ptr_to()), None);
+--- a/src/librustc_trans/lib.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/lib.rs	2018-02-10 13:00:51.744471947 +0100
+@@ -69,7 +69,7 @@
+ use back::bytecode::RLIB_BYTECODE_EXTENSION;
+ 
+ pub use metadata::LlvmMetadataLoader;
+-pub use llvm_util::{init, target_features, print_version, print_passes, print, enable_llvm_debug};
++pub use llvm_util::{init, target_features, print_version, print_passes, print};
+ 
+ use std::any::Any;
+ use std::path::PathBuf;
+--- a/src/librustc_trans/llvm_util.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/llvm_util.rs	2018-02-10 13:01:13.528418195 +0100
+@@ -137,7 +137,3 @@
+         }
+     }
+ }
+-
+-pub fn enable_llvm_debug() {
+-    unsafe { llvm::LLVMRustSetDebug(1); }
+-}
+--- a/src/librustc_trans/mir/block.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/mir/block.rs	2018-02-10 12:19:54.748603970 +0100
+@@ -795,7 +795,7 @@
+         let ccx = bcx.ccx;
+         let llpersonality = self.ccx.eh_personality();
+         let llretty = Type::struct_(ccx, &[Type::i8p(ccx), Type::i32(ccx)], false);
+-        let llretval = bcx.landing_pad(llretty, llpersonality, 1, self.llfn);
++        let llretval = bcx.landing_pad(llretty, llpersonality, 1);
+         bcx.set_cleanup(llretval);
+         let slot = self.get_personality_slot(&bcx);
+         Lifetime::Start.call(&bcx, slot);
+--- a/src/librustc_trans/mir/mod.rs	2018-01-01 22:50:13.000000000 +0100
++++ b/src/librustc_trans/mir/mod.rs	2018-02-10 13:06:49.528584769 +0100
+@@ -586,7 +586,7 @@
+ 
+                 let ops = unsafe {
+                     [llvm::LLVMRustDIBuilderCreateOpDeref(),
+-                     llvm::LLVMRustDIBuilderCreateOpPlus(),
++                     llvm::LLVMRustDIBuilderCreateOpPlusUconst(),
+                      byte_offset_of_var_in_env as i64,
+                      llvm::LLVMRustDIBuilderCreateOpDeref()]
+                 };
 --- a/src/rustllvm/ArchiveWrapper.cpp	2018-01-01 22:50:13.000000000 +0100
-+++ b/src/rustllvm/ArchiveWrapper.cpp	2018-01-14 11:31:54.979608052 +0100
-@@ -50,7 +50,7 @@
++++ b/src/rustllvm/ArchiveWrapper.cpp	2018-02-10 12:24:54.092849675 +0100
+@@ -50,7 +50,6 @@
  enum class LLVMRustArchiveKind {
    Other,
    GNU,
 -  MIPS64,
-+  GNU64,
    BSD,
    COFF,
  };
-@@ -59,8 +59,12 @@
+@@ -59,8 +58,6 @@
    switch (Kind) {
    case LLVMRustArchiveKind::GNU:
      return Archive::K_GNU;
 -  case LLVMRustArchiveKind::MIPS64:
-+  case LLVMRustArchiveKind::GNU64:
-+#if LLVM_VERSION_GE(6, 0)
-+    return Archive::K_GNU64;
-+#else
-     return Archive::K_MIPS64;
-+#endif
+-    return Archive::K_MIPS64;
    case LLVMRustArchiveKind::BSD:
      return Archive::K_BSD;
    case LLVMRustArchiveKind::COFF:
-@@ -285,8 +289,16 @@
+@@ -281,12 +278,20 @@
+     }
+   }
+ #if LLVM_VERSION_GE(3, 8)
+-  auto Pair = writeArchive(Dst, Members, WriteSymbtab, Kind, true, false);
++  auto Result = writeArchive(Dst, Members, WriteSymbtab, Kind, true, false);
  #else
-   auto Pair = writeArchive(Dst, Members, WriteSymbtab, Kind, true);
+-  auto Pair = writeArchive(Dst, Members, WriteSymbtab, Kind, true);
++  auto Result = writeArchive(Dst, Members, WriteSymbtab, Kind, true);
  #endif
++
 +#if LLVM_VERSION_GE(6, 0)
-+  if (!Pair)
++  if (!Result)
++    return LLVMRustResult::Success;
++  LLVMRustSetLastError(toString(std::move(Result)).c_str());
 +#else
    if (!Pair.second)
-+#endif
      return LLVMRustResult::Success;
-+#if LLVM_VERSION_GE(6, 0)
-+  LLVMRustSetLastError("Write archive failed");
-+#else
    LLVMRustSetLastError(Pair.second.message().c_str());
 +#endif
++
    return LLVMRustResult::Failure;
  }
 --- a/src/rustllvm/PassWrapper.cpp	2018-01-01 22:50:13.000000000 +0100
-+++ b/src/rustllvm/PassWrapper.cpp	2018-01-14 11:40:16.722407258 +0100
-@@ -22,7 +22,11 @@
++++ b/src/rustllvm/PassWrapper.cpp	2018-02-10 13:05:32.896775260 +0100
+@@ -22,9 +22,15 @@
  #include "llvm/Support/FileSystem.h"
  #include "llvm/Support/Host.h"
  #include "llvm/Target/TargetMachine.h"
-+#if LLVM_VERSION_GE(6, 0)
-+#include "llvm/CodeGen/TargetSubtargetInfo.h"
-+#else
- #include "llvm/Target/TargetSubtargetInfo.h"
-+#endif
+-#include "llvm/Target/TargetSubtargetInfo.h"
  #include "llvm/Transforms/IPO/PassManagerBuilder.h"
  
++#if LLVM_VERSION_GE(6, 0)
++#include "llvm/CodeGen/TargetSubtargetInfo.h"
++#include "llvm/IR/IntrinsicInst.h"
++#else
++#include "llvm/Target/TargetSubtargetInfo.h"
++#endif
++
  #if LLVM_VERSION_GE(4, 0)
-@@ -211,21 +213,14 @@
- }
+ #include "llvm/Transforms/IPO/AlwaysInliner.h"
+ #include "llvm/Transforms/IPO/FunctionImport.h"
+@@ -212,20 +218,15 @@
  
  enum class LLVMRustCodeModel {
--  Other,
+   Other,
 -  Default,
 -  JITDefault,
    Small,
    Kernel,
    Medium,
    Large,
++  None,
  };
  
--static CodeModel::Model fromRust(LLVMRustCodeModel Model) {
-+static Optional<CodeModel::Model> fromRust(LLVMRustCodeModel Model) {
+ static CodeModel::Model fromRust(LLVMRustCodeModel Model) {
    switch (Model) {
 -  case LLVMRustCodeModel::Default:
 -    return CodeModel::Default;
@@ -120,20 +446,30 @@
    case LLVMRustCodeModel::Small:
      return CodeModel::Small;
    case LLVMRustCodeModel::Kernel:
-@@ -413,7 +408,11 @@
+@@ -370,7 +371,6 @@
+     bool TrapUnreachable,
+     bool Singlethread) {
+ 
+-  auto CM = fromRust(RustCM);
+   auto OptLevel = fromRust(RustOptLevel);
+   auto RM = fromRust(RustReloc);
+ 
+@@ -412,6 +412,13 @@
+     Options.ThreadModel = ThreadModel::Single;
    }
  
-   TargetMachine *TM = TheTarget->createTargetMachine(
 +#if LLVM_VERSION_GE(6, 0)
-       Trip.getTriple(), RealCPU, Feature, Options, RM, CM, OptLevel);
++  Optional<CodeModel::Model> CM;
 +#else
-+      Trip.getTriple(), RealCPU, Feature, Options, RM, CM, OptLevel, false);
++  CodeModel::Model CM = CodeModel::Model::Default;
 +#endif
++  if (RustCM != LLVMRustCodeModel::None)
++    CM = fromRust(RustCM);
+   TargetMachine *TM = TheTarget->createTargetMachine(
+       Trip.getTriple(), RealCPU, Feature, Options, RM, CM, OptLevel);
    return wrap(TM);
- }
- 
 --- a/src/rustllvm/RustWrapper.cpp	2018-01-01 22:50:13.000000000 +0100
-+++ b/src/rustllvm/RustWrapper.cpp	2018-01-14 11:23:51.029772099 +0100
++++ b/src/rustllvm/RustWrapper.cpp	2018-02-10 13:08:01.808405754 +0100
 @@ -251,7 +251,11 @@
  // enable fpmath flag UnsafeAlgebra
  extern "C" void LLVMRustSetHasUnsafeAlgebra(LLVMValueRef V) {
@@ -146,3 +482,167 @@
    }
  }
  
+@@ -323,12 +327,6 @@
+   return wrap(unwrap(B)->CreateFence(fromRust(Order), fromRust(Scope)));
+ }
+ 
+-extern "C" void LLVMRustSetDebug(int Enabled) {
+-#ifndef NDEBUG
+-  DebugFlag = Enabled;
+-#endif
+-}
+-
+ enum class LLVMRustAsmDialect {
+   Other,
+   Att,
+@@ -402,9 +400,13 @@
+   FlagStaticMember = (1 << 12),
+   FlagLValueReference = (1 << 13),
+   FlagRValueReference = (1 << 14),
+-  FlagMainSubprogram      = (1 << 21),
++  FlagExternalTypeRef = (1 << 15),
++  FlagIntroducedVirtual = (1 << 18),
++  FlagBitField = (1 << 19),
++  FlagNoReturn = (1 << 20),
++  FlagMainSubprogram = (1 << 21),
+   // Do not add values that are not supported by the minimum LLVM
+-  // version we support!
++  // version we support! see llvm/include/llvm/IR/DebugInfoFlags.def
+ };
+ 
+ inline LLVMRustDIFlags operator&(LLVMRustDIFlags A, LLVMRustDIFlags B) {
+@@ -489,7 +491,21 @@
+   if (isSet(Flags & LLVMRustDIFlags::FlagRValueReference)) {
+     Result |= DINode::DIFlags::FlagRValueReference;
+   }
++#if LLVM_VERSION_LE(4, 0)
++  if (isSet(Flags & LLVMRustDIFlags::FlagExternalTypeRef)) {
++    Result |= DINode::DIFlags::FlagExternalTypeRef;
++  }
++#endif
++  if (isSet(Flags & LLVMRustDIFlags::FlagIntroducedVirtual)) {
++    Result |= DINode::DIFlags::FlagIntroducedVirtual;
++  }
++  if (isSet(Flags & LLVMRustDIFlags::FlagBitField)) {
++    Result |= DINode::DIFlags::FlagBitField;
++  }
+ #if LLVM_RUSTLLVM || LLVM_VERSION_GE(4, 0)
++  if (isSet(Flags & LLVMRustDIFlags::FlagNoReturn)) {
++    Result |= DINode::DIFlags::FlagNoReturn;
++  }
+   if (isSet(Flags & LLVMRustDIFlags::FlagMainSubprogram)) {
+     Result |= DINode::DIFlags::FlagMainSubprogram;
+   }
+@@ -828,7 +842,14 @@
+   return dwarf::DW_OP_deref;
+ }
+ 
+-extern "C" int64_t LLVMRustDIBuilderCreateOpPlus() { return dwarf::DW_OP_plus; }
++extern "C" int64_t LLVMRustDIBuilderCreateOpPlusUconst() {
++#if LLVM_VERSION_GE(5, 0)
++  return dwarf::DW_OP_plus_uconst;
++#else
++  // older LLVM used `plus` to behave like `plus_uconst`.
++  return dwarf::DW_OP_plus;
++#endif
++}
+ 
+ extern "C" void LLVMRustWriteTypeToString(LLVMTypeRef Ty, RustStringRef Str) {
+   RawRustStringOstream OS(Str);
+@@ -892,23 +913,6 @@
+   return true;
+ }
+ 
+-extern "C" bool LLVMRustLinkInParsedExternalBitcode(
+-    LLVMModuleRef DstRef, LLVMModuleRef SrcRef) {
+-#if LLVM_VERSION_GE(4, 0)
+-  Module *Dst = unwrap(DstRef);
+-  std::unique_ptr<Module> Src(unwrap(SrcRef));
+-
+-  if (Linker::linkModules(*Dst, std::move(Src))) {
+-    LLVMRustSetLastError("failed to link modules");
+-    return false;
+-  }
+-  return true;
+-#else
+-  LLVMRustSetLastError("can't link parsed modules on this LLVM");
+-  return false;
+-#endif
+-}
+-
+ // Note that the two following functions look quite similar to the
+ // LLVMGetSectionName function. Sadly, it appears that this function only
+ // returns a char* pointer, which isn't guaranteed to be null-terminated. The
+@@ -940,7 +944,6 @@
+ }
+ 
+ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(Twine, LLVMTwineRef)
+-DEFINE_SIMPLE_CONVERSION_FUNCTIONS(DebugLoc, LLVMDebugLocRef)
+ 
+ extern "C" void LLVMRustWriteTwineToString(LLVMTwineRef T, RustStringRef Str) {
+   RawRustStringOstream OS(Str);
+@@ -1097,13 +1100,6 @@
+   llvm_unreachable("Unhandled TypeID.");
+ }
+ 
+-extern "C" void LLVMRustWriteDebugLocToString(LLVMContextRef C,
+-                                              LLVMDebugLocRef DL,
+-                                              RustStringRef Str) {
+-  RawRustStringOstream OS(Str);
+-  unwrap(DL)->print(OS);
+-}
+-
+ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(SMDiagnostic, LLVMSMDiagnosticRef)
+ 
+ extern "C" void LLVMRustSetInlineAsmDiagnosticHandler(
+@@ -1117,13 +1113,6 @@
+   unwrap(D)->print("", OS);
+ }
+ 
+-extern "C" LLVMValueRef
+-LLVMRustBuildLandingPad(LLVMBuilderRef B, LLVMTypeRef Ty,
+-                        LLVMValueRef PersFn, unsigned NumClauses,
+-                        const char *Name, LLVMValueRef F) {
+-  return LLVMBuildLandingPad(B, Ty, PersFn, NumClauses, Name);
+-}
+-
+ extern "C" LLVMValueRef LLVMRustBuildCleanupPad(LLVMBuilderRef B,
+                                                 LLVMValueRef ParentPad,
+                                                 unsigned ArgCount,
+@@ -1373,10 +1362,6 @@
+     return true;
+ }
+ 
+-extern "C" LLVMContextRef LLVMRustGetValueContext(LLVMValueRef V) {
+-  return wrap(&unwrap(V)->getContext());
+-}
+-
+ enum class LLVMRustVisibility {
+   Default = 0,
+   Hidden = 1,
+@@ -1457,11 +1442,6 @@
+ 
+ extern "C" uint64_t
+ LLVMRustModuleCost(LLVMModuleRef M) {
+-  Module &Mod = *unwrap(M);
+-  uint64_t cost = 0;
+-  for (auto &F : Mod.functions()) {
+-    (void)F;
+-    cost += 1;
+-  }
+-  return cost;
++  auto f = unwrap(M)->functions();
++  return std::distance(std::begin(f), std::end(f));
+ }
+--- a/src/rustllvm/rustllvm.h	2018-01-01 22:50:13.000000000 +0100
++++ b/src/rustllvm/rustllvm.h	2018-02-10 13:04:29.040932807 +0100
+@@ -107,9 +107,7 @@
+ 
+ typedef struct OpaqueRustString *RustStringRef;
+ typedef struct LLVMOpaqueTwine *LLVMTwineRef;
+-typedef struct LLVMOpaqueDebugLoc *LLVMDebugLocRef;
+ typedef struct LLVMOpaqueSMDiagnostic *LLVMSMDiagnosticRef;
+-typedef struct LLVMOpaqueRustJITMemoryManager *LLVMRustJITMemoryManagerRef;
+ 
+ extern "C" void LLVMRustStringWriteImpl(RustStringRef Str, const char *Ptr,
+                                         size_t Size);

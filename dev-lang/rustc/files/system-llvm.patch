@@ -1,0 +1,106 @@
+--- a/src/bootstrap/builder.rs	2018-02-10 13:18:31.809850964 +0100
++++ b/src/bootstrap/builder.rs	2018-02-10 13:19:13.783747896 +0100
+@@ -627,8 +627,7 @@
+ 
+             if mode != Mode::Libstd && // FIXME(#45320)
+                mode != Mode::Libtest && // FIXME(#45511)
+-               self.config.rust_codegen_units.is_none() &&
+-               self.build.is_rust_llvm(compiler.host)
++               self.config.rust_codegen_units.is_none()
+             {
+                 cargo.env("RUSTC_THINLTO", "1");
+             }
+--- a/src/bootstrap/compile.rs	2018-02-10 13:17:57.696934627 +0100
++++ b/src/bootstrap/compile.rs	2018-02-10 13:25:22.502840101 +0100
+@@ -512,10 +512,7 @@
+     if !build.unstable_features() {
+         cargo.env("CFG_DISABLE_UNSTABLE_FEATURES", "1");
+     }
+-    // Flag that rust llvm is in use
+-    if build.is_rust_llvm(target) {
+-        cargo.env("LLVM_RUSTLLVM", "1");
+-    }
++
+     cargo.env("LLVM_CONFIG", build.llvm_config(target));
+     let target_config = build.config.target_config.get(&target);
+     if let Some(s) = target_config.and_then(|c| c.llvm_config.as_ref()) {
+--- a/src/bootstrap/check.rs	2018-02-10 13:18:17.200887074 +0100
++++ b/src/bootstrap/check.rs	2018-02-10 13:20:39.639536405 +0100
+@@ -804,9 +804,6 @@
+             let llvm_config = build.llvm_config(target);
+             let llvm_version = output(Command::new(&llvm_config).arg("--version"));
+             cmd.arg("--llvm-version").arg(llvm_version);
+-            if !build.is_rust_llvm(target) {
+-                cmd.arg("--system-llvm");
+-            }
+ 
+             // Only pass correct values for these flags for the `run-make` suite as it
+             // requires that a C++ compiler was configured which isn't always the case.
+--- a/src/librustc_llvm/build.rs	2018-02-10 13:24:45.792930423 +0100
++++ b/src/librustc_llvm/build.rs	2018-02-10 13:25:09.174873415 +0100
+@@ -159,10 +159,6 @@
+         cfg.flag(&flag);
+     }
+ 
+-    if env::var_os("LLVM_RUSTLLVM").is_some() {
+-        cfg.flag("-DLLVM_RUSTLLVM");
+-    }
+-
+     build_helper::rerun_if_changed_anything_in_dir(Path::new("../rustllvm"));
+     cfg.file("../rustllvm/PassWrapper.cpp")
+        .file("../rustllvm/RustWrapper.cpp")
+--- a/src/rustllvm/PassWrapper.cpp	2018-02-10 13:28:49.073331675 +0100
++++ b/src/rustllvm/PassWrapper.cpp	2018-02-10 13:29:22.415250218 +0100
+@@ -203,7 +203,6 @@
+ 
+ extern "C" bool LLVMRustHasFeature(LLVMTargetMachineRef TM,
+                                    const char *Feature) {
+-#if LLVM_RUSTLLVM
+   TargetMachine *Target = unwrap(TM);
+   const MCSubtargetInfo *MCInfo = Target->getMCSubtargetInfo();
+   const FeatureBitset &Bits = MCInfo->getFeatureBits();
+@@ -212,7 +211,6 @@
+   for (auto &FeatureEntry : FeatTable)
+     if (!strcmp(FeatureEntry.Key, Feature))
+       return (Bits & FeatureEntry.Value) == FeatureEntry.Value;
+-#endif
+   return false;
+ }
+ 
+@@ -306,7 +304,6 @@
+   llvm_unreachable("Bad RelocModel.");
+ }
+ 
+-#if LLVM_RUSTLLVM
+ /// getLongestEntryLength - Return the length of the longest entry in the table.
+ ///
+ static size_t getLongestEntryLength(ArrayRef<SubtargetFeatureKV> Table) {
+@@ -351,17 +348,6 @@
+          "target-feature=+feature1,-feature2\n\n");
+ }
+ 
+-#else
+-
+-extern "C" void LLVMRustPrintTargetCPUs(LLVMTargetMachineRef) {
+-  printf("Target CPU help is not supported by this LLVM version.\n\n");
+-}
+-
+-extern "C" void LLVMRustPrintTargetFeatures(LLVMTargetMachineRef) {
+-  printf("Target features help is not supported by this LLVM version.\n\n");
+-}
+-#endif
+-
+ extern "C" LLVMTargetMachineRef LLVMRustCreateTargetMachine(
+     const char *TripleStr, const char *CPU, const char *Feature,
+     LLVMRustCodeModel RustCM, LLVMRustRelocMode RustReloc,
+--- a/src/rustllvm/RustWrapper.cpp	2018-02-10 13:28:53.017321961 +0100
++++ b/src/rustllvm/RustWrapper.cpp	2018-02-10 13:29:39.871207575 +0100
+@@ -500,7 +500,7 @@
+   if (isSet(Flags & LLVMRustDIFlags::FlagBitField)) {
+     Result |= DINode::DIFlags::FlagBitField;
+   }
+-#if LLVM_RUSTLLVM || LLVM_VERSION_GE(4, 0)
++#if LLVM_VERSION_GE(4, 0)
+   if (isSet(Flags & LLVMRustDIFlags::FlagNoReturn)) {
+     Result |= DINode::DIFlags::FlagNoReturn;
+   }

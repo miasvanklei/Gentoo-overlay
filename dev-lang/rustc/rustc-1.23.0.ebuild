@@ -38,6 +38,7 @@ pkg_setup() {
 
 src_prepare() {
 	eapply "${FILESDIR}"/llvm-6.patch
+	eapply "${FILESDIR}"/system-llvm.patch
 	eapply "${FILESDIR}"/musl.patch
 	eapply "${FILESDIR}"/use-libc++.patch
 	eapply "${FILESDIR}"/debug-hack.patch
@@ -105,7 +106,7 @@ src_install() {
 	doins -r "${obj}/lib/rustlib"
 
 	# install analysis for rls
-	insinto "/usr/$(get_libdir)/rustlib/${CBUILD}/analysis"
+	insinto "/usr/$(get_libdir)/rustlib/analysis"
 	doins "${sobj}/release/deps/save-analysis/"*
 
 	# install COPYRIGHT and LICENSE
@@ -124,10 +125,10 @@ src_install() {
 	EOF
 	doenvd "${T}"/50${PN}
 
-	# install source needed for racer
+	# install sources needed for go to definition
 	pushd ${S}/src
-	mkdir -p ${D}/usr/src/${PN}
-	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/src/${PN} \; || die
+	mkdir -p ${D}/usr/lib/rustlib/src
+	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src \; || die
 	popd >/dev/null
 }
 
