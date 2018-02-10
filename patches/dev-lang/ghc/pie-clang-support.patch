@@ -1,0 +1,102 @@
+--- a/mk/ways.mk	2018-02-09 09:33:13.733219177 +0100
++++ b/mk/ways.mk	2018-02-09 09:34:33.084020377 +0100
+@@ -34,15 +34,15 @@
+ 
+ # Way 'v':
+ WAY_v_NAME=vanilla
+-WAY_v_HC_OPTS= -static
++WAY_v_HC_OPTS= -fPIC -static
+ 
+ # Way 'p':
+ WAY_p_NAME=profiling
+-WAY_p_HC_OPTS= -static -prof
++WAY_p_HC_OPTS= -fPIC -static -prof
+ 
+ # Way 'l':
+ WAY_l_NAME=event logging
+-WAY_l_HC_OPTS= -static -eventlog
++WAY_l_HC_OPTS= -fPIC -static -eventlog
+ 
+ #
+ # These ways apply to the RTS only:
+@@ -50,31 +50,31 @@
+ 
+ # Way 'thr':
+ WAY_thr_NAME=threaded
+-WAY_thr_HC_OPTS= -static -optc-DTHREADED_RTS
++WAY_thr_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS
+ 
+ # Way 'thr_p':
+ WAY_thr_p_NAME=threaded profiled
+-WAY_thr_p_HC_OPTS= -static -optc-DTHREADED_RTS -prof
++WAY_thr_p_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS -prof
+ 
+ # Way 'thr_l':
+ WAY_thr_l_NAME=threaded event logging
+-WAY_thr_l_HC_OPTS= -static -optc-DTHREADED_RTS -eventlog
++WAY_thr_l_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS -eventlog
+ 
+ # Way 'debug':
+ WAY_debug_NAME=debug
+-WAY_debug_HC_OPTS= -static -optc-DDEBUG -ticky -DTICKY_TICKY
++WAY_debug_HC_OPTS= -fPIC -static -optc-DDEBUG -ticky -DTICKY_TICKY
+ 
+ # Way 'debug_p':
+ WAY_debug_p_NAME=debug profiled
+-WAY_debug_p_HC_OPTS= -static -optc-DDEBUG -prof
++WAY_debug_p_HC_OPTS= -fPIC -static -optc-DDEBUG -prof
+ 
+ # Way 'thr_debug':
+ WAY_thr_debug_NAME=threaded debug
+-WAY_thr_debug_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG
++WAY_thr_debug_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS -optc-DDEBUG
+ 
+ # Way 'thr_debug_p':
+ WAY_thr_debug_p_NAME=threaded debug profiling
+-WAY_thr_debug_p_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG -prof
++WAY_thr_debug_p_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS -optc-DDEBUG -prof
+ 
+ # Way 'dyn': build dynamic shared libraries
+ WAY_dyn_NAME=dyn
+--- a/compiler/main/DynFlags.hs	2018-02-09 09:31:17.342509887 +0100
++++ b/compiler/main/DynFlags.hs	2018-02-09 09:32:36.557311699 +0100
+@@ -3640,24 +3640,12 @@
+     ++ [f | (ns,f) <- optLevelFlags, 0 `elem` ns]
+              -- The default -O0 options
+ 
+-    ++ default_PIC platform
++    ++ [Opt_PIC]
+ 
+     ++ concatMap (wayGeneralFlags platform) (defaultWays settings)
+ 
+     where platform = sTargetPlatform settings
+ 
+-default_PIC :: Platform -> [GeneralFlag]
+-default_PIC platform =
+-  case (platformOS platform, platformArch platform) of
+-    (OSDarwin, ArchX86_64) -> [Opt_PIC]
+-    (OSOpenBSD, ArchX86_64) -> [Opt_PIC] -- Due to PIE support in
+-                                         -- OpenBSD since 5.3 release
+-                                         -- (1 May 2013) we need to
+-                                         -- always generate PIC. See
+-                                         -- #10597 for more
+-                                         -- information.
+-    _                      -> []
+-
+ -- General flags that are switched on/off when other general flags are switched
+ -- on
+ impliedGFlags :: [(GeneralFlag, TurnOnFlag, GeneralFlag)]
+--- a/compiler/main/DriverPipeline.hs	2018-02-09 09:27:59.102004913 +0100
++++ b/compiler/main/DriverPipeline.hs	2018-02-09 09:28:49.540879000 +0100
+@@ -1850,11 +1850,6 @@
+                       ++ map SysTools.Option (
+                          []
+ 
+-                      -- See Note [No PIE eating when linking]
+-                      ++ (if sGccSupportsNoPie mySettings
+-                             then ["-no-pie"]
+-                             else [])
+-
+                       -- Permit the linker to auto link _symbol to _imp_symbol.
+                       -- This lets us link against DLLs without needing an "import library".
+                       ++ (if platformOS platform == OSMinGW32
