@@ -69,6 +69,10 @@ PATENTS
 README.md
 )
 
+PATCHES=(
+	"${FILESDIR}"/default-buildmode-pie.patch
+)
+
 go_arch()
 {
 	# By chance most portage arch names match Go
