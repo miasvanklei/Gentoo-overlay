@@ -60,10 +60,10 @@ index 639f0f29ceb..b5ae3fede97 100644
    void removeSections(std::function<bool(const SectionBase &)> ToRemove);
    void addSection(StringRef SecName, ArrayRef<uint8_t> Data);
 diff --git a/tools/llvm-objcopy/llvm-objcopy.cpp b/tools/llvm-objcopy/llvm-objcopy.cpp
-index 20ce93bb40e..a5a1d1c48cb 100644
+index 20ce93bb40e..e5ad1b3e135 100644
 --- a/tools/llvm-objcopy/llvm-objcopy.cpp
 +++ b/tools/llvm-objcopy/llvm-objcopy.cpp
-@@ -31,9 +31,11 @@
+@@ -31,12 +31,16 @@
  #include <algorithm>
  #include <cassert>
  #include <cstdlib>
@@ -75,10 +75,18 @@ index 20ce93bb40e..a5a1d1c48cb 100644
  #include <string>
  #include <system_error>
  #include <utility>
-@@ -74,6 +76,10 @@ LLVM_ATTRIBUTE_NORETURN void reportError(StringRef File, Error E) {
++#include <sys/stat.h>
++#include <unistd.h>
+ 
+ using namespace llvm;
+ using namespace object;
+@@ -72,8 +76,11 @@ LLVM_ATTRIBUTE_NORETURN void reportError(StringRef File, Error E) {
+ } // end namespace llvm
+ 
  static cl::opt<std::string> InputFilename(cl::Positional, cl::desc("<input>"));
- static cl::opt<std::string> OutputFilename(cl::Positional, cl::desc("<output>"),
-                                            cl::init("-"));
+-static cl::opt<std::string> OutputFilename(cl::Positional, cl::desc("<output>"),
+-                                           cl::init("-"));
++static cl::opt<std::string> OutputFilename(cl::Positional, cl::desc("<output>"));
 +
 +static cl::opt<std::string>
 +    RedefineSyms("redefine-syms", cl::desc("rename symbols pair \"old new\" in file"));
@@ -86,7 +94,7 @@ index 20ce93bb40e..a5a1d1c48cb 100644
  static cl::opt<std::string>
      OutputFormat("O", cl::desc("Set output format to one of the following:"
                                 "\n\tbinary"));
-@@ -89,6 +95,8 @@ static cl::opt<bool> StripAll(
+@@ -89,6 +96,8 @@ static cl::opt<bool> StripAll(
  static cl::opt<bool>
      StripAllGNU("strip-all-gnu",
                  cl::desc("Removes symbol, relocation, and debug information"));
@@ -95,7 +103,7 @@ index 20ce93bb40e..a5a1d1c48cb 100644
  static cl::list<std::string> Keep("keep", cl::desc("Keep <section>"),
                                    cl::value_desc("section"));
  static cl::list<std::string> OnlyKeep("only-keep",
-@@ -98,6 +106,8 @@ static cl::alias OnlyKeepA("j", cl::desc("Alias for only-keep"),
+@@ -98,6 +107,8 @@ static cl::alias OnlyKeepA("j", cl::desc("Alias for only-keep"),
                             cl::aliasopt(OnlyKeep));
  static cl::opt<bool> StripDebug("strip-debug",
                                  cl::desc("Removes all debug information"));
@@ -104,7 +112,7 @@ index 20ce93bb40e..a5a1d1c48cb 100644
  static cl::opt<bool> StripSections("strip-sections",
                                     cl::desc("Remove all section headers"));
  static cl::opt<bool>
-@@ -177,6 +187,21 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
+@@ -177,6 +188,21 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
    else
      Obj = llvm::make_unique<ELFObject<ELFT>>(ObjFile);
  
@@ -126,15 +134,22 @@ index 20ce93bb40e..a5a1d1c48cb 100644
    if (!SplitDWO.empty())
      SplitDWOToFile<ELFT>(ObjFile, SplitDWO.getValue());
  
-@@ -307,7 +332,10 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
+@@ -307,7 +333,17 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
    }
  
    Obj->finalize();
 -  WriteObjectFile(*Obj, OutputFilename.getValue());
-+  if (OutputFilename.empty() || OutputFilename == "-")
-+    WriteObjectFile(*Obj, InputFilename.getValue());
-+  else
-+    WriteObjectFile(*Obj, OutputFilename.getValue());
++
++  // get permissions of input file.
++  struct stat ret;
++  stat(InputFilename.c_str(), &ret);
++
++  StringRef Output = OutputFilename.empty() ? InputFilename : OutputFilename;
++  WriteObjectFile(*Obj, Output);
++
++  // set permissions equal to input file
++  chown(Output.str().c_str(), ret.st_uid, ret.st_gid);
++  chmod(Output.str().c_str(), ret.st_mode);
  }
  
  int main(int argc, char **argv) {
