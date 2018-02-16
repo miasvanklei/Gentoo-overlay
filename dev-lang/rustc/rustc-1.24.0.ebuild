@@ -43,6 +43,9 @@ src_prepare() {
 	eapply "${FILESDIR}"/use-libc++.patch
 	eapply "${FILESDIR}"/debug-hack.patch
 
+	# fix rls-analysis path
+	eapply "${FILESDIR}"/fix-analysis-path.patch
+
 	# rustdoc/rls fails to link with llvm shared
 	eapply "${FILESDIR}"/tools-llvm-shared.patch
 
@@ -55,15 +58,19 @@ src_configure() {
 	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
 
 	cat <<- EOF > config.toml
-        [llvm]
-        link-shared = true
+	[llvm]
+	link-shared = true
 	[build]
 	cargo = "/usr/bin/cargo"
 	rustc = "/usr/bin/rustc"
 	build = "${CBUILD}"
 	host = ["${CHOST}"]
 	target = ["${CBUILD}"]
-        extended = true
+	locked-deps = true
+	submodules = false
+	vendor = true
+	verbose = 2
+	extended = true
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)/${PN}"
@@ -73,7 +80,6 @@ src_configure() {
 	optimize = $(toml_usex !debug)
 	debuginfo = $(toml_usex debug)
 	debug-assertions = $(toml_usex debug)
-	codegen-units = 1
 	use-jemalloc = $(toml_usex jemalloc)
 	default-linker = "$(tc-getBUILD_CC)"
 	rpath = false
@@ -81,11 +87,13 @@ src_configure() {
 	cc = "$(tc-getBUILD_CC)"
 	cxx = "$(tc-getBUILD_CXX)"
 	llvm-config = "${llvm_config}"
+	linker = "$(tc-getCC)"
+	ar = "$(tc-getAR)"
 	EOF
 }
 
 src_compile() {
-	${EPYTHON} x.py build --verbose || die
+	${EPYTHON} x.py build --config="${S}"/config.toml || die
 }
 
 src_install() {
@@ -98,7 +106,7 @@ src_install() {
 
 	# install binaries
 	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc" "${tobj}/rls"
-        dobin "${tobj}/cargo" "${tobj}/clippy-driver" "${tobj}/rustfmt"
+        dobin "${tobj}/cargo" "${tobj}/rustfmt"
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
 	# install libraries

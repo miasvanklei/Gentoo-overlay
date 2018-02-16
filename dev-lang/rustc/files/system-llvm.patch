@@ -1,12 +1,12 @@
 --- a/src/bootstrap/builder.rs	2018-02-10 13:18:31.809850964 +0100
 +++ b/src/bootstrap/builder.rs	2018-02-10 13:19:13.783747896 +0100
 @@ -627,8 +627,7 @@
+                 cargo.arg("--release");
+             }
  
-             if mode != Mode::Libstd && // FIXME(#45320)
-                mode != Mode::Libtest && // FIXME(#45511)
--               self.config.rust_codegen_units.is_none() &&
+-            if self.config.rust_codegen_units.is_none() &&
 -               self.build.is_rust_llvm(compiler.host)
-+               self.config.rust_codegen_units.is_none()
++            if self.config.rust_codegen_units.is_none()
              {
                  cargo.env("RUSTC_THINLTO", "1");
              }
@@ -43,7 +43,7 @@
      }
  
 -    if env::var_os("LLVM_RUSTLLVM").is_some() {
--        cfg.flag("-DLLVM_RUSTLLVM");
+-        cfg.define("LLVM_RUSTLLVM", None);
 -    }
 -
      build_helper::rerun_if_changed_anything_in_dir(Path::new("../rustllvm"));
