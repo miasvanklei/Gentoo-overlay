@@ -1,24 +1,15 @@
---- a/hw/scsi/mptsas.c	2017-11-12 10:50:04.109707173 +0100
-+++ b/hw/scsi/mptsas.c	2017-11-12 10:50:17.924681363 +0100
-@@ -1238,9 +1238,6 @@
-      * and fail migration instead of asserting here.
-      * When we do, we might be able to re-enable NDEBUG below.
-      */
+--- a/include/qemu/osdep.h	2018-02-14 11:46:13.816383800 +0100
++++ b/include/qemu/osdep.h	2018-02-14 11:46:48.646295225 +0100
+@@ -120,9 +120,9 @@
+  * submit patches to remove any side-effects inside an assertion, or
+  * fixing error handling that should use Error instead of assert.
+  */
 -#ifdef NDEBUG
 -#error building with NDEBUG is not supported
 -#endif
-     assert(n >= 0);
- 
-     pci_dma_sglist_init(&req->qsg, pci, n);
---- a/hw/virtio/virtio.c	2017-11-12 10:51:24.405554057 +0100
-+++ b/hw/virtio/virtio.c	2017-11-12 10:51:41.324521131 +0100
-@@ -1027,9 +1027,6 @@
-      * of asserting here.
-      * When we do, we might be able to re-enable NDEBUG below.
-      */
--#ifdef NDEBUG
--#error building with NDEBUG is not supported
--#endif
-     assert(ARRAY_SIZE(data.in_addr) >= data.in_num);
-     assert(ARRAY_SIZE(data.out_addr) >= data.out_num);
- 
++//#ifdef NDEBUG
++//#error building with NDEBUG is not supported
++//#endif
+ #ifdef G_DISABLE_ASSERT
+ #error building with G_DISABLE_ASSERT is not supported
+ #endif
