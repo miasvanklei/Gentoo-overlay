@@ -14,6 +14,7 @@ SRC_URI="https://github.com/KDE/kio/archive/v5.42.0.tar.gz -> ${P}.tar.gz"
 IUSE="acl +handbook kerberos +kwallet X"
 
 RDEPEND="
+	$(add_frameworks_dep kauth)
 	$(add_frameworks_dep karchive)
 	$(add_frameworks_dep kbookmarks)
 	$(add_frameworks_dep kcodecs)
