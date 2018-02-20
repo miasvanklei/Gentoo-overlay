@@ -20,26 +20,26 @@ EGIT_BRANCH="release_60"
 LICENSE="|| ( UoI-NCSA MIT )"
 # Note: this needs to be updated to match version of clang-9999
 SLOT="6.0.0"
-KEYWORDS="~amd64"
-IUSE="+clang +compiler-rt test"
+KEYWORDS=""
+IUSE="+clang test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 
 LLVM_SLOT=${SLOT%%.*}
-# llvm-4 needed for --cmakedir
+# llvm-6 for new lit options
 DEPEND="
-	>=sys-devel/llvm-4
+	>=sys-devel/llvm-6
 	clang? ( sys-devel/clang )
 	test? (
-		app-portage/unsandbox
+		!<sys-apps/sandbox-2.13
 		$(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]")
 		=sys-devel/clang-${PV%_*}*:${LLVM_SLOT}
 		sys-libs/compiler-rt:${SLOT} )
 	${PYTHON_DEPS}"
 
-PATCHES=( "${FILESDIR}"/${PN}-6.0.0-musl-patches.patch )
-
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
+
+PATCHES=( "${FILESDIR}"/${PN}-6.0.0-musl-patches.patch )
 
 check_space() {
 	if use test; then
@@ -90,9 +90,7 @@ src_configure() {
 		-DCOMPILER_RT_OUTPUT_DIR="${BUILD_DIR}/lib/clang/${SLOT}"
 
 		-DCOMPILER_RT_INCLUDE_TESTS=$(usex test)
-		-DSANITIZER_USE_COMPILER_RT=$(usex compiler-rt)
 		# built-ins installed by sys-libs/compiler-rt
-		-DSANITIZER_CXX_ABI="libcxxabi"
 		-DCOMPILER_RT_BUILD_BUILTINS=OFF
 		-DCOMPILER_RT_BUILD_LIBFUZZER=ON
 		-DCOMPILER_RT_BUILD_PROFILE=ON
@@ -100,14 +98,9 @@ src_configure() {
 		-DCOMPILER_RT_BUILD_XRAY=ON
 	)
 	if use test; then
-		cat > "${T}"/unsandbox-lit.py <<-EOF || die
-			import os, sys
-			os.execlp("unsandbox", sys.argv[0], "lit", *sys.argv[1:])
-		EOF
-
 		mycmakeargs+=(
 			-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
-			-DLLVM_EXTERNAL_LIT="${T}/unsandbox-lit.py"
+			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
 			-DLLVM_LIT_ARGS="-vv"
 
 			# they are created during src_test()
@@ -156,6 +149,10 @@ src_configure() {
 src_test() {
 	# respect TMPDIR!
 	local -x LIT_PRESERVES_TMP=1
+	# disable sandbox to have it stop clobbering LD_PRELOAD
+	local -x SANDBOX_ON=0
+	# wipe LD_PRELOAD to make ASAN happy
+	local -x LD_PRELOAD=
 
 	cmake-utils_src_make check-all
 }
