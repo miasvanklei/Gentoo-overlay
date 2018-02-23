@@ -5,30 +5,26 @@ EAPI=6
 
 RESTRICT="test"
 
-inherit git-r3 llvm pax-utils toolchain-funcs
+inherit llvm pax-utils toolchain-funcs
 
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/JuliaLang/julia.git"
+SRC_URI="
+	https://github.com/JuliaLang/${PN}/releases/download/v${PV}/${P}.tar.gz
+	https://dev.gentoo.org/~tamiko/distfiles/${P}-bundled.tar.gz
+"
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 IUSE=""
 
 RDEPEND="
-	>=sys-devel/llvm-4.0.0:=
-	>=sys-devel/clang-4.0.0:="
-
-RDEPEND+="
-	app-misc/pax-utils
 	dev-libs/double-conversion:0=
 	dev-libs/gmp:0=
 	dev-libs/libgit2:0=
 	dev-libs/mpfr:0=
 	dev-libs/openspecfun
-	dev-libs/utf8proc
 	sci-libs/arpack:0=
 	sci-libs/camd:0=
 	sci-libs/cholmod:0=
@@ -38,39 +34,50 @@ RDEPEND+="
 	>=dev-libs/libpcre2-10.23:0=[jit]
 	sci-libs/umfpack:0=
 	sci-mathematics/glpk:0=
-	sys-libs/llvm-libunwind:0=
+	sys-devel/llvm:6=
+	sys-libs/llvm-libunwind
 	sys-libs/readline:0=
 	sys-libs/zlib:0=
 	>=virtual/blas-3.6
 	virtual/lapack"
 
 DEPEND="${RDEPEND}
+	dev-vcs/git
 	dev-util/patchelf
 	virtual/pkgconfig"
 
 PATCHES=(
-        "${FILESDIR}"/0001-not-available.patch
-        "${FILESDIR}"/0002-nodebug-install.patch
-        "${FILESDIR}"/0003-no-clean-docs.patch
-        "${FILESDIR}"/0004-cflags.patch
-        "${FILESDIR}"/0005-add-compilerrt.patch
-        "${FILESDIR}"/0006-disable-splitdebug.patch
-        "${FILESDIR}"/0007-fix-sandbox.patch
-        "${FILESDIR}"/0008-llvm-6.patch
+	"${FILESDIR}"/${PN}-0.6.0-fix_build_system.patch
+	"${FILESDIR}"/0001-use-compiler_rt.patch
+	"${FILESDIR}"/0002-ldconfig-compat.patch
+	"${FILESDIR}"/0003-llvm-libunwind.patch
+	"${FILESDIR}"/0004-llvm-5.patch
+	"${FILESDIR}"/0005-llvm-6.patch
+	"${FILESDIR}"/0006-no-debug-compile.patch
+	"${FILESDIR}"/0007-disable-splitdebug.patch
 )
 
-src_prepare() {
-	eapply "${PATCHES[@]}"
+LLVM_MAX_SLOT=6
 
-	eapply_user
+S="${WORKDIR}/julia"
+
+src_prepare() {
+	mv "${WORKDIR}"/bundled/UnicodeData.txt doc || die
+	mkdir deps/srccache || die
+	mv "${WORKDIR}"/bundled/* deps/srccache || die
+	rmdir "${WORKDIR}"/bundled || die
+
+	default
 
 	# Sledgehammer:
+	# - prevent fetching of bundled stuff in compile and install phase
 	# - respect CFLAGS
 	# - respect EPREFIX and Gentoo specific paths
 	# - fix BLAS and LAPACK link interface
-	# - disable fetching of files
 
 	sed -i \
+		-e 's|$(JLDOWNLOAD)|${EPREFIX}/bin/true|' \
+		-e 's|git submodule|${EPREFIX}/bin/true|g' \
 		-e "s|GENTOOCFLAGS|${CFLAGS}|g" \
 		-e "s|/usr/include|${EPREFIX%/}/usr/include|g" \
 		deps/Makefile || die
@@ -104,28 +111,22 @@ src_prepare() {
 	sed -i \
 		-e "s|ar -rcs|$(tc-getAR) -rcs|g" \
 		src/Makefile || die
-	sed -i \
-		-e "s|ar -rcs|$(tc-getAR) -rcs|g" \
-		src/support/Makefile || die
-	sed -i \
-		-e "s|ar -rcs|$(tc-getAR) -rcs|g" \
-		src/flisp/Makefile || die
 
-	# Prevent fetching of unicode data.
-	cp "${FILESDIR}"/UnicodeData.txt doc/UnicodeData.txt || die
+	# disable doc install starting  git fetching
+	sed -i -e 's~install: $(build_depsbindir)/stringreplace $(BUILDROOT)/doc/_build/html/en/index.html~install: $(build_depsbindir)/stringreplace~' Makefile || die
 }
 
 src_configure() {
 	# julia does not play well with the system versions of dsfmt, libuv,
+	# and utf8proc
 
 	# USE_SYSTEM_LIBM=0 implies using external openlibm
 	cat <<-EOF > Make.user
-		DISABLE_LIBUNWIND=1
 		USE_SYSTEM_DSFMT=0
 		USE_SYSTEM_LIBUV=0
 		USE_SYSTEM_PCRE=1
 		USE_SYSTEM_RMATH=0
-		USE_SYSTEM_UTF8PROC=1
+		USE_SYSTEM_UTF8PROC=0
 		USE_LLVM_SHLIB=1
 		USE_SYSTEM_ARPACK=1
 		USE_SYSTEM_BLAS=1
@@ -134,7 +135,7 @@ src_configure() {
 		USE_SYSTEM_GRISU=1
 		USE_SYSTEM_LAPACK=1
 		USE_SYSTEM_LIBGIT2=1
-		USE_SYSTEM_LIBM=0
+		USE_SYSTEM_LIBM=1
 		USE_SYSTEM_LIBUNWIND=1
 		USE_SYSTEM_LLVM=1
 		USE_SYSTEM_MPFR=1
@@ -155,7 +156,7 @@ src_compile() {
 	# Julia accesses /proc/self/mem on Linux
 	addpredict /proc/self/mem
 
-	emake clean
+	emake cleanall
 	emake VERBOSE=1 julia-release \
 		prefix="/usr" DESTDIR="${D}" CC="$(tc-getCC)" CXX="$(tc-getCXX)"
 	pax-mark m $(file usr/bin/julia-* | awk -F : '/ELF/ {print $1}')
@@ -166,6 +167,14 @@ src_test() {
 }
 
 src_install() {
+	# Julia is special. It tries to find a valid git repository (that would
+	# normally be cloned during compilation/installation). Just make it
+	# happy...
+	git init && \
+		git config --local user.email "whatyoudoing@example.com" && \
+		git config --local user.name "Whyyyyyy" && \
+		git commit -a --allow-empty -m "initial" || die "git failed"
+
 	emake install \
 		prefix="/usr" DESTDIR="${D}" CC="$(tc-getCC)" CXX="$(tc-getCXX)"
 	cat > 99julia <<-EOF
@@ -184,4 +193,7 @@ src_install() {
 		mkdir -p "${ED}"/usr/$(get_libdir) || die
 		mv "${ED}"/usr/lib/julia "${ED}"/usr/$(get_libdir)/julia || die
 	fi
+
+	# install find-syslibs
+	cp "${FILESDIR}"/find-syslibs "${ED}"/usr/share/julia
 }
