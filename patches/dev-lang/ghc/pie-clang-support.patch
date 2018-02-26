@@ -86,8 +86,8 @@
  -- General flags that are switched on/off when other general flags are switched
  -- on
  impliedGFlags :: [(GeneralFlag, TurnOnFlag, GeneralFlag)]
---- a/compiler/main/DriverPipeline.hs	2018-02-09 09:27:59.102004913 +0100
-+++ b/compiler/main/DriverPipeline.hs	2018-02-09 09:28:49.540879000 +0100
+--- a/compiler/main/DriverPipeline.hs     2017-01-03 16:59:18.000000000 +0100
++++ b/compiler/main/DriverPipeline.hs     2018-02-23 19:46:45.503646104 +0100
 @@ -1850,11 +1850,6 @@
                        ++ map SysTools.Option (
                           []
@@ -100,3 +100,64 @@
                        -- Permit the linker to auto link _symbol to _imp_symbol.
                        -- This lets us link against DLLs without needing an "import library".
                        ++ (if platformOS platform == OSMinGW32
+@@ -2154,13 +2149,8 @@
+       osInfo = platformOS (targetPlatform dflags)
+       ld_r args cc = SysTools.runLink dflags ([
+                        SysTools.Option "-nostdlib",
+-                       SysTools.Option "-Wl,-r"
++                       SysTools.Option "-r"
+                      ]
+-                        -- See Note [No PIE eating while linking] in SysTools
+-                     ++ (if sGccSupportsNoPie mySettings
+-                          then [SysTools.Option "-no-pie"]
+-                          else [])
+-
+                      ++ (if any (cc ==) [Clang, AppleClang, AppleClang51]
+                           then []
+                           else [SysTools.Option "-nodefaultlibs"])
+--- a/compiler/main/SysTools.hs   2017-01-03 16:59:18.000000000 +0100
++++ b/compiler/main/SysTools.hs   2018-02-23 19:45:57.390764574 +0100
+@@ -251,7 +251,6 @@
+        -- to make that possible, so for now you can't.
+        gcc_prog <- getSetting "C compiler command"
+        gcc_args_str <- getSetting "C compiler flags"
+-       gccSupportsNoPie <- getBooleanSetting "C compiler supports -no-pie"
+        cpp_prog <- getSetting "Haskell CPP command"
+        cpp_args_str <- getSetting "Haskell CPP flags"
+        let unreg_gcc_args = if targetUnregisterised
+@@ -344,7 +343,6 @@
+                     sLdSupportsBuildId       = ldSupportsBuildId,
+                     sLdSupportsFilelist      = ldSupportsFilelist,
+                     sLdIsGnuLd               = ldIsGnuLd,
+-                    sGccSupportsNoPie        = gccSupportsNoPie,
+                     sProgramName             = "ghc",
+                     sProjectVersion          = cProjectVersion,
+                     sPgm_L   = unlit_path,
+@@ -1580,15 +1578,6 @@
+ 
+ #endif
+ 
+-{-
+-Note [No PIE eating while linking]
+-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-As of 2016 some Linux distributions (e.g. Debian) have started enabling -pie by
+-default in their gcc builds. This is incompatible with -r as it implies that we
+-are producing an executable. Consequently, we must manually pass -no-pie to gcc
+-when joining object files or linking dynamic libraries. See #12759.
+--}
+-
+ linkDynLib :: DynFlags -> [String] -> [UnitId] -> IO ()
+ linkDynLib dflags0 o_files dep_packages
+  = do
+@@ -1754,10 +1743,6 @@
+                  ++ [ Option "-o"
+                     , FileOption "" output_fn
+                     ]
+-                    -- See Note [No PIE eating when linking]
+-                 ++ (if sGccSupportsNoPie (settings dflags)
+-                     then [Option "-no-pie"]
+-                     else [])
+                  ++ map Option o_files
+                  ++ [ Option "-shared" ]
+                  ++ map Option bsymbolicFlag
+
