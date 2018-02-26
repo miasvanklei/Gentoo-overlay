@@ -9,6 +9,7 @@ DESCRIPTION="A Sweet and Swifty YAML parser."
 HOMEPAGE="https://github.com/jpsim/Yams"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/jpsim/Yams.git"
+EGIT_COMMIT="5613e6afabda04a86705d9773f5a122fad832aee"
 
 LICENSE="Apache-2.0"
 SLOT="0"
