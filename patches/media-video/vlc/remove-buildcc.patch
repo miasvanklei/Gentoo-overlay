@@ -1,0 +1,25 @@
+--- a/src/Makefile.am	2018-02-20 16:20:20.671439101 +0100
++++ b/src/Makefile.am	2018-02-20 16:20:31.948311657 +0100
+@@ -494,7 +494,7 @@
+ 
+ fourcc_gen$(BUILDEXEEXT): misc/fourcc_gen.c misc/fourcc_list.h ../include/vlc_fourcc.h
+ 	$(AM_V_at)rm -f -- $@
+-	$(AM_V_CC)$(BUILDCC) -I$(srcdir) -o $@ $<
++	$(AM_V_CC)$(CC) -I$(srcdir) -o $@ $<
+ 
+ fourcc_tables.h: fourcc_gen$(BUILDEXEEXT)
+ 	$(AM_V_at)rm -f -- $@.tmp
+--- a/configure.ac	2018-02-20 16:18:56.200392077 +0100
++++ b/configure.ac	2018-02-20 16:19:27.925034822 +0100
+@@ -70,11 +70,6 @@
+ 
+ AC_ARG_VAR([DESKTOP_FILE_VALIDATE], [Validator for desktop entry files])
+ AC_CHECK_PROGS(DESKTOP_FILE_VALIDATE, [${DESKTOP_FILE_VALIDATE} desktop-file-validate], :)
+-AC_ARG_VAR([BUILDCC], [Build system C11 or C99 compiler command])
+-AC_CHECK_PROGS(BUILDCC, [c11-gcc c11 c99-gcc c99], [false])
+-AS_IF([test "$BUILDCC" = "false"], [
+-  AC_MSG_ERROR([Cannot find native C99 compiler: please define BUILDCC.])
+-])
+ 
+ dnl Check for compiler properties
+ AC_C_CONST
