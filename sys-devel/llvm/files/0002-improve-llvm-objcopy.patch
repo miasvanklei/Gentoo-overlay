@@ -1,50 +1,3 @@
-diff --git a/include/llvm/Support/FileOutputBuffer.h b/include/llvm/Support/FileOutputBuffer.h
-index 6aed423a01e..a98fe826985 100644
---- a/include/llvm/Support/FileOutputBuffer.h
-+++ b/include/llvm/Support/FileOutputBuffer.h
-@@ -40,6 +40,12 @@ public:
-   static Expected<std::unique_ptr<FileOutputBuffer>>
-   create(StringRef FilePath, size_t Size, unsigned Flags = 0);
- 
-+  /// Factory method to create an OutputBuffer object which manages a Mode
-+  /// buffer of the specified size. When committed, the buffer will be written
-+  /// to the file at the specified path.
-+  static Expected<std::unique_ptr<FileOutputBuffer>>
-+  createWithMode(StringRef FilePath, size_t Size, unsigned Mode);
-+
-   /// Returns a pointer to the start of the buffer.
-   virtual uint8_t *getBufferStart() const = 0;
- 
-diff --git a/lib/Support/FileOutputBuffer.cpp b/lib/Support/FileOutputBuffer.cpp
-index c4ff563e5f4..c9b1dce1b92 100644
---- a/lib/Support/FileOutputBuffer.cpp
-+++ b/lib/Support/FileOutputBuffer.cpp
-@@ -141,11 +141,7 @@ createOnDiskBuffer(StringRef Path, size_t Size, unsigned Mode) {
- 
- // Create an instance of FileOutputBuffer.
- Expected<std::unique_ptr<FileOutputBuffer>>
--FileOutputBuffer::create(StringRef Path, size_t Size, unsigned Flags) {
--  unsigned Mode = fs::all_read | fs::all_write;
--  if (Flags & F_executable)
--    Mode |= fs::all_exe;
--
-+FileOutputBuffer::createWithMode(StringRef Path, size_t Size, unsigned Mode) {
-   fs::file_status Stat;
-   fs::status(Path, Stat);
- 
-@@ -168,3 +164,12 @@ FileOutputBuffer::create(StringRef Path, size_t Size, unsigned Flags) {
-     return createInMemoryBuffer(Path, Size, Mode);
-   }
- }
-+
-+// Create an instance of FileOutputBuffer.
-+Expected<std::unique_ptr<FileOutputBuffer>>
-+FileOutputBuffer::create(StringRef Path, size_t Size, unsigned Flags) {
-+  unsigned Mode = fs::all_read | fs::all_write;
-+  if (Flags & F_executable)
-+    Mode |= fs::all_exe;
-+  return createWithMode(Path, Size, Mode);
-+}
 diff --git a/tools/llvm-objcopy/CMakeLists.txt b/tools/llvm-objcopy/CMakeLists.txt
 index 05aa727ab9d..b30a04b2479 100644
 --- a/tools/llvm-objcopy/CMakeLists.txt
@@ -110,15 +63,7 @@ diff --git a/tools/llvm-objcopy/llvm-objcopy.cpp b/tools/llvm-objcopy/llvm-objco
 index 20ce93bb40e..07472a53177 100644
 --- a/tools/llvm-objcopy/llvm-objcopy.cpp
 +++ b/tools/llvm-objcopy/llvm-objcopy.cpp
-@@ -23,6 +23,7 @@
- #include "llvm/Support/Error.h"
- #include "llvm/Support/ErrorHandling.h"
- #include "llvm/Support/ErrorOr.h"
-+#include "llvm/Support/FileSystem.h"
- #include "llvm/Support/FileOutputBuffer.h"
- #include "llvm/Support/ManagedStatic.h"
- #include "llvm/Support/PrettyStackTrace.h"
-@@ -31,9 +32,11 @@
+@@ -31,12 +31,16 @@
  #include <algorithm>
  #include <cassert>
  #include <cstdlib>
@@ -130,6 +75,11 @@ index 20ce93bb40e..07472a53177 100644
  #include <string>
  #include <system_error>
  #include <utility>
++#include <sys/stat.h>
++#include <unistd.h>
+ 
+ using namespace llvm;
+ using namespace object;
 @@ -72,8 +75,11 @@ LLVM_ATTRIBUTE_NORETURN void reportError(StringRef File, Error E) {
  } // end namespace llvm
  
@@ -162,20 +112,6 @@ index 20ce93bb40e..07472a53177 100644
  static cl::opt<bool> StripSections("strip-sections",
                                     cl::desc("Remove all section headers"));
  static cl::opt<bool>
-@@ -134,10 +144,11 @@ bool OnlyKeepDWOPred(const Object<ELFT> &Obj, const SectionBase &Sec) {
- 
- template <class ELFT>
- void WriteObjectFile(const Object<ELFT> &Obj, StringRef File) {
-+  sys::fs::file_status Stat;
-+  sys::fs::status(InputFilename, Stat);
-   std::unique_ptr<FileOutputBuffer> Buffer;
-   Expected<std::unique_ptr<FileOutputBuffer>> BufferOrErr =
--      FileOutputBuffer::create(File, Obj.totalSize(),
--                               FileOutputBuffer::F_executable);
-+      FileOutputBuffer::createWithMode(File, Obj.totalSize(), Stat.permissions());
-   handleAllErrors(BufferOrErr.takeError(), [](const ErrorInfoBase &) {
-     error("failed to open " + OutputFilename);
-   });
 @@ -177,6 +188,21 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
    else
      Obj = llvm::make_unique<ELFObject<ELFT>>(ObjFile);
@@ -198,14 +134,22 @@ index 20ce93bb40e..07472a53177 100644
    if (!SplitDWO.empty())
      SplitDWOToFile<ELFT>(ObjFile, SplitDWO.getValue());
  
-@@ -307,7 +333,9 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
+@@ -307,7 +333,17 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
    }
  
    Obj->finalize();
 -  WriteObjectFile(*Obj, OutputFilename.getValue());
 +
++  // get permissions of input file.
++  struct stat ret;
++  stat(InputFilename.c_str(), &ret);
++
 +  StringRef Output = OutputFilename.empty() ? InputFilename : OutputFilename;
 +  WriteObjectFile(*Obj, Output);
++
++  // set permissions equal to input file
++  chown(Output.str().c_str(), ret.st_uid, ret.st_gid);
++  chmod(Output.str().c_str(), ret.st_mode);
  }
  
  int main(int argc, char **argv) {
