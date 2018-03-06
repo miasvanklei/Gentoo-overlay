@@ -1,6 +1,6 @@
---- a/src/framework/mlt_property.h	2017-10-29 11:46:04.414572524 +0100
-+++ b/src/framework/mlt_property.h	2017-10-29 11:51:56.613776502 +0100
-@@ -25,20 +25,7 @@
+--- a/src/framework/mlt_property.h	2018-03-06 19:23:06.250095105 +0100
++++ b/src/framework/mlt_property.h	2018-03-06 19:23:59.839982519 +0100
+@@ -25,18 +25,7 @@
  
  #include "mlt_types.h"
  
@@ -9,12 +9,10 @@
 -#include <sys/param.h>
 -#endif
 -
--#if defined(__GLIBC__) || defined(__APPLE__) || (__FreeBSD_version >= 900506)
--#  if __GLIBC_MINOR__ >= 26 && !defined(__APPLE__)
--#    include <locale.h>
--#  else
--#    include <xlocale.h>
--#  endif
+-#if defined(__GLIBC__) && !defined(__APPLE__)
+-#  include <locale.h>
+-#elif defined(__APPLE__) || (__FreeBSD_version >= 900506)
+-#  include <xlocale.h>
 -#else
 -typedef char* locale_t;
 -#endif
