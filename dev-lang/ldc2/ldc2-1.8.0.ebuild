@@ -19,16 +19,10 @@ DEPEND=">=dev-util/cmake-2.8
 
 S=${WORKDIR}/ldc-${PV}-src
 
-src_prepare() {
-	eapply ${FILESDIR}/llvm-6.patch
-	eapply ${FILESDIR}/fix-musl.patch
-	eapply ${FILESDIR}/link-libunwind.patch
-	eapply ${FILESDIR}/remove-backtrace.patch
-	eapply ${FILESDIR}/remove-qsort_r.patch
-	eapply ${FILESDIR}/arm.patch
-
-	default
-}
+PATCHES=(
+	"${FILESDIR}"/link-libunwind.patch
+	"${FILESDIR}"/arm.patch
+)
 
 src_configure() {
 	local mycmakeargs=(
