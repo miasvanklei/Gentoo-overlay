@@ -8,31 +8,18 @@ EAPI=6
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
-EGIT_REPO_URI="https://git.llvm.org/git/libcxx.git
-	https://github.com/llvm-mirror/libcxx.git"
-EGIT_BRANCH="release_60"
 PYTHON_COMPAT=( python2_7 )
 
-[[ ${PV} == *9999 ]] && SCM="git-r3" || SCM=""
-
-inherit ${SCM} cmake-multilib llvm python-any-r1 toolchain-funcs
+inherit cmake-multilib llvm python-any-r1 toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="https://libcxx.llvm.org/"
-if [[ ${PV} != *9999 ]] ; then
-	SRC_URI="https://llvm.org/releases/${PV}/${P}.src.tar.xz"
-	S="${WORKDIR}/${P}.src"
-else
-	SRC_URI=""
-fi
+SRC_URI="https://llvm.org/releases/${PV}/${P}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-if [[ ${PV} != *9999 ]] ; then
-	KEYWORDS="~amd64 ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
-else
-	KEYWORDS="~amd64"
-fi
+KEYWORDS="~amd64 ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
+
 IUSE="+compiler-rt +libcxxabi libcxxrt +libunwind +static-libs test"
 REQUIRED_USE="libunwind? ( || ( libcxxabi libcxxrt ) )
 	?? ( libcxxabi libcxxrt )"
@@ -43,14 +30,16 @@ RDEPEND="
 	libcxxabi? ( ~sys-libs/libcxxabi-${PV}[libunwind=,static-libs?,${MULTILIB_USEDEP}] )
 	libcxxrt? ( sys-libs/libcxxrt[libunwind=,static-libs?,${MULTILIB_USEDEP}] )
 	!libcxxabi? ( !libcxxrt? ( >=sys-devel/gcc-4.7:=[cxx] ) )"
-# LLVM 4 required for llvm-config --cmakedir
+# llvm-6 for new lit options
 # clang-3.9.0 installs necessary target symlinks unconditionally
 # which removes the need for MULTILIB_USEDEP
 DEPEND="${RDEPEND}
 	test? ( >=sys-devel/clang-3.9.0
 		$(python_gen_any_dep 'dev-python/lit[${PYTHON_USEDEP}]') )
 	app-arch/xz-utils
-	>=sys-devel/llvm-4"
+	>=sys-devel/llvm-6"
+
+S=${WORKDIR}/${P/_/}.src
 
 DOCS=( CREDITS.TXT )
 

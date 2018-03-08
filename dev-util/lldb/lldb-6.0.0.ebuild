@@ -8,14 +8,15 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils git-r3 llvm python-single-r1 toolchain-funcs
+inherit cmake-utils llvm python-single-r1 toolchain-funcs
+
+MY_P=${P/_/}.src
+LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/lldb.git
-	https://github.com/llvm-mirror/lldb.git"
-EGIT_BRANCH="release_60"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	test? ( http://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
@@ -44,27 +45,26 @@ REQUIRED_USE=${PYTHON_REQUIRED_USE}
 # Do not strip, swift REPL will not work when stripped
 QA_PRESTRIPPED="/usr/bin/repl_swift"
 
+S=${WORKDIR}/${MY_P}
+
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
 
 pkg_setup() {
-	llvm_pkg_setup
+	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
 	python-single-r1_pkg_setup
 }
 
 src_unpack() {
-	if use test; then
-		# needed for patched gtest
-		git-r3_fetch "https://git.llvm.org/git/llvm.git
-			https://github.com/llvm-mirror/llvm.git"
-	fi
-	git-r3_fetch
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
 
 	if use test; then
-		git-r3_checkout https://llvm.org/git/llvm.git \
-			"${WORKDIR}"/llvm '' lib/Testing/Support utils/unittest
+		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
+		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
+			"${LLVM_P}"/{lib/Testing/Support,utils/unittest} || die
+		mv "${LLVM_P}" llvm || die
 	fi
-	git-r3_checkout
 }
 
 src_prepare() {
@@ -92,6 +92,7 @@ src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
+		-DLLDB_USE_SYSTEM_SIX=1
 
 		# TODO: fix upstream to detect this properly
 		-DHAVE_LIBDL=ON
@@ -128,9 +129,6 @@ src_install() {
 
 	# oh my...
 	if use python; then
-		# remove bundled six module
-		rm "${D}$(python_get_sitedir)/six.py" || die
-
 		# remove custom readline.so for now
 		# TODO: figure out how to deal with it
 		# upstream is basically building a custom readline.so with -ledit

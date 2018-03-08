@@ -8,31 +8,29 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils flag-o-matic git-r3 llvm python-any-r1 toolchain-funcs
+inherit cmake-utils flag-o-matic llvm python-any-r1 toolchain-funcs
 
 DESCRIPTION="Compiler runtime library for clang (built-in part)"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/compiler-rt.git
-	https://github.com/llvm-mirror/compiler-rt.git"
-EGIT_BRANCH="release_60"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
-# Note: this needs to be updated to match version of clang-9999
-SLOT="6.0.0"
+SLOT="${PV%_*}"
 KEYWORDS="~amd64"
 IUSE="+clang test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 
 LLVM_SLOT=${SLOT%%.*}
-# llvm-4 needed for --cmakedir
+# llvm-6 for new lit options
 DEPEND="
-	>=sys-devel/llvm-4
+	>=sys-devel/llvm-6
 	clang? ( sys-devel/clang )
 	test? (
 		$(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]")
 		=sys-devel/clang-${PV%_*}*:${LLVM_SLOT} )
 	${PYTHON_DEPS}"
+
+S=${WORKDIR}/${P/_/}.src
 
 PATCHES=(
 	"${FILESDIR}"/0001-add-blocks-support.patch
@@ -106,16 +104,16 @@ src_configure() {
 	cmake-utils_src_configure
 }
 
-src_install() {
-	cmake-utils_src_install
-
-	# needed for julia, only one symbol
-	${CC} ${FILESDIR}/compiler-rt.c -shared -o ${D}/usr/lib/libcompiler-rt.so
-}
-
 src_test() {
 	# respect TMPDIR!
 	local -x LIT_PRESERVES_TMP=1
 
 	cmake-utils_src_make check-builtins
+}
+
+src_install() {
+	cmake-utils_src_install
+
+	# needed for julia, only one symbol
+	${CC} ${FILESDIR}/compiler-rt.c -shared -o ${D}/usr/lib/libcompiler-rt.so
 }

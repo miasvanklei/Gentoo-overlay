@@ -8,15 +8,13 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils eapi7-ver flag-o-matic git-r3 multilib-minimal \
+inherit cmake-utils eapi7-ver flag-o-matic multilib-minimal \
 	pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/llvm.git
-	https://github.com/llvm-mirror/llvm.git"
-EGIT_BRANCH="release_60"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+#	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${P}-manpages.tar.bz2 )"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -35,7 +33,7 @@ LICENSE="UoI-NCSA rc BSD public-domain
 	llvm_targets_ARM? ( LLVM-Grant )"
 SLOT="$(ver_cut 1)"
 KEYWORDS="~amd64"
-IUSE="debug doc gold libedit +libffi ncurses test
+IUSE="debug doc gold libedit +libffi ncurses test xar xml
 	kernel_Darwin +swift ${ALL_LLVM_TARGETS[*]}"
 RESTRICT="!test? ( test )"
 
@@ -44,7 +42,9 @@ RDEPEND="
 	gold? ( >=sys-devel/binutils-2.22:*[cxx] )
 	libedit? ( dev-libs/libedit:0=[${MULTILIB_USEDEP}] )
 	libffi? ( >=virtual/libffi-3.0.13-r1:0=[${MULTILIB_USEDEP}] )
-	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )"
+	ncurses? ( >=sys-libs/ncurses-5.9-r3:0=[${MULTILIB_USEDEP}] )
+	xar? ( app-arch/xar )
+	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )"
 # configparser-3.2 breaks the build (3.3 or none at all are fine)
 DEPEND="${RDEPEND}
 	dev-lang/perl
@@ -65,10 +65,12 @@ DEPEND="${RDEPEND}
 RDEPEND="${RDEPEND}
 	!sys-devel/llvm:0"
 PDEPEND="sys-devel/llvm-common
-	gold? ( sys-devel/llvmgold )"
+	gold? ( >=sys-devel/llvmgold-${SLOT} )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
+
+S=${WORKDIR}/${P/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -113,6 +115,7 @@ multilib_src_configure() {
 		-DLLVM_APPEND_VC_REV=OFF
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${SLOT}"
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
+
 		-DLLVM_INSTALL_BINUTILS_SYMLINKS=ON
 
 		-DLLVM_LINK_LLVM_DYLIB=ON
@@ -124,6 +127,7 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_FFI=$(usex libffi)
 		-DLLVM_ENABLE_LIBEDIT=$(usex libedit)
 		-DLLVM_ENABLE_TERMINFO=$(usex ncurses)
+		-DLLVM_ENABLE_LIBXML2=$(usex xml)
 		-DLLVM_ENABLE_ASSERTIONS=$(usex debug)
 		-DLLVM_ENABLE_EH=ON
 		-DLLVM_ENABLE_RTTI=ON
@@ -137,6 +141,8 @@ multilib_src_configure() {
 
 		-DFFI_INCLUDE_DIR="${ffi_cflags#-I}"
 		-DFFI_LIBRARY_DIR="${ffi_ldflags#-L}"
+		# used only for llvm-objdump tool
+		-DHAVE_LIBXAR=$(multilib_native_usex xar 1 0)
 
 		# disable OCaml bindings (now in dev-ml/llvm-ocaml)
 		-DOCAMLFIND=NO
@@ -181,6 +187,8 @@ multilib_src_configure() {
 		)
 	fi
 
+	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
+	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
 	cmake-utils_src_configure
 }
 
@@ -251,6 +259,13 @@ multilib_src_install_all() {
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 _EOF_
 	doenvd "${T}/10llvm-${revord}"
+
+	# install pre-generated manpages
+#	if ! use doc; then
+#		# (doman does not support custom paths)
+#		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+#		doins "${WORKDIR}/${P}-manpages/llvm"/*.1
+#	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 }

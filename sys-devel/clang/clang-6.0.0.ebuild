@@ -8,15 +8,19 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils eapi7-ver flag-o-matic git-r3 llvm \
-	multilib-minimal pax-utils python-single-r1 toolchain-funcs
+inherit cmake-utils eapi7-ver flag-o-matic llvm \
+	multilib-minimal pax-utils prefix python-single-r1 toolchain-funcs
+
+MY_P=cfe-${PV/_/}.src
+EXTRA_P=clang-tools-extra-${PV/_/}.src
+LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/clang.git
-	https://github.com/llvm-mirror/clang.git"
-EGIT_BRANCH="release_60"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	http://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
+	test? ( http:releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
+#	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -43,6 +47,7 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	doc? ( dev-python/sphinx )
 	xml? ( virtual/pkgconfig )
+
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
 RDEPEND="${RDEPEND}
@@ -50,15 +55,15 @@ RDEPEND="${RDEPEND}
 	!sys-devel/clang:0"
 PDEPEND="
 	~sys-devel/clang-runtime-${PV}
-	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
 	fortran? ( dev-lang/flang )
+	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
 	default-libcxx? ( sys-libs/libcxx )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/${P}
+S=${WORKDIR}/x/y/${MY_P}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -84,22 +89,23 @@ src_unpack() {
 	mkdir -p x/y || die
 	cd x/y || die
 
-	git-r3_fetch "https://git.llvm.org/git/clang-tools-extra.git
-		https://github.com/llvm-mirror/clang-tools-extra.git"
-	if use test; then
-		# needed for patched gtest
-		git-r3_fetch "https://git.llvm.org/git/llvm.git
-			https://github.com/llvm-mirror/llvm.git"
-	fi
-	git-r3_fetch
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
+	einfo "Unpacking ${EXTRA_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${EXTRA_P}.tar.xz" || die
 
-	git-r3_checkout https://llvm.org/git/clang-tools-extra.git \
-		"${S}"/tools/extra
+	mv "${EXTRA_P}" "${S}"/tools/extra || die
 	if use test; then
-		git-r3_checkout https://llvm.org/git/llvm.git \
-			"${WORKDIR}"/llvm '' utils/{lit,llvm-lit,unittest}
+		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
+		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
+			"${LLVM_P}"/utils/{lit,llvm-lit,unittest} || die
+		mv "${LLVM_P}" "${WORKDIR}"/llvm || die
 	fi
-	git-r3_checkout "${EGIT_REPO_URI}" "${S}"
+
+#	if ! use doc; then
+#		einfo "Unpacking llvm-${PV}-manpages.tar.bz2 ..."
+#		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
+#	fi
 }
 
 src_prepare() {
@@ -134,6 +140,7 @@ src_prepare() {
 	use fortran && eapply "${FILESDIR}"/0010-add-fortran-support.patch
 
 	cmake-utils_src_prepare
+	eprefixify lib/Frontend/InitHeaderSearch.cpp
 }
 
 multilib_src_configure() {
@@ -149,6 +156,7 @@ multilib_src_configure() {
 
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
+
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DLLVM_BUILD_TESTS=$(usex test)
 
@@ -310,6 +318,12 @@ multilib_src_install_all() {
 	if use static-analyzer; then
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
 	fi
+
+	# install pre-generated manpages
+#	if ! use doc; then
+#		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+#		doins "${WORKDIR}/x/y/llvm-${PV}-manpages/clang"/*.1
+#	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression

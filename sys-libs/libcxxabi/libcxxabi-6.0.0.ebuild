@@ -8,14 +8,15 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib git-r3 llvm python-any-r1
+inherit cmake-multilib llvm python-any-r1
+
+MY_P=${P/_/}.src
+LIBCXX_P=libcxx-${PV/_/}.src
 
 DESCRIPTION="Low level support for a standard C++ library"
 HOMEPAGE="https://libcxxabi.llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://git.llvm.org/git/libcxxabi.git
-	https://github.com/llvm-mirror/libcxxabi.git"
-EGIT_BRANCH="release_60"
+SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	http://releases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -31,9 +32,9 @@ RDEPEND="
 			>=sys-libs/libunwind-1.0.1-r1[static-libs?,${MULTILIB_USEDEP}]
 		)
 	)"
-# LLVM 4 required for llvm-config --cmakedir
+# llvm-6 for new lit options
 DEPEND="${RDEPEND}
-	>=sys-devel/llvm-4
+	>=sys-devel/llvm-6
 	test? ( >=sys-devel/clang-3.9.0
 		~sys-libs/libcxx-${PV}[libcxxabi(-)]
 		$(python_gen_any_dep 'dev-python/lit[${PYTHON_USEDEP}]') )"
@@ -41,6 +42,8 @@ DEPEND="${RDEPEND}
 PATCHES=(
 	"${FILESDIR}"/0001-link-clang_rt.patch
 )
+
+S=${WORKDIR}/${MY_P}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -55,14 +58,13 @@ pkg_setup() {
 }
 
 src_unpack() {
-	# we need the headers
-	git-r3_fetch "https://git.llvm.org/git/libcxx.git
-		https://github.com/llvm-mirror/libcxx.git"
-	git-r3_fetch
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
 
-	git-r3_checkout https://llvm.org/git/libcxx.git \
-		"${WORKDIR}"/libcxx '' include utils/libcxx
-	git-r3_checkout
+	einfo "Unpacking parts of ${LIBCXX_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${LIBCXX_P}.tar.xz" \
+		"${LIBCXX_P}"/{include,utils/libcxx} || die
+	mv "${LIBCXX_P}" libcxx || die
 }
 
 multilib_src_configure() {
