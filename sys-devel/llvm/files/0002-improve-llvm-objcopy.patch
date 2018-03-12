@@ -80,7 +80,7 @@ index 20ce93bb40e..07472a53177 100644
  
  using namespace llvm;
  using namespace object;
-@@ -72,8 +75,11 @@ LLVM_ATTRIBUTE_NORETURN void reportError(StringRef File, Error E) {
+@@ -72,8 +76,11 @@
  } // end namespace llvm
  
  static cl::opt<std::string> InputFilename(cl::Positional, cl::desc("<input>"));
@@ -94,16 +94,18 @@ index 20ce93bb40e..07472a53177 100644
  static cl::opt<std::string>
      OutputFormat("O", cl::desc("Set output format to one of the following:"
                                 "\n\tbinary"));
-@@ -89,6 +95,8 @@ static cl::opt<bool> StripAll(
+@@ -89,6 +96,10 @@
  static cl::opt<bool>
      StripAllGNU("strip-all-gnu",
                  cl::desc("Removes symbol, relocation, and debug information"));
 +static cl::alias StripAllGNUA("S", cl::desc("Alias for strip-all-gnu"),
 +                           cl::aliasopt(StripAllGNU));
++static cl::alias StripUnneeded("strip-unneeded", cl::desc("Alias for strip-all-gnu"),
++                           cl::aliasopt(StripAllGNU));
  static cl::list<std::string> Keep("keep", cl::desc("Keep <section>"),
                                    cl::value_desc("section"));
  static cl::list<std::string> OnlyKeep("only-keep",
-@@ -98,6 +106,8 @@ static cl::alias OnlyKeepA("j", cl::desc("Alias for only-keep"),
+@@ -98,6 +109,8 @@
                             cl::aliasopt(OnlyKeep));
  static cl::opt<bool> StripDebug("strip-debug",
                                  cl::desc("Removes all debug information"));
@@ -112,7 +114,7 @@ index 20ce93bb40e..07472a53177 100644
  static cl::opt<bool> StripSections("strip-sections",
                                     cl::desc("Remove all section headers"));
  static cl::opt<bool>
-@@ -177,6 +188,21 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
+@@ -177,6 +190,21 @@
    else
      Obj = llvm::make_unique<ELFObject<ELFT>>(ObjFile);
  
@@ -134,7 +136,7 @@ index 20ce93bb40e..07472a53177 100644
    if (!SplitDWO.empty())
      SplitDWOToFile<ELFT>(ObjFile, SplitDWO.getValue());
  
-@@ -307,7 +333,17 @@ template <class ELFT> void CopyBinary(const ELFObjectFile<ELFT> &ObjFile) {
+@@ -307,7 +335,17 @@
    }
  
    Obj->finalize();
@@ -153,3 +155,13 @@ index 20ce93bb40e..07472a53177 100644
  }
  
  int main(int argc, char **argv) {
+@@ -321,6 +359,9 @@
+     cl::PrintHelpMessage();
+     return 2;
+   }
++  if (InputFilename.find(".a") != std::string::npos) {
++    return 0;
++  }
+   Expected<OwningBinary<Binary>> BinaryOrErr = createBinary(InputFilename);
+   if (!BinaryOrErr)
+     reportError(InputFilename, BinaryOrErr.takeError());
