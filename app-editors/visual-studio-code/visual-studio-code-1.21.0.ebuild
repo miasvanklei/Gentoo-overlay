@@ -38,20 +38,22 @@ node_compile() {
 	npm install $@ --nodedir=/usr/include/electron-1.6/node || die
 }
 
+node_asar() {
+        node_compile asar
+	node_modules/asar/bin/asar.js extract resources/app/node_modules.asar resources/app/node_modules
+	rm resources/app/node_modules.asar || die
+	rm -r resources/app/node_modules.asar.unpacked || die
+}
+
 src_compile() {
-	local n_p=(gc-signals keytar native-keymap native-watchdog node-pty nsfw oniguruma spdlog)
+	local n_p=(gc-signals@0.0.1 keytar@4.0.5 native-is-elevated@0.2.1 native-keymap@1.2.5 native-watchdog@0.3.0 node-pty@0.7.4 nsfw@1.0.16 oniguruma spdlog@0.6.0)
 	for i in "${n_p[@]}"; do
 		elog "recompiling $i"
 		node_compile $i || die
-		rm -r resources/app/node_modules/$i || die
+		cp node_modules/${i%@*}/build/Release/*.node resources/app/node_modules.asar.unpacked/${i%@*}/build/Release/obj.target || die
+		cp node_modules/${i%@*}/build/Release/*.node resources/app/node_modules.asar.unpacked/${i%@*}/build/Release/ || die
 	done
-
-	elog "deleting object and dep files"
-	find ${S} -name .deps -exec rm -rf "{}" \;
-	find ${S} -name obj.target -exec rm -rf "{}" \;
-
-	elog "copying node_modules"
-        cp -r node_modules/* resources/app/node_modules || die
+	node_asar
 }
 
 src_install() {
