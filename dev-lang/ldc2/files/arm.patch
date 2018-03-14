@@ -21,3 +21,89 @@
  
  void _d_eh_SetIP(_Unwind_Context *context, _Unwind_Ptr new_value)
  {
+--- a/runtime/druntime/src/core/sys/posix/sys/types.d	2018-03-04 21:48:17.000000000 +0100
++++ b/runtime/druntime/src/core/sys/posix/sys/types.d	2018-03-14 18:52:53.788423839 +0100
+@@ -118,7 +118,14 @@
+     alias long      blkcnt_t;
+     alias ulong     ino_t;
+     alias long      off_t;
+-    alias long      _Addr;
++    if version (D_LP64)
++    {
++        alias long     _Addr;
++    }
++    else
++    {
++        alias int      _Addr;
++    }
+     alias int       pid_t;
+     alias uint      uid_t;
+     alias uint      gid_t;
+@@ -662,6 +669,36 @@
+         }
+         struct pthread_rwlockattr_t
+         {
++            uint[2] __attr;
++        }
++        alias uint pthread_key_t;
++        alias uint pthread_condattr_t;
++        alias uint pthread_mutexattr_t;
++        alias int pthread_once_t;
++    }
++    else version(ARM) {
++        union pthread_attr_t
++        {
++            int[9] __i;
++            ulong[9] __s;
++        }
++        union pthread_cond_t
++        {
++            int[12] __i;
++            void*[12] __p;
++        }
++        union pthread_mutex_t
++        {
++            int[6] __i;
++            void*[6] __p;
++        }
++        union pthread_rwlock_t
++        {
++            int[8] __i;
++            void*[8] __p;
++        }
++        struct pthread_rwlockattr_t
++        {
+             uint[2] __attr;
+         }
+         alias uint pthread_key_t;
+--- a/runtime/druntime/src/core/sys/posix/config.d	2018-03-04 21:48:17.000000000 +0100
++++ b/runtime/druntime/src/core/sys/posix/config.d	2018-03-14 18:53:24.638423853 +0100
+@@ -75,7 +75,10 @@
+     enum __USE_LARGEFILE     = __USE_FILE_OFFSET64 && !__REDIRECT;
+     enum __USE_LARGEFILE64   = __USE_FILE_OFFSET64 && !__REDIRECT;
+ 
+-    enum __WORDSIZE=64;
++    version(D_LP64)
++        enum __WORDSIZE=64;
++    else
++        enum __WORDSIZE=32;
+ }
+ else version (Solaris)
+ {
+--- a/runtime/druntime/src/core/stdc/fenv.d	2018-03-04 21:48:17.000000000 +0100
++++ b/runtime/druntime/src/core/stdc/fenv.d	2018-03-14 18:53:39.068423860 +0100
+@@ -331,6 +331,14 @@
+         }
+         alias ushort fexcept_t;
+     }
++    else version (ARM)
++    {
++        struct fenv_t
++        {
++            uint __cw;
++        }
++        alias uint fexcept_t;
++    }
+     else
+     {
+         static assert(false, "Architecture not supported.");
