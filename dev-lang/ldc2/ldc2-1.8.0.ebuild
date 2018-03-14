@@ -21,7 +21,6 @@ S=${WORKDIR}/ldc-${PV}-src
 
 PATCHES=(
 	"${FILESDIR}"/link-libunwind.patch
-	"${FILESDIR}"/arm.patch
 )
 
 src_configure() {
