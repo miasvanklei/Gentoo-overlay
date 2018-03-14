@@ -18,7 +18,7 @@ RDEPEND="abi_x86_32? ( !<=app-emulation/emul-linux-x86-baselibs-20130224-r1
 		!app-emulation/emul-linux-x86-baselibs[-abi_x86_32(-)] )"
 DEPEND="test? ( dev-util/dejagnu )"
 
-DOCS="ChangeLog* README"
+DOCS="ChangeLog* README.md"
 
 ECONF_SOURCE="${S}"
 
