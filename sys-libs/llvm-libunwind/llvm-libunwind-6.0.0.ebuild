@@ -69,6 +69,7 @@ multilib_src_configure() {
 		-DLIBUNWIND_ENABLE_STATIC=$(usex static-libs)
 		-DLLVM_INCLUDE_TESTS=$(usex test)
 		-DLIBUNWIND_USE_COMPILER_RT=$(usex compiler-rt)
+		-DLIBUNWIND_HAS_NODEFAULTLIBS_FLAG=OFF
 
 		# support non-native unwinding; given it's small enough,
 		# enable it unconditionally

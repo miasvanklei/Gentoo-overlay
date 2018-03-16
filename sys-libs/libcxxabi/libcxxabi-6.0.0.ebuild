@@ -76,6 +76,7 @@ multilib_src_configure() {
 		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
 		-DLIBCXXABI_USE_COMPILER_RT=$(usex compiler-rt)
 		-DLIBCXXABI_INCLUDE_TESTS=$(usex test)
+		-DLIBCXXABI_HAS_NODEFAULTLIBS_FLAG=OFF
 
 		-DLIBCXXABI_LIBCXX_INCLUDES="${WORKDIR}"/libcxx/include
 	)
