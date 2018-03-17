@@ -13,7 +13,7 @@ HOMEPAGE="https://01.org/beignet"
 
 LICENSE="LGPL-2.1+"
 SLOT="0"
-IUSE="ocl-icd ocl20 +swift"
+IUSE="ocl-icd ocl20"
 
 if [[ "${PV}" == "9999" ]]; then
 	inherit git-r3
@@ -26,7 +26,7 @@ else
 fi
 
 COMMON="media-libs/mesa
-	sys-devel/clang:=[swift=]
+	sys-devel/clang:=
 	sys-devel/llvm:=
 	>=x11-libs/libdrm-2.4.70[video_cards_intel]
 	x11-libs/libXext
@@ -69,10 +69,6 @@ pkg_setup() {
 src_prepare() {
 	# See Bug #593968
 	append-flags -fPIC
-
-	if use swift; then
-		eapply ${FILESDIR}/link-apinotes.patch
-	fi
 
 	eapply_user
 

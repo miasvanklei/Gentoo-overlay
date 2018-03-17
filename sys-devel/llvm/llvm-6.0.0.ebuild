@@ -34,7 +34,7 @@ LICENSE="UoI-NCSA rc BSD public-domain
 SLOT="$(ver_cut 1)"
 KEYWORDS="~amd64"
 IUSE="debug doc gold libedit +libffi ncurses test xar xml
-	kernel_Darwin +swift ${ALL_LLVM_TARGETS[*]}"
+	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
@@ -84,12 +84,6 @@ src_prepare() {
 
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
-
-	# some arm relocations, needed for swift
-	eapply "${FILESDIR}"/0004-arm-relocation.patch
-
-	# add swift support
-	use swift && eapply "${FILESDIR}"/0005-add-swift-support.patch
 
 	# two specific rust patches in one
 	eapply "${FILESDIR}"/0006-add-rust-support.patch

@@ -21,7 +21,7 @@ SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 LICENSE="UoI-NCSA"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="+libedit ncurses +python +swift test"
+IUSE="+libedit ncurses +python test"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
@@ -36,14 +36,10 @@ RDEPEND="
 # upstream: https://github.com/swig/swig/issues/769
 DEPEND="${RDEPEND}
 	python? ( >dev-lang/swig-3.0.9 )
-	swift? ( dev-lang/swift )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
 	${PYTHON_DEPS}"
 
 REQUIRED_USE=${PYTHON_REQUIRED_USE}
-
-# Do not strip, swift REPL will not work when stripped
-QA_PRESTRIPPED="/usr/bin/repl_swift"
 
 S=${WORKDIR}/${MY_P}
 
@@ -70,7 +66,6 @@ src_unpack() {
 src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
-	use swift && eapply "${FILESDIR}"/0002-add-swift-support.patch
 
 	cmake-utils_src_prepare
 }
