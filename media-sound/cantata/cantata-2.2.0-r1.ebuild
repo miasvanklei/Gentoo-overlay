@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -112,6 +112,9 @@ pkg_preinst() {
 pkg_postinst() {
 	gnome2_icon_cache_update
 	xdg_pkg_postinst
+
+	has_version media-sound/mpd || \
+	elog "An instance of media-sound/mpd, local or remote, is required to set up Cantata."
 }
 
 pkg_postrm() {
