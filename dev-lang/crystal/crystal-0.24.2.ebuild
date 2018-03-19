@@ -24,11 +24,9 @@ IUSE="doc debug examples blocking-stdio-hack +system-crystal +xml +yaml"
 DEPEND="
 	>=sys-devel/llvm-3.9.0:*
 	dev-libs/boehm-gc[threads]
-	dev-libs/libatomic_ops
 	dev-libs/libevent
 	dev-libs/libpcre
 	sys-libs/llvm-libunwind
-	dev-libs/pcl
 	dev-libs/gmp:0
 	system-crystal? ( dev-lang/crystal )
 "

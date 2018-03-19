@@ -18,7 +18,11 @@ RDEPEND="${DEPEND}"
 
 RESTRICT=test # missing files in tarball
 
+src_compile() {
+	crystal build --release --progress --no-debug src/scry.cr
+}
+
 src_install() {
-	dobin bin/darwin/${PN}
+	dobin ${PN}
 	dodoc README.md
 }
