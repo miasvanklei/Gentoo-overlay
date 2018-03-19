@@ -85,6 +85,10 @@ src_prepare() {
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
 
+	# Add missing header for InstructionCombining.cpp, in order
+        # to export LLVMInitializeInstCombine as extern "C"
+	eapply "${FILESDIR}"/0005-missing-header.patch
+
 	# two specific rust patches in one
 	eapply "${FILESDIR}"/0006-add-rust-support.patch
 
@@ -213,7 +217,6 @@ src_install() {
 
 	local MULTILIB_WRAPPED_HEADERS=(
 		/usr/include/llvm/Config/llvm-config.h
-		/usr/include/llvm/Config/config.h
 	)
 
 	local LLVM_LDPATHS=()
