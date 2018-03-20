@@ -22,7 +22,7 @@ COMMONDEPEND="
 	nls? ( sys-devel/gettext )
 "
 RDEPEND="${COMMONDEPEND}
-	|| ( www-client/links www-client/lynx )
+	|| ( www-client/elinks www-client/lynx )
 "
 DEPEND="${COMMONDEPEND}
 	sys-devel/bc
@@ -66,6 +66,7 @@ src_prepare() {
 
 	eapply ${FILESDIR}/remove-sigcontext-include.patch
 	eapply ${FILESDIR}/strerror_r.patch
+	eapply ${FILESDIR}/ncurses-6.1.patch
 
 	default
 	# PATCHES contains configure.ac patch
