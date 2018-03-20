@@ -18,12 +18,12 @@ KEYWORDS="~amd64 ~x86"
 IUSE="brittany-dev-lib"
 
 RDEPEND=">=dev-haskell/aeson-1.0.1.0:=[profile?] <dev-haskell/aeson-1.3:=[profile?]
-	>=dev-haskell/butcher-1.2:=[profile?] <dev-haskell/butcher-1.3:=[profile?]
+	>=dev-haskell/butcher-1.3:=[profile?] <dev-haskell/butcher-1.4:=[profile?]
 	>=dev-haskell/cmdargs-0.10.14:=[profile?] <dev-haskell/cmdargs-0.11:=[profile?]
 	>=dev-haskell/czipwith-1.0.0.0:=[profile?] <dev-haskell/czipwith-1.1:=[profile?]
 	dev-haskell/data-tree-print:=[profile?]
 	>=dev-haskell/extra-1.4.10:=[profile?] <dev-haskell/extra-1.7:=[profile?]
-	>=dev-haskell/ghc-exactprint-0.5.3.0:=[profile?] <dev-haskell/ghc-exactprint-0.6:=[profile?]
+	>=dev-haskell/ghc-exactprint-0.5.6.0:=[profile?] <dev-haskell/ghc-exactprint-0.6:=[profile?]
 	>=dev-haskell/ghc-paths-0.1.0.9:=[profile?] <dev-haskell/ghc-paths-0.2:=[profile?]
 	>=dev-haskell/monad-memo-0.4.1:=[profile?] <dev-haskell/monad-memo-0.5:=[profile?]
 	>=dev-haskell/mtl-2.2.1:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
