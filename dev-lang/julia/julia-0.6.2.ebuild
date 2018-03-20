@@ -59,8 +59,6 @@ PATCHES=(
 
 LLVM_MAX_SLOT=6
 
-S="${WORKDIR}/julia"
-
 src_prepare() {
 	mv "${WORKDIR}"/bundled/UnicodeData.txt doc || die
 	mkdir deps/srccache || die
