@@ -19,8 +19,8 @@ DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
 SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 	http://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
-	test? ( http:releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
-#	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
+	test? ( http:releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -102,36 +102,39 @@ src_unpack() {
 		mv "${LLVM_P}" "${WORKDIR}"/llvm || die
 	fi
 
-#	if ! use doc; then
-#		einfo "Unpacking llvm-${PV}-manpages.tar.bz2 ..."
-#		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
-#	fi
+	if ! use doc; then
+		einfo "Unpacking llvm-${PV}-manpages.tar.bz2 ..."
+		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
+	fi
 }
 
 src_prepare() {
+	# fix invalid use of iterator
+	eapply "${FILESDIR}"/0001-Driver-Avoid-invalidated-iterator-in-insertTargetAnd.patch
+
+	# fix tests with compiler-rt
+	eapply "${FILESDIR}"/0002-test-Fix-Cross-DSO-CFI-Android-sanitizer-test-for-rt.patch
+
 	# fix use with arm
-	eapply "${FILESDIR}"/0001-fix-unwind.patch
+	eapply "${FILESDIR}"/0003-fix-unwind.patch
 
-	# cleanup and gentoo patches(SSP,PIE,FULLRELRO)
-	eapply "${FILESDIR}"/0002-gentoo-linux-changes.patch
-
-	# link libunwind
-	eapply "${FILESDIR}"/0003-link-libunwind.patch
+	# link in libc++abi and libunwind
+	eapply "${FILESDIR}"/0004-link-libraries.patch
 
 	# dont recurse to itself when clang > gcc symlink
-	eapply "${FILESDIR}"/0004-fix-ada-in-configure.patch
+	eapply "${FILESDIR}"/0005-fix-ada-in-configure.patch
+
+	# cleanup and gentoo patches(SSP,PIE,FULLRELRO)
+	eapply "${FILESDIR}"/0006-gentoo-linux-changes.patch
 
 	# increase gcc version
-	eapply "${FILESDIR}"/0005-increase-gcc-version.patch
+	eapply "${FILESDIR}"/0007-increase-gcc-version.patch
 
 	# define __STDC_ISO_10646__ and undefine __gnu_linux__
-	eapply "${FILESDIR}"/0006-defines-musl.patch
-
-	# patches for c++
-	eapply "${FILESDIR}"/0007-link-libcxxabi.patch
+	eapply "${FILESDIR}"/0008-defines-musl.patch
 
 	# needed in linux kernel
-	eapply "${FILESDIR}"/0008-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0009-add-fno-delete-null-pointer-checks.patch
 
 	# add Fortran support
 	use fortran && eapply "${FILESDIR}"/0010-add-fortran-support.patch
@@ -317,14 +320,16 @@ multilib_src_install_all() {
 	fi
 
 	# install pre-generated manpages
-#	if ! use doc; then
-#		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-#		doins "${WORKDIR}/x/y/llvm-${PV}-manpages/clang"/*.1
-#	fi
+	if ! use doc; then
+		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+		doins "${WORKDIR}/x/y/llvm-${PV}-manpages/clang"/*.1
+	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression
 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
+	# +x for some reason; TODO: investigate
+	use static-analyzer && fperms a-x "/usr/lib/llvm/${SLOT}/share/man/man1/scan-build.1"
 }
 
 pkg_postinst() {
