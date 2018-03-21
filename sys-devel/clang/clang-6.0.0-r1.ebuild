@@ -158,7 +158,6 @@ multilib_src_configure() {
 		-DLLVM_DYLIB_COMPONENTS="all"
 
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
-		-DLLVM_BUILD_TESTS=$(usex test)
 
 		# these are not propagated reliably, so redefine them
 		-DLLVM_ENABLE_EH=ON
@@ -328,8 +327,6 @@ multilib_src_install_all() {
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression
 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
-	# +x for some reason; TODO: investigate
-	use static-analyzer && fperms a-x "/usr/lib/llvm/${SLOT}/share/man/man1/scan-build.1"
 }
 
 pkg_postinst() {
