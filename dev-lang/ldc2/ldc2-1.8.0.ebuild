@@ -21,20 +21,17 @@ S=${WORKDIR}/ldc-${PV}-src
 
 PATCHES=(
 	"${FILESDIR}"/link-libunwind.patch
+	"${FILESDIR}"/wrong-type.patch
 )
 
 src_configure() {
 	local mycmakeargs=(
 		-DD_VERSION=2
-		-DBUILD_SHARED_LIBS=ON
+		-DBUILD_SHARED_LIBS=BOTH
 		-DD_FLAGS="${LDCFLAGS// /;}"
 		-DLDC_WITH_LLD=OFF
 	)
 	cmake-utils_src_configure
-}
-
-src_compile() {
-	cmake-utils_src_make
 }
 
 src_install() {
