@@ -37,11 +37,9 @@ pkg_setup() {
 }
 
 src_prepare() {
-	eapply "${FILESDIR}"/llvm-6.patch
 	eapply "${FILESDIR}"/system-llvm.patch
 	eapply "${FILESDIR}"/musl.patch
 	eapply "${FILESDIR}"/use-libc++.patch
-	eapply "${FILESDIR}"/debug-hack.patch
 
 	# fix rls-analysis path
 	eapply "${FILESDIR}"/fix-analysis-path.patch
@@ -73,7 +71,7 @@ src_configure() {
 	extended = true
 	[install]
 	prefix = "${EPREFIX}/usr"
-	libdir = "$(get_libdir)/${PN}"
+	libdir = "$(get_libdir)"
 	mandir = "share/${PN}/man"
 	docdir = "share/${PN}/doc"
 	[rust]
@@ -106,7 +104,7 @@ src_install() {
 
 	# install binaries
 	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc" "${tobj}/rls"
-        dobin "${tobj}/cargo" "${tobj}/rustfmt"
+        dobin "${tobj}/cargo" "${tobj}/rustfmt" "${tobj}/clippy-driver"
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
 	# install libraries
