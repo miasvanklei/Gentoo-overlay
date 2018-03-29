@@ -11,15 +11,17 @@ SLOT="0"
 KEYWORDS="x86 amd64"
 IUSE="systemd"
 
-CONTAINERS="2892cfc1e7a205d4f81af3970cbb53e4f365a765"
-DSYMBOL="e9aae0594739d002009cd34dd3edeb38f1f0893b"
-LIBDPARSE="5e81535d0aff4ceec2cbf03f5b02a31ae6d3fec2"
-MSGPACK="e6a5a69d2f86f2a0f7f7dad9de7080a55a929e46"
+CONTAINERS="6c5504cc80b75192b24cebe93209521c03f806d8"
+DSYMBOL="5b90412457ac5f1d67c04e4da01587edfd529ad5"
+LIBDPARSE="ee0fa01ab74b6bf27bed3c7bdb9d6fb789963342"
+MSGPACK="500940918243cf0468028e552605204c6aa46807"
+STDXALLOCATOR="7487970b58f4a2c0d495679329a8a2857111f3fd"
 
 SRC_URI="
-	https://github.com/Hackerpilot/DCD/archive/v${PV}.tar.gz -> DCD-${PV}.tar.gz
-	https://github.com/Hackerpilot/dsymbol/archive/${DSYMBOL}.tar.gz -> dsymbol-${DSYMBOL}.tar.gz
-	https://github.com/Hackerpilot/libdparse/archive/${LIBDPARSE}.tar.gz -> libdparse-${LIBDPARSE}.tar.gz
+	https://github.com/dlang-community/DCD/archive/v${PV}.tar.gz -> DCD-${PV}.tar.gz
+	https://github.com/dlang-community/dsymbol/archive/${DSYMBOL}.tar.gz -> dsymbol-${DSYMBOL}.tar.gz
+	https://github.com/dlang-community/libdparse/archive/${LIBDPARSE}.tar.gz -> libdparse-${LIBDPARSE}.tar.gz
+	https://github.com/dlang-community/stdx-allocator/archive/${STDXALLOCATOR}.tar.gz -> stdx-allocator-${STDXALLOCATOR}.tar.gz
 	https://github.com/msgpack/msgpack-d/archive/${MSGPACK}.tar.gz -> msgpack-d-${MSGPACK}.tar.gz
         https://github.com/economicmodeling/containers/archive/${CONTAINERS}.tar.gz -> containers-${CONTAINERS}.tar.gz
 	"
@@ -37,6 +39,7 @@ src_prepare()
 	mv -T ../dsymbol-${DSYMBOL}                  dsymbol                           || die
 	mv -T ../libdparse-${LIBDPARSE}              libdparse                         || die
 	mv -T ../msgpack-d-${MSGPACK}                msgpack-d                         || die
+	mv -T ../stdx-allocator-${STDXALLOCATOR}      stdx-allocator                     || die
 
 	touch githash.txt || die "Could not generate githash"
 	touch githash || die "Could not generate githash"
