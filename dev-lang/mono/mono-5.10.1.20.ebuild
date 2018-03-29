@@ -103,4 +103,7 @@ multilib_src_install() {
 	# for reference.
 	rm -f "${ED}"/usr/lib/mono/{2.0,4.5}/mscorlib.dll.so || die
 	rm -f "${ED}"/usr/lib/mono/{2.0,4.5}/mcs.exe.so || die
+
+	# breaks omnisharp
+	rm -rf "${ED}"/usr/lib/mono/xbuild/15.0
 }
