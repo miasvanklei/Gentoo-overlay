@@ -1,0 +1,109 @@
+From 20cdbc4bc66a011368ed3d98f5b6e5cfaee683b6 Mon Sep 17 00:00:00 2001
+From: Lennart Spitzner <hexagoxel@hexagoxel.de>
+Date: Sun, 10 Sep 2017 16:37:35 +0200
+Subject: [PATCH] Fix #53
+
+Previously, if the input did not end with a newline
+character and config had 'ppconf_hackAroundIncludes = True'
+then due to using unlines/lines the output contained an
+additional newline.
+---
+ src-brittany/Main.hs                            | 10 ++++++----
+ src/Language/Haskell/Brittany/Internal.hs       | 10 ++++++++--
+ src/Language/Haskell/Brittany/Internal/Utils.hs |  9 +++++++++
+ 3 files changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/src-brittany/Main.hs b/src-brittany/Main.hs
+index c337822..129ee50 100644
+--- a/src-brittany/Main.hs
++++ b/src-brittany/Main.hs
+@@ -166,8 +166,8 @@ coreIO
+   -> Maybe FilePath.FilePath -- ^ output filepath; stdout if Nothing.
+   -> IO (Either Int ())      -- ^ Either an errorNo, or success.
+ coreIO putErrorLnIO config suppressOutput inputPathM outputPathM = EitherT.runEitherT $ do
+-  let putErrorLn = liftIO . putErrorLnIO :: String -> EitherT.EitherT e IO ()
+-  let ghcOptions = config & _conf_forward & _options_ghc & runIdentity
++  let putErrorLn         = liftIO . putErrorLnIO :: String -> EitherT.EitherT e IO ()
++  let ghcOptions         = config & _conf_forward & _options_ghc & runIdentity
+   -- there is a good of code duplication between the following code and the
+   -- `pureModuleTransform` function. Unfortunately, there are also a good
+   -- amount of slight differences: This module is a bit more verbose, and
+@@ -198,7 +198,7 @@ coreIO putErrorLnIO config suppressOutput inputPathM outputPathM = EitherT.runEi
+       -- TODO: refactor this hack to not be mixed into parsing logic
+       let hackF s = if "#include" `isPrefixOf` s then "-- BRITTANY_INCLUDE_HACK " ++ s else s
+       let hackTransform =
+-            if hackAroundIncludes && not exactprintOnly then List.unlines . fmap hackF . List.lines else id
++            if hackAroundIncludes && not exactprintOnly then List.intercalate "\n" . fmap hackF . lines' else id
+       inputString <- liftIO $ System.IO.hGetContents System.IO.stdin
+       liftIO $ parseModuleFromString ghcOptions "stdin" cppCheckFunc (hackTransform inputString)
+     Just p -> liftIO $ parseModule ghcOptions p cppCheckFunc
+@@ -221,7 +221,9 @@ coreIO putErrorLnIO config suppressOutput inputPathM outputPathM = EitherT.runEi
+               then return $ pPrintModule config anns parsedSource
+               else liftIO $ pPrintModuleAndCheck config anns parsedSource
+             let hackF s = fromMaybe s $ TextL.stripPrefix (TextL.pack "-- BRITTANY_INCLUDE_HACK ") s
+-            pure $ if hackAroundIncludes then (ews, TextL.unlines $ fmap hackF $ TextL.lines outRaw) else (ews, outRaw)
++            pure $ if hackAroundIncludes
++              then (ews, TextL.intercalate (TextL.pack "\n") $ fmap hackF $ TextL.splitOn (TextL.pack "\n") outRaw)
++              else (ews, outRaw)
+       let customErrOrder ErrorInput{}         = 4
+           customErrOrder LayoutWarning{}      = 0 :: Int
+           customErrOrder ErrorOutputCheck{}   = 1
+diff --git a/src/Language/Haskell/Brittany/Internal.hs b/src/Language/Haskell/Brittany/Internal.hs
+index fb714f6..980992f 100644
+--- a/src/Language/Haskell/Brittany/Internal.hs
++++ b/src/Language/Haskell/Brittany/Internal.hs
+@@ -73,7 +73,7 @@ parsePrintModule configRaw inputText = runEitherT $ do
+           then "-- BRITTANY_INCLUDE_HACK " ++ s
+           else s
+     let hackTransform = if hackAroundIncludes
+-          then List.unlines . fmap hackF . List.lines
++          then List.intercalate "\n" . fmap hackF . lines'
+           else id
+     let cppCheckFunc dynFlags = if GHC.xopt GHC.Cpp dynFlags
+           then case cppMode of
+@@ -101,7 +101,12 @@ parsePrintModule configRaw inputText = runEitherT $ do
+     let hackF s = fromMaybe s
+           $ TextL.stripPrefix (TextL.pack "-- BRITTANY_INCLUDE_HACK ") s
+     pure $ if hackAroundIncludes
+-      then (ews, TextL.unlines $ fmap hackF $ TextL.lines outRaw)
++      then
++        ( ews
++        , TextL.intercalate (TextL.pack "\n") $ fmap hackF $ TextL.splitOn
++          (TextL.pack "\n")
++          outRaw
++        )
+       else (ews, outRaw)
+   let customErrOrder ErrorInput{}         = 4
+       customErrOrder LayoutWarning{}      = 0 :: Int
+@@ -115,6 +120,7 @@ parsePrintModule configRaw inputText = runEitherT $ do
+   if hasErrors then left $ errsWarns else pure $ TextL.toStrict outputTextL
+ 
+ 
++
+ -- BrittanyErrors can be non-fatal warnings, thus both are returned instead
+ -- of an Either.
+ -- This should be cleaned up once it is clear what kinds of errors really
+diff --git a/src/Language/Haskell/Brittany/Internal/Utils.hs b/src/Language/Haskell/Brittany/Internal/Utils.hs
+index 6f994e9..b0896b8 100644
+--- a/src/Language/Haskell/Brittany/Internal/Utils.hs
++++ b/src/Language/Haskell/Brittany/Internal/Utils.hs
+@@ -23,6 +23,7 @@ module Language.Haskell.Brittany.Internal.Utils
+   , transformDownMay
+   , FirstLastView(..)
+   , splitFirstLast
++  , lines'
+   )
+ where
+ 
+@@ -280,3 +281,11 @@ transformDownMay :: Uniplate.Uniplate on => (on -> Maybe on) -> (on -> on)
+ transformDownMay f = g where g x = maybe x (Uniplate.descend g) $ f x
+ _transformDownRec :: Uniplate.Uniplate on => (on -> Maybe on) -> (on -> on)
+ _transformDownRec f = g where g x = maybe (Uniplate.descend g x) g $ f x
++
++-- | similar to List.lines, but treating the case of final newline character
++-- in such a manner that this function is the inverse of @intercalate "\n"@.
++lines' :: String -> [String]
++lines' s = case break (== '\n') s of
++  (s1, []) -> [s1]
++  (s1, [_]) -> [s1, ""]
++  (s1, (_:r)) -> s1 : lines' r
