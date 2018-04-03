@@ -1,150 +1,53 @@
-diff --git a/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
-index ab63f0e..f099ffa
---- a/lib/Driver/Types.cpp
-+++ b/lib/Driver/Types.cpp
-@@ -99,6 +99,10 @@ bool types::isAcceptedByClang(ID Id) {
- 
-   case TY_Asm:
-   case TY_C: case TY_PP_C:
-+  /* FIXME Fortran types may not be necessary, since they are not accepted by
-+   * Clang directly */
-+  case TY_F_FreeForm: case TY_PP_F_FreeForm:
-+  case TY_F_FixedForm: case TY_PP_F_FixedForm:
-   case TY_CL:
-   case TY_CUDA: case TY_PP_CUDA:
-   case TY_CUDA_DEVICE:
-@@ -117,6 +121,33 @@ bool types::isAcceptedByClang(ID Id) {
-   }
- }
- 
-+bool types::isFortran(ID Id) {
-+  switch (Id) {
-+  default:
-+    return false;
-+
-+  case TY_F_FreeForm:
-+  case TY_PP_F_FreeForm:
-+  case TY_F_FixedForm:
-+  case TY_PP_F_FixedForm:
-+    return true;
-+  }
-+}
-+
-+bool types::isFreeFormFortran(ID Id) {
-+  if (!isFortran(Id))
-+    return false;
-+
-+  return (Id == TY_F_FreeForm || Id == TY_PP_F_FreeForm);
-+}
-+
-+bool types::isFixedFormFortran(ID Id) {
-+  if (!isFortran(Id))
-+    return false;
-+
-+  return (Id == TY_F_FixedForm || Id == TY_PP_F_FixedForm);
-+}
-+
- bool types::isObjC(ID Id) {
-   switch (Id) {
-   default:
-@@ -178,8 +209,8 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
-   return llvm::StringSwitch<types::ID>(Ext)
-            .Case("c", TY_C)
-            .Case("C", TY_CXX)
--           .Case("F", TY_Fortran)
--           .Case("f", TY_PP_Fortran)
-+           .Case("F", TY_F_FixedForm)
-+           .Case("f", TY_PP_F_FixedForm)
-            .Case("h", TY_CHeader)
-            .Case("H", TY_CXXHeader)
-            .Case("i", TY_PP_C)
-@@ -212,18 +243,22 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
-            .Case("cui", TY_PP_CUDA)
-            .Case("cxx", TY_CXX)
-            .Case("CXX", TY_CXX)
--           .Case("F90", TY_Fortran)
--           .Case("f90", TY_PP_Fortran)
--           .Case("F95", TY_Fortran)
--           .Case("f95", TY_PP_Fortran)
--           .Case("for", TY_PP_Fortran)
--           .Case("FOR", TY_PP_Fortran)
--           .Case("fpp", TY_Fortran)
--           .Case("FPP", TY_Fortran)
-            .Case("gch", TY_PCH)
-            .Case("hpp", TY_CXXHeader)
-            .Case("iim", TY_PP_CXXModule)
-            .Case("lib", TY_Object)
-+           .Case("for", TY_PP_F_FixedForm)
-+           .Case("FOR", TY_PP_F_FixedForm)
-+           .Case("fpp", TY_F_FixedForm)
-+           .Case("FPP", TY_F_FixedForm)
-+           .Case("f90", TY_PP_F_FreeForm)
-+           .Case("f95", TY_PP_F_FreeForm)
-+           .Case("f03", TY_PP_F_FreeForm)
-+           .Case("f08", TY_PP_F_FreeForm)
-+           .Case("F90", TY_F_FreeForm)
-+           .Case("F95", TY_F_FreeForm)
-+           .Case("F03", TY_F_FreeForm)
-+           .Case("F08", TY_F_FreeForm)
-            .Case("mii", TY_PP_ObjCXX)
-            .Case("obj", TY_Object)
-            .Case("pch", TY_PCH)
-@@ -248,7 +283,9 @@ types::ID types::lookupTypeForTypeSpecifier(const char *Name) {
- // FIXME: Why don't we just put this list in the defs file, eh.
- void types::getCompilationPhases(ID Id, llvm::SmallVectorImpl<phases::ID> &P) {
-   if (Id != TY_Object) {
--    if (getPreprocessedType(Id) != TY_INVALID) {
-+    // Delegate preprocessing to the "upper" part of Fortran compiler,
-+    // preprocess for other preprocessable inputs
-+    if (getPreprocessedType(Id) != TY_INVALID && !isFortran(Id)) {
-       P.push_back(phases::Preprocess);
-     }
- 
-@@ -258,8 +295,14 @@ void types::getCompilationPhases(ID Id, llvm::SmallVectorImpl<phases::ID> &P) {
- 
-     if (!onlyPrecompileType(Id)) {
-       if (!onlyAssembleType(Id)) {
--        P.push_back(phases::Compile);
--        P.push_back(phases::Backend);
-+        if (isFortran(Id)) {
-+          P.push_back(phases::FortranFrontend);
-+          P.push_back(phases::Compile);
-+          P.push_back(phases::Backend);
-+        } else {
-+          P.push_back(phases::Compile);
-+          P.push_back(phases::Backend);
-+        }
-       }
-       P.push_back(phases::Assemble);
-     }
-diff --git a/tools/driver/CMakeLists.txt b/tools/driver/CMakeLists.txt
-index f6e26fa..951cd89 100644
---- a/tools/driver/CMakeLists.txt
-+++ b/tools/driver/CMakeLists.txt
-@@ -59,7 +59,7 @@ endif()
- add_dependencies(clang clang-headers)
- 
- if(NOT CLANG_LINKS_TO_CREATE)
--  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp)
-+  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp flang gfortran)
- 
-   if (WIN32)
-     list(APPEND CLANG_LINKS_TO_CREATE ../msbuild-bin/cl)
+From 632396fdf8ae58381415d68950489497d565ddaa Mon Sep 17 00:00:00 2001
+From: Eric Schweitz <eschweitz@nvidia.com>
+Date: Fri, 5 Jan 2018 15:09:23 -0800
+Subject: [PATCH] Flang driver changes ported to master branch
+
+---
+ include/clang/Basic/DiagnosticDriverKinds.td |   4 +
+ include/clang/Driver/Action.h                |  11 +
+ include/clang/Driver/Driver.h                |   6 +-
+ include/clang/Driver/Options.td              | 157 ++++-
+ include/clang/Driver/Phases.h                |   1 +
+ include/clang/Driver/ToolChain.h             |  15 +
+ include/clang/Driver/Types.def               |   8 +-
+ include/clang/Driver/Types.h                 |   9 +
+ lib/Driver/Action.cpp                        |   7 +
+ lib/Driver/CMakeLists.txt                    |   1 +
+ lib/Driver/Driver.cpp                        |  12 +
+ lib/Driver/Phases.cpp                        |   1 +
+ lib/Driver/ToolChain.cpp                     |  54 ++
+ lib/Driver/ToolChains/CommonArgs.cpp         |  35 ++
+ lib/Driver/ToolChains/CommonArgs.h           |   2 +
+ lib/Driver/ToolChains/Flang.cpp              | 851 +++++++++++++++++++++++++++
+ lib/Driver/ToolChains/Flang.h                |  50 ++
+ lib/Driver/ToolChains/Gnu.cpp                |  10 +
+ lib/Driver/ToolChains/Linux.cpp              | 188 ++++++
+ lib/Driver/ToolChains/Linux.h                |   3 +
+ lib/Driver/Types.cpp                         |  60 +-
+ tools/driver/CMakeLists.txt                  |   2 +-
+ 22 files changed, 1462 insertions(+), 25 deletions(-)
+ create mode 100644 lib/Driver/ToolChains/Flang.cpp
+ create mode 100644 lib/Driver/ToolChains/Flang.h
+ mode change 100644 => 100755 lib/Driver/Types.cpp
+
 diff --git a/include/clang/Basic/DiagnosticDriverKinds.td b/include/clang/Basic/DiagnosticDriverKinds.td
-index 2fcd3a5..1632021 100644
+index 45cdf82d369..b175a7f4ab9 100644
 --- a/include/clang/Basic/DiagnosticDriverKinds.td
 +++ b/include/clang/Basic/DiagnosticDriverKinds.td
-@@ -42,6 +42,8 @@ def err_drv_invalid_pgo_instrumentor : Error<
+@@ -43,6 +43,10 @@ def err_drv_invalid_pgo_instrumentor : Error<
    "invalid PGO instrumentor in argument '%0'">;
  def err_drv_invalid_rtlib_name : Error<
    "invalid runtime library name in argument '%0'">;
 +def err_drv_invalid_allocatable_mode : Error<
 +  "invalid semantic mode for assignments to allocatables in argument '%0'">;
++def err_drv_unsupported_fixed_line_length : Error<
++  "unsupported fixed-format line length in argument '%0'">;
  def err_drv_unsupported_rtlib_for_platform : Error<
    "unsupported runtime library '%0' for platform '%1'">;
  def err_drv_invalid_stdlib_name : Error<
 diff --git a/include/clang/Driver/Action.h b/include/clang/Driver/Action.h
-index 72456d3..1e182d8 100644
+index 72456d34a0d..1e182d88f11 100644
 --- a/include/clang/Driver/Action.h
 +++ b/include/clang/Driver/Action.h
 @@ -59,6 +59,7 @@ class Action {
@@ -173,10 +76,10 @@ index 72456d3..1e182d8 100644
    void anchor() override;
  public:
 diff --git a/include/clang/Driver/Driver.h b/include/clang/Driver/Driver.h
-index 0ce461c..72ac1ac 100644
+index 07134309835..8328b871a31 100644
 --- a/include/clang/Driver/Driver.h
 +++ b/include/clang/Driver/Driver.h
-@@ -72,7 +72,8 @@ class Driver {
+@@ -67,7 +67,8 @@ class Driver {
      GCCMode,
      GXXMode,
      CPPMode,
@@ -186,7 +89,7 @@ index 0ce461c..72ac1ac 100644
    } Mode;
  
    enum SaveTempsMode {
-@@ -181,6 +182,9 @@ class Driver {
+@@ -182,6 +183,9 @@ class Driver {
    /// Whether the driver should follow cl.exe like behavior.
    bool IsCLMode() const { return Mode == CLMode; }
  
@@ -197,10 +100,10 @@ index 0ce461c..72ac1ac 100644
    unsigned CCCPrintBindings : 1;
  
 diff --git a/include/clang/Driver/Options.td b/include/clang/Driver/Options.td
-index 6be159f..326b56c 100644
+index 3ee834e6856..18142602c8b 100644
 --- a/include/clang/Driver/Options.td
 +++ b/include/clang/Driver/Options.td
-@@ -152,7 +152,7 @@ class InternalDriverOpt : Group<internal_driver_Group>,
+@@ -247,7 +247,7 @@ class InternalDriverOpt : Group<internal_driver_Group>,
    Flags<[DriverOption, HelpHidden]>;
  def driver_mode : Joined<["--"], "driver-mode=">, Group<internal_driver_Group>,
    Flags<[CoreOption, DriverOption, HelpHidden]>,
@@ -209,7 +112,16 @@ index 6be159f..326b56c 100644
  def rsp_quoting : Joined<["--"], "rsp-quoting=">, Group<internal_driver_Group>,
    Flags<[CoreOption, DriverOption, HelpHidden]>,
    HelpText<"Set the rsp quoting to either 'posix', or 'windows'">;
-@@ -2329,8 +2329,10 @@ def gfortran_Group : OptionGroup<"gfortran Group">;
+@@ -2708,11 +2708,19 @@ defm devirtualize : BooleanFFlag<"devirtualize">, Group<clang_ignored_gcc_optimi
+ defm devirtualize_speculatively : BooleanFFlag<"devirtualize-speculatively">,
+     Group<clang_ignored_gcc_optimization_f_Group>;
+ 
++// gfortran options that we recognize in the driver and pass along when
++// invoking GCC to compile Fortran code.
++def flang_rt_Group : OptionGroup<"Flang runtime library Group">;
++def pgi_fortran_Group : OptionGroup<"PGI Fortran compatibility Group">,
++  Flags<[HelpHidden]>;
++
  // Generic gfortran options.
  def A_DASH : Joined<["-"], "A-">, Group<gfortran_Group>;
  def J : JoinedOrSeparate<["-"], "J">, Flags<[RenderJoined]>, Group<gfortran_Group>;
@@ -222,30 +134,69 @@ index 6be159f..326b56c 100644
  def static_libgfortran : Flag<["-"], "static-libgfortran">, Group<gfortran_Group>;
  
  // "f" options with values for gfortran.
-@@ -2356,7 +2358,8 @@ defm aggressive_function_elimination : BooleanFFlag<"aggressive-function-elimina
+@@ -2720,7 +2728,8 @@ def fblas_matmul_limit_EQ : Joined<["-"], "fblas-matmul-limit=">, Group<gfortran
+ def fcheck_EQ : Joined<["-"], "fcheck=">, Group<gfortran_Group>;
+ def fcoarray_EQ : Joined<["-"], "fcoarray=">, Group<gfortran_Group>;
+ def fconvert_EQ : Joined<["-"], "fconvert=">, Group<gfortran_Group>;
+-def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<gfortran_Group>;
++def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<gfortran_Group>,
++  HelpText<"Set line length in fixed-form format Fortran, current supporting only 72 and 132 characters">;
+ def ffpe_trap_EQ : Joined<["-"], "ffpe-trap=">, Group<gfortran_Group>;
+ def ffree_line_length_VALUE : Joined<["-"], "ffree-line-length-">, Group<gfortran_Group>;
+ def finit_character_EQ : Joined<["-"], "finit-character=">, Group<gfortran_Group>;
+@@ -2733,12 +2742,17 @@ def fmax_stack_var_size_EQ : Joined<["-"], "fmax-stack-var-size=">, Group<gfortr
+ def fmax_subrecord_length_EQ : Joined<["-"], "fmax-subrecord-length=">, Group<gfortran_Group>;
+ def frecord_marker_EQ : Joined<["-"], "frecord-marker=">, Group<gfortran_Group>;
+ 
++// Define a group for Fortran source format
++def fortran_format_Group : OptionGroup<"Fortran format Group">, Group<gfortran_Group>;
+ // "f" flags for gfortran.
+ defm aggressive_function_elimination : BooleanFFlag<"aggressive-function-elimination">, Group<gfortran_Group>;
  defm align_commons : BooleanFFlag<"align-commons">, Group<gfortran_Group>;
  defm all_intrinsics : BooleanFFlag<"all-intrinsics">, Group<gfortran_Group>;
  defm automatic : BooleanFFlag<"automatic">, Group<gfortran_Group>;
 -defm backslash : BooleanFFlag<"backslash">, Group<gfortran_Group>;
-+defm backslash : BooleanFFlag<"backslash">, Group<gfortran_Group>,
++def fbackslash: Flag<["-"], "fbackslash">, Group<gfortran_Group>,
 +  HelpText<"Treat backslash as C-style escape character">;
++def fnobackslash: Flag<["-"], "fno-backslash">, Group<gfortran_Group>,
++  HelpText<"Treat backslash like any other character in character strings">;
  defm backtrace : BooleanFFlag<"backtrace">, Group<gfortran_Group>;
  defm bounds_check : BooleanFFlag<"bounds-check">, Group<gfortran_Group>;
  defm check_array_temporaries : BooleanFFlag<"check-array-temporaries">, Group<gfortran_Group>;
-@@ -2364,8 +2367,10 @@ defm cray_pointer : BooleanFFlag<"cray-pointer">, Group<gfortran_Group>;
+@@ -2746,17 +2760,27 @@ defm cray_pointer : BooleanFFlag<"cray-pointer">, Group<gfortran_Group>;
  defm d_lines_as_code : BooleanFFlag<"d-lines-as-code">, Group<gfortran_Group>;
  defm d_lines_as_comments : BooleanFFlag<"d-lines-as-comments">, Group<gfortran_Group>;
  defm default_double_8 : BooleanFFlag<"default-double-8">, Group<gfortran_Group>;
 -defm default_integer_8 : BooleanFFlag<"default-integer-8">, Group<gfortran_Group>;
 -defm default_real_8 : BooleanFFlag<"default-real-8">, Group<gfortran_Group>;
-+defm default_integer_8 : BooleanFFlag<"default-integer-8">, Group<gfortran_Group>,
++def default_integer_8_f : Flag<["-"], "fdefault-integer-8">, Group<gfortran_Group>,
 +  HelpText<"Treat INTEGER and LOGICAL as INTEGER*8 and LOGICAL*8">;
-+defm default_real_8 : BooleanFFlag<"default-real-8">, Group<gfortran_Group>,
++def default_integer_8_fno : Flag<["-"], "fno-default-integer-8">, Group<gfortran_Group>;
++def default_real_8_f : Flag<["-"], "fdefault-real-8">, Group<gfortran_Group>,
 +  HelpText<"Treat REAL as REAL*8">;
++def default_real_8_fno : Flag<["-"], "fno-default-real-8">, Group<gfortran_Group>;
  defm dollar_ok : BooleanFFlag<"dollar-ok">, Group<gfortran_Group>;
  defm dump_fortran_optimized : BooleanFFlag<"dump-fortran-optimized">, Group<gfortran_Group>;
  defm dump_fortran_original : BooleanFFlag<"dump-fortran-original">, Group<gfortran_Group>;
-@@ -2399,6 +2404,99 @@ defm stack_arrays : BooleanFFlag<"stack-arrays">, Group<gfortran_Group>;
+ defm dump_parse_tree : BooleanFFlag<"dump-parse-tree">, Group<gfortran_Group>;
+ defm external_blas : BooleanFFlag<"external-blas">, Group<gfortran_Group>;
+ defm f2c : BooleanFFlag<"f2c">, Group<gfortran_Group>;
+-defm fixed_form : BooleanFFlag<"fixed-form">, Group<gfortran_Group>;
+-defm free_form : BooleanFFlag<"free-form">, Group<gfortran_Group>;
+-defm frontend_optimize : BooleanFFlag<"frontend-optimize">, Group<gfortran_Group>;
++def fixed_form_on : Flag<["-"], "ffixed-form">, Group<fortran_format_Group>,
++  HelpText<"Enable fixed-form format for Fortran">;
++def fixed_form_off : Flag<["-"], "fno-fixed-form">, Group<fortran_format_Group>,
++  HelpText<"Disable fixed-form format for Fortran">;
++def free_form_on : Flag<["-"], "ffree-form">, Group<fortran_format_Group>,
++  HelpText<"Enable free-form format for Fortran">;
++def free_form_off : Flag<["-"], "fno-free-form">, Group<fortran_format_Group>,
++  HelpText<"Disable free-form format for Fortran">;
++defm frontend_optimize : BooleanFFlag<"frontend-optimize">, Group<fortran_format_Group>;
+ defm implicit_none : BooleanFFlag<"implicit-none">, Group<gfortran_Group>;
+ defm init_local_zero : BooleanFFlag<"init-local-zero">, Group<gfortran_Group>;
+ defm integer_4_integer_8 : BooleanFFlag<"integer-4-integer-8">, Group<gfortran_Group>;
+@@ -2781,6 +2805,119 @@ defm stack_arrays : BooleanFFlag<"stack-arrays">, Group<gfortran_Group>;
  defm underscoring : BooleanFFlag<"underscoring">, Group<gfortran_Group>;
  defm whole_file : BooleanFFlag<"whole-file">, Group<gfortran_Group>;
  
@@ -260,93 +211,113 @@ index 6be159f..326b56c 100644
 +  def _off : Flag<["-"], "Mno"#name>;
 +}
 +
-+// Define a group for Fortran source format
-+def fortran_format_Group : OptionGroup<"Fortran format Group">, Group<gfortran_Group>;
 +def Mfixed : Flag<["-"], "Mfixed">, Group<fortran_format_Group>,
-+  HelpText<"Force fixed-form format Fortran">;
-+defm Mfree: BooleanMFlag<"free">, Group<fortran_format_Group>,
-+  HelpText<"Enable or disable free-form format for Fortran">;
-+defm Mfreeform: BooleanMFlag<"freeform">, Group<fortran_format_Group>,
-+  HelpText<"Enable or disable free-form format for Fortran">;
++  HelpText<"Force fixed-form format Fortran">,
++  Flags<[HelpHidden]>;
++def Mfree_on: Flag<["-"], "Mfree">, Group<fortran_format_Group>,
++  HelpText<"Enable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
++def Mfree_off: Flag<["-"], "Mnofree">, Group<fortran_format_Group>,
++  HelpText<"Disable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
++def Mfreeform_on: Flag<["-"], "Mfreeform">, Group<fortran_format_Group>,
++  HelpText<"Enable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
++def Mfreeform_off: Flag<["-"], "Mnofreeform">, Group<fortran_format_Group>,
++  HelpText<"Disable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
 +
-+def Mipa: Joined<["-"], "Mipa">, Group<gfortran_Group>;
-+def Mstackarrays: Joined<["-"], "Mstack_arrays">, Group<gfortran_Group>;
-+def pc: JoinedOrSeparate<["-"], "pc">, Group<gfortran_Group>;
-+def Mfprelaxed: Joined<["-"], "Mfprelaxed">, Group<gfortran_Group>;
-+def Mnofprelaxed: Joined<["-"], "Mnofprelaxed">, Group<gfortran_Group>;
-+defm Mstride0: BooleanMFlag<"stride0">, Group<gfortran_Group>;
-+defm Mrecursive: BooleanMFlag<"recursive">, Group<gfortran_Group>;
-+defm Mreentrant: BooleanMFlag<"reentrant">, Group<gfortran_Group>;
-+defm Mbounds: BooleanMFlag<"bounds">, Group<gfortran_Group>;
-+defm Mdaz: BooleanMFlag<"daz">, Group<gfortran_Group>,
++def Mipa: Joined<["-"], "Mipa">, Group<pgi_fortran_Group>;
++def Mstackarrays: Joined<["-"], "Mstack_arrays">, Group<pgi_fortran_Group>;
++def pc: JoinedOrSeparate<["-"], "pc">, Group<pgi_fortran_Group>;
++def Mfprelaxed: Joined<["-"], "Mfprelaxed">, Group<pgi_fortran_Group>;
++def Mnofprelaxed: Joined<["-"], "Mnofprelaxed">, Group<pgi_fortran_Group>;
++defm Mstride0: BooleanMFlag<"stride0">, Group<pgi_fortran_Group>;
++defm Mrecursive: BooleanMFlag<"recursive">, Group<pgi_fortran_Group>;
++defm Mreentrant: BooleanMFlag<"reentrant">, Group<pgi_fortran_Group>;
++defm Mbounds: BooleanMFlag<"bounds">, Group<pgi_fortran_Group>;
++def Mdaz_on: Flag<["-"], "Mdaz">, Group<pgi_fortran_Group>,
 +  HelpText<"Treat denormalized numbers as zero">;
-+defm Kieee : BooleanKFlag<"ieee">, Group<gfortran_Group>,
-+  HelpText<"Enable or disable IEEE division">;
-+def Mextend : Flag<["-"], "Mextend">, Group<gfortran_Group>,
++def Mdaz_off: Flag<["-"], "Mnodaz">, Group<pgi_fortran_Group>,
++  HelpText<"Disable treating denormalized numbers as zero">;
++def Kieee_on : Flag<["-"], "Kieee">, Group<pgi_fortran_Group>,
++  HelpText<"Enable IEEE division">;
++def Kieee_off : Flag<["-"], "Knoieee">, Group<pgi_fortran_Group>,
++  HelpText<"Disable IEEE division">;
++def Mextend : Flag<["-"], "Mextend">, Group<pgi_fortran_Group>,
 +  HelpText<"Allow lines up to 132 characters in Fortran sources">;
-+def Mpreprocess : Flag<["-"], "Mpreprocess">, Group<gfortran_Group>,
++def Mpreprocess : Flag<["-"], "Mpreprocess">, Group<pgi_fortran_Group>,
 +  HelpText<"Preprocess Fortran files">;
-+def Mstandard: Flag<["-"], "Mstandard">, Group<gfortran_Group>,
++def Mstandard: Flag<["-"], "Mstandard">, Group<pgi_fortran_Group>,
 +  HelpText<"Check Fortran standard conformance">;
-+def Mchkptr: Flag<["-"], "Mchkptr">, Group<gfortran_Group>;
-+def Minline: Flag<["-"], "Minline">, Group<gfortran_Group>;
-+def fma: Flag<["-"], "fma">, Group<gfortran_Group>,
++def Mchkptr: Flag<["-"], "Mchkptr">, Group<pgi_fortran_Group>;
++defm Minline: BooleanMFlag<"inline">, Group<pgi_fortran_Group>;
++def fma: Flag<["-"], "fma">, Group<pgi_fortran_Group>,
 +  HelpText<"Enable generation of FMA instructions">;
-+def nofma: Flag<["-"], "nofma">, Group<gfortran_Group>,
++def nofma: Flag<["-"], "nofma">, Group<pgi_fortran_Group>,
 +  HelpText<"Disable generation of FMA instructions">;
-+defm Mfma: BooleanMFlag<"fma">, Group<gfortran_Group>,
++defm Mfma: BooleanMFlag<"fma">, Group<pgi_fortran_Group>,
 +  HelpText<"Enable generation of FMA instructions">;
-+def mp: Flag<["-"], "mp">, Group<gfortran_Group>,
++def mp: Flag<["-"], "mp">, Group<pgi_fortran_Group>,
 +  HelpText<"Enable OpenMP">;
-+def nomp: Flag<["-"], "nomp">, Group<gfortran_Group>,
++def nomp: Flag<["-"], "nomp">, Group<pgi_fortran_Group>,
 +  HelpText<"Do not link with OpenMP library libomp">;
-+def pgf90libs: Flag<["-"], "pgf90libs">, Group<gfortran_Group>;
-+defm Mflushz: BooleanMFlag<"flushz">, Group<gfortran_Group>,
++def Mflushz_on: Flag<["-"], "Mflushz">, Group<pgi_fortran_Group>,
 +  HelpText<"Set SSE to flush-to-zero mode">;
-+defm Msave: BooleanMFlag<"save">, Group<gfortran_Group>,
++def Mflushz_off: Flag<["-"], "Mnoflushz">, Group<pgi_fortran_Group>,
++  HelpText<"Disabling setting SSE to flush-to-zero mode">;
++def Msave_on: Flag<["-"], "Msave">, Group<pgi_fortran_Group>,
 +  HelpText<"Assume all Fortran variables have SAVE attribute">;
-+defm Mcache_align: BooleanMFlag<"cache_align">, Group<gfortran_Group>,
++def Msave_off: Flag<["-"], "Mnosave">, Group<pgi_fortran_Group>,
++  HelpText<"Assume no Fortran variables have SAVE attribute">;
++def Mcache_align_on: Flag<["-"], "Mcache_align">, Group<pgi_fortran_Group>,
 +  HelpText<"Align large objects on cache-line boundaries">;
-+def ModuleDir : Separate<["-"], "module">, Group<gfortran_Group>,
++def Mcache_align_off: Flag<["-"], "Mnocache_align">, Group<pgi_fortran_Group>,
++  HelpText<"Disable aligning large objects on cache-line boundaries">;
++def ModuleDir : Separate<["-"], "module">, Group<pgi_fortran_Group>,
 +  HelpText<"Fortran module path">;
 +def Minform_EQ : Joined<["-"], "Minform=">,
 +  HelpText<"Set error level of messages to display">;
 +def Mallocatable_EQ : Joined<["-"], "Mallocatable=">,
 +  HelpText<"Select semantics for assignments to allocatables (F03 or F95)">;
-+def Mbyteswapio: Flag<["-"], "Mbyteswapio">, Group<gfortran_Group>,
++def Mbyteswapio: Flag<["-"], "Mbyteswapio">, Group<pgi_fortran_Group>,
 +  HelpText<"Swap byte-order for unformatted input/output">;
 +def byteswapio: Flag<["-"], "byteswapio">, Group<gfortran_Group>,
 +  HelpText<"Swap byte-order for unformatted input/output">;
-+defm Mbackslash: BooleanMFlag<"backslash">, Group<gfortran_Group>,
++def Mbackslash: Flag<["-"], "Mbackslash">, Group<pgi_fortran_Group>,
 +  HelpText<"Treat backslash like any other character in character strings">;
-+def staticFlangLibs: Flag<["-"], "static-flang-libs">, Group<gfortran_Group>,
++def Mnobackslash: Flag<["-"], "Mnobackslash">, Group<pgi_fortran_Group>,
++  HelpText<"Treat backslash as C-style escape character">;
++def staticFlangLibs: Flag<["-"], "static-flang-libs">, Group<flang_rt_Group>,
 +  HelpText<"Link using static Flang libraries">;
-+def noFlangLibs: Flag<["-"], "no-flang-libs">, Group<gfortran_Group>,
++def noFlangLibs: Flag<["-"], "no-flang-libs">, Group<flang_rt_Group>,
 +  HelpText<"Do not link against Flang libraries">;
-+def r8: Flag<["-"], "r8">, Group<gfortran_Group>,
-+  Alias<default_real_8_f>;
++def r8: Flag<["-"], "r8">, Group<pgi_fortran_Group>,
++  HelpText<"Treat REAL as REAL*8">;
++def i8: Flag<["-"], "i8">, Group<pgi_fortran_Group>,
++  HelpText<"Treat INTEGER and LOGICAL as INTEGER*8 and LOGICAL*8">;
 +def no_fortran_main: Flag<["-"], "fno-fortran-main">, Group<gfortran_Group>,
 +  HelpText<"Don't link in Fortran main">;
-+def : Flag<["-"], "Mnomain">, Group<gfortran_Group>,
-+  Alias<no_fortran_main>;
++def Mnomain: Flag<["-"], "Mnomain">, Group<pgi_fortran_Group>,
++  HelpText<"Don't link in Fortran main">;
 +
 +// Flang internal debug options
-+def Mx_EQ : Joined<["-"], "Mx,">, Group<gfortran_Group>;
-+def My_EQ : Joined<["-"], "My,">, Group<gfortran_Group>;
-+def Hx_EQ : Joined<["-"], "Hx,">, Group<gfortran_Group>;
-+def Hy_EQ : Joined<["-"], "Hy,">, Group<gfortran_Group>;
-+def Wm_EQ : Joined<["-"], "Wm,">, Group<gfortran_Group>;
++def Mx_EQ : Joined<["-"], "Mx,">, Group<pgi_fortran_Group>;
++def My_EQ : Joined<["-"], "My,">, Group<pgi_fortran_Group>;
++def Hx_EQ : Joined<["-"], "Hx,">, Group<pgi_fortran_Group>;
++def Hy_EQ : Joined<["-"], "Hy,">, Group<pgi_fortran_Group>;
++def Wm_EQ : Joined<["-"], "Wm,">, Group<pgi_fortran_Group>;
 +
-+def Mq_EQ : Joined<["-"], "Mq,">, Group<gfortran_Group>;
-+def Hq_EQ : Joined<["-"], "Hq,">, Group<gfortran_Group>;
-+def Mqq_EQ : Joined<["-"], "Mqq,">, Group<gfortran_Group>;
-+def Hqq_EQ : Joined<["-"], "Hqq,">, Group<gfortran_Group>;
-+def Wh_EQ : Joined<["-"], "Wh,">, Group<gfortran_Group>;
++def Mq_EQ : Joined<["-"], "Mq,">, Group<pgi_fortran_Group>;
++def Hq_EQ : Joined<["-"], "Hq,">, Group<pgi_fortran_Group>;
++def Mqq_EQ : Joined<["-"], "Mqq,">, Group<pgi_fortran_Group>;
++def Hqq_EQ : Joined<["-"], "Hqq,">, Group<pgi_fortran_Group>;
++def Wh_EQ : Joined<["-"], "Wh,">, Group<pgi_fortran_Group>;
  
  include "CC1Options.td"
  
 diff --git a/include/clang/Driver/Phases.h b/include/clang/Driver/Phases.h
-index cd6b5b5..fe96caa 100644
+index cd6b5b5c9f0..fe96caaaf80 100644
 --- a/include/clang/Driver/Phases.h
 +++ b/include/clang/Driver/Phases.h
 @@ -18,6 +18,7 @@ namespace phases {
@@ -358,10 +329,10 @@ index cd6b5b5..fe96caa 100644
      Backend,
      Assemble,
 diff --git a/include/clang/Driver/ToolChain.h b/include/clang/Driver/ToolChain.h
-index ffb0d60..2413288 100644
+index 13f54d3718b..9bcec45e6c9 100644
 --- a/include/clang/Driver/ToolChain.h
 +++ b/include/clang/Driver/ToolChain.h
-@@ -83,11 +83,13 @@ class ToolChain {
+@@ -107,11 +107,13 @@ class ToolChain {
    /// programs.
    path_list ProgramPaths;
  
@@ -375,22 +346,22 @@ index ffb0d60..2413288 100644
    Tool *getAssemble() const;
    Tool *getLink() const;
    Tool *getClangAs() const;
-@@ -398,6 +400,14 @@ class ToolChain {
+@@ -450,6 +452,14 @@ class ToolChain {
    AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
                              llvm::opt::ArgStringList &CC1Args) const;
  
-+  /// \brief Add the pgf901-llvm arguments for system include paths.
++  /// \brief Add the flang arguments for system include paths.
 +  ///
 +  /// This routine is responsible for adding the -stdinc argument to
 +  /// include headers and module files from standard system header directories.
 +  virtual void
 +  AddFlangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-+                            llvm::opt::ArgStringList &F901Args) const { }
++                            llvm::opt::ArgStringList &Flang1Args) const { }
 +
    /// \brief Add options that need to be passed to cc1 for this target.
    virtual void addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
-                                      llvm::opt::ArgStringList &CC1Args) const;
-@@ -457,6 +467,11 @@ class ToolChain {
+                                      llvm::opt::ArgStringList &CC1Args,
+@@ -514,6 +524,11 @@ class ToolChain {
    virtual VersionTuple computeMSVCVersion(const Driver *D,
                                            const llvm::opt::ArgList &Args) const;
  
@@ -403,7 +374,7 @@ index ffb0d60..2413288 100644
    virtual SanitizerMask getSupportedSanitizers() const;
  
 diff --git a/include/clang/Driver/Types.def b/include/clang/Driver/Types.def
-index 2430b5b..0fd9c27 100644
+index 2430b5b924c..0fd9c2779cf 100644
 --- a/include/clang/Driver/Types.def
 +++ b/include/clang/Driver/Types.def
 @@ -69,12 +69,16 @@ TYPE("objective-c++-header",     ObjCXXHeader, PP_ObjCXXHeader, "h",     "pu")
@@ -426,7 +397,7 @@ index 2430b5b..0fd9c27 100644
  
  // LLVM IR/LTO types. We define separate types for IR and LTO because LTO
 diff --git a/include/clang/Driver/Types.h b/include/clang/Driver/Types.h
-index 22a26ae..ae3fa36 100644
+index 22a26ae46a0..ae3fa36231b 100644
 --- a/include/clang/Driver/Types.h
 +++ b/include/clang/Driver/Types.h
 @@ -107,6 +107,15 @@ namespace types {
@@ -446,7 +417,7 @@ index 22a26ae..ae3fa36 100644
  } // end namespace driver
  } // end namespace clang
 diff --git a/lib/Driver/Action.cpp b/lib/Driver/Action.cpp
-index 85e466a..70ff131 100644
+index 85e466a4409..70ff131d782 100644
 --- a/lib/Driver/Action.cpp
 +++ b/lib/Driver/Action.cpp
 @@ -29,6 +29,7 @@ const char *Action::getClassName(ActionClass AC) {
@@ -470,17 +441,23 @@ index 85e466a..70ff131 100644
  void CompileJobAction::anchor() {}
  
  CompileJobAction::CompileJobAction(Action *Input, types::ID OutputType)
+diff --git a/lib/Driver/CMakeLists.txt b/lib/Driver/CMakeLists.txt
+index 5bf91f2be98..fb560d418b0 100644
+--- a/lib/Driver/CMakeLists.txt
++++ b/lib/Driver/CMakeLists.txt
+@@ -40,6 +40,7 @@ add_clang_library(clangDriver
+   ToolChains/Cuda.cpp
+   ToolChains/Darwin.cpp
+   ToolChains/DragonFly.cpp
++  ToolChains/Flang.cpp
+   ToolChains/FreeBSD.cpp
+   ToolChains/Fuchsia.cpp
+   ToolChains/Gnu.cpp
 diff --git a/lib/Driver/Driver.cpp b/lib/Driver/Driver.cpp
-index 15f830d..c023281 100644
+index 325b233ac5e..5205ea98c1a 100644
 --- a/lib/Driver/Driver.cpp
 +++ b/lib/Driver/Driver.cpp
-@@ -112,12 +112,12 @@ void Driver::setDriverModeFromOption(StringRef Opt) {
-   if (!Opt.startswith(OptName))
-     return;
-   StringRef Value = Opt.drop_front(OptName.size());
--
-   const unsigned M = llvm::StringSwitch<unsigned>(Value)
-                          .Case("gcc", GCCMode)
+@@ -153,6 +153,7 @@ void Driver::setDriverModeFromOption(StringRef Opt) {
                           .Case("g++", GXXMode)
                           .Case("cpp", CPPMode)
                           .Case("cl", CLMode)
@@ -488,19 +465,33 @@ index 15f830d..c023281 100644
                           .Default(~0U);
  
    if (M != ~0U)
-@@ -2631,6 +2631,10 @@ Action *Driver::ConstructPhaseAction(Compilation &C, const ArgList &Args,
+@@ -231,6 +232,10 @@ phases::ID Driver::getFinalPhase(const DerivedArgList &DAL,
+       (PhaseArg = DAL.getLastArg(options::OPT__SLASH_P))) {
+     FinalPhase = phases::Preprocess;
+ 
++    // -fsyntax-only stops Fortran compilation after FortranFrontend
++  } else if (IsFortranMode() && (PhaseArg = DAL.getLastArg(options::OPT_fsyntax_only))) {
++    FinalPhase = phases::FortranFrontend;
++
+     // --precompile only runs up to precompilation.
+   } else if ((PhaseArg = DAL.getLastArg(options::OPT__precompile))) {
+     FinalPhase = phases::Precompile;
+@@ -3023,6 +3028,13 @@ Action *Driver::ConstructPhaseAction(Compilation &C, const ArgList &Args,
      }
      return C.MakeAction<PrecompileJobAction>(Input, OutputTy);
    }
 +  case phases::FortranFrontend: {
++    if (Args.hasArg(options::OPT_fsyntax_only))
++      return C.MakeAction<FortranFrontendJobAction>(Input,
++                                                    types::TY_Nothing);
 +    return C.MakeAction<FortranFrontendJobAction>(Input,
-+                                               types::TY_LLVM_IR);
++                                                  types::TY_LLVM_IR);
 +  }
    case phases::Compile: {
      if (Args.hasArg(options::OPT_fsyntax_only))
        return C.MakeAction<CompileJobAction>(Input, types::TY_Nothing);
 diff --git a/lib/Driver/Phases.cpp b/lib/Driver/Phases.cpp
-index 7ae2708..5f5e206 100644
+index 7ae270857f4..5f5e206f7d9 100644
 --- a/lib/Driver/Phases.cpp
 +++ b/lib/Driver/Phases.cpp
 @@ -17,6 +17,7 @@ const char *phases::getPhaseName(ID Id) {
@@ -511,62 +502,109 @@ index 7ae2708..5f5e206 100644
    case Compile: return "compiler";
    case Backend: return "backend";
    case Assemble: return "assembler";
---- a/lib/Driver/ToolChains/Clang.h	2017-07-20 00:15:17.674451774 +0200
-+++ b/lib/Driver/ToolChains/Clang.h	2017-07-20 00:15:57.770383556 +0200
-@@ -105,6 +105,24 @@
-                     const char *LinkingOutput) const override;
- };
+diff --git a/lib/Driver/ToolChain.cpp b/lib/Driver/ToolChain.cpp
+index f96a1182e3c..eab990e236a 100644
+--- a/lib/Driver/ToolChain.cpp
++++ b/lib/Driver/ToolChain.cpp
+@@ -11,6 +11,7 @@
+ #include "ToolChains/CommonArgs.h"
+ #include "ToolChains/Arch/ARM.h"
+ #include "ToolChains/Clang.h"
++#include "ToolChains/Flang.h"
+ #include "clang/Basic/ObjCRuntime.h"
+ #include "clang/Basic/VirtualFileSystem.h"
+ #include "clang/Config/config.h"
+@@ -137,6 +138,7 @@ const DriverSuffix *FindDriverSuffix(StringRef ProgName, size_t &Pos) {
+       {"cpp", "--driver-mode=cpp"},
+       {"cl", "--driver-mode=cl"},
+       {"++", "--driver-mode=g++"},
++      {"flang", "--driver-mode=fortran"},
+   };
  
-+/// \brief Flang Fortran frontend
-+class LLVM_LIBRARY_VISIBILITY FlangFrontend : public Tool {
-+public:
-+  FlangFrontend(const ToolChain &TC)
-+      : Tool("flang:frontend",
-+             "Fortran frontend to LLVM", TC,
-+             RF_Full) {}
-+
-+  bool hasGoodDiagnostics() const override { return true; }
-+  bool hasIntegratedAssembler() const override { return false; }
-+  bool hasIntegratedCPP() const override { return false; }
-+
-+  void ConstructJob(Compilation &C, const JobAction &JA,
-+                    const InputInfo &Output, const InputInfoList &Inputs,
-+                    const llvm::opt::ArgList &TCArgs,
-+                    const char *LinkingOutput) const override;
-+};
-+
- /// \brief Clang integrated assembler tool.
- class LLVM_LIBRARY_VISIBILITY ClangAs : public Tool {
- public:
---- a/lib/Driver/ToolChains/Gnu.cpp	2017-07-20 00:17:33.563219686 +0200
-+++ b/lib/Driver/ToolChains/Gnu.cpp	2017-07-20 00:18:14.211150392 +0200
-@@ -567,6 +567,18 @@
-   // The profile runtime also needs access to system libraries.
-   getToolChain().addProfileRTLibs(Args, CmdArgs);
+   for (size_t i = 0; i < llvm::array_lengthof(DriverSuffixes); ++i) {
+@@ -255,6 +257,12 @@ Tool *ToolChain::getAssemble() const {
+   return Assemble.get();
+ }
  
-+  // Add Fortran runtime libraries
-+  if (D.IsFortranMode() && !Args.hasArg(options::OPT_nostdlib) &&
-+      !Args.hasArg(options::OPT_noFlangLibs)) {
-+    ToolChain.AddFortranStdlibLibArgs(Args, CmdArgs);
-+  } else {
-+  // Claim "no Flang libraries" arguments if any
-+    for (auto Arg : Args.filtered(options::OPT_noFlangLibs)) {
-+      Arg->claim();
++Tool *ToolChain::getFlangFrontend() const {
++  if (!FlangFrontend)
++    FlangFrontend.reset(new tools::FlangFrontend(*this));
++  return FlangFrontend.get();
++}
++
+ Tool *ToolChain::getClangAs() const {
+   if (!Assemble)
+     Assemble.reset(new tools::ClangAs(*this));
+@@ -301,6 +309,9 @@ Tool *ToolChain::getTool(Action::ActionClass AC) const {
+   case Action::OffloadBundlingJobClass:
+   case Action::OffloadUnbundlingJobClass:
+     return getOffloadBundler();
++
++  case Action::FortranFrontendJobClass:
++    return getFlangFrontend();
+   }
+ 
+   llvm_unreachable("Invalid tool kind.");
+@@ -749,6 +760,49 @@ void ToolChain::AddCCKextLibArgs(const ArgList &Args,
+   CmdArgs.push_back("-lcc_kext");
+ }
+ 
++void ToolChain::AddFortranStdlibLibArgs(const ArgList &Args,
++                                    ArgStringList &CmdArgs) const {
++ bool staticFlangLibs = false;
++ bool useOpenMP = false;
++
++  if (Args.hasArg(options::OPT_staticFlangLibs)) {
++    for (auto *A: Args.filtered(options::OPT_staticFlangLibs)) {
++      A->claim();
++      staticFlangLibs = true;
 +    }
 +  }
 +
++  Arg *A = Args.getLastArg(options::OPT_mp, options::OPT_nomp,
++                           options::OPT_fopenmp, options::OPT_fno_openmp);
++  if (A &&
++      (A->getOption().matches(options::OPT_mp) ||
++       A->getOption().matches(options::OPT_fopenmp))) {
++      useOpenMP = true;
++  }
 +
-   if (D.CCCIsCXX() &&
-       !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
-     bool OnlyLibstdcxxStatic = Args.hasArg(options::OPT_static_libstdcxx) &&
---- a/lib/Driver/ToolChains/CommonArgs.cpp	2017-07-20 00:21:09.090850242 +0200
-+++ b/lib/Driver/ToolChains/CommonArgs.cpp	2017-07-20 00:23:43.449586121 +0200
-@@ -62,6 +62,22 @@
-     Paths.push_back(Path.str());
- }
++  if (staticFlangLibs) {
++    CmdArgs.push_back("-Bstatic");
++  }
++  CmdArgs.push_back("-lflang");
++  CmdArgs.push_back("-lflangrti");
++  if( useOpenMP ) {
++    CmdArgs.push_back("-lomp");
++  }
++  else {
++    CmdArgs.push_back("-lompstub");
++  }
++  if( staticFlangLibs ) {
++    CmdArgs.push_back("-Bdynamic");
++  }
++
++  CmdArgs.push_back("-lm");
++  CmdArgs.push_back("-lrt");
++
++  // Allways link Fortran executables with Pthreads
++  CmdArgs.push_back("-lpthread");
++
++}
++
+ bool ToolChain::AddFastMathRuntimeIfAvailable(const ArgList &Args,
+                                               ArgStringList &CmdArgs) const {
+   // Do not check for -fno-fast-math or -fno-unsafe-math when -Ofast passed
+diff --git a/lib/Driver/ToolChains/CommonArgs.cpp b/lib/Driver/ToolChains/CommonArgs.cpp
+index f26880123d8..535ae12193a 100644
+--- a/lib/Driver/ToolChains/CommonArgs.cpp
++++ b/lib/Driver/ToolChains/CommonArgs.cpp
+@@ -56,6 +56,23 @@ using namespace clang::driver::tools;
+ using namespace clang;
+ using namespace llvm::opt;
  
-+/// \brief Determine if Fortran link libraries are needed
-+static bool needFortranLibs(const Driver &D, const ArgList &Args) {
++/// \brief Determine if Fortran link libraies are needed
++bool tools::needFortranLibs(const Driver &D, const ArgList &Args) {
 +  if (D.IsFortranMode() && !Args.hasArg(options::OPT_nostdlib) &&
 +      !Args.hasArg(options::OPT_noFlangLibs)) {
 +    return true;
@@ -578,13 +616,14 @@ index 7ae2708..5f5e206 100644
 +/// \brief Determine if Fortran "main" object is needed
 +static bool needFortranMain(const Driver &D, const ArgList &Args) {
 +  return (needFortranLibs(D, Args)
-+       && !Args.hasArg(options::OPT_no_fortran_main));
++       && (!Args.hasArg(options::OPT_Mnomain) ||
++           !Args.hasArg(options::OPT_no_fortran_main)));
 +}
 +
- void tools::handleTargetFeaturesGroup(const ArgList &Args,
-                                       std::vector<StringRef> &Features,
-                                       OptSpecifier Group) {
-@@ -138,6 +154,7 @@
+ void tools::addPathIfExists(const Driver &D, const Twine &Path,
+                             ToolChain::path_list &Paths) {
+   if (D.getVFS().exists(Path))
+@@ -138,6 +155,7 @@ void tools::AddLinkerInputs(const ToolChain &TC, const InputInfoList &Inputs,
                              const ArgList &Args, ArgStringList &CmdArgs,
                              const JobAction &JA) {
    const Driver &D = TC.getDriver();
@@ -592,7 +631,7 @@ index 7ae2708..5f5e206 100644
  
    // Add extra linker input arguments which are not treated as inputs
    // (constructed via -Xarch_).
-@@ -162,6 +179,14 @@
+@@ -162,6 +180,14 @@ void tools::AddLinkerInputs(const ToolChain &TC, const InputInfoList &Inputs,
        continue;
      }
  
@@ -607,7 +646,7 @@ index 7ae2708..5f5e206 100644
      // Otherwise, this is a linker input argument.
      const Arg &A = II.getInputArg();
  
-@@ -179,6 +204,15 @@
+@@ -179,6 +205,15 @@ void tools::AddLinkerInputs(const ToolChain &TC, const InputInfoList &Inputs,
      }
    }
  
@@ -616,116 +655,81 @@ index 7ae2708..5f5e206 100644
 +  }
 +
 +  // Claim "no Fortran main" arguments
-+  for (auto Arg : Args.filtered(options::OPT_no_fortran_main)) {
++  for (auto Arg : Args.filtered(options::OPT_no_fortran_main, options::OPT_Mnomain)) {
 +    Arg->claim();
 +  }
 +
    // LIBRARY_PATH - included following the user specified library paths.
    //                and only supported on native toolchains.
    if (!TC.isCrossCompiling()) {
---- a/lib/Driver/ToolChains/Linux.cpp	2017-07-20 00:25:39.954386863 +0200
-+++ b/lib/Driver/ToolChains/Linux.cpp	2017-07-20 00:26:59.418250372 +0200
-@@ -418,6 +418,76 @@
-   return "/" + LibDir + "/" + Loader;
- }
+diff --git a/lib/Driver/ToolChains/CommonArgs.h b/lib/Driver/ToolChains/CommonArgs.h
+index 012f5b9f87a..6e1ed090611 100644
+--- a/lib/Driver/ToolChains/CommonArgs.h
++++ b/lib/Driver/ToolChains/CommonArgs.h
+@@ -20,6 +20,8 @@ namespace clang {
+ namespace driver {
+ namespace tools {
  
-+/// Convert path list to Fortran frontend argument
-+static void AddFlangSysIncludeArg(const ArgList &DriverArgs,
-+                                  ArgStringList &F901Args,
-+                                  ToolChain::path_list IncludePathList) {
-+  std::string ArgValue; // Path argument value
++bool needFortranLibs(const Driver &D, const llvm::opt::ArgList &Args);
 +
-+  // Make up argument value consisting of paths separated by colons
-+  bool first = true;
-+  for (auto P : IncludePathList) {
-+    if (first) {
-+      first = false;
-+    } else {
-+      ArgValue += ":";
-+    }
-+    ArgValue += P;
-+  }
-+
-+  // Add the argument
-+  F901Args.push_back("-stdinc");
-+  F901Args.push_back(DriverArgs.MakeArgString(ArgValue));
-+}
-+
-+void Linux::AddFlangSystemIncludeArgs(const ArgList &DriverArgs,
-+                                      ArgStringList &F901Args) const {
-+  path_list IncludePathList;
-+  const Driver &D = getDriver();
-+  std::string SysRoot = computeSysRoot();
-+
-+  if (DriverArgs.hasArg(options::OPT_nostdinc))
-+    return;
-+
-+  {
-+    SmallString<128> P(D.InstalledDir);
-+    llvm::sys::path::append(P, "../include");
-+    IncludePathList.push_back(P.str());
-+  }
-+
-+  if (!DriverArgs.hasArg(options::OPT_nostdlibinc))
-+    IncludePathList.push_back(SysRoot + "/usr/local/include");
-+
-+  if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
-+    SmallString<128> P(D.ResourceDir);
-+    llvm::sys::path::append(P, "include");
-+    IncludePathList.push_back(P.str());
-+  }
-+
-+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
-+    AddFlangSysIncludeArg(DriverArgs, F901Args, IncludePathList);
-+    return;
-+  }
-+
-+  // Check for configure-time C include directories.
-+  StringRef CIncludeDirs(C_INCLUDE_DIRS);
-+  if (CIncludeDirs != "") {
-+    SmallVector<StringRef, 5> dirs;
-+    CIncludeDirs.split(dirs, ":");
-+    for (StringRef dir : dirs) {
-+      StringRef Prefix =
-+          llvm::sys::path::is_absolute(dir) ? StringRef(SysRoot) : "";
-+      IncludePathList.push_back(Prefix.str() + dir.str());
-+    }
-+    AddFlangSysIncludeArg(DriverArgs, F901Args, IncludePathList);
-+    return;
-+  }
-+
-+  IncludePathList.push_back(SysRoot + "/usr/include");
-+
-+  AddFlangSysIncludeArg(DriverArgs, F901Args, IncludePathList);
-+}
-+
- void Linux::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
-                                       ArgStringList &CC1Args) const {
-   const Driver &D = getDriver();
---- a/lib/Driver/ToolChains/Linux.h	2017-07-20 00:27:27.251202654 +0200
-+++ b/lib/Driver/ToolChains/Linux.h	2017-07-20 00:27:53.346157780 +0200
-@@ -28,6 +28,9 @@
-   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                             llvm::opt::ArgStringList &CC1Args) const override;
-   std::string findLibCxxIncludePath() const override;
-+  void
-+  AddFlangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-+                            llvm::opt::ArgStringList &F901Args) const override;
-   void addLibStdCxxIncludePaths(
-       const llvm::opt::ArgList &DriverArgs,
-       llvm::opt::ArgStringList &CC1Args) const override;
---- a/lib/Driver/ToolChains/Clang.cpp	2017-07-20 00:18:31.299121057 +0200
-+++ b/lib/Driver/ToolChains/Clang.cpp	2017-07-20 00:20:16.323941178 +0200
-@@ -1897,6 +1898,750 @@
-   }
- }
+ void addPathIfExists(const Driver &D, const Twine &Path,
+                      ToolChain::path_list &Paths);
  
+diff --git a/lib/Driver/ToolChains/Flang.cpp b/lib/Driver/ToolChains/Flang.cpp
+new file mode 100644
+index 00000000000..eb619a860e9
+--- /dev/null
++++ b/lib/Driver/ToolChains/Flang.cpp
+@@ -0,0 +1,851 @@
++//===--- Flang.cpp - Flang+LLVM ToolChain Implementations -------*- C++ -*-===//
++//
++//                     The LLVM Compiler Infrastructure
++//
++// This file is distributed under the University of Illinois Open Source
++// License. See LICENSE.TXT for details.
++//
++//===----------------------------------------------------------------------===//
++
++#include "Flang.h"
++#include "CommonArgs.h"
++#include "InputInfo.h"
++#include "clang/Basic/CharInfo.h"
++#include "clang/Basic/LangOptions.h"
++#include "clang/Basic/ObjCRuntime.h"
++#include "clang/Basic/Version.h"
++#include "clang/Config/config.h"
++#include "clang/Driver/DriverDiagnostic.h"
++#include "clang/Driver/Options.h"
++#include "clang/Driver/SanitizerArgs.h"
++#include "clang/Driver/XRayArgs.h"
++#include "llvm/ADT/StringExtras.h"
++#include "llvm/Option/ArgList.h"
++#include "llvm/Support/CodeGen.h"
++#include "llvm/Support/Compression.h"
++#include "llvm/Support/FileSystem.h"
++#include "llvm/Support/Path.h"
++#include "llvm/Support/Process.h"
++#include "llvm/Support/TargetParser.h"
++#include "llvm/Support/YAMLParser.h"
++
++#ifdef LLVM_ON_UNIX
++#include <unistd.h> // For getuid().
++#endif
++
++using namespace clang::driver;
++using namespace clang::driver::tools;
++using namespace clang;
++using namespace llvm::opt;
++
 +void FlangFrontend::ConstructJob(Compilation &C, const JobAction &JA,
 +                         const InputInfo &Output, const InputInfoList &Inputs,
 +                         const ArgList &Args, const char *LinkingOutput) const {
 +  ArgStringList CommonCmdArgs;
 +  ArgStringList UpperCmdArgs;
 +  ArgStringList LowerCmdArgs;
++  SmallString<256> Stem;
++  std::string OutFile;
++  bool NeedIEEE = true;
 +
 +  // Check number of inputs for sanity. We need at least one input.
 +  assert(Inputs.size() >= 1 && "Must have at least one input.");
@@ -736,8 +740,14 @@ index 7ae2708..5f5e206 100644
 +  // Check file type sanity
 +  assert(types::isFortran(InputType) && "Can only accept Fortran");
 +
-+  std::string OutFile = Output.getFilename();
-+  std::string Stem = OutFile.substr(0, OutFile.length()-3); // Strip ".ll"
++  if (Args.hasArg(options::OPT_fsyntax_only)) {
++    // For -fsyntax-only produce temp files only
++    Stem = C.getDriver().GetTemporaryPath("", "");
++  } else {
++    OutFile = Output.getFilename();
++    Stem = llvm::sys::path::filename(OutFile);
++    llvm::sys::path::replace_extension(Stem, "");
++  }
 +
 +  // Add input file name to the compilation line
 +  UpperCmdArgs.push_back(Input.getBaseInput());
@@ -748,15 +758,31 @@ index 7ae2708..5f5e206 100644
 +  C.addTempFile(ILMFile);
 +
 +  /***** Process common args *****/
++
++  // Override IEEE mode if needed
++  if (Args.hasArg(options::OPT_Ofast) ||
++      Args.hasArg(options::OPT_ffast_math) ||
++      Args.hasArg(options::OPT_fno_fast_math) ||
++      Args.hasArg(options::OPT_Kieee_on) ||
++      Args.hasArg(options::OPT_Kieee_off)) {
++    auto A = Args.getLastArg(options::OPT_Ofast,
++                             options::OPT_ffast_math,
++                             options::OPT_fno_fast_math,
++                             options::OPT_Kieee_on,
++                             options::OPT_Kieee_off);
++    auto Opt = A->getOption();
++    if (Opt.matches(options::OPT_Ofast) ||
++        Opt.matches(options::OPT_ffast_math) ||
++        Opt.matches(options::OPT_Kieee_off)) {
++      NeedIEEE = false;
++    }
++  }
++
 +  // -Kieee is on by default
 +  if (!Args.hasArg(options::OPT_Kieee_off)) {
-+    // Enable IEEE arithmetic
 +    CommonCmdArgs.push_back("-y"); // Common: -y 129 2
 +    CommonCmdArgs.push_back("129");
 +    CommonCmdArgs.push_back("2");
-+    // Lower: -ieee 1
-+    LowerCmdArgs.push_back("-ieee");
-+    LowerCmdArgs.push_back("1");
 +    // Lower: -x 6 0x100
 +    LowerCmdArgs.push_back("-x");
 +    LowerCmdArgs.push_back("6");
@@ -777,9 +803,6 @@ index 7ae2708..5f5e206 100644
 +      Arg->claim();
 +    }
 +  } else {
-+    // Lower: -ieee 0
-+    LowerCmdArgs.push_back("-ieee");
-+    LowerCmdArgs.push_back("0");
 +    for (auto Arg : Args.filtered(options::OPT_Kieee_off)) {
 +      Arg->claim();
 +    }
@@ -879,20 +902,20 @@ index 7ae2708..5f5e206 100644
 +    CommonCmdArgs.push_back("2");
 +  }
 +
-+  // Treat backslashes as escape characters, just like C does
-+  for (auto Arg : Args.filtered(options::OPT_Mbackslash_on, options::OPT_backslash_fno)) {
++  // Treat backslashes as regular characters
++  for (auto Arg : Args.filtered(options::OPT_fnobackslash, options::OPT_Mbackslash)) {
 +    Arg->claim();
 +    CommonCmdArgs.push_back("-x");
 +    CommonCmdArgs.push_back("124");
-+    CommonCmdArgs.push_back("0x4");
++    CommonCmdArgs.push_back("0x40");
 +  }
 +
-+  // Treat backslashes as regular characters
-+  for (auto Arg : Args.filtered(options::OPT_Mbackslash_off, options::OPT_backslash_f)) {
++  // Treat backslashes as C-style escape characters
++  for (auto Arg : Args.filtered(options::OPT_fbackslash, options::OPT_Mnobackslash)) {
 +    Arg->claim();
 +    CommonCmdArgs.push_back("-y");
 +    CommonCmdArgs.push_back("124");
-+    CommonCmdArgs.push_back("0x4");
++    CommonCmdArgs.push_back("0x40");
 +  }
 +
 +  // handle OpemMP options
@@ -956,6 +979,7 @@ index 7ae2708..5f5e206 100644
 +
 +  // -g should produce DWARFv2
 +  for (auto Arg : Args.filtered(options::OPT_g_Flag)) {
++    Arg->claim();
 +    CommonCmdArgs.push_back("-x");
 +    CommonCmdArgs.push_back("120");
 +    CommonCmdArgs.push_back("0x200");
@@ -984,23 +1008,25 @@ index 7ae2708..5f5e206 100644
 +  }
 +
 +  // -Minline has no effect
-+  if (Arg *A = Args.getLastArg(options::OPT_Minline)) {
++  if (Arg *A = Args.getLastArg(options::OPT_Minline_on)) {
 +    getToolChain().getDriver().Diag(diag::warn_drv_clang_unsupported)
 +      << A->getAsString(Args);
 +  }
 +
 +  // Handle -fdefault-real-8 (and its alias, -r8) and -fno-default-real-8
-+  if (Arg *A = Args.getLastArg(options::OPT_default_real_8_f,
++  if (Arg *A = Args.getLastArg(options::OPT_r8,
++                               options::OPT_default_real_8_f,
 +                               options::OPT_default_real_8_fno)) {
 +    const char * fl;
 +    // For -f version add -x flag, for -fno add -y
-+    if (A->getOption().matches(options::OPT_default_real_8_f)) {
-+      fl = "-x";
-+    } else {
++    if (A->getOption().matches(options::OPT_default_real_8_fno)) {
 +      fl = "-y";
++    } else {
++      fl = "-x";
 +    }
 +
-+    for (Arg *A : Args.filtered(options::OPT_default_real_8_f,
++    for (Arg *A : Args.filtered(options::OPT_r8,
++                                options::OPT_default_real_8_f,
 +                                options::OPT_default_real_8_fno)) {
 +      A->claim();
 +    }
@@ -1014,14 +1040,21 @@ index 7ae2708..5f5e206 100644
 +  }
 +
 +  // Process and claim -i8/-fdefault-integer-8/-fno-default-integer-8 argument
-+  if (Arg *A = Args.getLastArg(options::OPT_default_integer_8_f,
++  if (Arg *A = Args.getLastArg(options::OPT_i8,
++                               options::OPT_default_integer_8_f,
 +                               options::OPT_default_integer_8_fno)) {
 +    const char * fl;
 +
-+    if (A->getOption().matches(options::OPT_default_integer_8_f)) {
-+      fl = "-x";
-+    } else {
++    if (A->getOption().matches(options::OPT_default_integer_8_fno)) {
 +      fl = "-y";
++    } else {
++      fl = "-x";
++    }
++
++    for (Arg *A : Args.filtered(options::OPT_i8,
++                                options::OPT_default_integer_8_f,
++                                options::OPT_default_integer_8_fno)) {
++      A->claim();
 +    }
 +
 +    UpperCmdArgs.push_back(fl);
@@ -1080,20 +1113,23 @@ index 7ae2708..5f5e206 100644
 +    }
 +  }
 +
-+  // For -Mflushz set -x 129 2 for second part of Fortran frontend
-+  for (Arg *A: Args.filtered(options::OPT_Mflushz_on)) {
-+    A->claim();
-+    LowerCmdArgs.push_back("-x");
-+    LowerCmdArgs.push_back("129");
-+    LowerCmdArgs.push_back("2");
-+  }
-+
-+  // For -Mnoflushz set -y 129 2 for second part of Fortran frontend
-+  for (Arg *A: Args.filtered(options::OPT_Mflushz_off)) {
-+    A->claim();
++  // Flush to zero mode
++  // Disabled by default, but can be enabled by a switch
++  if (Args.hasArg(options::OPT_Mflushz_on)) {
++    // For -Mflushz set -x 129 2 for second part of Fortran frontend
++    for (Arg *A: Args.filtered(options::OPT_Mflushz_on)) {
++      A->claim();
++      LowerCmdArgs.push_back("-x");
++      LowerCmdArgs.push_back("129");
++      LowerCmdArgs.push_back("2");
++    }
++  } else {
 +    LowerCmdArgs.push_back("-y");
 +    LowerCmdArgs.push_back("129");
 +    LowerCmdArgs.push_back("2");
++    for (Arg *A: Args.filtered(options::OPT_Mflushz_off)) {
++      A->claim();
++    }
 +  }
 +
 +  // Enable FMA
@@ -1126,57 +1162,6 @@ index 7ae2708..5f5e206 100644
 +    LowerCmdArgs.push_back("8");
 +  }
 +
-+  // Set a -x flag for second part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Mx_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    LowerCmdArgs.push_back("-x");
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
-+  // Set a -y flag for second part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_My_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    LowerCmdArgs.push_back("-y");
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
-+  // Set a -q (debug) flag for second part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Mq_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    LowerCmdArgs.push_back("-q");
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
-+  // Set a -qq (debug) flag for second part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Mqq_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    LowerCmdArgs.push_back("-qq");
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
-+  // Pass an arbitrary flag for second part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Wm_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    SmallVector<StringRef, 8> PassArgs;
-+    Value.split(PassArgs, StringRef(","));
-+    for (StringRef PassArg : PassArgs) {
-+      LowerCmdArgs.push_back(Args.MakeArgString(PassArg));
-+    }
-+  }
-+
 +  StringRef OptOStr("0");
 +  if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
 +    if (A->getOption().matches(options::OPT_O4)) {
@@ -1200,15 +1185,27 @@ index 7ae2708..5f5e206 100644
 +  }
 +  unsigned OptLevel = std::stoi(OptOStr.str());
 +
-+  if (Arg *A = Args.getLastArg(options::OPT_g_Group)) {
++  if (Args.hasArg(options::OPT_g_Group)) {
 +    // pass -g to lower
 +    LowerCmdArgs.push_back("-debug");
 +  }
 +
-+  if (Arg *A = Args.getLastArg(options::OPT_ffast_math)) {
-+    LowerCmdArgs.push_back("-x");
++  if (Arg *A = Args.getLastArg(options::OPT_ffast_math, options::OPT_fno_fast_math)) {
++    if (A->getOption().matches(options::OPT_ffast_math)) {
++      LowerCmdArgs.push_back("-x");
++    } else {
++      LowerCmdArgs.push_back("-y");
++    }
 +    LowerCmdArgs.push_back("216");
 +    LowerCmdArgs.push_back("1");
++  }
++
++  // IEEE compatibility mode
++  LowerCmdArgs.push_back("-ieee");
++  if (NeedIEEE) {
++    LowerCmdArgs.push_back("1");
++  } else {
++    LowerCmdArgs.push_back("0");
 +  }
 +
 +  /***** Upper part of the Fortran frontend *****/
@@ -1304,11 +1301,15 @@ index 7ae2708..5f5e206 100644
 +      switch (A->getOption().getID()) {
 +        default:
 +          llvm_unreachable("missed a case");
++         case options::OPT_fixed_form_on:
++         case options::OPT_free_form_off:
 +         case options::OPT_Mfixed:
 +         case options::OPT_Mfree_off:
 +         case options::OPT_Mfreeform_off:
 +           UpperCmdArgs.push_back("-nofreeform");
 +           break;
++         case options::OPT_free_form_on:
++         case options::OPT_fixed_form_off:
 +         case options::OPT_Mfree_on:
 +         case options::OPT_Mfreeform_on:
 +           UpperCmdArgs.push_back("-freeform");
@@ -1328,6 +1329,19 @@ index 7ae2708..5f5e206 100644
 +  for (auto Arg : Args.filtered(options::OPT_Mextend)) {
 +    Arg->claim();
 +    UpperCmdArgs.push_back("-extend");
++  }
++
++  for (auto Arg : Args.filtered(options::OPT_ffixed_line_length_VALUE)) {
++    StringRef Value = Arg->getValue();
++    if (Value == "72") {
++      Arg->claim();
++    } else if (Value == "132") {
++      Arg->claim();
++      UpperCmdArgs.push_back("-extend");
++    } else {
++      getToolChain().getDriver().Diag(diag::err_drv_unsupported_fixed_line_length)
++        << Arg->getAsString(Args);
++    }
 +  }
 +
 +  // Add user-defined include directories
@@ -1411,6 +1425,9 @@ index 7ae2708..5f5e206 100644
 +
 +  C.addCommand(llvm::make_unique<Command>(JA, *this, UpperExec, UpperCmdArgs, Inputs));
 +
++  // For -fsyntax-only that is it
++  if (Args.hasArg(options::OPT_fsyntax_only)) return;
++
 +  /***** Lower part of Fortran frontend *****/
 +
 +  const char *LowerExec = Args.MakeArgString(getToolChain().GetProgramPath("flang2"));
@@ -1447,7 +1464,7 @@ index 7ae2708..5f5e206 100644
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("121"); LowerCmdArgs.push_back("0x800");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("54"); LowerCmdArgs.push_back("0x10");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("70"); LowerCmdArgs.push_back("0x40000000");
-+  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("249"); LowerCmdArgs.push_back("40"); // LLVM version
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("249"); LowerCmdArgs.push_back("50"); // LLVM version
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("124"); LowerCmdArgs.push_back("1");
 +  LowerCmdArgs.push_back("-y"); LowerCmdArgs.push_back("163"); LowerCmdArgs.push_back("0xc0000000");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("189"); LowerCmdArgs.push_back("0x10");
@@ -1455,6 +1472,57 @@ index 7ae2708..5f5e206 100644
 +
 +  // Remove "noinline" attriblute
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("183"); LowerCmdArgs.push_back("0x10");
++
++  // Set a -x flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Mx_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -y flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_My_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -q (debug) flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Mq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-q");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -qq (debug) flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Mqq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-qq");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Pass an arbitrary flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Wm_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    SmallVector<StringRef, 8> PassArgs;
++    Value.split(PassArgs, StringRef(","));
++    for (StringRef PassArg : PassArgs) {
++      LowerCmdArgs.push_back(Args.MakeArgString(PassArg));
++    }
++  }
 +
 +  LowerCmdArgs.push_back("-stbfile");
 +  LowerCmdArgs.push_back(STBFile);
@@ -1464,87 +1532,418 @@ index 7ae2708..5f5e206 100644
 +  C.addCommand(llvm::make_unique<Command>(JA, *this, LowerExec, LowerCmdArgs, Inputs));
 +}
 +
- void Clang::ConstructJob(Compilation &C, const JobAction &JA,
-                          const InputInfo &Output, const InputInfoList &Inputs,
-                          const ArgList &Args, const char *LinkingOutput) const {
---- a/lib/Driver/ToolChain.cpp	2017-07-20 09:29:42.166553667 +0200
-+++ b/lib/Driver/ToolChain.cpp	2017-07-20 09:35:39.518943426 +0200
-@@ -130,6 +130,8 @@
-       {"cpp", "--driver-mode=cpp"},
-       {"cl", "--driver-mode=cl"},
-       {"++", "--driver-mode=g++"},
-+      {"flang", "--driver-mode=fortran"},
-+      {"gfortran", "--driver-mode=fortran"},
-   };
- 
-   for (size_t i = 0; i < llvm::array_lengthof(DriverSuffixes); ++i)
-@@ -241,6 +242,12 @@
-   return Assemble.get();
- }
- 
-+Tool *ToolChain::getFlangFrontend() const {
-+  if (!FlangFrontend)
-+    FlangFrontend.reset(new tools::FlangFrontend(*this));
-+  return FlangFrontend.get();
-+}
+diff --git a/lib/Driver/ToolChains/Flang.h b/lib/Driver/ToolChains/Flang.h
+new file mode 100644
+index 00000000000..2c3eb7c895a
+--- /dev/null
++++ b/lib/Driver/ToolChains/Flang.h
+@@ -0,0 +1,50 @@
++//===--- Flang.h - Flang Tool and ToolChain Implementations ====-*- C++ -*-===//
++//
++//                     The LLVM Compiler Infrastructure
++//
++// This file is distributed under the University of Illinois Open Source
++// License. See LICENSE.TXT for details.
++//
++//===----------------------------------------------------------------------===//
 +
- Tool *ToolChain::getClangAs() const {
-   if (!Assemble)
-     Assemble.reset(new tools::ClangAs(*this));
-@@ -287,6 +294,9 @@
-   case Action::OffloadBundlingJobClass:
-   case Action::OffloadUnbundlingJobClass:
-     return getOffloadBundler();
++#ifndef LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_Flang_H
++#define LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_Flang_H
 +
-+  case Action::FortranFrontendJobClass:
-+    return getFlangFrontend();
-   }
- 
-   llvm_unreachable("Invalid tool kind.");
-@@ -676,6 +686,46 @@
-   CmdArgs.push_back("-lcc_kext");
- }
- 
-+void ToolChain::AddFortranStdlibLibArgs(const ArgList &Args,
-+                                    ArgStringList &CmdArgs) const {
-+ bool staticFlangLibs = false;
-+ bool useOpenMP = false;
++#include "MSVC.h"
++#include "clang/Basic/DebugInfoOptions.h"
++#include "clang/Driver/Driver.h"
++#include "clang/Driver/Tool.h"
++#include "clang/Driver/Types.h"
++#include "llvm/ADT/Triple.h"
++#include "llvm/Option/Option.h"
++#include "llvm/Support/raw_ostream.h"
 +
-+  if (Args.hasArg(options::OPT_staticFlangLibs)) {
-+    for (auto *A: Args.filtered(options::OPT_staticFlangLibs)) {
-+      A->claim();
-+      staticFlangLibs = true;
++namespace clang {
++namespace driver {
++
++namespace tools {
++
++/// \brief Flang Fortran frontend
++class LLVM_LIBRARY_VISIBILITY FlangFrontend : public Tool {
++public:
++  FlangFrontend(const ToolChain &TC)
++      : Tool("flang:frontend",
++             "Fortran frontend to LLVM", TC,
++             RF_Full) {}
++
++  bool hasGoodDiagnostics() const override { return true; }
++  bool hasIntegratedAssembler() const override { return false; }
++  bool hasIntegratedCPP() const override { return false; }
++
++  void ConstructJob(Compilation &C, const JobAction &JA,
++                    const InputInfo &Output, const InputInfoList &Inputs,
++                    const llvm::opt::ArgList &TCArgs,
++                    const char *LinkingOutput) const override;
++};
++
++} // end namespace tools
++
++} // end namespace driver
++} // end namespace clang
++
++#endif // LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_CLANG_H
+diff --git a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
+index 7845781f12c..b391ba27ffa 100644
+--- a/lib/Driver/ToolChains/Gnu.cpp
++++ b/lib/Driver/ToolChains/Gnu.cpp
+@@ -465,6 +465,16 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+   // The profile runtime also needs access to system libraries.
+   getToolChain().addProfileRTLibs(Args, CmdArgs);
+ 
++  // Add Fortran runtime libraries
++  if (needFortranLibs(D, Args)) {
++    ToolChain.AddFortranStdlibLibArgs(Args, CmdArgs);
++  } else {
++  // Claim "no Flang libraries" arguments if any
++    for (auto Arg : Args.filtered(options::OPT_noFlangLibs)) {
++      Arg->claim();
 +    }
 +  }
 +
-+  Arg *A = Args.getLastArg(options::OPT_mp, options::OPT_nomp,
-+                           options::OPT_fopenmp, options::OPT_fno_openmp);
-+  if (A &&
-+      (A->getOption().matches(options::OPT_mp) ||
-+       A->getOption().matches(options::OPT_fopenmp))) {
-+      useOpenMP = true;
+   if (D.CCCIsCXX() &&
+       !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
+     if (ToolChain.ShouldLinkCXXStdlib(Args)) {
+diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+index 1301cdf114a..504c29502ac 100644
+--- a/lib/Driver/ToolChains/Linux.cpp
++++ b/lib/Driver/ToolChains/Linux.cpp
+@@ -543,6 +543,194 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+   return "/" + LibDir + "/" + Loader;
+ }
+ 
++/// Convert path list to Fortran frontend argument
++static void AddFlangSysIncludeArg(const ArgList &DriverArgs,
++                                  ArgStringList &Flang1Args,
++                                  ToolChain::path_list IncludePathList) {
++  std::string ArgValue; // Path argument value
++
++  // Make up argument value consisting of paths separated by colons
++  bool first = true;
++  for (auto P : IncludePathList) {
++    if (first) {
++      first = false;
++    } else {
++      ArgValue += ":";
++    }
++    ArgValue += P;
 +  }
 +
-+  if (staticFlangLibs) {
-+    CmdArgs.push_back("-Bstatic");
-+  }
-+  CmdArgs.push_back("-lflang");
-+  CmdArgs.push_back("-lflangrti");
-+  if( useOpenMP ) {
-+    CmdArgs.push_back("-lomp");
-+  }
-+  else {
-+    CmdArgs.push_back("-lompstub");
-+  }
-+  if( staticFlangLibs ) {
-+    CmdArgs.push_back("-Bdynamic");
-+  }
-+
-+  // Allways link Fortran executables with Pthreads
-+  CmdArgs.push_back("-lpthread");
-+
++  // Add the argument
++  Flang1Args.push_back("-stdinc");
++  Flang1Args.push_back(DriverArgs.MakeArgString(ArgValue));
 +}
 +
- bool ToolChain::AddFastMathRuntimeIfAvailable(const ArgList &Args,
-                                               ArgStringList &CmdArgs) const {
-   // Do not check for -fno-fast-math or -fno-unsafe-math when -Ofast passed
++void Linux::AddFlangSystemIncludeArgs(const ArgList &DriverArgs,
++                                      ArgStringList &Flang1Args) const {
++  path_list IncludePathList;
++  const Driver &D = getDriver();
++  std::string SysRoot = computeSysRoot();
++
++  if (DriverArgs.hasArg(options::OPT_nostdinc))
++    return;
++
++  {
++    SmallString<128> P(D.InstalledDir);
++    llvm::sys::path::append(P, "../include");
++    IncludePathList.push_back(P.str());
++  }
++
++  if (!DriverArgs.hasArg(options::OPT_nostdlibinc))
++    IncludePathList.push_back(SysRoot + "/usr/local/include");
++
++  if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
++    SmallString<128> P(D.ResourceDir);
++    llvm::sys::path::append(P, "include");
++    IncludePathList.push_back(P.str());
++  }
++
++  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
++    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
++    return;
++  }
++
++  // Check for configure-time C include directories.
++  StringRef CIncludeDirs(C_INCLUDE_DIRS);
++  if (CIncludeDirs != "") {
++    SmallVector<StringRef, 5> dirs;
++    CIncludeDirs.split(dirs, ":");
++    for (StringRef dir : dirs) {
++      StringRef Prefix =
++          llvm::sys::path::is_absolute(dir) ? StringRef(SysRoot) : "";
++      IncludePathList.push_back(Prefix.str() + dir.str());
++    }
++    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
++    return;
++  }
++
++  // Lacking those, try to detect the correct set of system includes for the
++  // target triple.
++
++  // Add include directories specific to the selected multilib set and multilib.
++  if (GCCInstallation.isValid()) {
++    const auto &Callback = Multilibs.includeDirsCallback();
++    if (Callback) {
++      for (const auto &Path : Callback(GCCInstallation.getMultilib()))
++        addExternCSystemIncludeIfExists(
++            DriverArgs, Flang1Args, GCCInstallation.getInstallPath() + Path);
++    }
++  }
++
++  // Implement generic Debian multiarch support.
++  const StringRef X86_64MultiarchIncludeDirs[] = {
++      "/usr/include/x86_64-linux-gnu",
++
++      // FIXME: These are older forms of multiarch. It's not clear that they're
++      // in use in any released version of Debian, so we should consider
++      // removing them.
++      "/usr/include/i686-linux-gnu/64", "/usr/include/i486-linux-gnu/64"};
++  const StringRef X86MultiarchIncludeDirs[] = {
++      "/usr/include/i386-linux-gnu",
++
++      // FIXME: These are older forms of multiarch. It's not clear that they're
++      // in use in any released version of Debian, so we should consider
++      // removing them.
++      "/usr/include/x86_64-linux-gnu/32", "/usr/include/i686-linux-gnu",
++      "/usr/include/i486-linux-gnu"};
++  const StringRef AArch64MultiarchIncludeDirs[] = {
++      "/usr/include/aarch64-linux-gnu"};
++  const StringRef ARMMultiarchIncludeDirs[] = {
++      "/usr/include/arm-linux-gnueabi"};
++  const StringRef ARMHFMultiarchIncludeDirs[] = {
++      "/usr/include/arm-linux-gnueabihf"};
++  const StringRef MIPSMultiarchIncludeDirs[] = {"/usr/include/mips-linux-gnu"};
++  const StringRef MIPSELMultiarchIncludeDirs[] = {
++      "/usr/include/mipsel-linux-gnu"};
++  const StringRef MIPS64MultiarchIncludeDirs[] = {
++      "/usr/include/mips64-linux-gnu", "/usr/include/mips64-linux-gnuabi64"};
++  const StringRef MIPS64ELMultiarchIncludeDirs[] = {
++      "/usr/include/mips64el-linux-gnu",
++      "/usr/include/mips64el-linux-gnuabi64"};
++  const StringRef PPCMultiarchIncludeDirs[] = {
++      "/usr/include/powerpc-linux-gnu"};
++  const StringRef PPC64MultiarchIncludeDirs[] = {
++      "/usr/include/powerpc64-linux-gnu"};
++  const StringRef PPC64LEMultiarchIncludeDirs[] = {
++      "/usr/include/powerpc64le-linux-gnu"};
++  const StringRef SparcMultiarchIncludeDirs[] = {
++      "/usr/include/sparc-linux-gnu"};
++  const StringRef Sparc64MultiarchIncludeDirs[] = {
++      "/usr/include/sparc64-linux-gnu"};
++  ArrayRef<StringRef> MultiarchIncludeDirs;
++  switch (getTriple().getArch()) {
++  case llvm::Triple::x86_64:
++    MultiarchIncludeDirs = X86_64MultiarchIncludeDirs;
++    break;
++  case llvm::Triple::x86:
++    MultiarchIncludeDirs = X86MultiarchIncludeDirs;
++    break;
++  case llvm::Triple::aarch64:
++  case llvm::Triple::aarch64_be:
++    MultiarchIncludeDirs = AArch64MultiarchIncludeDirs;
++    break;
++  case llvm::Triple::arm:
++    if (getTriple().getEnvironment() == llvm::Triple::GNUEABIHF)
++      MultiarchIncludeDirs = ARMHFMultiarchIncludeDirs;
++    else
++      MultiarchIncludeDirs = ARMMultiarchIncludeDirs;
++    break;
++  case llvm::Triple::mips:
++    MultiarchIncludeDirs = MIPSMultiarchIncludeDirs;
++    break;
++  case llvm::Triple::mipsel:
++    MultiarchIncludeDirs = MIPSELMultiarchIncludeDirs;
++    break;
++  case llvm::Triple::mips64:
++    MultiarchIncludeDirs = MIPS64MultiarchIncludeDirs;
++    break;
++  case llvm::Triple::mips64el:
++    MultiarchIncludeDirs = MIPS64ELMultiarchIncludeDirs;
++    break;
++  case llvm::Triple::ppc:
++    MultiarchIncludeDirs = PPCMultiarchIncludeDirs;
++    break;
++  case llvm::Triple::ppc64:
++    MultiarchIncludeDirs = PPC64MultiarchIncludeDirs;
++    break;
++  case llvm::Triple::ppc64le:
++    MultiarchIncludeDirs = PPC64LEMultiarchIncludeDirs;
++    break;
++  case llvm::Triple::sparc:
++    MultiarchIncludeDirs = SparcMultiarchIncludeDirs;
++    break;
++  case llvm::Triple::sparcv9:
++    MultiarchIncludeDirs = Sparc64MultiarchIncludeDirs;
++    break;
++  default:
++    break;
++  }
++  for (StringRef Dir : MultiarchIncludeDirs) {
++    if (llvm::sys::fs::exists(SysRoot + Dir)) {
++      IncludePathList.push_back(SysRoot + Dir.str());
++      break;
++    }
++  }
++
++  if (getTriple().getOS() == llvm::Triple::RTEMS) {
++    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
++    return;
++  }
++
++  // Add an include of '/include' directly. This isn't provided by default by
++  // system GCCs, but is often used with cross-compiling GCCs, and harmless to
++  // add even when Clang is acting as-if it were a system compiler.
++  IncludePathList.push_back(SysRoot + "/include");
++
++  IncludePathList.push_back(SysRoot + "/usr/include");
++
++  AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
++}
++
+ void Linux::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
+                                       ArgStringList &CC1Args) const {
+   const Driver &D = getDriver();
+diff --git a/lib/Driver/ToolChains/Linux.h b/lib/Driver/ToolChains/Linux.h
+index 9778c1832cc..34e41752d93 100644
+--- a/lib/Driver/ToolChains/Linux.h
++++ b/lib/Driver/ToolChains/Linux.h
+@@ -27,6 +27,9 @@ class LLVM_LIBRARY_VISIBILITY Linux : public Generic_ELF {
+   void
+   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
+                             llvm::opt::ArgStringList &CC1Args) const override;
++  void
++  AddFlangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
++                            llvm::opt::ArgStringList &Flang1Args) const override;
+   std::string findLibCxxIncludePath() const override;
+   void addLibStdCxxIncludePaths(
+       const llvm::opt::ArgList &DriverArgs,
+diff --git a/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
+old mode 100644
+new mode 100755
+index ab63f0e81b1..526db0fabef
+--- a/lib/Driver/Types.cpp
++++ b/lib/Driver/Types.cpp
+@@ -99,6 +99,8 @@ bool types::isAcceptedByClang(ID Id) {
+ 
+   case TY_Asm:
+   case TY_C: case TY_PP_C:
++  case TY_F_FreeForm: case TY_PP_F_FreeForm:
++  case TY_F_FixedForm: case TY_PP_F_FixedForm:
+   case TY_CL:
+   case TY_CUDA: case TY_PP_CUDA:
+   case TY_CUDA_DEVICE:
+@@ -117,6 +119,33 @@ bool types::isAcceptedByClang(ID Id) {
+   }
+ }
+ 
++bool types::isFortran(ID Id) {
++  switch (Id) {
++  default:
++    return false;
++
++  case TY_F_FreeForm:
++  case TY_PP_F_FreeForm:
++  case TY_F_FixedForm:
++  case TY_PP_F_FixedForm:
++    return true;
++  }
++}
++
++bool types::isFreeFormFortran(ID Id) {
++  if (!isFortran(Id))
++    return false;
++
++  return (Id == TY_F_FreeForm || Id == TY_PP_F_FreeForm);
++}
++
++bool types::isFixedFormFortran(ID Id) {
++  if (!isFortran(Id))
++    return false;
++
++  return (Id == TY_F_FixedForm || Id == TY_PP_F_FixedForm);
++}
++
+ bool types::isObjC(ID Id) {
+   switch (Id) {
+   default:
+@@ -178,8 +207,8 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
+   return llvm::StringSwitch<types::ID>(Ext)
+            .Case("c", TY_C)
+            .Case("C", TY_CXX)
+-           .Case("F", TY_Fortran)
+-           .Case("f", TY_PP_Fortran)
++           .Case("F", TY_F_FixedForm)
++           .Case("f", TY_PP_F_FixedForm)
+            .Case("h", TY_CHeader)
+            .Case("H", TY_CXXHeader)
+            .Case("i", TY_PP_C)
+@@ -212,18 +241,22 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
+            .Case("cui", TY_PP_CUDA)
+            .Case("cxx", TY_CXX)
+            .Case("CXX", TY_CXX)
+-           .Case("F90", TY_Fortran)
+-           .Case("f90", TY_PP_Fortran)
+-           .Case("F95", TY_Fortran)
+-           .Case("f95", TY_PP_Fortran)
+-           .Case("for", TY_PP_Fortran)
+-           .Case("FOR", TY_PP_Fortran)
+-           .Case("fpp", TY_Fortran)
+-           .Case("FPP", TY_Fortran)
+            .Case("gch", TY_PCH)
+            .Case("hpp", TY_CXXHeader)
+            .Case("iim", TY_PP_CXXModule)
+            .Case("lib", TY_Object)
++           .Case("for", TY_PP_F_FixedForm)
++           .Case("FOR", TY_PP_F_FixedForm)
++           .Case("fpp", TY_F_FixedForm)
++           .Case("FPP", TY_F_FixedForm)
++           .Case("f90", TY_PP_F_FreeForm)
++           .Case("f95", TY_PP_F_FreeForm)
++           .Case("f03", TY_PP_F_FreeForm)
++           .Case("f08", TY_PP_F_FreeForm)
++           .Case("F90", TY_F_FreeForm)
++           .Case("F95", TY_F_FreeForm)
++           .Case("F03", TY_F_FreeForm)
++           .Case("F08", TY_F_FreeForm)
+            .Case("mii", TY_PP_ObjCXX)
+            .Case("obj", TY_Object)
+            .Case("pch", TY_PCH)
+@@ -248,7 +281,9 @@ types::ID types::lookupTypeForTypeSpecifier(const char *Name) {
+ // FIXME: Why don't we just put this list in the defs file, eh.
+ void types::getCompilationPhases(ID Id, llvm::SmallVectorImpl<phases::ID> &P) {
+   if (Id != TY_Object) {
+-    if (getPreprocessedType(Id) != TY_INVALID) {
++    // Delegate preprocessing to the "upper" part of Fortran compiler,
++    // preprocess for other preprocessable inputs
++    if (getPreprocessedType(Id) != TY_INVALID && !isFortran(Id)) {
+       P.push_back(phases::Preprocess);
+     }
+ 
+@@ -258,6 +293,9 @@ void types::getCompilationPhases(ID Id, llvm::SmallVectorImpl<phases::ID> &P) {
+ 
+     if (!onlyPrecompileType(Id)) {
+       if (!onlyAssembleType(Id)) {
++        if (isFortran(Id)) {
++          P.push_back(phases::FortranFrontend);
++        }
+         P.push_back(phases::Compile);
+         P.push_back(phases::Backend);
+       }
+diff --git a/tools/driver/CMakeLists.txt b/tools/driver/CMakeLists.txt
+index 22a498422ae..fd9d5b78b47 100644
+--- a/tools/driver/CMakeLists.txt
++++ b/tools/driver/CMakeLists.txt
+@@ -60,7 +60,7 @@ endif()
+ add_dependencies(clang clang-headers)
+ 
+ if(NOT CLANG_LINKS_TO_CREATE)
+-  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp)
++  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp flang)
+ 
+   if (MSVC)
+     list(APPEND CLANG_LINKS_TO_CREATE ../msbuild-bin/cl)
