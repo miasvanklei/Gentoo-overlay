@@ -35,7 +35,7 @@ diff --git a/src/polkitbackend/polkitbackendjsauthority.cpp b/src/polkitbackend/
 index bc2fe22..b84c110 100644
 --- a/src/polkitbackend/polkitbackendjsauthority.cpp
 +++ b/src/polkitbackend/polkitbackendjsauthority.cpp
-@@ -29,6 +29,7 @@
+@@ -33,6 +33,7 @@
  #include <glib/gstdio.h>
  #include <locale.h>
  #include <glib/gi18n-lib.h>
@@ -43,28 +43,26 @@ index bc2fe22..b84c110 100644
  
  #include <polkit/polkit.h>
  #include "polkitbackendjsauthority.h"
-@@ -1486,8 +1486,6 @@
+@@ -1493,12 +1494,16 @@
+ {
+   /* PolkitBackendJsAuthority *authority = POLKIT_BACKEND_JS_AUTHORITY (JS_GetContextPrivate (cx)); */
    bool ret = false;
-   JSString *user_str;
-   JSString *netgroup_str;
 -  char *user;
 -  char *netgroup;
    bool is_in_netgroup = false;
-   JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
  
-@@ -1497,6 +1495,11 @@
-   user_str = JS::ToString(cx, args[0]);
-   netgroup_str = JS::ToString(cx, args[1]);
+   JS::CallArgs args = JS::CallArgsFromVp (argc, vp);
  
++
 +#if defined(HAVE_INNETGR)
 +  {
-+  char *user;
 +  char *netgroup;
++  char *user;
 +
-   user = JS_EncodeString (cx, user_str);
-   netgroup = JS_EncodeString (cx, netgroup_str);
+   user = JS_EncodeString (cx, args[0].toString());
+   netgroup = JS_EncodeString (cx, args[1].toString());
  
-@@ -1507,6 +1509,8 @@
+@@ -1512,6 +1517,8 @@
  
    JS_free (cx, netgroup);
    JS_free (cx, user);

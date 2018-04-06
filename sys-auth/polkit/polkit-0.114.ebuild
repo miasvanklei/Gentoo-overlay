@@ -3,22 +3,21 @@
 
 EAPI=6
 
-inherit autotools pam pax-utils systemd user xdg-utils git-r3
+inherit autotools pam pax-utils systemd user xdg-utils
 
 DESCRIPTION="Policy framework for controlling privileges for system-wide services"
 HOMEPAGE="https://www.freedesktop.org/wiki/Software/polkit"
-SRC_URI=""
-EGIT_REPO_URI="https://anongit.freedesktop.org/git/polkit.git"
+SRC_URI="https://www.freedesktop.org/software/${PN}/releases/${P}.tar.gz"
 
 LICENSE="LGPL-2"
 SLOT="0"
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sh ~sparc ~x86"
+KEYWORDS="alpha amd64 arm ~arm64 hppa ia64 ~mips ppc ppc64 ~s390 ~sh sparc x86"
 IUSE="elogind examples gtk +introspection jit kde nls pam selinux systemd test"
 
 REQUIRED_USE="?? ( elogind systemd )"
 
 CDEPEND="
-	dev-lang/spidermonkey:38[-debug]
+	dev-lang/spidermonkey:52[-debug]
 	dev-libs/glib:2
 	dev-libs/expat
 	elogind? ( sys-auth/elogind )
@@ -32,9 +31,9 @@ CDEPEND="
 DEPEND="${CDEPEND}
 	app-text/docbook-xml-dtd:4.1.2
 	app-text/docbook-xsl-stylesheets
+	dev-libs/gobject-introspection-common
 	dev-libs/libxslt
 	dev-util/gtk-doc-am
-	dev-util/gtk-doc
 	dev-util/intltool
 	sys-devel/gettext
 	virtual/pkgconfig
@@ -54,9 +53,7 @@ PDEPEND="
 DOCS=( docs/TODO HACKING NEWS README )
 
 PATCHES=(
-	"${FILESDIR}"/port-to-mozjs38.patch
-	"${FILESDIR}"/${PN}-0.114-elogind.patch
-	"${FILESDIR}"/${PN}-make-netgroup-support-optional.patch
+       "${FILESDIR}"/${PN}-make-netgroup-support-optional.patch
 )
 
 QA_MULTILIB_PATHS="
@@ -79,10 +76,10 @@ src_prepare() {
 	sed -i -e 's|unix-group:wheel|unix-user:0|' src/polkitbackend/*-default.rules || die #401513
 
 	# Workaround upstream hack around standard gtk-doc behavior, bug #552170
-#	sed -i -e 's/@ENABLE_GTK_DOC_TRUE@\(TARGET_DIR\)/\1/' \
-#		-e '/install-data-local:/,/uninstall-local:/ s/@ENABLE_GTK_DOC_TRUE@//' \
-#		-e 's/@ENABLE_GTK_DOC_FALSE@install-data-local://' \
-#		docs/polkit/Makefile.in || die
+	sed -i -e 's/@ENABLE_GTK_DOC_TRUE@\(TARGET_DIR\)/\1/' \
+		-e '/install-data-local:/,/uninstall-local:/ s/@ENABLE_GTK_DOC_TRUE@//' \
+		-e 's/@ENABLE_GTK_DOC_FALSE@install-data-local://' \
+		docs/polkit/Makefile.in || die
 
 	# disable broken test - bug #624022
 	sed -i -e "/^SUBDIRS/s/polkitbackend//" test/Makefile.am || die
