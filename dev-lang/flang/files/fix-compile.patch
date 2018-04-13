@@ -11,6 +11,24 @@ index bc8b0b6..86335e9 100644
  #include "stdioInterf.h"
  #include "fioMacros.h"
  
+diff --git a/runtime/flang/cdexp.c b/runtime/flang/cdexp.c
+--- a/runtime/flang/cdexp.c
++++ b/runtime/flang/cdexp.c
+@@ -19,3 +19,14 @@
+ 
+ /* For X86-64 architectures, cdexp is defined in fastmath.s */
+ 
++ZMPLXFUNC_Z(__mth_i_cdexp)
++{
++  ZMPLXARGS_Z;
++  double x, y, z;
++  x = exp(real);
++  __mth_dsincos(imag, &z, &y);
++  y *= x;
++  z *= x;
++  ZRETURN_D_D(y, z); /* should leave y & z in appropriate
++                  * registers */
++}
 diff --git a/runtime/flangrti/trace_lin.c b/runtime/flangrti/trace_lin.c
 index a316326..0670a67 100644
 --- a/runtime/flangrti/trace_lin.c
