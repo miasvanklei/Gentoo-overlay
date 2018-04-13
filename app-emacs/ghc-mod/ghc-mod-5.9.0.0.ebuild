@@ -29,7 +29,7 @@ RDEPEND=">=dev-haskell/cabal-helper-0.7.0.0:=[profile?] <dev-haskell/cabal-helpe
 	>=dev-haskell/haskell-src-exts-1.18:=[profile?] <dev-haskell/haskell-src-exts-1.20:=[profile?]
 	>=dev-haskell/hlint-2.0.8:=[profile?] <dev-haskell/hlint-2.1:=[profile?]
 	>=dev-haskell/monad-control-1:=[profile?] <dev-haskell/monad-control-1.1:=[profile?]
-	>=dev-haskell/monad-journal-0.4:=[profile?] <dev-haskell/monad-journal-0.8:=[profile?]
+	>=dev-haskell/monad-journal-0.4:=[profile?] <dev-haskell/monad-journal-0.9:=[profile?]
 	dev-haskell/mtl:=[profile?]
 	dev-haskell/old-time:=[profile?]
 	>=dev-haskell/optparse-applicative-0.14.0.0:=[profile?] <dev-haskell/optparse-applicative-0.15:=[profile?]

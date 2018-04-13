@@ -17,7 +17,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE="brittany-dev-lib"
 
-RDEPEND=">=dev-haskell/aeson-1.0.1.0:=[profile?] <dev-haskell/aeson-1.3:=[profile?]
+RDEPEND=">=dev-haskell/aeson-1.0.1.0:=[profile?] <dev-haskell/aeson-1.4:=[profile?]
 	>=dev-haskell/butcher-1.3:=[profile?] <dev-haskell/butcher-1.4:=[profile?]
 	>=dev-haskell/cmdargs-0.10.14:=[profile?] <dev-haskell/cmdargs-0.11:=[profile?]
 	>=dev-haskell/czipwith-1.0.0.0:=[profile?] <dev-haskell/czipwith-1.1:=[profile?]
@@ -38,12 +38,19 @@ RDEPEND=">=dev-haskell/aeson-1.0.1.0:=[profile?] <dev-haskell/aeson-1.3:=[profil
 	>=dev-haskell/unsafe-0.0:=[profile?] <dev-haskell/unsafe-0.1:=[profile?]
 	>=dev-haskell/yaml-0.8.18:=[profile?] <dev-haskell/yaml-0.9:=[profile?]
 	>=dev-lang/ghc-8.0.1:=
-	!brittany-dev-lib? ( >=dev-haskell/hspec-2.4.1:=[profile?] <dev-haskell/hspec-2.5:=[profile?] )
+	!brittany-dev-lib? ( >=dev-haskell/hspec-2.4.1:=[profile?] <dev-haskell/hspec-2.6:=[profile?] )
 "
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.24.2.0
 	test? ( !brittany-dev-lib? ( >=dev-haskell/parsec-3.1.11 <dev-haskell/parsec-3.2 ) )
 "
+
+src_prepare() {
+        default
+        cabal_chdeps \
+                'aeson >=1.0.1.0 && <1.3' 'aeson >=1.0.1.0 && <1.4' \
+		'hspec >=2.4.1 && <2.5' 'hspec >=2.4.1 && <2.6'
+}
 
 src_configure() {
 	haskell-cabal_src_configure \
