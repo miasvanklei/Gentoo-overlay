@@ -1,0 +1,44 @@
+--- src/Language/Haskell/LSP/TH/DataTypesJSON.hs.bak	2018-04-16 00:47:06.707781821 +0200
++++ src/Language/Haskell/LSP/TH/DataTypesJSON.hs	2018-04-16 00:49:07.898562457 +0200
+@@ -8,6 +8,7 @@
+ {-# LANGUAGE OverloadedStrings          #-}
+ {-# LANGUAGE TemplateHaskell            #-}
+ {-# LANGUAGE TypeSynonymInstances       #-}
++{-# LANGUAGE CPP                        #-}
+ 
+ module Language.Haskell.LSP.TH.DataTypesJSON where
+ 
+@@ -17,7 +18,9 @@
+ import           Data.Aeson.Types
+ import           Data.Hashable
+ import qualified Data.HashMap.Strict                        as H
+-import           Data.Monoid                                ((<>))
++#if __GLASGOW_HASKELL__ < 804
++import Data.Semigroup
++#endif
+ import           Data.Text                                  (Text)
+ import qualified Data.Text                                  as T
+ import           System.IO                                  (FilePath)
+@@ -32,7 +35,7 @@
+ -- | This data type is used to host a FromJSON instance for the encoding used by
+ -- elisp, where an empty list shows up as "null"
+ newtype List a = List [a]
+-                deriving (Show,Read,Eq,Monoid,Functor,Foldable,Traversable)
++                deriving (Show,Read,Eq,Semigroup,Monoid,Functor,Foldable,Traversable)
+ 
+ instance (A.ToJSON a) => A.ToJSON (List a) where
+   toJSON (List ls) = toJSON ls
+@@ -795,9 +798,12 @@
+     , _documentChanges :: Maybe (List TextDocumentEdit)
+     } deriving (Show, Read, Eq)
+ 
++instance Semigroup WorkspaceEdit where
++  (WorkspaceEdit a b) <> (WorkspaceEdit c d) = WorkspaceEdit (a <> c) (b <> d)
++
+ instance Monoid WorkspaceEdit where
+   mempty = WorkspaceEdit Nothing Nothing
+-  mappend (WorkspaceEdit a b) (WorkspaceEdit c d) = WorkspaceEdit (a <> c) (b <> d)
++  mappend = (<>)
+ 
+ deriveJSON lspOptions ''WorkspaceEdit
+ makeFieldsNoPrefix ''WorkspaceEdit

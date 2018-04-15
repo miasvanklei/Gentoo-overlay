@@ -1,0 +1,21 @@
+--- a/src/Djinn/HTypes.hs	2018-04-15 21:22:13.339780384 +0200
++++ b/src/Djinn/HTypes.hs	2018-04-15 21:23:21.649659145 +0200
+@@ -33,7 +33,8 @@
+ import Text.ParserCombinators.ReadP
+ import Text.PrettyPrint.HughesPJ (Doc, comma, fsep, nest, parens,
+                                   punctuate, renderStyle, sep,
+-                                  style, text, vcat, ($$), (<+>), (<>))
++                                  style, text, vcat, ($$), (<+>))
++import qualified Text.PrettyPrint as PP
+ 
+ import Djinn.LJTFormula
+ 
+@@ -239,7 +240,7 @@
+ ppPat _ (HPVar s) = text s
+ ppPat _ (HPCon s) = text s
+ ppPat _ (HPTuple ps) = parens $ fsep $ punctuate comma (map (ppPat 0) ps)
+-ppPat _ (HPAt s p) = text s <> text "@" <> ppPat 10 p
++ppPat _ (HPAt s p) = text s PP.<> text "@" PP.<> ppPat 10 p
+ ppPat p (HPApply a b) = pparens (p > 1) $ ppPat 1 a <+> ppPat 2 b
+ 
+ hPrExpr :: HExpr -> String

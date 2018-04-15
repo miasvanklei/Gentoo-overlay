@@ -12,7 +12,7 @@ LIVE_EBUILD=yes
 DESCRIPTION="Happy Haskell Hacking"
 HOMEPAGE="https://github.com/DanielG/ghc-mod"
 EGIT_REPO_URI="https://github.com/alanz/ghc-mod.git"
-EGIT_BRANCH="hie-integration-rebased-split-up-5"
+EGIT_BRANCH="ghc-8.4-hie"
 
 LICENSE="AGPL-3"
 SLOT="0/${PV}"
@@ -21,14 +21,13 @@ IUSE="shelltest"
 
 S="${S}/core"
 
-RDEPEND=">=dev-haskell/cabal-helper-0.7.0.0:=[profile?] <dev-haskell/cabal-helper-0.9:=[profile?]
+RDEPEND="dev-haskell/cabal-helper:=[profile?]
 	>=dev-haskell/djinn-ghc-0.0.2.2:=[profile?] <dev-haskell/djinn-ghc-0.1:=[profile?]
 	>=dev-haskell/extra-1.6:=[profile?] <dev-haskell/extra-1.7:=[profile?]
 	>=dev-haskell/fclabels-2.0:=[profile?] <dev-haskell/fclabels-2.1:=[profile?]
 	>=dev-haskell/ghc-paths-0.1.0.9:=[profile?] <dev-haskell/ghc-paths-0.2:=[profile?]
-	>=dev-haskell/ghc-syb-utils-0.2.3:=[profile?] <dev-haskell/ghc-syb-utils-0.3:=[profile?]
 	>=dev-haskell/haskell-src-exts-1.18:=[profile?] <dev-haskell/haskell-src-exts-1.21:=[profile?]
-	>=dev-haskell/hlint-2.0.8:=[profile?] <dev-haskell/hlint-2.1:=[profile?]
+	>=dev-haskell/hlint-2.0.8:=[profile?] <dev-haskell/hlint-2.2:=[profile?]
 	>=dev-haskell/monad-control-1:=[profile?] <dev-haskell/monad-control-1.1:=[profile?]
 	>=dev-haskell/monad-journal-0.4:=[profile?] <dev-haskell/monad-journal-0.9:=[profile?]
 	dev-haskell/mtl:=[profile?]
@@ -49,17 +48,6 @@ DEPEND="${RDEPEND}
 	test? ( >=dev-haskell/doctest-0.9.3 <dev-haskell/doctest-0.12
 		>=dev-haskell/hspec-2.0.0 <dev-haskell/hspec-2.4 )
 "
-
-PATCHES=(
-	"${FILESDIR}"/downgrade-cabal-helper.patch
-)
-
-src_prepare() {
-        default
-        cabal_chdeps \
-                'cabal-helper         < 0.9  && >= 0.8' \
-                'cabal-helper         < 0.8  && >= 0.7'
-}
 
 src_configure() {
 	haskell-cabal_src_configure \

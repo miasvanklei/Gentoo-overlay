@@ -1,0 +1,10 @@
+--- a/src/Language/Haskell/Refact/Refactoring/MaybeToMonadPlus.hs	2018-04-16 00:31:14.827502840 +0200
++++ b/src/Language/Haskell/Refact/Refactoring/MaybeToMonadPlus.hs	2018-04-16 00:31:26.651481774 +0200
+@@ -215,7 +215,6 @@
+ #else
+           worker nm fb@(GHC.FunBind ln _ _ _ _ _)
+ #endif
+-            -- *| (GHC.occNameString . GHC.rdrNameOcc) nm == funNm = do
+             | sameName nm ln funNm = do
+               logm $ "=======Found funbind========"
+               new_matches <- SYB.everywhereM (SYB.mkM worker') (GHC.fun_matches fb)

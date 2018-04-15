@@ -61,18 +61,6 @@ DEPEND="${RDEPEND}
 		dev-haskell/quickcheck-instances
 		dev-haskell/unordered-containers )
 "
-PATCHES=(
-	"${FILESDIR}/older-cabal.patch"
-)
-
-src_prepare() {
-        default
-        cabal_chdeps \
-                'hlint >= 2.0.11' \
-                'hlint >= 2.0.9' \
-                'cabal-helper >= 0.8.0.2' \
-                'cabal-helper >= 0.7'
-}
 
 src_configure() {
 	haskell-cabal_src_configure \

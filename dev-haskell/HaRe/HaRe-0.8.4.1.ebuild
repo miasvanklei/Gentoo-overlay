@@ -15,7 +15,7 @@ MY_P="${MY_PN}-${PV}"
 DESCRIPTION="the Haskell Refactorer"
 HOMEPAGE="https://github.com/RefactoringTools/HaRe/wiki"
 EGIT_REPO_URI="https://gitlab.com/alanz/HaRe.git"
-EGIT_BRANCH="wip-ghc-8.2-new-ghcmod-rebased-2"
+EGIT_BRANCH="ghc-8.4"
 
 LICENSE="BSD"
 SLOT="0/${PV}"
@@ -24,11 +24,10 @@ IUSE=""
 
 RESTRICT=test # tests build a lot of time
 
-RDEPEND=">=app-emacs/ghc-mod-5.8.0:=[profile?] <app-emacs/ghc-mod-5.10.0:=[profile?]
+RDEPEND=">=dev-haskell/ghc-mod-core-5.8.0:=[profile?] <dev-haskell/ghc-mod-core-5.10.0:=[profile?]
 	dev-haskell/cabal:=[profile?]
 	dev-haskell/cabal-helper:=[profile?]
 	>=dev-haskell/ghc-exactprint-0.5.3.0:=[profile?]
-	dev-haskell/ghc-syb-utils:=[profile?]
 	>=dev-haskell/gitrev-1.1:=[profile?]
 	dev-haskell/hslogger:=[profile?]
 	dev-haskell/monad-control:=[profile?]
@@ -45,6 +44,9 @@ DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.22.4.0
 "
 
+PATCHES=(
+	"${FILESDIR}"/hoogle-parse.patch
+)
 src_prepare() {
 	default
 

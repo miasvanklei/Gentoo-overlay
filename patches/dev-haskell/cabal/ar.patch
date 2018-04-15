@@ -22,24 +22,35 @@
  
 -      simple  = programInvocation ar (simpleArgs  ++ extraArgs)
 -      initial = programInvocation ar (initialArgs ++ extraArgs)
-+      simple  = programInvocation ar ((extraArgs ++ simpleArgs) : [tmpPath])
-+      initial = programInvocation ar ((extraArgs ++ initialArgs) : [tmpPath])
++      simple  = programInvocation ar ((simpleArgs  ++ extraArgs) : [tmpPath])
++      initial = programInvocation ar ((initialArgs ++ extraArgs) : [tmpPath])
        middle  = initial
 -      final   = programInvocation ar (finalArgs   ++ extraArgs)
-+      final   = programInvocation ar ((extraArgs ++ finalArgs) : [tmpPath])
++      final   = programInvocation ar ((finalArgs   ++ extraArgs) : [tmpPath])
  
    sequence_
          [ runProgramInvocation verbosity inv
-@@ -97,9 +97,9 @@
-   where
+@@ -95,8 +95,8 @@
+ 
+       invokeWithResponesFile :: FilePath -> ProgramInvocation
+       invokeWithResponesFile atFile =
+-        programInvocation ar $
+-        simpleArgs ++ extraArgs ++ ['@' : atFile]
++        programInvocation ar
++        ((simpleArgs ++ extraArgs) : ['@' : atFile])
+ 
+   if oldVersionManualOverride || responseArgumentsNotSupported
+     then
+@@ -118,9 +118,9 @@
      progDb = withPrograms lbi
      Platform hostArch hostOS = hostPlatform lbi
--    verbosityOpts v | v >= deafening = ["-v"]
--                    | v >= verbose   = []
--                    | otherwise      = ["-c"]
-+    verbosityOpts v | v >= deafening = "v"
-+                    | v >= verbose   = ""
-+                    | otherwise      = "c"
+     verbosityOpts v
+-      | v >= deafening = ["-v"]
+-      | v >= verbose   = []
+-      | otherwise      = ["-c"] -- Do not warn if library had to be created.
++      | v >= deafening = "v"
++      | v >= verbose   = ""
++      | otherwise      = "c" -- Do not warn if library had to be created.
  
  -- | @ar@ by default includes various metadata for each object file in their
  -- respective headers, so the output can differ for the same inputs, making
