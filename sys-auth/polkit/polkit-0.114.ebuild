@@ -54,6 +54,7 @@ DOCS=( docs/TODO HACKING NEWS README )
 
 PATCHES=(
        "${FILESDIR}"/${PN}-make-netgroup-support-optional.patch
+       "${FILESDIR}"/fix-configure.ac.patch
 )
 
 QA_MULTILIB_PATHS="
