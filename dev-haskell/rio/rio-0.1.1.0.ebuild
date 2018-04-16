@@ -18,20 +18,12 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 RDEPEND=">=dev-lang/ghc-7.4.1:=
-	dev-haskell/unlift-io
-	dev-haskell/bytestring:=
-	dev-haskell/containers:=
-	dev-haskell/deepseq:=
-	dev-haskell/directory:=
 	dev-haskell/exceptions:=
-	dev-haskell/filepath:=
 	dev-haskell/hashable:=
 	dev-haskell/microlens:=
 	dev-haskell/mtl:=
 	dev-haskell/primitive:=
-	dev-haskell/process:=
 	dev-haskell/text:=
-	dev-haskell/time:=
 	>=dev-haskell/typed-process-0.2.2.0:=
 	>=dev-haskell/unliftio-0.2.6.0:=
 	dev-haskell/unordered-containers:=

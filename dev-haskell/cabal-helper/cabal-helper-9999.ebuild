@@ -30,3 +30,11 @@ RDEPEND=">=dev-haskell/exceptions-0.8.3:=[profile?] <dev-haskell/exceptions-0.11
 		( >=dev-haskell/cabal-2.0 <dev-haskell/cabal-2.3 ) )
 "
 DEPEND="${RDEPEND}"
+
+src_prepare() {
+        default
+
+        cabal_chdeps \
+                'exceptions       < 0.9  && >= 0.8.3' 'exceptions       < 0.11  && >= 0.8.3' \
+		'template-haskell < 2.13 && >= 2.7.0.0' 'template-haskell < 2.14 && >= 2.7.0.0'
+}
