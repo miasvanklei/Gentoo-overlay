@@ -1,6 +1,6 @@
---- a/bin/estrip	2018-01-23 00:04:29.980196218 +0100
-+++ b/bin/estrip	2018-01-23 00:06:06.162048346 +0100
-@@ -79,6 +79,13 @@
+--- a/bin/estrip	2018-04-17 11:28:43.923258400 +0200
++++ b/bin/estrip	2018-04-17 11:29:37.017160823 +0200
+@@ -137,6 +137,13 @@
  	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
  	SPLIT_STRIP_FLAGS=
  	;;
@@ -14,7 +14,7 @@
  esac
  : ${PORTAGE_STRIP_FLAGS=${SAFE_STRIP_FLAGS} ${DEF_STRIP_FLAGS}}
  
-@@ -347,18 +354,7 @@
+@@ -416,18 +423,7 @@
  	# elf types though cause that stuff is good.
  
  	buildid=
@@ -29,8 +29,8 @@
 -				${STRIP} -g "${x}"
 -			fi
 -		fi
--	elif [[ ${f} == *"SB executable"* || ${f} == *"SB shared object"* ]] ; then
-+	if [[ ${f} == *"SB executable"* || ${f} == *"SB shared object"* ]] ; then
+-	elif [[ ${f} == *"SB executable"* || ${f} == *"SB pie executable"* ||
++	if [[ ${f} == *"SB executable"* || ${f} == *"SB pie executable"* ||
+ 		${f} == *"SB shared object"* ]] ; then
  		process_elf "${x}" "${inode_link}" ${PORTAGE_STRIP_FLAGS}
  	elif [[ ${f} == *"SB relocatable"* ]] ; then
- 		process_elf "${x}" "${inode_link}" ${SAFE_STRIP_FLAGS}
