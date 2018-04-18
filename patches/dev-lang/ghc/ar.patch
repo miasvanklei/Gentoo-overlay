@@ -1,6 +1,14 @@
 --- a/libraries/Cabal/Cabal/Distribution/Simple/Program/Ar.hs	2018-02-06 21:16:52.444914714 +0100
 +++ b/libraries/Cabal/Cabal/Distribution/Simple/Program/Ar.hs	2017-07-24 02:19:03.000000000 +0200
-@@ -68,20 +68,20 @@
+@@ -24,7 +24,6 @@
+ import qualified Data.ByteString as BS
+ import qualified Data.ByteString.Char8 as BS8
+ import Distribution.Compat.CopyFile (filesEqual)
+-import Distribution.Simple.Compiler (arResponseFilesSupported)
+ import Distribution.Simple.LocalBuildInfo (LocalBuildInfo(..))
+ import Distribution.Simple.Program
+          ( ProgramInvocation, arProgram, requireProgram )
+@@ -73,40 +72,25 @@
    -- call on OSX we use "ar qs" so that it'll make the index.
  
    let simpleArgs  = case hostOS of
@@ -28,20 +36,33 @@
 -      final   = programInvocation ar (finalArgs   ++ extraArgs)
 +      final   = programInvocation ar ((finalArgs   ++ extraArgs) : [tmpPath])
  
-   sequence_
-         [ runProgramInvocation verbosity inv
-@@ -95,8 +95,8 @@
- 
-       invokeWithResponesFile :: FilePath -> ProgramInvocation
-       invokeWithResponesFile atFile =
+-      oldVersionManualOverride =
+-        fromFlagOrDefault False $ configUseResponseFiles $ configFlags lbi
+-      responseArgumentsNotSupported   =
+-        not (arResponseFilesSupported (compiler lbi))
+-
+-      invokeWithResponesFile :: FilePath -> ProgramInvocation
+-      invokeWithResponesFile atFile =
 -        programInvocation ar $
 -        simpleArgs ++ extraArgs ++ ['@' : atFile]
-+        programInvocation ar
-+        ((simpleArgs ++ extraArgs) : ['@' : atFile])
+-
+-  if oldVersionManualOverride || responseArgumentsNotSupported
+-    then
+-      sequence_
+-        [ runProgramInvocation verbosity inv
+-        | inv <- multiStageProgramInvocation
+-                   simple (initial, middle, final) files ]
+-    else
+-      withResponseFile verbosity defaultTempFileOptions tmpDir "ar.rsp" Nothing files $
+-        \path -> runProgramInvocation verbosity $ invokeWithResponesFile path
++  sequence_
++    [ runProgramInvocation verbosity inv
++    | inv <- multiStageProgramInvocation
++               simple (initial, middle, final) files ]
  
-   if oldVersionManualOverride || responseArgumentsNotSupported
-     then
-@@ -118,9 +118,9 @@
+   unless (hostArch == Arm -- See #1537
+           || hostOS == AIX) $ -- AIX uses its own "ar" format variant
+@@ -118,9 +102,9 @@
      progDb = withPrograms lbi
      Platform hostArch hostOS = hostPlatform lbi
      verbosityOpts v
