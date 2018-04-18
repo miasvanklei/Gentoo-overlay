@@ -1,0 +1,1018 @@
+diff --git a/src/GhciMonad.hs b/src/GhciMonad.hs
+index 8fc0687..8b7b76f 100644
+--- a/src/GhciMonad.hs
++++ b/src/GhciMonad.hs
+@@ -382,7 +382,7 @@ printTimes dflags allocs psecs
+    = do let secs = (fromIntegral psecs / (10^(12::Integer))) :: Float
+             secs_str = showFFloat (Just 2) secs
+         putStrLn (showSDoc dflags (
+-                 parens (text (secs_str "") <+> text "secs" <> comma <+>
++                 parens (text (secs_str "") <+> text "secs" Outputable.<> comma <+>
+                          text (show allocs) <+> text "bytes")))
+ 
+ -----------------------------------------------------------------------------
+diff --git a/src/GhciTypes.hs b/src/GhciTypes.hs
+index 87ffc6f..5819184 100644
+--- a/src/GhciTypes.hs
++++ b/src/GhciTypes.hs
+@@ -49,14 +49,14 @@ data SpanInfo =
+ 
+ instance Outputable SpanInfo where
+   ppr (SpanInfo sl sc el ec ty v) =
+-    (int sl <>
+-     text ":" <>
+-     int sc <>
+-     text "-") <>
+-    (int el <>
+-     text ":" <>
+-     int ec <>
+-     text ": ") <>
+-    (ppr v <>
+-     text " :: " <>
++    (int sl Outputable.<>
++     text ":" Outputable.<>
++     int sc Outputable.<>
++     text "-") Outputable.<>
++    (int el Outputable.<>
++     text ":" Outputable.<>
++     int ec Outputable.<>
++     text ": ") Outputable.<>
++    (ppr v Outputable.<>
++     text " :: " Outputable.<>
+      ppr ty)
+
+diff --git a/intero.cabal b/intero.cabal
+index f3cd862..1a47edc 100644
+--- a/intero.cabal
++++ b/intero.cabal
+@@ -85,7 +85,7 @@ executable intero
+     random,
+     mtl
+ 
+-  if impl(ghc>=8.2.2)
++  if impl(ghc==8.2.2)
+     other-modules:
+       Completion
+ 
+diff --git a/src/InteractiveUI.hs b/src/InteractiveUI.hs
+index 8412a63..ce2ef19 100644
+--- a/src/InteractiveUI.hs
++++ b/src/InteractiveUI.hs
+@@ -51,7 +51,7 @@ import qualified GhciMonad ( args, runStmt )
+ import           GhciMonad hiding ( args, runStmt )
+ import           GhciTags
+ import           Debugger
+-#if __GLASGOW_HASKELL__ >= 802
++#if __GLASGOW_HASKELL__ == 802
+ import qualified Completion
+ #endif
+ 
+@@ -303,7 +303,7 @@ ghciCommands = [
+   where lifted m = \str -> lift (m stdout str)
+ 
+ fillCmd :: Handle -> String -> GHCi ()
+-#if __GLASGOW_HASKELL__ >= 802
++#if __GLASGOW_HASKELL__ == 802
+ fillCmd h =
+   withFillInput
+     (\fp line col -> do
+
+diff --git a/src/InteractiveUI.hs b/src/InteractiveUI.hs
+index ce2ef19..baa7731 100644
+--- a/src/InteractiveUI.hs
++++ b/src/InteractiveUI.hs
+@@ -943,19 +943,19 @@ mkPrompt = do
+             r:_ -> do
+                 let ix = GHC.resumeHistoryIx r
+                 if ix == 0
+-                   then return (brackets (ppr (GHC.resumeSpan r)) <> space)
++                   then return (brackets (ppr (GHC.resumeSpan r)) Outputable.<> space)
+                    else do
+                         let hist = GHC.resumeHistory r !! (ix-1)
+                         pan <- GHC.getHistorySpan hist
+-                        return (brackets (ppr (negate ix) <> char ':'
+-                                          <+> ppr pan) <> space)
++                        return (brackets (ppr (negate ix) Outputable.<> char ':'
++                                          <+> ppr pan) Outputable.<> space)
+   let
+         dots | _:rs <- resumes, not (null rs) = text "... "
+              | otherwise = empty
+ 
+         rev_imports = reverse imports -- rightmost are the most recent
+         modules_bit =
+-             hsep [ char '*' <> ppr m | IIModule m <- rev_imports ] <+>
++             hsep [ char '*' Outputable.<> ppr m | IIModule m <- rev_imports ] <+>
+              hsep (map ppr [ myIdeclName d | IIDecl d <- rev_imports ])
+ 
+          --  use the 'as' name if there is one
+@@ -966,12 +966,12 @@ mkPrompt = do
+                       | otherwise           = unLoc (ideclName d)
+ #endif
+ 
+-        deflt_prompt = dots <> context_bit <> modules_bit
++        deflt_prompt = dots Outputable.<> context_bit Outputable.<> modules_bit
+ 
+-        f ('%':'l':xs) = ppr (1 + line_number st) <> f xs
+-        f ('%':'s':xs) = deflt_prompt <> f xs
+-        f ('%':'%':xs) = char '%' <> f xs
+-        f (x:xs) = char x <> f xs
++        f ('%':'l':xs) = ppr (1 + line_number st) Outputable.<> f xs
++        f ('%':'s':xs) = deflt_prompt Outputable.<> f xs
++        f ('%':'%':xs) = char '%' Outputable.<> f xs
++        f (x:xs) = char x Outputable.<> f xs
+         f [] = empty
+ 
+   dflags <- getDynFlags
+@@ -1917,12 +1917,12 @@ modulesLoadedMsg ok mods = do
+   let mod_commas
+         | null mods = text "none."
+         | otherwise = hsep (
+-            punctuate comma (map ppr mods)) <> text "."
++            punctuate comma (map ppr mods)) Outputable.<> text "."
+       status = case ok of
+                    Failed    -> text "Failed"
+                    Succeeded -> text "Ok"
+ 
+-      msg = status <> text ", modules loaded:" <+> mod_commas
++      msg = status Outputable.<> text ", modules loaded:" <+> mod_commas
+ 
+   when (verbosity dflags > 0) $
+      liftIO $ putStrLn $ showSDocForUser dflags unqual msg
+@@ -2682,10 +2682,10 @@ showOptions show_all
+        dflags <- getDynFlags
+        let opts = options st
+        liftIO $ putStrLn (showSDoc dflags (
+-              text "options currently set: " <>
++              text "options currently set: " Outputable.<>
+               if null opts
+                    then text "none."
+-                   else hsep (map (\o -> char '+' <> text (optToStr o)) opts)
++                   else hsep (map (\o -> char '+' Outputable.<> text (optToStr o)) opts)
+            ))
+        getDynFlags >>= liftIO . showDynFlags show_all
+ 
+@@ -2716,8 +2716,8 @@ showDynFlags show_all dflags = do
+ 
+         default_dflags = defaultDynFlags (settings dflags)
+ 
+-        fstr   str = text "-f"    <> text str
+-        fnostr str = text "-fno-" <> text str
++        fstr   str = text "-f"    Outputable.<> text str
++        fnostr str = text "-fno-" Outputable.<> text str
+ 
+ #if __GLASGOW_HASKELL__ < 709
+         (ghciFlags,others)  = partition (\(_, f, _) -> f `elem` flgs)
+@@ -3029,7 +3029,7 @@ showContext = do
+    printForUser stdout $ vcat (map pp_resume (reverse resumes))
+   where
+    pp_resume res =
+-        ptext (sLit "--> ") <> text (GHC.resumeStmt res)
++        ptext (sLit "--> ") Outputable.<> text (GHC.resumeStmt res)
+         $$ nest 2 (ptext (sLit "Stopped at") <+> ppr (GHC.resumeSpan res))
+ 
+ showPackages :: GHCi ()
+@@ -3087,7 +3087,7 @@ showiLanguages = GHC.getInteractiveDynFlags >>= liftIO . showLanguages' False
+ showLanguages' :: Bool -> DynFlags -> IO ()
+ showLanguages' show_all dflags =
+   putStrLn $ showSDoc dflags $ vcat
+-     [ text "base language is: " <>
++     [ text "base language is: " Outputable.<>
+          case language dflags of
+            Nothing          -> text "Haskell2010"
+            Just Haskell98   -> text "Haskell98"
+@@ -3103,8 +3103,8 @@ showLanguages' show_all dflags =
+    setting test (FlagSpec str f _ _)
+ #endif
+           | quiet     = empty
+-          | is_on     = text "-X" <> text str
+-          | otherwise = text "-XNo" <> text str
++          | is_on     = text "-X" Outputable.<> text str
++          | otherwise = text "-XNo" Outputable.<> text str
+           where is_on = test f dflags
+                 quiet = not show_all && test f default_dflags == is_on
+ 
+@@ -3439,7 +3439,7 @@ historyCmd arg
+                  liftIO $ putStrLn $ if null rest then "<end of history>" else "..."
+ 
+ bold :: SDoc -> SDoc
+-bold c | do_bold   = text start_bold <> c <> text end_bold
++bold c | do_bold   = text start_bold Outputable.<> c Outputable.<> text end_bold
+        | otherwise = c
+ 
+ backCmd :: String -> GHCi ()
+@@ -3500,10 +3500,10 @@ breakSwitch (arg1:rest)
+                                           (GHC.srcLocLine l,
+                                            GHC.srcLocCol l)
+             UnhelpfulLoc _ ->
+-                noCanDo name $ text "can't find its location: " <> ppr loc
++                noCanDo name $ text "can't find its location: " Outputable.<> ppr loc
+        where
+           noCanDo n why = printForUser stdout $
+-                text "cannot set breakpoint on " <> ppr n <> text ": " <> why
++                text "cannot set breakpoint on " Outputable.<> ppr n Outputable.<> text ": " Outputable.<> why
+ 
+ breakByModule :: Module -> [String] -> GHCi ()
+ breakByModule md (arg1:rest)
+@@ -3541,10 +3541,10 @@ findBreakAndSet md lookupTickTree = do
+                              , onBreakCmd = ""
+                              }
+                printForUser stdout $
+-                  text "Breakpoint " <> ppr nm <>
++                  text "Breakpoint " Outputable.<> ppr nm Outputable.<>
+                   if alreadySet
+-                     then text " was already set at " <> ppr pan
+-                     else text " activated at " <> ppr pan
++                     then text " was already set at " Outputable.<> ppr pan
++                     else text " activated at " Outputable.<> ppr pan
+             else do
+             printForUser stdout $ text "Breakpoint could not be activated at"
+                                         <+> ppr pan
+@@ -3669,11 +3669,11 @@ list2 [arg] = do
+                     Just (_, UnhelpfulSpan _) -> panic "list2 UnhelpfulSpan"
+                     Just (_, RealSrcSpan pan) -> listAround pan False
+             UnhelpfulLoc _ ->
+-                  noCanDo name $ text "can't find its location: " <>
++                  noCanDo name $ text "can't find its location: " Outputable.<>
+                                  ppr loc
+     where
+         noCanDo n why = printForUser stdout $
+-            text "cannot list source code for " <> ppr n <> text ": " <> why
++            text "cannot list source code for " Outputable.<> ppr n Outputable.<> text ": " Outputable.<> why
+ list2  _other =
+         liftIO $ putStrLn "syntax:  :list [<line> | <module> <line> | <identifier>]"
+ 
+@@ -3965,12 +3965,12 @@ wantNameFromInterpretedModule noCanDo str and_then =
+       (n:_) -> do
+             let modl = ASSERT( isExternalName n ) GHC.nameModule n
+             if not (GHC.isExternalName n)
+-               then noCanDo n $ ppr n <>
++               then noCanDo n $ ppr n Outputable.<>
+                                 text " is not defined in an interpreted module"
+                else do
+             is_interpreted <- GHC.moduleIsInterpreted modl
+             if not is_interpreted
+-               then noCanDo n $ text "module " <> ppr modl <>
++               then noCanDo n $ text "module " Outputable.<> ppr modl Outputable.<>
+                                 text " is not interpreted"
+                else and_then n
+ 
+diff --git a/src/Main.hs b/src/Main.hs
+index 271f254..79e99ff 100644
+--- a/src/Main.hs
++++ b/src/Main.hs
+@@ -136,8 +136,8 @@ main = do
+     let flagWarnings = modeFlagWarnings
+ #else
+     (argv2, staticFlagWarnings) <- GHC.parseStaticFlags argv1'
+-    (mode, argv3, modeFlagWarnings) <- parseModeFlags argv2 
+-    let flagWarnings = staticFlagWarnings ++ modeFlagWarnings 
++    (mode, argv3, modeFlagWarnings) <- parseModeFlags argv2
++    let flagWarnings = staticFlagWarnings ++ modeFlagWarnings
+ #endif
+ 
+     -- If all we want to do is something like showing the version number
+@@ -266,8 +266,8 @@ main' postLoadMode dflags0 args flagWarnings = do
+         liftIO $ dumpPackages dflags6
+ 
+ # if __GLASGOW_HASKELL__ < 802
+-  when (verbosity dflags6 >= 3) $ do 
+-        liftIO $ hPutStrLn stderr ("Hsc static flags: " ++ unwords staticFlags) 
++  when (verbosity dflags6 >= 3) $ do
++        liftIO $ hPutStrLn stderr ("Hsc static flags: " ++ unwords staticFlags)
+ #endif
+ 
+         ---------------- Final sanity checking -----------
+@@ -777,13 +777,13 @@ showOptions = putStr (unlines availableOptions)
+ #else
+       availableOptions     = map ((:) '-') $
+                              getFlagNames mode_flags   ++
+-                             getFlagNames flagsDynamic ++ 
+-                             (filterUnwantedStatic . getFlagNames $ flagsStatic) ++ 
+-                             flagsStaticNames 
+-      -- this is a hack to get rid of two unwanted entries that get listed 
+-      -- as static flags. Hopefully this hack will disappear one day together 
+-      -- with static flags 
+-      filterUnwantedStatic      = filter (\x -> not (x `elem` ["f", "fno-"])) 
++                             getFlagNames flagsDynamic ++
++                             (filterUnwantedStatic . getFlagNames $ flagsStatic) ++
++                             flagsStaticNames
++      -- this is a hack to get rid of two unwanted entries that get listed
++      -- as static flags. Hopefully this hack will disappear one day together
++      -- with static flags
++      filterUnwantedStatic      = filter (\x -> not (x `elem` ["f", "fno-"]))
+ #endif
+       getFlagNames opts         = map getFlagName opts
+ #if __GLASGOW_HASKELL__ >= 710
+@@ -830,7 +830,7 @@ dumpFastStringStats dflags = do
+         -- the "z-encoded" total.
+   putMsg dflags msg
+   where
+-   x `pcntOf` y = int ((x * 100) `quot` y) <> char '%'
++   x `pcntOf` y = int ((x * 100) `quot` y) Outputable.<> char '%'
+ 
+ countFS :: Int -> Int -> Int -> [[FastString]] -> (Int, Int, Int)
+ countFS entries longest has_z [] = (entries, longest, has_z)
+
+diff --git a/intero.cabal b/intero.cabal
+index 1a47edc..640aff0 100644
+--- a/intero.cabal
++++ b/intero.cabal
+@@ -65,6 +65,7 @@ executable intero
+     GhciTypes
+     GhciInfo
+     GhciFind
++    Intero.Compat
+     Paths_intero
+   build-depends:
+     base < 5,
+@@ -73,7 +74,7 @@ executable intero
+     directory,
+     filepath,
+     -- We permit any 8.0.1.* or 8.0.2.* or 8.2.1
+-    ghc >= 7.8 && <= 8.2.2,
++    ghc >= 7.8 && <= 8.4.1,
+     ghc-paths,
+     haskeline,
+     process,
+@@ -85,7 +86,7 @@ executable intero
+     random,
+     mtl
+ 
+-  if impl(ghc==8.2.2)
++  if impl(ghc>=8.2.2)
+     other-modules:
+       Completion
+ 
+diff --git a/src/Completion.hs b/src/Completion.hs
+index 211594e..c8db03c 100644
+--- a/src/Completion.hs
++++ b/src/Completion.hs
+@@ -31,6 +31,7 @@ import           DynFlags
+ import           FastString
+ import           GHC
+ import           HscTypes
++import           Intero.Compat
+ import           Name
+ import           OccName
+ import           Outputable
+@@ -38,7 +39,6 @@ import           RdrName
+ import           TcRnDriver
+ import           TcRnTypes (tcg_rdr_env)
+ import           TyCoRep
+-import           TyCon
+ import           TysWiredIn
+ import           Unify
+ import           Unique
+@@ -55,7 +55,7 @@ data CompletableModule =
+ -- | All the context we need to generate completions for a declaration
+ -- in a module.
+ data Declaration = Declaration
+-  { declarationBind :: !(HsBindLR Name Name)
++  { declarationBind :: !(HsBindLR StageReaderName StageReaderName)
+     -- ^ The actual declaration, which we use to find holes and
+     -- substitute them with candidate replacements.
+     -- ^ A sample source, which we use merely for debugging.
+@@ -168,14 +168,14 @@ declarationHoles df declaration = go declaration
+                   , holeDeclaration = declaration
+                   })) .
+       listify (isJust . getHoleName) . declarationBind
+-    typeAt :: RealSrcSpan -> LHsExpr Id -> Maybe Type
++    typeAt :: RealSrcSpan -> LHsExpr StageReaderId -> Maybe Type
+     typeAt rs expr =
+       if getLoc expr == RealSrcSpan rs
+         then case expr of
+                L _ (HsVar (L _ i)) -> pure (idType i)
+                _ -> Nothing
+         else Nothing
+-    getHoleName :: LHsExpr Name -> Maybe (OccName, RealSrcSpan)
++    getHoleName :: LHsExpr StageReaderName -> Maybe (OccName, RealSrcSpan)
+     getHoleName =
+       \case
+         L someSpan (HsUnboundVar (TrueExprHole name)) -> do
+@@ -419,7 +419,7 @@ normalize df t0 = evalState (go t0) 1
+             u <- get
+             modify (+ 1)
+             pure (makeTypeVariable u "was_Any")
+-        FunTy (TyConApp (tyConFlavour -> "class") _) x -> go x
++        FunTy (TyConApp (ghc_tyConFlavour -> "class") _) x -> go x
+         ForAllTy _ x -> go x
+         CastTy x _ -> go x
+         FunTy x y -> FunTy <$> (go x) <*> (go y)
+@@ -443,7 +443,7 @@ tryWellTypedFill ::
+      GhcMonad m
+   => ParsedModule
+   -> Hole
+-  -> HsExpr RdrName
++  -> HsExpr StageReaderRdrName
+   -> m (Maybe ParsedModule)
+ tryWellTypedFill pm hole expr =
+   handleSourceError
+@@ -456,11 +456,11 @@ tryWellTypedFill pm hole expr =
+ -- Filling holes in the AST
+ 
+ -- | Fill the given hole in the module with the given expression.
+-fillHole :: ParsedModule -> Hole -> HsExpr RdrName -> ParsedModule
++fillHole :: ParsedModule -> Hole -> HsExpr StageReaderRdrName -> ParsedModule
+ fillHole pm hole expr =
+   pm {pm_parsed_source = everywhere (mkT replace) (pm_parsed_source pm)}
+   where
+-    replace :: LHsExpr RdrName -> LHsExpr RdrName
++    replace :: LHsExpr StageReaderRdrName -> LHsExpr StageReaderRdrName
+     replace =
+       (\case
+          L someSpan _
+@@ -471,14 +471,14 @@ fillHole pm hole expr =
+ --------------------------------------------------------------------------------
+ -- Helpers
+ 
+-rdrNameToLHsExpr :: id -> GenLocated SrcSpan (HsExpr id)
++rdrNameToLHsExpr :: RdrName -> GenLocated SrcSpan (HsExpr StageReaderRdrName)
+ rdrNameToLHsExpr rdrname =
+   L (UnhelpfulSpan (mkFastString "Generated by rdrNameToLHsExpr"))
+     (HsVar
+        (L (UnhelpfulSpan (mkFastString "Generated by getWellTypedFills"))
+           rdrname))
+ 
+-rdrNameToHsExpr :: id -> HsExpr id
++rdrNameToHsExpr :: RdrName -> HsExpr StageReaderRdrName
+ rdrNameToHsExpr rdrname =
+   HsVar
+     (L (UnhelpfulSpan (mkFastString "Generated by rdrNameToHsExpr")) rdrname)
+@@ -502,7 +502,7 @@ typecheckModuleNoDeferring parsed = do
+     nullLogAction _df _reason _sev _span _style _msgdoc = pure ()
+ 
+ -- | Convert parsed source groups into one bag of binds.
+-_parsedModuleToBag :: ParsedModule -> Bag (LHsBindLR RdrName RdrName)
++_parsedModuleToBag :: ParsedModule -> Bag (LHsBindLR StageReaderRdrName StageReaderRdrName)
+ _parsedModuleToBag =
+   listToBag . mapMaybe valD . hsmodDecls . unLoc . pm_parsed_source
+   where
+@@ -512,7 +512,7 @@ _parsedModuleToBag =
+         _ -> Nothing
+ 
+ -- | Convert renamed source groups into one bag of binds.
+-renamedSourceToBag :: RenamedSource -> Bag (LHsBindLR Name Name)
++renamedSourceToBag :: RenamedSource -> Bag (LHsBindLR StageReaderName StageReaderName)
+ renamedSourceToBag (hsGroup, _, _, _) = unHsValBindsLR (hs_valds hsGroup)
+   where
+     unHsValBindsLR =
+diff --git a/src/GhciFind.hs b/src/GhciFind.hs
+index a490cf2..4ca34b8 100644
+--- a/src/GhciFind.hs
++++ b/src/GhciFind.hs
+@@ -9,8 +9,9 @@ module GhciFind
+   (findType,FindType(..),findLoc,findNameUses,findCompletions,guessModule)
+   where
+ 
++import           Intero.Compat
+ #if __GLASGOW_HASKELL__ >= 800
+-import Module
++import           Module
+ #endif
+ import           Control.Exception
+ #if __GLASGOW_HASKELL__ < 710
+@@ -374,7 +375,7 @@ findType infos fp string sl sc el ec =
+                         Just name ->
+                           case find (reliableNameEquality name) names of
+                             Just nameWithBetterType ->
+-                              do result <- getInfo True nameWithBetterType
++                              do result <- ghc_getInfo True nameWithBetterType
+                                  case result of
+                                    Just (thing,_,_,_) ->
+                                      return (FindTyThing minfo thing)
+diff --git a/src/GhciInfo.hs b/src/GhciInfo.hs
+index 3904f76..0bc7afe 100644
+--- a/src/GhciInfo.hs
++++ b/src/GhciInfo.hs
+@@ -10,25 +10,29 @@ import           ConLike
+ import           Control.Exception
+ import           Control.Monad
+ import qualified CoreUtils
+-import           DataCon
+ import           Data.Data
+-import           Data.Generics (GenericQ, mkQ, extQ)
++import qualified Data.Generics
+ import           Data.List
+ import           Data.Map.Strict (Map)
+ import qualified Data.Map.Strict as M
+ import           Data.Maybe
+ import           Data.Time
++import           DataCon
+ import           Desugar
+ import           GHC
+ import           GhcMonad
+ import           GhciTypes
+-import           NameSet
++import           Intero.Compat
+ import           Outputable
+ import           Prelude hiding (mod)
+ import           System.Directory
+ import           TcHsSyn
+ import           Var
+ 
++#if __GLASGOW_HASKELL__ <= 802
++import           NameSet
++#endif
++
+ #if MIN_VERSION_ghc(7,8,3)
+ #else
+ import           Bag
+@@ -95,9 +99,9 @@ processAllTypeCheckedModule :: GhcMonad m
+                             => TypecheckedModule -> m [SpanInfo]
+ processAllTypeCheckedModule tcm =
+   do let tcs = tm_typechecked_source tcm
+-         bs = listifyAllSpans tcs :: [LHsBind Id]
+-         es = listifyAllSpans tcs :: [LHsExpr Id]
+-         ps = listifyAllSpans tcs :: [LPat Id]
++         bs = listifyAllSpans tcs :: [LHsBind StageReaderId]
++         es = listifyAllSpans tcs :: [LHsExpr StageReaderId]
++         ps = listifyAllSpans tcs :: [LPat StageReaderId]
+      bts <- mapM (getTypeLHsBind tcm) bs
+      ets <- mapM (getTypeLHsExpr tcm) es
+      pts <- mapM (getTypeLPat tcm) ps
+@@ -109,7 +113,7 @@ processAllTypeCheckedModule tcm =
+ 
+ getTypeLHsBind :: (GhcMonad m)
+                => TypecheckedModule
+-               -> LHsBind Id
++               -> LHsBind StageReaderId
+                -> m [(Maybe Id,SrcSpan,Type)]
+ #if MIN_VERSION_ghc(7,8,3)
+ getTypeLHsBind _ (L _spn FunBind{fun_id = pid,fun_matches = MG _ _ _typ _}) =
+@@ -133,7 +137,7 @@ getTypeLHsBind _ _ = return []
+ 
+ getTypeLHsExpr :: (GhcMonad m)
+                => TypecheckedModule
+-               -> LHsExpr Id
++               -> LHsExpr StageReaderId
+                -> m (Maybe (Maybe Id,SrcSpan,Type))
+ getTypeLHsExpr _ e =
+   do hs_env <- getSession
+@@ -155,7 +159,7 @@ getTypeLHsExpr _ e =
+ 
+ -- | Get id and type for patterns.
+ getTypeLPat :: (GhcMonad m)
+-            => TypecheckedModule -> LPat Id -> m (Maybe (Maybe Id,SrcSpan,Type))
++            => TypecheckedModule -> LPat StageReaderId -> m (Maybe (Maybe Id,SrcSpan,Type))
+ getTypeLPat _ (L spn pat) =
+   return (Just (getMaybeId pat,spn,getPatType pat))
+   where
+@@ -177,14 +181,18 @@ listifyAllSpans tcs =
+   where p (L spn _) = isGoodSrcSpan spn
+ 
+ listifyStaged :: Typeable r
+-              => Stage -> (r -> Bool) -> GenericQ [r]
++              => Stage -> (r -> Bool) -> Data.Generics.GenericQ [r]
++#if __GLASGOW_HASKELL__ <= 802
+ listifyStaged s p =
+   everythingStaged
+     s
+     (++)
+     []
+-    ([] `mkQ`
++    ([] `Data.Generics.mkQ`
+      (\x -> [x | p x]))
++#else
++listifyStaged _ p = Data.Generics.listify p
++#endif
+ 
+ ------------------------------------------------------------------------------
+ -- The following was taken from 'ghc-syb-utils'
+@@ -203,9 +211,10 @@ data Stage
+ 
+ -- | Like 'everything', but avoid known potholes, based on the 'Stage' that
+ --   generated the Ast.
+-everythingStaged :: Stage -> (r -> r -> r) -> r -> GenericQ r -> GenericQ r
++#if __GLASGOW_HASKELL__ <= 802
++everythingStaged :: Stage -> (r -> r -> r) -> r -> Data.Generics.GenericQ r -> Data.Generics.GenericQ r
+ everythingStaged stage k z f x
+-  | (const False `extQ` postTcType `extQ` fixity `extQ` nameSet) x = z
++  | (const False `Data.Generics.extQ` postTcType `Data.Generics.extQ` fixity `Data.Generics.extQ` nameSet) x = z
+   | otherwise = foldl k (f x) (gmapQ (everythingStaged stage k z f) x)
+   where nameSet    = const (stage `elem` [Parser,TypeChecker]) :: NameSet -> Bool
+ #if __GLASGOW_HASKELL__ >= 709
+@@ -214,6 +223,8 @@ everythingStaged stage k z f x
+         postTcType = const (stage<TypeChecker)                 :: PostTcType -> Bool
+ #endif
+         fixity     = const (stage<Renamer)                     :: GHC.Fixity -> Bool
++#endif
++
+ 
+ -- | Pretty print the types into a 'SpanInfo'.
+ toSpanInfo :: (Maybe Id,SrcSpan,Type) -> Maybe SpanInfo
+diff --git a/src/GhciTags.hs b/src/GhciTags.hs
+index b250637..6fe95ab 100644
+--- a/src/GhciTags.hs
++++ b/src/GhciTags.hs
+@@ -16,6 +16,7 @@ module GhciTags (
+ import Exception
+ import GHC
+ import GhciMonad
++import Intero.Compat
+ import Outputable
+ 
+ -- ToDo: figure out whether we need these, and put something appropriate
+@@ -59,7 +60,7 @@ ghciCreateTagsFile :: TagsKind -> FilePath -> GHCi ()
+ ghciCreateTagsFile kind file = do
+   createTagsFile kind file
+ 
+--- ToDo: 
++-- ToDo:
+ --      - remove restriction that all modules must be interpreted
+ --        (problem: we don't know source locations for entities unless
+ --        we compiled the module.
+@@ -69,7 +70,7 @@ ghciCreateTagsFile kind file = do
+ --
+ createTagsFile :: TagsKind -> FilePath -> GHCi ()
+ createTagsFile tagskind tagsFile = do
+-  graph <- GHC.getModuleGraph
++  graph <- ghc_getModuleGraph
+   mtags <- mapM listModuleTags (map GHC.ms_mod graph)
+   either_res <- liftIO $ collateAndWriteTags tagskind tagsFile $ concat mtags
+   case either_res of
+@@ -203,4 +204,3 @@ showETag TagInfo{ tagName = tag, tagLine = lineNo, tagCol = colNo,
+     ++ "\x01" ++ show lineNo
+     ++ "," ++ show charPos
+ showETag _ = throwGhcException (CmdLineError "missing source file info in showETag")
+-
+diff --git a/src/GhciTypes.hs b/src/GhciTypes.hs
+index 5819184..f6c0b52 100644
+--- a/src/GhciTypes.hs
++++ b/src/GhciTypes.hs
+@@ -4,6 +4,7 @@ module GhciTypes where
+ 
+ import Data.Time
+ import GHC
++import Intero.Compat
+ import Outputable
+ 
+ -- | Info about a module. This information is generated every time a
+@@ -21,7 +22,7 @@ data ModInfo =
+            -- (exports, instances, scope) from a module.
+           ,modinfoLastUpdate :: !UTCTime
+            -- ^ Last time the module was updated.
+-          ,modinfoImports :: ![LImportDecl Name]
++          ,modinfoImports :: ![LImportDecl StageReaderName]
+            -- ^ Import declarations within this module.
+           ,modinfoLocation :: !SrcSpan
+            -- ^ The location of the module
+diff --git a/src/InteractiveUI.hs b/src/InteractiveUI.hs
+index baa7731..0cb68da 100644
+--- a/src/InteractiveUI.hs
++++ b/src/InteractiveUI.hs
+@@ -26,7 +26,9 @@ module InteractiveUI (
+ 
+ #include "HsVersions.h"
+ 
++
+ -- Intero
++import Intero.Compat
+ #if __GLASGOW_HASKELL__ >= 800
+ import           GHCi
+ import           GHCi.RemoteTypes
+@@ -40,7 +42,6 @@ import qualified Data.Map as M
+ import           GhciInfo
+ import           GhciTypes
+ import           GhciFind
+-import           GHC (getModuleGraph)
+ 
+ -- GHCi
+ #if __GLASGOW_HASKELL__ >= 800
+@@ -51,7 +52,7 @@ import qualified GhciMonad ( args, runStmt )
+ import           GhciMonad hiding ( args, runStmt )
+ import           GhciTags
+ import           Debugger
+-#if __GLASGOW_HASKELL__ == 802
++#if __GLASGOW_HASKELL__ >= 802
+ import qualified Completion
+ #endif
+ 
+@@ -303,7 +304,7 @@ ghciCommands = [
+   where lifted m = \str -> lift (m stdout str)
+ 
+ fillCmd :: Handle -> String -> GHCi ()
+-#if __GLASGOW_HASKELL__ == 802
++#if __GLASGOW_HASKELL__ >= 802
+ fillCmd h =
+   withFillInput
+     (\fp line col -> do
+@@ -1463,7 +1464,7 @@ info allInfo s  = handleSourceError GHC.printException $ do
+ infoThing :: GHC.GhcMonad m => Bool -> String -> m SDoc
+ infoThing allInfo str = do
+     names     <- GHC.parseName str
+-    mb_stuffs <- mapM (GHC.getInfo allInfo) names
++    mb_stuffs <- mapM (ghc_getInfo allInfo) names
+     let filtered = filterOutChildren (\(t,_f,_ci,_fi) -> t) (catMaybes mb_stuffs)
+     return $ vcat (intersperse (text "") $ map pprInfo filtered)
+ 
+@@ -1557,7 +1558,7 @@ changeDirectory [] = do
+      Left _e -> return ()
+      Right dir -> changeDirectory [dir]
+ changeDirectory (dir:_) = do
+-  graph <- GHC.getModuleGraph
++  graph <- ghc_getModuleGraph
+   when (not (null graph)) $
+         liftIO $ putStrLn "Warning: changing directory causes all loaded modules to be unloaded,\nbecause the search path has changed."
+   GHC.setTargets []
+@@ -1619,9 +1620,9 @@ chooseEditFile :: GHCi String
+ chooseEditFile =
+   do let hasFailed x = fmap not $ GHC.isLoaded $ GHC.ms_mod_name x
+ 
+-     graph <- GHC.getModuleGraph
++     graph <- ghc_getModuleGraph
+      failed_graph <- filterM hasFailed graph
+-     let order g  = flattenSCCs $ GHC.topSortModuleGraph True g Nothing
++     let order g  = flattenSCCs $ ghc_topSortModuleGraph True g Nothing
+          pick xs  = case xs of
+                       x : _ -> GHC.ml_hs_file (GHC.ms_location x)
+                       _     -> Nothing
+@@ -1809,7 +1810,7 @@ doLoad retain_context howmuch = do
+   case wasok of
+     Succeeded -> do
+       names <- GHC.getRdrNamesInScope
+-      loaded <- getModuleGraph >>= filterM GHC.isLoaded . map GHC.ms_mod_name
++      loaded <- ghc_getModuleGraph >>= filterM GHC.isLoaded . map GHC.ms_mod_name
+       v <- lift (fmap mod_infos getGHCiState)
+       !newInfos <- collectInfo v loaded
+       lift (modifyGHCiState (\s -> s { mod_infos = newInfos, rdrNamesInScope = names }))
+@@ -1837,7 +1838,7 @@ setContextAfterLoad keep_ctxt ms = do
+   targets <- GHC.getTargets
+   case [ m | Just m <- map (findTarget ms) targets ] of
+         []    ->
+-          let graph' = flattenSCCs (GHC.topSortModuleGraph True ms Nothing) in
++          let graph' = flattenSCCs (ghc_topSortModuleGraph True ms Nothing) in
+           load_this (last graph')
+         (m:_) ->
+           load_this m
+@@ -2714,7 +2715,7 @@ showDynFlags show_all dflags = do
+           where is_on = test f dflags
+                 quiet = not show_all && test f default_dflags == is_on
+ 
+-        default_dflags = defaultDynFlags (settings dflags)
++        default_dflags = ghc_defaultDynFlags (settings dflags)
+ 
+         fstr   str = text "-f"    Outputable.<> text str
+         fnostr str = text "-fno-" Outputable.<> text str
+@@ -2987,7 +2988,7 @@ showModules = do
+ 
+ getLoadedModules :: GHC.GhcMonad m => m [GHC.ModSummary]
+ getLoadedModules = do
+-  graph <- GHC.getModuleGraph
++  graph <- ghc_getModuleGraph
+   filterM (GHC.isLoaded . GHC.ms_mod_name) graph
+ 
+ showBindings :: GHCi ()
+@@ -3002,7 +3003,7 @@ showBindings = do
+   where
+     makeDoc (AnId i) = pprTypeAndContents i
+     makeDoc tt = do
+-        mb_stuff <- GHC.getInfo False (getName tt)
++        mb_stuff <- ghc_getInfo False (getName tt)
+         return $ maybe (text "") pprTT mb_stuff
+ 
+     pprTT :: (TyThing, Fixity, [GHC.ClsInst], [GHC.FamInst]) -> SDoc
+@@ -3109,7 +3110,7 @@ showLanguages' show_all dflags =
+                 quiet = not show_all && test f default_dflags == is_on
+ 
+    default_dflags =
+-       defaultDynFlags (settings dflags) `lang_set`
++       ghc_defaultDynFlags (settings dflags) `lang_set`
+          case language dflags of
+            Nothing -> Just Haskell2010
+            other   -> other
+@@ -3223,7 +3224,7 @@ completeHomeModule = wrapIdentCompleter listHomeModules
+ 
+ listHomeModules :: String -> GHCi [String]
+ listHomeModules w = do
+-    g <- GHC.getModuleGraph
++    g <- ghc_getModuleGraph
+     let home_mods = map GHC.ms_mod_name g
+     dflags <- getDynFlags
+     return $ sort $ filter (w `isPrefixOf`)
+@@ -3679,7 +3680,7 @@ list2  _other =
+ 
+ listModuleLine :: Module -> Int -> InputT GHCi ()
+ listModuleLine modl line = do
+-   graph <- GHC.getModuleGraph
++   graph <- ghc_getModuleGraph
+    let this = filter ((== modl) . GHC.ms_mod) graph
+    case this of
+      [] -> panic "listModuleLine"
+diff --git a/src/Intero/Compat.hs b/src/Intero/Compat.hs
+new file mode 100644
+index 0000000..0fd3064
+--- /dev/null
++++ b/src/Intero/Compat.hs
+@@ -0,0 +1,119 @@
++{-# LANGUAGE CPP #-}
++
++-- | Compatibility between GHC API versions.
++
++module Intero.Compat
++  ( ghc_getModuleGraph
++  , ghc_getInfo
++  , ghc_defaultDynFlags
++  , ghc_topSortModuleGraph
++  , ghc_mkWarn
++  , ghc_mkErr
++  , ghc_errMsg
++  , ghc_warnMsg
++  , ghc_tyConFlavour
++  , StageReaderName
++  , StageReaderRdrName
++  , StageReaderId
++  ) where
++
++import           TyCoRep
++import           TyCon
++#if __GLASGOW_HASKELL__ > 802
++import           CmdLineParser
++#endif
++#if __GLASGOW_HASKELL__ >= 800
++import qualified Data.Graph as SCC
++#else
++import qualified Digraph as SCC
++#endif
++import           DynFlags
++import           GHC
++
++ghc_tyConFlavour :: TyCon -> String
++#if __GLASGOW_HASKELL__ <= 802
++ghc_tyConFlavour = tyConFlavour
++#else
++ghc_tyConFlavour n =
++  if tyConFlavour n == ClassFlavour
++    then "class"
++    else ""
++#endif
++
++ghc_defaultDynFlags :: Settings -> DynFlags
++#if __GLASGOW_HASKELL__ <= 802
++ghc_defaultDynFlags = defaultDynFlags
++#else
++ghc_defaultDynFlags s = defaultDynFlags s []
++#endif
++
++ghc_getInfo :: GhcMonad m => Bool -> Name -> m (Maybe (TyThing, Fixity, [ClsInst], [FamInst]))
++#if __GLASGOW_HASKELL__ <= 802
++ghc_getInfo = getInfo
++#else
++ghc_getInfo x y = fmap (fmap (\(a,b,c,d,_) -> (a,b,c,d))) (getInfo x y)
++#endif
++
++ghc_getModuleGraph :: GhcMonad m => m [ModSummary]
++#if __GLASGOW_HASKELL__ <= 802
++ghc_getModuleGraph = GHC.getModuleGraph
++#else
++ghc_getModuleGraph = fmap mgModSummaries GHC.getModuleGraph
++#endif
++
++ghc_topSortModuleGraph :: Bool -> [ModSummary] -> Maybe ModuleName -> [SCC.SCC ModSummary]
++#if __GLASGOW_HASKELL__ <= 802
++ghc_topSortModuleGraph = GHC.topSortModuleGraph
++#else
++ghc_topSortModuleGraph bool sums may = GHC.topSortModuleGraph bool (mkModuleGraph sums) may
++#endif
++
++#if __GLASGOW_HASKELL__ <= 802
++type StageReaderName = Name
++#else
++type StageReaderName = GhcRn
++#endif
++
++#if __GLASGOW_HASKELL__ <= 802
++type StageReaderRdrName = RdrName
++#else
++type StageReaderRdrName = GhcPs
++#endif
++
++#if __GLASGOW_HASKELL__ <= 802
++type StageReaderId = Id
++#else
++type StageReaderId = GhcTc
++#endif
++
++#if __GLASGOW_HASKELL__ > 802
++ghc_mkWarn :: Located String -> Warn
++ghc_mkWarn = Warn CmdLineParser.NoReason
++#else
++ghc_mkWarn :: a -> a
++ghc_mkWarn = id
++#endif
++
++#if __GLASGOW_HASKELL__ > 802
++ghc_mkErr :: Located String -> Err
++ghc_mkErr = Err
++#else
++ghc_mkErr :: a -> a
++ghc_mkErr = id
++#endif
++
++#if __GLASGOW_HASKELL__ > 802
++ghc_errMsg :: Err -> Located String
++ghc_errMsg = errMsg
++#else
++ghc_errMsg :: a -> a
++ghc_errMsg = id
++#endif
++
++#if __GLASGOW_HASKELL__ > 802
++ghc_warnMsg :: Warn -> Located String
++ghc_warnMsg = warnMsg
++#else
++ghc_warnMsg :: a -> a
++ghc_warnMsg = id
++#endif
+diff --git a/src/Main.hs b/src/Main.hs
+index 79e99ff..a2bdca9 100644
+--- a/src/Main.hs
++++ b/src/Main.hs
+@@ -25,6 +25,7 @@ import qualified Paths_intero
+ 
+ -- ghci-ng
+ import qualified GHC.Paths
++import Intero.Compat
+ 
+ -- Implementations of the various modes (--show-iface, mkdependHS. etc.)
+ import           LoadIface ( showIface )
+@@ -225,7 +226,7 @@ main' postLoadMode dflags0 args flagWarnings = do
+ 
+   GHC.prettyPrintGhcErrors dflags4 $ do
+ 
+-  let flagWarnings' = flagWarnings ++ dynamicFlagWarnings
++  let flagWarnings' = (map ghc_mkWarn flagWarnings) ++ dynamicFlagWarnings
+ 
+   handleSourceError (\e -> do
+        GHC.printException e
+@@ -561,14 +562,14 @@ parseModeFlags args = do
+       mode = case mModeFlag of
+              Nothing     -> doMakeMode
+              Just (m, _) -> m
+-      errs = errs1 ++ map (mkGeneralLocated "on the commandline") errs2
++      errs = errs1 ++ map ghc_mkErr (map (mkGeneralLocated "on the commandline") errs2)
+   when (not (null errs)) $ throwGhcException
+ #if __GLASGOW_HASKELL__ < 709
+                              $ errorsToGhcException errs
+ #else
+-                             $ errorsToGhcException $ map (\(L sp e) -> (show sp, e)) errs
++                             $ errorsToGhcException $ map (\(L sp e) -> (show sp, e)) (map ghc_errMsg errs)
+ #endif
+-  return (mode, flags' ++ leftover, warns)
++  return (mode, flags' ++ leftover, map ghc_warnMsg warns)
+ 
+ type ModeM = CmdLineP (Maybe (Mode, String), [String], [Located String])
+   -- mode flags sometimes give rise to new DynFlags (eg. -C, see below)
+diff --git a/src/Intero/Compat.hs b/src/Intero/Compat.hs
+index 0fd3064..205f312 100644
+--- a/src/Intero/Compat.hs
++++ b/src/Intero/Compat.hs
+@@ -17,7 +17,9 @@ module Intero.Compat
+   , StageReaderId
+   ) where
+ 
++#if __GLASGOW_HASKELL__ > 800
+ import           TyCoRep
++#endif
+ import           TyCon
+ #if __GLASGOW_HASKELL__ > 802
+ import           CmdLineParser
+@@ -34,10 +36,14 @@ ghc_tyConFlavour :: TyCon -> String
+ #if __GLASGOW_HASKELL__ <= 802
+ ghc_tyConFlavour = tyConFlavour
+ #else
++#if __GLASGOW_HASKELL__ > 800
+ ghc_tyConFlavour n =
+   if tyConFlavour n == ClassFlavour
+     then "class"
+     else ""
++#else
++ghc_tyConFlavour _ = ""
++#endif
+ #endif
+ 
+ ghc_defaultDynFlags :: Settings -> DynFlags
+
+diff --git a/src/Intero/Compat.hs b/src/Intero/Compat.hs
+index 205f312..e061d50 100644
+--- a/src/Intero/Compat.hs
++++ b/src/Intero/Compat.hs
+@@ -33,15 +33,15 @@ import           DynFlags
+ import           GHC
+ 
+ ghc_tyConFlavour :: TyCon -> String
+-#if __GLASGOW_HASKELL__ <= 802
+-ghc_tyConFlavour = tyConFlavour
+-#else
+-#if __GLASGOW_HASKELL__ > 800
++#if __GLASGOW_HASKELL__ > 802
+ ghc_tyConFlavour n =
+   if tyConFlavour n == ClassFlavour
+     then "class"
+     else ""
+ #else
++#if __GLASGOW_HASKELL__ > 800
++ghc_tyConFlavour = tyConFlavour
++#else
+ ghc_tyConFlavour _ = ""
+ #endif
+ #endif

@@ -40,3 +40,10 @@ DEPEND="${RDEPEND}
 PATCHES=(
 	"${FILESDIR}"/ghc-8.4.patch
 )
+
+src_prepare() {
+        default
+
+        cabal_chdeps \
+                'base >=4.9 && <4.11' 'base >=4.9 && <4.13'
+}

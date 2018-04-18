@@ -11,7 +11,6 @@ inherit haskell-cabal git-r3
 DESCRIPTION="Haskell source code formatter"
 HOMEPAGE="https://github.com/lspitzner/brittany/"
 EGIT_REPO_URI="https://github.com/lspitzner/brittany.git"
-EGIT_BRANCH="ghc-8.4"
 
 LICENSE="AGPL-3"
 SLOT="0/${PV}"
