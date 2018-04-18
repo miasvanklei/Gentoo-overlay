@@ -3,11 +3,9 @@
 
 EAPI=6
 
-inherit git-r3
-
 DESCRIPTION="A Smart Ethernet Switch for Earth"
 HOMEPAGE="https://github.com/zerotier/ZeroTierOne"
-EGIT_REPO_URI="https://github.com/zerotier/ZeroTierOne"
+SRC_URI="https://github.com/zerotier/${PN}/archive/${PV}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0"
