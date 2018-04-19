@@ -20,13 +20,12 @@ IUSE=""
 
 RDEPEND=""
 DEPEND="${RDEPEND}
-	>=sys-devel/llvm-3.9
-	>=sys-devel/clang-3.9
-	sys-libs/libpgmath
 	${PYTHON_DEPS}"
 
 CMAKE_BUILD_TYPE=Release
 
+S=${WORKDIR}/${P}/runtime/libpgmath
+
 PATCHES=(
-	${FILESDIR}/fix-compile.patch
+        ${FILESDIR}/fix-compile.patch
 )

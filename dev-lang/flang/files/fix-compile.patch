@@ -1,3 +1,29 @@
+diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
+index a38de60..00b4aec 100644
+--- a/runtime/flang/CMakeLists.txt
++++ b/runtime/flang/CMakeLists.txt
+@@ -14,7 +14,7 @@
+ # limitations under the License.
+ #
+ 
+-enable_language(C ASM Fortran) # Enable assembly and Fortran
++enable_language(C Fortran) # Enable assembly and Fortran
+ 
+ SET(ASM_OPTIONS "-DLINUX_ELF")
+ SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
+@@ -428,6 +428,12 @@ target_link_libraries(flang_shared ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/l
+ # Resolve symbols against libm and librt
+ target_link_libraries(flang_shared m rt)
+ 
++find_library(
++  LIBPGMATH
++  libpgmath.so
++  HINTS ${CMAKE_BINARY_DIR}/lib)
++target_link_libraries(flang_shared ${LIBPGMATH})
++
+ set(SHARED_LIBRARY FALSE)
+ 
+ set_property(
 diff --git a/runtime/flang/hand.c b/runtime/flang/hand.c
 index bc8b0b6..86335e9 100644
 --- a/runtime/flang/hand.c
@@ -11,26 +37,41 @@ index bc8b0b6..86335e9 100644
  #include "stdioInterf.h"
  #include "fioMacros.h"
  
-diff --git a/runtime/flang/cdexp.c b/runtime/flang/cdexp.c
---- a/runtime/flang/cdexp.c
-+++ b/runtime/flang/cdexp.c
-@@ -19,3 +19,14 @@
+diff --git a/runtime/flangrti/iostdinit.c b/runtime/flangrti/iostdinit.c
+index c2e5ad1..7b1874b 100644
+--- a/runtime/flangrti/iostdinit.c
++++ b/runtime/flangrti/iostdinit.c
+@@ -160,7 +160,7 @@ __io_ferror(void *p)
+ int
+ __io_getfd(void *fp)
+ {
+-  return (((FILE *)fp)->_fileno);
++  return fileno((FILE *)fp);
+ }
  
- /* For X86-64 architectures, cdexp is defined in fastmath.s */
+ /* is a tty? */
+diff --git a/runtime/flangrti/ktrap.c b/runtime/flangrti/ktrap.c
+index 75676d7..6e3830a 100644
+--- a/runtime/flangrti/ktrap.c
++++ b/runtime/flangrti/ktrap.c
+@@ -35,6 +35,7 @@ extern int __ktrapval __attribute__ ((weak));
+ void
+ __ktrap(void)
+ {
++#ifdef __GLIBC__
+   if (&__ktrapval != 0) {
+     int bv = __ktrapval;
+     if (bv != 0) {
+@@ -63,6 +64,7 @@ __ktrap(void)
+       feenableexcept(excepts);  /* glibc 2.2 extension to fenv.h */
+     }
+   }
++#endif
+ }
  
-+ZMPLXFUNC_Z(__mth_i_cdexp)
-+{
-+  ZMPLXARGS_Z;
-+  double x, y, z;
-+  x = exp(real);
-+  __mth_dsincos(imag, &z, &y);
-+  y *= x;
-+  z *= x;
-+  ZRETURN_D_D(y, z); /* should leave y & z in appropriate
-+                  * registers */
-+}
+ #else
 diff --git a/runtime/flangrti/trace_lin.c b/runtime/flangrti/trace_lin.c
-index a316326..0670a67 100644
+index 6974e77..93e20d1 100644
 --- a/runtime/flangrti/trace_lin.c
 +++ b/runtime/flangrti/trace_lin.c
 @@ -17,7 +17,7 @@
@@ -68,24 +109,11 @@ index a316326..0670a67 100644
  }
  
  /*
-diff --git a/runtime/flangrti/iostdinit.c b/runtime/flangrti/iostdinit.c
-index c2e5ad1..7b1874b 100644
---- a/runtime/flangrti/iostdinit.c
-+++ b/runtime/flangrti/iostdinit.c
-@@ -160,7 +160,7 @@ __io_ferror(void *p)
- int
- __io_getfd(void *fp)
- {
--  return (((FILE *)fp)->_fileno);
-+  return fileno((FILE *)fp);
- }
- 
- /* is a tty? */
 diff --git a/runtime/flangrti/x86_64-Linux/flt_env.c b/runtime/flangrti/x86_64-Linux/flt_env.c
-index aeeb05a..94be815 100644
+index 5e63f1c..97af983 100644
 --- a/runtime/flangrti/x86_64-Linux/flt_env.c
 +++ b/runtime/flangrti/x86_64-Linux/flt_env.c
-@@ -608,19 +608,19 @@ __fenv_feraiseexcept(int exc)
+@@ -511,19 +511,19 @@ __fenv_feraiseexcept(int exc)
  int
  __fenv_feenableexcept(int exc)
  {
@@ -108,36 +136,3 @@ index aeeb05a..94be815 100644
  }
  
  int
-diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
-index beca342..537b100 100644
---- a/runtime/flang/CMakeLists.txt
-+++ b/runtime/flang/CMakeLists.txt
-@@ -14,7 +14,7 @@
- # limitations under the License.
- #
- 
--enable_language(C ASM Fortran) # Enable assembly and Fortran
-+enable_language(C Fortran) # Enable assembly and Fortran
- 
- SET(ASM_OPTIONS "-DLINUX_ELF")
- SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
-diff --git a/runtime/flangrti/ktrap.c b/runtime/flangrti/ktrap.c
-index 75676d7..6e3830a 100644
---- a/runtime/flangrti/ktrap.c
-+++ b/runtime/flangrti/ktrap.c
-@@ -35,6 +35,7 @@ extern int __ktrapval __attribute__ ((weak));
- void
- __ktrap(void)
- {
-+#ifdef __GLIBC__
-   if (&__ktrapval != 0) {
-     int bv = __ktrapval;
-     if (bv != 0) {
-@@ -63,6 +64,7 @@ __ktrap(void)
-       feenableexcept(excepts);  /* glibc 2.2 extension to fenv.h */
-     }
-   }
-+#endif
- }
- 
- #else

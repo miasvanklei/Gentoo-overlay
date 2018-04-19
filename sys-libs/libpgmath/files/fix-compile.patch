@@ -1,0 +1,71 @@
+diff --git a/runtime/libpgmath/lib/x86_64/fast/CMakeLists.txt b/runtime/libpgmath/lib/x86_64/fast/CMakeLists.txt
+index aaf3403..8042275 100644
+--- a/runtime/libpgmath/lib/x86_64/fast/CMakeLists.txt
++++ b/runtime/libpgmath/lib/x86_64/fast/CMakeLists.txt
+@@ -22,7 +22,7 @@ get_property(FLAGS GLOBAL PROPERTY "FLAGS_X8664_L2")
+ set(SRCS
+   fastcdiv.S
+   fastmod.S)
+-libmath_add_object_library("${SRCS}" "${FLAGS}" "${DEFINITIONS}" "")
++libmath_add_object_library("${SRCS}" "${FLAGS} -march=cannonlake" "${DEFINITIONS}" "")
+ 
+ set(TARGET_NAME "mthdecls")
+ list(APPEND PREPROCESSOR "${CMAKE_C_COMPILER} -E -DMTH_CMPLX_C99_ABI -DMTH_NO_STD_MATH_HDRS -dM ${CMAKE_CURRENT_SOURCE_DIR}/../${TARGET_NAME}.h")
+@@ -45,5 +45,5 @@ endif()
+ include_directories(${CMAKE_CURRENT_BINARY_DIR})
+ set(SRCS
+   fastmath.S)
+-libmath_add_object_library("${SRCS}" "-m64 -O3" "${DEFINITIONS}" "fastmath")
++libmath_add_object_library("${SRCS}" "-m64 -O3 -march=cannonlake" "${DEFINITIONS}" "fastmath")
+ add_dependencies(fastmath mthdecls)
+diff --git a/runtime/libpgmath/lib/x86_64/libm_amd.h b/runtime/libpgmath/lib/x86_64/libm_amd.h
+index b4f735d..023962a 100644
+--- a/runtime/libpgmath/lib/x86_64/libm_amd.h
++++ b/runtime/libpgmath/lib/x86_64/libm_amd.h
+@@ -58,18 +58,10 @@ regulations applicable in licensee's jurisdiction.
+ 
+ #include <math.h>
+ 
+-#if !defined(TARGET_WIN)
+-typedef long __INT8_T;
+-typedef unsigned long __UINT8_T;
+-
+-#else
+ /*****  hacks for windows & open tools *****/
+ typedef long long __INT8_T;
+ typedef unsigned long long __UINT8_T;
+ 
+-/* Open Tools #defines ldexpf */
+-#undef ldexpf
+-
+ /* Open Tools does not declare an exception struct */
+ struct exception {
+   int type;
+@@ -78,7 +70,26 @@ struct exception {
+   double arg2;
+   double retval;
+ };
+-#endif
++
++/* fperror error msg selectors */
++#define FP_NOERR                 0
++#define FP_ILLEGAL_INPUT_OR_NAN -1
++#define FP_OVERFLOW_ERROR       -2
++#define FP_UNDERFLOW_ERROR      -3
++#define FP_UNDEFINED_ERROR      -4
++
++#define FPE_NOERR FP_NOERR                /* Everything OK */
++#define FPE_FPOVF FP_OVERFLOW_ERROR       /* floating point overflow */
++#define FPE_FPUNF FP_UNDERFLOW_ERROR      /* floating point underflow */
++#define FPE_IOVF  FP_OVERFLOW_ERROR       /* integer overflow (fix/dfix only) */
++#define FPE_INVOP FP_ILLEGAL_INPUT_OR_NAN /* invalid operand */
++#define FPE_DIVZ  FP_OVERFLOW_ERROR       /* reciprocal of zero */
++
++#define NANS
++#define SING FPE_DIVZ
++#define DOMAIN FPE_INVOP
++#define UNDERFLOW FPE_FPUNF
++#define OVERFLOW FPE_FPOVF
+ 
+ #ifndef _COMPLEX_DEFINED
+ struct _complex {
