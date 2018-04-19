@@ -7,11 +7,11 @@ EAPI=6
 #hackport: flags: -disable-git-info,-hide-dependency-versions,-integration-tests,-static,-supported-build
 
 CABAL_FEATURES="lib profile haddock hoogle hscolour test-suite"
-inherit haskell-cabal git-r3
+inherit haskell-cabal
 
 DESCRIPTION="The Haskell Tool Stack"
 HOMEPAGE="http://haskellstack.org"
-EGIT_REPO_URI="https://github.com/commercialhaskell/stack.git"
+SRC_URI="https://github.com/commercialhaskell/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0/${PV}"
