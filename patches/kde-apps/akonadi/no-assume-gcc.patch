@@ -1,11 +1,11 @@
 --- a/src/server/connection.cpp	2017-05-20 09:33:39.000000000 +0200
 +++ b/src/server/connection.cpp	2017-07-08 15:24:43.545769279 +0200
-@@ -289,7 +289,7 @@
-             // already messed up
-             qCWarning(AKONADISERVER_LOG) << "Protocol exception:" << e.what();
-             m_connectionClosing = true;
+@@ -312,7 +312,7 @@
+                 // already messed up
+                 qCWarning(AKONADISERVER_LOG) << "Protocol exception:" << e.what();
+                 m_connectionClosing = true;
 -#if defined(Q_OS_LINUX)
-+#if defined(__GLIBC__)
-         } catch (abi::__forced_unwind&) {
-             // HACK: NPTL throws __forced_unwind during thread cancellation and
-             // we *must* rethrow it otherwise the program aborts. Due to the issue
++#if defined(__GLIBCXX__)
+             } catch (abi::__forced_unwind&) {
+                 // HACK: NPTL throws __forced_unwind during thread cancellation and
+                 // we *must* rethrow it otherwise the program aborts. Due to the issue

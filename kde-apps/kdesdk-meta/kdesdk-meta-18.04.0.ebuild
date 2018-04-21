@@ -21,6 +21,5 @@ RDEPEND="
 	$(add_kdeapps_dep kompare)
 	$(add_kdeapps_dep kross-interpreters)
 	$(add_kdeapps_dep libkomparediff2)
-	$(add_kdeapps_dep okteta)
 	cvs? ( $(add_kdeapps_dep cervisia) )
 "
