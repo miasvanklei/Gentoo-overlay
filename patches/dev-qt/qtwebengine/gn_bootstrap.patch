@@ -1,13 +1,5 @@
 --- a/src/3rdparty/chromium/tools/gn/bootstrap/bootstrap.py
 +++ a/src/3rdparty/chromium/tools/gn/bootstrap/bootstrap.py
-@@ -20,6 +20,7 @@ import errno
- import logging
- import optparse
- import os
-+import platform
- import shutil
- import subprocess
- import sys
 @@ -31,6 +32,7 @@ SRC_ROOT = os.path.dirname(os.path.dirname(GN_ROOT))
  
  is_win = sys.platform.startswith('win')
@@ -34,14 +26,6 @@
        'base/at_exit.cc',
        'base/base_paths.cc',
        'base/base_switches.cc',
-@@ -449,6 +449,7 @@ def write_gn_ninja(path, root_gen_dir, options):
-       'base/metrics/histogram_base.cc',
-       'base/metrics/histogram_functions.cc',
-       'base/metrics/histogram_samples.cc',
-+      'base/metrics/histogram_snapshot_manager.cc',
-       'base/metrics/metrics_hashes.cc',
-       'base/metrics/persistent_histogram_allocator.cc',
-       'base/metrics/persistent_memory_allocator.cc',
 @@ -653,10 +654,11 @@ def write_gn_ninja(path, root_gen_dir, options):
          'base/threading/platform_thread_linux.cc',
      ])
