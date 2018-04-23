@@ -1,0 +1,493 @@
+From ff5322d57858418cce92f9f0ce385912785b5a54 Mon Sep 17 00:00:00 2001
+From: Ryan Scott <ryan.gl.scott@gmail.com>
+Date: Fri, 30 Mar 2018 10:44:46 -0400
+Subject: [PATCH] Allow building on GHC 8.4.1
+
+---
+ Setup.hs    | 28 +++++++++++++++++++---------
+ idris.cabal |  4 ++--
+ 2 files changed, 21 insertions(+), 11 deletions(-)
+
+diff --git a/Setup.hs b/Setup.hs
+index a14d946ee..1db0c20e8 100644
+--- a/Setup.hs
++++ b/Setup.hs
+@@ -14,7 +14,7 @@ import Distribution.Simple.InstallDirs as I
+ import Distribution.Simple.LocalBuildInfo as L
+ import qualified Distribution.Simple.Setup as S
+ import qualified Distribution.Simple.Program as P
+-import Distribution.Simple.Utils (createDirectoryIfMissingVerbose, rewriteFile, notice, installOrdinaryFiles)
++import Distribution.Simple.Utils
+ import Distribution.Compiler
+ import Distribution.PackageDescription
+ import Distribution.Text
+@@ -66,28 +66,28 @@ windres verbosity = P.runProgramInvocation verbosity . P.simpleProgramInvocation
+ 
+ usesGMP :: S.ConfigFlags -> Bool
+ usesGMP flags =
+-  case lookup (mkFlagName "gmp") (S.configConfigurationsFlags flags) of
++  case lookupFlagAssignment (mkFlagName "gmp") (S.configConfigurationsFlags flags) of
+     Just True -> True
+     Just False -> False
+     Nothing -> False
+ 
+ execOnly :: S.ConfigFlags -> Bool
+ execOnly flags =
+-  case lookup (mkFlagName "execonly") (S.configConfigurationsFlags flags) of
++  case lookupFlagAssignment (mkFlagName "execonly") (S.configConfigurationsFlags flags) of
+     Just True -> True
+     Just False -> False
+     Nothing -> False
+ 
+ isRelease :: S.ConfigFlags -> Bool
+ isRelease flags =
+-    case lookup (mkFlagName "release") (S.configConfigurationsFlags flags) of
++    case lookupFlagAssignment (mkFlagName "release") (S.configConfigurationsFlags flags) of
+       Just True -> True
+       Just False -> False
+       Nothing -> False
+ 
+ isFreestanding :: S.ConfigFlags -> Bool
+ isFreestanding flags =
+-  case lookup (mkFlagName "freestanding") (S.configConfigurationsFlags flags) of
++  case lookupFlagAssignment (mkFlagName "freestanding") (S.configConfigurationsFlags flags) of
+     Just True -> True
+     Just False -> False
+     Nothing -> False
+@@ -97,6 +97,11 @@ mkFlagName :: String -> FlagName
+ mkFlagName = FlagName
+ #endif
+ 
++#if !(MIN_VERSION_Cabal(2,2,0))
++lookupFlagAssignment :: FlagName -> FlagAssignment -> Maybe Bool
++lookupFlagAssignment = lookup
++#endif
++
+ -- -----------------------------------------------------------------------------
+ -- Clean
+ 
+@@ -136,7 +141,7 @@ generateVersionModule verbosity dir release = do
+     putStrLn $ "Generating " ++ versionModulePath ++
+              if release then " for release" else " for prerelease " ++ hash
+     createDirectoryIfMissingVerbose verbosity True dir
+-    rewriteFile versionModulePath (versionModuleContents hash)
++    rewriteFileEx verbosity versionModulePath (versionModuleContents hash)
+ 
+   where versionModuleContents h = "module Version_idris where\n\n" ++
+                                   "gitHash :: String\n" ++
+@@ -150,7 +155,7 @@ generateTargetModule verbosity dir targetDir = do
+     let targetModulePath = dir </> "Target_idris" Px.<.> "hs"
+     putStrLn $ "Generating " ++ targetModulePath
+     createDirectoryIfMissingVerbose verbosity True dir
+-    rewriteFile targetModulePath (versionModuleContents absPath targetDir)
++    rewriteFileEx verbosity targetModulePath (versionModuleContents absPath targetDir)
+             where versionModuleContents absolute td = "module Target_idris where\n\n" ++
+                                     "import System.FilePath\n" ++
+                                     "import System.Environment\n" ++
+@@ -176,7 +181,7 @@ generateToolchainModule verbosity srcDir toolDir = do
+                                    "getToolchainDir = \"\""
+     let toolPath = srcDir </> "Tools_idris" Px.<.> "hs"
+     createDirectoryIfMissingVerbose verbosity True srcDir
+-    rewriteFile toolPath (commonContent ++ toolContent)
++    rewriteFileEx verbosity toolPath (commonContent ++ toolContent)
+ 
+ idrisConfigure _ flags pkgdesc local = do
+     configureRTS
+@@ -240,6 +245,11 @@ idrisPostSDist args flags desc lbi = do
+              (\e -> let e' = (e :: SomeException) in return ())
+   postSDist simpleUserHooks args flags desc lbi
+ 
++#if !(MIN_VERSION_Cabal(2,0,0))
++rewriteFileEx :: Verbosity -> FilePath -> String -> IO ()
++rewriteFileEx _ = rewriteFile
++#endif
++
+ -- -----------------------------------------------------------------------------
+ -- Build
+ 
+diff --git a/idris.cabal b/idris.cabal
+index e4464d460..599fd3f69 100644
+--- a/idris.cabal
++++ b/idris.cabal
+@@ -100,7 +100,7 @@ source-repository head
+ 
+ custom-setup
+   setup-depends:
+-    Cabal >= 1.10 && <2.1,
++    Cabal >= 1.10 && <2.3,
+     base  >= 4 && <5,
+     directory,
+     filepath,
+@@ -309,7 +309,7 @@ Library
+                 , vector-binary-instances < 0.3
+                 , zip-archive > 0.2.3.5 && < 0.4
+                 , fsnotify >= 0.2 && < 2.2
+-                , async < 2.2
++                , async < 2.3
+ 
+   if !impl(ghc >= 8.0)
+     Build-Depends: semigroups == 0.18.*
+From fb717cc23bfe23af416356e44df900939469484b Mon Sep 17 00:00:00 2001
+From: Niklas Larsson <niklas@mm.st>
+Date: Thu, 29 Mar 2018 00:48:11 +0200
+Subject: [PATCH] Fix compilation with GHC 8.4
+
+---
+ src/IRTS/JavaScript/Codegen.hs |  7 ++++++-
+ src/Idris/AbsSyntaxTree.hs     | 12 ++++++++----
+ src/Idris/Core/ProofState.hs   |  6 +++++-
+ src/Idris/Core/TT.hs           | 17 +++++++++++++----
+ src/Idris/Delaborate.hs        |  6 +++++-
+ src/Idris/Docs.hs              |  6 +++++-
+ src/Idris/Docstrings.hs        |  9 ++++++---
+ src/Idris/Elab/Data.hs         |  6 +++++-
+ src/Idris/Elab/Utils.hs        |  6 +++++-
+ src/Idris/Output.hs            |  6 +++++-
+ src/Idris/REPL.hs              |  6 +++++-
+ src/Idris/TypeSearch.hs        | 19 +++++++++++++++++--
+ 12 files changed, 85 insertions(+), 21 deletions(-)
+
+diff --git a/src/IRTS/JavaScript/Codegen.hs b/src/IRTS/JavaScript/Codegen.hs
+index e389682dd..af38d86ea 100644
+--- a/src/IRTS/JavaScript/Codegen.hs
++++ b/src/IRTS/JavaScript/Codegen.hs
+@@ -5,7 +5,7 @@ Description : The JavaScript common code generator.
+ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+-{-# LANGUAGE OverloadedStrings #-}
++{-# LANGUAGE CPP, OverloadedStrings #-}
+ 
+ module IRTS.JavaScript.Codegen( codegenJs
+                               , CGConf(..)
+@@ -48,6 +48,11 @@ data CGStats = CGStats { usedBigInt :: Bool
+                        , hiddenClasses :: Set HiddenClass
+                        }
+ 
++#if (MIN_VERSION_base(4,11,0))
++instance Semigroup CGStats where
++    (<>) = mappend
++#endif
++
+ -- If we generate code for two declarations we want to merge their code
+ -- generation stats.
+ instance Monoid CGStats where
+diff --git a/src/Idris/AbsSyntaxTree.hs b/src/Idris/AbsSyntaxTree.hs
+index b9857f472..b94765aef 100644
+--- a/src/Idris/AbsSyntaxTree.hs
++++ b/src/Idris/AbsSyntaxTree.hs
+@@ -6,9 +6,10 @@ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+ 
+-{-# LANGUAGE DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric,
+-             DeriveTraversable, FlexibleContexts, FlexibleInstances,
+-             MultiParamTypeClasses, PatternGuards, TypeSynonymInstances #-}
++{-# LANGUAGE CPP, DeriveDataTypeable, DeriveFoldable, DeriveFunctor,
++             DeriveGeneric, DeriveTraversable, FlexibleContexts,
++             FlexibleInstances, MultiParamTypeClasses, PatternGuards,
++             TypeSynonymInstances #-}
+ 
+ module Idris.AbsSyntaxTree where
+ 
+@@ -25,8 +26,11 @@ import Util.Pretty
+ import Idris.Colours
+ 
+ import System.IO
+-
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding (Foldable, Traversable, (<$>), (<>))
++#else
+ import Prelude hiding (Foldable, Traversable, (<$>))
++#endif
+ 
+ import Control.Applicative ((<|>))
+ import qualified Control.Monad.Trans.Class as Trans (lift)
+diff --git a/src/Idris/Core/ProofState.hs b/src/Idris/Core/ProofState.hs
+index 062bb0349..0f4ef5e58 100644
+--- a/src/Idris/Core/ProofState.hs
++++ b/src/Idris/Core/ProofState.hs
+@@ -10,7 +10,7 @@ proofs, and some high level commands for introducing new theorems,
+ evaluation/checking inside the proof system, etc.
+ -}
+ 
+-{-# LANGUAGE FlexibleContexts, FlexibleInstances, MultiParamTypeClasses,
++{-# LANGUAGE CPP, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses,
+              PatternGuards #-}
+ module Idris.Core.ProofState(
+     ProofState(..), newProof, envAtFocus, goalAtFocus
+@@ -32,6 +32,10 @@ import Control.Arrow ((***))
+ import Control.Monad.State.Strict
+ import Data.List
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding ((<>))
++#endif
++
+ data ProofState = PS { thname            :: Name,
+                        holes             :: [Name], -- ^ holes still to be solved
+                        usedns            :: [Name], -- ^ used names, don't use again
+diff --git a/src/Idris/Core/TT.hs b/src/Idris/Core/TT.hs
+index 10900aedf..13e571251 100644
+--- a/src/Idris/Core/TT.hs
++++ b/src/Idris/Core/TT.hs
+@@ -22,10 +22,10 @@ TT is the core language of Idris. The language has:
+    * We have a simple collection of tactics which we use to elaborate source
+      programs with implicit syntax into fully explicit terms.
+ -}
+-{-# LANGUAGE DeriveDataTypeable, DeriveFoldable, DeriveFunctor, DeriveGeneric,
+-             DeriveTraversable, FlexibleContexts, FlexibleInstances,
+-             FunctionalDependencies, MultiParamTypeClasses, PatternGuards,
+-             TypeSynonymInstances #-}
++{-# LANGUAGE CPP, DeriveDataTypeable, DeriveFoldable, DeriveFunctor,
++             DeriveGeneric, DeriveTraversable, FlexibleContexts,
++             FlexibleInstances, FunctionalDependencies, MultiParamTypeClasses,
++             PatternGuards, TypeSynonymInstances #-}
+ {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+ module Idris.Core.TT(
+     AppStatus(..), ArithTy(..), Binder(..), Const(..), Ctxt(..)
+@@ -63,6 +63,10 @@ import Prelude (Bool(..), Double, Enum(..), Eq(..), FilePath, Functor(..), Int,
+                 Ordering(..), Show(..), String, div, error, fst, max, min, mod,
+                 not, otherwise, read, snd, ($), (&&), (.), (||))
+ 
++#if (MIN_VERSION_base(4,11,0))
++import qualified Prelude as S (Semigroup(..))
++#endif
++
+ import Control.Applicative (Alternative, Applicative(..))
+ import qualified Control.Applicative as A (Alternative(..))
+ import Control.DeepSeq (($!!))
+@@ -117,6 +121,11 @@ fc_end (FC _ _ end) = end
+ fc_end NoFC = (0, 0)
+ fc_end (FileFC f) = (0, 0)
+ 
++#if (MIN_VERSION_base(4,11,0))
++instance S.Semigroup FC where
++    (<>) = mappend
++#endif
++
+ instance Monoid FC where
+   mempty = NoFC
+ 
+diff --git a/src/Idris/Delaborate.hs b/src/Idris/Delaborate.hs
+index c6b8f4982..796de9d50 100644
+--- a/src/Idris/Delaborate.hs
++++ b/src/Idris/Delaborate.hs
+@@ -5,7 +5,7 @@ Description : Convert core TT back into high level syntax, primarily for display
+ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+-{-# LANGUAGE PatternGuards #-}
++{-# LANGUAGE CPP, PatternGuards #-}
+ {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+ module Idris.Delaborate (
+     annName, bugaddr, delab, delabWithEnv, delabDirect, delab', delabMV, delabSugared
+@@ -21,7 +21,11 @@ import Idris.ErrReverse
+ 
+ import Util.Pretty
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding ((<$>), (<>))
++#else
+ import Prelude hiding ((<$>))
++#endif
+ 
+ import Control.Applicative (Alternative((<|>)))
+ import Control.Monad.State
+diff --git a/src/Idris/Docs.hs b/src/Idris/Docs.hs
+index dd8dd5d21..ff1d5ee2f 100644
+--- a/src/Idris/Docs.hs
++++ b/src/Idris/Docs.hs
+@@ -6,7 +6,7 @@ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+ 
+-{-# LANGUAGE DeriveFunctor, MultiWayIf, PatternGuards #-}
++{-# LANGUAGE CPP, DeriveFunctor, MultiWayIf, PatternGuards #-}
+ {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+ 
+ module Idris.Docs (
+@@ -30,7 +30,11 @@ import Idris.Options (HowMuchDocs(..))
+ 
+ import Util.Pretty
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding ((<$>), (<>))
++#else
+ import Prelude hiding ((<$>))
++#endif
+ 
+ import Data.List
+ import Data.Maybe
+diff --git a/src/Idris/Docstrings.hs b/src/Idris/Docstrings.hs
+index a581565b9..ca5144552 100644
+--- a/src/Idris/Docstrings.hs
++++ b/src/Idris/Docstrings.hs
+@@ -6,8 +6,8 @@ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+ 
+-{-# LANGUAGE DeriveFoldable, DeriveFunctor, DeriveGeneric, DeriveTraversable,
+-             ScopedTypeVariables #-}
++{-# LANGUAGE CPP, DeriveFoldable, DeriveFunctor, DeriveGeneric,
++             DeriveTraversable, ScopedTypeVariables #-}
+ {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+ module Idris.Docstrings (
+     Docstring(..), Block(..), Inline(..), parseDocstring, renderDocstring
+@@ -19,8 +19,11 @@ import Idris.Core.TT (Err, Name, OutputAnnotation(..), Term, TextFormatting(..))
+ 
+ import Util.Pretty
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding ((<$>), (<>))
++#else
+ import Prelude hiding ((<$>))
+-
++#endif
+ import qualified Cheapskate as C
+ import Cheapskate.Html (renderDoc)
+ import qualified Cheapskate.Types as CT
+diff --git a/src/Idris/Elab/Data.hs b/src/Idris/Elab/Data.hs
+index 47a20bf89..5d4de5a3a 100644
+--- a/src/Idris/Elab/Data.hs
++++ b/src/Idris/Elab/Data.hs
+@@ -5,7 +5,7 @@ Description : Code to elaborate data structures.
+ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+-{-# LANGUAGE PatternGuards #-}
++{-# LANGUAGE CPP, PatternGuards #-}
+ module Idris.Elab.Data(elabData) where
+ 
+ import Idris.AbsSyntax
+@@ -24,7 +24,11 @@ import Idris.Output (iWarn, sendHighlighting)
+ 
+ import Util.Pretty
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding (id, (.), (<>))
++#else
+ import Prelude hiding (id, (.))
++#endif
+ 
+ import Control.Category
+ import Control.Monad
+diff --git a/src/Idris/Elab/Utils.hs b/src/Idris/Elab/Utils.hs
+index 46dd882d0..7ab6a6028 100644
+--- a/src/Idris/Elab/Utils.hs
++++ b/src/Idris/Elab/Utils.hs
+@@ -5,7 +5,7 @@ Description : Elaborator utilities.
+ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+-{-# LANGUAGE FlexibleContexts, PatternGuards #-}
++{-# LANGUAGE CPP, FlexibleContexts, PatternGuards #-}
+ module Idris.Elab.Utils where
+ 
+ import Idris.AbsSyntax
+@@ -21,6 +21,10 @@ import Idris.Output
+ 
+ import Util.Pretty
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding ((<>))
++#endif
++
+ import Control.Monad
+ import Control.Monad.State
+ import Data.List
+diff --git a/src/Idris/Output.hs b/src/Idris/Output.hs
+index 3ffce2363..abdc60da6 100644
+--- a/src/Idris/Output.hs
++++ b/src/Idris/Output.hs
+@@ -6,7 +6,7 @@ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+ 
+-{-# LANGUAGE FlexibleInstances #-}
++{-# LANGUAGE CPP, FlexibleInstances #-}
+ {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+ 
+ module Idris.Output (clearHighlights, emitWarning, formatMessage, idemodePutSExp,
+@@ -30,7 +30,11 @@ import Util.Pretty
+ import Util.ScreenSize (getScreenWidth)
+ import Util.System (isATTY)
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding ((<$>), (<>))
++#else
+ import Prelude hiding ((<$>))
++#endif
+ 
+ import Control.Arrow (first)
+ import Control.Monad.Trans.Except (ExceptT(ExceptT), runExceptT)
+diff --git a/src/Idris/REPL.hs b/src/Idris/REPL.hs
+index 53cc9d1aa..82f7b6100 100644
+--- a/src/Idris/REPL.hs
++++ b/src/Idris/REPL.hs
+@@ -5,7 +5,7 @@ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+ 
+-{-# LANGUAGE FlexibleContexts, PatternGuards #-}
++{-# LANGUAGE CPP, FlexibleContexts, PatternGuards #-}
+ -- FIXME: {-# OPTIONS_GHC -fwarn-incomplete-patterns #-}
+ {-# OPTIONS_GHC -fwarn-unused-imports #-}
+ 
+@@ -82,7 +82,11 @@ import Idris.WhoCalls
+ import IRTS.CodegenCommon
+ import IRTS.Compiler
+ import Network
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding (id, (.), (<$>), (<>))
++#else
+ import Prelude hiding (id, (.), (<$>))
++#endif
+ import System.Console.Haskeline as H
+ import System.Directory
+ import System.Environment
+diff --git a/src/Idris/TypeSearch.hs b/src/Idris/TypeSearch.hs
+index 157473946..a5c8bfa7c 100644
+--- a/src/Idris/TypeSearch.hs
++++ b/src/Idris/TypeSearch.hs
+@@ -5,7 +5,7 @@ Description : A Hoogle for Idris.
+ License     : BSD3
+ Maintainer  : The Idris Community.
+ -}
+-{-# LANGUAGE ScopedTypeVariables #-}
++{-# LANGUAGE CPP, ScopedTypeVariables #-}
+ 
+ module Idris.TypeSearch (
+     searchByType
+@@ -32,8 +32,12 @@ import Idris.Output (iPrintResult, iRenderError, iRenderOutput, iRenderResult,
+ 
+ import Util.Pretty (Doc, annotate, char, text, vsep, (<>))
+ 
++#if (MIN_VERSION_base(4,11,0))
++import Prelude hiding (Semigroup(..), pred)
++import qualified Prelude as S (Semigroup(..))
++#else
+ import Prelude hiding (pred)
+-
++#endif
+ import Control.Applicative (Applicative(..), (<$>), (<*>), (<|>))
+ import Control.Arrow (first, second, (&&&), (***))
+ import Control.Monad (guard, when)
+@@ -238,6 +242,17 @@ instance Ord Score where
+   compare = comparing defaultScoreFunction
+ 
+ 
++#if (MIN_VERSION_base(4,11,0))
++instance S.Semigroup a => S.Semigroup (Sided a) where
++    (Sided l1 r1) <> (Sided l2 r2) = Sided (l1 S.<> l2) (r1 S.<> r2)
++
++instance S.Semigroup AsymMods where
++    (<>) = mappend
++
++instance S.Semigroup Score where
++    (<>) = mappend
++#endif
++
+ instance Monoid a => Monoid (Sided a) where
+   mempty = Sided mempty mempty
+   (Sided l1 r1) `mappend` (Sided l2 r2) = Sided (l1 `mappend` l2) (r1 `mappend` r2)
