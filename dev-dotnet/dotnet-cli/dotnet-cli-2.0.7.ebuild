@@ -128,19 +128,19 @@ src_install() {
 	cp -pPR "${CLI_S}"/* "${ddest}" || die
 
 	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${CORECLR_S}/bin/Product/Linux.x64.Release/${file}" "${ddest_core}/${PV}/" || die
+		cp -pP "${CORECLR_S}/bin/Product/Linux.x64.Release/${file}" "${ddest_core}/2.0.5/" || die
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/${PV}/" || die
+		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/2.0.5/" || die
 	done
 
 	for file in "${CRYPTO_FILES[@]}"; do
-		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/${PV}/" || die
+		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/2.0.5/" || die
 	done
 
-        cp -pP "${CORESETUP_S}/cli/fxr/libhostfxr.so" "${ddest}/host/fxr/${PV}/" || die
-        cp -pP "${CORESETUP_S}/cli/dll/libhostpolicy.so" "${ddest_core}/${PV}/" || die
+        cp -pP "${CORESETUP_S}/cli/fxr/libhostfxr.so" "${ddest}/host/fxr/2.0.5/" || die
+        cp -pP "${CORESETUP_S}/cli/dll/libhostpolicy.so" "${ddest_core}/2.0.5/" || die
 	cp -pP "${CORESETUP_S}/cli/exe/dotnet/dotnet" "${ddest}/dotnet" || die
 
 	dosym "../../opt/dotnet_cli/dotnet" "/usr/bin/dotnet"
