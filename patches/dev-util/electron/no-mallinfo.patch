@@ -1,9 +1,9 @@
 --- a/chromium/base/trace_event/malloc_dump_provider.cc
 +++ b/chromium/base/trace_event/malloc_dump_provider.cc
 @@ -61,7 +61,7 @@ bool MallocDumpProvider::OnMemoryDump(co
-   resident_size = stats.max_size_in_use;
-   allocated_objects_size = all_heap_info.allocated_size;
-   allocated_objects_count = all_heap_info.block_count;
+   resident_size = main_heap_info.committed_size;
+   allocated_objects_size = main_heap_info.allocated_size;
+   allocated_objects_count = main_heap_info.block_count;
 -#else
 +#elif defined(OS_LINUX) && defined(__GLIBC__)
    struct mallinfo info = mallinfo();
@@ -73,9 +73,9 @@
  
  // TODO(tasak): Once it is possible to use memory-infra without tracing,
 @@ -1839,7 +1882,7 @@ void RenderThreadImpl::RecordPurgeAndSuspendMetrics() const {
-                           blink_stats.partitionAllocTotalAllocatedBytes / 1024);
-   UMA_HISTOGRAM_MEMORY_KB("PurgeAndSuspend.Memory.BlinkGCKB",
-                           blink_stats.blinkGCTotalAllocatedBytes / 1024);
+   memory_metrics->partition_alloc_kb =
+       blink_stats.partitionAllocTotalAllocatedBytes / 1024;
+   memory_metrics->blink_gc_kb = blink_stats.blinkGCTotalAllocatedBytes / 1024;
 -#if defined(OS_LINUX) || defined(OS_ANDROID)
 +#if (defined(OS_LINUX) && defined(__GLIBC__)) || defined(OS_ANDROID)
    struct mallinfo minfo = mallinfo();

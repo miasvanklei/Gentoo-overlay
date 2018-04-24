@@ -13,17 +13,17 @@
    // Note: code in this function is NOT async-signal safe (std::string uses
    // malloc internally).
  
--#if defined(__GLIBCXX__) && !defined(__UCLIBC__)
-+#if defined(__GLIBCXX__) &&  defined(__GLIBC__)
+-#if !defined(__UCLIBC__)
++#if defined(__GLIBC__)
  
    std::string::size_type search_from = 0;
    while (search_from < text->size()) {
-@@ -113,7 +113,7 @@
+@@ -116,7 +116,7 @@
+       search_from = mangled_start + 2;
      }
    }
- 
--#endif  // defined(__GLIBCXX__) && !defined(__UCLIBC__)
-+#endif  // defined(__GLIBCXX__) && defined(__GLIBC__)
+-#endif  // !defined(__UCLIBC__)
++#endif  // defined(__GLIBC__)
  }
  #endif  // !defined(USE_SYMBOLIZE)
  
@@ -45,15 +45,15 @@
  
  void PrintToStderr(const char* output) {
    // NOTE: This code MUST be async-signal safe (it's used by in-process
-@@ -718,7 +718,7 @@
-   // NOTE: This code MUST be async-signal safe (it's used by in-process
-   // stack dumping signal handler). NO malloc or stdio is allowed here.
+@@ -722,7 +722,7 @@
+ // NOTE: This code MUST be async-signal safe (it's used by in-process
+ // stack dumping signal handler). NO malloc or stdio is allowed here.
  
 -#if !defined(__UCLIBC__)
 +#if defined(__GLIBC__)
+   count = std::min(arraysize(trace_), count);
+ 
    // Though the backtrace API man page does not list any possible negative
-   // return values, we take no chance.
-   count_ = base::saturated_cast<size_t>(backtrace(trace_, arraysize(trace_)));
 @@ -731,13 +731,13 @@
    // NOTE: This code MUST be async-signal safe (it's used by in-process
    // stack dumping signal handler). NO malloc or stdio is allowed here.
@@ -81,15 +81,6 @@
  #include <cxxabi.h>
  #include <dlfcn.h>
  #include <execinfo.h>
-@@ -164,7 +164,7 @@
- }
- 
- void WTFGetBacktrace(void** stack, int* size) {
--#if OS(MACOSX) || (OS(LINUX) && !defined(__UCLIBC__))
-+#if OS(MACOSX) || (OS(LINUX) && defined(__GLIBC__))
-   *size = backtrace(stack, *size);
- #elif OS(WIN)
-   // The CaptureStackBackTrace function is available in XP, but it is not
 @@ -215,7 +215,7 @@
  };
  

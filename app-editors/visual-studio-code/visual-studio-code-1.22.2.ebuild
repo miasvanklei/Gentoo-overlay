@@ -20,7 +20,7 @@ DEPEND="
 	>=media-libs/libpng-1.2.46
 	>=x11-libs/gtk+-2.24.8-r1:2
 	app-crypt/libsecret
-	>=dev-util/electron-1.6.15
+	>=dev-util/electron-1.7.13
 	x11-libs/cairo
 	x11-libs/libXtst
 	net-libs/nodejs
@@ -35,15 +35,9 @@ RDEPEND="
 S="${WORKDIR}/VSCode-linux-x64"
 
 node_compile() {
-	npm install $@ --nodedir=/usr/include/electron-1.6/node || die
+	npm install $@ --nodedir=/usr/include/electron-1.7/node || die
 }
 
-node_asar() {
-        node_compile asar
-	node_modules/asar/bin/asar.js extract resources/app/node_modules.asar resources/app/node_modules
-	rm resources/app/node_modules.asar || die
-	rm -r resources/app/node_modules.asar.unpacked || die
-}
 
 src_compile() {
 	local n_p=(gc-signals@0.0.1 keytar@4.0.5 native-is-elevated@0.2.1 native-keymap@1.2.5 native-watchdog@0.3.0 node-pty@0.7.4 vscode-nsfw@1.0.17 oniguruma spdlog@0.6.0)
@@ -53,7 +47,6 @@ src_compile() {
 		cp node_modules/${i%@*}/build/Release/*.node resources/app/node_modules.asar.unpacked/${i%@*}/build/Release/obj.target || die
 		cp node_modules/${i%@*}/build/Release/*.node resources/app/node_modules.asar.unpacked/${i%@*}/build/Release/ || die
 	done
-	node_asar
 }
 
 src_install() {
@@ -65,12 +58,6 @@ src_install() {
 	doicon ${FILESDIR}/vscode.png
 	insinto "/usr/share/licenses/${PN}"
 	newins "resources/app/LICENSE.txt" "LICENSE"
-
-	# fix permissions
-	chmod +x ${D}/opt/visual-studio-code/app/node_modules/vscode-ripgrep/bin/rg || die
-
-	# electron 1.6 does not have --inspect, use --debug instead
-	grep -rl -- "--inspect=" ${D}/opt/visual-studio-code/app | xargs sed -i 's/--inspect=/--debug=/g'
 }
 
 pkg_postinst() {
