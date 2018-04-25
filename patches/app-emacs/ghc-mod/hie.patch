@@ -1,0 +1,10 @@
+diff --git a/GhcMod/Exe/Info.hs b/GhcMod/Exe/Info.hs
+index 0021936..07ed3ba 100644
+--- a/GhcMod/Exe/Info.hs
++++ b/GhcMod/Exe/Info.hs
+@@ -76,4 +76,4 @@ getSrcSpanType :: (GhcMonad m) => Bool -> G.ModSummary -> Int -> Int -> m [(SrcS
+ getSrcSpanType withConstraints modSum lineNo colNo =
+   G.parseModule modSum
+   >>= G.typecheckModule
+-  >>= flip (collectSpansTypes withConstraints) (lineNo, colNo)
++  >>= flip (collectSpansTypes withConstraints) (`G.spans` (lineNo, colNo))
