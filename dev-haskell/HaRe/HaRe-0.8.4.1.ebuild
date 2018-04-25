@@ -16,6 +16,7 @@ DESCRIPTION="the Haskell Refactorer"
 HOMEPAGE="https://github.com/RefactoringTools/HaRe/wiki"
 EGIT_REPO_URI="https://gitlab.com/alanz/HaRe.git"
 EGIT_BRANCH="ghc-8.4"
+EGIT_SUBMODULES=()
 
 LICENSE="BSD"
 SLOT="0/${PV}"

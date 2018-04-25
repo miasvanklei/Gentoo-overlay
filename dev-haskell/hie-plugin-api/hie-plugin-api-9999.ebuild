@@ -12,6 +12,7 @@ LIVE_EBUILD=yes
 DESCRIPTION="Provide a common engine to power any Haskell IDE"
 HOMEPAGE="http://hackage.haskell.org/package/hie-plugin-api"
 EGIT_REPO_URI="https://github.com/haskell/haskell-ide-engine.git"
+EGIT_SUBMODULES=()
 
 LICENSE="BSD"
 SLOT="0/${PV}"
