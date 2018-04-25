@@ -55,6 +55,9 @@ RDEPEND="
 		udisks? ( sys-fs/udisks:2 )
 	)
 "
+RDEPEND="${COMMON_DEPEND}
+        dev-lang/perl[ithreads]
+"
 DEPEND="${RDEPEND}
 	dev-qt/qtconcurrent:5
 	dev-qt/linguist-tools:5
