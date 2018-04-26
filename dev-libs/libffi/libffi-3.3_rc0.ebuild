@@ -2,12 +2,11 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=5
-inherit autotools-multilib toolchain-funcs git-r3
+inherit autotools-multilib toolchain-funcs
 
 DESCRIPTION="a portable, high level programming interface to various calling conventions"
 HOMEPAGE="https://sourceware.org/libffi/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/libffi/libffi.git"
+SRC_URI="https://github.com/libffi/libffi/releases/download/v${PV/_/-}/${P/_/-}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
@@ -20,6 +19,7 @@ DEPEND="test? ( dev-util/dejagnu )"
 
 DOCS="ChangeLog* README.md"
 
+S="${WORKDIR}/${P/_/-}"
 ECONF_SOURCE="${S}"
 
 pkg_setup() {
@@ -37,7 +37,6 @@ pkg_setup() {
 }
 
 src_prepare() {
-	#sed -i -e 's:@toolexeclibdir@:$(libdir):g' Makefile.in || die #462814
 	epatch "${FILESDIR}"/${PN}-3.2.1-o-tmpfile-eacces.patch #529044
 	epatch_user
 	eautoreconf
