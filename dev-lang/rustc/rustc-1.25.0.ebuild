@@ -38,6 +38,7 @@ pkg_setup() {
 
 src_prepare() {
 	eapply "${FILESDIR}"/system-llvm.patch
+	eapply "${FILESDIR}"/llvm-objcopy-compat.patch
 	eapply "${FILESDIR}"/musl.patch
 	eapply "${FILESDIR}"/use-libc++.patch
 

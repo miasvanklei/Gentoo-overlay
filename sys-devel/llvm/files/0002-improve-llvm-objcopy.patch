@@ -8,88 +8,17 @@ index 05aa727ab9d..b30a04b2479 100644
    add_llvm_tool_symlink(objcopy llvm-objcopy)
 +  add_llvm_tool_symlink(strip llvm-objcopy)
  endif()
-diff --git a/tools/llvm-objcopy/Object.cpp b/tools/llvm-objcopy/Object.cpp
-index 9e82448187e..17a1c8dad6b 100644
---- a/tools/llvm-objcopy/Object.cpp
-+++ b/tools/llvm-objcopy/Object.cpp
-@@ -162,6 +162,16 @@ void SymbolTableSection::addSymbol(StringRef Name, uint8_t Bind, uint8_t Type,
-   Size += this->EntrySize;
- }
- 
-+void SymbolTableSection::renameSymbols(std::vector<std::vector<std::string>> rsymbols) {
-+  for (const auto &Sym : Symbols) {
-+    for (const auto pair : rsymbols) {
-+      if (Sym->Name == pair[0]) {
-+        Sym->Name = pair[1];
-+      }
-+    }
-+  }
-+}
-+
- void SymbolTableSection::removeSectionReferences(const SectionBase *Sec) {
-   if (SymbolNames == Sec) {
-     error("String table " + SymbolNames->Name +
-diff --git a/tools/llvm-objcopy/Object.h b/tools/llvm-objcopy/Object.h
-index 639f0f29ceb..b5ae3fede97 100644
---- a/tools/llvm-objcopy/Object.h
-+++ b/tools/llvm-objcopy/Object.h
-@@ -188,7 +188,7 @@ struct Symbol {
-   SectionBase *DefinedIn = nullptr;
-   SymbolShndxType ShndxType;
-   uint32_t Index;
--  StringRef Name;
-+  std::string Name;
-   uint32_t NameIndex;
-   uint64_t Size;
-   uint8_t Type;
-@@ -213,6 +213,7 @@ public:
-   void addSymbolNames();
-   const SectionBase *getStrTab() const { return SymbolNames; }
-   const Symbol *getSymbolByIndex(uint32_t Index) const;
-+  void renameSymbols(std::vector<std::vector<std::string>> symbols);
-   void removeSectionReferences(const SectionBase *Sec) override;
-   void initialize(SectionTableRef SecTable) override;
-   void finalize() override;
-@@ -384,7 +385,7 @@ public:
-   Object(const object::ELFObjectFile<ELFT> &Obj);
-   virtual ~Object() = default;
- 
--  const SymbolTableSection *getSymTab() const { return SymbolTable; }
-+  SymbolTableSection *getSymTab() const { return SymbolTable; }
-   const SectionBase *getSectionHeaderStrTab() const { return SectionNames; }
-   void removeSections(std::function<bool(const SectionBase &)> ToRemove);
-   void addSection(StringRef SecName, ArrayRef<uint8_t> Data);
 diff --git a/tools/llvm-objcopy/llvm-objcopy.cpp b/tools/llvm-objcopy/llvm-objcopy.cpp
 index 20ce93bb40e..07472a53177 100644
 --- a/tools/llvm-objcopy/llvm-objcopy.cpp
 +++ b/tools/llvm-objcopy/llvm-objcopy.cpp
-@@ -31,12 +31,16 @@
- #include <algorithm>
- #include <cassert>
- #include <cstdlib>
-+#include <fstream>
- #include <functional>
- #include <iterator>
- #include <memory>
-+#include <sstream>
- #include <string>
- #include <system_error>
- #include <utility>
-+#include <sys/stat.h>
-+#include <unistd.h>
- 
- using namespace llvm;
- using namespace object;
-@@ -72,8 +76,11 @@
+@@ -72,8 +76,8 @@
  } // end namespace llvm
  
  static cl::opt<std::string> InputFilename(cl::Positional, cl::desc("<input>"));
 -static cl::opt<std::string> OutputFilename(cl::Positional, cl::desc("<output>"),
 -                                           cl::init("-"));
 +static cl::opt<std::string> OutputFilename(cl::Positional, cl::desc("<output>"));
-+
-+static cl::opt<std::string>
-+    RedefineSyms("redefine-syms", cl::desc("rename symbols pair \"old new\" in file"));
 +
  static cl::opt<std::string>
      OutputFormat("O", cl::desc("Set output format to one of the following:"
@@ -114,28 +43,6 @@ index 20ce93bb40e..07472a53177 100644
  static cl::opt<bool> StripSections("strip-sections",
                                     cl::desc("Remove all section headers"));
  static cl::opt<bool>
-@@ -177,6 +190,21 @@
-   else
-     Obj = llvm::make_unique<ELFObject<ELFT>>(ObjFile);
- 
-+  if (!RedefineSyms.empty()) {
-+    std::ifstream file(RedefineSyms.getValue());
-+    auto syms = Obj->getSymTab();
-+    std::string line;
-+    std::vector<std::vector<std::string>> symbols;
-+    while (std::getline(file, line)) {
-+      std::stringstream ss(line);
-+      std::vector<std::string> pair(2, "");
-+      std::getline(ss, pair[0], ' ');
-+      std::getline(ss, pair[1], ' ');
-+      symbols.push_back(pair);
-+    }
-+    Obj->getSymTab()->renameSymbols(symbols);
-+  }
-+
-   if (!SplitDWO.empty())
-     SplitDWOToFile<ELFT>(ObjFile, SplitDWO.getValue());
- 
 @@ -307,7 +335,17 @@
    }
  
