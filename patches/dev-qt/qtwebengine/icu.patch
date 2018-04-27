@@ -1,0 +1,590 @@
+diff -ur a/src/3rdparty/chromium/base/i18n/bidi_line_iterator.cc b/src/3rdparty/chromium/base/i18n/bidi_line_iterator.cc
+--- a/src/3rdparty/chromium/base/i18n/bidi_line_iterator.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/base/i18n/bidi_line_iterator.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -89,7 +89,7 @@
+       return false;
+   }
+ 
+-  ubidi_setPara(bidi_, text.data(), static_cast<int>(text.length()),
++  ubidi_setPara(bidi_, reinterpret_cast<const UChar*>(text.data()), static_cast<int>(text.length()),
+                 GetParagraphLevelForDirection(direction), nullptr, &error);
+   return (U_SUCCESS(error));
+ }
+diff -ur a/src/3rdparty/chromium/base/i18n/break_iterator.cc b/src/3rdparty/chromium/base/i18n/break_iterator.cc
+--- a/src/3rdparty/chromium/base/i18n/break_iterator.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/base/i18n/break_iterator.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -57,9 +57,9 @@
+       return false;
+   }
+   if (break_type_ == RULE_BASED) {
+-    iter_ = ubrk_openRules(rules_.c_str(),
++    iter_ = ubrk_openRules(reinterpret_cast<const UChar*>(rules_.c_str()),
+                            static_cast<int32_t>(rules_.length()),
+-                           string_.data(),
++                           reinterpret_cast<const UChar*>(string_.data()),
+                            static_cast<int32_t>(string_.size()),
+                            &parse_error,
+                            &status);
+@@ -68,7 +68,7 @@
+           << parse_error.line << ", offset " << parse_error.offset;
+     }
+   } else {
+-    iter_ = ubrk_open(break_type, nullptr, string_.data(),
++    iter_ = ubrk_open(break_type, nullptr, reinterpret_cast<const UChar*>(string_.data()),
+                       static_cast<int32_t>(string_.size()), &status);
+     if (U_FAILURE(status)) {
+       NOTREACHED() << "ubrk_open failed for type " << break_type
+@@ -123,7 +123,7 @@
+ bool BreakIterator::SetText(const base::char16* text, const size_t length) {
+   UErrorCode status = U_ZERO_ERROR;
+   ubrk_setText(static_cast<UBreakIterator*>(iter_),
+-               text, length, &status);
++               reinterpret_cast<const UChar*>(text), length, &status);
+   pos_ = 0;  // implicit when ubrk_setText is done
+   prev_ = npos;
+   if (U_FAILURE(status)) {
+diff -ur a/src/3rdparty/chromium/base/i18n/case_conversion.cc b/src/3rdparty/chromium/base/i18n/case_conversion.cc
+--- a/src/3rdparty/chromium/base/i18n/case_conversion.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/base/i18n/case_conversion.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -64,8 +64,8 @@
+     // terminator, but will otherwise. So we don't need to save room for that.
+     // Don't use WriteInto, which assumes null terminators.
+     int32_t new_length = case_mapper(
+-        &dest[0], saturated_cast<int32_t>(dest.size()),
+-        string.data(), saturated_cast<int32_t>(string.size()),
++        reinterpret_cast<UChar*>(&dest[0]), saturated_cast<int32_t>(dest.size()),
++        reinterpret_cast<const UChar*>(string.data()), saturated_cast<int32_t>(string.size()),
+         &error);
+     dest.resize(new_length);
+   } while (error == U_BUFFER_OVERFLOW_ERROR);
+diff -ur a/src/3rdparty/chromium/base/i18n/icu_string_conversions.cc b/src/3rdparty/chromium/base/i18n/icu_string_conversions.cc
+--- a/src/3rdparty/chromium/base/i18n/icu_string_conversions.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/base/i18n/icu_string_conversions.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -151,7 +151,7 @@
+   if (!U_SUCCESS(status))
+     return false;
+ 
+-  return ConvertFromUTF16(converter, utf16.c_str(),
++  return ConvertFromUTF16(converter, reinterpret_cast<const UChar*>(utf16.c_str()),
+                           static_cast<int>(utf16.length()), on_error, encoded);
+ }
+ 
+@@ -178,7 +178,7 @@
+ 
+   SetUpErrorHandlerForToUChars(on_error, converter, &status);
+   std::unique_ptr<char16[]> buffer(new char16[uchar_max_length]);
+-  int actual_size = ucnv_toUChars(converter, buffer.get(),
++  int actual_size = ucnv_toUChars(converter, reinterpret_cast<UChar*>(buffer.get()),
+       static_cast<int>(uchar_max_length), encoded.data(),
+       static_cast<int>(encoded.length()), &status);
+   ucnv_close(converter);
+diff -ur a/src/3rdparty/chromium/base/i18n/rtl.cc b/src/3rdparty/chromium/base/i18n/rtl.cc
+--- a/src/3rdparty/chromium/base/i18n/rtl.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/base/i18n/rtl.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -212,7 +212,7 @@
+ }
+ 
+ TextDirection GetFirstStrongCharacterDirection(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t length = text.length();
+   size_t position = 0;
+   while (position < length) {
+@@ -228,7 +228,7 @@
+ }
+ 
+ TextDirection GetLastStrongCharacterDirection(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t position = text.length();
+   while (position > 0) {
+     UChar32 character;
+@@ -243,7 +243,7 @@
+ }
+ 
+ TextDirection GetStringDirection(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t length = text.length();
+   size_t position = 0;
+ 
+@@ -374,7 +374,7 @@
+ #endif  // !OS_WIN
+ 
+ bool StringContainsStrongRTLChars(const string16& text) {
+-  const UChar* string = text.c_str();
++  const UChar* string = reinterpret_cast<const UChar*>(text.c_str());
+   size_t length = text.length();
+   size_t position = 0;
+   while (position < length) {
+diff -ur a/src/3rdparty/chromium/base/i18n/string_search.cc b/src/3rdparty/chromium/base/i18n/string_search.cc
+--- a/src/3rdparty/chromium/base/i18n/string_search.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/base/i18n/string_search.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -20,8 +20,9 @@
+   const string16& dummy = find_this_;
+ 
+   UErrorCode status = U_ZERO_ERROR;
+-  search_ = usearch_open(find_this_.data(), find_this_.size(), dummy.data(),
+-                         dummy.size(), uloc_getDefault(),
++  search_ = usearch_open(reinterpret_cast<const UChar*>(find_this_.data()), find_this_.size(),
++                         reinterpret_cast<const UChar*>(dummy.data()), dummy.size(),
++                         uloc_getDefault(),
+                          nullptr,  // breakiter
+                          &status);
+   if (U_SUCCESS(status)) {
+@@ -40,7 +41,7 @@
+ bool FixedPatternStringSearchIgnoringCaseAndAccents::Search(
+     const string16& in_this, size_t* match_index, size_t* match_length) {
+   UErrorCode status = U_ZERO_ERROR;
+-  usearch_setText(search_, in_this.data(), in_this.size(), &status);
++  usearch_setText(search_, reinterpret_cast<const UChar *>(in_this.data()), in_this.size(), &status);
+ 
+   // Default to basic substring search if usearch fails. According to
+   // http://icu-project.org/apiref/icu4c/usearch_8h.html, usearch_open will fail
+diff -ur a/src/3rdparty/chromium/base/i18n/unicodestring.h b/src/3rdparty/chromium/base/i18n/unicodestring.h
+--- a/src/3rdparty/chromium/base/i18n/unicodestring.h	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/base/i18n/unicodestring.h	2018-04-12 11:39:35.000000000 +0200
+@@ -18,7 +18,7 @@
+ 
+ inline string16 UnicodeStringToString16(const icu::UnicodeString& unistr) {
+ #if U_ICU_VERSION_MAJOR_NUM >= 59
+-  return base::string16(icu::toUCharPtr(unistr.getBuffer()),
++  return base::string16(reinterpret_cast<const char16*>(unistr.getBuffer()),
+                         static_cast<size_t>(unistr.length()));
+ #else
+   return base::string16(unistr.getBuffer(),
+diff -ur a/src/3rdparty/chromium/components/url_formatter/idn_spoof_checker.cc b/src/3rdparty/chromium/components/url_formatter/idn_spoof_checker.cc
+--- a/src/3rdparty/chromium/components/url_formatter/idn_spoof_checker.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/components/url_formatter/idn_spoof_checker.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -194,14 +194,14 @@
+                                              bool is_tld_ascii) {
+   UErrorCode status = U_ZERO_ERROR;
+   int32_t result =
+-      uspoof_check(checker_, label.data(),
++      uspoof_check(checker_, (const UChar*)label.data(),
+                    base::checked_cast<int32_t>(label.size()), nullptr, &status);
+   // If uspoof_check fails (due to library failure), or if any of the checks
+   // fail, treat the IDN as unsafe.
+   if (U_FAILURE(status) || (result & USPOOF_ALL_CHECKS))
+     return false;
+ 
+-  icu::UnicodeString label_string(FALSE, label.data(),
++  icu::UnicodeString label_string(FALSE, (const UChar*)label.data(),
+                                   base::checked_cast<int32_t>(label.size()));
+ 
+   // A punycode label with 'xn--' prefix is not subject to the URL
+diff -ur a/src/3rdparty/chromium/components/url_formatter/url_formatter.cc b/src/3rdparty/chromium/components/url_formatter/url_formatter.cc
+--- a/src/3rdparty/chromium/components/url_formatter/url_formatter.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/components/url_formatter/url_formatter.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -374,7 +374,7 @@
+       // code units, |status| will be U_BUFFER_OVERFLOW_ERROR and we'll try
+       // the conversion again, but with a sufficiently large buffer.
+       output_length = uidna_labelToUnicode(
+-          uidna, comp, static_cast<int32_t>(comp_len), &(*out)[original_length],
++          uidna, (const UChar*)comp, static_cast<int32_t>(comp_len), (UChar*)&(*out)[original_length],
+           output_length, &info, &status);
+     } while ((status == U_BUFFER_OVERFLOW_ERROR && info.errors == 0));
+ 
+diff -ur a/src/3rdparty/chromium/content/child/browser_font_resource_trusted.cc b/src/3rdparty/chromium/content/child/browser_font_resource_trusted.cc
+--- a/src/3rdparty/chromium/content/child/browser_font_resource_trusted.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/content/child/browser_font_resource_trusted.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -76,8 +76,7 @@
+     } else {
+       bidi_ = ubidi_open();
+       UErrorCode uerror = U_ZERO_ERROR;
+-      ubidi_setPara(bidi_, text_.data(), text_.size(), run.rtl, nullptr,
+-                    &uerror);
++      ubidi_setPara(bidi_, reinterpret_cast<const UChar*>(text_.data()), text_.size(), run.rtl, nullptr, &uerror);
+       if (U_SUCCESS(uerror))
+         num_runs_ = ubidi_countRuns(bidi_, &uerror);
+     }
+diff -ur a/src/3rdparty/chromium/ppapi/proxy/pdf_resource.cc b/src/3rdparty/chromium/ppapi/proxy/pdf_resource.cc
+--- a/src/3rdparty/chromium/ppapi/proxy/pdf_resource.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/ppapi/proxy/pdf_resource.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -59,10 +59,10 @@
+                                uint32_t* count) {
+   if (locale_.empty())
+     locale_ = GetLocale();
+-  const base::char16* string =
+-      reinterpret_cast<const base::char16*>(input_string);
+-  const base::char16* term =
+-      reinterpret_cast<const base::char16*>(input_term);
++  const UChar* string =
++      reinterpret_cast<const UChar*>(input_string);
++  const UChar* term =
++      reinterpret_cast<const UChar*>(input_term);
+ 
+   UErrorCode status = U_ZERO_ERROR;
+   UStringSearch* searcher = usearch_open(term, -1, string, -1, locale_.c_str(),
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/LinkHash.cpp b/src/3rdparty/chromium/third_party/WebKit/Source/platform/LinkHash.cpp
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/LinkHash.cpp	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/LinkHash.cpp	2018-04-12 11:39:35.000000000 +0200
+@@ -51,7 +51,7 @@
+         relative_utf8.Data(), relative_utf8.length(), nullptr, buffer, &parsed);
+   }
+   return url::ResolveRelative(base_utf8.Data(), base_utf8.length(),
+-                              base.GetParsed(), relative.Characters16(),
++                              base.GetParsed(), (const base::char16*)relative.Characters16(),
+                               relative.length(), nullptr, buffer, &parsed);
+ }
+ 
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp b/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/FilePathConversion.cpp	2018-04-12 11:39:35.000000000 +0200
+@@ -19,7 +19,7 @@
+   String str = web_string;
+   if (!str.Is8Bit()) {
+     return base::FilePath::FromUTF16Unsafe(
+-        base::StringPiece16(str.Characters16(), str.length()));
++        base::StringPiece16((const base::char16*)str.Characters16(), str.length()));
+   }
+ 
+ #if defined(OS_POSIX)
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/URLConversion.cpp b/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/URLConversion.cpp
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/URLConversion.cpp	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/URLConversion.cpp	2018-04-12 11:39:35.000000000 +0200
+@@ -23,7 +23,7 @@
+   }
+ 
+   // GURL can consume UTF-16 directly.
+-  return GURL(base::StringPiece16(str.Characters16(), str.length()));
++  return GURL(base::StringPiece16((const base::char16*)str.Characters16(), str.length()));
+ }
+ 
+ }  // namespace blink
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/WebString.cpp b/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/WebString.cpp
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/WebString.cpp	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/exported/WebString.cpp	2018-04-12 11:39:35.000000000 +0200
+@@ -58,7 +58,7 @@
+ WebString& WebString::operator=(WebString&&) = default;
+ 
+ WebString::WebString(const WebUChar* data, size_t len)
+-    : impl_(StringImpl::Create8BitIfPossible(data, len)) {}
++    : impl_(StringImpl::Create8BitIfPossible((const UChar*)data, len)) {}
+ 
+ void WebString::Reset() {
+   impl_ = nullptr;
+@@ -77,7 +77,7 @@
+ }
+ 
+ const WebUChar* WebString::Data16() const {
+-  return impl_ && !Is8Bit() ? impl_->Characters16() : nullptr;
++  return impl_ && !Is8Bit() ? (const WebUChar*)impl_->Characters16() : nullptr;
+ }
+ 
+ std::string WebString::Utf8(UTF8ConversionMode mode) const {
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/graphics/LoggingCanvas.cpp b/src/3rdparty/chromium/third_party/WebKit/Source/platform/graphics/LoggingCanvas.cpp
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/graphics/LoggingCanvas.cpp	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/graphics/LoggingCanvas.cpp	2018-04-12 11:39:35.000000000 +0200
+@@ -528,7 +528,7 @@
+   utf16 = icu::UnicodeString::fromUTF32(reinterpret_cast<const UChar32*>(text),
+                                         static_cast<int32_t>(byte_length));
+ #endif
+-  return String(icu::toUCharPtr(utf16.getBuffer()),
++  return String(utf16.getBuffer(),
+                 static_cast<unsigned>(utf16.length()));
+ }
+ 
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/KURL.cpp b/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/KURL.cpp
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/KURL.cpp	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/KURL.cpp	2018-04-12 11:39:35.000000000 +0200
+@@ -105,7 +105,7 @@
+                         int input_length,
+                         url::CanonOutput* output) override {
+     CString encoded = encoding_->Encode(
+-        String(input, input_length), WTF::kURLEncodedEntitiesForUnencodables);
++        String((const UChar*)input, input_length), WTF::kURLEncodedEntitiesForUnencodables);
+     output->Append(encoded.data(), static_cast<int>(encoded.length()));
+   }
+ 
+@@ -335,7 +335,7 @@
+   if (string_.Is8Bit())
+     url::ExtractFileName(AsURLChar8Subtle(string_), path, &file);
+   else
+-    url::ExtractFileName(string_.Characters16(), path, &file);
++    url::ExtractFileName((const base::char16*)string_.Characters16(), path, &file);
+ 
+   // Bug: https://bugs.webkit.org/show_bug.cgi?id=21015 this function returns
+   // a null string when the path is empty, which we duplicate here.
+@@ -365,7 +365,7 @@
+   DCHECK(!string_.IsNull());
+   int port = string_.Is8Bit()
+                  ? url::ParsePort(AsURLChar8Subtle(string_), parsed_.port)
+-                 : url::ParsePort(string_.Characters16(), parsed_.port);
++                 : url::ParsePort((const base::char16*)string_.Characters16(), parsed_.port);
+   DCHECK_NE(port, url::PORT_UNSPECIFIED);  // Checked port.len <= 0 before.
+ 
+   if (port == url::PORT_INVALID ||
+@@ -658,7 +658,7 @@
+     return false;
+   return string_.Is8Bit()
+              ? url::IsStandard(AsURLChar8Subtle(string_), parsed_.scheme)
+-             : url::IsStandard(string_.Characters16(), parsed_.scheme);
++             : url::IsStandard((const base::char16*)string_.Characters16(), parsed_.scheme);
+ }
+ 
+ bool EqualIgnoringFragmentIdentifier(const KURL& a, const KURL& b) {
+@@ -711,7 +711,7 @@
+   if (string_.Is8Bit())
+     url::ExtractFileName(AsURLChar8Subtle(string_), parsed_.path, &filename);
+   else
+-    url::ExtractFileName(string_.Characters16(), parsed_.path, &filename);
++    url::ExtractFileName((const base::char16*)string_.Characters16(), parsed_.path, &filename);
+   return filename.begin;
+ }
+ 
+@@ -725,7 +725,7 @@
+     return url::FindAndCompareScheme(AsURLChar8Subtle(url), url.length(),
+                                      protocol, nullptr);
+   }
+-  return url::FindAndCompareScheme(url.Characters16(), url.length(), protocol,
++  return url::FindAndCompareScheme((const base::char16*)url.Characters16(), url.length(), protocol,
+                                    nullptr);
+ }
+ 
+@@ -758,7 +758,7 @@
+                                      charset_converter, &output, &parsed_);
+   } else {
+     is_valid_ = url::ResolveRelative(base_utf8.Data(), base_utf8.length(),
+-                                     base.parsed_, relative.Characters16(),
++                                     base.parsed_, (const base::char16*)relative.Characters16(),
+                                      clampTo<int>(relative.length()),
+                                      charset_converter, &output, &parsed_);
+   }
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp b/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/weborigin/SecurityOrigin.cpp	2018-04-12 11:39:35.000000000 +0200
+@@ -646,7 +646,7 @@
+         url::CanonicalizeHost(utf8.Data(), url::Component(0, utf8.length()),
+                               &canon_output, &out_host);
+   } else {
+-    *success = url::CanonicalizeHost(host.Characters16(),
++    *success = url::CanonicalizeHost(reinterpret_cast<const base::char16 *>(host.Characters16()),
+                                      url::Component(0, host.length()),
+                                      &canon_output, &out_host);
+   }
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/AtomicString.h b/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/AtomicString.h
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/AtomicString.h	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/AtomicString.h	2018-04-12 11:39:35.000000000 +0200
+@@ -66,8 +66,10 @@
+   AtomicString(const LChar* chars, unsigned length);
+   AtomicString(const UChar* chars, unsigned length);
+   AtomicString(const UChar* chars);
++#if (U_ICU_VERSION_MAJOR_NUM < 59) || !defined(USING_SYSTEM_ICU)
+   AtomicString(const char16_t* chars)
+       : AtomicString(reinterpret_cast<const UChar*>(chars)) {}
++#endif
+ 
+   template <size_t inlineCapacity>
+   explicit AtomicString(const Vector<UChar, inlineCapacity>& vector)
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/StringView.h b/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/StringView.h
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/StringView.h	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/StringView.h	2018-04-12 11:39:35.000000000 +0200
+@@ -83,8 +83,10 @@
+         characters16_(chars),
+         length_(length) {}
+   StringView(const UChar* chars);
++#if (U_ICU_VERSION_MAJOR_NUM < 59) || !defined(USING_SYSTEM_ICU)
+   StringView(const char16_t* chars)
+       : StringView(reinterpret_cast<const UChar*>(chars)) {}
++#endif
+ 
+ #if DCHECK_IS_ON()
+   ~StringView();
+diff -ur a/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/WTFString.h b/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/WTFString.h
+--- a/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/WTFString.h	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/third_party/WebKit/Source/platform/wtf/text/WTFString.h	2018-04-12 11:39:35.000000000 +0200
+@@ -35,6 +35,7 @@
+ #include "platform/wtf/text/StringView.h"
+ #include <iosfwd>
+ 
++#include "third_party/icu/source/common/unicode/uvernum.h"
+ #ifdef __OBJC__
+ #include <objc/objc.h>
+ #endif
+@@ -68,6 +69,10 @@
+ 
+   // Construct a string with UTF-16 data.
+   String(const UChar* characters, unsigned length);
++#if (U_ICU_VERSION_MAJOR_NUM < 59) || !defined(USING_SYSTEM_ICU)
++  String(const char16_t* chars, unsigned length)
++      : String(reinterpret_cast<const UChar*>(chars), length) {}
++#endif
+ 
+   // Construct a string by copying the contents of a vector.
+   // This method will never create a null string. Vectors with size() == 0
+@@ -81,8 +86,13 @@
+ 
+   // Construct a string with UTF-16 data, from a null-terminated source.
+   String(const UChar*);
++#if (U_ICU_VERSION_MAJOR_NUM < 59) || !defined(USING_SYSTEM_ICU)
+   String(const char16_t* chars)
+       : String(reinterpret_cast<const UChar*>(chars)) {}
++#else
++  String(const uint16_t* chars)
++      : String(reinterpret_cast<const UChar*>(chars)) {}
++#endif
+ 
+   // Construct a string with latin1 data.
+   String(const LChar* characters, unsigned length);
+diff -ur a/src/3rdparty/chromium/third_party/icu/BUILD.gn b/src/3rdparty/chromium/third_party/icu/BUILD.gn
+--- a/src/3rdparty/chromium/third_party/icu/BUILD.gn	2018-04-26 20:04:44.954990233 +0200
++++ b/src/3rdparty/chromium/third_party/icu/BUILD.gn	2018-04-12 11:39:35.000000000 +0200
+@@ -1153,8 +1153,6 @@
+     "measunit.h",
+     "measure.h",
+     "msgfmt.h",
+-    "nounit.h",
+-    "numberformatter.h",
+     "numfmt.h",
+     "numsys.h",
+     "plurfmt.h",
+@@ -1182,11 +1180,11 @@
+     "tzrule.h",
+     "tztrans.h",
+     "ucal.h",
+-    "ucol.h",
+     "ucoleitr.h",
++    "ucol.h",
+     "ucsdet.h",
+-    "udat.h",
+     "udateintervalformat.h",
++    "udat.h",
+     "udatpg.h",
+     "ufieldpositer.h",
+     "uformattable.h",
+@@ -1199,7 +1197,6 @@
+     "upluralrules.h",
+     "uregex.h",
+     "uregion.h",
+-    "ureldatefmt.h",
+     "usearch.h",
+     "uspoof.h",
+     "utmscale.h",
+@@ -1219,16 +1216,13 @@
+     "appendable.h",
+     "brkiter.h",
+     "bytestream.h",
+-    "bytestrie.h",
+     "bytestriebuilder.h",
++    "bytestrie.h",
+     "caniter.h",
+-    "casemap.h",
+-    "char16ptr.h",
+     "chariter.h",
+     "dbbi.h",
+     "docmain.h",
+     "dtintrv.h",
+-    "edits.h",
+     "enumset.h",
+     "errorcode.h",
+     "filteredbrk.h",
+@@ -1251,26 +1245,23 @@
+     "rep.h",
+     "resbund.h",
+     "schriter.h",
+-    "simpleformatter.h",
+     "std_string.h",
+     "strenum.h",
+-    "stringoptions.h",
+     "stringpiece.h",
+     "stringtriebuilder.h",
+     "symtable.h",
+     "ubidi.h",
+-    "ubiditransform.h",
+     "ubrk.h",
+     "ucasemap.h",
+     "ucat.h",
+     "uchar.h",
+-    "ucharstrie.h",
+     "ucharstriebuilder.h",
++    "ucharstrie.h",
+     "uchriter.h",
+     "uclean.h",
+-    "ucnv.h",
+     "ucnv_cb.h",
+     "ucnv_err.h",
++    "ucnv.h",
+     "ucnvsel.h",
+     "uconfig.h",
+     "ucurr.h",
+@@ -1289,8 +1280,8 @@
+     "unimatch.h",
+     "uniset.h",
+     "unistr.h",
+-    "unorm.h",
+     "unorm2.h",
++    "unorm.h",
+     "uobject.h",
+     "urename.h",
+     "urep.h",
+@@ -1303,10 +1294,10 @@
+     "ustring.h",
+     "ustringtrie.h",
+     "utext.h",
+-    "utf.h",
+     "utf16.h",
+     "utf32.h",
+     "utf8.h",
++    "utf.h",
+     "utf_old.h",
+     "utrace.h",
+     "utypes.h",
+diff -ur a/src/3rdparty/chromium/ui/base/l10n/l10n_util.cc b/src/3rdparty/chromium/ui/base/l10n/l10n_util.cc
+--- a/src/3rdparty/chromium/ui/base/l10n/l10n_util.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/ui/base/l10n/l10n_util.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -583,7 +583,7 @@
+ 
+     int actual_size = uloc_getDisplayName(
+         locale_code.c_str(), display_locale.c_str(),
+-        base::WriteInto(&display_name, kBufferSize), kBufferSize - 1, &error);
++        (UChar*)base::WriteInto(&display_name, kBufferSize), kBufferSize - 1, &error);
+     DCHECK(U_SUCCESS(error));
+     display_name.resize(actual_size);
+   }
+diff -ur a/src/3rdparty/chromium/ui/base/l10n/time_format.cc b/src/3rdparty/chromium/ui/base/l10n/time_format.cc
+--- a/src/3rdparty/chromium/ui/base/l10n/time_format.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/ui/base/l10n/time_format.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -140,7 +140,7 @@
+   DCHECK_GT(capacity, 1);
+   base::string16 result;
+   UErrorCode error = U_ZERO_ERROR;
+-  time_string.extract(static_cast<UChar*>(base::WriteInto(&result, capacity)),
++  time_string.extract(reinterpret_cast<UChar*>(base::WriteInto(&result, capacity)),
+                       capacity, error);
+   DCHECK(U_SUCCESS(error));
+   return result;
+diff -ur a/src/3rdparty/chromium/url/url_canon_icu.cc b/src/3rdparty/chromium/url/url_canon_icu.cc
+--- a/src/3rdparty/chromium/url/url_canon_icu.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/url/url_canon_icu.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -135,7 +135,7 @@
+     UErrorCode err = U_ZERO_ERROR;
+     char* dest = &output->data()[begin_offset];
+     int required_capacity = ucnv_fromUChars(converter_, dest, dest_capacity,
+-                                            input, input_len, &err);
++                                            (const UChar*)input, input_len, &err);
+     if (err != U_BUFFER_OVERFLOW_ERROR) {
+       output->set_length(begin_offset + required_capacity);
+       return;
+@@ -172,7 +172,7 @@
+   while (true) {
+     UErrorCode err = U_ZERO_ERROR;
+     UIDNAInfo info = UIDNA_INFO_INITIALIZER;
+-    int output_length = uidna_nameToASCII(uidna, src, src_len, output->data(),
++    int output_length = uidna_nameToASCII(uidna, (const UChar*)src, src_len, (UChar*)output->data(),
+                                           output->capacity(), &info, &err);
+     if (U_SUCCESS(err) && info.errors == 0) {
+       output->set_length(output_length);
+diff -ur a/src/3rdparty/chromium/v8/src/runtime/runtime-intl.cc b/src/3rdparty/chromium/v8/src/runtime/runtime-intl.cc
+--- a/src/3rdparty/chromium/v8/src/runtime/runtime-intl.cc	2018-03-22 11:41:27.000000000 +0100
++++ b/src/3rdparty/chromium/v8/src/runtime/runtime-intl.cc	2018-04-12 11:39:35.000000000 +0200
+@@ -626,8 +626,7 @@
+   icu::UnicodeString result = plural_rules->select(rounded);
+   return *isolate->factory()
+               ->NewStringFromTwoByte(Vector<const uint16_t>(
+-                  reinterpret_cast<const uint16_t*>(
+-                      icu::toUCharPtr(result.getBuffer())),
++                  reinterpret_cast<const uint16_t*>(result.getBuffer()),
+                   result.length()))
+               .ToHandleChecked();
+ }
