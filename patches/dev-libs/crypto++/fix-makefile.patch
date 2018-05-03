@@ -1,29 +1,21 @@
---- a/GNUmakefile	2017-10-13 20:56:25.974950849 +0200
-+++ b/GNUmakefile	2017-10-13 20:58:29.618818479 +0200
-@@ -12,7 +12,6 @@
- CHMOD ?= chmod
- MKDIR ?= mkdir
+--- a/GNUmakefile	2018-05-02 10:46:52.511157210 +0200
++++ b/GNUmakefile	2018-05-02 10:47:49.581052880 +0200
+@@ -24,7 +24,6 @@
+ MKDIR ?= mkdir -p
+ 
  LN ?= ln -sf
 -LDCONF ?= /sbin/ldconfig -n
- UNAME := $(shell uname)
  
- IS_X86 := $(shell uname -m | $(EGREP) -v "x86_64" | $(EGREP) -i -c "i.86|x86|i86")
-@@ -580,8 +579,8 @@
- 	$(CP) libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)
- 	-$(CHMOD) 0755 $(DESTDIR)$(LIBDIR)/libcryptopp.so$(SOLIB_VERSION_SUFFIX)
+ INSTALL = install
+ INSTALL_PROGRAM = $(INSTALL)
+@@ -872,8 +871,8 @@
+ 	@-$(MKDIR) $(DESTDIR)$(LIBDIR)
+ 	$(INSTALL_PROGRAM) libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)
  ifeq ($(HAS_SOLIB_VERSION),1)
--	-$(LN) -sf libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)/libcryptopp.so
+-	-$(LN) libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)/libcryptopp.so
 -	$(LDCONF) $(DESTDIR)$(LIBDIR)
-+	-$(LN) -sf libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)/libcryptopp.so${SOLIB_COMPAT_SUFFIX}
-+	-$(LN) -sf libcryptopp.so$(SOLIB_COMPAT_SUFFIX) $(DESTDIR)$(LIBDIR)/libcryptopp.so
++	-$(LN) libcryptopp.so$(SOLIB_VERSION_SUFFIX) $(DESTDIR)$(LIBDIR)/libcryptopp.so$(SOLIB_COMPAT_SUFFIX)
++	-$(LN) libcryptopp.so$(SOLIB_COMPAT_SUFFIX) $(DESTDIR)$(LIBDIR)/libcryptopp.so
  endif
  endif
- 
-@@ -598,7 +597,6 @@
- ifeq ($(HAS_SOLIB_VERSION),1)
- 	-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.so$(SOLIB_COMPAT_SUFFIX)
- 	-$(RM) $(DESTDIR)$(LIBDIR)/libcryptopp.so
--	$(LDCONF) $(DESTDIR)$(LIBDIR)
- endif
- endif
- 
+ ifneq ($(wildcard libcryptopp.pc),)
