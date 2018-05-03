@@ -20,6 +20,7 @@ IUSE=""
 RDEPEND=">=dev-haskell/aeson-1.0.0.0:=[profile?]
 	dev-haskell/data-default:=[profile?]
 	dev-haskell/hashable:=[profile?]
+	=dev-haskell/haskell-lsp-types-${PV}:=[profile?]
 	dev-haskell/hslogger:=[profile?]
 	>=dev-haskell/lens-4.15.2:=[profile?]
 	dev-haskell/mtl:=[profile?]
@@ -36,14 +37,3 @@ DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.24.0.0
 	test? ( dev-haskell/hspec )
 "
-
-PATCHES=(
-	"${FILESDIR}"/ghc-8.4.patch
-)
-
-src_prepare() {
-        default
-
-        cabal_chdeps \
-                'base >=4.9 && <4.11' 'base >=4.9 && <4.13'
-}
