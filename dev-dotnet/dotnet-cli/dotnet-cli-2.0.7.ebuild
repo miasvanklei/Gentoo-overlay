@@ -8,9 +8,10 @@ EAPI="6"
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
+DOTNET_SDK="dotnet-sdk-2.1.105-linux-x64.tar.gz"
 
 IUSE="heimdal"
-SRC_URI="https://download.microsoft.com/download/1/1/5/115B762D-2B41-4AF3-9A63-92D9680B9409/dotnet-sdk-2.1.4-linux-x64.tar.gz
+SRC_URI="https://download.microsoft.com/download/2/E/C/2EC018A0-A0FC-40A2-849D-AA692F68349E/${DOTNET_SDK}
 	https://github.com/dotnet/coreclr/archive/v${PV}.tar.gz -> coreclr-${PV}.tar.gz
 	https://github.com/dotnet/corefx/archive/v${PV}.tar.gz -> corefx-${PV}.tar.gz
 	https://github.com/dotnet/core-setup/archive/v${PV}.tar.gz -> core-setup-${PV}.tar.gz"
@@ -73,7 +74,7 @@ src_unpack() {
 	unpack "coreclr-${PV}.tar.gz" "corefx-${PV}.tar.gz" "core-setup-${PV}.tar.gz"
 	mkdir "${CLI_S}" || die
 	cd "${CLI_S}" || die
-        unpack "dotnet-sdk-2.1.4-linux-x64.tar.gz"
+        unpack "${DOTNET_SDK}"
 }
 
 src_prepare() {
@@ -95,6 +96,8 @@ src_prepare() {
 
         cd "${CORECLR_S}" || die
 	eapply ${FILESDIR}/fix-build.patch
+	eapply ${FILESDIR}/clang-6.0.patch
+	eapply ${FILESDIR}/musl.patch
         cd ..
 
 	default_src_prepare
@@ -128,19 +131,19 @@ src_install() {
 	cp -pPR "${CLI_S}"/* "${ddest}" || die
 
 	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${CORECLR_S}/bin/Product/Linux.x64.Release/${file}" "${ddest_core}/2.0.5/" || die
+		cp -pP "${CORECLR_S}/bin/Product/Linux.x64.Release/${file}" "${ddest_core}/${PV}/" || die
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/2.0.5/" || die
+		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/${PV}/" || die
 	done
 
 	for file in "${CRYPTO_FILES[@]}"; do
-		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/2.0.5/" || die
+		cp -pP "${COREFX_S}/bin/Linux.x64.Release/native/${file}" "${ddest_core}/${PV}/" || die
 	done
 
-        cp -pP "${CORESETUP_S}/cli/fxr/libhostfxr.so" "${ddest}/host/fxr/2.0.5/" || die
-        cp -pP "${CORESETUP_S}/cli/dll/libhostpolicy.so" "${ddest_core}/2.0.5/" || die
+        cp -pP "${CORESETUP_S}/cli/fxr/libhostfxr.so" "${ddest}/host/fxr/${PV}/" || die
+        cp -pP "${CORESETUP_S}/cli/dll/libhostpolicy.so" "${ddest_core}/${PV}/" || die
 	cp -pP "${CORESETUP_S}/cli/exe/dotnet/dotnet" "${ddest}/dotnet" || die
 
 	dosym "../../opt/dotnet_cli/dotnet" "/usr/bin/dotnet"
