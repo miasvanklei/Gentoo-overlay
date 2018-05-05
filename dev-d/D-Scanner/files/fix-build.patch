@@ -1,0 +1,37 @@
+--- a/src/dscanner/dscanner_version.d	2018-04-23 18:54:26.000000000 +0200
++++ b/src/dscanner/dscanner_version.d	2018-05-04 19:50:33.653466606 +0200
+@@ -8,20 +8,5 @@
+ /**
+  * Human-readable version number
+  */
+-enum DEFAUULT_DSCANNER_VERSION = "v0.5.2";
++enum DSCANNER_VERSION = "v0.5.2";
+ 
+-version (built_with_dub)
+-{
+-	enum DSCANNER_VERSION = import("dubhash.txt");
+-}
+-else version (Windows)
+-{
+-	enum DSCANNER_VERSION = DEFAUULT_DSCANNER_VERSION;
+-}
+-else
+-{
+-	/**
+-	 * Current build's Git commit hash
+-	 */
+-	enum DSCANNER_VERSION = import("githash.txt");
+-}
+--- dub.json.bak	2018-05-05 10:14:38.067781330 +0200
++++ dub.json	2018-05-05 10:16:30.434565135 +0200
+@@ -22,8 +22,5 @@
+   "targetPath" : "bin",
+   "stringImportPaths" : [
+     "bin"
+-  ],
+-  "preGenerateCommands" : [
+-    "rdmd --eval='auto dir=environment.get(`DUB_PACKAGE_DIR`); dir.buildPath(`bin`).mkdirRecurse; auto gitVer = (`git -C `~dir~` describe --tags`).executeShell; (gitVer.status == 0 ? gitVer.output : dir.dirName.baseName.findSplitAfter(environment.get(`DUB_ROOT_PACKAGE`)~`-`)[1]).ifThrown(`0.0.0`).toFile(dir.buildPath(`bin`, `dubhash.txt`));'"
+   ]
+-}
+\ No newline at end of file
++}
