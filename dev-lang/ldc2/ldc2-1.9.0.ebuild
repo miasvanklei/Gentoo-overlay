@@ -29,7 +29,6 @@ src_configure() {
 		-DD_VERSION=2
 		-DBUILD_SHARED_LIBS=BOTH
 		-DD_FLAGS="${LDCFLAGS// /;}"
-		-DLDC_WITH_LLD=OFF
 	)
 	cmake-utils_src_configure
 }
