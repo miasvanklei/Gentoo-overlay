@@ -36,20 +36,15 @@ pkg_setup() {
 	llvm_pkg_setup
 }
 
-src_prepare() {
-	eapply "${FILESDIR}"/system-llvm.patch
-	eapply "${FILESDIR}"/llvm-objcopy-compat.patch
-	eapply "${FILESDIR}"/musl.patch
-	eapply "${FILESDIR}"/use-libc++.patch
-
-	# fix rls-analysis path
-	eapply "${FILESDIR}"/fix-analysis-path.patch
-
-	# rustdoc/rls fails to link with llvm shared
-	eapply "${FILESDIR}"/tools-llvm-shared.patch
-
-	eapply_user
-}
+PATCHES=(
+	"${FILESDIR}"/static.patch
+	"${FILESDIR}"/system-llvm.patch
+	"${FILESDIR}"/llvm-objcopy-compat.patch
+	"${FILESDIR}"/musl.patch
+	"${FILESDIR}"/use-libc++.patch
+	"${FILESDIR}"/fix-analysis-path.patch
+	"${FILESDIR}"/tools-llvm-shared.patch
+)
 
 src_configure() {
 	einfo "Setting up config.toml for target"

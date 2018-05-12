@@ -1,30 +1,60 @@
---- a/src/rustllvm/PassWrapper.cpp	2018-02-10 13:28:49.073331675 +0100
-+++ b/src/rustllvm/PassWrapper.cpp	2018-02-10 13:29:22.415250218 +0100
-@@ -203,7 +203,6 @@
+--- a/src/bootstrap/compile.rs	2018-05-11 10:28:37.177954138 +0200
++++ b/src/bootstrap/compile.rs	2018-05-11 10:28:50.624806862 +0200
+@@ -651,11 +651,6 @@
+                 println!("Building stage{} codegen artifacts ({} -> {}, {})",
+                          compiler.stage, &compiler.host, target, self.backend);
  
- extern "C" bool LLVMRustHasFeature(LLVMTargetMachineRef TM,
-                                    const char *Feature) {
--#if LLVM_RUSTLLVM
-   TargetMachine *Target = unwrap(TM);
-   const MCSubtargetInfo *MCInfo = Target->getMCSubtargetInfo();
-   const FeatureBitset &Bits = MCInfo->getFeatureBits();
-@@ -212,7 +211,6 @@
-   for (auto &FeatureEntry : FeatTable)
-     if (!strcmp(FeatureEntry.Key, Feature))
-       return (Bits & FeatureEntry.Value) == FeatureEntry.Value;
--#endif
-   return false;
- }
+-                // Pass down configuration from the LLVM build into the build of
+-                // librustc_llvm and librustc_trans.
+-                if build.is_rust_llvm(target) {
+-                    cargo.env("LLVM_RUSTLLVM", "1");
+-                }
+                 cargo.env("LLVM_CONFIG", &llvm_config);
+                 if self.backend != "emscripten" {
+                     let target_config = build.config.target_config.get(&target);
+--- a/src/bootstrap/test.rs	2018-05-11 10:28:09.115262493 +0200
++++ b/src/bootstrap/test.rs	2018-05-11 10:28:27.943055283 +0200
+@@ -928,9 +928,7 @@
+             });
+             let llvm_version = output(Command::new(&llvm_config).arg("--version"));
+             cmd.arg("--llvm-version").arg(llvm_version);
+-            if !build.is_rust_llvm(target) {
+-                cmd.arg("--system-llvm");
+-            }
++            cmd.arg("--system-llvm");
  
-@@ -306,7 +304,6 @@
-   llvm_unreachable("Bad RelocModel.");
+             // Only pass correct values for these flags for the `run-make` suite as it
+             // requires that a C++ compiler was configured which isn't always the case.
+--- a/src/bootstrap/lib.rs	2018-05-11 10:27:36.745617019 +0200
++++ b/src/bootstrap/lib.rs	2018-05-11 10:27:58.296380986 +0200
+@@ -533,16 +533,6 @@
+         self.out.join(&*target).join("crate-docs")
+     }
+ 
+-    /// Returns true if no custom `llvm-config` is set for the specified target.
+-    ///
+-    /// If no custom `llvm-config` was specified then Rust's llvm will be used.
+-    fn is_rust_llvm(&self, target: Interned<String>) -> bool {
+-        match self.config.target_config.get(&target) {
+-            Some(ref c) => c.llvm_config.is_none(),
+-            None => true
+-        }
+-    }
+-
+     /// Returns the path to `FileCheck` binary for the specified target
+     fn llvm_filecheck(&self, target: Interned<String>) -> PathBuf {
+         let target_config = self.config.target_config.get(&target);
+--- a/src/rustllvm/PassWrapper.cpp	2018-05-11 10:29:27.055407858 +0200
++++ b/src/rustllvm/PassWrapper.cpp	2018-05-11 10:29:57.226077416 +0200
+@@ -296,7 +296,6 @@
+   report_fatal_error("Bad RelocModel.");
  }
  
 -#if LLVM_RUSTLLVM
  /// getLongestEntryLength - Return the length of the longest entry in the table.
  ///
  static size_t getLongestEntryLength(ArrayRef<SubtargetFeatureKV> Table) {
-@@ -351,17 +348,6 @@
+@@ -341,17 +340,6 @@
           "target-feature=+feature1,-feature2\n\n");
  }
  
@@ -42,9 +72,9 @@
  extern "C" LLVMTargetMachineRef LLVMRustCreateTargetMachine(
      const char *TripleStr, const char *CPU, const char *Feature,
      LLVMRustCodeModel RustCM, LLVMRustRelocMode RustReloc,
---- a/src/rustllvm/RustWrapper.cpp	2018-02-10 13:28:53.017321961 +0100
-+++ b/src/rustllvm/RustWrapper.cpp	2018-02-10 13:29:39.871207575 +0100
-@@ -500,7 +500,7 @@
+--- a/src/rustllvm/RustWrapper.cpp	2018-05-11 10:30:44.937554859 +0200
++++ b/src/rustllvm/RustWrapper.cpp	2018-05-11 10:31:06.913314173 +0200
+@@ -565,7 +565,7 @@
    if (isSet(Flags & LLVMRustDIFlags::FlagBitField)) {
      Result |= DINode::DIFlags::FlagBitField;
    }
@@ -53,64 +83,8 @@
    if (isSet(Flags & LLVMRustDIFlags::FlagNoReturn)) {
      Result |= DINode::DIFlags::FlagNoReturn;
    }
---- a/src/bootstrap/builder.rs	2018-03-29 14:57:41.221315445 +0200
-+++ b/src/bootstrap/builder.rs	2018-03-29 14:58:36.641193554 +0200
-@@ -772,7 +772,6 @@
-             }
- 
-             if self.config.rust_codegen_units.is_none() &&
--               self.build.is_rust_llvm(compiler.host) &&
-                self.config.rust_thinlto {
-                 cargo.env("RUSTC_THINLTO", "1");
-             } else if self.config.rust_codegen_units.is_none() {
---- a/src/bootstrap/compile.rs	2018-03-29 14:56:50.683426256 +0200
-+++ b/src/bootstrap/compile.rs	2018-03-29 14:57:13.075376567 +0200
-@@ -646,11 +646,6 @@
-                 println!("Building stage{} codegen artifacts ({} -> {}, {})",
-                          compiler.stage, &compiler.host, target, self.backend);
- 
--                // Pass down configuration from the LLVM build into the build of
--                // librustc_llvm and librustc_trans.
--                if build.is_rust_llvm(target) {
--                    cargo.env("LLVM_RUSTLLVM", "1");
--                }
-                 cargo.env("LLVM_CONFIG", &llvm_config);
-                 if self.backend != "emscripten" {
-                     let target_config = build.config.target_config.get(&target);
---- a/src/bootstrap/lib.rs	2018-03-29 14:56:11.661511716 +0200
-+++ b/src/bootstrap/lib.rs	2018-03-29 14:56:34.242462324 +0200
-@@ -516,16 +516,6 @@
-         self.out.join(&*target).join("crate-docs")
-     }
- 
--    /// Returns true if no custom `llvm-config` is set for the specified target.
--    ///
--    /// If no custom `llvm-config` was specified then Rust's llvm will be used.
--    fn is_rust_llvm(&self, target: Interned<String>) -> bool {
--        match self.config.target_config.get(&target) {
--            Some(ref c) => c.llvm_config.is_none(),
--            None => true
--        }
--    }
--
-     /// Returns the path to `llvm-config` for the specified target.
-     ///
-     /// If a custom `llvm-config` was specified for target then that's returned
---- a/src/bootstrap/test.rs	2018-03-29 14:58:52.227159148 +0200
-+++ b/src/bootstrap/test.rs	2018-03-29 14:59:31.235074054 +0200
-@@ -915,9 +915,7 @@
-             let llvm_config = build.llvm_config(target);
-             let llvm_version = output(Command::new(&llvm_config).arg("--version"));
-             cmd.arg("--llvm-version").arg(llvm_version);
--            if !build.is_rust_llvm(target) {
--                cmd.arg("--system-llvm");
--            }
-+            cmd.arg("--system-llvm");
- 
-             // Only pass correct values for these flags for the `run-make` suite as it
-             // requires that a C++ compiler was configured which isn't always the case.
---- a/src/librustc_llvm/build.rs	2018-03-29 14:59:53.182025240 +0200
-+++ b/src/librustc_llvm/build.rs	2018-03-29 15:00:33.490937115 +0200
+--- a/src/librustc_llvm/build.rs	2018-05-11 10:31:24.061126360 +0200
++++ b/src/librustc_llvm/build.rs	2018-05-11 10:31:42.725921936 +0200
 @@ -146,11 +146,6 @@
          cfg.define(&flag, None);
      }

@@ -1,16 +1,16 @@
 --- a/src/bootstrap/tool.rs
 +++ b/src/bootstrap/tool.rs
-@@ -313,6 +313,10 @@ impl Step for Rustdoc {
+@@ -426,6 +426,10 @@
          cargo.env("RUSTC_DEBUGINFO", builder.config.rust_debuginfo.to_string())
               .env("RUSTC_DEBUGINFO_LINES", builder.config.rust_debuginfo_lines.to_string());
  
-+        if build.config.llvm_link_shared {
++       if build.config.llvm_link_shared {
 +            cargo.env("LLVM_LINK_SHARED", "1");
 +        }
 +
+         let _folder = build.fold_output(|| format!("stage{}-rustdoc", target_compiler.stage));
+         println!("Building rustdoc for stage{} ({})", target_compiler.stage, target_compiler.host);
          build.run(&mut cargo);
-         // Cargo adds a number of paths to the dylib search path on windows, which results in
-         // the wrong rustdoc being executed. To avoid the conflicting rustdocs, we name the "tool"
 --- a/src/tools/rustdoc/Cargo.toml
 +++ b/src/tools/rustdoc/Cargo.toml
 @@ -12,3 +12,4 @@ path = "main.rs"
@@ -34,9 +34,9 @@
  rls-span = { version = "0.4", features = ["serialize-serde"] }
  rls-vfs = { version = "0.4.5", features = ["racer-impls"] }
 +rustc_llvm = { path = "../../librustc_llvm" }
- rustfmt-nightly = { version = "0.4.0", optional = true }
+ rustfmt-nightly = "0.4.0"
+ clippy_lints = { version = "0.0.189", optional = true }
  serde = "1.0"
- serde_json = "1.0"
 --- a/src/tools/rls/src/main.rs
 +++ b/src/tools/rls/src/main.rs
 @@ -14,6 +14,8 @@
@@ -52,19 +52,20 @@
 +++ b/src/tools/clippy/Cargo.toml	2018-01-06 17:51:36.848306374 +0100
 @@ -41,6 +41,7 @@
  # end automatic update
- cargo_metadata = "0.2"
  regex = "0.2"
+ semver = "0.9"
 +rustc_llvm = { path = "../../librustc_llvm" }
  
  [dev-dependencies]
  compiletest_rs = "0.3"
 --- a/src/tools/clippy/src/main.rs	2018-01-01 22:52:59.000000000 +0100
 +++ b/src/tools/clippy/src/main.rs	2018-01-06 17:52:05.185239927 +0100
-@@ -7,6 +7,7 @@
- use std::process;
- use std::io::{self, Write};
+@@ -3,6 +3,8 @@
+ #![feature(rustc_private)]
+ #![allow(unknown_lints, missing_docs_in_private_items)]
  
 +extern crate rustc_llvm;
- extern crate cargo_metadata;
++
+ const CARGO_CLIPPY_HELP: &str = r#"Checks a package to catch common mistakes and improve your Rust code.
  
- use std::path::Path;
+ Usage:
