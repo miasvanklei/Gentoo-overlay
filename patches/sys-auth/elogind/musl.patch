@@ -1,0 +1,132 @@
+From 9b146a0a80bf6cdce8ad20256b60777beb426070 Mon Sep 17 00:00:00 2001
+From: maxice8 <thinkabit.ukim@gmail.com>
+Date: Fri, 27 Apr 2018 10:05:25 -0300
+Subject: [PATCH] musl_missing.h: add FTW_* macros missing from musl libc.
+
+---
+ src/shared/musl_missing.h | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/src/shared/musl_missing.h b/src/shared/musl_missing.h
+index d42f03c34..15f5f8473 100644
+--- a/src/shared/musl_missing.h
++++ b/src/shared/musl_missing.h
+@@ -107,6 +107,27 @@ typedef __compar_fn_t comparison_fn_t;
+  */
+ #define __register_atfork(prepare,parent,child,dso) pthread_atfork(prepare,parent,child)
+ 
++/*
++ * Missing FTW macros in musl, define them if not defined
++ * taken from
++ * https://git.yoctoproject.org/cgit.cgi/poky/plain/meta/recipes-core/systemd/systemd/0028-add-missing-FTW_-macros-for-musl.patch
++ */
++#ifndef FTW_ACTIONRETVAL
++#define FTW_ACTIONRETVAL 16
++#endif
++
++#ifndef FTW_CONTINUE
++#define FTW_CONTINUE 0
++#endif
++
++#ifndef FTW_STOP
++#define FTW_STOP 1
++#endif
++
++#ifndef FTW_SKIP_SUBTREE
++#define FTW_SKIP_SUBTREE 2
++#endif
++
+ #endif // !defined(__GLIBC__)
+ 
+ #endif // ELOGIND_BASIC_MUSL_MISSING_H_INCLUDED
+From 572cbd8524a5e2b22150c32118f58672449a5ca7 Mon Sep 17 00:00:00 2001
+From: maxice8 <thinkabit.ukim@gmail.com>
+Date: Tue, 16 Jan 2018 08:29:32 -0200
+Subject: [PATCH] work-around usage of glibc-specific __register_atfork for
+ musl systems
+
+__register_atfork is glibc-specific but is roughly equivalent to
+pthread_atfork, add a definition of it on musl_missing.h and guard
+against the definition of __register_atfork on src/basic/process-util.c
+using #ifdef __GLIBC__
+---
+ src/basic/process-util.c  | 2 ++
+ src/shared/musl_missing.h | 8 ++++++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/src/basic/process-util.c b/src/basic/process-util.c
+index d15027751..89e6f576b 100644
+--- a/src/basic/process-util.c
++++ b/src/basic/process-util.c
+@@ -1022,8 +1022,10 @@ static void reset_cached_pid(void) {
+ /* We use glibc __register_atfork() + __dso_handle directly here, as they are not included in the glibc
+  * headers. __register_atfork() is mostly equivalent to pthread_atfork(), but doesn't require us to link against
+  * libpthread, as it is part of glibc anyway. */
++#ifdef __GLIBC__
+ extern int __register_atfork(void (*prepare) (void), void (*parent) (void), void (*child) (void), void * __dso_handle);
+ extern void* __dso_handle __attribute__ ((__weak__));
++#endif // ifdef __GLIBC__
+ 
+ pid_t getpid_cached(void) {
+         pid_t current_value;
+diff --git a/src/shared/musl_missing.h b/src/shared/musl_missing.h
+index 20fc20a56..9b234556a 100644
+--- a/src/shared/musl_missing.h
++++ b/src/shared/musl_missing.h
+@@ -24,6 +24,7 @@ void elogind_set_program_name(const char* pcall);
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <pthread.h> /* for pthread_atfork */
+ 
+ #define strerror_r(e, m, k) (strerror_r(e, m, k) < 0 ? strdup("strerror_r() failed") : m);
+ 
+@@ -99,6 +100,13 @@ typedef __compar_fn_t comparison_fn_t;
+ # endif
+ #endif // ENABLE_UTMP
+ 
++/*
++ * Systemd makes use of undeclared glibc-specific __register_atfork to avoid
++ * a depednency on libpthread, __register_atfork is roughly equivalent to
++ * pthread_atfork so define __register_atfork to pthread_atfork.
++ */
++#define __register_atfork(prepare,parent,child,dso) pthread_atfork(prepare,parent,child)
++
+ #endif // !defined(__GLIBC__)
+ 
+ #endif // ELOGIND_BASIC_MUSL_MISSING_H_INCLUDED
+From 554c6b4215d081223704042d5dcf4c2d97cd95ba Mon Sep 17 00:00:00 2001
+From: maxice8 <thinkabit.ukim@gmail.com>
+Date: Tue, 16 Jan 2018 09:08:15 -0200
+Subject: [PATCH] test/test-sizeof.c: disable tests for missing typedefs in
+ musl
+
+---
+ src/test/test-sizeof.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/test/test-sizeof.c b/src/test/test-sizeof.c
+index bfc421e4b..cf122b674 100644
+--- a/src/test/test-sizeof.c
++++ b/src/test/test-sizeof.c
+@@ -48,8 +48,10 @@ int main(void) {
+         info(unsigned);
+         info(long unsigned);
+         info(long long unsigned);
++#ifdef __GLIBC__
+         info(__syscall_ulong_t);
+         info(__syscall_slong_t);
++#endif // ifdef __GLIBC__
+ 
+         info(float);
+         info(double);
+@@ -59,7 +61,9 @@ int main(void) {
+         info(ssize_t);
+         info(time_t);
+         info(usec_t);
++#ifdef __GLIBC__
+         info(__time_t);
++#endif // ifdef __GLIBC__
+         info(pid_t);
+         info(gid_t);
+ 
