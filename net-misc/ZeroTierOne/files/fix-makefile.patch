@@ -1,28 +1,24 @@
-diff --git a/make-linux.mk b/make-linux.mk
-index cd946491..ec12ac1d 100644
---- a/make-linux.mk
-+++ b/make-linux.mk
-@@ -74,8 +74,7 @@ else
- 	override CFLAGS+=-Wall -Wno-deprecated -pthread $(INCLUDES) -DNDEBUG $(DEFS)
- 	CXXFLAGS?=-O3 -fstack-protector
+--- a/make-linux.mk	2018-04-27 22:52:33.000000000 +0200
++++ b/make-linux.mk	2018-05-16 13:47:32.180195747 +0200
+@@ -76,8 +76,7 @@
+ 	CXXFLAGS?=-O3 -fstack-protector -fPIE
  	override CXXFLAGS+=-Wall -Wno-deprecated -std=c++11 -pthread $(INCLUDES) -DNDEBUG $(DEFS)
+ 	LDFLAGS=-pie -Wl,-z,relro,-z,now
 -	STRIP?=strip
 -	STRIP+=--strip-all
 +	STRIP?=echo
  endif
  
  ifeq ($(ZT_TRACE),1)
-@@ -97,11 +96,11 @@ CC_MACH=$(shell $(CC) -dumpmachine | cut -d '-' -f 1)
- ZT_ARCHITECTURE=999
- ifeq ($(CC_MACH),x86_64)
- 	ZT_ARCHITECTURE=2
--	ZT_USE_X64_ASM_CRYPTO=1
-+	ZT_USE_X64_ASM_CRYPTO=0
+@@ -162,6 +161,11 @@
+ 	ZT_ARCHITECTURE=3
+ 	override DEFS+=-DZT_NO_TYPE_PUNNING
+ 	ZT_USE_ARM32_NEON_ASM_CRYPTO=1
++endif
++ifeq ($(CC_MACH),armva)
++	ZT_ARCHITECTURE=3
++	override DEFS+=-DZT_NO_TYPE_PUNNING
++	ZT_USE_ARM32_NEON_ASM_CRYPTO=1
  endif
- ifeq ($(CC_MACH),amd64)
- 	ZT_ARCHITECTURE=2
--	ZT_USE_X64_ASM_CRYPTO=1
-+	ZT_USE_X64_ASM_CRYPTO=0
- endif
- ifeq ($(CC_MACH),powerpc64le)
- 	ZT_ARCHITECTURE=8
+ ifeq ($(CC_MACH),armv7l)
+ 	ZT_ARCHITECTURE=3
