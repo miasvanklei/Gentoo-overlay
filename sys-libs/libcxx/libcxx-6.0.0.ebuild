@@ -95,6 +95,7 @@ multilib_src_configure() {
 		-DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=OFF
 		-DLIBCXX_HAS_MUSL_LIBC=$(usex elibc_musl)
 		-DLIBCXX_INCLUDE_TESTS=$(usex test)
+		-DLIBCXX_SUPPORTS_NODEFAULTLIBS_FLAG=OFF
 	)
 
 	if use test; then
