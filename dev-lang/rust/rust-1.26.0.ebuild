@@ -13,11 +13,12 @@ KEYWORDS="~amd64"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/${P}-src.tar.gz"
+MY_P="rustc-${PV}"
+SRC_URI="https://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="-debug doc -jemalloc"
+IUSE="-debug doc +extended -jemalloc"
 
 RDEPEND="sys-devel/llvm:="
 
@@ -25,7 +26,7 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
 	>=dev-lang/perl-5.0"
 
-S=${WORKDIR}/${P}-src
+S="${WORKDIR}/${MY_P}-src"
 
 toml_usex() {
 	usex "$1" true false
@@ -44,6 +45,7 @@ PATCHES=(
 	"${FILESDIR}"/use-libc++.patch
 	"${FILESDIR}"/fix-analysis-path.patch
 	"${FILESDIR}"/tools-llvm-shared.patch
+	"${FILESDIR}"/50789.patch
 )
 
 src_configure() {
@@ -64,7 +66,7 @@ src_configure() {
 	submodules = false
 	vendor = true
 	verbose = 2
-	extended = true
+	extended = $(toml_usex extended)
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)"
@@ -99,8 +101,11 @@ src_install() {
 	local sobj="${rcbuild}/stage1-std/${CBUILD}"
 
 	# install binaries
-	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc" "${tobj}/rls"
-        dobin "${tobj}/cargo" "${tobj}/rustfmt" "${tobj}/clippy-driver"
+	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
+        if use extended; then
+		dobin "${tobj}/rls" "${tobj}/cargo"
+		dobin "${tobj}/rustfmt" "${tobj}/clippy-driver"
+	fi
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
 	# install libraries
@@ -108,8 +113,10 @@ src_install() {
 	doins -r "${obj}/lib/rustlib"
 
 	# install analysis for rls
-	insinto "/usr/$(get_libdir)/rustlib/analysis"
-	doins "${sobj}/release/deps/save-analysis/"*
+        if use extended; then
+		insinto "/usr/$(get_libdir)/rustlib/analysis"
+		doins "${sobj}/release/deps/save-analysis/"*
+	fi
 
 	# install COPYRIGHT and LICENSE
 	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT

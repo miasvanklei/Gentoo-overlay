@@ -14,7 +14,7 @@ KEYWORDS="~amd64"
 IUSE=""
 SRC_URI="https://github.com/phildawes/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 
-DEPEND="dev-lang/rustc"
+DEPEND="dev-lang/rust"
 RDEPEND="${DEPEND}"
 
 src_compile() {
