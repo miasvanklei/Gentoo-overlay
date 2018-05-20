@@ -22,7 +22,7 @@ RDEPEND=">=dev-haskell/exceptions-0.8.3:=[profile?] <dev-haskell/exceptions-0.11
 	>=dev-haskell/mtl-2.0:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
 	>=dev-haskell/semigroupoids-5.2:=[profile?] <dev-haskell/semigroupoids-5.3:=[profile?]
 	>=dev-haskell/temporary-1.2.0.4:=[profile?] <dev-haskell/temporary-1.3:=[profile?]
-	>=dev-haskell/unix-compat-0.4.3.1:=[profile?] <dev-haskell/unix-compat-0.5:=[profile?]
+	>=dev-haskell/unix-compat-0.4.3.1:=[profile?] <dev-haskell/unix-compat-0.7:=[profile?]
 	>=dev-haskell/utf8-string-1.0.1.1:=[profile?] <dev-haskell/utf8-string-1.1:=[profile?]
 	>=dev-lang/ghc-7.8.2:=
 	>=dev-haskell/cabal-1.18.1.3:=[profile?]
