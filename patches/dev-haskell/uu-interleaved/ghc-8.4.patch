@@ -1,0 +1,16 @@
+--- src/Control/Applicative/Interleaved.hs.bak	2018-05-30 20:34:21.963856747 +0200
++++ src/Control/Applicative/Interleaved.hs	2018-05-30 20:36:36.601901110 +0200
+@@ -55,9 +55,12 @@
+ 
+ -- * Grammars can be used as a monoid using the <||> combinator to combine them and (.) for composing  results
+ 
++instance Functor f => Semigroup (Gram f (r -> r)) where
++  p <> q = (.) <$> p <||> q
++
+ instance Functor f => Monoid (Gram f (r -> r)) where
+-  mappend p q = (.) <$> p <||> q
+   mempty      = empty
++  mappend     = (<>) 
+ 
+ instance (Show a) => Show (Gram f a) where
+   show (Gram l ma) = "Gram " ++ show  (length l) ++ " " ++ show ma 
