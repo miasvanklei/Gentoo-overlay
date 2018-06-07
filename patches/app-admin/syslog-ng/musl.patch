@@ -1,0 +1,13 @@
+--- a/lib/secret-storage/nondumpable-allocator.c
++++ b/lib/secret-storage/nondumpable-allocator.c
+@@ -104,8 +104,8 @@
+ nondumpable_buffer_alloc(gsize len)
+ {
+   gsize minimum_size = len + ALLOCATION_HEADER_SIZE;
+-  gsize PAGESIZE = sysconf(_SC_PAGE_SIZE);
+-  gsize alloc_size = round_to_nearest(minimum_size, PAGESIZE);
++  gsize page_size = sysconf(_SC_PAGE_SIZE);
++  gsize alloc_size = round_to_nearest(minimum_size, page_size);
+ 
+   Allocation *buffer = _mmap(alloc_size);
+   if (!buffer)
