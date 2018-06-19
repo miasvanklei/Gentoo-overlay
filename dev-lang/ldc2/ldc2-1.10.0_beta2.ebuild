@@ -4,7 +4,9 @@ EAPI=6
 
 inherit cmake-utils
 
-SRC_URI="https://github.com/ldc-developers/ldc/releases/download/v${PV}/ldc-${PV}-src.tar.gz"
+MY_PV=${PV/_/-}
+
+SRC_URI="https://github.com/ldc-developers/ldc/releases/download/v${MY_PV}/ldc-${MY_PV}-src.tar.gz"
 DESCRIPTION="LLVM D Compiler"
 HOMEPAGE="https://ldc-developers.github.com/ldc"
 KEYWORDS="~x86 ~amd64 ~arm ~ppc ~ppc64"
@@ -17,7 +19,7 @@ DEPEND=">=dev-util/cmake-2.8
 	sys-devel/llvm:=
 	${RDEPEND}"
 
-S=${WORKDIR}/ldc-${PV}-src
+S=${WORKDIR}/ldc-${MY_PV}-src
 
 PATCHES=(
 	"${FILESDIR}"/link-libunwind.patch
