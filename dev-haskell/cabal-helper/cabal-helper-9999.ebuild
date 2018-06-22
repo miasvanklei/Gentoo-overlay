@@ -25,6 +25,7 @@ RDEPEND=">=dev-haskell/exceptions-0.8.3:=[profile?] <dev-haskell/exceptions-0.11
 	>=dev-haskell/unix-compat-0.4.3.1:=[profile?] <dev-haskell/unix-compat-0.7:=[profile?]
 	>=dev-haskell/utf8-string-1.0.1.1:=[profile?] <dev-haskell/utf8-string-1.1:=[profile?]
 	>=dev-lang/ghc-7.8.2:=
+	>=dev-haskell/cabal-plan-9999:=
 	>=dev-haskell/cabal-1.18.1.3:=[profile?]
 	|| ( ( <dev-haskell/cabal-1.26 )
 		( >=dev-haskell/cabal-2.0 <dev-haskell/cabal-2.3 ) )
