@@ -1,16 +1,16 @@
 --- a/src/bootstrap/tool.rs
 +++ b/src/bootstrap/tool.rs
 @@ -426,6 +426,10 @@
-         cargo.env("RUSTC_DEBUGINFO", builder.config.rust_debuginfo.to_string())
-              .env("RUSTC_DEBUGINFO_LINES", builder.config.rust_debuginfo_lines.to_string());
+         let mut cargo = prepare_tool_cargo(builder, compiler, target, "build", path);
+         cargo.arg("--features").arg(self.extra_features.join(" "));
  
-+       if build.config.llvm_link_shared {
++       if builder.config.llvm_link_shared {
 +            cargo.env("LLVM_LINK_SHARED", "1");
 +        }
 +
-         let _folder = build.fold_output(|| format!("stage{}-rustdoc", target_compiler.stage));
-         println!("Building rustdoc for stage{} ({})", target_compiler.stage, target_compiler.host);
-         build.run(&mut cargo);
+         let _folder = builder.fold_output(|| format!("stage{}-{}", compiler.stage, tool));
+         builder.info(&format!("Building stage{} tool {} ({})", compiler.stage, tool, target));
+         let mut duplicates = Vec::new();
 --- a/src/tools/rustdoc/Cargo.toml
 +++ b/src/tools/rustdoc/Cargo.toml
 @@ -12,3 +12,4 @@ path = "main.rs"
@@ -34,8 +34,8 @@
  rls-span = { version = "0.4", features = ["serialize-serde"] }
  rls-vfs = { version = "0.4.5", features = ["racer-impls"] }
 +rustc_llvm = { path = "../../librustc_llvm" }
- rustfmt-nightly = "0.4.0"
- clippy_lints = { version = "0.0.189", optional = true }
+ rustfmt-nightly = "0.6"
+ clippy_lints = { version = "0.0.197", optional = true }
  serde = "1.0"
 --- a/src/tools/rls/src/main.rs
 +++ b/src/tools/rls/src/main.rs
@@ -48,8 +48,8 @@
  extern crate cargo;
  extern crate env_logger;
  extern crate languageserver_types as ls_types;
---- a/src/tools/clippy/Cargo.toml	2018-01-01 22:52:59.000000000 +0100
-+++ b/src/tools/clippy/Cargo.toml	2018-01-06 17:51:36.848306374 +0100
+--- a/src/tools/clippy/Cargo.toml
++++ b/src/tools/clippy/Cargo.toml
 @@ -41,6 +41,7 @@
  # end automatic update
  regex = "0.2"

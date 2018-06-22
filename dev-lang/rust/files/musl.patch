@@ -1,5 +1,5 @@
---- a/src/librustc_back/target/mod.rs
-+++ b/src/librustc_back/target/mod.rs
+--- a/src/librustc_target/spec/mod.rs
++++ b/src/librustc_target/spec/mod.rs
 @@ -153,6 +153,7 @@
      ("armv7-unknown-linux-musleabihf", armv7_unknown_linux_musleabihf),
      ("aarch64-unknown-linux-gnu", aarch64_unknown_linux_gnu),
@@ -9,9 +9,9 @@
      ("mips-unknown-linux-musl", mips_unknown_linux_musl),
      ("mipsel-unknown-linux-musl", mipsel_unknown_linux_musl),
 --- /dev/null
-+++ b/src/librustc_back/target/x86_64_gentoo_linux_musl.rs
-@@ -0,0 +1,36 @@
-+// Copyright 2014 The Rust Project Developers. See the COPYRIGHT
++++ b/src/librustc_target/spec/x86_64_gentoo_linux_musl.rs
+@@ -0,0 +1,35 @@
++// Copyright 2018 The Rust Project Developers. See the COPYRIGHT
 +// file at the top-level directory of this distribution and at
 +// http://rust-lang.org/COPYRIGHT.
 +//
@@ -21,17 +21,16 @@
 +// option. This file may not be copied, modified, or distributed
 +// except according to those terms.
 +
-+use LinkerFlavor;
-+use target::{Target, TargetResult};
++use spec::{LinkerFlavor, Target, TargetResult};
 +
 +pub fn target() -> TargetResult {
 +    let mut base = super::linux_base::opts();
 +    base.cpu = "x86-64".to_string();
 +    base.max_atomic_width = Some(64);
 +    base.crt_static_default = false;
-+    base.pre_link_args.get_mut(&LinkerFlavor::Gcc).unwrap().push("-m64".to_string());
 +    base.eliminate_frame_pointer = false;
 +    base.crt_static_respected = true;
++    base.stack_probes = true;
 +
 +    Ok(Target {
 +        llvm_target: "x86_64-gentoo-linux-musl".to_string(),
@@ -132,33 +131,33 @@
  }
 --- a/src/bootstrap/compile.rs
 +++ b/src/bootstrap/compile.rs
-@@ -79,13 +79,6 @@
+@@ -78,13 +78,6 @@
              });
-             println!("Uplifting stage1 std ({} -> {})", from.host, target);
+             builder.info(&format!("Uplifting stage1 std ({} -> {})", from.host, target));
  
 -            // Even if we're not building std this stage, the new sysroot must
 -            // still contain the musl startup objects.
 -            if target.contains("musl") {
 -                let libdir = builder.sysroot_libdir(compiler, target);
--                copy_musl_third_party_objects(build, target, &libdir);
+-                copy_musl_third_party_objects(builder, target, &libdir);
 -            }
 -
              builder.ensure(StdLink {
                  compiler: from,
                  target_compiler: compiler,
-@@ -94,11 +87,6 @@
+@@ -93,11 +86,6 @@
              return;
          }
  
 -        if target.contains("musl") {
 -            let libdir = builder.sysroot_libdir(compiler, target);
--            copy_musl_third_party_objects(build, target, &libdir);
+-            copy_musl_third_party_objects(builder, target, &libdir);
 -        }
 -
-         let out_dir = build.cargo_out(compiler, Mode::Libstd, target);
-         build.clear_if_dirty(&out_dir, &builder.rustc(compiler));
+         let out_dir = builder.cargo_out(compiler, Mode::Libstd, target);
+         builder.clear_if_dirty(&out_dir, &builder.rustc(compiler));
          let mut cargo = builder.cargo(compiler, Mode::Libstd, target, "build");
-@@ -120,20 +108,6 @@
+@@ -119,20 +107,6 @@
      }
  }
  
@@ -168,29 +167,29 @@
 -/// with a glibc-targeting toolchain, given we have the appropriate startup
 -/// files. As those shipped with glibc won't work, copy the ones provided by
 -/// musl so we have them on linux-gnu hosts.
--fn copy_musl_third_party_objects(build: &Build,
+-fn copy_musl_third_party_objects(builder: &Builder,
 -                                 target: Interned<String>,
 -                                 into: &Path) {
 -    for &obj in &["crt1.o", "crti.o", "crtn.o"] {
--        copy(&build.musl_root(target).unwrap().join("lib").join(obj), &into.join(obj));
+-        builder.copy(&builder.musl_root(target).unwrap().join("lib").join(obj), &into.join(obj));
 -    }
 -}
 -
  /// Configure cargo to compile the standard library, adding appropriate env vars
  /// and such.
- pub fn std_cargo(build: &Builder,
-@@ -179,11 +153,6 @@
-             cargo.env("JEMALLOC_OVERRIDE", jemalloc);
+ pub fn std_cargo(builder: &Builder,
+@@ -187,11 +161,6 @@
+                 cargo.env("JEMALLOC_OVERRIDE", jemalloc);
+             }
          }
-     }
--    if target.contains("musl") {
--        if let Some(p) = build.musl_root(target) {
--            cargo.env("MUSL_ROOT", p);
+-        if target.contains("musl") {
+-            if let Some(p) = builder.musl_root(target) {
+-                cargo.env("MUSL_ROOT", p);
+-            }
 -        }
--    }
+     }
  }
  
- #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 --- a/src/bootstrap/config.rs
 +++ b/src/bootstrap/config.rs
 @@ -119,8 +119,6 @@ pub struct Config {
@@ -256,9 +255,9 @@
 -            .map(|p| &**p)
 -    }
 -
-     /// Returns whether the target will be tested using the `remote-test-client`
-     /// and `remote-test-server` binaries.
-     fn remote_tested(&self, target: Interned<String>) -> bool {
+     /// Returns true if this is a no-std `target`, if defined
+     fn no_std(&self, target: Interned<String>) -> Option<bool> {
+         self.config.target_config.get(&target)
 --- a/src/bootstrap/sanity.rs
 +++ b/src/bootstrap/sanity.rs
 @@ -21,7 +21,7 @@
@@ -305,8 +304,8 @@
          if target.contains("msvc") {
              // There are three builds of cmake on windows: MSVC, MinGW, and
              // Cygwin. The Cygwin build does not have generators for Visual
---- a/src/liblibc/src/unix/mod.rs	2018-05-11 23:09:08.174138618 +0200
-+++ b/src/liblibc/src/unix/mod.rs	2018-05-11 23:11:18.542843132 +0200
+--- a/src/liblibc/src/unix/mod.rs
++++ b/src/liblibc/src/unix/mod.rs
 @@ -277,14 +277,9 @@
          // cargo build, don't pull in anything extra as the libstd dep
          // already pulls in all libs.
@@ -323,8 +322,8 @@
          extern {}
      } else if #[cfg(all(target_os = "netbsd"))] {
          // Since we don't use -nodefaultlibs on Rumprun, libc is always pulled
---- a/src/libunwind/lib.rs	2018-05-12 12:09:10.688561048 +0200
-+++ b/src/libunwind/lib.rs	2018-05-12 12:09:26.785399846 +0200
+--- a/src/libunwind/lib.rs
++++ b/src/libunwind/lib.rs
 @@ -36,6 +36,5 @@
  }
  

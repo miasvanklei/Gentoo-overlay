@@ -45,7 +45,6 @@ PATCHES=(
 	"${FILESDIR}"/use-libc++.patch
 	"${FILESDIR}"/fix-analysis-path.patch
 	"${FILESDIR}"/tools-llvm-shared.patch
-	"${FILESDIR}"/50789.patch
 )
 
 src_configure() {
@@ -104,7 +103,7 @@ src_install() {
 	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
         if use extended; then
 		dobin "${tobj}/rls" "${tobj}/cargo"
-		dobin "${tobj}/rustfmt" "${tobj}/clippy-driver"
+		dobin "${tobj}/rustfmt"
 	fi
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
