@@ -1,0 +1,54 @@
+--- a/src/basic/format-util.h
++++ b/src/basic/format-util.h
+@@ -61,14 +61,6 @@
+ #  define PRI_TIMEX "li"
+ #endif
+ 
+-#if SIZEOF_RLIM_T == 8
+-#  define RLIM_FMT "%" PRIu64
+-#elif SIZEOF_RLIM_T == 4
+-#  define RLIM_FMT "%" PRIu32
+-#else
+-#  error Unknown rlim_t size
+-#endif
+-
+ #if SIZEOF_DEV_T == 8
+ #  define DEV_FMT "%" PRIu64
+ #elif SIZEOF_DEV_T == 4
+--- a/src/basic/rlimit-util.c
++++ b/src/basic/rlimit-util.c
+@@ -286,13 +286,13 @@ int rlimit_format(const struct rlimit *rl, char **ret) {
+         if (rl->rlim_cur >= RLIM_INFINITY && rl->rlim_max >= RLIM_INFINITY)
+                 s = strdup("infinity");
+         else if (rl->rlim_cur >= RLIM_INFINITY)
+-                (void) asprintf(&s, "infinity:" RLIM_FMT, rl->rlim_max);
++                (void) asprintf(&s, "infinity:%ju", (uintmax_t)rl->rlim_max);
+         else if (rl->rlim_max >= RLIM_INFINITY)
+-                (void) asprintf(&s, RLIM_FMT ":infinity", rl->rlim_cur);
++                (void) asprintf(&s, "%ju:infinity", (uintmax_t)rl->rlim_cur);
+         else if (rl->rlim_cur == rl->rlim_max)
+-                (void) asprintf(&s, RLIM_FMT, rl->rlim_cur);
++                (void) asprintf(&s, "%ju", (uintmax_t)rl->rlim_cur);
+         else
+-                (void) asprintf(&s, RLIM_FMT ":" RLIM_FMT, rl->rlim_cur, rl->rlim_max);
++                (void) asprintf(&s, "%ju:%ju", (uintmax_t)rl->rlim_cur, (uintmax_t)rl->rlim_max);
+ 
+         if (!s)
+                 return -ENOMEM;
+--- a/src/core/execute.c
++++ b/src/core/execute.c
+@@ -3991,10 +3991,10 @@ void exec_context_dump(ExecContext *c, FILE* f, const char *prefix) {
+ 
+         for (i = 0; i < RLIM_NLIMITS; i++)
+                 if (c->rlimit[i]) {
+-                        fprintf(f, "Limit%s%s: " RLIM_FMT "\n",
+-                                prefix, rlimit_to_string(i), c->rlimit[i]->rlim_max);
+-                        fprintf(f, "Limit%s%sSoft: " RLIM_FMT "\n",
+-                                prefix, rlimit_to_string(i), c->rlimit[i]->rlim_cur);
++                        fprintf(f, "Limit%s%s: %ju\n",
++                                prefix, rlimit_to_string(i), (uintmax_t)c->rlimit[i]->rlim_max);
++                        fprintf(f, "Limit%s%sSoft: %ju\n",
++                                prefix, rlimit_to_string(i), (uintmax_t)c->rlimit[i]->rlim_cur);
+                 }
+ 
+         if (c->ioprio_set) {

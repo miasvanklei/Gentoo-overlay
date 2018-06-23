@@ -1,0 +1,27 @@
+--- a/src/boot/efi/meson.build
++++ b/src/boot/efi/meson.build
+@@ -132,14 +132,8 @@
+                        '-znocombreloc',
+                        '-L', efi_libdir,
+                        join_paths(efi_ldsdir, 'crt0-efi-@0@.o'.format(gnu_efi_path_arch))]
+-        if efi_arch == 'aarch64' or efi_arch == 'arm'
+-                # Aarch64 and ARM32 don't have an EFI capable objcopy. Use 'binary'
+-                # instead, and add required symbols manually.
+-                efi_ldflags += ['--defsym=EFI_SUBSYSTEM=0xa']
+-                efi_format = ['-O', 'binary']
+-        else
+-                efi_format = ['--target=efi-app-@0@'.format(gnu_efi_arch)]
+-        endif
++        efi_ldflags += ['--defsym=EFI_SUBSYSTEM=0xa']
++        efi_format = ['-O', 'binary']
+ 
+         systemd_boot_objects = []
+         stub_objects = []
+@@ -197,6 +191,7 @@
+                                    '-j', '.data',
+                                    '-j', '.dynamic',
+                                    '-j', '.dynsym',
++                                   '-j', '.dynstr',
+                                    '-j', '.rel',
+                                    '-j', '.rela',
+                                    '-j', '.reloc']

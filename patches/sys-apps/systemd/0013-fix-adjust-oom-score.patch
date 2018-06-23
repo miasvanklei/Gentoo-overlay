@@ -1,0 +1,17 @@
+--- a/src/basic/process-util.c
++++ b/src/basic/process-util.c
+@@ -1468,12 +1468,11 @@
+ }
+ 
+ int set_oom_score_adjust(int value) {
+-        char t[DECIMAL_STR_MAX(int)];
++        char t[DECIMAL_STR_MAX(value)];
+ 
+         sprintf(t, "%i", value);
+ 
+-        return write_string_file("/proc/self/oom_score_adj", t,
+-                                 WRITE_STRING_FILE_VERIFY_ON_FAILURE|WRITE_STRING_FILE_DISABLE_BUFFER);
++        return write_string_file("/proc/self/oom_score_adj", t, 0);
+ }
+ 
+ static const char *const ioprio_class_table[] = {

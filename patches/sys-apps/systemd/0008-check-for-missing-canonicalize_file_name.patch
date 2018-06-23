@@ -1,0 +1,26 @@
+--- a/meson.build
++++ b/meson.build
+@@ -520,6 +520,8 @@ foreach ident : [
+         ['kcmp',              '''#include <linux/kcmp.h>'''],
+         ['keyctl',            '''#include <sys/types.h>
+                                  #include <keyutils.h>'''],
++        ['canonicalize_file_name', '''#define _GNU_SOURCE
++                                      #include <stdlib.h>'''],
+         ['copy_file_range',   '''#include <sys/syscall.h>
+                                  #include <unistd.h>'''],
+         ['bpf',               '''#include <sys/syscall.h>
+--- a/src/basic/missing_syscall.h
++++ b/src/basic/missing_syscall.h
+@@ -31,6 +31,12 @@ static inline int pivot_root(const char *new_root, const char *put_old) {
+ }
+ #endif
+ 
++#if !HAVE_CANONICALIZE_FILE_NAME
++static inline char *canonicalize_file_name(const char *path) {
++        return realpath(path, NULL);
++}
++#endif
++
+ /* ======================================================================= */
+ 
+ #if !HAVE_MEMFD_CREATE
