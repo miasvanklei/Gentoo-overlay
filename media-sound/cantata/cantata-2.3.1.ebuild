@@ -3,7 +3,7 @@
 
 EAPI=6
 
-PLOCALES="cs de en_GB es fr hu it ja ko pl ru zh_CN"
+PLOCALES="cs da de en_GB es fr hu it ja ko pl ru zh_CN"
 inherit cmake-utils gnome2-utils l10n qmake-utils xdg
 
 DESCRIPTION="Featureful and configurable Qt client for the music player daemon (MPD)"
@@ -66,9 +66,8 @@ DEPEND="${RDEPEND}
 # cantata has no tests
 RESTRICT="test"
 
-PATCHES=( "${FILESDIR}/${P}-headers.patch"
-	"${FILESDIR}/system-solid.patch"
-	"${FILESDIR}/qt5.10-sql.patch" )
+PATCHES=( "${FILESDIR}/${PN}-2.2.0-headers.patch"
+	"${FILESDIR}/system-solid.patch" )
 
 src_prepare() {
 	remove_locale() {

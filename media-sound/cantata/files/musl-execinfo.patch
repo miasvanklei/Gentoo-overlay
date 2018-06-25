@@ -1,0 +1,20 @@
+--- a/gui/main.cpp	2018-06-24 17:21:23.996380930 +0200
++++ b/gui/main.cpp	2018-06-24 17:22:01.530327108 +0200
+@@ -260,7 +260,7 @@
+     qInstallMessageHandler(cantataQtMsgHandler);
+ }
+ 
+-#if defined Q_OS_LINUX && defined __GNUC__
++#if defined __GLIBC__
+ #include <execinfo.h>
+ #include <unistd.h>
+ #include <signal.h>
+@@ -340,7 +340,7 @@
+ 
+ int main(int argc, char *argv[])
+ {
+-    #if defined Q_OS_LINUX && defined __GNUC__
++    #if defined __GLIBC__
+     signal(SIGSEGV, sigHandler);
+     #endif
+     QThread::currentThread()->setObjectName("GUI");
