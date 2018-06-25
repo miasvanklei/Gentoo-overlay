@@ -9,15 +9,19 @@
  libbd_btrfs_la_LIBADD = $(GLIB_LIBS) $(BYTESIZE_LIBS) ${builddir}/../utils/libbd_utils.la
  libbd_btrfs_la_LDFLAGS = -L${srcdir}/../utils/ -version-info 2:0:0 -Wl,--no-undefined
  libbd_btrfs_la_CPPFLAGS = -I${builddir}/../../include/
-@@ -75,7 +75,7 @@
- endif
+@@ -75,10 +75,10 @@
  
- if WITH_DM
--libbd_dm_la_CFLAGS = $(GLIB_CFLAGS) $(DEVMAPPER_CFLAGS) $(UDEV_CFLAGS) -Wall -Wextra -Werror
-+libbd_dm_la_CFLAGS = $(GLIB_CFLAGS) $(DEVMAPPER_CFLAGS) $(UDEV_CFLAGS) -Wall -Wextra
- libbd_dm_la_LIBADD = $(GLIB_LIBS) $(DEVMAPPER_LIBS) $(UDEV_LIBS) -ldmraid ${builddir}/../utils/libbd_utils.la
- libbd_dm_la_LDFLAGS = -L${srcdir}/../utils/ -version-info 2:0:0 -Wl,--no-undefined
- # Dear author of libdmdraid, VERSION really is not a good name for an enum member!
+ if WITH_CRYPTO
+ if WITH_ESCROW
+-libbd_crypto_la_CFLAGS = $(GLIB_CFLAGS) $(CRYPTSETUP_CFLAGS) $(NSS_CFLAGS) -Wall -Wextra -Werror
++libbd_crypto_la_CFLAGS = $(GLIB_CFLAGS) $(CRYPTSETUP_CFLAGS) $(NSS_CFLAGS) -Wall -Wextra
+ libbd_crypto_la_LIBADD = $(GLIB_LIBS) $(CRYPTSETUP_LIBS) $(NSS_LIBS) -lvolume_key ${builddir}/../utils/libbd_utils.la
+ else
+-libbd_crypto_la_CFLAGS = $(GLIB_CFLAGS) $(CRYPTSETUP_CFLAGS) -Wall -Wextra -Werror
++libbd_crypto_la_CFLAGS = $(GLIB_CFLAGS) $(CRYPTSETUP_CFLAGS) -Wall -Wextra
+ libbd_crypto_la_LIBADD = $(GLIB_LIBS) $(CRYPTSETUP_LIBS) ${builddir}/../utils/libbd_utils.la
+ endif
+ libbd_crypto_la_LDFLAGS = -L${srcdir}/../utils/ -version-info 2:0:0 -Wl,--no-undefined
 @@ -84,7 +84,7 @@
  endif
  
