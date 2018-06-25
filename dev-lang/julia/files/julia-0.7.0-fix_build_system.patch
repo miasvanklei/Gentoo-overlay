@@ -1,0 +1,50 @@
+--- a/contrib/install.sh
++++ b/contrib/install.sh
+@@ -25,7 +25,6 @@
+ 
+     # Do the chmod dance, and ignore errors on platforms that don't like setting permissions of symlinks
+     # TODO: Test if it's a symlink instead of having to redirect stderr to /dev/null
+-    chmod $PERMS $DESTFILE 2>/dev/null
+ done
+ 
+ exit 0
+--- a/Make.inc
++++ b/Make.inc
+@@ -399,7 +399,7 @@ ifneq ($(OS), WINNT)
+ JCXXFLAGS += -pedantic
+ endif
+ DEBUGFLAGS := -O0 -ggdb2 -DJL_DEBUG_BUILD -fstack-protector-all
+-SHIPFLAGS := -O3 -ggdb2 -falign-functions
++SHIPFLAGS := GENTOOCFLAGS
+ endif
+ 
+ ifeq ($(USECLANG),1)
+@@ -410,7 +410,7 @@ JCFLAGS := -pipe $(fPIC) -fno-strict-aliasing -D_FILE_OFFSET_BITS=64
+ JCPPFLAGS := -fasynchronous-unwind-tables
+ JCXXFLAGS := -pipe $(fPIC) -fno-rtti -pedantic
+ DEBUGFLAGS := -O0 -g -DJL_DEBUG_BUILD -fstack-protector-all
+-SHIPFLAGS := -O3 -g
++SHIPFLAGS := GENTOOCFLAGS
+ ifeq ($(OS), Darwin)
+ ifeq ($(USE_LIBCPP), 1)
+ MACOSX_VERSION_MIN := 10.8
+@@ -439,7 +439,7 @@ JCFLAGS := -std=gnu11 -pipe $(fPIC) -fno-strict-aliasing -D_FILE_OFFSET_BITS=64
+ JCPPFLAGS :=
+ JCXXFLAGS := -pipe $(fPIC) -fno-rtti
+ DEBUGFLAGS := -O0 -g -DJL_DEBUG_BUILD -fstack-protector-all
+-SHIPFLAGS := -O3 -g -falign-functions
++SHIPFLAGS := GENTOOCFLAGS
+ endif
+ 
+ ifeq ($(USECCACHE), 1)
+--- a/doc/Makefile
++++ b/doc/Makefile
+@@ -25,7 +25,7 @@ deps: UnicodeData.txt
+ 	$(JLCHECKSUM) UnicodeData.txt
+ 
+ clean:
+-	-rm -rf _build/* deps/* docbuild.log UnicodeData.txt
++	@echo "Do not clean doc/_build/html. Just use it..."
+ 
+ cleanall: clean
+ 

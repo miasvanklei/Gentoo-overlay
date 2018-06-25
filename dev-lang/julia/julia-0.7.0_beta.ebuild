@@ -7,11 +7,13 @@ RESTRICT="test"
 
 inherit llvm pax-utils toolchain-funcs
 
+MY_PV=${PV/_/-}
+
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
 SRC_URI="
-	https://github.com/JuliaLang/${PN}/releases/download/v${PV}/${P}.tar.gz
-	https://dev.gentoo.org/~tamiko/distfiles/${P}-bundled.tar.gz
+	https://github.com/JuliaLang/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}.tar.gz
+	https://dev.gentoo.org/~tamiko/distfiles/${PN}-0.6.2-bundled.tar.gz
 "
 
 LICENSE="MIT"
@@ -27,6 +29,7 @@ RDEPEND="
 	dev-libs/openspecfun
 	sci-libs/arpack:0=
 	sci-libs/camd:0=
+        sci-libs/ccolamd
 	sci-libs/cholmod:0=
 	sci-libs/fftw:3.0=[threads]
 	sci-libs/openlibm:0=
@@ -47,23 +50,21 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-0.6.0-fix_build_system.patch
+	"${FILESDIR}"/${PN}-0.7.0-fix_build_system.patch
 	"${FILESDIR}"/0001-use-compiler_rt.patch
-	"${FILESDIR}"/0002-ldconfig-compat.patch
+	"${FILESDIR}"/0002-remove-nvptx-func.patch
 	"${FILESDIR}"/0003-llvm-libunwind.patch
-	"${FILESDIR}"/0004-llvm-5.patch
-	"${FILESDIR}"/0005-llvm-6.patch
-	"${FILESDIR}"/0006-no-debug-compile.patch
-	"${FILESDIR}"/0007-disable-splitdebug.patch
+	"${FILESDIR}"/0004-no-debug-compile.patch
+	"${FILESDIR}"/0005-disable-splitdebug.patch
 )
 
 LLVM_MAX_SLOT=6
 
+S=${WORKDIR}/julia
+
 src_prepare() {
 	mv "${WORKDIR}"/bundled/UnicodeData.txt doc || die
 	mkdir deps/srccache || die
-	mv "${WORKDIR}"/bundled/* deps/srccache || die
-	rmdir "${WORKDIR}"/bundled || die
 
 	default
 
@@ -120,6 +121,7 @@ src_configure() {
 
 	# USE_SYSTEM_LIBM=0 implies using external openlibm
 	cat <<-EOF > Make.user
+		DISABLE_LIBUNWIND=1
 		USE_SYSTEM_DSFMT=0
 		USE_SYSTEM_LIBUV=0
 		USE_SYSTEM_PCRE=1
@@ -184,14 +186,11 @@ src_install() {
 
 	mv "${ED}"/usr/etc/julia "${ED}"/etc || die
 	rmdir "${ED}"/usr/etc || die
-	mv "${ED}"/usr/share/doc/julia/{examples,html} \
+	mv "${ED}"/usr/share/doc/julia/html \
 		"${ED}"/usr/share/doc/${PF} || die
 	rmdir "${ED}"/usr/share/doc/julia || die
 	if [[ $(get_libdir) != lib ]]; then
 		mkdir -p "${ED}"/usr/$(get_libdir) || die
 		mv "${ED}"/usr/lib/julia "${ED}"/usr/$(get_libdir)/julia || die
 	fi
-
-	# install find-syslibs
-	cp "${FILESDIR}"/find-syslibs "${ED}"/usr/share/julia
 }
