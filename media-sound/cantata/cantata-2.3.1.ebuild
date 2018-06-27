@@ -66,8 +66,11 @@ DEPEND="${RDEPEND}
 # cantata has no tests
 RESTRICT="test"
 
-PATCHES=( "${FILESDIR}/${PN}-2.2.0-headers.patch"
-	"${FILESDIR}/system-solid.patch" )
+PATCHES=(
+	"${FILESDIR}/${PN}-2.2.0-headers.patch"
+	"${FILESDIR}/system-solid.patch"
+	"${FILESDIR}/musl-execinfo.patch"
+)
 
 src_prepare() {
 	remove_locale() {
