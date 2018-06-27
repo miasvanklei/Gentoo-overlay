@@ -54,7 +54,7 @@ PATCHES=(
 	"${FILESDIR}"/0001-use-compiler_rt.patch
 	"${FILESDIR}"/0002-remove-nvptx-func.patch
 	"${FILESDIR}"/0003-llvm-libunwind.patch
-	"${FILESDIR}"/0004-no-debug-compile.patch
+	"${FILESDIR}"/0004-disable-debug.patch
 	"${FILESDIR}"/0005-disable-splitdebug.patch
 )
 
