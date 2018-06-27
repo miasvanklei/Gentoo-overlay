@@ -58,7 +58,7 @@ src_install() {
 	doicon ${FILESDIR}/vscode.png
 	insinto "/usr/share/licenses/${PN}"
 	newins "resources/app/LICENSE.txt" "LICENSE"
-	fperms +x "/opt/${PN}/resources/app/node_modules.asar.unpacked/vscode-ripgrep/bin/rg"
+	fperms +x "/opt/${PN}/app/node_modules.asar.unpacked/vscode-ripgrep/bin/rg"
 }
 
 pkg_postinst() {
