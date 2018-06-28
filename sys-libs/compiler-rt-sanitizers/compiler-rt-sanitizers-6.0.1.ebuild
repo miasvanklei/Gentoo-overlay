@@ -21,7 +21,7 @@ SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="${PV%_*}"
 KEYWORDS="~amd64"
-IUSE="+clang test"
+IUSE="+compiler-rt +clang test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 
 LLVM_SLOT=${SLOT%%.*}
@@ -83,10 +83,10 @@ src_configure() {
 	fi
 
 	local mycmakeargs=(
-		-DCOMPILER_RT_INSTALL_PATH="${EPREFIX}/usr/lib/clang/${SLOT}"
+		-DCOMPILER_RT_INSTALL_PATH="${EPREFIX}/usr/lib/clang/6.0.0"
 		# use a build dir structure consistent with install
 		# this makes it possible to easily deploy test-friendly clang
-		-DCOMPILER_RT_OUTPUT_DIR="${BUILD_DIR}/lib/clang/${SLOT}"
+		-DCOMPILER_RT_OUTPUT_DIR="${BUILD_DIR}/lib/clang/6.0.0"
 
 		-DCOMPILER_RT_INCLUDE_TESTS=$(usex test)
 		# built-ins installed by sys-libs/compiler-rt
@@ -95,6 +95,8 @@ src_configure() {
 		-DCOMPILER_RT_BUILD_PROFILE=ON
 		-DCOMPILER_RT_BUILD_SANITIZERS=ON
 		-DCOMPILER_RT_BUILD_XRAY=ON
+		-DSANITIZER_CXX_ABI="libcxxabi"
+		-DSANITIZER_USE_COMPILER_RT=$(usex compiler-rt)
 	)
 	if use test; then
 		mycmakeargs+=(

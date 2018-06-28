@@ -109,9 +109,6 @@ src_unpack() {
 }
 
 src_prepare() {
-	# fix invalid use of iterator
-	eapply "${FILESDIR}"/0001-Driver-Avoid-invalidated-iterator-in-insertTargetAnd.patch
-
 	# fix tests with compiler-rt
 	eapply "${FILESDIR}"/0002-test-Fix-Cross-DSO-CFI-Android-sanitizer-test-for-rt.patch
 
@@ -257,7 +254,7 @@ src_install() {
 	local clang_version=$(ver_cut 1-2 "${llvm_version}")
 	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
 	local clang_tools=( clang clang++ clang-cl clang-cpp )
-	local gcc_tools=( gcc g++ cc c++ cpp )
+	local gcc_tools=( gcc g++ cc c++ cpp gfortran )
 	local abi i
 
 	# cmake gives us:

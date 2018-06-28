@@ -67,9 +67,6 @@ src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
 
-	# fix missing headers
-	eapply "${FILESDIR}"/0002-install-sb-headers.patch
-
 	# enable debugging crystal as c code
 	eapply "${FILESDIR}"/0003-crystal-debug.patch
 

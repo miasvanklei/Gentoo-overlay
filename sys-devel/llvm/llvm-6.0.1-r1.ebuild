@@ -85,12 +85,8 @@ src_prepare() {
 	# support building llvm against musl-libc
 	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
 
-	# Add missing header for InstructionCombining.cpp, in order
-        # to export LLVMInitializeInstCombine as extern "C"
-	eapply "${FILESDIR}"/0005-missing-header.patch
-
 	# two specific rust patches in one
-	eapply "${FILESDIR}"/0006-add-rust-support.patch
+	eapply "${FILESDIR}"/0004-add-rust-support.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
@@ -250,6 +246,7 @@ multilib_src_install_all() {
 	local revord=$(( 9999 - ${SLOT} ))
 	cat <<-_EOF_ > "${T}/10llvm-${revord}" || die
 		PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/bin"
+		ROOTPATH="${EPREFIX}/usr/lib/llvm/${SLOT}/bin"
 		MANPATH="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 _EOF_
