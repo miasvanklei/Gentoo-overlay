@@ -20,7 +20,7 @@ SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 
 LICENSE="UoI-NCSA"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm"
 IUSE="test"
 RESTRICT="!test? ( test )"
 

@@ -15,8 +15,8 @@ HOMEPAGE="https://llvm.org/"
 SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
-SLOT="${PV%_*}"
-KEYWORDS="~amd64"
+SLOT="6.0.0"
+KEYWORDS="~amd64 ~arm"
 IUSE="+clang test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 

@@ -20,7 +20,7 @@ SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm"
 IUSE="+compiler-rt +libunwind +static-libs test"
 RESTRICT="!test? ( test )"
 

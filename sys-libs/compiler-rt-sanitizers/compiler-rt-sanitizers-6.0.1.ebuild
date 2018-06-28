@@ -19,8 +19,8 @@ SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 	test? ( http://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 LICENSE="|| ( UoI-NCSA MIT )"
-SLOT="${PV%_*}"
-KEYWORDS="~amd64"
+SLOT="6.0.0"
+KEYWORDS="~amd64 ~arm"
 IUSE="+compiler-rt +clang test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 
