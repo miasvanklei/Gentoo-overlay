@@ -10,7 +10,7 @@ HOMEPAGE="https://clang.llvm.org/"
 SRC_URI=""
 
 LICENSE="metapackage"
-SLOT="6.0.0"
+SLOT="${PV%_*}"
 KEYWORDS="~amd64 ~arm"
 IUSE="+compiler-rt +libcxx +openmp +sanitize"
 
