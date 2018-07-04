@@ -96,14 +96,16 @@ src_install() {
 
 	local rcbuild="build/${CBUILD}"
 	local obj="${rcbuild}/stage2"
-	local tobj="${rcbuild}/stage2-tools-bin"
+	local tobj="${rcbuild}/stage2-tools/${CBUILD}/release"
 	local sobj="${rcbuild}/stage1-std/${CBUILD}"
 
 	# install binaries
 	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
         if use extended; then
 		dobin "${tobj}/rls" "${tobj}/cargo"
-		dobin "${tobj}/rustfmt"
+		dobin "${tobj}/rustfmt" "${tobj}/cargo-fmt"
+		insinto "/usr/$(get_libdir)/rustlib/${CBUILD}/lib"
+		doins ${tobj}/deps/librustc_cratesio_shim*.so
 	fi
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
