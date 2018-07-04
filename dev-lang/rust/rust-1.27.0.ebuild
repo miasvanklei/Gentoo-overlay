@@ -137,7 +137,7 @@ src_install() {
 
 	# install sources needed for go to definition
 	pushd ${S}/src
-	mkdir -p ${D}/usr/lib/rustlib/src
+	mkdir -p ${D}/usr/lib/rustlib/src/rust/src
 	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src \; || die
 	popd >/dev/null
 }
