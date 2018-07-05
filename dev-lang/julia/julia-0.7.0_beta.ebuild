@@ -54,7 +54,6 @@ PATCHES=(
 	"${FILESDIR}"/0001-use-compiler_rt.patch
 	"${FILESDIR}"/0002-remove-nvptx-func.patch
 	"${FILESDIR}"/0003-llvm-libunwind.patch
-	"${FILESDIR}"/0004-disable-debug.patch
 	"${FILESDIR}"/0005-disable-splitdebug.patch
 )
 
@@ -193,4 +192,7 @@ src_install() {
 		mkdir -p "${ED}"/usr/$(get_libdir) || die
 		mv "${ED}"/usr/lib/julia "${ED}"/usr/$(get_libdir)/julia || die
 	fi
+
+	# needed for julia, only one symbol
+	${CC} ${FILESDIR}/compiler-rt.c -shared -o ${D}/usr/lib/julia/libcompiler-rt.so
 }

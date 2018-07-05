@@ -1,17 +1,3 @@
-/* ===-- udivmodti4.c - Implement __udivmodti4 -----------------------------===
- *
- *                    The LLVM Compiler Infrastructure
- *
- * This file is dual licensed under the MIT and the University of Illinois Open
- * Source Licenses. See LICENSE.TXT for details.
- *
- * ===----------------------------------------------------------------------===
- *
- * This file implements __udivmodti4 for the compiler_rt library.
- *
- * ===----------------------------------------------------------------------===
- */
-
 #include <limits.h>
 
 typedef int      ti_int __attribute__ ((mode (TI)));
@@ -31,12 +17,6 @@ typedef union
         du_int high;
     } s;
 } utwords;
-
-/* Effects: if rem != 0, *rem = a % b
- * Returns: a / b
- */
-
-/* Translated from Figure 3-40 of The PowerPC Compiler Writer's Guide */
 
 tu_int
 __udivmodti4(tu_int a, tu_int b, tu_int* rem)

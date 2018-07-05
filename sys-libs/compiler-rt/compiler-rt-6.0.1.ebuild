@@ -90,10 +90,3 @@ src_test() {
 
 	cmake-utils_src_make check-builtins
 }
-
-src_install() {
-	cmake-utils_src_install
-
-	# needed for julia, only one symbol
-	${CC} ${FILESDIR}/compiler-rt.c -shared -o ${D}/usr/lib/libcompiler-rt.so
-}
