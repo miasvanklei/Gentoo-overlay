@@ -1,36 +1,3 @@
-From 632396fdf8ae58381415d68950489497d565ddaa Mon Sep 17 00:00:00 2001
-From: Eric Schweitz <eschweitz@nvidia.com>
-Date: Fri, 5 Jan 2018 15:09:23 -0800
-Subject: [PATCH] Flang driver changes ported to master branch
-
----
- include/clang/Basic/DiagnosticDriverKinds.td |   4 +
- include/clang/Driver/Action.h                |  11 +
- include/clang/Driver/Driver.h                |   6 +-
- include/clang/Driver/Options.td              | 157 ++++-
- include/clang/Driver/Phases.h                |   1 +
- include/clang/Driver/ToolChain.h             |  15 +
- include/clang/Driver/Types.def               |   8 +-
- include/clang/Driver/Types.h                 |   9 +
- lib/Driver/Action.cpp                        |   7 +
- lib/Driver/CMakeLists.txt                    |   1 +
- lib/Driver/Driver.cpp                        |  12 +
- lib/Driver/Phases.cpp                        |   1 +
- lib/Driver/ToolChain.cpp                     |  54 ++
- lib/Driver/ToolChains/CommonArgs.cpp         |  35 ++
- lib/Driver/ToolChains/CommonArgs.h           |   2 +
- lib/Driver/ToolChains/Flang.cpp              | 851 +++++++++++++++++++++++++++
- lib/Driver/ToolChains/Flang.h                |  50 ++
- lib/Driver/ToolChains/Gnu.cpp                |  10 +
- lib/Driver/ToolChains/Linux.cpp              | 188 ++++++
- lib/Driver/ToolChains/Linux.h                |   3 +
- lib/Driver/Types.cpp                         |  60 +-
- tools/driver/CMakeLists.txt                  |   2 +-
- 22 files changed, 1462 insertions(+), 25 deletions(-)
- create mode 100644 lib/Driver/ToolChains/Flang.cpp
- create mode 100644 lib/Driver/ToolChains/Flang.h
- mode change 100644 => 100755 lib/Driver/Types.cpp
-
 diff --git a/include/clang/Basic/DiagnosticDriverKinds.td b/include/clang/Basic/DiagnosticDriverKinds.td
 index 45cdf82d369..b175a7f4ab9 100644
 --- a/include/clang/Basic/DiagnosticDriverKinds.td
@@ -514,11 +481,12 @@ index f96a1182e3c..eab990e236a 100644
  #include "clang/Basic/ObjCRuntime.h"
  #include "clang/Basic/VirtualFileSystem.h"
  #include "clang/Config/config.h"
-@@ -137,6 +138,7 @@ const DriverSuffix *FindDriverSuffix(StringRef ProgName, size_t &Pos) {
+@@ -137,6 +138,8 @@ const DriverSuffix *FindDriverSuffix(StringRef ProgName, size_t &Pos) {
        {"cpp", "--driver-mode=cpp"},
        {"cl", "--driver-mode=cl"},
        {"++", "--driver-mode=g++"},
 +      {"flang", "--driver-mode=fortran"},
++      {"gfortran", "--driver-mode=fortran"},
    };
  
    for (size_t i = 0; i < llvm::array_lengthof(DriverSuffixes); ++i) {
@@ -1935,17 +1903,3 @@ index ab63f0e81b1..526db0fabef
          P.push_back(phases::Compile);
          P.push_back(phases::Backend);
        }
-diff --git a/tools/driver/CMakeLists.txt b/tools/driver/CMakeLists.txt
-index 22a498422ae..fd9d5b78b47 100644
---- a/tools/driver/CMakeLists.txt
-+++ b/tools/driver/CMakeLists.txt
-@@ -60,7 +60,7 @@ endif()
- add_dependencies(clang clang-headers)
- 
- if(NOT CLANG_LINKS_TO_CREATE)
--  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp)
-+  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp flang)
- 
-   if (MSVC)
-     list(APPEND CLANG_LINKS_TO_CREATE ../msbuild-bin/cl)
-

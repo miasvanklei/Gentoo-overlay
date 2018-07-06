@@ -136,6 +136,9 @@ src_prepare() {
 	# add Fortran support
 	use fortran && eapply "${FILESDIR}"/0010-add-fortran-support.patch
 
+	# create symlinks to gcc tools
+	eapply "${FILESDIR}"/0011-symlink-gcc-tools.patch
+
 	cmake-utils_src_prepare
 	eprefixify lib/Frontend/InitHeaderSearch.cpp
 }
@@ -253,8 +256,7 @@ src_install() {
 	local llvm_version=$(llvm-config --version) || die
 	local clang_version=$(ver_cut 1-2 "${llvm_version}")
 	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
-	local clang_tools=( clang clang++ clang-cl clang-cpp )
-	local gcc_tools=( gcc g++ cc c++ cpp gfortran )
+	local clang_tools=( clang clang++ clang-cl clang-cpp flang gcc g++ cc c++ cpp gfortran)
 	local abi i
 
 	# cmake gives us:
@@ -273,10 +275,6 @@ src_install() {
 		dosym "${i}-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}"
 	done
 
-	for i in "${gcc_tools[@]}"; do
-		dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}"
-	done
-
 	# now create target symlinks for all supported ABIs
 	for abi in $(get_all_abis); do
 		local abi_chost=$(get_abi_CHOST "${abi}")
@@ -284,11 +282,6 @@ src_install() {
 			dosym "${i}-${clang_version}" \
 				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}-${clang_version}"
 			dosym "${abi_chost}-${i}-${clang_version}" \
-				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
-		done
-
-		for i in "${gcc_tools[@]}"; do
-			dosym "clang-${clang_version}" \
 				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
 		done
 	done
