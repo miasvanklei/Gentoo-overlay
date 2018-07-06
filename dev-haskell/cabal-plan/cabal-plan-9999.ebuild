@@ -15,7 +15,7 @@ EGIT_REPO_URI="https://github.com/haskell-hvr/cabal-plan.git"
 LICENSE="GPL-3"
 SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
-IUSE="_ -exe"
+IUSE="_"
 
 RDEPEND=">=dev-haskell/base16-bytestring-0.1.1:=[profile?] <dev-haskell/base16-bytestring-0.2:=[profile?]
 	>=dev-haskell/text-1.2.2:=[profile?] <dev-haskell/text-1.3:=[profile?]
@@ -23,21 +23,17 @@ RDEPEND=">=dev-haskell/base16-bytestring-0.1.1:=[profile?] <dev-haskell/base16-b
 	>=dev-haskell/aeson-1.2.0:=[profile?] <dev-haskell/aeson-1.4:=[profile?]
 	>=dev-haskell/base-orphans-0.6:=[profile?] <dev-haskell/base-orphans-0.8:=[profile?]
         >=dev-haskell/base-compat-0.9.3:=[profile?] <dev-haskell/base-compat-0.11:=[profile?]
-	exe? ( >=dev-haskell/mtl-2.2.1:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
-		>=dev-haskell/parsec-3.1.11:=[profile?] <dev-haskell/parsec-3.2:=[profile?]
-		>=dev-haskell/semigroups-0.18.3:=[profile?] <dev-haskell/semigroups-0.19:=[profile?]
-		dev-haskell/topograph:=[profile?]
-		|| ( ( >=dev-haskell/ansi-terminal-0.6.2:=[profile?] <dev-haskell/ansi-terminal-0.7:=[profile?] )
-			( >=dev-haskell/ansi-terminal-0.8.0.2:=[profile?] <dev-haskell/ansi-terminal-0.9:=[profile?] ) )
-		>=dev-haskell/optparse-applicative-0.13.0:=[profile?] <dev-haskell/optparse-applicative-0.15:=[profile?] )
 	dev-lang/ghc:=
 "
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.0
 "
 
+PATCHES=(
+	"${FILESDIR}"/remove-lib-and-exe.patch
+)
+
 src_configure() {
 	haskell-cabal_src_configure \
-		$(cabal_flag _ _) \
-		$(cabal_flag exe exe)
+		$(cabal_flag _ _)
 }

@@ -1,0 +1,13 @@
+diff --git a/src/Haskell/Ide/Engine/Transport/LspStdio.hs b/src/Haskell/Ide/Engine/Transport/LspStdio.hs
+index 02fc890..ac314b0 100644
+--- a/src/Haskell/Ide/Engine/Transport/LspStdio.hs
++++ b/src/Haskell/Ide/Engine/Transport/LspStdio.hs
+@@ -597,7 +597,7 @@ reactor (DispatcherEnv cancelReqTVar wipTVar versionTVar) cin inp commandMap = d
+                  cmdparams = Just args
+              makeCommand (J.Diagnostic _r _s _c _source _m _) = []
+              -- TODO: make context specific commands for all sorts of things, such as refactorings
+-          let body = J.List $ concatMap makeCommand $ filter validCommand diags
++          let body = J.List $ map J.CommandOrCodeActionCommand $ concatMap makeCommand $ filter validCommand diags
+           let rspMsg = Core.makeResponseMessage req body
+           reactorSend $ RspCodeAction rspMsg
+ 

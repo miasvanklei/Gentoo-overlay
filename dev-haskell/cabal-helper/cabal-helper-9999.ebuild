@@ -11,7 +11,8 @@ LIVE_EBUILD=yes
 
 DESCRIPTION="Simple interface to some of Cabal's configuration state used by ghc-mod"
 HOMEPAGE="http://hackage.haskell.org/package/cabal-helper"
-EGIT_REPO_URI="https://github.com/DanielG/cabal-helper.git"
+EGIT_REPO_URI="https://github.com/alanz/cabal-helper.git"
+EGIT_BRANCH="bump-version-0.8.0.4"
 
 LICENSE="AGPL-3"
 SLOT="0/${PV}"
@@ -25,7 +26,6 @@ RDEPEND=">=dev-haskell/exceptions-0.8.3:=[profile?] <dev-haskell/exceptions-0.11
 	>=dev-haskell/unix-compat-0.4.3.1:=[profile?] <dev-haskell/unix-compat-0.7:=[profile?]
 	>=dev-haskell/utf8-string-1.0.1.1:=[profile?] <dev-haskell/utf8-string-1.1:=[profile?]
 	>=dev-lang/ghc-7.8.2:=
-	>=dev-haskell/cabal-plan-9999:=
 	>=dev-haskell/cabal-1.18.1.3:=[profile?]
 	|| ( ( <dev-haskell/cabal-1.26 )
 		( >=dev-haskell/cabal-2.0 <dev-haskell/cabal-2.3 ) )
