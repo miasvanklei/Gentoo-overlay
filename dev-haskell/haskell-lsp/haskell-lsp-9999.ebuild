@@ -11,6 +11,7 @@ inherit haskell-cabal git-r3
 DESCRIPTION="Haskell library for the Microsoft Language Server Protocol"
 HOMEPAGE="https://github.com/alanz/haskell-lsp"
 EGIT_REPO_URI="https://github.com/alanz/haskell-lsp.git"
+EGIT_COMMIT="3e046bf095568099dae606e1c20a92f1dc60b7b9"
 
 LICENSE="MIT"
 SLOT="0/${PV}"
