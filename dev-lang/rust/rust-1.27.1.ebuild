@@ -24,7 +24,8 @@ RDEPEND="sys-devel/llvm:="
 
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}
-	>=dev-lang/perl-5.0"
+	>=dev-lang/perl-5.0
+	!extended? ( dev-util/cargo )"
 
 S="${WORKDIR}/${MY_P}-src"
 
