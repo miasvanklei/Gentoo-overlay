@@ -18,7 +18,7 @@ SRC_URI="https://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="-debug doc +extended -jemalloc"
+IUSE="-debug doc -extended -jemalloc"
 
 RDEPEND="sys-devel/llvm:="
 
@@ -43,8 +43,7 @@ PATCHES=(
 	"${FILESDIR}"/llvm-objcopy-compat.patch
 	"${FILESDIR}"/musl.patch
 	"${FILESDIR}"/use-libc++.patch
-	"${FILESDIR}"/fix-analysis-path.patch
-	"${FILESDIR}"/tools-llvm-shared.patch
+	"${FILESDIR}"/enable-analysis.patch
 )
 
 src_configure() {
@@ -61,11 +60,9 @@ src_configure() {
 	build = "${CBUILD}"
 	host = ["${CHOST}"]
 	target = ["${CBUILD}"]
-	locked-deps = true
 	submodules = false
 	vendor = true
 	verbose = 2
-	extended = $(toml_usex extended)
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)"
@@ -96,17 +93,10 @@ src_install() {
 
 	local rcbuild="build/${CBUILD}"
 	local obj="${rcbuild}/stage2"
-	local tobj="${rcbuild}/stage2-tools/${CBUILD}/release"
 	local sobj="${rcbuild}/stage1-std/${CBUILD}"
 
 	# install binaries
 	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
-        if use extended; then
-		dobin "${tobj}/rls" "${tobj}/cargo"
-		dobin "${tobj}/rustfmt" "${tobj}/cargo-fmt"
-		insinto "/usr/$(get_libdir)/rustlib/${CBUILD}/lib"
-		doins ${tobj}/deps/librustc_cratesio_shim*.so
-	fi
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
 	# install libraries
@@ -114,10 +104,8 @@ src_install() {
 	doins -r "${obj}/lib/rustlib"
 
 	# install analysis for rls
-        if use extended; then
-		insinto "/usr/$(get_libdir)/rustlib/analysis"
-		doins "${sobj}/release/deps/save-analysis/"*
-	fi
+	insinto "/usr/$(get_libdir)/rustlib/analysis"
+	doins "${sobj}/release/deps/save-analysis/"*
 
 	# install COPYRIGHT and LICENSE
 	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
