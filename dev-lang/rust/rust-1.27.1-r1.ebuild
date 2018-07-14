@@ -10,6 +10,8 @@ inherit python-any-r1 versionator toolchain-funcs llvm
 SLOT="0"
 KEYWORDS="~amd64"
 
+CARGO_DEPEND_VERSION="0.$(($(get_version_component_range 2))).0"
+
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
@@ -18,14 +20,24 @@ SRC_URI="https://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="-debug doc -extended -jemalloc"
+IUSE="+cargo debug doc +rls +rustfmt -jemalloc"
+
+RDEPEND="jemalloc? ( dev-libs/jemalloc )
+	sys-devel/llvm"
+DEPEND="${RDEPEND}
+        ${PYTHON_DEPS}
+        || (
+                >=sys-devel/gcc-4.7
+                >=sys-devel/clang-3.5
+        )
+        cargo? ( !dev-util/cargo )
+        rustfmt? ( !dev-util/rustfmt )
+        dev-util/cmake
+"
+PDEPEND="!cargo? ( >=dev-util/cargo-${CARGO_DEPEND_VERSION} )"
+
 
 RDEPEND="sys-devel/llvm:="
-
-DEPEND="${RDEPEND}
-	${PYTHON_DEPS}
-	>=dev-lang/perl-5.0
-	!extended? ( dev-util/cargo )"
 
 S="${WORKDIR}/${MY_P}-src"
 
@@ -45,6 +57,7 @@ PATCHES=(
 	"${FILESDIR}"/musl.patch
 	"${FILESDIR}"/use-libc++.patch
 	"${FILESDIR}"/enable-analysis.patch
+	"${FILESDIR}"/fix-analysis-path.patch
 )
 
 src_configure() {
@@ -52,29 +65,46 @@ src_configure() {
 
 	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
 
-	cat <<- EOF > config.toml
+	local extended="false" tools=""
+	if use cargo; then
+		extended="true"
+		tools="\"cargo\","
+	fi
+	if use rls; then
+		extended="true"
+		tools="\"rls\",$tools"
+	fi
+	if use rustfmt; then
+		extended="true"
+		tools="\"rustfmt\",$tools"
+	fi
+
+	cat <<- EOF > "${S}"/config.toml
 	[llvm]
 	link-shared = true
 	[build]
-	cargo = "/usr/bin/cargo"
-	rustc = "/usr/bin/rustc"
 	build = "${CBUILD}"
 	host = ["${CHOST}"]
 	target = ["${CBUILD}"]
+	cargo = "/usr/bin/cargo"
+	rustc = "/usr/bin/rustc"
+	docs = $(toml_usex doc)
 	submodules = false
+	python = "${EPYTHON}"
 	vendor = true
-	verbose = 2
+	extended = ${extended}
+	tools = [${tools}]
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)"
 	mandir = "share/${PN}/man"
-	docdir = "share/${PN}/doc"
+	docdir = "share/doc/${PN}"
 	[rust]
 	optimize = $(toml_usex !debug)
 	debuginfo = $(toml_usex debug)
 	debug-assertions = $(toml_usex debug)
 	use-jemalloc = $(toml_usex jemalloc)
-	default-linker = "$(tc-getBUILD_CC)"
+	default-linker = "$(tc-getCC)"
 	rpath = false
 	[target.${CBUILD}]
 	cc = "$(tc-getBUILD_CC)"
@@ -86,7 +116,7 @@ src_configure() {
 }
 
 src_compile() {
-	${EPYTHON} x.py build --config="${S}"/config.toml || die
+	${EPYTHON} x.py build --config="${S}"/config.toml --exclude src/tools/miri || die
 }
 
 src_install() {
@@ -95,10 +125,22 @@ src_install() {
 	local rcbuild="build/${CBUILD}"
 	local obj="${rcbuild}/stage2"
 	local sobj="${rcbuild}/stage1-std/${CBUILD}"
+	local tobj="${rcbuild}/stage2-tools/${CBUILD}/release"
 
 	# install binaries
 	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
 	dobin src/etc/rust-gdb src/etc/rust-lldb
+
+	if use cargo; then
+		dobin "${tobj}"/cargo
+	fi
+	if use rls; then
+		dobin "${tobj}"/rls
+	fi
+	if use rustfmt; then
+		dobin "${tobj}"/rustfmt
+		dobin "${tobj}"/cargo-fmt
+	fi
 
 	# install libraries
 	insinto "/usr/$(get_libdir)"
@@ -124,7 +166,7 @@ src_install() {
 	EOF
 	doenvd "${T}"/50${PN}
 
-	# install sources needed for go to definition
+	# install sources needed for go to definition and racer
 	pushd ${S}/src
 	mkdir -p ${D}/usr/lib/rustlib/src/rust/src
 	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src \; || die
