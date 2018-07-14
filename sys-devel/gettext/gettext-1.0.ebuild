@@ -19,9 +19,7 @@ DEPEND="sys-libs/musl"
 RDEPEND="${DEPEND}"
 
 PATCHES=(
-	"${FILESDIR}"/fix-cflags.patch
-	"${FILESDIR}"/fix-install.patch
-	"${FILESDIR}"/remove-garbage.patch
+	"${FILESDIR}"/fix-build.patch
 )
 
 src_compile() {
@@ -30,5 +28,4 @@ src_compile() {
 
 src_install() {
 	emake LIBINTL=MUSL DESTDIR=${D} prefix=/usr install
-	mv ${D}/usr/share/gettext/m4 ${D}/usr/share/aclocal || die
 }
