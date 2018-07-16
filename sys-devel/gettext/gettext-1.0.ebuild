@@ -19,7 +19,7 @@ DEPEND="sys-libs/musl"
 RDEPEND="${DEPEND}"
 
 PATCHES=(
-	"${FILESDIR}"/fix-build.patch
+	"${FILESDIR}"/fix-cflags.patch
 )
 
 src_compile() {
