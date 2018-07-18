@@ -162,7 +162,7 @@ src_install() {
 	cat <<-EOF > "${T}"/50${PN}
 	LDPATH="/usr/$(get_libdir)/rustlib/${CBUILD}/lib"
 	MANPATH="/usr/share/${PN}/man"
-	RUST_SRC_PATH="/usr/src/rust"
+	RUST_SRC_PATH="/usr/lib/rustlib/src"
 	EOF
 	doenvd "${T}"/50${PN}
 
