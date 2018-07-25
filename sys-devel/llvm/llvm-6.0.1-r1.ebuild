@@ -88,6 +88,9 @@ src_prepare() {
 	# two specific rust patches in one
 	eapply "${FILESDIR}"/0004-add-rust-support.patch
 
+	# add -fno-delete-null-pointer-checks support
+	eapply "${FILESDIR}"/0005-add-fno-delete-null-pointer-checks.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 

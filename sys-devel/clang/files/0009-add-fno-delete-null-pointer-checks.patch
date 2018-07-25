@@ -1,19 +1,22 @@
+diff --git a/include/clang/Driver/Options.td b/include/clang/Driver/Options.td
+index b71d1e15ae8..60516084489 100644
 --- a/include/clang/Driver/Options.td
 +++ b/include/clang/Driver/Options.td
-@@ -479,6 +479,12 @@ def fno_autolink : Flag <["-"], "fno-autolink">, Group<f_Group>,
-   Flags<[DriverOption, CC1Option]>,
-   HelpText<"Disable generation of linker directives for automatic library linking">;
+@@ -1080,6 +1080,13 @@ def frewrite_imports : Flag<["-"], "frewrite-imports">, Group<f_Group>,
+   Flags<[CC1Option]>;
+ def fno_rewrite_imports : Flag<["-"], "fno-rewrite-imports">, Group<f_Group>;
  
-+def fdelete_null_pointer_checks : Flag<["-"], "fdelete-null-pointer-checks">,
-+    Group<f_Group>, Flags<[CC1Option]>,
-+    HelpText<"Assume that programs cannot safely dereference null pointers">;
-+def fno_delete_null_pointer_checks : Flag<["-"], "fno-delete-null-pointer-checks">,
-+    Group<f_Group>, Flags<[CC1Option]>;
++def fdelete_null_pointer_checks : Flag<["-"],
++  "fdelete-null-pointer-checks">, Group<f_Group>,
++  HelpText<"Treat usage of null pointers as undefined behavior.">;
++def fno_delete_null_pointer_checks : Flag<["-"],
++  "fno-delete-null-pointer-checks">, Group<f_Group>, Flags<[CC1Option]>,
++  HelpText<"Do not treat usage of null pointers as undefined behavior.">;
 +
- def fembed_bitcode_EQ : Joined<["-"], "fembed-bitcode=">,
-     Group<f_Group>, Flags<[DriverOption, CC1Option]>, MetaVarName<"<option>">,
-     HelpText<"Embed LLVM bitcode (option: off, all, bitcode, marker)">;
-@@ -2109,8 +2115,6 @@ defm reorder_blocks : BooleanFFlag<"reorder-blocks">, Group<clang_ignored_gcc_op
+ def frewrite_map_file : Separate<["-"], "frewrite-map-file">,
+                         Group<f_Group>,
+                         Flags<[ DriverOption, CC1Option ]>;
+@@ -2855,8 +2862,6 @@ defm reorder_blocks : BooleanFFlag<"reorder-blocks">, Group<clang_ignored_gcc_op
  defm eliminate_unused_debug_types : BooleanFFlag<"eliminate-unused-debug-types">, Group<clang_ignored_f_Group>;
  defm branch_count_reg : BooleanFFlag<"branch-count-reg">, Group<clang_ignored_gcc_optimization_f_Group>;
  defm default_inline : BooleanFFlag<"default-inline">, Group<clang_ignored_gcc_optimization_f_Group>;
@@ -22,64 +25,116 @@
  defm fat_lto_objects : BooleanFFlag<"fat-lto-objects">, Group<clang_ignored_gcc_optimization_f_Group>;
  defm float_store : BooleanFFlag<"float-store">, Group<clang_ignored_gcc_optimization_f_Group>;
  defm friend_injection : BooleanFFlag<"friend-injection">, Group<clang_ignored_f_Group>;
- diff --git a/include/clang/Frontend/CodeGenOptions.def b/include/clang/Frontend/CodeGenOptions.def
+diff --git a/include/clang/Frontend/CodeGenOptions.def b/include/clang/Frontend/CodeGenOptions.def
+index c199b5428ea..2ed96d43279 100644
 --- a/include/clang/Frontend/CodeGenOptions.def
 +++ b/include/clang/Frontend/CodeGenOptions.def
-@@ -44,6 +44,7 @@ CODEGENOPT(CXXCtorDtorAliases, 1, 0) ///< Emit complete ctors/dtors as linker
-                                      ///< aliases to base ctors when possible.
- CODEGENOPT(DataSections      , 1, 0) ///< Set when -fdata-sections is enabled.
- CODEGENOPT(UniqueSectionNames, 1, 1) ///< Set for -funique-section-names.
-+CODEGENOPT(DeleteNullPointerChecks , 1, 1) ///< -fdelete-null-pointer-checks
- CODEGENOPT(DisableFPElim     , 1, 0) ///< Set when -fomit-frame-pointer is enabled.
- CODEGENOPT(DisableFree       , 1, 0) ///< Don't free memory.
- CODEGENOPT(DiscardValueNames , 1, 0) ///< Discard Value Names from the IR (LLVMContext flag)
---- a/lib/CodeGen/CGExprScalar.cpp
-+++ b/lib/CodeGen/CGExprScalar.cpp
-@@ -1329,8 +1329,9 @@ bool CodeGenFunction::ShouldNullCheckClassCastValue(const CastExpr *CE) {
-     return false;
+@@ -130,6 +130,7 @@ CODEGENOPT(EnableSegmentedStacks , 1, 0) ///< Set when -fsplit-stack is enabled.
+ CODEGENOPT(NoImplicitFloat   , 1, 0) ///< Set when -mno-implicit-float is enabled.
+ CODEGENOPT(NoInfsFPMath      , 1, 0) ///< Assume FP arguments, results not +-Inf.
+ CODEGENOPT(NoSignedZeros     , 1, 0) ///< Allow ignoring the signedness of FP zero
++CODEGENOPT(NullPointerIsValid , 1, 0) ///< Assume Null pointer deference is defined.
+ CODEGENOPT(Reassociate       , 1, 0) ///< Allow reassociation of FP math ops
+ CODEGENOPT(ReciprocalMath    , 1, 0) ///< Allow FP divisions to be reassociated.
+ CODEGENOPT(NoTrappingMath    , 1, 0) ///< Set when -fno-trapping-math is enabled.
+diff --git a/lib/CodeGen/CGCall.cpp b/lib/CodeGen/CGCall.cpp
+index 07fb6d56dd7..fcc8a3e5f64 100644
+--- a/lib/CodeGen/CGCall.cpp
++++ b/lib/CodeGen/CGCall.cpp
+@@ -1734,6 +1734,8 @@ void CodeGenModule::ConstructDefaultFnAttrList(StringRef Name, bool HasOptnone,
+     FuncAttrs.addAttribute("less-precise-fpmad",
+                            llvm::toStringRef(CodeGenOpts.LessPreciseFPMAD));
  
-   if (isa<CXXThisExpr>(E->IgnoreParens())) {
--    // We always assume that 'this' is never null.
--    return false;
-+    // Assume that 'this' is never null unless -fno-delete-null-pointer-checks
-+    // is enabled.
-+    return !CGM.getCodeGenOpts().DeleteNullPointerChecks;
++    if (CodeGenOpts.NullPointerIsValid)
++      FuncAttrs.addAttribute("null-pointer-is-valid", "true");
+     if (!CodeGenOpts.FPDenormalMode.empty())
+       FuncAttrs.addAttribute("denormal-fp-math", CodeGenOpts.FPDenormalMode);
+ 
+@@ -1867,7 +1869,8 @@ void CodeGenModule::ConstructAttributeList(
+     }
+     if (TargetDecl->hasAttr<RestrictAttr>())
+       RetAttrs.addAttribute(llvm::Attribute::NoAlias);
+-    if (TargetDecl->hasAttr<ReturnsNonNullAttr>())
++    if (TargetDecl->hasAttr<ReturnsNonNullAttr>() &&
++        !CodeGenOpts.NullPointerIsValid)
+       RetAttrs.addAttribute(llvm::Attribute::NonNull);
+     if (TargetDecl->hasAttr<AnyX86NoCallerSavedRegistersAttr>())
+       FuncAttrs.addAttribute("no_caller_saved_registers");
+@@ -1974,7 +1977,8 @@ void CodeGenModule::ConstructAttributeList(
+     if (!PTy->isIncompleteType() && PTy->isConstantSizeType())
+       RetAttrs.addDereferenceableAttr(getContext().getTypeSizeInChars(PTy)
+                                         .getQuantity());
+-    else if (getContext().getTargetAddressSpace(PTy) == 0)
++    else if (getContext().getTargetAddressSpace(PTy) == 0 &&
++             !CodeGenOpts.NullPointerIsValid)
+       RetAttrs.addAttribute(llvm::Attribute::NonNull);
    }
  
-   if (const ImplicitCastExpr *ICE = dyn_cast<ImplicitCastExpr>(CE)) {
---- a/lib/CodeGen/CodeGenFunction.h
-+++ b/lib/CodeGen/CodeGenFunction.h
-@@ -1918,7 +1918,7 @@ public:
-                                         const CXXRecordDecl *Base,
-                                         bool BaseIsVirtual);
+@@ -2083,7 +2087,8 @@ void CodeGenModule::ConstructAttributeList(
+       if (!PTy->isIncompleteType() && PTy->isConstantSizeType())
+         Attrs.addDereferenceableAttr(getContext().getTypeSizeInChars(PTy)
+                                        .getQuantity());
+-      else if (getContext().getTargetAddressSpace(PTy) == 0)
++      else if (getContext().getTargetAddressSpace(PTy) == 0 &&
++               !CodeGenOpts.NullPointerIsValid)
+         Attrs.addAttribute(llvm::Attribute::NonNull);
+     }
  
--  static bool ShouldNullCheckClassCastValue(const CastExpr *Cast);
-+  bool ShouldNullCheckClassCastValue(const CastExpr *Cast);
+@@ -2343,7 +2348,8 @@ void CodeGenFunction::EmitFunctionProlog(const CGFunctionInfo &FI,
  
-   /// GetAddressOfBaseClass - This function will add the necessary delta to the
-   /// load of 'this' and returns address of the base class.
+         if (const ParmVarDecl *PVD = dyn_cast<ParmVarDecl>(Arg)) {
+           if (getNonNullAttr(CurCodeDecl, PVD, PVD->getType(),
+-                             PVD->getFunctionScopeIndex()))
++                             PVD->getFunctionScopeIndex()) &&
++              !CGM.getCodeGenOpts().NullPointerIsValid)
+             AI->addAttr(llvm::Attribute::NonNull);
+ 
+           QualType OTy = PVD->getOriginalType();
+@@ -2362,7 +2368,8 @@ void CodeGenFunction::EmitFunctionProlog(const CGFunctionInfo &FI,
+                 Attrs.addDereferenceableAttr(
+                   getContext().getTypeSizeInChars(ETy).getQuantity()*ArrSize);
+                 AI->addAttrs(Attrs);
+-              } else if (getContext().getTargetAddressSpace(ETy) == 0) {
++              } else if (getContext().getTargetAddressSpace(ETy) == 0 &&
++                         !CGM.getCodeGenOpts().NullPointerIsValid) {
+                 AI->addAttr(llvm::Attribute::NonNull);
+               }
+             }
+@@ -2372,7 +2379,8 @@ void CodeGenFunction::EmitFunctionProlog(const CGFunctionInfo &FI,
+             // we can't use the dereferenceable attribute, but in addrspace(0)
+             // we know that it must be nonnull.
+             if (ArrTy->getSizeModifier() == VariableArrayType::Static &&
+-                !getContext().getTargetAddressSpace(ArrTy->getElementType()))
++                !getContext().getTargetAddressSpace(ArrTy->getElementType()) &&
++                !CGM.getCodeGenOpts().NullPointerIsValid)
+               AI->addAttr(llvm::Attribute::NonNull);
+           }
+ 
+diff --git a/lib/Driver/ToolChains/Clang.cpp b/lib/Driver/ToolChains/Clang.cpp
+index 4db4dc19a8b..e23ff16699f 100644
 --- a/lib/Driver/ToolChains/Clang.cpp
 +++ b/lib/Driver/ToolChains/Clang.cpp
-@@ -5281,6 +5281,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
-                     options::OPT_fno_assume_sane_operator_new))
-     CmdArgs.push_back("-fno-assume-sane-operator-new");
+@@ -3348,6 +3348,10 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
+                    options::OPT_fno_merge_all_constants, false))
+     CmdArgs.push_back("-fmerge-all-constants");
  
-+  if (!Args.hasFlag(options::OPT_fdelete_null_pointer_checks,
-+                    options::OPT_fno_delete_null_pointer_checks))
-+    CmdArgs.push_back("-fdelete-null-pointer-checks");
++  if (Args.hasFlag(options::OPT_fno_delete_null_pointer_checks,
++                   options::OPT_fdelete_null_pointer_checks, false))
++    CmdArgs.push_back("-fno-delete-null-pointer-checks");
 +
-   // -fblocks=0 is default.
-   if (Args.hasFlag(options::OPT_fblocks, options::OPT_fno_blocks,
-                    getToolChain().IsBlocksDefault()) ||
+   // LLVM Code Generator Options.
+ 
+   if (Args.hasArg(options::OPT_frewrite_map_file) ||
+diff --git a/lib/Frontend/CompilerInvocation.cpp b/lib/Frontend/CompilerInvocation.cpp
+index c26d5fb79b3..9bb673d1e77 100644
 --- a/lib/Frontend/CompilerInvocation.cpp
 +++ b/lib/Frontend/CompilerInvocation.cpp
-@@ -544,6 +544,9 @@ static bool ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args, InputKind IK,
-   Opts.DumpCoverageMapping = Args.hasArg(OPT_dump_coverage_mapping);
-   Opts.AsmVerbose = Args.hasArg(OPT_masm_verbose);
-   Opts.AssumeSaneOperatorNew = !Args.hasArg(OPT_fno_assume_sane_operator_new);
-+  Opts.DeleteNullPointerChecks =
-+      Args.hasFlag(OPT_fdelete_null_pointer_checks,
-+                   OPT_fno_delete_null_pointer_checks, true);
-   Opts.ObjCAutoRefCountExceptions = Args.hasArg(OPT_fobjc_arc_exceptions);
-   Opts.CXAAtExit = !Args.hasArg(OPT_fno_use_cxa_atexit);
-   Opts.CXXCtorDtorAliases = Args.hasArg(OPT_mconstructor_aliases);
+@@ -746,6 +746,8 @@ static bool ParseCodeGenArgs(CodeGenOptions &Opts, ArgList &Args, InputKind IK,
+ 
+   Opts.NoUseJumpTables = Args.hasArg(OPT_fno_jump_tables);
+ 
++  Opts.NullPointerIsValid = Args.hasArg(OPT_fno_delete_null_pointer_checks);
++
+   Opts.ProfileSampleAccurate = Args.hasArg(OPT_fprofile_sample_accurate);
+ 
+   Opts.PrepareForLTO = Args.hasArg(OPT_flto, OPT_flto_EQ);
