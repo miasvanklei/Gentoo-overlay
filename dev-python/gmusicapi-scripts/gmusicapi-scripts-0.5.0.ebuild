@@ -18,6 +18,7 @@ IUSE="test"
 RDEPEND="dev-python/gmusicapi[${PYTHON_USEDEP}]
 	dev-python/gmusicapi-wrapper[${PYTHON_USEDEP}]
 	dev-python/docopt[${PYTHON_USEDEP}]
+	dev-python/wrapt[${PYTHON_USEDEP}]
 	>=media-libs/mutagen-1.18[${PYTHON_USEDEP}]
 	"
 DEPEND="${RDEPEND}
