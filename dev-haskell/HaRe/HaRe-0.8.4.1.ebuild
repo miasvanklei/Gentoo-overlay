@@ -49,12 +49,3 @@ PATCHES=(
 	"${FILESDIR}"/hoogle-parse.patch
 )
 
-src_prepare() {
-	default
-
-	# ghc blows up and does not finish compilation
-	[[ $(ghc-version) == 7.10.* ]] && replace-hcflags -O[1-9] -O0
-        cabal_chdeps \
-                'cabal-helper >= 0.8.0.3' 'cabal-helper >= 0.8.0.2'
-}
-

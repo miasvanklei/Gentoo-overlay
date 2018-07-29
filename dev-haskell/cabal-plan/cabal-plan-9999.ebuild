@@ -20,8 +20,8 @@ IUSE="_"
 RDEPEND=">=dev-haskell/base16-bytestring-0.1.1:=[profile?] <dev-haskell/base16-bytestring-0.2:=[profile?]
 	>=dev-haskell/text-1.2.2:=[profile?] <dev-haskell/text-1.3:=[profile?]
 	>=dev-haskell/vector-0.12.0.1:=[profile?] <dev-haskell/vector-0.13:=[profile?]
-	>=dev-haskell/aeson-1.2.0:=[profile?] <dev-haskell/aeson-1.4:=[profile?]
-	>=dev-haskell/base-orphans-0.6:=[profile?] <dev-haskell/base-orphans-0.8:=[profile?]
+	>=dev-haskell/aeson-1.2.0:=[profile?] <dev-haskell/aeson-1.5:=[profile?]
+	>=dev-haskell/base-orphans-0.6:=[profile?] <dev-haskell/base-orphans-0.9:=[profile?]
         >=dev-haskell/base-compat-0.9.3:=[profile?] <dev-haskell/base-compat-0.11:=[profile?]
 	dev-lang/ghc:=
 "

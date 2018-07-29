@@ -17,7 +17,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE="brittany-dev-lib"
 
-RDEPEND=">=dev-haskell/aeson-1.0.1.0:=[profile?] <dev-haskell/aeson-1.4:=[profile?]
+RDEPEND=">=dev-haskell/aeson-1.0.1.0:=[profile?] <dev-haskell/aeson-1.5:=[profile?]
 	>=dev-haskell/butcher-1.3:=[profile?] <dev-haskell/butcher-1.4:=[profile?]
 	>=dev-haskell/cmdargs-0.10.14:=[profile?] <dev-haskell/cmdargs-0.11:=[profile?]
 	>=dev-haskell/czipwith-1.0.0.0:=[profile?] <dev-haskell/czipwith-1.1:=[profile?]
@@ -48,7 +48,7 @@ DEPEND="${RDEPEND}
 src_prepare() {
         default
         cabal_chdeps \
-                'aeson >=1.0.1.0 && <1.3' 'aeson >=1.0.1.0 && <1.4'
+                'aeson >=1.0.1.0 && <1.3' 'aeson >=1.0.1.0 && <1.5'
 }
 
 src_configure() {
