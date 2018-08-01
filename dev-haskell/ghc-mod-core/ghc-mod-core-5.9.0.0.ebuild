@@ -22,7 +22,6 @@ IUSE="shelltest"
 S="${S}/core"
 
 RDEPEND="dev-haskell/cabal-helper:=[profile?]
-	>=dev-haskell/djinn-ghc-0.0.2.2:=[profile?] <dev-haskell/djinn-ghc-0.1:=[profile?]
 	>=dev-haskell/extra-1.6:=[profile?] <dev-haskell/extra-1.7:=[profile?]
 	>=dev-haskell/fclabels-2.0:=[profile?] <dev-haskell/fclabels-2.1:=[profile?]
 	>=dev-haskell/ghc-paths-0.1.0.9:=[profile?] <dev-haskell/ghc-paths-0.2:=[profile?]

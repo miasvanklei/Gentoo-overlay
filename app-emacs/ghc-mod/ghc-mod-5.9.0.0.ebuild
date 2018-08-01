@@ -20,7 +20,6 @@ KEYWORDS="~amd64 ~x86"
 IUSE="shelltest"
 
 RDEPEND="dev-haskell/cabal-helper:=[profile?]
-	>=dev-haskell/djinn-ghc-0.0.2.2:=[profile?] <dev-haskell/djinn-ghc-0.1:=[profile?]
 	>=dev-haskell/extra-1.6:=[profile?] <dev-haskell/extra-1.7:=[profile?]
 	>=dev-haskell/fclabels-2.0:=[profile?] <dev-haskell/fclabels-2.1:=[profile?]
 	>=dev-haskell/ghc-mod-core-5.9.0.0:=[profile?] <dev-haskell/ghc-mod-core-5.10.0.0:=[profile?]
