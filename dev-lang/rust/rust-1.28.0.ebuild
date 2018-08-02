@@ -53,10 +53,8 @@ pkg_setup() {
 PATCHES=(
 	"${FILESDIR}"/static.patch
 	"${FILESDIR}"/system-llvm.patch
-	"${FILESDIR}"/llvm-objcopy-compat.patch
 	"${FILESDIR}"/musl.patch
 	"${FILESDIR}"/use-libc++.patch
-	"${FILESDIR}"/enable-analysis.patch
 	"${FILESDIR}"/fix-analysis-path.patch
 )
 

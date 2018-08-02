@@ -1,17 +1,32 @@
 --- a/src/bootstrap/compile.rs
 +++ b/src/bootstrap/compile.rs
-@@ -691,11 +691,6 @@
+@@ -651,13 +651,6 @@
+ 
+     match &*backend {
+         "llvm" | "emscripten" => {
+-            // Build LLVM for our target. This will implicitly build the
+-            // host LLVM if necessary.
+-            let llvm_config = builder.ensure(native::Llvm {
+-                target,
+-                emscripten: backend == "emscripten",
+-            });
+-
+             if backend == "emscripten" {
+                 features.push_str(" emscripten");
+             }
+@@ -696,12 +696,6 @@
              builder.info(&format!("Building stage{} codegen artifacts ({} -> {}, {})",
                       compiler.stage, &compiler.host, target, backend));
  
 -            // Pass down configuration from the LLVM build into the build of
--            // librustc_llvm and librustc_trans.
+-            // librustc_llvm and librustc_codegen_llvm.
 -            if builder.is_rust_llvm(target) {
 -                cargo.env("LLVM_RUSTLLVM", "1");
 -            }
-             cargo.env("LLVM_CONFIG", &llvm_config);
+-            cargo.env("LLVM_CONFIG", &llvm_config);
              if backend != "emscripten" {
                  let target_config = builder.config.target_config.get(&target);
+                 if let Some(s) = target_config.and_then(|c| c.llvm_config.as_ref()) {
 --- a/src/bootstrap/test.rs
 +++ b/src/bootstrap/test.rs
 @@ -1016,9 +1016,7 @@
