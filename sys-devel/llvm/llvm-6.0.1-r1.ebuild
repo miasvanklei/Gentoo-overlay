@@ -91,6 +91,9 @@ src_prepare() {
 	# add -fno-delete-null-pointer-checks support
 	eapply "${FILESDIR}"/0005-add-fno-delete-null-pointer-checks.patch
 
+	# fix julia
+	eapply "${FILESDIR}"/0006-fix-julia.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
