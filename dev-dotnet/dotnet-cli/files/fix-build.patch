@@ -117,3 +117,20 @@
          endif()
          if(CLR_CMAKE_LINUX_ID STREQUAL ubuntu)
              set(CLR_CMAKE_PLATFORM_UBUNTU_LINUX 1)
+--- a/src/Native/build-native.sh	2018-08-19 19:50:15.418437456 +0200
++++ b/src/Native/build-native.sh	2018-08-19 19:51:40.656425554 +0200
+@@ -111,12 +111,8 @@
+     # Generate version.c if specified, else have an empty one.
+     __versionSourceFile=$__rootRepo/bin/obj/version.c
+     if [ ! -e "${__versionSourceFile}" ]; then
+-        if [ $__generateversionsource == true ]; then
+-            $__rootRepo/run.sh build-managed -project:"$__rootRepo/build.proj" -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true /v:minimal
+-        else
+-            __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
+-            echo $__versionSourceLine > $__versionSourceFile
+-        fi
++        __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
++        echo $__versionSourceLine > $__versionSourceFile
+     fi
+ }
+ 
