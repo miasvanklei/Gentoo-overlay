@@ -1,13 +1,13 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
 
-inherit bash-completion-r1 multiprocessing toolchain-funcs
+inherit bash-completion-r1 llvm multiprocessing toolchain-funcs
 
-BV=0.23.0-1
-BV_AMD64=${BV}-linux-x86_64
-BV_X86=${BV}-linux-i686
+BV=0.25.1
+BV_AMD64=${BV}-1-linux-x86_64
+BV_X86=${BV}-1-linux-i686
 
 DESCRIPTION="The Crystal Programming Language"
 HOMEPAGE="https://crystal-lang.org"
@@ -20,15 +20,19 @@ SLOT="0"
 KEYWORDS="~amd64"
 IUSE="doc debug examples blocking-stdio-hack +system-crystal +xml +yaml"
 
+LLVM_MAX_SLOT=6
+
 # dev-libs/boehm-gc[static-libs] dependency problem,  check the issue: https://github.com/manastech/crystal/issues/1382
 DEPEND="
-	>=sys-devel/llvm-3.9.0:*
+	sys-devel/llvm:${LLVM_MAX_SLOT}
 	dev-libs/boehm-gc[threads]
+	dev-libs/libatomic_ops
 	dev-libs/libevent
 	dev-libs/libpcre
 	sys-libs/llvm-libunwind
-	dev-libs/gmp:0
+	dev-libs/pcl
 	system-crystal? ( dev-lang/crystal )
+	dev-libs/gmp:0
 "
 RDEPEND="${DEPEND}
 	xml? ( dev-libs/libxml2 )
@@ -57,8 +61,7 @@ src_compile() {
 		CRYSTAL_PATH=src \
 		CRYSTAL_CONFIG_VERSION=${PV} \
 		CRYSTAL_CONFIG_PATH="lib:${EPREFIX}/usr/$(get_libdir)/crystal"
-		LLVM_CONFIG="llvm-config-6.0 --link-static"
-	use doc && emake doc
+	use doc && emake docs
 }
 
 src_test() {
@@ -89,7 +92,7 @@ src_install() {
 
 	if use doc ; then
 		docinto api
-		dodoc -r doc/.
+		dodoc -r docs/.
 	fi
 
 	newbashcomp etc/completion.bash ${PN}
