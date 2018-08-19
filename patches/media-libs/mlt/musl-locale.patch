@@ -1,15 +1,10 @@
---- a/src/framework/mlt_property.h	2018-03-06 19:23:06.250095105 +0100
-+++ b/src/framework/mlt_property.h	2018-03-06 19:23:59.839982519 +0100
-@@ -25,18 +25,7 @@
+--- a/src/framework/mlt_property.h	2018-07-02 20:24:28.000000000 +0200
++++ b/src/framework/mlt_property.h	2018-08-19 19:23:53.689866400 +0200
+@@ -30,13 +30,7 @@
+ #include <sys/param.h>
+ #endif
  
- #include "mlt_types.h"
- 
--#if defined(__FreeBSD__)
--/* This header has existed since 1994 and defines __FreeBSD_version below. */
--#include <sys/param.h>
--#endif
--
--#if defined(__GLIBC__) && !defined(__APPLE__)
+-#if (defined(__GLIBC__) && !defined(__APPLE__)) || HAVE_LOCALE_H
 -#  include <locale.h>
 -#elif defined(__APPLE__) || (__FreeBSD_version >= 900506)
 -#  include <xlocale.h>
@@ -19,4 +14,4 @@
 +#include <locale.h>
  
  extern mlt_property mlt_property_init( );
- extern int mlt_property_set_int( mlt_property self, int value );
+ extern void mlt_property_clear( mlt_property self );
