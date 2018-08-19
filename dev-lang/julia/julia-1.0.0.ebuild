@@ -1,4 +1,4 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -7,29 +7,44 @@ RESTRICT="test"
 
 inherit llvm pax-utils toolchain-funcs
 
-MY_PV=${PV/_/-}
+MY_LIBUV_V="ed3700c849289ed01fe04273a7bf865340b2bd7e"
+MY_UTF8PROC_V="97ef668b312b96382714dbb8eaac4affce0816e6"
+MY_LIBWHICH_V="81e9723c0273d78493dc8c8ed570f68d9ce7e89e"
+MY_DSFMT_V="2.2.3"
 
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
 SRC_URI="
-	https://github.com/JuliaLang/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}.tar.gz
-	https://dev.gentoo.org/~tamiko/distfiles/${PN}-0.6.2-bundled.tar.gz
+	https://github.com/JuliaLang/${PN}/releases/download/v${PV}/${P}.tar.gz
+	https://api.github.com/repos/JuliaLang/libuv/tarball/${MY_LIBUV_V} -> ${PN}-libuv-${MY_LIBUV_V}.tar.gz
+	https://api.github.com/repos/JuliaLang/utf8proc/tarball/${MY_UTF8PROC_V} -> ${PN}-utf8proc-${MY_UTF8PROC_V}.tar.gz
+	https://api.github.com/repos/vtjnash/libwhich/tarball/${MY_LIBWHICH_V} -> ${PN}-libwhich-${MY_LIBWHICH_V}.tar.gz
+	http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/SFMT/dSFMT-src-${MY_DSFMT_V}.tar.gz -> ${PN}-dsfmt-${MY_DSFMT_V}.tar.gz
 "
+
+S="${WORKDIR}/${PN}"
 
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~x86 ~amd64-linux ~x86-linux"
 IUSE=""
 
+# julia 0.7* is compatible with llvm-6
 RDEPEND="
+	sys-devel/llvm:6=
+	sys-devel/clang:6="
+LLVM_MAX_SLOT=6
+
+RDEPEND+="
 	dev-libs/double-conversion:0=
 	dev-libs/gmp:0=
 	dev-libs/libgit2:0=
 	dev-libs/mpfr:0=
 	dev-libs/openspecfun
+	net-libs/mbedtls
 	sci-libs/arpack:0=
 	sci-libs/camd:0=
-        sci-libs/ccolamd
+	sci-libs/ccolamd:0=
 	sci-libs/cholmod:0=
 	sci-libs/fftw:3.0=[threads]
 	sci-libs/openlibm:0=
@@ -37,8 +52,7 @@ RDEPEND="
 	>=dev-libs/libpcre2-10.23:0=[jit]
 	sci-libs/umfpack:0=
 	sci-mathematics/glpk:0=
-	sys-devel/llvm:6=
-	sys-libs/llvm-libunwind
+	sys-libs/llvm-libunwind:0=
 	sys-libs/readline:0=
 	sys-libs/zlib:0=
 	>=virtual/blas-3.6
@@ -57,14 +71,18 @@ PATCHES=(
 	"${FILESDIR}"/0005-disable-splitdebug.patch
 )
 
-LLVM_MAX_SLOT=6
+src_unpack() {
+	tounpack=(${A})
+	# the main source tree, followed by deps
+	unpack "${A/%\ */}"
 
-S=${WORKDIR}/julia
+	mkdir -p "${S}/deps/srccache/"
+	for i in "${tounpack[@]:1}"; do
+		cp "${DISTDIR}/${i}" "${S}/deps/srccache/${i#julia-}" || die
+	done
+}
 
 src_prepare() {
-	mv "${WORKDIR}"/bundled/UnicodeData.txt doc || die
-	mkdir deps/srccache || die
-
 	default
 
 	# Sledgehammer:
@@ -74,7 +92,6 @@ src_prepare() {
 	# - fix BLAS and LAPACK link interface
 
 	sed -i \
-		-e 's|$(JLDOWNLOAD)|${EPREFIX}/bin/true|' \
 		-e 's|git submodule|${EPREFIX}/bin/true|g' \
 		-e "s|GENTOOCFLAGS|${CFLAGS}|g" \
 		-e "s|/usr/include|${EPREFIX%/}/usr/include|g" \
@@ -88,12 +105,8 @@ src_prepare() {
 	liblapack="lib${liblapack#-l}"
 
 	sed -i \
-		-e "s|\(JULIA_EXECUTABLE = \)\(\$(JULIAHOME)/julia\)|\1 LD_LIBRARY_PATH=\$(BUILD)/$(get_libdir) \2|" \
 		-e "s|GENTOOCFLAGS|${CFLAGS}|g" \
-		-e "s|LIBDIR = lib|LIBDIR = $(get_libdir)|" \
-		-e "s|/usr/lib|${EPREFIX}/usr/$(get_libdir)|" \
-		-e "s|/usr/include|${EPREFIX}/usr/include|" \
-		-e "s|\$(BUILD)/lib|\$(BUILD)/$(get_libdir)|" \
+		-e "s|GENTOOLIBDIR|$(get_libdir)|" \
 		-e "s|^JULIA_COMMIT = .*|JULIA_COMMIT = v${PV}|" \
 		-e "s|-lblas|$($(tc-getPKG_CONFIG) --libs blas)|" \
 		-e "s|= libblas|= ${libblas}|" \
@@ -110,7 +123,7 @@ src_prepare() {
 		-e "s|ar -rcs|$(tc-getAR) -rcs|g" \
 		src/Makefile || die
 
-	# disable doc install starting  git fetching
+	# disable doc install starting	git fetching
 	sed -i -e 's~install: $(build_depsbindir)/stringreplace $(BUILDROOT)/doc/_build/html/en/index.html~install: $(build_depsbindir)/stringreplace~' Makefile || die
 }
 
@@ -120,30 +133,29 @@ src_configure() {
 
 	# USE_SYSTEM_LIBM=0 implies using external openlibm
 	cat <<-EOF > Make.user
-		DISABLE_LIBUNWIND=1
-		USE_SYSTEM_DSFMT=0
-		USE_SYSTEM_LIBUV=0
-		USE_SYSTEM_PCRE=1
-		USE_SYSTEM_RMATH=0
-		USE_SYSTEM_UTF8PROC=0
-		USE_LLVM_SHLIB=1
-		USE_SYSTEM_ARPACK=1
-		USE_SYSTEM_BLAS=1
-		USE_SYSTEM_FFTW=1
-		USE_SYSTEM_GMP=1
-		USE_SYSTEM_GRISU=1
-		USE_SYSTEM_LAPACK=1
-		USE_SYSTEM_LIBGIT2=1
-		USE_SYSTEM_LIBM=1
-		USE_SYSTEM_LIBUNWIND=1
-		USE_SYSTEM_LLVM=1
-		USE_SYSTEM_MPFR=1
-		USE_SYSTEM_OPENLIBM=1
-		USE_SYSTEM_OPENSPECFUN=1
-		USE_SYSTEM_PATCHELF=1
-		USE_SYSTEM_READLINE=1
-		USE_SYSTEM_SUITESPARSE=1
-		USE_SYSTEM_ZLIB=1
+		DISABLE_LIBUNWIND:=1
+		USE_SYSTEM_LLVM:=1
+		USE_SYSTEM_LIBUNWIND:=1
+		USE_SYSTEM_PCRE:=1
+		USE_SYSTEM_LIBM:=0
+		USE_SYSTEM_OPENLIBM:=1
+		USE_SYSTEM_DSFMT:=0
+		USE_SYSTEM_BLAS:=1
+		USE_SYSTEM_LAPACK:=1
+		USE_SYSTEM_GMP:=1
+		USE_SYSTEM_MPFR:=1
+		USE_SYSTEM_SUITESPARSE:=1
+		USE_SYSTEM_LIBUV:=0
+		USE_SYSTEM_UTF8PROC:=0
+		USE_SYSTEM_MBEDTLS:=1
+		USE_SYSTEM_LIBSSH2:=1
+		USE_SYSTEM_CURL:=1
+		USE_SYSTEM_LIBGIT2:=1
+		USE_SYSTEM_PATCHELF:=1
+		USE_LLVM_SHLIB:=1
+		USE_SYSTEM_ARPACK:=1
+		USE_SYSTEM_GRISU:=1
+		USE_SYSTEM_ZLIB:=1
 		VERBOSE=1
 		libdir="${EROOT}/usr/$(get_libdir)"
 	EOF
@@ -155,10 +167,11 @@ src_compile() {
 	# Julia accesses /proc/self/mem on Linux
 	addpredict /proc/self/mem
 
-	emake cleanall
-	emake VERBOSE=1 julia-release \
-		prefix="/usr" DESTDIR="${D}" CC="$(tc-getCC)" CXX="$(tc-getCXX)"
+	emake julia-release \
+		prefix="${EPREFIX}/usr" DESTDIR="${D}" \
+		CC="$(tc-getCC)" CXX="$(tc-getCXX)"
 	pax-mark m $(file usr/bin/julia-* | awk -F : '/ELF/ {print $1}')
+	emake
 }
 
 src_test() {
@@ -175,7 +188,8 @@ src_install() {
 		git commit -a --allow-empty -m "initial" || die "git failed"
 
 	emake install \
-		prefix="/usr" DESTDIR="${D}" CC="$(tc-getCC)" CXX="$(tc-getCXX)"
+		prefix="${EPREFIX}/usr" DESTDIR="${D}" \
+		CC="$(tc-getCC)" CXX="$(tc-getCXX)"
 	cat > 99julia <<-EOF
 		LDPATH=${EROOT%/}/usr/$(get_libdir)/julia
 	EOF
@@ -185,14 +199,10 @@ src_install() {
 
 	mv "${ED}"/usr/etc/julia "${ED}"/etc || die
 	rmdir "${ED}"/usr/etc || die
-	mv "${ED}"/usr/share/doc/julia/html \
-		"${ED}"/usr/share/doc/${PF} || die
+	mv "${ED}"/usr/share/doc/julia/html "${ED}"/usr/share/doc/${PF} || die
 	rmdir "${ED}"/usr/share/doc/julia || die
-	if [[ $(get_libdir) != lib ]]; then
-		mkdir -p "${ED}"/usr/$(get_libdir) || die
-		mv "${ED}"/usr/lib/julia "${ED}"/usr/$(get_libdir)/julia || die
-	fi
 
-	# needed for julia, only one symbol
-	${CC} ${FILESDIR}/compiler-rt.c -shared -o ${D}/usr/lib/julia/libcompiler-rt.so
+	# needed for some symbols
+	${CC} ${FILESDIR}/compiler-rt.c -shared -o ${D}/usr/lib/julia/libcompiler-rt.s
 }
+
