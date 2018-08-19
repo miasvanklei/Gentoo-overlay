@@ -20,7 +20,7 @@ SRC_URI="https://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+cargo debug doc +rls +rustfmt -jemalloc"
+IUSE="+cargo debug doc libressl +rls +rustfmt -jemalloc"
 
 RDEPEND="jemalloc? ( dev-libs/jemalloc )
 	sys-devel/llvm"
@@ -30,7 +30,14 @@ DEPEND="${RDEPEND}
                 >=sys-devel/gcc-4.7
                 >=sys-devel/clang-3.5
         )
-        cargo? ( !dev-util/cargo )
+        cargo? ( !dev-util/cargo
+		sys-libs/zlib
+		!libressl? ( dev-libs/openssl:0= )
+		libressl? ( dev-libs/libressl:0= )
+		net-libs/libssh2
+		net-libs/http-parser
+		net-misc/curl[ssl]
+	)
         rustfmt? ( !dev-util/rustfmt )
         dev-util/cmake
 "
