@@ -25,7 +25,3 @@ DEPEND="${RDEPEND}
 CMAKE_BUILD_TYPE=Release
 
 S=${WORKDIR}/${P}/runtime/libpgmath
-
-PATCHES=(
-        ${FILESDIR}/fix-compile.patch
-)
