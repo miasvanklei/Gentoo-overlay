@@ -1,0 +1,32 @@
+--- a/extensions/spellcheck/hunspell/glue/moz.build	2018-09-07 19:58:10.547517701 +0200
++++ b/extensions/spellcheck/hunspell/glue/moz.build	2018-09-07 19:58:19.360505850 +0200
+@@ -22,8 +22,6 @@
+ include('/ipc/chromium/chromium-config.mozbuild')
+ include('common.mozbuild')
+ 
+-HunspellIncludes()
+-
+ IPDL_SOURCES = [
+     'PRemoteSpellcheckEngine.ipdl',
+ ]
+--- a/extensions/spellcheck/hunspell/src/moz.build	2018-09-07 19:57:55.257538318 +0200
++++ b/extensions/spellcheck/hunspell/src/moz.build	2018-09-07 19:58:58.664453261 +0200
+@@ -27,8 +27,6 @@
+ include('/ipc/chromium/chromium-config.mozbuild')
+ include('../glue/common.mozbuild')
+ 
+-HunspellIncludes()
+-
+ if CONFIG['CC_TYPE'] in ('clang', 'clang-cl'):
+     CXXFLAGS += [
+         '-Wno-implicit-fallthrough',
+--- a/extensions/spellcheck/hunspell/glue/mozHunspellFileMgr.h	2018-09-07 19:55:54.367703986 +0200
++++ b/extensions/spellcheck/hunspell/glue/mozHunspellFileMgr.h	2018-09-07 19:56:15.248675006 +0200
+@@ -13,6 +13,7 @@
+ #include "mozilla/ResultExtensions.h"
+ #include "nsIInputStream.h"
+ #include "nsReadLine.h"
++#include "nsCOMPtr.h"
+ 
+ // Note: This class name and lack of namespacing terrible, but are necessary
+ // for Hunspell compatibility.
