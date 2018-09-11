@@ -14,8 +14,8 @@ MY_P="${MY_PN}-${PV}"
 
 DESCRIPTION="the Haskell Refactorer"
 HOMEPAGE="https://github.com/RefactoringTools/HaRe/wiki"
-EGIT_REPO_URI="https://gitlab.com/alanz/HaRe.git"
-EGIT_BRANCH="ghc-8.4"
+EGIT_REPO_URI="https://github.com/bubba/HaRe.git"
+EGIT_BRANCH="ghc-mod-update"
 EGIT_SUBMODULES=()
 
 LICENSE="BSD"
@@ -44,8 +44,3 @@ RDEPEND=">=dev-haskell/ghc-mod-core-5.8.0:=[profile?] <dev-haskell/ghc-mod-core-
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.22.4.0
 "
-
-PATCHES=(
-	"${FILESDIR}"/hoogle-parse.patch
-)
-
