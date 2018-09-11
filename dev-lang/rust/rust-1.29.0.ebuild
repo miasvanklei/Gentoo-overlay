@@ -15,8 +15,7 @@ CARGO_DEPEND_VERSION="0.$(($(get_version_component_range 2))).0"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-MY_P="rustc-${PV}"
-SRC_URI="https://static.rust-lang.org/dist/${MY_P}-src.tar.gz"
+SRC_URI="https://static.rust-lang.org/dist/rustc-beta-src.tar.gz -> ${P}.tar.gz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
@@ -46,7 +45,7 @@ PDEPEND="!cargo? ( >=dev-util/cargo-${CARGO_DEPEND_VERSION} )"
 
 RDEPEND="sys-devel/llvm:="
 
-S="${WORKDIR}/${MY_P}-src"
+S="${WORKDIR}/rustc-beta-src"
 
 toml_usex() {
 	usex "$1" true false

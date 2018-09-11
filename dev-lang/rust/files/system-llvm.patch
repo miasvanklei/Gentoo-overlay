@@ -87,17 +87,6 @@
  extern "C" LLVMTargetMachineRef LLVMRustCreateTargetMachine(
      const char *TripleStr, const char *CPU, const char *Feature,
      LLVMRustCodeModel RustCM, LLVMRustRelocMode RustReloc,
---- a/src/rustllvm/RustWrapper.cpp
-+++ b/src/rustllvm/RustWrapper.cpp
-@@ -565,7 +565,7 @@
-   if (isSet(Flags & LLVMRustDIFlags::FlagBitField)) {
-     Result |= DINode::DIFlags::FlagBitField;
-   }
--#if LLVM_RUSTLLVM || LLVM_VERSION_GE(4, 0)
-+#if LLVM_VERSION_GE(4, 0)
-   if (isSet(Flags & LLVMRustDIFlags::FlagNoReturn)) {
-     Result |= DINode::DIFlags::FlagNoReturn;
-   }
 --- a/src/librustc_llvm/build.rs
 +++ b/src/librustc_llvm/build.rs
 @@ -146,11 +146,6 @@
