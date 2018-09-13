@@ -24,6 +24,7 @@ S=${WORKDIR}/ldc-${MY_PV}-src
 PATCHES=(
 	"${FILESDIR}"/link-libunwind.patch
 	"${FILESDIR}"/wrong-type.patch
+	"${FILESDIR}"/llvm-7.patch
 )
 
 src_configure() {
