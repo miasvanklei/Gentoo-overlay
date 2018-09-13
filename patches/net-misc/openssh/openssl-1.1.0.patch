@@ -163,7 +163,7 @@ diff -aurp old/dh.c new/dh.c
  	    need > INT_MAX / 2 || 2 * need > pbits)
  		return SSH_ERR_INVALID_ARGUMENT;
  	if (need < 256)
-@@ -270,10 +276,13 @@ dh_gen_key(DH *dh, int need)
+@@ -270,11 +276,13 @@ dh_gen_key(DH *dh, int need)
  	 * Pollard Rho, Big step/Little Step attacks are O(sqrt(n)),
  	 * so double requested need here.
  	 */
@@ -171,6 +171,7 @@ diff -aurp old/dh.c new/dh.c
 -	if (DH_generate_key(dh) == 0 ||
 -	    !dh_pub_is_valid(dh, dh->pub_key)) {
 -		BN_clear_free(dh->priv_key);
+-		dh->priv_key = NULL;
 +	DH_set_length(dh, MIN(need * 2, pbits - 1));
 +	if (DH_generate_key(dh) == 0) {
 +		return SSH_ERR_LIBCRYPTO_ERROR;
@@ -390,10 +391,10 @@ diff -aurp old/kexdhs.c new/kexdhs.c
  
  	/* save session id := H */
  	if (kex->session_id == NULL) {
-@@ -195,12 +200,17 @@ input_kex_dh_init(int type, u_int32_t se
+@@ -195,12 +200,16 @@ input_kex_dh_init(int type, u_int32_t se
  	/* destroy_sensitive_data(); */
  
- 	/* send server hostkey, DH pubkey 'f' and singed H */
+ 	/* send server hostkey, DH pubkey 'f' and signed H */
 +	{
 +	const BIGNUM *pub_key;
 +	DH_get0_key(kex->dh, &pub_key, NULL);
@@ -402,10 +403,8 @@ diff -aurp old/kexdhs.c new/kexdhs.c
 -	    (r = sshpkt_put_bignum2(ssh, kex->dh->pub_key)) != 0 ||	/* f */
 +	    (r = sshpkt_put_bignum2(ssh, pub_key)) != 0 ||	/* f */
  	    (r = sshpkt_put_string(ssh, signature, slen)) != 0 ||
--	    (r = sshpkt_send(ssh)) != 0)
-+	    (r = sshpkt_send(ssh)) != 0) {
+ 	    (r = sshpkt_send(ssh)) != 0)
  		goto out;
-+	}
 +	}
  
  	if ((r = kex_derive_keys_bn(ssh, hash, hashlen, shared_secret)) == 0)
@@ -516,10 +515,10 @@ diff -aurp old/kexgexs.c new/kexgexs.c
  
  	/* save session id := H */
  	if (kex->session_id == NULL) {
-@@ -225,12 +236,17 @@ input_kex_dh_gex_init(int type, u_int32_
+@@ -225,12 +236,16 @@ input_kex_dh_gex_init(int type, u_int32_
  	/* destroy_sensitive_data(); */
  
- 	/* send server hostkey, DH pubkey 'f' and singed H */
+ 	/* send server hostkey, DH pubkey 'f' and signed H */
 +	{
 +	const BIGNUM *pub_key;
 +	DH_get0_key(kex->dh, &pub_key, NULL);
@@ -528,10 +527,8 @@ diff -aurp old/kexgexs.c new/kexgexs.c
 -	    (r = sshpkt_put_bignum2(ssh, kex->dh->pub_key)) != 0 ||     /* f */
 +	    (r = sshpkt_put_bignum2(ssh, pub_key)) != 0 ||     /* f */
  	    (r = sshpkt_put_string(ssh, signature, slen)) != 0 ||
--	    (r = sshpkt_send(ssh)) != 0)
-+	    (r = sshpkt_send(ssh)) != 0) {
+ 	    (r = sshpkt_send(ssh)) != 0)
  		goto out;
-+	}
 +	}
  
  	if ((r = kex_derive_keys_bn(ssh, hash, hashlen, shared_secret)) == 0)
@@ -540,20 +537,20 @@ diff -aurp old/monitor.c new/monitor.c
 --- old/monitor.c	2018-03-22 16:21:14.000000000 -1000
 +++ new/monitor.c	2018-03-23 10:05:03.890621610 -1000
 @@ -595,10 +595,12 @@ mm_answer_moduli(int sock, Buffer *m)
- 		buffer_put_char(m, 0);
+ 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
  		return (0);
  	} else {
 +		const BIGNUM *p, *g;
 +		DH_get0_pqg(dh, &p, NULL, &g);
  		/* Send first bignum */
- 		buffer_put_char(m, 1);
--		buffer_put_bignum2(m, dh->p);
--		buffer_put_bignum2(m, dh->g);
-+		buffer_put_bignum2(m, p);
-+		buffer_put_bignum2(m, g);
+ 		if ((r = sshbuf_put_u8(m, 1)) != 0 ||
+-		    (r = sshbuf_put_bignum2(m, dh->p)) != 0 ||
+-		    (r = sshbuf_put_bignum2(m, dh->g)) != 0)
++		    (r = sshbuf_put_bignum2(m, p)) != 0 ||
++		    (r = sshbuf_put_bignum2(m, g)) != 0)
+ 			fatal("%s: buffer error: %s", __func__, ssh_err(r));
  
  		DH_free(dh);
- 	}
 diff -aurp old/openbsd-compat/openssl-compat.c new/openbsd-compat/openssl-compat.c
 --- old/openbsd-compat/openssl-compat.c	2018-03-22 16:21:14.000000000 -1000
 +++ new/openbsd-compat/openssl-compat.c	2018-03-23 10:05:03.890621610 -1000
