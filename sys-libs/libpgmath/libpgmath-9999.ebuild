@@ -22,6 +22,10 @@ RDEPEND=""
 DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
+PATCHES=(
+	"${FILESDIR}"/fix-compile.patch
+)
+
 CMAKE_BUILD_TYPE=Release
 
 S=${WORKDIR}/${P}/runtime/libpgmath

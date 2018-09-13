@@ -1,0 +1,22 @@
+diff --git a/lib/common/pow/fma3/CMakeLists.txt b/lib/common/pow/fma3/CMakeLists.txt
+index 8e9046d..4dda0da 100644
+--- a/lib/common/pow/fma3/CMakeLists.txt
++++ b/lib/common/pow/fma3/CMakeLists.txt
+@@ -30,14 +30,14 @@ if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64")
+       vdpow4.cpp
+       vspow4.cpp
+       vspow8.cpp)
+-    libmath_add_object_library("${SRCS}" "${FLAGS}" "${DEFINITIONS}" "")
++    libmath_add_object_library("${SRCS}" "${FLAGS} -Wno-argument-outside-range" "${DEFINITIONS}" "")
+     set(SRCS
+       vdpow8.cpp
+       vspow16.cpp)
+     set(FLAGS_AVX512 "${FLAGS} -march=skylake-avx512 -mtune=skylake-avx512")
+-    libmath_add_object_library("${SRCS}" "${FLAGS_AVX512}" "${DEFINITIONS}" "pow-avx512")
++    libmath_add_object_library("${SRCS}" "${FLAGS_AVX512} -Wno-argument-outside-range" "${DEFINITIONS}" "pow-avx512")
+     set(FLAGS_AVX512 "${FLAGS} -march=knl -mtune=knl")
+-    libmath_add_object_library("${SRCS}" "${FLAGS_AVX512}" "${DEFINITIONS}" "pow-knl")
++    libmath_add_object_library("${SRCS}" "${FLAGS_AVX512} -Wno-argument-outside-range" "${DEFINITIONS}" "pow-knl")
+   endif()
+ elseif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64le")
+   set(SRCS
