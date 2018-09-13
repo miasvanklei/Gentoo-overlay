@@ -14,8 +14,8 @@ MY_P="${MY_PN}-${PV}"
 
 DESCRIPTION="the Haskell Refactorer"
 HOMEPAGE="https://github.com/RefactoringTools/HaRe/wiki"
-EGIT_REPO_URI="https://github.com/bubba/HaRe.git"
-EGIT_BRANCH="ghc-mod-update"
+EGIT_REPO_URI="https://github.com/alanz/HaRe.git"
+EGIT_BRANCH="ghc-8.6"
 EGIT_SUBMODULES=()
 
 LICENSE="BSD"
