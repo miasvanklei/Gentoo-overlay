@@ -8,14 +8,15 @@ EAPI="6"
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
-DOTNET_SDK="dotnet-sdk-2.1.300-linux-x64.tar.gz"
-DPV=2.1.0
+DOTNET_SDK="dotnet-sdk-2.2.100-preview2-009404-linux-musl-x64.tar.gz"
+DPV=2.2.0-preview2-26905-02
+MY_PV="${PV}-preview2"
 
 IUSE="heimdal"
-SRC_URI="https://download.microsoft.com/download/8/8/5/88544F33-836A-49A5-8B67-451C24709A8F/${DOTNET_SDK}
-	https://github.com/dotnet/coreclr/archive/v${PV}.tar.gz -> coreclr-${PV}.tar.gz
-	https://github.com/dotnet/corefx/archive/v${PV}.tar.gz -> corefx-${PV}.tar.gz
-	https://github.com/dotnet/core-setup/archive/v${PV}.tar.gz -> core-setup-${PV}.tar.gz"
+SRC_URI="https://download.microsoft.com/download/D/5/9/D593CD8F-04E7-425D-962C-86FF4C90B1DA/${DOTNET_SDK}
+	https://github.com/dotnet/coreclr/archive/v${MY_PV}.tar.gz -> coreclr-${MY_PV}.tar.gz
+	https://github.com/dotnet/corefx/archive/v${MY_PV}.tar.gz -> corefx-${MY_PV}.tar.gz
+	https://github.com/dotnet/core-setup/archive/v${MY_PV}.tar.gz -> core-setup-${MY_PV}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64"
@@ -43,9 +44,9 @@ DEPEND="${RDEPEND}
 
 S=${WORKDIR}
 CLI_S="${S}/dotnetcli-${PV}"
-CORECLR_S="${S}/coreclr-${PV}"
-COREFX_S="${S}/corefx-${PV}/"
-CORESETUP_S="${S}/core-setup-${PV}/"
+CORECLR_S="${S}/coreclr-${MY_PV}"
+COREFX_S="${S}/corefx-${MY_PV}/"
+CORESETUP_S="${S}/core-setup-${MY_PV}/"
 
 CORECLR_FILES=(
 	'libclrjit.so'
@@ -72,7 +73,7 @@ CRYPTO_FILES=(
 )
 
 src_unpack() {
-	unpack "coreclr-${PV}.tar.gz" "corefx-${PV}.tar.gz" "core-setup-${PV}.tar.gz"
+	unpack "coreclr-${MY_PV}.tar.gz" "corefx-${MY_PV}.tar.gz" "core-setup-${MY_PV}.tar.gz"
 	mkdir "${CLI_S}" || die
 	cd "${CLI_S}" || die
         unpack "${DOTNET_SDK}"
@@ -80,21 +81,24 @@ src_unpack() {
 
 src_prepare() {
 	for file in "${CORECLR_FILES[@]}"; do
-		rm "${CLI_S}/shared/Microsoft.NETCore.App/${DPV}/${file}"
+		rm "${CLI_S}/shared/Microsoft.NETCore.App/${DPV}/${file}" || die
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		rm "${CLI_S}/shared/Microsoft.NETCore.App/${DPV}/${file}"
+		rm "${CLI_S}/shared/Microsoft.NETCore.App/${DPV}/${file}" || die
 	done
 
 	for file in "${CRYPTO_FILES[@]}"; do
-		rm "${CLI_S}/shared/Microsoft.NETCore.App/${DPV}/${file}"
+		rm "${CLI_S}/shared/Microsoft.NETCore.App/${DPV}/${file}" || die
 	done
 
         cd "${CORECLR_S}" || die
-	eapply ${FILESDIR}/fix-build.patch
+	eapply ${FILESDIR}/fix-build-clr.patch
 	#eapply ${FILESDIR}/clang-6.0.patch
 	#eapply ${FILESDIR}/musl.patch
+        cd ..
+	cd "${COREFX_S}" || die
+	eapply ${FILESDIR}/fix-build-cfx.patch
         cd ..
 
 	default_src_prepare
