@@ -1,0 +1,31 @@
+--- a/mono/mini/aot-compiler.c	2018-09-13 10:29:25.935982915 +0200
++++ b/mono/mini/aot-compiler.c	2018-09-13 10:29:11.440486697 +0200
+@@ -11135,7 +11135,7 @@
+ #ifdef TARGET_WIN32_MSVC
+ #define AS_OPTIONS "-c -x assembler"
+ #elif defined(TARGET_AMD64) && !defined(TARGET_MACH)
+-#define AS_OPTIONS "--64"
++#define AS_OPTIONS "-c -x assembler"
+ #elif defined(TARGET_POWERPC64)
+ #define AS_OPTIONS "-a64 -mppc64"
+ #elif defined(sparc) && SIZEOF_VOID_P == 8
+@@ -11151,7 +11151,7 @@
+ #elif defined(TARGET_WIN32_MSVC)
+ #define AS_NAME "clang.exe"
+ #else
+-#define AS_NAME "as"
++#define AS_NAME "clang"
+ #endif
+ 
+ #ifdef TARGET_WIN32_MSVC
+--- a/mono/mini/image-writer.c	2018-09-13 10:26:45.749670617 +0200
++++ b/mono/mini/image-writer.c	2018-09-13 10:26:56.238114570 +0200
+@@ -93,7 +93,7 @@
+ #elif defined(TARGET_ASM_GAS) && defined(TARGET_WIN32)
+ #define AS_INT16_DIRECTIVE ".word"
+ #elif defined(TARGET_ASM_GAS)
+-#define AS_INT16_DIRECTIVE ".hword"
++#define AS_INT16_DIRECTIVE ".word"
+ #else
+ #define AS_INT16_DIRECTIVE ".word"
+ #endif

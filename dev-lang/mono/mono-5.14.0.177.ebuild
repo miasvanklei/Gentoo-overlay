@@ -67,6 +67,7 @@ src_prepare() {
 	eapply ${FILESDIR}/remove-sigcontext-include.patch
 	eapply ${FILESDIR}/strerror_r.patch
 	eapply ${FILESDIR}/revert-semaphore.patch
+	eapply ${FILESDIR}/use-clang.patch
 
 	default
 	# PATCHES contains configure.ac patch
