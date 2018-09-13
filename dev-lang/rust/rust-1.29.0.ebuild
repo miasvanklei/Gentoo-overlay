@@ -15,7 +15,7 @@ CARGO_DEPEND_VERSION="0.$(($(get_version_component_range 2))).0"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://static.rust-lang.org/dist/rustc-beta-src.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://dev-static.rust-lang.org/dist/rustc-${PV}-src.tar.xz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
