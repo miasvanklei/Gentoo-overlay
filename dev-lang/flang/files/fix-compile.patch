@@ -1,3 +1,16 @@
+diff --git a/tools/flang2/flang2exe/iliutil.cpp b/tools/flang2/flang2exe/iliutil.cpp
+index 538cb6f..da4bcf3 100644
+--- a/tools/flang2/flang2exe/iliutil.cpp
++++ b/tools/flang2/flang2exe/iliutil.cpp
+@@ -2093,7 +2093,7 @@ reciprocal_division(int n, INT divisor, int sgnd)
+   } else {
+     INT64 twol;
+     int shpre = 0;
+-    INT64 one_64 = {0x0, 0x1}, divisor64 = {0x0, udiv};
++    INT64 one_64 = {0x0, 0x1}, divisor64 = {0x0, static_cast<int32_t>(udiv)};
+     const int l = lg(udiv);
+ 
+     shf64(one_64, l, twol);
 diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
 index a38de60..00b4aec 100644
 --- a/runtime/flang/CMakeLists.txt
@@ -191,9 +204,3 @@ index c34fda0..1b72b90 100644
  }
  
  /*
-@@ -235,5 +165,3 @@ __abort_sig_init(void)
-     n++;
-   }
- }
--
--
