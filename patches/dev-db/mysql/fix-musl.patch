@@ -1,0 +1,23 @@
+--- a/mysys/posix_timers.c	2018-09-15 17:48:28.652244515 +0200
++++ b/mysys/posix_timers.c	2018-09-15 17:48:44.957230506 +0200
+@@ -197,8 +197,7 @@
+ 
+   sigev.sigev_value.sival_ptr= timer;
+   sigev.sigev_signo= MY_TIMER_EVENT_SIGNO;
+-  sigev.sigev_notify= SIGEV_SIGNAL | SIGEV_THREAD_ID;
+-  sigev.sigev_notify_thread_id= timer_notify_thread_id;
++  sigev.sigev_notify= SIGEV_SIGNAL;
+ 
+   return timer_create(CLOCK_MONOTONIC, &sigev, &timer->id);
+ }
+--- a/configure.cmake	2018-09-15 17:41:21.742621705 +0200
++++ b/configure.cmake	2018-09-15 17:47:26.435298176 +0200
+@@ -391,7 +391,7 @@
+ CHECK_SYMBOL_EXISTS(TIOCGWINSZ "sys/ioctl.h" GWINSZ_IN_SYS_IOCTL)
+ CHECK_SYMBOL_EXISTS(FIONREAD "sys/ioctl.h" FIONREAD_IN_SYS_IOCTL)
+ CHECK_SYMBOL_EXISTS(FIONREAD "sys/filio.h" FIONREAD_IN_SYS_FILIO)
+-CHECK_SYMBOL_EXISTS(SIGEV_THREAD_ID "signal.h;time.h" HAVE_SIGEV_THREAD_ID)
++SET(HAVE_SIGEV_THREAD_ID 1 CACHE INTERNAL "Have SIGEV_THREAD_ID")
+ CHECK_SYMBOL_EXISTS(SIGEV_PORT "signal.h;time.h;sys/siginfo.h" HAVE_SIGEV_PORT)
+ 
+ CHECK_SYMBOL_EXISTS(log2  math.h HAVE_LOG2)
