@@ -1,0 +1,30 @@
+--- a/meson.build
++++ b/meson.build
+@@ -340,7 +340,11 @@ if with_egl and not (with_platform_drm or with_platform_surfaceless)
+   endif
+ endif
+ 
+-pre_args += '-DGLX_USE_TLS'
++with_glx_use_tls = get_option('glx-use-tls')
++if with_glx_use_tls
++  pre_args += '-DGLX_USE_TLS'
++endif
++
+ if with_glx != 'disabled'
+   if not (with_platform_x11 and with_any_opengl)
+     if with_glx == 'auto'
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -195,6 +195,12 @@ option(
+   choices : ['auto', 'disabled', 'dri', 'xlib', 'gallium-xlib'],
+   description : 'Build support for GLX platform'
+ )
++option(
++  'glx-use-tls',
++  type : 'boolean',
++  value : false,
++  description : 'Build support for initial-exec TLS model on GLX platform'
++)
+ option(
+   'egl',
+   type : 'combo',
