@@ -8,7 +8,8 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-utils llvm python-single-r1 toolchain-funcs
+inherit cmake-utils llvm multiprocessing python-single-r1 \
+	toolchain-funcs
 
 MY_P=${P/_/}.src
 LLVM_P=llvm-${PV/_/}.src
@@ -32,10 +33,8 @@ RDEPEND="
 	~sys-devel/clang-${PV}[xml]
 	~sys-devel/llvm-${PV}
 	!<sys-devel/llvm-4.0"
-# swig-3.0.9+ generates invalid wrappers, #598708
-# upstream: https://github.com/swig/swig/issues/769
 DEPEND="${RDEPEND}
-	python? ( >dev-lang/swig-3.0.9 )
+	python? ( >=dev-lang/swig-3.0.11 )
 	test? ( ~dev-python/lit-${PV}[${PYTHON_USEDEP}] )
 	${PYTHON_DEPS}"
 
@@ -107,11 +106,10 @@ src_configure() {
 		# compilers for lit tests
 		-DLLDB_TEST_C_COMPILER="$(type -P clang)"
 		-DLLDB_TEST_CXX_COMPILER="$(type -P clang++)"
-		# compiler for ole' python tests
-		-DLLDB_TEST_COMPILER="$(type -P clang)"
+
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
 		-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
-		-DLLVM_LIT_ARGS="-vv"
+		-DLLVM_LIT_ARGS="-vv;-j;${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}"
 	)
 
 	cmake-utils_src_configure

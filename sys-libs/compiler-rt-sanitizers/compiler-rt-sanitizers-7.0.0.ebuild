@@ -8,7 +8,8 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit check-reqs cmake-utils flag-o-matic llvm python-any-r1
+inherit check-reqs cmake-utils flag-o-matic llvm \
+	multiprocessing python-any-r1
 
 MY_P=compiler-rt-${PV/_/}.src
 LLVM_P=llvm-${PV/_/}.src
@@ -21,7 +22,7 @@ SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="${PV%_*}"
 KEYWORDS="~amd64 ~arm"
-IUSE="+compiler-rt test"
+IUSE="test"
 RESTRICT="!test? ( test )"
 
 CLANG_SLOT=${SLOT%%.*}
@@ -30,14 +31,13 @@ DEPEND="
 	>=sys-devel/llvm-6
 	test? (
 		!<sys-apps/sandbox-2.13
-		$(python_gen_any_dep "~dev-python/lit-${PV}[\${PYTHON_USEDEP}]")
-		=sys-devel/clang-${PV%_*}*:${CLANG_SLOT}
-		sys-libs/compiler-rt:${SLOT} )
+		$(python_gen_any_dep "dev-python/lit[\${PYTHON_USEDEP}]")
+		=sys-devel/clang-${PV%_*}*:${CLANG_SLOT} )
 	${PYTHON_DEPS}"
 
 S=${WORKDIR}/${MY_P}
 
-PATCHES=( "${FILESDIR}"/${PN}-6.0.0-musl-patches.patch )
+PATCHES=( "${FILESDIR}"/${PN}-7.0.0-musl-patches.patch )
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -89,23 +89,22 @@ src_configure() {
 		-DCOMPILER_RT_BUILD_SANITIZERS=ON
 		-DCOMPILER_RT_BUILD_XRAY=ON
 		-DSANITIZER_CXX_ABI="libcxxabi"
-		-DSANITIZER_USE_COMPILER_RT=$(usex compiler-rt)
 	)
 	if use test; then
 		mycmakeargs+=(
 			-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
 			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
-			-DLLVM_LIT_ARGS="-vv"
+			-DLLVM_LIT_ARGS="-vv;-j;${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}"
 
 			# they are created during src_test()
-			-DCOMPILER_RT_TEST_COMPILER="${BUILD_DIR}/lib/llvm/${LLVM_SLOT}/bin/clang"
-			-DCOMPILER_RT_TEST_CXX_COMPILER="${BUILD_DIR}/lib/llvm/${LLVM_SLOT}/bin/clang++"
+			-DCOMPILER_RT_TEST_COMPILER="${BUILD_DIR}/lib/llvm/${CLANG_SLOT}/bin/clang"
+			-DCOMPILER_RT_TEST_CXX_COMPILER="${BUILD_DIR}/lib/llvm/${CLANG_SLOT}/bin/clang++"
 		)
 
 		# same flags are passed for build & tests, so we need to strip
 		# them down to a subset supported by clang
-		CC=${EPREFIX}/usr/lib/llvm/${LLVM_SLOT}/bin/clang \
-		CXX=${EPREFIX}/usr/lib/llvm/${LLVM_SLOT}/bin/clang++ \
+		CC=${EPREFIX}/usr/lib/llvm/${CLANG_SLOT}/bin/clang \
+		CXX=${EPREFIX}/usr/lib/llvm/${CLANG_SLOT}/bin/clang++ \
 		strip-unsupported-flags
 	fi
 
@@ -125,17 +124,17 @@ src_configure() {
 
 		# copy clang over since resource_dir is located relatively to binary
 		# therefore, we can put our new libraries in it
-		mkdir -p "${BUILD_DIR}"/lib/{llvm/${LLVM_SLOT}/{bin,$(get_libdir)},clang/${SLOT}/include} || die
-		cp "${EPREFIX}"/usr/lib/llvm/${LLVM_SLOT}/bin/clang{,++} \
-			"${BUILD_DIR}"/lib/llvm/${LLVM_SLOT}/bin/ || die
+		mkdir -p "${BUILD_DIR}"/lib/{llvm/${CLANG_SLOT}/{bin,$(get_libdir)},clang/${SLOT}/include} || die
+		cp "${EPREFIX}"/usr/lib/llvm/${CLANG_SLOT}/bin/clang{,++} \
+			"${BUILD_DIR}"/lib/llvm/${CLANG_SLOT}/bin/ || die
 		cp "${EPREFIX}"/usr/lib/clang/${SLOT}/include/*.h \
 			"${BUILD_DIR}"/lib/clang/${SLOT}/include/ || die
 		cp "${sys_dir}"/*builtins*.a \
 			"${BUILD_DIR}/lib/clang/${SLOT}/lib/${sys_dir##*/}/" || die
 		# we also need LLVMgold.so for gold-based tests
-		if [[ -f ${EPREFIX}/usr/lib/llvm/${LLVM_SLOT}/$(get_libdir)/LLVMgold.so ]]; then
-			ln -s "${EPREFIX}"/usr/lib/llvm/${LLVM_SLOT}/$(get_libdir)/LLVMgold.so \
-				"${BUILD_DIR}"/lib/llvm/${LLVM_SLOT}/$(get_libdir)/ || die
+		if [[ -f ${EPREFIX}/usr/lib/llvm/${CLANG_SLOT}/$(get_libdir)/LLVMgold.so ]]; then
+			ln -s "${EPREFIX}"/usr/lib/llvm/${CLANG_SLOT}/$(get_libdir)/LLVMgold.so \
+				"${BUILD_DIR}"/lib/llvm/${CLANG_SLOT}/$(get_libdir)/ || die
 		fi
 	fi
 }

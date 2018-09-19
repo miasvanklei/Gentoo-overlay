@@ -28,8 +28,8 @@ index c991550a4..2b706418b 100644
  }
  
  // Android and Solaris do not have dlvsym
--#if !SANITIZER_ANDROID && !SANITIZER_SOLARIS
-+#if !SANITIZER_ANDROID && !SANITIZER_SOLARIS && !SANITIZER_NONGNU
+-#if !SANITIZER_ANDROID && !SANITIZER_SOLARIS && !SANITIZER_OPENBSD
++#if !SANITIZER_ANDROID && !SANITIZER_SOLARIS && !SANITIZER_OPENBSD && !SANITIZER_NONGNU
  void *GetFuncAddrVer(const char *func_name, const char *ver) {
    return dlvsym(RTLD_NEXT, func_name, ver);
  }
@@ -110,30 +110,31 @@ diff --git a/lib/sanitizer_common/sanitizer_linux_libcdep.cc b/lib/sanitizer_com
 index 56fdfc870..5a9561297 100644
 --- a/lib/sanitizer_common/sanitizer_linux_libcdep.cc
 +++ b/lib/sanitizer_common/sanitizer_linux_libcdep.cc
-@@ -174,7 +174,7 @@ bool SanitizerGetThreadName(char *name, int max_len) {
+@@ -179,7 +179,7 @@
  }
  
- #if !SANITIZER_FREEBSD && !SANITIZER_ANDROID && !SANITIZER_GO && \
--    !SANITIZER_NETBSD && !SANITIZER_SOLARIS
-+    !SANITIZER_NETBSD && !SANITIZER_SOLARIS && !SANITIZER_NONGNU
+ #if !SANITIZER_FREEBSD && !SANITIZER_ANDROID && !SANITIZER_GO &&               \
+-    !SANITIZER_NETBSD && !SANITIZER_OPENBSD && !SANITIZER_SOLARIS
++    !SANITIZER_NETBSD && !SANITIZER_OPENBSD && !SANITIZER_SOLARIS && !SANITIZER_NONGNU
  static uptr g_tls_size;
  
  #ifdef __i386__
-@@ -203,11 +203,11 @@ void InitTlsSize() {
+@@ -256,12 +256,12 @@
  #else
  void InitTlsSize() { }
  #endif  // !SANITIZER_FREEBSD && !SANITIZER_ANDROID && !SANITIZER_GO &&
 -        // !SANITIZER_NETBSD && !SANITIZER_SOLARIS
 +        // !SANITIZER_NETBSD && !SANITIZER_SOLARIS && !SANITIZER_NONGNU
  
- #if (defined(__x86_64__) || defined(__i386__) || defined(__mips__) \
-     || defined(__aarch64__) || defined(__powerpc64__) || defined(__s390__) \
--    || defined(__arm__)) && SANITIZER_LINUX && !SANITIZER_ANDROID
-+    || defined(__arm__)) && SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_NONGNU
+ #if (defined(__x86_64__) || defined(__i386__) || defined(__mips__) ||          \
+      defined(__aarch64__) || defined(__powerpc64__) || defined(__s390__) ||    \
+      defined(__arm__)) &&                                                      \
+-    SANITIZER_LINUX && !SANITIZER_ANDROID
++    SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_NONGNU
  // sizeof(struct pthread) from glibc.
- static atomic_uintptr_t kThreadDescriptorSize;
+ static atomic_uintptr_t thread_descriptor_size;
  
-@@ -391,7 +391,7 @@ int GetSizeFromHdr(struct dl_phdr_info *info, size_t size, void *data) {
+@@ -426,7 +426,7 @@
  
  #if !SANITIZER_GO
  static void GetTls(uptr *addr, uptr *size) {
@@ -142,21 +143,21 @@ index 56fdfc870..5a9561297 100644
  # if defined(__x86_64__) || defined(__i386__) || defined(__s390__)
    *addr = ThreadSelf();
    *size = GetTlsSize();
-@@ -432,7 +432,7 @@ static void GetTls(uptr *addr, uptr *size) {
+@@ -467,7 +467,7 @@
        *addr = (uptr)tcb->tcb_dtv[1];
      }
    }
--#elif SANITIZER_ANDROID
-+#elif SANITIZER_ANDROID || SANITIZER_NONGNU
+-#elif SANITIZER_OPENBSD
++#elif SANITIZER_OPENBSD || SANITIZER_NONGNU
    *addr = 0;
    *size = 0;
- #elif SANITIZER_SOLARIS
-@@ -448,7 +448,7 @@ static void GetTls(uptr *addr, uptr *size) {
+ #elif SANITIZER_ANDROID
+@@ -486,7 +486,7 @@
  #if !SANITIZER_GO
  uptr GetTlsSize() {
- #if SANITIZER_FREEBSD || SANITIZER_ANDROID || SANITIZER_NETBSD || \
--    SANITIZER_SOLARIS
-+    SANITIZER_SOLARIS || SANITIZER_NONGNU
+ #if SANITIZER_FREEBSD || SANITIZER_ANDROID || SANITIZER_NETBSD ||              \
+-    SANITIZER_OPENBSD || SANITIZER_SOLARIS
++    SANITIZER_OPENBSD || SANITIZER_SOLARIS || SANITIZER_NONGNU
    uptr addr, size;
    GetTls(&addr, &size);
    return size;
@@ -203,12 +204,12 @@ index b99ac4480..31e1f6319 100644
  # define SI_ANDROID 1
  #else
 @@ -291,7 +297,7 @@
-   (SI_FREEBSD || SI_MAC || SI_LINUX_NOT_ANDROID)
  #define SANITIZER_INTERCEPT_ETHER_R (SI_FREEBSD || SI_LINUX_NOT_ANDROID)
- #define SANITIZER_INTERCEPT_SHMCTL                       \
--  (SI_NETBSD || SI_SOLARIS || ((SI_FREEBSD || SI_LINUX_NOT_ANDROID) && \
-+  (SI_NETBSD || SI_SOLARIS || ((SI_FREEBSD || SI_LINUX_NOT_ANDROID || SI_NONGNU) && \
-                  SANITIZER_WORDSIZE == 64))  // NOLINT
+ #define SANITIZER_INTERCEPT_SHMCTL          \
+   (SI_NETBSD || SI_OPENBSD || SI_SOLARIS || \
+-  ((SI_FREEBSD || SI_LINUX_NOT_ANDROID) && \
++  ((SI_FREEBSD || SI_LINUX_NOT_ANDROID || SI_NONGNU) && \
+     SANITIZER_WORDSIZE == 64))  // NOLINT
  #define SANITIZER_INTERCEPT_RANDOM_R SI_LINUX_NOT_ANDROID
  #define SANITIZER_INTERCEPT_PTHREAD_ATTR_GET SI_POSIX
 diff --git a/lib/sanitizer_common/sanitizer_platform_limits_posix.cc b/lib/sanitizer_common/sanitizer_platform_limits_posix.cc

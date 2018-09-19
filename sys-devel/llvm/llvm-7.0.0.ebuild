@@ -9,12 +9,11 @@ CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-utils eapi7-ver flag-o-matic multilib-minimal \
-	pax-utils python-any-r1 toolchain-funcs
+	multiprocessing pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${P}-manpages.tar.bz2 )"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -79,20 +78,17 @@ src_prepare() {
 	# use init-array as default
 	eapply "${FILESDIR}"/0001-use-init-array.patch
 
-	# add -S alias
-	eapply "${FILESDIR}"/0002-improve-llvm-objcopy.patch
-
 	# support building llvm against musl-libc
-	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
+	use elibc_musl && eapply "${FILESDIR}"/0002-musl-fixes.patch
 
 	# two specific rust patches in one
-	eapply "${FILESDIR}"/0004-add-rust-support.patch
+	eapply "${FILESDIR}"/0003-add-rust-support.patch
 
-	# add -fno-delete-null-pointer-checks support
-	eapply "${FILESDIR}"/0005-add-fno-delete-null-pointer-checks.patch
+	# add -S option and fix permissions
+	eapply "${FILESDIR}"/0004-improve-objcopy.patch
 
-	# fix julia
-	eapply "${FILESDIR}"/0006-fix-julia.patch
+	# add flang support
+	eapply "${FILESDIR}"/0005-flang-support.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
@@ -157,7 +153,7 @@ multilib_src_configure() {
 #	fi
 
 	use test && mycmakeargs+=(
-		-DLLVM_LIT_ARGS="-vv"
+		-DLLVM_LIT_ARGS="-vv;-j;${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}"
 	)
 
 	if multilib_is_native_abi; then
@@ -169,6 +165,7 @@ multilib_src_configure() {
 			-DLLVM_INSTALL_UTILS=ON
 		)
 		use doc && mycmakeargs+=(
+			-DCMAKE_INSTALL_MANDIR="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
 			-DLLVM_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
 		)
@@ -250,20 +247,20 @@ multilib_src_install() {
 
 multilib_src_install_all() {
 	local revord=$(( 9999 - ${SLOT} ))
-	cat <<-_EOF_ > "${T}/10llvm-${revord}" || die
+	newenvd - "10llvm-${revord}" <<-_EOF_
 		PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/bin"
+		# we need to duplicate it in ROOTPATH for Portage to respect...
 		ROOTPATH="${EPREFIX}/usr/lib/llvm/${SLOT}/bin"
 		MANPATH="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
-_EOF_
-	doenvd "${T}/10llvm-${revord}"
+	_EOF_
+}
 
-	# install pre-generated manpages
-	if ! use doc; then
-		# (doman does not support custom paths)
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/${P}-manpages/llvm"/*.1
-	fi
-
-	docompress "/usr/lib/llvm/${SLOT}/share/man"
+pkg_postinst() {
+	elog "You can find additional opt-viewer utility scripts in:"
+	elog "  ${EROOT}/usr/lib/llvm/${SLOT}/share/opt-viewer"
+	elog "To use these scripts, you will need Python 2.7 along with the following"
+	elog "packages:"
+	elog "  dev-python/pygments (for opt-viewer)"
+	elog "  dev-python/pyyaml (for all of them)"
 }

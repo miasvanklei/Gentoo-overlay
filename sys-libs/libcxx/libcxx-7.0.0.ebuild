@@ -10,11 +10,12 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib llvm python-any-r1 toolchain-funcs
+inherit cmake-multilib llvm multiprocessing python-any-r1 \
+	toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="https://libcxx.llvm.org/"
-SRC_URI="https://llvm.org/releases/${PV}/${P}.src.tar.xz"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
@@ -42,6 +43,10 @@ DEPEND="${RDEPEND}
 S=${WORKDIR}/${P/_/}.src
 
 DOCS=( CREDITS.TXT )
+
+PATCHES=(
+	"${FILESDIR}"/0001-fix-atomic.patch
+)
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
@@ -99,20 +104,20 @@ multilib_src_configure() {
 	)
 
 	if use test; then
+		local clang_path=$(type -P "${CHOST:+${CHOST}-}clang" 2>/dev/null)
+		local jobs=${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}
+
+		[[ -n ${clang_path} ]] || die "Unable to find ${CHOST}-clang for tests"
+
 		mycmakeargs+=(
 			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
-			-DLLVM_LIT_ARGS="-vv"
+			-DLLVM_LIT_ARGS="-vv;-j;${jobs};--param=cxx_under_test=${clang_path}"
 		)
 	fi
 	cmake-utils_src_configure
 }
 
 multilib_src_test() {
-	local clang_path=$(type -P "${CHOST:+${CHOST}-}clang" 2>/dev/null)
-
-	[[ -n ${clang_path} ]] || die "Unable to find ${CHOST}-clang for tests"
-	sed -i -e "/cxx_under_test/s^\".*\"^\"${clang_path}\"^" test/lit.site.cfg || die
-
 	cmake-utils_src_make check-libcxx
 }
 

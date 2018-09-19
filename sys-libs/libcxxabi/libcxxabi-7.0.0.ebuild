@@ -8,7 +8,7 @@ EAPI=6
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
-inherit cmake-multilib llvm python-any-r1
+inherit cmake-multilib llvm multiprocessing python-any-r1
 
 MY_P=${P/_/}.src
 LIBCXX_P=libcxx-${PV/_/}.src
@@ -36,7 +36,6 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	>=sys-devel/llvm-6
 	test? ( >=sys-devel/clang-3.9.0
-		~sys-libs/libcxx-${PV}[libcxxabi(-)]
 		$(python_gen_any_dep 'dev-python/lit[${PYTHON_USEDEP}]') )"
 
 PATCHES=(
@@ -58,12 +57,7 @@ pkg_setup() {
 }
 
 src_unpack() {
-	einfo "Unpacking ${MY_P}.tar.xz ..."
-	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
-
-	einfo "Unpacking parts of ${LIBCXX_P}.tar.xz ..."
-	tar -xf "${DISTDIR}/${LIBCXX_P}.tar.xz" \
-		"${LIBCXX_P}"/{include,utils/libcxx} || die
+	default
 	mv "${LIBCXX_P}" libcxx || die
 }
 
@@ -83,17 +77,37 @@ multilib_src_configure() {
 	if use test; then
 		mycmakeargs+=(
 			-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
-			-DLLVM_LIT_ARGS="-vv"
+			-DLLVM_LIT_ARGS="-vv;-j;${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}"
 		)
 	fi
 	cmake-utils_src_configure
 }
 
-multilib_src_test() {
-	local clang_path=$(type -P "${CHOST:+${CHOST}-}clang" 2>/dev/null)
+build_libcxx() {
+	local -x LDFLAGS="${LDFLAGS} -L${BUILD_DIR}/$(get_libdir)"
+	local CMAKE_USE_DIR=${WORKDIR}/libcxx
+	local BUILD_DIR=${BUILD_DIR}/libcxx
+	local mycmakeargs=(
+		-DLIBCXX_LIBDIR_SUFFIX=
+		-DLIBCXX_ENABLE_SHARED=ON
+		-DLIBCXX_ENABLE_STATIC=OFF
+		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF
+		-DLIBCXX_CXX_ABI=libcxxabi
+		-DLIBCXX_CXX_ABI_INCLUDE_PATHS="${S}"/include
+		-DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=OFF
+		-DLIBCXX_HAS_MUSL_LIBC=$(usex elibc_musl)
+		-DLIBCXX_HAS_GCC_S_LIB=OFF
+		-DLIBCXX_INCLUDE_TESTS=OFF
+	)
 
-	[[ -n ${clang_path} ]] || die "Unable to find ${CHOST}-clang for tests"
-	sed -i -e "/cxx_under_test/s^\".*\"^\"${clang_path}\"^" test/lit.site.cfg || die
+	cmake-utils_src_configure
+	cmake-utils_src_compile
+}
+
+multilib_src_test() {
+	# build a local copy of libc++ for testing to avoid circular dep
+	build_libcxx
+	mv "${BUILD_DIR}"/libcxx/lib/libc++* "${BUILD_DIR}/$(get_libdir)/" || die
 
 	cmake-utils_src_make check-libcxxabi
 }

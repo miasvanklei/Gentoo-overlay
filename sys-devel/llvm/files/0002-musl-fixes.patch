@@ -1,0 +1,51 @@
+diff --git a/include/llvm/Analysis/TargetLibraryInfo.def b/include/llvm/Analysis/TargetLibraryInfo.def
+index 7798e3c..ade2b96 100644
+--- a/include/llvm/Analysis/TargetLibraryInfo.def
++++ b/include/llvm/Analysis/TargetLibraryInfo.def
+@@ -27,6 +27,17 @@
+ #define TLI_DEFINE_STRING_INTERNAL(string_repr) string_repr,
+ #endif
+ 
++// avoid name conflicts with musl-libc
++#undef open
++#undef open64
++#undef fopen64
++#undef fseeko64
++#undef ftello64
++#undef fstat64
++#undef lstat64
++#undef stat64
++#undef tmpfile64
++
+ /// void *new(unsigned int);
+ TLI_DEFINE_ENUM_INTERNAL(msvc_new_int)
+ TLI_DEFINE_STRING_INTERNAL("??2@YAPAXI@Z")
+diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
+index c0abdbd..ed908f8 100644
+--- a/lib/Analysis/TargetLibraryInfo.cpp
++++ b/lib/Analysis/TargetLibraryInfo.cpp
+@@ -413,18 +413,18 @@
+     TLI.setUnavailable(LibFunc_flsll);
+   }
+ 
+-  // The following functions are available on Linux,
+-  // but Android uses bionic instead of glibc.
+-  if (!T.isOSLinux() || T.isAndroid()) {
++  // Android has memalign.
++  if (!T.isOSLinux() || !T.isAndroid())
++      TLI.setUnavailable(LibFunc_memalign);
++
++  // The following functions are only available on glibc
++  if (T.isMusl() || !T.isOSGlibc()) {
+     TLI.setUnavailable(LibFunc_dunder_strdup);
+     TLI.setUnavailable(LibFunc_dunder_strtok_r);
+     TLI.setUnavailable(LibFunc_dunder_isoc99_scanf);
+     TLI.setUnavailable(LibFunc_dunder_isoc99_sscanf);
+     TLI.setUnavailable(LibFunc_under_IO_getc);
+     TLI.setUnavailable(LibFunc_under_IO_putc);
+-    // But, Android has memalign.
+-    if (!T.isAndroid())
+-      TLI.setUnavailable(LibFunc_memalign);
+     TLI.setUnavailable(LibFunc_fopen64);
+     TLI.setUnavailable(LibFunc_fseeko64);
+     TLI.setUnavailable(LibFunc_fstat64);

@@ -56,15 +56,16 @@
    // TODO: Handle "int posix_memalign(void **, size_t, size_t)"
  };
  
-@@ -386,6 +389,8 @@ const CallInst *llvm::isFreeCall(const Value *I, const TargetLibraryInfo *TLI) {
-            TLIFn == LibFunc_msvc_delete_array_ptr32_nothrow || // delete[](void*, nothrow)
+@@ -402,7 +402,8 @@
             TLIFn == LibFunc_msvc_delete_array_ptr64_nothrow)   // delete[](void*, nothrow)
      ExpectedNumParams = 2;
-+  else if (TLIFn == LibFunc_rust_dealloc)
-+    ExpectedNumParams = 3;
+   else if (TLIFn == LibFunc_ZdaPvSt11align_val_tRKSt9nothrow_t || // delete(void*, align_val_t, nothrow)
+-           TLIFn == LibFunc_ZdlPvSt11align_val_tRKSt9nothrow_t) // delete[](void*, align_val_t, nothrow)
++           TLIFn == LibFunc_ZdlPvSt11align_val_tRKSt9nothrow_t || // delete[](void*, align_val_t, nothrow)
++           TLIFn == LibFunc_rust_dealloc) // rust_dealloc()
+     ExpectedNumParams = 3;
    else
      return nullptr;
- 
 --- a/lib/Analysis/TargetLibraryInfo.cpp
 +++ b/lib/Analysis/TargetLibraryInfo.cpp
 @@ -1289,6 +1289,28 @@ bool TargetLibraryInfoImpl::isValidProtoForLibFunc(const FunctionType &FTy,

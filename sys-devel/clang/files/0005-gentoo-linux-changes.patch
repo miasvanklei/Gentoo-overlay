@@ -47,11 +47,12 @@ index 7845781f12..3d417850dc 100644
  #include "clang/Driver/Driver.h"
  #include "clang/Driver/DriverDiagnostic.h"
  #include "clang/Driver/Options.h"
-@@ -300,7 +301,7 @@ static const char *getLDMOption(const llvm::Triple &T, const ArgList &Args) {
+@@ -284,8 +284,7 @@
  }
  
  static bool getPIE(const ArgList &Args, const toolchains::Linux &ToolChain) {
--  if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_static))
+-  if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_static) ||
+-      Args.hasArg(options::OPT_r))
 +  if (Args.hasArg(options::OPT_shared) || Args.hasArg(options::OPT_r))
      return false;
  
@@ -116,12 +117,12 @@ diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
 index 1301cdf114..239cea8e0b 100644
 --- a/lib/Driver/ToolChains/Linux.cpp
 +++ b/lib/Driver/ToolChains/Linux.cpp
-@@ -190,32 +190,18 @@ static void addMultilibsFilePaths(const Driver &D, const MultilibSet &Multilibs,
+@@ -208,53 +208,27 @@
  
  Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
      : Generic_ELF(D, Triple, Args) {
 -  GCCInstallation.init(Triple, Args);
-   Multilibs = GCCInstallation.getMultilibs();
+-  Multilibs = GCCInstallation.getMultilibs();
    llvm::Triple::ArchType Arch = Triple.getArch();
    std::string SysRoot = computeSysRoot();
  
@@ -151,7 +152,28 @@ index 1301cdf114..239cea8e0b 100644
      ExtraOpts.push_back("-z");
      ExtraOpts.push_back("relro");
    }
-@@ -237,7 +223,7 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
+ 
+-  if (GCCInstallation.getParentLibPath().find("opt/rh/devtoolset") !=
+-      StringRef::npos)
+-    // With devtoolset on RHEL, we want to add a bin directory that is relative
+-    // to the detected gcc install, because if we are using devtoolset gcc then
+-    // we want to use other tools from devtoolset (e.g. ld) instead of the
+-    // standard system tools.
+-    PPaths.push_back(Twine(GCCInstallation.getParentLibPath() +
+-                     "/../bin").str());
+-
+   if (Arch == llvm::Triple::arm || Arch == llvm::Triple::thumb)
+     ExtraOpts.push_back("-X");
+ 
+   const bool IsAndroid = Triple.isAndroid();
+   const bool IsMips = Triple.isMIPS();
+   const bool IsHexagon = Arch == llvm::Triple::hexagon;
+-  const bool IsRISCV =
+-      Arch == llvm::Triple::riscv32 || Arch == llvm::Triple::riscv64;
+ 
+   if (IsMips && !SysRoot.empty())
+     ExtraOpts.push_back("--sysroot=" + SysRoot);
+@@ -266,7 +240,7 @@
    // Android loader does not support .gnu.hash.
    // Hexagon linker/loader does not support .gnu.hash
    if (!IsMips && !IsAndroid && !IsHexagon) {
@@ -160,7 +182,7 @@ index 1301cdf114..239cea8e0b 100644
          (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick))
        ExtraOpts.push_back("--hash-style=gnu");
  
-@@ -256,123 +242,12 @@ Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
+@@ -285,150 +259,12 @@
    if (IsAndroid || Distro.IsOpenSUSE())
      ExtraOpts.push_back("--enable-new-dtags");
  
@@ -239,8 +261,35 @@ index 1301cdf114..239cea8e0b 100644
 -
 -  addPathIfExists(D, SysRoot + "/lib/" + MultiarchTriple, Paths);
 -  addPathIfExists(D, SysRoot + "/lib/../" + OSLibDir, Paths);
+-
+-  if (IsAndroid) {
+-    // Android sysroots contain a library directory for each supported OS
+-    // version as well as some unversioned libraries in the usual multiarch
+-    // directory.
+-    unsigned Major;
+-    unsigned Minor;
+-    unsigned Micro;
+-    Triple.getEnvironmentVersion(Major, Minor, Micro);
+-    addPathIfExists(D,
+-                    SysRoot + "/usr/lib/" + MultiarchTriple + "/" +
+-                        llvm::to_string(Major),
+-                    Paths);
+-  }
+-
 -  addPathIfExists(D, SysRoot + "/usr/lib/" + MultiarchTriple, Paths);
--  addPathIfExists(D, SysRoot + "/usr/lib/../" + OSLibDir, Paths);
+-  // 64-bit OpenEmbedded sysroots may not have a /usr/lib dir. So they cannot
+-  // find /usr/lib64 as it is referenced as /usr/lib/../lib64. So we handle
+-  // this here.
+-  if (Triple.getVendor() == llvm::Triple::OpenEmbedded &&
+-      Triple.isArch64Bit())
+-    addPathIfExists(D, SysRoot + "/usr/" + OSLibDir, Paths);
+-  else
+-    addPathIfExists(D, SysRoot + "/usr/lib/../" + OSLibDir, Paths);
+-  if (IsRISCV) {
+-    StringRef ABIName = tools::riscv::getRISCVABI(Args, Triple);
+-    addPathIfExists(D, SysRoot + "/" + OSLibDir + "/" + ABIName, Paths);
+-    addPathIfExists(D, SysRoot + "/usr/" + OSLibDir + "/" + ABIName, Paths);
+-  }
 -
 -  // Try walking via the GCC triple path in case of biarch or multiarch GCC
 -  // installations with strange symlinks.

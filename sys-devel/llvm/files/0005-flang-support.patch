@@ -1,0 +1,2266 @@
+From a554fe5d4845f14671343c1acc12f16965fb3a1d Mon Sep 17 00:00:00 2001
+From: Eric Schweitz <eschweitz@nvidia.com>
+Date: Tue, 11 Sep 2018 15:49:34 -0700
+Subject: [PATCH] Merge Flang LLVM changes from release_60 to the release_70
+ branch.
+
+---
+ include/llvm/Analysis/TargetLibraryInfo.h   |   3 +-
+ include/llvm/Bitcode/LLVMBitCodes.h         |   3 +
+ include/llvm/IR/DIBuilder.h                 |  20 +
+ include/llvm/IR/DebugInfoFlags.def          |   5 +-
+ include/llvm/IR/DebugInfoMetadata.h         | 258 +++++++++++
+ include/llvm/IR/Metadata.def                |   3 +
+ lib/Analysis/BasicAliasAnalysis.cpp         |   6 +-
+ lib/Analysis/TargetLibraryInfo.cpp          | 455 +++++++++++++++++++-
+ lib/AsmParser/LLParser.cpp                  |  67 +++
+ lib/Bitcode/Reader/MetadataLoader.cpp       |  63 +++
+ lib/Bitcode/Writer/BitcodeWriter.cpp        |  60 +++
+ lib/CodeGen/AsmPrinter/DebugLocEntry.h      |   3 +
+ lib/CodeGen/AsmPrinter/DebugLocStream.cpp   |   5 +-
+ lib/CodeGen/AsmPrinter/DebugLocStream.h     |   8 +-
+ lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp |  68 ++-
+ lib/CodeGen/AsmPrinter/DwarfCompileUnit.h   |   6 +
+ lib/CodeGen/AsmPrinter/DwarfDebug.cpp       | 110 +++++
+ lib/CodeGen/AsmPrinter/DwarfDebug.h         |  31 ++
+ lib/CodeGen/AsmPrinter/DwarfExpression.cpp  |   5 +
+ lib/CodeGen/AsmPrinter/DwarfExpression.h    |   2 +-
+ lib/CodeGen/AsmPrinter/DwarfUnit.cpp        |  74 +++-
+ lib/CodeGen/AsmPrinter/DwarfUnit.h          |   4 +
+ lib/IR/AsmWriter.cpp                        |  54 +++
+ lib/IR/DIBuilder.cpp                        |  21 +
+ lib/IR/DebugInfoMetadata.cpp                |  42 ++
+ lib/IR/LLVMContextImpl.h                    | 115 +++++
+ lib/IR/Verifier.cpp                         |  32 +-
+ lib/Transforms/Vectorize/LoopVectorize.cpp  |   6 +-
+ 28 files changed, 1500 insertions(+), 29 deletions(-)
+
+diff --git a/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
+index a3fe834022f7..889391df6c76 100644
+--- a/include/llvm/Analysis/TargetLibraryInfo.h
++++ b/include/llvm/Analysis/TargetLibraryInfo.h
+@@ -87,7 +87,8 @@ class TargetLibraryInfoImpl {
+   enum VectorLibrary {
+     NoLibrary,  // Don't use any vector library.
+     Accelerate, // Use Accelerate framework.
+-    SVML        // Intel short vector math library.
++    SVML,       // Intel short vector math library.
++    PGMATH      // PGI math library.
+   };
+ 
+   TargetLibraryInfoImpl();
+diff --git a/include/llvm/Bitcode/LLVMBitCodes.h b/include/llvm/Bitcode/LLVMBitCodes.h
+index 6723cf42dd2c..b6a3f38aa619 100644
+--- a/include/llvm/Bitcode/LLVMBitCodes.h
++++ b/include/llvm/Bitcode/LLVMBitCodes.h
+@@ -311,6 +311,9 @@ enum MetadataCodes {
+   METADATA_INDEX_OFFSET = 38,           // [offset]
+   METADATA_INDEX = 39,                  // [bitpos]
+   METADATA_LABEL = 40,                  // [distinct, scope, name, file, line]
++  METADATA_STRING_TYPE = 41,      // [distinct, name, size, align, ...]
++  METADATA_FORTRAN_ARRAY_TYPE = 42, // [distinct, name, [bounds ...], ...]
++  METADATA_FORTRAN_SUBRANGE = 43, // [distinct, lbound, lbnde, ubound, ubnde]
+ };
+ 
+ // The constants block (CONSTANTS_BLOCK_ID) describes emission for each
+diff --git a/include/llvm/IR/DIBuilder.h b/include/llvm/IR/DIBuilder.h
+index 06c9421ec1d6..63aa08e956cb 100644
+--- a/include/llvm/IR/DIBuilder.h
++++ b/include/llvm/IR/DIBuilder.h
+@@ -192,6 +192,12 @@ namespace llvm {
+     DIBasicType *createBasicType(StringRef Name, uint64_t SizeInBits,
+                                  unsigned Encoding);
+ 
++    /// Create debugging information entry for a string
++    /// type.
++    /// \param Name        Type name.
++    /// \param SizeInBits  Size of the type.
++    DIStringType *createStringType(StringRef Name, uint64_t SizeInBits);
++
+     /// Create debugging information entry for a qualified
+     /// type, e.g. 'const int'.
+     /// \param Tag         Tag identifing type, e.g. dwarf::TAG_volatile_type
+@@ -479,6 +485,14 @@ namespace llvm {
+     DICompositeType *createArrayType(uint64_t Size, uint32_t AlignInBits,
+                                      DIType *Ty, DINodeArray Subscripts);
+ 
++    /// Create debugging information entry for a Fortran array.
++    /// \param Size         Array size.
++    /// \param AlignInBits  Alignment.
++    /// \param Ty           Element type.
++    /// \param Subscripts   Subscripts.
++    DIFortranArrayType *createFortranArrayType(
++        uint64_t Size, uint32_t AlignInBits, DIType *Ty, DINodeArray Subs);
++
+     /// Create debugging information entry for a vector type.
+     /// \param Size         Array size.
+     /// \param AlignInBits  Alignment.
+@@ -562,6 +576,12 @@ namespace llvm {
+     DISubrange *getOrCreateSubrange(int64_t Lo, int64_t Count);
+     DISubrange *getOrCreateSubrange(int64_t Lo, Metadata *CountNode);
+ 
++    /// Create a descriptor for a value range.  This
++    /// implicitly uniques the values returned.
++    DIFortranSubrange *getOrCreateFortranSubrange(
++        int64_t CLBound, int64_t CUBound, bool NoUBound, Metadata *Lbound,
++        Metadata * Lbndexp, Metadata *Ubound, Metadata * Ubndexp);
++
+     /// Create a new descriptor for the specified variable.
+     /// \param Context     Variable scope.
+     /// \param Name        Name of the variable.
+diff --git a/include/llvm/IR/DebugInfoFlags.def b/include/llvm/IR/DebugInfoFlags.def
+index b1f5fac64232..4249126cb141 100644
+--- a/include/llvm/IR/DebugInfoFlags.def
++++ b/include/llvm/IR/DebugInfoFlags.def
+@@ -48,6 +48,9 @@ HANDLE_DI_FLAG((1 << 23), TypePassByReference)
+ HANDLE_DI_FLAG((1 << 24), FixedEnum)
+ HANDLE_DI_FLAG((1 << 25), Thunk)
+ HANDLE_DI_FLAG((1 << 26), Trivial)
++HANDLE_DI_FLAG((1 << 27), Pure)
++HANDLE_DI_FLAG((1 << 28), Elemental)
++HANDLE_DI_FLAG((1 << 29), Recursive)
+ 
+ // To avoid needing a dedicated value for IndirectVirtualBase, we use
+ // the bitwise or of Virtual and FwdDecl, which does not otherwise
+@@ -57,7 +60,7 @@ HANDLE_DI_FLAG((1 << 2) | (1 << 5), IndirectVirtualBase)
+ #ifdef DI_FLAG_LARGEST_NEEDED
+ // intended to be used with ADT/BitmaskEnum.h
+ // NOTE: always must be equal to largest flag, check this when adding new flag
+-HANDLE_DI_FLAG((1 << 26), Largest)
++HANDLE_DI_FLAG((1 << 29), Largest)
+ #undef DI_FLAG_LARGEST_NEEDED
+ #endif
+ 
+diff --git a/include/llvm/IR/DebugInfoMetadata.h b/include/llvm/IR/DebugInfoMetadata.h
+index 820746851104..1ce86f3e95ba 100644
+--- a/include/llvm/IR/DebugInfoMetadata.h
++++ b/include/llvm/IR/DebugInfoMetadata.h
+@@ -217,10 +217,13 @@ class DINode : public MDNode {
+       return false;
+     case GenericDINodeKind:
+     case DISubrangeKind:
++    case DIFortranSubrangeKind:
+     case DIEnumeratorKind:
+     case DIBasicTypeKind:
++    case DIStringTypeKind:
+     case DIDerivedTypeKind:
+     case DICompositeTypeKind:
++    case DIFortranArrayTypeKind:
+     case DISubroutineTypeKind:
+     case DIFileKind:
+     case DICompileUnitKind:
+@@ -388,6 +391,71 @@ class DISubrange : public DINode {
+   }
+ };
+ 
++/// Fortran array subrange
++class DIFortranSubrange : public DINode {
++  friend class LLVMContextImpl;
++  friend class MDNode;
++
++  int64_t CLowerBound;
++  int64_t CUpperBound;
++  bool NoUpperBound;
++
++  DIFortranSubrange(LLVMContext &C, StorageType Storage, int64_t CLowerBound,
++                    int64_t CUpperBound, bool NoUpperBound,
++                    ArrayRef<Metadata *> Ops)
++      : DINode(C, DIFortranSubrangeKind, Storage,
++               dwarf::DW_TAG_subrange_type, Ops), CLowerBound(CLowerBound),
++        CUpperBound(CUpperBound), NoUpperBound(NoUpperBound) {}
++  ~DIFortranSubrange() = default;
++
++  static DIFortranSubrange *getImpl(LLVMContext &Context, int64_t CLBound,
++                                    int64_t CUBound, bool NoUpperBound,
++                                    Metadata *Lbound, Metadata *Lbndexp,
++                                    Metadata *Ubound, Metadata *Ubndexp,
++                                    StorageType Storage,
++                                    bool ShouldCreate = true);
++
++  TempDIFortranSubrange cloneImpl() const {
++    return getTemporary(getContext(), getCLowerBound(), getCUpperBound(),
++                        noUpperBound(), getRawLowerBound(),
++                        getRawLowerBoundExpression(), getRawUpperBound(),
++                        getRawUpperBoundExpression());
++  }
++
++public:
++  DEFINE_MDNODE_GET(DIFortranSubrange, (int64_t CLB, int64_t CUB, bool NUB,
++                                        Metadata *LBound, Metadata *LBndExp,
++                                        Metadata *UBound, Metadata *UBndExp),
++                    (CLB, CUB, NUB, LBound, LBndExp, UBound, UBndExp))
++
++  TempDIFortranSubrange clone() const { return cloneImpl(); }
++
++  DIVariable *getLowerBound() const {
++    return cast_or_null<DIVariable>(getRawLowerBound());
++  }
++  DIExpression *getLowerBoundExp() const {
++    return cast_or_null<DIExpression>(getRawLowerBoundExpression());
++  }
++  DIVariable *getUpperBound() const {
++    return  cast_or_null<DIVariable>(getRawUpperBound());
++  }
++  DIExpression *getUpperBoundExp() const {
++    return cast_or_null<DIExpression>(getRawUpperBoundExpression());
++  }
++
++  int64_t getCLowerBound() const { return CLowerBound; }
++  int64_t getCUpperBound() const { return CUpperBound; }
++  Metadata *getRawLowerBound() const { return getOperand(0); }
++  Metadata *getRawLowerBoundExpression() const { return getOperand(1); }
++  Metadata *getRawUpperBound() const { return getOperand(2); }
++  Metadata *getRawUpperBoundExpression() const { return getOperand(3); }
++  bool noUpperBound() const { return NoUpperBound; }
++
++  static bool classof(const Metadata *MD) {
++    return MD->getMetadataID() == DIFortranSubrangeKind;
++  }
++};
++
+ /// Enumeration value.
+ ///
+ /// TODO: Add a pointer to the context (DW_TAG_enumeration_type) once that no
+@@ -477,8 +545,10 @@ class DIScope : public DINode {
+     default:
+       return false;
+     case DIBasicTypeKind:
++    case DIStringTypeKind:
+     case DIDerivedTypeKind:
+     case DICompositeTypeKind:
++    case DIFortranArrayTypeKind:
+     case DISubroutineTypeKind:
+     case DIFileKind:
+     case DICompileUnitKind:
+@@ -719,8 +789,10 @@ class DIType : public DIScope {
+     default:
+       return false;
+     case DIBasicTypeKind:
++    case DIStringTypeKind:
+     case DIDerivedTypeKind:
+     case DICompositeTypeKind:
++    case DIFortranArrayTypeKind:
+     case DISubroutineTypeKind:
+       return true;
+     }
+@@ -765,6 +837,12 @@ class DIBasicType : public DIType {
+ public:
+   DEFINE_MDNODE_GET(DIBasicType, (unsigned Tag, StringRef Name),
+                     (Tag, Name, 0, 0, 0))
++  DEFINE_MDNODE_GET(DIBasicType,
++                    (unsigned Tag, StringRef Name, uint64_t SizeInBits),
++                    (Tag, Name, SizeInBits, 0, 0))
++  DEFINE_MDNODE_GET(DIBasicType,
++                    (unsigned Tag, MDString *Name, uint64_t SizeInBits),
++                    (Tag, Name, SizeInBits, 0, 0))
+   DEFINE_MDNODE_GET(DIBasicType,
+                     (unsigned Tag, StringRef Name, uint64_t SizeInBits,
+                      uint32_t AlignInBits, unsigned Encoding),
+@@ -789,6 +867,99 @@ class DIBasicType : public DIType {
+   }
+ };
+ 
++/// String type, Fortran CHARACTER(n)
++class DIStringType : public DIType {
++  friend class LLVMContextImpl;
++  friend class MDNode;
++
++  unsigned Encoding;
++
++  DIStringType(LLVMContext &C, StorageType Storage, unsigned Tag,
++               uint64_t SizeInBits, uint32_t AlignInBits, unsigned Encoding,
++               ArrayRef<Metadata *> Ops)
++      : DIType(C, DIStringTypeKind, Storage, Tag, 0, SizeInBits, AlignInBits, 0,
++               FlagZero, Ops),
++        Encoding(Encoding) {}
++  ~DIStringType() = default;
++
++  static DIStringType *getImpl(LLVMContext &Context, unsigned Tag,
++                               StringRef Name, Metadata *StringLength,
++                               Metadata *StrLenExp, uint64_t SizeInBits,
++                               uint32_t AlignInBits, unsigned Encoding,
++                               StorageType Storage, bool ShouldCreate = true) {
++    return getImpl(Context, Tag, getCanonicalMDString(Context, Name),
++                   StringLength, StrLenExp, SizeInBits, AlignInBits, Encoding,
++                   Storage, ShouldCreate);
++  }
++  static DIStringType *getImpl(LLVMContext &Context, unsigned Tag,
++                               MDString *Name, Metadata *StringLength,
++                               Metadata *StrLenExp, uint64_t SizeInBits,
++                               uint32_t AlignInBits, unsigned Encoding,
++                               StorageType Storage, bool ShouldCreate = true);
++
++  TempDIStringType cloneImpl() const {
++    return getTemporary(getContext(), getTag(), getName(), getRawStringLength(),
++                        getRawStringLengthExp(), getSizeInBits(),
++                        getAlignInBits(), getEncoding());
++  }
++
++public:
++  DEFINE_MDNODE_GET(DIStringType, (unsigned Tag, StringRef Name),
++                    (Tag, Name, nullptr, nullptr, 0, 0, 0))
++  DEFINE_MDNODE_GET(DIStringType,
++                    (unsigned Tag, StringRef Name, uint64_t SizeInBits,
++                     uint32_t AlignInBits),
++                    (Tag, Name, nullptr, nullptr, SizeInBits, AlignInBits, 0))
++  DEFINE_MDNODE_GET(DIStringType,
++                    (unsigned Tag, MDString *Name, uint64_t SizeInBits,
++                     uint32_t AlignInBits),
++                    (Tag, Name, nullptr, nullptr, SizeInBits, AlignInBits, 0))
++  DEFINE_MDNODE_GET(DIStringType,
++                    (unsigned Tag, StringRef Name, Metadata *StringLength,
++                     Metadata *StringLengthExp, uint64_t SizeInBits,
++                     uint32_t AlignInBits),
++                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
++                     AlignInBits, 0))
++  DEFINE_MDNODE_GET(DIStringType,
++                    (unsigned Tag, MDString *Name, Metadata *StringLength,
++                     Metadata *StringLengthExp, uint64_t SizeInBits,
++                     uint32_t AlignInBits),
++                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
++                     AlignInBits, 0))
++  DEFINE_MDNODE_GET(DIStringType,
++                    (unsigned Tag, StringRef Name, Metadata *StringLength,
++                     Metadata *StringLengthExp, uint64_t SizeInBits,
++                     uint32_t AlignInBits, unsigned Encoding),
++                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
++                     AlignInBits, Encoding))
++  DEFINE_MDNODE_GET(DIStringType,
++                    (unsigned Tag, MDString *Name, Metadata *StringLength,
++                     Metadata *StringLengthExp, uint64_t SizeInBits,
++                     uint32_t AlignInBits, unsigned Encoding),
++                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
++                     AlignInBits, Encoding))
++
++  TempDIStringType clone() const { return cloneImpl(); }
++
++  static bool classof(const Metadata *MD) {
++    return MD->getMetadataID() == DIStringTypeKind;
++  }
++
++  DIVariable *getStringLength() const {
++    return cast_or_null<DIVariable>(getRawStringLength());
++  }
++
++  DIExpression *getStringLengthExp() const {
++    return cast_or_null<DIExpression>(getRawStringLengthExp());
++  }
++
++  unsigned getEncoding() const { return Encoding; }
++
++  Metadata *getRawStringLength() const { return getOperand(3); }
++
++  Metadata *getRawStringLengthExp() const { return getOperand(4); }
++};
++
+ /// Derived types.
+ ///
+ /// This includes qualified types, pointers, references, friends, typedefs, and
+@@ -1096,6 +1267,90 @@ class DICompositeType : public DIType {
+   }
+ };
+ 
++/// Fortran array types.
++class DIFortranArrayType : public DIType {
++  friend class LLVMContextImpl;
++  friend class MDNode;
++
++  DIFortranArrayType(LLVMContext &C, StorageType Storage, unsigned Tag,
++                     unsigned Line, uint64_t SizeInBits, uint32_t AlignInBits,
++                     uint64_t OffsetInBits, DIFlags Flags,
++                     ArrayRef<Metadata *> Ops)
++      : DIType(C, DIFortranArrayTypeKind, Storage, Tag, Line, SizeInBits,
++               AlignInBits, OffsetInBits, Flags, Ops) {}
++  ~DIFortranArrayType() = default;
++
++  static DIFortranArrayType *
++  getImpl(LLVMContext &Context, unsigned Tag, StringRef Name, Metadata *File,
++          unsigned Line, DIScopeRef Scope, DITypeRef BaseType,
++          uint64_t SizeInBits, uint32_t AlignInBits, uint64_t OffsetInBits,
++          DIFlags Flags, DINodeArray Elements, StorageType Storage,
++          bool ShouldCreate = true) {
++    return getImpl(
++        Context, Tag, getCanonicalMDString(Context, Name), File, Line, Scope,
++        BaseType, SizeInBits, AlignInBits, OffsetInBits, Flags, Elements.get(),
++        Storage, ShouldCreate);
++  }
++  static DIFortranArrayType *
++  getImpl(LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
++          unsigned Line, Metadata *Scope, Metadata *BaseType,
++          uint64_t SizeInBits, uint32_t AlignInBits, uint64_t OffsetInBits,
++          DIFlags Flags, Metadata *Elements, StorageType Storage,
++          bool ShouldCreate = true);
++
++  TempDIFortranArrayType cloneImpl() const {
++    return getTemporary(getContext(), getTag(), getName(), getFile(), getLine(),
++                        getScope(), getBaseType(), getSizeInBits(),
++                        getAlignInBits(), getOffsetInBits(), getFlags(),
++                        getElements());
++  }
++
++public:
++  DEFINE_MDNODE_GET(DIFortranArrayType,
++                    (unsigned Tag, StringRef Name, DIFile *File, unsigned Line,
++                     DIScopeRef Scope, DITypeRef BaseType, uint64_t SizeInBits,
++                     uint32_t AlignInBits, uint64_t OffsetInBits,
++                     DIFlags Flags, DINodeArray Elements),
++                    (Tag, Name, File, Line, Scope, BaseType, SizeInBits,
++                     AlignInBits, OffsetInBits, Flags, Elements))
++  DEFINE_MDNODE_GET(DIFortranArrayType,
++                    (unsigned Tag, MDString *Name, Metadata *File,
++                     unsigned Line, Metadata *Scope, Metadata *BaseType,
++                     uint64_t SizeInBits, uint32_t AlignInBits,
++                     uint64_t OffsetInBits, DIFlags Flags, Metadata *Elements),
++                    (Tag, Name, File, Line, Scope, BaseType, SizeInBits,
++                     AlignInBits, OffsetInBits, Flags, Elements))
++
++  TempDIFortranArrayType clone() const { return cloneImpl(); }
++
++  DITypeRef getBaseType() const { return DITypeRef(getRawBaseType()); }
++  DINodeArray getElements() const {
++    return cast_or_null<MDTuple>(getRawElements());
++  }
++
++  Metadata *getRawBaseType() const { return getOperand(3); }
++  Metadata *getRawElements() const { return getOperand(4); }
++
++  /// Replace operands.
++  ///
++  /// If this \a isUniqued() and not \a isResolved(), on a uniquing collision
++  /// this will be RAUW'ed and deleted.  Use a \a TrackingMDRef to keep track
++  /// of its movement if necessary.
++  /// @{
++  void replaceElements(DINodeArray Elements) {
++#ifndef NDEBUG
++    for (DINode *Op : getElements())
++      assert(is_contained(Elements->operands(), Op) &&
++             "Lost a member during member list replacement");
++#endif
++    replaceOperandWith(4, Elements.get());
++  }
++
++  static bool classof(const Metadata *MD) {
++    return MD->getMetadataID() == DIFortranArrayTypeKind;
++  }
++};
++
+ /// Type array for a subprogram.
+ ///
+ /// TODO: Fold the array of types in directly as operands.
+@@ -1718,6 +1973,9 @@ class DISubprogram : public DILocalScope {
+   bool isExplicit() const { return getFlags() & FlagExplicit; }
+   bool isPrototyped() const { return getFlags() & FlagPrototyped; }
+   bool isMainSubprogram() const { return getFlags() & FlagMainSubprogram; }
++  bool isPure() const { return getFlags() & FlagPure; }
++  bool isElemental() const { return getFlags() & FlagElemental; }
++  bool isRecursive() const { return getFlags() & FlagRecursive; }
+ 
+   /// Check if this is reference-qualified.
+   ///
+diff --git a/include/llvm/IR/Metadata.def b/include/llvm/IR/Metadata.def
+index 70a03f28b488..177fd67d9654 100644
+--- a/include/llvm/IR/Metadata.def
++++ b/include/llvm/IR/Metadata.def
+@@ -114,6 +114,9 @@ HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIImportedEntity)
+ HANDLE_SPECIALIZED_MDNODE_BRANCH(DIMacroNode)
+ HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIMacro)
+ HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIMacroFile)
++HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIStringType)
++HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIFortranArrayType)
++HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIFortranSubrange)
+ 
+ #undef HANDLE_METADATA
+ #undef HANDLE_METADATA_LEAF
+diff --git a/lib/Analysis/BasicAliasAnalysis.cpp b/lib/Analysis/BasicAliasAnalysis.cpp
+index f9ecbc043261..1fa6cb71ad3f 100644
+--- a/lib/Analysis/BasicAliasAnalysis.cpp
++++ b/lib/Analysis/BasicAliasAnalysis.cpp
+@@ -1274,7 +1274,7 @@ BasicAAResult::aliasGEP(const GEPOperator *GEP1, LocationSize V1Size,
+     // If we get a No or May, then return it immediately, no amount of analysis
+     // will improve this situation.
+     if (BaseAlias != MustAlias) {
+-      assert(BaseAlias == NoAlias || BaseAlias == MayAlias);
++      //assert(BaseAlias == NoAlias || BaseAlias == MayAlias);
+       return BaseAlias;
+     }
+ 
+@@ -1321,7 +1321,7 @@ BasicAAResult::aliasGEP(const GEPOperator *GEP1, LocationSize V1Size,
+       // cannot alias per GEP semantics: "Any memory access must be done through
+       // a pointer value associated with an address range of the memory access,
+       // otherwise the behavior is undefined.".
+-      assert(R == NoAlias || R == MayAlias);
++      //assert(R == NoAlias || R == MayAlias);
+       return R;
+     }
+ 
+@@ -1429,7 +1429,7 @@ BasicAAResult::aliasGEP(const GEPOperator *GEP1, LocationSize V1Size,
+   // Statically, we can see that the base objects are the same, but the
+   // pointers have dynamic offsets which we can't resolve. And none of our
+   // little tricks above worked.
+-  return MayAlias;
++  return PartialAlias;
+ }
+ 
+ static AliasResult MergeAliasResults(AliasResult A, AliasResult B) {
+diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
+index 102135fbf313..a6e424bde73d 100644
+--- a/lib/Analysis/TargetLibraryInfo.cpp
++++ b/lib/Analysis/TargetLibraryInfo.cpp
+@@ -25,7 +25,9 @@ static cl::opt<TargetLibraryInfoImpl::VectorLibrary> ClVectorLibrary(
+                clEnumValN(TargetLibraryInfoImpl::Accelerate, "Accelerate",
+                           "Accelerate framework"),
+                clEnumValN(TargetLibraryInfoImpl::SVML, "SVML",
+-                          "Intel SVML library")));
++                          "Intel SVML library"),
++               clEnumValN(TargetLibraryInfoImpl::PGMATH, "PGMATH",
++                          "PGI math library")));
+ 
+ StringRef const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] = {
+ #define TLI_DEFINE_STRING
+@@ -527,7 +529,6 @@ TargetLibraryInfoImpl::TargetLibraryInfoImpl() {
+ TargetLibraryInfoImpl::TargetLibraryInfoImpl(const Triple &T) {
+   // Default to everything being available.
+   memset(AvailableArray, -1, sizeof(AvailableArray));
+-
+   initialize(*this, T, StandardNames);
+ }
+ 
+@@ -1559,6 +1560,456 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
+     addVectorizableFunctions(VecFuncs);
+     break;
+   }
++
++  // NOTE: All routines listed here are not available on all the architectures.
++  // Based on the size of vector registers available and the size of data, the
++  // vector width should be chosen correctly.
++  case PGMATH: {
++    const VecDesc VecFuncs[] = {
++        {"__fd_sin_1", "__fd_sin_2", 2},
++        {"__fd_sin_1", "__fd_sin_4", 4},
++        {"__fd_sin_1", "__fd_sin_8", 8},
++
++        {"__fs_sin_1", "__fs_sin_4", 4},
++        {"__fs_sin_1", "__fs_sin_8", 8},
++        {"__fs_sin_1", "__fs_sin_16", 16},
++
++        {"__pd_sin_1", "__pd_sin_2", 2},
++        {"__pd_sin_1", "__pd_sin_4", 4},
++        {"__pd_sin_1", "__pd_sin_8", 8},
++
++        {"__ps_sin_1", "__ps_sin_4", 4},
++        {"__ps_sin_1", "__ps_sin_8", 8},
++        {"__ps_sin_1", "__ps_sin_16", 16},
++
++        {"__rd_sin_1", "__rd_sin_2", 2},
++        {"__rd_sin_1", "__rd_sin_4", 4},
++        {"__rd_sin_1", "__rd_sin_8", 8},
++
++        {"__rs_sin_1", "__rs_sin_4", 4},
++        {"__rs_sin_1", "__rs_sin_8", 8},
++        {"__rs_sin_1", "__rs_sin_16", 16},
++
++        {"__fd_cos_1", "__fd_cos_2", 2},
++        {"__fd_cos_1", "__fd_cos_4", 4},
++        {"__fd_cos_1", "__fd_cos_8", 8},
++
++        {"__fs_cos_1", "__fs_cos_4", 4},
++        {"__fs_cos_1", "__fs_cos_8", 8},
++        {"__fs_cos_1", "__fs_cos_16", 16},
++
++        {"__pd_cos_1", "__pd_cos_2", 2},
++        {"__pd_cos_1", "__pd_cos_4", 4},
++        {"__pd_cos_1", "__pd_cos_8", 8},
++
++        {"__ps_cos_1", "__ps_cos_4", 4},
++        {"__ps_cos_1", "__ps_cos_8", 8},
++        {"__ps_cos_1", "__ps_cos_16", 16},
++
++        {"__rd_cos_1", "__rd_cos_2", 2},
++        {"__rd_cos_1", "__rd_cos_4", 4},
++        {"__rd_cos_1", "__rd_cos_8", 8},
++
++        {"__rs_cos_1", "__rs_cos_4", 4},
++        {"__rs_cos_1", "__rs_cos_8", 8},
++        {"__rs_cos_1", "__rs_cos_16", 16},
++
++        {"__fd_sincos_1", "__fd_sincos_2", 2},
++        {"__fd_sincos_1", "__fd_sincos_4", 4},
++        {"__fd_sincos_1", "__fd_sincos_8", 8},
++
++        {"__fs_sincos_1", "__fs_sincos_4", 4},
++        {"__fs_sincos_1", "__fs_sincos_8", 8},
++        {"__fs_sincos_1", "__fs_sincos_16", 16},
++
++        {"__pd_sincos_1", "__pd_sincos_2", 2},
++        {"__pd_sincos_1", "__pd_sincos_4", 4},
++        {"__pd_sincos_1", "__pd_sincos_8", 8},
++
++        {"__ps_sincos_1", "__ps_sincos_4", 4},
++        {"__ps_sincos_1", "__ps_sincos_8", 8},
++        {"__ps_sincos_1", "__ps_sincos_16", 16},
++
++        {"__rd_sincos_1", "__rd_sincos_2", 2},
++        {"__rd_sincos_1", "__rd_sincos_4", 4},
++        {"__rd_sincos_1", "__rd_sincos_8", 8},
++
++        {"__rs_sincos_1", "__rs_sincos_4", 4},
++        {"__rs_sincos_1", "__rs_sincos_8", 8},
++        {"__rs_sincos_1", "__rs_sincos_16", 16},
++
++        {"__fd_tan_1", "__fd_tan_2", 2},
++        {"__fd_tan_1", "__fd_tan_4", 4},
++        {"__fd_tan_1", "__fd_tan_8", 8},
++
++        {"__fs_tan_1", "__fs_tan_4", 4},
++        {"__fs_tan_1", "__fs_tan_8", 8},
++        {"__fs_tan_1", "__fs_tan_16", 16},
++
++        {"__pd_tan_1", "__pd_tan_2", 2},
++        {"__pd_tan_1", "__pd_tan_4", 4},
++        {"__pd_tan_1", "__pd_tan_8", 8},
++
++        {"__ps_tan_1", "__ps_tan_4", 4},
++        {"__ps_tan_1", "__ps_tan_8", 8},
++        {"__ps_tan_1", "__ps_tan_16", 16},
++
++        {"__rd_tan_1", "__rd_tan_2", 2},
++        {"__rd_tan_1", "__rd_tan_4", 4},
++        {"__rd_tan_1", "__rd_tan_8", 8},
++
++        {"__rs_tan_1", "__rs_tan_4", 4},
++        {"__rs_tan_1", "__rs_tan_8", 8},
++        {"__rs_tan_1", "__rs_tan_16", 16},
++
++        {"__fd_sinh_1", "__fd_sinh_2", 2},
++        {"__fd_sinh_1", "__fd_sinh_4", 4},
++        {"__fd_sinh_1", "__fd_sinh_8", 8},
++
++        {"__fs_sinh_1", "__fs_sinh_4", 4},
++        {"__fs_sinh_1", "__fs_sinh_8", 8},
++        {"__fs_sinh_1", "__fs_sinh_16", 16},
++
++        {"__pd_sinh_1", "__pd_sinh_2", 2},
++        {"__pd_sinh_1", "__pd_sinh_4", 4},
++        {"__pd_sinh_1", "__pd_sinh_8", 8},
++
++        {"__ps_sinh_1", "__ps_sinh_4", 4},
++        {"__ps_sinh_1", "__ps_sinh_8", 8},
++        {"__ps_sinh_1", "__ps_sinh_16", 16},
++
++        {"__rd_sinh_1", "__rd_sinh_2", 2},
++        {"__rd_sinh_1", "__rd_sinh_4", 4},
++        {"__rd_sinh_1", "__rd_sinh_8", 8},
++
++        {"__rs_sinh_1", "__rs_sinh_4", 4},
++        {"__rs_sinh_1", "__rs_sinh_8", 8},
++        {"__rs_sinh_1", "__rs_sinh_16", 16},
++
++        {"__fd_cosh_1", "__fd_cosh_2", 2},
++        {"__fd_cosh_1", "__fd_cosh_4", 4},
++        {"__fd_cosh_1", "__fd_cosh_8", 8},
++
++        {"__fs_cosh_1", "__fs_cosh_4", 4},
++        {"__fs_cosh_1", "__fs_cosh_8", 8},
++        {"__fs_cosh_1", "__fs_cosh_16", 16},
++
++        {"__pd_cosh_1", "__pd_cosh_2", 2},
++        {"__pd_cosh_1", "__pd_cosh_4", 4},
++        {"__pd_cosh_1", "__pd_cosh_8", 8},
++
++        {"__ps_cosh_1", "__ps_cosh_4", 4},
++        {"__ps_cosh_1", "__ps_cosh_8", 8},
++        {"__ps_cosh_1", "__ps_cosh_16", 16},
++
++        {"__rd_cosh_1", "__rd_cosh_2", 2},
++        {"__rd_cosh_1", "__rd_cosh_4", 4},
++        {"__rd_cosh_1", "__rd_cosh_8", 8},
++
++        {"__rs_cosh_1", "__rs_cosh_4", 4},
++        {"__rs_cosh_1", "__rs_cosh_8", 8},
++        {"__rs_cosh_1", "__rs_cosh_16", 16},
++
++        {"__fd_tanh_1", "__fd_tanh_2", 2},
++        {"__fd_tanh_1", "__fd_tanh_4", 4},
++        {"__fd_tanh_1", "__fd_tanh_8", 8},
++
++        {"__fs_tanh_1", "__fs_tanh_4", 4},
++        {"__fs_tanh_1", "__fs_tanh_8", 8},
++        {"__fs_tanh_1", "__fs_tanh_16", 16},
++
++        {"__pd_tanh_1", "__pd_tanh_2", 2},
++        {"__pd_tanh_1", "__pd_tanh_4", 4},
++        {"__pd_tanh_1", "__pd_tanh_8", 8},
++
++        {"__ps_tanh_1", "__ps_tanh_4", 4},
++        {"__ps_tanh_1", "__ps_tanh_8", 8},
++        {"__ps_tanh_1", "__ps_tanh_16", 16},
++
++        {"__rd_tanh_1", "__rd_tanh_2", 2},
++        {"__rd_tanh_1", "__rd_tanh_4", 4},
++        {"__rd_tanh_1", "__rd_tanh_8", 8},
++
++        {"__rs_tanh_1", "__rs_tanh_4", 4},
++        {"__rs_tanh_1", "__rs_tanh_8", 8},
++        {"__rs_tanh_1", "__rs_tanh_16", 16},
++
++        {"__fd_asin_1", "__fd_asin_2", 2},
++        {"__fd_asin_1", "__fd_asin_4", 4},
++        {"__fd_asin_1", "__fd_asin_8", 8},
++
++        {"__fs_asin_1", "__fs_asin_4", 4},
++        {"__fs_asin_1", "__fs_asin_8", 8},
++        {"__fs_asin_1", "__fs_asin_16", 16},
++
++        {"__pd_asin_1", "__pd_asin_2", 2},
++        {"__pd_asin_1", "__pd_asin_4", 4},
++        {"__pd_asin_1", "__pd_asin_8", 8},
++
++        {"__ps_asin_1", "__ps_asin_4", 4},
++        {"__ps_asin_1", "__ps_asin_8", 8},
++        {"__ps_asin_1", "__ps_asin_16", 16},
++
++        {"__rd_asin_1", "__rd_asin_2", 2},
++        {"__rd_asin_1", "__rd_asin_4", 4},
++        {"__rd_asin_1", "__rd_asin_8", 8},
++
++        {"__rs_asin_1", "__rs_asin_4", 4},
++        {"__rs_asin_1", "__rs_asin_8", 8},
++        {"__rs_asin_1", "__rs_asin_16", 16},
++
++        {"__fd_acos_1", "__fd_acos_2", 2},
++        {"__fd_acos_1", "__fd_acos_4", 4},
++        {"__fd_acos_1", "__fd_acos_8", 8},
++
++        {"__fs_acos_1", "__fs_acos_4", 4},
++        {"__fs_acos_1", "__fs_acos_8", 8},
++        {"__fs_acos_1", "__fs_acos_16", 16},
++
++        {"__pd_acos_1", "__pd_acos_2", 2},
++        {"__pd_acos_1", "__pd_acos_4", 4},
++        {"__pd_acos_1", "__pd_acos_8", 8},
++
++        {"__ps_acos_1", "__ps_acos_4", 4},
++        {"__ps_acos_1", "__ps_acos_8", 8},
++        {"__ps_acos_1", "__ps_acos_16", 16},
++
++        {"__rd_acos_1", "__rd_acos_2", 2},
++        {"__rd_acos_1", "__rd_acos_4", 4},
++        {"__rd_acos_1", "__rd_acos_8", 8},
++
++        {"__rs_acos_1", "__rs_acos_4", 4},
++        {"__rs_acos_1", "__rs_acos_8", 8},
++        {"__rs_acos_1", "__rs_acos_16", 16},
++
++        {"__fd_atan_1", "__fd_atan_2", 2},
++        {"__fd_atan_1", "__fd_atan_4", 4},
++        {"__fd_atan_1", "__fd_atan_8", 8},
++
++        {"__fs_atan_1", "__fs_atan_4", 4},
++        {"__fs_atan_1", "__fs_atan_8", 8},
++        {"__fs_atan_1", "__fs_atan_16", 16},
++
++        {"__pd_atan_1", "__pd_atan_2", 2},
++        {"__pd_atan_1", "__pd_atan_4", 4},
++        {"__pd_atan_1", "__pd_atan_8", 8},
++
++        {"__ps_atan_1", "__ps_atan_4", 4},
++        {"__ps_atan_1", "__ps_atan_8", 8},
++        {"__ps_atan_1", "__ps_atan_16", 16},
++
++        {"__rd_atan_1", "__rd_atan_2", 2},
++        {"__rd_atan_1", "__rd_atan_4", 4},
++        {"__rd_atan_1", "__rd_atan_8", 8},
++
++        {"__rs_atan_1", "__rs_atan_4", 4},
++        {"__rs_atan_1", "__rs_atan_8", 8},
++        {"__rs_atan_1", "__rs_atan_16", 16},
++
++        {"__fd_atan2_1", "__fd_atan2_2", 2},
++        {"__fd_atan2_1", "__fd_atan2_4", 4},
++        {"__fd_atan2_1", "__fd_atan2_8", 8},
++
++        {"__fs_atan2_1", "__fs_atan2_4", 4},
++        {"__fs_atan2_1", "__fs_atan2_8", 8},
++        {"__fs_atan2_1", "__fs_atan2_16", 16},
++
++        {"__pd_atan2_1", "__pd_atan2_2", 2},
++        {"__pd_atan2_1", "__pd_atan2_4", 4},
++        {"__pd_atan2_1", "__pd_atan2_8", 8},
++
++        {"__ps_atan2_1", "__ps_atan2_4", 4},
++        {"__ps_atan2_1", "__ps_atan2_8", 8},
++        {"__ps_atan2_1", "__ps_atan2_16", 16},
++
++        {"__rd_atan2_1", "__rd_atan2_2", 2},
++        {"__rd_atan2_1", "__rd_atan2_4", 4},
++        {"__rd_atan2_1", "__rd_atan2_8", 8},
++
++        {"__rs_atan2_1", "__rs_atan2_4", 4},
++        {"__rs_atan2_1", "__rs_atan2_8", 8},
++        {"__rs_atan2_1", "__rs_atan2_16", 16},
++
++        {"__fd_pow_1", "__fd_pow_2", 2},
++        {"__fd_pow_1", "__fd_pow_4", 4},
++        {"__fd_pow_1", "__fd_pow_8", 8},
++
++        {"__fs_pow_1", "__fs_pow_4", 4},
++        {"__fs_pow_1", "__fs_pow_8", 8},
++        {"__fs_pow_1", "__fs_pow_16", 16},
++
++        {"__pd_pow_1", "__pd_pow_2", 2},
++        {"__pd_pow_1", "__pd_pow_4", 4},
++        {"__pd_pow_1", "__pd_pow_8", 8},
++
++        {"__ps_pow_1", "__ps_pow_4", 4},
++        {"__ps_pow_1", "__ps_pow_8", 8},
++        {"__ps_pow_1", "__ps_pow_16", 16},
++
++        {"__rd_pow_1", "__rd_pow_2", 2},
++        {"__rd_pow_1", "__rd_pow_4", 4},
++        {"__rd_pow_1", "__rd_pow_8", 8},
++
++        {"__rs_pow_1", "__rs_pow_4", 4},
++        {"__rs_pow_1", "__rs_pow_8", 8},
++        {"__rs_pow_1", "__rs_pow_16", 16},
++
++        {"__fs_powi_1", "__fs_powi_4", 4},
++        {"__fs_powi_1", "__fs_powi_8", 8},
++        {"__fs_powi_1", "__fs_powi_16", 16},
++
++        {"__ps_powi_1", "__ps_powi_4", 4},
++        {"__ps_powi_1", "__ps_powi_8", 8},
++        {"__ps_powi_1", "__ps_powi_16", 16},
++
++        {"__rs_powi_1", "__rs_powi_4", 4},
++        {"__rs_powi_1", "__rs_powi_8", 8},
++        {"__rs_powi_1", "__rs_powi_16", 16},
++
++        {"__fd_powi1_1", "__fd_powi1_2", 2},
++        {"__fd_powi1_1", "__fd_powi1_4", 4},
++        {"__fd_powi1_1", "__fd_powi1_8", 8},
++
++        {"__fs_powi1_1", "__fs_powi1_4", 4},
++        {"__fs_powi1_1", "__fs_powi1_8", 8},
++        {"__fs_powi1_1", "__fs_powi1_16", 16},
++
++        {"__pd_powi1_1", "__pd_powi1_2", 2},
++        {"__pd_powi1_1", "__pd_powi1_4", 4},
++        {"__pd_powi1_1", "__pd_powi1_8", 8},
++
++        {"__ps_powi1_1", "__ps_powi1_4", 4},
++        {"__ps_powi1_1", "__ps_powi1_8", 8},
++        {"__ps_powi1_1", "__ps_powi1_16", 16},
++
++        {"__rd_powi1_1", "__rd_powi1_2", 2},
++        {"__rd_powi1_1", "__rd_powi1_4", 4},
++        {"__rd_powi1_1", "__rd_powi1_8", 8},
++
++        {"__rs_powi1_1", "__rs_powi1_4", 4},
++        {"__rs_powi1_1", "__rs_powi1_8", 8},
++        {"__rs_powi1_1", "__rs_powi1_16", 16},
++
++        {"__fd_powk_1", "__fd_powk_2", 2},
++        {"__fd_powk_1", "__fd_powk_4", 4},
++        {"__fd_powk_1", "__fd_powk_8", 8},
++
++        {"__fs_powk_1", "__fs_powk_4", 4},
++        {"__fs_powk_1", "__fs_powk_8", 8},
++        {"__fs_powk_1", "__fs_powk_16", 16},
++
++        {"__pd_powk_1", "__pd_powk_2", 2},
++        {"__pd_powk_1", "__pd_powk_4", 4},
++        {"__pd_powk_1", "__pd_powk_8", 8},
++
++        {"__ps_powk_1", "__ps_powk_4", 4},
++        {"__ps_powk_1", "__ps_powk_8", 8},
++        {"__ps_powk_1", "__ps_powk_16", 16},
++
++        {"__rd_powk_1", "__rd_powk_2", 2},
++        {"__rd_powk_1", "__rd_powk_4", 4},
++        {"__rd_powk_1", "__rd_powk_8", 8},
++
++        {"__rs_powk_1", "__rs_powk_4", 4},
++        {"__rs_powk_1", "__rs_powk_8", 8},
++        {"__rs_powk_1", "__rs_powk_16", 16},
++
++        {"__fd_powk1_1", "__fd_powk1_2", 2},
++        {"__fd_powk1_1", "__fd_powk1_4", 4},
++        {"__fd_powk1_1", "__fd_powk1_8", 8},
++
++        {"__fs_powk1_1", "__fs_powk1_4", 4},
++        {"__fs_powk1_1", "__fs_powk1_8", 8},
++        {"__fs_powk1_1", "__fs_powk1_16", 16},
++
++        {"__pd_powk1_1", "__pd_powk1_2", 2},
++        {"__pd_powk1_1", "__pd_powk1_4", 4},
++        {"__pd_powk1_1", "__pd_powk1_8", 8},
++
++        {"__ps_powk1_1", "__ps_powk1_4", 4},
++        {"__ps_powk1_1", "__ps_powk1_8", 8},
++        {"__ps_powk1_1", "__ps_powk1_16", 16},
++
++        {"__rd_powk1_1", "__rd_powk1_2", 2},
++        {"__rd_powk1_1", "__rd_powk1_4", 4},
++        {"__rd_powk1_1", "__rd_powk1_8", 8},
++
++        {"__rs_powk1_1", "__rs_powk1_4", 4},
++        {"__rs_powk1_1", "__rs_powk1_8", 8},
++        {"__rs_powk1_1", "__rs_powk1_16", 16},
++
++        {"__fd_log10_1", "__fd_log10_2", 2},
++        {"__fd_log10_1", "__fd_log10_4", 4},
++        {"__fd_log10_1", "__fd_log10_8", 8},
++
++        {"__fs_log10_1", "__fs_log10_4", 4},
++        {"__fs_log10_1", "__fs_log10_8", 8},
++        {"__fs_log10_1", "__fs_log10_16", 16},
++
++        {"__pd_log10_1", "__pd_log10_2", 2},
++        {"__pd_log10_1", "__pd_log10_4", 4},
++        {"__pd_log10_1", "__pd_log10_8", 8},
++
++        {"__ps_log10_1", "__ps_log10_4", 4},
++        {"__ps_log10_1", "__ps_log10_8", 8},
++        {"__ps_log10_1", "__ps_log10_16", 16},
++
++        {"__rd_log10_1", "__rd_log10_2", 2},
++        {"__rd_log10_1", "__rd_log10_4", 4},
++        {"__rd_log10_1", "__rd_log10_8", 8},
++
++        {"__rs_log10_1", "__rs_log10_4", 4},
++        {"__rs_log10_1", "__rs_log10_8", 8},
++        {"__rs_log10_1", "__rs_log10_16", 16},
++
++        {"__fd_log_1", "__fd_log_2", 2},
++        {"__fd_log_1", "__fd_log_4", 4},
++        {"__fd_log_1", "__fd_log_8", 8},
++
++        {"__fs_log_1", "__fs_log_4", 4},
++        {"__fs_log_1", "__fs_log_8", 8},
++        {"__fs_log_1", "__fs_log_16", 16},
++
++        {"__pd_log_1", "__pd_log_2", 2},
++        {"__pd_log_1", "__pd_log_4", 4},
++        {"__pd_log_1", "__pd_log_8", 8},
++
++        {"__ps_log_1", "__ps_log_4", 4},
++        {"__ps_log_1", "__ps_log_8", 8},
++        {"__ps_log_1", "__ps_log_16", 16},
++
++        {"__rd_log_1", "__rd_log_2", 2},
++        {"__rd_log_1", "__rd_log_4", 4},
++        {"__rd_log_1", "__rd_log_8", 8},
++
++        {"__rs_log_1", "__rs_log_4", 4},
++        {"__rs_log_1", "__rs_log_8", 8},
++        {"__rs_log_1", "__rs_log_16", 16},
++
++        {"__fs_exp_1", "__fs_exp_4", 4},
++        {"__fs_exp_1", "__fs_exp_8", 8},
++        {"__fs_exp_1", "__fs_exp_16", 16},
++
++        {"__pd_exp_1", "__pd_exp_2", 2},
++        {"__pd_exp_1", "__pd_exp_4", 4},
++        {"__pd_exp_1", "__pd_exp_8", 8},
++
++        {"__ps_exp_1", "__ps_exp_4", 4},
++        {"__ps_exp_1", "__ps_exp_8", 8},
++        {"__ps_exp_1", "__ps_exp_16", 16},
++
++        {"__rd_exp_1", "__rd_exp_2", 2},
++        {"__rd_exp_1", "__rd_exp_4", 4},
++        {"__rd_exp_1", "__rd_exp_8", 8},
++
++        {"__rs_exp_1", "__rs_exp_4", 4},
++        {"__rs_exp_1", "__rs_exp_8", 8},
++        {"__rs_exp_1", "__rs_exp_16", 16}
++    };
++    addVectorizableFunctions(VecFuncs);
++    break;
++  }
++
+   case NoLibrary:
+     break;
+   }
+diff --git a/lib/AsmParser/LLParser.cpp b/lib/AsmParser/LLParser.cpp
+index 7cf74dd16f5a..da0dd8fe9a08 100644
+--- a/lib/AsmParser/LLParser.cpp
++++ b/lib/AsmParser/LLParser.cpp
+@@ -4258,6 +4258,28 @@ bool LLParser::ParseDISubrange(MDNode *&Result, bool IsDistinct) {
+   return false;
+ }
+ 
++/// ParseDIFortranSubrange:
++///   ::= !DIFortranSubrange(lowerBound: 2)
++bool LLParser::ParseDIFortranSubrange(MDNode *&Result, bool IsDistinct) {
++#define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
++  OPTIONAL(constLowerBound, MDSignedField, (0, INT64_MIN, INT64_MAX));         \
++  OPTIONAL(constUpperBound, MDSignedField, (0, INT64_MIN, INT64_MAX));         \
++  OPTIONAL(lowerBound, MDField, );                                             \
++  OPTIONAL(lowerBoundExpression, MDField, );                                   \
++  OPTIONAL(upperBound, MDField, );                                             \
++  OPTIONAL(upperBoundExpression, MDField, );
++  PARSE_MD_FIELDS();
++#undef VISIT_MD_FIELDS
++
++  Result = GET_OR_DISTINCT(DIFortranSubrange,
++                           (Context, constLowerBound.Val, constUpperBound.Val,
++                            (!constUpperBound.Seen) && (!upperBound.Seen),
++                            lowerBound.Val, lowerBoundExpression.Val,
++                            upperBound.Val, upperBoundExpression.Val));
++  return false;
++}
++
++
+ /// ParseDIEnumerator:
+ ///   ::= !DIEnumerator(value: 30, isUnsigned: true, name: "SomeKind")
+ bool LLParser::ParseDIEnumerator(MDNode *&Result, bool IsDistinct) {
+@@ -4297,6 +4319,26 @@ bool LLParser::ParseDIBasicType(MDNode *&Result, bool IsDistinct) {
+   return false;
+ }
+ 
++/// ParseDIStringType:
++///   ::= !DIStringType(name: "character(4)", size: 32, align: 32)
++bool LLParser::ParseDIStringType(MDNode *&Result, bool IsDistinct) {
++#define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
++  OPTIONAL(tag, DwarfTagField, (dwarf::DW_TAG_string_type));                   \
++  OPTIONAL(name, MDStringField, );                                             \
++  OPTIONAL(stringLength, MDField, );                                           \
++  OPTIONAL(stringLengthExpression, MDField, );                                 \
++  OPTIONAL(size, MDUnsignedField, (0, UINT64_MAX));                            \
++  OPTIONAL(align, MDUnsignedField, (0, UINT32_MAX));                           \
++  OPTIONAL(encoding, DwarfAttEncodingField, );
++  PARSE_MD_FIELDS();
++#undef VISIT_MD_FIELDS
++
++  Result = GET_OR_DISTINCT(DIStringType, (Context, tag.Val, name.Val,
++      stringLength.Val, stringLengthExpression.Val, size.Val, align.Val,
++      encoding.Val));
++  return false;
++}
++
+ /// ParseDIDerivedType:
+ ///   ::= !DIDerivedType(tag: DW_TAG_pointer_type, name: "int", file: !0,
+ ///                      line: 7, scope: !1, baseType: !2, size: 32,
+@@ -4374,6 +4416,31 @@ bool LLParser::ParseDICompositeType(MDNode *&Result, bool IsDistinct) {
+   return false;
+ }
+ 
++bool LLParser::ParseDIFortranArrayType(MDNode *&Result, bool IsDistinct) {
++#define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
++  OPTIONAL(tag, DwarfTagField, (dwarf::DW_TAG_array_type));                    \
++  OPTIONAL(name, MDStringField, );                                             \
++  OPTIONAL(file, MDField, );                                                   \
++  OPTIONAL(line, LineField, );                                                 \
++  OPTIONAL(scope, MDField, );                                                  \
++  OPTIONAL(baseType, MDField, );                                               \
++  OPTIONAL(size, MDUnsignedField, (0, UINT64_MAX));                            \
++  OPTIONAL(align, MDUnsignedField, (0, UINT32_MAX));                           \
++  OPTIONAL(offset, MDUnsignedField, (0, UINT64_MAX));                          \
++  OPTIONAL(flags, DIFlagField, );                                              \
++  OPTIONAL(elements, MDField, );
++  PARSE_MD_FIELDS();
++#undef VISIT_MD_FIELDS
++
++  // Create a new node, and save it in the context if it belongs in the type
++  // map.
++  Result = GET_OR_DISTINCT(
++      DIFortranArrayType,
++      (Context, tag.Val, name.Val, file.Val, line.Val, scope.Val, baseType.Val,
++       size.Val, align.Val, offset.Val, flags.Val, elements.Val));
++  return false;
++}
++
+ bool LLParser::ParseDISubroutineType(MDNode *&Result, bool IsDistinct) {
+ #define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
+   OPTIONAL(flags, DIFlagField, );                                              \
+diff --git a/lib/Bitcode/Reader/MetadataLoader.cpp b/lib/Bitcode/Reader/MetadataLoader.cpp
+index 011c41e2cecd..5797ebc6bbd2 100644
+--- a/lib/Bitcode/Reader/MetadataLoader.cpp
++++ b/lib/Bitcode/Reader/MetadataLoader.cpp
+@@ -804,10 +804,13 @@ MetadataLoader::MetadataLoaderImpl::lazyLoadModuleMetadataBlock() {
+       case bitc::METADATA_LOCATION:
+       case bitc::METADATA_GENERIC_DEBUG:
+       case bitc::METADATA_SUBRANGE:
++      case bitc::METADATA_FORTRAN_SUBRANGE:
+       case bitc::METADATA_ENUMERATOR:
+       case bitc::METADATA_BASIC_TYPE:
++      case bitc::METADATA_STRING_TYPE:
+       case bitc::METADATA_DERIVED_TYPE:
+       case bitc::METADATA_COMPOSITE_TYPE:
++      case bitc::METADATA_FORTRAN_ARRAY_TYPE:
+       case bitc::METADATA_SUBROUTINE_TYPE:
+       case bitc::METADATA_MODULE:
+       case bitc::METADATA_FILE:
+@@ -1197,6 +1200,20 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
+     NextMetadataNo++;
+     break;
+   }
++  case bitc::METADATA_FORTRAN_SUBRANGE: {
++    if (Record.size() != 8)
++      return error("Invalid record");
++
++    IsDistinct = Record[0];
++    MetadataList.assignValue(
++        GET_OR_DISTINCT(DIFortranSubrange,
++                        (Context, Record[1], Record[2], Record[3],
++                         getMDOrNull(Record[4]), getMDOrNull(Record[5]),
++                         getMDOrNull(Record[6]), getMDOrNull(Record[7]))),
++        NextMetadataNo);
++    NextMetadataNo++;
++    break;
++  }
+   case bitc::METADATA_ENUMERATOR: {
+     if (Record.size() != 3)
+       return error("Invalid record");
+@@ -1223,6 +1240,20 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
+     NextMetadataNo++;
+     break;
+   }
++  case bitc::METADATA_STRING_TYPE: {
++    if (Record.size() != 6)
++      return error("Invalid record");
++
++    IsDistinct = Record[0];
++    MetadataList.assignValue(
++        GET_OR_DISTINCT(DIStringType,
++                        (Context, Record[1], getMDString(Record[2]),
++                         getMDOrNull(Record[3]), getMDOrNull(Record[4]),
++                         Record[5], Record[6], Record[7])),
++        NextMetadataNo);
++    NextMetadataNo++;
++    break;
++  }
+   case bitc::METADATA_DERIVED_TYPE: {
+     if (Record.size() < 12 || Record.size() > 13)
+       return error("Invalid record");
+@@ -1316,6 +1347,38 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
+     NextMetadataNo++;
+     break;
+   }
++  case bitc::METADATA_FORTRAN_ARRAY_TYPE: {
++    if (Record.size() != 12)
++      return error("Invalid record");
++
++    // If we have a UUID and this is not a forward declaration, lookup the
++    // mapping.
++    IsDistinct = Record[0] & 0x1;
++    unsigned Tag = Record[1];
++    MDString *Name = getMDString(Record[2]);
++    Metadata *File = getMDOrNull(Record[3]);
++    unsigned Line = Record[4];
++    Metadata *Scope = getDITypeRefOrNull(Record[5]);
++    Metadata *BaseType = nullptr;
++    uint64_t SizeInBits = Record[7];
++    if (Record[8] > (uint64_t)std::numeric_limits<uint32_t>::max())
++      return error("Alignment value is too large");
++    uint32_t AlignInBits = Record[8];
++    uint64_t OffsetInBits = 0;
++    DINode::DIFlags Flags = static_cast<DINode::DIFlags>(Record[10]);
++    Metadata *Elements = nullptr;
++    BaseType = getDITypeRefOrNull(Record[6]);
++    OffsetInBits = Record[9];
++    Elements = getMDOrNull(Record[11]);
++    DIFortranArrayType *CT =
++      GET_OR_DISTINCT(DIFortranArrayType,
++                      (Context, Tag, Name, File, Line, Scope, BaseType,
++                       SizeInBits, AlignInBits, OffsetInBits, Flags,
++                       Elements));
++    MetadataList.assignValue(CT, NextMetadataNo);
++    NextMetadataNo++;
++    break;
++  }
+   case bitc::METADATA_SUBROUTINE_TYPE: {
+     if (Record.size() < 3 || Record.size() > 4)
+       return error("Invalid record");
+diff --git a/lib/Bitcode/Writer/BitcodeWriter.cpp b/lib/Bitcode/Writer/BitcodeWriter.cpp
+index 87b47dc354b5..ae4277e8e6e7 100644
+--- a/lib/Bitcode/Writer/BitcodeWriter.cpp
++++ b/lib/Bitcode/Writer/BitcodeWriter.cpp
+@@ -294,14 +294,22 @@ class ModuleBitcodeWriter : public ModuleBitcodeWriterBase {
+                           SmallVectorImpl<uint64_t> &Record, unsigned &Abbrev);
+   void writeDISubrange(const DISubrange *N, SmallVectorImpl<uint64_t> &Record,
+                        unsigned Abbrev);
++  void writeDIFortranSubrange(const DIFortranSubrange *N,
++                              SmallVectorImpl<uint64_t> &Record,
++                              unsigned Abbrev);
+   void writeDIEnumerator(const DIEnumerator *N,
+                          SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
+   void writeDIBasicType(const DIBasicType *N, SmallVectorImpl<uint64_t> &Record,
+                         unsigned Abbrev);
++  void writeDIStringType(const DIStringType *N,
++                         SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
+   void writeDIDerivedType(const DIDerivedType *N,
+                           SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
+   void writeDICompositeType(const DICompositeType *N,
+                             SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
++  void writeDIFortranArrayType(const DIFortranArrayType *N,
++                               SmallVectorImpl<uint64_t> &Record,
++                               unsigned Abbrev);
+   void writeDISubroutineType(const DISubroutineType *N,
+                              SmallVectorImpl<uint64_t> &Record,
+                              unsigned Abbrev);
+@@ -1466,6 +1474,22 @@ void ModuleBitcodeWriter::writeDISubrange(const DISubrange *N,
+   Record.clear();
+ }
+ 
++void ModuleBitcodeWriter::writeDIFortranSubrange(
++    const DIFortranSubrange *N, SmallVectorImpl<uint64_t> &Record,
++    unsigned Abbrev) {
++  Record.push_back(N->isDistinct());
++  Record.push_back(N->getCLowerBound());
++  Record.push_back(N->getCUpperBound());
++  Record.push_back(N->noUpperBound());
++  Record.push_back(VE.getMetadataOrNullID(N->getLowerBound()));
++  Record.push_back(VE.getMetadataOrNullID(N->getLowerBoundExp()));
++  Record.push_back(VE.getMetadataOrNullID(N->getUpperBound()));
++  Record.push_back(VE.getMetadataOrNullID(N->getUpperBoundExp()));
++
++  Stream.EmitRecord(bitc::METADATA_FORTRAN_SUBRANGE, Record, Abbrev);
++  Record.clear();
++}
++
+ void ModuleBitcodeWriter::writeDIEnumerator(const DIEnumerator *N,
+                                             SmallVectorImpl<uint64_t> &Record,
+                                             unsigned Abbrev) {
+@@ -1491,6 +1515,22 @@ void ModuleBitcodeWriter::writeDIBasicType(const DIBasicType *N,
+   Record.clear();
+ }
+ 
++void ModuleBitcodeWriter::writeDIStringType(const DIStringType *N,
++                                           SmallVectorImpl<uint64_t> &Record,
++                                           unsigned Abbrev) {
++  Record.push_back(N->isDistinct());
++  Record.push_back(N->getTag());
++  Record.push_back(VE.getMetadataOrNullID(N->getRawName()));
++  Record.push_back(VE.getMetadataOrNullID(N->getStringLength()));
++  Record.push_back(VE.getMetadataOrNullID(N->getStringLengthExp()));
++  Record.push_back(N->getSizeInBits());
++  Record.push_back(N->getAlignInBits());
++  Record.push_back(N->getEncoding());
++
++  Stream.EmitRecord(bitc::METADATA_STRING_TYPE, Record, Abbrev);
++  Record.clear();
++}
++
+ void ModuleBitcodeWriter::writeDIDerivedType(const DIDerivedType *N,
+                                              SmallVectorImpl<uint64_t> &Record,
+                                              unsigned Abbrev) {
+@@ -1544,6 +1584,26 @@ void ModuleBitcodeWriter::writeDICompositeType(
+   Record.clear();
+ }
+ 
++void ModuleBitcodeWriter::writeDIFortranArrayType(
++    const DIFortranArrayType *N, SmallVectorImpl<uint64_t> &Record,
++    unsigned Abbrev) {
++  Record.push_back(N->isDistinct());
++  Record.push_back(N->getTag());
++  Record.push_back(VE.getMetadataOrNullID(N->getRawName()));
++  Record.push_back(VE.getMetadataOrNullID(N->getFile()));
++  Record.push_back(N->getLine());
++  Record.push_back(VE.getMetadataOrNullID(N->getScope()));
++  Record.push_back(VE.getMetadataOrNullID(N->getBaseType()));
++  Record.push_back(N->getSizeInBits());
++  Record.push_back(N->getAlignInBits());
++  Record.push_back(N->getOffsetInBits());
++  Record.push_back(N->getFlags());
++  Record.push_back(VE.getMetadataOrNullID(N->getElements().get()));
++
++  Stream.EmitRecord(bitc::METADATA_FORTRAN_ARRAY_TYPE, Record, Abbrev);
++  Record.clear();
++}
++
+ void ModuleBitcodeWriter::writeDISubroutineType(
+     const DISubroutineType *N, SmallVectorImpl<uint64_t> &Record,
+     unsigned Abbrev) {
+diff --git a/lib/CodeGen/AsmPrinter/DebugLocEntry.h b/lib/CodeGen/AsmPrinter/DebugLocEntry.h
+index ac49657b68fa..74926cb1e969 100644
+--- a/lib/CodeGen/AsmPrinter/DebugLocEntry.h
++++ b/lib/CodeGen/AsmPrinter/DebugLocEntry.h
+@@ -151,6 +151,9 @@ class DebugLocEntry {
+   /// Lower this entry into a DWARF expression.
+   void finalize(const AsmPrinter &AP, DebugLocStream::ListBuilder &List,
+                 const DIBasicType *BT);
++
++  void finalize(const AsmPrinter &AP, DebugLocStream::ListBuilder &List,
++                const DIStringType *ST);
+ };
+ 
+ /// Compare two Values for equality.
+diff --git a/lib/CodeGen/AsmPrinter/DebugLocStream.cpp b/lib/CodeGen/AsmPrinter/DebugLocStream.cpp
+index 7e8ed7104af3..c0bbdfa4c7b5 100644
+--- a/lib/CodeGen/AsmPrinter/DebugLocStream.cpp
++++ b/lib/CodeGen/AsmPrinter/DebugLocStream.cpp
+@@ -38,7 +38,10 @@ void DebugLocStream::finalizeEntry() {
+          "Popped off more entries than are in the list");
+ }
+ 
+-DebugLocStream::ListBuilder::~ListBuilder() {
++void DebugLocStream::ListBuilder::finalize() {
++  if (Finalized)
++    return;
++  Finalized = true;
+   if (!Locs.finalizeList(Asm))
+     return;
+   V.initializeDbgValue(&MI);
+diff --git a/lib/CodeGen/AsmPrinter/DebugLocStream.h b/lib/CodeGen/AsmPrinter/DebugLocStream.h
+index 8dcf5cbc1889..061f92491f00 100644
+--- a/lib/CodeGen/AsmPrinter/DebugLocStream.h
++++ b/lib/CodeGen/AsmPrinter/DebugLocStream.h
+@@ -157,17 +157,21 @@ class DebugLocStream::ListBuilder {
+   DbgVariable &V;
+   const MachineInstr &MI;
+   size_t ListIndex;
++  bool Finalized;
+ 
+ public:
+   ListBuilder(DebugLocStream &Locs, DwarfCompileUnit &CU, AsmPrinter &Asm,
+               DbgVariable &V, const MachineInstr &MI)
+-      : Locs(Locs), Asm(Asm), V(V), MI(MI), ListIndex(Locs.startList(&CU)) {}
++      : Locs(Locs), Asm(Asm), V(V), MI(MI), ListIndex(Locs.startList(&CU)),
++        Finalized(false) {}
++
++  void finalize();
+ 
+   /// Finalize the list.
+   ///
+   /// If the list is empty, delete it.  Otherwise, finalize it by creating a
+   /// temp symbol in \a Asm and setting up the \a DbgVariable.
+-  ~ListBuilder();
++  ~ListBuilder() { finalize(); }
+ 
+   DebugLocStream &getLocs() { return Locs; }
+ };
+diff --git a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
+index 32271a0ef24a..12aca4ed40fc 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
++++ b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
+@@ -518,11 +518,18 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+   }
+ 
+   // Add variable address.
++  constructDieLocation(*VariableDie, dwarf::DW_AT_location, DV);
++  return VariableDie;
++}
+ 
+-  unsigned Offset = DV.getDebugLocListIndex();
+-  if (Offset != ~0U) {
+-    addLocationList(*VariableDie, dwarf::DW_AT_location, Offset);
+-    return VariableDie;
++void DwarfCompileUnit::constructDieLocation(
++    DIE &Die, dwarf::Attribute Attribute, const DbgVariable &DV) {
++  if (Attribute == dwarf::DW_AT_location) {
++    unsigned Offset = DV.getDebugLocListIndex();
++    if (Offset != ~0U) {
++      addLocationList(Die, Attribute, Offset);
++      return;
++    }
+   }
+ 
+   // Check if variable is described by a DBG_VALUE instruction.
+@@ -534,7 +541,7 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+       // If the second operand is an immediate, this is an indirect value.
+       assert((!Op1.isImm() || (Op1.getImm() == 0)) && "unexpected offset");
+       MachineLocation Location(RegOp.getReg(), Op1.isImm());
+-      addVariableAddress(DV, *VariableDie, Location);
++      addVariableAddress(DV, Die, Location);
+     } else if (DVInsn->getOperand(0).isImm()) {
+       // This variable is described by a single constant.
+       // Check whether it has a DIExpression.
+@@ -546,21 +553,21 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+         DwarfExpr.addFragmentOffset(Expr);
+         DwarfExpr.addUnsignedConstant(DVInsn->getOperand(0).getImm());
+         DwarfExpr.addExpression(Expr);
+-        addBlock(*VariableDie, dwarf::DW_AT_location, DwarfExpr.finalize());
++        addBlock(Die, Attribute, DwarfExpr.finalize());
+       } else
+-        addConstantValue(*VariableDie, DVInsn->getOperand(0), DV.getType());
++        addConstantValue(Die, DVInsn->getOperand(0), DV.getType());
+     } else if (DVInsn->getOperand(0).isFPImm())
+-      addConstantFPValue(*VariableDie, DVInsn->getOperand(0));
++      addConstantFPValue(Die, DVInsn->getOperand(0));
+     else if (DVInsn->getOperand(0).isCImm())
+-      addConstantValue(*VariableDie, DVInsn->getOperand(0).getCImm(),
++      addConstantValue(Die, DVInsn->getOperand(0).getCImm(),
+                        DV.getType());
+ 
+-    return VariableDie;
++    return;
+   }
+ 
+   // .. else use frame index.
+   if (!DV.hasFrameIndexExprs())
+-    return VariableDie;
++    return;
+ 
+   DIELoc *Loc = new (DIEValueAllocator) DIELoc;
+   DIEDwarfExpression DwarfExpr(*Asm, *this, *Loc);
+@@ -583,9 +590,44 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+           *Asm->MF->getSubtarget().getRegisterInfo(), Cursor, FrameReg);
+     DwarfExpr.addExpression(std::move(Cursor));
+   }
+-  addBlock(*VariableDie, dwarf::DW_AT_location, DwarfExpr.finalize());
++  addBlock(Die, Attribute, DwarfExpr.finalize());
++}
+ 
+-  return VariableDie;
++void DwarfCompileUnit::constructDieLocationAddExpr(
++    DIE &Die, dwarf::Attribute Attribute, const DbgVariable &DV,
++    DIExpression *SubExpr) {
++  if (Attribute == dwarf::DW_AT_location)
++    return; // clients like gdb don't handle location lists correctly
++  if (DV.getMInsn())
++    return; // temp should not have a DBG_VALUE instruction
++  if (!DV.hasFrameIndexExprs())
++    return; // but it should have a frame index expression
++
++  DIELoc *Loc = new (DIEValueAllocator) DIELoc;
++  DIEDwarfExpression DwarfExpr(*Asm, *this, *Loc);
++  for (auto &Fragment : DV.getFrameIndexExprs()) {
++    unsigned FrameReg = 0;
++    const DIExpression *Expr = Fragment.Expr;
++    const TargetFrameLowering *TFI = Asm->MF->getSubtarget().getFrameLowering();
++    int Offset = TFI->getFrameIndexReference(*Asm->MF, Fragment.FI, FrameReg);
++    DwarfExpr.addFragmentOffset(Expr);
++    SmallVector<uint64_t, 8> Ops;
++    Ops.push_back(dwarf::DW_OP_plus_uconst);
++    Ops.push_back(Offset);
++    Ops.append(Expr->elements_begin(), Expr->elements_end());
++    if (SubExpr) {
++      for (unsigned SEOp : SubExpr->getElements())
++        Ops.push_back(SEOp);
++    } else {
++      Ops.push_back(dwarf::DW_OP_deref);
++    }
++    DIExpressionCursor Cursor(Ops);
++    DwarfExpr.setMemoryLocationKind();
++    DwarfExpr.addMachineRegExpression(
++        *Asm->MF->getSubtarget().getRegisterInfo(), Cursor, FrameReg);
++    DwarfExpr.addExpression(std::move(Cursor));
++  }
++  addBlock(Die, Attribute, DwarfExpr.finalize());
+ }
+ 
+ DIE *DwarfCompileUnit::constructVariableDIE(DbgVariable &DV,
+diff --git a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
+index 51e1558fe4a3..03464c3f08a0 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
++++ b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
+@@ -303,6 +303,12 @@ class DwarfCompileUnit final : public DwarfUnit {
+   uint64_t getDWOId() const { return DWOId; }
+   void setDWOId(uint64_t DwoId) { DWOId = DwoId; }
+ 
++  void constructDieLocation(DIE &Die, dwarf::Attribute Attribute,
++                            const DbgVariable &DV);
++  void constructDieLocationAddExpr(DIE &Die, dwarf::Attribute Attribute,
++                                   const DbgVariable &DV,
++                                   DIExpression *SubExpr);
++
+   bool hasDwarfPubSections() const;
+ };
+ 
+diff --git a/lib/CodeGen/AsmPrinter/DwarfDebug.cpp b/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
+index 500e7a00196f..5113f142be73 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
++++ b/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
+@@ -936,6 +936,55 @@ void DwarfDebug::ensureAbstractVariableIsCreatedIfScoped(DwarfCompileUnit &CU,
+     CU.createAbstractVariable(Cleansed, Scope);
+ }
+ 
++DIE *DwarfDebug::getSubrangeDie(const DIFortranSubrange *SR) const {
++  auto I = SubrangeDieMap.find(SR);
++  return (I == SubrangeDieMap.end()) ? nullptr : I->second;
++}
++
++void DwarfDebug::constructSubrangeDie(const DIFortranArrayType *AT,
++                                      DbgVariable &DV,
++                                      DwarfCompileUnit &TheCU) {
++  dwarf::Attribute Attribute;
++  const DIFortranSubrange *WFS = nullptr;
++  DIExpression *WEx = nullptr;
++  const DIVariable *DI = DV.getVariable();
++  DINodeArray Elements = AT->getElements();
++
++  for (unsigned i = 0, N = Elements.size(); i < N; ++i) {
++    DINode *Element = cast<DINode>(Elements[i]);
++    if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(Element)) {
++      if (DIVariable *UBV = FS->getUpperBound())
++        if (UBV == DI) {
++          Attribute = dwarf::DW_AT_upper_bound;
++          WFS = FS;
++          WEx = FS->getUpperBoundExp();
++          break;
++        }
++      if (DIVariable *LBV = FS->getLowerBound())
++        if (LBV == DI) {
++          Attribute = dwarf::DW_AT_lower_bound;
++          WFS = FS;
++          WEx = FS->getLowerBoundExp();
++          break;
++        }          
++    }
++  }
++
++  if (!WFS)
++    return;
++
++  DIE *Die;
++  auto I = SubrangeDieMap.find(WFS);
++  if (I == SubrangeDieMap.end()) {
++    Die = DIE::get(DIEValueAllocator, dwarf::DW_TAG_subrange_type);
++    SubrangeDieMap[WFS] = Die;
++  } else {
++    Die = I->second;
++  }
++
++  TheCU.constructDieLocationAddExpr(*Die, Attribute, DV, WEx);
++}
++
+ // Collect variable information from side table maintained by MF.
+ void DwarfDebug::collectVariableInfoFromMFTable(
+     DwarfCompileUnit &TheCU, DenseSet<InlinedVariable> &Processed) {
+@@ -957,6 +1006,11 @@ void DwarfDebug::collectVariableInfoFromMFTable(
+     ensureAbstractVariableIsCreatedIfScoped(TheCU, Var, Scope->getScopeNode());
+     auto RegVar = llvm::make_unique<DbgVariable>(Var.first, Var.second);
+     RegVar->initializeMMI(VI.Expr, VI.Slot);
++    if (VariableInDependentType.count(VI.Var)) {
++      const DIType *DT = VariableInDependentType[VI.Var];
++      if (const DIFortranArrayType *AT = dyn_cast<DIFortranArrayType>(DT))
++        constructSubrangeDie(AT, *RegVar.get(), TheCU);
++    } 
+     if (DbgVariable *DbgVar = MFVars.lookup(Var))
+       DbgVar->addMMIEntry(*RegVar);
+     else if (InfoHolder.addScopeVariable(Scope, RegVar.get())) {
+@@ -1194,10 +1248,35 @@ static bool validThroughout(LexicalScopes &LScopes,
+   return false;
+ }
+ 
++void DwarfDebug::populateDependentTypeMap() {
++  for (const auto &I : DbgValues) {
++    InlinedVariable IV = I.first;
++    if (I.second.empty())
++      continue;
++
++    if (const DIStringType *ST = dyn_cast<DIStringType>(
++            static_cast<const Metadata *>(IV.first->getType())))
++      if (const DIVariable *LV = ST->getStringLength())
++        VariableInDependentType[LV] = ST;
++
++    if (const DIFortranArrayType *AT = dyn_cast<DIFortranArrayType>(
++            static_cast<const Metadata *>(IV.first->getType())))
++      for (const DINode *S : AT->getElements())
++        if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(S)) {
++          if (const DIVariable *LBV = FS->getLowerBound())
++            VariableInDependentType[LBV] = AT;
++          if (const DIVariable *UBV = FS->getUpperBound())
++            VariableInDependentType[UBV] = AT;
++        }
++  }
++}
++
+ // Find variables for each lexical scope.
+ void DwarfDebug::collectVariableInfo(DwarfCompileUnit &TheCU,
+                                      const DISubprogram *SP,
+                                      DenseSet<InlinedVariable> &Processed) {
++  clearDependentTracking();
++  populateDependentTypeMap();
+   // Grab the variable info that was squirreled away in the MMI side-table.
+   collectVariableInfoFromMFTable(TheCU, Processed);
+ 
+@@ -1252,8 +1331,25 @@ void DwarfDebug::collectVariableInfo(DwarfCompileUnit &TheCU,
+     // Finalize the entry by lowering it into a DWARF bytestream.
+     for (auto &Entry : Entries)
+       Entry.finalize(*Asm, List, BT);
++    List.finalize();
++
++    if (VariableInDependentType.count(IV.first)) {
++      const DIType *DT = VariableInDependentType[IV.first];
++      if (const DIStringType *ST = dyn_cast<DIStringType>(DT)) {
++        unsigned Offset;
++        DbgVariable TVar = {IV.first, IV.second};
++        DebugLocStream::ListBuilder LB(DebugLocs, TheCU, *Asm, TVar, *MInsn);
++        for (auto &Entry : Entries)
++          Entry.finalize(*Asm, LB, ST);
++        LB.finalize();
++        Offset = TVar.getDebugLocListIndex();
++        if (Offset != ~0u)
++          addStringTypeLoc(ST, Offset);
++      }
++    }
+   }
+ 
++
+   // Collect info for variables that were optimized out.
+   for (const DINode *DN : SP->getRetainedNodes()) {
+     if (auto *DV = dyn_cast<DILocalVariable>(DN)) {
+@@ -1781,6 +1877,20 @@ void DebugLocEntry::finalize(const AsmPrinter &AP,
+   DwarfExpr.finalize();
+ }
+ 
++void DebugLocEntry::finalize(const AsmPrinter &AP,
++                             DebugLocStream::ListBuilder &List,
++                             const DIStringType *ST) {
++  DebugLocStream::EntryBuilder Entry(List, Begin, End);
++  BufferByteStreamer Streamer = Entry.getStreamer();
++  DebugLocDwarfExpression DwarfExpr(AP.getDwarfVersion(), Streamer);
++  DebugLocEntry::Value Value = Values[0];
++  assert(!Value.isFragment());
++  assert(Values.size() == 1 && "only fragments may have >1 value");
++  Value.Expression = ST->getStringLengthExp();
++  emitDebugLocValue(AP, nullptr, Value, DwarfExpr);
++  DwarfExpr.finalize();
++}
++
+ void DwarfDebug::emitDebugLocEntryLocation(const DebugLocStream::Entry &Entry) {
+   // Emit the size.
+   Asm->OutStreamer->AddComment("Loc expr size");
+diff --git a/lib/CodeGen/AsmPrinter/DwarfDebug.h b/lib/CodeGen/AsmPrinter/DwarfDebug.h
+index abf2e43b1312..7f6f8ce98cef 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfDebug.h
++++ b/lib/CodeGen/AsmPrinter/DwarfDebug.h
+@@ -200,6 +200,8 @@ enum class AccelTableKind {
+   Dwarf,   ///< DWARF v5 .debug_names.
+ };
+ 
++class DummyDwarfExpression;
++
+ /// Collects and handles dwarf debug information.
+ class DwarfDebug : public DebugHandlerBase {
+   /// All DIEValues are allocated through this allocator.
+@@ -314,6 +316,14 @@ class DwarfDebug : public DebugHandlerBase {
+   bool SingleCU;
+   bool IsDarwin;
+ 
++  /// Map for tracking Fortran deferred CHARACTER lengths
++  DenseMap<const DIStringType*, unsigned> StringTypeLocMap;
++
++  /// Map for tracking Fortran assumed shape array descriptors
++  DenseMap<const DIFortranSubrange*, DIE*> SubrangeDieMap;
++
++  DenseMap<const DIVariable*,const DIType*> VariableInDependentType;
++
+   AddressPool AddrPool;
+ 
+   /// Accelerator tables.
+@@ -484,6 +494,12 @@ class DwarfDebug : public DebugHandlerBase {
+   /// Emit the reference to the section.
+   void emitSectionReference(const DwarfCompileUnit &CU);
+ 
++  /// Populate dependent type variable map
++  void populateDependentTypeMap();
++
++  /// Clear dependent type tracking map
++  void clearDependentTracking() { VariableInDependentType.clear(); }
++
+ protected:
+   /// Gather pre-function debug information.
+   void beginFunctionImpl(const MachineFunction *MF) override;
+@@ -632,6 +648,21 @@ class DwarfDebug : public DebugHandlerBase {
+     return CUDieMap.lookup(Die);
+   }
+ 
++  unsigned getStringTypeLoc(const DIStringType *ST) const {
++    auto I = StringTypeLocMap.find(ST);
++    return I != StringTypeLocMap.end() ? I->second : 0;
++  }
++
++  void addStringTypeLoc(const DIStringType *ST, unsigned Loc) {
++    assert(ST);
++    if (Loc)
++      StringTypeLocMap[ST] = Loc;
++  }
++
++  DIE *getSubrangeDie(const DIFortranSubrange *SR) const;
++  void constructSubrangeDie(const DIFortranArrayType *AT,
++                            DbgVariable &DV, DwarfCompileUnit &TheCU);
++
+   /// \defgroup DebuggerTuning Predicates to tune DWARF for a given debugger.
+   ///
+   /// Returns whether we are "tuning" for a given debugger.
+diff --git a/lib/CodeGen/AsmPrinter/DwarfExpression.cpp b/lib/CodeGen/AsmPrinter/DwarfExpression.cpp
+index d8d1a5e8f841..ca97ab7c5b8e 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfExpression.cpp
++++ b/lib/CodeGen/AsmPrinter/DwarfExpression.cpp
+@@ -346,6 +346,11 @@ void DwarfExpression::addExpression(DIExpressionCursor &&ExprCursor,
+       emitOp(dwarf::DW_OP_plus_uconst);
+       emitUnsigned(Op->getArg(0));
+       break;
++    case dwarf::DW_OP_deref_size:
++      assert(LocationKind != Register);
++      emitOp(dwarf::DW_OP_deref_size);
++      emitUnsigned(Op->getArg(0));
++      break;
+     case dwarf::DW_OP_plus:
+     case dwarf::DW_OP_minus:
+     case dwarf::DW_OP_mul:
+diff --git a/lib/CodeGen/AsmPrinter/DwarfExpression.h b/lib/CodeGen/AsmPrinter/DwarfExpression.h
+index 0637d952eba4..e5e160aecfb6 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfExpression.h
++++ b/lib/CodeGen/AsmPrinter/DwarfExpression.h
+@@ -264,7 +264,7 @@ class DebugLocDwarfExpression final : public DwarfExpression {
+ 
+ /// DwarfExpression implementation for singular DW_AT_location.
+ class DIEDwarfExpression final : public DwarfExpression {
+-const AsmPrinter &AP;
++  const AsmPrinter &AP;
+   DwarfUnit &DU;
+   DIELoc &DIE;
+ 
+diff --git a/lib/CodeGen/AsmPrinter/DwarfUnit.cpp b/lib/CodeGen/AsmPrinter/DwarfUnit.cpp
+index 600f4a78fda0..2224de159de2 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfUnit.cpp
++++ b/lib/CodeGen/AsmPrinter/DwarfUnit.cpp
+@@ -760,8 +760,12 @@ DIE *DwarfUnit::getOrCreateTypeDIE(const MDNode *TyNode) {
+ 
+   if (auto *BT = dyn_cast<DIBasicType>(Ty))
+     constructTypeDIE(TyDIE, BT);
++  else if (auto *ST = dyn_cast<DIStringType>(Ty))
++    constructTypeDIE(TyDIE, ST);
+   else if (auto *STy = dyn_cast<DISubroutineType>(Ty))
+     constructTypeDIE(TyDIE, STy);
++  else if (auto *ATy = dyn_cast<DIFortranArrayType>(Ty))
++    constructArrayTypeDIE(TyDIE, ATy);
+   else if (auto *CTy = dyn_cast<DICompositeType>(Ty)) {
+     if (DD->generateTypeUnits() && !Ty->isForwardDecl())
+       if (MDString *TypeId = CTy->getRawIdentifier()) {
+@@ -846,13 +850,39 @@ void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIBasicType *BTy) {
+   if (BTy->getTag() == dwarf::DW_TAG_unspecified_type)
+     return;
+ 
+-  addUInt(Buffer, dwarf::DW_AT_encoding, dwarf::DW_FORM_data1,
+-          BTy->getEncoding());
++  if (BTy->getTag() != dwarf::DW_TAG_string_type)
++    addUInt(Buffer, dwarf::DW_AT_encoding, dwarf::DW_FORM_data1,
++            BTy->getEncoding());
+ 
+   uint64_t Size = BTy->getSizeInBits() >> 3;
+   addUInt(Buffer, dwarf::DW_AT_byte_size, None, Size);
+ }
+ 
++void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIStringType *STy) {
++  // Get core information.
++  StringRef Name = STy->getName();
++  // Add name if not anonymous or intermediate type.
++  if (!Name.empty())
++    addString(Buffer, dwarf::DW_AT_name, Name);
++
++  if (unsigned LLI = DD->getStringTypeLoc(STy)) {
++    // DW_TAG_string_type has a DW_AT_string_length location
++    dwarf::Form Form = (DD->getDwarfVersion() >= 4)
++      ? dwarf::DW_FORM_sec_offset : dwarf::DW_FORM_data4;
++    Buffer.addValue(DIEValueAllocator, dwarf::DW_AT_string_length, Form,
++                    DIELocList(LLI));
++  }
++
++  uint64_t Size = STy->getSizeInBits() >> 3;
++  addUInt(Buffer, dwarf::DW_AT_byte_size, None, Size);
++
++  if (STy->getEncoding()) {
++    // for eventual unicode support
++    addUInt(Buffer, dwarf::DW_AT_encoding, dwarf::DW_FORM_data1,
++            STy->getEncoding());
++  }
++}
++
+ void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIDerivedType *DTy) {
+   // Get core information.
+   StringRef Name = DTy->getName();
+@@ -1367,6 +1397,12 @@ void DwarfUnit::applySubprogramAttributes(const DISubprogram *SP, DIE &SPDie,
+ 
+   if (SP->isMainSubprogram())
+     addFlag(SPDie, dwarf::DW_AT_main_subprogram);
++  if (SP->isPure())
++    addFlag(SPDie, dwarf::DW_AT_pure);
++  if (SP->isElemental())
++    addFlag(SPDie, dwarf::DW_AT_elemental);
++  if (SP->isRecursive())
++    addFlag(SPDie, dwarf::DW_AT_recursive);
+ }
+ 
+ void DwarfUnit::constructSubrangeDIE(DIE &Buffer, const DISubrange *SR,
+@@ -1394,6 +1430,26 @@ void DwarfUnit::constructSubrangeDIE(DIE &Buffer, const DISubrange *SR,
+     addUInt(DW_Subrange, dwarf::DW_AT_count, None, Count);
+ }
+ 
++void DwarfUnit::constructFortranSubrangeDIE(DIE &Buffer,
++                                            const DIFortranSubrange *SR) {
++  DIE *IndexTy = getIndexTyDie();
++  DIE *Die = DD->getSubrangeDie(SR);
++  if ((!Die) || Die->getParent())
++    Die = DIE::get(DIEValueAllocator, dwarf::DW_TAG_subrange_type);
++  DIE &DW_Subrange = Buffer.addChild(Die);
++  addDIEEntry(DW_Subrange, dwarf::DW_AT_type, *IndexTy);
++
++  if (!SR->getLowerBound()) {
++    int64_t BVC = SR->getCLowerBound();
++    addSInt(DW_Subrange, dwarf::DW_AT_lower_bound, None, BVC);
++  }
++
++  if ((!SR->getUpperBound()) && (!SR->noUpperBound())) {
++    int64_t BVC = SR->getCUpperBound();
++    addSInt(DW_Subrange, dwarf::DW_AT_upper_bound, None, BVC);
++  }
++}
++
+ DIE *DwarfUnit::getIndexTyDie() {
+   if (IndexTyDie)
+     return IndexTyDie;
+@@ -1461,6 +1517,20 @@ void DwarfUnit::constructArrayTypeDIE(DIE &Buffer, const DICompositeType *CTy) {
+   }
+ }
+ 
++void DwarfUnit::constructArrayTypeDIE(DIE &Buffer,
++                                      const DIFortranArrayType *ATy) {
++  // Emit the element type.
++  addType(Buffer, resolve(ATy->getBaseType()));
++
++  // Add subranges to array type.
++  DINodeArray Elements = ATy->getElements();
++  for (unsigned i = 0, N = Elements.size(); i < N; ++i) {
++    DINode *Element = cast<DINode>(Elements[i]);
++    if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(Element))
++      constructFortranSubrangeDIE(Buffer, FS);
++  }
++}
++
+ void DwarfUnit::constructEnumTypeDIE(DIE &Buffer, const DICompositeType *CTy) {
+   const DIType *DTy = resolve(CTy->getBaseType());
+   bool IsUnsigned = DTy && isUnsignedDIType(DD, DTy);
+diff --git a/lib/CodeGen/AsmPrinter/DwarfUnit.h b/lib/CodeGen/AsmPrinter/DwarfUnit.h
+index 69696f626536..9c14ed6256fa 100644
+--- a/lib/CodeGen/AsmPrinter/DwarfUnit.h
++++ b/lib/CodeGen/AsmPrinter/DwarfUnit.h
+@@ -341,10 +341,14 @@ class DwarfUnit : public DIEUnit {
+ 
+ private:
+   void constructTypeDIE(DIE &Buffer, const DIBasicType *BTy);
++  void constructTypeDIE(DIE &Buffer, const DIStringType *BTy);
++  void constructTypeDIE(DIE &Buffer, const DIFortranArrayType *ATy);
+   void constructTypeDIE(DIE &Buffer, const DIDerivedType *DTy);
+   void constructTypeDIE(DIE &Buffer, const DISubroutineType *CTy);
+   void constructSubrangeDIE(DIE &Buffer, const DISubrange *SR, DIE *IndexTy);
++  void constructFortranSubrangeDIE(DIE &Buffer, const DIFortranSubrange *SR);
+   void constructArrayTypeDIE(DIE &Buffer, const DICompositeType *CTy);
++  void constructArrayTypeDIE(DIE &Buffer, const DIFortranArrayType *ATy);
+   void constructEnumTypeDIE(DIE &Buffer, const DICompositeType *CTy);
+   DIE &constructMemberDIE(DIE &Buffer, const DIDerivedType *DT);
+   void constructTemplateTypeParameterDIE(DIE &Buffer,
+diff --git a/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
+index 99a25a723b4a..e442063a5b0b 100644
+--- a/lib/IR/AsmWriter.cpp
++++ b/lib/IR/AsmWriter.cpp
+@@ -1761,6 +1761,24 @@ static void writeDISubrange(raw_ostream &Out, const DISubrange *N,
+   Out << ")";
+ }
+ 
++static void writeDIFortranSubrange(raw_ostream &Out, const DIFortranSubrange *N,
++                                   TypePrinting *TypePrinter,
++                                   SlotTracker *Machine,
++                                   const Module *Context) {
++  Out << "!DIFortranSubrange(";
++  MDFieldPrinter Printer(Out, TypePrinter, Machine, Context);
++  Printer.printInt("constLowerBound", N->getCLowerBound(), false);
++  if (!N->noUpperBound())
++    Printer.printInt("constUpperBound", N->getCUpperBound(), false);
++  Printer.printMetadata("lowerBound", N->getRawLowerBound());
++  Printer.printMetadata("lowerBoundExpression",
++                        N->getRawLowerBoundExpression());
++  Printer.printMetadata("upperBound", N->getRawUpperBound());
++  Printer.printMetadata("upperBoundExpression",
++                        N->getRawUpperBoundExpression());
++  Out << ")";
++}
++
+ static void writeDIEnumerator(raw_ostream &Out, const DIEnumerator *N,
+                               TypePrinting *, SlotTracker *, const Module *) {
+   Out << "!DIEnumerator(";
+@@ -1790,6 +1808,23 @@ static void writeDIBasicType(raw_ostream &Out, const DIBasicType *N,
+   Out << ")";
+ }
+ 
++static void writeDIStringType(raw_ostream &Out, const DIStringType *N,
++                             TypePrinting *TypePrinter, SlotTracker *Machine,
++                              const Module *Context) {
++  Out << "!DIStringType(";
++  MDFieldPrinter Printer(Out, TypePrinter, Machine, Context);
++  if (N->getTag() != dwarf::DW_TAG_string_type)
++    Printer.printTag(N);
++  Printer.printString("name", N->getName());
++  Printer.printMetadata("stringLength", N->getRawStringLength());
++  Printer.printMetadata("stringLengthExpression", N->getRawStringLengthExp());
++  Printer.printInt("size", N->getSizeInBits());
++  Printer.printInt("align", N->getAlignInBits());
++  Printer.printDwarfEnum("encoding", N->getEncoding(),
++                         dwarf::AttributeEncodingString);
++  Out << ")";
++}
++
+ static void writeDIDerivedType(raw_ostream &Out, const DIDerivedType *N,
+                                TypePrinting *TypePrinter, SlotTracker *Machine,
+                                const Module *Context) {
+@@ -1838,6 +1873,25 @@ static void writeDICompositeType(raw_ostream &Out, const DICompositeType *N,
+   Out << ")";
+ }
+ 
++static void writeDIFortranArrayType(
++    raw_ostream &Out, const DIFortranArrayType *N, TypePrinting *TypePrinter,
++    SlotTracker *Machine, const Module *Context) {
++  Out << "!DIFortranArrayType(";
++  MDFieldPrinter Printer(Out, TypePrinter, Machine, Context);
++  Printer.printTag(N);
++  Printer.printString("name", N->getName());
++  Printer.printMetadata("scope", N->getRawScope());
++  Printer.printMetadata("file", N->getRawFile());
++  Printer.printInt("line", N->getLine());
++  Printer.printMetadata("baseType", N->getRawBaseType());
++  Printer.printInt("size", N->getSizeInBits());
++  Printer.printInt("align", N->getAlignInBits());
++  Printer.printInt("offset", N->getOffsetInBits());
++  Printer.printDIFlags("flags", N->getFlags());
++  Printer.printMetadata("elements", N->getRawElements());
++  Out << ")";
++}
++
+ static void writeDISubroutineType(raw_ostream &Out, const DISubroutineType *N,
+                                   TypePrinting *TypePrinter,
+                                   SlotTracker *Machine, const Module *Context) {
+diff --git a/lib/IR/DIBuilder.cpp b/lib/IR/DIBuilder.cpp
+index 5c5477f4f40f..590991212e4e 100644
+--- a/lib/IR/DIBuilder.cpp
++++ b/lib/IR/DIBuilder.cpp
+@@ -262,6 +262,12 @@ DIBasicType *DIBuilder::createBasicType(StringRef Name, uint64_t SizeInBits,
+                           0, Encoding);
+ }
+ 
++DIStringType *DIBuilder::createStringType(StringRef Name, uint64_t SizeInBits) {
++  assert(!Name.empty() && "Unable to create type without name");
++  return DIStringType::get(VMContext, dwarf::DW_TAG_string_type, Name,
++                           SizeInBits, 0);
++}
++
+ DIDerivedType *DIBuilder::createQualifiedType(unsigned Tag, DIType *FromTy) {
+   return DIDerivedType::get(VMContext, Tag, "", nullptr, 0, nullptr, FromTy, 0,
+                             0, 0, None, DINode::FlagZero);
+@@ -525,6 +531,15 @@ DICompositeType *DIBuilder::createArrayType(uint64_t Size,
+   return R;
+ }
+ 
++DIFortranArrayType *DIBuilder::createFortranArrayType(
++    uint64_t Size, uint32_t AlignInBits, DIType *Ty, DINodeArray Subscripts) {
++  auto *R = DIFortranArrayType::get(VMContext, dwarf::DW_TAG_array_type, "",
++                                    nullptr, 0, nullptr, Ty, Size, AlignInBits,
++                                    0, DINode::FlagZero, Subscripts);
++  trackIfUnresolved(R);
++  return R;
++}
++
+ DICompositeType *DIBuilder::createVectorType(uint64_t Size,
+                                              uint32_t AlignInBits, DIType *Ty,
+                                              DINodeArray Subscripts) {
+@@ -628,6 +643,12 @@ DISubrange *DIBuilder::getOrCreateSubrange(int64_t Lo, Metadata *CountNode) {
+   return DISubrange::get(VMContext, CountNode, Lo);
+ }
+ 
++DIFortranSubrange *DIBuilder::getOrCreateFortranSubrange(
++    int64_t CLB, int64_t CUB, bool NUB, Metadata *LB, Metadata *LBE,
++    Metadata *UB, Metadata *UBE) {
++  return DIFortranSubrange::get(VMContext, CLB, CUB, NUB, LB, LBE, UB, UBE);
++}
++
+ static void checkGlobalVariableScope(DIScope *Context) {
+ #ifndef NDEBUG
+   if (auto *CT =
+diff --git a/lib/IR/DebugInfoMetadata.cpp b/lib/IR/DebugInfoMetadata.cpp
+index 910e8c2fb74f..0903a7d4b4cb 100644
+--- a/lib/IR/DebugInfoMetadata.cpp
++++ b/lib/IR/DebugInfoMetadata.cpp
+@@ -262,6 +262,15 @@ DISubrange *DISubrange::getImpl(LLVMContext &Context, Metadata *CountNode,
+   DEFINE_GETIMPL_STORE(DISubrange, (CountNode, Lo), Ops);
+ }
+ 
++DIFortranSubrange *DIFortranSubrange::getImpl(
++    LLVMContext &Context, int64_t CLB, int64_t CUB, bool NUB, Metadata *LB,
++    Metadata *LBE, Metadata *UB, Metadata *UBE, StorageType Storage,
++    bool ShouldCreate) {
++  DEFINE_GETIMPL_LOOKUP(DIFortranSubrange, (CLB, CUB, NUB, LB, LBE, UB, UBE));
++  Metadata *Ops[] = {LB, LBE, UB, UBE};
++  DEFINE_GETIMPL_STORE(DIFortranSubrange, (CLB, CUB, NUB), Ops);
++}
++
+ DIEnumerator *DIEnumerator::getImpl(LLVMContext &Context, int64_t Value,
+                                     bool IsUnsigned, MDString *Name,
+                                     StorageType Storage, bool ShouldCreate) {
+@@ -296,6 +305,21 @@ Optional<DIBasicType::Signedness> DIBasicType::getSignedness() const {
+   }
+ }
+ 
++DIStringType *DIStringType::getImpl(LLVMContext &Context, unsigned Tag,
++                                    MDString *Name, Metadata *StringLength,
++                                    Metadata *StringLengthExp,
++                                    uint64_t SizeInBits, uint32_t AlignInBits,
++                                    unsigned Encoding, StorageType Storage,
++                                    bool ShouldCreate) {
++  assert(isCanonical(Name) && "Expected canonical MDString");
++  DEFINE_GETIMPL_LOOKUP(DIStringType,
++                        (Tag, Name, StringLength, StringLengthExp, SizeInBits,
++                         AlignInBits, Encoding));
++  Metadata *Ops[] = {nullptr, nullptr, Name, StringLength, StringLengthExp};
++  DEFINE_GETIMPL_STORE(DIStringType, (Tag, SizeInBits, AlignInBits, Encoding),
++                       Ops);
++}
++
+ DIDerivedType *DIDerivedType::getImpl(
+     LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
+     unsigned Line, Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
+@@ -335,6 +359,22 @@ DICompositeType *DICompositeType::getImpl(
+                        Ops);
+ }
+ 
++DIFortranArrayType *DIFortranArrayType::getImpl(
++    LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
++    unsigned Line, Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
++    uint32_t AlignInBits, uint64_t OffsetInBits, DIFlags Flags,
++    Metadata *Elements, StorageType Storage, bool ShouldCreate) {
++  assert(isCanonical(Name) && "Expected canonical MDString");
++
++  // Keep this in sync with buildODRType.
++  DEFINE_GETIMPL_LOOKUP(
++      DIFortranArrayType, (Tag, Name, File, Line, Scope, BaseType, SizeInBits,
++                           AlignInBits, OffsetInBits, Flags, Elements));
++  Metadata *Ops[] = {File, Scope, Name, BaseType, Elements};
++  DEFINE_GETIMPL_STORE(DIFortranArrayType, (Tag, Line, SizeInBits, AlignInBits,
++                                            OffsetInBits, Flags), Ops);
++}
++
+ DICompositeType *DICompositeType::buildODRType(
+     LLVMContext &Context, MDString &Identifier, unsigned Tag, MDString *Name,
+     Metadata *File, unsigned Line, Metadata *Scope, Metadata *BaseType,
+@@ -691,6 +731,7 @@ unsigned DIExpression::ExprOperand::getSize() const {
+     return 3;
+   case dwarf::DW_OP_constu:
+   case dwarf::DW_OP_plus_uconst:
++  case dwarf::DW_OP_deref_size:
+     return 2;
+   default:
+     return 1;
+@@ -746,6 +787,7 @@ bool DIExpression::isValid() const {
+     case dwarf::DW_OP_shra:
+     case dwarf::DW_OP_deref:
+     case dwarf::DW_OP_xderef:
++    case dwarf::DW_OP_deref_size:
+     case dwarf::DW_OP_lit0:
+     case dwarf::DW_OP_not:
+     case dwarf::DW_OP_dup:
+diff --git a/lib/IR/LLVMContextImpl.h b/lib/IR/LLVMContextImpl.h
+index 3b2e1e81b1c1..81a33eecc3e0 100644
+--- a/lib/IR/LLVMContextImpl.h
++++ b/lib/IR/LLVMContextImpl.h
+@@ -351,6 +351,42 @@ template <> struct MDNodeKeyImpl<DISubrange> {
+   }
+ };
+ 
++template <> struct MDNodeKeyImpl<DIFortranSubrange> {
++  int64_t CLBound;
++  int64_t CUBound;
++  bool NoUBound;
++  Metadata *LowerBound;
++  Metadata *LowerBoundExp;
++  Metadata *UpperBound;
++  Metadata *UpperBoundExp;
++
++  MDNodeKeyImpl(int64_t CLB, int64_t CUB, bool NUB, Metadata *LB, Metadata *LBE,
++                Metadata *UB, Metadata *UBE)
++      : CLBound(CLB), CUBound(CUB), NoUBound(NUB), LowerBound(LB),
++        LowerBoundExp(LBE), UpperBound(UB), UpperBoundExp(UBE) {}
++  MDNodeKeyImpl(const DIFortranSubrange *N)
++      : CLBound(N->getCLowerBound()), CUBound(N->getCUpperBound()),
++        NoUBound(N->noUpperBound()), LowerBound(N->getRawLowerBound()),
++        LowerBoundExp(N->getRawLowerBoundExpression()),
++        UpperBound(N->getRawUpperBound()),
++        UpperBoundExp(N->getRawUpperBoundExpression()) {}
++
++  bool isKeyOf(const DIFortranSubrange *RHS) const {
++    return CLBound == RHS->getCLowerBound() &&
++      CUBound == RHS->getCUpperBound() &&
++      NoUBound == RHS->noUpperBound() &&
++      LowerBound == RHS->getRawLowerBound() &&
++      LowerBoundExp == RHS->getRawLowerBoundExpression() &&
++      UpperBound == RHS->getRawUpperBound() &&
++      UpperBoundExp == RHS->getRawUpperBoundExpression();
++  }
++
++  unsigned getHashValue() const {
++    return hash_combine(CLBound, CUBound, NoUBound, UpperBound, UpperBoundExp,
++                        LowerBound, LowerBoundExp);
++  }
++};
++
+ template <> struct MDNodeKeyImpl<DIEnumerator> {
+   int64_t Value;
+   MDString *Name;
+@@ -397,6 +433,39 @@ template <> struct MDNodeKeyImpl<DIBasicType> {
+   }
+ };
+ 
++template <> struct MDNodeKeyImpl<DIStringType> {
++  unsigned Tag;
++  MDString *Name;
++  Metadata *StringLength;
++  Metadata *StringLengthExp;
++  uint64_t SizeInBits;
++  uint32_t AlignInBits;
++  unsigned Encoding;
++
++  MDNodeKeyImpl(unsigned Tag, MDString *Name, Metadata *StringLength,
++                Metadata *StringLengthExp, uint64_t SizeInBits,
++                uint32_t AlignInBits, unsigned Encoding)
++      : Tag(Tag), Name(Name), StringLength(StringLength),
++        StringLengthExp(StringLengthExp), SizeInBits(SizeInBits),
++        AlignInBits(AlignInBits), Encoding(Encoding) {}
++  MDNodeKeyImpl(const DIStringType *N)
++      : Tag(N->getTag()), Name(N->getRawName()),
++        StringLength(N->getRawStringLength()),
++        StringLengthExp(N->getRawStringLengthExp()),
++        SizeInBits(N->getSizeInBits()),
++        AlignInBits(N->getAlignInBits()), Encoding(N->getEncoding()) {}
++
++  bool isKeyOf(const DIStringType *RHS) const {
++    return Tag == RHS->getTag() && Name == RHS->getRawName() &&
++           SizeInBits == RHS->getSizeInBits() &&
++           AlignInBits == RHS->getAlignInBits() &&
++           Encoding == RHS->getEncoding();
++  }
++  unsigned getHashValue() const {
++    return hash_combine(Tag, Name, SizeInBits, AlignInBits, Encoding);
++  }
++};
++
+ template <> struct MDNodeKeyImpl<DIDerivedType> {
+   unsigned Tag;
+   MDString *Name;
+@@ -553,6 +622,52 @@ template <> struct MDNodeKeyImpl<DICompositeType> {
+   }
+ };
+ 
++template <> struct MDNodeKeyImpl<DIFortranArrayType> {
++  unsigned Tag;
++  MDString *Name;
++  Metadata *File;
++  unsigned Line;
++  Metadata *Scope;
++  Metadata *BaseType;
++  uint64_t SizeInBits;
++  uint64_t OffsetInBits;
++  uint32_t AlignInBits;
++  unsigned Flags;
++  Metadata *Elements;
++
++  MDNodeKeyImpl(unsigned Tag, MDString *Name, Metadata *File, unsigned Line,
++                Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
++                uint32_t AlignInBits, uint64_t OffsetInBits, unsigned Flags,
++                Metadata *Elements)
++      : Tag(Tag), Name(Name), File(File), Line(Line), Scope(Scope),
++        BaseType(BaseType), SizeInBits(SizeInBits), OffsetInBits(OffsetInBits),
++        AlignInBits(AlignInBits), Flags(Flags), Elements(Elements) {}
++  MDNodeKeyImpl(const DIFortranArrayType *N)
++      : Tag(N->getTag()), Name(N->getRawName()), File(N->getRawFile()),
++        Line(N->getLine()), Scope(N->getRawScope()),
++        BaseType(N->getRawBaseType()), SizeInBits(N->getSizeInBits()),
++        OffsetInBits(N->getOffsetInBits()), AlignInBits(N->getAlignInBits()),
++        Flags(N->getFlags()), Elements(N->getRawElements()) {}
++
++  bool isKeyOf(const DIFortranArrayType *RHS) const {
++    return Tag == RHS->getTag() && Name == RHS->getRawName() &&
++           File == RHS->getRawFile() && Line == RHS->getLine() &&
++           Scope == RHS->getRawScope() && BaseType == RHS->getRawBaseType() &&
++           SizeInBits == RHS->getSizeInBits() &&
++           AlignInBits == RHS->getAlignInBits() &&
++           OffsetInBits == RHS->getOffsetInBits() && Flags == RHS->getFlags() &&
++           Elements == RHS->getRawElements();
++  }
++
++  unsigned getHashValue() const {
++    // Intentionally computes the hash on a subset of the operands for
++    // performance reason. The subset has to be significant enough to avoid
++    // collision "most of the time". There is no correctness issue in case of
++    // collision because of the full check above.
++    return hash_combine(Name, File, Line, BaseType, Scope, Elements);
++  }
++};
++
+ template <> struct MDNodeKeyImpl<DISubroutineType> {
+   unsigned Flags;
+   uint8_t CC;
+diff --git a/lib/IR/Verifier.cpp b/lib/IR/Verifier.cpp
+index e5231bb78a36..0e266a36d7bc 100644
+--- a/lib/IR/Verifier.cpp
++++ b/lib/IR/Verifier.cpp
+@@ -878,13 +878,27 @@ void Verifier::visitDISubrange(const DISubrange &N) {
+            "invalid subrange count", &N);
+ }
+ 
++void Verifier::visitDIFortranSubrange(const DIFortranSubrange &N) {
++  AssertDI(N.getTag() == dwarf::DW_TAG_subrange_type, "invalid tag", &N);
++  AssertDI(N.getLowerBound() ? (N.getLowerBoundExp() != nullptr) : true,
++           "no lower bound", &N);
++  AssertDI(N.getUpperBound() ? (N.getUpperBoundExp() != nullptr) : true,
++           "no upper bound", &N);
++}
++
+ void Verifier::visitDIEnumerator(const DIEnumerator &N) {
+   AssertDI(N.getTag() == dwarf::DW_TAG_enumerator, "invalid tag", &N);
+ }
+ 
+ void Verifier::visitDIBasicType(const DIBasicType &N) {
+   AssertDI(N.getTag() == dwarf::DW_TAG_base_type ||
+-               N.getTag() == dwarf::DW_TAG_unspecified_type,
++               N.getTag() == dwarf::DW_TAG_unspecified_type ||
++               N.getTag() == dwarf::DW_TAG_string_type,
++           "invalid tag", &N);
++}
++
++void Verifier::visitDIStringType(const DIStringType &N) {
++  AssertDI( N.getTag() == dwarf::DW_TAG_string_type,
+            "invalid tag", &N);
+ }
+ 
+@@ -984,6 +998,22 @@ void Verifier::visitDICompositeType(const DICompositeType &N) {
+   }
+ }
+ 
++void Verifier::visitDIFortranArrayType(const DIFortranArrayType &N) {
++  // Common scope checks.
++  visitDIScope(N);
++
++  AssertDI(N.getTag() == dwarf::DW_TAG_array_type, "invalid tag", &N);
++
++  AssertDI(isScope(N.getRawScope()), "invalid scope", &N, N.getRawScope());
++  AssertDI(isType(N.getRawBaseType()), "invalid base type", &N,
++           N.getRawBaseType());
++
++  AssertDI(!N.getRawElements() || isa<MDTuple>(N.getRawElements()),
++           "invalid composite elements", &N, N.getRawElements());
++  AssertDI(!hasConflictingReferenceFlags(N.getFlags()),
++           "invalid reference flags", &N);
++}
++
+ void Verifier::visitDISubroutineType(const DISubroutineType &N) {
+   AssertDI(N.getTag() == dwarf::DW_TAG_subroutine_type, "invalid tag", &N);
+   if (auto *Types = N.getRawTypeArray()) {
+diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
+index 1c7d0a63a5ca..ad778d09e208 100644
+--- a/lib/Transforms/Vectorize/LoopVectorize.cpp
++++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
+@@ -5094,8 +5094,10 @@ LoopVectorizationCostModel::getSmallestAndWidestTypes() {
+       if (ValuesToIgnore.count(&I))
+         continue;
+ 
+-      // Only examine Loads, Stores and PHINodes.
+-      if (!isa<LoadInst>(I) && !isa<StoreInst>(I) && !isa<PHINode>(I))
++      // Examine Loads, Stores, PHINodes
++      // Also examine instructions which convert to a float/double
++      if (!isa<LoadInst>(I) && !isa<StoreInst>(I) && !isa<PHINode>(I) &&
++          !isa<FPExtInst>(I) && !isa<SIToFPInst>(I) && !isa<UIToFPInst>(I))
+         continue;
+ 
+       // Examine PHI nodes that are reduction variables. Update the type to

@@ -1,8 +1,22 @@
-diff --git a/include/clang/Basic/DiagnosticDriverKinds.td b/include/clang/Basic/DiagnosticDriverKinds.td
-index 45cdf82d369..b175a7f4ab9 100644
---- a/include/clang/Basic/DiagnosticDriverKinds.td
-+++ b/include/clang/Basic/DiagnosticDriverKinds.td
-@@ -43,6 +43,10 @@ def err_drv_invalid_pgo_instrumentor : Error<
+diff -urN a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt	2018-06-28 20:35:25.000000000 +0200
++++ b/CMakeLists.txt	2018-09-12 15:46:14.312830503 +0200
+@@ -397,6 +397,11 @@
+ 
+ add_definitions( -D_GNU_SOURCE )
+ 
++option(FLANG_LLVM_EXTENSIONS "enable the Flang LLVM extensions" OFF)
++if(FLANG_LLVM_EXTENSIONS)
++  add_definitions( -DFLANG_LLVM_EXTENSIONS )
++endif()
++
+ option(CLANG_BUILD_TOOLS
+   "Build the Clang tools. If OFF, just generate build targets." ON)
+ 
+diff -urN a/include/clang/Basic/DiagnosticDriverKinds.td b/include/clang/Basic/DiagnosticDriverKinds.td
+--- a/include/clang/Basic/DiagnosticDriverKinds.td	2018-07-30 21:24:48.000000000 +0200
++++ b/include/clang/Basic/DiagnosticDriverKinds.td	2018-09-12 15:46:14.385830451 +0200
+@@ -50,6 +50,10 @@
    "invalid PGO instrumentor in argument '%0'">;
  def err_drv_invalid_rtlib_name : Error<
    "invalid runtime library name in argument '%0'">;
@@ -13,11 +27,19 @@ index 45cdf82d369..b175a7f4ab9 100644
  def err_drv_unsupported_rtlib_for_platform : Error<
    "unsupported runtime library '%0' for platform '%1'">;
  def err_drv_invalid_stdlib_name : Error<
-diff --git a/include/clang/Driver/Action.h b/include/clang/Driver/Action.h
-index 72456d34a0d..1e182d88f11 100644
---- a/include/clang/Driver/Action.h
-+++ b/include/clang/Driver/Action.h
-@@ -59,6 +59,7 @@ class Action {
+@@ -215,6 +219,8 @@
+   InGroup<OpenMPTarget>;
+ def err_drv_bitcode_unsupported_on_toolchain : Error<
+   "-fembed-bitcode is not supported on versions of iOS prior to 6.0">;
++def err_drv_clang_unsupported_minfo_arg : Error<
++  "'%0' option does not support '%1' value">;
+ 
+ def warn_O4_is_O3 : Warning<"-O4 is equivalent to -O3">, InGroup<Deprecated>;
+ def warn_drv_optimization_value : Warning<"optimization level '%0' is not supported; using '%1%2' instead">,
+diff -urN a/include/clang/Driver/Action.h b/include/clang/Driver/Action.h
+--- a/include/clang/Driver/Action.h	2018-05-09 03:00:01.000000000 +0200
++++ b/include/clang/Driver/Action.h	2018-09-12 15:46:14.396830443 +0200
+@@ -62,6 +62,7 @@
      AnalyzeJobClass,
      MigrateJobClass,
      CompileJobClass,
@@ -25,7 +47,7 @@ index 72456d34a0d..1e182d88f11 100644
      BackendJobClass,
      AssembleJobClass,
      LinkJobClass,
-@@ -400,6 +401,16 @@ class MigrateJobAction : public JobAction {
+@@ -428,6 +429,16 @@
    }
  };
  
@@ -41,12 +63,11 @@ index 72456d34a0d..1e182d88f11 100644
 +
  class CompileJobAction : public JobAction {
    void anchor() override;
- public:
-diff --git a/include/clang/Driver/Driver.h b/include/clang/Driver/Driver.h
-index 07134309835..8328b871a31 100644
---- a/include/clang/Driver/Driver.h
-+++ b/include/clang/Driver/Driver.h
-@@ -67,7 +67,8 @@ class Driver {
+ 
+diff -urN a/include/clang/Driver/Driver.h b/include/clang/Driver/Driver.h
+--- a/include/clang/Driver/Driver.h	2018-07-30 21:24:48.000000000 +0200
++++ b/include/clang/Driver/Driver.h	2018-09-12 15:46:14.400830440 +0200
+@@ -67,7 +67,8 @@
      GCCMode,
      GXXMode,
      CPPMode,
@@ -56,7 +77,7 @@ index 07134309835..8328b871a31 100644
    } Mode;
  
    enum SaveTempsMode {
-@@ -182,6 +183,9 @@ class Driver {
+@@ -182,6 +183,9 @@
    /// Whether the driver should follow cl.exe like behavior.
    bool IsCLMode() const { return Mode == CLMode; }
  
@@ -66,11 +87,10 @@ index 07134309835..8328b871a31 100644
    /// Only print tool bindings, don't build any jobs.
    unsigned CCCPrintBindings : 1;
  
-diff --git a/include/clang/Driver/Options.td b/include/clang/Driver/Options.td
-index 3ee834e6856..18142602c8b 100644
---- a/include/clang/Driver/Options.td
-+++ b/include/clang/Driver/Options.td
-@@ -247,7 +247,7 @@ class InternalDriverOpt : Group<internal_driver_Group>,
+diff -urN a/include/clang/Driver/Options.td b/include/clang/Driver/Options.td
+--- a/include/clang/Driver/Options.td	2018-08-13 09:59:11.000000000 +0200
++++ b/include/clang/Driver/Options.td	2018-09-12 15:46:14.401830440 +0200
+@@ -251,7 +251,7 @@
    Flags<[DriverOption, HelpHidden]>;
  def driver_mode : Joined<["--"], "driver-mode=">, Group<internal_driver_Group>,
    Flags<[CoreOption, DriverOption, HelpHidden]>,
@@ -79,7 +99,16 @@ index 3ee834e6856..18142602c8b 100644
  def rsp_quoting : Joined<["--"], "rsp-quoting=">, Group<internal_driver_Group>,
    Flags<[CoreOption, DriverOption, HelpHidden]>,
    HelpText<"Set the rsp quoting to either 'posix', or 'windows'">;
-@@ -2708,11 +2708,19 @@ defm devirtualize : BooleanFFlag<"devirtualize">, Group<clang_ignored_gcc_optimi
+@@ -1367,7 +1367,7 @@
+   Group<f_clang_Group>, Flags<[CC1Option]>,
+   HelpText<"Disables an experimental new pass manager in LLVM.">;
+ def fveclib : Joined<["-"], "fveclib=">, Group<f_Group>, Flags<[CC1Option]>,
+-    HelpText<"Use the given vector functions library">, Values<"Accelerate,SVML,none">;
++    HelpText<"Use the given vector functions library">, Values<"Accelerate,SVML,PGMATH,none">;
+ def fno_lax_vector_conversions : Flag<["-"], "fno-lax-vector-conversions">, Group<f_Group>,
+   HelpText<"Disallow implicit conversions between vectors with a different number of elements or different element types">, Flags<[CC1Option]>;
+ def fno_merge_all_constants : Flag<["-"], "fno-merge-all-constants">, Group<f_Group>,
+@@ -2934,11 +2934,19 @@
  defm devirtualize_speculatively : BooleanFFlag<"devirtualize-speculatively">,
      Group<clang_ignored_gcc_optimization_f_Group>;
  
@@ -101,7 +130,7 @@ index 3ee834e6856..18142602c8b 100644
  def static_libgfortran : Flag<["-"], "static-libgfortran">, Group<gfortran_Group>;
  
  // "f" options with values for gfortran.
-@@ -2720,7 +2728,8 @@ def fblas_matmul_limit_EQ : Joined<["-"], "fblas-matmul-limit=">, Group<gfortran
+@@ -2946,7 +2954,8 @@
  def fcheck_EQ : Joined<["-"], "fcheck=">, Group<gfortran_Group>;
  def fcoarray_EQ : Joined<["-"], "fcoarray=">, Group<gfortran_Group>;
  def fconvert_EQ : Joined<["-"], "fconvert=">, Group<gfortran_Group>;
@@ -111,7 +140,7 @@ index 3ee834e6856..18142602c8b 100644
  def ffpe_trap_EQ : Joined<["-"], "ffpe-trap=">, Group<gfortran_Group>;
  def ffree_line_length_VALUE : Joined<["-"], "ffree-line-length-">, Group<gfortran_Group>;
  def finit_character_EQ : Joined<["-"], "finit-character=">, Group<gfortran_Group>;
-@@ -2733,12 +2742,17 @@ def fmax_stack_var_size_EQ : Joined<["-"], "fmax-stack-var-size=">, Group<gfortr
+@@ -2959,12 +2968,17 @@
  def fmax_subrecord_length_EQ : Joined<["-"], "fmax-subrecord-length=">, Group<gfortran_Group>;
  def frecord_marker_EQ : Joined<["-"], "frecord-marker=">, Group<gfortran_Group>;
  
@@ -130,7 +159,7 @@ index 3ee834e6856..18142602c8b 100644
  defm backtrace : BooleanFFlag<"backtrace">, Group<gfortran_Group>;
  defm bounds_check : BooleanFFlag<"bounds-check">, Group<gfortran_Group>;
  defm check_array_temporaries : BooleanFFlag<"check-array-temporaries">, Group<gfortran_Group>;
-@@ -2746,17 +2760,27 @@ defm cray_pointer : BooleanFFlag<"cray-pointer">, Group<gfortran_Group>;
+@@ -2972,17 +2986,27 @@
  defm d_lines_as_code : BooleanFFlag<"d-lines-as-code">, Group<gfortran_Group>;
  defm d_lines_as_comments : BooleanFFlag<"d-lines-as-comments">, Group<gfortran_Group>;
  defm default_double_8 : BooleanFFlag<"default-double-8">, Group<gfortran_Group>;
@@ -163,7 +192,7 @@ index 3ee834e6856..18142602c8b 100644
  defm implicit_none : BooleanFFlag<"implicit-none">, Group<gfortran_Group>;
  defm init_local_zero : BooleanFFlag<"init-local-zero">, Group<gfortran_Group>;
  defm integer_4_integer_8 : BooleanFFlag<"integer-4-integer-8">, Group<gfortran_Group>;
-@@ -2781,6 +2805,119 @@ defm stack_arrays : BooleanFFlag<"stack-arrays">, Group<gfortran_Group>;
+@@ -3007,6 +3031,131 @@
  defm underscoring : BooleanFFlag<"underscoring">, Group<gfortran_Group>;
  defm whole_file : BooleanFFlag<"whole-file">, Group<gfortran_Group>;
  
@@ -194,6 +223,16 @@ index 3ee834e6856..18142602c8b 100644
 +  HelpText<"Disable free-form format for Fortran">,
 +  Flags<[HelpHidden]>;
 +
++def Minfo_EQ : CommaJoined<["-"], "Minfo=">,
++  HelpText<"Diagnostic information about successful optimizations">,
++  Values<"all,vect,inline">;
++def Minfoall : Flag<["-"], "Minfo">,
++  HelpText<"Diagnostic information about all successful optimizations">;
++def Mneginfo_EQ : CommaJoined<["-"], "Mneginfo=">,
++  HelpText<"Diagnostic information about missed optimizations">,
++  Values<"all,vect,inline">;
++def Mneginfoall : Flag<["-"], "Mneginfo">,
++  HelpText<"Diagnostic information about all missed optimizations">;
 +def Mipa: Joined<["-"], "Mipa">, Group<pgi_fortran_Group>;
 +def Mstackarrays: Joined<["-"], "Mstack_arrays">, Group<pgi_fortran_Group>;
 +def pc: JoinedOrSeparate<["-"], "pc">, Group<pgi_fortran_Group>;
@@ -267,6 +306,8 @@ index 3ee834e6856..18142602c8b 100644
 +  HelpText<"Don't link in Fortran main">;
 +def Mnomain: Flag<["-"], "Mnomain">, Group<pgi_fortran_Group>,
 +  HelpText<"Don't link in Fortran main">;
++def frelaxed_math : Flag<["-"], "frelaxed-math">, Group<pgi_fortran_Group>,
++  HelpText<"Use relaxed Math intrinsic functions">;
 +
 +// Flang internal debug options
 +def Mx_EQ : Joined<["-"], "Mx,">, Group<pgi_fortran_Group>;
@@ -283,11 +324,10 @@ index 3ee834e6856..18142602c8b 100644
  
  include "CC1Options.td"
  
-diff --git a/include/clang/Driver/Phases.h b/include/clang/Driver/Phases.h
-index cd6b5b5c9f0..fe96caaaf80 100644
---- a/include/clang/Driver/Phases.h
-+++ b/include/clang/Driver/Phases.h
-@@ -18,6 +18,7 @@ namespace phases {
+diff -urN a/include/clang/Driver/Phases.h b/include/clang/Driver/Phases.h
+--- a/include/clang/Driver/Phases.h	2014-12-21 08:00:00.000000000 +0100
++++ b/include/clang/Driver/Phases.h	2018-09-12 15:46:14.401830440 +0200
+@@ -18,6 +18,7 @@
    enum ID {
      Preprocess,
      Precompile,
@@ -295,12 +335,11 @@ index cd6b5b5c9f0..fe96caaaf80 100644
      Compile,
      Backend,
      Assemble,
-diff --git a/include/clang/Driver/ToolChain.h b/include/clang/Driver/ToolChain.h
-index 13f54d3718b..9bcec45e6c9 100644
---- a/include/clang/Driver/ToolChain.h
-+++ b/include/clang/Driver/ToolChain.h
-@@ -107,11 +107,13 @@ class ToolChain {
-   /// programs.
+diff -urN a/include/clang/Driver/ToolChain.h b/include/clang/Driver/ToolChain.h
+--- a/include/clang/Driver/ToolChain.h	2018-07-27 21:45:14.000000000 +0200
++++ b/include/clang/Driver/ToolChain.h	2018-09-12 15:46:14.401830440 +0200
+@@ -122,12 +122,14 @@
+   /// The list of toolchain specific path prefixes to search for programs.
    path_list ProgramPaths;
  
 +  mutable std::unique_ptr<Tool> FlangFrontend;
@@ -308,27 +347,13 @@ index 13f54d3718b..9bcec45e6c9 100644
    mutable std::unique_ptr<Tool> Assemble;
    mutable std::unique_ptr<Tool> Link;
    mutable std::unique_ptr<Tool> OffloadBundler;
+ 
    Tool *getClang() const;
 +  Tool *getFlangFrontend() const;
    Tool *getAssemble() const;
    Tool *getLink() const;
    Tool *getClangAs() const;
-@@ -450,6 +452,14 @@ class ToolChain {
-   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                             llvm::opt::ArgStringList &CC1Args) const;
- 
-+  /// \brief Add the flang arguments for system include paths.
-+  ///
-+  /// This routine is responsible for adding the -stdinc argument to
-+  /// include headers and module files from standard system header directories.
-+  virtual void
-+  AddFlangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-+                            llvm::opt::ArgStringList &Flang1Args) const { }
-+
-   /// \brief Add options that need to be passed to cc1 for this target.
-   virtual void addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
-                                      llvm::opt::ArgStringList &CC1Args,
-@@ -514,6 +524,11 @@ class ToolChain {
+@@ -532,6 +542,11 @@
    virtual VersionTuple computeMSVCVersion(const Driver *D,
                                            const llvm::opt::ArgList &Args) const;
  
@@ -337,14 +362,13 @@ index 13f54d3718b..9bcec45e6c9 100644
 +  virtual void AddFortranStdlibLibArgs(const llvm::opt::ArgList &Args,
 +                                       llvm::opt::ArgStringList &CmdArgs) const;
 +
-   /// \brief Return sanitizers which are available in this toolchain.
+   /// Return sanitizers which are available in this toolchain.
    virtual SanitizerMask getSupportedSanitizers() const;
  
-diff --git a/include/clang/Driver/Types.def b/include/clang/Driver/Types.def
-index 2430b5b924c..0fd9c2779cf 100644
---- a/include/clang/Driver/Types.def
-+++ b/include/clang/Driver/Types.def
-@@ -69,12 +69,16 @@ TYPE("objective-c++-header",     ObjCXXHeader, PP_ObjCXXHeader, "h",     "pu")
+diff -urN a/include/clang/Driver/Types.def b/include/clang/Driver/Types.def
+--- a/include/clang/Driver/Types.def	2018-04-18 20:25:03.000000000 +0200
++++ b/include/clang/Driver/Types.def	2018-09-12 15:46:14.401830440 +0200
+@@ -72,12 +72,16 @@
  TYPE("c++-module",               CXXModule,    PP_CXXModule,    "cppm",  "mu")
  TYPE("c++-module-cpp-output",    PP_CXXModule, INVALID,         "iim",   "m")
  
@@ -363,11 +387,10 @@ index 2430b5b924c..0fd9c2779cf 100644
  TYPE("java",                     Java,         INVALID,         nullptr, "u")
  
  // LLVM IR/LTO types. We define separate types for IR and LTO because LTO
-diff --git a/include/clang/Driver/Types.h b/include/clang/Driver/Types.h
-index 22a26ae46a0..ae3fa36231b 100644
---- a/include/clang/Driver/Types.h
-+++ b/include/clang/Driver/Types.h
-@@ -107,6 +107,15 @@ namespace types {
+diff -urN a/include/clang/Driver/Types.h b/include/clang/Driver/Types.h
+--- a/include/clang/Driver/Types.h	2018-05-11 21:21:39.000000000 +0200
++++ b/include/clang/Driver/Types.h	2018-09-12 15:46:14.401830440 +0200
+@@ -110,6 +110,15 @@
    /// source file type (used for clang-cl emulation of \Yc).
    ID lookupHeaderTypeForSourceType(ID Id);
  
@@ -383,11 +406,79 @@ index 22a26ae46a0..ae3fa36231b 100644
  } // end namespace types
  } // end namespace driver
  } // end namespace clang
-diff --git a/lib/Driver/Action.cpp b/lib/Driver/Action.cpp
-index 85e466a4409..70ff131d782 100644
---- a/lib/Driver/Action.cpp
-+++ b/lib/Driver/Action.cpp
-@@ -29,6 +29,7 @@ const char *Action::getClassName(ActionClass AC) {
+diff -urN a/include/clang/Frontend/CodeGenOptions.h b/include/clang/Frontend/CodeGenOptions.h
+--- a/include/clang/Frontend/CodeGenOptions.h	2018-05-09 03:00:01.000000000 +0200
++++ b/include/clang/Frontend/CodeGenOptions.h	2018-09-12 15:46:14.402830439 +0200
+@@ -54,6 +54,9 @@
+   enum VectorLibrary {
+     NoLibrary,  // Don't use any vector library.
+     Accelerate, // Use the Accelerate framework.
++#ifdef FLANG_LLVM_EXTENSIONS
++    PGMATH,     // PGI math library.
++#endif
+     SVML        // Intel short vector math library.
+   };
+ 
+diff -urN a/lib/CodeGen/BackendUtil.cpp b/lib/CodeGen/BackendUtil.cpp
+--- a/lib/CodeGen/BackendUtil.cpp	2018-07-18 02:27:07.000000000 +0200
++++ b/lib/CodeGen/BackendUtil.cpp	2018-09-12 15:46:14.487830378 +0200
+@@ -333,6 +333,11 @@
+   case CodeGenOptions::SVML:
+     TLII->addVectorizableFunctionsFromVecLib(TargetLibraryInfoImpl::SVML);
+     break;
++#ifdef FLANG_LLVM_EXTENSIONS
++  case CodeGenOptions::PGMATH:
++    TLII->addVectorizableFunctionsFromVecLib(TargetLibraryInfoImpl::PGMATH);
++    break;
++#endif
+   default:
+     break;
+   }
+diff -urN a/lib/CodeGen/CodeGenAction.cpp b/lib/CodeGen/CodeGenAction.cpp
+--- a/lib/CodeGen/CodeGenAction.cpp	2018-08-09 14:46:44.000000000 +0200
++++ b/lib/CodeGen/CodeGenAction.cpp	2018-09-12 15:46:14.527830349 +0200
+@@ -1033,10 +1033,37 @@
+     Ctx.setInlineAsmDiagnosticHandler(BitcodeInlineAsmDiagHandler,
+                                       &CI.getDiagnostics());
+ 
++    const CodeGenOptions &CodeGenOpts = CI.getCodeGenOpts();
++    DiagnosticsEngine &Diags = CI.getDiagnostics();
++    std::unique_ptr<llvm::ToolOutputFile> OptRecordFile;
++
++    if (!CodeGenOpts.OptRecordFile.empty()) {
++      std::error_code EC;
++      OptRecordFile =
++        llvm::make_unique<llvm::ToolOutputFile>(CodeGenOpts.OptRecordFile,
++                                                EC, sys::fs::F_None);
++
++      if (EC) {
++        Diags.Report(diag::err_cannot_open_file) <<
++          CodeGenOpts.OptRecordFile << EC.message();
++        return;
++      }
++
++      Ctx.setDiagnosticsOutputFile(
++        llvm::make_unique<yaml::Output>(OptRecordFile->os()));
++
++      if (CodeGenOpts.getProfileUse() != CodeGenOptions::ProfileNone)
++        Ctx.setDiagnosticsHotnessRequested(true);
++    }
++
+     EmitBackendOutput(CI.getDiagnostics(), CI.getHeaderSearchOpts(),
+                       CI.getCodeGenOpts(), TargetOpts, CI.getLangOpts(),
+                       CI.getTarget().getDataLayout(), TheModule.get(), BA,
+                       std::move(OS));
++
++    if (OptRecordFile)
++      OptRecordFile->keep();
++
+     return;
+   }
+ 
+diff -urN a/lib/Driver/Action.cpp b/lib/Driver/Action.cpp
+--- a/lib/Driver/Action.cpp	2018-05-08 23:02:12.000000000 +0200
++++ b/lib/Driver/Action.cpp	2018-09-12 15:46:14.543830338 +0200
+@@ -28,6 +28,7 @@
    case PrecompileJobClass: return "precompiler";
    case AnalyzeJobClass: return "analyzer";
    case MigrateJobClass: return "migrator";
@@ -395,7 +486,7 @@ index 85e466a4409..70ff131d782 100644
    case CompileJobClass: return "compiler";
    case BackendJobClass: return "backend";
    case AssembleJobClass: return "assembler";
-@@ -323,6 +324,12 @@ void MigrateJobAction::anchor() {}
+@@ -329,6 +330,12 @@
  MigrateJobAction::MigrateJobAction(Action *Input, types::ID OutputType)
      : JobAction(MigrateJobClass, Input, OutputType) {}
  
@@ -408,11 +499,10 @@ index 85e466a4409..70ff131d782 100644
  void CompileJobAction::anchor() {}
  
  CompileJobAction::CompileJobAction(Action *Input, types::ID OutputType)
-diff --git a/lib/Driver/CMakeLists.txt b/lib/Driver/CMakeLists.txt
-index 5bf91f2be98..fb560d418b0 100644
---- a/lib/Driver/CMakeLists.txt
-+++ b/lib/Driver/CMakeLists.txt
-@@ -40,6 +40,7 @@ add_clang_library(clangDriver
+diff -urN a/lib/Driver/CMakeLists.txt b/lib/Driver/CMakeLists.txt
+--- a/lib/Driver/CMakeLists.txt	2018-07-31 16:21:46.000000000 +0200
++++ b/lib/Driver/CMakeLists.txt	2018-09-12 15:46:14.543830338 +0200
+@@ -41,6 +41,7 @@
    ToolChains/Cuda.cpp
    ToolChains/Darwin.cpp
    ToolChains/DragonFly.cpp
@@ -420,30 +510,54 @@ index 5bf91f2be98..fb560d418b0 100644
    ToolChains/FreeBSD.cpp
    ToolChains/Fuchsia.cpp
    ToolChains/Gnu.cpp
-diff --git a/lib/Driver/Driver.cpp b/lib/Driver/Driver.cpp
-index 325b233ac5e..5205ea98c1a 100644
---- a/lib/Driver/Driver.cpp
-+++ b/lib/Driver/Driver.cpp
-@@ -153,6 +153,7 @@ void Driver::setDriverModeFromOption(StringRef Opt) {
-                          .Case("g++", GXXMode)
-                          .Case("cpp", CPPMode)
-                          .Case("cl", CLMode)
-+                         .Case("fortran", FortranMode)
-                          .Default(~0U);
+diff -urN a/lib/Driver/Driver.cpp b/lib/Driver/Driver.cpp
+--- a/lib/Driver/Driver.cpp	2018-07-31 16:21:46.000000000 +0200
++++ b/lib/Driver/Driver.cpp	2018-09-12 15:46:14.544830337 +0200
+@@ -157,6 +157,7 @@
+                    .Case("g++", GXXMode)
+                    .Case("cpp", CPPMode)
+                    .Case("cl", CLMode)
++                   .Case("fortran", FortranMode)
+                    .Default(None))
+     Mode = *M;
+   else
+@@ -247,18 +248,31 @@
  
-   if (M != ~0U)
-@@ -231,6 +232,10 @@ phases::ID Driver::getFinalPhase(const DerivedArgList &DAL,
+   // -{E,EP,P,M,MM} only run the preprocessor.
+   if (CCCIsCPP() || (PhaseArg = DAL.getLastArg(options::OPT_E)) ||
++      (PhaseArg = DAL.getLastArg(options::OPT_fsyntax_only)) ||
+       (PhaseArg = DAL.getLastArg(options::OPT__SLASH_EP)) ||
+       (PhaseArg = DAL.getLastArg(options::OPT_M, options::OPT_MM)) ||
        (PhaseArg = DAL.getLastArg(options::OPT__SLASH_P))) {
-     FinalPhase = phases::Preprocess;
- 
-+    // -fsyntax-only stops Fortran compilation after FortranFrontend
-+  } else if (IsFortranMode() && (PhaseArg = DAL.getLastArg(options::OPT_fsyntax_only))) {
-+    FinalPhase = phases::FortranFrontend;
+-    FinalPhase = phases::Preprocess;
 +
++    // -fsyntax-only or -E stops Fortran compilation after FortranFrontend
++    if (IsFortranMode() && (DAL.getLastArg(options::OPT_E) ||
++      DAL.getLastArg(options::OPT_fsyntax_only))) {
++      FinalPhase = phases::FortranFrontend;
++
++      // if not Fortran, fsyntax_only implies 'Compile' is the FinalPhase
++    } else if (DAL.getLastArg(options::OPT_fsyntax_only)) {
++      FinalPhase = phases::Compile;
++
++      // everything else has 'Preprocess' as its FinalPhase
++    } else {
++      FinalPhase = phases::Preprocess;
++    }
+ 
      // --precompile only runs up to precompilation.
    } else if ((PhaseArg = DAL.getLastArg(options::OPT__precompile))) {
      FinalPhase = phases::Precompile;
-@@ -3023,6 +3028,13 @@ Action *Driver::ConstructPhaseAction(Compilation &C, const ArgList &Args,
+ 
+-    // -{fsyntax-only,-analyze,emit-ast} only run up to the compiler.
+-  } else if ((PhaseArg = DAL.getLastArg(options::OPT_fsyntax_only)) ||
+-             (PhaseArg = DAL.getLastArg(options::OPT_module_file_info)) ||
++    // -{analyze,emit-ast} only run up to the compiler.
++  } else if ((PhaseArg = DAL.getLastArg(options::OPT_module_file_info)) ||
+              (PhaseArg = DAL.getLastArg(options::OPT_verify_pch)) ||
+              (PhaseArg = DAL.getLastArg(options::OPT_rewrite_objc)) ||
+              (PhaseArg = DAL.getLastArg(options::OPT_rewrite_legacy_objc)) ||
+@@ -3199,6 +3213,13 @@
      }
      return C.MakeAction<PrecompileJobAction>(Input, OutputTy);
    }
@@ -457,11 +571,10 @@ index 325b233ac5e..5205ea98c1a 100644
    case phases::Compile: {
      if (Args.hasArg(options::OPT_fsyntax_only))
        return C.MakeAction<CompileJobAction>(Input, types::TY_Nothing);
-diff --git a/lib/Driver/Phases.cpp b/lib/Driver/Phases.cpp
-index 7ae270857f4..5f5e206f7d9 100644
---- a/lib/Driver/Phases.cpp
-+++ b/lib/Driver/Phases.cpp
-@@ -17,6 +17,7 @@ const char *phases::getPhaseName(ID Id) {
+diff -urN a/lib/Driver/Phases.cpp b/lib/Driver/Phases.cpp
+--- a/lib/Driver/Phases.cpp	2014-12-21 08:00:00.000000000 +0100
++++ b/lib/Driver/Phases.cpp	2018-09-12 15:46:14.545830337 +0200
+@@ -17,6 +17,7 @@
    switch (Id) {
    case Preprocess: return "preprocessor";
    case Precompile: return "precompiler";
@@ -469,28 +582,26 @@ index 7ae270857f4..5f5e206f7d9 100644
    case Compile: return "compiler";
    case Backend: return "backend";
    case Assemble: return "assembler";
-diff --git a/lib/Driver/ToolChain.cpp b/lib/Driver/ToolChain.cpp
-index f96a1182e3c..eab990e236a 100644
---- a/lib/Driver/ToolChain.cpp
-+++ b/lib/Driver/ToolChain.cpp
+diff -urN a/lib/Driver/ToolChain.cpp b/lib/Driver/ToolChain.cpp
+--- a/lib/Driver/ToolChain.cpp	2018-07-30 21:24:48.000000000 +0200
++++ b/lib/Driver/ToolChain.cpp	2018-09-12 15:46:14.545830337 +0200
 @@ -11,6 +11,7 @@
- #include "ToolChains/CommonArgs.h"
+ #include "InputInfo.h"
  #include "ToolChains/Arch/ARM.h"
  #include "ToolChains/Clang.h"
 +#include "ToolChains/Flang.h"
  #include "clang/Basic/ObjCRuntime.h"
+ #include "clang/Basic/Sanitizers.h"
  #include "clang/Basic/VirtualFileSystem.h"
- #include "clang/Config/config.h"
-@@ -137,6 +138,8 @@ const DriverSuffix *FindDriverSuffix(StringRef ProgName, size_t &Pos) {
+@@ -142,6 +143,7 @@
        {"cpp", "--driver-mode=cpp"},
        {"cl", "--driver-mode=cl"},
        {"++", "--driver-mode=g++"},
 +      {"flang", "--driver-mode=fortran"},
-+      {"gfortran", "--driver-mode=fortran"},
    };
  
    for (size_t i = 0; i < llvm::array_lengthof(DriverSuffixes); ++i) {
-@@ -255,6 +257,12 @@ Tool *ToolChain::getAssemble() const {
+@@ -259,6 +261,12 @@
    return Assemble.get();
  }
  
@@ -503,7 +614,7 @@ index f96a1182e3c..eab990e236a 100644
  Tool *ToolChain::getClangAs() const {
    if (!Assemble)
      Assemble.reset(new tools::ClangAs(*this));
-@@ -301,6 +309,9 @@ Tool *ToolChain::getTool(Action::ActionClass AC) const {
+@@ -305,6 +313,9 @@
    case Action::OffloadBundlingJobClass:
    case Action::OffloadUnbundlingJobClass:
      return getOffloadBundler();
@@ -513,7 +624,7 @@ index f96a1182e3c..eab990e236a 100644
    }
  
    llvm_unreachable("Invalid tool kind.");
-@@ -749,6 +760,50 @@ void ToolChain::AddCCKextLibArgs(const ArgList &Args,
+@@ -772,6 +783,50 @@
    CmdArgs.push_back("-lcc_kext");
  }
  
@@ -541,8 +652,8 @@ index f96a1182e3c..eab990e236a 100644
 +    CmdArgs.push_back("-Bstatic");
 +  }
 +  CmdArgs.push_back("-lflang");
-+  CmdArgs.push_back("-lpgmath");
 +  CmdArgs.push_back("-lflangrti");
++  CmdArgs.push_back("-lpgmath");
 +  if( useOpenMP ) {
 +    CmdArgs.push_back("-lomp");
 +  }
@@ -564,11 +675,83 @@ index f96a1182e3c..eab990e236a 100644
  bool ToolChain::AddFastMathRuntimeIfAvailable(const ArgList &Args,
                                                ArgStringList &CmdArgs) const {
    // Do not check for -fno-fast-math or -fno-unsafe-math when -Ofast passed
-diff --git a/lib/Driver/ToolChains/CommonArgs.cpp b/lib/Driver/ToolChains/CommonArgs.cpp
-index f26880123d8..535ae12193a 100644
---- a/lib/Driver/ToolChains/CommonArgs.cpp
-+++ b/lib/Driver/ToolChains/CommonArgs.cpp
-@@ -56,6 +56,23 @@ using namespace clang::driver::tools;
+diff -urN a/lib/Driver/ToolChains/Clang.cpp b/lib/Driver/ToolChains/Clang.cpp
+--- a/lib/Driver/ToolChains/Clang.cpp	2018-09-04 12:40:19.000000000 +0200
++++ b/lib/Driver/ToolChains/Clang.cpp	2018-09-12 15:46:14.549830334 +0200
+@@ -3398,8 +3398,69 @@
+   else
+     CmdArgs.push_back(Args.MakeArgString(getToolChain().getThreadModel()));
+ 
++#ifdef FLANG_LLVM_EXTENSIONS
++  if(Args.getLastArg(options::OPT_fveclib))
++    Args.AddLastArg(CmdArgs, options::OPT_fveclib);
++  else
++    CmdArgs.push_back("-fveclib=PGMATH");
++#else
+   Args.AddLastArg(CmdArgs, options::OPT_fveclib);
++#endif
+ 
++  std::string PassRemarkVal(""), PassRemarkOpt("");
++  if (Args.getLastArg(options::OPT_Minfoall)) {
++    PassRemarkVal = ".*";
++    Args.ClaimAllArgs(options::OPT_Minfoall);
++  } else if (Arg *A = Args.getLastArg(options::OPT_Minfo_EQ)) {
++    for (const StringRef &val : A->getValues()) {
++      if(val.equals("all")) {
++        PassRemarkVal = ".*";
++        break;
++      } else if(val.equals("inline") || val.equals("vect")) {
++        PassRemarkVal += PassRemarkVal.empty() ? "" : "|";
++        PassRemarkVal += val;
++      } else {
++        D.Diag(diag::err_drv_clang_unsupported_minfo_arg)
++          << A->getOption().getName()
++          << val.str();
++        break;
++      }
++    }
++  }
++  PassRemarkOpt = "-pass-remarks=" + PassRemarkVal;
++  CmdArgs.push_back("-mllvm");
++  CmdArgs.push_back(Args.MakeArgString(PassRemarkOpt));
++  Args.ClaimAllArgs(options::OPT_Minfo_EQ);
++  PassRemarkVal.clear();
++  PassRemarkOpt.clear();
++
++  if (Args.getLastArg(options::OPT_Mneginfoall)) {
++    PassRemarkVal = ".*";
++    Args.ClaimAllArgs(options::OPT_Mneginfoall);
++  } else if (Arg *A = Args.getLastArg(options::OPT_Mneginfo_EQ)) {
++    for (const StringRef &val : A->getValues()) {
++      if(val.equals("all")) {
++        PassRemarkVal = ".*";
++        break;
++      } else if(val.equals("inline") || val.equals("vect")) {
++        PassRemarkVal += PassRemarkVal.empty() ? "" : "|";
++        PassRemarkVal += val;
++      } else {
++        D.Diag(diag::err_drv_clang_unsupported_minfo_arg)
++          << A->getOption().getName()
++          << val.str();
++        break;
++      }
++    }
++  }
++  PassRemarkOpt = "-pass-remarks-missed=" + PassRemarkVal;
++  CmdArgs.push_back("-mllvm");
++  CmdArgs.push_back(Args.MakeArgString(PassRemarkOpt));
++  PassRemarkOpt = "-pass-remarks-analysis=" + PassRemarkVal;
++  CmdArgs.push_back("-mllvm");
++  CmdArgs.push_back(Args.MakeArgString(PassRemarkOpt));
++  Args.ClaimAllArgs(options::OPT_Mneginfo_EQ);
++
+   if (Args.hasFlag(options::OPT_fmerge_all_constants,
+                    options::OPT_fno_merge_all_constants, false))
+     CmdArgs.push_back("-fmerge-all-constants");
+diff -urN a/lib/Driver/ToolChains/CommonArgs.cpp b/lib/Driver/ToolChains/CommonArgs.cpp
+--- a/lib/Driver/ToolChains/CommonArgs.cpp	2018-06-26 18:14:35.000000000 +0200
++++ b/lib/Driver/ToolChains/CommonArgs.cpp	2018-09-12 15:46:14.549830334 +0200
+@@ -58,6 +58,23 @@
  using namespace clang;
  using namespace llvm::opt;
  
@@ -592,7 +775,7 @@ index f26880123d8..535ae12193a 100644
  void tools::addPathIfExists(const Driver &D, const Twine &Path,
                              ToolChain::path_list &Paths) {
    if (D.getVFS().exists(Path))
-@@ -138,6 +155,7 @@ void tools::AddLinkerInputs(const ToolChain &TC, const InputInfoList &Inputs,
+@@ -140,6 +157,7 @@
                              const ArgList &Args, ArgStringList &CmdArgs,
                              const JobAction &JA) {
    const Driver &D = TC.getDriver();
@@ -600,7 +783,7 @@ index f26880123d8..535ae12193a 100644
  
    // Add extra linker input arguments which are not treated as inputs
    // (constructed via -Xarch_).
-@@ -162,6 +180,14 @@ void tools::AddLinkerInputs(const ToolChain &TC, const InputInfoList &Inputs,
+@@ -166,6 +184,14 @@
        continue;
      }
  
@@ -615,7 +798,7 @@ index f26880123d8..535ae12193a 100644
      // Otherwise, this is a linker input argument.
      const Arg &A = II.getInputArg();
  
-@@ -179,6 +205,15 @@ void tools::AddLinkerInputs(const ToolChain &TC, const InputInfoList &Inputs,
+@@ -183,6 +209,15 @@
      }
    }
  
@@ -631,11 +814,10 @@ index f26880123d8..535ae12193a 100644
    // LIBRARY_PATH - included following the user specified library paths.
    //                and only supported on native toolchains.
    if (!TC.isCrossCompiling()) {
-diff --git a/lib/Driver/ToolChains/CommonArgs.h b/lib/Driver/ToolChains/CommonArgs.h
-index 012f5b9f87a..6e1ed090611 100644
---- a/lib/Driver/ToolChains/CommonArgs.h
-+++ b/lib/Driver/ToolChains/CommonArgs.h
-@@ -20,6 +20,8 @@ namespace clang {
+diff -urN a/lib/Driver/ToolChains/CommonArgs.h b/lib/Driver/ToolChains/CommonArgs.h
+--- a/lib/Driver/ToolChains/CommonArgs.h	2018-05-18 17:07:56.000000000 +0200
++++ b/lib/Driver/ToolChains/CommonArgs.h	2018-09-12 15:46:14.549830334 +0200
+@@ -20,6 +20,8 @@
  namespace driver {
  namespace tools {
  
@@ -644,12 +826,10 @@ index 012f5b9f87a..6e1ed090611 100644
  void addPathIfExists(const Driver &D, const Twine &Path,
                       ToolChain::path_list &Paths);
  
-diff --git a/lib/Driver/ToolChains/Flang.cpp b/lib/Driver/ToolChains/Flang.cpp
-new file mode 100644
-index 00000000000..eb619a860e9
---- /dev/null
-+++ b/lib/Driver/ToolChains/Flang.cpp
-@@ -0,0 +1,851 @@
+diff -urN a/lib/Driver/ToolChains/Flang.cpp b/lib/Driver/ToolChains/Flang.cpp
+--- a/lib/Driver/ToolChains/Flang.cpp	1970-01-01 01:00:00.000000000 +0100
++++ b/lib/Driver/ToolChains/Flang.cpp	2018-09-12 15:55:31.313432675 +0200
+@@ -0,0 +1,903 @@
 +//===--- Flang.cpp - Flang+LLVM ToolChain Implementations -------*- C++ -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -698,7 +878,9 @@ index 00000000000..eb619a860e9
 +  ArgStringList LowerCmdArgs;
 +  SmallString<256> Stem;
 +  std::string OutFile;
-+  bool NeedIEEE = true;
++  bool NeedIEEE = false;
++  bool NeedFastMath = false;
++  bool NeedRelaxedMath = false;
 +
 +  // Check number of inputs for sanity. We need at least one input.
 +  assert(Inputs.size() >= 1 && "Must have at least one input.");
@@ -728,54 +910,6 @@ index 00000000000..eb619a860e9
 +
 +  /***** Process common args *****/
 +
-+  // Override IEEE mode if needed
-+  if (Args.hasArg(options::OPT_Ofast) ||
-+      Args.hasArg(options::OPT_ffast_math) ||
-+      Args.hasArg(options::OPT_fno_fast_math) ||
-+      Args.hasArg(options::OPT_Kieee_on) ||
-+      Args.hasArg(options::OPT_Kieee_off)) {
-+    auto A = Args.getLastArg(options::OPT_Ofast,
-+                             options::OPT_ffast_math,
-+                             options::OPT_fno_fast_math,
-+                             options::OPT_Kieee_on,
-+                             options::OPT_Kieee_off);
-+    auto Opt = A->getOption();
-+    if (Opt.matches(options::OPT_Ofast) ||
-+        Opt.matches(options::OPT_ffast_math) ||
-+        Opt.matches(options::OPT_Kieee_off)) {
-+      NeedIEEE = false;
-+    }
-+  }
-+
-+  // -Kieee is on by default
-+  if (!Args.hasArg(options::OPT_Kieee_off)) {
-+    CommonCmdArgs.push_back("-y"); // Common: -y 129 2
-+    CommonCmdArgs.push_back("129");
-+    CommonCmdArgs.push_back("2");
-+    // Lower: -x 6 0x100
-+    LowerCmdArgs.push_back("-x");
-+    LowerCmdArgs.push_back("6");
-+    LowerCmdArgs.push_back("0x100");
-+    // -x 42 0x400000
-+    LowerCmdArgs.push_back("-x");
-+    LowerCmdArgs.push_back("42");
-+    LowerCmdArgs.push_back("0x400000");
-+    // -y 129 4
-+    LowerCmdArgs.push_back("-y");
-+    LowerCmdArgs.push_back("129");
-+    LowerCmdArgs.push_back("4");
-+    // -x 129 0x400
-+    LowerCmdArgs.push_back("-x");
-+    LowerCmdArgs.push_back("129");
-+    LowerCmdArgs.push_back("0x400");
-+    for (auto Arg : Args.filtered(options::OPT_Kieee_on)) {
-+      Arg->claim();
-+    }
-+  } else {
-+    for (auto Arg : Args.filtered(options::OPT_Kieee_off)) {
-+      Arg->claim();
-+    }
-+  }
 +
 +  // Add "inform level" flag
 +  if (Args.hasArg(options::OPT_Minform_EQ)) {
@@ -913,6 +1047,13 @@ index 00000000000..eb619a860e9
 +      CommonCmdArgs.push_back("-x");
 +      CommonCmdArgs.push_back("69");
 +      CommonCmdArgs.push_back("0x400");
++
++      // Disable use of native atomic instructions
++      // for OpenMP atomics pending either a named
++      // option or a libatomic bundled with flang.
++      UpperCmdArgs.push_back("-x");
++      UpperCmdArgs.push_back("69");
++      UpperCmdArgs.push_back("0x1000");
 +    }
 +  }
 +
@@ -1031,46 +1172,6 @@ index 00000000000..eb619a860e9
 +    UpperCmdArgs.push_back("0x10");
 +  }
 +
-+  // Set a -x flag for first part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Hx_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    UpperCmdArgs.push_back("-x");
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
-+  // Set a -y flag for first part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Hy_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    UpperCmdArgs.push_back("-y");
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
-+  // Set a -q (debug) flag for first part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Hq_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    UpperCmdArgs.push_back("-q");
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
-+  // Set a -qq (debug) flag for first part of Fortran frontend
-+  for (Arg *A : Args.filtered(options::OPT_Hqq_EQ)) {
-+    A->claim();
-+    StringRef Value = A->getValue();
-+    auto XFlag = Value.split(",");
-+    UpperCmdArgs.push_back("-qq");
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
-+    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
-+  }
-+
 +  // Pass an arbitrary flag for first part of Fortran frontend
 +  for (Arg *A : Args.filtered(options::OPT_Wh_EQ)) {
 +    A->claim();
@@ -1159,21 +1260,85 @@ index 00000000000..eb619a860e9
 +    LowerCmdArgs.push_back("-debug");
 +  }
 +
-+  if (Arg *A = Args.getLastArg(options::OPT_ffast_math, options::OPT_fno_fast_math)) {
-+    if (A->getOption().matches(options::OPT_ffast_math)) {
-+      LowerCmdArgs.push_back("-x");
-+    } else {
-+      LowerCmdArgs.push_back("-y");
++  /* Pick the last among conflicting flags, if a positive and negative flag
++     exists for ex. "-ffast-math -fno-fast-math" they get nullified. Also any
++     previously overwritten flag remains that way. 
++     For ex. "-Kieee -ffast-math -fno-fast-math". -Kieee gets overwritten by 
++     -ffast-math which then gets negated by -fno-fast-math, finally behaving as
++     if none of those flags were passed.
++  */
++  for(Arg *A: Args.filtered(options::OPT_ffast_math, options::OPT_fno_fast_math,
++                        options::OPT_Ofast, options::OPT_Kieee_off,
++                        options::OPT_Kieee_on, options::OPT_frelaxed_math)) {
++    if (A->getOption().matches(options::OPT_ffast_math) ||
++        A->getOption().matches(options::OPT_Ofast)) {
++      NeedIEEE = NeedRelaxedMath = false;
++      NeedFastMath = true;
++    } else if (A->getOption().matches(options::OPT_Kieee_on)) {
++      NeedFastMath = NeedRelaxedMath = false;
++      NeedIEEE = true;
++    } else if (A->getOption().matches(options::OPT_frelaxed_math)) {
++      NeedFastMath = NeedIEEE = false;
++      NeedRelaxedMath = true;
++    } else if (A->getOption().matches(options::OPT_fno_fast_math)) {
++      NeedFastMath = false;
++    } else if (A->getOption().matches(options::OPT_Kieee_off)) {
++      NeedIEEE = false;
 +    }
-+    LowerCmdArgs.push_back("216");
-+    LowerCmdArgs.push_back("1");
++    A->claim();
 +  }
 +
-+  // IEEE compatibility mode
-+  LowerCmdArgs.push_back("-ieee");
-+  if (NeedIEEE) {
++  if (NeedFastMath) {
++    // Lower: -x 216 1
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("216");
 +    LowerCmdArgs.push_back("1");
++    // Lower: -ieee 0
++    LowerCmdArgs.push_back("-ieee");
++    LowerCmdArgs.push_back("0");
++  } else if (NeedIEEE) {
++    // Common: -y 129 2
++    CommonCmdArgs.push_back("-y");
++    CommonCmdArgs.push_back("129");
++    CommonCmdArgs.push_back("2");
++    // Lower: -x 6 0x100
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("6");
++    LowerCmdArgs.push_back("0x100");
++    // Lower: -x 42 0x400000
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("42");
++    LowerCmdArgs.push_back("0x400000");
++    // Lower: -y 129 4
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("129");
++    LowerCmdArgs.push_back("4");
++    // Lower: -x 129 0x400
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("129");
++    LowerCmdArgs.push_back("0x400");
++    // Lower: -y 216 1 (OPT_fno_fast_math)
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("216");
++    LowerCmdArgs.push_back("1");
++    // Lower: -ieee 1
++    LowerCmdArgs.push_back("-ieee");
++    LowerCmdArgs.push_back("1");
++  } else if (NeedRelaxedMath) {
++    // Lower: -x 15 0x400
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("15");
++    LowerCmdArgs.push_back("0x400");
++    // Lower: -y 216 1 (OPT_fno_fast_math)
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("216");
++    LowerCmdArgs.push_back("1");
++    // Lower: -ieee 0
++    LowerCmdArgs.push_back("-ieee");
++    LowerCmdArgs.push_back("0");
 +  } else {
++    // Lower: -ieee 0
++    LowerCmdArgs.push_back("-ieee");
 +    LowerCmdArgs.push_back("0");
 +  }
 +
@@ -1190,6 +1355,7 @@ index 00000000000..eb619a860e9
 +  UpperCmdArgs.append(CommonCmdArgs.begin(), CommonCmdArgs.end()); // Append common arguments
 +  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("19"); UpperCmdArgs.push_back("0x400000");
 +  UpperCmdArgs.push_back("-quad");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("68"); UpperCmdArgs.push_back("0x1");
 +  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("59"); UpperCmdArgs.push_back("4");
 +  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("15"); UpperCmdArgs.push_back("2");
 +  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("49"); UpperCmdArgs.push_back("0x400004");
@@ -1221,9 +1387,6 @@ index 00000000000..eb619a860e9
 +    UpperCmdArgs.push_back("2");
 +  }
 +
-+  // Add system include arguments.
-+  getToolChain().AddFlangSystemIncludeArgs(Args, UpperCmdArgs);
-+
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("unix");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__unix");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__unix__");
@@ -1232,25 +1395,51 @@ index 00000000000..eb619a860e9
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__linux__");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__NO_MATH_INLINES");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__LP64__");
-+  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__x86_64");
-+  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__x86_64__");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__LONG_MAX__=9223372036854775807L");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__SIZE_TYPE__=unsigned long int");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__PTRDIFF_TYPE__=long int");
++  switch (getToolChain().getEffectiveTriple().getArch()) {
++  case llvm::Triple::aarch64:
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__aarch64");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__aarch64__");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__ARM_ARCH=8");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__ARM_ARCH__=8");
++    break;
++  case llvm::Triple::x86_64:
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__x86_64");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__x86_64__");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__amd_64__amd64__");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__k8");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__k8__");
++    break;
++  default: /* generic 64-bit */
++    ;
++  }
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__THROW=");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__extension__=");
-+  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__amd_64__amd64__");
-+  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__k8");
-+  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__k8__");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__PGLLVM__");
 +
 +  // Enable preprocessor
 +  if (Args.hasArg(options::OPT_Mpreprocess) ||
 +      Args.hasArg(options::OPT_cpp) ||
++      Args.hasArg(options::OPT_E) ||
 +      types::getPreprocessedType(InputType) != types::TY_INVALID) {
 +    UpperCmdArgs.push_back("-preprocess");
-+    for (auto Arg : Args.filtered(options::OPT_Mpreprocess, options::OPT_cpp)) {
++    for (auto Arg : Args.filtered(options::OPT_Mpreprocess, options::OPT_cpp, options::OPT_E)) {
 +      Arg->claim();
++    }
++
++    // When -E option is provided, run only the fortran preprocessor.
++    // Only in -E mode, consume -P if it exists
++    if (Args.hasArg(options::OPT_E)) {
++      UpperCmdArgs.push_back("-es");
++      // Line marker mode is disabled
++      if (Args.hasArg(options::OPT_P)) {
++        Args.ClaimAllArgs(options::OPT_P);
++      } else {
++        // -pp enables line marker mode in fortran preprocessor
++        UpperCmdArgs.push_back("-pp");
++      }
 +    }
 +  }
 +
@@ -1356,7 +1545,7 @@ index 00000000000..eb619a860e9
 +        << A->getAsString(Args);
 +    }
 +  } else { // No argument passed
-+    UpperCmdArgs.push_back("-y"); // Default is 1995
++    UpperCmdArgs.push_back("-x"); // Default is 03
 +  }
 +  UpperCmdArgs.push_back("54"); UpperCmdArgs.push_back("1"); // XBIT value
 +
@@ -1372,6 +1561,46 @@ index 00000000000..eb619a860e9
 +    for (auto Arg : Args.filtered(options::OPT_Mchkptr)) {
 +      Arg->claim();
 +    }
++  }
++
++  // Set a -x flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hx_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -y flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hy_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-y");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -q (debug) flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-q");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -qq (debug) flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hqq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-qq");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
 +  }
 +
 +  const char * STBFile = Args.MakeArgString(Stem + ".stb");
@@ -1394,8 +1623,9 @@ index 00000000000..eb619a860e9
 +
 +  C.addCommand(llvm::make_unique<Command>(JA, *this, UpperExec, UpperCmdArgs, Inputs));
 +
-+  // For -fsyntax-only that is it
-+  if (Args.hasArg(options::OPT_fsyntax_only)) return;
++  // For -fsyntax-only or -E that is it
++  if (Args.hasArg(options::OPT_fsyntax_only) ||
++      Args.hasArg(options::OPT_E)) return;
 +
 +  /***** Lower part of Fortran frontend *****/
 +
@@ -1407,6 +1637,7 @@ index 00000000000..eb619a860e9
 +  LowerCmdArgs.push_back("-terse"); LowerCmdArgs.push_back("1");
 +  LowerCmdArgs.push_back("-inform"); LowerCmdArgs.push_back("warn");
 +  LowerCmdArgs.append(CommonCmdArgs.begin(), CommonCmdArgs.end()); // Append common arguments
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("68"); LowerCmdArgs.push_back("0x1");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("51"); LowerCmdArgs.push_back("0x20");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("119"); LowerCmdArgs.push_back("0xa10000");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("122"); LowerCmdArgs.push_back("0x40");
@@ -1419,6 +1650,7 @@ index 00000000000..eb619a860e9
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("70"); LowerCmdArgs.push_back("0x8000");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("122"); LowerCmdArgs.push_back("1");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("125"); LowerCmdArgs.push_back("0x20000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("164"); LowerCmdArgs.push_back("0x800000");
 +  LowerCmdArgs.push_back("-quad");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("59"); LowerCmdArgs.push_back("4");
 +  LowerCmdArgs.push_back("-tp"); LowerCmdArgs.push_back("px");
@@ -1501,11 +1733,9 @@ index 00000000000..eb619a860e9
 +  C.addCommand(llvm::make_unique<Command>(JA, *this, LowerExec, LowerCmdArgs, Inputs));
 +}
 +
-diff --git a/lib/Driver/ToolChains/Flang.h b/lib/Driver/ToolChains/Flang.h
-new file mode 100644
-index 00000000000..2c3eb7c895a
---- /dev/null
-+++ b/lib/Driver/ToolChains/Flang.h
+diff -urN a/lib/Driver/ToolChains/Flang.h b/lib/Driver/ToolChains/Flang.h
+--- a/lib/Driver/ToolChains/Flang.h	1970-01-01 01:00:00.000000000 +0100
++++ b/lib/Driver/ToolChains/Flang.h	2018-09-12 15:46:14.551830332 +0200
 @@ -0,0 +1,50 @@
 +//===--- Flang.h - Flang Tool and ToolChain Implementations ====-*- C++ -*-===//
 +//
@@ -1557,11 +1787,10 @@ index 00000000000..2c3eb7c895a
 +} // end namespace clang
 +
 +#endif // LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_CLANG_H
-diff --git a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
-index 7845781f12c..b391ba27ffa 100644
---- a/lib/Driver/ToolChains/Gnu.cpp
-+++ b/lib/Driver/ToolChains/Gnu.cpp
-@@ -465,6 +465,16 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
+diff -urN a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
+--- a/lib/Driver/ToolChains/Gnu.cpp	2018-07-31 16:21:46.000000000 +0200
++++ b/lib/Driver/ToolChains/Gnu.cpp	2018-09-12 15:46:14.552830331 +0200
+@@ -450,6 +450,16 @@
    // The profile runtime also needs access to system libraries.
    getToolChain().addProfileRTLibs(Args, CmdArgs);
  
@@ -1578,11 +1807,10 @@ index 7845781f12c..b391ba27ffa 100644
    if (D.CCCIsCXX() &&
        !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
      if (ToolChain.ShouldLinkCXXStdlib(Args)) {
-diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
-index 1301cdf114a..504c29502ac 100644
---- a/lib/Driver/ToolChains/Linux.cpp
-+++ b/lib/Driver/ToolChains/Linux.cpp
-@@ -543,6 +543,194 @@ std::string Linux::getDynamicLinker(const ArgList &Args) const {
+diff -urN a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
+--- a/lib/Driver/ToolChains/Linux.cpp	2018-07-30 21:44:13.000000000 +0200
++++ b/lib/Driver/ToolChains/Linux.cpp	2018-09-12 15:56:10.441404761 +0200
+@@ -619,6 +619,28 @@
    return "/" + LibDir + "/" + Loader;
  }
  
@@ -1608,196 +1836,13 @@ index 1301cdf114a..504c29502ac 100644
 +  Flang1Args.push_back(DriverArgs.MakeArgString(ArgValue));
 +}
 +
-+void Linux::AddFlangSystemIncludeArgs(const ArgList &DriverArgs,
-+                                      ArgStringList &Flang1Args) const {
-+  path_list IncludePathList;
-+  const Driver &D = getDriver();
-+  std::string SysRoot = computeSysRoot();
-+
-+  if (DriverArgs.hasArg(options::OPT_nostdinc))
-+    return;
-+
-+  {
-+    SmallString<128> P(D.InstalledDir);
-+    llvm::sys::path::append(P, "../include");
-+    IncludePathList.push_back(P.str());
-+  }
-+
-+  if (!DriverArgs.hasArg(options::OPT_nostdlibinc))
-+    IncludePathList.push_back(SysRoot + "/usr/local/include");
-+
-+  if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
-+    SmallString<128> P(D.ResourceDir);
-+    llvm::sys::path::append(P, "include");
-+    IncludePathList.push_back(P.str());
-+  }
-+
-+  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
-+    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
-+    return;
-+  }
-+
-+  // Check for configure-time C include directories.
-+  StringRef CIncludeDirs(C_INCLUDE_DIRS);
-+  if (CIncludeDirs != "") {
-+    SmallVector<StringRef, 5> dirs;
-+    CIncludeDirs.split(dirs, ":");
-+    for (StringRef dir : dirs) {
-+      StringRef Prefix =
-+          llvm::sys::path::is_absolute(dir) ? StringRef(SysRoot) : "";
-+      IncludePathList.push_back(Prefix.str() + dir.str());
-+    }
-+    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
-+    return;
-+  }
-+
-+  // Lacking those, try to detect the correct set of system includes for the
-+  // target triple.
-+
-+  // Add include directories specific to the selected multilib set and multilib.
-+  if (GCCInstallation.isValid()) {
-+    const auto &Callback = Multilibs.includeDirsCallback();
-+    if (Callback) {
-+      for (const auto &Path : Callback(GCCInstallation.getMultilib()))
-+        addExternCSystemIncludeIfExists(
-+            DriverArgs, Flang1Args, GCCInstallation.getInstallPath() + Path);
-+    }
-+  }
-+
-+  // Implement generic Debian multiarch support.
-+  const StringRef X86_64MultiarchIncludeDirs[] = {
-+      "/usr/include/x86_64-linux-gnu",
-+
-+      // FIXME: These are older forms of multiarch. It's not clear that they're
-+      // in use in any released version of Debian, so we should consider
-+      // removing them.
-+      "/usr/include/i686-linux-gnu/64", "/usr/include/i486-linux-gnu/64"};
-+  const StringRef X86MultiarchIncludeDirs[] = {
-+      "/usr/include/i386-linux-gnu",
-+
-+      // FIXME: These are older forms of multiarch. It's not clear that they're
-+      // in use in any released version of Debian, so we should consider
-+      // removing them.
-+      "/usr/include/x86_64-linux-gnu/32", "/usr/include/i686-linux-gnu",
-+      "/usr/include/i486-linux-gnu"};
-+  const StringRef AArch64MultiarchIncludeDirs[] = {
-+      "/usr/include/aarch64-linux-gnu"};
-+  const StringRef ARMMultiarchIncludeDirs[] = {
-+      "/usr/include/arm-linux-gnueabi"};
-+  const StringRef ARMHFMultiarchIncludeDirs[] = {
-+      "/usr/include/arm-linux-gnueabihf"};
-+  const StringRef MIPSMultiarchIncludeDirs[] = {"/usr/include/mips-linux-gnu"};
-+  const StringRef MIPSELMultiarchIncludeDirs[] = {
-+      "/usr/include/mipsel-linux-gnu"};
-+  const StringRef MIPS64MultiarchIncludeDirs[] = {
-+      "/usr/include/mips64-linux-gnu", "/usr/include/mips64-linux-gnuabi64"};
-+  const StringRef MIPS64ELMultiarchIncludeDirs[] = {
-+      "/usr/include/mips64el-linux-gnu",
-+      "/usr/include/mips64el-linux-gnuabi64"};
-+  const StringRef PPCMultiarchIncludeDirs[] = {
-+      "/usr/include/powerpc-linux-gnu"};
-+  const StringRef PPC64MultiarchIncludeDirs[] = {
-+      "/usr/include/powerpc64-linux-gnu"};
-+  const StringRef PPC64LEMultiarchIncludeDirs[] = {
-+      "/usr/include/powerpc64le-linux-gnu"};
-+  const StringRef SparcMultiarchIncludeDirs[] = {
-+      "/usr/include/sparc-linux-gnu"};
-+  const StringRef Sparc64MultiarchIncludeDirs[] = {
-+      "/usr/include/sparc64-linux-gnu"};
-+  ArrayRef<StringRef> MultiarchIncludeDirs;
-+  switch (getTriple().getArch()) {
-+  case llvm::Triple::x86_64:
-+    MultiarchIncludeDirs = X86_64MultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::x86:
-+    MultiarchIncludeDirs = X86MultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::aarch64:
-+  case llvm::Triple::aarch64_be:
-+    MultiarchIncludeDirs = AArch64MultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::arm:
-+    if (getTriple().getEnvironment() == llvm::Triple::GNUEABIHF)
-+      MultiarchIncludeDirs = ARMHFMultiarchIncludeDirs;
-+    else
-+      MultiarchIncludeDirs = ARMMultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::mips:
-+    MultiarchIncludeDirs = MIPSMultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::mipsel:
-+    MultiarchIncludeDirs = MIPSELMultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::mips64:
-+    MultiarchIncludeDirs = MIPS64MultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::mips64el:
-+    MultiarchIncludeDirs = MIPS64ELMultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::ppc:
-+    MultiarchIncludeDirs = PPCMultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::ppc64:
-+    MultiarchIncludeDirs = PPC64MultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::ppc64le:
-+    MultiarchIncludeDirs = PPC64LEMultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::sparc:
-+    MultiarchIncludeDirs = SparcMultiarchIncludeDirs;
-+    break;
-+  case llvm::Triple::sparcv9:
-+    MultiarchIncludeDirs = Sparc64MultiarchIncludeDirs;
-+    break;
-+  default:
-+    break;
-+  }
-+  for (StringRef Dir : MultiarchIncludeDirs) {
-+    if (llvm::sys::fs::exists(SysRoot + Dir)) {
-+      IncludePathList.push_back(SysRoot + Dir.str());
-+      break;
-+    }
-+  }
-+
-+  if (getTriple().getOS() == llvm::Triple::RTEMS) {
-+    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
-+    return;
-+  }
-+
-+  // Add an include of '/include' directly. This isn't provided by default by
-+  // system GCCs, but is often used with cross-compiling GCCs, and harmless to
-+  // add even when Clang is acting as-if it were a system compiler.
-+  IncludePathList.push_back(SysRoot + "/include");
-+
-+  IncludePathList.push_back(SysRoot + "/usr/include");
-+
-+  AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
-+}
-+
  void Linux::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                        ArgStringList &CC1Args) const {
    const Driver &D = getDriver();
-diff --git a/lib/Driver/ToolChains/Linux.h b/lib/Driver/ToolChains/Linux.h
-index 9778c1832cc..34e41752d93 100644
---- a/lib/Driver/ToolChains/Linux.h
-+++ b/lib/Driver/ToolChains/Linux.h
-@@ -27,6 +27,9 @@ class LLVM_LIBRARY_VISIBILITY Linux : public Generic_ELF {
-   void
-   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-                             llvm::opt::ArgStringList &CC1Args) const override;
-+  void
-+  AddFlangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
-+                            llvm::opt::ArgStringList &Flang1Args) const override;
-   std::string findLibCxxIncludePath() const override;
-   void addLibStdCxxIncludePaths(
-       const llvm::opt::ArgList &DriverArgs,
-diff --git a/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
-old mode 100644
-new mode 100755
-index ab63f0e81b1..526db0fabef
---- a/lib/Driver/Types.cpp
-+++ b/lib/Driver/Types.cpp
-@@ -99,6 +99,8 @@ bool types::isAcceptedByClang(ID Id) {
+diff -urN a/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
+--- a/lib/Driver/Types.cpp	2018-05-11 21:21:39.000000000 +0200
++++ b/lib/Driver/Types.cpp	2018-09-12 15:46:14.554830330 +0200
+@@ -99,6 +99,8 @@
  
    case TY_Asm:
    case TY_C: case TY_PP_C:
@@ -1806,7 +1851,7 @@ index ab63f0e81b1..526db0fabef
    case TY_CL:
    case TY_CUDA: case TY_PP_CUDA:
    case TY_CUDA_DEVICE:
-@@ -117,6 +119,33 @@ bool types::isAcceptedByClang(ID Id) {
+@@ -120,6 +122,33 @@
    }
  }
  
@@ -1840,7 +1885,7 @@ index ab63f0e81b1..526db0fabef
  bool types::isObjC(ID Id) {
    switch (Id) {
    default:
-@@ -178,8 +207,8 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
+@@ -196,8 +225,8 @@
    return llvm::StringSwitch<types::ID>(Ext)
             .Case("c", TY_C)
             .Case("C", TY_CXX)
@@ -1851,7 +1896,7 @@ index ab63f0e81b1..526db0fabef
             .Case("h", TY_CHeader)
             .Case("H", TY_CXXHeader)
             .Case("i", TY_PP_C)
-@@ -212,18 +241,22 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
+@@ -230,19 +259,23 @@
             .Case("cui", TY_PP_CUDA)
             .Case("cxx", TY_CXX)
             .Case("CXX", TY_CXX)
@@ -1864,6 +1909,7 @@ index ab63f0e81b1..526db0fabef
 -           .Case("fpp", TY_Fortran)
 -           .Case("FPP", TY_Fortran)
             .Case("gch", TY_PCH)
+            .Case("hip", TY_HIP)
             .Case("hpp", TY_CXXHeader)
             .Case("iim", TY_PP_CXXModule)
             .Case("lib", TY_Object)
@@ -1882,7 +1928,7 @@ index ab63f0e81b1..526db0fabef
             .Case("mii", TY_PP_ObjCXX)
             .Case("obj", TY_Object)
             .Case("pch", TY_PCH)
-@@ -248,7 +281,9 @@ types::ID types::lookupTypeForTypeSpecifier(const char *Name) {
+@@ -267,7 +300,9 @@
  // FIXME: Why don't we just put this list in the defs file, eh.
  void types::getCompilationPhases(ID Id, llvm::SmallVectorImpl<phases::ID> &P) {
    if (Id != TY_Object) {
@@ -1893,7 +1939,7 @@ index ab63f0e81b1..526db0fabef
        P.push_back(phases::Preprocess);
      }
  
-@@ -258,6 +293,9 @@ void types::getCompilationPhases(ID Id, llvm::SmallVectorImpl<phases::ID> &P) {
+@@ -277,6 +312,9 @@
  
      if (!onlyPrecompileType(Id)) {
        if (!onlyAssembleType(Id)) {
@@ -1903,3 +1949,29 @@ index ab63f0e81b1..526db0fabef
          P.push_back(phases::Compile);
          P.push_back(phases::Backend);
        }
+diff -urN a/lib/Frontend/CompilerInvocation.cpp b/lib/Frontend/CompilerInvocation.cpp
+--- a/lib/Frontend/CompilerInvocation.cpp	2018-07-26 17:17:38.000000000 +0200
++++ b/lib/Frontend/CompilerInvocation.cpp	2018-09-12 15:46:14.566830321 +0200
+@@ -558,6 +558,10 @@
+       Opts.setVecLib(CodeGenOptions::Accelerate);
+     else if (Name == "SVML")
+       Opts.setVecLib(CodeGenOptions::SVML);
++#ifdef FLANG_LLVM_EXTENSIONS
++    else if (Name == "PGMATH")
++      Opts.setVecLib(CodeGenOptions::PGMATH);
++#endif
+     else if (Name == "none")
+       Opts.setVecLib(CodeGenOptions::NoLibrary);
+     else
+diff -urN a/tools/driver/CMakeLists.txt b/tools/driver/CMakeLists.txt
+--- a/tools/driver/CMakeLists.txt	2018-07-20 18:30:02.000000000 +0200
++++ b/tools/driver/CMakeLists.txt	2018-09-12 15:46:15.872829387 +0200
+@@ -62,7 +62,7 @@
+ add_dependencies(clang clang-headers)
+ 
+ if(NOT CLANG_LINKS_TO_CREATE)
+-  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp)
++  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp flang)
+ endif()
+ 
+ foreach(link ${CLANG_LINKS_TO_CREATE})

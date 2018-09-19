@@ -1,0 +1,22 @@
+--- a/tools/extra/clangd/CMakeLists.txt	2018-09-12 16:19:40.065532586 +0200
++++ b/tools/extra/clangd/CMakeLists.txt	2018-09-12 16:19:52.096504974 +0200
+@@ -2,11 +2,6 @@
+   Support
+   )
+ 
+-set(CLANGD_ATOMIC_LIB "")
+-if(NOT HAVE_CXX_ATOMICS64_WITHOUT_LIB)
+-  list(APPEND CLANGD_ATOMIC_LIB "atomic")
+-endif()
+-
+ add_clang_library(clangDaemon
+   AST.cpp
+   ClangdLSPServer.cpp
+@@ -62,7 +57,6 @@
+   clangToolingInclusions
+   clangToolingRefactor
+   ${LLVM_PTHREAD_LIB}
+-  ${CLANGD_ATOMIC_LIB}
+   )
+ 
+ if( LLVM_LIB_FUZZING_ENGINE OR LLVM_USE_SANITIZE_COVERAGE )

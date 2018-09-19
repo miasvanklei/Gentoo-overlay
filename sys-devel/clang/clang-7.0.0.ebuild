@@ -9,7 +9,8 @@ CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-utils eapi7-ver flag-o-matic llvm \
-	multilib-minimal pax-utils prefix python-single-r1 toolchain-funcs
+	multilib-minimal multiprocessing pax-utils prefix python-single-r1 \
+	toolchain-funcs
 
 MY_P=cfe-${PV/_/}.src
 EXTRA_P=clang-tools-extra-${PV/_/}.src
@@ -19,8 +20,7 @@ DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
 SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 	http://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
-	test? ( http:releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
+	test? ( http://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -47,13 +47,13 @@ RDEPEND="
 DEPEND="${RDEPEND}
 	doc? ( dev-python/sphinx )
 	xml? ( virtual/pkgconfig )
-
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
 RDEPEND="${RDEPEND}
 	!<sys-devel/llvm-4.0.0_rc:0
 	!sys-devel/clang:0"
 PDEPEND="
+	sys-devel/clang-common
 	~sys-devel/clang-runtime-${PV}
 	fortran? ( dev-lang/flang )
 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
@@ -98,46 +98,39 @@ src_unpack() {
 	if use test; then
 		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
 		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
+			"${LLVM_P}"/lib/Testing/Support \
 			"${LLVM_P}"/utils/{lit,llvm-lit,unittest} || die
 		mv "${LLVM_P}" "${WORKDIR}"/llvm || die
-	fi
-
-	if ! use doc; then
-		einfo "Unpacking llvm-${PV}-manpages.tar.bz2 ..."
-		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
 	fi
 }
 
 src_prepare() {
-	# fix tests with compiler-rt
-	eapply "${FILESDIR}"/0002-test-Fix-Cross-DSO-CFI-Android-sanitizer-test-for-rt.patch
+	# remove latomic in clangd
+	eapply "${FILESDIR}"/0001-remove-atomic.patch
 
 	# fix use with arm
-	eapply "${FILESDIR}"/0003-fix-unwind.patch
+	eapply "${FILESDIR}"/0002-fix-unwind.patch
 
 	# link in libc++abi and libunwind
-	eapply "${FILESDIR}"/0004-link-libraries.patch
+	eapply "${FILESDIR}"/0003-link-libraries.patch
 
 	# dont recurse to itself when clang > gcc symlink
-	eapply "${FILESDIR}"/0005-fix-ada-in-configure.patch
+	eapply "${FILESDIR}"/0004-fix-ada-in-configure.patch
 
 	# cleanup and gentoo patches(SSP,PIE,FULLRELRO)
-	eapply "${FILESDIR}"/0006-gentoo-linux-changes.patch
+	eapply "${FILESDIR}"/0005-gentoo-linux-changes.patch
 
 	# increase gcc version
-	eapply "${FILESDIR}"/0007-increase-gcc-version.patch
+	eapply "${FILESDIR}"/0006-increase-gcc-version.patch
 
 	# define __STDC_ISO_10646__ and undefine __gnu_linux__
-	eapply "${FILESDIR}"/0008-defines-musl.patch
-
-	# needed in linux kernel
-	eapply "${FILESDIR}"/0009-add-fno-delete-null-pointer-checks.patch
+	eapply "${FILESDIR}"/0007-defines-musl.patch
 
 	# add Fortran support
-	use fortran && eapply "${FILESDIR}"/0010-add-fortran-support.patch
+	use fortran && eapply "${FILESDIR}"/0008-add-fortran-support.patch
 
 	# create symlinks to gcc tools
-	eapply "${FILESDIR}"/0011-symlink-gcc-tools.patch
+	eapply "${FILESDIR}"/0009-symlink-gcc-tools.patch
 
 	cmake-utils_src_prepare
 	eprefixify lib/Frontend/InitHeaderSearch.cpp
@@ -151,6 +144,7 @@ multilib_src_configure() {
 		# ensure that the correct llvm-config is used
 		-DLLVM_CONFIG="$(type -P "${CHOST}-llvm-config")"
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${SLOT}"
+		-DCMAKE_INSTALL_MANDIR="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
 		# relative to bindir
 		-DCLANG_RESOURCE_DIR="../../../../lib/clang/${clang_version}"
 
@@ -158,6 +152,7 @@ multilib_src_configure() {
 		-DLLVM_DYLIB_COMPONENTS="all"
 
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
+		-DLLVM_BUILD_TESTS=$(usex test)
 
 		# these are not propagated reliably, so redefine them
 		-DLLVM_ENABLE_EH=ON
@@ -182,7 +177,7 @@ multilib_src_configure() {
 	)
 	use test && mycmakeargs+=(
 		-DLLVM_MAIN_SRC_DIR="${WORKDIR}/llvm"
-		-DLLVM_LIT_ARGS="-vv"
+		-DLLVM_LIT_ARGS="-vv;-j;${LIT_JOBS:-$(makeopts_jobs "${MAKEOPTS}" "$(get_nproc)")}"
 	)
 
 	if multilib_is_native_abi; then
@@ -254,20 +249,20 @@ src_install() {
 	# Apply CHOST and version suffix to clang tools
 	# note: we use two version components here (vs 3 in runtime path)
 	local llvm_version=$(llvm-config --version) || die
-	local clang_version=$(ver_cut 1-2 "${llvm_version}")
+	local clang_version=$(ver_cut 1 "${llvm_version}")
 	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
 	local clang_tools=( clang clang++ clang-cl clang-cpp flang gcc g++ cc c++ cpp gfortran)
 	local abi i
 
 	# cmake gives us:
-	# - clang-X.Y
-	# - clang -> clang-X.Y
+	# - clang-X
+	# - clang -> clang-X
 	# - clang++, clang-cl, clang-cpp -> clang
 	# we want to have:
-	# - clang-X.Y
-	# - clang++-X.Y, clang-cl-X.Y, clang-cpp-X.Y -> clang-X.Y
-	# - clang, clang++, clang-cl, clang-cpp -> clang*-X.Y
-	# - gcc, g++, cc, c++, cpp -> clang*-X.Y
+	# - clang-X
+	# - clang++-X, clang-cl-X, clang-cpp-X -> clang-X
+	# - clang, clang++, clang-cl, clang-cpp -> clang*-X
+	# - gcc, g++, cc, c++, cpp -> clang*-X
 	# also in CHOST variant
 	for i in "${clang_tools[@]:1}"; do
 		rm "${ED%/}/usr/lib/llvm/${SLOT}/bin/${i}" || die
@@ -308,21 +303,23 @@ multilib_src_install_all() {
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
 	fi
 
-	# install pre-generated manpages
-	if ! use doc; then
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/x/y/llvm-${PV}-manpages/clang"/*.1
-	fi
-
-	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression
 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
+	# +x for some reason; TODO: investigate
+	use static-analyzer && fperms a-x "/usr/lib/llvm/${SLOT}/share/man/man1/scan-build.1"
 }
 
 pkg_postinst() {
 	if [[ ${ROOT} == / && -f ${EPREFIX}/usr/share/eselect/modules/compiler-shadow.eselect ]] ; then
 		eselect compiler-shadow update all
 	fi
+
+	elog "You can find additional utility scripts in:"
+	elog "  ${EROOT}/usr/lib/llvm/${SLOT}/share/clang"
+	elog "To use these scripts, you will need Python 2.7. Some of them are vim"
+	elog "integration scripts (with instructions inside). The run-clang-tidy.py"
+	elog "scripts requires the following additional package:"
+	elog "  dev-python/pyyaml"
 }
 
 pkg_postrm() {
