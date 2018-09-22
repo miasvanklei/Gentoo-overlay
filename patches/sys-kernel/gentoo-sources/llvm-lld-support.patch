@@ -1,0 +1,44 @@
+--- a/arch/x86/purgatory/Makefile	2018-09-21 15:16:15.027827930 +0200
++++ b/arch/x86/purgatory/Makefile	2018-09-21 15:16:26.034827668 +0200
+@@ -9,7 +9,7 @@
+ $(obj)/sha256.o: $(srctree)/lib/sha256.c FORCE
+ 	$(call if_changed_rule,cc_o_c)
+ 
+-LDFLAGS_purgatory.ro := -e purgatory_start -r --no-undefined -nostdlib -z nodefaultlib
++LDFLAGS_purgatory.ro := -e purgatory_start -r --no-undefined -nostdlib
+ targets += purgatory.ro
+ 
+ KASAN_SANITIZE	:= n
+--- a/arch/x86/realmode/rm/Makefile	2018-09-21 15:15:34.259828269 +0200
++++ b/arch/x86/realmode/rm/Makefile	2018-09-21 15:15:58.306828189 +0200
+@@ -47,7 +47,7 @@
+ targets += realmode.lds
+ $(obj)/realmode.lds: $(obj)/pasyms.h
+ 
+-LDFLAGS_realmode.elf := --emit-relocs -T
++LDFLAGS_realmode.elf := -m elf_i386 --emit-relocs -T
+ CPPFLAGS_realmode.lds += -P -C -I$(objtree)/$(obj)
+ 
+ targets += realmode.elf
+--- a/arch/x86/entry/vdso/Makefile	2018-09-21 15:15:04.102827845 +0200
++++ b/arch/x86/entry/vdso/Makefile	2018-09-21 15:15:16.058828084 +0200
+@@ -48,7 +48,7 @@
+ 
+ VDSO_LDFLAGS_vdso.lds = -m64 -Wl,-soname=linux-vdso.so.1 \
+ 			-Wl,--no-undefined \
+-			-Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096 \
++			-Wl,-z,max-page-size=4096 \
+ 			$(DISABLE_LTO)
+ 
+ $(obj)/vdso64.so.dbg: $(obj)/vdso.lds $(vobjs) FORCE
+--- a/arch/x86/boot/Makefile	2018-09-21 15:21:06.180801298 +0200
++++ b/arch/x86/boot/Makefile	2018-09-21 15:21:23.610798629 +0200
+@@ -100,7 +100,7 @@
+ AFLAGS_header.o += -I$(objtree)/$(obj)
+ $(obj)/header.o: $(obj)/zoffset.h
+ 
+-LDFLAGS_setup.elf	:= -T
++LDFLAGS_setup.elf	:= -m elf_i386 -T
+ $(obj)/setup.elf: $(src)/setup.ld $(SETUP_OBJS) FORCE
+ 	$(call if_changed,ld)
+ 

@@ -1,0 +1,29 @@
+--- a/arch/x86/Makefile	2018-09-21 15:07:17.947715496 +0200
++++ b/arch/x86/Makefile	2018-09-21 15:07:37.063725414 +0200
+@@ -315,10 +315,6 @@
+ 
+ archprepare: checkbin
+ checkbin:
+-ifndef CC_HAVE_ASM_GOTO
+-	@echo Compiler lacks asm-goto support.
+-	@exit 1
+-endif
+ 
+ archclean:
+ 	$(Q)rm -rf $(objtree)/arch/i386
+--- a/Makefile	2018-09-21 15:05:04.795628142 +0200
++++ b/Makefile	2018-09-21 15:05:48.970660920 +0200
+@@ -504,13 +504,6 @@
+ KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
+ KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
+ 
+-# check for 'asm goto'
+-ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC) $(KBUILD_CFLAGS)), y)
+-  CC_HAVE_ASM_GOTO := 1
+-  KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
+-  KBUILD_AFLAGS += -DCC_HAVE_ASM_GOTO
+-endif
+-
+ # The expansion should be delayed until arch/$(SRCARCH)/Makefile is included.
+ # Some architectures define CROSS_COMPILE in arch/$(SRCARCH)/Makefile.
+ # CC_VERSION_TEXT is referenced from Kconfig (so it needs export),

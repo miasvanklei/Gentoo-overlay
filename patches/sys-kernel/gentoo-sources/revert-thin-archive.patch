@@ -1,0 +1,116 @@
+--- a/scripts/link-vmlinux.sh	2018-09-21 15:04:36.427604886 +0200
++++ b/scripts/link-vmlinux.sh	2018-09-21 15:04:38.249606437 +0200
+@@ -44,37 +44,16 @@
+ 	fi
+ }
+ 
+-# Thin archive build here makes a final archive with symbol table and indexes
+-# from vmlinux objects INIT and MAIN, which can be used as input to linker.
+-# KBUILD_VMLINUX_LIBS archives should already have symbol table and indexes
+-# added.
+-#
+-# Traditional incremental style of link does not require this step
+-#
+-# built-in.a output file
+-#
+-archive_builtin()
+-{
+-	info AR built-in.a
+-	rm -f built-in.a;
+-	${AR} rcsTP${KBUILD_ARFLAGS} built-in.a			\
+-				${KBUILD_VMLINUX_INIT}		\
+-				${KBUILD_VMLINUX_MAIN}
+-}
+-
+ # Link of vmlinux.o used for section mismatch analysis
+ # ${1} output file
+ modpost_link()
+ {
+-	local objects
+-
+-	objects="--whole-archive				\
+-		built-in.a					\
+-		--no-whole-archive				\
++        local objects
++	objects="${KBUILD_VMLINUX_INIT}				\
+ 		--start-group					\
++		${KBUILD_VMLINUX_MAIN}				\
+ 		${KBUILD_VMLINUX_LIBS}				\
+ 		--end-group"
+-
+ 	${LD} ${LDFLAGS} -r -o ${1} ${objects}
+ }
+ 
+@@ -87,10 +66,9 @@
+ 	local objects
+ 
+ 	if [ "${SRCARCH}" != "um" ]; then
+-		objects="--whole-archive			\
+-			built-in.a				\
+-			--no-whole-archive			\
++		objects="${KBUILD_VMLINUX_INIT}			\
+ 			--start-group				\
++			${KBUILD_VMLINUX_MAIN}			\
+ 			${KBUILD_VMLINUX_LIBS}			\
+ 			--end-group				\
+ 			${1}"
+@@ -98,10 +76,9 @@
+ 		${LD} ${LDFLAGS} ${LDFLAGS_vmlinux} -o ${2}	\
+ 			-T ${lds} ${objects}
+ 	else
+-		objects="-Wl,--whole-archive			\
+-			built-in.a				\
+-			-Wl,--no-whole-archive			\
++		objects="${KBUILD_VMLINUX_INIT}			\
+ 			-Wl,--start-group			\
++			${KBUILD_VMLINUX_MAIN}			\
+ 			${KBUILD_VMLINUX_LIBS}			\
+ 			-Wl,--end-group				\
+ 			${1}"
+@@ -217,8 +194,6 @@
+ # final build of init/
+ ${MAKE} -f "${srctree}/scripts/Makefile.build" obj=init
+ 
+-archive_builtin
+-
+ #link vmlinux.o
+ info LD vmlinux.o
+ modpost_link vmlinux.o
+--- a/scripts/Makefile.build	2018-09-21 14:52:10.065028200 +0200
++++ b/scripts/Makefile.build	2018-09-21 15:13:46.178823836 +0200
+@@ -448,16 +448,18 @@
+ #
+ ifdef builtin-target
+ 
+-# built-in.a archives are made with no symbol table or index which
+-# makes them small and fast, but unable to be used by the linker.
+-# scripts/link-vmlinux.sh builds an aggregate built-in.a with a symbol
+-# table and index.
+-quiet_cmd_ar_builtin = AR      $@
+-      cmd_ar_builtin = rm -f $@; \
+-                     $(AR) rcSTP$(KBUILD_ARFLAGS) $@ $(filter $(real-obj-y), $^)
++cmd_make_builtin = $(LD) $(ld_flags) -r -o
++cmd_make_empty_builtin = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS)
++quiet_cmd_link_o_target = LD      $@
++
++# If the list of objects to link is empty, just create an empty built-in.o
++cmd_link_o_target = $(if $(strip $(real-obj-y)),\
++		      $(cmd_make_builtin) $@ $(filter $(real-obj-y), $^) \
++		      $(cmd_secanalysis),\
++		      $(cmd_make_empty_builtin) $@)
+ 
+ $(builtin-target): $(real-obj-y) FORCE
+-	$(call if_changed,ar_builtin)
++	$(call if_changed,link_o_target)
+ 
+ targets += $(builtin-target)
+ endif # builtin-target
+@@ -482,7 +484,7 @@
+ quiet_cmd_link_l_target = AR      $@
+ 
+ # lib target archives do get a symbol table and index
+-cmd_link_l_target = rm -f $@; $(AR) rcsTP$(KBUILD_ARFLAGS) $@ $(lib-y)
++cmd_link_l_target = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS) $@ $(lib-y)
+ 
+ $(lib-target): $(lib-y) FORCE
+ 	$(call if_changed,link_l_target)
