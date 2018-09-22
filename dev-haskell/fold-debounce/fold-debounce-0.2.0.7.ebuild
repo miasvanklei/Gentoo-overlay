@@ -18,7 +18,7 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 RDEPEND=">=dev-haskell/data-default-class-0.0.1:=[profile?] <dev-haskell/data-default-class-0.2:=[profile?]
-	>=dev-haskell/stm-2.4.2:=[profile?] <dev-haskell/stm-2.5:=[profile?]
+	>=dev-haskell/stm-2.4.2:=[profile?] <dev-haskell/stm-2.6:=[profile?]
 	>=dev-haskell/stm-delay-0.1.1:=[profile?] <dev-haskell/stm-delay-0.2:=[profile?]
 	>=dev-lang/ghc-7.6.1:=
 "

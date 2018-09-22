@@ -33,6 +33,14 @@ PATCHES=(
 	"${FILESDIR}"/remove-lib-and-exe.patch
 )
 
+src_prepare() {
+        default
+
+        cabal_chdeps \
+                'base              (>= 4.6 && <4.10) || ^>= 4.10 || ^>=4.11' 'base              >= 4.6' \
+		'containers        ^>= 0.5.0' 'containers        >= 0.5.0'
+}
+
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag _ _)

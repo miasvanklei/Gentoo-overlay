@@ -37,3 +37,10 @@ DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.24.0.0
 	test? ( dev-haskell/hspec )
 "
+
+src_prepare() {
+        default
+
+        cabal_chdeps \
+                'base >=4.9 && <4.12' 'base >=4.9 && <4.13'
+}
