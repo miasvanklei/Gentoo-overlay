@@ -1,18 +1,3 @@
-diff --git a/tools/flang2/flang2exe/iliutil.cpp b/tools/flang2/flang2exe/iliutil.cpp
-index 538cb6f..da4bcf3 100644
---- a/tools/flang2/flang2exe/iliutil.cpp
-+++ b/tools/flang2/flang2exe/iliutil.cpp
-@@ -2093,7 +2093,7 @@ reciprocal_division(int n, INT divisor, int sgnd)
-   } else {
-     INT64 twol;
-     int shpre = 0;
--    INT64 one_64 = {0x0, 0x1}, divisor64 = {0x0, udiv};
-+    INT64 one_64 = {0x0, 0x1}, divisor64 = {0x0, static_cast<int32_t>(udiv)};
-     const int l = lg(udiv);
- 
-     shf64(one_64, l, twol);
-diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
-index a38de60..00b4aec 100644
 --- a/runtime/flang/CMakeLists.txt
 +++ b/runtime/flang/CMakeLists.txt
 @@ -14,7 +14,7 @@
@@ -24,19 +9,6 @@ index a38de60..00b4aec 100644
  
  SET(ASM_OPTIONS "-DLINUX_ELF")
  SET(CMAKE_ASM_FLAGS "${CFLAGS} ${ASM_OPTIONS}" )
-@@ -428,6 +428,12 @@ target_link_libraries(flang_shared ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/l
- # Resolve symbols against libm and librt
- target_link_libraries(flang_shared m rt)
- 
-+find_library(
-+  LIBPGMATH
-+  libpgmath.so
-+  HINTS ${CMAKE_BINARY_DIR}/lib)
-+target_link_libraries(flang_shared ${LIBPGMATH})
-+
- set(SHARED_LIBRARY FALSE)
- 
- set_property(
 diff --git a/runtime/flang/hand.c b/runtime/flang/hand.c
 index bc8b0b6..86335e9 100644
 --- a/runtime/flang/hand.c
