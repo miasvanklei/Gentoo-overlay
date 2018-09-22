@@ -44,3 +44,7 @@ RDEPEND=">=dev-haskell/ghc-mod-core-5.8.0:=[profile?] <dev-haskell/ghc-mod-core-
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.22.4.0
 "
+
+PATCHES=(
+	"${FILESDIR}"/ghc-8.6.patch
+)
