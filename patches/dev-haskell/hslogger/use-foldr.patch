@@ -1,0 +1,11 @@
+--- a/src/System/Log/Logger.hs	2018-09-22 16:48:29.552155412 +0200
++++ b/src/System/Log/Logger.hs	2018-09-22 16:48:41.766142548 +0200
+@@ -476,7 +476,7 @@
+ removeAllHandlers :: IO ()
+ removeAllHandlers =
+     modifyMVar_ logTree $ \lt -> do
+-        let allHandlers = Map.fold (\l r -> concat [r, handlers l]) [] lt
++        let allHandlers = foldr (\l r -> concat [r, handlers l]) [] lt
+         mapM_ (\(HandlerT h) -> close h) allHandlers
+         return $ Map.map (\l -> l {handlers = []}) lt
+ 
