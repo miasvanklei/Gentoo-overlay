@@ -357,6 +357,9 @@ src_prepare() {
 	_unnest_patches "${WORKDIR}/${PATCHES_P}/${PV}"
 	eapply "${WORKDIR}/${PATCHES_P}/${PV}"
 
+	# icu-62 support
+	eapply "${FILESDIR}"/icu-62.patch
+
 	# Merge chromiumcontent component into chromium source tree.
 	mkdir -p "${CHROMIUM_S}/chromiumcontent" || die
 	cp -a "${LIBCC_S}/chromiumcontent" "${CHROMIUM_S}/" || die
