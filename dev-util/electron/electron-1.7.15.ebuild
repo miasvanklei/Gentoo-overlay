@@ -557,7 +557,8 @@ src_configure() {
 	myconf_gn+=" fieldtrial_testing_like_official_build=true"
 
 	if tc-is-clang; then
-		myconf_gn+=" is_clang=true clang_base_path=\"/usr/lib/llvm/6\" clang_use_chrome_plugins=false"
+		clang_path=$(which clang)
+		myconf_gn+=" is_clang=true clang_base_path=\"${clang_path%/*/*}\" clang_use_chrome_plugins=false"
 	else
 		myconf_gn+=" is_clang=false"
 	fi
