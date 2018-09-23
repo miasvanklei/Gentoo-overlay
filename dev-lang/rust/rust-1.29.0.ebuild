@@ -45,7 +45,7 @@ PDEPEND="!cargo? ( >=dev-util/cargo-${CARGO_DEPEND_VERSION} )"
 
 RDEPEND="sys-devel/llvm:="
 
-S="${WORKDIR}/rustc-beta-src"
+S="${WORKDIR}/rustc-${PV}-src"
 
 toml_usex() {
 	usex "$1" true false
