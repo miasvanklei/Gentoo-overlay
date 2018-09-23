@@ -16,7 +16,8 @@ IUSE="heimdal"
 SRC_URI="https://download.microsoft.com/download/D/5/9/D593CD8F-04E7-425D-962C-86FF4C90B1DA/${DOTNET_SDK}
 	https://github.com/dotnet/coreclr/archive/v${MY_PV}.tar.gz -> coreclr-${MY_PV}.tar.gz
 	https://github.com/dotnet/corefx/archive/v${MY_PV}.tar.gz -> corefx-${MY_PV}.tar.gz
-	https://github.com/dotnet/core-setup/archive/v${MY_PV}.tar.gz -> core-setup-${MY_PV}.tar.gz"
+	https://github.com/dotnet/core-setup/archive/v${MY_PV}.tar.gz -> core-setup-${MY_PV}.tar.gz
+	https://github.com/Samsung/netcoredbg/archive/latest.tar.gz -> netcoredbg-${MY_PV}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64"
@@ -47,6 +48,7 @@ CLI_S="${S}/dotnetcli-${PV}"
 CORECLR_S="${S}/coreclr-${MY_PV}"
 COREFX_S="${S}/corefx-${MY_PV}/"
 CORESETUP_S="${S}/core-setup-${MY_PV}/"
+NETCOREDBG_S="${S}/netcoredbg-latest"
 
 CORECLR_FILES=(
 	'libclrjit.so'
@@ -73,7 +75,7 @@ CRYPTO_FILES=(
 )
 
 src_unpack() {
-	unpack "coreclr-${MY_PV}.tar.gz" "corefx-${MY_PV}.tar.gz" "core-setup-${MY_PV}.tar.gz"
+	unpack "coreclr-${MY_PV}.tar.gz" "corefx-${MY_PV}.tar.gz" "core-setup-${MY_PV}.tar.gz" "netcoredbg-${MY_PV}.tar.gz"
 	mkdir "${CLI_S}" || die
 	cd "${CLI_S}" || die
         unpack "${DOTNET_SDK}"
@@ -94,9 +96,6 @@ src_prepare() {
 
         cd "${CORECLR_S}" || die
 	eapply ${FILESDIR}/fix-build-clr.patch
-	#eapply ${FILESDIR}/clang-6.0.patch
-	#eapply ${FILESDIR}/musl.patch
-        cd ..
 	cd "${COREFX_S}" || die
 	eapply ${FILESDIR}/fix-build-cfx.patch
         cd ..
@@ -121,6 +120,12 @@ src_compile() {
 	cd "${CORESETUP_S}" || die
 	./src/corehost/build.sh --arch amd64 --hostver ${DPV} \
         --fxrver ${DPV} --policyver ${DPV} --commithash a9190d4 --apphostver ${DPV} || die
+
+	cd "${NETCOREDBG_S}" || die
+	mkdir build
+	cd build
+	cmake -DCMAKE_INSTALL_PREFIX=/usr -DCLR_DIR="${CORECLR_S}" ../
+	make
 }
 
 src_install() {
@@ -146,6 +151,9 @@ src_install() {
         cp -pP "${CORESETUP_S}/cli/fxr/libhostfxr.so" "${ddest}/host/fxr/${DPV}/" || die
         cp -pP "${CORESETUP_S}/cli/dll/libhostpolicy.so" "${ddest_core}/${DPV}/" || die
 	cp -pP "${CORESETUP_S}/cli/exe/dotnet/dotnet" "${ddest}/dotnet" || die
+	cp -PP "${NETCOREDBG_S}/build/src/debug/netcoredbg/netcoredbg" "${ddest_core}/${DPV}/netcoredbg" || die
+	cp -PP "${NETCOREDBG_S}/build/src/debug/netcoredbg/SymbolReader.dll" "${ddest_core}/${DPV}/SymbolReader.dll" || die
 
-	dosym "../../opt/dotnet_cli/dotnet" "/usr/bin/dotnet"
+	dosym "/opt/dotnet_cli/dotnet" "/usr/bin/dotnet"
+	dosym "/opt/dotnet_cli/shared/Microsoft.NETCore.App/${DPV}/netcoredbg" "/usr/bin/netcoredbg"
 }
