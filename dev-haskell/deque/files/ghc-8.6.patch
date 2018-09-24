@@ -1,0 +1,17 @@
+--- a/library/Deque.hs	2018-09-25 00:30:38.781129411 +0200
++++ b/library/Deque.hs	2018-09-25 00:30:21.893140266 +0200
+@@ -2,6 +2,7 @@
+ 
+ import Prelude hiding (foldr, foldr', foldl')
+ import Control.Applicative
++import qualified Control.Monad.Fail as Fail
+ import Data.Foldable
+ import Data.Traversable
+ import Data.Maybe
+@@ -163,3 +164,6 @@
+     pure
+   m >>= f =
+     fromList (toList m >>= toList . f)
++
++instance Fail.MonadFail Deque where
++  fail = Fail.fail

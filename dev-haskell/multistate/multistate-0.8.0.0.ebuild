@@ -28,6 +28,15 @@ DEPEND="${RDEPEND}
 	test? ( >=dev-haskell/hspec-2 <dev-haskell/hspec-2.5 )
 "
 
+src_prepare() {
+        default
+
+	eapply "${FILESDIR}"/ghc-8.6.patch
+
+        cabal_chdeps \
+                'base         >= 4.9   && <4.12' 'base         >= 4.9   && <4.13'
+}
+
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag build-example build-example)

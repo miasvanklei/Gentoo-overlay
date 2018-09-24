@@ -1,0 +1,146 @@
+diff -ur a/src/Control/Monad/Trans/MultiRWS/Lazy.hs b/src/Control/Monad/Trans/MultiRWS/Lazy.hs
+--- a/src/Control/Monad/Trans/MultiRWS/Lazy.hs	2018-04-13 19:43:52.000000000 +0200
++++ b/src/Control/Monad/Trans/MultiRWS/Lazy.hs	2018-09-24 19:41:01.974111332 +0200
+@@ -113,6 +113,7 @@
+                                        , defaultRestoreM
+                                        )
+ import Control.Monad.Fix               ( MonadFix(..) )
++import Control.Monad.Fail              ( MonadFail(..) )
+ import Control.Monad.IO.Class          ( MonadIO(..) )
+ 
+ import Data.Monoid
+@@ -385,14 +386,14 @@
+ withMultiStates_ HNil       = void
+ withMultiStates_ (x :+: xs) = withMultiStates_ xs . withMultiState_ x
+ 
+-withoutMultiReader :: Monad m => MultiRWST rs w s m a -> MultiRWST (r ': rs) w s m a
++withoutMultiReader :: (Monad m, MonadFail m) => MultiRWST rs w s m a -> MultiRWST (r ': rs) w s m a
+ withoutMultiReader k = MultiRWST $ do
+   (rs@(_ :+: rr), w, s) <- get
+   ~(a, ~(_, w', s')) <- lift $ runStateT (runMultiRWSTRaw k) (rr, w, s)
+   put (rs, w', s')
+   return a
+ 
+-withoutMultiState :: Monad m => MultiRWST r w ss m a -> MultiRWST r w (s ': ss) m a
++withoutMultiState :: (Monad m, MonadFail m) => MultiRWST r w ss m a -> MultiRWST r w (s ': ss) m a
+ withoutMultiState k = MultiRWST $ do
+   (r, w, s :+: sr) <- get
+   ~(a, ~(_, w', s')) <- lift $ runStateT (runMultiRWSTRaw k) (r, w, sr)
+diff -ur a/src/Control/Monad/Trans/MultiRWS/Strict.hs b/src/Control/Monad/Trans/MultiRWS/Strict.hs
+--- a/src/Control/Monad/Trans/MultiRWS/Strict.hs	2018-04-13 19:43:52.000000000 +0200
++++ b/src/Control/Monad/Trans/MultiRWS/Strict.hs	2018-09-24 22:50:42.343457322 +0200
+@@ -114,6 +114,7 @@
+                                        , defaultRestoreM
+                                        )
+ import Control.Monad.Fix               ( MonadFix(..) )
++import qualified Control.Monad.Fail as Fail
+ import Control.Monad.IO.Class          ( MonadIO(..) )
+ 
+ import Data.Monoid
+@@ -139,6 +140,9 @@
+   return = MultiRWST . return
+   k >>= f = MultiRWST $ runMultiRWSTRaw k >>= runMultiRWSTRaw . f
+ 
++instance (Monad m) => Fail.MonadFail (MultiRWST r w s m) where
++  fail = Fail.fail
++
+ instance MonadTrans (MultiRWST r w s) where
+   lift = MultiRWST . lift
+ 
+@@ -387,14 +391,14 @@
+ withMultiStates_ HNil       = void
+ withMultiStates_ (x :+: xs) = withMultiStates_ xs . withMultiState_ x
+ 
+-withoutMultiReader :: Monad m => MultiRWST rs w s m a -> MultiRWST (r ': rs) w s m a
++withoutMultiReader :: (Monad m, Fail.MonadFail m) => MultiRWST rs w s m a -> MultiRWST (r ': rs) w s m a
+ withoutMultiReader k = MultiRWST $ do
+   (rs@(_ :+: rr), w, s) <- get
+   (a, (_, w', s')) <- lift $ runStateT (runMultiRWSTRaw k) (rr, w, s)
+   put (rs, w', s')
+   return a
+ 
+-withoutMultiState :: Monad m => MultiRWST r w ss m a -> MultiRWST r w (s ': ss) m a
++withoutMultiState :: (Monad m, Fail.MonadFail m) => MultiRWST r w ss m a -> MultiRWST r w (s ': ss) m a
+ withoutMultiState k = MultiRWST $ do
+   (r, w, s :+: sr) <- get
+   (a, (_, w', s')) <- lift $ runStateT (runMultiRWSTRaw k) (r, w, sr)
+diff -ur a/src/Control/Monad/Trans/MultiReader/Lazy.hs b/src/Control/Monad/Trans/MultiReader/Lazy.hs
+--- a/src/Control/Monad/Trans/MultiReader/Lazy.hs	2018-04-13 19:43:52.000000000 +0200
++++ b/src/Control/Monad/Trans/MultiReader/Lazy.hs	2018-09-24 19:41:01.974111332 +0200
+@@ -71,6 +71,7 @@
+                                        , defaultRestoreM
+                                        )
+ import Control.Monad.Fix               ( MonadFix(..) )
++import Control.Monad.Fail              ( MonadFail(..) )
+ import Control.Monad.IO.Class          ( MonadIO(..) )
+ 
+ 
+@@ -185,7 +186,7 @@
+ withMultiReaders_ HNil       = liftM (const ())
+ withMultiReaders_ (x :+: xs) = withMultiReaders_ xs . withMultiReader_ x
+ 
+-withoutMultiReader :: Monad m => MultiReaderT rs m a -> MultiReaderT (r ': rs) m a
++withoutMultiReader :: (Monad m, MonadFail m) => MultiReaderT rs m a -> MultiReaderT (r ': rs) m a
+ withoutMultiReader k = MultiReaderT $ do
+   _ :+: rr <- get
+   lift $ runMultiReaderT rr k
+diff -ur a/src/Control/Monad/Trans/MultiReader/Strict.hs b/src/Control/Monad/Trans/MultiReader/Strict.hs
+--- a/src/Control/Monad/Trans/MultiReader/Strict.hs	2018-04-13 19:43:52.000000000 +0200
++++ b/src/Control/Monad/Trans/MultiReader/Strict.hs	2018-09-24 19:41:01.974111332 +0200
+@@ -71,6 +71,7 @@
+                                        , defaultRestoreM
+                                        )
+ import Control.Monad.Fix               ( MonadFix(..) )
++import Control.Monad.Fail              ( MonadFail(..) )
+ import Control.Monad.IO.Class          ( MonadIO(..) )
+ 
+ 
+@@ -185,7 +186,7 @@
+ withMultiReaders_ HNil       = liftM (const ())
+ withMultiReaders_ (x :+: xs) = withMultiReaders_ xs . withMultiReader_ x
+ 
+-withoutMultiReader :: Monad m => MultiReaderT rs m a -> MultiReaderT (r ': rs) m a
++withoutMultiReader :: (Monad m, MonadFail m) => MultiReaderT rs m a -> MultiReaderT (r ': rs) m a
+ withoutMultiReader k = MultiReaderT $ do
+   _ :+: rr <- get
+   lift $ runMultiReaderT rr k
+diff -ur a/src/Control/Monad/Trans/MultiState/Lazy.hs b/src/Control/Monad/Trans/MultiState/Lazy.hs
+--- a/src/Control/Monad/Trans/MultiState/Lazy.hs	2018-04-13 19:43:52.000000000 +0200
++++ b/src/Control/Monad/Trans/MultiState/Lazy.hs	2018-09-24 19:41:01.974111332 +0200
+@@ -87,6 +87,7 @@
+                                        )
+ import Data.Monoid                     ( Monoid )
+ import Control.Monad.Fix               ( MonadFix(..) )
++import Control.Monad.Fail              ( MonadFail(..) )
+ import Control.Monad.IO.Class          ( MonadIO(..) )
+ 
+ 
+@@ -238,7 +239,7 @@
+ withMultiStates_  HNil       = liftM (const ())
+ withMultiStates_ (x :+: xs)  = withMultiStates_ xs . withMultiState_ x
+ 
+-withoutMultiState :: (Functor m, Monad m) => MultiStateT ss m a -> MultiStateT (s ': ss) m a
++withoutMultiState :: (Functor m, Monad m, MonadFail m) => MultiStateT ss m a -> MultiStateT (s ': ss) m a
+ withoutMultiState k = MultiStateT $ do
+   s :+: sr <- get
+   ~(a, sr') <- lift $ runMultiStateT sr k
+diff -ur a/src/Control/Monad/Trans/MultiState/Strict.hs b/src/Control/Monad/Trans/MultiState/Strict.hs
+--- a/src/Control/Monad/Trans/MultiState/Strict.hs	2018-04-13 19:43:52.000000000 +0200
++++ b/src/Control/Monad/Trans/MultiState/Strict.hs	2018-09-24 19:41:01.974111332 +0200
+@@ -87,6 +87,7 @@
+                                        )
+ import Data.Monoid                     ( Monoid )
+ import Control.Monad.Fix               ( MonadFix(..) )
++import Control.Monad.Fail              ( MonadFail(..) )
+ import Control.Monad.IO.Class          ( MonadIO(..) )
+ 
+ 
+@@ -236,7 +237,7 @@
+ withMultiStates_  HNil       = liftM (const ())
+ withMultiStates_ (x :+: xs)  = withMultiStates_ xs . withMultiState_ x
+ 
+-withoutMultiState :: (Functor m, Monad m) => MultiStateT ss m a -> MultiStateT (s ': ss) m a
++withoutMultiState :: (Functor m, Monad m, MonadFail m) => MultiStateT ss m a -> MultiStateT (s ': ss) m a
+ withoutMultiState k = MultiStateT $ do
+   s :+: sr <- get
+   (a, sr') <- lift $ runMultiStateT sr k

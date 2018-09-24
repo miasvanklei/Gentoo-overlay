@@ -29,3 +29,7 @@ DEPEND="${RDEPEND}
 		>=dev-haskell/test-framework-0.3.3
 		>=dev-haskell/test-framework-quickcheck2-0.2.9 )
 "
+
+PATCHES=(
+	"${FILESDIR}"/ghc-8.6.patch
+)

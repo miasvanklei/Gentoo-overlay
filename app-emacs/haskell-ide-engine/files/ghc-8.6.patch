@@ -1,0 +1,107 @@
+diff --git a/src/Haskell/Ide/Engine/Plugin/Example2.hs b/src/Haskell/Ide/Engine/Plugin/Example2.hs
+index 1a1204b..7f92ea4 100644
+--- a/src/Haskell/Ide/Engine/Plugin/Example2.hs
++++ b/src/Haskell/Ide/Engine/Plugin/Example2.hs
+@@ -53,12 +53,5 @@ sayHelloTo n = return $ "hello " <> n <> " from ExamplePlugin2"
+ diagnosticProvider :: DiagnosticProviderFuncSync
+ diagnosticProvider trigger uri = do
+   liftIO $ logm "Example2.diagnosticProvider called"
+-  let diag = Diagnostic
+-              { _range = Range (Position 0 0) (Position 1 0)
+-              , _severity = Nothing
+-              , _code = Nothing
+-              , _source = Just "eg2"
+-              , _message = "Example plugin diagnostic, triggered by" <> T.pack (show trigger)
+-              , _relatedInformation = Nothing
+-              }
++  let diag = Diagnostic (Range (Position 0 0) (Position 1 0)) Nothing Nothing (Just "eg2") ("Example plugin diagnostic, triggered by" <> T.pack (show trigger)) Nothing
+   return $ IdeResultOk $ Map.fromList [(uri,S.singleton diag)]
+diff --git a/src/Haskell/Ide/Engine/Plugin/GhcMod.hs b/src/Haskell/Ide/Engine/Plugin/GhcMod.hs
+index d59e54f..39b0f68 100644
+--- a/src/Haskell/Ide/Engine/Plugin/GhcMod.hs
++++ b/src/Haskell/Ide/Engine/Plugin/GhcMod.hs
+@@ -652,38 +652,38 @@ symbolProvider uri = pluginGetFile "ghc-mod symbolProvider: " uri $
+         decls = concatMap go $ hsmodDecls hsMod
+ 
+         go :: LHsDecl GM.GhcPs -> [Decl]
+-        go (L l (TyClD FamDecl { tcdFam = FamilyDecl { fdLName = n } })) = pure (Decl LSP.SkClass n [] l)
+-        go (L l (TyClD SynDecl { tcdLName = n })) = pure (Decl LSP.SkClass n [] l)
+-        go (L l (TyClD DataDecl { tcdLName = n, tcdDataDefn = HsDataDefn { dd_cons = cons } })) =
++        go (L l (TyClD _ FamDecl { tcdFam = FamilyDecl { fdLName = n } })) = pure (Decl LSP.SkClass n [] l)
++        go (L l (TyClD _ SynDecl { tcdLName = n })) = pure (Decl LSP.SkClass n [] l)
++        go (L l (TyClD _ DataDecl { tcdLName = n, tcdDataDefn = HsDataDefn { dd_cons = cons } })) =
+           pure (Decl LSP.SkClass n (concatMap processCon cons) l)
+-        go (L l (TyClD ClassDecl { tcdLName = n, tcdSigs = sigs, tcdATs = fams })) =
++        go (L l (TyClD t ClassDecl { tcdLName = n, tcdSigs = sigs, tcdATs = fams })) =
+           pure (Decl LSP.SkInterface n children l)
+           where children = famDecls ++ sigDecls
+-                famDecls = concatMap (go . fmap (TyClD . FamDecl)) fams
++                famDecls = concatMap (go . fmap (TyClD t . FamDecl NoExt)) fams
+                 sigDecls = concatMap processSig sigs
+ 
+-        go (L l (ValD FunBind { fun_id = ln, fun_matches = MG { mg_alts = llms } })) =
++        go (L l (ValD t FunBind { fun_id = ln, fun_matches = MG { mg_alts = llms } })) =
+           pure (Decl LSP.SkFunction ln wheres l)
+           where
+             wheres = concatMap (gomatch . unLoc) (unLoc llms)
+             gomatch Match { m_grhss = GRHSs { grhssLocalBinds = lbs } } = golbs (unLoc lbs)
+-            golbs (HsValBinds (ValBindsIn lhsbs _ )) = concatMap (go . fmap ValD) lhsbs
++            golbs (HsValBinds _ (ValBinds _ lhsbs _ )) = concatMap (go . fmap (ValD t)) lhsbs
+             golbs _ = []
+ 
+-        go (L l (ValD PatBind { pat_lhs = p })) =
++        go (L l (ValD _ PatBind { pat_lhs = p })) =
+           map (\n -> Decl LSP.SkVariable n [] l) $ hsNamessRdr p
+-        go (L l (ForD ForeignImport { fd_name = n })) = pure (Decl LSP.SkFunction n [] l)
++        go (L l (ForD _ ForeignImport { fd_name = n })) = pure (Decl LSP.SkFunction n [] l)
+         go _ = []
+ 
+         processSig :: LSig GM.GhcPs -> [Decl]
+-        processSig (L l (ClassOpSig False names _)) =
++        processSig (L l (ClassOpSig _ False names _)) =
+           map (\n -> Decl LSP.SkMethod n [] l) names
+         processSig _ = []
+ 
+         processCon :: LConDecl GM.GhcPs -> [Decl]
+         processCon (L l ConDeclGADT { con_names = names }) =
+           map (\n -> Decl LSP.SkConstructor n [] l) names
+-        processCon (L l ConDeclH98 { con_name = name, con_details = dets }) =
++        processCon (L l ConDeclH98 { con_name = name, con_args = dets }) =
+           pure (Decl LSP.SkConstructor name xs l)
+           where
+             f (L fl ln) = Decl LSP.SkField ln [] fl
+@@ -703,10 +703,10 @@ symbolProvider uri = pluginGetFile "ghc-mod symbolProvider: " uri $
+             xs = case meis of
+                     Just (False, eis) -> concatMap f (unLoc eis)
+                     _ -> []
+-            f (L l' (IEVar n)) = pure (Decl LSP.SkFunction (ieLWrappedName n) [] l')
+-            f (L l' (IEThingAbs n)) = pure (Decl LSP.SkClass (ieLWrappedName n) [] l')
+-            f (L l' (IEThingAll n)) = pure (Decl LSP.SkClass (ieLWrappedName n) [] l')
+-            f (L l' (IEThingWith n _ vars fields)) =
++            f (L l' (IEVar _ n)) = pure (Decl LSP.SkFunction (ieLWrappedName n) [] l')
++            f (L l' (IEThingAbs _ n)) = pure (Decl LSP.SkClass (ieLWrappedName n) [] l')
++            f (L l' (IEThingAll _ n)) = pure (Decl LSP.SkClass (ieLWrappedName n) [] l')
++            f (L l' (IEThingWith _ n _ vars fields)) =
+               let funcDecls = map (\n' -> Decl LSP.SkFunction (ieLWrappedName n') [] (getLoc n')) vars
+                   fieldDecls = map (\f' -> Decl LSP.SkField (flSelector <$> f') [] (getLoc f')) fields
+                   children = funcDecls ++ fieldDecls
+diff --git a/src/Haskell/Ide/Engine/Plugin/Liquid.hs b/src/Haskell/Ide/Engine/Plugin/Liquid.hs
+index 82a5e2f..228eb71 100644
+--- a/src/Haskell/Ide/Engine/Plugin/Liquid.hs
++++ b/src/Haskell/Ide/Engine/Plugin/Liquid.hs
+@@ -174,14 +174,7 @@ runLiquidHaskell fp = do
+ 
+ liquidErrorToDiagnostic :: LiquidError -> Diagnostic
+ liquidErrorToDiagnostic (LE f t msg) =
+-  Diagnostic
+-    { _range = Range (lpToPos f) (lpToPos t)
+-    , _severity = Just DsError
+-    , _code = Nothing
+-    , _source = Just "liquid"
+-    , _message = msg
+-    , _relatedInformation = Nothing
+-    }
++  Diagnostic (Range (lpToPos f) (lpToPos t)) (Just DsError) Nothing (Just "liquid") msg Nothing
+ 
+ lpToPos :: LiquidPos -> Position
+ lpToPos (LP r c) = Position (r - 1) (c - 1)

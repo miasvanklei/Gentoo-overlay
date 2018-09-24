@@ -67,6 +67,10 @@ DEPEND="${RDEPEND}
 		dev-haskell/unordered-containers )
 "
 
+PATCHES=(
+	"${FILESDIR}"/ghc-8.6.patch
+)
+
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag pedantic pedantic)

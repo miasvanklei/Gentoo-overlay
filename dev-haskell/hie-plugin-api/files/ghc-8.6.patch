@@ -1,0 +1,65 @@
+diff -ur a/Haskell/Ide/Engine/ArtifactMap.hs b/Haskell/Ide/Engine/ArtifactMap.hs
+--- a/Haskell/Ide/Engine/ArtifactMap.hs	2018-09-24 22:51:10.369373044 +0200
++++ b/Haskell/Ide/Engine/ArtifactMap.hs	2018-09-24 22:50:53.339424166 +0200
+@@ -1,4 +1,5 @@
+ {-# LANGUAGE CPP #-}
++{-# LANGUAGE TypeFamilies #-}
+ module Haskell.Ide.Engine.ArtifactMap where
+ 
+ import Data.Maybe
+@@ -72,15 +73,15 @@
+ 
+ #if __GLASGOW_HASKELL__ > 710
+     fieldOcc :: GHC.FieldOcc GM.GhcRn -> LocMap
+-    fieldOcc (GHC.FieldOcc (GHC.L (GHC.RealSrcSpan r) _) n) = IM.singleton (rspToInt r) n
++    fieldOcc (GHC.FieldOcc n (GHC.L (GHC.RealSrcSpan r) _)) = IM.singleton (rspToInt r) n
+     fieldOcc _ = IM.empty
+ 
+     hsRecFieldN :: GHC.LHsExpr GM.GhcRn -> LocMap
+-    hsRecFieldN (GHC.L _ (GHC.HsRecFld (GHC.Unambiguous (GHC.L (GHC.RealSrcSpan r) _) n) )) = IM.singleton (rspToInt r) n
++    hsRecFieldN (GHC.L _ (GHC.HsRecFld _ (GHC.Unambiguous n (GHC.L (GHC.RealSrcSpan r) _)) )) = IM.singleton (rspToInt r) n
+     hsRecFieldN _ = IM.empty
+ 
+     hsRecFieldT :: GHC.LHsExpr GM.GhcTc -> LocMap
+-    hsRecFieldT (GHC.L _ (GHC.HsRecFld (GHC.Ambiguous (GHC.L (GHC.RealSrcSpan r) _) n) )) = IM.singleton (rspToInt r) (Var.varName n)
++    hsRecFieldT (GHC.L _ (GHC.HsRecFld _ (GHC.Ambiguous n (GHC.L (GHC.RealSrcSpan r) _)) )) = IM.singleton (rspToInt r) (Var.varName n)
+     hsRecFieldT _ = IM.empty
+ #endif
+ 
+@@ -105,7 +106,7 @@
+     goImp acc _ = acc
+ 
+     goExp :: ModuleMap -> GHC.LIE name -> ModuleMap
+-    goExp acc (GHC.L (GHC.RealSrcSpan r) (GHC.IEModuleContents lmn)) =
++    goExp acc (GHC.L (GHC.RealSrcSpan r) (GHC.IEModuleContents _ lmn)) =
+       IM.insert (rspToInt r) (GHC.unLoc lmn) acc
+     goExp acc _ = acc
+ 
+@@ -116,12 +117,12 @@
+   where
+     -- go :: GHC.HsDecl GHC.GhcPs -> DefMap
+     -- Type signatures
+-    go (GHC.SigD (GHC.TypeSig lns _)) =
++    go (GHC.SigD _ (GHC.TypeSig _ lns _)) =
+       foldl IM.union mempty $ fmap go' lns
+       where go' (GHC.L (GHC.RealSrcSpan r) n) = IM.singleton (rspToInt r) n 
+             go' _ = mempty
+     -- Definitions
+-    go (GHC.ValD (GHC.FunBind (GHC.L (GHC.RealSrcSpan r) n) GHC.MG { GHC.mg_alts = llms } _ _ _)) =
++    go (GHC.ValD _ (GHC.FunBind _ (GHC.L (GHC.RealSrcSpan r) n) GHC.MG { GHC.mg_alts = llms }  _ _)) =
+       IM.insert (rspToInt r) n wheres
+       where
+         wheres = mconcat $ fmap (gomatch . GHC.unLoc) (GHC.unLoc llms)
+@@ -129,9 +130,9 @@
+         gomatch GHC.Match { GHC.m_grhss = GHC.GRHSs { GHC.grhssLocalBinds = lbs } } =
+             golbs (GHC.unLoc lbs)
+ 
+-        golbs (GHC.HsValBinds (GHC.ValBindsIn lhsbs lsigs)) =
+-          foldl (\acc x -> IM.union acc (go $ GHC.ValD $ GHC.unLoc x)) mempty lhsbs
+-            `mappend` foldl IM.union mempty (fmap (go . GHC.SigD . GHC.unLoc) lsigs)
++        golbs (GHC.HsValBinds _ (GHC.ValBinds _ lhsbs lsigs)) =
++          foldl (\acc x -> IM.union acc (go $ GHC.ValD GHC.NoExt (GHC.unLoc x))) mempty lhsbs
++            `mappend` foldl IM.union mempty (fmap (go . GHC.SigD GHC.NoExt . GHC.unLoc) lsigs)
+         golbs _ = mempty
+     go _ = mempty
+     decls = GHC.hsmodDecls $ GHC.unLoc $ GHC.pm_parsed_source $ GHC.tm_parsed_module tm

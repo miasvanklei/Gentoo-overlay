@@ -27,6 +27,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/fingertree:=[profile?]
 	>=dev-haskell/ghc-mod-core-5.9.0.0:=[profile?]
 	>=dev-haskell/haskell-lsp-types-0.2.1.0:=[profile?]
+	>=dev-haskell/haskell-lsp-0.2.1.0:=[profile?]
 	dev-haskell/hslogger:=[profile?]
 	dev-haskell/monad-control:=[profile?]
 	dev-haskell/monoid-subclasses:=[profile?]
@@ -40,6 +41,10 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.24.0.0
 "
+
+PATCHES=(
+	"${FILESDIR}"/ghc-8.6.patch
+)
 
 src_configure() {
 	haskell-cabal_src_configure \

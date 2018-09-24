@@ -48,6 +48,10 @@ DEPEND="${RDEPEND}
 		>=dev-haskell/hspec-2.0.0 <dev-haskell/hspec-2.4 )
 "
 
+PATCHES=(
+	"${FILESDIR}"/ghc-8.6.patch
+)
+
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag shelltest shelltest)
