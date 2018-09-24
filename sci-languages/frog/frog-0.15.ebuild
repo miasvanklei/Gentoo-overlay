@@ -29,15 +29,6 @@ DEPEND="dev-libs/libxml2
 	sci-libs/frogdata
 	virtual/pkgconfig"
 
-src_prepare()
-{
-	# fixes build error and linking error
-	eapply "${FILESDIR}"/missing-includes.patch
-
-	eapply_user
-	eautoreconf
-}
-
 src_configure() {
         econf --disable-static
 }
