@@ -42,3 +42,14 @@
  $(obj)/setup.elf: $(src)/setup.ld $(SETUP_OBJS) FORCE
  	$(call if_changed,ld)
  
+--- a/arch/x86/kernel/vmlinux.lds.S	2018-09-24 11:12:51.892696132 +0200
++++ b/arch/x86/kernel/vmlinux.lds.S	2018-09-24 11:13:06.627987544 +0200
+@@ -389,7 +389,7 @@
+  * Per-cpu symbols which need to be offset from __per_cpu_load
+  * for the boot processor.
+  */
+-#define INIT_PER_CPU(x) init_per_cpu__##x = x + __per_cpu_load
++#define INIT_PER_CPU(x) init_per_cpu__##x = x + ABSOLUTE(__per_cpu_load)
+ INIT_PER_CPU(gdt_page);
+ INIT_PER_CPU(irq_stack_union);
+ 
