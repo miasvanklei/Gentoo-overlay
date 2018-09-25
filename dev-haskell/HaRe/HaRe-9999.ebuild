@@ -25,7 +25,7 @@ IUSE=""
 
 RESTRICT=test # tests build a lot of time
 
-RDEPEND=">=dev-haskell/ghc-mod-core-5.8.0:=[profile?] <dev-haskell/ghc-mod-core-5.10.0:=[profile?]
+RDEPEND="dev-haskell/ghc-mod-core:=[profile?]
 	dev-haskell/cabal:=[profile?]
 	dev-haskell/cabal-helper:=[profile?]
 	>=dev-haskell/ghc-exactprint-0.5.3.0:=[profile?]

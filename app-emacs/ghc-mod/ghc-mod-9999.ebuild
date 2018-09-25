@@ -22,7 +22,7 @@ IUSE="shelltest"
 RDEPEND="dev-haskell/cabal-helper:=[profile?]
 	>=dev-haskell/extra-1.6:=[profile?] <dev-haskell/extra-1.7:=[profile?]
 	>=dev-haskell/fclabels-2.0:=[profile?] <dev-haskell/fclabels-2.1:=[profile?]
-	>=dev-haskell/ghc-mod-core-5.9.0.0:=[profile?] <dev-haskell/ghc-mod-core-5.10.0.0:=[profile?]
+	dev-haskell/ghc-mod-core:=[profile?]
 	>=dev-haskell/ghc-paths-0.1.0.9:=[profile?] <dev-haskell/ghc-paths-0.2:=[profile?]
 	>=dev-haskell/haskell-src-exts-1.18:=[profile?] <dev-haskell/haskell-src-exts-1.21:=[profile?]
 	>=dev-haskell/hlint-2.0.8:=[profile?] <dev-haskell/hlint-2.2:=[profile?]
