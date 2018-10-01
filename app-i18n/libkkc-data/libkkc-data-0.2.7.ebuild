@@ -1,9 +1,9 @@
 # Copyright 1999-2017 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=5
+EAPI=6
 
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python3_6 )
 
 inherit python-single-r1
 
@@ -23,6 +23,10 @@ RDEPEND="${COMMON_DEPEND}"
 RESTRICT="mirror"
 
 DOCS=""
+
+PATCHES=(
+	"${FILESDIR}"/python3.patch
+)
 
 pkg_setup() {
 	python-single-r1_pkg_setup
