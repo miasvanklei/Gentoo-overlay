@@ -8,33 +8,34 @@ CHROMIUM_LANGS="am ar bg bn ca cs da de el en-GB es es-419 et fa fi fil fr gu he
 	hi hr hu id it ja kn ko lt lv ml mr ms nb nl pl pt-BR pt-PT ro ru sk sl sr
 	sv sw ta te th tr uk vi zh-CN zh-TW"
 
-inherit check-reqs chromium-2 gnome2-utils flag-o-matic multilib \
-	multiprocessing pax-utils portability python-any-r1 toolchain-funcs \
-	versionator virtualx xdg-utils
+inherit check-reqs chromium-2 eapi7-ver gnome2-utils flag-o-matic multilib \
+	multiprocessing ninja-utils pax-utils portability python-any-r1 \
+	toolchain-funcs virtualx xdg-utils
 
 # Keep this in sync with vendor/libchromiumcontent/VERSION
-CHROMIUM_VERSION="58.0.3029.110"
+CHROMIUM_VERSION="61.0.3163.100"
 # Keep this in sync with vendor/breakpad
-BREAKPAD_COMMIT="c566c50d81f7b1edeaee9f11f5d07bda858d6b64"
+BREAKPAD_COMMIT="82f0452e6b687b3c1e14e08d172b2f3fb79ae91a"
 # Keep this in sync with vendor/breakpad/src (and find the corresponding
 # commit in https://github.com/google/breakpad/)
-BREAKPAD_SRC_COMMIT="e35167de7516448fcc2bf687ad580b9d8b6aedc2"
+BREAKPAD_SRC_COMMIT="67f738b7adb47dc1e3b272fb99062f4192fa6651"
 # Keep this in sync with vendor/node
-NODE_COMMIT="a992f2ff412b85606ec1d4c1eb00ad832fa1e640"
+NODE_COMMIT="51abeb37cad3f2098c0f0fffdff739f4ac2393e8"
 # Keep this in sync with vendor/native_mate
-NATIVE_MATE_COMMIT="7d9c1a80f025f4c46f7da8ea73246fe0f1968579"
+NATIVE_MATE_COMMIT="6a3d238b7e1e3742f2bb495336a84021d927a24f"
 # Keep this in sync with vendor/pdf_viewer
-PDF_VIEWER_COMMIT="beb36874a6b61d7a18b92bf7dcd1f0661e4c59cf"
+PDF_VIEWER_COMMIT="a5251e497fb52e699b28f627e3cbb6d8cefb62df"
 # Keep this in sync with vendor/pdf_viewer/vendor/grit
 GRIT_COMMIT="9536fb6429147d27ef1563088341825db0a893cd"
 # Keep this in sync with vendor/libchromiumcontent
-LIBCHROMIUMCONTENT_COMMIT="2f7b83669315f9492380334d1a8b1cd9bc758efd"
+LIBCHROMIUMCONTENT_COMMIT="cbd04c0dccc7655cd42f02baee3a622d5170ac08"
 # Keep this in sync with package.json#devDependencies
 ASAR_VERSION="0.13.0"
 BROWSERIFY_VERSION="14.0.0"
 NINJA_VERSION="1.8.2"
+GENTOO_PATCHES_VERSION="982b6ad378681966e40e273a7918f5ae511d45a8"
 
-PATCHES_P="gentoo-electron-patches-${P}"
+PATCHES_P="gentoo-electron-patches-${GENTOO_PATCHES_VERSION}"
 CHROMIUM_P="chromium-${CHROMIUM_VERSION}"
 BREAKPAD_P="chromium-breakpad-${BREAKPAD_COMMIT}"
 BREAKPAD_SRC_P="breakpad-${BREAKPAD_SRC_COMMIT}"
@@ -60,7 +61,7 @@ SRC_URI="
 	https://github.com/electron/libchromiumcontent/archive/${LIBCHROMIUMCONTENT_COMMIT}.tar.gz -> electron-${LIBCHROMIUMCONTENT_P}.tar.gz
 	https://github.com/elprans/asar/releases/download/v${ASAR_VERSION}-gentoo/asar-build.tar.gz -> ${ASAR_P}.tar.gz
 	https://github.com/elprans/node-browserify/releases/download/${BROWSERIFY_VERSION}-gentoo/browserify-build.tar.gz -> ${BROWSERIFY_P}.tar.gz
-	https://github.com/elprans/gentoo-electron-patches/archive/${P}.tar.gz -> electron-patches-${PV}.tar.gz
+	https://github.com/elprans/gentoo-electron-patches/archive/${GENTOO_PATCHES_VERSION}.tar.gz -> electron-patches-${GENTOO_PATCHES_VERSION}.tar.gz
 	https://github.com/ninja-build/ninja/archive/v${NINJA_VERSION}.tar.gz -> ninja-${NINJA_VERSION}.tar.gz
 "
 
@@ -75,9 +76,9 @@ GRIT_S="${PDF_VIEWER_S}/vendor/grit"
 LIBCC_S="${S}/vendor/libchromiumcontent"
 
 LICENSE="BSD"
-SLOT="$(get_version_component_range 1-2)"
+SLOT="$(ver_cut 1-2)"
 KEYWORDS="~amd64"
-IUSE="cups custom-cflags gconf gnome-keyring gtk3 kerberos lto neon pic
+IUSE="cups custom-cflags gconf gnome-keyring kerberos lto neon pic
 	  +proprietary-codecs pulseaudio selinux +system-ffmpeg"
 RESTRICT="!system-ffmpeg? ( proprietary-codecs? ( bindist ) )"
 
@@ -95,7 +96,6 @@ COMMON_DEPEND="
 	dev-libs/expat:=
 	dev-libs/glib:2
 	>=dev-libs/icu-58:=
-	>=dev-libs/jsoncpp-0.5.0-r1:=
 	dev-libs/libxml2:=[icu]
 	dev-libs/libxslt:=
 	dev-libs/nspr:=
@@ -106,20 +106,30 @@ COMMON_DEPEND="
 	>=media-libs/alsa-lib-1.0.19:=
 	media-libs/fontconfig:=
 	media-libs/freetype:=
-	>=media-libs/harfbuzz-1.3.1:=[icu(+)]
+	>=media-libs/harfbuzz-1.4.2:=[icu(+)]
 	media-libs/libexif:=
 	media-libs/libjpeg-turbo:=
 	media-libs/libpng:=
 	>=media-libs/libvpx-1.7.0:=[postproc,svc]
-	media-libs/speex:=
+	>=media-libs/openh264-1.6.0:=
 	pulseaudio? ( media-sound/pulseaudio:= )
-	system-ffmpeg? ( >=media-video/ffmpeg-3:= )
+	system-ffmpeg? (
+		>=media-video/ffmpeg-3:=
+		|| (
+			media-video/ffmpeg[-samba]
+			>=net-fs/samba-4.5.10-r1[-debug(-)]
+		)
+		!=net-fs/samba-4.5.12-r0
+		media-libs/opus:=
+	)
+	>=net-dns/c-ares-1.13.0:=
+	>=net-libs/nghttp2-1.32.0:=
 	sys-apps/dbus:=
 	sys-apps/pciutils:=
-	>=sys-libs/libcap-2.22:=
 	virtual/udev
 	x11-libs/cairo:=
 	x11-libs/gdk-pixbuf:2
+	x11-libs/gtk+:3[X]
 	x11-libs/libdrm
 	x11-libs/libnotify:=
 	x11-libs/libX11:=
@@ -129,7 +139,6 @@ COMMON_DEPEND="
 	x11-libs/libXext:=
 	x11-libs/libXfixes:=
 	>=x11-libs/libXi-1.6.0:=
-	x11-libs/libXinerama:=
 	x11-libs/libXrandr:=
 	x11-libs/libXrender:=
 	x11-libs/libXScrnSaver:=
@@ -147,8 +156,6 @@ RDEPEND="${COMMON_DEPEND}
 	x11-misc/xdg-utils
 	virtual/opengl
 	virtual/ttf-fonts
-	!gtk3? ( x11-libs/gtk+:2 )
-	gtk3? ( x11-libs/gtk+:3[X] )
 	selinux? ( sec-policy/selinux-chromium )
 "
 # dev-vcs/git - https://bugs.gentoo.org/593476
@@ -158,17 +165,15 @@ DEPEND="${COMMON_DEPEND}
 		dev-lang/yasm
 	)
 	dev-lang/perl
-	dev-perl/JSON
+	dev-util/gn
 	>=dev-util/gperf-3.0.3
-	dev-util/ninja
-	net-libs/nodejs
+	>=dev-util/ninja-1.7.2
+	>=net-libs/nodejs-4.6.1
 	sys-apps/hwids[usb(+)]
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
 	virtual/pkgconfig
 	dev-vcs/git
-	!gtk3? ( x11-libs/gtk+:2 )
-	gtk3? ( x11-libs/gtk+:3 )
 	$(python_gen_any_dep '
 		>=dev-python/beautifulsoup-4.3.2:4[${PYTHON_USEDEP}]
 		dev-python/html5lib[${PYTHON_USEDEP}]
@@ -190,11 +195,11 @@ fi
 pre_build_checks() {
 	if [[ ${MERGE_TYPE} != binary ]]; then
 		local -x CPP="$(tc-getCXX) -E"
-		if tc-is-clang && ! version_is_at_least "3.9.1" "$(clang-fullversion)"; then
+		if tc-is-clang && ! ver_test "$(clang-fullversion)" -ge 3.9.1; then
 			# bugs: #601654
 			die "At least clang 3.9.1 is required"
 		fi
-		if tc-is-gcc && ! version_is_at_least 4.9 "$(gcc-version)"; then
+		if tc-is-gcc && ! ver_test "$(gcc-version)" -ge 4.9; then
 			# bugs: #535730, #525374, #518668, #600288
 			die "At least gcc 4.9 is required"
 		fi
@@ -343,32 +348,24 @@ src_prepare() {
 	sed -i -e "s/'lib'/'${LIBDIR}'/" lib/module.js || die
 	sed -i -e "s|\"lib\"|\"${LIBDIR}\"|" deps/npm/lib/npm.js || die
 
-	# Fix broken patch
-	cd "${LIBCC_S}" || die
-	eapply "${FILESDIR}/electron-1.7.13-v8-crankshaft-rce-fix.patch"
+	# Apply Gentoo patches for Electron itself.
+	cd "${S}" || die
+	cp -aL "${FILESDIR}/patches" "${WORKDIR}/${PATCHES_P}"
+	_unnest_patches "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
+	eapply "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
 
-	# Apply libcc Chromium patches.
+	# Apply Chromium patches from libchromiumcontent.
 	cd "${CHROMIUM_S}" || die
 	_unnest_patches "${LIBCC_S}/patches"
 	eapply "${LIBCC_S}/patches"
 
-	# Apply Gentoo patches
-	cd "${S}" || die
-	_unnest_patches "${WORKDIR}/${PATCHES_P}/${PV}"
-	eapply "${WORKDIR}/${PATCHES_P}/${PV}"
-
-	# icu-62 support
-	eapply "${FILESDIR}"/icu-62.patch
+	# Finally, apply Gentoo patches for Chromium.
+	eapply "${WORKDIR}/${PATCHES_P}/${PV}/chromium/"
 
 	# Merge chromiumcontent component into chromium source tree.
 	mkdir -p "${CHROMIUM_S}/chromiumcontent" || die
 	cp -a "${LIBCC_S}/chromiumcontent" "${CHROMIUM_S}/" || die
 	cp -a "${LIBCC_S}/tools/linux/" "${CHROMIUM_S}/tools/" || die
-
-	if use gtk3; then
-		sed -i -e 's/gtk2/gtk3/g' "${CHROMIUM_S}/chromiumcontent/BUILD.gn" \
-		|| die
-	fi
 
 	local keeplibs=(
 		base/third_party/dmg_fp
@@ -388,10 +385,10 @@ src_prepare() {
 		third_party/WebKit
 		third_party/analytics
 		third_party/angle
-		third_party/angle/src/common/third_party/numerics
+		third_party/angle/src/common/third_party/base
+		third_party/angle/src/common/third_party/murmurhash
 		third_party/angle/src/third_party/compiler
 		third_party/angle/src/third_party/libXNVCtrl
-		third_party/angle/src/third_party/murmurhash
 		third_party/angle/src/third_party/trace_event
 		third_party/boringssl
 		third_party/brotli
@@ -405,6 +402,7 @@ src_prepare() {
 		third_party/catapult/tracing/third_party/gl-matrix
 		third_party/catapult/tracing/third_party/jszip
 		third_party/catapult/tracing/third_party/mannwhitneyu
+		third_party/catapult/tracing/third_party/oboe
 		third_party/ced
 		third_party/cld_2
 		third_party/cld_3
@@ -414,9 +412,12 @@ src_prepare() {
 		third_party/fips181
 		third_party/flatbuffers
 		third_party/flot
+		third_party/freetype
+		third_party/glslang-angle
 		third_party/google_input_tools
 		third_party/google_input_tools/third_party/closure_library
 		third_party/google_input_tools/third_party/closure_library/third_party/closure
+		third_party/googletest
 		third_party/hunspell
 		third_party/iccjpeg
 		third_party/inspector_protocol
@@ -431,7 +432,6 @@ src_prepare() {
 		third_party/libsecret
 		third_party/libsrtp
 		third_party/libudev
-		third_party/libusb
 		third_party/libwebm
 		third_party/libxml/chromium
 		third_party/libyuv
@@ -443,21 +443,18 @@ src_prepare() {
 		third_party/mt19937ar
 		third_party/node
 		third_party/node/node_modules/vulcanize/third_party/UglifyJS2
-		third_party/openh264
 		third_party/openmax_dl
-		third_party/opus
 		third_party/ots
 		third_party/pdfium
 		third_party/pdfium/third_party/agg23
 		third_party/pdfium/third_party/base
+		third_party/pdfium/third_party/build
 		third_party/pdfium/third_party/bigint
 		third_party/pdfium/third_party/freetype
 		third_party/pdfium/third_party/lcms2-2.6
-		third_party/pdfium/third_party/libjpeg
 		third_party/pdfium/third_party/libopenjpeg20
 		third_party/pdfium/third_party/libpng16
 		third_party/pdfium/third_party/libtiff
-		third_party/pdfium/third_party/zlib_v128
 		third_party/ply
 		third_party/polymer
 		third_party/protobuf
@@ -465,16 +462,22 @@ src_prepare() {
 		third_party/qcms
 		third_party/sfntly
 		third_party/skia
+		third_party/skia/third_party/vulkan
 		third_party/smhasher
+		third_party/spirv-headers
+		third_party/spirv-tools-angle
 		third_party/sqlite
-		third_party/tcmalloc
+		third_party/swiftshader
+		third_party/swiftshader/third_party/llvm-subzero
+		third_party/swiftshader/third_party/subzero
 		third_party/usrsctp
+		third_party/vulkan
+		third_party/vulkan-validation-layers
 		third_party/web-animations-js
 		third_party/webdriver
 		third_party/webrtc
 		third_party/widevine
 		third_party/woff2
-		third_party/x86inc
 		third_party/zlib/google
 		url/third_party/mozilla
 		v8/src/third_party/valgrind
@@ -489,7 +492,7 @@ src_prepare() {
 		third_party/yasm/run_yasm.py
 	)
 	if ! use system-ffmpeg; then
-		keeplibs+=( third_party/ffmpeg )
+		keeplibs+=( third_party/ffmpeg third_party/opus )
 	fi
 
 	cd "${CHROMIUM_S}" || die
@@ -511,17 +514,18 @@ src_configure() {
 
 	cd "${CHROMIUM_S}" || die
 
-	# GN needs explicit config for Debug/Release as opposed to inferring it from build directory.
+	# GN needs explicit config for Debug/Release as opposed to
+	# inferring it from build directory.
 	myconf_gn+=" is_debug=false"
 
 	# Disable nacl, we can't build without pnacl (http://crbug.com/269560).
 	myconf_gn+=" enable_nacl=false"
 
 	# Use system-provided libraries.
+	# TODO: freetype (https://bugs.chromium.org/p/pdfium/issues/detail?id=733).
 	# TODO: use_system_hunspell (upstream changes needed).
 	# TODO: use_system_libsrtp (bug #459932).
-	# TODO: use_system_libusb (http://crbug.com/266149).
-	# TODO: use_system_opus (https://code.google.com/p/webrtc/issues/detail?id=3077).
+	# TODO: xml (bug #616818).
 	# TODO: use_system_protobuf (bug #525560).
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
@@ -531,18 +535,20 @@ src_configure() {
 		flac
 		harfbuzz-ng
 		icu
+		libdrm
 		libjpeg
 		libpng
 		libvpx
 		libwebp
 		libxml
 		libxslt
+		openh264
 		re2
 		snappy
 		yasm
 		zlib)
 	if use system-ffmpeg; then
-		gn_system_libraries+=( ffmpeg )
+		gn_system_libraries+=( libvpx ffmpeg opus )
 	fi
 	build/linux/unbundle/replace_gn_files.py \
 		--system-libraries ${gn_system_libraries[@]} || die
@@ -551,7 +557,6 @@ src_configure() {
 	myconf_gn+=" use_cups=$(usex cups true false)"
 	myconf_gn+=" use_gconf=$(usex gconf true false)"
 	myconf_gn+=" use_gnome_keyring=$(usex gnome-keyring true false)"
-	myconf_gn+=" use_gtk3=$(usex gtk3 true false)"
 	myconf_gn+=" use_kerberos=$(usex kerberos true false)"
 	myconf_gn+=" use_pulseaudio=$(usex pulseaudio true false)"
 
@@ -569,7 +574,8 @@ src_configure() {
 	# Never use bundled gold binary. Disable gold linker flags for now.
 	# Do not use bundled clang.
 	# Trying to use gold results in linker crash.
-	myconf_gn+=" use_gold=false use_sysroot=false linux_use_bundled_binutils=false"
+	myconf_gn+=" use_gold=false use_sysroot=false"
+	myconf_gn+=" linux_use_bundled_binutils=false use_custom_libcxx=false"
 
 	ffmpeg_branding="$(usex proprietary-codecs Chrome Chromium)"
 	myconf_gn+=" proprietary_codecs=$(usex proprietary-codecs true false)"
@@ -622,11 +628,19 @@ src_configure() {
 	# Make sure the build system will use the right tools, bug #340795.
 	tc-export AR CC CXX NM
 
-	# https://bugs.gentoo.org/588596
-	append-cxxflags $(test-flags-CXX -fno-delete-null-pointer-checks)
-
 	# Define a custom toolchain for GN
 	myconf_gn+=" custom_toolchain=\"${FILESDIR}/toolchain:default\""
+
+	if tc-is-cross-compiler; then
+		tc-export BUILD_{AR,CC,CXX,NM}
+		myconf_gn+=" host_toolchain=\"${FILESDIR}/toolchain:host\""
+		myconf_gn+=" v8_snapshot_toolchain=\"${FILESDIR}/toolchain:host\""
+	else
+		myconf_gn+=" host_toolchain=\"${FILESDIR}/toolchain:default\""
+	fi
+
+	# https://bugs.gentoo.org/588596
+	append-cxxflags $(test-flags-CXX -fno-delete-null-pointer-checks)
 
 	myconf_gn+=" icu_use_data_file=false"
 
@@ -666,13 +680,12 @@ src_configure() {
 
 	einfo "Configuring bundled nodejs..."
 	pushd "${S}/vendor/node" > /dev/null || die
-	# Make sure gyp_node does not run
-	echo '#!/usr/bin/env python' > tools/gyp_node.py || die
 	# --shared-libuv cannot be used as electron's node fork
 	# patches uv_loop structure.
-	./configure --shared --without-bundled-v8 --shared-openssl \
-		--shared-http-parser --shared-zlib --without-npm \
-		--with-intl=system-icu --without-dtrace \
+	./configure --shared --without-bundled-v8 \
+		--shared-openssl --shared-http-parser --shared-zlib \
+		--shared-nghttp2 --shared-cares \
+		--without-npm --with-intl=system-icu --without-dtrace \
 		--dest-cpu=${target_arch} --prefix="" || die
 	popd > /dev/null || die
 
@@ -680,12 +693,13 @@ src_configure() {
 	myconf_gn+=" root_extra_deps = [\"//chromiumcontent:chromiumcontent\"]"
 	myconf_gn+=" is_electron_build = true"
 	myconf_gn+=" is_component_build = false"
-	myconf_gn+=" use_experimental_allocator_shim = false"
-	myconf_gn+=" use_allocator= \"none\""
+	myconf_gn+=" use_allocator_shim = false"
+        myconf_gn+=" use_allocator= \"none\""
 
 	einfo "Configuring chromiumcontent..."
-	tools/gn/bootstrap/bootstrap.py -v --gn-gen-args "${myconf_gn}" || die
-	out/Release/gn gen --args="${myconf_gn}" out/Release || die
+	set -- gn gen --args="${myconf_gn} ${EXTRA_GN}" out/Release
+	echo "$@"
+	"$@" || die
 
 	cd "${S}" || die
 }
@@ -738,6 +752,8 @@ src_compile() {
 
 	# Build libchromiumcontent components.
 	eninja -C "${chromium_target}" chromiumcontent:chromiumcontent
+	CHROMIUMCONTENT_2ND_PASS=1 \
+		eninja -C "${chromium_target}" chromiumcontent:libs
 
 	cd "${S}" || die
 
@@ -766,7 +782,6 @@ src_compile() {
 		$(gyp_use gconf use_gconf)
 		$(gyp_use gnome-keyring use_gnome_keyring)
 		$(gyp_use gnome-keyring linux_link_gnome_keyring)
-		$(gyp_use gtk3)
 		$(gyp_use lto)"
 
 	myconf_gyp+=" -Duse_system_icu=1"
@@ -801,6 +816,7 @@ src_compile() {
 	myconf_gyp+=" -Dicu_use_data_file_flag=0"
 	myconf_gyp+=" -Dgenerate_character_data=0"
 
+	myconf_gyp+=" -Dmas_build=0"
 	myconf_gyp+=" -Dlibchromiumcontent_component=0"
 	myconf_gyp+=" -Dcomponent=static_library"
 	myconf_gyp+=" -Dlibrary=static_library"

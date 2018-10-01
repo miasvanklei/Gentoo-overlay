@@ -13,6 +13,110 @@
  /* End of x86-64 definitions                                                 */
  #elif defined(__mips__)
  #if _MIPS_SIM == _MIPS_SIM_ABI32
+--- a/chromium/sandbox/linux/suid/process_util.h
++++ b/chromium/sandbox/linux/suid/process_util.h
+@@ -11,6 +11,14 @@
+ #include <stdbool.h>
+ #include <sys/types.h>
+ 
++// Some additional functions
++# define TEMP_FAILURE_RETRY(expression) \
++	(__extension__			\
++	 ({ long int __result;		\
++	  do __result = (long int) (expression); \
++	  while (__result == -1L && errno == EINTR); \
++	  __result; }))
++
+ // This adjusts /proc/process/oom_score_adj so the Linux OOM killer
+ // will prefer certain process types over others. The range for the
+ // adjustment is [-1000, 1000], with [0, 1000] being user accessible.
+--- a/chromium/sandbox/linux/seccomp-bpf/trap.cc
++++ b/chromium/sandbox/linux/seccomp-bpf/trap.cc
+@@ -156,7 +156,7 @@
+   // most versions of glibc don't include this information in siginfo_t. So,
+   // we need to explicitly copy it into a arch_sigsys structure.
+   struct arch_sigsys sigsys;
+-  memcpy(&sigsys, &info->_sifields, sizeof(sigsys));
++  memcpy(&sigsys, &info->__si_fields, sizeof(sigsys));
+ 
+ #if defined(__mips__)
+   // When indirect syscall (syscall(__NR_foo, ...)) is made on Mips, the
+--- a/chromium/device/serial/serial_io_handler_posix.cc
++++ b/chromium/device/serial/serial_io_handler_posix.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <sys/ioctl.h>
+ #include <termios.h>
++#include <asm-generic/ioctls.h>
+ 
+ #include "base/posix/eintr_wrapper.h"
+ 
+--- a/chromium/base/logging.cc
++++ b/chromium/base/logging.cc
+@@ -545,8 +545,7 @@
+ 
+ LogMessage::~LogMessage() {
+   size_t stack_start = stream_.tellp();
+-#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && !defined(__UCLIBC__) && \
+-    !defined(OS_AIX)
++#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && defined(__GLIBC__)
+   if (severity_ == LOG_FATAL && !base::debug::BeingDebugged()) {
+     // Include a stack trace on a fatal, unless a debugger is attached.
+     base::debug::StackTrace trace;
+--- a/chromium/third_party/WebKit/Source/platform/wtf/StackUtil.cpp
++++ b/chromium/third_party/WebKit/Source/platform/wtf/StackUtil.cpp
+@@ -28,7 +28,7 @@
+ // FIXME: On Mac OSX and Linux, this method cannot estimate stack size
+ // correctly for the main thread.
+ 
+-#if defined(__GLIBC__) || defined(OS_ANDROID) || defined(OS_FREEBSD) || \
++#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_FREEBSD) || \
+     defined(OS_FUCHSIA)
+   // pthread_getattr_np() can fail if the thread is not invoked by
+   // pthread_create() (e.g., the main thread of webkit_unit_tests).
+@@ -96,7 +96,7 @@
+ }
+ 
+ void* GetStackStart() {
+-#if defined(__GLIBC__) || defined(OS_ANDROID) || defined(OS_FREEBSD) || \
++#if defined(OS_LINUX) || defined(OS_ANDROID) || defined(OS_FREEBSD) || \
+     defined(OS_FUCHSIA)
+   pthread_attr_t attr;
+   int error;
+--- a/chromium/net/dns/dns_config_service_posix.cc
++++ b/chromium/net/dns/dns_config_service_posix.cc
+@@ -122,7 +122,7 @@
+   ConfigParsePosixResult result;
+   config->unhandled_options = false;
+ // TODO(fuchsia): Use res_ninit() when it's implemented on Fuchsia.
+-#if defined(OS_OPENBSD) || defined(OS_FUCHSIA)
++#if defined(OS_OPENBSD) || defined(OS_FUCHSIA) || defined(_GNU_SOURCE)
+   // Note: res_ninit in glibc always returns 0 and sets RES_INIT.
+   // res_init behaves the same way.
+   memset(&_res, 0, sizeof(_res));
+--- a/chromium/base/native_library_posix.cc     2016-11-17 01:45:50.032002326 +0100
++++ b/chromium/base/native_library_posix.cc     2016-11-17 01:46:23.729001549 +0100
+@@ -12,6 +12,10 @@
+ #include "base/strings/utf_string_conversions.h"
+ #include "base/threading/thread_restrictions.h"
+
++#ifndef RTLD_DEEPBIND
++#define RTLD_DEEPBIND 0
++#endif
++
+ namespace base {
+
+ std::string NativeLibraryLoadError::ToString() const {
+--- a/chromium/third_party/ots/include/opentype-sanitiser.h
++++ b/chromium/third_party/ots/include/opentype-sanitiser.h
+@@ -20,6 +20,7 @@ typedef unsigned __int64 uint64_t;
+ #define htonl(x) _byteswap_ulong (x)
+ #define htons(x) _byteswap_ushort (x)
+ #else
++#include <sys/types.h>
+ #include <arpa/inet.h>
+ #include <stdint.h>
+ #endif
 --- a/chromium/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
 +++ b/chromium/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
 @@ -49,7 +49,7 @@
@@ -77,78 +181,20 @@
    static const int kClass = ELFCLASS64;
  #else
  #error "Unsupported __WORDSIZE for ElfCoreDump."
---- a/chromium/sandbox/linux/suid/process_util.h
-+++ b/chromium/sandbox/linux/suid/process_util.h
-@@ -11,6 +11,14 @@
- #include <stdbool.h>
- #include <sys/types.h>
- 
-+// Some additional functions
-+# define TEMP_FAILURE_RETRY(expression) \
-+	(__extension__			\
-+	 ({ long int __result;		\
-+	  do __result = (long int) (expression); \
-+	  while (__result == -1L && errno == EINTR); \
-+	  __result; }))
-+
- // This adjusts /proc/process/oom_score_adj so the Linux OOM killer
- // will prefer certain process types over others. The range for the
- // adjustment is [-1000, 1000], with [0, 1000] being user accessible.
---- a/chromium/sandbox/linux/seccomp-bpf/trap.cc
-+++ b/chromium/sandbox/linux/seccomp-bpf/trap.cc
-@@ -156,7 +156,7 @@
-   // most versions of glibc don't include this information in siginfo_t. So,
-   // we need to explicitly copy it into a arch_sigsys structure.
-   struct arch_sigsys sigsys;
--  memcpy(&sigsys, &info->_sifields, sizeof(sigsys));
-+  memcpy(&sigsys, &info->__si_fields, sizeof(sigsys));
- 
- #if defined(__mips__)
-   // When indirect syscall (syscall(__NR_foo, ...)) is made on Mips, the
---- a/chromium/net/dns/dns_config_service_posix.cc
-+++ b/chromium/net/dns/dns_config_service_posix.cc
-@@ -116,7 +116,7 @@
- ConfigParsePosixResult ReadDnsConfig(DnsConfig* config) {
-   ConfigParsePosixResult result;
-   config->unhandled_options = false;
--#if defined(OS_OPENBSD)
-+#if defined(OS_OPENBSD) || defined(_GNU_SOURCE)
-   // Note: res_ninit in glibc always returns 0 and sets RES_INIT.
-   // res_init behaves the same way.
-   memset(&_res, 0, sizeof(_res));
---- a/chromium/third_party/WebKit/Source/wtf/StackUtil.cpp
-+++ b/chromium/third_party/WebKit/Source/wtf/StackUtil.cpp
-@@ -68,7 +68,7 @@
- // FIXME: On Mac OSX and Linux, this method cannot estimate stack size
- // correctly for the main thread.
- 
--#if defined(__GLIBC__) || OS(ANDROID) || OS(FREEBSD)
-+#if OS(LINUX) || OS(ANDROID) || OS(FREEBSD)
-   // pthread_getattr_np() can fail if the thread is not invoked by
-   // pthread_create() (e.g., the main thread of webkit_unit_tests).
-   // If so, a conservative size estimate is returned.
-@@ -135,7 +135,7 @@
- }
- 
- void* getStackStart() {
--#if defined(__GLIBC__) || OS(ANDROID) || OS(FREEBSD)
-+#if OS(LINUX) || OS(ANDROID) || OS(FREEBSD)
-   pthread_attr_t attr;
-   int error;
- #if OS(FREEBSD)
 --- a/chromium/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
 +++ b/chromium/chrome/browser/metrics/chrome_browser_main_extra_parts_metrics.cc
-@@ -40,7 +40,7 @@
- #include "chrome/browser/metrics/tab_usage_recorder.h"
- #endif  // !defined(OS_ANDROID)
+@@ -39,7 +39,9 @@
+ #endif  // defined(OS_ANDROID) && defined(__arm__)
  
--#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
-+#if defined(__GLIBC__) && !defined(OS_CHROMEOS)
+ #if defined(OS_LINUX) && !defined(OS_CHROMEOS)
++#if defined(__GLIBC__)
  #include <gnu/libc-version.h>
++#endif
  
- #include "base/version.h"
-@@ -173,7 +173,7 @@
- }
+ #include "base/linux_util.h"
+ #include "base/strings/string_split.h"
+@@ -295,7 +297,7 @@ void RecordLinuxDistro() {
+ #endif  // defined(OS_LINUX) && !defined(OS_CHROMEOS)
  
  void RecordLinuxGlibcVersion() {
 -#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
@@ -156,52 +202,3 @@
    base::Version version(gnu_get_libc_version());
  
    UMALinuxGlibcVersion glibc_version_result = UMA_LINUX_GLIBC_NOT_PARSEABLE;
-@@ -197,7 +197,7 @@
- #endif
- }
- 
--#if defined(USE_X11) && !defined(OS_CHROMEOS)
-+#if defined(__GLIBC__) && defined(USE_X11) && !defined(OS_CHROMEOS)
- UMALinuxWindowManager GetLinuxWindowManager() {
-   switch (ui::GuessWindowManager()) {
-     case ui::WM_UNKNOWN:
-@@ -330,7 +330,7 @@
- 
- void ChromeBrowserMainExtraPartsMetrics::PostBrowserStart() {
-   RecordLinuxGlibcVersion();
--#if defined(USE_X11) && !defined(OS_CHROMEOS)
-+#if defined(__GLIBC__) && defined(USE_X11) && !defined(OS_CHROMEOS)
-   UMA_HISTOGRAM_ENUMERATION("Linux.WindowManager",
-                             GetLinuxWindowManager(),
-                             UMA_LINUX_WINDOW_MANAGER_COUNT);
---- a/chromium/device/serial/serial_io_handler_posix.cc
-+++ b/chromium/device/serial/serial_io_handler_posix.cc
-@@ -6,6 +6,7 @@
- 
- #include <sys/ioctl.h>
- #include <termios.h>
-+#include <asm-generic/ioctls.h>
- 
- #include "base/posix/eintr_wrapper.h"
- 
---- a/chromium/base/logging.cc
-+++ b/chromium/base/logging.cc
-@@ -494,7 +494,7 @@
- }
- 
- LogMessage::~LogMessage() {
--#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && !defined(__UCLIBC__)
-+#if !defined(OFFICIAL_BUILD) && !defined(OS_NACL) && defined(__GLIBC__)
-   if (severity_ == LOG_FATAL && !base::debug::BeingDebugged()) {
-     // Include a stack trace on a fatal, unless a debugger is attached.
-     base::debug::StackTrace trace;
---- a/chromium/third_party/ots/include/opentype-sanitiser.h
-+++ b/chromium/third_party/ots/include/opentype-sanitiser.h
-@@ -20,6 +20,7 @@ typedef unsigned __int64 uint64_t;
- #define htonl(x) _byteswap_ulong (x)
- #define htons(x) _byteswap_ushort (x)
- #else
-+#include <sys/types.h>
- #include <arpa/inet.h>
- #include <stdint.h>
- #endif

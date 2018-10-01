@@ -13,15 +13,6 @@
  /* End of x86-64 definitions                                                 */
  #elif defined(__mips__)
  #if _MIPS_SIM == _MIPS_SIM_ABI32
-@@ -2936,7 +2936,7 @@
- 
-     /* Need to make sure __off64_t isn't truncated to 32-bits under x32.  */
-     LSS_INLINE void* LSS_NAME(mmap)(void *s, size_t l, int p, int f, int d,
--                                    __off64_t o) {
-+                                    off64_t o) {
-       LSS_BODY(6, void*, mmap, LSS_SYSCALL_ARG(s), LSS_SYSCALL_ARG(l),
-                                LSS_SYSCALL_ARG(p), LSS_SYSCALL_ARG(f),
-                                LSS_SYSCALL_ARG(d), (uint64_t)(o));
 --- a/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
 +++ b/vendor/breakpad/src/client/linux/dump_writer_common/ucontext_reader.cc
 @@ -49,7 +49,7 @@
@@ -171,31 +162,4 @@
  
  static int maybe_new_socket(uv_tcp_t* handle, int domain, int flags) {
    int sockfd;
-
---- a/vendor/node/src/node.cc	2018-01-27 17:08:12.475645058 +0100
-+++ b/vendor/node/src/node.cc	2018-01-27 17:08:36.586600024 +0100
-@@ -4536,13 +4536,13 @@
- 
-   if (fd == -1) {
-     fprintf(stderr, "could not open snapshot file '%s': %s\n",
--            path, sys_errlist[errno]);
-+            path, strerror(errno));
-     ABORT();
-   }
- 
-   if (fstat(fd, &sb) == -1) {
-     fprintf(stderr, "could not stat snapshot file '%s': %s\n",
--            path, sys_errlist[errno]);
-+            path, strerror(errno));
-     ABORT();
-   }
- 
-@@ -4552,7 +4552,7 @@
-             mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0));
-   if (*addr == MAP_FAILED) {
-     fprintf(stderr, "could not read snapshot file '%s': %s\n",
--            path, sys_errlist[errno]);
-+            path, strerror(errno));
-     ABORT();
-   }
  

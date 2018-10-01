@@ -1,0 +1,17 @@
+--- a/chromium/base/BUILD.gn	2017-09-22 00:04:50.000000000 +0200
++++ b/chromium/base/BUILD.gn	2018-09-30 12:34:29.652323517 +0200
+@@ -1134,14 +1134,6 @@
+     ":debugging_flags",
+   ]
+ 
+-  # Needed for <atomic> if using newer C++ library than sysroot, except if
+-  # building inside the cros_sdk environment - use host_toolchain as a
+-  # more robust check for this.
+-  if (!use_sysroot && (is_android || (is_linux && !is_chromecast)) &&
+-      host_toolchain != "//build/toolchain/cros:host") {
+-    libs = [ "atomic" ]
+-  }
+-
+   if (use_allocator_shim) {
+     sources += [
+       "allocator/allocator_shim.cc",
