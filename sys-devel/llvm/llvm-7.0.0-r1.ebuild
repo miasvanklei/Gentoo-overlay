@@ -75,6 +75,10 @@ S=${WORKDIR}/${P/_/}.src
 CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
+	# Fix x86 codegen bug triggered by Chromium
+	# https://bugs.gentoo.org/664868
+	eapply "${FILESDIR}"/0001-X86-Stop-X86DomainReassignment-from-creating-copies-.patch
+
 	# use init-array as default
 	eapply "${FILESDIR}"/0001-use-init-array.patch
 
