@@ -5,7 +5,7 @@ EAPI=6
 
 PYTHON_COMPAT=( python3_6 )
 
-inherit python-any-r1 versionator toolchain-funcs llvm
+inherit llvm multiprocessing toolchain-funcs python-any-r1 versionator
 
 SLOT="0"
 KEYWORDS="~amd64"
@@ -19,7 +19,7 @@ SRC_URI="https://static.rust-lang.org/dist/rustc-${PV}-src.tar.xz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+cargo debug doc libressl +rls +rustfmt -jemalloc"
+IUSE="+cargo +clippy debug doc libressl +rls +rustfmt -jemalloc"
 
 RDEPEND="jemalloc? ( dev-libs/jemalloc )
 	sys-devel/llvm"
@@ -38,7 +38,7 @@ DEPEND="${RDEPEND}
 		net-misc/curl[ssl]
 	)
         rustfmt? ( !dev-util/rustfmt )
-        dev-util/cmake
+        dev-libs/libgit2
 "
 PDEPEND="!cargo? ( >=dev-util/cargo-${CARGO_DEPEND_VERSION} )"
 
@@ -57,11 +57,19 @@ pkg_setup() {
 }
 
 PATCHES=(
-	"${FILESDIR}"/static.patch
-	"${FILESDIR}"/system-llvm.patch
-	"${FILESDIR}"/musl.patch
-	"${FILESDIR}"/use-libc++.patch
+	"${FILESDIR}"/musl-fix-static-linking.patch
+	"${FILESDIR}"/musl-fix-linux_musl_base.patch
+	"${FILESDIR}"/llvm-with-ffi.patch
+	"${FILESDIR}"/static-pie.patch
+	"${FILESDIR}"/need-rpath.patch
+	"${FILESDIR}"/minimize-rpath.patch
+	"${FILESDIR}"/gentoo-change-rpath-to-rustlib.patch
+	"${FILESDIR}"/gentoo-target.patch
+	"${FILESDIR}"/bootstrap-tool-respect-tool.patch
 	"${FILESDIR}"/fix-analysis-path.patch
+	"${FILESDIR}"/system-llvm.patch
+	"${FILESDIR}"/link-libc++.patch
+	"${FILESDIR}"/link-libunwind.patch
 )
 
 src_configure() {
@@ -74,9 +82,13 @@ src_configure() {
 		extended="true"
 		tools="\"cargo\","
 	fi
+	if use clippy; then
+		extended="true"
+		tools="\"clippy\",$tools"
+	fi
 	if use rls; then
 		extended="true"
-		tools="\"rls\",$tools"
+		tools="\"rls\",\"analysis\",\"src\",$tools"
 	fi
 	if use rustfmt; then
 		extended="true"
@@ -101,26 +113,35 @@ src_configure() {
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)"
-	mandir = "share/${PN}/man"
 	docdir = "share/doc/${PN}"
+	mandir = "share/${PN}/man"
 	[rust]
 	optimize = $(toml_usex !debug)
 	debuginfo = $(toml_usex debug)
 	debug-assertions = $(toml_usex debug)
 	use-jemalloc = $(toml_usex jemalloc)
 	default-linker = "$(tc-getCC)"
-	rpath = false
+        channel = "stable"
 	[target.${CBUILD}]
 	cc = "$(tc-getBUILD_CC)"
 	cxx = "$(tc-getBUILD_CXX)"
 	llvm-config = "${llvm_config}"
+	musl-root = "/usr"
 	linker = "$(tc-getCC)"
 	ar = "$(tc-getAR)"
 	EOF
 }
 
 src_compile() {
-	${EPYTHON} x.py build --config="${S}"/config.toml --exclude src/tools/miri || die
+	cat <<- EOF >> "${S}"/config.env
+		RUST_BACKTRACE=1
+		RUSTC_CRT_STATIC="false"
+		LIBGIT2_SYS_USE_PKG_CONFIG=1
+	EOF
+
+	env $(cat "${S}"/config.env)\
+	${EPYTHON} ./x.py build --config="${S}"/config.toml -j$(makeopts_jobs) \
+	--exclude src/tools/miri || die
 }
 
 src_install() {
@@ -131,12 +152,16 @@ src_install() {
 	local sobj="${rcbuild}/stage1-std/${CBUILD}"
 	local tobj="${rcbuild}/stage2-tools/${CBUILD}/release"
 
-	# install binaries
+	# Install binaries
 	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
 	if use cargo; then
 		dobin "${tobj}"/cargo
+	fi
+	if use clippy; then
+		dobin "${tobj}"/clippy
+		dobin "${tobj}"/cargo-clippy
 	fi
 	if use rls; then
 		dobin "${tobj}"/rls
@@ -146,23 +171,26 @@ src_install() {
 		dobin "${tobj}"/cargo-fmt
 	fi
 
-	# install libraries
+	# Install libraries
 	insinto "/usr/$(get_libdir)"
 	doins -r "${obj}/lib/rustlib"
 
-	# install analysis for rls
+	# Delete crt*.o files
+	find "${D}" -name "crt*.o" -delete || die
+
+	# Install analysis for rls
 	insinto "/usr/$(get_libdir)/rustlib/analysis"
 	doins "${sobj}/release/deps/save-analysis/"*
 
-	# install COPYRIGHT and LICENSE
+	# Install COPYRIGHT and LICENSE
 	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
 
-	# pretty printers
+	# Pretty printers
 	insinto "/usr/$(get_libdir)/rustlib/etc"
 	doins src/etc/*pretty*
 	doins src/etc/lldb_rust_formatters.py
 
-	# setup environment
+	# Setup environment
 	cat <<-EOF > "${T}"/50${PN}
 	LDPATH="/usr/$(get_libdir)/rustlib/${CBUILD}/lib"
 	MANPATH="/usr/share/${PN}/man"
@@ -170,16 +198,16 @@ src_install() {
 	EOF
 	doenvd "${T}"/50${PN}
 
-	# install sources needed for go to definition and racer
+	# Install sources needed for go to definition and racer
 	pushd ${S}/src
 	mkdir -p ${D}/usr/lib/rustlib/src/rust/src
-	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src \; || die
+	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src/rust/src \; || die
 	popd >/dev/null
 }
 
 pkg_postinst() {
 	elog "Rust installs a helper script for calling GDB now,"
-	elog "for your convenience it is installed under /usr/bin/rust-gdb-${PV}."
+	elog "for your convenience it is installed under /usr/bin/rust-gdb."
 
 	if has_version app-editors/emacs || has_version app-editors/emacs-vcs; then
 		elog "install app-emacs/rust-mode to get emacs support for rust."
