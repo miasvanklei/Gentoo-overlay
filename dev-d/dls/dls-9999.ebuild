@@ -7,7 +7,7 @@ inherit git-r3
 
 DESCRIPTION="Microsoft language server protocol implementation for D using workspace-d"
 HOMEPAGE="https://github.com/Pure-D/serve-d"
-EGIT_REPO_URI="https://github.com/Pure-D/serve-d.git"
+EGIT_REPO_URI="https://github.com/d-language-server/dls.git"
 SRC_URI=""
 LICENSE="MIT"
 SLOT="0"
@@ -22,5 +22,5 @@ src_compile() {
 }
 
 src_install() {
-	dobin serve-d
+	dobin dls
 }
