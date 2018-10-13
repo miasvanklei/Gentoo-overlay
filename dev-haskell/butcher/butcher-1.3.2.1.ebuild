@@ -35,14 +35,6 @@ DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.22.2.0
 "
 
-src_prepare() {
-        default
-
-        cabal_chdeps \
-                'base >=4.9 && <4.12' 'base >=4.9 && <4.13' \
-		'containers <0.6' 'containers <0.7'
-}
-
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag butcher-dev butcher-dev)
