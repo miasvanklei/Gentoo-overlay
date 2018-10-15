@@ -13,7 +13,8 @@ IUSE="debug"
 
 SRC_URI="https://github.com/dlang/dub/archive/v${PV}.tar.gz -> ${PN}-${PV}.tar.gz"
 
-DEPEND="net-misc/curl"
+DEPEND="net-misc/curl
+	dev-lang/ldc2"
 RDEPEND="${DEPEND}"
 
 PATCHES=(
