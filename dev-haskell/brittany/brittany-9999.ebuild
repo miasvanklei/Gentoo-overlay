@@ -37,7 +37,7 @@ RDEPEND=">=dev-haskell/aeson-1.0.1.0:=[profile?] <dev-haskell/aeson-1.5:=[profil
 	>=dev-haskell/text-1.2:=[profile?] <dev-haskell/text-1.3:=[profile?]
 	>=dev-haskell/uniplate-1.6.12:=[profile?] <dev-haskell/uniplate-1.7:=[profile?]
 	>=dev-haskell/unsafe-0.0:=[profile?] <dev-haskell/unsafe-0.1:=[profile?]
-	>=dev-haskell/yaml-0.8.18:=[profile?] <dev-haskell/yaml-0.11:=[profile?]
+	>=dev-haskell/yaml-0.8.18:=[profile?] <dev-haskell/yaml-0.12:=[profile?]
 	>=dev-lang/ghc-8.0.1:=
 	!brittany-dev-lib? ( >=dev-haskell/hspec-2.4.1:=[profile?] <dev-haskell/hspec-2.6:=[profile?] )
 "
@@ -52,7 +52,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/ghc-8.6.patch
 
         cabal_chdeps \
-                'yaml >=0.8.18 && <0.9' 'yaml >=0.8.18 && <0.11' \
+                'yaml >=0.8.18 && <0.9' 'yaml >=0.8.18 && <0.12' \
 		'monad-memo >=0.4.1 && <0.5' 'monad-memo >=0.4.1 && <0.6' \
 		'ghc-exactprint >=0.5.6.0 && <0.5.8' 'ghc-exactprint >=0.5.6.0 && <0.5.9'
 }
