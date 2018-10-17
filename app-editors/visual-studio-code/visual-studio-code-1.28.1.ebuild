@@ -40,7 +40,7 @@ node_compile() {
 
 
 src_compile() {
-	local n_p=(gc-signals@0.0.1 keytar@4.0.5 native-is-elevated@0.2.1 native-keymap@1.2.5 native-watchdog@0.3.0 node-pty@0.7.4 vscode-nsfw@1.0.17 oniguruma spdlog@0.6.0)
+	local n_p=(gc-signals@0.0.1 keytar@4.2.1 native-is-elevated@0.2.1 native-keymap@1.2.5 native-watchdog@1.0.0 node-pty@0.7.8 vscode-nsfw@1.1.1 oniguruma spdlog@0.7.2)
 	for i in "${n_p[@]}"; do
 		elog "recompiling $i"
 		node_compile $i || die
