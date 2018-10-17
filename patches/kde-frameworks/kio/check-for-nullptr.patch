@@ -1,41 +1,13 @@
---- a/src/widgets/kpropertiesdialog.cpp	2018-09-02 21:25:13.000000000 +0200
-+++ b/src/widgets/kpropertiesdialog.cpp	2018-09-22 14:22:26.037152751 +0200
-@@ -1166,23 +1166,25 @@
+--- a/src/widgets/kpropertiesdialog.cpp	2018-10-16 11:14:36.500153909 +0200
++++ b/src/widgets/kpropertiesdialog.cpp	2018-10-16 11:15:27.475188431 +0200
+@@ -1166,9 +1166,9 @@
              l = new QLabel(d->m_frame);
              grid->addWidget(l, curRow++, 2);
              l->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
 -            l->setText(mp->mountType());
  
--            if (mp && mp->mountPoint() != QLatin1String("/")) {
--                l = new QLabel(i18n("Mounted on:"), d->m_frame);
--                grid->addWidget(l, curRow, 0, Qt::AlignRight);
-+            if (mp) {
+             if (mp) {
 +                l->setText(mp->mountType());
-+                if (mp->mountPoint() != QLatin1String("/")) {
-+                    l = new QLabel(i18n("Mounted on:"), d->m_frame);
-+                    grid->addWidget(l, curRow, 0, Qt::AlignRight);
- 
--                l = new KSqueezedTextLabel(mp->mountPoint(), d->m_frame);
--                l->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
--                grid->addWidget(l, curRow++, 2);
-+                    l = new KSqueezedTextLabel(mp->mountPoint(), d->m_frame);
-+                    l->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
-+                    grid->addWidget(l, curRow++, 2);
- 
--                l = new QLabel(i18n("Mounted from:"), d->m_frame);
--                grid->addWidget(l, curRow, 0, Qt::AlignRight);
-+                    l = new QLabel(i18n("Mounted from:"), d->m_frame);
-+                    grid->addWidget(l, curRow, 0, Qt::AlignRight);
- 
--                l = new QLabel(d->m_frame);
--                grid->addWidget(l, curRow++, 2);
--                l->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
--                l->setText(mp->mountedFrom());
-+                    l = new QLabel(d->m_frame);
-+                    grid->addWidget(l, curRow++, 2);
-+                    l->setTextInteractionFlags(Qt::TextSelectableByMouse | Qt::TextSelectableByKeyboard);
-+                    l->setText(mp->mountedFrom());
-+                }
-             }
-         }
+                 l = new QLabel(i18n("Mounted on:"), d->m_frame);
+                 grid->addWidget(l, curRow, 0, Qt::AlignRight);
  
