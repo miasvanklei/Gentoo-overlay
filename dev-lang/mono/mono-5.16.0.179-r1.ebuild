@@ -1,20 +1,22 @@
-# Copyright 1999-2017 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
 
-inherit autotools eutils linux-info mono-env flag-o-matic pax-utils versionator multilib-minimal
+KEYWORDS="~amd64 ~arm64 ~ppc ~ppc64 ~x86 ~amd64-linux"
+
+RESTRICT="mirror"
+SLOT="0"
+
+IUSE="nls minimal pax_kernel xen doc"
+
+inherit autotools eutils linux-info mono-env flag-o-matic pax-utils multilib-minimal
 
 DESCRIPTION="Mono runtime and class libraries, a C# compiler/interpreter"
 HOMEPAGE="http://www.mono-project.com/Main_Page"
-SRC_URI="http://download.mono-project.com/sources/${PN}/${P}.tar.bz2"
-
 LICENSE="MIT LGPL-2.1 GPL-2 BSD-4 NPL-1.1 Ms-PL GPL-2-with-linking-exception IDPL"
-SLOT="0"
 
-KEYWORDS="~amd64 ~ppc ~ppc64 ~x86 ~amd64-linux"
-
-IUSE="nls minimal pax_kernel xen doc"
+SRC_URI="http://download.mono-project.com/sources/mono/${P}.tar.bz2"
 
 COMMONDEPEND="
 	!minimal? ( >=dev-dotnet/libgdiplus-2.10 )
@@ -22,17 +24,22 @@ COMMONDEPEND="
 	nls? ( sys-devel/gettext )
 "
 RDEPEND="${COMMONDEPEND}
-	|| ( www-client/elinks www-client/lynx )
+	|| ( www-client/links www-client/lynx )
 "
 DEPEND="${COMMONDEPEND}
 	sys-devel/bc
 	virtual/yacc
 	pax_kernel? ( sys-apps/elfix )
 	dev-util/cmake
-	!dev-lang/mono-basic
 "
 
-#S="${WORKDIR}/${PN}-$(get_version_component_range 1-3)"
+PATCHES=(
+	"${FILESDIR}"/${PN}-5.0.1.1-x86_32.patch
+	"${FILESDIR}"/mono-5.12-try-catch.patch
+	"${FILESDIR}"/strerror_r.patch
+        "${FILESDIR}"/revert-semaphore.patch
+        "${FILESDIR}"/use-clang.patch
+)
 
 pkg_pretend() {
 	linux-info_pkg_setup
@@ -43,7 +50,7 @@ pkg_pretend() {
 			# https://github.com/gentoo/gentoo/blob/f200e625bda8de696a28338318c9005b69e34710/eclass/linux-info.eclass#L686
 			ewarn "kernel config not found"
 			ewarn "If CONFIG_SYSVIPC is not set in your kernel .config, mono will hang while compiling."
-			ewarn "See http://bugs.gentoo.org/261869 for more info."
+			ewarn "See https://bugs.gentoo.org/261869 for more info."
 		fi
 	fi
 }
@@ -64,10 +71,12 @@ src_prepare() {
 		sed '/exec "/ i\paxmark.sh -mr "$r/@mono_runtime@"' -i "${S}"/runtime/mono-wrapper.in || die "Failed to sed mono-wrapper.in"
 	fi
 
-	eapply ${FILESDIR}/remove-sigcontext-include.patch
-	eapply ${FILESDIR}/strerror_r.patch
-	eapply ${FILESDIR}/revert-semaphore.patch
-	eapply ${FILESDIR}/use-clang.patch
+	# mono build system can fail otherwise
+	strip-flags
+
+	# prebuilt files were left in tarball by accident:
+	rm -rv external/corefx/src/Native/Unix/System.Native/.libs || die
+	rm -rv external/corefx/src/Native/Unix/System.Native/*.{o,lo} || die
 
 	default
 	# PATCHES contains configure.ac patch
@@ -78,12 +87,10 @@ src_prepare() {
 multilib_src_configure() {
 	local myeconfargs=(
 		--disable-silent-rules
+		$(use_with xen xen_opt)
 		--without-ikvm-native
 		--disable-dtrace
-		--disable-boehm
-		--enable-parallel-mark
 		--without-sigaltstack
-		$(use_with xen xen_opt)
 		$(use_with doc mcs-docs)
 		$(use_enable nls)
 	)
@@ -105,6 +112,10 @@ multilib_src_install() {
 	rm -f "${ED}"/usr/lib/mono/{2.0,4.5}/mscorlib.dll.so || die
 	rm -f "${ED}"/usr/lib/mono/{2.0,4.5}/mcs.exe.so || die
 
-	# breaks omnisharp
-	rm -rf "${ED}"/usr/lib/mono/xbuild/15.0
+	# remove .la files
+	rm -f "${ED}"/usr/lib/mono/*.la || die
+
+	# Remove Windows-only stuff
+	rm -fr "${ED}"/usr/lib/mono/*/Mono.Security.Win32* || die
+	rm -f "${ED}"/usr/lib/libMonoSupportW.* || die
 }
