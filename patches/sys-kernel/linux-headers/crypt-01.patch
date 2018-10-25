@@ -1,0 +1,135 @@
+From b13dfa470877a684f56b4d2632cf1cf8c5cfd772 Mon Sep 17 00:00:00 2001
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 5 Sep 2018 17:11:56 +0100
+Subject: KEYS: Provide key type operations for asymmetric key ops
+
+Provide five new operations in the key_type struct that can be used to
+provide access to asymmetric key operations.  These will be implemented for
+the asymmetric key type in a later patch and may refer to a key retained in
+RAM by the kernel or a key retained in crypto hardware.
+
+     int (*asym_query)(const struct kernel_pkey_params *params,
+		       struct kernel_pkey_query *info);
+     int (*asym_eds_op)(struct kernel_pkey_params *params,
+			const void *in, void *out);
+     int (*asym_verify_signature)(struct kernel_pkey_params *params,
+			          const void *in, const void *in2);
+
+Since encrypt, decrypt and sign are identical in their interfaces, they're
+rolled together in the asym_eds_op() operation and there's an operation ID
+in the params argument to distinguish them.
+
+Verify is different in that we supply the data and the signature instead
+and get an error value (or 0) as the only result on the expectation that
+this may well be how a hardware crypto device may work.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Tested-by: Denis Kenzior <denkenz@gmail.com>
+---
+ include/linux/key-type.h             |  11 ++++
+ include/linux/keyctl.h               |  46 +++++++++++++++
+ include/uapi/linux/keyctl.h          |   5 ++
+ 3 files changed, 62 insertions(+)
+ create mode 100644 include/linux/keyctl.h
+
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index 05d8fb5a06c4..bc9af551fc83 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -17,6 +17,9 @@
+ 
+ #ifdef CONFIG_KEYS
+ 
++struct kernel_pkey_query;
++struct kernel_pkey_params;
++
+ /*
+  * key under-construction record
+  * - passed to the request_key actor if supplied
+@@ -155,6 +158,14 @@ struct key_type {
+ 	 */
+ 	struct key_restriction *(*lookup_restriction)(const char *params);
+ 
++	/* Asymmetric key accessor functions. */
++	int (*asym_query)(const struct kernel_pkey_params *params,
++			  struct kernel_pkey_query *info);
++	int (*asym_eds_op)(struct kernel_pkey_params *params,
++			   const void *in, void *out);
++	int (*asym_verify_signature)(struct kernel_pkey_params *params,
++				     const void *in, const void *in2);
++
+ 	/* internal fields */
+ 	struct list_head	link;		/* link in types list */
+ 	struct lock_class_key	lock_class;	/* key->sem lock class */
+diff --git a/include/linux/keyctl.h b/include/linux/keyctl.h
+new file mode 100644
+index 000000000000..c7c48c79ce0e
+--- /dev/null
++++ b/include/linux/keyctl.h
+@@ -0,0 +1,46 @@
++/* keyctl kernel bits
++ *
++ * Copyright (C) 2016 Red Hat, Inc. All Rights Reserved.
++ * Written by David Howells (dhowells@redhat.com)
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public Licence
++ * as published by the Free Software Foundation; either version
++ * 2 of the Licence, or (at your option) any later version.
++ */
++
++#ifndef __LINUX_KEYCTL_H
++#define __LINUX_KEYCTL_H
++
++#include <uapi/linux/keyctl.h>
++
++struct kernel_pkey_query {
++	__u32		supported_ops;	/* Which ops are supported */
++	__u32		key_size;	/* Size of the key in bits */
++	__u16		max_data_size;	/* Maximum size of raw data to sign in bytes */
++	__u16		max_sig_size;	/* Maximum size of signature in bytes */
++	__u16		max_enc_size;	/* Maximum size of encrypted blob in bytes */
++	__u16		max_dec_size;	/* Maximum size of decrypted blob in bytes */
++};
++
++enum kernel_pkey_operation {
++	kernel_pkey_encrypt,
++	kernel_pkey_decrypt,
++	kernel_pkey_sign,
++	kernel_pkey_verify,
++};
++
++struct kernel_pkey_params {
++	struct key	*key;
++	const char	*encoding;	/* Encoding (eg. "oaep" or "raw" for none) */
++	const char	*hash_algo;	/* Digest algorithm used (eg. "sha1") or NULL if N/A */
++	char		*info;		/* Modified info string to be released later */
++	__u32		in_len;		/* Input data size */
++	union {
++		__u32	out_len;	/* Output buffer size (enc/dec/sign) */
++		__u32	in2_len;	/* 2nd input data size (verify) */
++	};
++	enum kernel_pkey_operation op : 8;
++};
++
++#endif /* __LINUX_KEYCTL_H */
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index 7b8c9e19bad1..d5eac15bc00c 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -77,4 +77,9 @@ struct keyctl_kdf_params {
+ 	__u32 __spare[8];
+ };
+ 
++#define KEYCTL_SUPPORTS_ENCRYPT		0x01
++#define KEYCTL_SUPPORTS_DECRYPT		0x02
++#define KEYCTL_SUPPORTS_SIGN		0x04
++#define KEYCTL_SUPPORTS_VERIFY		0x08
++
+ #endif /*  _LINUX_KEYCTL_H */
+-- 
+cgit 1.2-0.3.lf.el7
+

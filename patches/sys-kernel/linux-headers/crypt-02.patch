@@ -1,0 +1,153 @@
+From 2daa4df3ecffaa717ba00851f12c6884bc472d5e Mon Sep 17 00:00:00 2001
+From: David Howells <dhowells@redhat.com>
+Date: Wed, 5 Sep 2018 17:11:56 +0100
+Subject: KEYS: Provide keyctls to drive the new key type ops for asymmetric
+ keys
+
+Provide five keyctl functions that permit userspace to make use of the new
+key type ops for accessing and driving asymmetric keys.
+
+ (*) Query an asymmetric key.
+
+	long keyctl(KEYCTL_PKEY_QUERY,
+		    key_serial_t key, unsigned long reserved,
+		    struct keyctl_pkey_query *info);
+
+     Get information about an asymmetric key.  The information is returned
+     in the keyctl_pkey_query struct:
+
+	__u32	supported_ops;
+
+     A bit mask of flags indicating which ops are supported.  This is
+     constructed from a bitwise-OR of:
+
+	KEYCTL_SUPPORTS_{ENCRYPT,DECRYPT,SIGN,VERIFY}
+
+	__u32	key_size;
+
+     The size in bits of the key.
+
+	__u16	max_data_size;
+	__u16	max_sig_size;
+	__u16	max_enc_size;
+	__u16	max_dec_size;
+
+     The maximum sizes in bytes of a blob of data to be signed, a signature
+     blob, a blob to be encrypted and a blob to be decrypted.
+
+     reserved must be set to 0.  This is intended for future use to hand
+     over one or more passphrases needed unlock a key.
+
+     If successful, 0 is returned.  If the key is not an asymmetric key,
+     EOPNOTSUPP is returned.
+
+
+ (*) Encrypt, decrypt, sign or verify a blob using an asymmetric key.
+
+	long keyctl(KEYCTL_PKEY_ENCRYPT,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    void *out);
+
+	long keyctl(KEYCTL_PKEY_DECRYPT,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    void *out);
+
+	long keyctl(KEYCTL_PKEY_SIGN,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    void *out);
+
+	long keyctl(KEYCTL_PKEY_VERIFY,
+		    const struct keyctl_pkey_params *params,
+		    const char *info,
+		    const void *in,
+		    const void *in2);
+
+     Use an asymmetric key to perform a public-key cryptographic operation
+     a blob of data.
+
+     The parameter block pointed to by params contains a number of integer
+     values:
+
+	__s32		key_id;
+	__u32		in_len;
+	__u32		out_len;
+	__u32		in2_len;
+
+     For a given operation, the in and out buffers are used as follows:
+
+	Operation ID		in,in_len	out,out_len	in2,in2_len
+	=======================	===============	===============	===========
+	KEYCTL_PKEY_ENCRYPT	Raw data	Encrypted data	-
+	KEYCTL_PKEY_DECRYPT	Encrypted data	Raw data	-
+	KEYCTL_PKEY_SIGN	Raw data	Signature	-
+	KEYCTL_PKEY_VERIFY	Raw data	-		Signature
+
+     info is a string of key=value pairs that supply supplementary
+     information.
+
+     The __spare space in the parameter block must be set to 0.  This is
+     intended, amongst other things, to allow the passing of passphrases
+     required to unlock a key.
+
+     If successful, encrypt, decrypt and sign all return the amount of data
+     written into the output buffer.  Verification returns 0 on success.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Denis Kenzior <denkenz@gmail.com>
+Tested-by: Denis Kenzior <denkenz@gmail.com>
+---
+ include/uapi/linux/keyctl.h          |  25 +++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/include/uapi/linux/keyctl.h b/include/uapi/linux/keyctl.h
+index d5eac15bc00c..1a5a7948606e 100644
+--- a/include/uapi/linux/keyctl.h
++++ b/include/uapi/linux/keyctl.h
+@@ -61,6 +61,11 @@
+ #define KEYCTL_INVALIDATE		21	/* invalidate a key */
+ #define KEYCTL_GET_PERSISTENT		22	/* get a user's persistent keyring */
+ #define KEYCTL_DH_COMPUTE		23	/* Compute Diffie-Hellman values */
++#define KEYCTL_PKEY_QUERY		24	/* Query public key parameters */
++#define KEYCTL_PKEY_ENCRYPT		25	/* Encrypt a blob using a public key */
++#define KEYCTL_PKEY_DECRYPT		26	/* Decrypt a blob using a public key */
++#define KEYCTL_PKEY_SIGN		27	/* Create a public key signature */
++#define KEYCTL_PKEY_VERIFY		28	/* Verify a public key signature */
+ #define KEYCTL_RESTRICT_KEYRING		29	/* Restrict keys allowed to link to a keyring */
+ 
+ /* keyctl structures */
+@@ -82,4 +87,24 @@ struct keyctl_kdf_params {
+ #define KEYCTL_SUPPORTS_SIGN		0x04
+ #define KEYCTL_SUPPORTS_VERIFY		0x08
+ 
++struct keyctl_pkey_query {
++	__u32		supported_ops;	/* Which ops are supported */
++	__u32		key_size;	/* Size of the key in bits */
++	__u16		max_data_size;	/* Maximum size of raw data to sign in bytes */
++	__u16		max_sig_size;	/* Maximum size of signature in bytes */
++	__u16		max_enc_size;	/* Maximum size of encrypted blob in bytes */
++	__u16		max_dec_size;	/* Maximum size of decrypted blob in bytes */
++	__u32		__spare[10];
++};
++
++struct keyctl_pkey_params {
++	__s32		key_id;		/* Serial no. of public key to use */
++	__u32		in_len;		/* Input data size */
++	union {
++		__u32		out_len;	/* Output buffer size (encrypt/decrypt/sign) */
++		__u32		in2_len;	/* 2nd input data size (verify) */
++	};
++	__u32		__spare[7];
++};
++
+ #endif /*  _LINUX_KEYCTL_H */
+-- 
+cgit 1.2-0.3.lf.el7
+
