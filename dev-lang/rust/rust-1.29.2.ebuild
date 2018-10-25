@@ -70,6 +70,7 @@ PATCHES=(
 	"${FILESDIR}"/system-llvm.patch
 	"${FILESDIR}"/link-libc++.patch
 	"${FILESDIR}"/link-libunwind.patch
+	"${FILESDIR}"/1.29.2-clippy-sysroot.patch
 )
 
 src_configure() {
@@ -160,7 +161,7 @@ src_install() {
 		dobin "${tobj}"/cargo
 	fi
 	if use clippy; then
-		dobin "${tobj}"/clippy
+		dobin "${tobj}"/clippy-driver
 		dobin "${tobj}"/cargo-clippy
 	fi
 	if use rls; then
