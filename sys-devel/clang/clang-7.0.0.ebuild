@@ -126,11 +126,11 @@ src_prepare() {
 	# define __STDC_ISO_10646__ and undefine __gnu_linux__
 	eapply "${FILESDIR}"/0007-defines-musl.patch
 
-	# add Fortran support
-	use fortran && eapply "${FILESDIR}"/0008-add-fortran-support.patch
-
 	# create symlinks to gcc tools
 	eapply "${FILESDIR}"/0009-symlink-gcc-tools.patch
+
+	# add Fortran support
+	use fortran && eapply "${FILESDIR}"/0008-add-fortran-support.patch
 
 	cmake-utils_src_prepare
 	eprefixify lib/Frontend/InitHeaderSearch.cpp
