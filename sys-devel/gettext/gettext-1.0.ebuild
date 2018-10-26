@@ -22,6 +22,11 @@ PATCHES=(
 	"${FILESDIR}"/fix-cflags.patch
 )
 
+src_prepare() {
+	cp "${FILESDIR}"/pthread_rwlock_rdlock.m4 "${S}"/m4/ || die
+	default
+}
+
 src_compile() {
 	emake LIBINTL=MUSL prefix=/usr
 }
