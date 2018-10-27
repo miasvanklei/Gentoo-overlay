@@ -70,7 +70,7 @@ PATCHES=(
 	"${FILESDIR}"/system-llvm.patch
 	"${FILESDIR}"/link-libc++.patch
 	"${FILESDIR}"/link-libunwind.patch
-	"${FILESDIR}"/1.29.2-clippy-sysroot.patch
+	"${FILESDIR}"/${PV}-clippy-sysroot.patch
 )
 
 src_configure() {
