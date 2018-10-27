@@ -251,7 +251,10 @@ src_install() {
 	local llvm_version=$(llvm-config --version) || die
 	local clang_version=$(ver_cut 1 "${llvm_version}")
 	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
-	local clang_tools=( clang clang++ clang-cl clang-cpp flang gcc g++ cc c++ cpp gfortran)
+	local clang_tools=( clang clang++ clang-cl clang-cpp gcc g++ cc c++ cpp)
+	if use flang; then
+		clang_tools+=( flang gfortran )
+	fi
 	local abi i
 
 	# cmake gives us:
