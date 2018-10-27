@@ -252,7 +252,7 @@ src_install() {
 	local clang_version=$(ver_cut 1 "${llvm_version}")
 	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
 	local clang_tools=( clang clang++ clang-cl clang-cpp gcc g++ cc c++ cpp)
-	if use flang; then
+	if use fortran; then
 		clang_tools+=( flang gfortran )
 	fi
 	local abi i
