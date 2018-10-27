@@ -34,6 +34,7 @@ S=${WORKDIR}/${P/_/}.src
 
 PATCHES=(
 	"${FILESDIR}"/0001-add-blocks-support.patch
+	"${FILESDIR}"/0003-fix-float128-soft.patch
 )
 
 # least intrusive of all

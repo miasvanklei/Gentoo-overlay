@@ -1,0 +1,30 @@
+--- a/lib/builtins/CMakeLists.txt
++++ b/lib/builtins/CMakeLists.txt
+@@ -232,6 +232,7 @@
+ 
+ if (NOT MSVC)
+   set(x86_64_SOURCES
++      ${GENERIC_TF_SOURCES}
+       x86_64/floatdidf.c
+       x86_64/floatdisf.c
+       x86_64/floatdixf.c
+--- a/lib/builtins/fp_lib.h
++++ b/lib/builtins/fp_lib.h
+@@ -103,11 +103,16 @@
+ COMPILER_RT_ABI fp_t __adddf3(fp_t a, fp_t b);
+ 
+ #elif defined QUAD_PRECISION
+-#if __LDBL_MANT_DIG__ == 113
++// __LDBL_MANT_DIG__ is set to 64 for x86_64.
++#if __LDBL_MANT_DIG__ == 113 || defined(__x86_64__)
+ #define CRT_LDBL_128BIT
+ typedef __uint128_t rep_t;
+ typedef __int128_t srep_t;
++#if defined(__FLOAT128__) || defined(__SIZEOF_FLOAT128__)
++typedef __float128 fp_t;
++#else
+ typedef long double fp_t;
++#endif
+ #define REP_C (__uint128_t)
+ // Note: Since there is no explicit way to tell compiler the constant is a
+ // 128-bit integer, we let the constant be casted to 128-bit integer
