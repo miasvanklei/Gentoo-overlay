@@ -1,5 +1,143 @@
---- a/scripts/link-vmlinux.sh	2018-10-22 19:14:03.680003495 +0200
-+++ b/scripts/link-vmlinux.sh	2018-10-22 19:16:59.029830234 +0200
+--- a/Makefile	2018-10-27 21:05:57.743300870 +0200
++++ b/Makefile	2018-10-27 21:08:06.301160791 +0200
+@@ -35,7 +35,7 @@
+ # Most importantly: sub-Makefiles should only ever modify files in
+ # their own directory. If in some directory we have a dependency on
+ # a file in another dir (which doesn't happen often, but it's often
+-# unavoidable when linking the built-in.a targets which finally
++# unavoidable when linking the built-in.o targets which finally
+ # turn into vmlinux), we will call a sub make in that other dir, and
+ # after that we are sure that everything which is in that other dir
+ # is now up to date.
+@@ -968,13 +968,13 @@
+ vmlinux-alldirs	:= $(sort $(vmlinux-dirs) $(patsubst %/,%,$(filter %/, \
+ 		     $(init-) $(core-) $(drivers-) $(net-) $(libs-) $(virt-))))
+ 
+-init-y		:= $(patsubst %/, %/built-in.a, $(init-y))
+-core-y		:= $(patsubst %/, %/built-in.a, $(core-y))
+-drivers-y	:= $(patsubst %/, %/built-in.a, $(drivers-y))
+-net-y		:= $(patsubst %/, %/built-in.a, $(net-y))
++init-y		:= $(patsubst %/, %/built-in.o, $(init-y))
++core-y		:= $(patsubst %/, %/built-in.o, $(core-y))
++drivers-y	:= $(patsubst %/, %/built-in.o, $(drivers-y))
++net-y		:= $(patsubst %/, %/built-in.o, $(net-y))
+ libs-y1		:= $(patsubst %/, %/lib.a, $(libs-y))
+-libs-y2		:= $(patsubst %/, %/built-in.a, $(filter-out %.a, $(libs-y)))
+-virt-y		:= $(patsubst %/, %/built-in.a, $(virt-y))
++libs-y2		:= $(filter-out %.a, $(patsubst %/, %/built-in.o, $(libs-y)))
++virt-y		:= $(patsubst %/, %/built-in.o, $(virt-y))
+ 
+ # Externally visible symbols (used by link-vmlinux.sh)
+ export KBUILD_VMLINUX_INIT := $(head-y) $(init-y)
+--- a/scripts/Makefile.build	2018-10-27 21:06:51.575241800 +0200
++++ b/scripts/Makefile.build	2018-10-27 21:08:31.669133528 +0200
+@@ -70,7 +70,7 @@
+ endif
+ 
+ ifneq ($(strip $(real-obj-y) $(need-builtin)),)
+-builtin-target := $(obj)/built-in.a
++builtin-target := $(obj)/built-in.o
+ endif
+ 
+ modorder-target := $(obj)/modules.order
+@@ -97,7 +97,7 @@
+   cmd_checkdoc = $(srctree)/scripts/kernel-doc -none $< ;
+ endif
+ 
+-# Do section mismatch analysis for each module/built-in.a
++# Do section mismatch analysis for each module/built-in.o
+ ifdef CONFIG_DEBUG_SECTION_MISMATCH
+   cmd_secanalysis = ; scripts/mod/modpost $@
+ endif
+@@ -436,16 +436,18 @@
+ #
+ ifdef builtin-target
+ 
+-# built-in.a archives are made with no symbol table or index which
+-# makes them small and fast, but unable to be used by the linker.
+-# scripts/link-vmlinux.sh builds an aggregate built-in.a with a symbol
+-# table and index.
+-quiet_cmd_ar_builtin = AR      $@
+-      cmd_ar_builtin = rm -f $@; \
+-                     $(AR) rcSTP$(KBUILD_ARFLAGS) $@ $(filter $(real-obj-y), $^)
++cmd_make_builtin = $(LD) $(ld_flags) -r -o
++cmd_make_empty_builtin = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS)
++quiet_cmd_link_o_target = LD      $@
++
++# If the list of objects to link is empty, just create an empty built-in.o
++cmd_link_o_target = $(if $(strip $(real-obj-y)),\
++		      $(cmd_make_builtin) $@ $(filter $(real-obj-y), $^) \
++		      $(cmd_secanalysis),\
++		      $(cmd_make_empty_builtin) $@)
+ 
+ $(builtin-target): $(real-obj-y) FORCE
+-	$(call if_changed,ar_builtin)
++	$(call if_changed,link_o_target)
+ 
+ targets += $(builtin-target)
+ endif # builtin-target
+@@ -470,7 +472,7 @@
+ quiet_cmd_link_l_target = AR      $@
+ 
+ # lib target archives do get a symbol table and index
+-cmd_link_l_target = rm -f $@; $(AR) rcsTP$(KBUILD_ARFLAGS) $@ $(lib-y)
++cmd_link_l_target = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS) $@ $(lib-y)
+ 
+ $(lib-target): $(lib-y) FORCE
+ 	$(call if_changed,link_l_target)
+--- a/scripts/Makefile.lib	2018-10-27 21:05:07.191356939 +0200
++++ b/scripts/Makefile.lib	2018-10-27 21:08:49.277114667 +0200
+@@ -27,7 +27,7 @@
+ 
+ # Handle objects in subdirs
+ # ---------------------------------------------------------------------------
+-# o if we encounter foo/ in $(obj-y), replace it by foo/built-in.a
++# o if we encounter foo/ in $(obj-y), replace it by foo/built-in.o
+ #   and add the directory to the list of dirs to descend into: $(subdir-y)
+ # o if we encounter foo/ in $(obj-m), remove it from $(obj-m)
+ #   and add the directory to the list of dirs to descend into: $(subdir-m)
+@@ -35,7 +35,7 @@
+ subdir-y	+= $(__subdir-y)
+ __subdir-m	:= $(patsubst %/,%,$(filter %/, $(obj-m)))
+ subdir-m	+= $(__subdir-m)
+-obj-y		:= $(patsubst %/, %/built-in.a, $(obj-y))
++obj-y		:= $(patsubst %/, %/built-in.o, $(obj-y))
+ obj-m		:= $(filter-out %/, $(obj-m))
+ 
+ # Subdirectories we need to descend into
+@@ -49,10 +49,10 @@
+ 
+ # $(subdir-obj-y) is the list of objects in $(obj-y) which uses dir/ to
+ # tell kbuild to descend
+-subdir-obj-y := $(filter %/built-in.a, $(obj-y))
++subdir-obj-y := $(filter %/built-in.o, $(obj-y))
+ 
+ # Replace multi-part objects by their individual parts,
+-# including built-in.a from subdirectories
++# including built-in.o from subdirectories
+ real-obj-y := $(foreach m, $(obj-y), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y))),$($(m:.o=-objs)) $($(m:.o=-y)),$(m)))
+ real-obj-m := $(foreach m, $(obj-m), $(if $(strip $($(m:.o=-objs)) $($(m:.o=-y)) $($(m:.o=-m))),$($(m:.o=-objs)) $($(m:.o=-y)) $($(m:.o=-m)),$(m)))
+ 
+--- a/scripts/link-vmlinux.sh	2018-10-27 21:05:25.479336583 +0200
++++ b/scripts/link-vmlinux.sh	2018-10-27 21:09:25.957075549 +0200
+@@ -4,7 +4,7 @@
+ # link vmlinux
+ #
+ # vmlinux is linked from the objects selected by $(KBUILD_VMLINUX_INIT) and
+-# $(KBUILD_VMLINUX_MAIN) and $(KBUILD_VMLINUX_LIBS). Most are built-in.a files
++# $(KBUILD_VMLINUX_MAIN) and $(KBUILD_VMLINUX_LIBS). Most are built-in.o files
+ # from top-level directories in the kernel tree, others are specified in
+ # arch/$(ARCH)/Makefile. Ordering when linking is important, and
+ # $(KBUILD_VMLINUX_INIT) must be first. $(KBUILD_VMLINUX_LIBS) are archives
+@@ -18,7 +18,7 @@
+ #   |   +--< init/version.o + more
+ #   |
+ #   +--< $(KBUILD_VMLINUX_MAIN)
+-#   |    +--< drivers/built-in.a mm/built-in.a + more
++#   |    +--< drivers/built-in.o mm/built-in.o + more
+ #   |
+ #   +--< $(KBUILD_VMLINUX_LIBS)
+ #   |    +--< lib/lib.a + more
 @@ -44,34 +44,15 @@
  	fi
  }
@@ -63,6 +201,15 @@
  			${KBUILD_VMLINUX_LIBS}			\
  			-Wl,--end-group				\
  			${1}"
+@@ -160,7 +139,7 @@
+ 	rm -f .tmp_System.map
+ 	rm -f .tmp_kallsyms*
+ 	rm -f .tmp_vmlinux*
+-	rm -f built-in.a
++	rm -f built-in.o
+ 	rm -f System.map
+ 	rm -f vmlinux
+ 	rm -f vmlinux.o
 @@ -217,8 +196,6 @@
  # final build of init/
  ${MAKE} -f "${srctree}/scripts/Makefile.build" obj=init
@@ -72,41 +219,4 @@
  #link vmlinux.o
  info LD vmlinux.o
  modpost_link vmlinux.o
---- a/scripts/Makefile.build	2018-10-22 19:14:16.270991007 +0200
-+++ b/scripts/Makefile.build	2018-10-22 19:15:27.855920155 +0200
-@@ -436,16 +436,18 @@
- #
- ifdef builtin-target
- 
--# built-in.a archives are made with no symbol table or index which
--# makes them small and fast, but unable to be used by the linker.
--# scripts/link-vmlinux.sh builds an aggregate built-in.a with a symbol
--# table and index.
--quiet_cmd_ar_builtin = AR      $@
--      cmd_ar_builtin = rm -f $@; \
--                     $(AR) rcSTP$(KBUILD_ARFLAGS) $@ $(filter $(real-obj-y), $^)
-+cmd_make_builtin = $(LD) $(ld_flags) -r -o
-+cmd_make_empty_builtin = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS)
-+quiet_cmd_link_o_target = LD      $@
-+
-+# If the list of objects to link is empty, just create an empty built-in.o
-+cmd_link_o_target = $(if $(strip $(real-obj-y)),\
-+		      $(cmd_make_builtin) $@ $(filter $(real-obj-y), $^) \
-+		      $(cmd_secanalysis),\
-+		      $(cmd_make_empty_builtin) $@)
- 
- $(builtin-target): $(real-obj-y) FORCE
--	$(call if_changed,ar_builtin)
-+	$(call if_changed,link_o_target)
- 
- targets += $(builtin-target)
- endif # builtin-target
-@@ -470,7 +472,7 @@
- quiet_cmd_link_l_target = AR      $@
- 
- # lib target archives do get a symbol table and index
--cmd_link_l_target = rm -f $@; $(AR) rcsTP$(KBUILD_ARFLAGS) $@ $(lib-y)
-+cmd_link_l_target = rm -f $@; $(AR) rcs$(KBUILD_ARFLAGS) $@ $(lib-y)
- 
- $(lib-target): $(lib-y) FORCE
- 	$(call if_changed,link_l_target)
+
