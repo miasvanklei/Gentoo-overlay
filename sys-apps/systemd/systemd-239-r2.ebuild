@@ -8,7 +8,7 @@ if [[ ${PV} == 9999 ]]; then
 	inherit git-r3
 else
 	SRC_URI="https://github.com/systemd/systemd/archive/v${PV}/${P}.tar.gz
-		https://dev.gentoo.org/~floppym/dist/${P}-patches-0.tar.gz"
+		https://dev.gentoo.org/~floppym/dist/${P}-patches-1.tar.gz"
 	KEYWORDS="alpha amd64 ~arm arm64 ~hppa ia64 ~mips ~ppc ppc64 ~sparc x86"
 fi
 
@@ -151,6 +151,11 @@ src_prepare() {
 
 	[[ -d "${WORKDIR}"/patches ]] && PATCHES+=( "${WORKDIR}"/patches )
 
+	# Add local patches here
+	PATCHES+=(
+		"${FILESDIR}"/239-debug-extra.patch
+	)
+
 	if ! use vanilla; then
 		PATCHES+=(
 			"${FILESDIR}/gentoo-Dont-enable-audit-by-default.patch"
@@ -263,7 +268,9 @@ multilib_src_configure() {
 		-Dvconsole=$(meson_multilib)
 
 		# disabled on musl
-		-Dmyhostname=false
+		-Dnss-myhostname=false
+		-Dnss-mymachines=false
+		-Dnss-resolve=false
 		-Dnss-systemd=false
 		-Dutmp=false
 		-Dsysusers=false
