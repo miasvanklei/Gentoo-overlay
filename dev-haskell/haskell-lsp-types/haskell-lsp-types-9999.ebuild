@@ -37,10 +37,3 @@ DEPEND="${RDEPEND}
 	test? ( dev-haskell/hspec )
 "
 S=${WORKDIR}/${P}/haskell-lsp-types
-
-src_prepare() {
-        default
-
-        cabal_chdeps \
-                'base >=4.9 && <4.12' 'base >=4.9 && <4.13'
-}

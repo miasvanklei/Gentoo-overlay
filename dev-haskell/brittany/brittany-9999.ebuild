@@ -49,8 +49,6 @@ DEPEND="${RDEPEND}
 src_prepare() {
         default
 
-	eapply "${FILESDIR}"/ghc-8.6.patch
-
         cabal_chdeps \
                 'yaml >=0.8.18 && <0.9' 'yaml >=0.8.18 && <0.12' \
 		'monad-memo >=0.4.1 && <0.5' 'monad-memo >=0.4.1 && <0.6' \
