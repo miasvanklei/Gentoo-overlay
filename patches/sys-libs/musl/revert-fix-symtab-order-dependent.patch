@@ -1,0 +1,43 @@
+--- a/ldso/dynlink.c	2018-09-04 19:17:19.000000000 +0200
++++ b/ldso/dynlink.c	2018-11-01 19:19:15.355196526 +0100
+@@ -1968,7 +1968,6 @@
+ 	uint32_t nsym;
+ 	char *strings;
+ 	size_t best = 0;
+-	size_t besterr = -1;
+ 
+ 	pthread_rwlock_rdlock(&lock);
+ 	p = addr2dso(addr);
+@@ -1986,7 +1985,6 @@
+ 		if (idx < nsym && (sym[idx].st_info&0xf) == STT_FUNC) {
+ 			best = (size_t)(p->funcdescs + idx);
+ 			bestsym = sym + idx;
+-			besterr = 0;
+ 		}
+ 	}
+ 
+@@ -1997,19 +1995,18 @@
+ 			size_t symaddr = (size_t)laddr(p, sym->st_value);
+ 			if (symaddr > addr || symaddr <= best)
+ 				continue;
++			if (sym->st_size && symaddr + sym->st_size <= addr) {
++				best = 0;
++				bestsym = 0;
++				continue;
++                        }
+ 			best = symaddr;
+ 			bestsym = sym;
+-			besterr = addr - symaddr;
+ 			if (addr == symaddr)
+ 				break;
+ 		}
+ 	}
+ 
+-	if (bestsym && besterr > bestsym->st_size-1) {
+-		best = 0;
+-		bestsym = 0;
+-	}
+-
+ 	info->dli_fname = p->name;
+ 	info->dli_fbase = p->map;
+ 
