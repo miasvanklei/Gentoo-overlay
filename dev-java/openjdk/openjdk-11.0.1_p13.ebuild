@@ -25,8 +25,8 @@ JVM_VARIANTS="
 "
 
 IUSE=+$(printf "jvm_variant_%s " ${JVM_VARIANTS})
-IUSE+="alsa debug doc examples gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux system-giflib
-       system-lcms system-libjpeg system-libpng system-zlib source +webstart"
+IUSE+="alsa debug doc examples gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux +system-giflib
+       +system-lcms +system-libjpeg +system-libpng +system-zlib source +webstart"
 
 REQUIRED_USE="
 	^^ (
@@ -195,11 +195,11 @@ src_configure() {
 			--enable-headless-only=$(usex headless-awt yes no) \
 			--enable-full-docs=no \
 			--disable-ccache \
-			--with-libjpeg=$(usex system-libjpeg bundled system) \
-			--with-giflib=$(usex system-giflib bundled system) \
-			--with-libpng=$(usex system-libpng bundled system) \
-			--with-zlib=$(usex system-zlib bundled system) \
-			--with-lcms=$(usex system-lcms bundled system) \
+			--with-libjpeg=$(usex system-libjpeg system bundled) \
+			--with-giflib=$(usex system-giflib system bundled) \
+			--with-libpng=$(usex system-libpng system bundled) \
+			--with-zlib=$(usex system-zlib system bundled) \
+			--with-lcms=$(usex system-lcms system bundled) \
 			"${myconf[@]}"
 	)
 }
