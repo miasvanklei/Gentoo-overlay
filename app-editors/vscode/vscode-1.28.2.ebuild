@@ -301,7 +301,7 @@ src_install() {
 	insinto "/usr/share/licenses/${PN}${suffix}"
 	doins "${BIN_S}/$(get_vscode_rpmdir)/resources/app/LICENSE.txt"
 	doins "${BIN_S}/$(get_vscode_rpmdir)/resources/app/ThirdPartyNotices.txt"
-	dosym "../..${install_dir}/code" "/usr/bin/code${suffix}"
+	dosym "../..${install_dir}/code" "/usr/bin/vscode${suffix}"
 
 	fix_executables "${install_dir}" "*/extensions/*/bin/*"
 }
