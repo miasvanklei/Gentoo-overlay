@@ -8,12 +8,12 @@ EAPI="6"
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
-DOTNET_SDK="dotnet-sdk-2.2.100-preview2-009404-linux-musl-x64.tar.gz"
-DPV=2.2.0-preview2-26905-02
-MY_PV="${PV}-preview2"
+DOTNET_SDK="dotnet-sdk-2.2.100-preview3-009430-linux-x64.tar.gz"
+DPV=2.2.0-preview3-27014-02
+MY_PV="${PV}-preview3"
 
 IUSE="heimdal"
-SRC_URI="https://download.microsoft.com/download/D/5/9/D593CD8F-04E7-425D-962C-86FF4C90B1DA/${DOTNET_SDK}
+SRC_URI="https://download.visualstudio.microsoft.com/download/pr/e7cf8f5b-b0b4-4e22-b836-89af615ad13c/4583953b976cbe658c4c84f61624e8a9/${DOTNET_SDK}
 	https://github.com/dotnet/coreclr/archive/v${MY_PV}.tar.gz -> coreclr-${MY_PV}.tar.gz
 	https://github.com/dotnet/corefx/archive/v${MY_PV}.tar.gz -> corefx-${MY_PV}.tar.gz
 	https://github.com/dotnet/core-setup/archive/v${MY_PV}.tar.gz -> core-setup-${MY_PV}.tar.gz
