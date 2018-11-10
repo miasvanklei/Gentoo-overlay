@@ -25,8 +25,8 @@ JVM_VARIANTS="
 "
 
 IUSE=+$(printf "jvm_variant_%s " ${JVM_VARIANTS})
-IUSE+="alsa debug doc examples gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux +system-giflib
-       +system-lcms +system-libjpeg +system-libpng +system-zlib source +webstart"
+IUSE+="alsa debug doc examples +gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux +system-giflib
+       +system-lcms +system-libjpeg +system-libpng +system-zlib source webstart"
 
 REQUIRED_USE="
 	^^ (
@@ -131,26 +131,31 @@ pkg_setup() {
 		export JDK_HOME
 	fi
 
+}
+
+src_prepare() {
 	# change default toolchain to clang
-	eapply "${FILESIDIR}"/change-default-toolchain.patch
+	eapply "${FILESDIR}"/change-default-toolchain.patch
 
 	# fix ipv6
-	eapply "${FILESIDIR}"/jdk-fix-ipv6-init.patch
+	eapply "${FILESDIR}"/jdk-fix-ipv6-init.patch
 
 	# execinfo not available on musl
-	eapply "${FILESIDIR}"/jdk-execinfo.patch
+	eapply "${FILESDIR}"/jdk-execinfo.patch
 
 	# musl specific fixes
-	eapply "${FILESIDIR}"/jdk-musl.patch
+	eapply "${FILESDIR}"/jdk-musl.patch
 
 	# thread_db.h not available on musl
-	eapply "${FILESIDIR}"/hotspot-noagent-musl.patch
+	eapply "${FILESDIR}"/hotspot-noagent-musl.patch
 
 	# uclibc specific fixes (also for musl)
-	eapply "${FILESIDIR}"/hotspot-uclibc-fixes.patch
+	eapply "${FILESDIR}"/hotspot-uclibc-fixes.patch
 
 	# fix dlopen of libjvm
-	eapply "${FILESIDIR}"/jdk-fix-libjvm-load.patch
+	eapply "${FILESDIR}"/jdk-fix-libjvm-load.patch
+
+	default
 }
 
 src_configure() {
