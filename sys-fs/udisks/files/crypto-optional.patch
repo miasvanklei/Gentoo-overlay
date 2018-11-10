@@ -1,0 +1,608 @@
+--- a/configure.ac	2018-11-10 00:27:21.250622162 +0100
++++ b/configure.ac	2018-11-10 00:30:25.633464220 +0100
+@@ -37,8 +37,6 @@
+ # Compilation
+ #
+ 
+-GNOME_COMPILE_WARNINGS([maximum])
+-
+ CC_CHECK_CFLAGS_APPEND([                          \
+         -Wall                                     \
+         -W                                        \
+@@ -631,25 +629,34 @@
+ fi
+ 
+ # libblockdev crypto
+-SAVE_CFLAGS=$CFLAGS
+-SAVE_LDFLAGS=$LDFLAGS
++have_crypto=no
++AC_ARG_ENABLE(crypto,
++              AS_HELP_STRING([--enable-crypto], [enable BLOCKDEV CRYPTO support]),
++	      [],
++	      [enable_crypto=no])
++if test "x$enable_crypto" = "xyes"; then
++  SAVE_CFLAGS=$CFLAGS
++  SAVE_LDFLAGS=$LDFLAGS
+ 
+-CFLAGS="$GLIB_CFLAGS"
+-LDFLAGS="$GLIB_LIBS"
+-AC_MSG_CHECKING([libblockdev-crypto presence])
+-AC_TRY_COMPILE([#include <blockdev/crypto.h>], [],
++  CFLAGS="$GLIB_CFLAGS"
++  LDFLAGS="$GLIB_LIBS"
++  AC_MSG_CHECKING([libblockdev-crypto presence])
++  AC_TRY_COMPILE([#include <blockdev/crypto.h>], [],
+                [AC_MSG_RESULT([yes])
+                have_crypto=yes],
+                [AC_MSG_RESULT([no])
+                have_crypto=no])
+ 
+-CFLAGS=$SAVE_CFLAGS
+-LDFLAGS=$SAVE_LDFLAGS
++  CFLAGS=$SAVE_CFLAGS
++  LDFLAGS=$SAVE_LDFLAGS
+ 
+-if test "x$have_crypto" = "xno"; then
+-  AC_MSG_ERROR([BLOCKDEV CRYPTO support requested but header or library not found])
++  if test "x$have_crypto" = "xno"; then
++    AC_MSG_ERROR([BLOCKDEV CRYPTO support requested but header or library not found])
++  fi
+ fi
+ 
++AM_CONDITIONAL(HAVE_CRYPTO, test "x$have_crypto" = "xyes")
++
+ 
+ # Internationalization
+ #
+--- a/src/Makefile.am	2018-11-10 00:33:52.511255621 +0100
++++ b/src/Makefile.am	2018-11-10 00:35:27.512151774 +0100
+@@ -58,8 +58,6 @@
+ 	udiskslinuxpartitiontable.h    udiskslinuxpartitiontable.c             \
+ 	udiskslinuxfilesystem.h        udiskslinuxfilesystem.c                 \
+ 	udiskslinuxfilesystemhelpers.h udiskslinuxfilesystemhelpers.c          \
+-	udiskslinuxencrypted.h         udiskslinuxencrypted.c                  \
+-	udiskslinuxencryptedhelpers.h udiskslinuxencryptedhelpers.c            \
+ 	udiskslinuxswapspace.h         udiskslinuxswapspace.c                  \
+ 	udiskslinuxloop.h              udiskslinuxloop.c                       \
+ 	udiskslinuxdriveobject.h       udiskslinuxdriveobject.c                \
+@@ -79,8 +77,6 @@
+ 	udisksprivate.h                                                        \
+ 	udisksfstabentry.h             udisksfstabentry.c                      \
+ 	udisksfstabmonitor.h           udisksfstabmonitor.c                    \
+-	udiskscrypttabentry.h          udiskscrypttabentry.c                   \
+-	udiskscrypttabmonitor.h        udiskscrypttabmonitor.c                 \
+ 	udiskslinuxdevice.h            udiskslinuxdevice.c                     \
+ 	udisksata.h                    udisksata.c                             \
+ 	udisksmodulemanager.h          udisksmodulemanager.c                   \
+@@ -89,6 +89,14 @@
+ 	$(BUILT_SOURCES)                                                       \
+ 	$(NULL)
+ 
++if HAVE_CRYPTO
++libudisks_daemon_la_SOURCES += \
++       udiskslinuxencrypted.h         udiskslinuxencrypted.c                  \
++       udiskslinuxencryptedhelpers.h udiskslinuxencryptedhelpers.c            \
++       udiskscrypttabentry.h          udiskscrypttabentry.c                   \
++       udiskscrypttabmonitor.h        udiskscrypttabmonitor.c
++endif
++
+ if HAVE_LIBMOUNT
+ libudisks_daemon_la_SOURCES +=                                           \
+ 	udisksutabentry.h              udisksutabentry.c                       \
+--- a/src/udisksstate.h	2018-11-10 01:22:54.199735914 +0100
++++ b/src/udisksstate.h	2018-11-10 01:08:37.800076237 +0100
+@@ -45,6 +45,7 @@
+                                                   dev_t          block_device,
+                                                   uid_t         *out_uid,
+                                                   gboolean      *out_fstab_mount);
++#ifdef HAVE_CRYPTO
+ /* unlocked-crypto-dev */
+ void           udisks_state_add_unlocked_crypto_dev    (UDisksState   *state,
+                                                         dev_t          cleartext_device,
+@@ -54,6 +55,7 @@
+ dev_t            udisks_state_find_unlocked_crypto_dev (UDisksState   *state,
+                                                         dev_t          crypto_device,
+                                                         uid_t         *out_uid);
++#endif
+ /* loop */
+ void             udisks_state_add_loop           (UDisksState   *state,
+                                                   const gchar   *device_file,
+--- a/src/udiskslinuxblockobject.c	2018-11-10 01:03:05.553660694 +0100
++++ b/src/udiskslinuxblockobject.c	2018-11-10 01:04:38.230490993 +0100
+@@ -49,14 +49,16 @@
+ #include "udiskslinuxpartitiontable.h"
+ #include "udiskslinuxpartition.h"
+ #include "udiskslinuxfilesystem.h"
++#ifdef HAVE_CRYPTO
+ #include "udiskslinuxencrypted.h"
++#include "udiskscrypttabmonitor.h"
++#include "udiskscrypttabentry.h"
++#endif
+ #include "udiskslinuxswapspace.h"
+ #include "udiskslinuxloop.h"
+ #include "udiskslinuxprovider.h"
+ #include "udisksfstabmonitor.h"
+ #include "udisksfstabentry.h"
+-#include "udiskscrypttabmonitor.h"
+-#include "udiskscrypttabentry.h"
+ #include "udiskslinuxdevice.h"
+ #include "udisksmodulemanager.h"
+ 
+@@ -716,6 +718,7 @@
+ 
+ /* ---------------------------------------------------------------------------------------------------- */
+ 
++#ifdef HAVE_CRYPTO
+ static gboolean
+ encrypted_check (UDisksObject *object)
+ {
+@@ -739,6 +742,7 @@
+   udisks_linux_encrypted_update (UDISKS_LINUX_ENCRYPTED (_iface), UDISKS_LINUX_BLOCK_OBJECT (object));
+   return TRUE;
+ }
++#endif
+ 
+ /* ---------------------------------------------------------------------------------------------------- */
+ 
+@@ -840,8 +844,10 @@
+                 UDISKS_TYPE_LINUX_FILESYSTEM, &object->iface_filesystem);
+   update_iface (UDISKS_OBJECT (object), action, swapspace_check, swapspace_connect, swapspace_update,
+                 UDISKS_TYPE_LINUX_SWAPSPACE, &object->iface_swapspace);
++#ifdef HAVE_CRYPTO
+   update_iface (UDISKS_OBJECT (object), action, encrypted_check, encrypted_connect, encrypted_update,
+                 UDISKS_TYPE_LINUX_ENCRYPTED, &object->iface_encrypted);
++#endif
+   update_iface (UDISKS_OBJECT (object), action, loop_check, loop_connect, loop_update,
+                 UDISKS_TYPE_LINUX_LOOP, &object->iface_loop);
+   update_iface (UDISKS_OBJECT (object), action, partition_table_check, partition_table_connect, partition_table_update,
+--- a/src/udisksdaemonutil.c	2018-11-10 01:07:44.893165376 +0100
++++ b/src/udisksdaemonutil.c	2018-11-10 01:09:03.216033830 +0100
+@@ -511,7 +511,9 @@
+   UDisksPartition *partition = NULL;
+   UDisksState *state;
+   uid_t setup_by_user;
++#ifdef HAVE_CRYPTO
+   UDisksObject *crypto_object;
++#endif
+ 
+   ret = FALSE;
+ 
+@@ -549,6 +549,7 @@
+     }
+ 
+   /* LUKS devices */
++#ifdef HAVE_CRYPTO
+   crypto_object = udisks_daemon_find_object (daemon, udisks_block_get_crypto_backing_device (block));
+   if (crypto_object != NULL)
+     {
+@@ -567,6 +568,7 @@
+         }
+       g_object_unref (crypto_object);
+     }
++#endif
+ 
+ #ifdef HAVE_MDRAID
+   /* MDRaid devices */
+--- a/src/udisksdaemon.c	2018-11-10 01:04:58.553454572 +0100
++++ b/src/udisksdaemon.c	2018-11-10 01:07:04.728233892 +0100
+@@ -37,8 +37,10 @@
+ #include "udisksstate.h"
+ #include "udisksfstabmonitor.h"
+ #include "udisksfstabentry.h"
++#ifdef HAVE_CRYPTO
+ #include "udiskscrypttabmonitor.h"
+ #include "udiskscrypttabentry.h"
++#endif
+ #include "udiskslinuxblockobject.h"
+ #include "udiskslinuxdevice.h"
+ #include "udisksmodulemanager.h"
+@@ -83,7 +83,9 @@
+ 
+   UDisksFstabMonitor *fstab_monitor;
+ 
++#ifdef HAVE_CRYPTO
+   UDisksCrypttabMonitor *crypttab_monitor;
++#endif
+ 
+ #ifdef HAVE_LIBMOUNT
+   UDisksUtabMonitor *utab_monitor;
+@@ -141,7 +141,9 @@
+   udisks_module_manager_unload_modules (daemon->module_manager);
+   g_object_unref (daemon->mount_monitor);
+   g_object_unref (daemon->fstab_monitor);
++#ifdef HAVE_CRYPTO
+   g_object_unref (daemon->crypttab_monitor);
++#endif
+ #ifdef HAVE_LIBMOUNT
+   g_object_unref (daemon->utab_monitor);
+ #endif
+@@ -178,9 +181,11 @@
+       g_value_set_object (value, udisks_daemon_get_fstab_monitor (daemon));
+       break;
+ 
++#ifdef HAVE_CRYPTO
+     case PROP_CRYPTTAB_MONITOR:
+       g_value_set_object (value, udisks_daemon_get_crypttab_monitor (daemon));
+       break;
++#endif
+ 
+     case PROP_MODULE_MANAGER:
+       g_value_set_object (value, udisks_daemon_get_module_manager (daemon));
+@@ -276,13 +281,19 @@
+   BDPluginSpec loop_plugin = {BD_PLUGIN_LOOP, NULL};
+   BDPluginSpec mdraid_plugin = {BD_PLUGIN_MDRAID, NULL};
+   BDPluginSpec fs_plugin = {BD_PLUGIN_FS, NULL};
++#ifdef HAVE_CRYPTO
+   BDPluginSpec crypto_plugin = {BD_PLUGIN_CRYPTO, NULL};
++#endif
+ 
+   /* The core daemon needs the part, swap, loop, mdraid, fs and crypto plugins.
+      Additional plugins are required by various modules, but they make sure
+      plugins are loaded themselves. */
+   BDPluginSpec *plugins[] = {&part_plugin, &swap_plugin, &loop_plugin, &mdraid_plugin,
+-                             &fs_plugin, &crypto_plugin, NULL};
++                             &fs_plugin,
++#ifdef HAVE_CRYPTO
++                             &crypto_plugin,
++#endif
++                             NULL};
+   BDPluginSpec **plugin_p = NULL;
+   error = NULL;
+ 
+@@ -368,7 +375,9 @@
+                     daemon);
+ 
+   daemon->fstab_monitor = udisks_fstab_monitor_new ();
++#ifdef HAVE_CRYPTO
+   daemon->crypttab_monitor = udisks_crypttab_monitor_new ();
++#endif
+ #ifdef HAVE_LIBMOUNT
+   daemon->utab_monitor = udisks_utab_monitor_new ();
+ #endif
+@@ -613,6 +613,7 @@
+   return daemon->fstab_monitor;
+ }
+ 
++#ifdef HAVE_CRYPTO
+ /**
+  * udisks_daemon_get_crypttab_monitor:
+  * @daemon: A #UDisksDaemon
+@@ -627,6 +628,7 @@
+   g_return_val_if_fail (UDISKS_IS_DAEMON (daemon), NULL);
+   return daemon->crypttab_monitor;
+ }
++#endif
+ 
+ #ifdef HAVE_LIBMOUNT
+ /**
+--- a/src/udiskslinuxblock.c	2018-11-10 00:44:33.962496285 +0100
++++ b/src/udiskslinuxblock.c	2018-11-10 01:00:28.040965328 +0100
+@@ -52,8 +52,6 @@
+ #include "udiskslinuxprovider.h"
+ #include "udisksfstabmonitor.h"
+ #include "udisksfstabentry.h"
+-#include "udiskscrypttabmonitor.h"
+-#include "udiskscrypttabentry.h"
+ #include "udisksdaemonutil.h"
+ #include "udisksbasejob.h"
+ #include "udiskssimplejob.h"
+@@ -63,8 +61,12 @@
+ #endif
+ #include "udiskslinuxdevice.h"
+ #include "udiskslinuxpartition.h"
++#ifdef HAVE_CRYPTO
++#include "udiskscrypttabmonitor.h"
++#include "udiskscrypttabentry.h"
+ #include "udiskslinuxencrypted.h"
+ #include "udiskslinuxencryptedhelpers.h"
++#endif
+ #include "udiskslinuxpartitiontable.h"
+ #include "udiskslinuxfilesystemhelpers.h"
+ 
+@@ -579,6 +581,7 @@
+   return ret;
+ }
+ 
++#ifdef HAVE_CRYPTO
+ static GList *
+ find_crypttab_entries_for_device (UDisksLinuxBlock *block,
+                                   UDisksDaemon     *daemon)
+@@ -638,6 +641,7 @@
+   g_list_free_full (entries, g_object_unref);
+   return ret;
+ }
++#endif
+ 
+ #ifdef HAVE_LIBMOUNT
+ static GList *
+@@ -690,6 +694,7 @@
+                          "fstab", &dict_builder);
+ }
+ 
++#ifdef HAVE_CRYPTO
+ static gboolean
+ add_crypttab_entry (GVariantBuilder       *builder,
+                     UDisksCrypttabEntry   *entry,
+@@ -752,6 +757,7 @@
+ 
+   return TRUE;
+ }
++#endif
+ 
+ /* returns a floating GVariant */
+ static GVariant *
+@@ -776,6 +782,7 @@
+     add_fstab_entry (&builder, UDISKS_FSTAB_ENTRY (l->data));
+   g_list_free_full (entries, g_object_unref);
+ 
++#ifdef HAVE_CRYPTO
+   /* Then the /etc/crypttab entries (currently only supported for LUKS) */
+   if (udisks_linux_block_is_luks (UDISKS_BLOCK (block)))
+     {
+@@ -786,15 +793,15 @@
+             {
+               g_variant_builder_clear (&builder);
+               g_list_free_full (entries, g_object_unref);
+-              goto out;
++              return ret;
+             }
+         }
+       g_list_free_full (entries, g_object_unref);
+     }
++#endif
+ 
+   ret = g_variant_builder_end (&builder);
+ 
+- out:
+   return ret;
+ }
+ 
+@@ -883,6 +890,7 @@
+   return ret;
+ }
+ 
++#ifdef HAVE_CRYPTO
+ static GList *
+ find_crypttab_entries_for_needle (gchar        *needle,
+                                   UDisksDaemon *daemon)
+@@ -907,6 +915,7 @@
+   g_list_free_full (entries, g_object_unref);
+   return ret;
+ }
++#endif
+ 
+ /* returns a floating GVariant */
+ static GVariant *
+@@ -933,6 +942,7 @@
+     add_fstab_entry (&builder, UDISKS_FSTAB_ENTRY (l->data));
+   g_list_free_full (entries, g_object_unref);
+ 
++#ifdef HAVE_CRYPTO
+   /* Then the /etc/crypttab entries */
+   entries = find_crypttab_entries_for_needle (needle, daemon);
+   for (l = entries; l != NULL; l = l->next)
+@@ -941,14 +951,14 @@
+         {
+           g_variant_builder_clear (&builder);
+           g_list_free_full (entries, g_object_unref);
+-          goto out;
++          return ret;
+         }
+     }
+   g_list_free_full (entries, g_object_unref);
++#endif
+ 
+   ret = g_variant_builder_end (&builder);
+ 
+- out:
+   return ret;
+ }
+ 
+@@ -1015,10 +1025,11 @@
+   gboolean media_available;
+   gboolean media_change_detected;
+   gboolean read_only;
+-  gboolean seems_encrypted = FALSE;
+   guint n;
++#ifdef HAVE_CRYPTO
++  gboolean seems_encrypted = FALSE;
+   GError *error = NULL;
+-
++#endif
+   drive = NULL;
+ 
+   device = udisks_linux_block_object_get_device (object);
+@@ -1235,6 +1246,7 @@
+       udisks_block_set_id (iface, NULL);
+     }
+ 
++#ifdef HAVE_CRYPTO
+   if (udisks_daemon_get_enable_tcrypt (daemon))
+     {
+       seems_encrypted = bd_crypto_device_seems_encrypted (device_file, &error);
+@@ -1252,6 +1264,7 @@
+       udisks_block_set_id_type (iface, "crypto_unknown");
+     }
+   else
++#endif
+     {
+       udisks_block_set_id_usage (iface, g_udev_device_get_property (device->udev_device, "ID_FS_USAGE"));
+       udisks_block_set_id_type (iface, g_udev_device_get_property (device->udev_device, "ID_FS_TYPE"));
+@@ -1670,6 +1683,7 @@
+   return FALSE;
+ }
+ 
++#ifdef HAVE_CRYPTO
+ static gchar *
+ make_block_luksname (UDisksBlock *block, GError **error)
+ {
+@@ -1680,6 +1694,7 @@
+   else
+     return NULL;
+ }
++#endif
+ 
+ static gboolean
+ add_remove_crypttab_entry (UDisksBlock *block,
+@@ -2269,6 +2284,7 @@
+ 
+ /* ---------------------------------------------------------------------------------------------------- */
+ 
++#ifdef HAVE_CRYPTO
+ static UDisksObject *
+ wait_for_luks_uuid (UDisksDaemon *daemon,
+                     gpointer      user_data)
+@@ -2325,6 +2341,7 @@
+   g_list_free_full (objects, g_object_unref);
+   return ret;
+ }
++#endif
+ 
+ /* ---------------------------------------------------------------------------------------------------- */
+ 
+@@ -2716,6 +2733,7 @@
+                        gpointer       user_data,
+                        GError       **error)
+ {
++#ifdef HAVE_CRYPTO
+   struct TeardownData *data = user_data;
+   UDisksObject *object = UDISKS_OBJECT (g_dbus_interface_get_object (G_DBUS_INTERFACE (block)));
+   UDisksEncrypted *enc = udisks_object_peek_encrypted (object);
+@@ -2745,6 +2763,7 @@
+               return FALSE;
+         }
+     }
++#endif
+ 
+   return udisks_linux_remove_configuration (udisks_block_get_configuration (block), error);
+ }
+@@ -3148,6 +3167,7 @@
+   /* And now create the desired filesystem */
+   wait_data->type = type;
+ 
++#ifdef HAVE_CRYPTO
+   if (encrypt_passphrase != NULL)
+     {
+       CryptoJobData data;
+@@ -3257,6 +3277,7 @@
+       block_to_mkfs = cleartext_block;
+     }
+   else
++#endif
+     {
+       object_to_mkfs = object;
+       block_to_mkfs = block;
+--- a/src/udisksstate.c	2018-11-10 00:43:37.010567762 +0100
++++ b/src/udisksstate.c	2018-11-10 01:14:24.592515854 +0100
+@@ -40,7 +40,9 @@
+ #include "udiskslogging.h"
+ #include "udiskslinuxprovider.h"
+ #include "udisksdaemonutil.h"
++#ifdef HAVE_CRYPTO
+ #include "udiskslinuxencryptedhelpers.h"
++#endif
+ 
+ /**
+  * SECTION:udisksstate
+@@ -178,9 +180,11 @@
+ static void      udisks_state_check_in_thread     (UDisksState          *state);
+ static void      udisks_state_check_mounted_fs    (UDisksState          *state,
+                                                    GArray               *devs_to_clean);
++#ifdef HAVE_CRYPTO
+ static void      udisks_state_check_unlocked_crypto_dev (UDisksState          *state,
+                                                          gboolean              check_only,
+                                                          GArray               *devs_to_clean);
++#endif
+ static void      udisks_state_check_loop          (UDisksState          *state,
+                                                    gboolean              check_only,
+                                                    GArray               *devs_to_clean);
+@@ -428,9 +432,11 @@
+    * but only check + record devices marked for cleaning
+    */
+   devs_to_clean = g_array_new (FALSE, FALSE, sizeof (dev_t));
++#ifdef HAVE_CRYPTO
+   udisks_state_check_unlocked_crypto_dev (state,
+                                           TRUE, /* check_only */
+                                           devs_to_clean);
++#endif
+   udisks_state_check_loop (state,
+                            TRUE, /* check_only */
+                            devs_to_clean);
+@@ -449,9 +455,11 @@
+   /* Then go through all block devices and clear them up
+    * ... for real this time
+    */
++#ifdef HAVE_CRYPTO
+   udisks_state_check_unlocked_crypto_dev (state,
+                                           FALSE, /* check_only */
+                                           NULL);
++#endif
+   udisks_state_check_loop (state,
+                            FALSE, /* check_only */
+                            NULL);
+@@ -1041,6 +1049,7 @@
+ /* ---------------------------------------------------------------------------------------------------- */
+ 
+ /* returns TRUE if the entry should be kept */
++#ifdef HAVE_CRYPTO
+ static gboolean
+ udisks_state_check_unlocked_crypto_dev_entry (UDisksState  *state,
+                                               GVariant     *value,
+@@ -1447,6 +1456,7 @@
+   g_mutex_unlock (&state->lock);
+   return ret;
+ }
++#endif
+ 
+ /* ---------------------------------------------------------------------------------------------------- */
+ 
+--- a/src/udiskslinuxprovider.c   2018-08-07 10:43:26.000000000 +0200
++++ b/src/udiskslinuxprovider.c   2018-11-10 01:48:15.375407269 +0100
+@@ -190,12 +190,14 @@
+   g_signal_handlers_disconnect_by_func (udisks_daemon_get_fstab_monitor (daemon),
+                                         G_CALLBACK (fstab_monitor_on_entry_removed),
+                                         provider);
++#ifdef HAVE_CRYPTO
+   g_signal_handlers_disconnect_by_func (udisks_daemon_get_crypttab_monitor (daemon),
+                                         G_CALLBACK (crypttab_monitor_on_entry_added),
+                                         provider);
+   g_signal_handlers_disconnect_by_func (udisks_daemon_get_crypttab_monitor (daemon),
+                                         G_CALLBACK (crypttab_monitor_on_entry_removed),
+                                         provider);
++#endif
+ 
+   if (G_OBJECT_CLASS (udisks_linux_provider_parent_class)->finalize != NULL)
+     G_OBJECT_CLASS (udisks_linux_provider_parent_class)->finalize (object);
+@@ -707,6 +709,7 @@
+                     "entry-removed",
+                     G_CALLBACK (fstab_monitor_on_entry_removed),
+                     provider);
++#ifdef CRYPTO
+   g_signal_connect (udisks_daemon_get_crypttab_monitor (daemon),
+                     "entry-added",
+                     G_CALLBACK (crypttab_monitor_on_entry_added),
+@@ -715,6 +718,7 @@
+                     "entry-removed",
+                     G_CALLBACK (crypttab_monitor_on_entry_removed),
+                     provider);
++#endif
+ #ifdef HAVE_LIBMOUNT
+   g_signal_connect (udisks_daemon_get_utab_monitor (daemon),
+                     "entry-added",
+
+@@ -1544,6 +1544,7 @@
+   update_all_block_objects (provider);
+ }
+ 
++#ifdef HAVE_CRYPTO
+ static void
+ crypttab_monitor_on_entry_added (UDisksCrypttabMonitor *monitor,
+                                  UDisksCrypttabEntry   *entry,
+@@ -1561,6 +1562,7 @@
+   UDisksLinuxProvider *provider = UDISKS_LINUX_PROVIDER (user_data);
+   update_all_block_objects (provider);
+ }
++#endif
+ 
+ #ifdef HAVE_LIBMOUNT
+ static void
