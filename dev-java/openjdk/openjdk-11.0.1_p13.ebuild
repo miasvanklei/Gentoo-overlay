@@ -24,22 +24,26 @@ JVM_VARIANTS="
 	zero
 "
 
-IUSE=+$(printf "jvm_variant_%s " ${JVM_VARIANTS})
-IUSE+="alsa debug doc examples +gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux +system-giflib
-       +system-lcms +system-libjpeg +system-libpng +system-zlib source webstart"
+IUSE=$(printf "jvm_variant_%s " ${JVM_VARIANTS})
 
 REQUIRED_USE="
-	^^ (
-		|| ( jvm_variant_server jvm_variant_client jvm_variant_minimal )
-		jvm_variant_core
-		jvm_variant_zero
-	)
+	|| ( ${IUSE} )
+	?? ( jvm_variant_core jvm_variant_zero )
+	jvm_variant_core? ( !jvm_variant_server !jvm_variant_client !jvm_variant_minimal )
+	jvm_variant_zero? ( !jvm_variant_server !jvm_variant_client !jvm_variant_minimal )
 "
+
+IUSE="+${IUSE} alsa debug doc examples gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux source
+	+system-giflib +system-lcms +system-libjpeg +system-libpng +system-zlib webstart"
 
 CDEPEND="
 	media-libs/freetype:2=
 	net-print/cups
-	sys-libs/zlib
+	system-giflib? ( media-libs/giflib )
+	system-lcms? ( media-libs/lcms )
+	system-libjpeg? ( media-libs/libjpeg-turbo )
+	system-libpng? ( media-libs/libpng )
+	system-zlib? ( sys-libs/zlib )
 	!headless-awt? (
 		x11-libs/libX11
 		x11-libs/libXext
