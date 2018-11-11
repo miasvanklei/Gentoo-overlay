@@ -14,7 +14,8 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 
-DEPEND="dev-util/dub"
+DEPEND="dev-util/dub
+	dev-util/dtools"
 RDEPEND="${DEPEND}"
 
 src_compile() {
