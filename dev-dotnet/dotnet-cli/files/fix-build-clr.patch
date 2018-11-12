@@ -117,3 +117,21 @@
          endif()
          if(CLR_CMAKE_LINUX_ID STREQUAL ubuntu)
              set(CLR_CMAKE_PLATFORM_UBUNTU_LINUX 1)
+--- a/src/pal/src/CMakeLists.txt	2018-10-13 03:07:42.000000000 +0200
++++ b/src/pal/src/CMakeLists.txt	2018-11-11 11:55:22.595649021 +0100
+@@ -292,15 +292,6 @@
+     find_library(INTL intl)
+   endif()
+ 
+-  # On Android, we don't need to link with gcc_s, pthread and rt
+-  if(NOT CLR_CMAKE_PLATFORM_ANDROID)
+-    target_link_libraries(coreclrpal
+-      gcc_s
+-      pthread
+-      rt
+-    )
+-  endif()
+-
+   if(CLR_CMAKE_PLATFORM_ANDROID)
+     find_library(LZMA NAMES lzma)
+ 
