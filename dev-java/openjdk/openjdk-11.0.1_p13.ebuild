@@ -33,7 +33,7 @@ REQUIRED_USE="
 	jvm_variant_zero? ( !jvm_variant_server !jvm_variant_client !jvm_variant_minimal )
 "
 
-IUSE="+${IUSE} alsa debug doc examples gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux source
+IUSE="+${IUSE} alsa debug doc examples +gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux source
 	+system-giflib +system-lcms +system-libjpeg +system-libpng +system-zlib webstart"
 
 CDEPEND="
