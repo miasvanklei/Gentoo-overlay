@@ -33,6 +33,10 @@ S=${WORKDIR}/${MY_P}
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
 
+PATCHES=(
+	"${FILESDIR}"/no-crash-r-use-linker-script-with-discard.patch
+)
+
 python_check_deps() {
 	has_version "dev-python/lit[${PYTHON_USEDEP}]"
 }
