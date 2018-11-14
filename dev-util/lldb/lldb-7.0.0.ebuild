@@ -74,6 +74,7 @@ src_prepare() {
 
 src_configure() {
 	local mycmakeargs=(
+		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
 
