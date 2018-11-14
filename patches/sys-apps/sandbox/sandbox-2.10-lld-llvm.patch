@@ -13,3 +13,16 @@
  sb_nr.h: symbols.h $(SB_NR_FILE)
  	$(AM_V_GEN)$(EGREP) -h '^\#define SB_' $^ > $@
  trace_syscalls.h: $(GEN_TRACE_SCRIPT) $(SB_SCHIZO_HEADERS)
+--- a/configure	2018-11-14 17:22:34.584765610 +0100
++++ b/configure	2018-11-14 17:24:32.092504158 +0100
+@@ -15027,10 +15027,7 @@
+ 	) 1>&5
+ }
+ LIBC_PATH=$(if 	try_link -Wl,--verbose; then :
+-  $AWK '/ttempt to open/ { if (($(NF-1) ~ /\/libc\.so/) && ($NF == "succeeded")) LIBC = $(NF-1); }; END {print LIBC}' libctest.log
+-elif 	try_link -Wl,-m; then :
+   set -- `$EGREP -o '/[^ ]*/libc.so' libctest.log`; echo $1
+-
+ fi)
+ rm -f libctest*
+ if test x"$LIBC_PATH" = x || ! test -r "$LIBC_PATH" ; then
