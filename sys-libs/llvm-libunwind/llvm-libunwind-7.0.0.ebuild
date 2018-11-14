@@ -36,6 +36,7 @@ S=${WORKDIR}/${MY_P}
 
 PATCHES=(
 	"${FILESDIR}"/0001-link-clang_rt.patch
+	"${FILESDIR}"/0002-fix-compiler-rt-multilib.patch
 )
 
 # least intrusive of all
@@ -67,7 +68,6 @@ multilib_src_configure() {
 		-DLIBUNWIND_ENABLE_STATIC=$(usex static-libs)
 		-DLLVM_INCLUDE_TESTS=$(usex test)
 		-DLIBUNWIND_USE_COMPILER_RT=$(usex compiler-rt)
-		-DLIBUNWIND_HAS_NODEFAULTLIBS_FLAG=OFF
 
 		# support non-native unwinding; given it's small enough,
 		# enable it unconditionally

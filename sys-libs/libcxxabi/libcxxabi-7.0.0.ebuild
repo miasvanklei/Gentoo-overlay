@@ -40,6 +40,7 @@ DEPEND="${RDEPEND}
 
 PATCHES=(
 	"${FILESDIR}"/0001-link-clang_rt.patch
+	"${FILESDIR}"/0002-fix-compiler-rt-multilib.patch
 )
 
 S=${WORKDIR}/${MY_P}
@@ -64,6 +65,7 @@ src_unpack() {
 multilib_src_configure() {
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
+		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXXABI_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXXABI_ENABLE_SHARED=ON
 		-DLIBCXXABI_ENABLE_STATIC=$(usex static-libs)

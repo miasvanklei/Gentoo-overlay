@@ -46,6 +46,7 @@ DOCS=( CREDITS.TXT )
 
 PATCHES=(
 	"${FILESDIR}"/0001-fix-atomic.patch
+	"${FILESDIR}"/0002-fix-compiler-rt-multilib.patch
 )
 
 # least intrusive of all
@@ -89,6 +90,7 @@ multilib_src_configure() {
 
 	local libdir=$(get_libdir)
 	local mycmakeargs=(
+		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXX_LIBDIR_SUFFIX=${libdir#lib}
 		-DLIBCXX_ENABLE_SHARED=ON
 		-DLIBCXX_ENABLE_STATIC=$(usex static-libs)
