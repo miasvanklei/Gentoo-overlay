@@ -10,8 +10,7 @@ inherit haskell-cabal git-r3
 
 DESCRIPTION="Simple interface to some of Cabal's configuration state used by ghc-mod"
 HOMEPAGE="http://hackage.haskell.org/package/cabal-helper"
-EGIT_REPO_URI="https://github.com/alanz/cabal-helper.git"
-EGIT_BRANCH="ghc-8.6.1"
+EGIT_REPO_URI="https://github.com/DanielG/cabal-helper.git"
 
 LICENSE="AGPL-3"
 SLOT="0/${PV}"
