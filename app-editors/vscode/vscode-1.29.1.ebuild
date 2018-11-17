@@ -38,6 +38,7 @@ NODE_PTY_V=0.7.8
 ONIGURUMA_V=7.0.2
 SPDLOG_V=0.7.2
 VSCODE_NSFW_V=1.0.17
+VSCODE_SQLITE3_V=4.0.2
 
 # The x86_64 arch below is irrelevant, as we will rebuild all binary packages.
 SRC_URI="
@@ -53,6 +54,7 @@ SRC_URI="
 	https://registry.npmjs.org/oniguruma/-/oniguruma-7.0.2.tgz -> vscodedep-oniguruma-${ONIGURUMA_V}.tar.gz
 	https://registry.npmjs.org/spdlog/-/spdlog-0.7.2.tgz -> vscodedep-spdlog-${SPDLOG_V}.tar.gz
 	http://registry.npmjs.org/vscode-nsfw/-/vscode-nsfw-1.0.17.tgz -> vscodedep-vscode-nsfw-${VSCODE_NSFW_V}.tar.gz
+	http://registry.npmjs.org/vscode-sqlite3/-/vscode-sqlite3-4.0.2.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
 "
 
 BINMODS=(
@@ -65,6 +67,7 @@ BINMODS=(
 	oniguruma
 	spdlog
 	vscode-nsfw
+	vscode-sqlite3
 )
 
 LICENSE="MIT"
