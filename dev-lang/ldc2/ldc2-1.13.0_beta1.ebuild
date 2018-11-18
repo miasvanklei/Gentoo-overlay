@@ -1,4 +1,4 @@
-# Copyright 1999-2016 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 EAPI=6
 
@@ -22,9 +22,9 @@ DEPEND=">=dev-util/cmake-2.8
 S=${WORKDIR}/ldc-${MY_PV}-src
 
 PATCHES=(
-	"${FILESDIR}"/link-libunwind.patch
+	"${FILESDIR}"/fix-linking.patch
+	"${FILESDIR}"/fix-sys-stat.patch
 	"${FILESDIR}"/wrong-type.patch
-	"${FILESDIR}"/llvm-7.patch
 )
 
 src_configure() {

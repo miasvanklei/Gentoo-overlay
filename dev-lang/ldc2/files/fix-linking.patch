@@ -1,0 +1,43 @@
+--- a/driver/linker-gcc.cpp	2018-11-17 22:57:47.970328370 +0100
++++ b/driver/linker-gcc.cpp	2018-11-17 22:59:46.593154794 +0100
+@@ -525,10 +525,8 @@
+   if (!opts::linker.empty()) {
+     args.push_back("-fuse-ld=" + opts::linker);
+   } else if (global.params.isLinux) {
+-    // Default to ld.gold on Linux due to ld.bfd issues with ThinLTO (see #2278)
+-    // and older bfd versions stripping llvm.used symbols (e.g., ModuleInfo
+-    // refs) with --gc-sections (see #2870).
+-    args.push_back("-fuse-ld=gold");
++    // ld.lld is better than ld.gold or ld.bfd.
++    args.push_back("-fuse-ld=lld");
+   }
+ }
+ 
+@@ -574,25 +572,21 @@
+ 
+   switch (triple.getOS()) {
+   case llvm::Triple::Linux:
+-    addSoname = true;
+     if (triple.getEnvironment() == llvm::Triple::Android) {
+       args.push_back("-ldl");
+       args.push_back("-lm");
++      addSoname = true;
+       break;
+     }
+-    args.push_back("-lrt");
+   // fallthrough
+   case llvm::Triple::Darwin:
+   case llvm::Triple::MacOSX:
+-    args.push_back("-ldl");
+-  // fallthrough
+   case llvm::Triple::FreeBSD:
+   case llvm::Triple::NetBSD:
+   case llvm::Triple::OpenBSD:
+   case llvm::Triple::DragonFly:
+     addSoname = true;
+-    args.push_back("-lpthread");
+-    args.push_back("-lm");
++    args.push_back("-lunwind");
+     break;
+ 
+   case llvm::Triple::Solaris:
