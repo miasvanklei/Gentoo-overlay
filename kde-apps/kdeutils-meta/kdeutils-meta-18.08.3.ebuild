@@ -13,13 +13,13 @@ IUSE="cups floppy"
 RDEPEND="
 	$(add_kdeapps_dep ark)
 	$(add_kdeapps_dep filelight)
+	$(add_kdeapps_dep kbackup)
 	$(add_kdeapps_dep kcalc)
 	$(add_kdeapps_dep kcharselect)
 	$(add_kdeapps_dep kdebugsettings)
 	$(add_kdeapps_dep kdf)
 	$(add_kdeapps_dep kgpg)
 	$(add_kdeapps_dep kwalletmanager)
-	$(add_kdeapps_dep sweeper)
 	cups? ( $(add_kdeapps_dep print-manager) )
 	floppy? ( $(add_kdeapps_dep kfloppy) )
 "
