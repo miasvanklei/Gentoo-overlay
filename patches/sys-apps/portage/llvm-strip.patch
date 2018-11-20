@@ -1,5 +1,5 @@
---- a/bin/estrip	2018-04-17 11:28:43.923258400 +0200
-+++ b/bin/estrip	2018-04-17 11:29:37.017160823 +0200
+--- a/bin/estrip	2018-11-19 15:25:35.491438502 +0100
++++ b/bin/estrip	2018-11-19 15:26:43.593311589 +0100
 @@ -137,6 +137,13 @@
  	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
  	SPLIT_STRIP_FLAGS=
@@ -14,7 +14,7 @@
  esac
  : ${PORTAGE_STRIP_FLAGS=${SAFE_STRIP_FLAGS} ${DEF_STRIP_FLAGS}}
  
-@@ -416,18 +423,7 @@
+@@ -415,19 +422,7 @@
  	# elf types though cause that stuff is good.
  
  	buildid=
@@ -26,7 +26,8 @@
 -			# linked in (only for finally linked ELFs), so we have to
 -			# retain the debug info in the archive itself.
 -			if ! ${FEATURES_splitdebug} || ${RESTRICT_splitdebug} ; then
--				${STRIP} -g "${x}"
+-				${STRIP} -g "${x}" &&
+-				${RANLIB} "${x}"
 -			fi
 -		fi
 -	elif [[ ${f} == *"SB executable"* || ${f} == *"SB pie executable"* ||
