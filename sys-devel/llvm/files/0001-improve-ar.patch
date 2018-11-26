@@ -1,0 +1,110 @@
+--- a/tools/llvm-ar/llvm-ar.cpp	2018-08-03 12:12:24.000000000 +0200
++++ b/tools/llvm-ar/llvm-ar.cpp	2018-11-24 17:22:20.101700795 +0100
+@@ -35,6 +35,7 @@
+ #include "llvm/Support/raw_ostream.h"
+ #include "llvm/ToolDrivers/llvm-dlltool/DlltoolDriver.h"
+ #include "llvm/ToolDrivers/llvm-lib/LibDriver.h"
++#include <iostream>
+ 
+ #if !defined(_MSC_VER) && !defined(__MINGW32__)
+ #include <unistd.h>
+@@ -175,6 +176,7 @@
+ static bool Symtab = true;         ///< 's' modifier
+ static bool Deterministic = true;  ///< 'D' and 'U' modifiers
+ static bool Thin = false;          ///< 'T' modifier
++static bool FullPath = false;      ///< 'P' modifier
+ 
+ // Relative Positional Argument (for insert/move). This variable holds
+ // the name of the archive member to which the 'a', 'b' or 'i' modifier
+@@ -188,7 +190,7 @@
+ 
+ // This variable holds the list of member files to proecess, as given
+ // on the command line.
+-static std::vector<StringRef> Members;
++static std::vector<std::string> Members;
+ 
+ // Extract the member filename from the command line for the [relpos] argument
+ // associated with a, b, and i modifiers
+@@ -208,9 +210,36 @@
+ }
+ 
+ // Copy over remaining items in PositionalArgs to our Members vector
++// When we do Thin, we need to copy over the members when it is a archive
+ static void getMembers() {
+-  for (auto &Arg : PositionalArgs)
+-    Members.push_back(Arg);
++  if (!Thin) {
++    for (auto &Arg : PositionalArgs)
++      Members.push_back(Arg);
++    return;
++  }
++  for (auto &Arg : PositionalArgs) {
++    ErrorOr<std::unique_ptr<MemoryBuffer>> Buf =
++        MemoryBuffer::getFile(Arg, -1, false);
++    std::error_code EC = Buf.getError();
++    if (EC) {
++        Members.push_back(Arg);
++        continue;
++    }
++    Error Err = Error::success();
++    object::Archive Archive(Buf.get()->getMemBufferRef(), Err);
++    EC = errorToErrorCode(std::move(Err));
++    if (EC) {
++      Members.push_back(Arg);
++      continue;
++    }
++    Err = Error::success();
++    for (auto &Child : Archive.children(Err)) {
++      Expected<std::string> NameOrErr = Child.getFullName();
++      failIfError(NameOrErr.takeError());
++      std::string Name = NameOrErr.get();
++      Members.push_back(Name);
++    }
++  }
+ }
+ 
+ static void runMRIScript();
+@@ -283,6 +312,9 @@
+     case 'T':
+       Thin = true;
+       break;
++    case 'P':
++      FullPath = true;
++      break;
+     default:
+       fail(std::string("unknown option ") + Options[i]);
+     }
+@@ -518,7 +550,7 @@
+ static InsertAction computeInsertAction(ArchiveOperation Operation,
+                                         const object::Archive::Child &Member,
+                                         StringRef Name,
+-                                        std::vector<StringRef>::iterator &Pos) {
++                                        std::vector<std::string>::iterator &Pos) {
+   if (Operation == QuickAppend || Members.empty())
+     return IA_AddOldMember;
+ 
+@@ -588,7 +620,7 @@
+           InsertPos = Pos + 1;
+       }
+ 
+-      std::vector<StringRef>::iterator MemberI = Members.end();
++      std::vector<std::string>::iterator MemberI = Members.end();
+       InsertAction Action =
+           computeInsertAction(Operation, Child, Name, MemberI);
+       switch (Action) {
+@@ -633,6 +665,15 @@
+     Ret.insert(Ret.begin() + InsertPos, NewArchiveMember());
+   Pos = InsertPos;
+   for (auto &Member : Members) {
++    if (FullPath) {
++      SmallString<256> RMember;
++      std::error_code EC = sys::fs::real_path(Member, RMember);
++      if (!EC) {
++        addMember(Ret, RMember, Pos);
++        ++Pos;
++        continue;
++      }
++    }
+     addMember(Ret, Member, Pos);
+     ++Pos;
+   }

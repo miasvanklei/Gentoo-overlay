@@ -80,19 +80,22 @@ src_prepare() {
 	eapply "${FILESDIR}"/0001-X86-Stop-X86DomainReassignment-from-creating-copies-.patch
 
 	# use init-array as default
-	eapply "${FILESDIR}"/0001-use-init-array.patch
+	eapply "${FILESDIR}"/0004-use-init-array.patch
 
 	# support building llvm against musl-libc
-	use elibc_musl && eapply "${FILESDIR}"/0002-musl-fixes.patch
+	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
+
+	# add P option, add the contents of thin archives to thin archives
+	eapply "${FILESDIR}"/0001-improve-ar.patch
+
+	# add -S option and fix permissions when stripping
+	eapply "${FILESDIR}"/0002-improve-objcopy.patch
 
 	# two specific rust patches in one
-	eapply "${FILESDIR}"/0003-add-rust-support.patch
-
-	# add -S option and fix permissions
-	eapply "${FILESDIR}"/0004-improve-objcopy.patch
+	eapply "${FILESDIR}"/0005-add-rust-support.patch
 
 	# add flang support
-	eapply "${FILESDIR}"/0005-flang-support.patch
+	eapply "${FILESDIR}"/0006-flang-support.patch
 
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
