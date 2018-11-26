@@ -22,7 +22,7 @@ else
 	UPSTREAM_CHANNEL="stable"
 fi
 
-ELECTRON_V=2.0.9
+ELECTRON_V=2.0.8
 ELECTRON_SLOT=2.0
 
 ASAR_V=0.14.3
@@ -37,7 +37,7 @@ NATIVE_WATCHDOG_V=1.0.0
 NODE_PTY_V=0.7.8
 ONIGURUMA_V=7.0.2
 SPDLOG_V=0.7.2
-VSCODE_NSFW_V=1.0.17
+VSCODE_NSFW_V=1.1.1
 VSCODE_SQLITE3_V=4.0.2
 
 # The x86_64 arch below is irrelevant, as we will rebuild all binary packages.
@@ -53,8 +53,8 @@ SRC_URI="
 	https://registry.npmjs.org/node-pty/-/node-pty-0.7.8.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
 	https://registry.npmjs.org/oniguruma/-/oniguruma-7.0.2.tgz -> vscodedep-oniguruma-${ONIGURUMA_V}.tar.gz
 	https://registry.npmjs.org/spdlog/-/spdlog-0.7.2.tgz -> vscodedep-spdlog-${SPDLOG_V}.tar.gz
-	http://registry.npmjs.org/vscode-nsfw/-/vscode-nsfw-1.0.17.tgz -> vscodedep-vscode-nsfw-${VSCODE_NSFW_V}.tar.gz
-	http://registry.npmjs.org/vscode-sqlite3/-/vscode-sqlite3-4.0.2.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
+	https://registry.npmjs.org/vscode-nsfw/-/vscode-nsfw-1.1.1.tgz -> vscodedep-vscode-nsfw-${VSCODE_NSFW_V}.tar.gz
+	https://registry.npmjs.org/vscode-sqlite3/-/vscode-sqlite3-4.0.2.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
 "
 
 BINMODS=(
@@ -239,11 +239,19 @@ EOF
 
 src_configure() {
 	local binmod
+	local config
 
 	for binmod in "${BINMODS[@]}"; do
 		einfo "Configuring ${binmod}..."
 		cd "${WORKDIR}/$(package_dir ${binmod})" || die
-		enodegyp configure
+
+		if [[ "${binmod}" == "vscode-sqlite3" ]]; then
+			config="--sqlite=/usr"
+		else
+			config=""
+		fi
+
+		enodegyp configure ${config}
 	done
 }
 
@@ -370,7 +378,9 @@ get_node_includedir() {
 
 # Run JavaScript using Electron's version of Node.
 enode_electron() {
-	"${BROOT}/$(get_electron_dir)"/node "${@}"
+	set -- "${BROOT}/$(get_electron_dir)"/node "${@}"
+	echo "$@"
+	"$@" || die
 }
 
 # Run node-gyp using Electron's version of Node.
@@ -380,14 +390,14 @@ enodegyp() {
 
 	PATH="${BROOT}/$(get_electron_dir):${PATH}" \
 		enode_electron "${nodegyp}" \
-			--nodedir="${BROOT}/$(get_node_includedir)" "${@}" || die
+			--nodedir="${BROOT}/$(get_node_includedir)" "${@}"
 }
 
 # asar wrapper.
 easar() {
 	local asar="${WORKDIR}/$(package_dir asar)/node_modules/asar/bin/asar"
 	echo "asar" "${@}"
-	enode_electron "${asar}" "${@}" || die
+	enode_electron "${asar}" "${@}"
 }
 
 # Return a $WORKDIR directory for a given package name.
