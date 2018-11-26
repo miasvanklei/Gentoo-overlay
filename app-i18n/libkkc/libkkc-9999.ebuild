@@ -3,34 +3,22 @@
 
 EAPI=6
 
-PYTHON_COMPAT=( python3_6 )
-VALA_MIN_API_VERSION="0.24"
-
-inherit autotools python-single-r1 vala
+inherit autotools git-r3 vala
 
 DESCRIPTION="Japanese Kana Kanji conversion library"
-HOMEPAGE="https://github.com/ueno/libkkc
-	https://bitbucket.org/libkkc/libkkc"
+HOMEPAGE="https://github.com/ueno/libkkc"
 
-if [[ ${PV} = *9999* ]]; then
-	inherit git-r3
-	EGIT_REPO_URI="https://github.com/ueno/libkkc.git"
-	EGIT_BRANCH="master"
-else
-	SRC_URI="https://github.com/ueno/libkkc/archive/v${PV}.tar.gz
-		-> ${P}.tar.gz"
-fi
+EGIT_REPO_URI="https://github.com/ueno/libkkc.git"
+EGIT_BRANCH="master"
 
 LICENSE="GPL-3+"
 SLOT="0"
 KEYWORDS="~amd64"
 IUSE="doc +nls static-libs"
 
-COMMON_DEPEND="${PYTHON_DEPS}
-	>=dev-libs/glib-2.24:2
+COMMON_DEPEND=">=dev-libs/glib-2.24:2
 	>=dev-libs/json-glib-1.0
-	dev-libs/libgee:0.8
-	dev-libs/marisa[python,${PYTHON_USEDEP}]"
+	dev-libs/libgee:0.8"
 DEPEND="${COMMON_DEPEND}
 	$(vala_depend)
 	virtual/pkgconfig
@@ -40,15 +28,10 @@ RDEPEND="${COMMON_DEPEND}"
 PDEPEND="app-i18n/libkkc-data
 	app-i18n/skk-jisyo"
 
-RESTRICT="mirror"
-
 DOCS=( README.md )
 
-pkg_setup() {
-	python-single-r1_pkg_setup
-}
-
 src_prepare() {
+	eapply "${FILESDIR}"/disable-tests.patch
 	eapply_user
 	eautoreconf
 	vala_src_prepare
@@ -59,4 +42,8 @@ src_configure(){
 		$(use_enable nls) \
 		 --enable-introspection \
 		$(use_enable static-libs static)
+}
+
+src_compile() {
+	LIBS="-lm" emake
 }

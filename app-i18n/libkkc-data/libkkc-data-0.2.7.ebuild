@@ -3,7 +3,7 @@
 
 EAPI=6
 
-PYTHON_COMPAT=( python3_6 )
+PYTHON_COMPAT=( python3_{6,7} )
 
 inherit python-single-r1
 
@@ -16,7 +16,8 @@ SLOT="0"
 KEYWORDS="~amd64"
 
 COMMON_DEPEND="${PYTHON_DEPS}
-	app-i18n/libkkc"
+	app-i18n/libkkc
+	dev-libs/marisa[python,${PYTHON_USEDEP}]"
 DEPEND="${COMMON_DEPEND}"
 RDEPEND="${COMMON_DEPEND}"
 
