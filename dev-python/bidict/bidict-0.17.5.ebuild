@@ -11,7 +11,7 @@ HOMEPAGE="https://bidict.readthedocs.io"
 SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
 LICENSE="MPL-2.0"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm"
 IUSE=""
 
 RDEPEND=""

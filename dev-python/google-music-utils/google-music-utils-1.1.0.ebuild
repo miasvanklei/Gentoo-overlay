@@ -12,7 +12,7 @@ HOMEPAGE="https://github.com/simon-weber/gmusicapi"
 SRC_URI="https://github.com/thebigmunch/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm"
 IUSE=""
 
 RDEPEND=">=dev-python/audio-metadata-0.1[${PYTHON_USEDEP}]
