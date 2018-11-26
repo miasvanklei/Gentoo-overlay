@@ -9,7 +9,7 @@ inherit distutils-r1
 
 DESCRIPTION="This project provides first-class OAuth library support for Requests"
 HOMEPAGE="https://github.com/requests/requests-oauthlib"
-SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
+SRC_URI="https://github.com/requests/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
 LICENSE="ISC"
