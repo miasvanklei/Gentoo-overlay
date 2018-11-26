@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="6"
@@ -33,7 +33,7 @@ LIBCHROMIUMCONTENT_COMMIT="ccdb085454b0a387ee96e0f81a7ca9a8ce07a710"
 ASAR_VERSION="0.13.0"
 BROWSERIFY_VERSION="14.0.0"
 NINJA_VERSION="1.8.2"
-GENTOO_PATCHES_VERSION="982b6ad378681966e40e273a7918f5ae511d45a8"
+GENTOO_PATCHES_VERSION="6744d7a92cb45a4248adb113cc4022364d4b1816"
 
 PATCHES_P="gentoo-electron-patches-${GENTOO_PATCHES_VERSION}"
 CHROMIUM_P="chromium-${CHROMIUM_VERSION}"
@@ -96,6 +96,7 @@ COMMON_DEPEND="
 	dev-libs/expat:=
 	dev-libs/glib:2
 	>=dev-libs/icu-58:=
+	dev-libs/libevent:=
 	dev-libs/libxml2:=[icu]
 	dev-libs/libxslt:=
 	dev-libs/nspr:=
@@ -350,9 +351,8 @@ src_prepare() {
 
 	# Apply Gentoo patches for Electron itself.
 	cd "${S}" || die
-	cp -aL "${FILESDIR}/patches" "${WORKDIR}/${PATCHES_P}"
-	_unnest_patches "${WORKDIR}/${PATCHES_P}/2.0.10/electron/"
-	eapply "${WORKDIR}/${PATCHES_P}/2.0.10/electron/"
+	_unnest_patches "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
+	eapply "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
 
 	# Apply Chromium patches from libchromiumcontent.
 	cd "${CHROMIUM_S}" || die
@@ -360,7 +360,7 @@ src_prepare() {
 	eapply "${LIBCC_S}/patches"
 
 	# Finally, apply Gentoo patches for Chromium.
-	eapply "${WORKDIR}/${PATCHES_P}/2.0.10/chromium/"
+	eapply "${WORKDIR}/${PATCHES_P}/${PV}/chromium/"
 
 	# Merge chromiumcontent component into chromium source tree.
 	mkdir -p "${CHROMIUM_S}/chromiumcontent" || die
@@ -484,7 +484,6 @@ src_prepare() {
 		v8/third_party/inspector_protocol
 
 		# gyp -> gn leftovers
-		base/third_party/libevent
 		third_party/adobe
 		third_party/speech-dispatcher
 		third_party/usb_ids
@@ -530,12 +529,12 @@ src_configure() {
 	# TODO: use_system_ssl (http://crbug.com/58087).
 	# TODO: use_system_sqlite (http://crbug.com/22208).
 
-	# libevent: https://bugs.gentoo.org/593458
 	local gn_system_libraries=(
 		flac
 		harfbuzz-ng
 		icu
 		libdrm
+		libevent
 		libjpeg
 		libpng
 		libvpx
@@ -694,7 +693,7 @@ src_configure() {
 	myconf_gn+=" is_electron_build = true"
 	myconf_gn+=" is_component_build = false"
 	myconf_gn+=" use_allocator_shim = false"
-        myconf_gn+=" use_allocator= \"none\""
+	myconf_gn+=" use_allocator=\"none\""
 
 	einfo "Configuring chromiumcontent..."
 	set -- gn gen --args="${myconf_gn} ${EXTRA_GN}" out/Release
