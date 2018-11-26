@@ -1,0 +1,50 @@
+--- a/pytzdata/__init__.py	2018-11-26 15:56:26.622932475 +0100
++++ b/pytzdata/__init__.py	2018-11-26 15:58:49.565717541 +0100
+@@ -7,12 +7,7 @@
+ from ._compat import FileNotFoundError
+ 
+ 
+-DEFAULT_DIRECTORY = os.path.join(
+-    os.path.dirname(__file__),
+-    'zoneinfo'
+-)
+-
+-_DIRECTORY = os.getenv('PYTZDATA_TZDATADIR', DEFAULT_DIRECTORY)
++TIMEZONE_DIRECTORY =  '/usr/share/zoneinfo'
+ 
+ _TIMEZONES = {}
+ 
+@@ -68,7 +63,7 @@
+         if part == os.path.pardir or os.path.sep in part:
+             raise ValueError('Bad path segment: %r' % part)
+ 
+-    filepath = os.path.join(_DIRECTORY, *name_parts)
++    filepath = os.path.join(TIMEZONE_DIRECTORY, *name_parts)
+ 
+     if not os.path.exists(filepath):
+         raise TimezoneNotFound('Timezone {} not found at {}'.format(name, filepath))
+@@ -76,15 +71,6 @@
+     return filepath
+ 
+ 
+-def set_directory(directory=None):
+-    global _DIRECTORY
+-
+-    if directory is None:
+-        directory = os.getenv('PYTZDATA_TZDATADIR', DEFAULT_DIRECTORY)
+-
+-    _DIRECTORY = directory
+-
+-
+ def get_timezones():
+     """
+     Get the supported timezones.
+@@ -96,7 +82,7 @@
+ 
+     :rtype: tuple
+     """
+-    base_dir = _DIRECTORY
++    base_dir = TIMEZONE_DIRECTORY
+     zones = ()
+ 
+     for root, dirs, files in os.walk(base_dir):
