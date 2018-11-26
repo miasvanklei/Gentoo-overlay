@@ -23,8 +23,7 @@ RDEPEND="dev-libs/libltdl
 	dev-util/lttng-ust
 	!cuda? ( >=sys-devel/clang-6.0 )
 	cuda? ( >=sys-devel/clang-6.0[llvm_targets_NVPTX] )
-	sys-apps/hwloc[cuda?]
-	app-eselect/eselect-opencl"
+	sys-apps/hwloc[cuda?]"
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
