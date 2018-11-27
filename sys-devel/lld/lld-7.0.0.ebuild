@@ -35,6 +35,7 @@ CMAKE_BUILD_TYPE=Release
 
 PATCHES=(
 	"${FILESDIR}"/no-crash-r-use-linker-script-with-discard.patch
+	"${FILESDIR}"/fix-alignment-power-2.patch
 )
 
 python_check_deps() {

@@ -1,0 +1,11 @@
+--- a/ELF/SyntheticSections.cpp
++++ b/ELF/SyntheticSections.cpp
+@@ -2941,7 +2941,7 @@ void elf::mergeSections() {
+     }
+ 
+     StringRef OutsecName = getOutputSectionName(MS);
+-    uint32_t Alignment = std::max<uint32_t>(MS->Alignment, MS->Entsize);
++    uint32_t Alignment = std::max<uint32_t>(MS->Alignment, NextPowerOf2(MS->Entsize));
+ 
+     auto I = llvm::find_if(MergeSections, [=](MergeSyntheticSection *Sec) {
+       // While we could create a single synthetic section for two different
