@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -13,7 +13,7 @@ inherit cmake-utils flag-o-matic llvm multiprocessing python-any-r1 \
 
 DESCRIPTION="Compiler runtime library for clang (built-in part)"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="${PV%_*}"

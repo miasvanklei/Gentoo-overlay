@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -18,9 +18,10 @@ LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	http://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
-	test? ( http://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	https://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -30,7 +31,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 
 LICENSE="UoI-NCSA"
 SLOT="$(ver_cut 1)"
-KEYWORDS="~amd64 ~arm"
+KEYWORDS="~amd64 ~arm64 ~ppc64 ~x86 ~amd64-fbsd ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 IUSE="debug +default-compiler-rt +default-libcxx doc +fortran +static-analyzer
 	test xml z3 kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 RESTRICT="!test? ( test )"
@@ -101,6 +102,11 @@ src_unpack() {
 			"${LLVM_P}"/lib/Testing/Support \
 			"${LLVM_P}"/utils/{lit,llvm-lit,unittest} || die
 		mv "${LLVM_P}" "${WORKDIR}"/llvm || die
+	fi
+
+	if ! use doc; then
+		einfo "Unpacking llvm-${PV}-manpages.tar.bz2 ..."
+		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
 	fi
 }
 
@@ -307,6 +313,13 @@ multilib_src_install_all() {
 		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
 	fi
 
+	# install pre-generated manpages
+	if ! use doc; then
+		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+		doins "${WORKDIR}/x/y/llvm-${PV}-manpages/clang"/*.1
+	fi
+
+	docompress "/usr/lib/llvm/${SLOT}/share/man"
 	# match 'html' non-compression
 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
 	# +x for some reason; TODO: investigate

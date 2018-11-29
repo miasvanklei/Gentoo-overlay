@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -15,8 +15,8 @@ LIBCXX_P=libcxx-${PV/_/}.src
 
 DESCRIPTION="Low level support for a standard C++ library"
 HOMEPAGE="https://libcxxabi.llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	http://releases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	https://releases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"

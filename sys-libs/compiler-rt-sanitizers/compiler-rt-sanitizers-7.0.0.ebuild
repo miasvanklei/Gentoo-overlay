@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -16,8 +16,8 @@ LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="Compiler runtime libraries for clang (sanitizers & xray)"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	test? ( http://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="${PV%_*}"

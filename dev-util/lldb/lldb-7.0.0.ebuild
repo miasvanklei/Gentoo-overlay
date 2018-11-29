@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -16,12 +16,12 @@ LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="http://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	test? ( http://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
-KEYWORDS="~amd64 ~arm"
+KEYWORDS="~amd64 ~arm64 ~x86 ~arm"
 IUSE="+libedit ncurses +python test"
 RESTRICT="!test? ( test )"
 
@@ -81,6 +81,7 @@ src_configure() {
 		-DLLDB_DISABLE_CURSES=$(usex !ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)
 		-DLLDB_DISABLE_PYTHON=$(usex !python)
+		-DLLDB_USE_SYSTEM_SIX=1
 		-DLLVM_ENABLE_TERMINFO=$(usex ncurses)
 
 		-DLLDB_INCLUDE_TESTS=$(usex test)
@@ -90,7 +91,6 @@ src_configure() {
 		-DLLVM_ENABLE_THREADS=ON
 		-DLLVM_ENABLE_LLD=ON
 		-DLLVM_ENABLE_CXX1Y=ON
-		-DLLDB_USE_SYSTEM_SIX=1
 
 		# TODO: fix upstream to detect this properly
 		-DHAVE_LIBDL=ON
