@@ -5,7 +5,7 @@ diff -urN a/CMakeLists.txt b/CMakeLists.txt
  
  add_definitions( -D_GNU_SOURCE )
  
-+option(FLANG_LLVM_EXTENSIONS "enable the Flang LLVM extensions" OFF)
++option(FLANG_LLVM_EXTENSIONS "enable the Flang LLVM extensions" ON)
 +if(FLANG_LLVM_EXTENSIONS)
 +  add_definitions( -DFLANG_LLVM_EXTENSIONS )
 +endif()
@@ -353,6 +353,21 @@ diff -urN a/include/clang/Driver/ToolChain.h b/include/clang/Driver/ToolChain.h
    Tool *getAssemble() const;
    Tool *getLink() const;
    Tool *getClangAs() const;
+@@ -467,6 +469,14 @@
+   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
+                             llvm::opt::ArgStringList &CC1Args) const;
+ 
++  /// Add the flang arguments for system include paths.
++  ///
++  /// This routine is responsible for adding the -stdinc argument to
++  /// include headers and module files from standard system header directories.
++  virtual void
++  AddFlangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
++                            llvm::opt::ArgStringList &Flang1Args) const { }
++
+   /// Add options that need to be passed to cc1 for this target.
+   virtual void addClangTargetOptions(const llvm::opt::ArgList &DriverArgs,
+                                      llvm::opt::ArgStringList &CC1Args,
 @@ -532,6 +542,11 @@
    virtual VersionTuple computeMSVCVersion(const Driver *D,
                                            const llvm::opt::ArgList &Args) const;
@@ -593,11 +608,12 @@ diff -urN a/lib/Driver/ToolChain.cpp b/lib/Driver/ToolChain.cpp
  #include "clang/Basic/ObjCRuntime.h"
  #include "clang/Basic/Sanitizers.h"
  #include "clang/Basic/VirtualFileSystem.h"
-@@ -142,6 +143,7 @@
+@@ -142,6 +143,8 @@
        {"cpp", "--driver-mode=cpp"},
        {"cl", "--driver-mode=cl"},
        {"++", "--driver-mode=g++"},
 +      {"flang", "--driver-mode=fortran"},
++      {"gfortran", "--driver-mode=fortran"},
    };
  
    for (size_t i = 0; i < llvm::array_lengthof(DriverSuffixes); ++i) {
@@ -829,7 +845,7 @@ diff -urN a/lib/Driver/ToolChains/CommonArgs.h b/lib/Driver/ToolChains/CommonArg
 diff -urN a/lib/Driver/ToolChains/Flang.cpp b/lib/Driver/ToolChains/Flang.cpp
 --- a/lib/Driver/ToolChains/Flang.cpp	1970-01-01 01:00:00.000000000 +0100
 +++ b/lib/Driver/ToolChains/Flang.cpp	2018-09-12 15:55:31.313432675 +0200
-@@ -0,0 +1,903 @@
+@@ -0,0 +1,905 @@
 +//===--- Flang.cpp - Flang+LLVM ToolChain Implementations -------*- C++ -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -1387,6 +1403,8 @@ diff -urN a/lib/Driver/ToolChains/Flang.cpp b/lib/Driver/ToolChains/Flang.cpp
 +    UpperCmdArgs.push_back("2");
 +  }
 +
++  getToolChain().AddFlangSystemIncludeArgs(Args, UpperCmdArgs);
++
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("unix");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__unix");
 +  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__unix__");
@@ -1665,7 +1683,7 @@ diff -urN a/lib/Driver/ToolChains/Flang.cpp b/lib/Driver/ToolChains/Flang.cpp
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("121"); LowerCmdArgs.push_back("0x800");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("54"); LowerCmdArgs.push_back("0x10");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("70"); LowerCmdArgs.push_back("0x40000000");
-+  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("249"); LowerCmdArgs.push_back("50"); // LLVM version
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("249"); LowerCmdArgs.push_back("70"); // LLVM version
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("124"); LowerCmdArgs.push_back("1");
 +  LowerCmdArgs.push_back("-y"); LowerCmdArgs.push_back("163"); LowerCmdArgs.push_back("0xc0000000");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("189"); LowerCmdArgs.push_back("0x10");
@@ -1810,7 +1828,7 @@ diff -urN a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
 diff -urN a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
 --- a/lib/Driver/ToolChains/Linux.cpp	2018-07-30 21:44:13.000000000 +0200
 +++ b/lib/Driver/ToolChains/Linux.cpp	2018-09-12 15:56:10.441404761 +0200
-@@ -619,6 +619,28 @@
+@@ -619,6 +619,75 @@
    return "/" + LibDir + "/" + Loader;
  }
  
@@ -1836,9 +1854,69 @@ diff -urN a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
 +  Flang1Args.push_back(DriverArgs.MakeArgString(ArgValue));
 +}
 +
++void Linux::AddFlangSystemIncludeArgs(const ArgList &DriverArgs,
++                                      ArgStringList &Flang1Args) const {
++  path_list IncludePathList;
++  const Driver &D = getDriver();
++  std::string SysRoot = computeSysRoot();
++
++  if (DriverArgs.hasArg(options::OPT_nostdinc))
++    return;
++
++  {
++    SmallString<128> P(D.InstalledDir);
++    llvm::sys::path::append(P, "../include");
++    IncludePathList.push_back(P.str());
++  }
++
++  if (!DriverArgs.hasArg(options::OPT_nostdlibinc))
++    IncludePathList.push_back(SysRoot + "/usr/local/include");
++
++  if (!DriverArgs.hasArg(options::OPT_nobuiltininc)) {
++    SmallString<128> P(D.ResourceDir);
++    llvm::sys::path::append(P, "include");
++    IncludePathList.push_back(P.str());
++  }
++
++  if (DriverArgs.hasArg(options::OPT_nostdlibinc)) {
++    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
++    return;
++  }
++
++  // Check for configure-time C include directories.
++  StringRef CIncludeDirs(C_INCLUDE_DIRS);
++  if (CIncludeDirs != "") {
++    SmallVector<StringRef, 5> dirs;
++    CIncludeDirs.split(dirs, ":");
++    for (StringRef dir : dirs) {
++      StringRef Prefix =
++          llvm::sys::path::is_absolute(dir) ? StringRef(SysRoot) : "";
++      IncludePathList.push_back(Prefix.str() + dir.str());
++    }
++    AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
++    return;
++  }
++
++  IncludePathList.push_back(SysRoot + "/usr/include");
++  AddFlangSysIncludeArg(DriverArgs, Flang1Args, IncludePathList);
++}
++
  void Linux::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
                                        ArgStringList &CC1Args) const {
    const Driver &D = getDriver();
+diff -urN a/lib/Driver/ToolChains/Linux.h b/lib/Driver/ToolChains/Linux.h
+--- a/lib/Driver/ToolChains/Linux.h   2018-12-01 21:42:04.646496894 +0100
++++ b/lib/Driver/ToolChains/Linux.h   2018-12-01 21:52:09.708671734 +0100
+@@ -25,6 +25,9 @@
+   bool HasNativeLLVMSupport() const override;
+ 
+   void
++  AddFlangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
++                           llvm::opt::ArgStringList &Flang1Args) const override;
++  void
+   AddClangSystemIncludeArgs(const llvm::opt::ArgList &DriverArgs,
+                             llvm::opt::ArgStringList &CC1Args) const override;
+   void addLibCxxIncludePaths(
 diff -urN a/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
 --- a/lib/Driver/Types.cpp	2018-05-11 21:21:39.000000000 +0200
 +++ b/lib/Driver/Types.cpp	2018-09-12 15:46:14.554830330 +0200
