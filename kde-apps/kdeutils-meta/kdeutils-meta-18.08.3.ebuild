@@ -18,7 +18,6 @@ RDEPEND="
 	$(add_kdeapps_dep kcharselect)
 	$(add_kdeapps_dep kdebugsettings)
 	$(add_kdeapps_dep kdf)
-	$(add_kdeapps_dep kgpg)
 	$(add_kdeapps_dep kwalletmanager)
 	cups? ( $(add_kdeapps_dep print-manager) )
 	floppy? ( $(add_kdeapps_dep kfloppy) )
