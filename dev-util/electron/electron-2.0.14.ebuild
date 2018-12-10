@@ -96,7 +96,6 @@ COMMON_DEPEND="
 	dev-libs/expat:=
 	dev-libs/glib:2
 	>=dev-libs/icu-58:=
-	dev-libs/libevent:=
 	dev-libs/libxml2:=[icu]
 	dev-libs/libxslt:=
 	dev-libs/nspr:=
@@ -169,7 +168,7 @@ DEPEND="${COMMON_DEPEND}
 	dev-util/gn
 	>=dev-util/gperf-3.0.3
 	>=dev-util/ninja-1.7.2
-	>=net-libs/nodejs-4.6.1
+	>=net-libs/nodejs-4.6.1[ssl]
 	sys-apps/hwids[usb(+)]
 	>=sys-devel/bison-2.4.3
 	sys-devel/flex
@@ -484,6 +483,7 @@ src_prepare() {
 		v8/third_party/inspector_protocol
 
 		# gyp -> gn leftovers
+		base/third_party/libevent
 		third_party/adobe
 		third_party/speech-dispatcher
 		third_party/usb_ids
@@ -534,7 +534,6 @@ src_configure() {
 		harfbuzz-ng
 		icu
 		libdrm
-		libevent
 		libjpeg
 		libpng
 		libvpx
