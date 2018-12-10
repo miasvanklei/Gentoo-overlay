@@ -19,31 +19,27 @@ SRC_URI="https://static.rust-lang.org/dist/rustc-${PV}-src.tar.xz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+cargo +clippy debug doc libressl +rls +rustfmt -jemalloc"
+IUSE="+clippy debug doc -jemalloc libressl +rls +rustfmt"
 
-RDEPEND="jemalloc? ( dev-libs/jemalloc )
-	sys-devel/llvm"
-DEPEND="${RDEPEND}
-        ${PYTHON_DEPS}
-        || (
-                >=sys-devel/gcc-4.7
-                >=sys-devel/clang-3.5
-        )
-        cargo? ( !dev-util/cargo
+COMMON_DEPEND="jemalloc? ( dev-libs/jemalloc )
 		sys-libs/zlib
 		!libressl? ( dev-libs/openssl:0= )
 		libressl? ( dev-libs/libressl:0= )
 		net-libs/libssh2
-		net-libs/http-parser
+		net-libs/http-parser:=
 		net-misc/curl[ssl]
+		>=sys-devel/llvm-6:="
+DEPEND="${COMMON_DEPEND}
+	${PYTHON_DEPS}
+	|| (
+		>=sys-devel/clang-3.5
+		>=sys-devel/gcc-4.7
 	)
-        rustfmt? ( !dev-util/rustfmt )
-        dev-libs/libgit2
-"
-PDEPEND="!cargo? ( >=dev-util/cargo-${CARGO_DEPEND_VERSION} )"
+	dev-util/cmake"
+RDEPEND="${COMMON_DEPEND}
+	!dev-util/cargo
+	rustfmt? ( !dev-util/rustfmt )"
 
-
-RDEPEND="sys-devel/llvm:="
 
 S="${WORKDIR}/rustc-${PV}-src"
 
@@ -70,7 +66,7 @@ PATCHES=(
 	"${FILESDIR}"/system-llvm.patch
 	"${FILESDIR}"/link-libc++.patch
 	"${FILESDIR}"/link-libunwind.patch
-	"${FILESDIR}"/${PV}-clippy-sysroot.patch
+	"${FILESDIR}"/1.30.1-clippy-sysroot.patch
 )
 
 src_configure() {
@@ -78,21 +74,14 @@ src_configure() {
 
 	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
 
-	local extended="false" tools=""
-	if use cargo; then
-		extended="true"
-		tools="\"cargo\","
-	fi
+	local extended="true" tools="\"cargo\","
 	if use clippy; then
-		extended="true"
 		tools="\"clippy\",$tools"
 	fi
 	if use rls; then
-		extended="true"
 		tools="\"rls\",\"analysis\",\"src\",$tools"
 	fi
 	if use rustfmt; then
-		extended="true"
 		tools="\"rustfmt\",$tools"
 	fi
 
@@ -154,12 +143,10 @@ src_install() {
 	local tobj="${rcbuild}/stage2-tools/${CBUILD}/release"
 
 	# Install binaries
-	dobin "${obj}/bin/rustc" "${obj}/bin/rustdoc"
+	dobin "${obj}"/bin/rustc "${obj}"/bin/rustdoc "${tobj}"/cargo
+
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
-	if use cargo; then
-		dobin "${tobj}"/cargo
-	fi
 	if use clippy; then
 		dobin "${tobj}"/clippy-driver
 		dobin "${tobj}"/cargo-clippy
