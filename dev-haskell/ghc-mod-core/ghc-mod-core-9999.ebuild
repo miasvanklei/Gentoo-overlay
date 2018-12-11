@@ -12,7 +12,7 @@ LIVE_EBUILD=yes
 DESCRIPTION="Happy Haskell Hacking"
 HOMEPAGE="https://github.com/DanielG/ghc-mod"
 EGIT_REPO_URI="https://github.com/alanz/ghc-mod.git"
-EGIT_BRANCH="ghc-8.6-parse-module"
+EGIT_BRANCH="cabal-new-merged"
 
 LICENSE="AGPL-3"
 SLOT="0/${PV}"
@@ -43,10 +43,6 @@ DEPEND="${RDEPEND}
 	test? ( >=dev-haskell/doctest-0.9.3 <dev-haskell/doctest-0.12
 		>=dev-haskell/hspec-2.0.0 <dev-haskell/hspec-2.4 )
 "
-
-PATCHES=(
-	"${FILESDIR}"/ghc-8.6.patch
-)
 
 src_configure() {
 	haskell-cabal_src_configure \

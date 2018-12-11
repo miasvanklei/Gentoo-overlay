@@ -12,7 +12,7 @@ LIVE_EBUILD=yes
 DESCRIPTION="Happy Haskell Hacking"
 HOMEPAGE="https://github.com/DanielG/ghc-mod"
 EGIT_REPO_URI="https://github.com/alanz/ghc-mod.git"
-EGIT_BRANCH="ghc-8.6-parse-module"
+EGIT_BRANCH="cabal-new-merged"
 
 LICENSE="AGPL-3"
 SLOT="0/${PV}"

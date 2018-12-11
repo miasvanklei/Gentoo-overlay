@@ -11,7 +11,6 @@ inherit haskell-cabal git-r3
 DESCRIPTION="Haskell source code formatter"
 HOMEPAGE="https://github.com/lspitzner/brittany/"
 EGIT_REPO_URI="https://github.com/lspitzner/brittany.git"
-EGIT_BRANCH="ghc-8.6"
 
 LICENSE="AGPL-3"
 SLOT="0/${PV}"
@@ -51,8 +50,7 @@ src_prepare() {
 
         cabal_chdeps \
                 'yaml >=0.8.18 && <0.9' 'yaml >=0.8.18 && <0.12' \
-		'monad-memo >=0.4.1 && <0.5' 'monad-memo >=0.4.1 && <0.6' \
-		'ghc-exactprint >=0.5.6.0 && <0.5.8' 'ghc-exactprint >=0.5.6.0 && <0.5.9'
+		'monad-memo >=0.4.1 && <0.5' 'monad-memo >=0.4.1 && <0.6'
 }
 
 src_configure() {
