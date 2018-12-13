@@ -38,7 +38,7 @@ NODE_PTY_V=0.7.8
 ONIGURUMA_V=7.0.2
 SPDLOG_V=0.7.2
 VSCODE_NSFW_V=1.1.1
-VSCODE_SQLITE3_V=4.0.2
+VSCODE_SQLITE3_V=4.0.5
 
 # The x86_64 arch below is irrelevant, as we will rebuild all binary packages.
 SRC_URI="
