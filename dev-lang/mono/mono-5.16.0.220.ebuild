@@ -24,7 +24,7 @@ COMMONDEPEND="
 	nls? ( sys-devel/gettext )
 "
 RDEPEND="${COMMONDEPEND}
-	|| ( www-client/links www-client/lynx )
+	|| ( www-client/elinks www-client/lynx )
 "
 DEPEND="${COMMONDEPEND}
 	sys-devel/bc
