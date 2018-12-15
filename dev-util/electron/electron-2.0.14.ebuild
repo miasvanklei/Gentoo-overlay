@@ -678,10 +678,11 @@ src_configure() {
 
 	einfo "Configuring bundled nodejs..."
 	pushd "${S}/vendor/node" > /dev/null || die
+	# --shared-openssl cannot be used: depends on openssl 1.0
 	# --shared-libuv cannot be used as electron's node fork
 	# patches uv_loop structure.
 	./configure --shared --without-bundled-v8 \
-		--shared-openssl --shared-http-parser --shared-zlib \
+		--shared-http-parser --shared-zlib \
 		--shared-nghttp2 --shared-cares \
 		--without-npm --with-intl=system-icu --without-dtrace \
 		--dest-cpu=${target_arch} --prefix="" || die
