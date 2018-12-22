@@ -1,0 +1,239 @@
+--- a/src/libsystemd/sd-hwdb/hwdb-util.c
++++ b/src/libsystemd/sd-hwdb/hwdb-util.c
+@@ -126,9 +126,10 @@
+ 
+ DEFINE_TRIVIAL_CLEANUP_FUNC(struct trie*, trie_free);
+ 
+-static int trie_values_cmp(const struct trie_value_entry *a, const struct trie_value_entry *b, struct trie *trie) {
+-        return strcmp(trie->strings->buf + a->key_off,
+-                      trie->strings->buf + b->key_off);
++static struct trie *trie_node_add_value_trie;
++static int trie_values_cmp(const struct trie_value_entry *a, const struct trie_value_entry *b) {
++        return strcmp(trie_node_add_value_trie->strings->buf + a->key_off,
++                      trie_node_add_value_trie->strings->buf + b->key_off);
+ }
+ 
+ static int trie_node_add_value(struct trie *trie, struct trie_node *node,
+@@ -156,7 +157,9 @@
+                         .value_off = v,
+                 };
+ 
+-                val = typesafe_bsearch_r(&search, node->values, node->values_count, trie_values_cmp, trie);
++		trie_node_add_value_trie = trie;
++                val = typesafe_bsearch(&search, node->values, node->values_count, trie_values_cmp);
++                trie_node_add_value_trie = NULL;
+                 if (val) {
+                         /* At this point we have 2 identical properties on the same match-string.
+                          * Since we process files in order, we just replace the previous value. */
+@@ -182,7 +185,9 @@
+                 .line_number = line_number,
+         };
+         node->values_count++;
+-        typesafe_qsort_r(node->values, node->values_count, trie_values_cmp, trie);
++        trie_node_add_value_trie = trie;
++        typesafe_qsort(node->values, node->values_count, trie_values_cmp);
++        trie_node_add_value_trie = NULL;
+         return 0;
+ }
+ 
+--- a/src/basic/util.h
++++ b/src/basic/util.h
+@@ -66,22 +66,12 @@
+ bool in_initrd(void);
+ void in_initrd_force(bool value);
+ 
+-void *xbsearch_r(const void *key, const void *base, size_t nmemb, size_t size,
+-                 __compar_d_fn_t compar, void *arg);
+-
+-#define typesafe_bsearch_r(k, b, n, func, userdata)                     \
+-        ({                                                              \
+-                const typeof(b[0]) *_k = k;                             \
+-                int (*_func_)(const typeof(b[0])*, const typeof(b[0])*, typeof(userdata)) = func; \
+-                xbsearch_r((const void*) _k, (b), (n), sizeof((b)[0]), (__compar_d_fn_t) _func_, userdata); \
+-        })
+-
+ /**
+  * Normal bsearch requires base to be nonnull. Here were require
+  * that only if nmemb > 0.
+  */
+ static inline void* bsearch_safe(const void *key, const void *base,
+-                                 size_t nmemb, size_t size, __compar_fn_t compar) {
++                                 size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
+         if (nmemb <= 0)
+                 return NULL;
+ 
+@@ -93,14 +83,14 @@
+         ({                                                              \
+                 const typeof(b[0]) *_k = k;                             \
+                 int (*_func_)(const typeof(b[0])*, const typeof(b[0])*) = func; \
+-                bsearch_safe((const void*) _k, (b), (n), sizeof((b)[0]), (__compar_fn_t) _func_); \
++                bsearch_safe((const void*) _k, (b), (n), sizeof((b)[0]), (int (*)(const void *, const void *)) _func_); \
+         })
+ 
+ /**
+  * Normal qsort requires base to be nonnull. Here were require
+  * that only if nmemb > 0.
+  */
+-static inline void qsort_safe(void *base, size_t nmemb, size_t size, __compar_fn_t compar) {
++static inline void qsort_safe(void *base, size_t nmemb, size_t size, int (*compar)(const void *, const void *)) {
+         if (nmemb <= 1)
+                 return;
+ 
+@@ -113,21 +103,7 @@
+ #define typesafe_qsort(p, n, func)                                      \
+         ({                                                              \
+                 int (*_func_)(const typeof(p[0])*, const typeof(p[0])*) = func; \
+-                qsort_safe((p), (n), sizeof((p)[0]), (__compar_fn_t) _func_); \
+-        })
+-
+-static inline void qsort_r_safe(void *base, size_t nmemb, size_t size, __compar_d_fn_t compar, void *userdata) {
+-        if (nmemb <= 1)
+-                return;
+-
+-        assert(base);
+-        qsort_r(base, nmemb, size, compar, userdata);
+-}
+-
+-#define typesafe_qsort_r(p, n, func, userdata)                          \
+-        ({                                                              \
+-                int (*_func_)(const typeof(p[0])*, const typeof(p[0])*, typeof(userdata)) = func; \
+-                qsort_r_safe((p), (n), sizeof((p)[0]), (__compar_d_fn_t) _func_, userdata); \
++                qsort_safe((p), (n), sizeof((p)[0]), (int (*)(const void *, const void *)) _func_); \
+         })
+ 
+ /* Normal memcpy requires src to be nonnull. We do nothing if n is 0. */
+--- a/src/basic/util.c
++++ b/src/basic/util.c
+@@ -140,32 +140,6 @@
+ void in_initrd_force(bool value) {
+         saved_in_initrd = value;
+ }
+-
+-/* hey glibc, APIs with callbacks without a user pointer are so useless */
+-void *xbsearch_r(const void *key, const void *base, size_t nmemb, size_t size,
+-                 __compar_d_fn_t compar, void *arg) {
+-        size_t l, u, idx;
+-        const void *p;
+-        int comparison;
+-
+-        assert(!size_multiply_overflow(nmemb, size));
+-
+-        l = 0;
+-        u = nmemb;
+-        while (l < u) {
+-                idx = (l + u) / 2;
+-                p = (const uint8_t*) base + idx * size;
+-                comparison = compar(key, p, arg);
+-                if (comparison < 0)
+-                        u = idx;
+-                else if (comparison > 0)
+-                        l = idx + 1;
+-                else
+-                        return (void *)p;
+-        }
+-        return NULL;
+-}
+-
+ bool memeqzero(const void *data, size_t length) {
+         /* Does the buffer consist entirely of NULs?
+          * Copied from https://github.com/systemd/casync/, copied in turn from
+--- a/src/journal/catalog.c
++++ b/src/journal/catalog.c
+@@ -560,21 +560,21 @@
+                 strncpy(key.language, loc, sizeof(key.language));
+                 key.language[strcspn(key.language, ".@")] = 0;
+ 
+-                f = bsearch(&key, (const uint8_t*) p + le64toh(h->header_size), le64toh(h->n_items), le64toh(h->catalog_item_size), (comparison_fn_t) catalog_compare_func);
++                f = bsearch(&key, (const uint8_t*) p + le64toh(h->header_size), le64toh(h->n_items), le64toh(h->catalog_item_size), (int (*)(const void *, const void *)) catalog_compare_func);
+                 if (!f) {
+                         char *e;
+ 
+                         e = strchr(key.language, '_');
+                         if (e) {
+                                 *e = 0;
+-                                f = bsearch(&key, (const uint8_t*) p + le64toh(h->header_size), le64toh(h->n_items), le64toh(h->catalog_item_size), (comparison_fn_t) catalog_compare_func);
++                                f = bsearch(&key, (const uint8_t*) p + le64toh(h->header_size), le64toh(h->n_items), le64toh(h->catalog_item_size), (int (*)(const void *, const void *)) catalog_compare_func);
+                         }
+                 }
+         }
+ 
+         if (!f) {
+                 zero(key.language);
+-                f = bsearch(&key, (const uint8_t*) p + le64toh(h->header_size), le64toh(h->n_items), le64toh(h->catalog_item_size), (comparison_fn_t) catalog_compare_func);
++                f = bsearch(&key, (const uint8_t*) p + le64toh(h->header_size), le64toh(h->n_items), le64toh(h->catalog_item_size), (int (*)(const void *, const void *)) catalog_compare_func);
+         }
+ 
+         if (!f)
+--- a/src/shared/format-table.c
++++ b/src/shared/format-table.c
+@@ -848,31 +848,32 @@
+         return CMP(index_a, index_b);
+ }
+ 
+-static int table_data_compare(const size_t *a, const size_t *b, Table *t) {
++static Table *user_table;
++static int table_data_compare(const size_t *a, const size_t *b) {
+         size_t i;
+         int r;
+ 
+-        assert(t);
+-        assert(t->sort_map);
++        assert(user_table);
++        assert(user_table->sort_map);
+ 
+         /* Make sure the header stays at the beginning */
+-        if (*a < t->n_columns && *b < t->n_columns)
++        if (*a < user_table->n_columns && *b < user_table->n_columns)
+                 return 0;
+-        if (*a < t->n_columns)
++        if (*a < user_table->n_columns)
+                 return -1;
+-        if (*b < t->n_columns)
++        if (*b < user_table->n_columns)
+                 return 1;
+ 
+         /* Order other lines by the sorting map */
+-        for (i = 0; i < t->n_sort_map; i++) {
++        for (i = 0; i < user_table->n_sort_map; i++) {
+                 TableData *d, *dd;
+ 
+-                d = t->data[*a + t->sort_map[i]];
+-                dd = t->data[*b + t->sort_map[i]];
++                d = user_table->data[*a + user_table->sort_map[i]];
++                dd = user_table->data[*b + user_table->sort_map[i]];
+ 
+                 r = cell_data_compare(d, *a, dd, *b);
+                 if (r != 0)
+-                        return t->reverse_map && t->reverse_map[t->sort_map[i]] ? -r : r;
++                        return user_table->reverse_map && user_table->reverse_map[user_table->sort_map[i]] ? -r : r;
+         }
+ 
+         /* Order identical lines by the order there were originally added in */
+@@ -1105,7 +1106,12 @@
+                 for (i = 0; i < n_rows; i++)
+                         sorted[i] = i * t->n_columns;
+ 
+-                typesafe_qsort_r(sorted, n_rows, table_data_compare, t);
++                if (n_rows <=1)
++                    return 0;
++                assert(sorted);
++                user_table = t;
++                typesafe_qsort(sorted, n_rows, table_data_compare);
++                user_table = NULL;
+         }
+ 
+         if (t->display_map)
+@@ -1532,7 +1538,12 @@
+                 for (i = 0; i < n_rows; i++)
+                         sorted[i] = i * t->n_columns;
+ 
+-                typesafe_qsort_r(sorted, n_rows, table_data_compare, t);
++		 if (n_rows <= 1)
++                        return 0;
++                assert(sorted);
++                user_table = t;
++                typesafe_qsort(sorted, n_rows, table_data_compare);
++                user_table = NULL;
+         }
+ 
+         if (t->display_map)
