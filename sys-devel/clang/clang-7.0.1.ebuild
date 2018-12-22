@@ -57,7 +57,7 @@ PDEPEND="
 	sys-devel/clang-common
 	~sys-devel/clang-runtime-${PV}
 	fortran? ( dev-lang/flang )
-	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
+	default-compiler-rt? ( =sys-libs/compiler-rt-${PV} )
 	default-libcxx? ( sys-libs/libcxx )"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}

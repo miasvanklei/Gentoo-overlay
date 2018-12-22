@@ -66,9 +66,6 @@ src_prepare() {
 	# fix musl/arm combination
 	eapply "${FILESDIR}"/0001-musl-lldb-arm.patch
 
-	# enable debugging crystal as c code
-	eapply "${FILESDIR}"/0003-crystal-debug.patch
-
 	cmake-utils_src_prepare
 }
 
