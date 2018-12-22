@@ -167,7 +167,7 @@ src_install() {
 	find "${D}" -name "crt*.o" -delete || die
 
 	# Install analysis for rls
-	insinto "/usr/$(get_libdir)/rustlib/analysis"
+	insinto "/usr/$(get_libdir)/rustlib/analysis/${CHOST}"
 	doins "${sobj}/release/deps/save-analysis/"*
 
 	# Install COPYRIGHT and LICENSE
