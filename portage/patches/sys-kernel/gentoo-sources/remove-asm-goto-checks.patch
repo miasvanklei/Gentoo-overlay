@@ -1,6 +1,6 @@
 --- a/arch/x86/Makefile	2018-09-21 15:07:17.947715496 +0200
 +++ b/arch/x86/Makefile	2018-09-21 15:07:37.063725414 +0200
-@@ -315,10 +315,6 @@
+@@ -296,10 +296,6 @@
  
  archprepare: checkbin
  checkbin:
@@ -8,9 +8,9 @@
 -	@echo Compiler lacks asm-goto support.
 -	@exit 1
 -endif
- 
- archclean:
- 	$(Q)rm -rf $(objtree)/arch/i386
+ ifdef CONFIG_RETPOLINE
+ ifeq ($(RETPOLINE_CFLAGS),)
+ 	@echo "You are building kernel with non-retpoline compiler." >&2
 --- a/Makefile	2018-09-21 15:05:04.795628142 +0200
 +++ b/Makefile	2018-09-21 15:05:48.970660920 +0200
 @@ -504,13 +504,6 @@
