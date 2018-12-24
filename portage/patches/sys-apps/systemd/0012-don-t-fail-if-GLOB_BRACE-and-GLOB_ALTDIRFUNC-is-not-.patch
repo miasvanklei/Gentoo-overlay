@@ -1,3 +1,28 @@
+From 848e711d719a6d987bc7d14183e1c7b1f1c91c56 Mon Sep 17 00:00:00 2001
+From: Chen Qi <Qi.Chen@windriver.com>
+Date: Fri, 29 Jun 2018 17:10:29 +0800
+Subject: [PATCH 08/19] don't fail if GLOB_BRACE and GLOB_ALTDIRFUNC is not
+ defined
+
+If the standard library doesn't provide brace
+expansion users just won't get it.
+
+Dont use GNU GLOB extentions on non-glibc systems
+
+Conditionalize use of GLOB_ALTDIRFUNC
+
+Upstream-Status: Inappropriate [musl specific]
+
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Signed-off-by: Chen Qi <Qi.Chen@windriver.com>
+---
+ src/basic/glob-util.c     | 13 +++++++++++--
+ src/test/test-glob-util.c | 15 +++++++++++++++
+ src/tmpfiles/tmpfiles.c   | 10 ++++++++++
+ 3 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/src/basic/glob-util.c b/src/basic/glob-util.c
+index 9fac676f2..8adb9559e 100644
 --- a/src/basic/glob-util.c
 +++ b/src/basic/glob-util.c
 @@ -10,6 +10,11 @@
@@ -36,12 +61,14 @@
          if (k == GLOB_NOMATCH)
                  return -ENOENT;
          if (k == GLOB_NOSPACE)
+diff --git a/src/test/test-glob-util.c b/src/test/test-glob-util.c
+index d78d6223c..f5943b26d 100644
 --- a/src/test/test-glob-util.c
 +++ b/src/test/test-glob-util.c
 @@ -12,6 +12,11 @@
+ #include "glob-util.h"
  #include "macro.h"
  #include "rm-rf.h"
- #include "tmpfile-util.h"
 +/* Don't fail if the standard library
 + * doesn't provide brace expansion */
 +#ifndef GLOB_BRACE
@@ -84,6 +111,8 @@
          assert_se(r == GLOB_NOMATCH);
  
          (void) rm_rf(template, REMOVE_ROOT|REMOVE_PHYSICAL);
+diff --git a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
+index 927de35f3..5f0283da5 100644
 --- a/src/tmpfiles/tmpfiles.c
 +++ b/src/tmpfiles/tmpfiles.c
 @@ -60,6 +60,12 @@
@@ -119,3 +148,6 @@
          };
          int r = 0, k;
          char **fn;
+-- 
+2.11.0
+
