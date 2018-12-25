@@ -14,6 +14,7 @@ KEYWORDS="~amd64 arm"
 IUSE=""
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/sabotage-linux/gettext-tiny"
+EGIT_BRANCH="newpoparser"
 
 DEPEND="sys-libs/musl"
 RDEPEND="${DEPEND}"
