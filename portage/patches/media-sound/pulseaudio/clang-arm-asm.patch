@@ -1,0 +1,21 @@
+--- a/src/pulsecore/mix_neon.c	2018-12-25 15:18:40.569328220 +0100
++++ b/src/pulsecore/mix_neon.c	2018-12-25 15:18:48.265334485 +0100
+@@ -175,6 +175,10 @@
+ 
+     int32x4_t sv0, sv1;
+ 
++#ifdef __clang__
++    sv0 = vld1q_s32(streams[0].linear);
++    sv1 = vld1q_s32(streams[1].linear);+
++#else
+     __asm__ __volatile__ (
+         "vld1.s32 %h[sv0], [%[lin0]]         \n\t"
+         "vld1.s32 %h[sv1], [%[lin1]]         \n\t"
+@@ -182,6 +186,7 @@
+         : [lin0] "r" (streams[0].linear), [lin1] "r" (streams[1].linear)
+         : /* clobber list */
+     );
++#endif
+ 
+     length /= sizeof(int16_t);
+     for (; length >= 4; length -= 4) {
