@@ -1,0 +1,1125 @@
+From 71833088fb26be75ae88f13f970b814436b688ce Mon Sep 17 00:00:00 2001
+From: Bruce Anderson <banderson19com@san.rr.com>
+Date: Wed, 17 Oct 2018 12:15:42 +0200
+Subject: Upgrade SimpleIpV4AddressValidator and SimpleIpV6AddressValidator
+
+Summary:
+to optionally handle a CIDR or port suffix. Added capabilitiesimplemented via defaulted parameter to maintain compatibilitywith the previous version. Includes unit tests for the updated
+code. Opened as a separate review per comment from Pino on review
+D15093.
+
+Part of:
+CCBUG: 397572
+FIXED-IN: 5.14.0
+
+Reviewers: jgrulich, pino
+
+Subscribers: ngraham, plasma-devel
+
+Tags: #plasma
+
+Differential Revision: https://phabricator.kde.org/D15520
+---
+ CMakeLists.txt                             |   2 +
+ libs/editor/CMakeLists.txt                 |   1 +
+ libs/editor/simpleiplistvalidator.cpp      | 108 ++++++++++++++++
+ libs/editor/simpleiplistvalidator.h        |  46 +++++++
+ libs/editor/simpleipv4addressvalidator.cpp |  84 +++++++++++--
+ libs/editor/simpleipv4addressvalidator.h   |   7 +-
+ libs/editor/simpleipv6addressvalidator.cpp | 132 +++++++++++++++++---
+ libs/editor/simpleipv6addressvalidator.h   |   7 +-
+ tests/CMakeLists.txt                       |  30 +++++
+ tests/simpleiplisttest.cpp                 | 136 ++++++++++++++++++++
+ tests/simpleipv4test.cpp                   | 152 +++++++++++++++++++++++
+ tests/simpleipv6test.cpp                   | 192 +++++++++++++++++++++++++++++
+ 12 files changed, 873 insertions(+), 24 deletions(-)
+ create mode 100644 libs/editor/simpleiplistvalidator.cpp
+ create mode 100644 libs/editor/simpleiplistvalidator.h
+ create mode 100644 tests/CMakeLists.txt
+ create mode 100644 tests/simpleiplisttest.cpp
+ create mode 100644 tests/simpleipv4test.cpp
+ create mode 100644 tests/simpleipv6test.cpp
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f8daca9..e3bbe3b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -25,6 +25,7 @@ find_package(Qt5 ${QT_MIN_VERSION} CONFIG REQUIRED COMPONENTS
+     Network
+     Quick
+     Widgets
++    Test
+ )
+ 
+ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED
+@@ -95,5 +96,6 @@ add_subdirectory(kded)
+ add_subdirectory(kcm)
+ add_subdirectory(libs)
+ add_subdirectory(vpn)
++add_subdirectory(tests)
+ 
+ feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
+diff --git a/libs/editor/CMakeLists.txt b/libs/editor/CMakeLists.txt
+index c50a43a..74bb255 100644
+--- a/libs/editor/CMakeLists.txt
++++ b/libs/editor/CMakeLists.txt
+@@ -40,6 +40,7 @@ set(plasmanm_editor_SRCS
+     listvalidator.cpp
+     simpleipv4addressvalidator.cpp
+     simpleipv6addressvalidator.cpp
++    simpleiplistvalidator.cpp
+     vpnuiplugin.cpp
+ 
+     ../configuration.cpp
+diff --git a/libs/editor/simpleiplistvalidator.cpp b/libs/editor/simpleiplistvalidator.cpp
+new file mode 100644
+index 0000000..1dcf876
+--- /dev/null
++++ b/libs/editor/simpleiplistvalidator.cpp
+@@ -0,0 +1,108 @@
++/*
++Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++This program is free software; you can redistribute it and/or
++modify it under the terms of the GNU General Public License as
++published by the Free Software Foundation; either version 2 of
++the License or (at your option) version 3 or any later version
++accepted by the membership of KDE e.V. (or its successor approved
++by the membership of KDE e.V.), which shall act as a proxy
++defined in Section 14 of version 3 of the license.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "simpleiplistvalidator.h"
++
++#include <QStringList>
++#include <QVector>
++
++SimpleIpListValidator::SimpleIpListValidator(QObject *parent,
++                                             AddressStyle style,
++                                             AddressType type)
++    : QValidator(parent)
++    , m_ipv6Validator(nullptr)
++    , m_ipv4Validator(nullptr)
++{
++    if (type == Ipv4 || type == Both) {
++        SimpleIpV4AddressValidator::AddressStyle ipv4Style;
++        if (style == Base)
++            ipv4Style = SimpleIpV4AddressValidator::AddressStyle::Base;
++        else if (style == WithCidr)
++            ipv4Style = SimpleIpV4AddressValidator::AddressStyle::WithCidr;
++        else
++            ipv4Style = SimpleIpV4AddressValidator::AddressStyle::WithPort;
++        m_ipv4Validator = new SimpleIpV4AddressValidator(this, ipv4Style);
++    }
++    if (type == Ipv6 || type == Both) {
++        SimpleIpV6AddressValidator::AddressStyle ipv6Style;
++        if (style == Base)
++            ipv6Style = SimpleIpV6AddressValidator::AddressStyle::Base;
++        else if (style == WithCidr)
++            ipv6Style = SimpleIpV6AddressValidator::AddressStyle::WithCidr;
++        else
++            ipv6Style = SimpleIpV6AddressValidator::AddressStyle::WithPort;
++        m_ipv6Validator = new SimpleIpV6AddressValidator(this, ipv6Style);
++    }
++}
++
++SimpleIpListValidator::~SimpleIpListValidator()
++{
++}
++
++QValidator::State SimpleIpListValidator::validate(QString &address, int &pos) const
++{
++    Q_UNUSED(pos)
++
++    // Split the incoming address on commas possibly with spaces on either side
++    QStringList addressList = address.split(",");
++
++    // Use a local variable for position in the validators so it doesn't screw
++    // up the position of the cursor when we return
++    int localPos = 0;
++    QValidator::State result = QValidator::Acceptable;
++
++    for (QString &rawAddr : addressList) {
++        QValidator::State ipv4Result = QValidator::Acceptable;
++        QValidator::State ipv6Result = QValidator::Acceptable;
++
++        QString addr = rawAddr.trimmed();
++
++        // If we are starting a new address and all the previous addressess
++        // are not Acceptable then the previous addresses need to be completed
++        // before a new one is started
++        if (result != QValidator::Acceptable)
++            return QValidator::Invalid;
++
++        // See if it is an IPv4 address. If we are not testing for IPv4
++        // then by definition IPv4 is Invalid
++        if (m_ipv4Validator != nullptr)
++            ipv4Result = m_ipv4Validator->validate(addr, localPos);
++        else
++            ipv4Result = QValidator::Invalid;
++
++        // See if it is an IPv6 address. If we are not testing for IPv6
++        // then by definition IPv6 is Invalid
++        if (m_ipv6Validator != nullptr)
++            ipv6Result = m_ipv6Validator->validate(addr, localPos);
++        else
++            ipv6Result = QValidator::Invalid;
++
++        // If this address is not at least an Intermediate then get out because the list is Invalid
++        if (ipv6Result == QValidator::Invalid && ipv4Result == QValidator::Invalid)
++            return QValidator::Invalid;
++
++        // If either validator judged this address to be Intermediate then that's the best the
++        // final result can be for the whole list. No need to test for Acceptable because
++        // that's the default set on entry and we only downgrade it from there.
++        if (ipv4Result == QValidator::Intermediate || ipv6Result == QValidator::Intermediate)
++            result = QValidator::Intermediate;
++    }
++    return result;
++}
+diff --git a/libs/editor/simpleiplistvalidator.h b/libs/editor/simpleiplistvalidator.h
+new file mode 100644
+index 0000000..fa027c5
+--- /dev/null
++++ b/libs/editor/simpleiplistvalidator.h
+@@ -0,0 +1,46 @@
++/*
++Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++This program is free software; you can redistribute it and/or
++modify it under the terms of the GNU General Public License as
++published by the Free Software Foundation; either version 2 of
++the License or (at your option) version 3 or any later version
++accepted by the membership of KDE e.V. (or its successor approved
++by the membership of KDE e.V.), which shall act as a proxy
++defined in Section 14 of version 3 of the license.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef SIMPLEIPLISTVALIDATOR_H
++#define SIMPLEIPLISTVALIDATOR_H
++
++#include <QValidator>
++#include "simpleipv4addressvalidator.h"
++#include "simpleipv6addressvalidator.h"
++
++class Q_DECL_EXPORT SimpleIpListValidator : public QValidator
++{
++public:
++    enum AddressType {Ipv4, Ipv6, Both};
++    enum AddressStyle {Base, WithCidr, WithPort};
++
++    explicit SimpleIpListValidator(QObject *parent,
++                                   AddressStyle style = AddressStyle::Base,
++                                   AddressType allow = AddressType::Both);
++    ~SimpleIpListValidator() override;
++
++    State validate(QString &, int &) const override;
++
++private:
++    SimpleIpV6AddressValidator *m_ipv6Validator;
++    SimpleIpV4AddressValidator *m_ipv4Validator;
++};
++
++#endif // SIMPLEIPV4ADDRESSVALIDATOR_H
+diff --git a/libs/editor/simpleipv4addressvalidator.cpp b/libs/editor/simpleipv4addressvalidator.cpp
+index 54c4c85..ce0af31 100644
+--- a/libs/editor/simpleipv4addressvalidator.cpp
++++ b/libs/editor/simpleipv4addressvalidator.cpp
+@@ -23,9 +23,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ #include <QStringList>
+ #include <QVector>
+ 
+-SimpleIpV4AddressValidator::SimpleIpV4AddressValidator(QObject *parent)
++SimpleIpV4AddressValidator::SimpleIpV4AddressValidator(QObject *parent, AddressStyle style)
+     : QValidator(parent)
++    , m_addressStyle(style)
+ {
++    switch (style) {
++        case Base:
++            m_validator.setRegularExpression(QRegularExpression(QLatin1String("[0-9, ]{1,3}\\.[0-9, ]{1,3}\\.[0-9, ]{1,3}\\.[0-9, ]{1,3}")));
++            break;
++        case WithCidr:
++            m_validator.setRegularExpression(QRegularExpression(QLatin1String("([0-9]{1,3}\\.){3,3}[0-9]{1,3}/[0-9]{1,2}")));
++            break;
++        case WithPort:
++            m_validator.setRegularExpression(QRegularExpression(QLatin1String("([0-9]{1,3}\\.){3,3}[0-9]{1,3}:[0-9]{1,5}")));
++            break;
++    }
+ }
+ 
+ SimpleIpV4AddressValidator::~SimpleIpV4AddressValidator()
+@@ -34,7 +46,8 @@ SimpleIpV4AddressValidator::~SimpleIpV4AddressValidator()
+ 
+ QValidator::State SimpleIpV4AddressValidator::validate(QString &address, int &pos) const
+ {
+-    if (QValidator::Invalid == checkWithInputMask(address, pos)) {
++    QValidator::State maskResult = checkWithInputMask(address, pos);
++    if (QValidator::Invalid == maskResult) {
+         return QValidator::Invalid;
+     }
+ 
+@@ -42,20 +55,43 @@ QValidator::State SimpleIpV4AddressValidator::validate(QString &address, int &po
+     // some additional correctness checks on the last validation step.
+     QList<int> tetrads;
+ 
+-    return checkTetradsRanges(address, tetrads);
++    QValidator::State tetradResult = checkTetradsRanges(address, tetrads);
++    if (QValidator::Invalid == tetradResult)
++        return QValidator::Invalid;
++    else if (QValidator::Intermediate == tetradResult || QValidator::Intermediate == maskResult)
++        return QValidator::Intermediate;
++    else
++        return QValidator::Acceptable;
+ }
+ 
+ QValidator::State SimpleIpV4AddressValidator::checkWithInputMask(QString &value, int &pos) const
+ {
+-    QRegExpValidator v(QRegExp(QLatin1String("[0-9, ]{1,3}\\.[0-9, ]{1,3}\\.[0-9, ]{1,3}\\.[0-9, ]{1,3}")), nullptr);
+-
+-    return v.validate(value, pos);
++    return m_validator.validate(value, pos);
+ }
+ 
+ QValidator::State SimpleIpV4AddressValidator::checkTetradsRanges(QString &value, QList<int> &tetrads) const
+ {
+     QStringList temp;
+-    const QVector<QStringRef> addrParts = value.splitRef(QLatin1Char('.'));
++    QVector<QStringRef> addrParts;
++    QStringList cidrParts;
++    QStringList portParts;
++
++    switch (m_addressStyle) {
++    case Base:
++        addrParts = value.splitRef(QLatin1Char('.'));
++        break;
++
++    case WithCidr:
++        cidrParts = value.split(QLatin1Char('/'));
++        addrParts = cidrParts[0].splitRef(QLatin1Char('.'));
++        break;
++
++    case WithPort:
++        portParts = value.split(QLatin1Char(':'));
++        addrParts = portParts[0].splitRef(QLatin1Char('.'));
++        break;
++    }
++
+     int i = 0;
+     // fill in the list with invalid values
+     tetrads << -1 << -1 << -1 << -1;
+@@ -93,6 +129,40 @@ QValidator::State SimpleIpV4AddressValidator::checkTetradsRanges(QString &value,
+         return QValidator::Intermediate;
+     }
+     else {
++        if (m_addressStyle == WithCidr) {
++            if (cidrParts.size() > 1) {
++                value += QLatin1String("/");
++                if (!cidrParts[1].isEmpty()) {
++                    int cidrValue = cidrParts[1].toInt();
++                    if (cidrValue > 32) {
++                        return QValidator::Invalid;
++                    } else {
++                        value += cidrParts[1];
++                        return QValidator::Acceptable;
++                    }
++                }
++                else {
++                    return QValidator::Intermediate;
++                }
++            }
++        } else if (m_addressStyle == WithPort) {
++            if (portParts.size() > 1) {
++                value += QLatin1String(":");
++                if (!portParts[1].isEmpty()) {
++                    int portValue = portParts[1].toInt();
++                    if (portValue > 65535) {
++                        return QValidator::Invalid;
++                    } else {
++                        value += portParts[1];
++                        return QValidator::Acceptable;
++                    }
++                }
++                else {
++                    return QValidator::Intermediate;
++                }
++            }
++        }
++
+         // qCDebug(PLASMA_NM) << "QValidator::Acceptable";
+         return QValidator::Acceptable;
+     }
+diff --git a/libs/editor/simpleipv4addressvalidator.h b/libs/editor/simpleipv4addressvalidator.h
+index ce31454..3645995 100644
+--- a/libs/editor/simpleipv4addressvalidator.h
++++ b/libs/editor/simpleipv4addressvalidator.h
+@@ -26,7 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ class Q_DECL_EXPORT SimpleIpV4AddressValidator : public QValidator
+ {
+ public:
+-    explicit SimpleIpV4AddressValidator(QObject *parent);
++    enum AddressStyle {Base, WithCidr, WithPort};
++
++    explicit SimpleIpV4AddressValidator(QObject *parent, AddressStyle style = AddressStyle::Base);
+     ~SimpleIpV4AddressValidator() override;
+ 
+     State validate(QString &, int &) const override;
+@@ -38,6 +40,9 @@ public:
+      *  In the tetrads are placed into QList. Input string may be changed.
+      */
+     QValidator::State checkTetradsRanges(QString &, QList<int>&) const;
++private:
++    AddressStyle m_addressStyle;
++    QRegularExpressionValidator m_validator;
+ };
+ 
+ #endif // SIMPLEIPV4ADDRESSVALIDATOR_H
+diff --git a/libs/editor/simpleipv6addressvalidator.cpp b/libs/editor/simpleipv6addressvalidator.cpp
+index 8fe1362..483c4f5 100644
+--- a/libs/editor/simpleipv6addressvalidator.cpp
++++ b/libs/editor/simpleipv6addressvalidator.cpp
+@@ -21,10 +21,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ #include "simpleipv6addressvalidator.h"
+ 
+ #include <QStringList>
++#include <QVector>
+ 
+-SimpleIpV6AddressValidator::SimpleIpV6AddressValidator(QObject *parent)
++SimpleIpV6AddressValidator::SimpleIpV6AddressValidator(QObject *parent, AddressStyle style)
+     : QValidator(parent)
++    , m_addressStyle(style)
+ {
++    switch (style) {
++        case Base:
++            m_validator.setRegularExpression(QRegularExpression(QLatin1String("([0-9a-fA-F]{1,4}|:)+")));
++            break;
++        case WithCidr:
++            m_validator.setRegularExpression(QRegularExpression(QLatin1String("([0-9a-fA-F]{1,4}|:){2,15}/[0-9]{1,3}")));
++            break;
++        case WithPort:
++            m_validator.setRegularExpression(QRegularExpression(QLatin1String("\\[([0-9a-fA-F]{1,4}|:)+\\]:[0-9]{1,5}")));
++    }
+ }
+ 
+ SimpleIpV6AddressValidator::~SimpleIpV6AddressValidator()
+@@ -42,30 +54,76 @@ QValidator::State SimpleIpV6AddressValidator::validate(QString &address, int &po
+ 
+ QValidator::State SimpleIpV6AddressValidator::checkWithInputMask(QString &value, int &pos) const
+ {
+-    QRegExpValidator v(QRegExp(QLatin1String("([0-9a-fA-F]{1,4}|:)+")), nullptr);
+-
+-    return v.validate(value, pos);
++    return  m_validator.validate(value, pos);
+ }
+ 
+ QValidator::State SimpleIpV6AddressValidator::checkTetradsRanges(QString &value) const
+ {
+-    const QStringList addrParts = value.split(QLatin1Char(':'));
++    QStringList addrParts;
++    QStringList cidrParts;
++    QStringList portParts;
++    bool foundBracket = false;
++    QValidator::State result = QValidator::Acceptable;
++
++    switch (m_addressStyle) {
++    case Base:
++        addrParts = value.split(QLatin1Char(':'));
++        break;
++
++    case WithCidr:
++        cidrParts = value.split(QLatin1Char('/'));
++        addrParts = cidrParts[0].split(QLatin1Char(':'));
++        break;
++
++    case WithPort:
++      if (value.isEmpty())
++          return QValidator::Intermediate;
++      if (value[0] != '[') {
++          return QValidator::Invalid;
++      } else {
++          // Input: "[1:2:3:4:5:6:7:8]:123"
++          // bracketParts: "[1:2:3:4:5:6:7:8" , ":123"
++          // addrParts: "" , "1:2:3:4:5:6:7:8"
++          // portParts: "", "123"
++          QStringList bracketParts = value.split(QLatin1Char(']'));
++          if (bracketParts.size() < 2)
++              portParts = QStringList();
++          else {
++              foundBracket = true;
++              if (!bracketParts[1].isEmpty() && bracketParts[1][0] != ':')
++                  return QValidator::Invalid;
++              else
++                  portParts = bracketParts[1].split(QLatin1Char(':'));
++          }
++          addrParts = bracketParts[0].split(QLatin1Char('['))[1].split(QLatin1Char(':'));
++      }
++    }
++
+     int number = addrParts.size();
+-    if (number > 8) {
++    // There is no case where can be more than 8 colons (9 parts)
++    // and only one unusual case where there are 8 colons (1:2:3:4:5:6:7::)
++    if (number > 9)
++        return QValidator::Invalid;
++    else if (number == 9 && (!addrParts[7].isEmpty() || !addrParts[8].isEmpty()))
+         return QValidator::Invalid;
+-    }
+ 
+     // lets check address parts
+     bool emptypresent = false;
+     int i = 1;
+-    Q_FOREACH (QString part, addrParts) { // krazy:exclude=Q_FOREACH 
++    Q_FOREACH (QString part, addrParts) { // krazy:exclude=Q_FOREACH
+         if (part.isEmpty() && i < number) {
+-            if (emptypresent) {
++            // There is only one case where you can have 3 empty parts
++            // and that is when you have the string: "::" which is valid
++            // and useful and of course it can also be extended to ::123 for
++            // instance. Anywhere other than the beginning though, having 3 empty
++            // parts indicates either a run of 3 colons ("1:::6")" or two sets of
++            // 2 colons ("1:2::3:4::") which are always invalid
++            if (emptypresent && i != 2) {
+                 // qCDebug(PLASMA_NM) << "part.isEmpty()";
+                 return QValidator::Invalid;
+-            }
+-            else if (!emptypresent)
+-            {
++            } else {
++                // If this is an empty part then set it to zero to not fail
++                // the next test
+                 part.setNum(0,16);
+                 emptypresent = true;
+             }
+@@ -78,8 +136,52 @@ QValidator::State SimpleIpV6AddressValidator::checkTetradsRanges(QString &value)
+         }
+     }
+ 
+-    if (number < 8 && !emptypresent)
+-        return QValidator::Intermediate;
++    // A special case: a single colon needs to be  Intermediate not Acceptable
++    if (number == 2 && addrParts[0].isEmpty() && addrParts[1].isEmpty())
++        result = QValidator::Intermediate;
++
++    // Another special case: a single colon followed by something (i.e. ":123"
++    // is invalid
++    else if (number > 1 && addrParts[0].isEmpty() && !addrParts[1].isEmpty())
++        result =  QValidator::Invalid;
++
++    // If we don't have 8 parts yet and none of them are empty we aren't done yet
++    else if (number < 8 && !emptypresent)
++        result = QValidator::Intermediate;
++
++    // If we have 8 parts but the last one is empty we aren't done yet
++    else if (number == 8 && addrParts[7].isEmpty())
++        result =  QValidator::Intermediate;
++
++    if (m_addressStyle == WithCidr) {
++        int cidrSize = cidrParts.size();
+ 
+-    return QValidator::Acceptable;
++        // If we have a '/' and the basic address portion is not
++        // yet complete (i.e. Intermediate) then the whole thing  is Invalid
++        if (cidrSize == 2 && result == QValidator::Intermediate)
++            return QValidator::Invalid;
++
++        if (cidrSize == 1 || (cidrSize == 2 && cidrParts[1].isEmpty()))
++            return QValidator::Intermediate;
++
++        int cidrValue = cidrParts[1].toInt();
++        if (cidrValue > 128)
++            return QValidator::Invalid;
++    } else if (m_addressStyle == WithPort) {
++        int portSize = portParts.size();
++
++        // If we have a ']' and the basic address portion is not
++        // yet complete (i.e. Intermediate) then the whole thing  is Invalid
++        if (foundBracket && result == QValidator::Intermediate)
++            return QValidator::Invalid;
++
++        if (portSize < 2 || (portSize == 2 && portParts[1].isEmpty())) {
++            return QValidator::Intermediate;
++        } else {
++            int portValue = portParts[1].toInt();
++            if (portValue > 65535)
++                return QValidator::Invalid;
++        }
++    }
++    return result;
+ }
+diff --git a/libs/editor/simpleipv6addressvalidator.h b/libs/editor/simpleipv6addressvalidator.h
+index 829fafb..0767e46 100644
+--- a/libs/editor/simpleipv6addressvalidator.h
++++ b/libs/editor/simpleipv6addressvalidator.h
+@@ -26,7 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ class Q_DECL_EXPORT SimpleIpV6AddressValidator : public QValidator
+ {
+ public:
+-    explicit SimpleIpV6AddressValidator(QObject *parent);
++    enum AddressStyle {Base, WithCidr, WithPort};
++
++    explicit SimpleIpV6AddressValidator(QObject *parent, AddressStyle style = AddressStyle::Base);
+     ~SimpleIpV6AddressValidator() override;
+ 
+     State validate(QString &, int &) const override;
+@@ -38,6 +40,9 @@ public:
+      *  In the tetrads are placed into QList. Input string may be changed.
+      */
+     QValidator::State checkTetradsRanges(QString &) const;
++private:
++    AddressStyle m_addressStyle;
++    QRegularExpressionValidator m_validator;
+ };
+ 
+ #endif // SIMPLEIPV6ADDRESSVALIDATOR_H
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+new file mode 100644
+index 0000000..3ccc74c
+--- /dev/null
++++ b/tests/CMakeLists.txt
+@@ -0,0 +1,30 @@
++set( EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR} )
++
++include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/.. )
++
++########### next target ###############
++
++include(ECMAddTests)
++
++ecm_add_test(
++    simpleipv6test.cpp
++    ${CMAKE_CURRENT_SOURCE_DIR}/../libs/editor/simpleipv6addressvalidator.cpp
++    TEST_NAME simpleipv6test
++    LINK_LIBRARIES Qt5::Test  Qt5::Widgets
++)
++
++ecm_add_test(
++    simpleipv4test.cpp
++    ${CMAKE_CURRENT_SOURCE_DIR}/../libs/editor/simpleipv4addressvalidator.cpp
++    TEST_NAME simpleipv4test
++    LINK_LIBRARIES Qt5::Test  Qt5::Widgets
++)
++
++ecm_add_test(
++    simpleiplisttest.cpp
++    ${CMAKE_CURRENT_SOURCE_DIR}/../libs/editor/simpleipv4addressvalidator.cpp
++    ${CMAKE_CURRENT_SOURCE_DIR}/../libs/editor/simpleipv6addressvalidator.cpp
++    ${CMAKE_CURRENT_SOURCE_DIR}/../libs/editor/simpleiplistvalidator.cpp
++    TEST_NAME simpleiplisttest
++    LINK_LIBRARIES Qt5::Test  Qt5::Widgets
++)
+diff --git a/tests/simpleiplisttest.cpp b/tests/simpleiplisttest.cpp
+new file mode 100644
+index 0000000..b3cabde
+--- /dev/null
++++ b/tests/simpleiplisttest.cpp
+@@ -0,0 +1,136 @@
++/*
++Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++This program is free software; you can redistribute it and/or
++modify it under the terms of the GNU General Public License as
++published by the Free Software Foundation; either version 2 of
++the License or (at your option) version 3 or any later version
++accepted by the membership of KDE e.V. (or its successor approved
++by the membership of KDE e.V.), which shall act as a proxy
++defined in Section 14 of version 3 of the license.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "simpleiplistvalidator.h"
++#include <QTest>
++
++class SimpleipListTest : public QObject
++{
++    Q_OBJECT
++
++public:
++    SimpleipListTest();
++
++private slots:
++    void baseTest();
++    void baseTest_data();
++    void cidrTest();
++    void cidrTest_data();
++    void portTest();
++    void portTest_data();
++
++private:
++    SimpleIpListValidator m_vb;
++    SimpleIpListValidator m_vc;
++    SimpleIpListValidator m_vp;
++};
++
++SimpleipListTest::SimpleipListTest()
++    : m_vb(nullptr, SimpleIpListValidator::AddressStyle::Base)
++    , m_vc(nullptr, SimpleIpListValidator::AddressStyle::WithCidr)
++    , m_vp(nullptr, SimpleIpListValidator::AddressStyle::WithPort)
++{
++}
++
++Q_DECLARE_METATYPE(QValidator::State)
++
++void SimpleipListTest::baseTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("") << "" << QValidator::Intermediate;
++    QTest::newRow("123.12.2") << "123.12.2" << QValidator::Intermediate;
++    QTest::newRow("123.12.2,") << "123.12.2," << QValidator::Invalid;
++    QTest::newRow("123.45.22.9") << "123.45.22.9" << QValidator::Acceptable;
++    QTest::newRow("123.45.22.9,") << "123.45.22.9," << QValidator::Intermediate;
++    QTest::newRow("123.45.22.9,  ") << "123.45.22.9,  " << QValidator::Intermediate;
++    QTest::newRow("123.45.22,") << "123.45.22," << QValidator::Invalid;
++    QTest::newRow("123.45.22.9,  BBEf:0112") << "123.45.22.9,  BBEf:0112" << QValidator::Intermediate;
++    QTest::newRow("123.45.22.9,  BBEf:0112::1") << "123.45.22.9,  BBEf:0112::1" << QValidator::Acceptable;
++    QTest::newRow("123.45.22.9,  BBEf:0112:,") << "123.45.22.9,  BBEf:0112:," << QValidator::Invalid;
++    QTest::newRow("123.45.22.9,  BBEf:0112::1,") << "123.45.22.9,  BBEf:0112::1," << QValidator::Intermediate;
++    QTest::newRow("123.45.22.9,  BBEf:0112::1/123,") << "123.45.22.9,  BBEf:0112::1/123," << QValidator::Invalid;
++    QTest::newRow("123.45.22.9,  BBEf:0112::1,1.2.3.4") << "123.45.22.9,  BBEf:0112::1,1.2.3.4" << QValidator::Acceptable;
++}    
++
++void SimpleipListTest::baseTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vb.validate(address, pos), result);
++}
++
++void SimpleipListTest::cidrTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("10.77.18.4/32") << "10.77.18.4/32" << QValidator::Acceptable;
++    QTest::newRow("10.77.18.4/32,") << "10.77.18.4/32," << QValidator::Intermediate;
++    QTest::newRow("10.77.18.4/32,Be00:e00:0:") << "10.77.18.4/32,Be00:e00:0:" << QValidator::Intermediate;
++    QTest::newRow("10.77.18.4/32,Be00:e00:0:21/3") << "10.77.18.4/32,Be00:e00:0:21/3" << QValidator::Invalid;
++    QTest::newRow("10.77.18.4/32,Be00:e00::0:21/128") << "10.77.18.4/32,Be00:e00::0:21/128" << QValidator::Acceptable;
++    QTest::newRow("10.77.18.4/32,Be00:e00::0:21/129") << "10.77.18.4/32,Be00:e00::0:21/129" << QValidator::Invalid;
++}
++
++void SimpleipListTest::cidrTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vc.validate(address, pos), result);
++}
++
++void SimpleipListTest::portTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("10.77.18.4:32") << "10.77.18.4:32" << QValidator::Acceptable;
++    QTest::newRow("10.77.18.4:,") << "10.77.18.4:," << QValidator::Invalid;
++    QTest::newRow("10.77.18.4:234, 1") << "10.77.18.4:234, 1" << QValidator::Intermediate;
++    QTest::newRow("10.77.18.4:234, 1b") << "10.77.18.4:234, 1b" << QValidator::Invalid;
++    QTest::newRow("10.77.18.4:234, [1b") << "10.77.18.4:234, [1b" << QValidator::Intermediate;
++    QTest::newRow("10.77.18.4:234, [10:33:22::1") << "10.77.18.4:234, [10:33:22::1" << QValidator::Intermediate;
++    QTest::newRow("10.77.18.4:234, [10:33:22::1]") << "10.77.18.4:234, [10:33:22::1]" << QValidator::Intermediate;
++    QTest::newRow("10.77.18.4:234, [10:33:22::1]:") << "10.77.18.4:234, [10:33:22::1]:" << QValidator::Intermediate;
++    QTest::newRow("10.77.18.4:234, [10:33:22::1]:22") << "10.77.18.4:234, [10:33:22::1]:22" << QValidator::Acceptable;
++    QTest::newRow("10.77.18.4:234, [10:33:22::1]:22,12.23.34.45:65535") << "10.77.18.4:234, [10:33:22::1]:22,12.23.34.45:65535" << QValidator::Acceptable;
++}
++
++void SimpleipListTest::portTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vp.validate(address, pos), result);
++}
++
++QTEST_GUILESS_MAIN(SimpleipListTest)
++
++#include "simpleiplisttest.moc"
+diff --git a/tests/simpleipv4test.cpp b/tests/simpleipv4test.cpp
+new file mode 100644
+index 0000000..b3db71d
+--- /dev/null
++++ b/tests/simpleipv4test.cpp
+@@ -0,0 +1,152 @@
++/*
++Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++This program is free software; you can redistribute it and/or
++modify it under the terms of the GNU General Public License as
++published by the Free Software Foundation; either version 2 of
++the License or (at your option) version 3 or any later version
++accepted by the membership of KDE e.V. (or its successor approved
++by the membership of KDE e.V.), which shall act as a proxy
++defined in Section 14 of version 3 of the license.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "simpleipv4addressvalidator.h"
++#include <QTest>
++
++class SimpleIpv4Test : public QObject
++{
++    Q_OBJECT
++
++public:
++    SimpleIpv4Test();
++
++private slots:
++    void baseTest();
++    void baseTest_data();
++    void cidrTest();
++    void cidrTest_data();
++    void portTest();
++    void portTest_data();
++
++private:
++    SimpleIpV4AddressValidator m_vb;
++    SimpleIpV4AddressValidator m_vc;
++    SimpleIpV4AddressValidator m_vp;
++};
++
++
++SimpleIpv4Test::SimpleIpv4Test()
++    : m_vb(nullptr, SimpleIpV4AddressValidator::AddressStyle::Base)
++    , m_vc(nullptr, SimpleIpV4AddressValidator::AddressStyle::WithCidr)
++    , m_vp(nullptr, SimpleIpV4AddressValidator::AddressStyle::WithPort)
++{
++}
++
++Q_DECLARE_METATYPE(QValidator::State)
++
++void SimpleIpv4Test::baseTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("empty string") << "" << QValidator::Intermediate;
++    QTest::newRow("123.12.2") << "123.12.2" << QValidator::Intermediate;
++    QTest::newRow("123.45.22.9") << "123.45.22.9" << QValidator::Acceptable;
++    QTest::newRow("1") << "1" << QValidator::Intermediate;
++    QTest::newRow("12") << "12" << QValidator::Intermediate;
++    QTest::newRow("123") << "123" << QValidator::Intermediate;
++    QTest::newRow("123.") << "123." << QValidator::Intermediate;
++    QTest::newRow("123.4") << "123.4" << QValidator::Intermediate;
++    QTest::newRow("123.54") << "123.54" << QValidator::Intermediate;
++    QTest::newRow("123.54.") << "123.54." << QValidator::Intermediate;
++    QTest::newRow("123.255") << "123.255" << QValidator::Intermediate;
++    QTest::newRow("123.255.") << "123.255." << QValidator::Intermediate;
++    QTest::newRow("123.123.9") << "123.123.9" << QValidator::Intermediate;
++    QTest::newRow("123.34.99") << "123.34.99" << QValidator::Intermediate;
++    QTest::newRow("123.22.233") << "123.22.233" << QValidator::Intermediate;
++    QTest::newRow("255.255.255.") << "255.255.255." << QValidator::Intermediate;
++    QTest::newRow("1.1.1.7") << "1.1.1.7" << QValidator::Acceptable;
++    QTest::newRow("12a") << "12a" << QValidator::Invalid;
++    QTest::newRow("255") << "255" << QValidator::Intermediate;
++    QTest::newRow("256") << "256" << QValidator::Invalid;
++    QTest::newRow("255.255.255.255") << "255.255.255.255" << QValidator::Acceptable;
++    QTest::newRow("256.255.255.255") << "256.255.255.255" << QValidator::Invalid;
++    QTest::newRow("255.256.255.255") << "255.256.255.255" << QValidator::Invalid;
++    QTest::newRow("255.255.256.255") << "255.255.256.255" << QValidator::Invalid;
++    QTest::newRow("255.255.255.256") << "255.255.255.256" << QValidator::Invalid;
++    QTest::newRow("1.1.1.1.") << "1.1.1.1." << QValidator::Invalid;
++}
++
++void SimpleIpv4Test::baseTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vb.validate(address, pos), result);
++}
++
++void SimpleIpv4Test::cidrTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("10.77.18.4/32") << "10.77.18.4/32" << QValidator::Acceptable;
++    QTest::newRow("10.77.18.4/33") << "10.77.18.4/33" << QValidator::Invalid;
++    QTest::newRow("10.77.14.8") << "10.77.14.8" << QValidator::Intermediate;
++    QTest::newRow("10.77.13/") << "10.77.13/" << QValidator::Invalid;
++    QTest::newRow("33.22.55.44/") << "33.22.55.44/" << QValidator::Intermediate;
++    QTest::newRow("11.23.45./") << "11.23.45./" << QValidator::Invalid;
++    QTest::newRow("0.0.0.0/0") << "0.0.0.0/0" << QValidator::Acceptable;
++    QTest::newRow("1.2.3.4/28/") << "1.2.3.4/28/" << QValidator::Invalid;
++    QTest::newRow("1.2.3.4//") << "1.2.3.4//" << QValidator::Invalid;
++}
++
++void SimpleIpv4Test::cidrTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vc.validate(address, pos), result);
++}
++
++void SimpleIpv4Test::portTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("10.77.18.4:32") << "10.77.18.4:32" << QValidator::Acceptable;
++    QTest::newRow("10.77.18.4:65536") << "10.77.18.4:65536" << QValidator::Invalid;
++    QTest::newRow("10.77.18.4") << "10.77.18.4" << QValidator::Intermediate;
++    QTest::newRow("10.77.13:") << "10.77.13:" << QValidator::Invalid;
++    QTest::newRow("33.22.55.44:") << "33.22.55.44:" << QValidator::Intermediate;
++    QTest::newRow("11.23.45.:") << "11.23.45.:" << QValidator::Invalid;
++    QTest::newRow("0.0.0.0:65535") << "0.0.0.0:65535" << QValidator::Acceptable;
++    QTest::newRow("1.2.3.4:0:") << "1.2.3.4:0:" << QValidator::Invalid;
++    QTest::newRow("1.2.3.4::") << "1.2.3.4::" << QValidator::Invalid;
++}
++
++void SimpleIpv4Test::portTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vp.validate(address, pos), result);
++}
++
++QTEST_APPLESS_MAIN(SimpleIpv4Test)
++
++#include "simpleipv4test.moc"
+diff --git a/tests/simpleipv6test.cpp b/tests/simpleipv6test.cpp
+new file mode 100644
+index 0000000..2a049c0
+--- /dev/null
++++ b/tests/simpleipv6test.cpp
+@@ -0,0 +1,192 @@
++/*
++Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++This program is free software; you can redistribute it and/or
++modify it under the terms of the GNU General Public License as
++published by the Free Software Foundation; either version 2 of
++the License or (at your option) version 3 or any later version
++accepted by the membership of KDE e.V. (or its successor approved
++by the membership of KDE e.V.), which shall act as a proxy
++defined in Section 14 of version 3 of the license.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "simpleipv6addressvalidator.h"
++#include <QTest>
++
++class SimpleIpv6Test : public QObject
++{
++    Q_OBJECT
++
++public:
++    SimpleIpv6Test();
++
++private slots:
++    void baseTest();
++    void baseTest_data();
++    void cidrTest();
++    void cidrTest_data();
++    void portTest();
++    void portTest_data();
++
++private:
++    SimpleIpV6AddressValidator m_vb;
++    SimpleIpV6AddressValidator m_vc;
++    SimpleIpV6AddressValidator m_vp;
++};
++
++SimpleIpv6Test::SimpleIpv6Test()
++    : m_vb(nullptr, SimpleIpV6AddressValidator::AddressStyle::Base)
++    , m_vc(nullptr, SimpleIpV6AddressValidator::AddressStyle::WithCidr)
++    , m_vp(nullptr, SimpleIpV6AddressValidator::AddressStyle::WithPort)
++{
++}
++
++Q_DECLARE_METATYPE(QValidator::State)
++
++void SimpleIpv6Test::baseTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++
++    QTest::newRow("null string") << "" << QValidator::Intermediate;
++    QTest::newRow("0123:4567:89ab:cdef") << "0123:4567:89ab:cdef" << QValidator::Intermediate;
++    QTest::newRow("0123:4567:89ab:cdef:0123:4567:89ab:cdef") << "0123:4567:89ab:cdef:0123:4567:89ab:cdef" << QValidator::Acceptable;
++    QTest::newRow("1") << "1" << QValidator::Intermediate;
++    QTest::newRow("12") << "12" << QValidator::Intermediate;
++    QTest::newRow("123") << "123" << QValidator::Intermediate;
++    QTest::newRow("1234") << "1234" << QValidator::Intermediate;
++    QTest::newRow("1234:") << "1234:" << QValidator::Intermediate;
++    QTest::newRow("1234:1") << "1234:1" << QValidator::Intermediate;
++    QTest::newRow("1234:12") << "1234:12" << QValidator::Intermediate;
++    QTest::newRow("1234:123") << "1234:123" << QValidator::Intermediate;
++    QTest::newRow("1234:1234") << "1234:1234" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:") << "1234:1234:" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1") << "1234:1234:1" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:12") << "1234:1234:12" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:123") << "1234:1234:123" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234") << "1234:1234:1234" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:") << "1234:1234:1234:" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1") << "1234:1234:1234:1" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:12") << "1234:1234:1234:12" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:123") << "1234:1234:1234:123" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234") << "1234:1234:1234:1234" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:") << "1234:1234:1234:1234:" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1") << "1234:1234:1234:1234:1" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:12") << "1234:1234:1234:1234:12" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:123") << "1234:1234:1234:1234:123" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234") << "1234:1234:1234:1234:1234" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:") << "1234:1234:1234:1234:1234:" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1") << "1234:1234:1234:1234:1234:1" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:12") << "1234:1234:1234:1234:1234:12" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:123") << "1234:1234:1234:1234:1234:123" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234") << "1234:1234:1234:1234:1234:1234" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:") << "1234:1234:1234:1234:1234:1234:" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:1") << "1234:1234:1234:1234:1234:1234:1" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:12") << "1234:1234:1234:1234:1234:1234:12" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:123") << "1234:1234:1234:1234:1234:1234:123" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:1234") << "1234:1234:1234:1234:1234:1234:1234" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:1234:") << "1234:1234:1234:1234:1234:1234:1234:" << QValidator::Intermediate;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:1234:1") << "1234:1234:1234:1234:1234:1234:1234:1" << QValidator::Acceptable;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:1234:12") << "1234:1234:1234:1234:1234:1234:1234:12" << QValidator::Acceptable;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:1234:123") << "1234:1234:1234:1234:1234:1234:1234:123" << QValidator::Acceptable;
++    QTest::newRow("1234:1234:1234:1234:1234:1234:1234:1234") << "1234:1234:1234:1234:1234:1234:1234:1234" << QValidator::Acceptable;
++    QTest::newRow(":") << ":" << QValidator::Intermediate;
++    QTest::newRow("::") << "::" << QValidator::Acceptable;
++    QTest::newRow("::1:2:3:4") << "::1:2:3:4" << QValidator::Acceptable;
++    QTest::newRow("1::2:3:4") << "1::2:3:4" << QValidator::Acceptable;
++    QTest::newRow("1:2345::6:7") << "1:2345::6:7" << QValidator::Acceptable;
++    QTest::newRow("1:2:3::1:1:1") << "1:2:3::1:1:1" << QValidator::Acceptable;
++    QTest::newRow("1:2:3:4::1") << "1:2:3:4::1" << QValidator::Acceptable;
++    QTest::newRow("1:2:3:4:5::1") << "1:2:3:4:5::1" << QValidator::Acceptable;
++    QTest::newRow("1:2:3:4:5:6::1") << "1:2:3:4:5:6::1" << QValidator::Acceptable;
++    QTest::newRow("1:2:3:4:5:6:7::") << "1:2:3:4:5:6:7::" << QValidator::Acceptable;
++    QTest::newRow("1::") << "1::" << QValidator::Acceptable;
++    QTest::newRow("::1:2:3:4") << "::1:2:3:4" << QValidator::Acceptable;
++    QTest::newRow("::1:2:3::4") << "::1:2:3::4" << QValidator::Invalid;
++    QTest::newRow("1:2::3:4:5:6:7:") << "1:2::3:4:5:6:7:" << QValidator::Invalid;
++    QTest::newRow("1:2::3:4:5:6:7:8") << "1:2::3:4:5:6:7:8" << QValidator::Invalid;
++    QTest::newRow(":1") << ":1" << QValidator::Invalid;
++    QTest::newRow("0123:4567:89ab:cdef:0123:4567:89ab:cdeg") << "0123:4567:89ab:cdef:0123:4567:89ab:cdeg" << QValidator::Invalid;
++    QTest::newRow("0123:4567:89ab:cdef:0123:4567:89ab:cde.") << "0123:4567:89ab:cdef:0123:4567:89ab:cde." << QValidator::Invalid;
++    QTest::newRow("0123:4567:89ab:cdef:0123:4567:89ab:cden") << "0123:4567:89ab:cdef:0123:4567:89ab:cden" << QValidator::Invalid;
++    QTest::newRow("0n") << "0n" << QValidator::Invalid;
++}
++
++void SimpleIpv6Test::baseTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vb.validate(address, pos), result);
++}
++
++void SimpleIpv6Test::cidrTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("1234:2345:3456:4567:5678:6789:789A:89ab/128") << "1234:2345:3456:4567:5678:6789:789A:89ab/128" << QValidator::Acceptable;
++    QTest::newRow("") << "" << QValidator::Intermediate;
++    QTest::newRow("1234:2345::6789:789A:89ab/28") << "1234:2345::6789:789A:89ab/28" << QValidator::Acceptable;
++    QTest::newRow("1234:2345:3456:4567:5678:6789:789A:89ab/129") << "1234:2345:3456:4567:5678:6789:789A:89ab/129" << QValidator::Invalid;
++    QTest::newRow("1234:2345:3456:4567:5678:6789:789A:89ab/") << "1234:2345:3456:4567:5678:6789:789A:89ab/" << QValidator::Intermediate;
++    QTest::newRow("1234:2345:3456:4567:5678:6789:789A/") << "1234:2345:3456:4567:5678:6789:789A/" << QValidator::Invalid;
++    QTest::newRow("1234:2345:/") << "1234:2345:/" << QValidator::Invalid;
++    QTest::newRow("1234:2345::6789:789A:89ab") << "1234:2345::6789:789A:89ab" << QValidator::Intermediate;
++    QTest::newRow("::/0") << "::/0" << QValidator::Acceptable;
++    QTest::newRow("1234:2345::6789:789A:89ab/28/") << "1234:2345::6789:789A:89ab/28/" << QValidator::Invalid;
++    QTest::newRow("1234:2345::6789:789A:89ab//") << "1234:2345::6789:789A:89ab//" << QValidator::Invalid;
++}
++
++void SimpleIpv6Test::cidrTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vc.validate(address, pos), result);
++}
++
++void SimpleIpv6Test::portTest_data()
++{
++    QTest::addColumn<QString>("address");
++    QTest::addColumn<QValidator::State>("result");
++
++    QTest::newRow("") << "" << QValidator::Intermediate;
++    QTest::newRow("1") << "1" << QValidator::Invalid;
++    QTest::newRow("[1") << "[1" << QValidator::Intermediate;
++    QTest::newRow("[1123:22:44:11]") << "[1123:22:44:11]" << QValidator::Invalid;
++    QTest::newRow("[1234:2345::6789:789A:89ab]") << "[1234:2345::6789:789A:89ab]" << QValidator::Intermediate;
++    QTest::newRow("[1234:2345::6789:789A:89ab]:") << "[1234:2345::6789:789A:89ab]:" << QValidator::Intermediate;
++    QTest::newRow("[1234:2345::6789:789A:89ab]:a") << "[1234:2345::6789:789A:89ab]:a" << QValidator::Invalid;
++    QTest::newRow("[1234:2345::6789:789A:89ab]:12") << "[1234:2345::6789:789A:89ab]:12" << QValidator::Acceptable;
++    QTest::newRow("[1234:2345::6789:789A:89ab]:65535") << "[1234:2345::6789:789A:89ab]:65535" << QValidator::Acceptable;
++    QTest::newRow("[1234:2345::6789:789A:89ab]:65536") << "[1234:2345::6789:789A:89ab]:65536" << QValidator::Invalid;
++}
++
++
++void SimpleIpv6Test::portTest()
++{
++    int pos;
++
++    QFETCH(QString, address);
++    QFETCH(QValidator::State, result);
++
++    QCOMPARE(m_vp.validate(address, pos), result);
++}
++
++QTEST_GUILESS_MAIN(SimpleIpv6Test)
++
++#include "simpleipv6test.moc"
+-- 
+cgit v1.1
+

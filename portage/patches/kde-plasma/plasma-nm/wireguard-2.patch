@@ -1,0 +1,2065 @@
+From 389a5e195bce4c2da3fef750c7cc18425c491e29 Mon Sep 17 00:00:00 2001
+From: Bruce Anderson <banderson19com@san.rr.com>
+Date: Wed, 7 Nov 2018 09:33:35 +0100
+Subject: Add WireGuard capability.
+
+Summary:
+FEATURE: 397572
+FIXED-IN: 5.14.0
+
+Reviewers: #plasma, jgrulich, pino
+
+Reviewed By: jgrulich
+
+Subscribers: acrouthamel, K900, pino, lbeltrame, ngraham, plasma-devel
+
+Tags: #plasma
+
+Differential Revision: https://phabricator.kde.org/D15093
+---
+ libs/models/kcmidentitymodel.cpp                   |   4 +-
+ vpn/CMakeLists.txt                                 |   1 +
+ vpn/wireguard/CMakeLists.txt                       |  31 ++
+ vpn/wireguard/nm-wireguard-service.h               |  48 +++
+ .../plasmanetworkmanagement_wireguardui.desktop    |  17 +
+ vpn/wireguard/wireguard.cpp                        | 381 +++++++++++++++++++++
+ vpn/wireguard/wireguard.h                          |  44 +++
+ vpn/wireguard/wireguard.ui                         | 199 +++++++++++
+ vpn/wireguard/wireguardadvanced.ui                 | 252 ++++++++++++++
+ vpn/wireguard/wireguardadvancedwidget.cpp          | 264 ++++++++++++++
+ vpn/wireguard/wireguardadvancedwidget.h            |  59 ++++
+ vpn/wireguard/wireguardauth.cpp                    |  56 +++
+ vpn/wireguard/wireguardauth.h                      |  43 +++
+ vpn/wireguard/wireguardauth.ui                     |  31 ++
+ vpn/wireguard/wireguardkeyvalidator.cpp            |  39 +++
+ vpn/wireguard/wireguardkeyvalidator.h              |  38 ++
+ vpn/wireguard/wireguardwidget.cpp                  | 324 ++++++++++++++++++
+ vpn/wireguard/wireguardwidget.h                    |  60 ++++
+ 18 files changed, 1890 insertions(+), 1 deletion(-)
+ create mode 100644 vpn/wireguard/CMakeLists.txt
+ create mode 100644 vpn/wireguard/nm-wireguard-service.h
+ create mode 100644 vpn/wireguard/plasmanetworkmanagement_wireguardui.desktop
+ create mode 100644 vpn/wireguard/wireguard.cpp
+ create mode 100644 vpn/wireguard/wireguard.h
+ create mode 100644 vpn/wireguard/wireguard.ui
+ create mode 100644 vpn/wireguard/wireguardadvanced.ui
+ create mode 100644 vpn/wireguard/wireguardadvancedwidget.cpp
+ create mode 100644 vpn/wireguard/wireguardadvancedwidget.h
+ create mode 100644 vpn/wireguard/wireguardauth.cpp
+ create mode 100644 vpn/wireguard/wireguardauth.h
+ create mode 100644 vpn/wireguard/wireguardauth.ui
+ create mode 100644 vpn/wireguard/wireguardkeyvalidator.cpp
+ create mode 100644 vpn/wireguard/wireguardkeyvalidator.h
+ create mode 100644 vpn/wireguard/wireguardwidget.cpp
+ create mode 100644 vpn/wireguard/wireguardwidget.h
+
+diff --git a/libs/models/kcmidentitymodel.cpp b/libs/models/kcmidentitymodel.cpp
+index 2e1a8b8..d4c21a3 100644
+--- a/libs/models/kcmidentitymodel.cpp
++++ b/libs/models/kcmidentitymodel.cpp
+@@ -90,7 +90,9 @@ QVariant KcmIdentityModel::data(const QModelIndex &index, int role) const
+         return tooltip;
+     } else if (role == KcmVpnConnectionExportable) {
+         if (type == NetworkManager::ConnectionSettings::Vpn && vpnSetting) {
+-            return (vpnSetting->serviceType().endsWith(QLatin1String("vpnc")) || vpnSetting->serviceType().endsWith(QLatin1String("openvpn")));
++            return (vpnSetting->serviceType().endsWith(QLatin1String("vpnc")) ||
++                    vpnSetting->serviceType().endsWith(QLatin1String("openvpn")) ||
++                    vpnSetting->serviceType().endsWith(QLatin1String("wireguard")));
+         }
+         return false;
+     } else {
+diff --git a/vpn/CMakeLists.txt b/vpn/CMakeLists.txt
+index c45071c..81fdd70 100644
+--- a/vpn/CMakeLists.txt
++++ b/vpn/CMakeLists.txt
+@@ -11,4 +11,5 @@ add_subdirectory(ssh)
+ add_subdirectory(sstp)
+ add_subdirectory(strongswan)
+ add_subdirectory(vpnc)
++add_subdirectory(wireguard)
+ 
+diff --git a/vpn/wireguard/CMakeLists.txt b/vpn/wireguard/CMakeLists.txt
+new file mode 100644
+index 0000000..c8875bc
+--- /dev/null
++++ b/vpn/wireguard/CMakeLists.txt
+@@ -0,0 +1,31 @@
++add_definitions(-DTRANSLATION_DOMAIN=\"plasmanetworkmanagement_wireguardui\")
++
++set(wireguard_SRCS
++    ../../libs/debug.cpp
++    wireguard.cpp
++    wireguardwidget.cpp
++    wireguardauth.cpp
++    wireguardadvancedwidget.cpp
++    wireguardkeyvalidator.cpp
++)
++
++ki18n_wrap_ui(wireguard_SRCS wireguard.ui wireguardadvanced.ui wireguardauth.ui)
++
++add_library(plasmanetworkmanagement_wireguardui ${wireguard_SRCS})
++
++kcoreaddons_desktop_to_json(plasmanetworkmanagement_wireguardui plasmanetworkmanagement_wireguardui.desktop)
++
++target_link_libraries(plasmanetworkmanagement_wireguardui
++    plasmanm_internal
++    plasmanm_editor
++    KF5::ConfigCore
++    KF5::CoreAddons
++    KF5::I18n
++    KF5::KIOWidgets
++    KF5::WidgetsAddons
++    KF5::ConfigWidgets
++)
++
++install(TARGETS plasmanetworkmanagement_wireguardui  DESTINATION ${PLUGIN_INSTALL_DIR})
++
++install(FILES plasmanetworkmanagement_wireguardui.desktop  DESTINATION ${SERVICES_INSTALL_DIR})
+diff --git a/vpn/wireguard/nm-wireguard-service.h b/vpn/wireguard/nm-wireguard-service.h
+new file mode 100644
+index 0000000..3961d66
+--- /dev/null
++++ b/vpn/wireguard/nm-wireguard-service.h
+@@ -0,0 +1,48 @@
++/* -*- Mode: C; tab-width: 4; indent-tabs-mode: t; c-basic-offset: 4 -*- */
++/* nm-wireguard-service - WireGuard integration with NetworkManager
++ *
++ *  Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++ *
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ */
++
++#ifndef NM_WIREGUARD_SERVICE_H
++#define NM_WIREGUARD_SERVICE_H
++
++#define NM_DBUS_SERVICE_WIREGUARD    "org.freedesktop.NetworkManager.wireguard"
++#define NM_DBUS_INTERFACE_WIREGUARD  "org.freedesktop.NetworkManager.wireguard"
++#define NM_DBUS_PATH_WIREGUARD       "/org/freedesktop/NetworkManager/wireguard"
++
++#define NM_WG_KEY_ADDR_IP4      "local-ip4"
++#define NM_WG_KEY_ADDR_IP6      "local-ip6"
++#define NM_WG_KEY_LISTEN_PORT   "local-listen-port"
++#define NM_WG_KEY_PRIVATE_KEY   "local-private-key"
++#define NM_WG_KEY_DNS           "connection-dns"
++#define NM_WG_KEY_MTU           "connection-mtu"
++#define NM_WG_KEY_TABLE         "connection_table"
++#define NM_WG_KEY_PUBLIC_KEY    "peer-public-key"
++#define NM_WG_KEY_ALLOWED_IPS   "peer-allowed-ips"
++#define NM_WG_KEY_ENDPOINT      "peer-endpoint"
++#define NM_WG_KEY_PRESHARED_KEY "peer-preshared-key"
++#define NM_WG_KEY_FWMARK        "fwmark"
++#define NM_WG_KEY_PRE_UP        "script-pre-up"
++#define NM_WG_KEY_POST_UP       "script-post-up"
++#define NM_WG_KEY_PRE_DOWN      "script-pre-down"
++#define NM_WG_KEY_POST_DOWN     "script-post-down"
++#define NM_WG_KEY_PERSISTENT_KEEPALIVE "peer-persistent-keep-alive"
++
++#endif /* NM_WIREGUARD_SERVICE_H */
+diff --git a/vpn/wireguard/plasmanetworkmanagement_wireguardui.desktop b/vpn/wireguard/plasmanetworkmanagement_wireguardui.desktop
+new file mode 100644
+index 0000000..4938621
+--- /dev/null
++++ b/vpn/wireguard/plasmanetworkmanagement_wireguardui.desktop
+@@ -0,0 +1,17 @@
++[Desktop Entry]
++Type=Service
++Icon=
++ServiceTypes=PlasmaNetworkManagement/VpnUiPlugin
++X-KDE-Library=plasmanetworkmanagement_wireguardui
++X-NetworkManager-Services=org.freedesktop.NetworkManager.wireguard
++X-KDE-PluginInfo-Author=Bruce Anderson
++X-KDE-PluginInfo-Email=banderson19com@san.rr.com
++X-KDE-PluginInfo-Name=plasmanetworkmanagement_wireguardui
++X-KDE-PluginInfo-Version=0.1
++X-KDE-PluginInfo-Website=
++X-KDE-PluginInfo-Category=VPNService
++X-KDE-PluginInfo-Depends=
++X-KDE-PluginInfo-License=GPL
++X-KDE-PluginInfo-EnabledByDefault=false
++Name=WireGuard based VPN
++Comment=Compatible with WireGuard VPN servers
+diff --git a/vpn/wireguard/wireguard.cpp b/vpn/wireguard/wireguard.cpp
+new file mode 100644
+index 0000000..9e02ef0
+--- /dev/null
++++ b/vpn/wireguard/wireguard.cpp
+@@ -0,0 +1,381 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This program is free software; you can redistribute it and/or
++    modify it under the terms of the GNU General Public License as
++    published by the Free Software Foundation; either version 2 of
++    the License or (at your option) version 3 or any later version
++    accepted by the membership of KDE e.V. (or its successor approved
++    by the membership of KDE e.V.), which shall act as a proxy
++    defined in Section 14 of version 3 of the license.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "wireguard.h"
++
++#include <QLatin1Char>
++#include <QFileInfo>
++#include <KPluginFactory>
++#include <KConfig>
++#include <KConfigGroup>
++
++#include <NetworkManagerQt/Connection>
++#include <NetworkManagerQt/VpnSetting>
++#include <NetworkManagerQt/Ipv4Setting>
++
++#include "wireguardwidget.h"
++#include "wireguardauth.h"
++#include "simpleipv4addressvalidator.h"
++#include "simpleipv6addressvalidator.h"
++#include "simpleiplistvalidator.h"
++#include "wireguardkeyvalidator.h"
++
++#include "nm-wireguard-service.h"
++
++K_PLUGIN_FACTORY_WITH_JSON(WireGuardUiPluginFactory,
++                           "plasmanetworkmanagement_wireguardui.json",
++                           registerPlugin<WireGuardUiPlugin>();)
++
++#define NMV_WG_TAG_INTERFACE             "Interface"
++#define NMV_WG_TAG_PRIVATE_KEY           "PrivateKey"
++#define NMV_WG_TAG_LISTEN_PORT           "ListenPort"
++#define NMV_WG_TAG_ADDRESS               "Address"
++#define NMV_WG_TAG_DNS                   "DNS"
++#define NMV_WG_TAG_MTU                   "MTU"
++#define NMV_WG_TAG_TABLE                 "Table"
++#define NMV_WG_TAG_PRE_UP                "PreUp"
++#define NMV_WG_TAG_POST_UP               "PostUp"
++#define NMV_WG_TAG_PRE_DOWN              "PreDown"
++#define NMV_WG_TAG_POST_DOWN             "PostDown"
++#define NMV_WG_TAG_FWMARK                "FwMark"
++
++#define NMV_WG_TAG_PEER                  "Peer"
++#define NMV_WG_TAG_PUBLIC_KEY            "PublicKey"
++#define NMV_WG_TAG_ALLOWED_IPS           "AllowedIPs"
++#define NMV_WG_TAG_ENDPOINT              "Endpoint"
++#define NMV_WG_TAG_PRESHARED_KEY         "PresharedKey"
++#define NMV_WG_TAG_PERSISTENT_KEEPALIVE  "PersistentKeepalive"
++
++
++WireGuardUiPlugin::WireGuardUiPlugin(QObject *parent, const QVariantList &) : VpnUiPlugin(parent)
++{
++}
++
++WireGuardUiPlugin::~WireGuardUiPlugin()
++{
++}
++
++SettingWidget *WireGuardUiPlugin::widget(const NetworkManager::VpnSetting::Ptr &setting,
++                                         QWidget *parent)
++{
++    return new WireGuardSettingWidget(setting, parent);
++}
++
++SettingWidget *WireGuardUiPlugin::askUser(const NetworkManager::VpnSetting::Ptr &setting,
++                                          QWidget *parent)
++{
++    return new WireGuardAuthWidget(setting, parent);
++}
++
++QString WireGuardUiPlugin::suggestedFileName(const NetworkManager::ConnectionSettings::Ptr &connection) const
++{
++    return connection->id() + "_wireguard.conf";
++}
++
++QString WireGuardUiPlugin::supportedFileExtensions() const
++{
++    return "*.conf";
++}
++
++NMVariantMapMap WireGuardUiPlugin::importConnectionSettings(const QString &fileName)
++{
++    NMVariantMapMap result;
++
++    const KConfig importFile(fileName, KConfig::NoGlobals);
++    const KConfigGroup interfaceGroup = importFile.group(NMV_WG_TAG_INTERFACE);
++    const KConfigGroup peerGroup = importFile.group(NMV_WG_TAG_PEER);
++
++    // The config file must have both [Interface] and [Peer] sections
++    if (!interfaceGroup.exists()
++        || !peerGroup.exists()) {
++        mError = VpnUiPlugin::Error;
++        mErrorMessage = i18n("Config file needs both [Peer] and [Interface]");
++        return result;
++    }
++
++    const QString connectionName = QFileInfo(fileName).completeBaseName();
++    NMStringMap dataMap;
++    QVariantMap ipv4Data;
++
++    QString value;
++    QStringList valueList;
++    int intValue;
++
++    // Do the required fields first and fail (i.e. return an empty result) if not present
++
++    // Addresses
++    valueList = interfaceGroup.readEntry(NMV_WG_TAG_ADDRESS, QStringList());
++    if (valueList.isEmpty()) {
++        mError = VpnUiPlugin::Error;
++        mErrorMessage = i18n("No address in config file");
++        return result;
++    }
++
++    for (const QString &address : valueList) {
++        const QPair<QHostAddress, int> addressIn = QHostAddress::parseSubnet(address.trimmed());
++        if (addressIn.first.protocol() == QAbstractSocket::NetworkLayerProtocol::IPv4Protocol) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_ADDR_IP4), address);
++        } else if (addressIn.first.protocol() == QAbstractSocket::NetworkLayerProtocol::IPv6Protocol) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_ADDR_IP6), address);
++        } else { // Error condition
++            mError = VpnUiPlugin::Error;
++            mErrorMessage = i18n("No valid address in config file");
++            return result;
++        }
++    }
++
++    WireGuardKeyValidator keyValidator(nullptr);
++    int pos = 0;
++
++    // Private Key
++    value = interfaceGroup.readEntry(NMV_WG_TAG_PRIVATE_KEY);
++    if (!value.isEmpty()) {
++        if (keyValidator.validate(value, pos) == QValidator::State::Acceptable) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_PRIVATE_KEY), value);
++        } else {
++            mError = VpnUiPlugin::Error;
++            mErrorMessage = i18n("No valid Private Key in config file");
++            return result;
++        }
++    } else {
++        mError = VpnUiPlugin::Error;
++        mErrorMessage = i18n("No Private Key in config file");
++        return result;
++    }
++
++    // Public Key
++    value = peerGroup.readEntry(NMV_WG_TAG_PUBLIC_KEY);
++    if (!value.isEmpty()) {
++        if (keyValidator.validate(value, pos) == QValidator::State::Acceptable) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_PUBLIC_KEY), value);
++        } else {
++            mError = VpnUiPlugin::Error;
++            mErrorMessage = i18n("No valid Public Key in config file");
++            return result;
++        }
++    } else {
++        mError = VpnUiPlugin::Error;
++        mErrorMessage = i18n("No Public Key in config file");
++        return result;
++    }
++
++    // Allowed IPs
++    value = peerGroup.readEntry(NMV_WG_TAG_ALLOWED_IPS);
++    if (!value.isEmpty()) {
++        SimpleIpListValidator validator(this,
++                                        SimpleIpListValidator::WithCidr,
++                                        SimpleIpListValidator::Both);
++
++        if (validator.validate(value, pos) != QValidator::State::Invalid) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_ALLOWED_IPS), value);
++        } else {
++            mError = VpnUiPlugin::Error;
++            mErrorMessage = i18n("Invalid Allowed IP in config file");
++            return result;
++        }
++    } else {
++        mError = VpnUiPlugin::Error;
++        mErrorMessage = i18n("No Allowed IPs in config file");
++        return result;
++    }
++
++    // Now the optional ones
++
++    // Listen Port
++    intValue = interfaceGroup.readEntry(NMV_WG_TAG_LISTEN_PORT, 0);
++    if (intValue > 0) {
++        if (intValue < 65536) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_LISTEN_PORT), QString::number(intValue));
++        } else {
++            mError = VpnUiPlugin::Error;
++            mErrorMessage = i18n("Invalid Listen Port in config file");
++            return result;
++        }
++    }
++
++    // DNS
++    value = interfaceGroup.readEntry(NMV_WG_TAG_DNS);
++    if (!value.isEmpty()) {
++        const QHostAddress testAddress(value);
++        if (testAddress.protocol() == QAbstractSocket::NetworkLayerProtocol::IPv4Protocol
++            || testAddress.protocol() == QAbstractSocket::NetworkLayerProtocol::IPv6Protocol) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_DNS), value);
++        } else {
++            mError = VpnUiPlugin::Error;
++            mErrorMessage = i18n("Invalid DNS in config file");
++            return result;
++        }
++    }
++
++    // MTU
++    intValue = interfaceGroup.readEntry(NMV_WG_TAG_MTU, 0);
++    if (intValue > 0)
++        dataMap.insert(QLatin1String(NM_WG_KEY_LISTEN_PORT), QString::number(intValue));
++
++    // Table
++    value = interfaceGroup.readEntry(NMV_WG_TAG_TABLE);
++    if (!value.isEmpty())
++        dataMap.insert(QLatin1String(NM_WG_KEY_TABLE), value);
++
++    // PreUp
++    value = interfaceGroup.readEntry(NMV_WG_TAG_PRE_UP);
++    if (!value.isEmpty())
++        dataMap.insert(QLatin1String(NM_WG_KEY_PRE_UP), value);
++
++    // PostUp
++    value = interfaceGroup.readEntry(NMV_WG_TAG_POST_UP);
++    if (!value.isEmpty())
++        dataMap.insert(QLatin1String(NM_WG_KEY_POST_UP), value);
++
++    // PreDown
++    value = interfaceGroup.readEntry(NMV_WG_TAG_PRE_DOWN);
++    if (!value.isEmpty())
++        dataMap.insert(QLatin1String(NM_WG_KEY_PRE_DOWN), value);
++
++    // PostDown
++    value = interfaceGroup.readEntry(NMV_WG_TAG_POST_DOWN);
++    if (!value.isEmpty())
++        dataMap.insert(QLatin1String(NM_WG_KEY_POST_DOWN), value);
++
++    // Endpoint
++    value = peerGroup.readEntry(NMV_WG_TAG_ENDPOINT);
++    if (!value.isEmpty())
++        dataMap.insert(QLatin1String(NM_WG_KEY_ENDPOINT), value);
++
++    // Preshared Key
++    value = peerGroup.readEntry(NMV_WG_TAG_PRESHARED_KEY);
++    if (!value.isEmpty()) {
++        if (keyValidator.validate(value, pos) == QValidator::State::Acceptable) {
++            dataMap.insert(QLatin1String(NM_WG_KEY_PRESHARED_KEY), value);
++        } else {
++            mError = VpnUiPlugin::Error;
++            mErrorMessage = i18n("Invalid Preshared Key in config file");
++            return result;
++        }
++    }
++
++    // Persistent Keepalive
++    intValue = peerGroup.readEntry(NMV_WG_TAG_PERSISTENT_KEEPALIVE, -1);
++    if (intValue > -1)
++        dataMap.insert(QLatin1String(NM_WG_KEY_PERSISTENT_KEEPALIVE), QString::number(intValue));
++
++    NetworkManager::VpnSetting setting;
++    setting.setServiceType(QLatin1String(NM_DBUS_SERVICE_WIREGUARD));
++    setting.setData(dataMap);
++
++    QVariantMap conn;
++    conn.insert("id", connectionName);
++    conn.insert("type", "vpn");
++    result.insert("connection", conn);
++    result.insert("vpn", setting.toMap());
++
++    return result;
++}
++
++bool WireGuardUiPlugin::exportConnectionSettings(const NetworkManager::ConnectionSettings::Ptr &connection,
++                                                 const QString &fileName)
++{
++    NetworkManager::VpnSetting::Ptr vpnSetting = connection->setting(
++                                                    NetworkManager::Setting::Vpn).dynamicCast<NetworkManager::VpnSetting>();
++    NMStringMap dataMap = vpnSetting->data();
++
++    // Make sure all the required fields are present
++    if (!(dataMap.contains(QLatin1String(NM_WG_KEY_ADDR_IP4))
++        || dataMap.contains(QLatin1String(NM_WG_KEY_ADDR_IP6)))
++        || !dataMap.contains(QLatin1String(NM_WG_KEY_PRIVATE_KEY))
++        || !dataMap.contains(QLatin1String(NM_WG_KEY_PUBLIC_KEY))
++        || !dataMap.contains(QLatin1String(NM_WG_KEY_ALLOWED_IPS)))
++        return false;
++
++    // Open the output file
++    KConfig exportFile(fileName, KConfig::NoGlobals);
++    KConfigGroup interfaceGroup = exportFile.group(NMV_WG_TAG_INTERFACE);
++    KConfigGroup peerGroup = exportFile.group(NMV_WG_TAG_PEER);
++
++    QStringList outputList;
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_ADDR_IP4)))
++        outputList.append(dataMap[NM_WG_KEY_ADDR_IP4]);
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_ADDR_IP6)))
++        outputList.append(dataMap[NM_WG_KEY_ADDR_IP6]);
++    interfaceGroup.writeEntry(NMV_WG_TAG_ADDRESS, outputList);
++
++    // Do Private Key
++    interfaceGroup.writeEntry(NMV_WG_TAG_PRIVATE_KEY, dataMap[NM_WG_KEY_PRIVATE_KEY]);
++
++    // Do DNS (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_DNS)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_DNS, dataMap[NM_WG_KEY_DNS]);
++
++    // Do MTU (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_MTU)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_MTU, dataMap[NM_WG_KEY_MTU]);
++
++    // Do Table number (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_TABLE)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_TABLE, dataMap[NM_WG_KEY_TABLE]);
++
++    // Do Listen Port (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_LISTEN_PORT)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_LISTEN_PORT, dataMap[NM_WG_KEY_LISTEN_PORT]);
++
++    // Do FwMark (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_FWMARK)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_FWMARK, dataMap[NM_WG_KEY_FWMARK]);
++
++    // Do PreUp (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PRE_UP)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_PRE_UP, dataMap[NM_WG_KEY_PRE_UP]);
++
++    // Do PostUp (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_POST_UP)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_POST_UP, dataMap[NM_WG_KEY_POST_UP]);
++
++    // Do PreDown (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PRE_DOWN)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_PRE_DOWN, dataMap[NM_WG_KEY_PRE_DOWN]);
++
++    // Do PostDown (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_POST_DOWN)))
++        interfaceGroup.writeEntry(NMV_WG_TAG_POST_DOWN, dataMap[NM_WG_KEY_POST_DOWN]);
++
++    // Do Pupblic key (required)
++    peerGroup.writeEntry(NMV_WG_TAG_PUBLIC_KEY, dataMap[NM_WG_KEY_PUBLIC_KEY]);
++
++    // Do Allowed IP list (Required)
++    peerGroup.writeEntry(NMV_WG_TAG_ALLOWED_IPS, dataMap[NM_WG_KEY_ALLOWED_IPS]);
++
++    // Do Endpoint (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_ENDPOINT)))
++        peerGroup.writeEntry(NMV_WG_TAG_ENDPOINT, dataMap[NM_WG_KEY_ENDPOINT]);
++
++    // Do Preshared Key (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PRESHARED_KEY)))
++        peerGroup.writeEntry(NMV_WG_TAG_PRESHARED_KEY, dataMap[NM_WG_KEY_PRESHARED_KEY]);
++
++    // Do Persistent Keepalive (Not required)
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PERSISTENT_KEEPALIVE)))
++        peerGroup.writeEntry(NMV_WG_TAG_PERSISTENT_KEEPALIVE, dataMap[NM_WG_KEY_PERSISTENT_KEEPALIVE]);
++
++    exportFile.sync();
++    return true;
++}
++
++#include "wireguard.moc"
+diff --git a/vpn/wireguard/wireguard.h b/vpn/wireguard/wireguard.h
+new file mode 100644
+index 0000000..412acbd
+--- /dev/null
++++ b/vpn/wireguard/wireguard.h
+@@ -0,0 +1,44 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This program is free software; you can redistribute it and/or
++    modify it under the terms of the GNU General Public License as
++    published by the Free Software Foundation; either version 2 of
++    the License or (at your option) version 3 or any later version
++    accepted by the membership of KDE e.V. (or its successor approved
++    by the membership of KDE e.V.), which shall act as a proxy
++    defined in Section 14 of version 3 of the license.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef PLASMANM_WIREGUARD_H
++#define PLASMANM_WIREGUARD_H
++
++#include "vpnuiplugin.h"
++
++class Q_DECL_EXPORT WireGuardUiPlugin : public VpnUiPlugin
++{
++Q_OBJECT
++public:
++    explicit WireGuardUiPlugin(QObject *parent = nullptr, const QVariantList& = QVariantList());
++    ~WireGuardUiPlugin() override;
++    SettingWidget *widget(const NetworkManager::VpnSetting::Ptr &setting,
++                          QWidget *parent = nullptr) override;
++    SettingWidget *askUser(const NetworkManager::VpnSetting::Ptr &setting,
++                           QWidget *parent = nullptr) override;
++
++    QString suggestedFileName(const NetworkManager::ConnectionSettings::Ptr &connection) const override;
++    QString supportedFileExtensions() const override;
++    NMVariantMapMap importConnectionSettings(const QString &fileName) override;
++    bool exportConnectionSettings(const NetworkManager::ConnectionSettings::Ptr &connection,
++                                  const QString &fileName) override;
++};
++
++#endif //  PLASMANM_WIREGUARD_H
+diff --git a/vpn/wireguard/wireguard.ui b/vpn/wireguard/wireguard.ui
+new file mode 100644
+index 0000000..35ae1ff
+--- /dev/null
++++ b/vpn/wireguard/wireguard.ui
+@@ -0,0 +1,199 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<ui version="4.0">
++ <class>WireGuardProp</class>
++ <widget class="QWidget" name="WireGuardProp">
++  <property name="geometry">
++   <rect>
++    <x>0</x>
++    <y>0</y>
++    <width>495</width>
++    <height>454</height>
++   </rect>
++  </property>
++  <property name="windowTitle">
++   <string>WireGuard Settings</string>
++  </property>
++  <layout class="QVBoxLayout" name="verticalLayout_2">
++   <item>
++    <widget class="QGroupBox" name="groupBox">
++     <property name="title">
++      <string>Interface</string>
++     </property>
++     <layout class="QFormLayout" name="form1Layout">
++      <item row="0" column="0">
++       <widget class="QLabel" name="addressIPv4Label">
++        <property name="text">
++         <string>Address (IPv4):</string>
++        </property>
++       </widget>
++      </item>
++      <item row="0" column="1">
++       <widget class="QLineEdit" name="addressIPv4LineEdit">
++        <property name="toolTip">
++         <string>IPv4 Internet address with
++CIDR (example: 10.22.13.123/32)
++assigned to the local interface.
++IPv4 or IPv6 address (or both) required</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="0">
++       <widget class="QLabel" name="addressIPv6Label">
++        <property name="text">
++         <string>Address (IPv6):</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="1">
++       <widget class="QLineEdit" name="addressIPv6LineEdit">
++        <property name="toolTip">
++         <string>IPv6 Internet address with
++CIDR assigned to the local interface.
++(example: fc00:aaaa:aaaa:aa03::1bc9/128) 
++IPv4 or IPv6 address (or both) required</string>
++        </property>
++       </widget>
++      </item>
++      <item row="2" column="0">
++       <widget class="QLabel" name="privateKeyLabel">
++        <property name="text">
++         <string>Private key:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="2" column="1">
++       <widget class="PasswordField" name="privateKeyLineEdit">
++        <property name="toolTip">
++         <string>Required.
++A base64 private key generated by wg genkey.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="3" column="0">
++       <widget class="QLabel" name="dNSLabel">
++        <property name="text">
++         <string>DNS:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="3" column="1">
++       <widget class="QLineEdit" name="dNSLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++IPv4 or IPv6 address to set the interface's DNS server.</string>
++        </property>
++       </widget>
++      </item>
++     </layout>
++    </widget>
++   </item>
++   <item>
++    <widget class="QGroupBox" name="groupBox_2">
++     <property name="title">
++      <string>Peer</string>
++     </property>
++     <layout class="QFormLayout" name="form2Layout">
++      <item row="0" column="0">
++       <widget class="QLabel" name="publicKeyLabel">
++        <property name="text">
++         <string>Public key:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="0" column="1">
++       <widget class="QLineEdit" name="publicKeyLineEdit">
++        <property name="toolTip">
++         <string>Required.
++A base64 public key calculated by wg pubkey 
++from a private key, and usually transmitted 
++out of band to the author of the configuration file.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="0">
++       <widget class="QLabel" name="allowedIPsLabel">
++        <property name="text">
++         <string>Allowed IPs:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="1">
++       <widget class="QLineEdit" name="allowedIPsLineEdit">
++        <property name="toolTip">
++         <string>Required.
++A comma-separated list of IP (v4 or v6) addresses 
++with CIDR masks from which incoming traffic for 
++this peer is allowed and to which outgoing traffic 
++for this peer is directed. The catch-all 0.0.0.0/0 
++may be specified for matching all IPv4 addresses, 
++and ::/0 may be specified for matching all IPv6 addresses.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="2" column="0">
++       <widget class="QLabel" name="endpointLabel">
++        <property name="text">
++         <string>Endpoint:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="2" column="1">
++       <widget class="QLineEdit" name="endpointLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++An endpoint IP followed by a colon, and then a port number.</string>
++        </property>
++       </widget>
++      </item>
++     </layout>
++    </widget>
++   </item>
++   <item>
++    <layout class="QHBoxLayout" name="horizontalLayout">
++     <item>
++      <spacer name="horizontalSpacer">
++       <property name="orientation">
++        <enum>Qt::Horizontal</enum>
++       </property>
++       <property name="sizeHint" stdset="0">
++        <size>
++         <width>40</width>
++         <height>20</height>
++        </size>
++       </property>
++      </spacer>
++     </item>
++     <item>
++      <widget class="QPushButton" name="btnAdvanced">
++       <property name="text">
++        <string>Advanced...</string>
++       </property>
++      </widget>
++     </item>
++    </layout>
++   </item>
++   <item>
++    <spacer name="verticalSpacer">
++     <property name="orientation">
++      <enum>Qt::Vertical</enum>
++     </property>
++     <property name="sizeHint" stdset="0">
++      <size>
++       <width>20</width>
++       <height>0</height>
++      </size>
++     </property>
++    </spacer>
++   </item>
++  </layout>
++ </widget>
++ <customwidgets>
++  <customwidget>
++   <class>PasswordField</class>
++   <extends>QLineEdit</extends>
++   <header location="global">passwordfield.h</header>
++  </customwidget>
++ </customwidgets>
++ <resources/>
++ <connections/>
++</ui>
+diff --git a/vpn/wireguard/wireguardadvanced.ui b/vpn/wireguard/wireguardadvanced.ui
+new file mode 100644
+index 0000000..967eab1
+--- /dev/null
++++ b/vpn/wireguard/wireguardadvanced.ui
+@@ -0,0 +1,252 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<ui version="4.0">
++ <class>WireGuardAdvancedWidget</class>
++ <widget class="QWidget" name="WireGuardAdvancedWidget">
++  <property name="geometry">
++   <rect>
++    <x>0</x>
++    <y>0</y>
++    <width>398</width>
++    <height>380</height>
++   </rect>
++  </property>
++  <property name="windowTitle">
++   <string>WireGuard Advanced</string>
++  </property>
++  <layout class="QVBoxLayout" name="verticalLayout_2">
++   <item>
++    <widget class="QGroupBox" name="groupBox">
++     <property name="title">
++      <string>Interface</string>
++     </property>
++     <layout class="QFormLayout" name="formLayout_1">
++      <item row="0" column="0">
++       <widget class="QLabel" name="listenPortLabel">
++        <property name="text">
++         <string>Listen port:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="0" column="1">
++       <widget class="QLineEdit" name="listenPortLineEdit">
++        <property name="toolTip">
++         <string>Listen port number. Chosen randomly if left as 'Automatic'.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="0">
++       <widget class="QLabel" name="mTULabel">
++        <property name="text">
++         <string>MTU:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="1">
++       <widget class="QLineEdit" name="mtuLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++If not specified, the MTU is automatically determined
++from the endpoint addresses or the system default route,
++which is usually a sane choice. However, to manually
++specify an MTU and to override this automatic discovery,
++this value may be specified explicitly.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="2" column="0">
++       <widget class="QLabel" name="tableLabel">
++        <property name="text">
++         <string>Table:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="2" column="1">
++       <widget class="QLineEdit" name="tableLineEdit">
++        <property name="toolTip">
++         <string>Controls the routing table to which routes are added. 
++There are two special values: `off' disables the 
++creation of routes altogether, and `auto' (the default) 
++adds routes to the default table and enables special 
++handling of default routes</string>
++        </property>
++       </widget>
++      </item>
++      <item row="3" column="0">
++       <widget class="QLabel" name="fwMarkLabel">
++        <property name="text">
++         <string>FwMark:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="3" column="1">
++       <widget class="QLineEdit" name="fwMarkLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++An fwmark for outgoing packets. If set to 0 or 'off', this
++option is disabled. May be specified in hexadecimal by
++prepending '0x'.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="4" column="0">
++       <widget class="QLabel" name="preUpLabel">
++        <property name="text">
++         <string>Pre-up command:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="4" column="1">
++       <widget class="QLineEdit" name="preUpLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++Script snippet which will be executed by bash(1)
++before setting up the interface. Most commonly used
++to configure custom DNS options or firewall rules.
++The special string `%i' is expanded to INTERFACE.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="5" column="0">
++       <widget class="QLabel" name="postUpLabel">
++        <property name="text">
++         <string>Post-up command:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="5" column="1">
++       <widget class="QLineEdit" name="postUpLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++Script snippet which will be executed by bash(1)
++after setting up the interface. Most commonly used
++to configure custom DNS options or firewall rules.
++The special string `%i' is expanded to INTERFACE.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="6" column="0">
++       <widget class="QLabel" name="preDownLabel">
++        <property name="text">
++         <string>Pre-down command:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="6" column="1">
++       <widget class="QLineEdit" name="preDownLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++Script snippet which will be executed by bash(1)
++before tearing down the interface. Most commonly used
++to configure custom DNS options or firewall rules.
++The special string `%i' is expanded to INTERFACE.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="7" column="0">
++       <widget class="QLabel" name="postDownLabel">
++        <property name="text">
++         <string>Post-down command:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="7" column="1">
++       <widget class="QLineEdit" name="postDownLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++Script snippet which will be executed by bash(1)
++after tearing down the interface. Most commonly used
++to configure custom DNS options or firewall rules.
++The special string `%i' is expanded to INTERFACE.</string>
++        </property>
++       </widget>
++      </item>
++     </layout>
++    </widget>
++   </item>
++   <item>
++    <widget class="QGroupBox" name="groupBox_2">
++     <property name="title">
++      <string>Peer</string>
++     </property>
++     <layout class="QFormLayout" name="formLayout">
++      <item row="0" column="0">
++       <widget class="QLabel" name="presharedKeyLabel">
++        <property name="text">
++         <string>Preshared key:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="0" column="1">
++       <widget class="PasswordField" name="presharedKeyLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++A base64 preshared key generated by wg genpsk.
++This option adds an additional layer of symmetric-key
++cryptography to be mixed into the already existing
++public-key cryptography, for post-quantum resistance.</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="0">
++       <widget class="QLabel" name="persistentKeepaliveLabel">
++        <property name="text">
++         <string>Persistent Keepalive:</string>
++        </property>
++       </widget>
++      </item>
++      <item row="1" column="1">
++       <widget class="QLineEdit" name="persistentKeepaliveLineEdit">
++        <property name="toolTip">
++         <string>Optional.
++A seconds interval, between 1 and 65535 inclusive, of
++how often to send an authenticated empty packet to
++the peer for the purpose of keeping a stateful firewall
++or NAT mapping valid persistently. For example, if the
++interface very rarely sends traffic, but it might at
++anytime receive traffic from a peer, and it is behind
++NAT, the interface might benefit from having a
++persistent keepalive interval of 25 seconds. If set to
++0 or "off", this option is disabled. By default or
++when unspecified, this option is off. Most users will not
++need this.</string>
++        </property>
++       </widget>
++      </item>
++     </layout>
++    </widget>
++   </item>
++   <item>
++    <widget class="QDialogButtonBox" name="buttonBox">
++     <property name="standardButtons">
++      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
++     </property>
++    </widget>
++   </item>
++   <item>
++    <layout class="QHBoxLayout" name="horizontalLayout_2"/>
++   </item>
++   <item>
++    <spacer name="verticalSpacer">
++     <property name="orientation">
++      <enum>Qt::Vertical</enum>
++     </property>
++     <property name="sizeHint" stdset="0">
++      <size>
++       <width>20</width>
++       <height>40</height>
++      </size>
++     </property>
++    </spacer>
++   </item>
++  </layout>
++ </widget>
++ <customwidgets>
++  <customwidget>
++   <class>PasswordField</class>
++   <extends>QLineEdit</extends>
++   <header location="global">passwordfield.h</header>
++  </customwidget>
++ </customwidgets>
++ <resources/>
++ <connections/>
++</ui>
+diff --git a/vpn/wireguard/wireguardadvancedwidget.cpp b/vpn/wireguard/wireguardadvancedwidget.cpp
+new file mode 100644
+index 0000000..d4d9346
+--- /dev/null
++++ b/vpn/wireguard/wireguardadvancedwidget.cpp
+@@ -0,0 +1,264 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This library is free software; you can redistribute it and/or
++    modify it under the terms of the GNU Lesser General Public
++    License as published by the Free Software Foundation; either
++    version 2.1 of the License, or (at your option) version 3, or any
++    later version accepted by the membership of KDE e.V. (or its
++    successor approved by the membership of KDE e.V.), which shall
++    act as a proxy defined in Section 6 of version 3 of the license.
++
++    This library is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++    Lesser General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public
++    License along with this library.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "wireguardadvancedwidget.h"
++#include <QtWidgets/QPushButton>
++#include <KColorScheme>
++#include "ui_wireguardadvanced.h"
++#include "nm-wireguard-service.h"
++#include "settingwidget.h"
++#include "wireguardkeyvalidator.h"
++
++class WireGuardAdvancedWidget::Private
++{
++public:
++    NetworkManager::VpnSetting::Ptr setting;
++    Ui::WireGuardAdvancedWidget ui;
++    QPalette warningPalette;
++    QPalette normalPalette;
++    WireGuardKeyValidator *keyValidator;
++    QIntValidator *listenPortValidator;
++    QIntValidator *mtuValidator;
++    QRegularExpressionValidator *fwMarkValidator;
++    QIntValidator *persistentKeepaliveValidator;
++    QRegularExpressionValidator *tableValidator;
++    ~Private();
++    Private();
++    bool fwMarkValid;
++    bool presharedKeyValid;
++    bool tableValid;
++};
++
++WireGuardAdvancedWidget::Private::Private() : fwMarkValid(true),
++                                              presharedKeyValid(true),
++                                              tableValid(true)
++{
++}
++
++WireGuardAdvancedWidget::Private::~Private()
++{
++    delete keyValidator;
++    delete listenPortValidator;
++    delete mtuValidator;
++    delete fwMarkValidator;
++    delete persistentKeepaliveValidator;
++    delete tableValidator;
++}
++
++WireGuardAdvancedWidget::WireGuardAdvancedWidget(const NetworkManager::VpnSetting::Ptr &setting,
++                                                 QWidget *parent)
++    : QDialog(parent), d(new Private)
++{
++    KSharedConfigPtr config = KSharedConfig::openConfig();
++    d->warningPalette = KColorScheme::createApplicationPalette(config);
++    d->normalPalette = KColorScheme::createApplicationPalette(config);
++    KColorScheme::adjustBackground(d->warningPalette,
++                                   KColorScheme::NegativeBackground,
++                                   QPalette::Base,
++                                   KColorScheme::ColorSet::View,
++                                   config);
++
++    KColorScheme::adjustBackground(d->normalPalette,
++                                   KColorScheme::NormalBackground,
++                                   QPalette::Base,
++                                   KColorScheme::ColorSet::View,
++                                   config);
++
++    d->keyValidator = new WireGuardKeyValidator(this);
++    d->ui.setupUi(this);
++
++    setWindowTitle(i18nc("@title: window advanced wireguard properties",
++                         "Advanced WireGuard properties"));
++
++    d->setting = setting;
++
++    connect(d->ui.buttonBox, &QDialogButtonBox::accepted, this, &WireGuardAdvancedWidget::accept);
++    connect(d->ui.buttonBox, &QDialogButtonBox::rejected, this, &WireGuardAdvancedWidget::reject);
++    connect(d->ui.presharedKeyLineEdit, &PasswordField::textChanged,
++            this, &WireGuardAdvancedWidget::checkPresharedKey);
++    connect(d->ui.tableLineEdit, &QLineEdit::textChanged,
++            this, &WireGuardAdvancedWidget::checkTable);
++    connect(d->ui.fwMarkLineEdit, &QLineEdit::textChanged,
++            this, &WireGuardAdvancedWidget::checkFwMark);
++    d->ui.presharedKeyLineEdit->setPasswordModeEnabled(true);
++
++    d->listenPortValidator = new QIntValidator(0, 65535, nullptr);
++    d->ui.listenPortLineEdit->setValidator(d->listenPortValidator);
++
++    d->persistentKeepaliveValidator = new QIntValidator(0, 65535, nullptr);
++    d->ui.persistentKeepaliveLineEdit->setValidator(d->persistentKeepaliveValidator);
++
++    d->mtuValidator = new QIntValidator(nullptr);
++    d->mtuValidator->setBottom(0);
++    d->ui.mtuLineEdit->setValidator(d->mtuValidator);
++
++    d->fwMarkValidator = new QRegularExpressionValidator(QRegularExpression("(off)|([0-9]{0,10})|(0x[0-9a-fA-F]{1,8})"));
++    d->ui.fwMarkLineEdit->setValidator(d->fwMarkValidator);
++
++    d->tableValidator = new QRegularExpressionValidator(QRegularExpression("(off)|(auto)|([0-9]*)"));
++    d->ui.tableLineEdit->setValidator(d->tableValidator);
++
++    KAcceleratorManager::manage(this);
++
++    if (d->setting) {
++        loadConfig();
++    }
++    checkPresharedKey();
++    checkFwMark();
++    checkTable();
++}
++
++WireGuardAdvancedWidget::~WireGuardAdvancedWidget()
++{
++    delete d;
++}
++
++void WireGuardAdvancedWidget::loadConfig()
++{
++    const NMStringMap dataMap = d->setting->data();
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_LISTEN_PORT)))
++        d->ui.listenPortLineEdit->setText(dataMap[NM_WG_KEY_LISTEN_PORT]);
++    else
++        d->ui.listenPortLineEdit->clear();
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PERSISTENT_KEEPALIVE)))
++        d->ui.persistentKeepaliveLineEdit->setText(dataMap[NM_WG_KEY_PERSISTENT_KEEPALIVE]);
++    else
++        d->ui.persistentKeepaliveLineEdit->clear();
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_MTU)))
++        d->ui.mtuLineEdit->setText(dataMap[NM_WG_KEY_MTU]);
++    else
++        d->ui.mtuLineEdit->clear();
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_TABLE)))
++        d->ui.tableLineEdit->setText(dataMap[NM_WG_KEY_TABLE]);
++    else
++        d->ui.tableLineEdit->clear();
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_FWMARK)))
++        d->ui.fwMarkLineEdit->setText(dataMap[NM_WG_KEY_FWMARK]);
++    else
++        d->ui.fwMarkLineEdit->clear();
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PRESHARED_KEY)))
++        d->ui.presharedKeyLineEdit->setText(dataMap[NM_WG_KEY_PRESHARED_KEY]);
++    else
++        d->ui.presharedKeyLineEdit->setText(QString());
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PRE_UP)))
++        d->ui.preUpLineEdit->setText(dataMap[NM_WG_KEY_PRE_UP]);
++    else
++        d->ui.preUpLineEdit->setText(QString());
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_POST_UP)))
++        d->ui.postUpLineEdit->setText(dataMap[NM_WG_KEY_POST_UP]);
++    else
++        d->ui.postUpLineEdit->setText(QString());
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_PRE_DOWN)))
++        d->ui.preDownLineEdit->setText(dataMap[NM_WG_KEY_PRE_DOWN]);
++    else
++        d->ui.preDownLineEdit->setText(QString());
++
++    if (dataMap.contains(QLatin1String(NM_WG_KEY_POST_DOWN)))
++        d->ui.postDownLineEdit->setText(dataMap[NM_WG_KEY_POST_DOWN]);
++    else
++        d->ui.postDownLineEdit->setText(QString());
++}
++
++void WireGuardAdvancedWidget::setProperty(NMStringMap &data, const QLatin1String &key,
++                                          const QString &value) const
++{
++    if (!value.isEmpty())
++        data.insert(key, value);
++}
++
++NetworkManager::VpnSetting::Ptr WireGuardAdvancedWidget::setting() const
++{
++    NMStringMap data;
++    QString stringVal;
++
++    setProperty(data, QLatin1String(NM_WG_KEY_LISTEN_PORT), d->ui.listenPortLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_PERSISTENT_KEEPALIVE),
++                d->ui.persistentKeepaliveLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_MTU), d->ui.mtuLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_TABLE), d->ui.tableLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_FWMARK), d->ui.fwMarkLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_PRESHARED_KEY), d->ui.presharedKeyLineEdit->text());
++    setProperty(data, QLatin1String(NM_WG_KEY_PRE_UP), d->ui.preUpLineEdit->text());
++    setProperty(data, QLatin1String(NM_WG_KEY_POST_UP), d->ui.postUpLineEdit->text());
++    setProperty(data, QLatin1String(NM_WG_KEY_PRE_DOWN), d->ui.preDownLineEdit->text());
++    setProperty(data, QLatin1String(NM_WG_KEY_POST_DOWN), d->ui.postDownLineEdit->text());
++
++    d->setting->setData(data);
++
++    return d->setting;
++}
++
++void WireGuardAdvancedWidget::checkPresharedKey()
++{
++    int pos = 0;
++    PasswordField *widget = d->ui.presharedKeyLineEdit;
++    QString value = widget->text();
++    d->presharedKeyValid = QValidator::Acceptable == d->keyValidator->validate(value, pos)
++                           || value.isEmpty();
++    setBackground(widget, d->presharedKeyValid);
++    slotWidgetChanged();
++}
++
++void WireGuardAdvancedWidget::checkTable()
++{
++    int pos = 0;
++    QLineEdit *widget = d->ui.tableLineEdit;
++    QString value = widget->displayText();
++    d->tableValid = QValidator::Acceptable == widget->validator()->validate(value, pos)
++                  || value.isEmpty();
++    setBackground(widget, d->tableValid);
++    slotWidgetChanged();
++}
++
++void WireGuardAdvancedWidget::checkFwMark()
++{
++    int pos = 0;
++    QLineEdit *widget = d->ui.fwMarkLineEdit;
++    QString value = widget->displayText();
++    d->fwMarkValid = QValidator::Acceptable == widget->validator()->validate(value, pos)
++                     || value.isEmpty();
++    setBackground(widget, d->fwMarkValid);
++    slotWidgetChanged();
++}
++
++void WireGuardAdvancedWidget::setBackground(QWidget *w, bool result) const
++{
++    if (result)
++        w->setPalette(d->normalPalette);
++    else
++        w->setPalette(d->warningPalette);
++}
++
++void WireGuardAdvancedWidget::slotWidgetChanged()
++{
++    if (d->tableValid && d->fwMarkValid && d->presharedKeyValid)
++        d->ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(true);
++    else
++        d->ui.buttonBox->button(QDialogButtonBox::Ok)->setEnabled(false);
++}
+diff --git a/vpn/wireguard/wireguardadvancedwidget.h b/vpn/wireguard/wireguardadvancedwidget.h
+new file mode 100644
+index 0000000..9ba1404
+--- /dev/null
++++ b/vpn/wireguard/wireguardadvancedwidget.h
+@@ -0,0 +1,59 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This library is free software; you can redistribute it and/or
++    modify it under the terms of the GNU Lesser General Public
++    License as published by the Free Software Foundation; either
++    version 2.1 of the License, or (at your option) version 3, or any
++    later version accepted by the membership of KDE e.V. (or its
++    successor approved by the membership of KDE e.V.), which shall
++    act as a proxy defined in Section 6 of version 3 of the license.
++
++    This library is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++    Lesser General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public
++    License along with this library.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef PLASMA_NM_OPENVPN_ADVANCED_WIDGET_H
++#define PLASMA_NM_OPENVPN_ADVANCED_WIDGET_H
++
++#include "passwordfield.h"
++
++#include <QDialog>
++
++#include <NetworkManagerQt/VpnSetting>
++
++namespace Ui
++{
++class WireGuardAdvancedWidget;
++}
++
++class QLineEdit;
++class WireGuardAdvancedWidget : public QDialog
++{
++    Q_OBJECT
++
++public:
++    explicit WireGuardAdvancedWidget(const NetworkManager::VpnSetting::Ptr &setting,
++                                     QWidget *parent = 0);
++    ~WireGuardAdvancedWidget() override;
++    NetworkManager::VpnSetting::Ptr setting() const;
++
++private:
++    void loadConfig();
++    void setProperty(NMStringMap &data, const QLatin1String &key, const QString &value) const;
++    void setProperty(NMStringMap &data, const QLatin1String &key, const int value) const;
++    void checkPresharedKey();
++    void checkTable();
++    void checkFwMark();
++    void setBackground(QWidget *w, bool result) const;
++    void slotWidgetChanged();
++    class Private;
++    Private *const d;
++};
++
++#endif // PLASMA_NM_OPENVPN_ADVANCED_WIDGET_H
+diff --git a/vpn/wireguard/wireguardauth.cpp b/vpn/wireguard/wireguardauth.cpp
+new file mode 100644
+index 0000000..315752f
+--- /dev/null
++++ b/vpn/wireguard/wireguardauth.cpp
+@@ -0,0 +1,56 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This program is free software; you can redistribute it and/or
++    modify it under the terms of the GNU General Public License as
++    published by the Free Software Foundation; either version 2 of
++    the License or (at your option) version 3 or any later version
++    accepted by the membership of KDE e.V. (or its successor approved
++    by the membership of KDE e.V.), which shall act as a proxy
++    defined in Section 14 of version 3 of the license.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "wireguardauth.h"
++#include "ui_wireguardauth.h"
++
++#include <QString>
++
++class WireGuardAuthWidgetPrivate
++{
++public:
++    Ui_WireGuardAuth ui;
++    NetworkManager::VpnSetting::Ptr setting;
++};
++
++WireGuardAuthWidget::WireGuardAuthWidget(const NetworkManager::VpnSetting::Ptr &setting,
++                                         QWidget *parent)
++    : SettingWidget(setting, parent)
++    , d_ptr(new WireGuardAuthWidgetPrivate)
++{
++    Q_D(WireGuardAuthWidget);
++    d->ui.setupUi(this);
++    d->setting = setting;
++
++    KAcceleratorManager::manage(this);
++}
++
++WireGuardAuthWidget::~WireGuardAuthWidget()
++{
++    delete d_ptr;
++}
++
++QVariantMap WireGuardAuthWidget::setting() const
++{
++    Q_D(const WireGuardAuthWidget);
++
++    QVariantMap result;
++    return result;
++}
+diff --git a/vpn/wireguard/wireguardauth.h b/vpn/wireguard/wireguardauth.h
+new file mode 100644
+index 0000000..74df259
+--- /dev/null
++++ b/vpn/wireguard/wireguardauth.h
+@@ -0,0 +1,43 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This program is free software; you can redistribute it and/or
++    modify it under the terms of the GNU General Public License as
++    published by the Free Software Foundation; either version 2 of
++    the License or (at your option) version 3 or any later version
++    accepted by the membership of KDE e.V. (or its successor approved
++    by the membership of KDE e.V.), which shall act as a proxy
++    defined in Section 14 of version 3 of the license.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef WIREGUARDAUTH_H
++#define WIREGUARDAUTH_H
++
++#include <NetworkManagerQt/VpnSetting>
++
++#include "settingwidget.h"
++
++class WireGuardAuthWidgetPrivate;
++
++class WireGuardAuthWidget : public SettingWidget
++{
++    Q_OBJECT
++    Q_DECLARE_PRIVATE(WireGuardAuthWidget)
++public:
++    explicit WireGuardAuthWidget(const NetworkManager::VpnSetting::Ptr &setting, QWidget *parent = 0);
++    ~WireGuardAuthWidget() override;
++    virtual QVariantMap setting() const override;
++
++private:
++    WireGuardAuthWidgetPrivate *const d_ptr;
++};
++
++#endif // WIREGUARDAUTH_H
+diff --git a/vpn/wireguard/wireguardauth.ui b/vpn/wireguard/wireguardauth.ui
+new file mode 100644
+index 0000000..c2d2350
+--- /dev/null
++++ b/vpn/wireguard/wireguardauth.ui
+@@ -0,0 +1,31 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<ui version="4.0">
++ <class>WireGuardAuth</class>
++ <widget class="QWidget" name="WireGuardAuth">
++  <property name="geometry">
++   <rect>
++    <x>0</x>
++    <y>0</y>
++    <width>263</width>
++    <height>51</height>
++   </rect>
++  </property>
++  <layout class="QFormLayout" name="formLayout">
++   <property name="verticalSpacing">
++    <number>6</number>
++   </property>
++   <item row="0" column="1">
++    <widget class="QLabel" name="groupNameLabel">
++     <property name="text">
++      <string>No WireGuard Secrets currently</string>
++     </property>
++     <property name="wordWrap">
++      <bool>false</bool>
++     </property>
++    </widget>
++   </item>
++  </layout>
++ </widget>
++ <resources/>
++ <connections/>
++</ui>
+diff --git a/vpn/wireguard/wireguardkeyvalidator.cpp b/vpn/wireguard/wireguardkeyvalidator.cpp
+new file mode 100644
+index 0000000..fc7ceb6
+--- /dev/null
++++ b/vpn/wireguard/wireguardkeyvalidator.cpp
+@@ -0,0 +1,39 @@
++/*
++Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++This program is free software; you can redistribute it and/or
++modify it under the terms of the GNU General Public License as
++published by the Free Software Foundation; either version 2 of
++the License or (at your option) version 3 or any later version
++accepted by the membership of KDE e.V. (or its successor approved
++by the membership of KDE e.V.), which shall act as a proxy
++defined in Section 14 of version 3 of the license.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "wireguardkeyvalidator.h"
++
++WireGuardKeyValidator::WireGuardKeyValidator(QObject *parent)
++    : QValidator(parent)
++{
++    m_validator = new QRegularExpressionValidator(this);
++    // A WireGuard key is Base64 encoded and in human readable form consistes
++    // of 43 Alpha-numeric or  '+' or '/' with a 44th character of an equal sign.
++    m_validator->setRegularExpression(QRegularExpression(QLatin1String("[0-9a-zA-Z\\+/]{43,43}=")));
++}
++
++WireGuardKeyValidator::~WireGuardKeyValidator()
++{
++}
++
++QValidator::State WireGuardKeyValidator::validate(QString &address, int &pos) const
++{
++    return m_validator->validate(address, pos);
++}
+diff --git a/vpn/wireguard/wireguardkeyvalidator.h b/vpn/wireguard/wireguardkeyvalidator.h
+new file mode 100644
+index 0000000..b099dd1
+--- /dev/null
++++ b/vpn/wireguard/wireguardkeyvalidator.h
+@@ -0,0 +1,38 @@
++/*
++Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++This program is free software; you can redistribute it and/or
++modify it under the terms of the GNU General Public License as
++published by the Free Software Foundation; either version 2 of
++the License or (at your option) version 3 or any later version
++accepted by the membership of KDE e.V. (or its successor approved
++by the membership of KDE e.V.), which shall act as a proxy
++defined in Section 14 of version 3 of the license.
++
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
++
++You should have received a copy of the GNU General Public License
++along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef WIREGUARDKEYVALIDATOR_H
++#define WIREGUARDKEYVALIDATOR_H
++
++#include <QValidator>
++
++class WireGuardKeyValidator : public QValidator
++{
++public:
++    explicit WireGuardKeyValidator(QObject *parent);
++    ~WireGuardKeyValidator() override;
++
++    QValidator::State validate(QString &, int &) const override;
++
++private:
++    QRegularExpressionValidator *m_validator;
++};
++
++#endif // SIMPLEIPV4ADDRESSVALIDATOR_H
+diff --git a/vpn/wireguard/wireguardwidget.cpp b/vpn/wireguard/wireguardwidget.cpp
+new file mode 100644
+index 0000000..0b67d6a
+--- /dev/null
++++ b/vpn/wireguard/wireguardwidget.cpp
+@@ -0,0 +1,324 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This program is free software; you can redistribute it and/or
++    modify it under the terms of the GNU General Public License as
++    published by the Free Software Foundation; either version 2 of
++    the License or (at your option) version 3 or any later version
++    accepted by the membership of KDE e.V. (or its successor approved
++    by the membership of KDE e.V.), which shall act as a proxy
++    defined in Section 14 of version 3 of the license.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#include "debug.h"
++#include "wireguardwidget.h"
++#include "wireguardadvancedwidget.h"
++#include "simpleipv4addressvalidator.h"
++#include "simpleiplistvalidator.h"
++#include "wireguardkeyvalidator.h"
++
++#include <QDBusMetaType>
++#include <QPointer>
++#include <KColorScheme>
++
++#include "nm-wireguard-service.h"
++
++class WireGuardSettingWidget::Private
++{
++public:
++    Private();
++    Ui_WireGuardProp ui;
++    NetworkManager::VpnSetting::Ptr setting;
++    KSharedConfigPtr config;
++    QPalette warningPalette;
++    QPalette normalPalette;
++    WireGuardKeyValidator *keyValidator;
++    bool addressValid;
++    bool privateKeyValid;
++    bool publicKeyValid;
++    bool dnsValid;
++    bool allowedIpsValid;
++    bool endpointValid;
++};
++
++WireGuardSettingWidget::Private::Private(void) : addressValid(false),
++                                                 privateKeyValid(false),
++                                                 publicKeyValid(false),
++                                                 dnsValid(true),       // optional so blank is valid
++                                                 allowedIpsValid(false),
++                                                 endpointValid(true)   // optional so blank is valid
++{
++}
++
++WireGuardSettingWidget::WireGuardSettingWidget(const NetworkManager::VpnSetting::Ptr &setting,
++                                               QWidget *parent)
++    : SettingWidget(setting, parent),
++      d(new Private)
++{
++    qDBusRegisterMetaType<NMStringMap>();
++
++    d->ui.setupUi(this);
++    d->setting = setting;
++
++    d->config = KSharedConfig::openConfig();
++    d->warningPalette = KColorScheme::createApplicationPalette(d->config);
++    d->normalPalette = KColorScheme::createApplicationPalette(d->config);
++    KColorScheme::adjustBackground(d->warningPalette,
++                                   KColorScheme::NegativeBackground,
++                                   QPalette::Base,
++                                   KColorScheme::ColorSet::View,
++                                   d->config);
++
++    KColorScheme::adjustBackground(d->normalPalette,
++                                   KColorScheme::NormalBackground,
++                                   QPalette::Base,
++                                   KColorScheme::ColorSet::View,
++                                   d->config);
++
++
++    connect(d->ui.addressIPv4LineEdit, &QLineEdit::textChanged, this,
++            &WireGuardSettingWidget::checkAddressValid);
++    connect(d->ui.addressIPv6LineEdit, &QLineEdit::textChanged, this,
++            &WireGuardSettingWidget::checkAddressValid);
++    connect(d->ui.privateKeyLineEdit, &PasswordField::textChanged, this,
++            &WireGuardSettingWidget::checkPrivateKeyValid);
++    connect(d->ui.publicKeyLineEdit, &QLineEdit::textChanged, this,
++            &WireGuardSettingWidget::checkPublicKeyValid);
++    connect(d->ui.allowedIPsLineEdit, &QLineEdit::textChanged, this,
++            &WireGuardSettingWidget::checkAllowedIpsValid);
++    connect(d->ui.endpointLineEdit, &QLineEdit::textChanged, this,
++            &WireGuardSettingWidget::checkEndpointValid);
++    connect(d->ui.dNSLineEdit, &QLineEdit::textChanged, this,
++            &WireGuardSettingWidget::checkDnsValid);
++
++    d->ui.privateKeyLineEdit->setPasswordModeEnabled(true);
++
++    connect(d->ui.btnAdvanced, &QPushButton::clicked, this, &WireGuardSettingWidget::showAdvanced);
++
++    SimpleIpV4AddressValidator *ip4WithCidrValidator = 
++        new SimpleIpV4AddressValidator(this, SimpleIpV4AddressValidator::AddressStyle::WithCidr);
++    d->ui.addressIPv4LineEdit->setValidator(ip4WithCidrValidator);
++
++    // Create a validator for the IPv6 address line edit
++    // Address must be a valid IP address with a CIDR suffix
++    SimpleIpV6AddressValidator *ip6WithCidrValidator =
++        new SimpleIpV6AddressValidator(this, SimpleIpV6AddressValidator::AddressStyle::WithCidr);
++
++    d->ui.addressIPv6LineEdit->setValidator(ip6WithCidrValidator);
++
++    // This is done as a private variable rather than a local variable so it can be
++    // used both here and to validate the private key later
++    d->keyValidator = new WireGuardKeyValidator(this);
++    d->ui.publicKeyLineEdit->setValidator(d->keyValidator);
++
++    // Create validator for DNS
++    SimpleIpV4AddressValidator *dnsValidator = new SimpleIpV4AddressValidator(this);
++    d->ui.dNSLineEdit->setValidator(dnsValidator);
++
++    // Create validator for Endpoint
++    SimpleIpV4AddressValidator *endpointValidator =
++        new SimpleIpV4AddressValidator(this, SimpleIpV4AddressValidator::AddressStyle::WithPort);
++    d->ui.endpointLineEdit->setValidator(endpointValidator);
++
++    // Create validator for AllowedIPs
++    SimpleIpListValidator *allowedIPsValidator = new SimpleIpListValidator(this,
++                                                                           SimpleIpListValidator::WithCidr,
++                                                                           SimpleIpListValidator::Both);
++    d->ui.allowedIPsLineEdit->setValidator(allowedIPsValidator);
++
++    // Connect for setting check
++    watchChangedSetting();
++
++    KAcceleratorManager::manage(this);
++
++    if (setting && !setting->isNull()) {
++        loadConfig(d->setting);
++    }
++
++    // Set the initial backgrounds on all the widgets
++    checkAddressValid();
++    checkPrivateKeyValid();
++    checkPublicKeyValid();
++    checkDnsValid();
++    checkAllowedIpsValid();
++    checkEndpointValid();
++
++}
++
++WireGuardSettingWidget::~WireGuardSettingWidget()
++{
++    delete d;
++}
++
++void WireGuardSettingWidget::loadConfig(const NetworkManager::Setting::Ptr &setting)
++{
++    Q_UNUSED(setting)
++    // General settings
++    const NMStringMap dataMap = d->setting->data();
++
++    d->ui.addressIPv4LineEdit->setText(dataMap[NM_WG_KEY_ADDR_IP4]);
++    d->ui.addressIPv6LineEdit->setText(dataMap[NM_WG_KEY_ADDR_IP6]);
++    d->ui.privateKeyLineEdit->setText(dataMap[NM_WG_KEY_PRIVATE_KEY]);
++    d->ui.dNSLineEdit->setText(dataMap[NM_WG_KEY_DNS]);
++    d->ui.publicKeyLineEdit->setText(dataMap[NM_WG_KEY_PUBLIC_KEY]);
++    d->ui.allowedIPsLineEdit->setText(dataMap[NM_WG_KEY_ALLOWED_IPS]);
++    d->ui.endpointLineEdit->setText(dataMap[NM_WG_KEY_ENDPOINT]);
++}
++
++void WireGuardSettingWidget::loadSecrets(const NetworkManager::Setting::Ptr &setting)
++{
++    // Currently WireGuard does not have any secrets
++    Q_UNUSED(setting)
++}
++
++QVariantMap WireGuardSettingWidget::setting() const
++{
++    NMStringMap data = d->setting->data();
++    NetworkManager::VpnSetting setting;
++    setting.setServiceType(QLatin1String(NM_DBUS_SERVICE_WIREGUARD));
++
++    // required settings
++    setProperty(data, QLatin1String(NM_WG_KEY_ADDR_IP4), d->ui.addressIPv4LineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_ADDR_IP6), d->ui.addressIPv6LineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_PRIVATE_KEY), d->ui.privateKeyLineEdit->text());
++    setProperty(data, QLatin1String(NM_WG_KEY_PUBLIC_KEY), d->ui.publicKeyLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_ALLOWED_IPS), d->ui.allowedIPsLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_DNS), d->ui.dNSLineEdit->displayText());
++    setProperty(data, QLatin1String(NM_WG_KEY_ENDPOINT), d->ui.endpointLineEdit->displayText());
++
++    setting.setData(data);
++
++    return setting.toMap();
++}
++
++void WireGuardSettingWidget::setProperty(NMStringMap &data,
++                                         const QLatin1String &key,
++                                         const QString &value) const
++{
++    if (!value.isEmpty())
++        data.insert(key, value);
++    else
++        data.remove(key);
++}
++
++void WireGuardSettingWidget::showAdvanced()
++{
++    QPointer<WireGuardAdvancedWidget> adv = new WireGuardAdvancedWidget(d->setting, this);
++
++    connect(adv.data(), &WireGuardAdvancedWidget::accepted,
++            [adv, this] () {
++                NetworkManager::VpnSetting::Ptr advData = adv->setting();
++                if (!advData.isNull()) {
++                    d->setting->setData(advData->data());
++                }
++            });
++    connect(adv.data(), &WireGuardAdvancedWidget::finished,
++            [adv] () {
++                if (adv) {
++                    adv->deleteLater();
++                }
++            });
++    adv->setModal(true);
++    adv->show();
++}
++
++bool WireGuardSettingWidget::isValid() const
++{
++    return d->addressValid
++           && d->privateKeyValid
++           && d->publicKeyValid
++           && d->dnsValid
++           && d->allowedIpsValid
++           && d->endpointValid;
++}
++
++void WireGuardSettingWidget::checkAddressValid()
++{
++    int pos = 0;
++    QLineEdit *widget = d->ui.addressIPv4LineEdit;
++    QString value(widget->displayText());
++    bool ip4valid = (widget->validator()->validate(value, pos) == QValidator::Acceptable);
++    bool ip4present = !widget->displayText().isEmpty();
++
++    widget = d->ui.addressIPv6LineEdit;
++    value = widget->displayText();
++    bool ip6valid = QValidator::Acceptable == widget->validator()->validate(value, pos);
++    bool ip6present = !widget->displayText().isEmpty();
++
++    d->addressValid = (ip4valid && ip6valid)
++                      || (ip4valid && !ip6present)
++                      || (!ip4present && ip6valid);
++
++    setBackground(d->ui.addressIPv4LineEdit, d->addressValid);
++    setBackground(d->ui.addressIPv6LineEdit, d->addressValid);
++
++    slotWidgetChanged();
++}
++
++void WireGuardSettingWidget::checkPrivateKeyValid()
++{
++    int pos = 0;
++    PasswordField *widget = d->ui.privateKeyLineEdit;
++    QString value = widget->text();
++    d->privateKeyValid = QValidator::Acceptable == d->keyValidator->validate(value, pos);
++    setBackground(widget, d->privateKeyValid);
++    slotWidgetChanged();
++}
++
++void WireGuardSettingWidget::checkPublicKeyValid()
++{
++    int pos = 0;
++    QLineEdit *widget = d->ui.publicKeyLineEdit;
++    QString value = widget->displayText();
++    d->publicKeyValid = QValidator::Acceptable == widget->validator()->validate(value, pos);
++    setBackground(widget, d->publicKeyValid);
++    slotWidgetChanged();
++}
++
++void WireGuardSettingWidget::checkDnsValid()
++{
++    int pos = 0;
++    QLineEdit *widget = d->ui.dNSLineEdit;
++    QString value = widget->displayText();
++    d->dnsValid = QValidator::Acceptable == widget->validator()->validate(value, pos)
++                  || widget->displayText().isEmpty();
++    setBackground(widget, d->dnsValid);
++    slotWidgetChanged();
++}
++
++void WireGuardSettingWidget::checkAllowedIpsValid()
++{
++    int pos = 0;
++    QLineEdit *widget = d->ui.allowedIPsLineEdit;
++    QString value = widget->displayText();
++    d->allowedIpsValid = QValidator::Acceptable == widget->validator()->validate(value, pos);
++    setBackground(widget, d->allowedIpsValid);
++    slotWidgetChanged();
++}
++
++void WireGuardSettingWidget::checkEndpointValid()
++{
++    int pos = 0;
++    QLineEdit *widget = d->ui.endpointLineEdit;
++    QString value = widget->displayText();
++    d->endpointValid = QValidator::Acceptable == widget->validator()->validate(value, pos)
++                       || value.isEmpty();
++    setBackground(widget, d->endpointValid);
++    slotWidgetChanged();
++}
++
++void WireGuardSettingWidget::setBackground(QWidget *w, bool result) const
++{
++    if (result)
++        w->setPalette(d->normalPalette);
++    else
++        w->setPalette(d->warningPalette);
++}
+diff --git a/vpn/wireguard/wireguardwidget.h b/vpn/wireguard/wireguardwidget.h
+new file mode 100644
+index 0000000..ab8c6b1
+--- /dev/null
++++ b/vpn/wireguard/wireguardwidget.h
+@@ -0,0 +1,60 @@
++/*
++    Copyright 2018 Bruce Anderson <banderson19com@san.rr.com>
++
++    This program is free software; you can redistribute it and/or
++    modify it under the terms of the GNU General Public License as
++    published by the Free Software Foundation; either version 2 of
++    the License or (at your option) version 3 or any later version
++    accepted by the membership of KDE e.V. (or its successor approved
++    by the membership of KDE e.V.), which shall act as a proxy
++    defined in Section 14 of version 3 of the license.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program.  If not, see <http://www.gnu.org/licenses/>.
++*/
++
++#ifndef WIREGUARDWIDGET_H
++#define WIREGUARDWIDGET_H
++
++#include "settingwidget.h"
++#include "ui_wireguard.h"
++
++#include <NetworkManagerQt/VpnSetting>
++
++class WireGuardSettingWidget : public SettingWidget
++{
++    Q_OBJECT
++public:
++    explicit WireGuardSettingWidget(const NetworkManager::VpnSetting::Ptr &setting,
++                                    QWidget *parent = 0);
++    ~WireGuardSettingWidget() override;
++
++    void loadConfig(const NetworkManager::Setting::Ptr &setting) override;
++    void loadSecrets(const NetworkManager::Setting::Ptr &setting) override;
++
++    QVariantMap setting() const override;
++
++    virtual bool isValid() const override;
++
++private Q_SLOTS:
++    void showAdvanced();
++
++private:
++    class Private;
++    Private *d;
++    void setProperty(NMStringMap &data, const QLatin1String &key, const QString &value) const;
++    void setBackground(QWidget *w, bool result) const;
++    void checkAddressValid();
++    void checkPrivateKeyValid();
++    void checkPublicKeyValid();
++    void checkDnsValid();
++    void checkAllowedIpsValid();
++    void checkEndpointValid();
++};
++
++#endif // WIREGUARDWIDGET_H
+-- 
+cgit v1.1
+
