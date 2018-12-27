@@ -1,18 +1,17 @@
 # Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/systemd/systemd.git"
 	inherit git-r3
 else
-	SRC_URI="https://github.com/systemd/systemd/archive/v${PV}/${P}.tar.gz
-		https://dev.gentoo.org/~floppym/dist/${P}-patches-1.tar.gz"
-	KEYWORDS="alpha amd64 ~arm arm64 ~hppa ia64 ~mips ~ppc ppc64 ~sparc x86"
+	SRC_URI="https://github.com/systemd/systemd/archive/v${PV}/${P}.tar.gz"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sparc ~x86"
 fi
 
-PYTHON_COMPAT=( python3_{4,5,6,7} )
+PYTHON_COMPAT=( python{3_5,3_6,3_7} )
 
 inherit bash-completion-r1 linux-info meson multilib-minimal ninja-utils pam python-any-r1 systemd toolchain-funcs udev user
 
@@ -21,7 +20,7 @@ HOMEPAGE="https://www.freedesktop.org/wiki/Software/systemd"
 
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
-IUSE="acl apparmor audit build cryptsetup curl elfutils +gcrypt gnuefi http idn importd +kmod libidn2 +lz4 lzma nat pam pcre policykit qrcode -seccomp selinux +split-usr ssl +sysv-utils test vanilla xkb"
+IUSE="acl apparmor audit build cryptsetup curl elfutils +gcrypt gnuefi http idn importd +kmod libidn2 +lz4 lzma nat pam pcre policykit qrcode +resolvconf +seccomp selinux +split-usr ssl +sysv-utils test vanilla xkb"
 
 REQUIRED_USE="importd? ( curl gcrypt lzma )"
 RESTRICT="!test? ( test )"
@@ -37,7 +36,6 @@ COMMON_DEPEND=">=sys-apps/util-linux-2.30:0=[${MULTILIB_USEDEP}]
 	cryptsetup? ( >=sys-fs/cryptsetup-1.6:0= )
 	curl? ( net-misc/curl:0= )
 	elfutils? ( >=dev-libs/elfutils-0.158:0= )
-	elibc_musl? ( sys-libs/musl-nscd )
 	gcrypt? ( >=dev-libs/libgcrypt-1.4.5:0=[${MULTILIB_USEDEP}] )
 	http? (
 		>=net-libs/libmicrohttpd-0.9.33:0=
@@ -68,6 +66,7 @@ RDEPEND="${COMMON_DEPEND}
 	selinux? ( sec-policy/selinux-base-policy[systemd] )
 	sysv-utils? ( !sys-apps/sysvinit )
 	!sysv-utils? ( sys-apps/sysvinit )
+	resolvconf? ( !net-dns/openresolv )
 	!build? ( || (
 		sys-apps/util-linux[kill(-)]
 		sys-process/procps[kill(+)]
@@ -86,14 +85,18 @@ PDEPEND=">=sys-apps/dbus-1.9.8[systemd]
 	!vanilla? ( sys-apps/gentoo-systemd-integration )"
 
 # Newer linux-headers needed by ia64, bug #480218
-DEPEND="${COMMON_DEPEND}
+DEPEND="
+	>=sys-kernel/linux-headers-${MINKV}
+	gnuefi? ( >=sys-boot/gnu-efi-3.0.2 )
+"
+
+BDEPEND="
 	app-arch/xz-utils:0
 	dev-util/gperf
+	>=dev-util/meson-0.46
 	>=dev-util/intltool-0.50
 	>=sys-apps/coreutils-8.16
-	>=sys-kernel/linux-headers-${MINKV}
-	virtual/pkgconfig
-	gnuefi? ( >=sys-boot/gnu-efi-3.0.2 )
+	virtual/pkgconfig[${MULTILIB_USEDEP}]
 	test? ( sys-apps/dbus )
 	app-text/docbook-xml-dtd:4.2
 	app-text/docbook-xml-dtd:4.5
@@ -147,20 +150,20 @@ src_unpack() {
 }
 
 src_prepare() {
+	# Do NOT add patches here
 	local PATCHES=()
 
 	[[ -d "${WORKDIR}"/patches ]] && PATCHES+=( "${WORKDIR}"/patches )
 
 	# Add local patches here
 	PATCHES+=(
-		"${FILESDIR}"/239-debug-extra.patch
 	)
 
 	if ! use vanilla; then
 		PATCHES+=(
 			"${FILESDIR}/gentoo-Dont-enable-audit-by-default.patch"
 			"${FILESDIR}/gentoo-systemd-user-pam.patch"
-			"${FILESDIR}/gentoo-uucp-group-r1.patch"
+			"${FILESDIR}/gentoo-uucp-group.patch"
 			"${FILESDIR}/gentoo-generator-path.patch"
 		)
 	fi
@@ -257,6 +260,7 @@ multilib_src_configure() {
 		-Dhostnamed=$(meson_multilib)
 		-Dhwdb=$(meson_multilib)
 		-Dldconfig=$(meson_multilib)
+		-Dlocaled=$(meson_multilib)
 		-Dman=$(meson_multilib)
 		-Dnetworkd=$(meson_multilib)
 		-Dquotacheck=$(meson_multilib)
@@ -306,18 +310,26 @@ multilib_src_install() {
 }
 
 multilib_src_install_all() {
+	local rootprefix=$(usex split-usr '' /usr)
+
 	# meson doesn't know about docdir
-	mv "${ED%/}"/usr/share/doc/{systemd,${PF}} || die
+	mv "${ED}"/usr/share/doc/{systemd,${PF}} || die
 
 	einstalldocs
 	dodoc "${FILESDIR}"/nsswitch.conf
 
+	if ! use resolvconf; then
+		rm -f "${ED}${rootprefix}"/sbin/resolvconf || die
+	fi
+
 	if ! use sysv-utils; then
-		local rootprefix=$(usex split-usr '' /usr)
-		rm "${ED%/}${rootprefix}"/sbin/{halt,init,poweroff,reboot,runlevel,shutdown,telinit} || die
-		rmdir "${ED%/}${rootprefix}"/sbin || die
-		rm "${ED%/}"/usr/share/man/man1/init.1 || die
-		rm "${ED%/}"/usr/share/man/man8/{halt,poweroff,reboot,runlevel,shutdown,telinit}.8 || die
+		rm "${ED}${rootprefix}"/sbin/{halt,init,poweroff,reboot,runlevel,shutdown,telinit} || die
+		rm "${ED}"/usr/share/man/man1/init.1 || die
+		rm "${ED}"/usr/share/man/man8/{halt,poweroff,reboot,runlevel,shutdown,telinit}.8 || die
+	fi
+
+	if ! use resolvconf && ! use sysv-utils; then
+		rmdir "${ED}${rootprefix}"/sbin || die
 	fi
 
 	# Preserve empty dirs in /etc & /var, bug #437008
@@ -331,18 +343,18 @@ multilib_src_install_all() {
 
 	# If we install these symlinks, there is no way for the sysadmin to remove them
 	# permanently.
-	rm -f "${ED%/}"/etc/systemd/system/multi-user.target.wants/systemd-networkd.service || die
-	rm -f "${ED%/}"/etc/systemd/system/dbus-org.freedesktop.network1.service || die
-	rm -f "${ED%/}"/etc/systemd/system/multi-user.target.wants/systemd-resolved.service || die
-	rm -f "${ED%/}"/etc/systemd/system/dbus-org.freedesktop.resolve1.service || die
-	rm -fr "${ED%/}"/etc/systemd/system/network-online.target.wants || die
-	rm -fr "${ED%/}"/etc/systemd/system/sockets.target.wants || die
-	rm -fr "${ED%/}"/etc/systemd/system/sysinit.target.wants || die
+	rm -f "${ED}"/etc/systemd/system/multi-user.target.wants/systemd-networkd.service || die
+	rm -f "${ED}"/etc/systemd/system/dbus-org.freedesktop.network1.service || die
+	rm -f "${ED}"/etc/systemd/system/multi-user.target.wants/systemd-resolved.service || die
+	rm -f "${ED}"/etc/systemd/system/dbus-org.freedesktop.resolve1.service || die
+	rm -fr "${ED}"/etc/systemd/system/network-online.target.wants || die
+	rm -fr "${ED}"/etc/systemd/system/sockets.target.wants || die
+	rm -fr "${ED}"/etc/systemd/system/sysinit.target.wants || die
 
 	local udevdir=/lib/udev
 	use split-usr || udevdir=/usr/lib/udev
 
-	rm -r "${ED%/}${udevdir}/hwdb.d" || die
+	rm -r "${ED}${udevdir}/hwdb.d" || die
 
 	if use split-usr; then
 		# Avoid breaking boot/reboot
@@ -352,9 +364,9 @@ multilib_src_install_all() {
 }
 
 migrate_locale() {
-	local envd_locale_def="${EROOT%/}/etc/env.d/02locale"
-	local envd_locale=( "${EROOT%/}"/etc/env.d/??locale )
-	local locale_conf="${EROOT%/}/etc/locale.conf"
+	local envd_locale_def="${EROOT}/etc/env.d/02locale"
+	local envd_locale=( "${EROOT}"/etc/env.d/??locale )
+	local locale_conf="${EROOT}/etc/locale.conf"
 
 	if [[ ! -L ${locale_conf} && ! -e ${locale_conf} ]]; then
 		# If locale.conf does not exist...
@@ -419,7 +431,7 @@ pkg_postinst() {
 	# Keep this here in case the database format changes so it gets updated
 	# when required. Despite that this file is owned by sys-apps/hwids.
 	if has_version "sys-apps/hwids[udev]"; then
-		udevadm hwdb --update --root="${EROOT%/}"
+		udevadm hwdb --update --root="${EROOT}"
 	fi
 
 	udev_reload || FAIL=1

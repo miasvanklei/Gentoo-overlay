@@ -1,0 +1,43 @@
+--- a/src/portable/portabled-operation.c
++++ b/src/portable/portabled-operation.c
+@@ -1,5 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
++#include <sys/wait.h>
++
+ #include "alloc-util.h"
+ #include "fd-util.h"
+ #include "portabled-operation.h"
+--- a/src/cgroups-agent/cgroups-agent.c
++++ b/src/cgroups-agent/cgroups-agent.c
+@@ -2,6 +2,7 @@
+ 
+ #include <stdlib.h>
+ #include <sys/socket.h>
++#include <string.h>
+ 
+ #include "fd-util.h"
+ #include "log.h"
+--- a/src/udev/udev-event.c
++++ b/src/udev/udev-event.c
+@@ -7,6 +7,7 @@
+ #include <stddef.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <sys/wait.h>
+ #include <unistd.h>
+ 
+ #include "sd-event.h"
+--- a/src/test/test-json.c.
++++ b/src/test/test-json.c
+@@ -13,6 +13,10 @@
+ #include "strv.h"
+ #include "util.h"
+ 
++#ifndef M_PIl
++#define M_PIl 3.141592653589793238462643383279502884L
++#endif
++
+ static void test_tokenizer(const char *data, ...) {
+         unsigned line = 0, column = 0;
+         void *state = NULL;
