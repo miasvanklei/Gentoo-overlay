@@ -53,20 +53,16 @@ pkg_setup() {
 }
 
 PATCHES=(
-	"${FILESDIR}"/musl-fix-static-linking.patch
-	"${FILESDIR}"/musl-fix-linux_musl_base.patch
-	"${FILESDIR}"/llvm-with-ffi.patch
-	"${FILESDIR}"/static-pie.patch
-	"${FILESDIR}"/need-rpath.patch
-	"${FILESDIR}"/minimize-rpath.patch
-	"${FILESDIR}"/gentoo-change-rpath-to-rustlib.patch
-	"${FILESDIR}"/gentoo-target.patch
-	"${FILESDIR}"/bootstrap-tool-respect-tool.patch
-	"${FILESDIR}"/fix-analysis-path.patch
-	"${FILESDIR}"/system-llvm.patch
-	"${FILESDIR}"/link-libc++.patch
-	"${FILESDIR}"/link-libunwind.patch
-	"${FILESDIR}"/1.30.1-clippy-sysroot.patch
+	"${FILESDIR}"/0001-cleanup-musl-target.patch
+	"${FILESDIR}"/0002-add-gentoo-target.patch
+        "${FILESDIR}"/0003-liblibc-linkage.patch
+        "${FILESDIR}"/0004-libunwind-linkage.patch
+	"${FILESDIR}"/0005-libc++-linkage.patch
+	"${FILESDIR}"/0006-musl-fix-static-linking.patch
+	"${FILESDIR}"/0007-static-pie-support.patch
+	"${FILESDIR}"/0008-system-llvm.patch
+	"${FILESDIR}"/0009-fix-analysis-path.patch
+	"${FILESDIR}"/0010-Move-debugger-scripts-to-usr-share-rust.patch
 )
 
 src_configure() {
@@ -112,11 +108,11 @@ src_configure() {
 	use-jemalloc = $(toml_usex jemalloc)
 	default-linker = "$(tc-getCC)"
         channel = "stable"
+        rpath = false
 	[target.${CBUILD}]
 	cc = "$(tc-getBUILD_CC)"
 	cxx = "$(tc-getBUILD_CXX)"
 	llvm-config = "${llvm_config}"
-	musl-root = "/usr"
 	linker = "$(tc-getCC)"
 	ar = "$(tc-getAR)"
 	EOF
@@ -131,7 +127,7 @@ src_compile() {
 
 	env $(cat "${S}"/config.env)\
 	${EPYTHON} ./x.py build --config="${S}"/config.toml -j$(makeopts_jobs) \
-	--exclude src/tools/miri || die
+        --exclude src/tools/miri || die
 }
 
 src_install() {
