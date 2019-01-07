@@ -53,6 +53,7 @@ pkg_setup() {
 }
 
 PATCHES=(
+	"${FILESDIR}"/1.30.1-clippy-sysroot.patch
 	"${FILESDIR}"/0001-cleanup-musl-target.patch
 	"${FILESDIR}"/0002-add-gentoo-target.patch
         "${FILESDIR}"/0003-liblibc-linkage.patch
