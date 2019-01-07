@@ -28,7 +28,7 @@ PDF_VIEWER_COMMIT="a5251e497fb52e699b28f627e3cbb6d8cefb62df"
 # Keep this in sync with vendor/pdf_viewer/vendor/grit
 GRIT_COMMIT="9536fb6429147d27ef1563088341825db0a893cd"
 # Keep this in sync with vendor/libchromiumcontent
-LIBCHROMIUMCONTENT_COMMIT="ccdb085454b0a387ee96e0f81a7ca9a8ce07a710"
+LIBCHROMIUMCONTENT_COMMIT="daf9bdcdfdfd6bad258b5e1e48b2e17d06c1a987"
 # Keep this in sync with package.json#devDependencies
 ASAR_VERSION="0.13.0"
 BROWSERIFY_VERSION="14.0.0"
@@ -350,8 +350,8 @@ src_prepare() {
 
 	# Apply Gentoo patches for Electron itself.
 	cd "${S}" || die
-	_unnest_patches "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
-	eapply "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
+	_unnest_patches "${WORKDIR}/${PATCHES_P}/2.0.14/electron/"
+	eapply "${WORKDIR}/${PATCHES_P}/2.0.14/electron/"
 
 	# Apply Chromium patches from libchromiumcontent.
 	cd "${CHROMIUM_S}" || die
@@ -359,7 +359,7 @@ src_prepare() {
 	eapply "${LIBCC_S}/patches"
 
 	# Finally, apply Gentoo patches for Chromium.
-	eapply "${WORKDIR}/${PATCHES_P}/${PV}/chromium/"
+	eapply "${WORKDIR}/${PATCHES_P}/2.0.14/chromium/"
 
 	# Merge chromiumcontent component into chromium source tree.
 	mkdir -p "${CHROMIUM_S}/chromiumcontent" || die
