@@ -1,0 +1,78 @@
+From 15b6b766adc888046caedf7f3cd31580b3759f34 Mon Sep 17 00:00:00 2001
+From: Luis Diaz Mas <piponazo@gmail.com>
+Date: Sun, 6 Jan 2019 10:07:49 +0100
+Subject: [PATCH] Reliable detection of strerror_r variants
+
+---
+ cmake/config.h.cmake           |  3 +++
+ cmake/generateConfigFile.cmake |  9 +++++++++
+ src/futils.cpp                 | 10 +---------
+ 3 files changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/cmake/config.h.cmake b/cmake/config.h.cmake
+index 9bd83f3c6..edac1ef7e 100644
+--- a/cmake/config.h.cmake
++++ b/cmake/config.h.cmake
+@@ -27,6 +27,9 @@
+ // Define if you have the strerror_r function.
+ #cmakedefine EXV_HAVE_STRERROR_R
+ 
++// Define if the strerror_r function returns char*.
++#cmakedefine EXV_STRERROR_R_CHAR_P
++
+ // Define to enable the Windows unicode path support.
+ #cmakedefine EXV_UNICODE_PATH
+ 
+diff --git a/cmake/generateConfigFile.cmake b/cmake/generateConfigFile.cmake
+index 5f7ea50bd..2c1510083 100644
+--- a/cmake/generateConfigFile.cmake
++++ b/cmake/generateConfigFile.cmake
+@@ -1,4 +1,5 @@
+ include(CheckIncludeFile)
++include(CheckCXXSourceCompiles)
+ 
+ # Note that the scope of the EXV_ variables in local
+ if (${EXIV2_ENABLE_WEBREADY})
+@@ -28,6 +29,14 @@ check_function_exists( mmap     EXV_HAVE_MMAP )
+ check_function_exists( munmap   EXV_HAVE_MUNMAP )
+ check_function_exists( strerror_r   EXV_HAVE_STRERROR_R )
+ 
++check_cxx_source_compiles( "
++#include <string.h>
++int main() {
++    char buff[100];
++    const char* c = strerror_r(0,buff,100);
++    return 0;
++}" EXV_STRERROR_R_CHAR_P )
++
+ check_include_file( "unistd.h"  EXV_HAVE_UNISTD_H )
+ check_include_file( "sys/mman.h"    EXV_HAVE_SYS_MMAN_H )
+ if ( NOT MINGW AND NOT MSYS AND NOT MSVC )
+diff --git a/src/futils.cpp b/src/futils.cpp
+index 0f3069385..2fb66b1dc 100644
+--- a/src/futils.cpp
++++ b/src/futils.cpp
+@@ -53,14 +53,6 @@
+ #include <algorithm>
+ #include <stdexcept>
+ 
+-#ifdef EXV_HAVE_STRERROR_R
+-#ifdef _GNU_SOURCE
+-extern char *strerror_r(int errnum, char *buf, size_t n);
+-#else
+-extern int strerror_r(int errnum, char *buf, size_t n);
+-#endif
+-#endif
+-
+ namespace Exiv2 {
+     const char* ENVARDEF[] = {"/exiv2.php", "40"}; //!< @brief default URL for http exiv2 handler and time-out
+     const char* ENVARKEY[] = {"EXIV2_HTTP_POST", "EXIV2_TIMEOUT"}; //!< @brief request keys for http exiv2 handler and time-out
+@@ -345,7 +337,7 @@ namespace Exiv2 {
+         std::ostringstream os;
+ #ifdef EXV_HAVE_STRERROR_R
+         const size_t n = 1024;
+-#ifdef _GNU_SOURCE
++#ifdef EXV_STRERROR_R_CHAR_P
+         char *buf = 0;
+         char buf2[n];
+         std::memset(buf2, 0x0, n);
