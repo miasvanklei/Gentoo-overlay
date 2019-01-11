@@ -63,7 +63,7 @@
  {
  	gboolean timeout = FALSE;
  	gboolean interrupted = FALSE;
--	gint32 old, new;
+-	gint32 old, new_;
  
  	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] worker parking",
  		GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ())));
@@ -98,8 +98,8 @@
 +		mono_thread_info_install_interrupt (worker_wait_interrupt, NULL, &interrupted);
 +		if (interrupted)
 +			goto done;
--			new = old + 1;
--		} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new, old) != old);
+-			new_ = old + 1;
+-		} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new_, old) != old);
  
 +		if (mono_coop_cond_timedwait (&worker.parked_threads_cond, &worker.parked_threads_lock, rand_next (&rand_handle, 5 * 1000, 60 * 1000)) != 0)
 -		switch (mono_coop_sem_timedwait (&worker.parked_threads_sem, rand_next (&rand_handle, 5 * 1000, 60 * 1000), MONO_SEM_FLAGS_ALERTABLE)) {
@@ -124,8 +124,8 @@
  
 +done:
 +		worker.parked_threads_count -= 1;
--				new = old - 1;
--			} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new, old) != old);
+-				new_ = old - 1;
+-			} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new_, old) != old);
 -		}
  
  		COUNTER_ATOMIC (counter, {
@@ -145,7 +145,7 @@
  {
 +	gboolean res = FALSE;
 -	gboolean res = TRUE;
--	gint32 old, new;
+-	gint32 old, new_;
  
  	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_THREADPOOL, "[%p] try unpark worker",
  		GUINT_TO_POINTER (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ())));
@@ -165,8 +165,8 @@
 -			break;
 -		}
 -
--		new = old - 1;
--	} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new, old) != old);
+-		new_ = old - 1;
+-	} while (mono_atomic_cas_i32 (&worker.parked_threads_count, new_, old) != old);
 -
 -	if (res)
 -		mono_coop_sem_post (&worker.parked_threads_sem);
