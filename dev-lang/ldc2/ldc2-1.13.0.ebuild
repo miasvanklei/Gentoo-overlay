@@ -23,7 +23,6 @@ S=${WORKDIR}/ldc-${MY_PV}-src
 
 PATCHES=(
 	"${FILESDIR}"/fix-linking.patch
-	"${FILESDIR}"/fix-sys-stat.patch
 	"${FILESDIR}"/wrong-type.patch
 )
 

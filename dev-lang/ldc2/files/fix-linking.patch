@@ -1,15 +1,16 @@
 --- a/driver/linker-gcc.cpp	2018-11-17 22:57:47.970328370 +0100
 +++ b/driver/linker-gcc.cpp	2018-11-17 22:59:46.593154794 +0100
-@@ -525,10 +525,8 @@
+@@ -524,13 +524,6 @@
+ void ArgsBuilder::addLinker() {
    if (!opts::linker.empty()) {
      args.push_back("-fuse-ld=" + opts::linker);
-   } else if (global.params.isLinux) {
+-  } else if (global.params.isLinux &&
+-             global.params.targetTriple->getEnvironment() !=
+-                 llvm::Triple::Android) {
 -    // Default to ld.gold on Linux due to ld.bfd issues with ThinLTO (see #2278)
 -    // and older bfd versions stripping llvm.used symbols (e.g., ModuleInfo
 -    // refs) with --gc-sections (see #2870).
 -    args.push_back("-fuse-ld=gold");
-+    // ld.lld is better than ld.gold or ld.bfd.
-+    args.push_back("-fuse-ld=lld");
    }
  }
  
