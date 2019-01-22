@@ -16,7 +16,7 @@ KEYWORDS="~amd64 ~arm"
 IUSE=""
 
 RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
-	>=dev-python/audio-metadata-0.2[${PYTHON_USEDEP}]
+	>=dev-python/audio-metadata-0.3[${PYTHON_USEDEP}]
 	>=dev-python/marshmallow-2.1[${PYTHON_USEDEP}]
 	>=dev-python/pendulum-2.0[${PYTHON_USEDEP}]
 	>=dev-python/protobuf-python-3.5[${PYTHON_USEDEP}]"

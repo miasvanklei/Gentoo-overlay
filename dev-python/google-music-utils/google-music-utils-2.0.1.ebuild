@@ -14,7 +14,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm"
 IUSE=""
 
-RDEPEND=">=dev-python/audio-metadata-0.1[${PYTHON_USEDEP}]
+RDEPEND=">=dev-python/audio-metadata-0.3[${PYTHON_USEDEP}]
 	>=dev-python/multidict-4.0[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.10[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}

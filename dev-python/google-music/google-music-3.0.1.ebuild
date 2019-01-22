@@ -16,8 +16,8 @@ KEYWORDS="~amd64 ~arm"
 IUSE=""
 
 RDEPEND=">=dev-python/appdirs-1.4[${PYTHON_USEDEP}]
-	>=dev-python/audio-metadata-0.1[${PYTHON_USEDEP}]
-	>=dev-python/google-music-proto-2.1[${PYTHON_USEDEP}]
+	>=dev-python/audio-metadata-0.3[${PYTHON_USEDEP}]
+	>=dev-python/google-music-proto-2.2[${PYTHON_USEDEP}]
 	>=dev-python/protobuf-python-3.5[${PYTHON_USEDEP}]
 	>=dev-python/requests-oauthlib-1.0[${PYTHON_USEDEP}]
 	>=dev-python/tenacity-5.0[${PYTHON_USEDEP}]"
