@@ -10,15 +10,15 @@
  	__stdio_exit();
 --- a/src/internal/libc.h
 +++ b/src/internal/libc.h
-@@ -46,6 +46,8 @@ extern size_t __hwcap ATTR_LIBC_VISIBILITY;
- extern size_t __sysinfo ATTR_LIBC_VISIBILITY;
+@@ -49,6 +49,8 @@
+ extern hidden size_t __sysinfo;
  extern char *__progname, *__progname_full;
  
-+void __tls_run_dtors(void) ATTR_LIBC_VISIBILITY;
++hidden void __tls_run_dtors(void);
 +
- /* Designed to avoid any overhead in non-threaded processes */
- void __lock(volatile int *) ATTR_LIBC_VISIBILITY;
- void __unlock(volatile int *) ATTR_LIBC_VISIBILITY;
+ extern hidden const char __libc_version[];
+ 
+ hidden void __synccall(void (*)(void *), void *);
 --- a/src/internal/pthread_impl.h
 +++ b/src/internal/pthread_impl.h
 @@ -12,6 +12,8 @@
