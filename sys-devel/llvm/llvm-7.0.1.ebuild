@@ -77,6 +77,9 @@ S=${WORKDIR}/${P/_/}.src
 CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
+	# fix rust segfault
+	eapply "${FILESDIR}"/0001-fix-segfault-discriminator.patch
+
 	# use init-array as default
 	eapply "${FILESDIR}"/0004-use-init-array.patch
 
