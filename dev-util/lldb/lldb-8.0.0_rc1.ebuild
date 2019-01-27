@@ -6,7 +6,7 @@ EAPI=6
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python3_7 )
 
 inherit cmake-utils llvm multiprocessing python-single-r1 \
 	toolchain-funcs
@@ -16,8 +16,8 @@ LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="The LLVM debugger"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
+SRC_URI="https://prereleases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	test? ( https://prereleases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 LICENSE="UoI-NCSA"
 SLOT="0"

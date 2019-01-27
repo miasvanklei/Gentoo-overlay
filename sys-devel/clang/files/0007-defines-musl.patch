@@ -1,16 +1,16 @@
-diff --git a/lib/Basic/Targets/OSTargets.h b/lib/Basic/Targets/OSTargets.h
-index 5af63615dc..954195822f 100644
 --- a/lib/Basic/Targets/OSTargets.h
 +++ b/lib/Basic/Targets/OSTargets.h
-@@ -297,7 +297,10 @@ protected:
-     // Linux defines; list based off of gcc output
-     DefineStd(Builder, "unix", Opts);
-     DefineStd(Builder, "linux", Opts);
--    Builder.defineMacro("__gnu_linux__");
-+    if (!Triple.isMusl())
-+      Builder.defineMacro("__gnu_linux__");
-+    else
-+      Builder.defineMacro("__STDC_ISO_10646__", "201206L");
-     Builder.defineMacro("__ELF__");
-     if (Triple.isAndroid()) {
-       Builder.defineMacro("__ANDROID__", "1");
+@@ -354,9 +354,12 @@
+       this->PlatformMinVersion = VersionTuple(Maj, Min, Rev);
+       if (Maj)
+         Builder.defineMacro("__ANDROID_API__", Twine(Maj));
+-    } else {
++    } else if (!Triple.isMusl()) {
+         Builder.defineMacro("__gnu_linux__");
+     }
++    else {
++        Builder.defineMacro("__STDC_ISO_10646__", "201206L");
++    }
+     if (Opts.POSIXThreads)
+       Builder.defineMacro("_REENTRANT");
+     if (Opts.CPlusPlus)

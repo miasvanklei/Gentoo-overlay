@@ -1,18 +1,3 @@
---- a/libsandbox/Makefile.in	2017-10-04 13:49:17.567421709 +0200
-+++ b/libsandbox/Makefile.in	2017-10-04 13:49:30.374407387 +0200
-@@ -769,10 +769,10 @@
- wrappers.c: symbols.h
- 
- libsandbox.map: $(SYMBOLS_FILE) $(GEN_VERSION_MAP_SCRIPT)
--	$(AM_V_GEN)$(READELF) -s $(LIBC_PATH) | $(SB_AWK) $(GEN_VERSION_MAP_SCRIPT) > $@
-+	$(AM_V_GEN)$(READELF) -t $(LIBC_PATH) | $(SB_AWK) $(GEN_VERSION_MAP_SCRIPT) > $@
- 
- symbols.h: $(SYMBOLS_FILE) $(GEN_HEADER_SCRIPT)
--	$(AM_V_GEN)$(READELF) -s $(LIBC_PATH) | $(SB_AWK) $(GEN_HEADER_SCRIPT) > $@
-+	$(AM_V_GEN)$(READELF) -t $(LIBC_PATH) | $(SB_AWK) $(GEN_HEADER_SCRIPT) > $@
- sb_nr.h: symbols.h $(SB_NR_FILE)
- 	$(AM_V_GEN)$(EGREP) -h '^\#define SB_' $^ > $@
- trace_syscalls.h: $(GEN_TRACE_SCRIPT) $(SB_SCHIZO_HEADERS)
 --- a/configure	2018-11-14 17:22:34.584765610 +0100
 +++ b/configure	2018-11-14 17:24:32.092504158 +0100
 @@ -15027,10 +15027,7 @@

@@ -13,8 +13,7 @@ inherit cmake-utils eapi7-ver flag-o-matic multilib-minimal \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${P}-manpages.tar.bz2 )"
+SRC_URI="https://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -77,20 +76,14 @@ S=${WORKDIR}/${P/_/}.src
 CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
-	# fix rust segfault
-	eapply "${FILESDIR}"/0001-fix-segfault-discriminator.patch
-
 	# use init-array as default
 	eapply "${FILESDIR}"/0004-use-init-array.patch
 
-	# support building llvm against musl-libc
-	use elibc_musl && eapply "${FILESDIR}"/0003-musl-fixes.patch
+	# add P option,
+	eapply "${FILESDIR}"/0001-ar-add-p-option.patch
 
-	# add P option, add the contents of thin archives to thin archives
-	eapply "${FILESDIR}"/0001-improve-ar.patch
-
-	# add -S option and fix permissions when stripping
-	eapply "${FILESDIR}"/0002-improve-objcopy.patch
+	# fix permissions when stripping, use strip_all_gnu for -S
+	eapply "${FILESDIR}"/0002-objcopy-improvements.patch
 
 	# two specific rust patches in one
 	eapply "${FILESDIR}"/0005-add-rust-support.patch
@@ -263,13 +256,6 @@ multilib_src_install_all() {
 		MANPATH="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 	_EOF_
-
-	# install pre-generated manpages
-	if ! use doc; then
-		# (doman does not support custom paths)
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/${P}-manpages/llvm"/*.1
-	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 }

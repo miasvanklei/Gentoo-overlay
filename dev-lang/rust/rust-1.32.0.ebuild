@@ -64,6 +64,7 @@ PATCHES=(
 	"${FILESDIR}"/0008-system-llvm.patch
 	"${FILESDIR}"/0009-fix-analysis-path.patch
 	"${FILESDIR}"/0010-Move-debugger-scripts-to-usr-share-rust.patch
+	"${FILESDIR}"/0011-llvm-8.patch
 )
 
 src_configure() {

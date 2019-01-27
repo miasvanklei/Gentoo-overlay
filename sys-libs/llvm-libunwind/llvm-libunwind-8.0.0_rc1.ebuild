@@ -6,7 +6,7 @@ EAPI=6
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
-PYTHON_COMPAT=( python{2_7,3_4,3_5,3_6} )
+PYTHON_COMPAT=( python{2_7,3_5,3_6,3_7} )
 inherit cmake-multilib llvm multiprocessing python-any-r1
 
 MY_P=libunwind-${PV/_/}.src
@@ -15,9 +15,9 @@ LIBCXXABI_P=libcxxabi-${PV/_/}.src
 
 DESCRIPTION="C++ runtime stack unwinder from LLVM"
 HOMEPAGE="https://github.com/llvm-mirror/libunwind"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
-	test? ( https://releases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz
-		https://releases.llvm.org/${PV/_//}/${LIBCXXABI_P}.tar.xz )"
+SRC_URI="https://prereleases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	test? ( https://prereleases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz
+		https://prereleases.llvm.org/${PV/_//}/${LIBCXXABI_P}.tar.xz )"
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"

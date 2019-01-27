@@ -1,19 +1,14 @@
 --- a/bin/estrip	2018-11-19 15:25:35.491438502 +0100
 +++ b/bin/estrip	2018-11-19 15:26:43.593311589 +0100
-@@ -137,6 +137,13 @@
+@@ -133,7 +133,7 @@
+ *GNU*) # sys-devel/binutils
+ 	# We'll leave out -R .note for now until we can check out the relevance
+ 	# of the section when it has the ALLOC flag set on it ...
+-	SAFE_STRIP_FLAGS="--strip-unneeded"
++	SAFE_STRIP_FLAGS="-S"
  	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
  	SPLIT_STRIP_FLAGS=
  	;;
-+*) # sys-devel/llvm
-+	# We'll leave out -R .note for now until we can check out the relevance
-+	# of the section when it has the ALLOC flag set on it ...
-+	SAFE_STRIP_FLAGS=""
-+	DEF_STRIP_FLAGS="-S -R .comment -R .GCC.command.line -R .note.gnu.gold-version"
-+	SPLIT_STRIP_FLAGS=
-+	;;
- esac
- : ${PORTAGE_STRIP_FLAGS=${SAFE_STRIP_FLAGS} ${DEF_STRIP_FLAGS}}
- 
 @@ -415,19 +422,7 @@
  	# elf types though cause that stuff is good.
  

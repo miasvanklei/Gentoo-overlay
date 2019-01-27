@@ -1,42 +1,3 @@
-diff --git a/include/clang/Driver/Distro.h b/include/clang/Driver/Distro.h
-index 4ab4e2ae99..73effab6ec 100644
---- a/include/clang/Driver/Distro.h
-+++ b/include/clang/Driver/Distro.h
-@@ -35,6 +35,7 @@ public:
-     DebianStretch,
-     DebianBuster,
-     Exherbo,
-+    GentooLinux,
-     RHEL5,
-     RHEL6,
-     RHEL7,
-@@ -121,6 +122,10 @@ public:
-     return DistroVal == AlpineLinux;
-   }
- 
-+  bool IsGentoo() const {
-+    return DistroVal == GentooLinux;
-+  }
-+
-   /// @}
- };
- 
-diff --git a/lib/Driver/Distro.cpp b/lib/Driver/Distro.cpp
-index f15c919b9a..af62eee299 100644
---- a/lib/Driver/Distro.cpp
-+++ b/lib/Driver/Distro.cpp
-@@ -135,6 +135,9 @@ static Distro::DistroType DetectDistro(vfs::FileSystem &VFS) {
-   if (VFS.exists("/etc/arch-release"))
-     return Distro::ArchLinux;
- 
-+  if (VFS.exists("/etc/gentoo-release"))
-+    return Distro::GentooLinux;
-+
-   return Distro::UnknownDistro;
- }
- 
-diff --git a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
-index 7845781f12..3d417850dc 100644
 --- a/lib/Driver/ToolChains/Gnu.cpp
 +++ b/lib/Driver/ToolChains/Gnu.cpp
 @@ -18,6 +18,7 @@
@@ -113,16 +74,15 @@ index 7845781f12..3d417850dc 100644
        const char *crtend;
        if (Args.hasArg(options::OPT_shared))
          crtend = isAndroid ? "crtend_so.o" : "crtendS.o";
-diff --git a/lib/Driver/ToolChains/Linux.cpp b/lib/Driver/ToolChains/Linux.cpp
-index 1301cdf114..239cea8e0b 100644
 --- a/lib/Driver/ToolChains/Linux.cpp
 +++ b/lib/Driver/ToolChains/Linux.cpp
-@@ -208,53 +208,27 @@
+@@ -215,34 +215,18 @@
  
  Linux::Linux(const Driver &D, const llvm::Triple &Triple, const ArgList &Args)
      : Generic_ELF(D, Triple, Args) {
 -  GCCInstallation.init(Triple, Args);
 -  Multilibs = GCCInstallation.getMultilibs();
+-  SelectedMultilib = GCCInstallation.getMultilib();
    llvm::Triple::ArchType Arch = Triple.getArch();
    std::string SysRoot = computeSysRoot();
  
@@ -141,16 +101,20 @@ index 1301cdf114..239cea8e0b 100644
 -
    Distro Distro(D.getVFS());
  
--  if (Distro.IsAlpineLinux()) {
-+  if (Distro.IsAlpineLinux() || Distro.IsGentoo()) {
+-  if (Distro.IsAlpineLinux() || Triple.isAndroid()) {
++  if (Distro.IsAlpineLinux() || Distro.IsGentoo() || Triple.isAndroid()) {
      ExtraOpts.push_back("-z");
      ExtraOpts.push_back("now");
    }
  
--  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsAlpineLinux()) {
-+  if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsAlpineLinux() || Distro.IsGentoo()) {
+   if (Distro.IsOpenSUSE() || Distro.IsUbuntu() || Distro.IsAlpineLinux() ||
+-      Triple.isAndroid()) {
++      Distro.IsGentoo() || Triple.isAndroid()) {
      ExtraOpts.push_back("-z");
      ExtraOpts.push_back("relro");
+   }
+@@ -255,23 +239,12 @@
+     ExtraOpts.push_back("max-page-size=4096");
    }
  
 -  if (GCCInstallation.getParentLibPath().find("opt/rh/devtoolset") !=
@@ -173,16 +137,16 @@ index 1301cdf114..239cea8e0b 100644
  
    if (IsMips && !SysRoot.empty())
      ExtraOpts.push_back("--sysroot=" + SysRoot);
-@@ -266,7 +240,7 @@
-   // Android loader does not support .gnu.hash.
+@@ -284,7 +257,7 @@
    // Hexagon linker/loader does not support .gnu.hash
-   if (!IsMips && !IsAndroid && !IsHexagon) {
--    if (Distro.IsRedhat() || Distro.IsOpenSUSE() || Distro.IsAlpineLinux() ||
-+    if (Distro.IsRedhat() || Distro.IsOpenSUSE() || Distro.IsAlpineLinux() || Distro.IsGentoo() ||
-         (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick))
+   if (!IsMips && !IsHexagon) {
+     if (Distro.IsRedhat() || Distro.IsOpenSUSE() || Distro.IsAlpineLinux() ||
+-        (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick) ||
++        Distro.IsGentoo() || (Distro.IsUbuntu() && Distro >= Distro::UbuntuMaverick) ||
+         (IsAndroid && !Triple.isAndroidVersionLT(23)))
        ExtraOpts.push_back("--hash-style=gnu");
  
-@@ -285,150 +259,12 @@
+@@ -305,148 +278,12 @@
    if (IsAndroid || Distro.IsOpenSUSE())
      ExtraOpts.push_back("--enable-new-dtags");
  
@@ -191,8 +155,8 @@ index 1301cdf114..239cea8e0b 100644
 -  // This was determined by running GCC in a fake filesystem, creating all
 -  // possible permutations of these directories, and seeing which ones it added
 -  // to the link paths.
-   path_list &Paths = getFilePaths();
- 
+-  path_list &Paths = getFilePaths();
+-
    const std::string OSLibDir = getOSLibDir(Triple, Args);
 -  const std::string MultiarchTriple = getMultiarchTriple(D, Triple, SysRoot);
 -
@@ -200,16 +164,14 @@ index 1301cdf114..239cea8e0b 100644
 -  if (GCCInstallation.isValid()) {
 -    const llvm::Triple &GCCTriple = GCCInstallation.getTriple();
 -    const std::string &LibPath = GCCInstallation.getParentLibPath();
--    const Multilib &Multilib = GCCInstallation.getMultilib();
--    const MultilibSet &Multilibs = GCCInstallation.getMultilibs();
 -
 -    // Add toolchain / multilib specific file paths.
--    addMultilibsFilePaths(D, Multilibs, Multilib,
+-    addMultilibsFilePaths(D, Multilibs, SelectedMultilib,
 -                          GCCInstallation.getInstallPath(), Paths);
 -
 -    // Sourcery CodeBench MIPS toolchain holds some libraries under
 -    // a biarch-like suffix of the GCC installation.
--    addPathIfExists(D, GCCInstallation.getInstallPath() + Multilib.gccSuffix(),
+-    addPathIfExists(D, GCCInstallation.getInstallPath() + SelectedMultilib.gccSuffix(),
 -                    Paths);
 -
 -    // GCC cross compiling toolchains will install target libraries which ship
@@ -231,7 +193,7 @@ index 1301cdf114..239cea8e0b 100644
 -    // Note that this matches the GCC behavior. See the below comment for where
 -    // Clang diverges from GCC's behavior.
 -    addPathIfExists(D, LibPath + "/../" + GCCTriple.str() + "/lib/../" +
--                           OSLibDir + Multilib.osSuffix(),
+-                           OSLibDir + SelectedMultilib.osSuffix(),
 -                    Paths);
 -
 -    // If the GCC installation we found is inside of the sysroot, we want to
@@ -330,22 +292,22 @@ index 1301cdf114..239cea8e0b 100644
 -  if (StringRef(D.Dir).startswith(SysRoot))
 -    addPathIfExists(D, D.Dir + "/../lib", Paths);
  
++  path_list &Paths = getFilePaths();
++
 +  addPathIfExists(D, SysRoot + "/" + OSLibDir, Paths);
 +  addPathIfExists(D, SysRoot + "/usr/" + OSLibDir, Paths);
    addPathIfExists(D, SysRoot + "/lib", Paths);
    addPathIfExists(D, SysRoot + "/usr/lib", Paths);
  }
-diff --git a/lib/Driver/ToolChains/Linux.h b/lib/Driver/ToolChains/Linux.h
-index 9778c1832c..b41b2e1bf0 100644
 --- a/lib/Driver/ToolChains/Linux.h
 +++ b/lib/Driver/ToolChains/Linux.h
-@@ -36,6 +36,9 @@ public:
-   void AddIAMCUIncludeArgs(const llvm::opt::ArgList &DriverArgs,
+@@ -39,6 +39,9 @@
                             llvm::opt::ArgStringList &CC1Args) const override;
+   CXXStdlibType GetDefaultCXXStdlibType() const override;
    bool isPIEDefault() const override;
 +  unsigned GetDefaultStackProtectorLevel(bool KernelOrKext) const override {
 +    return 2;
 +  }
+   bool IsMathErrnoDefault() const override;
    SanitizerMask getSupportedSanitizers() const override;
    void addProfileRTLibs(const llvm::opt::ArgList &Args,
-                         llvm::opt::ArgStringList &CmdArgs) const override;

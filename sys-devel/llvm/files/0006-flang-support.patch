@@ -1,56 +1,32 @@
-From a554fe5d4845f14671343c1acc12f16965fb3a1d Mon Sep 17 00:00:00 2001
-From: Eric Schweitz <eschweitz@nvidia.com>
-Date: Tue, 11 Sep 2018 15:49:34 -0700
-Subject: [PATCH] Merge Flang LLVM changes from release_60 to the release_70
- branch.
-
----
- include/llvm/Analysis/TargetLibraryInfo.h   |   3 +-
- include/llvm/Bitcode/LLVMBitCodes.h         |   3 +
- include/llvm/IR/DIBuilder.h                 |  20 +
- include/llvm/IR/DebugInfoFlags.def          |   5 +-
- include/llvm/IR/DebugInfoMetadata.h         | 258 +++++++++++
- include/llvm/IR/Metadata.def                |   3 +
- lib/Analysis/BasicAliasAnalysis.cpp         |   6 +-
- lib/Analysis/TargetLibraryInfo.cpp          | 455 +++++++++++++++++++-
- lib/AsmParser/LLParser.cpp                  |  67 +++
- lib/Bitcode/Reader/MetadataLoader.cpp       |  63 +++
- lib/Bitcode/Writer/BitcodeWriter.cpp        |  60 +++
- lib/CodeGen/AsmPrinter/DebugLocEntry.h      |   3 +
- lib/CodeGen/AsmPrinter/DebugLocStream.cpp   |   5 +-
- lib/CodeGen/AsmPrinter/DebugLocStream.h     |   8 +-
- lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp |  68 ++-
- lib/CodeGen/AsmPrinter/DwarfCompileUnit.h   |   6 +
- lib/CodeGen/AsmPrinter/DwarfDebug.cpp       | 110 +++++
- lib/CodeGen/AsmPrinter/DwarfDebug.h         |  31 ++
- lib/CodeGen/AsmPrinter/DwarfExpression.cpp  |   5 +
- lib/CodeGen/AsmPrinter/DwarfExpression.h    |   2 +-
- lib/CodeGen/AsmPrinter/DwarfUnit.cpp        |  74 +++-
- lib/CodeGen/AsmPrinter/DwarfUnit.h          |   4 +
- lib/IR/AsmWriter.cpp                        |  54 +++
- lib/IR/DIBuilder.cpp                        |  21 +
- lib/IR/DebugInfoMetadata.cpp                |  42 ++
- lib/IR/LLVMContextImpl.h                    | 115 +++++
- lib/IR/Verifier.cpp                         |  32 +-
- lib/Transforms/Vectorize/LoopVectorize.cpp  |   6 +-
- 28 files changed, 1500 insertions(+), 29 deletions(-)
-
-diff --git a/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
-index a3fe834022f7..889391df6c76 100644
---- a/include/llvm/Analysis/TargetLibraryInfo.h
-+++ b/include/llvm/Analysis/TargetLibraryInfo.h
-@@ -87,7 +87,8 @@ class TargetLibraryInfoImpl {
-   enum VectorLibrary {
-     NoLibrary,  // Don't use any vector library.
-     Accelerate, // Use Accelerate framework.
--    SVML        // Intel short vector math library.
-+    SVML,       // Intel short vector math library.
-+    PGMATH      // PGI math library.
-   };
+diff --git a/include/llvm-c/DebugInfo.h b/include/llvm-c/DebugInfo.h
+index bc341da3d521..1cbd40970633 100644
+--- a/include/llvm-c/DebugInfo.h
++++ b/include/llvm-c/DebugInfo.h
+@@ -59,6 +59,10 @@ typedef enum {
+   LLVMDIFlagTrivial = 1 << 26,
+   LLVMDIFlagBigEndian = 1 << 27,
+   LLVMDIFlagLittleEndian = 1 << 28,
++  LLVMDIFlagFortran = 1 << 30,
++  LLVMDIFlagPure = (1 << 30) | (1 << 9),
++  LLVMDIFlagElemental = (1 << 30) | (1 << 15),
++  LLVMDIFlagRecursive = (1 << 30) | (1 << 19),
+   LLVMDIFlagIndirectVirtualBase = (1 << 2) | (1 << 5),
+   LLVMDIFlagAccessibility = LLVMDIFlagPrivate | LLVMDIFlagProtected |
+                             LLVMDIFlagPublic,
+@@ -160,7 +164,10 @@ enum {
+   LLVMDIObjCPropertyMetadataKind,
+   LLVMDIImportedEntityMetadataKind,
+   LLVMDIMacroMetadataKind,
+-  LLVMDIMacroFileMetadataKind
++  LLVMDIMacroFileMetadataKind,
++  LLVMDIStringTypeMetadataKind,
++  LLVMDIFortranArrayTypeMetadataKind,
++  LLVMDIFortranSubrangeMetadataKind
+ };
+ typedef unsigned LLVMMetadataKind;
  
-   TargetLibraryInfoImpl();
 diff --git a/include/llvm/Bitcode/LLVMBitCodes.h b/include/llvm/Bitcode/LLVMBitCodes.h
-index 6723cf42dd2c..b6a3f38aa619 100644
+index f0d11e9c1689..cb9a173ae4b9 100644
 --- a/include/llvm/Bitcode/LLVMBitCodes.h
 +++ b/include/llvm/Bitcode/LLVMBitCodes.h
 @@ -311,6 +311,9 @@ enum MetadataCodes {
@@ -64,12 +40,12 @@ index 6723cf42dd2c..b6a3f38aa619 100644
  
  // The constants block (CONSTANTS_BLOCK_ID) describes emission for each
 diff --git a/include/llvm/IR/DIBuilder.h b/include/llvm/IR/DIBuilder.h
-index 06c9421ec1d6..63aa08e956cb 100644
+index 1fe7b36db00b..912180347800 100644
 --- a/include/llvm/IR/DIBuilder.h
 +++ b/include/llvm/IR/DIBuilder.h
-@@ -192,6 +192,12 @@ namespace llvm {
-     DIBasicType *createBasicType(StringRef Name, uint64_t SizeInBits,
-                                  unsigned Encoding);
+@@ -196,6 +196,12 @@ namespace llvm {
+                                  unsigned Encoding,
+                                  DINode::DIFlags Flags = DINode::FlagZero);
  
 +    /// Create debugging information entry for a string
 +    /// type.
@@ -80,7 +56,7 @@ index 06c9421ec1d6..63aa08e956cb 100644
      /// Create debugging information entry for a qualified
      /// type, e.g. 'const int'.
      /// \param Tag         Tag identifing type, e.g. dwarf::TAG_volatile_type
-@@ -479,6 +485,14 @@ namespace llvm {
+@@ -483,6 +489,14 @@ namespace llvm {
      DICompositeType *createArrayType(uint64_t Size, uint32_t AlignInBits,
                                       DIType *Ty, DINodeArray Subscripts);
  
@@ -95,7 +71,7 @@ index 06c9421ec1d6..63aa08e956cb 100644
      /// Create debugging information entry for a vector type.
      /// \param Size         Array size.
      /// \param AlignInBits  Alignment.
-@@ -562,6 +576,12 @@ namespace llvm {
+@@ -566,6 +580,12 @@ namespace llvm {
      DISubrange *getOrCreateSubrange(int64_t Lo, int64_t Count);
      DISubrange *getOrCreateSubrange(int64_t Lo, Metadata *CountNode);
  
@@ -109,30 +85,35 @@ index 06c9421ec1d6..63aa08e956cb 100644
      /// \param Context     Variable scope.
      /// \param Name        Name of the variable.
 diff --git a/include/llvm/IR/DebugInfoFlags.def b/include/llvm/IR/DebugInfoFlags.def
-index b1f5fac64232..4249126cb141 100644
+index a0a9c6bcacb8..201de90c1d00 100644
 --- a/include/llvm/IR/DebugInfoFlags.def
 +++ b/include/llvm/IR/DebugInfoFlags.def
-@@ -48,6 +48,9 @@ HANDLE_DI_FLAG((1 << 23), TypePassByReference)
- HANDLE_DI_FLAG((1 << 24), FixedEnum)
- HANDLE_DI_FLAG((1 << 25), Thunk)
- HANDLE_DI_FLAG((1 << 26), Trivial)
-+HANDLE_DI_FLAG((1 << 27), Pure)
-+HANDLE_DI_FLAG((1 << 28), Elemental)
-+HANDLE_DI_FLAG((1 << 29), Recursive)
+@@ -61,6 +61,14 @@ HANDLE_DI_FLAG((1 << 27), BigEndian)
+ HANDLE_DI_FLAG((1 << 28), LittleEndian)
+ HANDLE_DI_FLAG((1 << 29), AllCallsDescribed)
  
++// Fortran flags: use bit 30 to indicate it's Fortran and then overload some
++// flags that otherwise have no semantics with respect to Fortran and are not
++// used in DISubprogram's member functions
++HANDLE_DI_FLAG((1 << 30), Fortran)
++HANDLE_DI_FLAG((1 << 30)|(1 << 9), Pure)
++HANDLE_DI_FLAG((1 << 30)|(1 << 15), Elemental)
++HANDLE_DI_FLAG((1 << 30)|(1 << 19), Recursive)
++
  // To avoid needing a dedicated value for IndirectVirtualBase, we use
  // the bitwise or of Virtual and FwdDecl, which does not otherwise
-@@ -57,7 +60,7 @@ HANDLE_DI_FLAG((1 << 2) | (1 << 5), IndirectVirtualBase)
+ // make sense for inheritance.
+@@ -69,7 +77,7 @@ HANDLE_DI_FLAG((1 << 2) | (1 << 5), IndirectVirtualBase)
  #ifdef DI_FLAG_LARGEST_NEEDED
  // intended to be used with ADT/BitmaskEnum.h
  // NOTE: always must be equal to largest flag, check this when adding new flag
--HANDLE_DI_FLAG((1 << 26), Largest)
-+HANDLE_DI_FLAG((1 << 29), Largest)
+-HANDLE_DI_FLAG((1 << 29), Largest)
++HANDLE_DI_FLAG((1 << 30), Largest)
  #undef DI_FLAG_LARGEST_NEEDED
  #endif
  
 diff --git a/include/llvm/IR/DebugInfoMetadata.h b/include/llvm/IR/DebugInfoMetadata.h
-index 820746851104..1ce86f3e95ba 100644
+index a461d1bd4fe8..46deaf91e104 100644
 --- a/include/llvm/IR/DebugInfoMetadata.h
 +++ b/include/llvm/IR/DebugInfoMetadata.h
 @@ -217,10 +217,13 @@ class DINode : public MDNode {
@@ -232,7 +213,7 @@ index 820746851104..1ce86f3e95ba 100644
      case DISubroutineTypeKind:
      case DIFileKind:
      case DICompileUnitKind:
-@@ -719,8 +789,10 @@ class DIType : public DIScope {
+@@ -721,8 +791,10 @@ class DIType : public DIScope {
      default:
        return false;
      case DIBasicTypeKind:
@@ -243,20 +224,20 @@ index 820746851104..1ce86f3e95ba 100644
      case DISubroutineTypeKind:
        return true;
      }
-@@ -765,6 +837,12 @@ class DIBasicType : public DIType {
+@@ -770,6 +842,12 @@ class DIBasicType : public DIType {
  public:
    DEFINE_MDNODE_GET(DIBasicType, (unsigned Tag, StringRef Name),
-                     (Tag, Name, 0, 0, 0))
+                     (Tag, Name, 0, 0, 0, FlagZero))
 +  DEFINE_MDNODE_GET(DIBasicType,
 +                    (unsigned Tag, StringRef Name, uint64_t SizeInBits),
-+                    (Tag, Name, SizeInBits, 0, 0))
++                    (Tag, Name, SizeInBits, 0, 0, FlagZero))
 +  DEFINE_MDNODE_GET(DIBasicType,
 +                    (unsigned Tag, MDString *Name, uint64_t SizeInBits),
-+                    (Tag, Name, SizeInBits, 0, 0))
++                    (Tag, Name, SizeInBits, 0, 0, FlagZero))
    DEFINE_MDNODE_GET(DIBasicType,
                      (unsigned Tag, StringRef Name, uint64_t SizeInBits,
-                      uint32_t AlignInBits, unsigned Encoding),
-@@ -789,6 +867,99 @@ class DIBasicType : public DIType {
+                      uint32_t AlignInBits, unsigned Encoding, DIFlags Flags),
+@@ -794,6 +872,99 @@ class DIBasicType : public DIType {
    }
  };
  
@@ -356,7 +337,7 @@ index 820746851104..1ce86f3e95ba 100644
  /// Derived types.
  ///
  /// This includes qualified types, pointers, references, friends, typedefs, and
-@@ -1096,6 +1267,90 @@ class DICompositeType : public DIType {
+@@ -1101,6 +1272,90 @@ class DICompositeType : public DIType {
    }
  };
  
@@ -447,9 +428,9 @@ index 820746851104..1ce86f3e95ba 100644
  /// Type array for a subprogram.
  ///
  /// TODO: Fold the array of types in directly as operands.
-@@ -1718,6 +1973,9 @@ class DISubprogram : public DILocalScope {
-   bool isExplicit() const { return getFlags() & FlagExplicit; }
-   bool isPrototyped() const { return getFlags() & FlagPrototyped; }
+@@ -1804,6 +2059,9 @@ class DISubprogram : public DILocalScope {
+     return getFlags() & FlagAllCallsDescribed;
+   }
    bool isMainSubprogram() const { return getFlags() & FlagMainSubprogram; }
 +  bool isPure() const { return getFlags() & FlagPure; }
 +  bool isElemental() const { return getFlags() & FlagElemental; }
@@ -471,522 +452,11 @@ index 70a03f28b488..177fd67d9654 100644
  
  #undef HANDLE_METADATA
  #undef HANDLE_METADATA_LEAF
-diff --git a/lib/Analysis/BasicAliasAnalysis.cpp b/lib/Analysis/BasicAliasAnalysis.cpp
-index f9ecbc043261..1fa6cb71ad3f 100644
---- a/lib/Analysis/BasicAliasAnalysis.cpp
-+++ b/lib/Analysis/BasicAliasAnalysis.cpp
-@@ -1274,7 +1274,7 @@ BasicAAResult::aliasGEP(const GEPOperator *GEP1, LocationSize V1Size,
-     // If we get a No or May, then return it immediately, no amount of analysis
-     // will improve this situation.
-     if (BaseAlias != MustAlias) {
--      assert(BaseAlias == NoAlias || BaseAlias == MayAlias);
-+      //assert(BaseAlias == NoAlias || BaseAlias == MayAlias);
-       return BaseAlias;
-     }
- 
-@@ -1321,7 +1321,7 @@ BasicAAResult::aliasGEP(const GEPOperator *GEP1, LocationSize V1Size,
-       // cannot alias per GEP semantics: "Any memory access must be done through
-       // a pointer value associated with an address range of the memory access,
-       // otherwise the behavior is undefined.".
--      assert(R == NoAlias || R == MayAlias);
-+      //assert(R == NoAlias || R == MayAlias);
-       return R;
-     }
- 
-@@ -1429,7 +1429,7 @@ BasicAAResult::aliasGEP(const GEPOperator *GEP1, LocationSize V1Size,
-   // Statically, we can see that the base objects are the same, but the
-   // pointers have dynamic offsets which we can't resolve. And none of our
-   // little tricks above worked.
--  return MayAlias;
-+  return PartialAlias;
- }
- 
- static AliasResult MergeAliasResults(AliasResult A, AliasResult B) {
-diff --git a/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
-index 102135fbf313..a6e424bde73d 100644
---- a/lib/Analysis/TargetLibraryInfo.cpp
-+++ b/lib/Analysis/TargetLibraryInfo.cpp
-@@ -25,7 +25,9 @@ static cl::opt<TargetLibraryInfoImpl::VectorLibrary> ClVectorLibrary(
-                clEnumValN(TargetLibraryInfoImpl::Accelerate, "Accelerate",
-                           "Accelerate framework"),
-                clEnumValN(TargetLibraryInfoImpl::SVML, "SVML",
--                          "Intel SVML library")));
-+                          "Intel SVML library"),
-+               clEnumValN(TargetLibraryInfoImpl::PGMATH, "PGMATH",
-+                          "PGI math library")));
- 
- StringRef const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] = {
- #define TLI_DEFINE_STRING
-@@ -527,7 +529,6 @@ TargetLibraryInfoImpl::TargetLibraryInfoImpl() {
- TargetLibraryInfoImpl::TargetLibraryInfoImpl(const Triple &T) {
-   // Default to everything being available.
-   memset(AvailableArray, -1, sizeof(AvailableArray));
--
-   initialize(*this, T, StandardNames);
- }
- 
-@@ -1559,6 +1560,456 @@ void TargetLibraryInfoImpl::addVectorizableFunctionsFromVecLib(
-     addVectorizableFunctions(VecFuncs);
-     break;
-   }
-+
-+  // NOTE: All routines listed here are not available on all the architectures.
-+  // Based on the size of vector registers available and the size of data, the
-+  // vector width should be chosen correctly.
-+  case PGMATH: {
-+    const VecDesc VecFuncs[] = {
-+        {"__fd_sin_1", "__fd_sin_2", 2},
-+        {"__fd_sin_1", "__fd_sin_4", 4},
-+        {"__fd_sin_1", "__fd_sin_8", 8},
-+
-+        {"__fs_sin_1", "__fs_sin_4", 4},
-+        {"__fs_sin_1", "__fs_sin_8", 8},
-+        {"__fs_sin_1", "__fs_sin_16", 16},
-+
-+        {"__pd_sin_1", "__pd_sin_2", 2},
-+        {"__pd_sin_1", "__pd_sin_4", 4},
-+        {"__pd_sin_1", "__pd_sin_8", 8},
-+
-+        {"__ps_sin_1", "__ps_sin_4", 4},
-+        {"__ps_sin_1", "__ps_sin_8", 8},
-+        {"__ps_sin_1", "__ps_sin_16", 16},
-+
-+        {"__rd_sin_1", "__rd_sin_2", 2},
-+        {"__rd_sin_1", "__rd_sin_4", 4},
-+        {"__rd_sin_1", "__rd_sin_8", 8},
-+
-+        {"__rs_sin_1", "__rs_sin_4", 4},
-+        {"__rs_sin_1", "__rs_sin_8", 8},
-+        {"__rs_sin_1", "__rs_sin_16", 16},
-+
-+        {"__fd_cos_1", "__fd_cos_2", 2},
-+        {"__fd_cos_1", "__fd_cos_4", 4},
-+        {"__fd_cos_1", "__fd_cos_8", 8},
-+
-+        {"__fs_cos_1", "__fs_cos_4", 4},
-+        {"__fs_cos_1", "__fs_cos_8", 8},
-+        {"__fs_cos_1", "__fs_cos_16", 16},
-+
-+        {"__pd_cos_1", "__pd_cos_2", 2},
-+        {"__pd_cos_1", "__pd_cos_4", 4},
-+        {"__pd_cos_1", "__pd_cos_8", 8},
-+
-+        {"__ps_cos_1", "__ps_cos_4", 4},
-+        {"__ps_cos_1", "__ps_cos_8", 8},
-+        {"__ps_cos_1", "__ps_cos_16", 16},
-+
-+        {"__rd_cos_1", "__rd_cos_2", 2},
-+        {"__rd_cos_1", "__rd_cos_4", 4},
-+        {"__rd_cos_1", "__rd_cos_8", 8},
-+
-+        {"__rs_cos_1", "__rs_cos_4", 4},
-+        {"__rs_cos_1", "__rs_cos_8", 8},
-+        {"__rs_cos_1", "__rs_cos_16", 16},
-+
-+        {"__fd_sincos_1", "__fd_sincos_2", 2},
-+        {"__fd_sincos_1", "__fd_sincos_4", 4},
-+        {"__fd_sincos_1", "__fd_sincos_8", 8},
-+
-+        {"__fs_sincos_1", "__fs_sincos_4", 4},
-+        {"__fs_sincos_1", "__fs_sincos_8", 8},
-+        {"__fs_sincos_1", "__fs_sincos_16", 16},
-+
-+        {"__pd_sincos_1", "__pd_sincos_2", 2},
-+        {"__pd_sincos_1", "__pd_sincos_4", 4},
-+        {"__pd_sincos_1", "__pd_sincos_8", 8},
-+
-+        {"__ps_sincos_1", "__ps_sincos_4", 4},
-+        {"__ps_sincos_1", "__ps_sincos_8", 8},
-+        {"__ps_sincos_1", "__ps_sincos_16", 16},
-+
-+        {"__rd_sincos_1", "__rd_sincos_2", 2},
-+        {"__rd_sincos_1", "__rd_sincos_4", 4},
-+        {"__rd_sincos_1", "__rd_sincos_8", 8},
-+
-+        {"__rs_sincos_1", "__rs_sincos_4", 4},
-+        {"__rs_sincos_1", "__rs_sincos_8", 8},
-+        {"__rs_sincos_1", "__rs_sincos_16", 16},
-+
-+        {"__fd_tan_1", "__fd_tan_2", 2},
-+        {"__fd_tan_1", "__fd_tan_4", 4},
-+        {"__fd_tan_1", "__fd_tan_8", 8},
-+
-+        {"__fs_tan_1", "__fs_tan_4", 4},
-+        {"__fs_tan_1", "__fs_tan_8", 8},
-+        {"__fs_tan_1", "__fs_tan_16", 16},
-+
-+        {"__pd_tan_1", "__pd_tan_2", 2},
-+        {"__pd_tan_1", "__pd_tan_4", 4},
-+        {"__pd_tan_1", "__pd_tan_8", 8},
-+
-+        {"__ps_tan_1", "__ps_tan_4", 4},
-+        {"__ps_tan_1", "__ps_tan_8", 8},
-+        {"__ps_tan_1", "__ps_tan_16", 16},
-+
-+        {"__rd_tan_1", "__rd_tan_2", 2},
-+        {"__rd_tan_1", "__rd_tan_4", 4},
-+        {"__rd_tan_1", "__rd_tan_8", 8},
-+
-+        {"__rs_tan_1", "__rs_tan_4", 4},
-+        {"__rs_tan_1", "__rs_tan_8", 8},
-+        {"__rs_tan_1", "__rs_tan_16", 16},
-+
-+        {"__fd_sinh_1", "__fd_sinh_2", 2},
-+        {"__fd_sinh_1", "__fd_sinh_4", 4},
-+        {"__fd_sinh_1", "__fd_sinh_8", 8},
-+
-+        {"__fs_sinh_1", "__fs_sinh_4", 4},
-+        {"__fs_sinh_1", "__fs_sinh_8", 8},
-+        {"__fs_sinh_1", "__fs_sinh_16", 16},
-+
-+        {"__pd_sinh_1", "__pd_sinh_2", 2},
-+        {"__pd_sinh_1", "__pd_sinh_4", 4},
-+        {"__pd_sinh_1", "__pd_sinh_8", 8},
-+
-+        {"__ps_sinh_1", "__ps_sinh_4", 4},
-+        {"__ps_sinh_1", "__ps_sinh_8", 8},
-+        {"__ps_sinh_1", "__ps_sinh_16", 16},
-+
-+        {"__rd_sinh_1", "__rd_sinh_2", 2},
-+        {"__rd_sinh_1", "__rd_sinh_4", 4},
-+        {"__rd_sinh_1", "__rd_sinh_8", 8},
-+
-+        {"__rs_sinh_1", "__rs_sinh_4", 4},
-+        {"__rs_sinh_1", "__rs_sinh_8", 8},
-+        {"__rs_sinh_1", "__rs_sinh_16", 16},
-+
-+        {"__fd_cosh_1", "__fd_cosh_2", 2},
-+        {"__fd_cosh_1", "__fd_cosh_4", 4},
-+        {"__fd_cosh_1", "__fd_cosh_8", 8},
-+
-+        {"__fs_cosh_1", "__fs_cosh_4", 4},
-+        {"__fs_cosh_1", "__fs_cosh_8", 8},
-+        {"__fs_cosh_1", "__fs_cosh_16", 16},
-+
-+        {"__pd_cosh_1", "__pd_cosh_2", 2},
-+        {"__pd_cosh_1", "__pd_cosh_4", 4},
-+        {"__pd_cosh_1", "__pd_cosh_8", 8},
-+
-+        {"__ps_cosh_1", "__ps_cosh_4", 4},
-+        {"__ps_cosh_1", "__ps_cosh_8", 8},
-+        {"__ps_cosh_1", "__ps_cosh_16", 16},
-+
-+        {"__rd_cosh_1", "__rd_cosh_2", 2},
-+        {"__rd_cosh_1", "__rd_cosh_4", 4},
-+        {"__rd_cosh_1", "__rd_cosh_8", 8},
-+
-+        {"__rs_cosh_1", "__rs_cosh_4", 4},
-+        {"__rs_cosh_1", "__rs_cosh_8", 8},
-+        {"__rs_cosh_1", "__rs_cosh_16", 16},
-+
-+        {"__fd_tanh_1", "__fd_tanh_2", 2},
-+        {"__fd_tanh_1", "__fd_tanh_4", 4},
-+        {"__fd_tanh_1", "__fd_tanh_8", 8},
-+
-+        {"__fs_tanh_1", "__fs_tanh_4", 4},
-+        {"__fs_tanh_1", "__fs_tanh_8", 8},
-+        {"__fs_tanh_1", "__fs_tanh_16", 16},
-+
-+        {"__pd_tanh_1", "__pd_tanh_2", 2},
-+        {"__pd_tanh_1", "__pd_tanh_4", 4},
-+        {"__pd_tanh_1", "__pd_tanh_8", 8},
-+
-+        {"__ps_tanh_1", "__ps_tanh_4", 4},
-+        {"__ps_tanh_1", "__ps_tanh_8", 8},
-+        {"__ps_tanh_1", "__ps_tanh_16", 16},
-+
-+        {"__rd_tanh_1", "__rd_tanh_2", 2},
-+        {"__rd_tanh_1", "__rd_tanh_4", 4},
-+        {"__rd_tanh_1", "__rd_tanh_8", 8},
-+
-+        {"__rs_tanh_1", "__rs_tanh_4", 4},
-+        {"__rs_tanh_1", "__rs_tanh_8", 8},
-+        {"__rs_tanh_1", "__rs_tanh_16", 16},
-+
-+        {"__fd_asin_1", "__fd_asin_2", 2},
-+        {"__fd_asin_1", "__fd_asin_4", 4},
-+        {"__fd_asin_1", "__fd_asin_8", 8},
-+
-+        {"__fs_asin_1", "__fs_asin_4", 4},
-+        {"__fs_asin_1", "__fs_asin_8", 8},
-+        {"__fs_asin_1", "__fs_asin_16", 16},
-+
-+        {"__pd_asin_1", "__pd_asin_2", 2},
-+        {"__pd_asin_1", "__pd_asin_4", 4},
-+        {"__pd_asin_1", "__pd_asin_8", 8},
-+
-+        {"__ps_asin_1", "__ps_asin_4", 4},
-+        {"__ps_asin_1", "__ps_asin_8", 8},
-+        {"__ps_asin_1", "__ps_asin_16", 16},
-+
-+        {"__rd_asin_1", "__rd_asin_2", 2},
-+        {"__rd_asin_1", "__rd_asin_4", 4},
-+        {"__rd_asin_1", "__rd_asin_8", 8},
-+
-+        {"__rs_asin_1", "__rs_asin_4", 4},
-+        {"__rs_asin_1", "__rs_asin_8", 8},
-+        {"__rs_asin_1", "__rs_asin_16", 16},
-+
-+        {"__fd_acos_1", "__fd_acos_2", 2},
-+        {"__fd_acos_1", "__fd_acos_4", 4},
-+        {"__fd_acos_1", "__fd_acos_8", 8},
-+
-+        {"__fs_acos_1", "__fs_acos_4", 4},
-+        {"__fs_acos_1", "__fs_acos_8", 8},
-+        {"__fs_acos_1", "__fs_acos_16", 16},
-+
-+        {"__pd_acos_1", "__pd_acos_2", 2},
-+        {"__pd_acos_1", "__pd_acos_4", 4},
-+        {"__pd_acos_1", "__pd_acos_8", 8},
-+
-+        {"__ps_acos_1", "__ps_acos_4", 4},
-+        {"__ps_acos_1", "__ps_acos_8", 8},
-+        {"__ps_acos_1", "__ps_acos_16", 16},
-+
-+        {"__rd_acos_1", "__rd_acos_2", 2},
-+        {"__rd_acos_1", "__rd_acos_4", 4},
-+        {"__rd_acos_1", "__rd_acos_8", 8},
-+
-+        {"__rs_acos_1", "__rs_acos_4", 4},
-+        {"__rs_acos_1", "__rs_acos_8", 8},
-+        {"__rs_acos_1", "__rs_acos_16", 16},
-+
-+        {"__fd_atan_1", "__fd_atan_2", 2},
-+        {"__fd_atan_1", "__fd_atan_4", 4},
-+        {"__fd_atan_1", "__fd_atan_8", 8},
-+
-+        {"__fs_atan_1", "__fs_atan_4", 4},
-+        {"__fs_atan_1", "__fs_atan_8", 8},
-+        {"__fs_atan_1", "__fs_atan_16", 16},
-+
-+        {"__pd_atan_1", "__pd_atan_2", 2},
-+        {"__pd_atan_1", "__pd_atan_4", 4},
-+        {"__pd_atan_1", "__pd_atan_8", 8},
-+
-+        {"__ps_atan_1", "__ps_atan_4", 4},
-+        {"__ps_atan_1", "__ps_atan_8", 8},
-+        {"__ps_atan_1", "__ps_atan_16", 16},
-+
-+        {"__rd_atan_1", "__rd_atan_2", 2},
-+        {"__rd_atan_1", "__rd_atan_4", 4},
-+        {"__rd_atan_1", "__rd_atan_8", 8},
-+
-+        {"__rs_atan_1", "__rs_atan_4", 4},
-+        {"__rs_atan_1", "__rs_atan_8", 8},
-+        {"__rs_atan_1", "__rs_atan_16", 16},
-+
-+        {"__fd_atan2_1", "__fd_atan2_2", 2},
-+        {"__fd_atan2_1", "__fd_atan2_4", 4},
-+        {"__fd_atan2_1", "__fd_atan2_8", 8},
-+
-+        {"__fs_atan2_1", "__fs_atan2_4", 4},
-+        {"__fs_atan2_1", "__fs_atan2_8", 8},
-+        {"__fs_atan2_1", "__fs_atan2_16", 16},
-+
-+        {"__pd_atan2_1", "__pd_atan2_2", 2},
-+        {"__pd_atan2_1", "__pd_atan2_4", 4},
-+        {"__pd_atan2_1", "__pd_atan2_8", 8},
-+
-+        {"__ps_atan2_1", "__ps_atan2_4", 4},
-+        {"__ps_atan2_1", "__ps_atan2_8", 8},
-+        {"__ps_atan2_1", "__ps_atan2_16", 16},
-+
-+        {"__rd_atan2_1", "__rd_atan2_2", 2},
-+        {"__rd_atan2_1", "__rd_atan2_4", 4},
-+        {"__rd_atan2_1", "__rd_atan2_8", 8},
-+
-+        {"__rs_atan2_1", "__rs_atan2_4", 4},
-+        {"__rs_atan2_1", "__rs_atan2_8", 8},
-+        {"__rs_atan2_1", "__rs_atan2_16", 16},
-+
-+        {"__fd_pow_1", "__fd_pow_2", 2},
-+        {"__fd_pow_1", "__fd_pow_4", 4},
-+        {"__fd_pow_1", "__fd_pow_8", 8},
-+
-+        {"__fs_pow_1", "__fs_pow_4", 4},
-+        {"__fs_pow_1", "__fs_pow_8", 8},
-+        {"__fs_pow_1", "__fs_pow_16", 16},
-+
-+        {"__pd_pow_1", "__pd_pow_2", 2},
-+        {"__pd_pow_1", "__pd_pow_4", 4},
-+        {"__pd_pow_1", "__pd_pow_8", 8},
-+
-+        {"__ps_pow_1", "__ps_pow_4", 4},
-+        {"__ps_pow_1", "__ps_pow_8", 8},
-+        {"__ps_pow_1", "__ps_pow_16", 16},
-+
-+        {"__rd_pow_1", "__rd_pow_2", 2},
-+        {"__rd_pow_1", "__rd_pow_4", 4},
-+        {"__rd_pow_1", "__rd_pow_8", 8},
-+
-+        {"__rs_pow_1", "__rs_pow_4", 4},
-+        {"__rs_pow_1", "__rs_pow_8", 8},
-+        {"__rs_pow_1", "__rs_pow_16", 16},
-+
-+        {"__fs_powi_1", "__fs_powi_4", 4},
-+        {"__fs_powi_1", "__fs_powi_8", 8},
-+        {"__fs_powi_1", "__fs_powi_16", 16},
-+
-+        {"__ps_powi_1", "__ps_powi_4", 4},
-+        {"__ps_powi_1", "__ps_powi_8", 8},
-+        {"__ps_powi_1", "__ps_powi_16", 16},
-+
-+        {"__rs_powi_1", "__rs_powi_4", 4},
-+        {"__rs_powi_1", "__rs_powi_8", 8},
-+        {"__rs_powi_1", "__rs_powi_16", 16},
-+
-+        {"__fd_powi1_1", "__fd_powi1_2", 2},
-+        {"__fd_powi1_1", "__fd_powi1_4", 4},
-+        {"__fd_powi1_1", "__fd_powi1_8", 8},
-+
-+        {"__fs_powi1_1", "__fs_powi1_4", 4},
-+        {"__fs_powi1_1", "__fs_powi1_8", 8},
-+        {"__fs_powi1_1", "__fs_powi1_16", 16},
-+
-+        {"__pd_powi1_1", "__pd_powi1_2", 2},
-+        {"__pd_powi1_1", "__pd_powi1_4", 4},
-+        {"__pd_powi1_1", "__pd_powi1_8", 8},
-+
-+        {"__ps_powi1_1", "__ps_powi1_4", 4},
-+        {"__ps_powi1_1", "__ps_powi1_8", 8},
-+        {"__ps_powi1_1", "__ps_powi1_16", 16},
-+
-+        {"__rd_powi1_1", "__rd_powi1_2", 2},
-+        {"__rd_powi1_1", "__rd_powi1_4", 4},
-+        {"__rd_powi1_1", "__rd_powi1_8", 8},
-+
-+        {"__rs_powi1_1", "__rs_powi1_4", 4},
-+        {"__rs_powi1_1", "__rs_powi1_8", 8},
-+        {"__rs_powi1_1", "__rs_powi1_16", 16},
-+
-+        {"__fd_powk_1", "__fd_powk_2", 2},
-+        {"__fd_powk_1", "__fd_powk_4", 4},
-+        {"__fd_powk_1", "__fd_powk_8", 8},
-+
-+        {"__fs_powk_1", "__fs_powk_4", 4},
-+        {"__fs_powk_1", "__fs_powk_8", 8},
-+        {"__fs_powk_1", "__fs_powk_16", 16},
-+
-+        {"__pd_powk_1", "__pd_powk_2", 2},
-+        {"__pd_powk_1", "__pd_powk_4", 4},
-+        {"__pd_powk_1", "__pd_powk_8", 8},
-+
-+        {"__ps_powk_1", "__ps_powk_4", 4},
-+        {"__ps_powk_1", "__ps_powk_8", 8},
-+        {"__ps_powk_1", "__ps_powk_16", 16},
-+
-+        {"__rd_powk_1", "__rd_powk_2", 2},
-+        {"__rd_powk_1", "__rd_powk_4", 4},
-+        {"__rd_powk_1", "__rd_powk_8", 8},
-+
-+        {"__rs_powk_1", "__rs_powk_4", 4},
-+        {"__rs_powk_1", "__rs_powk_8", 8},
-+        {"__rs_powk_1", "__rs_powk_16", 16},
-+
-+        {"__fd_powk1_1", "__fd_powk1_2", 2},
-+        {"__fd_powk1_1", "__fd_powk1_4", 4},
-+        {"__fd_powk1_1", "__fd_powk1_8", 8},
-+
-+        {"__fs_powk1_1", "__fs_powk1_4", 4},
-+        {"__fs_powk1_1", "__fs_powk1_8", 8},
-+        {"__fs_powk1_1", "__fs_powk1_16", 16},
-+
-+        {"__pd_powk1_1", "__pd_powk1_2", 2},
-+        {"__pd_powk1_1", "__pd_powk1_4", 4},
-+        {"__pd_powk1_1", "__pd_powk1_8", 8},
-+
-+        {"__ps_powk1_1", "__ps_powk1_4", 4},
-+        {"__ps_powk1_1", "__ps_powk1_8", 8},
-+        {"__ps_powk1_1", "__ps_powk1_16", 16},
-+
-+        {"__rd_powk1_1", "__rd_powk1_2", 2},
-+        {"__rd_powk1_1", "__rd_powk1_4", 4},
-+        {"__rd_powk1_1", "__rd_powk1_8", 8},
-+
-+        {"__rs_powk1_1", "__rs_powk1_4", 4},
-+        {"__rs_powk1_1", "__rs_powk1_8", 8},
-+        {"__rs_powk1_1", "__rs_powk1_16", 16},
-+
-+        {"__fd_log10_1", "__fd_log10_2", 2},
-+        {"__fd_log10_1", "__fd_log10_4", 4},
-+        {"__fd_log10_1", "__fd_log10_8", 8},
-+
-+        {"__fs_log10_1", "__fs_log10_4", 4},
-+        {"__fs_log10_1", "__fs_log10_8", 8},
-+        {"__fs_log10_1", "__fs_log10_16", 16},
-+
-+        {"__pd_log10_1", "__pd_log10_2", 2},
-+        {"__pd_log10_1", "__pd_log10_4", 4},
-+        {"__pd_log10_1", "__pd_log10_8", 8},
-+
-+        {"__ps_log10_1", "__ps_log10_4", 4},
-+        {"__ps_log10_1", "__ps_log10_8", 8},
-+        {"__ps_log10_1", "__ps_log10_16", 16},
-+
-+        {"__rd_log10_1", "__rd_log10_2", 2},
-+        {"__rd_log10_1", "__rd_log10_4", 4},
-+        {"__rd_log10_1", "__rd_log10_8", 8},
-+
-+        {"__rs_log10_1", "__rs_log10_4", 4},
-+        {"__rs_log10_1", "__rs_log10_8", 8},
-+        {"__rs_log10_1", "__rs_log10_16", 16},
-+
-+        {"__fd_log_1", "__fd_log_2", 2},
-+        {"__fd_log_1", "__fd_log_4", 4},
-+        {"__fd_log_1", "__fd_log_8", 8},
-+
-+        {"__fs_log_1", "__fs_log_4", 4},
-+        {"__fs_log_1", "__fs_log_8", 8},
-+        {"__fs_log_1", "__fs_log_16", 16},
-+
-+        {"__pd_log_1", "__pd_log_2", 2},
-+        {"__pd_log_1", "__pd_log_4", 4},
-+        {"__pd_log_1", "__pd_log_8", 8},
-+
-+        {"__ps_log_1", "__ps_log_4", 4},
-+        {"__ps_log_1", "__ps_log_8", 8},
-+        {"__ps_log_1", "__ps_log_16", 16},
-+
-+        {"__rd_log_1", "__rd_log_2", 2},
-+        {"__rd_log_1", "__rd_log_4", 4},
-+        {"__rd_log_1", "__rd_log_8", 8},
-+
-+        {"__rs_log_1", "__rs_log_4", 4},
-+        {"__rs_log_1", "__rs_log_8", 8},
-+        {"__rs_log_1", "__rs_log_16", 16},
-+
-+        {"__fs_exp_1", "__fs_exp_4", 4},
-+        {"__fs_exp_1", "__fs_exp_8", 8},
-+        {"__fs_exp_1", "__fs_exp_16", 16},
-+
-+        {"__pd_exp_1", "__pd_exp_2", 2},
-+        {"__pd_exp_1", "__pd_exp_4", 4},
-+        {"__pd_exp_1", "__pd_exp_8", 8},
-+
-+        {"__ps_exp_1", "__ps_exp_4", 4},
-+        {"__ps_exp_1", "__ps_exp_8", 8},
-+        {"__ps_exp_1", "__ps_exp_16", 16},
-+
-+        {"__rd_exp_1", "__rd_exp_2", 2},
-+        {"__rd_exp_1", "__rd_exp_4", 4},
-+        {"__rd_exp_1", "__rd_exp_8", 8},
-+
-+        {"__rs_exp_1", "__rs_exp_4", 4},
-+        {"__rs_exp_1", "__rs_exp_8", 8},
-+        {"__rs_exp_1", "__rs_exp_16", 16}
-+    };
-+    addVectorizableFunctions(VecFuncs);
-+    break;
-+  }
-+
-   case NoLibrary:
-     break;
-   }
 diff --git a/lib/AsmParser/LLParser.cpp b/lib/AsmParser/LLParser.cpp
-index 7cf74dd16f5a..da0dd8fe9a08 100644
+index f887372060b5..9ecde50f2407 100644
 --- a/lib/AsmParser/LLParser.cpp
 +++ b/lib/AsmParser/LLParser.cpp
-@@ -4258,6 +4258,28 @@ bool LLParser::ParseDISubrange(MDNode *&Result, bool IsDistinct) {
+@@ -4351,6 +4351,28 @@ bool LLParser::ParseDISubrange(MDNode *&Result, bool IsDistinct) {
    return false;
  }
  
@@ -1015,7 +485,7 @@ index 7cf74dd16f5a..da0dd8fe9a08 100644
  /// ParseDIEnumerator:
  ///   ::= !DIEnumerator(value: 30, isUnsigned: true, name: "SomeKind")
  bool LLParser::ParseDIEnumerator(MDNode *&Result, bool IsDistinct) {
-@@ -4297,6 +4319,26 @@ bool LLParser::ParseDIBasicType(MDNode *&Result, bool IsDistinct) {
+@@ -4392,6 +4414,26 @@ bool LLParser::ParseDIBasicType(MDNode *&Result, bool IsDistinct) {
    return false;
  }
  
@@ -1042,7 +512,7 @@ index 7cf74dd16f5a..da0dd8fe9a08 100644
  /// ParseDIDerivedType:
  ///   ::= !DIDerivedType(tag: DW_TAG_pointer_type, name: "int", file: !0,
  ///                      line: 7, scope: !1, baseType: !2, size: 32,
-@@ -4374,6 +4416,31 @@ bool LLParser::ParseDICompositeType(MDNode *&Result, bool IsDistinct) {
+@@ -4469,6 +4511,31 @@ bool LLParser::ParseDICompositeType(MDNode *&Result, bool IsDistinct) {
    return false;
  }
  
@@ -1075,10 +545,10 @@ index 7cf74dd16f5a..da0dd8fe9a08 100644
  #define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
    OPTIONAL(flags, DIFlagField, );                                              \
 diff --git a/lib/Bitcode/Reader/MetadataLoader.cpp b/lib/Bitcode/Reader/MetadataLoader.cpp
-index 011c41e2cecd..5797ebc6bbd2 100644
+index 3289aa0acddd..344d0e1684af 100644
 --- a/lib/Bitcode/Reader/MetadataLoader.cpp
 +++ b/lib/Bitcode/Reader/MetadataLoader.cpp
-@@ -804,10 +804,13 @@ MetadataLoader::MetadataLoaderImpl::lazyLoadModuleMetadataBlock() {
+@@ -800,10 +800,13 @@ MetadataLoader::MetadataLoaderImpl::lazyLoadModuleMetadataBlock() {
        case bitc::METADATA_LOCATION:
        case bitc::METADATA_GENERIC_DEBUG:
        case bitc::METADATA_SUBRANGE:
@@ -1092,7 +562,7 @@ index 011c41e2cecd..5797ebc6bbd2 100644
        case bitc::METADATA_SUBROUTINE_TYPE:
        case bitc::METADATA_MODULE:
        case bitc::METADATA_FILE:
-@@ -1197,6 +1200,20 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
+@@ -1195,6 +1198,20 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
      NextMetadataNo++;
      break;
    }
@@ -1113,7 +583,7 @@ index 011c41e2cecd..5797ebc6bbd2 100644
    case bitc::METADATA_ENUMERATOR: {
      if (Record.size() != 3)
        return error("Invalid record");
-@@ -1223,6 +1240,20 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
+@@ -1224,6 +1241,20 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
      NextMetadataNo++;
      break;
    }
@@ -1134,7 +604,7 @@ index 011c41e2cecd..5797ebc6bbd2 100644
    case bitc::METADATA_DERIVED_TYPE: {
      if (Record.size() < 12 || Record.size() > 13)
        return error("Invalid record");
-@@ -1316,6 +1347,38 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
+@@ -1317,6 +1348,38 @@ Error MetadataLoader::MetadataLoaderImpl::parseOneMetadata(
      NextMetadataNo++;
      break;
    }
@@ -1174,10 +644,10 @@ index 011c41e2cecd..5797ebc6bbd2 100644
      if (Record.size() < 3 || Record.size() > 4)
        return error("Invalid record");
 diff --git a/lib/Bitcode/Writer/BitcodeWriter.cpp b/lib/Bitcode/Writer/BitcodeWriter.cpp
-index 87b47dc354b5..ae4277e8e6e7 100644
+index 68d79edceafb..95b1349a9cc4 100644
 --- a/lib/Bitcode/Writer/BitcodeWriter.cpp
 +++ b/lib/Bitcode/Writer/BitcodeWriter.cpp
-@@ -294,14 +294,22 @@ class ModuleBitcodeWriter : public ModuleBitcodeWriterBase {
+@@ -296,14 +296,22 @@ class ModuleBitcodeWriter : public ModuleBitcodeWriterBase {
                            SmallVectorImpl<uint64_t> &Record, unsigned &Abbrev);
    void writeDISubrange(const DISubrange *N, SmallVectorImpl<uint64_t> &Record,
                         unsigned Abbrev);
@@ -1200,7 +670,7 @@ index 87b47dc354b5..ae4277e8e6e7 100644
    void writeDISubroutineType(const DISubroutineType *N,
                               SmallVectorImpl<uint64_t> &Record,
                               unsigned Abbrev);
-@@ -1466,6 +1474,22 @@ void ModuleBitcodeWriter::writeDISubrange(const DISubrange *N,
+@@ -1487,6 +1495,22 @@ void ModuleBitcodeWriter::writeDISubrange(const DISubrange *N,
    Record.clear();
  }
  
@@ -1223,7 +693,7 @@ index 87b47dc354b5..ae4277e8e6e7 100644
  void ModuleBitcodeWriter::writeDIEnumerator(const DIEnumerator *N,
                                              SmallVectorImpl<uint64_t> &Record,
                                              unsigned Abbrev) {
-@@ -1491,6 +1515,22 @@ void ModuleBitcodeWriter::writeDIBasicType(const DIBasicType *N,
+@@ -1513,6 +1537,22 @@ void ModuleBitcodeWriter::writeDIBasicType(const DIBasicType *N,
    Record.clear();
  }
  
@@ -1246,7 +716,7 @@ index 87b47dc354b5..ae4277e8e6e7 100644
  void ModuleBitcodeWriter::writeDIDerivedType(const DIDerivedType *N,
                                               SmallVectorImpl<uint64_t> &Record,
                                               unsigned Abbrev) {
-@@ -1544,6 +1584,26 @@ void ModuleBitcodeWriter::writeDICompositeType(
+@@ -1566,6 +1606,26 @@ void ModuleBitcodeWriter::writeDICompositeType(
    Record.clear();
  }
  
@@ -1274,7 +744,7 @@ index 87b47dc354b5..ae4277e8e6e7 100644
      const DISubroutineType *N, SmallVectorImpl<uint64_t> &Record,
      unsigned Abbrev) {
 diff --git a/lib/CodeGen/AsmPrinter/DebugLocEntry.h b/lib/CodeGen/AsmPrinter/DebugLocEntry.h
-index ac49657b68fa..74926cb1e969 100644
+index befa4b941c8d..d1289a3ad87e 100644
 --- a/lib/CodeGen/AsmPrinter/DebugLocEntry.h
 +++ b/lib/CodeGen/AsmPrinter/DebugLocEntry.h
 @@ -151,6 +151,9 @@ class DebugLocEntry {
@@ -1332,10 +802,10 @@ index 8dcf5cbc1889..061f92491f00 100644
    DebugLocStream &getLocs() { return Locs; }
  };
 diff --git a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
-index 32271a0ef24a..12aca4ed40fc 100644
+index 1dca3f0fce5b..b4de4aa378b9 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
 +++ b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
-@@ -518,11 +518,18 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+@@ -548,11 +548,18 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
    }
  
    // Add variable address.
@@ -1358,7 +828,7 @@ index 32271a0ef24a..12aca4ed40fc 100644
    }
  
    // Check if variable is described by a DBG_VALUE instruction.
-@@ -534,7 +541,7 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+@@ -564,7 +571,7 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
        // If the second operand is an immediate, this is an indirect value.
        assert((!Op1.isImm() || (Op1.getImm() == 0)) && "unexpected offset");
        MachineLocation Location(RegOp.getReg(), Op1.isImm());
@@ -1367,7 +837,7 @@ index 32271a0ef24a..12aca4ed40fc 100644
      } else if (DVInsn->getOperand(0).isImm()) {
        // This variable is described by a single constant.
        // Check whether it has a DIExpression.
-@@ -546,21 +553,21 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+@@ -576,21 +583,21 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
          DwarfExpr.addFragmentOffset(Expr);
          DwarfExpr.addUnsignedConstant(DVInsn->getOperand(0).getImm());
          DwarfExpr.addExpression(Expr);
@@ -1395,7 +865,7 @@ index 32271a0ef24a..12aca4ed40fc 100644
  
    DIELoc *Loc = new (DIEValueAllocator) DIELoc;
    DIEDwarfExpression DwarfExpr(*Asm, *this, *Loc);
-@@ -583,9 +590,44 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
+@@ -613,9 +620,44 @@ DIE *DwarfCompileUnit::constructVariableDIEImpl(const DbgVariable &DV,
            *Asm->MF->getSubtarget().getRegisterInfo(), Cursor, FrameReg);
      DwarfExpr.addExpression(std::move(Cursor));
    }
@@ -1443,28 +913,27 @@ index 32271a0ef24a..12aca4ed40fc 100644
  
  DIE *DwarfCompileUnit::constructVariableDIE(DbgVariable &DV,
 diff --git a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
-index 51e1558fe4a3..03464c3f08a0 100644
+index 9ec22f68c12f..b8996e57cbc4 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
 +++ b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
-@@ -303,6 +303,12 @@ class DwarfCompileUnit final : public DwarfUnit {
+@@ -312,6 +312,11 @@ class DwarfCompileUnit final : public DwarfUnit {
+ 
    uint64_t getDWOId() const { return DWOId; }
    void setDWOId(uint64_t DwoId) { DWOId = DwoId; }
- 
 +  void constructDieLocation(DIE &Die, dwarf::Attribute Attribute,
 +                            const DbgVariable &DV);
 +  void constructDieLocationAddExpr(DIE &Die, dwarf::Attribute Attribute,
 +                                   const DbgVariable &DV,
 +                                   DIExpression *SubExpr);
-+
+ 
    bool hasDwarfPubSections() const;
  };
- 
 diff --git a/lib/CodeGen/AsmPrinter/DwarfDebug.cpp b/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
-index 500e7a00196f..5113f142be73 100644
+index 71fbfaa567c5..ff0a712fd7d5 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
 +++ b/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
-@@ -936,6 +936,55 @@ void DwarfDebug::ensureAbstractVariableIsCreatedIfScoped(DwarfCompileUnit &CU,
-     CU.createAbstractVariable(Cleansed, Scope);
+@@ -1028,6 +1028,55 @@ void DwarfDebug::ensureAbstractEntityIsCreatedIfScoped(DwarfCompileUnit &CU,
+     CU.createAbstractEntity(Node, Scope);
  }
  
 +DIE *DwarfDebug::getSubrangeDie(const DIFortranSubrange *SR) const {
@@ -1497,7 +966,7 @@ index 500e7a00196f..5113f142be73 100644
 +          WFS = FS;
 +          WEx = FS->getLowerBoundExp();
 +          break;
-+        }          
++        }
 +    }
 +  }
 +
@@ -1518,10 +987,10 @@ index 500e7a00196f..5113f142be73 100644
 +
  // Collect variable information from side table maintained by MF.
  void DwarfDebug::collectVariableInfoFromMFTable(
-     DwarfCompileUnit &TheCU, DenseSet<InlinedVariable> &Processed) {
-@@ -957,6 +1006,11 @@ void DwarfDebug::collectVariableInfoFromMFTable(
-     ensureAbstractVariableIsCreatedIfScoped(TheCU, Var, Scope->getScopeNode());
-     auto RegVar = llvm::make_unique<DbgVariable>(Var.first, Var.second);
+     DwarfCompileUnit &TheCU, DenseSet<InlinedEntity> &Processed) {
+@@ -1050,6 +1099,11 @@ void DwarfDebug::collectVariableInfoFromMFTable(
+     auto RegVar = llvm::make_unique<DbgVariable>(
+                     cast<DILocalVariable>(Var.first), Var.second);
      RegVar->initializeMMI(VI.Expr, VI.Slot);
 +    if (VariableInDependentType.count(VI.Var)) {
 +      const DIType *DT = VariableInDependentType[VI.Var];
@@ -1531,69 +1000,71 @@ index 500e7a00196f..5113f142be73 100644
      if (DbgVariable *DbgVar = MFVars.lookup(Var))
        DbgVar->addMMIEntry(*RegVar);
      else if (InfoHolder.addScopeVariable(Scope, RegVar.get())) {
-@@ -1194,10 +1248,35 @@ static bool validThroughout(LexicalScopes &LScopes,
+@@ -1299,10 +1353,37 @@ static bool validThroughout(LexicalScopes &LScopes,
    return false;
  }
  
 +void DwarfDebug::populateDependentTypeMap() {
 +  for (const auto &I : DbgValues) {
-+    InlinedVariable IV = I.first;
++    InlinedEntity IV = I.first;
 +    if (I.second.empty())
 +      continue;
 +
-+    if (const DIStringType *ST = dyn_cast<DIStringType>(
-+            static_cast<const Metadata *>(IV.first->getType())))
-+      if (const DIVariable *LV = ST->getStringLength())
-+        VariableInDependentType[LV] = ST;
++    if (const DIVariable *V = dyn_cast<DIVariable>(IV.first)) {
++      if (const DIStringType *ST = dyn_cast<DIStringType>(
++              static_cast<const Metadata *>(V->getType())))
++        if (const DIVariable *LV = ST->getStringLength())
++          VariableInDependentType[LV] = ST;
 +
-+    if (const DIFortranArrayType *AT = dyn_cast<DIFortranArrayType>(
-+            static_cast<const Metadata *>(IV.first->getType())))
-+      for (const DINode *S : AT->getElements())
-+        if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(S)) {
-+          if (const DIVariable *LBV = FS->getLowerBound())
-+            VariableInDependentType[LBV] = AT;
-+          if (const DIVariable *UBV = FS->getUpperBound())
-+            VariableInDependentType[UBV] = AT;
-+        }
++      if (const DIFortranArrayType *AT = dyn_cast<DIFortranArrayType>(
++              static_cast<const Metadata *>(V->getType())))
++        for (const DINode *S : AT->getElements())
++          if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(S)) {
++            if (const DIVariable *LBV = FS->getLowerBound())
++              VariableInDependentType[LBV] = AT;
++            if (const DIVariable *UBV = FS->getUpperBound())
++              VariableInDependentType[UBV] = AT;
++          }
++    }
 +  }
 +}
 +
  // Find variables for each lexical scope.
- void DwarfDebug::collectVariableInfo(DwarfCompileUnit &TheCU,
-                                      const DISubprogram *SP,
-                                      DenseSet<InlinedVariable> &Processed) {
+ void DwarfDebug::collectEntityInfo(DwarfCompileUnit &TheCU,
+                                    const DISubprogram *SP,
+                                    DenseSet<InlinedEntity> &Processed) {
 +  clearDependentTracking();
 +  populateDependentTypeMap();
    // Grab the variable info that was squirreled away in the MMI side-table.
    collectVariableInfoFromMFTable(TheCU, Processed);
  
-@@ -1252,8 +1331,25 @@ void DwarfDebug::collectVariableInfo(DwarfCompileUnit &TheCU,
+@@ -1359,6 +1440,25 @@ void DwarfDebug::collectEntityInfo(DwarfCompileUnit &TheCU,
      // Finalize the entry by lowering it into a DWARF bytestream.
      for (auto &Entry : Entries)
        Entry.finalize(*Asm, List, BT);
 +    List.finalize();
 +
-+    if (VariableInDependentType.count(IV.first)) {
-+      const DIType *DT = VariableInDependentType[IV.first];
-+      if (const DIStringType *ST = dyn_cast<DIStringType>(DT)) {
-+        unsigned Offset;
-+        DbgVariable TVar = {IV.first, IV.second};
-+        DebugLocStream::ListBuilder LB(DebugLocs, TheCU, *Asm, TVar, *MInsn);
-+        for (auto &Entry : Entries)
-+          Entry.finalize(*Asm, LB, ST);
-+        LB.finalize();
-+        Offset = TVar.getDebugLocListIndex();
-+        if (Offset != ~0u)
-+          addStringTypeLoc(ST, Offset);
++    if (const DIVariable *V = dyn_cast<DIVariable>(IV.first))
++      if (VariableInDependentType.count(V)) {
++        const DIType *DT = VariableInDependentType[V];
++        if (const DIStringType *ST = dyn_cast<DIStringType>(DT)) {
++          unsigned Offset;
++          if (const DILocalVariable *LV = dyn_cast<DILocalVariable>(V)) {
++            DbgVariable TVar = {LV, IV.second};
++            DebugLocStream::ListBuilder LB(DebugLocs, TheCU, *Asm, TVar, *MInsn);
++            for (auto &Entry : Entries)
++              Entry.finalize(*Asm, LB, ST);
++            LB.finalize();
++            Offset = TVar.getDebugLocListIndex();
++            if (Offset != ~0u)
++              addStringTypeLoc(ST, Offset);
++          }
++        }
 +      }
-+    }
    }
  
-+
-   // Collect info for variables that were optimized out.
-   for (const DINode *DN : SP->getRetainedNodes()) {
-     if (auto *DV = dyn_cast<DILocalVariable>(DN)) {
-@@ -1781,6 +1877,20 @@ void DebugLocEntry::finalize(const AsmPrinter &AP,
+   // For each InlinedEntity collected from DBG_LABEL instructions, convert to
+@@ -1940,6 +2040,20 @@ void DebugLocEntry::finalize(const AsmPrinter &AP,
    DwarfExpr.finalize();
  }
  
@@ -1615,10 +1086,10 @@ index 500e7a00196f..5113f142be73 100644
    // Emit the size.
    Asm->OutStreamer->AddComment("Loc expr size");
 diff --git a/lib/CodeGen/AsmPrinter/DwarfDebug.h b/lib/CodeGen/AsmPrinter/DwarfDebug.h
-index abf2e43b1312..7f6f8ce98cef 100644
+index 8a31e989b289..1f551bbd88c8 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfDebug.h
 +++ b/lib/CodeGen/AsmPrinter/DwarfDebug.h
-@@ -200,6 +200,8 @@ enum class AccelTableKind {
+@@ -277,6 +277,8 @@ enum class AccelTableKind {
    Dwarf,   ///< DWARF v5 .debug_names.
  };
  
@@ -1627,7 +1098,7 @@ index abf2e43b1312..7f6f8ce98cef 100644
  /// Collects and handles dwarf debug information.
  class DwarfDebug : public DebugHandlerBase {
    /// All DIEValues are allocated through this allocator.
-@@ -314,6 +316,14 @@ class DwarfDebug : public DebugHandlerBase {
+@@ -390,6 +392,14 @@ class DwarfDebug : public DebugHandlerBase {
    bool SingleCU;
    bool IsDarwin;
  
@@ -1642,9 +1113,9 @@ index abf2e43b1312..7f6f8ce98cef 100644
    AddressPool AddrPool;
  
    /// Accelerator tables.
-@@ -484,6 +494,12 @@ class DwarfDebug : public DebugHandlerBase {
-   /// Emit the reference to the section.
-   void emitSectionReference(const DwarfCompileUnit &CU);
+@@ -500,6 +510,12 @@ class DwarfDebug : public DebugHandlerBase {
+   void emitMacroFile(DIMacroFile &F, DwarfCompileUnit &U);
+   void handleMacroNodes(DIMacroNodeArray Nodes, DwarfCompileUnit &U);
  
 +  /// Populate dependent type variable map
 +  void populateDependentTypeMap();
@@ -1652,10 +1123,18 @@ index abf2e43b1312..7f6f8ce98cef 100644
 +  /// Clear dependent type tracking map
 +  void clearDependentTracking() { VariableInDependentType.clear(); }
 +
- protected:
-   /// Gather pre-function debug information.
-   void beginFunctionImpl(const MachineFunction *MF) override;
-@@ -632,6 +648,21 @@ class DwarfDebug : public DebugHandlerBase {
+   /// DWARF 5 Experimental Split Dwarf Emitters
+ 
+   /// Initialize common features of skeleton units.
+@@ -566,6 +582,7 @@ class DwarfDebug : public DebugHandlerBase {
+   void collectVariableInfoFromMFTable(DwarfCompileUnit &TheCU,
+                                       DenseSet<InlinedEntity> &P);
+ 
++
+   /// Emit the reference to the section.
+   void emitSectionReference(const DwarfCompileUnit &CU);
+ 
+@@ -717,6 +734,21 @@ class DwarfDebug : public DebugHandlerBase {
      return CUDieMap.lookup(Die);
    }
  
@@ -1678,10 +1157,10 @@ index abf2e43b1312..7f6f8ce98cef 100644
    ///
    /// Returns whether we are "tuning" for a given debugger.
 diff --git a/lib/CodeGen/AsmPrinter/DwarfExpression.cpp b/lib/CodeGen/AsmPrinter/DwarfExpression.cpp
-index d8d1a5e8f841..ca97ab7c5b8e 100644
+index 19c350afbf17..c994ed18985a 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfExpression.cpp
 +++ b/lib/CodeGen/AsmPrinter/DwarfExpression.cpp
-@@ -346,6 +346,11 @@ void DwarfExpression::addExpression(DIExpressionCursor &&ExprCursor,
+@@ -356,6 +356,11 @@ void DwarfExpression::addExpression(DIExpressionCursor &&ExprCursor,
        emitOp(dwarf::DW_OP_plus_uconst);
        emitUnsigned(Op->getArg(0));
        break;
@@ -1694,10 +1173,10 @@ index d8d1a5e8f841..ca97ab7c5b8e 100644
      case dwarf::DW_OP_minus:
      case dwarf::DW_OP_mul:
 diff --git a/lib/CodeGen/AsmPrinter/DwarfExpression.h b/lib/CodeGen/AsmPrinter/DwarfExpression.h
-index 0637d952eba4..e5e160aecfb6 100644
+index 91568ba6d107..d166600b1dbf 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfExpression.h
 +++ b/lib/CodeGen/AsmPrinter/DwarfExpression.h
-@@ -264,7 +264,7 @@ class DebugLocDwarfExpression final : public DwarfExpression {
+@@ -267,7 +267,7 @@ class DebugLocDwarfExpression final : public DwarfExpression {
  
  /// DwarfExpression implementation for singular DW_AT_location.
  class DIEDwarfExpression final : public DwarfExpression {
@@ -1707,10 +1186,10 @@ index 0637d952eba4..e5e160aecfb6 100644
    DIELoc &DIE;
  
 diff --git a/lib/CodeGen/AsmPrinter/DwarfUnit.cpp b/lib/CodeGen/AsmPrinter/DwarfUnit.cpp
-index 600f4a78fda0..2224de159de2 100644
+index 991dac7cf35b..dc1a33d58c37 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfUnit.cpp
 +++ b/lib/CodeGen/AsmPrinter/DwarfUnit.cpp
-@@ -760,8 +760,12 @@ DIE *DwarfUnit::getOrCreateTypeDIE(const MDNode *TyNode) {
+@@ -649,8 +649,12 @@ DIE *DwarfUnit::getOrCreateTypeDIE(const MDNode *TyNode) {
  
    if (auto *BT = dyn_cast<DIBasicType>(Ty))
      constructTypeDIE(TyDIE, BT);
@@ -1723,7 +1202,7 @@ index 600f4a78fda0..2224de159de2 100644
    else if (auto *CTy = dyn_cast<DICompositeType>(Ty)) {
      if (DD->generateTypeUnits() && !Ty->isForwardDecl())
        if (MDString *TypeId = CTy->getRawIdentifier()) {
-@@ -846,13 +850,39 @@ void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIBasicType *BTy) {
+@@ -735,8 +739,9 @@ void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIBasicType *BTy) {
    if (BTy->getTag() == dwarf::DW_TAG_unspecified_type)
      return;
  
@@ -1735,6 +1214,8 @@ index 600f4a78fda0..2224de159de2 100644
  
    uint64_t Size = BTy->getSizeInBits() >> 3;
    addUInt(Buffer, dwarf::DW_AT_byte_size, None, Size);
+@@ -747,6 +752,31 @@ void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIBasicType *BTy) {
+     addUInt(Buffer, dwarf::DW_AT_endianity, None, dwarf::DW_END_little);
  }
  
 +void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIStringType *STy) {
@@ -1765,7 +1246,7 @@ index 600f4a78fda0..2224de159de2 100644
  void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIDerivedType *DTy) {
    // Get core information.
    StringRef Name = DTy->getName();
-@@ -1367,6 +1397,12 @@ void DwarfUnit::applySubprogramAttributes(const DISubprogram *SP, DIE &SPDie,
+@@ -1261,6 +1291,12 @@ void DwarfUnit::applySubprogramAttributes(const DISubprogram *SP, DIE &SPDie,
  
    if (SP->isMainSubprogram())
      addFlag(SPDie, dwarf::DW_AT_main_subprogram);
@@ -1778,7 +1259,7 @@ index 600f4a78fda0..2224de159de2 100644
  }
  
  void DwarfUnit::constructSubrangeDIE(DIE &Buffer, const DISubrange *SR,
-@@ -1394,6 +1430,26 @@ void DwarfUnit::constructSubrangeDIE(DIE &Buffer, const DISubrange *SR,
+@@ -1288,6 +1324,26 @@ void DwarfUnit::constructSubrangeDIE(DIE &Buffer, const DISubrange *SR,
      addUInt(DW_Subrange, dwarf::DW_AT_count, None, Count);
  }
  
@@ -1793,19 +1274,19 @@ index 600f4a78fda0..2224de159de2 100644
 +
 +  if (!SR->getLowerBound()) {
 +    int64_t BVC = SR->getCLowerBound();
-+    addSInt(DW_Subrange, dwarf::DW_AT_lower_bound, None, BVC);
++    addSInt(DW_Subrange, dwarf::DW_AT_lower_bound, dwarf::DW_FORM_sdata, BVC);
 +  }
 +
 +  if ((!SR->getUpperBound()) && (!SR->noUpperBound())) {
 +    int64_t BVC = SR->getCUpperBound();
-+    addSInt(DW_Subrange, dwarf::DW_AT_upper_bound, None, BVC);
++    addSInt(DW_Subrange, dwarf::DW_AT_upper_bound, dwarf::DW_FORM_sdata, BVC);
 +  }
 +}
 +
  DIE *DwarfUnit::getIndexTyDie() {
    if (IndexTyDie)
      return IndexTyDie;
-@@ -1461,6 +1517,20 @@ void DwarfUnit::constructArrayTypeDIE(DIE &Buffer, const DICompositeType *CTy) {
+@@ -1355,6 +1411,20 @@ void DwarfUnit::constructArrayTypeDIE(DIE &Buffer, const DICompositeType *CTy) {
    }
  }
  
@@ -1827,10 +1308,10 @@ index 600f4a78fda0..2224de159de2 100644
    const DIType *DTy = resolve(CTy->getBaseType());
    bool IsUnsigned = DTy && isUnsignedDIType(DD, DTy);
 diff --git a/lib/CodeGen/AsmPrinter/DwarfUnit.h b/lib/CodeGen/AsmPrinter/DwarfUnit.h
-index 69696f626536..9c14ed6256fa 100644
+index a59ebb7c1465..c9d67c144c75 100644
 --- a/lib/CodeGen/AsmPrinter/DwarfUnit.h
 +++ b/lib/CodeGen/AsmPrinter/DwarfUnit.h
-@@ -341,10 +341,14 @@ class DwarfUnit : public DIEUnit {
+@@ -322,10 +322,14 @@ class DwarfUnit : public DIEUnit {
  
  private:
    void constructTypeDIE(DIE &Buffer, const DIBasicType *BTy);
@@ -1846,10 +1327,10 @@ index 69696f626536..9c14ed6256fa 100644
    DIE &constructMemberDIE(DIE &Buffer, const DIDerivedType *DT);
    void constructTemplateTypeParameterDIE(DIE &Buffer,
 diff --git a/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
-index 99a25a723b4a..e442063a5b0b 100644
+index a5dc623e1a30..6e5955908d16 100644
 --- a/lib/IR/AsmWriter.cpp
 +++ b/lib/IR/AsmWriter.cpp
-@@ -1761,6 +1761,24 @@ static void writeDISubrange(raw_ostream &Out, const DISubrange *N,
+@@ -1803,6 +1803,24 @@ static void writeDISubrange(raw_ostream &Out, const DISubrange *N,
    Out << ")";
  }
  
@@ -1874,7 +1355,7 @@ index 99a25a723b4a..e442063a5b0b 100644
  static void writeDIEnumerator(raw_ostream &Out, const DIEnumerator *N,
                                TypePrinting *, SlotTracker *, const Module *) {
    Out << "!DIEnumerator(";
-@@ -1790,6 +1808,23 @@ static void writeDIBasicType(raw_ostream &Out, const DIBasicType *N,
+@@ -1833,6 +1851,23 @@ static void writeDIBasicType(raw_ostream &Out, const DIBasicType *N,
    Out << ")";
  }
  
@@ -1898,7 +1379,7 @@ index 99a25a723b4a..e442063a5b0b 100644
  static void writeDIDerivedType(raw_ostream &Out, const DIDerivedType *N,
                                 TypePrinting *TypePrinter, SlotTracker *Machine,
                                 const Module *Context) {
-@@ -1838,6 +1873,25 @@ static void writeDICompositeType(raw_ostream &Out, const DICompositeType *N,
+@@ -1881,6 +1916,25 @@ static void writeDICompositeType(raw_ostream &Out, const DICompositeType *N,
    Out << ")";
  }
  
@@ -1925,11 +1406,11 @@ index 99a25a723b4a..e442063a5b0b 100644
                                    TypePrinting *TypePrinter,
                                    SlotTracker *Machine, const Module *Context) {
 diff --git a/lib/IR/DIBuilder.cpp b/lib/IR/DIBuilder.cpp
-index 5c5477f4f40f..590991212e4e 100644
+index d29759f56791..c3e31efa60d7 100644
 --- a/lib/IR/DIBuilder.cpp
 +++ b/lib/IR/DIBuilder.cpp
-@@ -262,6 +262,12 @@ DIBasicType *DIBuilder::createBasicType(StringRef Name, uint64_t SizeInBits,
-                           0, Encoding);
+@@ -265,6 +265,12 @@ DIBasicType *DIBuilder::createBasicType(StringRef Name, uint64_t SizeInBits,
+                           0, Encoding, Flags);
  }
  
 +DIStringType *DIBuilder::createStringType(StringRef Name, uint64_t SizeInBits) {
@@ -1957,7 +1438,12 @@ index 5c5477f4f40f..590991212e4e 100644
  DICompositeType *DIBuilder::createVectorType(uint64_t Size,
                                               uint32_t AlignInBits, DIType *Ty,
                                               DINodeArray Subscripts) {
-@@ -628,6 +643,12 @@ DISubrange *DIBuilder::getOrCreateSubrange(int64_t Lo, Metadata *CountNode) {
+@@ -624,10 +639,17 @@ DISubrange *DIBuilder::getOrCreateSubrange(int64_t Lo, int64_t Count) {
+   return DISubrange::get(VMContext, Count, Lo);
+ }
+ 
++
+ DISubrange *DIBuilder::getOrCreateSubrange(int64_t Lo, Metadata *CountNode) {
    return DISubrange::get(VMContext, CountNode, Lo);
  }
  
@@ -1971,10 +1457,26 @@ index 5c5477f4f40f..590991212e4e 100644
  #ifndef NDEBUG
    if (auto *CT =
 diff --git a/lib/IR/DebugInfoMetadata.cpp b/lib/IR/DebugInfoMetadata.cpp
-index 910e8c2fb74f..0903a7d4b4cb 100644
+index 92f3f21f754c..a10b91c53cc9 100644
 --- a/lib/IR/DebugInfoMetadata.cpp
 +++ b/lib/IR/DebugInfoMetadata.cpp
-@@ -262,6 +262,15 @@ DISubrange *DISubrange::getImpl(LLVMContext &Context, Metadata *CountNode,
+@@ -196,6 +196,15 @@ DINode::DIFlags DINode::splitFlags(DIFlags Flags,
+       SplitFlags.push_back(FlagVirtualInheritance);
+     Flags &= ~R;
+   }
++  if (Flags & FlagFortran) {
++    if ((Flags & FlagPure) == FlagPure)
++      SplitFlags.push_back(FlagPure);
++    if ((Flags & FlagElemental) == FlagElemental)
++      SplitFlags.push_back(FlagElemental);
++    if ((Flags & FlagRecursive) == FlagRecursive)
++      SplitFlags.push_back(FlagRecursive);
++    Flags &= ~(FlagPure|FlagElemental|FlagRecursive);
++  }
+   if ((Flags & FlagIndirectVirtualBase) == FlagIndirectVirtualBase) {
+     Flags &= ~FlagIndirectVirtualBase;
+     SplitFlags.push_back(FlagIndirectVirtualBase);
+@@ -325,6 +334,15 @@ DISubrange *DISubrange::getImpl(LLVMContext &Context, Metadata *CountNode,
    DEFINE_GETIMPL_STORE(DISubrange, (CountNode, Lo), Ops);
  }
  
@@ -1990,8 +1492,8 @@ index 910e8c2fb74f..0903a7d4b4cb 100644
  DIEnumerator *DIEnumerator::getImpl(LLVMContext &Context, int64_t Value,
                                      bool IsUnsigned, MDString *Name,
                                      StorageType Storage, bool ShouldCreate) {
-@@ -296,6 +305,21 @@ Optional<DIBasicType::Signedness> DIBasicType::getSignedness() const {
-   }
+@@ -347,6 +365,21 @@ DIBasicType *DIBasicType::getImpl(LLVMContext &Context, unsigned Tag,
+                       Flags), Ops);
  }
  
 +DIStringType *DIStringType::getImpl(LLVMContext &Context, unsigned Tag,
@@ -2009,10 +1511,10 @@ index 910e8c2fb74f..0903a7d4b4cb 100644
 +                       Ops);
 +}
 +
- DIDerivedType *DIDerivedType::getImpl(
-     LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
-     unsigned Line, Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
-@@ -335,6 +359,22 @@ DICompositeType *DICompositeType::getImpl(
+ Optional<DIBasicType::Signedness> DIBasicType::getSignedness() const {
+   switch (getEncoding()) {
+   case dwarf::DW_ATE_signed:
+@@ -399,6 +432,22 @@ DICompositeType *DICompositeType::getImpl(
                         Ops);
  }
  
@@ -2035,7 +1537,7 @@ index 910e8c2fb74f..0903a7d4b4cb 100644
  DICompositeType *DICompositeType::buildODRType(
      LLVMContext &Context, MDString &Identifier, unsigned Tag, MDString *Name,
      Metadata *File, unsigned Line, Metadata *Scope, Metadata *BaseType,
-@@ -691,6 +731,7 @@ unsigned DIExpression::ExprOperand::getSize() const {
+@@ -818,6 +867,7 @@ unsigned DIExpression::ExprOperand::getSize() const {
      return 3;
    case dwarf::DW_OP_constu:
    case dwarf::DW_OP_plus_uconst:
@@ -2043,19 +1545,11 @@ index 910e8c2fb74f..0903a7d4b4cb 100644
      return 2;
    default:
      return 1;
-@@ -746,6 +787,7 @@ bool DIExpression::isValid() const {
-     case dwarf::DW_OP_shra:
-     case dwarf::DW_OP_deref:
-     case dwarf::DW_OP_xderef:
-+    case dwarf::DW_OP_deref_size:
-     case dwarf::DW_OP_lit0:
-     case dwarf::DW_OP_not:
-     case dwarf::DW_OP_dup:
 diff --git a/lib/IR/LLVMContextImpl.h b/lib/IR/LLVMContextImpl.h
-index 3b2e1e81b1c1..81a33eecc3e0 100644
+index 2d120869860a..1674dc0a1946 100644
 --- a/lib/IR/LLVMContextImpl.h
 +++ b/lib/IR/LLVMContextImpl.h
-@@ -351,6 +351,42 @@ template <> struct MDNodeKeyImpl<DISubrange> {
+@@ -354,6 +354,42 @@ template <> struct MDNodeKeyImpl<DISubrange> {
    }
  };
  
@@ -2098,7 +1592,7 @@ index 3b2e1e81b1c1..81a33eecc3e0 100644
  template <> struct MDNodeKeyImpl<DIEnumerator> {
    int64_t Value;
    MDString *Name;
-@@ -397,6 +433,39 @@ template <> struct MDNodeKeyImpl<DIBasicType> {
+@@ -402,6 +438,39 @@ template <> struct MDNodeKeyImpl<DIBasicType> {
    }
  };
  
@@ -2138,7 +1632,7 @@ index 3b2e1e81b1c1..81a33eecc3e0 100644
  template <> struct MDNodeKeyImpl<DIDerivedType> {
    unsigned Tag;
    MDString *Name;
-@@ -553,6 +622,52 @@ template <> struct MDNodeKeyImpl<DICompositeType> {
+@@ -558,6 +627,52 @@ template <> struct MDNodeKeyImpl<DICompositeType> {
    }
  };
  
@@ -2192,10 +1686,10 @@ index 3b2e1e81b1c1..81a33eecc3e0 100644
    unsigned Flags;
    uint8_t CC;
 diff --git a/lib/IR/Verifier.cpp b/lib/IR/Verifier.cpp
-index e5231bb78a36..0e266a36d7bc 100644
+index 60ff0adb8f41..49c22c8ab352 100644
 --- a/lib/IR/Verifier.cpp
 +++ b/lib/IR/Verifier.cpp
-@@ -878,13 +878,27 @@ void Verifier::visitDISubrange(const DISubrange &N) {
+@@ -886,13 +886,27 @@ void Verifier::visitDISubrange(const DISubrange &N) {
             "invalid subrange count", &N);
  }
  
@@ -2214,17 +1708,17 @@ index e5231bb78a36..0e266a36d7bc 100644
  void Verifier::visitDIBasicType(const DIBasicType &N) {
    AssertDI(N.getTag() == dwarf::DW_TAG_base_type ||
 -               N.getTag() == dwarf::DW_TAG_unspecified_type,
-+               N.getTag() == dwarf::DW_TAG_unspecified_type ||
-+               N.getTag() == dwarf::DW_TAG_string_type,
++           N.getTag() == dwarf::DW_TAG_unspecified_type ||
++           N.getTag() == dwarf::DW_TAG_string_type,
 +           "invalid tag", &N);
 +}
 +
 +void Verifier::visitDIStringType(const DIStringType &N) {
 +  AssertDI( N.getTag() == dwarf::DW_TAG_string_type,
             "invalid tag", &N);
- }
- 
-@@ -984,6 +998,22 @@ void Verifier::visitDICompositeType(const DICompositeType &N) {
+   AssertDI(!(N.isBigEndian() && N.isLittleEndian()) ,
+             "has conflicting flags", &N);
+@@ -994,6 +1008,22 @@ void Verifier::visitDICompositeType(const DICompositeType &N) {
    }
  }
  
@@ -2247,20 +1741,34 @@ index e5231bb78a36..0e266a36d7bc 100644
  void Verifier::visitDISubroutineType(const DISubroutineType &N) {
    AssertDI(N.getTag() == dwarf::DW_TAG_subroutine_type, "invalid tag", &N);
    if (auto *Types = N.getRawTypeArray()) {
-diff --git a/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
-index 1c7d0a63a5ca..ad778d09e208 100644
---- a/lib/Transforms/Vectorize/LoopVectorize.cpp
-+++ b/lib/Transforms/Vectorize/LoopVectorize.cpp
-@@ -5094,8 +5094,10 @@ LoopVectorizationCostModel::getSmallestAndWidestTypes() {
-       if (ValuesToIgnore.count(&I))
-         continue;
- 
--      // Only examine Loads, Stores and PHINodes.
--      if (!isa<LoadInst>(I) && !isa<StoreInst>(I) && !isa<PHINode>(I))
-+      // Examine Loads, Stores, PHINodes
-+      // Also examine instructions which convert to a float/double
-+      if (!isa<LoadInst>(I) && !isa<StoreInst>(I) && !isa<PHINode>(I) &&
-+          !isa<FPExtInst>(I) && !isa<SIToFPInst>(I) && !isa<UIToFPInst>(I))
-         continue;
- 
-       // Examine PHI nodes that are reduction variables. Update the type to
+diff --git a/test/DebugInfo/fortran-subprogram-at.ll b/test/DebugInfo/fortran-subprogram-at.ll
+new file mode 100644
+index 000000000000..8eada44a5b29
+--- /dev/null
++++ b/test/DebugInfo/fortran-subprogram-at.ll
+@@ -0,0 +1,24 @@
++; Test for DIFlagPure, DIFlagElement and DIFlagRecursive. These three
++; DIFlags are used to attach DW_AT_pure, DW_AT_element, and DW_AT_recursive
++; attributes to DW_TAG_subprogram DIEs.
++
++; RUN: llvm-as < %s | llvm-dis | llvm-as | llvm-dis | FileCheck %s
++; CHECK: !DISubprogram({{.*}}, flags: DIFlagPure | DIFlagElemental | DIFlagRecursive,
++
++!llvm.module.flags = !{!0, !1}
++!llvm.dbg.cu = !{!2}
++
++define void @subprgm() !dbg !6 {
++L:
++  ret void
++}
++
++!0 = !{i32 2, !"Dwarf Version", i32 2}
++!1 = !{i32 1, !"Debug Info Version", i32 3}
++!2 = distinct !DICompileUnit(language: DW_LANG_Fortran90, file: !3, producer: "Flang", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !4, globals: !4, imports: !4)
++!3 = !DIFile(filename: "fortran-subprogram-at.f", directory: "/")
++!4 = !{}
++!5 = !DIBasicType(name: "real", size: 32, align: 32, encoding: DW_ATE_float)
++!6 = distinct !DISubprogram(name: "subprgm", scope: !2, file: !3, line: 256, type: !7, isLocal: false, isDefinition: true, scopeLine: 256, flags: DIFlagPure|DIFlagElemental|DIFlagRecursive, isOptimized: false, unit: !2)
++!7 = !DISubroutineType(types: !8)
++!8 = !{null, !5}
+

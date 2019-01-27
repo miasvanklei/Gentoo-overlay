@@ -1,0 +1,104 @@
+--- a/runtime/jit-rt/cpp-so/jit_context.cpp
++++ b/runtime/jit-rt/cpp-so/jit_context.cpp
+@@ -95,7 +95,7 @@ JITContext::JITContext()
+       execSession(stringPool), resolver(createResolver()),
+       objectLayer(execSession,
+                   [this](llvm::orc::VModuleKey) {
+-                    return llvm::orc::RTDyldObjectLinkingLayer::Resources{
++                    return ObjectLayerT::Resources{
+                         std::make_shared<llvm::SectionMemoryManager>(),
+                         resolver};
+                   }),
+--- a/runtime/jit-rt/cpp-so/jit_context.h
++++ b/runtime/jit-rt/cpp-so/jit_context.h
+@@ -67,11 +67,19 @@ class JITContext final {
+   llvm::llvm_shutdown_obj shutdownObj;
+   std::unique_ptr<llvm::TargetMachine> targetmachine;
+   const llvm::DataLayout dataLayout;
++#if LDC_LLVM_VER >= 800
++  using ObjectLayerT = llvm::orc::LegacyRTDyldObjectLinkingLayer;
++  using ListenerLayerT =
++    llvm::orc::LegacyObjectTransformLayer<ObjectLayerT, ModuleListener>;
++  using CompileLayerT =
++    llvm::orc::LegacyIRCompileLayer<ListenerLayerT, llvm::orc::SimpleCompiler>;
++#else
+   using ObjectLayerT = llvm::orc::RTDyldObjectLinkingLayer;
+   using ListenerLayerT =
+       llvm::orc::ObjectTransformLayer<ObjectLayerT, ModuleListener>;
+   using CompileLayerT =
+       llvm::orc::IRCompileLayer<ListenerLayerT, llvm::orc::SimpleCompiler>;
++#endif
+ #if LDC_LLVM_VER >= 700
+   using ModuleHandleT = llvm::orc::VModuleKey;
+   std::shared_ptr<llvm::orc::SymbolStringPool> stringPool;
+--- a/driver/cl_options-llvm.cpp
++++ b/driver/cl_options-llvm.cpp
+@@ -38,9 +38,9 @@
+ #endif
+ 
+ cl::boolOrDefault disableFPElim() {
+-  return ::DisableFPElim.getNumOccurrences() == 0
++  return ::FramePointerUsage.getNumOccurrences() == 0
+              ? cl::BOU_UNSET
+-             : ::DisableFPElim ? cl::BOU_TRUE : cl::BOU_FALSE;
++             : ::FramePointerUsage ? cl::BOU_TRUE : cl::BOU_FALSE;
+ }
+ 
+ bool disableRedZone() { return ::DisableRedZone; }
+--- a/gen/optimizer.cpp
++++ b/gen/optimizer.cpp
+@@ -29,6 +29,8 @@
+ #include "llvm/Support/CommandLine.h"
+ #include "llvm/Target/TargetMachine.h"
+ #include "llvm/Transforms/Instrumentation.h"
++#include "llvm/Transforms/Instrumentation/MemorySanitizer.h"
++#include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
+ #include "llvm/Transforms/IPO.h"
+ #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+ 
+@@ -179,7 +181,7 @@
+ 
+ static void addMemorySanitizerPass(const PassManagerBuilder &Builder,
+                                    PassManagerBase &PM) {
+-  PM.add(createMemorySanitizerPass());
++  PM.add(createMemorySanitizerLegacyPassPass());
+ 
+   // MemorySanitizer inserts complex instrumentation that mostly follows
+   // the logic of the original code, but operates on "shadow" values.
+@@ -196,7 +198,7 @@
+ 
+ static void addThreadSanitizerPass(const PassManagerBuilder &Builder,
+                                    PassManagerBase &PM) {
+-  PM.add(createThreadSanitizerPass());
++  PM.add(createThreadSanitizerLegacyPassPass());
+ }
+ 
+ static void addSanitizerCoveragePass(const PassManagerBuilder &Builder,
+--- a/gen/dynamiccompile.cpp
++++ b/gen/dynamiccompile.cpp
+@@ -20,7 +20,6 @@
+ #include "gen/llvm.h"
+ #include "ir/irfunction.h"
+ #include "llvm/Bitcode/BitcodeWriter.h"
+-#include "llvm/IR/TypeBuilder.h"
+ #include "llvm/Transforms/Utils/Cloning.h"
+ #include "llvm/Transforms/Utils/ModuleUtils.h"
+ 
+@@ -374,15 +373,14 @@
+       llvm::ConstantInt::get(module.getContext(), APInt(32, elements.size())));
+ }
+ 
+-template <typename T>
+ void createStaticArray(llvm::Module &mod, llvm::GlobalVariable *var,
+                        llvm::GlobalVariable *varLen, // can be null
+-                       llvm::ArrayRef<T> arr) {
++                       llvm::ArrayRef<uint8_t> arr) {
+   assert(nullptr != var);
+   const auto dataLen = arr.size();
+   auto gvar = new llvm::GlobalVariable(
+       mod,
+-      llvm::ArrayType::get(llvm::TypeBuilder<T, false>::get(mod.getContext()),
++      llvm::ArrayType::get(llvm::Type::getInt8Ty(mod.getContext()),
+                            dataLen),
+       true, llvm::GlobalValue::InternalLinkage,
+       llvm::ConstantDataArray::get(mod.getContext(), arr), ".str");

@@ -216,6 +216,24 @@ diff --git a/lib/sanitizer_common/sanitizer_platform_limits_posix.cc b/lib/sanit
 index f12e8206a..42f25590b 100644
 --- a/lib/sanitizer_common/sanitizer_platform_limits_posix.cc
 +++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.cc
+@@ -34,6 +34,7 @@
+ #include <pwd.h>
+ #include <signal.h>
+ #include <stddef.h>
++#include <stdio.h>
+ #include <sys/mman.h>
+ #include <sys/resource.h>
+ #include <sys/socket.h>
+@@ -55,7 +56,9 @@
+ #endif
+ 
+ #if !SANITIZER_ANDROID
++#if !SANITIZER_NONGNU
+ #include <fstab.h>
++#endif
+ #include <sys/mount.h>
+ #include <sys/timeb.h>
+ #include <utmpx.h>
 @@ -63,7 +63,6 @@
  #include <malloc.h>
  #include <mntent.h>
@@ -252,12 +270,22 @@ index f12e8206a..42f25590b 100644
  #if HAVE_RPC_XDR_H
  # include <rpc/xdr.h>
  #elif HAVE_TIRPC_RPC_XDR_H
+@@ -197,7 +202,9 @@
+ #endif // SANITIZER_MAC && !SANITIZER_IOS
+ 
+ #if !SANITIZER_ANDROID
++#if !SANITIZER_NONGNU
+   unsigned struct_fstab_sz = sizeof(struct fstab);
++#endif
+   unsigned struct_statfs_sz = sizeof(struct statfs);
+   unsigned struct_sockaddr_sz = sizeof(struct sockaddr);
+   unsigned ucontext_t_sz = sizeof(ucontext_t);
 @@ -311,7 +313,7 @@ unsigned struct_ElfW_Phdr_sz = sizeof(ElfW(Phdr));
  unsigned struct_ElfW_Phdr_sz = sizeof(Elf_Phdr);
  #endif
  
--#if (SANITIZER_LINUX || SANITIZER_FREEBSD) && !SANITIZER_ANDROID
-+#if (SANITIZER_LINUX || SANITIZER_FREEBSD) && !SANITIZER_ANDROID && !SANITIZER_NONGNU
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
++#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_NONGNU
    int glob_nomatch = GLOB_NOMATCH;
    int glob_altdirfunc = GLOB_ALTDIRFUNC;
  #endif
@@ -328,7 +356,7 @@ index f12e8206a..42f25590b 100644
  
 -#if SANITIZER_LINUX
 +#if SANITIZER_LINUX && !SANITIZER_NONGNU
- COMPILER_CHECK(sizeof(__sanitizer_mallinfo) == sizeof(struct mallinfo));
+ COMPILER_CHECK(sizeof(__sanitizer_struct_mallinfo) == sizeof(struct mallinfo));
  #endif
  
 @@ -1238,7 +1242,7 @@ COMPILER_CHECK(__sanitizer_XDR_DECODE == XDR_DECODE);

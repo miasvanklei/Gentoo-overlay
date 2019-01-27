@@ -101,3 +101,44 @@
      build_helper::rerun_if_changed_anything_in_dir(Path::new("../rustllvm"));
      cfg.file("../rustllvm/PassWrapper.cpp")
         .file("../rustllvm/RustWrapper.cpp")
+--- a/src/librustc_codegen_llvm/llvm_util.rs
++++ b/src/librustc_codegen_llvm/llvm_util.rs
+@@ -70,9 +70,8 @@
+         if sess.opts.debugging_opts.disable_instrumentation_preinliner {
+             add("-disable-preinline");
+         }
+-        if llvm::LLVMRustIsRustLLVM() {
+-            add("-mergefunc-use-aliases");
+-        }
++
++        add("-mergefunc-use-aliases");
+ 
+         for arg in &sess.opts.cg.llvm_args {
+             add(&(*arg));
+--- a/src/librustc_codegen_llvm/llvm/ffi.rs
++++ b/src/librustc_codegen_llvm/llvm/ffi.rs
+@@ -1392,7 +1392,6 @@
+     pub fn LLVMRustDebugMetadataVersion() -> u32;
+     pub fn LLVMRustVersionMajor() -> u32;
+     pub fn LLVMRustVersionMinor() -> u32;
+-    pub fn LLVMRustIsRustLLVM() -> bool;
+ 
+     pub fn LLVMRustAddModuleFlag(M: &Module, name: *const c_char, value: u32);
+ 
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -533,14 +617,6 @@
+ 
+ extern "C" uint32_t LLVMRustVersionMajor() { return LLVM_VERSION_MAJOR; }
+ 
+-extern "C" bool LLVMRustIsRustLLVM() {
+-#ifdef LLVM_RUSTLLVM
+-  return 1;
+-#else
+-  return 0;
+-#endif
+-}
+-
+ extern "C" void LLVMRustAddModuleFlag(LLVMModuleRef M, const char *Name,
+                                       uint32_t Value) {
+   unwrap(M)->addModuleFlag(Module::Warning, Name, Value);
