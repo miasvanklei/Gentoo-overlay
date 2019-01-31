@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Authors
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
@@ -11,39 +11,16 @@ SLOT=${MY_PV%%[.+]*}
 DESCRIPTION="Open source implementation of the Java programming language"
 HOMEPAGE="https://openjdk.java.net"
 SRC_URI="https://hg.${PN}.java.net/jdk-updates/jdk${SLOT}u/archive/jdk-${MY_PV}.tar.bz2"
+
 LICENSE="GPL-2"
 KEYWORDS="~amd64 ~arm64 ~ppc64"
 
-# Default variant must be first!
-# The rest do not matter.
-JVM_VARIANTS="
-	server
-	client
-	core
-	minimal
-	zero
-"
-
-IUSE=$(printf "jvm_variant_%s " ${JVM_VARIANTS})
-
-REQUIRED_USE="
-	|| ( ${IUSE} )
-	?? ( jvm_variant_core jvm_variant_zero )
-	jvm_variant_core? ( !jvm_variant_server !jvm_variant_client !jvm_variant_minimal )
-	jvm_variant_zero? ( !jvm_variant_server !jvm_variant_client !jvm_variant_minimal )
-"
-
-IUSE="+${IUSE} alsa debug doc examples +gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux source
-	+system-giflib +system-lcms +system-libjpeg +system-libpng +system-zlib webstart"
+IUSE="alsa cups debug doc examples +gentoo-vm headless-awt +jbootstrap nsplugin +pch selinux source -systemtap webstart"
 
 CDEPEND="
 	media-libs/freetype:2=
-	net-print/cups
-	system-giflib? ( media-libs/giflib )
-	system-lcms? ( media-libs/lcms )
-	system-libjpeg? ( media-libs/libjpeg-turbo )
-	system-libpng? ( media-libs/libpng )
-	system-zlib? ( sys-libs/zlib )
+	sys-libs/zlib
+	systemtap? ( dev-util/systemtap )
 	!headless-awt? (
 		x11-libs/libX11
 		x11-libs/libXext
@@ -54,9 +31,11 @@ CDEPEND="
 	)
 "
 
+# cups and alsa required to build, but not to run, make is possible to remove
 RDEPEND="
 	${CDEPEND}
 	alsa? ( media-libs/alsa-lib )
+	cups? ( net-print/cups )
 	selinux? ( sec-policy/selinux-java )
 "
 
@@ -64,6 +43,7 @@ DEPEND="
 	${CDEPEND}
 	app-arch/zip
 	media-libs/alsa-lib
+	net-print/cups
 	!headless-awt? (
 		x11-base/xorg-proto
 	)
@@ -79,20 +59,14 @@ PDEPEND="webstart? ( >=dev-java/icedtea-web-1.6.1:0 )
 S="${WORKDIR}/jdk${SLOT}u-jdk-${MY_PV}"
 
 # The space required to build varies wildly depending on USE flags,
-# ranging from 2GB to 24GB. This function is certainly not exact but
+# ranging from 2GB to 16GB. This function is certainly not exact but
 # should be close enough to be useful.
 openjdk_check_requirements() {
-	local M variant count=0
-
-	for variant in ${JVM_VARIANTS}; do
-		use jvm_variant_${variant} &&
-			count=$(( $count + 1 ))
-	done
-
-	M=$(usex debug 2600 875)
-	M=$(( $(usex debug 2900 375) * $count + $M ))
+	local M
+	M=2048
 	M=$(( $(usex jbootstrap 2 1) * $M ))
-	M=$(( $(usex doc 300 0) + $(usex source 120 0) + 820 + $M ))
+	M=$(( $(usex debug 3 1) * $M ))
+	M=$(( $(usex doc 320 0) + $(usex source 128 0) + 192 + $M ))
 
 	CHECKREQS_DISK_BUILD=${M}M check-reqs_pkg_${EBUILD_PHASE}
 }
@@ -119,7 +93,7 @@ pkg_setup() {
 
 	local vm
 	for vm in ${JAVA_PKG_WANT_BUILD_VM}; do
-		if [[ -d ${EPREFIX}/usr/$(get_libdir)/jvm/${vm} ]]; then
+		if [[ -d ${EPREFIX}/usr/lib/jvm/${vm} ]]; then
 			java-pkg-2_pkg_setup
 			return
 		fi
@@ -134,7 +108,6 @@ pkg_setup() {
 		JDK_HOME=${EPREFIX}/opt/${JDK_HOME%-r*}
 		export JDK_HOME
 	fi
-
 }
 
 src_prepare() {
@@ -160,21 +133,37 @@ src_prepare() {
 	eapply "${FILESDIR}"/jdk-fix-libjvm-load.patch
 
 	default
+	chmod +x configure || die
 }
 
 src_configure() {
-	# Work around stack alignment issue, bug #647954.
+	# Work around stack alignment issue, bug #647954. in case we ever have x86
 	use x86 && append-flags -mincoming-stack-boundary=2
 
-	chmod +x configure || die
+	# Enabling full docs appears to break doc building. If not
+	# explicitly disabled, the flag will get auto-enabled if pandoc and
+	# graphviz are detected. pandoc has loads of dependencies anyway.
+	# currently it still bundles lcms libpng giflib and libjpeg.
 
-	local variant build_variants
-	for variant in ${JVM_VARIANTS}; do
-		use jvm_variant_${variant} &&
-			build_variants+=${variant},
-	done
-
-	local myconf=()
+	local myconf=(
+		--disable-ccache
+		--enable-full-docs=no
+		--with-boot-jdk="${JDK_HOME}"
+		--with-extra-cflags="${CFLAGS}"
+		--with-extra-cxxflags="${CXXFLAGS}"
+		--with-extra-ldflags="${LDFLAGS}"
+		--with-native-debug-symbols=$(usex debug internal none)
+		--with-version-pre=gentoo
+		--with-version-string=${MY_PV%+*}
+		--with-version-build=${MY_PV#*+}
+		--with-zlib=system
+		--with-libjpeg=system
+		--with-giflib=system
+		--with-libpng=system
+		--with-lcms=system
+		--enable-dtrace=$(usex systemtap yes no)
+		--enable-headless-only=$(usex headless-awt yes no)
+	)
 
 	# PaX breaks pch, bug #601016
 	if use pch && ! host-is-pax; then
@@ -183,33 +172,11 @@ src_configure() {
 		myconf+=( --disable-precompiled-headers )
 	fi
 
-	# Enabling full docs appears to break doc building. If not
-	# explicitly disabled, the flag will get auto-enabled if pandoc and
-	# graphviz are detected. pandoc has loads of dependencies anyway.
-
 	(
 		unset JAVA JAVAC XARGS
 		CFLAGS= CXXFLAGS= LDFLAGS= \
 		CONFIG_SITE=/dev/null \
-		econf \
-			--with-boot-jdk="${JDK_HOME}" \
-			--with-extra-cflags="${CFLAGS}" \
-			--with-extra-cxxflags="${CXXFLAGS}" \
-			--with-extra-ldflags="${LDFLAGS}" \
-			--with-jvm-variants=${build_variants%,} \
-			--with-native-debug-symbols=$(usex debug internal none) \
-			--with-version-pre=gentoo \
-			--with-version-string=${MY_PV%+*} \
-			--with-version-build=${MY_PV#*+} \
-			--enable-headless-only=$(usex headless-awt yes no) \
-			--enable-full-docs=no \
-			--disable-ccache \
-			--with-libjpeg=$(usex system-libjpeg system bundled) \
-			--with-giflib=$(usex system-giflib system bundled) \
-			--with-libpng=$(usex system-libpng system bundled) \
-			--with-zlib=$(usex system-zlib system bundled) \
-			--with-lcms=$(usex system-lcms system bundled) \
-			"${myconf[@]}"
+		econf "${myconf[@]}"
 	)
 }
 
@@ -250,7 +217,6 @@ src_install() {
 	if use doc ; then
 		insinto /usr/share/doc/${PF}/html
 		doins -r "${S}"/build/*-release/images/docs/*
-		dosym ${PF} /usr/share/doc/${PN}-${SLOT}
 	fi
 }
 
