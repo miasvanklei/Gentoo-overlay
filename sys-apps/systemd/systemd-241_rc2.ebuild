@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Authors
+# Copyright 2011-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -7,8 +7,10 @@ if [[ ${PV} == 9999 ]]; then
 	EGIT_REPO_URI="https://github.com/systemd/systemd.git"
 	inherit git-r3
 else
-	SRC_URI="https://github.com/systemd/systemd/archive/v${PV}/${P}.tar.gz
-		https://dev.gentoo.org/~floppym/dist/${P}-patches-3.tar.gz"
+	MY_PV=${PV/_/-}
+	MY_P=${PN}-${MY_PV}
+	S=${WORKDIR}/${MY_P}
+	SRC_URI="https://github.com/systemd/systemd/archive/v${MY_PV}/${MY_P}.tar.gz"
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~sparc ~x86"
 fi
 
@@ -260,7 +262,6 @@ multilib_src_configure() {
 		-Dhibernate=$(meson_multilib)
 		-Dhostnamed=$(meson_multilib)
 		-Dhwdb=$(meson_multilib)
-		-Dldconfig=$(meson_multilib)
 		-Dlocaled=$(meson_multilib)
 		-Dman=$(meson_multilib)
 		-Dnetworkd=$(meson_multilib)
@@ -280,6 +281,7 @@ multilib_src_configure() {
 		-Dutmp=false
 		-Dsysusers=false
 		-Dgshadow=false
+		-Dldconfig=false
 	)
 
 	if multilib_is_native_abi && use idn; then
