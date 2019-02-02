@@ -79,9 +79,6 @@ src_prepare() {
 	# use init-array as default
 	eapply "${FILESDIR}"/0004-use-init-array.patch
 
-	# add P option,
-	eapply "${FILESDIR}"/0001-ar-add-p-option.patch
-
 	# fix permissions when stripping, use strip_all_gnu for -S
 	eapply "${FILESDIR}"/0002-objcopy-improvements.patch
 
