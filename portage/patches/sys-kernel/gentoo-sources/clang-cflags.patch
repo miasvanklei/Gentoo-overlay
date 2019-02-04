@@ -1,5 +1,5 @@
---- a/Makefile	2019-02-02 15:16:03.146995598 +0100
-+++ b/Makefile	2019-02-02 15:17:10.153931055 +0100
+--- a/Makefile	2019-02-04 15:45:55.626748085 +0100
++++ b/Makefile	2019-02-04 15:46:17.979710902 +0100
 @@ -422,9 +422,9 @@
  		-I$(objtree)/include \
  		$(USERINCLUDE)
@@ -30,6 +30,6 @@
 -KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 -KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 -
- # The expansion should be delayed until arch/$(SRCARCH)/Makefile is included.
- # Some architectures define CROSS_COMPILE in arch/$(SRCARCH)/Makefile.
- # CC_VERSION_TEXT is referenced from Kconfig (so it needs export),
+ # check for 'asm goto'
+ ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC) $(KBUILD_CFLAGS)), y)
+   CC_HAVE_ASM_GOTO := 1
