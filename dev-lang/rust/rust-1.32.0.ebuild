@@ -25,6 +25,7 @@ COMMON_DEPEND="jemalloc? ( dev-libs/jemalloc )
 		sys-libs/zlib
 		!libressl? ( dev-libs/openssl:0= )
 		libressl? ( dev-libs/libressl:0= )
+		dev-libs/libgit2:=
 		net-libs/libssh2
 		net-libs/http-parser:=
 		net-misc/curl[ssl]
