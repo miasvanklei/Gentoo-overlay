@@ -1,0 +1,30 @@
+--- a/src/pal/inc/rt/specstrings_undef.h	2019-02-05 11:17:21.727246954 +0100
++++ b/src/pal/inc/rt/specstrings_undef.h	2019-02-05 11:17:29.405235063 +0100
+@@ -71,7 +71,6 @@
+ #undef _Outptr_result_bytebuffer_all_maybenull_
+ #undef _Outptr_opt_result_bytebuffer_all_maybenull_
+ #undef _When_
+-#undef __allocator
+ #undef __analysis_assert
+ #undef __analysis_assume
+ #undef __analysis_assume_nullterminated
+--- a/src/pal/inc/rt/specstrings_strict.h	2019-02-05 11:17:11.151263329 +0100
++++ b/src/pal/inc/rt/specstrings_strict.h	2019-02-05 11:17:57.838191021 +0100
+@@ -650,7 +650,6 @@
+ #define __assume_bound(i)        __allowed(as_statement_with_arg(i))
+ #define __analysis_assume_nullterminated(x) \
+                                  __allowed(as_statement_with_arg(x))
+-#define __allocator              __allowed(on_function) 
+ #define __deallocate(kind)       __allowed(on_parameter) 
+ #define __deallocate_opt(kind)   __allowed(on_parameter) 
+ #define __post_invalid           __allowed(on_parameter_or_return) 
+--- a/src/pal/inc/rt/specstrings.h	2019-02-05 11:16:49.983296086 +0100
++++ b/src/pal/inc/rt/specstrings.h	2019-02-05 11:17:42.750214396 +0100
+@@ -310,7 +310,6 @@
+ 				            __byte_readableTo((expr) ? (size) : (size) * 2)
+ #define __post_invalid                      _Post_ __notvalid
+ /* integer related macros */
+-#define __allocator                         __inner_allocator
+ #ifndef PAL_STDCPP_COMPAT
+ #define __deallocate(kind)                  _Pre_ __notnull __post_invalid
+ #define __deallocate_opt(kind)              _Pre_ __maybenull __post_invalid
