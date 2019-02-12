@@ -15,9 +15,12 @@ DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
 SRC_URI="https://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
+# Those are in lib/Targets, without explicit CMakeLists.txt mention
+ALL_LLVM_EXPERIMENTAL_TARGETS=( AVR Nios2 RISCV WebAssembly )
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
-	NVPTX PowerPC Sparc SystemZ X86 XCore )
+	NVPTX PowerPC Sparc SystemZ X86 XCore
+	"${ALL_LLVM_EXPERIMENTAL_TARGETS[@]}" )
 ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 
 # Additional licenses:
@@ -115,7 +118,8 @@ multilib_src_configure() {
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
 
-		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
+		-DLLVM_TARGETS_TO_BUILD=""
+		-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DLLVM_ENABLE_FFI=$(usex libffi)
@@ -221,7 +225,7 @@ src_install() {
 	multilib-minimal_src_install
 
 	# binutils symlinks
-	local llvm_tools=( ranlib ar nm )
+	local llvm_tools=( ranlib ar nm objdump )
 
 	for abi in $(get_all_abis); do
 		local abi_chost=$(get_abi_CHOST "${abi}")
