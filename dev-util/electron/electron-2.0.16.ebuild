@@ -111,6 +111,7 @@ COMMON_DEPEND="
 	media-libs/libjpeg-turbo:=
 	media-libs/libpng:=
 	>=media-libs/libvpx-1.7.0:=[postproc,svc]
+	<media-libs/libvpx-1.8
 	>=media-libs/openh264-1.6.0:=
 	pulseaudio? ( media-sound/pulseaudio:= )
 	system-ffmpeg? (
