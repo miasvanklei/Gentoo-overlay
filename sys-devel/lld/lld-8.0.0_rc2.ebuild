@@ -31,7 +31,6 @@ DEPEND="${RDEPEND}
 S=${WORKDIR}/${MY_P}
 
 PATCHES=(
-	"${FILESDIR}/more-specific-gnu.linkonce.patch"
 	"${FILESDIR}/fix-alignment-power-2.patch"
 )
 
