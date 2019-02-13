@@ -1,5 +1,5 @@
---- a/security/sandbox/linux/SandboxOpenedFiles.cpp	2018-05-18 15:53:29.737816486 +0200
-+++ b/security/sandbox/linux/SandboxOpenedFiles.cpp	2018-05-18 15:53:40.855793940 +0200
+--- a/security/sandbox/linux/SandboxOpenedFiles.cpp
++++ b/security/sandbox/linux/SandboxOpenedFiles.cpp
 @@ -11,6 +11,7 @@
  
  #include <fcntl.h>
@@ -8,8 +8,8 @@
  
  namespace mozilla {
  
---- a/widget/xremoteclient/RemoteUtils.h	2018-05-18 15:54:36.097679927 +0200
-+++ b/widget/xremoteclient/RemoteUtils.h	2018-05-18 15:54:45.943659952 +0200
+--- a/widget/xremoteclient/RemoteUtils.h
++++ b/widget/xremoteclient/RemoteUtils.h
 @@ -6,6 +6,8 @@
  #ifndef RemoteUtils_h__
  #define RemoteUtils_h__
@@ -19,3 +19,14 @@
  char* ConstructCommandLine(int32_t argc, char** argv,
                             const char* aDesktopStartupID,
                             int* aCommandLineLength);
+--- a/toolkit/mozapps/update/common/updatedefines.h
++++ b/toolkit/mozapps/update/common/updatedefines.h
+@@ -117,7 +117,7 @@ static inline int mywcsprintf(WCHAR* dest, size_t count, const WCHAR* fmt, ...)
+ 
+ #ifdef SOLARIS
+ # include <sys/stat.h>
+-#else
++#elif !defined(__linux__) || defined(__GLIBC__)
+ # include <fts.h>
+ #endif
+ # include <dirent.h>
