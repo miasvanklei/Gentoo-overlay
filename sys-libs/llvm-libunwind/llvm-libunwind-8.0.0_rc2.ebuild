@@ -37,6 +37,7 @@ S=${WORKDIR}/${MY_P}
 PATCHES=(
 	"${FILESDIR}"/0001-link-clang_rt.patch
 	"${FILESDIR}"/0002-fix-compiler-rt-multilib.patch
+	"${FILESDIR}"/0003-link-libunwind-compiler-rt.patch
 )
 
 # least intrusive of all
