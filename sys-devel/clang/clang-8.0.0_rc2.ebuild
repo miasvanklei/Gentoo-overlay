@@ -23,8 +23,10 @@ SRC_URI="https://prereleases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 	test? ( https://prereleases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 # Keep in sync with sys-devel/llvm
+ALL_LLVM_EXPERIMENTAL_TARGETS=( AVR Nios2 RISCV WebAssembly )
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
-	NVPTX PowerPC Sparc SystemZ X86 XCore )
+        NVPTX PowerPC Sparc SystemZ X86 XCore
+        "${ALL_LLVM_EXPERIMENTAL_TARGETS[@]}" )
 ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 
@@ -153,7 +155,6 @@ multilib_src_configure() {
 		-DLLVM_DYLIB_COMPONENTS="all"
 
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
-		-DLLVM_BUILD_TESTS=$(usex test)
 
 		# these are not propagated reliably, so redefine them
 		-DLLVM_ENABLE_EH=ON
