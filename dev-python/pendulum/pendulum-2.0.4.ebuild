@@ -12,7 +12,7 @@ HOMEPAGE="https://pendulum.eustace.io"
 SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~arm"
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 RDEPEND=">=dev-python/python-dateutil-2.6[${PYTHON_USEDEP}]

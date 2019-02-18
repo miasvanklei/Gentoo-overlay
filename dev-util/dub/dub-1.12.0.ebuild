@@ -8,7 +8,7 @@ HOMEPAGE="http://code.dlang.org/"
 LICENSE="MIT"
 
 SLOT="0"
-KEYWORDS="~amd64 ~x86 ~arm"
+KEYWORDS="~amd64 ~x86 ~arm ~arm64"
 IUSE="debug"
 
 SRC_URI="https://github.com/dlang/dub/archive/v${PV}.tar.gz -> ${PN}-${PV}.tar.gz"

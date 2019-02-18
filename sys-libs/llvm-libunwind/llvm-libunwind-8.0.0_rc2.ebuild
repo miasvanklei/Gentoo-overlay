@@ -21,7 +21,7 @@ SRC_URI="https://prereleases.llvm.org/${PV/_//}/${MY_P}.tar.xz
 
 LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS="~amd64 ~arm"
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE="+compiler-rt debug +static-libs test"
 RESTRICT="!test? ( test )"
 
