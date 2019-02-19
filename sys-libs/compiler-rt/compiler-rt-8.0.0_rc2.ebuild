@@ -58,6 +58,7 @@ src_configure() {
 
 	local mycmakeargs=(
 		-DCOMPILER_RT_INSTALL_PATH="${EPREFIX}/usr/lib/clang/${SLOT}"
+		-DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="${CBUILD}"
 
 		-DCOMPILER_RT_INCLUDE_TESTS=$(usex test)
 		-DCOMPILER_RT_BUILD_LIBFUZZER=OFF
