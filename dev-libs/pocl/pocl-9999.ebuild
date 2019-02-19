@@ -15,14 +15,20 @@ else
 	KEYWORDS="~amd64"
 fi
 
+LLVM_TARGET=( NVPTX )
+LLVM_TARGET=( "${LLVM_TARGET[@]/#/llvm_targets_}" )
+
 LICENSE="MIT"
 SLOT="0"
-IUSE="cuda"
+IUSE="cuda ${LLVM_TARGET[*]}"
+RESTRICT="cuda? ( ${LLVM_TARGET[*]} )"
+
+LLVM_MAX_SLOT=8
 
 RDEPEND="dev-libs/libltdl
 	dev-util/lttng-ust
-	!cuda? ( >=sys-devel/clang-6.0 )
-	cuda? ( >=sys-devel/clang-6.0[llvm_targets_NVPTX] )
+        sys-devel/llvm:=
+	>=sys-devel/clang-6.0[${LLVM_TARGET[*]}?]
 	sys-apps/hwloc[cuda?]"
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
