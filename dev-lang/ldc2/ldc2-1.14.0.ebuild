@@ -24,7 +24,6 @@ S=${WORKDIR}/ldc-${MY_PV}-src
 PATCHES=(
 	"${FILESDIR}"/fix-linking.patch
 	"${FILESDIR}"/wrong-type.patch
-	"${FILESDIR}"/llvm-8.patch
 )
 
 src_configure() {
