@@ -10,7 +10,7 @@ LICENSE="GPL-3"
 inherit git-r3
 
 SLOT="0"
-KEYWORDS="~amd64 arm"
+KEYWORDS="~amd64 arm ~arm64"
 IUSE=""
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/sabotage-linux/gettext-tiny"
