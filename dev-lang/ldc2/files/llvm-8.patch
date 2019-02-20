@@ -80,3 +80,43 @@
  llvm::Optional<llvm::FramePointer::FP> framePointerUsage() {
    if (::FramePointerUsage.getNumOccurrences() == 0)
      return llvm::None;
+--- a/gen/optimizer.h	2019-02-17 14:53:52.000000000 +0100
++++ b/gen/optimizer.h	2019-02-20 20:50:00.168645580 +0100
+@@ -34,7 +34,7 @@
+ 
+ bool willCrossModuleInline();
+ 
+-#if LDC_LLVM_VER >= 900
++#if LDC_LLVM_VER >= 800
+ llvm::FramePointer::FP whichFramePointersToEmit();
+ #else
+ bool willEliminateFramePointer();
+--- a/gen/dynamiccompile.cpp	2019-02-20 20:46:12.737801932 +0100
++++ b/gen/dynamiccompile.cpp	2019-02-20 20:48:54.824690158 +0100
+@@ -20,7 +20,6 @@
+ #include "gen/llvm.h"
+ #include "ir/irfunction.h"
+ #include "llvm/Bitcode/BitcodeWriter.h"
+-#include "llvm/IR/TypeBuilder.h"
+ #include "llvm/Transforms/Utils/Cloning.h"
+ #include "llvm/Transforms/Utils/ModuleUtils.h"
+ 
+@@ -374,16 +373,14 @@
+       llvm::ConstantInt::get(module.getContext(), APInt(32, elements.size())));
+ }
+ 
+-template <typename T>
+ void createStaticArray(llvm::Module &mod, llvm::GlobalVariable *var,
+                        llvm::GlobalVariable *varLen, // can be null
+-                       llvm::ArrayRef<T> arr) {
++                       llvm::ArrayRef<uint8_t> arr) {
+   assert(nullptr != var);
+   const auto dataLen = arr.size();
+   auto gvar = new llvm::GlobalVariable(
+       mod,
+-      llvm::ArrayType::get(llvm::TypeBuilder<T, false>::get(mod.getContext()),
+-                           dataLen),
++      llvm::ArrayType::get(llvm::Type::getInt8Ty(mod.getContext()), dataLen),
+       true, llvm::GlobalValue::InternalLinkage,
+       llvm::ConstantDataArray::get(mod.getContext(), arr), ".str");
+   var->setInitializer(getArrayPtr(gvar));
