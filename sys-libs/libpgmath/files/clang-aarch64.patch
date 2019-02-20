@@ -1,0 +1,507 @@
+diff --git a/lib/common/acos/fma3/ssacos.cpp b/lib/common/acos/fma3/ssacos.cpp
+index b623d272..ce055ff1 100644
+--- a/lib/common/acos/fma3/ssacos.cpp
++++ b/lib/common/acos/fma3/ssacos.cpp
+@@ -77,7 +77,11 @@ float __fss_acos_fma3(float const a)
+         _sq = _mm_setr_ps(0.0f, sq, 0.0f, 0.0f);
+         p1 = _mm_fmadd_ps(p, _x2_x, F);
+ 
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++        __m128 pi_mask = (__m128)((long double)_mm_cmpgt_epi32(ZERO, (__m128i)((long double)_a)));
++#else
+         __m128 pi_mask = (__m128)_mm_cmpgt_epi32(ZERO, (__m128i)_a);
++#endif
+         pi_mask = _mm_and_ps(pi_mask, PI);
+         p1 = _mm_fmsub_ps(_sq, p1, pi_mask);
+ 
+diff --git a/lib/common/acos/fma3/vdacos2.cpp b/lib/common/acos/fma3/vdacos2.cpp
+index 9ab2aaa6..ac2d4d94 100644
+--- a/lib/common/acos/fma3/vdacos2.cpp
++++ b/lib/common/acos/fma3/vdacos2.cpp
+@@ -33,7 +33,11 @@ __m128d __fvd_acos_fma3(__m128d const a)
+     __m128i const ABS_MASK  = _mm_set1_epi64x(ABS_MASK_LL);
+     __m128d const ZERO      = _mm_set1_pd(0.0);
+     __m128d const ONE       = _mm_set1_pd(1.0);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const SGN_MASK  = (__m128d)((long double)_mm_set1_epi64x(SGN_MASK_LL));
++#else
+     __m128d const SGN_MASK  = (__m128d)_mm_set1_epi64x(SGN_MASK_LL);
++#endif
+     __m128d const THRESHOLD = _mm_set1_pd(THRESHOLD_D);
+     __m128d const PI_HI     = _mm_set1_pd(PI_HI_D);
+ 
+@@ -71,7 +75,11 @@ __m128d __fvd_acos_fma3(__m128d const a)
+     __m128d res, cmp, sign, fix;
+     __m128d p0hi, p0lo, p1hi, p1lo;
+ 
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    x  = _mm_and_pd(a, (__m128d)((long double)ABS_MASK));
++#else
+     x  = _mm_and_pd(a, (__m128d)ABS_MASK);
++#endif
+     x2 = _mm_mul_pd(a, a);
+     sq = _mm_sub_pd(ONE, x);
+     sq = _mm_sqrt_pd(sq);
+diff --git a/lib/common/acos/fma3/vsacos4.cpp b/lib/common/acos/fma3/vsacos4.cpp
+index 5e8e0bf1..7c012d2b 100644
+--- a/lib/common/acos/fma3/vsacos4.cpp
++++ b/lib/common/acos/fma3/vsacos4.cpp
+@@ -29,11 +29,20 @@ extern "C" __m128 __fvs_acos_fma3(__m128 const a);
+ 
+ __m128 __fvs_acos_fma3(__m128 const a)
+ {
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128  const ABS_MASK      = (__m128)((long double)_mm_set1_epi32(ABS_MASK_I));
++    __m128  const SGN_MASK      = (__m128)((long double)_mm_set1_epi32(SGN_MASK_I));
++#else
+     __m128  const ABS_MASK      = (__m128)_mm_set1_epi32(ABS_MASK_I);
+     __m128  const SGN_MASK      = (__m128)_mm_set1_epi32(SGN_MASK_I);
++#endif
+     __m128  const ONE           = _mm_set1_ps(1.0f);
+     __m128i const ZERO          = _mm_set1_epi32(0);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128i const THRESHOLD     = (__m128i)((long double)_mm_set1_ps(THRESHOLD_F));
++#else
+     __m128i const THRESHOLD     = (__m128i)_mm_set1_ps(THRESHOLD_F);
++#endif
+     __m128  const PI            = _mm_set1_ps(PI_F);
+ 
+     // p0 coefficients
+@@ -57,8 +66,13 @@ __m128 __fvs_acos_fma3(__m128 const a)
+     sq = _mm_sub_ps(ONE, x);
+     sq = _mm_sqrt_ps(sq); // sqrt(1 - |a|)
+ 
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128 pi_mask = (__m128)((long double)_mm_cmpgt_epi32(ZERO, (__m128i)((long double)a)));
++    cmp0 = (__m128)((long double)_mm_cmpgt_epi32((__m128i)((long double)x), THRESHOLD));
++#else
+     __m128 pi_mask = (__m128)_mm_cmpgt_epi32(ZERO, (__m128i)a);
+     cmp0 = (__m128)_mm_cmpgt_epi32((__m128i)x, THRESHOLD);
++#endif
+ 
+     // polynomials evaluation
+     x2 = _mm_mul_ps(a, a);
+diff --git a/lib/common/arm64intrin.h b/lib/common/arm64intrin.h
+index 9c9a7317..3b3ebc73 100644
+--- a/lib/common/arm64intrin.h
++++ b/lib/common/arm64intrin.h
+@@ -899,14 +899,14 @@ struct __s128i {
+ 
+   inline __s128i& operator+=(unsigned int i) {
+     if (i != 0U)
+-      xird = xird + i;
++      xird = xird + static_cast<int32_t>(i);
+ 
+     return *this;
+   }
+ 
+   inline __s128i& operator+=(int i) {
+     if (i != 0)
+-      xird = xird + i;
++      xird = xird + static_cast<int32_t>(i);
+ 
+     return *this;
+   }
+@@ -922,7 +922,7 @@ struct __s128i {
+ 
+   inline __s128i& operator+=(unsigned long l) {
+     if (l != 0UL)
+-      xlrd = xlrd + l;
++      xlrd = xlrd + static_cast<int64_t>(l);
+ 
+     return *this;
+   }
+@@ -1281,7 +1281,7 @@ vec_ld(int v, float vld[4])
+ {
+   __m128 r(vld);
+   r += v;
+-  return r.operator vrd2_t();
++  return r.operator __m128::vrd2_t();
+ }
+ 
+ static inline __m128::vrd2_t
+@@ -1290,7 +1290,7 @@ vec_ld(unsigned int v, float vld[4])
+ {
+   __m128 r(vld);
+   r += v;
+-  return r.operator vrd2_t();
++  return r.operator __m128::vrd2_t();
+ }
+ 
+ static inline __m128d
+diff --git a/lib/common/asin/fma3/vdasin2.cpp b/lib/common/asin/fma3/vdasin2.cpp
+index e4661d0c..e6b89dfe 100644
+--- a/lib/common/asin/fma3/vdasin2.cpp
++++ b/lib/common/asin/fma3/vdasin2.cpp
+@@ -34,8 +34,13 @@ __m128d __fvd_asin_fma3(__m128d const a)
+     __m128i const ABS_MASK  = _mm_set1_epi64x(ABS_MASK_LL);
+     __m128d const ZERO      = _mm_set1_pd(0.0);
+     __m128d const ONE       = _mm_set1_pd(1.0);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const SGN_MASK  = (__m128d)((long double)_mm_set1_epi64x(SGN_MASK_LL));
++    __m128d const THRESHOLD = (__m128d)((long double)_mm_set1_epi64x(THRESHOLD_LL));
++#else
+     __m128d const SGN_MASK  = (__m128d)_mm_set1_epi64x(SGN_MASK_LL);
+     __m128d const THRESHOLD = (__m128d)_mm_set1_epi64x(THRESHOLD_LL);
++#endif
+     __m128d const PIO2_HI   = _mm_set1_pd(PIO2_HI_D);
+     __m128d const PIO2_LO   = _mm_set1_pd(PIO2_LO_D);
+ 
+@@ -70,7 +75,11 @@ __m128d __fvd_asin_fma3(__m128d const a)
+     __m128d sq, p0hi, p0lo, p0, p1hi, p1lo, p1;
+     __m128d res, cmp, sign, fix, pio2_lo, pio2_hi;
+ 
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    x  = _mm_and_pd(a, (__m128d)((long double)ABS_MASK));
++#else
+     x  = _mm_and_pd(a, (__m128d)ABS_MASK);
++#endif
+     sq = _mm_sub_pd(ONE, x);
+     sq = _mm_sqrt_pd(sq);
+ 
+diff --git a/lib/common/asin/fma3/vsasin4.cpp b/lib/common/asin/fma3/vsasin4.cpp
+index 9863b6fe..f29abd33 100644
+--- a/lib/common/asin/fma3/vsasin4.cpp
++++ b/lib/common/asin/fma3/vsasin4.cpp
+@@ -30,10 +30,19 @@
+ extern "C" __m128 __fvs_asin_fma3(__m128 const a);
+ 
+ __m128 __fvs_asin_fma3(__m128 const a) {
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128  const ABS_MASK  = (__m128)((long double)_mm_set1_epi32(ABS_MASK_I));
++    __m128  const SGN_MASK  = (__m128)((long double)_mm_set1_epi32(SGN_MASK_I));
++#else
+     __m128  const ABS_MASK  = (__m128)_mm_set1_epi32(ABS_MASK_I);
+     __m128  const SGN_MASK  = (__m128)_mm_set1_epi32(SGN_MASK_I);
++#endif
+     __m128  const ONE       = _mm_set1_ps(1.0f);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128i const THRESHOLD = (__m128i)((long double)_mm_set1_ps(THRESHOLD_F));
++#else
+     __m128i const THRESHOLD = (__m128i)_mm_set1_ps(THRESHOLD_F);
++#endif
+     __m128  const PIO2      = _mm_set1_ps(PIO2_F);
+ 
+     // p0 coefficients
+@@ -58,7 +67,11 @@ __m128 __fvs_asin_fma3(__m128 const a) {
+     sq = _mm_sqrt_ps(sq); // sqrt(1 - |a|)
+ 
+     // sgn(a) * ( |a| > 0.5705 ? pi/2 - sqrt(1 - |x|) * p1(|a|) : p0(|a|) )
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    cmp0 = (__m128)((long double)_mm_cmpgt_epi32((__m128i)((long double)x), THRESHOLD));
++#else
+     cmp0 = (__m128)_mm_cmpgt_epi32((__m128i)x, THRESHOLD);
++#endif
+ 
+     // polynomials evaluation
+     x2 = _mm_mul_ps(a, a);
+diff --git a/lib/common/exp/fma3/sdexp.cpp b/lib/common/exp/fma3/sdexp.cpp
+index f1cf8c2c..186a1e06 100644
+--- a/lib/common/exp/fma3/sdexp.cpp
++++ b/lib/common/exp/fma3/sdexp.cpp
+@@ -34,14 +34,27 @@ extern "C" double __fsd_exp_fma3(double);
+ // handles large cases as well as special cases such as infinities and NaNs
+ __m128d __pgm_exp_d_slowpath(__m128d const a, __m128i const i, __m128d const t,  __m128d const z)
+ {
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const INF        = (__m128d)((long double)_mm_set1_epi64x(INF_D));
++#else
+     __m128d const INF        = (__m128d)_mm_set1_epi64x(INF_D);
++#endif
+     __m128d const ZERO       = _mm_set1_pd(ZERO_D);
+     __m128i const HI_ABS_MASK = _mm_set1_epi64x(HI_ABS_MASK_D);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const UPPERBOUND_1 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_1_D));
++    __m128d const UPPERBOUND_2 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_2_D));
++#else
+     __m128d const UPPERBOUND_1 = (__m128d)_mm_set1_epi64x(UPPERBOUND_1_D);
+     __m128d const UPPERBOUND_2 = (__m128d)_mm_set1_epi64x(UPPERBOUND_2_D);
++#endif
+     __m128i const MULT_CONST = _mm_set1_epi64x(MULT_CONST_D);
+ 
+-    __m128d abs_lt = (__m128d)_mm_and_si128((__m128i)a, HI_ABS_MASK);                    
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d abs_lt = (__m128d)((long double)_mm_and_si128((__m128i)((long double)a), HI_ABS_MASK));
++#else
++    __m128d abs_lt = (__m128d)_mm_and_si128((__m128i)a, HI_ABS_MASK);
++#endif
+ 
+     __m128d slowpath_mask = (__m128d)_mm_cmp_sd(abs_lt, UPPERBOUND_1, _CMP_LT_OS);       
+     __m128d lt_zero_mask = _mm_cmp_sd(a, ZERO, _CMP_LT_OS); // compute a < 0.0           
+@@ -57,9 +70,14 @@ __m128d __pgm_exp_d_slowpath(__m128d const a, __m128i const i, __m128d const t,
+ 
+     k = _mm_sub_epi32(i, k);          // k = i - k                              
+     __m128i i_scale_acc_2 = _mm_slli_epi64(k, SCALE_D);  // shift to HI and shift 20 
+-    __m128d multiplier = (__m128d)_mm_add_epi64(i_scale_acc_2, MULT_CONST);     
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d multiplier = (__m128d)((long double)_mm_add_epi64(i_scale_acc_2, MULT_CONST));
++    __m128d res = (__m128d)((long double)_mm_add_epi32(i_scale_acc, (__m128i)((long double)t)));
++#else
++    __m128d multiplier = (__m128d)_mm_add_epi64(i_scale_acc_2, MULT_CONST);
++    __m128d res = (__m128d)_mm_add_epi32(i_scale_acc, (__m128i)t);
++#endif
+ 
+-    __m128d res = (__m128d)_mm_add_epi32(i_scale_acc, (__m128i)t);              
+     res = _mm_mul_sd(res, multiplier);                                          
+ 
+     __m128d slowpath_blend = _mm_blendv_pd(zero_inf_blend, res, accurate_scale_mask); 
+@@ -73,7 +91,11 @@ double __fsd_exp_fma3(double const a_in)
+     __m128d const NEG_LN2_HI = _mm_set1_pd(NEG_LN2_HI_D);
+     __m128d const NEG_LN2_LO = _mm_set1_pd(NEG_LN2_LO_D);
+     __m128d const ZERO       = _mm_set1_pd(ZERO_D);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const INF        = (__m128d)((long double)_mm_set1_epi64x(INF_D));
++#else
+     __m128d const INF        = (__m128d)_mm_set1_epi64x(INF_D);
++#endif
+ 
+     __m128d const EXP_POLY_11 = _mm_set1_pd(EXP_POLY_11_D);
+     __m128d const EXP_POLY_10 = _mm_set1_pd(EXP_POLY_10_D);
+@@ -89,15 +111,24 @@ double __fsd_exp_fma3(double const a_in)
+     __m128d const EXP_POLY_0  = _mm_set1_pd(EXP_POLY_0_D);
+ 
+     __m128d const DBL2INT_CVT = _mm_set1_pd(DBL2INT_CVT_D);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const UPPERBOUND_1 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_1_D));
++    __m128d const UPPERBOUND_2 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_2_D));
++#else
+     __m128d const UPPERBOUND_1 = (__m128d)_mm_set1_epi64x(UPPERBOUND_1_D);
+     __m128d const UPPERBOUND_2 = (__m128d)_mm_set1_epi64x(UPPERBOUND_2_D);
++#endif
+ 
+     __m128i const MULT_CONST = _mm_set1_epi64x(MULT_CONST_D);
+     __m128i const HI_ABS_MASK = _mm_set1_epi64x(HI_ABS_MASK_D);
+ 
+     __m128d a = _mm_set1_pd(a_in);
+     // calculating exponent; stored in the LO of each 64-bit block
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128i i = (__m128i) ((long double)_mm_fmadd_sd(a, L2E, DBL2INT_CVT));
++#else
+     __m128i i = (__m128i) _mm_fmadd_sd(a, L2E, DBL2INT_CVT);
++#endif
+ 
+     // calculate mantissa
+     //fast mul rint
+@@ -125,15 +156,23 @@ double __fsd_exp_fma3(double const a_in)
+     
+     // fast scale
+     __m128i i_scale = _mm_slli_epi64(i, SCALE_D); 
+-    __m128d z = (__m128d)_mm_add_epi32(i_scale, (__m128i)t); 
+-
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d z = (__m128d)((long double)_mm_add_epi32(i_scale, (__m128i)((long double)t)));
++    __m128d abs_a = (__m128d)((long double)_mm_and_si128((__m128i)((long double)a), HI_ABS_MASK));
++#else
++    __m128d z = (__m128d)_mm_add_epi32(i_scale, (__m128i)t);
+     __m128d abs_a = (__m128d)_mm_and_si128((__m128i)a, HI_ABS_MASK);
++#endif
+ 
+ #if defined(TARGET_LINUX_POWER)
+     int exp_slowmask = _vec_any_nz((__m128i)_mm_cmpgt_epi64((__m128i)abs_a, (__m128i)UPPERBOUND_1));
++#else
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    int exp_slowmask = _mm_movemask_epi8(_mm_cmpgt_epi64((__m128i)((long double)abs_a), (__m128i)((long double)UPPERBOUND_1)));
+ #else
+     int exp_slowmask = _mm_movemask_epi8(_mm_cmpgt_epi64((__m128i)abs_a, (__m128i)UPPERBOUND_1));
+ #endif
++#endif
+ 
+ //    if (exp_slowmask) {
+ //        return _mm_cvtsd_f64(__pgm_exp_d_slowpath(a, i, t, z));
+diff --git a/lib/common/exp/fma3/vdexp2.cpp b/lib/common/exp/fma3/vdexp2.cpp
+index d93d9cce..7c28866d 100644
+--- a/lib/common/exp/fma3/vdexp2.cpp
++++ b/lib/common/exp/fma3/vdexp2.cpp
+@@ -32,14 +32,27 @@ extern "C" __m128d __fvd_exp_fma3(__m128d);
+ // handles large cases as well as special cases such as infinities and NaNs
+ __m128d __pgm_exp_d_vec128_slowpath(__m128d const a, __m128i const i, __m128d const t,  __m128d const z)
+ {
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const INF        = (__m128d)((long double)_mm_set1_epi64x(INF_D));
++#else
+     __m128d const INF        = (__m128d)_mm_set1_epi64x(INF_D);
++#endif
+     __m128d const ZERO       = _mm_set1_pd(ZERO_D);
+     __m128i const HI_ABS_MASK = _mm_set1_epi64x(HI_ABS_MASK_D);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const UPPERBOUND_1 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_1_D));
++    __m128d const UPPERBOUND_2 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_2_D));
++#else
+     __m128d const UPPERBOUND_1 = (__m128d)_mm_set1_epi64x(UPPERBOUND_1_D);
+     __m128d const UPPERBOUND_2 = (__m128d)_mm_set1_epi64x(UPPERBOUND_2_D);
++#endif
+     __m128i const MULT_CONST = _mm_set1_epi64x(MULT_CONST_D);
+ 
+-    __m128d abs_lt = (__m128d)_mm_and_si128((__m128i)a, HI_ABS_MASK);                    
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d abs_lt = (__m128d)((long double)_mm_and_si128((__m128i)((long double)a), HI_ABS_MASK));
++#else
++    __m128d abs_lt = (__m128d)_mm_and_si128((__m128i)a, HI_ABS_MASK);
++#endif
+ 
+     __m128d slowpath_mask = (__m128d)_mm_cmp_pd(abs_lt, UPPERBOUND_1, _CMP_LT_OS);       
+     __m128d lt_zero_mask = _mm_cmp_pd(a, ZERO, _CMP_LT_OS); // compute a < 0.0           
+@@ -55,9 +68,13 @@ __m128d __pgm_exp_d_vec128_slowpath(__m128d const a, __m128i const i, __m128d co
+ 
+     k = _mm_sub_epi32(i, k);          // k = i - k                              
+     __m128i i_scale_acc_2 = _mm_slli_epi64(k, SCALE_D);  // shift to HI and shift 20 
+-    __m128d multiplier = (__m128d)_mm_add_epi64(i_scale_acc_2, MULT_CONST);     
+-
+-    __m128d res = (__m128d)_mm_add_epi32(i_scale_acc, (__m128i)t);              
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d multiplier = (__m128d)((long double)_mm_add_epi64(i_scale_acc_2, MULT_CONST));
++    __m128d res = (__m128d)((long double)_mm_add_epi32(i_scale_acc, (__m128i)((long double)t)));
++#else
++    __m128d multiplier = (__m128d)_mm_add_epi64(i_scale_acc_2, MULT_CONST);
++    __m128d res = (__m128d)_mm_add_epi32(i_scale_acc, (__m128i)t);
++#endif
+     res = _mm_mul_pd(res, multiplier);                                          
+ 
+     __m128d slowpath_blend = _mm_blendv_pd(zero_inf_blend, res, accurate_scale_mask); 
+@@ -70,7 +87,11 @@ __m128d __fvd_exp_fma3(__m128d const a)
+     __m128d const NEG_LN2_HI = _mm_set1_pd(NEG_LN2_HI_D);
+     __m128d const NEG_LN2_LO = _mm_set1_pd(NEG_LN2_LO_D);
+     __m128d const ZERO       = _mm_set1_pd(ZERO_D);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const INF        = (__m128d)((long double)_mm_set1_epi64x(INF_D));
++#else
+     __m128d const INF        = (__m128d)_mm_set1_epi64x(INF_D);
++#endif
+ 
+     __m128d const EXP_POLY_11 = _mm_set1_pd(EXP_POLY_11_D);
+     __m128d const EXP_POLY_10 = _mm_set1_pd(EXP_POLY_10_D);
+@@ -86,14 +107,23 @@ __m128d __fvd_exp_fma3(__m128d const a)
+     __m128d const EXP_POLY_0  = _mm_set1_pd(EXP_POLY_0_D);
+ 
+     __m128d const DBL2INT_CVT = _mm_set1_pd(DBL2INT_CVT_D);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d const UPPERBOUND_1 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_1_D));
++    __m128d const UPPERBOUND_2 = (__m128d)((long double)_mm_set1_epi64x(UPPERBOUND_2_D));
++#else
+     __m128d const UPPERBOUND_1 = (__m128d)_mm_set1_epi64x(UPPERBOUND_1_D);
+     __m128d const UPPERBOUND_2 = (__m128d)_mm_set1_epi64x(UPPERBOUND_2_D);
++#endif
+ 
+     __m128i const MULT_CONST = _mm_set1_epi64x(MULT_CONST_D);
+     __m128i const HI_ABS_MASK = _mm_set1_epi64x(HI_ABS_MASK_D);
+ 
+     // calculating exponent; stored in the LO of each 64-bit block
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128i i = (__m128i) ((long double)_mm_fmadd_pd(a, L2E, DBL2INT_CVT));
++#else
+     __m128i i = (__m128i) _mm_fmadd_pd(a, L2E, DBL2INT_CVT);
++#endif
+ 
+     // calculate mantissa
+     //fast mul rint
+@@ -121,15 +151,23 @@ __m128d __fvd_exp_fma3(__m128d const a)
+     
+     // fast scale
+     __m128i i_scale = _mm_slli_epi64(i, SCALE_D); 
+-    __m128d z = (__m128d)_mm_add_epi32(i_scale, (__m128i)t); 
+-
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128d z = (__m128d)((long double)_mm_add_epi32(i_scale, (__m128i)((long double)t)));
++    __m128d abs_a = (__m128d)((long double)_mm_and_si128((__m128i)((long double)a), HI_ABS_MASK));
++#else
++    __m128d z = (__m128d)_mm_add_epi32(i_scale, (__m128i)t);
+     __m128d abs_a = (__m128d)_mm_and_si128((__m128i)a, HI_ABS_MASK);
++#endif
+ 
+ #if defined(TARGET_LINUX_POWER)
+     int exp_slowmask = _vec_any_nz((__m128i)_mm_cmpgt_epi64((__m128i)abs_a, (__m128i)UPPERBOUND_1));
++#else
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    int exp_slowmask = _mm_movemask_epi8(_mm_cmpgt_epi64((__m128i)((long double)abs_a), (__m128i)((long double)UPPERBOUND_1)));
+ #else
+     int exp_slowmask = _mm_movemask_epi8(_mm_cmpgt_epi64((__m128i)abs_a, (__m128i)UPPERBOUND_1));
+ #endif
++#endif
+ 
+ //    if (exp_slowmask) {
+ //        return __pgm_exp_d_vec128_slowpath(a, i, t, z);
+diff --git a/lib/common/exp/fma3/vsexp4.cpp b/lib/common/exp/fma3/vsexp4.cpp
+index 13a1c666..e2fbf3bf 100644
+--- a/lib/common/exp/fma3/vsexp4.cpp
++++ b/lib/common/exp/fma3/vsexp4.cpp
+@@ -34,11 +34,18 @@ __m128 __fvs_exp_fma3(__m128 a)
+     __m128 const EXP_PDN_VEC = _mm_set1_ps(EXP_PDN);
+     __m128 const FLT2INT_CVT_VEC = _mm_set1_ps(FLT2INT_CVT);
+     __m128 const L2E_VEC = _mm_set1_ps(L2E);
+-   
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128 const SGN_VEC = (__m128)((long double)_mm_set1_epi32(MASK));
++#else
+     __m128 const SGN_VEC = (__m128)_mm_set1_epi32(MASK);
++#endif
+ 
+     __m128 abs = _mm_and_ps(a, SGN_VEC);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128i sp_mask = _mm_cmpgt_epi32(_mm_castps_si128((__m128i)((long double)abs)), _mm_castps_si128((__m128i)((long double)EXP_PDN_VEC))); // nie-zero dla niedobrych
++#else
+     __m128i sp_mask = _mm_cmpgt_epi32(_mm_castps_si128(abs), _mm_castps_si128(EXP_PDN_VEC)); // zero dla dobrych
++#endif
+ #if defined(TARGET_LINUX_POWER)
+     int sp = _vec_any_nz(sp_mask);
+ #else
+@@ -48,8 +55,11 @@ __m128 __fvs_exp_fma3(__m128 a)
+     __m128 tt = _mm_sub_ps(t, FLT2INT_CVT_VEC);
+     __m128 z = _mm_fnmadd_ps(tt, _mm_set1_ps(LN2_0), a);
+            z = _mm_fnmadd_ps(tt, _mm_set1_ps(LN2_1), z);
+-         
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128i exp = _mm_castps_si128((__m128i)((long double)t));
++#else
+     __m128i exp = _mm_castps_si128(t);
++#endif
+             exp = _mm_slli_epi32(exp, 23);
+ 
+     __m128 zz =                 _mm_set1_ps(EXP_C7);
+@@ -60,8 +70,12 @@ __m128 __fvs_exp_fma3(__m128 a)
+     zz = _mm_fmadd_ps(zz, z, _mm_set1_ps(EXP_C2));
+     zz = _mm_fmadd_ps(zz, z, _mm_set1_ps(EXP_C1));
+     zz = _mm_fmadd_ps(zz, z, _mm_set1_ps(EXP_C0));
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128 res = (__m128)((long double)_mm_add_epi32(exp, (__m128i)((long double)zz)));
++#else
+     __m128 res = (__m128)_mm_add_epi32(exp, (__m128i)zz);
+- 
++#endif
++
+     if (sp)
+     {
+         res = __pgm_exp_vec128_slowpath(a, exp, zz);       
+@@ -78,11 +92,18 @@ __m128 __pgm_exp_vec128_slowpath(__m128 a, __m128i exp, __m128 zz) {
+     __m128i const DNRM_THR_VEC = _mm_set1_epi32(DNRM_THR);
+     __m128i const EXP_BIAS_VEC = _mm_set1_epi32(EXP_BIAS);
+     __m128i const DNRM_SHFT_VEC = _mm_set1_epi32(DNRM_SHFT);   
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128 const INF_VEC = (__m128)((long double)_mm_set1_epi32(INF));
++#else
+     __m128 const INF_VEC = (__m128)_mm_set1_epi32(INF);
+-    
++#endif
+     __m128 inf_mask = _mm_cmp_ps(a, EXP_HI_VEC, _CMP_LT_OS);
+     __m128 zero_mask = _mm_cmp_ps(a, EXP_LO_VEC, _CMP_GT_OS);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128 nan_mask = (__m128)((long double)_mm_cmp_ps((__m128i)((long double)a), (__m128i)((long double)a), _CMP_NEQ_UQ));
++#else
+     __m128 nan_mask = _mm_cmp_ps(a, a, _CMP_NEQ_UQ);
++#endif
+     //ORIG __m128 nan_mask = _mm_cmp_ps(a, a, 4);
+     __m128 inf_vec = _mm_andnot_ps(inf_mask, INF_VEC);
+     __m128 nan_vec = _mm_and_ps(a, nan_mask); 
+@@ -91,8 +112,13 @@ __m128 __pgm_exp_vec128_slowpath(__m128 a, __m128i exp, __m128 zz) {
+     __m128i dnrm = _mm_min_epi32(exp, DNRM_THR_VEC);
+             dnrm = _mm_add_epi32(dnrm, DNRM_SHFT_VEC);
+             exp = _mm_max_epi32(exp, DNRM_THR_VEC);
++#if defined(__clang__) && defined(TARGET_LINUX_ARM64)
++    __m128 res = (__m128)((long double)_mm_add_epi32(exp, (__m128i)((long double)zz)));
++    res = _mm_fmadd_ps((__m128)((long double)dnrm), res, nan_vec);
++#else
+     __m128 res = (__m128)_mm_add_epi32(exp, (__m128i)zz);
+     res = _mm_fmadd_ps((__m128)dnrm, res, nan_vec);
++#endif
+     res = _mm_blendv_ps(res, inf_vec, fix_mask);
+ 
+     return res;
