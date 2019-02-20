@@ -160,7 +160,9 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
-	)
+		"${FILESDIR}"/CVE-2019-6454/0001-Refuse-dbus-message-paths-longer-than-BUS_PATH_SIZE_.patch
+		"${FILESDIR}"/CVE-2019-6454/0002-Allocate-temporary-strings-to-hold-dbus-paths-on-the.patch
+        )
 
 	if ! use vanilla; then
 		PATCHES+=(
