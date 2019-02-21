@@ -37,7 +37,7 @@ DEPEND="
 
 S=${WORKDIR}/${MY_P}
 
-PATCHES=( "${FILESDIR}"/${PN}-7.0.0-musl-patches.patch )
+PATCHES=( "${FILESDIR}"/${PN}-8.0.0-musl-patches.patch )
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=Release
