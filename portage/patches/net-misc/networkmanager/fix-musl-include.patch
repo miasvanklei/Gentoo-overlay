@@ -1,5 +1,5 @@
---- a/shared/n-acd/src/n-acd.c   2018-09-09 12:10:36.626987553 +0200
-+++ b/shared/n-acd/src/n-acd.c   2018-09-09 12:51:36.680798693 +0200
+--- a/shared/n-acd/src/n-acd.c
++++ b/shared/n-acd/src/n-acd.c
 @@ -23,10 +23,10 @@
  #include <errno.h>
  #include <limits.h>
@@ -43,7 +43,7 @@
  #include "nm-utils/nm-udev-utils.h"
 --- a/src/devices/nm-device.c
 +++ b/src/devices/nm-device.c
-@@ -34,7 +34,9 @@
+@@ -34,7 +34,10 @@
  #include <arpa/inet.h>
  #include <fcntl.h>
  #include <linux/if_addr.h>
@@ -51,7 +51,17 @@
 +#if defined(__GLIBC__)
 +    #include <linux/if_arp.h>
 +#endif
++#include <linux/if.h>
  #include <linux/rtnetlink.h>
  #include <linux/pkt_sched.h>
  #include <uuid/uuid.h>
-
+--- a/src/nm-manager.c
++++ b/src/nm-manager.c
+@@ -28,6 +28,7 @@
+ #include <errno.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <linux/types.h>
+ 
+ #include "nm-utils/nm-c-list.h"
+ 
