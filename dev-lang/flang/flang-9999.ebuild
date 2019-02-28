@@ -29,5 +29,4 @@ CMAKE_BUILD_TYPE=Release
 
 PATCHES=(
 	${FILESDIR}/fix-compile.patch
-	${FILESDIR}/llvm-7.0.patch
 )
