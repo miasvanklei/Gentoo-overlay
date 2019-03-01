@@ -54,10 +54,9 @@ pkg_setup() {
 }
 
 PATCHES=(
-	"${FILESDIR}"/1.30.1-clippy-sysroot.patch
 	"${FILESDIR}"/0001-cleanup-musl-target.patch
 	"${FILESDIR}"/0002-add-gentoo-target.patch
-        "${FILESDIR}"/0003-liblibc-linkage.patch
+	"${FILESDIR}"/0003-libc-linkage.patch
         "${FILESDIR}"/0004-libunwind-linkage.patch
 	"${FILESDIR}"/0005-libc++-linkage.patch
 	"${FILESDIR}"/0006-musl-fix-static-linking.patch
