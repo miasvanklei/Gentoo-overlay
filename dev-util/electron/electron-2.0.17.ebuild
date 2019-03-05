@@ -1,4 +1,4 @@
-# Copyright 1999-2018 Gentoo Authors
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="6"
@@ -33,7 +33,7 @@ LIBCHROMIUMCONTENT_COMMIT="daf9bdcdfdfd6bad258b5e1e48b2e17d06c1a987"
 ASAR_VERSION="0.13.0"
 BROWSERIFY_VERSION="14.0.0"
 NINJA_VERSION="1.8.2"
-GENTOO_PATCHES_VERSION="6744d7a92cb45a4248adb113cc4022364d4b1816"
+GENTOO_PATCHES_VERSION="b04011d68866c1159eb35b1a5260d519172cc05b"
 
 PATCHES_P="gentoo-electron-patches-${GENTOO_PATCHES_VERSION}"
 CHROMIUM_P="chromium-${CHROMIUM_VERSION}"
@@ -111,11 +111,10 @@ COMMON_DEPEND="
 	media-libs/libjpeg-turbo:=
 	media-libs/libpng:=
 	>=media-libs/libvpx-1.7.0:=[postproc,svc]
-	<media-libs/libvpx-1.8
 	>=media-libs/openh264-1.6.0:=
 	pulseaudio? ( media-sound/pulseaudio:= )
 	system-ffmpeg? (
-		>=media-video/ffmpeg-3:=
+		>=media-video/ffmpeg-4:=
 		|| (
 			media-video/ffmpeg[-samba]
 			>=net-fs/samba-4.5.10-r1[-debug(-)]
@@ -351,8 +350,8 @@ src_prepare() {
 
 	# Apply Gentoo patches for Electron itself.
 	cd "${S}" || die
-	_unnest_patches "${WORKDIR}/${PATCHES_P}/2.0.14/electron/"
-	eapply "${WORKDIR}/${PATCHES_P}/2.0.14/electron/"
+	_unnest_patches "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
+	eapply "${WORKDIR}/${PATCHES_P}/${PV}/electron/"
 
 	# Apply Chromium patches from libchromiumcontent.
 	cd "${CHROMIUM_S}" || die
@@ -360,7 +359,7 @@ src_prepare() {
 	eapply "${LIBCC_S}/patches"
 
 	# Finally, apply Gentoo patches for Chromium.
-	eapply "${WORKDIR}/${PATCHES_P}/2.0.14/chromium/"
+	eapply "${WORKDIR}/${PATCHES_P}/${PV}/chromium/"
 
 	# Merge chromiumcontent component into chromium source tree.
 	mkdir -p "${CHROMIUM_S}/chromiumcontent" || die
