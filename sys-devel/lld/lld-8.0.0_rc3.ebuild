@@ -32,6 +32,7 @@ S=${WORKDIR}/${MY_P}
 
 PATCHES=(
 	"${FILESDIR}/fix-alignment-power-2.patch"
+	"${FILESDIR}/ignore-no-relax.patch"
 )
 
 # least intrusive of all
