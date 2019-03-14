@@ -37,6 +37,15 @@
  	gmac_clkin: external-gmac-clock {
  		compatible = "fixed-clock";
  		clock-frequency = <125000000>;
+@@ -47,7 +74,7 @@
+ 	vcc_host1_5v: vcc_otg_5v: vcc-host1-5v-regulator {
+ 		compatible = "regulator-fixed";
+ 		enable-active-high;
+-		gpio = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
++		gpio = <&gpio0 RK_PD3 GPIO_ACTIVE_HIGH>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&usb20_host_drv>;
+ 		regulator-name = "vcc_host1_5v";
 @@ -68,7 +95,9 @@
  	sound {
  		compatible = "audio-graph-card";
@@ -73,7 +82,7 @@
  };
  
  &cpu0 {
-@@ -100,22 +147,26 @@
+@@ -100,26 +147,30 @@
  };
  
  &emmc {
@@ -103,6 +112,11 @@
  	phy-mode = "rgmii";
  	pinctrl-names = "default";
  	pinctrl-0 = <&rgmiim1_pins>;
+-	snps,force_thresh_dma_mode;
++	rockchip,bugged_tx_coe;
+ 	snps,reset-gpio = <&gpio1 RK_PC2 GPIO_ACTIVE_LOW>;
+ 	snps,reset-active-low;
+ 	snps,reset-delays-us = <0 10000 50000>;
 @@ -130,12 +181,28 @@
  
  &hdmi {
@@ -239,6 +253,15 @@
 +
  &io_domains {
  	status = "okay";
+ 
+@@ -266,7 +368,7 @@
+ 
+ 	usb2 {
+ 		usb20_host_drv: usb20-host-drv {
+-			rockchip,pins = <0 RK_PA2 RK_FUNC_GPIO &pcfg_pull_none>;
++			rockchip,pins = <0 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
+ 		};
+ 	};
  
 @@ -281,11 +383,15 @@
  	bus-width = <4>;
@@ -502,6 +525,34 @@ index 55997cf84b39f..2c69a7cbe8077 100644
  		}
  	}
  	/*
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+index 685d20472358ec..deab31560840e3 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
+@@ -3629,6 +3629,10 @@ static netdev_features_t stmmac_fix_features(struct net_device *dev,
+ 	if (priv->plat->bugged_jumbo && (dev->mtu > ETH_DATA_LEN))
+ 		features &= ~NETIF_F_CSUM_MASK;
+ 
++	/* Including very small MTUs of 1498 for Rockchip devices */
++	if (priv->plat->bugged_tx_coe && (dev->mtu > ETH_DATA_LEN - 2))
++		features &= ~NETIF_F_CSUM_MASK;
++
+ 	/* Disable tso if asked by ethtool */
+ 	if ((priv->plat->tso_en) && (priv->dma_cap.tsoen)) {
+ 		if (features & NETIF_F_TSO)
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+index 2b800ce1d5bf42..bde8ee56c5a219 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c
+@@ -516,6 +516,8 @@ stmmac_probe_config_dt(struct platform_device *pdev, const char **mac)
+ 		pr_warn("force_sf_dma_mode is ignored if force_thresh_dma_mode is set.");
+ 	}
+ 
++	plat->bugged_tx_coe = of_property_read_bool(np, "rockchip,bugged_tx_coe");
++
+ 	of_property_read_u32(np, "snps,ps-speed", &plat->mac_port_sel_speed);
+ 
+ 	plat->axi = stmmac_axi_setup(pdev);
 diff --git a/drivers/net/phy/realtek.c b/drivers/net/phy/realtek.c
 index 271e8adc39f10..abab7ad943bfe 100644
 --- a/drivers/net/phy/realtek.c
@@ -670,3 +721,88 @@ index d0bdebd87ce3a..3da8f28d2c0e5 100644
 +		"NS1066X",
 +		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
 +		US_FL_IGNORE_UAS),
+--- a/include/linux/stmmac.h
++++ b/include/linux/stmmac.h
+@@ -162,6 +162,7 @@ struct plat_stmmacenet_data {
+ 	int pmt;
+ 	int force_sf_dma_mode;
+ 	int force_thresh_dma_mode;
++	int bugged_tx_coe;
+ 	int riwt_off;
+ 	int max_speed;
+ 	int maxmtu;
+--- a/arch/arm64/boot/dts/rockchip/rk3328.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3328.dtsi
+@@ -1670,50 +1670,50 @@
+ 			rgmiim1_pins: rgmiim1-pins {
+ 				rockchip,pins =
+ 					/* mac_txclk */
+-					<1 RK_PB4 2 &pcfg_pull_none_12ma>,
++					<1 RK_PB4 2 &pcfg_pull_none_8ma>,
+ 					/* mac_rxclk */
+-					<1 RK_PB5 2 &pcfg_pull_none_2ma>,
++					<1 RK_PB5 2 &pcfg_pull_none_4ma>,
+ 					/* mac_mdio */
+-					<1 RK_PC3 2 &pcfg_pull_none_2ma>,
++					<1 RK_PC3 2 &pcfg_pull_none_4ma>,
+ 					/* mac_txen */
+-					<1 RK_PD1 2 &pcfg_pull_none_12ma>,
++					<1 RK_PD1 2 &pcfg_pull_none_8ma>,
+ 					/* mac_clk */
+-					<1 RK_PC5 2 &pcfg_pull_none_2ma>,
++					<1 RK_PC5 2 &pcfg_pull_none_4ma>,
+ 					/* mac_rxdv */
+-					<1 RK_PC6 2 &pcfg_pull_none_2ma>,
++					<1 RK_PC6 2 &pcfg_pull_none_4ma>,
+ 					/* mac_mdc */
+-					<1 RK_PC7 2 &pcfg_pull_none_2ma>,
++					<1 RK_PC7 2 &pcfg_pull_none_4ma>,
+ 					/* mac_rxd1 */
+-					<1 RK_PB2 2 &pcfg_pull_none_2ma>,
++					<1 RK_PB2 2 &pcfg_pull_none_4ma>,
+ 					/* mac_rxd0 */
+-					<1 RK_PB3 2 &pcfg_pull_none_2ma>,
++					<1 RK_PB3 2 &pcfg_pull_none_4ma>,
+ 					/* mac_txd1 */
+-					<1 RK_PB0 2 &pcfg_pull_none_12ma>,
++					<1 RK_PB0 2 &pcfg_pull_none_8ma>,
+ 					/* mac_txd0 */
+-					<1 RK_PB1 2 &pcfg_pull_none_12ma>,
++					<1 RK_PB1 2 &pcfg_pull_none_8ma>,
+ 					/* mac_rxd3 */
+-					<1 RK_PB6 2 &pcfg_pull_none_2ma>,
++					<1 RK_PB6 2 &pcfg_pull_none_4ma>,
+ 					/* mac_rxd2 */
+-					<1 RK_PB7 2 &pcfg_pull_none_2ma>,
++					<1 RK_PB7 2 &pcfg_pull_none_4ma>,
+ 					/* mac_txd3 */
+-					<1 RK_PC0 2 &pcfg_pull_none_12ma>,
++					<1 RK_PC0 2 &pcfg_pull_none_8ma>,
+ 					/* mac_txd2 */
+-					<1 RK_PC1 2 &pcfg_pull_none_12ma>,
++					<1 RK_PC1 2 &pcfg_pull_none_8ma>,
+ 
+ 					/* mac_txclk */
+-					<0 RK_PB0 1 &pcfg_pull_none>,
++					<0 RK_PB0 1 &pcfg_pull_none_8ma>,
+ 					/* mac_txen */
+-					<0 RK_PB4 1 &pcfg_pull_none>,
++					<0 RK_PB4 1 &pcfg_pull_none_8ma>,
+ 					/* mac_clk */
+-					<0 RK_PD0 1 &pcfg_pull_none>,
++					<0 RK_PD0 1 &pcfg_pull_none_4ma>,
+ 					/* mac_txd1 */
+-					<0 RK_PC0 1 &pcfg_pull_none>,
++					<0 RK_PC0 1 &pcfg_pull_none_8ma>,
+ 					/* mac_txd0 */
+-					<0 RK_PC1 1 &pcfg_pull_none>,
++					<0 RK_PC1 1 &pcfg_pull_none_8ma>,
+ 					/* mac_txd3 */
+-					<0 RK_PC7 1 &pcfg_pull_none>,
++					<0 RK_PC7 1 &pcfg_pull_none_8ma>,
+ 					/* mac_txd2 */
+-					<0 RK_PC6 1 &pcfg_pull_none>;
++					<0 RK_PC6 1 &pcfg_pull_none_8ma>;
+ 			};
+ 
+ 			rmiim1_pins: rmiim1-pins {
