@@ -26,17 +26,3 @@
  
  #include "nm-dbus-interface.h"
  
---- a/src/systemd/src/basic/socket-util.h
-+++ b/src/systemd/src/basic/socket-util.h
-@@ -28,6 +28,11 @@
- #include <sys/un.h>
- #include <linux/netlink.h>
- #include <linux/if_packet.h>
-+#if !defined(__GLIBC__)
-+/* SIOCGSTAMPNS from linux/asm-generic.h 
-+ * for src/systemd/src/libsystemd-network/sd-lldp.c */
-+#include <linux/sockios.h>
-+#endif
- 
- #include "macro.h"
- #include "util.h"
