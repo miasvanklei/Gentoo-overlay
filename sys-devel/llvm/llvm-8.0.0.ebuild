@@ -13,7 +13,7 @@ inherit cmake-utils eapi7-ver flag-o-matic multilib-minimal \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://prereleases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 # Those are in lib/Targets, without explicit CMakeLists.txt mention
 ALL_LLVM_EXPERIMENTAL_TARGETS=( AVR Nios2 RISCV WebAssembly )
