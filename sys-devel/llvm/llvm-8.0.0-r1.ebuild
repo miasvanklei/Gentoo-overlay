@@ -79,6 +79,9 @@ S=${WORKDIR}/${P/_/}.src
 CMAKE_BUILD_TYPE=Release
 
 src_prepare() {
+	# bug fix
+	eapply "${FILESDIR}"/0001-llvm-cmake-Add-additional-headers-only-if-they-exist.patch
+
 	# use init-array as default
 	eapply "${FILESDIR}"/0004-use-init-array.patch
 
