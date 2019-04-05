@@ -160,9 +160,7 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
-		"${FILESDIR}"/CVE-2019-6454/0001-Refuse-dbus-message-paths-longer-than-BUS_PATH_SIZE_.patch
-		"${FILESDIR}"/CVE-2019-6454/0002-Allocate-temporary-strings-to-hold-dbus-paths-on-the.patch
-        )
+	)
 
 	if ! use vanilla; then
 		PATCHES+=(
@@ -346,16 +344,6 @@ multilib_src_install_all() {
 	# Symlink /etc/sysctl.conf for easy migration.
 	dosym ../sysctl.conf /etc/sysctl.d/99-sysctl.conf
 
-	# If we install these symlinks, there is no way for the sysadmin to remove them
-	# permanently.
-	rm -f "${ED}"/etc/systemd/system/multi-user.target.wants/systemd-networkd.service || die
-	rm -f "${ED}"/etc/systemd/system/dbus-org.freedesktop.network1.service || die
-	rm -f "${ED}"/etc/systemd/system/multi-user.target.wants/systemd-resolved.service || die
-	rm -f "${ED}"/etc/systemd/system/dbus-org.freedesktop.resolve1.service || die
-	rm -fr "${ED}"/etc/systemd/system/network-online.target.wants || die
-	rm -fr "${ED}"/etc/systemd/system/sockets.target.wants || die
-	rm -fr "${ED}"/etc/systemd/system/sysinit.target.wants || die
-
 	local udevdir=/lib/udev
 	use split-usr || udevdir=/usr/lib/udev
 
@@ -412,6 +400,20 @@ migrate_locale() {
 	fi
 }
 
+save_enabled_units() {
+	ENABLED_UNITS=()
+	type systemctl &>/dev/null || return
+	for x; do
+		if systemctl --quiet --root="${ROOT:-/}" is-enabled "${x}"; then
+			ENABLED_UNITS+=( "${x}" )
+		fi
+	done
+}
+
+pkg_preinst() {
+	save_enabled_units {machines,remote-{cryptsetup,fs}}.target getty@tty1.service
+}
+
 pkg_postinst() {
 	newusergroup() {
 		enewgroup "$1"
@@ -446,6 +448,14 @@ pkg_postinst() {
 	migrate_locale
 
 	systemd_reenable systemd-networkd.service systemd-resolved.service
+
+	if [[ ${ENABLED_UNITS[@]} ]]; then
+		systemctl --root="${ROOT:-/}" enable "${ENABLED_UNITS[@]}"
+	fi
+
+	if [[ -L ${EROOT}/var/lib/systemd/timesync ]]; then
+		rm "${EROOT}/var/lib/systemd/timesync"
+	fi
 
 	if [[ -z ${ROOT} && -d /run/systemd/system ]]; then
 		ebegin "Reexecuting system manager"
