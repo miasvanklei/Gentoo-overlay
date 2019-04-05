@@ -1,12 +1,12 @@
---- a/src/framework/mlt_property.h	2018-07-02 20:24:28.000000000 +0200
-+++ b/src/framework/mlt_property.h	2018-08-19 19:23:53.689866400 +0200
+--- a/src/framework/mlt_property.h
++++ b/src/framework/mlt_property.h
 @@ -30,13 +30,7 @@
  #include <sys/param.h>
  #endif
  
--#if (defined(__GLIBC__) && !defined(__APPLE__)) || HAVE_LOCALE_H
+-#if (defined(__GLIBC__) && !defined(__APPLE__)) || defined(HAVE_LOCALE_H)
 -#  include <locale.h>
--#elif defined(__APPLE__) || (__FreeBSD_version >= 900506)
+-#elif defined(__APPLE__) || (defined(__FreeBSD_version) && __FreeBSD_version >= 900506)
 -#  include <xlocale.h>
 -#else
 -typedef char* locale_t;
