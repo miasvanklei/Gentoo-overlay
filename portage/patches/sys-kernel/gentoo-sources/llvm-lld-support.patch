@@ -9,39 +9,6 @@
  targets += purgatory.ro
  
  KASAN_SANITIZE	:= n
---- a/arch/x86/realmode/rm/Makefile	2018-09-21 15:15:34.259828269 +0200
-+++ b/arch/x86/realmode/rm/Makefile	2018-09-21 15:15:58.306828189 +0200
-@@ -47,7 +47,7 @@
- targets += realmode.lds
- $(obj)/realmode.lds: $(obj)/pasyms.h
- 
--LDFLAGS_realmode.elf := --emit-relocs -T
-+LDFLAGS_realmode.elf := -m elf_i386 --emit-relocs -T
- CPPFLAGS_realmode.lds += -P -C -I$(objtree)/$(obj)
- 
- targets += realmode.elf
---- a/arch/x86/boot/Makefile	2018-09-21 15:21:06.180801298 +0200
-+++ b/arch/x86/boot/Makefile	2018-09-21 15:21:23.610798629 +0200
-@@ -100,7 +100,7 @@
- AFLAGS_header.o += -I$(objtree)/$(obj)
- $(obj)/header.o: $(obj)/zoffset.h
- 
--LDFLAGS_setup.elf	:= -T
-+LDFLAGS_setup.elf	:= -m elf_i386 -T
- $(obj)/setup.elf: $(src)/setup.ld $(SETUP_OBJS) FORCE
- 	$(call if_changed,ld)
- 
---- a/arch/x86/kernel/vmlinux.lds.S	2018-09-24 11:12:51.892696132 +0200
-+++ b/arch/x86/kernel/vmlinux.lds.S	2018-09-24 11:13:06.627987544 +0200
-@@ -389,7 +389,7 @@
-  * Per-cpu symbols which need to be offset from __per_cpu_load
-  * for the boot processor.
-  */
--#define INIT_PER_CPU(x) init_per_cpu__##x = x + __per_cpu_load
-+#define INIT_PER_CPU(x) init_per_cpu__##x = ABSOLUTE(x) + __per_cpu_load
- INIT_PER_CPU(gdt_page);
- INIT_PER_CPU(irq_stack_union);
- 
 --- a/arch/arm/boot/compressed/Makefile	2018-10-27 21:35:12.686328798 +0200
 +++ b/arch/arm/boot/compressed/Makefile	2018-10-27 21:35:26.628313373 +0200
 @@ -131,8 +131,6 @@
