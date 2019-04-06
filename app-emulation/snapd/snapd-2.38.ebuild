@@ -36,6 +36,7 @@ export GOPATH="${S}/${PN}"
 EGO_PN="github.com/snapcore/${PN}"
 
 PATCHES=(
+	"${FILESDIR}"/add-musl-path.patch
 	"${FILESDIR}"/missing-includes.patch
 )
 
@@ -96,7 +97,7 @@ src_compile() {
 	done
 
 	# Generate apparmor profile
-	sed -e 's,[@]LIBEXECDIR[@],/usr/$(get_libdir)/snapd,g' \
+	sed -e "s,[@]LIBEXECDIR[@],/usr/$(get_libdir)/snapd,g" \
 		-e 's,[@]SNAP_MOUNT_DIR[@],/snap,' \
 		"${C}/snap-confine/snap-confine.apparmor.in" \
 		> "${C}/snap-confine/usr.$(get_libdir).snapd.snap-confine.real"
