@@ -14,7 +14,7 @@
              if backend == "emscripten" {
                  features.push_str(" emscripten");
              }
-@@ -696,12 +696,6 @@
+@@ -696,13 +696,6 @@
              builder.info(&format!("Building stage{} codegen artifacts ({} -> {}, {})",
                       compiler.stage, &compiler.host, target, backend));
  
@@ -23,6 +23,7 @@
 -            if builder.is_rust_llvm(target) && backend != "emscripten" {
 -                cargo.env("LLVM_RUSTLLVM", "1");
 -            }
+-
 -            cargo.env("LLVM_CONFIG", &llvm_config);
              if backend != "emscripten" {
                  let target_config = builder.config.target_config.get(&target);
@@ -46,7 +47,7 @@
          self.out.join(&*target).join("crate-docs")
      }
  
--    /// Returns true if no custom `llvm-config` is set for the specified target.
+-    /// Returns `true` if no custom `llvm-config` is set for the specified target.
 -    ///
 -    /// If no custom `llvm-config` was specified then Rust's llvm will be used.
 -    fn is_rust_llvm(&self, target: Interned<String>) -> bool {
@@ -103,18 +104,27 @@
         .file("../rustllvm/RustWrapper.cpp")
 --- a/src/librustc_codegen_llvm/llvm_util.rs
 +++ b/src/librustc_codegen_llvm/llvm_util.rs
-@@ -70,9 +70,8 @@
+@@ -61,14 +61,12 @@
          if sess.opts.debugging_opts.disable_instrumentation_preinliner {
              add("-disable-preinline");
          }
 -        if llvm::LLVMRustIsRustLLVM() {
--            add("-mergefunc-use-aliases");
--        }
-+
-+        add("-mergefunc-use-aliases");
+-            match sess.opts.debugging_opts.merge_functions
+-                  .unwrap_or(sess.target.target.options.merge_functions) {
+-                MergeFunctions::Disabled |
+-                MergeFunctions::Trampolines => {}
+-                MergeFunctions::Aliases => {
+-                    add("-mergefunc-use-aliases");
+-                }
++        match sess.opts.debugging_opts.merge_functions
++              .unwrap_or(sess.target.target.options.merge_functions) {
++            MergeFunctions::Disabled |
++            MergeFunctions::Trampolines => {}
++            MergeFunctions::Aliases => {
++                add("-mergefunc-use-aliases");
+             }
+         }
  
-         for arg in &sess.opts.cg.llvm_args {
-             add(&(*arg));
 --- a/src/librustc_codegen_llvm/llvm/ffi.rs
 +++ b/src/librustc_codegen_llvm/llvm/ffi.rs
 @@ -1392,7 +1392,6 @@

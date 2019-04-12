@@ -125,7 +125,7 @@
  }
  
 -/// Copies third pary objects needed by various targets.
--fn copy_third_party_objects(builder: &Builder, compiler: &Compiler, target: Interned<String>) {
+-fn copy_third_party_objects(builder: &Builder<'_>, compiler: &Compiler, target: Interned<String>) {
 -    let libdir = builder.sysroot_libdir(*compiler, target);
 -
 -    // Copies the crt(1,i,n).o startup objects
@@ -237,7 +237,7 @@
 -            .map(|p| &**p)
 -    }
 -
-     /// Returns true if this is a no-std `target`, if defined
+     /// Returns `true` if this is a no-std `target`, if defined
      fn no_std(&self, target: Interned<String>) -> Option<bool> {
          self.config.target_config.get(&target)
 --- a/src/bootstrap/sanity.rs

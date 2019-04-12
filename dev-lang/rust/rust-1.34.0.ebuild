@@ -62,9 +62,7 @@ PATCHES=(
 	"${FILESDIR}"/0006-musl-fix-static-linking.patch
 	"${FILESDIR}"/0007-static-pie-support.patch
 	"${FILESDIR}"/0008-system-llvm.patch
-	"${FILESDIR}"/0009-fix-analysis-path.patch
 	"${FILESDIR}"/0010-Move-debugger-scripts-to-usr-share-rust.patch
-	"${FILESDIR}"/0011-llvm-8.patch
 )
 
 src_configure() {
@@ -165,7 +163,7 @@ src_install() {
 	find "${D}" -name "crt*.o" -delete || die
 
 	# Install analysis for rls
-	insinto "/usr/$(get_libdir)/rustlib/analysis/${CHOST}"
+	insinto "/usr/$(get_libdir)/rustlib/${CHOST}/analysis"
 	doins "${sobj}/release/deps/save-analysis/"*
 
 	# Install COPYRIGHT and LICENSE
