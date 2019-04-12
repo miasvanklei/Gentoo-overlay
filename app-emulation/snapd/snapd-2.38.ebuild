@@ -49,8 +49,7 @@ RDEPEND="!sys-apps/snap-confine
 DEPEND="${RDEPEND}
 	>=dev-lang/go-1.9
 	dev-python/docutils
-	sys-devel/gettext
-	sys-fs/xfsprogs"
+	sys-devel/gettext"
 
 src_configure() {
 	debug-print-function $FUNCNAME "$@"
@@ -120,8 +119,7 @@ src_install() {
 		"${DS}/snapd.apparmor.service"
 
 	cd "${MY_S}"
-        insinto "/usr/$(get_libdir)"
-	doins -r  \
+	dodir  \
 		"/etc/profile.d" \
 		"/usr/$(get_libdir)/snapd" \
 		"/usr/share/dbus-1/services" \
