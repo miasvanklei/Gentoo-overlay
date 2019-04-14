@@ -1,0 +1,162 @@
+--- a/src/thread/pthread_mutex_timedlock.c
++++ b/src/thread/pthread_mutex_timedlock.c
+@@ -1,40 +1,5 @@
+ #include "pthread_impl.h"
+ 
+-static int pthread_mutex_timedlock_pi(pthread_mutex_t *restrict m, const struct timespec *restrict at)
+-{
+-	int type = m->_m_type;
+-	int priv = (type & 128) ^ 128;
+-	pthread_t self = __pthread_self();
+-	int e;
+-
+-	if (!priv) self->robust_list.pending = &m->_m_next;
+-
+-	do e = -__syscall(SYS_futex, &m->_m_lock, FUTEX_LOCK_PI|priv, 0, at);
+-	while (e==EINTR);
+-	if (e) self->robust_list.pending = 0;
+-
+-	switch (e) {
+-	case 0:
+-		/* Catch spurious success for non-robust mutexes. */
+-		if (!(type&4) && ((m->_m_lock & 0x40000000) || m->_m_waiters)) {
+-			a_store(&m->_m_waiters, -1);
+-			__syscall(SYS_futex, &m->_m_lock, FUTEX_UNLOCK_PI|priv);
+-			self->robust_list.pending = 0;
+-			break;
+-		}
+-		/* Signal to trylock that we already have the lock. */
+-		m->_m_count = -1;
+-		return __pthread_mutex_trylock(m);
+-	case ETIMEDOUT:
+-		return e;
+-	case EDEADLK:
+-		if ((type&3) == PTHREAD_MUTEX_ERRORCHECK) return e;
+-	}
+-	do e = __timedwait(&(int){0}, 0, CLOCK_REALTIME, at, 1);
+-	while (e != ETIMEDOUT);
+-	return e;
+-}
+-
+ int __pthread_mutex_timedlock(pthread_mutex_t *restrict m, const struct timespec *restrict at)
+ {
+ 	if ((m->_m_type&15) == PTHREAD_MUTEX_NORMAL
+@@ -46,8 +11,6 @@
+ 
+ 	r = __pthread_mutex_trylock(m);
+ 	if (r != EBUSY) return r;
+-
+-	if (type&8) return pthread_mutex_timedlock_pi(m, at);
+ 	
+ 	int spins = 100;
+ 	while (spins-- && m->_m_lock && !m->_m_waiters) a_spin();
+--- a/src/thread/pthread_mutex_trylock.c
++++ b/src/thread/pthread_mutex_trylock.c
+@@ -9,17 +9,10 @@
+ 
+ 	old = m->_m_lock;
+ 	own = old & 0x3fffffff;
++	if (own == tid && (type&3) == PTHREAD_MUTEX_RECURSIVE) {
++		if ((unsigned)m->_m_count >= INT_MAX) return EAGAIN;
++		m->_m_count++;
++		return 0;
+-	if (own == tid) {
+-		if ((type&8) && m->_m_count<0) {
+-			old &= 0x40000000;
+-			m->_m_count = 0;
+-			goto success;
+-		}
+-		if ((type&3) == PTHREAD_MUTEX_RECURSIVE) {
+-			if ((unsigned)m->_m_count >= INT_MAX) return EAGAIN;
+-			m->_m_count++;
+-			return 0;
+-		}
+ 	}
+ 	if (own == 0x3fffffff) return ENOTRECOVERABLE;
+ 	if (own || (old && !(type & 4))) return EBUSY;
+@@ -36,18 +29,9 @@
+ 
+ 	if (a_cas(&m->_m_lock, old, tid) != old) {
+ 		self->robust_list.pending = 0;
+-		if ((type&12)==12 && m->_m_waiters) return ENOTRECOVERABLE;
+ 		return EBUSY;
+ 	}
+ 
+-success:
+-	if ((type&8) && m->_m_waiters) {
+-		int priv = (type & 128) ^ 128;
+-		__syscall(SYS_futex, &m->_m_lock, FUTEX_UNLOCK_PI|priv);
+-		self->robust_list.pending = 0;
+-		return (type&4) ? ENOTRECOVERABLE : EBUSY;
+-	}
+-
+ 	volatile void *next = self->robust_list.head;
+ 	m->_m_next = next;
+ 	m->_m_prev = &self->robust_list.head;
+--- a/src/thread/pthread_mutex_unlock.c
++++ b/src/thread/pthread_mutex_unlock.c
+@@ -8,11 +8,10 @@
+ 	int type = m->_m_type & 15;
+ 	int priv = (m->_m_type & 128) ^ 128;
+ 	int new = 0;
+-	int old;
+ 
+ 	if (type != PTHREAD_MUTEX_NORMAL) {
+ 		self = __pthread_self();
++		int old = m->_m_lock;
+-		old = m->_m_lock;
+ 		int own = old & 0x3fffffff;
+ 		if (own != self->tid)
+ 			return EPERM;
+@@ -30,16 +29,7 @@
+ 		if (next != &self->robust_list.head) *(volatile void *volatile *)
+ 			((char *)next - sizeof(void *)) = prev;
+ 	}
++	cont = a_swap(&m->_m_lock, new);
+-	if (type&8) {
+-		if (old<0 || a_cas(&m->_m_lock, old, new)!=old) {
+-			if (new) a_store(&m->_m_waiters, -1);
+-			__syscall(SYS_futex, &m->_m_lock, FUTEX_UNLOCK_PI|priv);
+-		}
+-		cont = 0;
+-		waiters = 0;
+-	} else {
+-		cont = a_swap(&m->_m_lock, new);
+-	}
+ 	if (type != PTHREAD_MUTEX_NORMAL && !priv) {
+ 		self->robust_list.pending = 0;
+ 		__vm_unlock();
+--- a/src/thread/pthread_mutexattr_setprotocol.c
++++ b/src/thread/pthread_mutexattr_setprotocol.c
+@@ -1,29 +1,7 @@
+ #include "pthread_impl.h"
+-#include "syscall.h"
+-
+-static pthread_once_t check_pi_once;
+-static int check_pi_result;
+-
+-static void check_pi()
+-{
+-	volatile int lk = 0;
+-	check_pi_result = -__syscall(SYS_futex, &lk, FUTEX_LOCK_PI, 0, 0);
+-}
+ 
+ int pthread_mutexattr_setprotocol(pthread_mutexattr_t *a, int protocol)
+ {
++	if (protocol) return ENOTSUP;
++	return 0;
+-	switch (protocol) {
+-	case PTHREAD_PRIO_NONE:
+-		a->__attr &= ~8;
+-		return 0;
+-	case PTHREAD_PRIO_INHERIT:
+-		pthread_once(&check_pi_once, check_pi);
+-		if (check_pi_result) return check_pi_result;
+-		a->__attr |= 8;
+-		return 0;
+-	case PTHREAD_PRIO_PROTECT:
+-		return ENOTSUP;
+-	default:
+-		return EINVAL;
+-	}
+ }
