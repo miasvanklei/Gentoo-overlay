@@ -74,3 +74,32 @@
                          if (r < 0) {
                                  log_debug_errno(r, "Failed to %s controller %s for %s (%s): %m",
                                                  FLAGS_SET(mask, bit) ? "enable" : "disable", n, p, fs);
+--- a/src/binfmt/binfmt.c
++++ b/src/binfmt/binfmt.c
+@@ -48,7 +48,7 @@
+         if (!fn)
+                 return log_oom();
+ 
+-        return write_string_file(fn, "-1", WRITE_STRING_FILE_DISABLE_BUFFER);
++        return write_string_file(fn, "-1", 0);
+ }
+ 
+ static int apply_rule(const char *rule) {
+@@ -56,7 +56,7 @@
+ 
+         (void) delete_rule(rule);
+ 
+-        r = write_string_file("/proc/sys/fs/binfmt_misc/register", rule, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/sys/fs/binfmt_misc/register", rule, 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to add binary format: %m");
+ 
+@@ -213,7 +213,7 @@
+                 }
+ 
+                 /* Flush out all rules */
+-                write_string_file("/proc/sys/fs/binfmt_misc/status", "-1", WRITE_STRING_FILE_DISABLE_BUFFER);
++                write_string_file("/proc/sys/fs/binfmt_misc/status", "-1", 0);
+ 
+                 STRV_FOREACH(f, files) {
+                         k = apply_file(*f, true);
