@@ -1,24 +1,36 @@
-# Copyright 1999-2018 Gentoo Authors
-# Distributed under the terms of the GNU General Public License v2\
+# Copyright 1999-2019 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
-
-inherit kde5-meta-pkg
+EAPI=7
 
 DESCRIPTION="kdeutils - merge this to pull in all kdeutils-derived packages"
-HOMEPAGE="https://www.kde.org/applications/utilities https://utils.kde.org"
-KEYWORDS="~amd64 ~x86"
-IUSE="cups floppy"
+HOMEPAGE="https://kde.org/applications/utilities https://utils.kde.org"
+
+LICENSE="metapackage"
+SLOT="5"
+KEYWORDS="~amd64 ~arm64 ~x86"
+IUSE="7zip cups floppy lrz rar"
 
 RDEPEND="
-	$(add_kdeapps_dep ark)
-	$(add_kdeapps_dep filelight)
-	$(add_kdeapps_dep kbackup)
-	$(add_kdeapps_dep kcalc)
-	$(add_kdeapps_dep kcharselect)
-	$(add_kdeapps_dep kdebugsettings)
-	$(add_kdeapps_dep kdf)
-	$(add_kdeapps_dep kwalletmanager)
-	cups? ( $(add_kdeapps_dep print-manager) )
-	floppy? ( $(add_kdeapps_dep kfloppy) )
+	>=kde-apps/ark-${PV}:${SLOT}
+	>=kde-apps/filelight-${PV}:${SLOT}
+	>=kde-apps/kate-${PV}:${SLOT}
+	>=kde-apps/kbackup-${PV}:${SLOT}
+	>=kde-apps/kcalc-${PV}:${SLOT}
+	>=kde-apps/kcharselect-${PV}:${SLOT}
+	>=kde-apps/kdebugsettings-${PV}:${SLOT}
+	>=kde-apps/kdf-${PV}:${SLOT}
+	>=kde-apps/kwalletmanager-${PV}:${SLOT}
+	cups? ( >=kde-apps/print-manager-${PV}:${SLOT} )
+	floppy? ( >=kde-apps/kfloppy-${PV}:${SLOT} )
+"
+# Optional runtime deps: kde-apps/ark
+RDEPEND="${RDEPEND}
+	7zip? ( app-arch/p7zip )
+	lrz? ( app-arch/lrzip )
+	rar? ( || (
+		app-arch/rar
+		app-arch/unrar
+		app-arch/unar
+	) )
 "
