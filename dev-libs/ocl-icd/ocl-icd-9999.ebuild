@@ -5,8 +5,6 @@ EAPI=6
 
 inherit cmake-utils git-r3
 
-OCD_PV=2.2.12
-
 DESCRIPTION="The OpenCL ICD Loader project."
 HOMEPAGE="https://github.com/KhronosGroup/OpenCL-ICD-Loader"
 SRC_URI=""
@@ -26,7 +24,9 @@ DOCS=(README.md)
 src_install() {
 	OCL_DIR="/usr/$(get_libdir)/OpenCL/vendors/ocl-icd"
         dodir ${OCL_DIR}
+        dodir "/usr/lib/pkgconfig"
 
+	cp ${FILESDIR}/OpenCL.pc "${ED}/usr/lib/pkgconfig"
 	cp -a ${BUILD_DIR}/lib/libOpenCL.so* "${ED}${OCL_DIR}" || die "Can't install vendor library"
 }
 
