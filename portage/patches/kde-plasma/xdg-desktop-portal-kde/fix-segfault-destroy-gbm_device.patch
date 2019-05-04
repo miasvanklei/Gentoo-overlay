@@ -1,0 +1,26 @@
+From 29609c3eb0a40c37a610f68ec9c9b9d9913b555f Mon Sep 17 00:00:00 2001
+From: Jan Grulich <jgrulich@redhat.com>
+Date: Mon, 29 Apr 2019 08:11:03 +0200
+Subject: Destroy gbm_device only when it's initialized
+
+BUG: 407025
+---
+ src/waylandintegration.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/waylandintegration.cpp b/src/waylandintegration.cpp
+index a1005f8..cac8701 100644
+--- a/src/waylandintegration.cpp
++++ b/src/waylandintegration.cpp
+@@ -182,7 +182,7 @@ WaylandIntegration::WaylandIntegrationPrivate::~WaylandIntegrationPrivate()
+         m_remoteAccessManager->destroy();
+     }
+ 
+-    if (m_drmFd) {
++    if (m_gbmDevice) {
+         gbm_device_destroy(m_gbmDevice);
+     }
+ }
+-- 
+cgit v1.1
+
