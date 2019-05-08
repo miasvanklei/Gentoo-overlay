@@ -1,25 +1,3 @@
---- a/arch/x86/purgatory/Makefile	2018-09-21 15:16:15.027827930 +0200
-+++ b/arch/x86/purgatory/Makefile	2018-09-21 15:16:26.034827668 +0200
-@@ -9,7 +9,7 @@
- $(obj)/sha256.o: $(srctree)/lib/sha256.c FORCE
- 	$(call if_changed_rule,cc_o_c)
- 
--LDFLAGS_purgatory.ro := -e purgatory_start -r --no-undefined -nostdlib -z nodefaultlib
-+LDFLAGS_purgatory.ro := -e purgatory_start -r --no-undefined -nostdlib
- targets += purgatory.ro
- 
- KASAN_SANITIZE	:= n
---- a/arch/arm/boot/compressed/Makefile	2018-10-27 21:35:12.686328798 +0200
-+++ b/arch/arm/boot/compressed/Makefile	2018-10-27 21:35:26.628313373 +0200
-@@ -131,8 +131,6 @@
- ifeq ($(CONFIG_CPU_ENDIAN_BE8),y)
- LDFLAGS_vmlinux += --be8
- endif
--# ?
--LDFLAGS_vmlinux += -p
- # Report unresolved symbol references
- LDFLAGS_vmlinux += --no-undefined
- # Delete all temporary local symbols
 --- a/arch/arm/vdso/Makefile	2018-10-27 21:31:02.294611422 +0200
 +++ b/arch/arm/vdso/Makefile	2018-10-27 21:31:13.452598560 +0200
 @@ -11,7 +11,7 @@
@@ -37,8 +15,8 @@
  #
  # Copyright (C) 1995-2001 by Russell King
  
--LDFLAGS_vmlinux	:=-p --no-undefined -X --pic-veneer
-+LDFLAGS_vmlinux	:=--no-undefined -X
+-LDFLAGS_vmlinux	:= --no-undefined -X --pic-veneer
++LDFLAGS_vmlinux	:= --no-undefined -X
  ifeq ($(CONFIG_CPU_ENDIAN_BE8),y)
  LDFLAGS_vmlinux	+= --be8
  KBUILD_LDFLAGS_MODULE	+= --be8
