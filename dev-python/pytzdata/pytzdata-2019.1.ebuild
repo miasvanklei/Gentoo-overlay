@@ -23,6 +23,6 @@ DEPEND="${RDEPEND}
 	sys-libs/timezone-data"
 
 PATCHES=(
-	"${FILESDIR}"/${PV}-zoneinfo-noinstall.patch
-        "${FILESDIR}"/${PV}-zoneinfo.patch
+	"${FILESDIR}"/2018.7-zoneinfo-noinstall.patch
+        "${FILESDIR}"/2018.7-zoneinfo.patch
 )
