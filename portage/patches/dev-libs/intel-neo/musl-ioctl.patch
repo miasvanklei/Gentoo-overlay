@@ -1,0 +1,11 @@
+--- a/runtime/os_interface/linux/drm_neo.cpp
++++ b/runtime/os_interface/linux/drm_neo.cpp
+@@ -26,7 +26,7 @@
+     int ret;
+     SYSTEM_ENTER();
+     do {
+-        ret = ::ioctl(fd, request, arg);
++        ret = ::ioctl(fd, (int)request, arg);
+     } while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+     SYSTEM_LEAVE(request);
+     return ret;

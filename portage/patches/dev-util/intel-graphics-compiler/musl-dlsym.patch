@@ -1,0 +1,30 @@
+--- a/IGC/AdaptorOCL/OCL/LoadBuffer.cpp
++++ b/IGC/AdaptorOCL/OCL/LoadBuffer.cpp
+@@ -44,23 +44,23 @@
+     // Symbol Name is <type>_<number>
+     char name[73];      // 64 + 9 for prefix
+     char size_name[78]; // 64 + 9 for prefix + 5 for suffix
+-    void *module;
++    void *handle;
+     void *symbol;
+     uint32_t size;
+ 
+     snprintf(name,      sizeof(name),      "_igc_bif_%s_%s",      pResType, &pResName[1]);
+     snprintf(size_name, sizeof(size_name), "_igc_bif_%s_%s_size", pResType, &pResName[1]);
+ 
+-    module = RTLD_DEFAULT;
++    handle = dlopen("libigc.so", RTLD_NOW);;
+ 
+-    symbol = dlsym(module, size_name);
++    symbol = dlsym(handle, size_name);
+     if (!symbol)
+     {
+         return NULL;
+     }
+     size = *(uint32_t *)symbol;
+ 
+-    symbol = dlsym(module, name);
++    symbol = dlsym(handle, name);
+     if (!symbol)
+     {
+         return NULL;
