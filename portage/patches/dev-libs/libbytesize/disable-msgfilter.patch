@@ -1,0 +1,23 @@
+--- a/po/Makefile.in
++++ b/po/Makefile.in
+@@ -380,10 +380,6 @@
+ # The translations files after they have been merged with the latest copy of
+ # the .pot file. These are written to $(builddir) as <lang>.mpo.
+ 
+-# Special weirdness to auto-generate sr@latin.po if sr.po is present
+-MERGED_POFILES = $(patsubst %.po,%.mpo,$(notdir $(POFILES))) $(if \
+-	$(shell [ -f sr.po ] && echo y),sr@latin.mpo,)
+-
+ # The MO files, which are the binary data built from the .po files.
+ MOFILES = $(patsubst %.mpo,%.mo,$(MERGED_POFILES))
+ XGETTEXT_OPTIONS = --keyword=_ --keyword=N_ --keyword=P_:1,2 \
+@@ -630,9 +626,6 @@
+ 
+ .PRECIOUS: Makefile
+ 
+-sr@latin.mpo: $(srcdir)/sr.po
+-	$(AM_V_GEN)$(MSGFILTER) -i $(srcdir)/sr.po -o $@ recode-sr-latin
+-
+ # How to build the .pot file. This needs to be regenerated if anything that
+ # goes into it has changed.
+ $(POTFILE): $(POTFILE_INPUT)
