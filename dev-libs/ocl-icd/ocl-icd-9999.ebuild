@@ -22,12 +22,13 @@ DOCS=(README.md)
 
 
 src_install() {
+	cmake-utils_src_install
 	OCL_DIR="/usr/$(get_libdir)/OpenCL/vendors/ocl-icd"
         dodir ${OCL_DIR}
         dodir "/usr/lib/pkgconfig"
 
 	cp ${FILESDIR}/OpenCL.pc "${ED}/usr/lib/pkgconfig"
-	cp -a ${BUILD_DIR}/lib/libOpenCL.so* "${ED}${OCL_DIR}" || die "Can't install vendor library"
+	mv ${ED}/usr/lib/libOpenCL.so* "${ED}${OCL_DIR}" || die "Can't install vendor library"
 }
 
 pkg_postinst() {
