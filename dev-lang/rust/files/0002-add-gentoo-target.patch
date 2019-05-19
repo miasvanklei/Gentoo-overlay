@@ -1,13 +1,3 @@
---- a/src/librustc_target/spec/mod.rs
-+++ b/src/librustc_target/spec/mod.rs
-@@ -153,6 +153,7 @@
-     ("armv7-unknown-linux-musleabihf", armv7_unknown_linux_musleabihf),
-     ("aarch64-unknown-linux-gnu", aarch64_unknown_linux_gnu),
-     ("x86_64-unknown-linux-musl", x86_64_unknown_linux_musl),
-+    ("x86_64-gentoo-linux-musl", x86_64_gentoo_linux_musl),
-     ("i686-unknown-linux-musl", i686_unknown_linux_musl),
-     ("mips-unknown-linux-musl", mips_unknown_linux_musl),
-     ("mipsel-unknown-linux-musl", mipsel_unknown_linux_musl),
 --- /dev/null
 +++ b/src/librustc_target/spec/x86_64_gentoo_linux_musl.rs
 @@ -0,0 +1,11 @@
@@ -22,3 +12,29 @@
 +
 +    Ok(base)
 +}
+--- /dev/null
++++ b/src/librustc_target/spec/aarch64_gentoo_linux_musl.rs
+@@ -0,0 +1,11 @@
++use crate::spec::TargetResult;
++
++pub fn target() -> TargetResult {
++    let mut base = super::aarch64_unknown_linux_musl::target()?;
++
++    base.llvm_target = "aarch64-gentoo-linux-musl".to_string();
++    base.target_vendor = "gentoo".to_string();
++    base.options.crt_static_default = false;
++
++    Ok(base)
++}
+--- a/src/librustc_target/spec/mod.rs
++++ b/src/librustc_target/spec/mod.rs
+@@ -359,7 +359,9 @@
+     ("aarch64-unknown-linux-gnu", aarch64_unknown_linux_gnu),
+ 
+     ("aarch64-unknown-linux-musl", aarch64_unknown_linux_musl),
++    ("aarch64-gentoo-linux-musl", aarch64_gentoo_linux_musl),
+     ("x86_64-unknown-linux-musl", x86_64_unknown_linux_musl),
++    ("x86_64-gentoo-linux-musl", x86_64_gentoo_linux_musl),
+     ("i686-unknown-linux-musl", i686_unknown_linux_musl),
+     ("i586-unknown-linux-musl", i586_unknown_linux_musl),
+     ("mips-unknown-linux-musl", mips_unknown_linux_musl),
