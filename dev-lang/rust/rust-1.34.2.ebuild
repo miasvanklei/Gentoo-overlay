@@ -8,7 +8,7 @@ PYTHON_COMPAT=( python3_{6,7} )
 inherit llvm multiprocessing toolchain-funcs python-any-r1 versionator
 
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 
 CARGO_DEPEND_VERSION="0.$(($(get_version_component_range 2))).0"
 
@@ -68,8 +68,6 @@ PATCHES=(
 src_configure() {
 	einfo "Setting up config.toml for target"
 
-	local llvm_config="$(get_llvm_prefix)/bin/${CBUILD}-llvm-config"
-
 	local extended="true" tools="\"cargo\","
 	if use clippy; then
 		tools="\"clippy\",$tools"
@@ -85,9 +83,9 @@ src_configure() {
 	[llvm]
 	link-shared = true
 	[build]
-	build = "${CBUILD}"
 	host = ["${CHOST}"]
-	target = ["${CBUILD}"]
+	build = "${CHOST}"
+	target = ["${CHOST}"]
 	cargo = "/usr/bin/cargo"
 	rustc = "/usr/bin/rustc"
 	docs = $(toml_usex doc)
@@ -105,16 +103,9 @@ src_configure() {
 	optimize = $(toml_usex !debug)
 	debuginfo = $(toml_usex debug)
 	debug-assertions = $(toml_usex debug)
-        jemalloc = $(toml_usex jemalloc)
 	default-linker = "$(tc-getCC)"
-        channel = "stable"
-        rpath = false
-	[target.${CBUILD}]
-	cc = "$(tc-getBUILD_CC)"
-	cxx = "$(tc-getBUILD_CXX)"
-	llvm-config = "${llvm_config}"
-	linker = "$(tc-getCC)"
-	ar = "$(tc-getAR)"
+	channel = "stable"
+	rpath = false
 	EOF
 }
 
@@ -163,8 +154,10 @@ src_install() {
 	find "${D}" -name "crt*.o" -delete || die
 
 	# Install analysis for rls
-	insinto "/usr/$(get_libdir)/rustlib/${CHOST}/analysis"
-	doins "${sobj}/release/deps/save-analysis/"*
+	if use rls; then
+		insinto "/usr/$(get_libdir)/rustlib/${CHOST}/analysis"
+		doins "${sobj}/release/deps/save-analysis/"*
+	fi
 
 	# Install COPYRIGHT and LICENSE
 	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
@@ -182,11 +175,13 @@ src_install() {
 	EOF
 	doenvd "${T}"/50${PN}
 
-	# Install sources needed for go to definition and racer
-	pushd ${S}/src
-	mkdir -p ${D}/usr/lib/rustlib/src/rust/src
-	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src/rust/src \; || die
-	popd >/dev/null
+	# Install sources needed for rls
+	if use rls; then
+		pushd ${S}/src
+		mkdir -p ${D}/usr/lib/rustlib/src/rust/src
+		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src/rust/src \; || die
+		popd >/dev/null
+	fi
 }
 
 pkg_postinst() {
