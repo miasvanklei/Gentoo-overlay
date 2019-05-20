@@ -19,10 +19,9 @@ SRC_URI="https://dev-static.rust-lang.org/dist/rustc-${PV}-src.tar.xz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clippy debug doc -jemalloc libressl +rls +rustfmt"
+IUSE="+clippy debug doc libressl +rls +rustfmt"
 
-COMMON_DEPEND="jemalloc? ( dev-libs/jemalloc )
-		sys-libs/zlib
+COMMON_DEPEND="sys-libs/zlib
 		!libressl? ( dev-libs/openssl:0= )
 		libressl? ( dev-libs/libressl:0= )
 		<=dev-libs/libgit2-0.29:=
