@@ -38,8 +38,7 @@ DEPEND="${COMMON_DEPEND}
 	dev-util/cmake"
 RDEPEND="${COMMON_DEPEND}
 	!dev-util/cargo
-	rustfmt? ( !dev-util/rustfmt )"
-
+	!dev-util/rustfmt"
 
 S="${WORKDIR}/rustc-${PV}-src"
 
