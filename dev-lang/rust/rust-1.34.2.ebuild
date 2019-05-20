@@ -19,7 +19,7 @@ SRC_URI="https://dev-static.rust-lang.org/dist/rustc-${PV}-src.tar.xz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="+clippy debug doc libressl +rls +rustfmt"
+IUSE="debug doc libressl"
 
 COMMON_DEPEND="sys-libs/zlib
 		!libressl? ( dev-libs/openssl:0= )
@@ -67,17 +67,6 @@ PATCHES=(
 src_configure() {
 	einfo "Setting up config.toml for target"
 
-	local extended="true" tools="\"cargo\","
-	if use clippy; then
-		tools="\"clippy\",$tools"
-	fi
-	if use rls; then
-		tools="\"rls\",\"analysis\",\"src\",$tools"
-	fi
-	if use rustfmt; then
-		tools="\"rustfmt\",$tools"
-	fi
-
 	cat <<- EOF > "${S}"/config.toml
 	[llvm]
 	link-shared = true
@@ -92,7 +81,6 @@ src_configure() {
 	python = "${EPYTHON}"
 	vendor = true
 	extended = ${extended}
-	tools = [${tools}]
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)"
@@ -133,17 +121,11 @@ src_install() {
 
 	dobin src/etc/rust-gdb src/etc/rust-lldb
 
-	if use clippy; then
-		dobin "${tobj}"/clippy-driver
-		dobin "${tobj}"/cargo-clippy
-	fi
-	if use rls; then
-		dobin "${tobj}"/rls
-	fi
-	if use rustfmt; then
-		dobin "${tobj}"/rustfmt
-		dobin "${tobj}"/cargo-fmt
-	fi
+	dobin "${tobj}"/clippy-driver
+	dobin "${tobj}"/cargo-clippy
+	dobin "${tobj}"/rls
+	dobin "${tobj}"/rustfmt
+	dobin "${tobj}"/cargo-fmt
 
 	# Install libraries
 	insinto "/usr/$(get_libdir)"
@@ -153,10 +135,8 @@ src_install() {
 	find "${D}" -name "crt*.o" -delete || die
 
 	# Install analysis for rls
-	if use rls; then
-		insinto "/usr/$(get_libdir)/rustlib/${CHOST}/analysis"
-		doins "${sobj}/release/deps/save-analysis/"*
-	fi
+	insinto "/usr/$(get_libdir)/rustlib/${CHOST}/analysis"
+	doins "${sobj}/release/deps/save-analysis/"*
 
 	# Install COPYRIGHT and LICENSE
 	dodoc COPYRIGHT LICENSE-APACHE LICENSE-MIT
@@ -175,12 +155,10 @@ src_install() {
 	doenvd "${T}"/50${PN}
 
 	# Install sources needed for rls
-	if use rls; then
-		pushd ${S}/src
-		mkdir -p ${D}/usr/lib/rustlib/src/rust/src
-		find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src/rust/src \; || die
-		popd >/dev/null
-	fi
+	pushd ${S}/src
+	mkdir -p ${D}/usr/lib/rustlib/src/rust/src
+	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src/rust/src \; || die
+	popd >/dev/null
 }
 
 pkg_postinst() {
