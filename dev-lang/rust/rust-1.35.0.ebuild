@@ -52,7 +52,7 @@ pkg_setup() {
 }
 
 PATCHES=(
-	"${FILESDIR}"/0001-cleanup-musl-target.patch
+	"${FILESDIR}"/0001-Remove-nostdlib-and-musl_root-from-musl-targets.patch
 	"${FILESDIR}"/0002-add-gentoo-target.patch
 	"${FILESDIR}"/0003-libc-linkage.patch
         "${FILESDIR}"/0004-libunwind-linkage.patch
@@ -60,7 +60,7 @@ PATCHES=(
 	"${FILESDIR}"/0006-musl-fix-static-linking.patch
 	"${FILESDIR}"/0007-static-pie-support.patch
 	"${FILESDIR}"/0008-system-llvm.patch
-	"${FILESDIR}"/0010-Move-debugger-scripts-to-usr-share-rust.patch
+	"${FILESDIR}"/0009-Move-debugger-scripts-to-usr-share-rust.patch
 )
 
 src_configure() {
@@ -79,7 +79,7 @@ src_configure() {
 	submodules = false
 	python = "${EPYTHON}"
 	vendor = true
-	extended = ${extended}
+	extended = true
 	[install]
 	prefix = "${EPREFIX}/usr"
 	libdir = "$(get_libdir)"
