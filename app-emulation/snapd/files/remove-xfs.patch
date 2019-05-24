@@ -1,0 +1,46 @@
+--- a/github.com/snapcore/snapd/cmd/configure.ac
++++ b/github.com/snapcore/snapd/cmd/configure.ac
+@@ -22,11 +22,6 @@
+ # Checks for header files.
+ AC_CHECK_HEADERS([fcntl.h limits.h stdlib.h string.h sys/mount.h unistd.h])
+ AC_CHECK_HEADERS([sys/quota.h], [], [AC_MSG_ERROR(sys/quota.h unavailable)])
+-AC_CHECK_HEADERS([xfs/xqm.h], [], [AC_MSG_ERROR(xfs/xqm.h unavailable)],
+-[[#define _GNU_SOURCE
+-#define _FILE_OFFSET_BITS 64
+-#include <xfs/xqm.h>
+-]])
+ 
+ # Checks for typedefs, structures, and compiler characteristics.
+ AC_CHECK_HEADER_STDBOOL
+--- a/github.com/snapcore/snapd/cmd/snap-seccomp/main.go
++++ b/github.com/snapcore/snapd/cmd/snap-seccomp/main.go
+@@ -44,16 +44,6 @@
+ //#include <sys/ptrace.h>
+ //#include <termios.h>
+ //#include <unistd.h>
+-// //The XFS interface requires a 64 bit file system interface
+-// //but we don't want to leak this anywhere else if not globally
+-// //defined.
+-//#ifndef _FILE_OFFSET_BITS
+-//#define _FILE_OFFSET_BITS 64
+-//#include <xfs/xqm.h>
+-//#undef _FILE_OFFSET_BITS
+-//#else
+-//#include <xfs/xqm.h>
+-//#endif
+ //#include <seccomp.h>
+ //#include <linux/sched.h>
+ //#include <linux/seccomp.h>
+@@ -376,12 +366,6 @@
+ 	"Q_SETINFO":   C.Q_SETINFO,
+ 	"Q_GETQUOTA":  C.Q_GETQUOTA,
+ 	"Q_SETQUOTA":  C.Q_SETQUOTA,
+-	"Q_XQUOTAON":  C.Q_XQUOTAON,
+-	"Q_XQUOTAOFF": C.Q_XQUOTAOFF,
+-	"Q_XGETQUOTA": C.Q_XGETQUOTA,
+-	"Q_XSETQLIM":  C.Q_XSETQLIM,
+-	"Q_XGETQSTAT": C.Q_XGETQSTAT,
+-	"Q_XQUOTARM":  C.Q_XQUOTARM,
+ 
+ 	// man 2 mknod
+ 	"S_IFREG":  syscall.S_IFREG,

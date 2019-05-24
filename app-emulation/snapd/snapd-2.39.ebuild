@@ -38,6 +38,7 @@ EGO_PN="github.com/snapcore/${PN}"
 PATCHES=(
 	"${FILESDIR}"/add-musl-path.patch
 	"${FILESDIR}"/missing-includes.patch
+	"${FILESDIR}"/remove-xfs.patch
 )
 
 RDEPEND="!sys-apps/snap-confine
