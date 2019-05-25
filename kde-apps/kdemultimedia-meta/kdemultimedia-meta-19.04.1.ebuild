@@ -15,7 +15,6 @@ KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="+cdrom +ffmpeg gstreamer"
 
 RDEPEND="
-	>=kde-apps/dragon-${PV}:${SLOT}
 	>=kde-apps/juk-${PV}:${SLOT}
 	>=kde-apps/kdenlive-18.12.3:${SLOT}
 	>=kde-apps/kwave-${PV}:${SLOT}
