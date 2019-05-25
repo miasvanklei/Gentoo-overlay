@@ -39,6 +39,7 @@ PATCHES=(
 	"${FILESDIR}"/add-musl-path.patch
 	"${FILESDIR}"/missing-includes.patch
 	"${FILESDIR}"/remove-xfs.patch
+	"${FILESDIR}"/fix-buildid.patch
 )
 
 RDEPEND="!sys-apps/snap-confine
