@@ -1,30 +1,20 @@
---- a/bin/estrip	2018-11-19 15:25:35.491438502 +0100
-+++ b/bin/estrip	2018-11-19 15:26:43.593311589 +0100
+--- a/bin/estrip
++++ b/bin/estrip
 @@ -133,7 +133,7 @@
  *GNU*) # sys-devel/binutils
  	# We'll leave out -R .note for now until we can check out the relevance
  	# of the section when it has the ALLOC flag set on it ...
--	SAFE_STRIP_FLAGS="--strip-unneeded"
+-	SAFE_STRIP_FLAGS="--strip-unneeded -N __gentoo_check_ldflags__"
 +	SAFE_STRIP_FLAGS="-S"
  	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
  	SPLIT_STRIP_FLAGS=
  	;;
-@@ -415,19 +422,7 @@
+@@ -434,9 +434,7 @@
  	# elf types though cause that stuff is good.
  
  	buildid=
 -	if [[ ${f} == *"current ar archive"* ]] ; then
--		__vecho "   ${x:${#ED}}"
--		if ${strip_this} ; then
--			# If we have split debug enabled, then do not strip this.
--			# There is no concept of splitdebug for objects not yet
--			# linked in (only for finally linked ELFs), so we have to
--			# retain the debug info in the archive itself.
--			if ! ${FEATURES_splitdebug} || ${RESTRICT_splitdebug} ; then
--				${STRIP} -g "${x}" &&
--				${RANLIB} "${x}"
--			fi
--		fi
+-		process_ar "${x}"
 -	elif [[ ${f} == *"SB executable"* || ${f} == *"SB pie executable"* ||
 +	if [[ ${f} == *"SB executable"* || ${f} == *"SB pie executable"* ||
  		${f} == *"SB shared object"* ]] ; then
