@@ -94,6 +94,15 @@ src_prepare() {
 	# add flang support
 	eapply "${FILESDIR}"/0006-flang-support.patch
 
+	# Add explicit representations of umin/smin
+	eapply "${FILESDIR}"/0007-D50167-scev-umin.patch
+
+        # Fix vectorize fdiv
+	eapply "${FILESDIR}"/0008-D34078-vectorize-fdiv.patch
+
+	# Disallow coercion between different ni addrspaces
+	eapply "${FILESDIR}"/0009-D50010-VNCoercion-ni.patch
+
 	# disable use of SDK on OSX, bug #568758
 	sed -i -e 's/xcrun/false/' utils/lit/lit/util.py || die
 
