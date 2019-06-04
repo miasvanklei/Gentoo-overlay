@@ -87,6 +87,13 @@ src_configure() {
 	cmake-utils_src_configure
 }
 
+src_install() {
+	cmake-utils_src_install
+
+	# For julia
+	${CXX} ${CXXFLAGS} ${FILESDIR}/compiler-rt.c -shared -o ${ED}/usr/lib/compiler-rt.so || die
+}
+
 src_test() {
 	# respect TMPDIR!
 	local -x LIT_PRESERVES_TMP=1
