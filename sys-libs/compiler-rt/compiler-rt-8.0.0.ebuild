@@ -91,7 +91,7 @@ src_install() {
 	cmake-utils_src_install
 
 	# For julia
-	${CXX} ${CXXFLAGS} ${FILESDIR}/compiler-rt.c -shared -o ${ED}/usr/lib/compiler-rt.so || die
+	${CC} ${CXXFLAGS} ${FILESDIR}/compiler-rt.c -shared -o ${ED}/usr/lib/libcompiler-rt.so || die
 }
 
 src_test() {
