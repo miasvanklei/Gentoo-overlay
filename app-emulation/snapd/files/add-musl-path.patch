@@ -8,3 +8,13 @@
      /etc/ld.so.preload r,
      /{,usr/}lib{,32,64,x32}/{,@{multiarch}/}ld-*.so mrix,
      # libc, you are funny
+--- a/src/github.com/snapcore/snapd/interfaces/apparmor/template.go
++++ b/src/github.com/snapcore/snapd/interfaces/apparmor/template.go
+@@ -616,6 +616,7 @@
+   /var/lib/snapd/hostfs/{,var/lib/snapd/}snap/core/*/usr/lib/snapd/snap-update-ns mr,
+ 
+   # Allow reading the dynamic linker cache.
++  /etc/ld-musl*.path r,
+   /etc/ld.so.cache r,
+   # Allow reading, mapping and executing the dynamic linker.
+   /{,usr/}lib{,32,64,x32}/{,@{multiarch}/}ld-*.so mrix,

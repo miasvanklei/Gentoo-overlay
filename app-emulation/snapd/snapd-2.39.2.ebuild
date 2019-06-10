@@ -40,6 +40,8 @@ PATCHES=(
 	"${FILESDIR}"/missing-includes.patch
 	"${FILESDIR}"/remove-xfs.patch
 	"${FILESDIR}"/fix-buildid.patch
+	"${FILESDIR}"/fix-invalid-version-info-length.patch
+	"${FILESDIR}"/dirty-fix-fexecve.patch
 )
 
 RDEPEND="!sys-apps/snap-confine
