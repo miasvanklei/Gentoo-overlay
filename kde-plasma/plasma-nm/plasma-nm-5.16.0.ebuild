@@ -53,10 +53,6 @@ RDEPEND="${DEPEND}
 	$(add_plasma_dep kde-cli-tools)
 "
 
-PATCHES=(
-	"${FILESDIR}"/missing-includes.patch
-)
-
 src_configure() {
 	local mycmakeargs=(
 		-DDISABLE_MODEMMANAGER_SUPPORT=$(usex !modemmanager)
