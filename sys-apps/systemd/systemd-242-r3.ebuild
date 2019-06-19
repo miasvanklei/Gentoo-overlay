@@ -173,6 +173,7 @@ src_prepare() {
 		"${FILESDIR}"/242-gcc-9.patch
 		"${FILESDIR}"/242-socket-util-flush-accept.patch
 		"${FILESDIR}"/242-wireguard-listenport.patch
+		"${FILESDIR}"/242-file-max.patch
 	)
 
 	if ! use vanilla; then
