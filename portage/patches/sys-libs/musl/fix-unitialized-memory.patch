@@ -1,12 +1,11 @@
 --- a/ldso/dynlink.c
 +++ b/ldso/dynlink.c
-@@ -2175,7 +2175,8 @@
- {
- 	size_t addr = (size_t)addr_arg;
- 	struct dso *p;
--	Sym *sym, *bestsym;
-+	Sym *sym;
-+	Sym *bestsym = NULL;
- 	uint32_t nsym;
- 	char *strings;
- 	size_t best = 0;
+@@ -2216,7 +2216,7 @@
+ 		}
+ 	}
+ 
+-	if (bestsym && besterr > bestsym->st_size-1) {
++	if (best && besterr > bestsym->st_size-1) {
+ 		best = 0;
+ 		bestsym = 0;
+ 	}
