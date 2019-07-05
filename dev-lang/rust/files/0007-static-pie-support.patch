@@ -44,8 +44,8 @@
          target_option_val!(needs_plt);
          target_option_val!(relro_level);
          target_option_val!(archive_format);
---- a/src/librustc_codegen_llvm/back/link.rs
-+++ b/src/librustc_codegen_llvm/back/link.rs
+--- a/src/librustc_codegen_ssa/back/link.rs
++++ b/src/librustc_codegen_ssa/back/link.rs
 @@ -994,13 +994,9 @@
          let mut position_independent_executable = false;
  
@@ -55,10 +55,9 @@
 -            let more_args = &sess.opts.cg.link_arg;
 -            let mut args = args.iter().chain(more_args.iter()).chain(used_link_args.iter());
 -
+-            if is_pic(sess) && !sess.crt_static() && !args.any(|x| *x == "-static") {
 +            let static_pie = t.options.static_position_independent_executables;
-             if get_reloc_model(sess) == llvm::RelocMode::PIC
--                && !sess.crt_static() && !args.any(|x| *x == "-static") {
-+                && (!sess.crt_static() || static_pie) {
++            if is_pic(sess) && (!sess.crt_static() || static_pie) {
                  position_independent_executable = true;
              }
          }
