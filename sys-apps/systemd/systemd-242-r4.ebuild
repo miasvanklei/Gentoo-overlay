@@ -182,6 +182,8 @@ src_prepare() {
 			"${FILESDIR}/gentoo-systemd-user-pam.patch"
 			"${FILESDIR}/gentoo-uucp-group.patch"
 			"${FILESDIR}/gentoo-generator-path.patch"
+			"${FILESDIR}/241-wrapper-msan-unpoinson.patch"
+			"${FILESDIR}/242-rdrand-ryzen.patch"
 		)
 	fi
 
