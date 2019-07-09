@@ -1,14 +1,3 @@
---- a/arch/arm/vdso/Makefile	2018-10-27 21:31:02.294611422 +0200
-+++ b/arch/arm/vdso/Makefile	2018-10-27 21:31:13.452598560 +0200
-@@ -11,7 +11,7 @@
- ccflags-y += -DDISABLE_BRANCH_PROFILING
- 
- VDSO_LDFLAGS := -Wl,-Bsymbolic -Wl,--no-undefined -Wl,-soname=linux-vdso.so.1
--VDSO_LDFLAGS += -Wl,-z,max-page-size=4096 -Wl,-z,common-page-size=4096
-+VDSO_LDFLAGS += -Wl,-z,max-page-size=4096
- VDSO_LDFLAGS += -nostdlib -shared
- VDSO_LDFLAGS += $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
- VDSO_LDFLAGS += $(call cc-ldoption, -Wl$(comma)--build-id)
 --- a/arch/arm/Makefile	2018-10-27 21:13:57.390791660 +0200
 +++ b/arch/arm/Makefile	2018-10-27 21:17:20.525583851 +0200
 @@ -10,7 +10,7 @@
@@ -29,15 +18,4 @@
 +
  #
  # The Scalar Replacement of Aggregates (SRA) optimization pass in GCC 4.9 and
- # later may result in code being generated that handles signed short and signed
---- a/arch/arm64/kernel/vdso/Makefile   2019-03-14 17:40:22.537751210 +0100
-+++ b/arch/arm64/kernel/vdso/Makefile   2019-03-14 17:40:34.133669869 +0100
-@@ -54,7 +54,7 @@
- 
- # Actual build commands
- quiet_cmd_vdsold = VDSOL   $@
--      cmd_vdsold = $(CC) $(c_flags) -Wl,-n -Wl,-T $^ -o $@
-+      cmd_vdsold = $(CC) $(c_flags) -Wl,-T $^ -o $@
- quiet_cmd_vdsoas = VDSOA   $@
-       cmd_vdsoas = $(CC) $(a_flags) -c -o $@ $<
- 
+ # later may result in code being generated that handles signed short and signed 
