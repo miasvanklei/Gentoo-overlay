@@ -174,6 +174,7 @@ src_prepare() {
 		"${FILESDIR}"/242-socket-util-flush-accept.patch
 		"${FILESDIR}"/242-wireguard-listenport.patch
 		"${FILESDIR}"/242-file-max.patch
+		"${FILESDIR}"/242-rdrand-ryzen.patch
 	)
 
 	if ! use vanilla; then
@@ -182,8 +183,6 @@ src_prepare() {
 			"${FILESDIR}/gentoo-systemd-user-pam.patch"
 			"${FILESDIR}/gentoo-uucp-group.patch"
 			"${FILESDIR}/gentoo-generator-path.patch"
-			"${FILESDIR}/241-wrapper-msan-unpoinson.patch"
-			"${FILESDIR}/242-rdrand-ryzen.patch"
 		)
 	fi
 
