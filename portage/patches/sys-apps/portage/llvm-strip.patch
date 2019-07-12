@@ -1,14 +1,16 @@
 --- a/bin/estrip
 +++ b/bin/estrip
-@@ -133,7 +133,7 @@
+@@ -133,8 +133,8 @@
  *GNU*) # sys-devel/binutils
  	# We'll leave out -R .note for now until we can check out the relevance
  	# of the section when it has the ALLOC flag set on it ...
 -	SAFE_STRIP_FLAGS="--strip-unneeded -N __gentoo_check_ldflags__"
-+	SAFE_STRIP_FLAGS="-S"
- 	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
+-	DEF_STRIP_FLAGS="-R .comment -R .GCC.command.line -R .note.gnu.gold-version"
++	SAFE_STRIP_FLAGS="-N __gentoo_check_ldflags__"
++	DEF_STRIP_FLAGS="--strip-all-gnu -R .comment -R .GCC.command.line -R .note.gnu.gold-version"
  	SPLIT_STRIP_FLAGS=
  	;;
+ esac
 @@ -434,9 +434,7 @@
  	# elf types though cause that stuff is good.
  
