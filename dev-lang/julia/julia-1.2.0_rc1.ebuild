@@ -46,6 +46,7 @@ RDEPEND+="
 	sci-libs/spqr:0=
 	sci-libs/umfpack:0=
 	sci-mathematics/glpk:0=
+	sys-devel/llvm:8=
 	sys-libs/compiler-rt
 	sys-libs/readline:0=
 	sys-libs/zlib:0=
