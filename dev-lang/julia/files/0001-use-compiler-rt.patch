@@ -1,5 +1,5 @@
 --- /dev/null
-+++ b/src/builtin.cpp
++++ b/src/builtins.cpp
 @@ -0,0 +1,54 @@
 +#include <stdint.h>
 +
@@ -66,3 +66,13 @@
  // Custom object emission notification handler for the JuliaOJIT
  extern JITEventListener *CreateJuliaJITEventListener();
  JuliaOJIT::DebugObjectRegistrar::DebugObjectRegistrar(JuliaOJIT &JIT)
+@@ -551,6 +551,8 @@
+     // Step 2: Search the program symbols
+     if (uint64_t addr = SectionMemoryManager::getSymbolAddressInProcess(Name))
+         return JL_SymbolInfo(addr, JITSymbolFlags::Exported);
++    if (uint64_t addr = resolve_builtins(Name.c_str()))
++        return JL_SymbolInfo(addr, JITSymbolFlags::Exported);
+ #if defined(_OS_LINUX_) || defined(_OS_WINDOWS_) || defined(_OS_FREEBSD_)
+     if (uint64_t addr = resolve_atomic(Name.c_str()))
+         return JL_SymbolInfo(addr, JITSymbolFlags::Exported);
+
