@@ -163,6 +163,7 @@ src_compile() {
 	addpredict /proc/self/mem
 
 	emake cleanall
+
 	emake julia-release \
 		prefix="${EPREFIX}/usr" DESTDIR="${D}" \
 		CC="$(tc-getCC)" CXX="$(tc-getCXX)"
