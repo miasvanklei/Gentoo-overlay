@@ -62,6 +62,7 @@ PATCHES=(
 	"${FILESDIR}"/${PN}-1.1.0-fix_build_system.patch
 	"${FILESDIR}"/0001-use-compiler-rt.patch
 	"${FILESDIR}"/0002-llvm-unwind.patch
+	"${FILESDIR}"/0003-print-llvm-errors.patch
 	"${FILESDIR}"/llvm-8.patch
 )
 
