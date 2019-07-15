@@ -1,0 +1,35 @@
+--- a/src/basic/missing_prctl.h
++++ b/src/basic/missing_prctl.h
+@@ -1,6 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ #pragma once
+ 
++#ifdef __GLIBC__
+ #include <linux/prctl.h>
+ 
+ /* 58319057b7847667f0c9585b9de0e8932b0fdb08 (4.3) */
+@@ -12,3 +13,4 @@
+ #define PR_CAP_AMBIENT_LOWER     3
+ #define PR_CAP_AMBIENT_CLEAR_ALL 4
+ #endif
++#endif
+--- a/src/network/netdev/tunnel.c
++++ b/src/network/netdev/tunnel.c
+@@ -1,7 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
+ #include <arpa/inet.h>
+-#include <net/if.h>
+ #include <linux/ip.h>
+ #include <linux/if_tunnel.h>
+ #include <linux/ip6_tunnel.h>
+--- a/src/test/test-netlink-manual.c
++++ b/src/test/test-netlink-manual.c
+@@ -3,7 +3,6 @@
+ #include <arpa/inet.h>
+ #include <libkmod.h>
+ #include <linux/ip.h>
+-#include <net/if.h>
+ #include <linux/if_tunnel.h>
+ #include <sys/types.h>
+ #include <unistd.h>
