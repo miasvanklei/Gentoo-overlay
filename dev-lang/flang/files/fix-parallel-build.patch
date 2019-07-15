@@ -1,0 +1,157 @@
+From 94c0f302bc3100cb988a40177b77b65eac9c53f8 Mon Sep 17 00:00:00 2001
+From: Paul Osmialowski <pawel.osmialowski@arm.com>
+Date: Sat, 25 Nov 2017 22:36:51 +0000
+Subject: [PATCH] runtime: fix parallel build of omp_lib
+
+Signed-off-by: Paul Osmialowski <pawel.osmialowski@arm.com>
+---
+ runtime/flang/CMakeLists.txt    | 11 +++++++
+ runtime/flang/omp_lib.F95       | 34 --------------------
+ runtime/flang/omp_lib_kinds.F95 | 57 +++++++++++++++++++++++++++++++++
+ 3 files changed, 68 insertions(+), 34 deletions(-)
+ create mode 100644 runtime/flang/omp_lib_kinds.F95
+
+diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
+index c4300b9b2..aad3110b5 100644
+--- a/runtime/flang/CMakeLists.txt
++++ b/runtime/flang/CMakeLists.txt
+@@ -146,6 +146,7 @@ SET(FTN_INTRINSICS_DESC_INDEP
+   merge.c
+   mvbits3f.c
+   nargs3f.c
++  omp_lib_kinds.F95
+   omp_lib.F95
+   outstr3f.c
+   packtimeqq3f.c
+@@ -536,6 +537,11 @@ set_source_files_properties(
+   PROPERTIES
+   OBJECT_OUTPUTS ${CMAKE_Fortran_MODULE_DIRECTORY}/iso_c_binding.mod
+   )
++set_source_files_properties(
++  omp_lib_kinds.F95
++  PROPERTIES
++  OBJECT_OUTPUTS ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib_kinds.mod
++  )
+ 
+ # State a dependency on the module
+ set_source_files_properties(
+@@ -544,6 +550,11 @@ set_source_files_properties(
+   PROPERTIES
+   OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/iso_c_binding.mod
+   )
++set_source_files_properties(
++  omp_lib.F95
++  PROPERTIES
++  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib_kinds.mod
++  )
+ 
+ # State a dependency on the module
+ set_source_files_properties(
+diff --git a/runtime/flang/omp_lib.F95 b/runtime/flang/omp_lib.F95
+index 7a8e74ec8..3e7d07191 100644
+--- a/runtime/flang/omp_lib.F95
++++ b/runtime/flang/omp_lib.F95
+@@ -54,40 +54,6 @@
+ #define LIBOMP_YEAR_MONTH 201107
+ #endif
+ 
+-module omp_lib_kinds
+-  integer, parameter :: omp_integer_kind = 4
+-  integer, parameter :: omp_logical_kind = 4
+-#if defined(TARGET_KMPC)
+-  integer, parameter :: omp_lock_kind = 8
+-#else
+-  integer, parameter :: omp_lock_kind = 4
+-#endif
+-  integer, parameter :: omp_nest_lock_kind = 8
+-  integer, parameter :: omp_sched_kind  = 4
+-  integer, parameter :: omp_real_kind          = 4
+-  integer, parameter :: omp_proc_bind_kind     = omp_integer_kind
+-  integer, parameter :: omp_lock_hint_kind     = omp_integer_kind
+-
+-  integer(kind=omp_sched_kind), parameter :: omp_sched_static  = 1
+-  integer(kind=omp_sched_kind), parameter :: omp_sched_dynamic = 2
+-  integer(kind=omp_sched_kind), parameter :: omp_sched_guided  = 3
+-  integer(kind=omp_sched_kind), parameter :: omp_sched_auto    = 4
+-
+-  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_false = 0
+-  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_true = 1
+-  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_master = 2
+-  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_close = 3
+-  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_spread = 4
+-
+-  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_none           = 0
+-  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_uncontended    = 1
+-  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_contended      = 2
+-  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_nonspeculative = 4
+-  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_speculative    = 8
+-
+-
+-end module omp_lib_kinds
+-
+ module omp_lib
+   use omp_lib_kinds
+ #ifdef PGDLL
+diff --git a/runtime/flang/omp_lib_kinds.F95 b/runtime/flang/omp_lib_kinds.F95
+new file mode 100644
+index 000000000..065533310
+--- /dev/null
++++ b/runtime/flang/omp_lib_kinds.F95
+@@ -0,0 +1,57 @@
++! 
++! Copyright (c) 2017, NVIDIA CORPORATION.  All rights reserved.
++!
++! Licensed under the Apache License, Version 2.0 (the "License");
++! you may not use this file except in compliance with the License.
++! You may obtain a copy of the License at
++!
++!     http://www.apache.org/licenses/LICENSE-2.0
++!
++! Unless required by applicable law or agreed to in writing, software
++! distributed under the License is distributed on an "AS IS" BASIS,
++! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++! See the License for the specific language governing permissions and
++! limitations under the License.
++! 
++
++!          THIS CODE AND INFORMATION ARE PROVIDED "AS IS" WITHOUT
++!   WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT
++!   NOT LIMITED TO THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR
++!   FITNESS FOR A PARTICULAR PURPOSE. 
++!
++! omp_lib_kinds.f90
++!
++
++module omp_lib_kinds
++  integer, parameter :: omp_integer_kind = 4
++  integer, parameter :: omp_logical_kind = 4
++#if defined(TARGET_KMPC)
++  integer, parameter :: omp_lock_kind = 8
++#else
++  integer, parameter :: omp_lock_kind = 4
++#endif
++  integer, parameter :: omp_nest_lock_kind = 8
++  integer, parameter :: omp_sched_kind  = 4
++  integer, parameter :: omp_real_kind          = 4
++  integer, parameter :: omp_proc_bind_kind     = omp_integer_kind
++  integer, parameter :: omp_lock_hint_kind     = omp_integer_kind
++
++  integer(kind=omp_sched_kind), parameter :: omp_sched_static  = 1
++  integer(kind=omp_sched_kind), parameter :: omp_sched_dynamic = 2
++  integer(kind=omp_sched_kind), parameter :: omp_sched_guided  = 3
++  integer(kind=omp_sched_kind), parameter :: omp_sched_auto    = 4
++
++  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_false = 0
++  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_true = 1
++  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_master = 2
++  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_close = 3
++  integer (kind=omp_proc_bind_kind), parameter :: omp_proc_bind_spread = 4
++
++  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_none           = 0
++  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_uncontended    = 1
++  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_contended      = 2
++  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_nonspeculative = 4
++  integer (kind=omp_lock_hint_kind), parameter :: omp_lock_hint_speculative    = 8
++
++
++end module omp_lib_kinds

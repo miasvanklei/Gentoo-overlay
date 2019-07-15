@@ -29,4 +29,5 @@ CMAKE_BUILD_TYPE=Release
 
 PATCHES=(
 	${FILESDIR}/fix-compile.patch
+	${FILESDIR}/fix-parallel-build.patch
 )
