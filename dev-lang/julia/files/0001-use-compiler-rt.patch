@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/src/builtins.cpp
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,28 @@
 +#include <stdint.h>
 +
 +extern "C" unsigned long long __udivmodti4 (unsigned long long a, unsigned long long b, unsigned long long *c);
@@ -12,31 +12,6 @@
 +{
 +    return !str[h] ? 5381 : (str2int(str, h+1) * 33) ^ str[h];
 +}
-+
-+#define OPTIMISED_CASES              \
-+  OPTIMISED_CASE(1, uint8_t)         \
-+  OPTIMISED_CASE(2, uint16_t)        \
-+  OPTIMISED_CASE(4, uint32_t)        \
-+  OPTIMISED_CASE(8, uint64_t)
-+
-+#define OPTIMIZED_SWITCH_CASES   \
-+  OPTIMIZED_SWITCH_CASE(1)       \
-+  OPTIMIZED_SWITCH_CASE(2)       \
-+  OPTIMIZED_SWITCH_CASE(4)       \
-+  OPTIMIZED_SWITCH_CASE(8)       \
-+
-+#define PPCAT_NX(A, B) A ## B
-+#define PPCAT(A, B) PPCAT_NX(A, B)
-+#define STRINGIZE_NX(A) #A
-+#define STRINGIZE(A) STRINGIZE_NX(A)
-+
-+#define OPTIMIZED_SWITCH_CASE(n)  \
-+  case str2int(STRINGIZE(PPCAT(__atomic_load_, n))):          \
-+    return (uintptr_t)&__atomic_load_##n;
-+
-+#define OPTIMISED_CASE(n, type)                \
-+  extern "C" type __atomic_load_##n(type *src, int model);
-+OPTIMISED_CASES
 +
 +// Resolve functions from compiler_rt. Since compiler_rt is a static library
 +// and not a dynamic one, we need to list all functions.
@@ -50,7 +25,6 @@
 +            return (uintptr_t)&__udivti3;
 +        case str2int("__divti3"):
 +            return (uintptr_t)&__divti3;
-+        OPTIMIZED_SWITCH_CASES
 +        default:
 +            return 0;
 +    }
