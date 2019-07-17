@@ -13,13 +13,10 @@ IUSE="7zip cups floppy lrz rar"
 
 RDEPEND="
 	>=kde-apps/ark-${PV}:${SLOT}
-	>=kde-apps/filelight-${PV}:${SLOT}
 	>=kde-apps/kate-${PV}:${SLOT}
-	>=kde-apps/kbackup-${PV}:${SLOT}
 	>=kde-apps/kcalc-${PV}:${SLOT}
 	>=kde-apps/kcharselect-${PV}:${SLOT}
 	>=kde-apps/kdebugsettings-${PV}:${SLOT}
-	>=kde-apps/kdf-${PV}:${SLOT}
 	>=kde-apps/kwalletmanager-${PV}:${SLOT}
 	cups? ( >=kde-apps/print-manager-${PV}:${SLOT} )
 	floppy? ( >=kde-apps/kfloppy-${PV}:${SLOT} )
