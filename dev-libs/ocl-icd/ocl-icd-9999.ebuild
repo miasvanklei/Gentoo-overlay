@@ -13,9 +13,9 @@ EGIT_REPO_URI="https://github.com/KhronosGroup/OpenCL-ICD-Loader.git"
 LICENSE="Apache-2.0"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE=""
+IUSE="+khronos-headers"
 
-DEPEND="media-libs/mesa"
+DEPEND=""
 RDEPEND="app-eselect/eselect-opencl"
 
 DOCS=(README.md)
