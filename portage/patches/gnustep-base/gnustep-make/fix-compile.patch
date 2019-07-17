@@ -1,0 +1,65 @@
+--- a/target.make
++++ b/target.make
+@@ -354,7 +354,7 @@
+           $(LN_S) $(LIB_LINK_VERSION_FILE) $(LIB_LINK_FILE))
+ 
+ BUNDLE_LD       =  $(LD)
+-BUNDLE_LDFLAGS  += -fgnu-runtime -bundle
++BUNDLE_LDFLAGS  += -bundle
+ BUNDLE_LDFLAGS  += -undefined dynamic_lookup
+ 
+ else 
+@@ -553,7 +553,7 @@
+ # The following ifeq matches both 'linux-gnu' (which is GNU/Linux ELF)
+ # and 'gnu0.3' (I've been told GNUSTEP_TARGET_OS is 'gnu0.3' on
+ # GNU/Hurd at the moment).  We want the same code in both cases.
+-ifeq ($(findstring gnu, $(GNUSTEP_TARGET_OS)), gnu)
++ifeq ($(findstring linux, $(GNUSTEP_TARGET_OS)), linux)
+ HAVE_SHARED_LIBS        = yes
+ SHARED_LIB_LINK_CMD     = \
+         $(LD) $(SHARED_LD_PREFLAGS) -shared -Wl,-soname,$(LIB_LINK_SONAME_FILE) \
+--- a/config.make.in
++++ b/config.make.in
+@@ -121,7 +121,7 @@
+   FRAMEWORK_VERSION_SUPPORT = no
+ endif
+ 
+-LD = $(CC)
++LD = $(CXX)
+ LDOUT =
+ LDFLAGS = @LDFLAGS@ 
+ 
+--- a/library-combo.make
++++ b/library-combo.make
+@@ -31,7 +31,7 @@
+   OBJC_LDFLAGS =
+   OBJC_LIB_DIR =
+   OBJC_LIBS = $(OBJC_LIB_FLAG)
+-  RUNTIME_FLAG   = -fgnu-runtime
++  RUNTIME_FLAG   = 
+   RUNTIME_DEFINE = -DGNU_RUNTIME=1
+ endif
+ 
+--- a/configure
++++ b/configure
+@@ -6204,17 +6204,9 @@
+ # To work around this, we use -Wl,-r with clang, and -r with GCC.
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking for the flag to use to do partial linking" >&5
+ $as_echo_n "checking for the flag to use to do partial linking... " >&6; }
+-gs_cv_using_clang=`${CC} --version 2>&5 | grep -c "clang"`
+-if test x"${gs_cv_using_clang}" = x"0" ; then
+-  OBJ_MERGE_CMD_FLAG=-r
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: -r" >&5
+-$as_echo "-r" >&6; }
+-else
+-  OBJ_MERGE_CMD_FLAG=-Wl,-r
+-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: -Wl,-r" >&5
+-$as_echo "-Wl,-r" >&6; }
+-fi
+-
++OBJ_MERGE_CMD_FLAG=-r
++{ $as_echo "$as_me:${as_lineno-$LINENO}: result: -r" >&5
++$as_echo "-r" >&6; }
+ 
+ 
+ #--------------------------------------------------------------------
