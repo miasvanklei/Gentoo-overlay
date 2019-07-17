@@ -286,6 +286,9 @@ multilib_src_configure() {
 		-Dtmpfiles=$(meson_multilib)
 		-Dvconsole=$(meson_multilib)
 
+		# default hierarchy
+		-Ddefault_hierarchy=unified
+
 		# disabled on musl
 		-Dnss-myhostname=false
 		-Dnss-mymachines=false
