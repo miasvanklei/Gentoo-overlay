@@ -1,0 +1,380 @@
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -913,7 +913,10 @@ LLVMRustCreateThinLTOData(LLVMRustThinLTOModule *modules,
+                               GlobalValue::LinkageTypes NewLinkage) {
+     ResolvedODR[ModuleIdentifier][GUID] = NewLinkage;
+   };
+-#if LLVM_VERSION_GE(8, 0)
++#if LLVM_VERSION_GE(9, 0)
++  thinLTOResolvePrevailingInIndex(Ret->Index, isPrevailing, recordNewLinkage,
++                                  Ret->GUIDPreservedSymbols);
++#elif LLVM_VERSION_GE(8, 0)
+   thinLTOResolvePrevailingInIndex(Ret->Index, isPrevailing, recordNewLinkage);
+ #else
+   thinLTOResolveWeakForLinkerInIndex(Ret->Index, isPrevailing, recordNewLinkage);
+--- a/src/librustc_codegen_llvm/abi.rs
++++ b/src/librustc_codegen_llvm/abi.rs
+@@ -34,17 +34,17 @@ trait ArgAttributeExt {
+ impl ArgAttributeExt for ArgAttribute {
+     fn for_each_kind<F>(&self, mut f: F) where F: FnMut(llvm::Attribute) {
+         for_each_kind!(self, f,
+-                       ByVal, NoAlias, NoCapture, NonNull, ReadOnly, SExt, StructRet, ZExt, InReg)
++                       NoAlias, NoCapture, NonNull, ReadOnly, SExt, StructRet, ZExt, InReg)
+     }
+ }
+ 
+ pub trait ArgAttributesExt {
+-    fn apply_llfn(&self, idx: AttributePlace, llfn: &Value);
+-    fn apply_callsite(&self, idx: AttributePlace, callsite: &Value);
++    fn apply_llfn(&self, idx: AttributePlace, llfn: &Value, ty: Option<&Type>);
++    fn apply_callsite(&self, idx: AttributePlace, callsite: &Value, ty: Option<&Type>);
+ }
+ 
+ impl ArgAttributesExt for ArgAttributes {
+-    fn apply_llfn(&self, idx: AttributePlace, llfn: &Value) {
++    fn apply_llfn(&self, idx: AttributePlace, llfn: &Value, ty: Option<&Type>) {
+         let mut regular = self.regular;
+         unsafe {
+             let deref = self.pointee_size.bytes();
+@@ -65,11 +65,14 @@ impl ArgAttributesExt for ArgAttributes {
+                                                idx.as_uint(),
+                                                align.bytes() as u32);
+             }
++            if regular.contains(ArgAttribute::ByVal) {
++                llvm::LLVMRustAddByValAttr(llfn, idx.as_uint(), ty.unwrap());
++            }
+             regular.for_each_kind(|attr| attr.apply_llfn(idx, llfn));
+         }
+     }
+ 
+-    fn apply_callsite(&self, idx: AttributePlace, callsite: &Value) {
++    fn apply_callsite(&self, idx: AttributePlace, callsite: &Value, ty: Option<&Type>) {
+         let mut regular = self.regular;
+         unsafe {
+             let deref = self.pointee_size.bytes();
+@@ -90,6 +93,9 @@ impl ArgAttributesExt for ArgAttributes {
+                                                        idx.as_uint(),
+                                                        align.bytes() as u32);
+             }
++            if regular.contains(ArgAttribute::ByVal) {
++                llvm::LLVMRustAddByValCallSiteAttr(callsite, idx.as_uint(), ty.unwrap());
++            }
+             regular.for_each_kind(|attr| attr.apply_callsite(idx, callsite));
+         }
+     }
+@@ -298,7 +304,7 @@ pub trait FnTypeLlvmExt<'tcx> {
+     fn llvm_type(&self, cx: &CodegenCx<'ll, 'tcx>) -> &'ll Type;
+     fn ptr_to_llvm_type(&self, cx: &CodegenCx<'ll, 'tcx>) -> &'ll Type;
+     fn llvm_cconv(&self) -> llvm::CallConv;
+-    fn apply_attrs_llfn(&self, llfn: &'ll Value);
++    fn apply_attrs_llfn(&self, cx: &CodegenCx<'ll, 'tcx>, llfn: &'ll Value);
+     fn apply_attrs_callsite(&self, bx: &mut Builder<'a, 'll, 'tcx>, callsite: &'ll Value);
+ }
+ 
+@@ -384,51 +390,51 @@ impl<'tcx> FnTypeLlvmExt<'tcx> for FnType<'tcx, Ty<'tcx>> {
+         }
+     }
+ 
+-    fn apply_attrs_llfn(&self, llfn: &'ll Value) {
++    fn apply_attrs_llfn(&self, cx: &CodegenCx<'ll, 'tcx>, llfn: &'ll Value) {
+         let mut i = 0;
+-        let mut apply = |attrs: &ArgAttributes| {
+-            attrs.apply_llfn(llvm::AttributePlace::Argument(i), llfn);
++        let mut apply = |attrs: &ArgAttributes, ty: Option<&Type>| {
++            attrs.apply_llfn(llvm::AttributePlace::Argument(i), llfn, ty);
+             i += 1;
+         };
+         match self.ret.mode {
+             PassMode::Direct(ref attrs) => {
+-                attrs.apply_llfn(llvm::AttributePlace::ReturnValue, llfn);
++                attrs.apply_llfn(llvm::AttributePlace::ReturnValue, llfn, None);
+             }
+-            PassMode::Indirect(ref attrs, _) => apply(attrs),
++            PassMode::Indirect(ref attrs, _) => apply(attrs, Some(self.ret.layout.llvm_type(cx))),
+             _ => {}
+         }
+         for arg in &self.args {
+             if arg.pad.is_some() {
+-                apply(&ArgAttributes::new());
++                apply(&ArgAttributes::new(), None);
+             }
+             match arg.mode {
+                 PassMode::Ignore(_) => {}
+                 PassMode::Direct(ref attrs) |
+-                PassMode::Indirect(ref attrs, None) => apply(attrs),
++                PassMode::Indirect(ref attrs, None) => apply(attrs, Some(arg.layout.llvm_type(cx))),
+                 PassMode::Indirect(ref attrs, Some(ref extra_attrs)) => {
+-                    apply(attrs);
+-                    apply(extra_attrs);
++                    apply(attrs, None);
++                    apply(extra_attrs, None);
+                 }
+                 PassMode::Pair(ref a, ref b) => {
+-                    apply(a);
+-                    apply(b);
++                    apply(a, None);
++                    apply(b, None);
+                 }
+-                PassMode::Cast(_) => apply(&ArgAttributes::new()),
++                PassMode::Cast(_) => apply(&ArgAttributes::new(), None),
+             }
+         }
+     }
+ 
+     fn apply_attrs_callsite(&self, bx: &mut Builder<'a, 'll, 'tcx>, callsite: &'ll Value) {
+         let mut i = 0;
+-        let mut apply = |attrs: &ArgAttributes| {
+-            attrs.apply_callsite(llvm::AttributePlace::Argument(i), callsite);
++        let mut apply = |attrs: &ArgAttributes, ty: Option<&Type>| {
++            attrs.apply_callsite(llvm::AttributePlace::Argument(i), callsite, ty);
+             i += 1;
+         };
+         match self.ret.mode {
+             PassMode::Direct(ref attrs) => {
+-                attrs.apply_callsite(llvm::AttributePlace::ReturnValue, callsite);
++                attrs.apply_callsite(llvm::AttributePlace::ReturnValue, callsite, None);
+             }
+-            PassMode::Indirect(ref attrs, _) => apply(attrs),
++            PassMode::Indirect(ref attrs, _) => apply(attrs, Some(self.ret.layout.llvm_type(bx))),
+             _ => {}
+         }
+         if let layout::Abi::Scalar(ref scalar) = self.ret.layout.abi {
+@@ -446,21 +452,21 @@ impl<'tcx> FnTypeLlvmExt<'tcx> for FnType<'tcx, Ty<'tcx>> {
+         }
+         for arg in &self.args {
+             if arg.pad.is_some() {
+-                apply(&ArgAttributes::new());
++                apply(&ArgAttributes::new(), None);
+             }
+             match arg.mode {
+                 PassMode::Ignore(_) => {}
+                 PassMode::Direct(ref attrs) |
+-                PassMode::Indirect(ref attrs, None) => apply(attrs),
++                PassMode::Indirect(ref attrs, None) => apply(attrs, Some(arg.layout.llvm_type(bx))),
+                 PassMode::Indirect(ref attrs, Some(ref extra_attrs)) => {
+-                    apply(attrs);
+-                    apply(extra_attrs);
++                    apply(attrs, None);
++                    apply(extra_attrs, None);
+                 }
+                 PassMode::Pair(ref a, ref b) => {
+-                    apply(a);
+-                    apply(b);
++                    apply(a, None);
++                    apply(b, None);
+                 }
+-                PassMode::Cast(_) => apply(&ArgAttributes::new()),
++                PassMode::Cast(_) => apply(&ArgAttributes::new(), None),
+             }
+         }
+ 
+--- a/src/librustc_codegen_llvm/declare.rs
++++ b/src/librustc_codegen_llvm/declare.rs
+@@ -107,7 +107,7 @@ impl DeclareMethods<'tcx> for CodegenCx<'ll, 'tcx> {
+             llvm::Attribute::NoReturn.apply_llfn(Function, llfn);
+         }
+ 
+-        fty.apply_attrs_llfn(llfn);
++        fty.apply_attrs_llfn(self, llfn);
+ 
+         llfn
+     }
+--- a/src/librustc_codegen_llvm/llvm/ffi.rs
++++ b/src/librustc_codegen_llvm/llvm/ffi.rs
+@@ -794,6 +794,7 @@ extern "C" {
+     pub fn LLVMRustAddAlignmentAttr(Fn: &Value, index: c_uint, bytes: u32);
+     pub fn LLVMRustAddDereferenceableAttr(Fn: &Value, index: c_uint, bytes: u64);
+     pub fn LLVMRustAddDereferenceableOrNullAttr(Fn: &Value, index: c_uint, bytes: u64);
++    pub fn LLVMRustAddByValAttr(Fn: &Value, index: c_uint, ty: &Type);
+     pub fn LLVMRustAddFunctionAttribute(Fn: &Value, index: c_uint, attr: Attribute);
+     pub fn LLVMRustAddFunctionAttrStringValue(Fn: &Value,
+                                               index: c_uint,
+@@ -824,6 +825,7 @@ extern "C" {
+     pub fn LLVMRustAddDereferenceableOrNullCallSiteAttr(Instr: &Value,
+                                                         index: c_uint,
+                                                         bytes: u64);
++    pub fn LLVMRustAddByValCallSiteAttr(Instr: &Value, index: c_uint, ty: &Type);
+ 
+     // Operations on load/store instructions (only)
+     pub fn LLVMSetVolatile(MemoryAccessInst: &Value, volatile: Bool);
+--- a/src/rustllvm/RustWrapper.cpp
++++ b/src/rustllvm/RustWrapper.cpp
+@@ -237,6 +237,17 @@ extern "C" void LLVMRustAddDereferenceableOrNullCallSiteAttr(LLVMValueRef Instr,
+       Call->getContext(), Index, B));
+ }
+ 
++extern "C" void LLVMRustAddByValCallSiteAttr(LLVMValueRef Instr, unsigned Index,
++                                             LLVMTypeRef Ty) {
++  CallSite Call = CallSite(unwrap<Instruction>(Instr));
++#if LLVM_VERSION_GE(9, 0)
++  Attribute Attr = Attribute::getWithByValType(Call->getContext(), unwrap(Ty));
++#else
++  Attribute Attr = Attribute::get(Call->getContext(), Attribute::ByVal);
++#endif
++  Call.addAttribute(Index, Attr);
++}
++
+ extern "C" void LLVMRustAddFunctionAttribute(LLVMValueRef Fn, unsigned Index,
+                                              LLVMRustAttribute RustAttr) {
+   Function *A = unwrap<Function>(Fn);
+@@ -271,6 +282,17 @@ extern "C" void LLVMRustAddDereferenceableOrNullAttr(LLVMValueRef Fn,
+   A->addAttributes(Index, B);
+ }
+ 
++extern "C" void LLVMRustAddByValAttr(LLVMValueRef Fn, unsigned Index,
++                                     LLVMTypeRef Ty) {
++  Function *F = unwrap<Function>(Fn);
++#if LLVM_VERSION_GE(9, 0)
++  Attribute Attr = Attribute::getWithByValType(F->getContext(), unwrap(Ty));
++#else
++  Attribute Attr = Attribute::get(F->getContext(), Attribute::ByVal);
++#endif
++  F->addAttribute(Index, Attr);
++}
++
+ extern "C" void LLVMRustAddFunctionAttrStringValue(LLVMValueRef Fn,
+                                                    unsigned Index,
+                                                    const char *Name,
+--- a/src/librustc_codegen_llvm/context.rs
++++ b/src/librustc_codegen_llvm/context.rs
+@@ -1,5 +1,6 @@
+ use crate::attributes;
+ use crate::llvm;
++use crate::llvm_util;
+ use crate::debuginfo;
+ use crate::value::Value;
+ use rustc::dep_graph::DepGraphSafe;
+@@ -140,6 +141,11 @@ pub fn is_pie_binary(sess: &Session) -> bool {
+     !is_any_library(sess) && get_reloc_model(sess) == llvm::RelocMode::PIC
+ }
+ 
++fn strip_function_ptr_alignment(data_layout: String) -> String {
++    // FIXME: Make this more general.
++    data_layout.replace("-Fi8-", "-")
++}
++
+ pub unsafe fn create_module(
+     tcx: TyCtxt<'_>,
+     llcx: &'ll llvm::Context,
+@@ -149,14 +155,19 @@ pub unsafe fn create_module(
+     let mod_name = SmallCStr::new(mod_name);
+     let llmod = llvm::LLVMModuleCreateWithNameInContext(mod_name.as_ptr(), llcx);
+ 
++    let mut target_data_layout = sess.target.target.data_layout.clone();
++    if llvm_util::get_major_version() < 9 {
++        target_data_layout = strip_function_ptr_alignment(target_data_layout);
++    }
++
+     // Ensure the data-layout values hardcoded remain the defaults.
+     if sess.target.target.options.is_builtin {
+         let tm = crate::back::write::create_informational_target_machine(&tcx.sess, false);
+         llvm::LLVMRustSetDataLayoutFromTargetMachine(llmod, tm);
+         llvm::LLVMRustDisposeTargetMachine(tm);
+ 
+-        let data_layout = llvm::LLVMGetDataLayout(llmod);
+-        let data_layout = str::from_utf8(CStr::from_ptr(data_layout).to_bytes())
++        let llvm_data_layout = llvm::LLVMGetDataLayout(llmod);
++        let llvm_data_layout = str::from_utf8(CStr::from_ptr(llvm_data_layout).to_bytes())
+             .ok().expect("got a non-UTF8 data-layout from LLVM");
+ 
+         // Unfortunately LLVM target specs change over time, and right now we
+@@ -177,16 +188,16 @@ pub unsafe fn create_module(
+         let cfg_llvm_root = option_env!("CFG_LLVM_ROOT").unwrap_or("");
+         let custom_llvm_used = cfg_llvm_root.trim() != "";
+ 
+-        if !custom_llvm_used && sess.target.target.data_layout != data_layout {
++        if !custom_llvm_used && target_data_layout != llvm_data_layout {
+             bug!("data-layout for builtin `{}` target, `{}`, \
+                   differs from LLVM default, `{}`",
+                  sess.target.target.llvm_target,
+-                 sess.target.target.data_layout,
+-                 data_layout);
++                 target_data_layout,
++                 llvm_data_layout);
+         }
+     }
+ 
+-    let data_layout = SmallCStr::new(&sess.target.target.data_layout);
++    let data_layout = SmallCStr::new(&target_data_layout);
+     llvm::LLVMSetDataLayout(llmod, data_layout.as_ptr());
+ 
+     let llvm_target = SmallCStr::new(&sess.target.target.llvm_target);
+--- a/src/librustc_codegen_llvm/common.rs
++++ b/src/librustc_codegen_llvm/common.rs
+@@ -249,6 +249,10 @@ impl ConstMethods<'tcx> for CodegenCx<'ll, 'tcx> {
+         self.const_uint(self.type_i8(), i as u64)
+     }
+ 
++    fn const_real(&self, t: &'ll Type, val: f64) -> &'ll Value {
++        unsafe { llvm::LLVMConstReal(t, val) }
++    }
++
+     fn const_struct(
+         &self,
+         elts: &[&'ll Value],
+--- a/src/librustc_codegen_llvm/intrinsic.rs
++++ b/src/librustc_codegen_llvm/intrinsic.rs
+@@ -1663,9 +1663,10 @@ fn generic_simd_intrinsic(
+                             acc
+                         } else {
+                             // unordered arithmetic reductions do not:
++                            let identity_acc = if $name.contains("mul") { 1.0 } else { 0.0 };
+                             match f.bit_width() {
+-                                32 => bx.const_undef(bx.type_f32()),
+-                                64 => bx.const_undef(bx.type_f64()),
++                                32 => bx.const_real(bx.type_f32(), identity_acc),
++                                64 => bx.const_real(bx.type_f64(), identity_acc),
+                                 v => {
+                                     return_error!(r#"
+ unsupported {} from `{}` with element `{}` of size `{}` to `{}`"#,
+--- a/src/librustc_codegen_llvm/llvm/ffi.rs
++++ b/src/librustc_codegen_llvm/llvm/ffi.rs
+@@ -715,6 +715,7 @@ extern "C" {
+     // Operations on scalar constants
+     pub fn LLVMConstInt(IntTy: &Type, N: c_ulonglong, SignExtend: Bool) -> &Value;
+     pub fn LLVMConstIntOfArbitraryPrecision(IntTy: &Type, Wn: c_uint, Ws: *const u64) -> &Value;
++    pub fn LLVMConstReal(RealTy: &Type, N: f64) -> &Value;
+     pub fn LLVMConstIntGetZExtValue(ConstantVal: &Value) -> c_ulonglong;
+     pub fn LLVMRustConstInt128Get(ConstantVal: &Value, SExt: bool,
+                                   high: &mut u64, low: &mut u64) -> bool;
+--- a/src/librustc_codegen_ssa/traits/consts.rs
++++ b/src/librustc_codegen_ssa/traits/consts.rs
+@@ -17,6 +17,7 @@ pub trait ConstMethods<'tcx>: BackendTypes {
+     fn const_u64(&self, i: u64) -> Self::Value;
+     fn const_usize(&self, i: u64) -> Self::Value;
+     fn const_u8(&self, i: u8) -> Self::Value;
++    fn const_real(&self, t: Self::Type, val: f64) -> Self::Value;
+ 
+     fn const_struct(&self, elts: &[Self::Value], packed: bool) -> Self::Value;
+ 
+--- a/src/rustllvm/PassWrapper.cpp
++++ b/src/rustllvm/PassWrapper.cpp
+@@ -266,8 +266,8 @@ static Optional<Reloc::Model> fromRust(LLVMRustRelocMode RustReloc) {
+ 
+ #ifdef LLVM_RUSTLLVM
+ /// getLongestEntryLength - Return the length of the longest entry in the table.
+-///
+-static size_t getLongestEntryLength(ArrayRef<SubtargetFeatureKV> Table) {
++template<typename KV>
++static size_t getLongestEntryLength(ArrayRef<KV> Table) {
+   size_t MaxLen = 0;
+   for (auto &I : Table)
+     MaxLen = std::max(MaxLen, std::strlen(I.Key));
+@@ -279,7 +279,7 @@ extern "C" void LLVMRustPrintTargetCPUs(LLVMTargetMachineRef TM) {
+   const MCSubtargetInfo *MCInfo = Target->getMCSubtargetInfo();
+   const Triple::ArchType HostArch = Triple(sys::getProcessTriple()).getArch();
+   const Triple::ArchType TargetArch = Target->getTargetTriple().getArch();
+-  const ArrayRef<SubtargetFeatureKV> CPUTable = MCInfo->getCPUTable();
++  const ArrayRef<SubtargetSubTypeKV> CPUTable = MCInfo->getCPUTable();
+   unsigned MaxCPULen = getLongestEntryLength(CPUTable);
+ 
+   printf("Available CPUs for this target:\n");
+@@ -289,7 +289,7 @@ extern "C" void LLVMRustPrintTargetCPUs(LLVMTargetMachineRef TM) {
+       MaxCPULen, "native", (int)HostCPU.size(), HostCPU.data());
+   }
+   for (auto &CPU : CPUTable)
+-    printf("    %-*s - %s.\n", MaxCPULen, CPU.Key, CPU.Desc);
++    printf("    %-*s\n", MaxCPULen, CPU.Key);
+   printf("\n");
+ }
+ 

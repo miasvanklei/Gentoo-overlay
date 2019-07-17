@@ -52,16 +52,28 @@ pkg_setup() {
 }
 
 PATCHES=(
-	"${FILESDIR}"/0001-Remove-nostdlib-and-musl_root-from-musl-targets.patch
-	"${FILESDIR}"/0002-add-gentoo-target.patch
-	"${FILESDIR}"/0003-libc-linkage.patch
-        "${FILESDIR}"/0004-libunwind-linkage.patch
-	"${FILESDIR}"/0005-libc++-linkage.patch
-	"${FILESDIR}"/0006-musl-fix-static-linking.patch
-	"${FILESDIR}"/0007-static-pie-support.patch
-	"${FILESDIR}"/0008-system-llvm.patch
-	"${FILESDIR}"/0009-Move-debugger-scripts-to-usr-share-rust.patch
 )
+
+clear_vendor_checksums() {
+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
+}
+
+src_prepare() {
+	eapply "${FILESDIR}"/0001-Remove-nostdlib-and-musl_root-from-musl-targets.patch
+	eapply "${FILESDIR}"/0002-link-stage-2-tools-dynamically-to-libstd.patch
+	eapply "${FILESDIR}"/0003-libc-linkage.patch
+	eapply "${FILESDIR}"/0004-libunwind-linkage.patch
+	eapply "${FILESDIR}"/0005-libc++-linkage.patch
+	eapply "${FILESDIR}"/0006-musl-fix-static-linking.patch
+	eapply "${FILESDIR}"/0007-add-gentoo-target.patch
+	eapply "${FILESDIR}"/0008-llvm-9.patch
+	eapply "${FILESDIR}"/0009-Move-debugger-scripts-to-usr-share-rust.patch
+
+	eapply_user
+
+	clear_vendor_checksums libc
+}
+
 
 src_configure() {
 	einfo "Setting up config.toml for target"
@@ -92,6 +104,9 @@ src_configure() {
 	default-linker = "$(tc-getCC)"
 	channel = "stable"
 	rpath = false
+	[target.${CHOST}]
+	llvm-config = "$(get_llvm_prefix "${LLVM_MAX_SLOT}")/bin/llvm-config"
+	crt-static = false
 	EOF
 }
 
@@ -134,7 +149,7 @@ src_install() {
 	find "${D}" -name "crt*.o" -delete || die
 
 	# Install analysis for rls
-	insinto "/usr/$(get_libdir)/rustlib/${CHOST}/analysis"
+	insinto "/usr/$(get_libdir)/rustlib/x86_64-unknown-linux-musl/analysis"
 	doins "${sobj}/release/deps/save-analysis/"*
 
 	# Install COPYRIGHT and LICENSE
