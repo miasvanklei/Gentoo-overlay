@@ -42,6 +42,7 @@ PATCHES=(
 	"${FILESDIR}"/fix-buildid.patch
 	"${FILESDIR}"/fix-invalid-version-info-length.patch
 	"${FILESDIR}"/dirty-fix-fexecve.patch
+	"${FILESDIR}"/use-getenv.patch
 )
 
 RDEPEND="!sys-apps/snap-confine
