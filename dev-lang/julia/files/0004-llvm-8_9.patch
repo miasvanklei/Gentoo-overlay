@@ -208,6 +208,15 @@ index 28bbba2a094a..dedfaae57d89 100644
          }
  
          jl_frame_t *frame = &(*frames)[i];
+@@ -589,7 +589,7 @@
+         StringRef sName;
+         if (!Section.getName(sName) && sName == ".gnu_debuglink") {
+             StringRef Contents;
+-            if (!Section.getContents(Contents)) {
++            if (!Section.getContents()) {
+                 size_t length = Contents.find('\0');
+                 info.filename = Contents.substr(0, length);
+                 info.crc32 = *(const uint32_t*)Contents.substr(LLT_ALIGN(length + 1, 4), 4).data();
 diff --git a/src/debuginfo.h b/src/debuginfo.h
 index 4acf509e8fd3..b7b532968f84 100644
 --- a/src/debuginfo.h

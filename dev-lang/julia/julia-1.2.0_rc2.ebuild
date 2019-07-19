@@ -46,7 +46,7 @@ RDEPEND+="
 	sci-libs/spqr:0=
 	sci-libs/umfpack:0=
 	sci-mathematics/glpk:0=
-	sys-devel/llvm:8=
+	sys-devel/llvm:=
 	sys-libs/compiler-rt
 	sys-libs/readline:0=
 	sys-libs/zlib:0=
@@ -63,7 +63,9 @@ PATCHES=(
 	"${FILESDIR}"/0001-use-compiler-rt.patch
 	"${FILESDIR}"/0002-llvm-unwind.patch
 	"${FILESDIR}"/0003-print-llvm-errors.patch
-	"${FILESDIR}"/llvm-8.patch
+	"${FILESDIR}"/0004-llvm-8_9.patch
+	# temporary
+	"${FILESDIR}"/llvm-9.patch
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
