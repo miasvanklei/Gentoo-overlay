@@ -1,109 +1,156 @@
-# Gentoo generic
+# clang -O0, for jitter-base
 dev-libs/libgcrypt o-flag-munging
-sys-apps/dbus user-session
-dev-vcs/git -python
-dev-lang/python sqlite
-net-misc/curl -ldap
-www-client/elinks -X
-dev-libs/openssl -bindist
-net-misc/openssh -bindist
-sys-apps/groff -X
-media-gfx/graphviz -python
-dev-util/cmake server system-jsoncpp
-dev-lang/ghc ghcbootstrap
-x11-themes/arc-theme gtk2 gtk3
-x11-themes/gtk-engines-murrine -themes
-sys-kernel/linux-firmware savedconfig
-dev-libs/libevent debug
-media-libs/mesa -llvm -opencl
-media-video/vlc -libnotify
-dev-lang/perl ithreads
-www-client/firefox system-harfbuzz system-icu system-jpeg system-libevent system-libvpx system-sqlite custom-cflags custom-optimization hardening clang
-dev-db/sqlite secure-delete
-media-libs/mlt frei0r
-media-libs/opencv -python
-media-fonts/baekmuk-fonts -X
-net-print/cups-filters -pdf
-app-emulation/docker -overlay
-app-text/texlive-core xetex
-dev-util/lldb libedit python
-media-sound/pulseaudio -bluetooth -ofono-headset
-net-misc/networkmanager -iwd -bluetooth
-x11-base/xorg-server -suid
+
+# don't depend on kdewebkit
+net-p2p/ktorrent -search -rss -zeroconf
+
+# kile disable png
+app-editors/kile -png
+
+# octave
+sci-visualization/gnuplot latex cairo
+sci-mathematics/octave fftw gnuplot gui graphicsmagick imagemagick
+
+# kdenlive
+media-libs/mlt melt sdl frei0r xml kdenlive fftw opencv
+virtual/ffmpeg sdl
+media-video/ffmpeg sdl
+
+# go
+dev-lang/go system-bootstrap
+
+# snapd
 sys-libs/libseccomp static-libs
-dev-python/matplotlib -wxwidgets
-sci-libs/fftw threads
 
-# qt
-dev-qt/qtsql -mysql
-dev-python/PyQt5 -bluetooth
-sci-visualization/gnuplot -wxwidgets
-sci-mathematics/octave curl fftw gui hdf5 postscript opengl gnuplot
-sci-libs/cholmod lapack
-sci-mathematics/glpk gmp
-sci-libs/hdf5 -fortran
+# ark
+kde-apps/ark zip lzma
 
-# Japanese
-app-i18n/fcitx gtk2 gtk3
-app-i18n/mozc fcitx4
-dev-util/gyp python_targets_python2_7
-app-i18n/libkkc -introspection
-dev-libs/marisa python
+# unar, libobjc2 needed for clang
+gnustep-base/gnustep-make native-exceptions libobjc2
+
+# kdeconnect: bluetooth interfers with headsets
+kde-misc/kdeconnect -bluetooth
+
+# disable aac
+media-sound/pulseaudio-modules-bt -aac
+
+# cantata: cddb and replaygain
+media-sound/cantata cddb replaygain
+dev-lang/perl ithreads
+
+# arc
+x11-themes/gtk-engines-murrine -themes
+x11-themes/arc-theme gtk2 gtk3
+
+# python2_7 only
+net-libs/nodejs python_targets_python2_7
+
+# firefox
+www-client/firefox clang custom-cflags custom-optimization
+media-libs/libpng apng
+media-libs/libvpx postproc
+dev-db/sqlite secure-delete
+
+# plasma
+kde-plasma/plasma-workspace geolocation
+kde-frameworks/ktexteditor git editorconfig
+kde-frameworks/kfilemetadata pdf office epub
+kde-apps/gwenview kipi raw
+kde-apps/spectacle kipi
+kde-apps/okular epub markdown
+
+# use own-built ghc
+dev-lang/ghc ghcbootstrap
+
+# no dlvsym
+sys-apps/systemd -xkb
+
+# custom cflags/optimizations
+sys-fs/cryfs custom-optimization
+dev-lang/spidermonkey custom-cflags custom-optimization
+app-crypt/libb2 native-cflags
+
+# no smartcard
+app-crypt/gnupg -smartcard -usb
+
+# no libical
+net-wireless/bluez -obex
+
+# no vala
+dev-libs/glib -dbus
+
+# no X
+www-client/links -X
+sys-apps/groff -X
+app-text/ghostscript-gpl -X
+media-libs/freetype -X
+
+# no mujs
+net-print/cups-filters -pdf
 
 # libcxx
 sys-libs/gdbm berkdb
 
 # clang
-net-wireless/bluez user-session -alsa
+net-wireless/bluez -alsa
 
-# musl
-sys-fs/e2fsprogs -nls
-app-editors/nano -nls
-app-text/hunspell -nls
-dev-vcs/git -nls
+# pam != static
+sys-apps/busybox -pam
 
-# python packages port
-dev-python/six python_targets_python2_7
-dev-python/setuptools python_targets_python2_7
-dev-python/certifi python_targets_python2_7
-dev-util/gtk-doc python_targets_python2_7
-app-text/asciidoc python_targets_python2_7 python_single_target_python2_7
-net-libs/nodejs python_targets_python2_7
-dev-java/javatoolkit python_targets_python2_7
+# disable iptables
+sys-apps/iproute2 -iptables
 
-# Qemu
-app-emulation/qemu virgl spice static-user -doc
-dev-libs/glib static-libs
-sys-libs/zlib static-libs
-sys-apps/attr static-libs
-dev-libs/libpcre static-libs
+# disable wpa_supplicant, dhcp, ncurses
+net-misc/networkmanager iwd wifi -wext -dhclient -ncurses
+net-wireless/iwd -crda
 
-# kde
-media-sound/kid3 -mp4
-dev-qt/qtnetwork -bindist
-kde-frameworks/kfilemetadata taglib epub office
-kde-frameworks/kwallet gpg
-kde-apps/kdecore-meta -webengine
-kde-apps/kdeadmin-meta -cron
-kde-apps/kdemultimedia-meta -gstreamer
-kde-apps/kdeutils-meta rar
-kde-apps/kio-extras taglib
-kde-apps/ark lzma zip
-kde-apps/okular epub mobi markdown
-kde-apps/dolphin thumbnail
-kde-apps/dolphin-plugins git
-kde-apps/kget gpg bittorrent
+# configure gtk theme
 kde-plasma/systemsettings gtk
 kde-plasma/plasma-meta gtk
-kde-misc/kdeconnect mousepad -bluetooth
-kde-frameworks/purpose -kaccounts
 
-# libreoffice
-app-office/libreoffice pdfimport
-dev-libs/xmlsec nss
-media-libs/harfbuzz icu
-media-gfx/fontforge -python
+# sane defaults: no legacy crap, no flatpak
+kde-plasma/plasma-meta -legacy-systray -pm-utils -desktop-portal
 
-# cantata/mpd
-media-sound/cantata taglib replaygain cddb -musicbrainz
-media-sound/mpd libmpdclient nfs
+# disable gstreamer, qtwebengine and cron
+kde-apps/kdecore-meta -webengine
+kde-apps/kdeadmin-meta -cron
+kde-apps/kdeutils-meta rar
+
+# disable modemmanager, bluetooth, ppp
+media-sound/pulseaudio -bluetooth
+net-misc/networkmanager -modemmanager -bluetooth -ppp
+
+# report graphics/cpu information
+media-libs/mesa lm_sensors
+kde-plasma/ksysguard lm_sensors
+
+# no lvm
+sys-libs/libblockdev -cryptsetup
+
+# qtcore
+dev-libs/libpcre2 pcre16
+
+# julia
+dev-libs/libpcre2 jit
+sci-libs/fftw threads
+
+# xdg-utils
+app-text/xmlto text
+
+# radeon
+x11-libs/libdrm video_cards_radeon
+x11-base/xorg-drivers -video_cards_radeonsi
+
+# subtitles
+media-video/vlc truetype
+media-video/ffmpeg truetype
+
+# vlc
+sys-libs/zlib minizip
+
+# spidermonkey
+dev-lang/python sqlite
+
+# kwin
+media-libs/mesa wayland
+
