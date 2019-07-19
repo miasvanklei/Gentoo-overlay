@@ -287,7 +287,7 @@ multilib_src_configure() {
 		-Dvconsole=$(meson_multilib)
 
 		# default hierarchy
-		-Ddefault_hierarchy=unified
+		-Ddefault-hierarchy=unified
 
 		# disabled on musl
 		-Dnss-myhostname=false
