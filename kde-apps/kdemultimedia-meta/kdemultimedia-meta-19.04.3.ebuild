@@ -12,13 +12,12 @@ HOMEPAGE="
 LICENSE="metapackage"
 SLOT="5"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="+cdrom +ffmpeg gstreamer"
+IUSE="cdrom +ffmpeg gstreamer"
 
 RDEPEND="
 	>=kde-apps/juk-${PV}:${SLOT}
 	>=kde-apps/kdenlive-18.12.3:${SLOT}
 	>=kde-apps/kwave-${PV}:${SLOT}
-	>=kde-apps/libkcddb-${PV}:${SLOT}
 	cdrom? (
 		>=kde-apps/audiocd-kio-${PV}:${SLOT}
 		>=kde-apps/libkcompactdisc-${PV}:${SLOT}
