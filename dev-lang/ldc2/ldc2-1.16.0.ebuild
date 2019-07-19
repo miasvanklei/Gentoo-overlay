@@ -24,12 +24,14 @@ S=${WORKDIR}/ldc-${MY_PV}-src
 PATCHES=(
 	"${FILESDIR}"/fix-linking.patch
 	"${FILESDIR}"/wrong-type.patch
+	"${FILESDIR}"/llvm-9.patch
 )
 
 src_configure() {
 	local mycmakeargs=(
 		-DD_VERSION=2
 		-DBUILD_SHARED_LIBS=BOTH
+		-DLDC_DYNAMIC_COMPILE=False
 		-DD_FLAGS="${LDCFLAGS// /;}"
 	)
 	cmake-utils_src_configure
