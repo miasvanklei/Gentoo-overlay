@@ -1,0 +1,57 @@
+--- /dev/null
++++ b/lib/builtins/extendxftf2.c
+@@ -0,0 +1,21 @@
++//===-- lib/extendsftf2.c - single -> quad conversion -------------*- C -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++#define QUAD_PRECISION
++#include "fp_lib.h"
++
++#if defined(CRT_HAS_128BIT) && defined(CRT_LDBL_128BIT)
++#define SRC_QUAD
++#define DST_QUAD
++#include "fp_extend_impl.inc"
++
++COMPILER_RT_ABI long double __extendsftf2(long double a) {
++  return __extendXfYf2__(a);
++}
++
++#endif
+--- a/lib/builtins/fp_lib.h
++++ b/lib/builtins/fp_lib.h
+@@ -100,7 +100,7 @@ static __inline void wideMultiply(rep_t a, rep_t b, rep_t *hi, rep_t *lo) {
+ COMPILER_RT_ABI fp_t __adddf3(fp_t a, fp_t b);
+ 
+ #elif defined QUAD_PRECISION
+-#if __LDBL_MANT_DIG__ == 113 && defined(__SIZEOF_INT128__)
++#if __LDBL_MANT_DIG__ == 113 && defined(__SIZEOF_INT128__) || defined(__x86_64__)
+ #define CRT_LDBL_128BIT
+ typedef __uint128_t rep_t;
+ typedef __int128_t srep_t;
+--- /dev/null
++++ b/lib/builtins/trunctfxf2.c
+@@ -0,0 +1,19 @@
++//===-- lib/trunctfsf2.c - quad -> single conversion --------------*- C -*-===//
++//
++// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// See https://llvm.org/LICENSE.txt for license information.
++// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++//
++//===----------------------------------------------------------------------===//
++
++#define QUAD_PRECISION
++#include "fp_lib.h"
++
++#if defined(CRT_HAS_128BIT) && defined(CRT_LDBL_128BIT)
++#define SRC_QUAD
++#define DST_QUAD
++#include "fp_trunc_impl.inc"
++
++COMPILER_RT_ABI long double __trunctfsf2(long double a) { return __truncXfYf2__(a); }
++
++#endif
