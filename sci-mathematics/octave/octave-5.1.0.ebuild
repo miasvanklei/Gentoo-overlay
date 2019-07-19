@@ -17,7 +17,6 @@ KEYWORDS="~amd64 ~arm ~hppa ~ppc ~ppc64 ~x86 ~x86-fbsd ~amd64-linux ~x86-linux"
 
 RDEPEND="
 	app-arch/bzip2
-	app-text/ghostscript-gpl
 	dev-libs/libpcre:3=
 	sys-libs/ncurses:0=
 	sys-libs/zlib
