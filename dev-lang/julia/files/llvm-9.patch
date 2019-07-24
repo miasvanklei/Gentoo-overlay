@@ -36,14 +36,30 @@
      // see if all of the constant folding has exposed more loops
      // to simplification and deletion
      // this helps significantly with cleaning up iteration
---- a/src/Makefile	2019-07-14 21:13:54.655876663 +0000
-+++ b/src/Makefile	2019-07-14 21:16:00.733885822 +0000
-@@ -56,7 +56,7 @@
- ifeq ($(JULIACODEGEN),LLVM)
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -59,7 +59,7 @@
  SRCS += codegen jitlayers disasm debuginfo llvm-simdloop llvm-ptls llvm-muladd \
- 	llvm-late-gc-lowering llvm-lower-handlers llvm-gc-invariant-verifier \
--	llvm-propagate-addrspaces llvm-multiversioning llvm-alloc-opt cgmemmgr \
-+	llvm-propagate-addrspaces llvm-multiversioning cgmemmgr \
- 	llvm-api
+ 	llvm-final-gc-lowering llvm-pass-helpers llvm-late-gc-lowering \
+ 	llvm-lower-handlers llvm-gc-invariant-verifier llvm-propagate-addrspaces \
+-	llvm-multiversioning llvm-alloc-opt cgmemmgr llvm-api
++	llvm-multiversioning cgmemmgr llvm-api
  FLAGS += -I$(shell $(LLVM_CONFIG_HOST) --includedir)
  LLVM_LIBS := all
+ ifeq ($(USE_POLLY),1)
+--- a/src/debuginfo.cpp
++++ b/src/debuginfo.cpp
+@@ -597,7 +597,13 @@
+         StringRef sName;
+         if (!Section.getName(sName) && sName == ".gnu_debuglink") {
+             StringRef Contents;
++#if JL_LLVM_VERSION >= 90000
++            Expected<StringRef> E = Section.getContents();
++            if (E) {
++                Contents = *E;
++#else
+             if (!Section.getContents(Contents)) {
++#endif
+                 size_t length = Contents.find('\0');
+                 info.filename = Contents.substr(0, length);
+                 info.crc32 = *(const uint32_t*)Contents.substr(LLT_ALIGN(length + 1, 4), 4).data();

@@ -7,9 +7,9 @@ RESTRICT="test"
 
 inherit pax-utils toolchain-funcs
 
-MY_PV="${PV//_rc/-rc}"
-MY_LIBUV_V="2348256acf5759a544e5ca7935f638d2bc091d60"
-MY_UTF8PROC_V="454f60150c7f023526d353e1e6b386f93ee0b116"
+MY_PV="${PV//_/-}"
+MY_LIBUV_V="35b1504507a7a4168caae3d78db54d1121b121e1"
+MY_UTF8PROC_V="5c632c57426f2e4246e3b64dd2fd088d3920f9e5"
 MY_LIBWHICH_V="81e9723c0273d78493dc8c8ed570f68d9ce7e89e"
 MY_DSFMT_V="2.2.3"
 
@@ -63,7 +63,6 @@ PATCHES=(
 	"${FILESDIR}"/0001-use-compiler-rt.patch
 	"${FILESDIR}"/0002-llvm-unwind.patch
 	"${FILESDIR}"/0003-print-llvm-errors.patch
-	"${FILESDIR}"/0004-llvm-8_9.patch
 	# temporary
 	"${FILESDIR}"/llvm-9.patch
 )
@@ -132,6 +131,7 @@ src_configure() {
 
 	# USE_SYSTEM_LIBM=0 implies using external openlibm
 	cat <<-EOF > Make.user
+		USE_BINARYBUILDER_DSFMT:=0
 		USE_SYSTEM_ARPACK:=1
 		USE_SYSTEM_BLAS:=1
 		USE_SYSTEM_DSFMT:=0
@@ -165,7 +165,7 @@ src_compile() {
 	# Julia accesses /proc/self/mem on Linux
 	addpredict /proc/self/mem
 
-	emake cleanall
+#	emake cleanall
 
 	emake julia-release \
 		prefix="${EPREFIX}/usr" DESTDIR="${D}" \
