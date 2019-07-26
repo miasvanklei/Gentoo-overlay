@@ -1,0 +1,13 @@
+diff --git a/lib/crt/CMakeLists.txt b/lib/crt/CMakeLists.txt
+index 03a07f475d7..10f8d67cb86 100644
+--- a/lib/crt/CMakeLists.txt
++++ b/lib/crt/CMakeLists.txt
+@@ -69,7 +73,7 @@ function(check_cxx_section_exists section output)
+ endfunction()
+ 
+ check_cxx_section_exists(".init_array" COMPILER_RT_HAS_INITFINI_ARRAY
+-  SOURCE "__attribute__((constructor)) void f() {}\nint main() { return 0; }\n")
++  SOURCE "__attribute__((constructor)) int f() { return 0; }\nint main() { return 0; }\n")
+ 
+ append_list_if(COMPILER_RT_HAS_STD_C11_FLAG -std=c11 CRT_CFLAGS)
+ append_list_if(COMPILER_RT_HAS_INITFINI_ARRAY -DCRT_HAS_INITFINI_ARRAY CRT_CFLAGS)
