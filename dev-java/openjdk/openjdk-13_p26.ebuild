@@ -114,9 +114,6 @@ src_prepare() {
 	# change default toolchain to clang
 	eapply "${FILESDIR}"/change-default-toolchain.patch
 
-	# fix ipv6
-	eapply "${FILESDIR}"/jdk-fix-ipv6-init.patch
-
 	# execinfo not available on musl
 	eapply "${FILESDIR}"/jdk-execinfo.patch
 
@@ -131,6 +128,9 @@ src_prepare() {
 
 	# fix dlopen of libjvm
 	eapply "${FILESDIR}"/jdk-fix-libjvm-load.patch
+
+	# fix log debug
+	eapply "${FILESDIR}"/improve-bootstrap-time.patch
 
 	default
 	chmod +x configure || die
