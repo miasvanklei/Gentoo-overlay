@@ -129,9 +129,6 @@ src_prepare() {
 	# fix dlopen of libjvm
 	eapply "${FILESDIR}"/jdk-fix-libjvm-load.patch
 
-	# fix log debug
-	eapply "${FILESDIR}"/improve-bootstrap-time.patch
-
 	default
 	chmod +x configure || die
 }
