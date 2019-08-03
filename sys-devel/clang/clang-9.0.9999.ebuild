@@ -95,6 +95,8 @@ src_unpack() {
 }
 
 src_prepare() {
+	# clang version is very long
+	eapply "${FILESDIR}"/0001-drop-build-dir.patch
 	eapply "${FILESDIR}"/0004-fix-ada-in-configure.patch
 	eapply "${FILESDIR}"/0005-gentoo-linux-changes.patch
 	eapply "${FILESDIR}"/0007-defines-musl.patch
