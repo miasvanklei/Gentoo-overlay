@@ -1,0 +1,126 @@
+--- b/src/basic/socket-util.h
++++ a/src/basic/socket-util.h
+@@ -3,9 +3,9 @@
+ 
+ #include <inttypes.h>
+ #include <linux/netlink.h>
+-#include <linux/if_ether.h>
+ #include <linux/if_infiniband.h>
+ #include <linux/if_packet.h>
++#include <netinet/ether.h>
+ #include <netinet/in.h>
+ #include <stdbool.h>
+ #include <stddef.h>
+--- b/src/libsystemd-network/arp-util.c
++++ a/src/libsystemd-network/arp-util.c
+@@ -3,9 +3,8 @@
+   Copyright © 2014 Axis Communications AB. All rights reserved.
+ ***/
+ 
++#include <linux/filter.h>
+ #include <arpa/inet.h>
+-#include <linux/filter.h>
+-#include <netinet/if_ether.h>
+ 
+ #include "arp-util.h"
+ #include "fd-util.h"
+--- b/src/libsystemd-network/sd-dhcp6-client.c
++++ a/src/libsystemd-network/sd-dhcp6-client.c
+@@ -6,7 +6,6 @@
+ #include <errno.h>
+ #include <string.h>
+ #include <sys/ioctl.h>
+-#include <linux/if_arp.h>
+ #include <linux/if_infiniband.h>
+ 
+ #include "sd-dhcp6-client.h"
+--- b/src/libsystemd-network/sd-ipv4acd.c
++++ a/src/libsystemd-network/sd-ipv4acd.c
+@@ -5,7 +5,6 @@
+ 
+ #include <arpa/inet.h>
+ #include <errno.h>
+-#include <netinet/if_ether.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+--- b/src/libsystemd-network/test-dhcp6-client.c
++++ a/src/libsystemd-network/test-dhcp6-client.c
+@@ -4,7 +4,6 @@
+ ***/
+ 
+ #include <net/ethernet.h>
+-#include <net/if_arp.h>
+ #include <stdbool.h>
+ #include <stdio.h>
+ #include <sys/socket.h>
+--- b/src/libsystemd-network/test-ipv4ll.c
++++ a/src/libsystemd-network/test-ipv4ll.c
+@@ -4,7 +4,6 @@
+ ***/
+ 
+ #include <errno.h>
+-#include <netinet/if_ether.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <sys/socket.h>
+--- b/src/network/networkd-dhcp4.c
++++ a/src/network/networkd-dhcp4.c
+@@ -2,7 +2,6 @@
+ 
+ #include <netinet/in.h>
+ #include <linux/if.h>
+-#include <linux/if_arp.h>
+ 
+ #include "alloc-util.h"
+ #include "hostname-util.h"
+--- b/src/network/networkd-dhcp6.c
++++ a/src/network/networkd-dhcp6.c
+@@ -5,7 +5,6 @@
+ 
+ #include <netinet/in.h>
+ #include <linux/if.h>
+-#include <linux/if_arp.h>
+ #include "sd-radv.h"
+ 
+ #include "sd-dhcp6-client.h"
+--- b/src/network/networkd-link.c
++++ a/src/network/networkd-link.c
+@@ -2,7 +2,6 @@
+ 
+ #include <netinet/in.h>
+ #include <linux/if.h>
+-#include <linux/if_arp.h>
+ #include <unistd.h>
+ 
+ #include "alloc-util.h"
+--- b/src/network/networkd-lldp-rx.c
++++ a/src/network/networkd-lldp-rx.c
+@@ -1,7 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ 
+ #include <net/if.h>
+-#include <net/if_arp.h>
+ #include <unistd.h>
+ 
+ #include "fd-util.h"
+--- b/src/network/networkd-lldp-tx.c
++++ a/src/network/networkd-lldp-tx.c
+@@ -3,7 +3,6 @@
+ #include <endian.h>
+ #include <inttypes.h>
+ #include <net/if.h>
+-#include <net/if_arp.h>
+ #include <string.h>
+ 
+ #include "alloc-util.h"
+--- b/src/systemd/sd-netlink.h
++++ a/src/systemd/sd-netlink.h
+@@ -19,6 +19,7 @@
+ 
+ #include <inttypes.h>
+ #include <net/ethernet.h>
++#include <netinet/ether.h>
+ #include <netinet/in.h>
+ #include <linux/neighbour.h>
+ #include <linux/rtnetlink.h>

@@ -1,61 +1,27 @@
---- a/src/journal/journal-send.c
-+++ b/src/journal/journal-send.c
-@@ -2,7 +2,6 @@
- 
- #include <errno.h>
- #include <fcntl.h>
--#include <printf.h>
- #include <stddef.h>
- #include <sys/socket.h>
- #include <sys/un.h>
-@@ -21,6 +20,7 @@
- #include "stdio-util.h"
- #include "string-util.h"
- #include "tmpfile-util.h"
-+#include "parse-printf-format.h"
- 
- #define SNDBUF_SIZE (8*1024*1024)
- 
---- a/src/basic/stdio-util.h
-+++ b/src/basic/stdio-util.h
-@@ -1,13 +1,13 @@
- /* SPDX-License-Identifier: LGPL-2.1+ */
- #pragma once
- 
--#include <printf.h>
- #include <stdarg.h>
- #include <stdio.h>
- #include <sys/types.h>
- 
- #include "macro.h"
- #include "memory-util.h"
-+#include "parse-printf-format.h"
- 
- #define snprintf_ok(buf, len, fmt, ...) \
-         ((size_t) snprintf(buf, len, fmt, __VA_ARGS__) < (len))
+--- a/meson.build
++++ b/meson.build
+@@ -685,6 +685,7 @@ foreach header : ['crypt.h',
+ foreach header : ['crypt.h',
+                   'linux/memfd.h',
+                   'linux/vm_sockets.h',
++                  'printf.h',
+                   'sys/auxv.h',
+                   'valgrind/memcheck.h',
+                   'valgrind/valgrind.h',
 --- a/src/basic/meson.build
 +++ b/src/basic/meson.build
-@@ -211,6 +211,10 @@
-         xattr-util.h
- '''.split())
+@@ -298,6 +298,11 @@ foreach item : [['af',     af_list_txt,     'af',         ''],
+ endforeach
  
+ basic_sources += generated_gperf_headers
++
 +if conf.get('HAVE_PRINTF_H') != 1
 +        basic_sources += [files('parse-printf-format.c')]
 +endif
 +
- missing_audit_h = files('missing_audit.h')
- missing_capability_h = files('missing_capability.h')
- missing_network_h = files('missing_network.h')
---- a/meson.build
-+++ b/meson.build
-@@ -669,6 +669,7 @@
-                   'linux/vm_sockets.h',
-                   'linux/can/vxcan.h',
-                   'sys/auxv.h',
-+                  'printf.h',
-                   'valgrind/memcheck.h',
-                   'valgrind/valgrind.h',
-                  ]
+ basic_gcrypt_sources = files(
+         'gcrypt-util.c',
+         'gcrypt-util.h')
 --- /dev/null
 +++ b/src/basic/parse-printf-format.c
 @@ -0,0 +1,273 @@
@@ -369,26 +335,61 @@
 +
 +#include <stddef.h>
 +
-+enum {                         /* C type: */
-+  PA_INT,                      /* int */
-+  PA_CHAR,                     /* int, cast to char */
-+  PA_WCHAR,                    /* wide char */
-+  PA_STRING,                   /* const char *, a '\0'-terminated string */
-+  PA_WSTRING,                  /* const wchar_t *, wide character string */
-+  PA_POINTER,                  /* void * */
-+  PA_FLOAT,                    /* float */
-+  PA_DOUBLE,                   /* double */
++enum {				/* C type: */
++  PA_INT,			/* int */
++  PA_CHAR,			/* int, cast to char */
++  PA_WCHAR,			/* wide char */
++  PA_STRING,			/* const char *, a '\0'-terminated string */
++  PA_WSTRING,			/* const wchar_t *, wide character string */
++  PA_POINTER,			/* void * */
++  PA_FLOAT,			/* float */
++  PA_DOUBLE,			/* double */
 +  PA_LAST
 +};
 +
 +/* Flag bits that can be set in a type returned by `parse_printf_format'.  */
-+#define        PA_FLAG_MASK            0xff00
-+#define        PA_FLAG_LONG_LONG       (1 << 8)
-+#define        PA_FLAG_LONG_DOUBLE     PA_FLAG_LONG_LONG
-+#define        PA_FLAG_LONG            (1 << 9)
-+#define        PA_FLAG_SHORT           (1 << 10)
-+#define        PA_FLAG_PTR             (1 << 11)
++#define	PA_FLAG_MASK		0xff00
++#define	PA_FLAG_LONG_LONG	(1 << 8)
++#define	PA_FLAG_LONG_DOUBLE	PA_FLAG_LONG_LONG
++#define	PA_FLAG_LONG		(1 << 9)
++#define	PA_FLAG_SHORT		(1 << 10)
++#define	PA_FLAG_PTR		(1 << 11)
 +
 +size_t parse_printf_format(const char *fmt, size_t n, int *types);
 +
 +#endif /* HAVE_PRINTF_H */
+--- a/src/basic/stdio-util.h
++++ b/src/basic/stdio-util.h
+@@ -1,13 +1,13 @@
+ /* SPDX-License-Identifier: LGPL-2.1+ */
+ #pragma once
+ 
+-#include <printf.h>
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <sys/types.h>
+ 
+ #include "macro.h"
+ #include "memory-util.h"
++#include "parse-printf-format.h"
+ 
+ #define snprintf_ok(buf, len, fmt, ...) \
+         ((size_t) snprintf(buf, len, fmt, __VA_ARGS__) < (len))
+--- a/src/journal/journal-send.c
++++ b/src/journal/journal-send.c
+@@ -2,7 +2,6 @@
+ 
+ #include <errno.h>
+ #include <fcntl.h>
+-#include <printf.h>
+ #include <stddef.h>
+ #include <sys/socket.h>
+ #include <sys/un.h>
+@@ -21,6 +20,7 @@
+ #include "stdio-util.h"
+ #include "string-util.h"
+ #include "tmpfile-util.h"
++#include "parse-printf-format.h"
+ 
+ #define SNDBUF_SIZE (8*1024*1024)
+ 
