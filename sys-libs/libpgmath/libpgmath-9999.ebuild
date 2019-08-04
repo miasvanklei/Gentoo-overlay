@@ -23,7 +23,6 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
 PATCHES=(
-	"${FILESDIR}"/fix-compile.patch
 	"${FILESDIR}"/fix-definition.patch
 	"${FILESDIR}"/clang-aarch64.patch
 )
