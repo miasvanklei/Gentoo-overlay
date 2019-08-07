@@ -26,3 +26,7 @@ RDEPEND=">=dev-python/appdirs-1.0[${PYTHON_USEDEP}]
 	>=dev-python/tomlkit-0.5[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}
 	dev-python/setuptools[${PYTHON_USEDEP}]"
+
+PATCHES=(
+	"${FILESDIR}"/fix-broken-setup-py.patch
+)

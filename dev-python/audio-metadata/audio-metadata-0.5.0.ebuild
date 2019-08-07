@@ -18,7 +18,11 @@ IUSE=""
 RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
 	>=dev-python/bidict-0.17[${PYTHON_USEDEP}]
 	>=dev-python/bitstruct-6.0.0[${PYTHON_USEDEP}]
-	>=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
+	=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
 	>=dev-python/pprintpp-0.4[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}
 	dev-python/setuptools[${PYTHON_USEDEP}]"
+
+PATCHES=(
+        "${FILESDIR}"/fix-broken-setup-py.patch
+)
