@@ -15,13 +15,14 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
-RDEPEND=">=dev-python/appdirs-1.4[${PYTHON_USEDEP}]
-	>=dev-python/audio-metadata-0.3[${PYTHON_USEDEP}]
-	>=dev-python/click-6.0[${PYTHON_USEDEP}]
-	>=dev-python/click-default-group-1.2[${PYTHON_USEDEP}]
+RDEPEND=">=dev-python/appdirs-1.0[${PYTHON_USEDEP}]
+	>=dev-python/audio-metadata-0.5[${PYTHON_USEDEP}]
 	>=dev-python/google-music-3.0[${PYTHON_USEDEP}]
-	>=dev-python/google-music-utils-2.0[${PYTHON_USEDEP}]
-	>=dev-python/logzero-1.5[${PYTHON_USEDEP}]
+	>=dev-python/google-music-proto-2.4[${PYTHON_USEDEP}]
+	>=dev-python/google-music-utils-2.1[${PYTHON_USEDEP}]
+	>=dev-python/loguru-0.3[${PYTHON_USEDEP}]
+	>=dev-python/pendulum-2.0[${PYTHON_USEDEP}]
+	>=dev-python/natsort-5.0[${PYTHON_USEDEP}]
 	>=dev-python/tomlkit-0.5[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}
 	dev-python/setuptools[${PYTHON_USEDEP}]"
