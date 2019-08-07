@@ -9,7 +9,7 @@ inherit distutils-r1
 
 DESCRIPTION="A CLI utility for interacting with Google Music."
 HOMEPAGE="https://github.com/thebigmunch/google-music-scripts"
-SRC_URI="https://github.com/thebigmunch/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"

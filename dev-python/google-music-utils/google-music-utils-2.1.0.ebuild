@@ -8,7 +8,7 @@ inherit vcs-snapshot distutils-r1
 
 DESCRIPTION="A wrapper interface around gmusicapi"
 HOMEPAGE="https://github.com/thebigmunch/google-music-utils"
-SRC_URI="https://github.com/thebigmunch/${PN}/archive/${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
