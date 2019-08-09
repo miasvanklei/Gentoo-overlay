@@ -112,11 +112,8 @@ src_prepare() {
 	# strip entire symbol table: under review
 	eapply ${FILESDIR}/0002-strip-entire-symbol-table.patch
 
-	# forgotten
-	eapply ${FILESDIR}/0003-fix-cx8-ryzen.patch
-
 	# use init-array as default
-	eapply ${FILESDIR}/0004-use-init-array.patch
+	eapply ${FILESDIR}/0003-use-init-array.patch
 
 	# User patches + QA
 	cmake-utils_src_prepare
