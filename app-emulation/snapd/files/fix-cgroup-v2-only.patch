@@ -1,0 +1,114 @@
+--- a/src/github.com/snapcore/snapd/cmd/libsnap-confine-private/cgroup-support.c
++++ b/src/github.com/snapcore/snapd/cmd/libsnap-confine-private/cgroup-support.c
+@@ -25,6 +25,7 @@
+ #include <string.h>
+ #include <sys/stat.h>
+ #include <sys/types.h>
++#include <sys/vfs.h>
+ #include <unistd.h>
+ 
+ #include "cleanup-funcs.h"
+@@ -66,3 +67,24 @@ void sc_cgroup_create_and_join(const char *parent, const char *name, pid_t pid)
+     }
+     debug("moved process %ld to cgroup hierarchy %s/%s", (long)pid, parent, name);
+ }
++
++static const char *cgroup_dir = "/sys/fs/cgroup";
++
++// from statfs(2)
++#ifndef CGRUOP2_SUPER_MAGIC
++#define CGROUP2_SUPER_MAGIC 0x63677270
++#endif
++
++// Detect if we are running in cgroup v2 unified mode (as opposed to
++// hybrid or legacy) The algorithm is described in
++// https://systemd.io/CGROUP_DELEGATION.html
++bool sc_cgroup_is_v2() {
++    struct statfs buf;
++
++    int err = statfs(cgroup_dir, &buf);
++    if (err == 0 && buf.f_type == CGROUP2_SUPER_MAGIC) {
++       fprintf(stderr, "WARNING: cgroup v2 is not fully supported yet\n");
++       return true;
++    }
++    return false;
++}
+--- a/src/github.com/snapcore/snapd/cmd/libsnap-confine-private/cgroup-support.h
++++ b/src/github.com/snapcore/snapd/cmd/libsnap-confine-private/cgroup-support.h
+@@ -19,6 +19,7 @@
+ #define SC_CGROUP_SUPPORT_H
+ 
+ #include <fcntl.h>
++#include <stdbool.h>
+ 
+ /**
+  * sc_cgroup_create_and_join joins, perhaps creating, a cgroup hierarchy.
+@@ -30,4 +31,10 @@
+  **/
+ void sc_cgroup_create_and_join(const char *parent, const char *name, pid_t pid);
+ 
++/**
++ * sc_cgroup_is_v2() returns true if running on cgroups v2
++ *
++ **/
++bool sc_cgroup_is_v2(void);
++
+ #endif
+--- a/src/github.com/snapcore/snapd/cmd/snap-confine/ns-support.c
++++ b/src/github.com/snapcore/snapd/cmd/snap-confine/ns-support.c
+@@ -39,6 +39,7 @@
+ #include <unistd.h>
+ 
+ #include "../libsnap-confine-private/cgroup-freezer-support.h"
++#include "../libsnap-confine-private/cgroup-support.h"
+ #include "../libsnap-confine-private/classic.h"
+ #include "../libsnap-confine-private/cleanup-funcs.h"
+ #include "../libsnap-confine-private/infofile.h"
+@@ -486,7 +487,7 @@ static int sc_inspect_and_maybe_discard_stale_ns(int mnt_fd,
+ 		debug("preserved mount is not stale, reusing");
+ 		return 0;
+ 	case SC_DISCARD_SHOULD:
+-		if (sc_cgroup_freezer_occupied(inv->snap_instance)) {
++                if (!sc_cgroup_is_v2() && sc_cgroup_freezer_occupied(inv->snap_instance)) {
+ 			// Some processes are still using the namespace so we cannot discard it
+ 			// as that would fracture the view that the set of processes inside
+ 			// have on what is mounted.
+--- a/src/github.com/snapcore/snapd/cmd/snap-confine/snap-confine.c
++++ b/src/github.com/snapcore/snapd/cmd/snap-confine/snap-confine.c
+@@ -35,6 +35,7 @@
+ #include "../libsnap-confine-private/apparmor-support.h"
+ #include "../libsnap-confine-private/cgroup-freezer-support.h"
+ #include "../libsnap-confine-private/cgroup-pids-support.h"
++#include "../libsnap-confine-private/cgroup-support.h"
+ #include "../libsnap-confine-private/classic.h"
+ #include "../libsnap-confine-private/cleanup-funcs.h"
+ #include "../libsnap-confine-private/feature.h"
+@@ -574,8 +575,11 @@ static void enter_non_classic_execution_environment(sc_invocation * inv,
+ 
+ 	/** Populate and join the device control group. */
+ 	struct snappy_udev udev_s;
+-	if (snappy_udev_init(inv->security_tag, &udev_s) == 0)
+-		setup_devices_cgroup(inv->security_tag, &udev_s);
++	if (snappy_udev_init(inv->security_tag, &udev_s) == 0) {
++		if (!sc_cgroup_is_v2()) {
++			setup_devices_cgroup(inv->security_tag, &udev_s);
++		}
++	}
+ 	snappy_udev_cleanup(&udev_s);
+ 
+ 	/**
+@@ -601,9 +601,11 @@
+ 			die("cannot set effective group id to root");
+ 		}
+ 	}
+-	sc_cgroup_freezer_join(inv->snap_instance, getpid());
+-	if (sc_feature_enabled(SC_FEATURE_REFRESH_APP_AWARENESS)) {
+-		sc_cgroup_pids_join(inv->security_tag, getpid());
++	if (!sc_cgroup_is_v2()) {
++		sc_cgroup_freezer_join(inv->snap_instance, getpid());
++		if (sc_feature_enabled(SC_FEATURE_REFRESH_APP_AWARENESS)) {
++			sc_cgroup_pids_join(inv->security_tag, getpid());
++		}
+ 	}
+ 	if (geteuid() == 0 && real_gid != 0) {
+ 		if (setegid(real_gid) != 0) {
