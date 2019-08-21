@@ -1,16 +1,15 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit cmake-utils eapi7-ver flag-o-matic git-r3 llvm \
-	multilib-minimal multiprocessing pax-utils python-single-r1 \
-	toolchain-funcs
+inherit cmake-utils git-r3 llvm multilib-minimal multiprocessing \
+	pax-utils python-single-r1 toolchain-funcs
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
@@ -19,15 +18,16 @@ EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
 EGIT_BRANCH="release/9.x"
 
 # Keep in sync with sys-devel/llvm
-ALL_LLVM_EXPERIMENTAL_TARGETS=( AVR Nios2 RISCV )
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
-	NVPTX PowerPC Sparc SystemZ WebAssembly X86 XCore
-	"${ALL_LLVM_EXPERIMENTAL_TARGETS[@]}" )
+	NVPTX PowerPC RISCV Sparc SystemZ WebAssembly X86 XCore )
 ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 
-LICENSE="UoI-NCSA"
-SLOT="9"
+# MSVCSetupApi.h: MIT
+# sorttable.js: MIT
+
+LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
+SLOT="$(ver_cut 1)"
 KEYWORDS=""
 IUSE="debug +default-compiler-rt +default-libcxx doc +fortran +static-analyzer
 	test +xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
@@ -118,6 +118,7 @@ multilib_src_configure() {
 		# relative to bindir
 		-DCLANG_RESOURCE_DIR="../../../../lib/clang/${clang_version}"
 
+		-DBUILD_SHARED_LIBS=OFF
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
@@ -210,9 +211,9 @@ src_install() {
 	multilib-minimal_src_install
 
 	# Move runtime headers to /usr/lib/clang, where they belong
-	mv "${ED%/}"/usr/include/clangrt "${ED%/}"/usr/lib/clang || die
+	mv "${ED}"/usr/include/clangrt "${ED}"/usr/lib/clang || die
 	# move (remaining) wrapped headers back
-	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
+	mv "${ED}"/usr/include "${ED}"/usr/lib/llvm/${SLOT}/include || die
 
 	# Apply CHOST and version suffix to clang tools
 	# note: we use two version components here (vs 3 in runtime path)
@@ -235,7 +236,7 @@ src_install() {
 	# - clang, clang++, clang-cl, clang-cpp, gcc, g++, cc, c++, cpp -> clang*-X
 	# also in CHOST variant
 	for i in "${clang_tools[@]:1}"; do
-		rm "${ED%/}/usr/lib/llvm/${SLOT}/bin/${i}" || die
+		rm "${ED}/usr/lib/llvm/${SLOT}/bin/${i}" || die
 		dosym "clang-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}-${clang_version}"
 		dosym "${i}-${clang_version}" "/usr/lib/llvm/${SLOT}/bin/${i}"
 	done
@@ -253,7 +254,7 @@ src_install() {
 
 	# Remove unnecessary headers on FreeBSD, bug #417171
 	if use kernel_FreeBSD; then
-		rm "${ED}"usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
+		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
 	fi
 }
 
@@ -262,15 +263,15 @@ multilib_src_install() {
 
 	# move headers to /usr/include for wrapping & ABI mismatch checks
 	# (also drop the version suffix from runtime headers)
-	rm -rf "${ED%/}"/usr/include || die
-	mv "${ED%/}"/usr/lib/llvm/${SLOT}/include "${ED%/}"/usr/include || die
-	mv "${ED%/}"/usr/lib/llvm/${SLOT}/$(get_libdir)/clang "${ED%/}"/usr/include/clangrt || die
+	rm -rf "${ED}"/usr/include || die
+	mv "${ED}"/usr/lib/llvm/${SLOT}/include "${ED}"/usr/include || die
+	mv "${ED}"/usr/lib/llvm/${SLOT}/$(get_libdir)/clang "${ED}"/usr/include/clangrt || die
 }
 
 multilib_src_install_all() {
 	python_fix_shebang "${ED}"
 	if use static-analyzer; then
-		python_optimize "${ED}"usr/lib/llvm/${SLOT}/share/scan-view
+		python_optimize "${ED}"/usr/lib/llvm/${SLOT}/share/scan-view
 	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
@@ -281,7 +282,7 @@ multilib_src_install_all() {
 }
 
 pkg_postinst() {
-	if [[ ${ROOT} == / && -f ${EPREFIX}/usr/share/eselect/modules/compiler-shadow.eselect ]] ; then
+	if [[ -z ${ROOT} && -f ${EPREFIX}/usr/share/eselect/modules/compiler-shadow.eselect ]] ; then
 		eselect compiler-shadow update all
 	fi
 
@@ -294,7 +295,7 @@ pkg_postinst() {
 }
 
 pkg_postrm() {
-	if [[ ${ROOT} == / && -f ${EPREFIX}/usr/share/eselect/modules/compiler-shadow.eselect ]] ; then
+	if [[ -z ${ROOT} && -f ${EPREFIX}/usr/share/eselect/modules/compiler-shadow.eselect ]] ; then
 		eselect compiler-shadow clean all
 	fi
 }

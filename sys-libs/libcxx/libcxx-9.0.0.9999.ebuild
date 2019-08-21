@@ -1,7 +1,7 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 # Ninja provides better scalability and cleaner verbose output, and is used
 # throughout all LLVM projects.
@@ -26,7 +26,7 @@ else
 	SRC_URI=""
 fi
 
-LICENSE="|| ( UoI-NCSA MIT )"
+LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
 SLOT="0"
 if [[ ${PV} != *9999 ]] ; then
 	KEYWORDS="~amd64 ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"

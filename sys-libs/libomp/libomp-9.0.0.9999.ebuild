@@ -1,12 +1,12 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
-PYTHON_COMPAT=( python2_7 )
+PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
 inherit cmake-multilib git-r3 linux-info multiprocessing python-any-r1
 
@@ -16,11 +16,7 @@ SRC_URI=""
 EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
 EGIT_BRANCH="release/9.x"
 
-# Additional licenses:
-# - MIT-licensed Intel code,
-# - LLVM Software Grant from Intel.
-
-LICENSE="|| ( UoI-NCSA MIT ) MIT LLVM-Grant"
+LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS=""
 IUSE="cuda hwloc kernel_linux offload ompt test"

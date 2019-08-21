@@ -1,7 +1,7 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
@@ -15,7 +15,7 @@ SRC_URI=""
 EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
 EGIT_BRANCH="release/9.x"
 
-LICENSE="|| ( UoI-NCSA MIT )"
+LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
 SLOT="0"
 KEYWORDS=""
 IUSE="debug +static-libs test"

@@ -1,7 +1,7 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 inherit multilib-build
 
@@ -10,8 +10,7 @@ HOMEPAGE="https://clang.llvm.org/"
 SRC_URI=""
 
 LICENSE="metapackage"
-# Note: keep it matching clang-9999 version
-SLOT="9.0.0"
+SLOT="$(ver_cut 1-3)"
 KEYWORDS=""
 IUSE="+compiler-rt +libcxx +openmp +sanitize"
 

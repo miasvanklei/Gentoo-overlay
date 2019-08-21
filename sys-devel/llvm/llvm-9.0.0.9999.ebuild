@@ -1,16 +1,15 @@
-
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit cmake-utils eapi7-ver flag-o-matic git-r3 multilib-minimal \
-	multiprocessing pax-utils python-any-r1 toolchain-funcs
+inherit cmake-utils git-r3 multilib-minimal multiprocessing pax-utils \
+	python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
@@ -18,32 +17,26 @@ SRC_URI=""
 EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
 EGIT_BRANCH="release/9.x"
 
-# Those are in lib/Targets, without explicit CMakeLists.txt mention
-ALL_LLVM_EXPERIMENTAL_TARGETS=( AVR Nios2 RISCV )
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
-	NVPTX PowerPC Sparc SystemZ WebAssembly X86 XCore
-	"${ALL_LLVM_EXPERIMENTAL_TARGETS[@]}" )
+	NVPTX PowerPC RISCV Sparc SystemZ WebAssembly X86 XCore )
 ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 
 # Additional licenses:
 # 1. OpenBSD regex: Henry Spencer's license ('rc' in Gentoo) + BSD.
-# 2. ARM backend: LLVM Software Grant by ARM.
+# 2. xxhash: BSD.
 # 3. MD5 code: public-domain.
-# 4. Tests (not installed):
-#  a. gtest: BSD.
-#  b. YAML tests: MIT.
+# 4. ConvertUTF.h: TODO.
 
-LICENSE="UoI-NCSA rc BSD public-domain
-	llvm_targets_ARM? ( LLVM-Grant )"
-SLOT="9"
+LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
+SLOT="$(ver_cut 1)"
 KEYWORDS=""
 IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
-	sys-libs/zlib:0=
+	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
 	exegesis? ( dev-libs/libpfm:= )
 	gold? (
 		|| (
@@ -71,7 +64,6 @@ DEPEND="${RDEPEND}
 		dev-python/recommonmark[${PYTHON_USEDEP}]
 		dev-python/sphinx[${PYTHON_USEDEP}]
 	') )
-	!doc? ( ${PYTHON_DEPS} )
 	gold? ( sys-libs/binutils-libs )
 	libffi? ( virtual/pkgconfig )
 	!!<dev-python/configparser-3.3.0.2
@@ -135,12 +127,10 @@ multilib_src_configure() {
 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
 		-DLLVM_INSTALL_BINUTILS_SYMLINKS=ON
 
+		-DBUILD_SHARED_LIBS=OFF
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DLLVM_DYLIB_COMPONENTS="all"
-		# cheap hack: LLVM combines both anyway, and the only difference
-		# is that the former list is explicitly verified at cmake time
-		-DLLVM_TARGETS_TO_BUILD=""
-		-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
+		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
 		-DLLVM_BUILD_TESTS=$(usex test)
 
 		-DLLVM_ENABLE_FFI=$(usex libffi)
@@ -153,6 +143,8 @@ multilib_src_configure() {
 		-DLLVM_ENABLE_RTTI=ON
 		-DLLVM_ENABLE_CXX1Y=ON
 		-DLLVM_ENABLE_Z3_SOLVER=$(usex z3)
+
+		-DWITH_POLLY=OFF # TODO
 
 		-DLLVM_HOST_TRIPLE="${CHOST}"
 
@@ -253,15 +245,15 @@ src_install() {
 	multilib-minimal_src_install
 
 	# move wrapped headers back
-	mv "${ED%/}"/usr/include "${ED%/}"/usr/lib/llvm/${SLOT}/include || die
+	mv "${ED}"/usr/include "${ED}"/usr/lib/llvm/${SLOT}/include || die
 }
 
 multilib_src_install() {
 	cmake-utils_src_install
 
 	# move headers to /usr/include for wrapping
-	rm -rf "${ED%/}"/usr/include || die
-	mv "${ED%/}"/usr/lib/llvm/${SLOT}/include "${ED%/}"/usr/include || die
+	rm -rf "${ED}"/usr/include || die
+	mv "${ED}"/usr/lib/llvm/${SLOT}/include "${ED}"/usr/include || die
 
 	LLVM_LDPATHS+=( "${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)" )
 }
@@ -281,7 +273,7 @@ multilib_src_install_all() {
 
 pkg_postinst() {
 	elog "You can find additional opt-viewer utility scripts in:"
-	elog "  ${EROOT%/}/usr/lib/llvm/${SLOT}/share/opt-viewer"
+	elog "  ${EROOT}/usr/lib/llvm/${SLOT}/share/opt-viewer"
 	elog "To use these scripts, you will need Python along with the following"
 	elog "packages:"
 	elog "  dev-python/pygments (for opt-viewer)"

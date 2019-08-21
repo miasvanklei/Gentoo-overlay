@@ -1,12 +1,12 @@
-# Copyright 1999-2018 Gentoo Foundation
+# Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
-PYTHON_COMPAT=( python3_6 )
+PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
 inherit cmake-utils git-r3 llvm multiprocessing python-single-r1 \
 	toolchain-funcs
@@ -17,7 +17,7 @@ SRC_URI=""
 EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
 EGIT_BRANCH="release/9.x"
 
-LICENSE="UoI-NCSA"
+LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA"
 SLOT="0"
 KEYWORDS=""
 IUSE="libedit ncurses +python test"
@@ -47,6 +47,7 @@ CMAKE_BUILD_TYPE=RelWithDebInfo
 
 pkg_setup() {
 	llvm_pkg_setup
+	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
 	python-single-r1_pkg_setup
 }
 
@@ -61,8 +62,9 @@ src_unpack() {
 
 src_configure() {
 	local mycmakeargs=(
+		-DBUILD_SHARED_LIBS=OFF
 		-DLLVM_LINK_LLVM_DYLIB=ON
-		-DLLVM_DYLIB_COMPONENTS=ON
+		-DLLVM_DYLIB_COMPONENTS="all"
 
 		-DLLDB_DISABLE_CURSES=$(usex !ncurses)
 		-DLLDB_DISABLE_LIBEDIT=$(usex !libedit)
@@ -97,6 +99,7 @@ src_configure() {
 }
 
 src_test() {
+	local -x LIT_PRESERVES_TMP=1
 	cmake-utils_src_make check-lldb-lit
 	use python && cmake-utils_src_make check-lldb
 }
