@@ -42,14 +42,14 @@
  
          let compiler = cfg.get_compiler();
 @@ -113,7 +113,7 @@
-         if let Some(cxx) = config.and_then(|c| c.cxx.as_ref()) {
              cfg.compiler(cxx);
+             true
+         } else if build.hosts.contains(&target) || build.build == target {
+-            set_compiler(&mut cfg, Language::CPlusPlus, target, config, build);
++            set_compiler(&mut cfg, Language::CPlusPlus, target, config);
+             true
          } else {
--            set_compiler(&mut cfg, Language::CPlusPlus, host, config, build);
-+            set_compiler(&mut cfg, Language::CPlusPlus, host, config);
-         }
-         let compiler = cfg.get_compiler();
-         build.verbose(&format!("CXX_{} = {:?}", host, compiler.path()));
+             false
 @@ -124,8 +124,7 @@
  fn set_compiler(cfg: &mut cc::Build,
                  compiler: Language,

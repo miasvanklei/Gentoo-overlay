@@ -99,7 +99,7 @@ src_configure() {
 	mandir = "share/${PN}/man"
 	[rust]
 	optimize = $(toml_usex !debug)
-	debuginfo = $(toml_usex debug)
+	debug = $(toml_usex debug)
 	debug-assertions = $(toml_usex debug)
 	default-linker = "$(tc-getCC)"
 	channel = "stable"
