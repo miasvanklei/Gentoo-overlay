@@ -107,6 +107,9 @@ src_prepare() {
 	# use init-array as default
 	eapply ${FILESDIR}/0003-use-init-array.patch
 
+	# apply ownership to stripped file
+	eapply ${FILESDIR}/0004-strip-apply-ownership.patch
+
 	# User patches + QA
 	cmake-utils_src_prepare
 }
