@@ -185,11 +185,6 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
-		"${FILESDIR}"/243-rc1-analyze.patch
-		"${FILESDIR}"/243-rc1-cryptsetup.patch
-		"${FILESDIR}"/243-rc1-revert-logind-remove-unused-check.patch
-		"${FILESDIR}"/243-rc1-udev-properties.patch
-
 	)
 
 	if ! use vanilla; then
