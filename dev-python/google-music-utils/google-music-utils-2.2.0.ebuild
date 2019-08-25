@@ -15,7 +15,8 @@ KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 RDEPEND=">=dev-python/audio-metadata-0.5[${PYTHON_USEDEP}]
-	=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
+	>=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
+	<dev-python/more-itertools-5.0[${PYTHON_USEDEP}]
 	>=dev-python/multidict-4.0[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.10[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}
