@@ -65,14 +65,6 @@
  WAY_dyn_NAME=dyn
 --- a/compiler/main/DynFlags.hs   2018-02-01 05:20:33.000000000 +0100
 +++ b/compiler/main/DynFlags.hs   2018-04-15 17:38:55.219737734 +0200
-@@ -1104,7 +1104,6 @@
-   sLdSupportsBuildId       :: Bool,
-   sLdSupportsFilelist      :: Bool,
-   sLdIsGnuLd               :: Bool,
--  sGccSupportsNoPie        :: Bool,
-   -- commands for particular phases
-   sPgm_L                 :: String,
-   sPgm_P                 :: (String,[Option]),
 @@ -4152,16 +4151,7 @@
      where platform = sTargetPlatform settings
  
@@ -91,92 +83,8 @@
  
  -- General flags that are switched on/off when other general flags are switched
  -- on
-@@ -5121,55 +5111,11 @@
- -- platform.
- 
- picCCOpts :: DynFlags -> [String]
--picCCOpts dflags = pieOpts ++ picOpts
--  where
--    picOpts =
--      case platformOS (targetPlatform dflags) of
--      OSDarwin
--          -- Apple prefers to do things the other way round.
--          -- PIC is on by default.
--          -- -mdynamic-no-pic:
--          --     Turn off PIC code generation.
--          -- -fno-common:
--          --     Don't generate "common" symbols - these are unwanted
--          --     in dynamic libraries.
--
--       | gopt Opt_PIC dflags -> ["-fno-common", "-U__PIC__", "-D__PIC__"]
--       | otherwise           -> ["-mdynamic-no-pic"]
--      OSMinGW32 -- no -fPIC for Windows
--       | gopt Opt_PIC dflags -> ["-U__PIC__", "-D__PIC__"]
--       | otherwise           -> []
--      _
--      -- we need -fPIC for C files when we are compiling with -dynamic,
--      -- otherwise things like stub.c files don't get compiled
--      -- correctly.  They need to reference data in the Haskell
--      -- objects, but can't without -fPIC.  See
--      -- http://ghc.haskell.org/trac/ghc/wiki/Commentary/PositionIndependentCode
--       | gopt Opt_PIC dflags || WayDyn `elem` ways dflags ->
--          ["-fPIC", "-U__PIC__", "-D__PIC__"]
--       | otherwise                             -> []
--
--    pieOpts
--      | gopt Opt_PICExecutable dflags       = ["-pie"]
--        -- See Note [No PIE when linking]
--      | sGccSupportsNoPie (settings dflags) = ["-no-pie"]
--      | otherwise                           = []
--
-+picCCOpts dflags = ["-fPIC", "-U__PIC__", "-D__PIC__"]
- 
--{-
--Note [No PIE while linking]
--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--As of 2016 some Linux distributions (e.g. Debian) have started enabling -pie by
--default in their gcc builds. This is incompatible with -r as it implies that we
--are producing an executable. Consequently, we must manually pass -no-pie to gcc
--when joining object files or linking dynamic libraries. Unless, of course, the
--user has explicitly requested a PIE executable with -pie. See #12759.
---}
- 
- picPOpts :: DynFlags -> [String]
--picPOpts dflags
-- | gopt Opt_PIC dflags = ["-U__PIC__", "-D__PIC__"]
-- | otherwise           = []
-+picPOpts dflags = ["-U__PIC__", "-D__PIC__"]
- 
- -- -----------------------------------------------------------------------------
- -- Splitting
---- a/compiler/main/SysTools.hs   2017-11-28 17:39:29.000000000 +0100
-+++ b/compiler/main/SysTools.hs   2018-04-15 17:43:31.443216668 +0200
-@@ -184,7 +184,6 @@
-        -- to make that possible, so for now you can't.
-        gcc_prog <- getToolSetting "C compiler command"
-        gcc_args_str <- getSetting "C compiler flags"
--       gccSupportsNoPie <- getBooleanSetting "C compiler supports -no-pie"
-        cpp_prog <- getToolSetting "Haskell CPP command"
-        cpp_args_str <- getSetting "Haskell CPP flags"
-        let unreg_gcc_args = if targetUnregisterised
-@@ -280,7 +279,6 @@
-                     sLdSupportsBuildId       = ldSupportsBuildId,
-                     sLdSupportsFilelist      = ldSupportsFilelist,
-                     sLdIsGnuLd               = ldIsGnuLd,
--                    sGccSupportsNoPie        = gccSupportsNoPie,
-                     sProgramName             = "ghc",
-                     sProjectVersion          = cProjectVersion,
-                     sPgm_L   = unlit_path,
 --- a/compiler/main/DriverPipeline.hs     2018-04-15 17:40:13.449589908 +0200
 +++ b/compiler/main/DriverPipeline.hs     2018-04-15 17:41:11.139481368 +0200
-@@ -1814,7 +1814,6 @@
-                       ++ map SysTools.Option (
-                          []
- 
--                      -- See Note [No PIE when linking]
-                       ++ picCCOpts dflags
- 
-                       -- Permit the linker to auto link _symbol to _imp_symbol.
 @@ -2128,12 +2127,8 @@
        osInfo = platformOS (targetPlatform dflags)
        ld_r args cc = SysTools.runLink dflags ([
@@ -184,7 +92,7 @@
 -                       SysTools.Option "-Wl,-r"
 +                       SysTools.Option "-r"
                       ]
--                        -- See Note [No PIE while linking] in SysTools
+-                        -- See Note [No PIE while linking] in DynFlags
 -                     ++ (if sGccSupportsNoPie mySettings
 -                          then [SysTools.Option "-no-pie"]
 -                          else [])
