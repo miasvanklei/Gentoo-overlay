@@ -5,7 +5,7 @@ EAPI=6
 
 inherit git-r3
 
-DESCRIPTION="Arc cusomization for Plasma 5 "
+DESCRIPTION="Arc customization for Plasma 5 "
 HOMEPAGE="https://github.com/PapirusDevelopmentTeam/arc-kde"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/PapirusDevelopmentTeam/arc-kde.git"
