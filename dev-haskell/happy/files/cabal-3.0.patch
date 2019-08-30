@@ -1,0 +1,27 @@
+diff --git a/Setup.lhs b/Setup.lhs
+index 59a09b3..2964896 100644
+--- a/Setup.lhs
++++ b/Setup.lhs
+@@ -44,7 +44,7 @@ symbols cs = case lex cs of
+               _ -> []
+ 
+ myPostBuild _ flags _ lbi = do
+-  let runProgram p = rawSystemProgramConf (fromFlagOrDefault normal (buildVerbosity flags))
++  let runProgram p = runDbProgram (fromFlagOrDefault normal (buildVerbosity flags))
+                                           p
+                                           (withPrograms lbi)
+       cpp_template src dst opts = do
+diff --git a/happy.cabal b/happy.cabal
+index b8fbc22..adcd329 100644
+--- a/happy.cabal
++++ b/happy.cabal
+@@ -130,7 +130,7 @@ extra-source-files:
+         tests/rank2.y
+ 
+ custom-setup
+-  setup-depends: Cabal <2.6,
++  setup-depends: Cabal <3.1,
+                  base >=4.6 && <5,
+                  directory <1.4,
+                  filepath <1.5
+
