@@ -1,0 +1,59 @@
+--- a/IGC/CMakeLists.txt
++++ b/IGC/CMakeLists.txt
+@@ -2475,7 +2475,7 @@ elseif(_igc_compiler_is_clang)
+       ALIAS OptimizeDisabled           "-O0"
+       ALIAS OptimizeSize               "-Os"
+       ALIAS OptimizeSpeed              "-O2"
+-      ALIAS OptimizeFull               "-03"
++      ALIAS OptimizeFull               "-O3"
+       ALIAS RtMultiThreadedStatic
+       ALIAS RtMultiThreadedShared
+       ALIAS RtMultiThreadedStaticDebug
+@@ -2629,7 +2629,6 @@ foreach(_compilerFlagName IN ITEMS "CMAKE_CXX_FLAGS" "CMAKE_C_FLAGS")
+           ALL_PATTERN ""
+           SET
+             CompileAsDefault
+-            
+             DisableSpecificWarnings
+             ExceptionsDisabled
+             MultiProcessorCompilation
+@@ -2642,8 +2641,6 @@ foreach(_compilerFlagName IN ITEMS "CMAKE_CXX_FLAGS" "CMAKE_C_FLAGS")
+       "${_compilerFlagName}"
+       ALL_PATTERN_NOINHERIT ""
+       SET
+-        DebugInfoProgramDatabase
+-        OptimizeSize
+         RtMultiThreadedStatic
+     )
+   igc_config_flag_apply_settings(
+@@ -2660,7 +2657,7 @@ foreach(_compilerFlagName IN ITEMS "CMAKE_CXX_FLAGS" "CMAKE_C_FLAGS")
+       "${_compilerFlagName}"
+       PATTERN "${IGC_BUILD__RELEASE_PATTERN}"
+       SET
+-        OptimizeSpeed
++        OptimizeFull
+         ControlFlowGuard
+         # Disable LTCG due to increase of release build time
+         #WholeProgramOptimization
+@@ -2766,7 +2766,6 @@
+         SET_RAW
+           -pipe
+           -fmessage-length=0
+-          -march=corei7
+           -mstackrealign
+           -fms-extensions
+           -Wno-unused-parameter
+@@ -2780,13 +2775,6 @@ foreach(_compilerFlagName IN ITEMS "CMAKE_CXX_FLAGS" "CMAKE_C_FLAGS")
+           -Wno-write-strings
+           -finline
+           -fno-strict-aliasing
+-          -msse
+-          -msse2
+-          -msse3
+-          -mssse3
+-          -msse4
+-          -msse4.1
+-          -msse4.2
+           -Wno-unknown-pragmas
+           -fPIC
+       )
