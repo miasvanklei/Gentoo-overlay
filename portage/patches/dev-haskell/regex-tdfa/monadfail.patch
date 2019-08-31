@@ -1,11 +1,11 @@
---- a/Text/Regex/TDFA.hs
-+++ b/Text/Regex/TDFA.hs
+--- a/Text/Regex/TDFA.hs	2019-08-31 14:26:01.387426025 +0200
++++ b/Text/Regex/TDFA.hs	2019-08-31 14:26:54.499032716 +0200
 @@ -202,9 +202,9 @@
  
  -- | This is the monadic matching operator.  If a single match fails,
  -- then 'fail' will be called.
--(=~~) :: (RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target, Monad m)
-+(=~~) :: (RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target, MonadFail m)
+-(=~~) :: (RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target,Monad m)
++(=~~) :: (RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target,MonadFail m)
        => source1 -> source -> m target
 -(=~~) x r = do let make :: (RegexMaker Regex CompOption ExecOption a, Monad m) => a -> m Regex
 +(=~~) x r = do let make :: (RegexMaker Regex CompOption ExecOption a, MonadFail m) => a -> m Regex
