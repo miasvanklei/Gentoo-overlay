@@ -9,6 +9,7 @@ DESCRIPTION="Bi-directional translator between SPIR-V and LLVM IR"
 HOMEPAGE="https://github.com/KhronosGroup/SPIRV-LLVM-Translator"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git"
+EGIT_BRANCH=llvm_release_90
 
 LICENSE="UoI-NCSA"
 SLOT="9"
