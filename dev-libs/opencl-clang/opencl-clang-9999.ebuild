@@ -9,6 +9,7 @@ DESCRIPTION="OpenCL-oriented thin wrapper library around clang"
 HOMEPAGE="https://github.com/intel/opencl-clang"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/intel/opencl-clang.git"
+#EGIT_BRANCH=llvm_release_90
 
 LICENSE="UoI-NCSA"
 SLOT="9"
@@ -25,7 +26,6 @@ LLVM_MAX_SLOT=9
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0-clang_library_dir.patch
 	"${FILESDIR}"/link-with-clang-cpp.patch
-	"${FILESDIR}"/opencl-c-base.patch
 )
 
 multilib_src_configure() {
