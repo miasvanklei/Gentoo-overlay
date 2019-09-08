@@ -75,3 +75,20 @@
  #elif defined(_AIX)
    #include <pthread.h>
    /* Also defined in net/aix_close.c */
+--- a/src/java.base/unix/native/libjava/childproc.c
++++ b/src/java.base/unix/native/libjava/childproc.c
+@@ -237,7 +237,13 @@
+ {
+     if (envp == NULL || (char **) envp == environ) {
+         execvp(file, (char **) argv);
+-        return;
++        // ENOEXEC indicates that the file header was not recognized. The musl C
++        // library does not implement the fallback to /bin/sh for that case, so fall
++        // through to the code below which implements that fallback using
++        // execve_with_shell_fallback.
++        if (errno != ENOEXEC) {
++            return;
++        }
+     }
+ 
+     if (*file == '\0') {
