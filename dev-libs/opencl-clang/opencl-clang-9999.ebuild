@@ -9,7 +9,7 @@ DESCRIPTION="OpenCL-oriented thin wrapper library around clang"
 HOMEPAGE="https://github.com/intel/opencl-clang"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/intel/opencl-clang.git"
-#EGIT_BRANCH=llvm_release_90
+EGIT_BRANCH=ocl-open-90
 
 LICENSE="UoI-NCSA"
 SLOT="9"
