@@ -16,7 +16,7 @@ IUSE="cdrom +ffmpeg gstreamer"
 
 RDEPEND="
 	>=kde-apps/juk-${PV}:${SLOT}
-	>=kde-apps/kdenlive-18.12.3:${SLOT}
+	>=kde-apps/kdenlive-${PV}:${SLOT}
 	>=kde-apps/kwave-${PV}:${SLOT}
 	cdrom? (
 		>=kde-apps/audiocd-kio-${PV}:${SLOT}
