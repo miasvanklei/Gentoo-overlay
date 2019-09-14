@@ -1,0 +1,95 @@
+--- a/src/KennedyWarren.hs	2015-01-15 13:27:10.000000000 +0100
++++ b/src/KennedyWarren.hs	2019-09-14 15:44:11.805576900 +0200
+@@ -20,6 +20,7 @@
+ import qualified Data.Set as Set
+ import Data.Map (Map)
+ import qualified Data.Map as Map
++import qualified Data.Map.Strict as SMap
+ import Data.IntMap (IntMap)
+ import qualified Data.IntMap as IntMap
+ import Data.IntSet (IntSet)
+@@ -400,7 +401,7 @@
+   let (VGNode from,vgto) = imLookup vs edges -- from must be equal to the current state
+   childvs <- gets vgChildVisits
+   let rchildv = imLookup edg childvs
+-  vgInST $ modifySTRef rchildv $ Map.insertWith' (++) (ide,p) [vgto]
++  vgInST $ modifySTRef rchildv $ SMap.insertWith (++) (ide,p) [vgto]
+   ndis <- gets vgNDI
+   let rndi = imLookup from ndis
+   ndi <- vgInST $ readSTRef rndi
+--- a/src-generated/Transform.hs	2015-01-15 13:27:11.000000000 +0100
++++ b/src-generated/Transform.hs	2019-09-14 15:44:11.810576858 +0200
+@@ -866,57 +866,57 @@
+    {-# LINE 328 "src-ag/Transform.ag" #-}
+    rule33 = \ _allRulesErrs ->
+                              {-# LINE 328 "src-ag/Transform.ag" #-}
+-                             let  f m s = Map.fold ((><) . snd) s m
+-                             in Map.fold f Seq.empty _allRulesErrs
++                             let  f m s = foldr ((><) . snd) s m
++                             in foldr f Seq.empty _allRulesErrs
+                              {-# LINE 872 "dist/build/Transform.hs"#-}
+    {-# INLINE rule34 #-}
+    {-# LINE 331 "src-ag/Transform.ag" #-}
+    rule34 = \ _allSigsErrs ->
+                              {-# LINE 331 "src-ag/Transform.ag" #-}
+-                             let  f m s = Map.fold ((><) . snd) s m
+-                             in Map.fold f Seq.empty _allSigsErrs
++                             let  f m s = foldr ((><) . snd) s m
++                             in foldr f Seq.empty _allSigsErrs
+                              {-# LINE 879 "dist/build/Transform.hs"#-}
+    {-# INLINE rule35 #-}
+    {-# LINE 334 "src-ag/Transform.ag" #-}
+    rule35 = \ _allInstsErrs ->
+                              {-# LINE 334 "src-ag/Transform.ag" #-}
+-                             let  f m s = Map.fold ((><) . snd) s m
+-                             in Map.fold f Seq.empty _allInstsErrs
++                             let  f m s = foldr ((><) . snd) s m
++                             in foldr f Seq.empty _allInstsErrs
+                              {-# LINE 886 "dist/build/Transform.hs"#-}
+    {-# INLINE rule36 #-}
+    {-# LINE 337 "src-ag/Transform.ag" #-}
+    rule36 = \ _allUniquesErrs ->
+                              {-# LINE 337 "src-ag/Transform.ag" #-}
+-                             let  f m s = Map.fold ((><) . snd) s m
+-                             in Map.fold f Seq.empty _allUniquesErrs
++                             let  f m s = foldr ((><) . snd) s m
++                             in foldr f Seq.empty _allUniquesErrs
+                              {-# LINE 893 "dist/build/Transform.hs"#-}
+    {-# INLINE rule37 #-}
+    {-# LINE 340 "src-ag/Transform.ag" #-}
+    rule37 = \ _allAugmentErrs ->
+                              {-# LINE 340 "src-ag/Transform.ag" #-}
+-                             let  f m s = Map.fold ((><) . snd) s m
+-                             in Map.fold f Seq.empty _allAugmentErrs
++                             let  f m s = foldr ((><) . snd) s m
++                             in foldr f Seq.empty _allAugmentErrs
+                              {-# LINE 900 "dist/build/Transform.hs"#-}
+    {-# INLINE rule38 #-}
+    {-# LINE 343 "src-ag/Transform.ag" #-}
+    rule38 = \ _allAroundsErrs ->
+                              {-# LINE 343 "src-ag/Transform.ag" #-}
+-                             let  f m s = Map.fold ((><) . snd) s m
+-                             in Map.fold f Seq.empty _allAroundsErrs
++                             let  f m s = foldr ((><) . snd) s m
++                             in foldr f Seq.empty _allAroundsErrs
+                              {-# LINE 907 "dist/build/Transform.hs"#-}
+    {-# INLINE rule39 #-}
+    {-# LINE 346 "src-ag/Transform.ag" #-}
+    rule39 = \ _allNamesErrs ->
+                               {-# LINE 346 "src-ag/Transform.ag" #-}
+-                              let  f m s = Map.fold ((><)) s m
+-                              in Map.fold f Seq.empty _allNamesErrs
++                              let  f m s = foldr ((><)) s m
++                              in foldr f Seq.empty _allNamesErrs
+                               {-# LINE 914 "dist/build/Transform.hs"#-}
+    {-# INLINE rule40 #-}
+    {-# LINE 349 "src-ag/Transform.ag" #-}
+    rule40 = \ _allMergesErrs ->
+                               {-# LINE 349 "src-ag/Transform.ag" #-}
+-                              let f m s = Map.fold ((><) . snd) s m
+-                              in Map.fold f Seq.empty _allMergesErrs
++                              let f m s = foldr ((><) . snd) s m
++                              in foldr f Seq.empty _allMergesErrs
+                               {-# LINE 921 "dist/build/Transform.hs"#-}
+    {-# INLINE rule41 #-}
+    {-# LINE 352 "src-ag/Transform.ag" #-}
