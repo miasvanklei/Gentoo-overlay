@@ -1,0 +1,13 @@
+diff --git a/src/CabalHelper/Compiletime/Wrapper.hs b/src/CabalHelper/Compiletime/Wrapper.hs
+index 9a4e275..27b8ec3 100644
+--- a/src/CabalHelper/Compiletime/Wrapper.hs
++++ b/src/CabalHelper/Compiletime/Wrapper.hs
+@@ -163,7 +163,7 @@ main = handlePanic $ do
+       [cfile] <- filter isCabalFile <$> getDirectoryContents projdir
+       gpd <- readPackageDescription silent (projdir </> cfile)
+       let pkgName     = display (packageName gpd) :: String
+-      let pkgVersion  = display (toDataVersion (packageVersion gpd)) :: String
++      let pkgVersion  = showVersion (toDataVersion (packageVersion gpd)) :: String
+       let path = "dist-newstyle/build" </> bp </> ("ghc-" <> ghcVersion) </> pkgName <> "-" <> pkgVersion
+       let distDirPath = ChResponseDistDir path
+ 

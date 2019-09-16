@@ -1,0 +1,20 @@
+--- a/Text/Regex/Posix/Wrap.hsc	2019-09-15 13:30:08.460908385 +0200
++++ b/Text/Regex/Posix/Wrap.hsc	2019-09-15 13:33:41.936661263 +0200
+@@ -322,7 +322,7 @@
+ 
+ (=~)  :: (RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target)
+       => source1 -> source -> target
+-(=~~) :: (RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target,Monad m)
++(=~~) :: (RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target,Monad m,MonadFail m)
+       => source1 -> source -> m target
+ 
+ instance RegexOptions Regex CompOption ExecOption where
+@@ -338,7 +338,7 @@
+                make = makeRegex
+            in match (make r) x
+ 
+--- (=~~) ::(RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target,Monad m) => source1 -> source -> m target
++-- (=~~) ::(RegexMaker Regex CompOption ExecOption source,RegexContext Regex source1 target,Monad m,MonadFail m) => source1 -> source -> m target
+ (=~~) x r = let make :: RegexMaker Regex CompOption ExecOption a => a -> Regex
+                 make = makeRegex
+             in matchM (make r) x

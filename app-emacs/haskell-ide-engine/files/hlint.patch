@@ -1,0 +1,29 @@
+diff --git a/haskell-ide-engine.cabal b/haskell-ide-engine.cabal
+index 405e7b3f..3045d9fd 100644
+--- a/haskell-ide-engine.cabal
++++ b/haskell-ide-engine.cabal
+@@ -101,7 +100,7 @@ library
+   if impl(ghc < 8.4)
+     build-depends:     hlint >= 2.0.11 && < 2.1.18
+   else
+-    build-depends:     hlint >= 2.2.2
++    build-depends:     hlint >= 2.0.11
+ 
+   ghc-options:         -Wall -Wredundant-constraints
+   if flag(pedantic)
+diff --git a/src/Haskell/Ide/Engine/Plugin/ApplyRefact.hs b/src/Haskell/Ide/Engine/Plugin/ApplyRefact.hs
+index 6589bc27..3fe4550e 100644
+--- a/src/Haskell/Ide/Engine/Plugin/ApplyRefact.hs
++++ b/src/Haskell/Ide/Engine/Plugin/ApplyRefact.hs
+@@ -27,11 +27,7 @@ import           Haskell.Ide.Engine.PluginUtils
+ import           Language.Haskell.Exts.SrcLoc
+ import           Language.Haskell.Exts.Parser
+ import           Language.Haskell.Exts.Extension
+-#if (defined(MIN_VERSION_GLASGOW_HASKELL) && (MIN_VERSION_GLASGOW_HASKELL(8,4,0,0)))
+-import           Language.Haskell.HLint4           as Hlint
+-#else
+ import           Language.Haskell.HLint3           as Hlint
+-#endif
+ import qualified Language.Haskell.LSP.Types        as LSP
+ import qualified Language.Haskell.LSP.Types.Lens   as LSP
+ import           Refact.Apply

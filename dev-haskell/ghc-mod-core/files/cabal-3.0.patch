@@ -1,0 +1,35 @@
+diff --git a/GhcMod/CabalHelper.hs b/GhcMod/CabalHelper.hs
+index 6cbf18b..4e82687 100644
+--- a/GhcMod/CabalHelper.hs
++++ b/GhcMod/CabalHelper.hs
+@@ -191,10 +191,10 @@ withCabal action = do
+           case proj of
+             CabalProject -> do
+                 gmLog GmDebug "" $ strDoc "reconfiguring Cabal project"
+-                cabalReconfigure "configure" (optPrograms opts) crdl flgs
++                cabalReconfigure "v1-configure" (optPrograms opts) crdl flgs
+             CabalNewProject -> do
+                 gmLog GmDebug "" $ strDoc "reconfiguring Cabal new-build project"
+-                cabalReconfigure "new-configure" (optPrograms opts) crdl flgs
++                cabalReconfigure "v1-configure" (optPrograms opts) crdl flgs
+             StackProject {} -> do
+                 gmLog GmDebug "" $ strDoc "reconfiguring Stack project"
+                 -- TODO: we could support flags for stack too, but it seems
+diff --git a/GhcMod/Pretty.hs b/GhcMod/Pretty.hs
+index acc219e..bd67dcb 100644
+--- a/GhcMod/Pretty.hs
++++ b/GhcMod/Pretty.hs
+@@ -51,8 +51,13 @@ renderSDoc sdoc = do
+ gmComponentNameDoc :: ChComponentName -> Doc
+ gmComponentNameDoc ChSetupHsName   = text $ "Setup.hs"
+ #if MIN_VERSION_cabal_helper(0,8,0)
++# if MIN_VERSION_cabal_helper(0,9,0)
++gmComponentNameDoc (ChLibName ChMainLibName)    = text $ "library"
++gmComponentNameDoc (ChLibName (ChSubLibName _)) = text $ "library"
++# else
+ gmComponentNameDoc ChLibName       = text $ "library"
+ gmComponentNameDoc (ChSubLibName _)= text $ "library"
++# endif
+ gmComponentNameDoc (ChFLibName _)  = text $ "flibrary"
+ #else
+ gmComponentNameDoc (ChLibName "")  = text $ "library"

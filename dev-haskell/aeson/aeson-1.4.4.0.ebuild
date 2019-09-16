@@ -58,9 +58,9 @@ DEPEND="${RDEPEND}
 # "
 
 src_prepare() {
-        default
+	default
 
-        cabal_chdeps \
+	cabal_chdeps \
 		'template-haskell >= 2.7.0.0 && < 2.15' 'template-haskell >= 2.7.0.0 && < 2.16' \
 		'time             >= 1.4     && < 1.9' 'time             >= 1.4     && < 1.10'
 }
