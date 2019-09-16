@@ -21,7 +21,7 @@ RDEPEND="dev-haskell/attoparsec:=[profile?]
 	dev-haskell/fail:=[profile?]
 	dev-haskell/mtl:=[profile?]
 	dev-haskell/transformers:=[profile?]
-	>=dev-haskell/unorder-containers-0.2:=[profile?]
+	>=dev-haskell/unordered-containers-0.2:=[profile?]
 	>=dev-lang/ghc-7.4.1:=
 "
 DEPEND="${RDEPEND}
