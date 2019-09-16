@@ -92,4 +92,4 @@ src_prepare() {
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag pedantic pedantic)
-x}
+}
