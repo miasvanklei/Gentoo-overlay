@@ -8,14 +8,12 @@ EAPI=7
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit cmake-utils git-r3 multilib-minimal multiprocessing pax-utils \
+inherit cmake-utils multilib-minimal multiprocessing pax-utils \
 	python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -30,7 +28,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
 
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
 SLOT="$(ver_cut 1)"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
 RESTRICT="!test? ( test )"
@@ -77,7 +75,7 @@ PDEPEND="sys-devel/llvm-common
 
 REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
 
-S="${WORKDIR}/${PN}"
+S=${WORKDIR}/${P/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -87,11 +85,6 @@ python_check_deps() {
 
 	has_version "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
 	has_version "dev-python/sphinx[${PYTHON_USEDEP}]"
-}
-
-src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}" '' llvm
 }
 
 src_prepare() {

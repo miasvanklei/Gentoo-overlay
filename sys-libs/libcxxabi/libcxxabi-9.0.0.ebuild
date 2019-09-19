@@ -1,24 +1,26 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit cmake-multilib git-r3 llvm multiprocessing python-any-r1
+inherit cmake-multilib llvm multiprocessing python-any-r1
+
+MY_P=${P/_/}.src
+LIBCXX_P=libcxx-${PV/_/}.src
 
 DESCRIPTION="Low level support for a standard C++ library"
 HOMEPAGE="https://libcxxabi.llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	https://releases.llvm.org/${PV/_//}/${LIBCXX_P}.tar.xz"
 
-LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
+LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm ~arm64 ~x86 ~amd64-fbsd"
 IUSE="+libunwind +static-libs test elibc_musl"
 RESTRICT="!test? ( test )"
 
@@ -35,7 +37,7 @@ DEPEND="${RDEPEND}
 	test? ( >=sys-devel/clang-3.9.0
 		$(python_gen_any_dep 'dev-python/lit[${PYTHON_USEDEP}]') )"
 
-S="${WORKDIR}/${PN}"
+S=${WORKDIR}/${MY_P}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -50,8 +52,8 @@ pkg_setup() {
 }
 
 src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}" '' libcxxabi libcxx
+	default
+	mv "${LIBCXX_P}" libcxx || die
 }
 
 multilib_src_configure() {
@@ -88,8 +90,8 @@ build_libcxx() {
 	local BUILD_DIR=${BUILD_DIR}/libcxx
 	local mycmakeargs=(
 		-DLIBCXX_LIBDIR_SUFFIX=
-		-DLIBCXX_ENABLE_SHARED=OFF
-		-DLIBCXX_ENABLE_STATIC=ON
+		-DLIBCXX_ENABLE_SHARED=ON
+		-DLIBCXX_ENABLE_STATIC=OFF
 		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF
 		-DLIBCXX_CXX_ABI=libcxxabi
 		-DLIBCXX_CXX_ABI_INCLUDE_PATHS="${S}"/include

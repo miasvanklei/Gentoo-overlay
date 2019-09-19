@@ -11,7 +11,7 @@ SRC_URI=""
 
 LICENSE="metapackage"
 SLOT="$(ver_cut 1-3)"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE="+compiler-rt +libcxx +openmp +sanitize"
 
 RDEPEND="

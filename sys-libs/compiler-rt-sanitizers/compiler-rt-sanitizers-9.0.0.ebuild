@@ -1,25 +1,27 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit check-reqs cmake-utils flag-o-matic git-r3 llvm \
+inherit check-reqs cmake-utils flag-o-matic llvm \
 	multiprocessing python-any-r1
+
+MY_P=compiler-rt-${PV/_/}.src
+LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="Compiler runtime libraries for clang (sanitizers & xray)"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
-LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
-SLOT="$(ver_cut 1-3)"
-KEYWORDS=""
+LICENSE="|| ( UoI-NCSA MIT )"
+SLOT="${PV%_*}"
+KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-fbsd ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 IUSE="+clang +libfuzzer +profile +sanitize test +xray elibc_glibc"
 # FIXME: libfuzzer does not enable all its necessary dependencies
 REQUIRED_USE="libfuzzer? ( || ( sanitize xray ) )"
@@ -38,7 +40,7 @@ DEPEND="
 		sys-libs/compiler-rt:${SLOT} )
 	${PYTHON_DEPS}"
 
-S=${WORKDIR}/x/y/compiler-rt
+S=${WORKDIR}/${MY_P}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -61,11 +63,14 @@ pkg_setup() {
 }
 
 src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}/x/y" '' compiler-rt
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
 
 	if use test; then
-		git-r3_checkout '' "${WORKDIR}" '' llvm/utils/unittest
+		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
+		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
+			"${LLVM_P}"/utils/unittest || die
+		mv "${LLVM_P}" llvm || die
 	fi
 }
 

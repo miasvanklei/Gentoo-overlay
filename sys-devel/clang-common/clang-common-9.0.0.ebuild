@@ -3,26 +3,25 @@
 
 EAPI=7
 
-inherit bash-completion-r1 git-r3
+inherit bash-completion-r1
 
+MY_P=cfe-${PV/_/}.src
 DESCRIPTION="Common files shared between multiple slots of clang"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 PDEPEND="sys-devel/clang:*"
 
-S="${WORKDIR}"/clang
+S=${WORKDIR}/${MY_P}
 
 src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}" '' clang/utils/bash-autocomplete.sh
+	einfo "Unpacking parts of ${MY_P}.tar.xz ..."
+	tar -xJf "${DISTDIR}/${MY_P}.tar.xz" "${MY_P}/utils/bash-autocomplete.sh" || die
 }
 
 src_configure() { :; }

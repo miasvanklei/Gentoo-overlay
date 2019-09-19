@@ -1,25 +1,23 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit cmake-utils flag-o-matic git-r3 llvm multiprocessing \
+inherit cmake-utils flag-o-matic llvm multiprocessing \
 	python-any-r1 toolchain-funcs
 
 DESCRIPTION="Compiler runtime library for clang (built-in part)"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
-LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
-SLOT="$(ver_cut 1-3)"
-KEYWORDS=""
+LICENSE="|| ( UoI-NCSA MIT )"
+SLOT="${PV%_*}"
+KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-fbsd ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 IUSE="+clang test"
 RESTRICT="!test? ( test ) !clang? ( test )"
 
@@ -33,7 +31,7 @@ DEPEND="
 		=sys-devel/clang-${PV%_*}*:${CLANG_SLOT} )
 	${PYTHON_DEPS}"
 
-S="${WORKDIR}/${PN}"
+S=${WORKDIR}/${P/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -48,11 +46,6 @@ pkg_pretend() {
 pkg_setup() {
 	llvm_pkg_setup
 	python-any-r1_pkg_setup
-}
-
-src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}" '' compiler-rt
 }
 
 test_compiler() {

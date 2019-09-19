@@ -3,26 +3,23 @@
 
 EAPI=7
 
-inherit git-r3
-
+MY_P=llvm-${PV/_/}.src
 DESCRIPTION="Common files shared between multiple slots of LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz"
 
 LICENSE="UoI-NCSA"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 RDEPEND="!sys-devel/llvm:0"
 
-S="${WORKDIR}"/llvm
+S=${WORKDIR}/${MY_P}
 
 src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}" '' llvm/utils/vim
+        einfo "Unpacking parts of ${MY_P}.tar.xz ..."
+        tar -xJf "${DISTDIR}/${MY_P}.tar.xz" "${MY_P}/utils/vim" || die
 }
 
 src_configure() { :; }

@@ -1,24 +1,26 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=6
 
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit cmake-multilib git-r3 linux-info multiprocessing python-any-r1
+inherit cmake-multilib linux-info multiprocessing python-any-r1
 
 DESCRIPTION="OpenMP runtime library for LLVM/clang compiler"
 HOMEPAGE="https://openmp.llvm.org"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/openmp-${PV/_/}.src.tar.xz"
 
-LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
+# Additional licenses:
+# - MIT-licensed Intel code,
+# - LLVM Software Grant from Intel.
+
+LICENSE="|| ( UoI-NCSA MIT ) MIT LLVM-Grant"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-fbsd ~amd64-linux ~x64-macos"
 IUSE="cuda hwloc kernel_linux offload ompt test"
 # CUDA works only with the x86_64 ABI
 REQUIRED_USE="offload? ( cuda? ( abi_x86_64 ) )"
@@ -43,7 +45,7 @@ DEPEND="${RDEPEND}
 		>=sys-devel/clang-6
 	)"
 
-S="${WORKDIR}"/openmp
+S=${WORKDIR}/openmp-${PV/_/}.src
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -72,12 +74,6 @@ pkg_pretend() {
 pkg_setup() {
 	use test && python-any-r1_pkg_setup
 }
-
-src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}" '' openmp
-}
-
 
 multilib_src_configure() {
 	local libdir="$(get_libdir)"

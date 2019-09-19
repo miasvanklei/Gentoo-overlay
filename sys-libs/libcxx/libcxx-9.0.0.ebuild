@@ -1,39 +1,26 @@
 # Copyright 1999-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI=6
 
 # Ninja provides better scalability and cleaner verbose output, and is used
 # throughout all LLVM projects.
 : ${CMAKE_MAKEFILE_GENERATOR:=ninja}
 # (needed due to CMAKE_BUILD_TYPE != Gentoo)
 CMAKE_MIN_VERSION=3.7.0-r1
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-[[ ${PV} == *9999 ]] && SCM="git-r3" || SCM=""
-
-inherit ${SCM} cmake-multilib llvm multiprocessing python-any-r1 \
+inherit cmake-multilib llvm multiprocessing python-any-r1 \
 	toolchain-funcs
 
 DESCRIPTION="New implementation of the C++ standard library, targeting C++11"
 HOMEPAGE="https://libcxx.llvm.org/"
-if [[ ${PV} != *9999 ]] ; then
-	SRC_URI="https://llvm.org/releases/${PV}/${P}.src.tar.xz"
-	S="${WORKDIR}/${P}.src"
-else
-	SRC_URI=""
-fi
+SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
 
-LICENSE="Apache-2.0-with-LLVM-exceptions || ( UoI-NCSA MIT )"
+LICENSE="|| ( UoI-NCSA MIT )"
 SLOT="0"
-if [[ ${PV} != *9999 ]] ; then
-	KEYWORDS="~amd64 ~x86 ~amd64-fbsd ~x86-fbsd ~amd64-linux ~x86-linux"
-else
-	KEYWORDS=""
-fi
-IUSE="elibc_glibc elibc_musl +libcxxabi libcxxrt +libunwind +static-libs test"
+KEYWORDS="~amd64 ~arm ~arm64 ~x86 ~amd64-fbsd"
+IUSE="+libcxxabi libcxxrt +libunwind +static-libs test"
 REQUIRED_USE="libunwind? ( || ( libcxxabi libcxxrt ) )
 	?? ( libcxxabi libcxxrt )"
 RESTRICT="!test? ( test )"
@@ -51,7 +38,7 @@ DEPEND="${RDEPEND}
 	app-arch/xz-utils
 	>=sys-devel/llvm-6"
 
-S="${WORKDIR}/${PN}"
+S=${WORKDIR}/${P/_/}.src
 
 DOCS=( CREDITS.TXT )
 
@@ -66,11 +53,6 @@ CMAKE_BUILD_TYPE=RelWithDebInfo
 
 python_check_deps() {
 	has_version "dev-python/lit[${PYTHON_USEDEP}]"
-}
-
-src_unpack() {
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}" '' libcxx
 }
 
 pkg_setup() {

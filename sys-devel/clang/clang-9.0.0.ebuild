@@ -8,14 +8,18 @@ EAPI=7
 CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
 
-inherit cmake-utils git-r3 llvm multilib-minimal multiprocessing \
+inherit cmake-utils llvm multilib-minimal multiprocessing \
 	pax-utils python-single-r1 toolchain-funcs
+
+MY_P=cfe-${PV/_/}.src
+EXTRA_P=clang-tools-extra-${PV/_/}.src
+LLVM_P=llvm-${PV/_/}.src
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/llvm/llvm-project.git"
-EGIT_BRANCH="release/9.x"
+SRC_URI="https://releases.llvm.org/${PV/_//}/${MY_P}.tar.xz
+	https://releases.llvm.org/${PV/_//}/${EXTRA_P}.tar.xz
+	test? ( https://releases.llvm.org/${PV/_//}/${LLVM_P}.tar.xz )"
 
 # Keep in sync with sys-devel/llvm
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -28,7 +32,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
 SLOT="$(ver_cut 1)"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE="debug +default-compiler-rt +default-libcxx doc +fortran +static-analyzer
 	test +xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 RESTRICT="!test? ( test )"
@@ -58,7 +62,7 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
 
 # We need extra level of indirection for CLANG_RESOURCE_DIR
-S=${WORKDIR}/x/y/${PN}
+S=${WORKDIR}/x/y/${MY_P}
 
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
@@ -84,13 +88,18 @@ src_unpack() {
 	mkdir -p x/y || die
 	cd x/y || die
 
-	git-r3_fetch
-	git-r3_checkout '' "${WORKDIR}/x/y" '' clang clang-tools-extra
+	einfo "Unpacking ${MY_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${MY_P}.tar.xz" || die
+	einfo "Unpacking ${EXTRA_P}.tar.xz ..."
+	tar -xf "${DISTDIR}/${EXTRA_P}.tar.xz" || die
 
-	mv clang-tools-extra clang/tools/extra
-
+	mv "${EXTRA_P}" "${S}"/tools/extra || die
 	if use test; then
-		git-r3_checkout '' "${WORKDIR}" '' llvm/lib/Testing/Support llvm/utils/{lit,llvm-lit,unittest}
+		einfo "Unpacking parts of ${LLVM_P}.tar.xz ..."
+		tar -xf "${DISTDIR}/${LLVM_P}.tar.xz" \
+			"${LLVM_P}"/lib/Testing/Support \
+			"${LLVM_P}"/utils/{lit,llvm-lit,unittest} || die
+		mv "${LLVM_P}" "${WORKDIR}"/llvm || die
 	fi
 }
 
