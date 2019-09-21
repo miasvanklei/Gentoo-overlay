@@ -1,0 +1,11 @@
+--- a/src/pulsecore/atomic.h	2019-09-17 19:00:47.367773965 +0200
++++ b/src/pulsecore/atomic.h	2019-09-17 19:01:48.677057006 +0200
+@@ -117,7 +117,7 @@
+ }
+ 
+ static inline void pa_atomic_ptr_store(pa_atomic_ptr_t *a, void* p) {
+-    __atomic_store_n(&a->value, p, __ATOMIC_SEQ_CST);
++    __atomic_store_n(&a->value, (uintptr_t)p, __ATOMIC_SEQ_CST);
+ }
+ 
+ #else
