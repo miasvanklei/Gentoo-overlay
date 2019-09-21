@@ -120,9 +120,6 @@ src_prepare() {
 	# musl specific fixes
 	eapply "${FILESDIR}"/jdk-musl.patch
 
-	# thread_db.h not available on musl
-#	eapply "${FILESDIR}"/hotspot-noagent-musl.patch
-
 	# uclibc specific fixes (also for musl)
 	eapply "${FILESDIR}"/hotspot-uclibc-fixes.patch
 
