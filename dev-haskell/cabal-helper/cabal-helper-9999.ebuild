@@ -25,6 +25,7 @@ RDEPEND=">=dev-haskell/cabal-1.14:=[profile?] <dev-haskell/cabal-4.0.0:=[profile
 	dev-haskell/cabal-plan:=
 	>=dev-haskell/mtl-2.0:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
 	>=dev-haskell/sha-1.6.4.4:=[profile?] <dev-haskell/sha-1.7:=[profile?]
+	>=dev-haskell/semigroupoids-5.2:=[profile?] <dev-haskell/semigroupoids-5.4:=[profile?]
 	>=dev-haskell/pretty-show-1.6.0:=[profile?] <dev-haskell/pretty-show-1.10:=[profile?]
 	>=dev-haskell/temporary-1.2.0.4:=[profile?] <dev-haskell/temporary-1.4:=[profile?]
 	>=dev-haskell/utf8-string-1.0.1.1:=[profile?] <dev-haskell/utf8-string-1.1:=[profile?]
