@@ -29,14 +29,6 @@ DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.0
 "
 
-src_prepare() {
-        default
-
-        cabal_chdeps \
-                'optparse-applicative < 0.15 && >= 0.13.0.0' 'optparse-applicative < 0.16 && >= 0.13.0.0'
-}
-
-
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag _ _)
