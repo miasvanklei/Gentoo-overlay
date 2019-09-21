@@ -15,6 +15,7 @@ DESCRIPTION="Constraint solving framework employed by the Helium Compiler"
 HOMEPAGE="http://www.cs.uu.nl/wiki/bin/view/Helium/WebHome"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/Helium4Haskell/Top.git"
+EGIT_BRANCH="codegen-llvm-typed"
 
 LICENSE="GPL-2"
 SLOT="0/${PV}"
