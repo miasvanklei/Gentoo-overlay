@@ -12,7 +12,7 @@ DESCRIPTION="The Lazy Virtual Machine (LVM)"
 HOMEPAGE="http://www.cs.uu.nl/wiki/bin/view/Helium/WebHome"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/Helium4Haskell/lvm.git"
-EGIT_BRANCH="code-cleanup"
+EGIT_BRANCH="codegen-llvm-typed"
 
 LICENSE="BSD"
 SLOT="0/${PV}"
@@ -26,9 +26,5 @@ RDEPEND="dev-haskell/parsec:=[profile?]
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.10.1.0
 "
-
-PATCHES=(
-	"${FILESDIR}"/ghc-8.6.patch
-)
 
 S="${WORKDIR}"/${P}/src/lib
