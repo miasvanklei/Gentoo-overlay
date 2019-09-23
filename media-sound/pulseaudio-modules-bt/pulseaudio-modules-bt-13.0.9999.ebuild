@@ -5,10 +5,15 @@ EAPI=7
 
 inherit git-r3 cmake-utils readme.gentoo-r1
 
+PULSE_PN="${PN/-modules-bt/}"
+PULSE_PV="${PV/.9999/}"
+PULSE="${PULSE_PN}-${PULSE_PV}"
+
 DESCRIPTION="PulseAudio modules for LDAC, aptX, aptX HD, and AAC for Bluetooth (alongside SBC and native+ofono headset)"
 HOMEPAGE="https://github.com/EHfive/pulseaudio-modules-bt"
-SRC_URI=""
+SRC_URI="https://freedesktop.org/software/pulseaudio/releases/${PULSE}.tar.xz"
 EGIT_REPO_URI="https://github.com/EHfive/${PN}"
+EGIT_SUBMODULES=()
 
 LICENSE="LGPL-2.1"
 SLOT="0"
@@ -50,6 +55,16 @@ load-module module-bluetooth-policy
 load-module module-bluetooth-discover
 .endif
 "
+
+src_unpack() {
+	git-r3_fetch
+	git-r3_checkout
+
+	cd ${S}
+	unpack "${PULSE}".tar.xz
+	rmdir pa
+	mv "${PULSE}" pa
+}
 
 src_configure() {
 	local mycmakeargs=(
