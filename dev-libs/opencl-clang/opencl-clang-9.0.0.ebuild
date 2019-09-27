@@ -3,29 +3,26 @@
 
 EAPI=7
 
-inherit cmake-multilib llvm git-r3
+inherit cmake-multilib llvm
 
 DESCRIPTION="OpenCL-oriented thin wrapper library around clang"
 HOMEPAGE="https://github.com/intel/opencl-clang"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/intel/opencl-clang.git"
-EGIT_BRANCH=ocl-open-90
+SRC_URI="https://github.com/intel/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="UoI-NCSA"
-SLOT="9"
+SLOT="8"
 KEYWORDS="~amd64"
 
 BDEPEND="dev-vcs/git"
-COMMON="sys-devel/clang:9=[static-analyzer,${MULTILIB_USEDEP}]"
+COMMON="sys-devel/clang:8=[static-analyzer,${MULTILIB_USEDEP}]"
 DEPEND="${COMMON}
-	dev-util/spirv-llvm-translator:9=[${MULTILIB_USEDEP}]"
+	dev-util/spirv-llvm-translator:8=[${MULTILIB_USEDEP}]"
 RDEPEND="${COMMON}"
 
-LLVM_MAX_SLOT=9
+LLVM_MAX_SLOT=8
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0-clang_library_dir.patch
-	"${FILESDIR}"/link-with-clang-cpp.patch
 )
 
 multilib_src_configure() {
