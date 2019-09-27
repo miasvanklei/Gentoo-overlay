@@ -63,10 +63,9 @@ PATCHES=(
 	"${FILESDIR}"/0001-use-compiler-rt.patch
 	"${FILESDIR}"/0002-llvm-unwind.patch
 	"${FILESDIR}"/0003-print-llvm-errors.patch
+	"${FILESDIR}"/0004-llvm-9.patch
 	# fix build when nvidia is not built-in
 	"${FILESDIR}"/remove-nvvmreflectpass.patch
-	# temporary
-	"${FILESDIR}"/llvm-9.patch
 )
 
 S="${WORKDIR}/${PN}-${MY_PV}"
