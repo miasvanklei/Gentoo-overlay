@@ -110,6 +110,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0005-gentoo-linux-changes.patch
 	eapply "${FILESDIR}"/0007-defines-musl.patch
 	eapply "${FILESDIR}"/0009-symlink-gcc-tools.patch
+	eapply "${FILESDIR}"/0010-static-pie.patch
 	use fortran && eapply "${FILESDIR}"/0008-add-fortran-support.patch
 
 	cmake-utils_src_prepare
