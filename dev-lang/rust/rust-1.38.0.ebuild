@@ -66,7 +66,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/0005-libc++-linkage.patch
 	eapply "${FILESDIR}"/0006-musl-fix-static-linking.patch
 	eapply "${FILESDIR}"/0007-add-gentoo-target.patch
-	eapply "${FILESDIR}"/0008-llvm-9.patch
+	eapply "${FILESDIR}"/0008-static-pie.patch
 	eapply "${FILESDIR}"/0009-Move-debugger-scripts-to-usr-share-rust.patch
 
 	eapply_user
@@ -111,6 +111,7 @@ src_configure() {
 }
 
 src_compile() {
+#		CARGO_BUILD_PIPELINING=true
 	cat <<- EOF >> "${S}"/config.env
 		RUST_BACKTRACE=1
 		RUSTC_CRT_STATIC="false"
@@ -170,8 +171,8 @@ src_install() {
 
 	# Install sources needed for rls
 	pushd ${S}/src
-	mkdir -p ${D}/usr/lib/rustlib/src/rust/src
-	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src/rust/src \; || die
+	mkdir -p ${D}/usr/lib/rustlib/src
+	find lib* -name "*.rs" -type f -exec cp --parents {} ${D}/usr/lib/rustlib/src \; || die
 	popd >/dev/null
 }
 
