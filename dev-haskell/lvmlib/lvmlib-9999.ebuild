@@ -12,7 +12,7 @@ DESCRIPTION="The Lazy Virtual Machine (LVM)"
 HOMEPAGE="http://www.cs.uu.nl/wiki/bin/view/Helium/WebHome"
 SRC_URI=""
 EGIT_REPO_URI="https://github.com/Helium4Haskell/lvm.git"
-EGIT_BRANCH="codegen-llvm-typed"
+EGIT_BRANCH="code-cleanup"
 
 LICENSE="BSD"
 SLOT="0/${PV}"
