@@ -3,27 +3,31 @@
 
 EAPI=7
 
-inherit cmake-multilib flag-o-matic llvm git-r3
+inherit cmake-multilib flag-o-matic llvm
+
+MY_PN="SPIRV-LLVM-Translator"
+MY_PV="$(ver_rs 3 -)"
+MY_P="${MY_PN}-${MY_PV}"
 
 DESCRIPTION="Bi-directional translator between SPIR-V and LLVM IR"
 HOMEPAGE="https://github.com/KhronosGroup/SPIRV-LLVM-Translator"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git"
-EGIT_BRANCH=llvm_release_90
+SRC_URI="https://github.com/KhronosGroup/${MY_PN}/archive/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="UoI-NCSA"
-SLOT="9"
+SLOT="8"
 KEYWORDS="~amd64"
 IUSE="test tools"
 
-COMMON="sys-devel/llvm:9=[${MULTILIB_USEDEP}]"
+S="${WORKDIR}/${MY_P}"
+
+COMMON="sys-devel/llvm:8=[${MULTILIB_USEDEP}]"
 DEPEND="${COMMON}
 	test? ( dev-python/lit )"
 RDEPEND="${COMMON}"
 
 REQUIRED_USE="test? ( tools )"
 
-LLVM_MAX_SLOT=9
+LLVM_MAX_SLOT=8
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0.1-no_pkgconfig_files.patch
