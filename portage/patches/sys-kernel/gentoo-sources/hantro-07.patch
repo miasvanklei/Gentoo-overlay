@@ -1,0 +1,129 @@
+diff --git a/drivers/staging/media/hantro/hantro.h b/drivers/staging/media/hantro/hantro.h
+index 81e25dfc98b7d..c4c86c32ea2da 100644
+--- a/drivers/staging/media/hantro/hantro.h
++++ b/drivers/staging/media/hantro/hantro.h
+@@ -20,6 +20,7 @@
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-ioctl.h>
++#include <media/v4l2-mem2mem.h>
+ #include <media/videobuf2-core.h>
+ #include <media/videobuf2-dma-contig.h>
+ 
+@@ -373,4 +374,16 @@ bool hantro_is_encoder_ctx(const struct hantro_ctx *ctx);
+ void *hantro_get_ctrl(struct hantro_ctx *ctx, u32 id);
+ dma_addr_t hantro_get_ref(struct vb2_queue *q, u64 ts);
+ 
++static inline struct vb2_v4l2_buffer *
++hantro_get_src_buf(struct hantro_ctx *ctx)
++{
++	return v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
++}
++
++static inline struct vb2_v4l2_buffer *
++hantro_get_dst_buf(struct hantro_ctx *ctx)
++{
++	return v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++}
++
+ #endif /* HANTRO_H_ */
+diff --git a/drivers/staging/media/hantro/hantro_g1_mpeg2_dec.c b/drivers/staging/media/hantro/hantro_g1_mpeg2_dec.c
+index e592c1b66375d..55f861e961086 100644
+--- a/drivers/staging/media/hantro/hantro_g1_mpeg2_dec.c
++++ b/drivers/staging/media/hantro/hantro_g1_mpeg2_dec.c
+@@ -167,8 +167,8 @@ void hantro_g1_mpeg2_dec_run(struct hantro_ctx *ctx)
+ 	const struct v4l2_mpeg2_picture *picture;
+ 	u32 reg;
+ 
+-	src_buf = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
+-	dst_buf = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++	src_buf = hantro_get_src_buf(ctx);
++	dst_buf = hantro_get_dst_buf(ctx);
+ 
+ 	/* Apply request controls if any */
+ 	v4l2_ctrl_request_setup(src_buf->vb2_buf.req_obj.req,
+diff --git a/drivers/staging/media/hantro/hantro_g1_vp8_dec.c b/drivers/staging/media/hantro/hantro_g1_vp8_dec.c
+index 72d983a11ca17..6032cbbecb06e 100644
+--- a/drivers/staging/media/hantro/hantro_g1_vp8_dec.c
++++ b/drivers/staging/media/hantro/hantro_g1_vp8_dec.c
+@@ -260,7 +260,7 @@ static void cfg_parts(struct hantro_ctx *ctx,
+ 	u32 count = 0;
+ 	unsigned int i;
+ 
+-	vb2_src = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
++	vb2_src = hantro_get_src_buf(ctx);
+ 	src_dma = vb2_dma_contig_plane_dma_addr(&vb2_src->vb2_buf, 0);
+ 
+ 	/*
+@@ -391,7 +391,7 @@ static void cfg_ref(struct hantro_ctx *ctx,
+ 	struct vb2_v4l2_buffer *vb2_dst;
+ 	dma_addr_t ref;
+ 
+-	vb2_dst = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++	vb2_dst = hantro_get_dst_buf(ctx);
+ 
+ 	ref = hantro_get_ref(cap_q, hdr->last_frame_ts);
+ 	if (!ref)
+@@ -424,7 +424,7 @@ static void cfg_buffers(struct hantro_ctx *ctx,
+ 	dma_addr_t dst_dma;
+ 	u32 reg;
+ 
+-	vb2_dst = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++	vb2_dst = hantro_get_dst_buf(ctx);
+ 
+ 	/* Set probability table buffer address */
+ 	vdpu_write_relaxed(vpu, ctx->vp8_dec.prob_tbl.dma,
+@@ -453,7 +453,7 @@ void hantro_g1_vp8_dec_run(struct hantro_ctx *ctx)
+ 	u32 mb_width, mb_height;
+ 	u32 reg;
+ 
+-	vb2_src = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
++	vb2_src = hantro_get_src_buf(ctx);
+ 	v4l2_ctrl_request_setup(vb2_src->vb2_buf.req_obj.req,
+ 				&ctx->ctrl_handler);
+ 
+diff --git a/drivers/staging/media/hantro/hantro_h1_jpeg_enc.c b/drivers/staging/media/hantro/hantro_h1_jpeg_enc.c
+index 0c1e3043dc7ee..f5adb5cbde507 100644
+--- a/drivers/staging/media/hantro/hantro_h1_jpeg_enc.c
++++ b/drivers/staging/media/hantro/hantro_h1_jpeg_enc.c
+@@ -84,8 +84,8 @@ void hantro_h1_jpeg_enc_run(struct hantro_ctx *ctx)
+ 	struct hantro_jpeg_ctx jpeg_ctx;
+ 	u32 reg;
+ 
+-	src_buf = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
+-	dst_buf = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++	src_buf = hantro_get_src_buf(ctx);
++	dst_buf = hantro_get_dst_buf(ctx);
+ 
+ 	memset(&jpeg_ctx, 0, sizeof(jpeg_ctx));
+ 	jpeg_ctx.buffer = vb2_plane_vaddr(&dst_buf->vb2_buf, 0);
+diff --git a/drivers/staging/media/hantro/rk3399_vpu_hw_jpeg_enc.c b/drivers/staging/media/hantro/rk3399_vpu_hw_jpeg_enc.c
+index ae66354d2d936..82c5af822766e 100644
+--- a/drivers/staging/media/hantro/rk3399_vpu_hw_jpeg_enc.c
++++ b/drivers/staging/media/hantro/rk3399_vpu_hw_jpeg_enc.c
+@@ -116,8 +116,8 @@ void rk3399_vpu_jpeg_enc_run(struct hantro_ctx *ctx)
+ 	struct media_request *src_req;
+ 	u32 reg;
+ 
+-	src_buf = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
+-	dst_buf = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++	src_buf = hantro_get_src_buf(ctx);
++	dst_buf = hantro_get_dst_buf(ctx);
+ 
+ 	src_req = src_buf->vb2_buf.req_obj.req;
+ 	v4l2_ctrl_request_setup(src_req, &ctx->ctrl_handler);
+diff --git a/drivers/staging/media/hantro/rk3399_vpu_hw_mpeg2_dec.c b/drivers/staging/media/hantro/rk3399_vpu_hw_mpeg2_dec.c
+index 8685bddfbcab4..451bfcceadba4 100644
+--- a/drivers/staging/media/hantro/rk3399_vpu_hw_mpeg2_dec.c
++++ b/drivers/staging/media/hantro/rk3399_vpu_hw_mpeg2_dec.c
+@@ -169,8 +169,8 @@ void rk3399_vpu_mpeg2_dec_run(struct hantro_ctx *ctx)
+ 	const struct v4l2_mpeg2_picture *picture;
+ 	u32 reg;
+ 
+-	src_buf = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
+-	dst_buf = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++	src_buf = hantro_get_src_buf(ctx);
++	dst_buf = hantro_get_dst_buf(ctx);
+ 
+ 	/* Apply request controls if any */
+ 	v4l2_ctrl_request_setup(src_buf->vb2_buf.req_obj.req,
