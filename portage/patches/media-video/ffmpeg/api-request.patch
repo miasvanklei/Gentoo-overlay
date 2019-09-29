@@ -86,19 +86,6 @@ index 15e6c321b1d..0c842b920fc 100755
  enabled libv4l2           && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_ioctl
  enabled libvidstab        && require_pkg_config libvidstab "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
  enabled libvmaf           && require_pkg_config libvmaf "libvmaf >= 0.6.2" libvmaf.h compute_vmaf
-@@ -6457,6 +6458,12 @@
- check_cc vp8_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;"
- check_cc vp9_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;"
- 
-+check_func_headers "linux/media.h linux/videodev2.h" v4l2_timeval_to_ns
-+check_cc h264_v4l2_request linux/videodev2.h "int i = V4L2_PIX_FMT_H264_SLICE;"
-+check_cc hevc_v4l2_request linux/videodev2.h "int i = V4L2_PIX_FMT_HEVC_SLICE;"
-+check_cc mpeg2_v4l2_request linux/videodev2.h "int i = V4L2_PIX_FMT_MPEG2_SLICE;"
-+check_cc vp8_v4l2_request linux/videodev2.h "int i = V4L2_PIX_FMT_VP8_FRAME;"
-+
- check_headers sys/videoio.h
- test_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
- 
 diff --git a/libavcodec/Makefile b/libavcodec/Makefile
 index 4b8ad121dbe..0249defb4f3 100644
 --- a/libavcodec/Makefile
