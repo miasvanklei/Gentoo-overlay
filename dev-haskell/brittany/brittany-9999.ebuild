@@ -47,10 +47,6 @@ DEPEND="${RDEPEND}
 		>=dev-haskell/parsec-3.1.11 <dev-haskell/parsec-3.2 )
 "
 
-PATCHES=(
-	"${FILESDIR}"/ghc-8.8.patch
-)
-
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag brittany-dev-lib brittany-dev-lib)
