@@ -41,7 +41,6 @@ PATCHES=(
 	"${FILESDIR}"/remove-xfs.patch
 	"${FILESDIR}"/dirty-fix-fexecve.patch
 	"${FILESDIR}"/use-getenv.patch
-	"${FILESDIR}"/fix-cgroup-v2-only.patch
 	"${FILESDIR}"/fix-versioninfo-length.patch
 )
 
