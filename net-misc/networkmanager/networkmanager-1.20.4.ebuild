@@ -174,13 +174,10 @@ multilib_src_configure() {
 		--disable-static
 		--localstatedir=/var
 		--disable-lto
-		--disable-config-plugin-ibft
 		--disable-qt
 		--without-netconfig
 		--with-dbus-sys-dir=/etc/dbus-1/system.d
-		# We need --with-libnm-glib (and dbus-glib dep) as reverse deps are
-		# still not ready for removing that lib, bug #665338
-		--with-libnm-glib
+
 		--with-nmcli=yes
 		--with-udev-dir="$(get_udevdir)"
 		--with-config-plugins-default=keyfile
