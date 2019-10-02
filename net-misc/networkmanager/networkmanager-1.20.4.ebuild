@@ -316,6 +316,8 @@ multilib_src_install_all() {
 		EOF
 	fi
 
+	# invalid and not needed
+	rm "${ED%/}"/lib/udev/rules.d/84-nm-drivers.rules || die
 	# Empty
 	rmdir "${ED%/}"/var{/lib{/NetworkManager,},} || die
 }
