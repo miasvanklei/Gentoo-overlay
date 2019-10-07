@@ -1,0 +1,43 @@
+From df3fbe7c04e6f98532dbda3842aabb7813558341 Mon Sep 17 00:00:00 2001
+From: Ahzo <Ahzo@tutanota.com>
+Date: Fri, 4 Oct 2019 23:45:27 +0200
+Subject: [PATCH] drm/amdgpu: Move IB pool init after ucode bo creation
+
+This prevents frequent resume failures.
+
+Fixes: 533aed278afe ("drm/amdgpu: Move IB pool init and fini v2")
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=204241
+Signed-off-by: Ahzo <Ahzo@tutanota.com>
+---
+ drivers/gpu/drm/amd/amdgpu/amdgpu_device.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c b/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c
+index 5a1939dbd4e3..cc276270725e 100644
+--- a/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c
++++ b/drivers/gpu/drm/amd/amdgpu/amdgpu_device.c
+@@ -1816,6 +1816,10 @@ static int amdgpu_device_ip_init(struct amdgpu_device *adev)
+ 		}
+ 	}
+ 
++	r = amdgpu_ucode_create_bo(adev); /* create ucode bo when sw_init complete*/
++	if (r)
++		goto init_failed;
++
+ 	r = amdgpu_ib_pool_init(adev);
+ 	if (r) {
+ 		dev_err(adev->dev, "IB initialization failed (%d).\n", r);
+@@ -1823,10 +1827,6 @@ static int amdgpu_device_ip_init(struct amdgpu_device *adev)
+ 		goto init_failed;
+ 	}
+ 
+-	r = amdgpu_ucode_create_bo(adev); /* create ucode bo when sw_init complete*/
+-	if (r)
+-		goto init_failed;
+-
+ 	r = amdgpu_device_ip_hw_init_phase1(adev);
+ 	if (r)
+ 		goto init_failed;
+-- 
+2.23.0
+
