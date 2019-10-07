@@ -25,6 +25,7 @@ DEPEND="${RDEPEND}
 PATCHES=(
 	"${FILESDIR}"/fix-definition.patch
 	"${FILESDIR}"/clang-aarch64.patch
+	"${FILESDIR}"/fenv.patch
 )
 
 CMAKE_BUILD_TYPE=Release
