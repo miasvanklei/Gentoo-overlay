@@ -14,12 +14,12 @@ SLOT="8"
 KEYWORDS="~amd64"
 
 BDEPEND="dev-vcs/git"
-COMMON="sys-devel/clang:8=[static-analyzer,${MULTILIB_USEDEP}]"
+COMMON="sys-devel/clang:9=[static-analyzer,${MULTILIB_USEDEP}]"
 DEPEND="${COMMON}
-	dev-util/spirv-llvm-translator:8=[${MULTILIB_USEDEP}]"
+	dev-util/spirv-llvm-translator:9=[${MULTILIB_USEDEP}]"
 RDEPEND="${COMMON}"
 
-LLVM_MAX_SLOT=8
+LLVM_MAX_SLOT=9
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0-clang_library_dir.patch

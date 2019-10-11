@@ -20,14 +20,14 @@ IUSE="test tools"
 
 S="${WORKDIR}/${MY_P}"
 
-COMMON="sys-devel/llvm:8=[${MULTILIB_USEDEP}]"
+COMMON="sys-devel/llvm:9=[${MULTILIB_USEDEP}]"
 DEPEND="${COMMON}
 	test? ( dev-python/lit )"
 RDEPEND="${COMMON}"
 
 REQUIRED_USE="test? ( tools )"
 
-LLVM_MAX_SLOT=8
+LLVM_MAX_SLOT=9
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0.1-no_pkgconfig_files.patch
