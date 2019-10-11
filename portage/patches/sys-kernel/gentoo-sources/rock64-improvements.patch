@@ -1,5 +1,58 @@
---- a/arch/arm64/boot/dts/rockchip/rk3328.dtsi	2019-09-22 14:13:25.821093280 +0200
-+++ b/arch/arm64/boot/dts/rockchip/rk3328.dtsi	2019-09-22 14:28:12.427006256 +0200
+--- a/arch/arm64/boot/dts/rockchip/rk3328-rock64.dts	2019-09-22 14:07:54.243379846 +0200
++++ b/arch/arm64/boot/dts/rockchip/rk3328-rock64.dts	2019-09-22 14:18:23.028816748 +0200
+@@ -11,7 +11,7 @@
+ 	compatible = "pine64,rock64", "rockchip,rk3328";
+ 
+ 	chosen {
+-		stdout-path = "serial2:1500000n8";
++		stdout-path = "serial2:115200n8";
+ 	};
+ 
+ 	gmac_clkin: external-gmac-clock {
+@@ -68,7 +68,8 @@ 
+ 	sound {
+ 		compatible = "audio-graph-card";
+ 		label = "rockchip,rk3328";
+-		dais = <&i2s1_p0
++		dais = <&i2s0_p0
++			&i2s1_p0
+ 			&spdif_p0>;
+ 	};
+ 
+@@ -141,6 +142,12 @@ 
+ 
+ &hdmi {
+ 	status = "okay";
++
++	port@0 {
++		hdmi_p0_0: endpoint {
++			remote-endpoint = <&i2s0_p0_0>;
++		};
++	};
+ };
+ 
+ &hdmiphy {
+@@ -256,6 +263,18 @@ 
+ 	};
+ };
+ 
++&i2s0 {
++	status = "okay";
++
++	i2s0_p0: port {
++		i2s0_p0_0: endpoint {
++			dai-format = "i2s";
++			mclk-fs = <256>;
++			remote-endpoint = <&hdmi_p0_0>;
++		};
++	};
++};
++
+ &i2s1 {
+ 	status = "okay";
+ 
+--- a/arch/arm64/boot/dts/rockchip/rk3328.dtsi	2019-10-11 19:23:04.091821067 +0200
++++ b/arch/arm64/boot/dts/rockchip/rk3328.dtsi	2019-10-11 19:24:50.730871520 +0200
 @@ -105,22 +105,22 @@
  		};
  		opp-816000000 {
@@ -27,6 +80,14 @@
  			clock-latency-ns = <40000>;
  		};
  	};
+@@ -278,6 +278,7 @@
+ 			};
+ 			pd_vpu@RK3328_PD_VPU {
+ 				reg = <RK3328_PD_VPU>;
++				clocks = <&cru ACLK_VPU>, <&cru HCLK_VPU>;
+ 			};
+ 		};
+ 
 @@ -596,6 +597,17 @@
  		status = "disabled";
  	};
@@ -45,14 +106,11 @@
  	vpu_mmu: iommu@ff350800 {
  		compatible = "rockchip,iommu";
  		reg = <0x0 0xff350800 0x0 0x40>;
---- a/arch/arm64/boot/dts/rockchip/rk3328-rock64.dts	2019-09-22 14:07:54.243379846 +0200
-+++ b/arch/arm64/boot/dts/rockchip/rk3328-rock64.dts	2019-09-22 14:18:23.028816748 +0200
-@@ -11,7 +11,7 @@
- 	compatible = "pine64,rock64", "rockchip,rk3328";
- 
- 	chosen {
--		stdout-path = "serial2:1500000n8";
-+		stdout-path = "serial2:115200n8";
+@@ -604,6 +616,7 @@
+ 		clocks = <&cru ACLK_VPU>, <&cru HCLK_VPU>;
+ 		clock-names = "aclk", "iface";
+ 		#iommu-cells = <0>;
++		power-domains = <&power RK3328_PD_VPU>;
+ 		status = "disabled";
  	};
  
- 	gmac_clkin: external-gmac-clock {
