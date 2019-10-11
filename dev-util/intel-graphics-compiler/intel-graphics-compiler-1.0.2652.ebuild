@@ -3,12 +3,11 @@
 
 EAPI=7
 
-inherit cmake-multilib llvm git-r3
+inherit cmake-multilib llvm
 
 DESCRIPTION="LLVM-based OpenCL compiler targetting Intel Gen graphics hardware"
 HOMEPAGE="https://github.com/intel/intel-graphics-compiler"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/intel/intel-graphics-compiler.git"
+SRC_URI="https://github.com/intel/intel-graphics-compiler/archive/igc-${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
@@ -21,6 +20,8 @@ RDEPEND="${COMMON}"
 
 LLVM_MAX_SLOT=9
 CMAKE_BUILD_TYPE=Release
+
+S=${WORKDIR}/${PN}-igc-${PV}
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-1.0.9-no_Werror.patch
