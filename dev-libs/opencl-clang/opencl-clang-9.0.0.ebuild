@@ -10,7 +10,7 @@ HOMEPAGE="https://github.com/intel/opencl-clang"
 SRC_URI="https://github.com/intel/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="UoI-NCSA"
-SLOT="8"
+SLOT="9"
 KEYWORDS="~amd64"
 
 BDEPEND="dev-vcs/git"
