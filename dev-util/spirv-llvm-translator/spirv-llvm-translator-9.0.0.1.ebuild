@@ -14,7 +14,7 @@ HOMEPAGE="https://github.com/KhronosGroup/SPIRV-LLVM-Translator"
 SRC_URI="https://github.com/KhronosGroup/${MY_PN}/archive/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="UoI-NCSA"
-SLOT="8"
+SLOT="9"
 KEYWORDS="~amd64"
 IUSE="test tools"
 
