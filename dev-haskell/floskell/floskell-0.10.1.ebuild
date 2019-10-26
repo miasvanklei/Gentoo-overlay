@@ -24,7 +24,7 @@ RDEPEND=">=dev-haskell/aeson-0.11.3.0:=[profile?] <dev-haskell/aeson-1.5:=[profi
 	>=dev-haskell/haskell-src-exts-1.19:=[profile?] <dev-haskell/haskell-src-exts-1.22:=[profile?]
 	>=dev-haskell/monad-dijkstra-0.1.1:=[profile?] <dev-haskell/monad-dijkstra-0.2:=[profile?]
 	>=dev-haskell/mtl-2.2.1:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
-	>=dev-haskell/optparse-applicative-0.12.1.0:=[profile?] <dev-haskell/optparse-applicative-0.16:=[profile?]
+	>=dev-haskell/optparse-applicative-0.12.1.0:=[profile?] <dev-haskell/optparse-applicative-0.15:=[profile?]
 	>=dev-haskell/text-1.2.2.2:=[profile?] <dev-haskell/text-1.3:=[profile?]
 	>=dev-haskell/unordered-containers-0.2.8.0:=[profile?] <dev-haskell/unordered-containers-0.3:=[profile?]
 	>=dev-haskell/utf8-string-1.0.1.1:=[profile?] <dev-haskell/utf8-string-1.1:=[profile?]
@@ -40,6 +40,5 @@ src_prepare() {
 	default
 
 	cabal_chdeps \
-		'base >=4.9 && <4.13' 'base >=4.9 && <4.14' \
-		'optparse-applicative >=0.12.1.0 && <0.15' 'optparse-applicative >=0.12.1.0 && <0.16'
+		'base >=4.9 && <4.13' 'base >=4.9 && <4.14'
 }

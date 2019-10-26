@@ -29,7 +29,7 @@ RDEPEND="=dev-haskell/cabal-helper-9999:=[profile?]
 	>=dev-haskell/monad-control-1:=[profile?] <dev-haskell/monad-control-1.1:=[profile?]
 	>=dev-haskell/monad-journal-0.4:=[profile?] <dev-haskell/monad-journal-0.9:=[profile?]
 	dev-haskell/mtl:=[profile?]
-	>=dev-haskell/optparse-applicative-0.14.0.0:=[profile?] <dev-haskell/optparse-applicative-0.16:=[profile?]
+	>=dev-haskell/optparse-applicative-0.14.0.0:=[profile?] <dev-haskell/optparse-applicative-0.15:=[profile?]
 	>=dev-haskell/pipes-4.1:=[profile?] <dev-haskell/pipes-4.4:=[profile?]
 	>=dev-haskell/safe-0.3.9:=[profile?] <dev-haskell/safe-0.4:=[profile?]
 	>=dev-haskell/split-0.2.2:=[profile?] <dev-haskell/split-0.3:=[profile?]
@@ -52,7 +52,6 @@ src_prepare() {
         default
 
         cabal_chdeps \
-                'optparse-applicative < 0.15 && >= 0.13.0.0' 'optparse-applicative < 0.16 && >= 0.13.0.0' \
                 'temporary            < 1.3  && >= 1.2.0.3' 'temporary            < 1.4  && >= 1.2.0.3' \
                 'ghc                  < 8.7  && >= 7.8' 'ghc                  < 8.9  && >= 7.6'
 }
