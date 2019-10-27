@@ -16,14 +16,14 @@ fi
 
 PYTHON_COMPAT=( python{3_5,3_6,3_7} )
 
-inherit bash-completion-r1 linux-info meson multilib-minimal ninja-utils pam python-any-r1 systemd toolchain-funcs udev
+inherit bash-completion-r1 linux-info meson multilib-minimal ninja-utils pam python-any-r1 systemd toolchain-funcs udev usr-ldscript
 
 DESCRIPTION="System and service manager for Linux"
 HOMEPAGE="https://www.freedesktop.org/wiki/Software/systemd"
 
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
-IUSE="acl apparmor audit build cgroup-hybrid cryptsetup curl dns-over-tls elfutils +gcrypt gnuefi http idn importd +kmod +lz4 lzma nat pam pcre policykit qrcode +resolvconf +seccomp selinux split-usr +sysv-utils test vanilla xkb"
+IUSE="acl apparmor audit build cgroup-hybrid cryptsetup curl dns-over-tls elfutils +gcrypt gnuefi http idn importd +kmod +lz4 lzma nat pam pcre policykit qrcode +resolvconf +seccomp selinux split-usr static-libs +sysv-utils test vanilla xkb"
 
 REQUIRED_USE="importd? ( curl gcrypt lzma )"
 RESTRICT="!test? ( test )"
@@ -237,6 +237,7 @@ multilib_src_configure() {
 		# make sure we get /bin:/sbin in PATH
 		-Dsplit-usr=$(usex split-usr true false)
 		-Drootprefix="$(usex split-usr "${EPREFIX:-/}" "${EPREFIX}/usr")"
+		-Drootlibdir="${EPREFIX}/usr/$(get_libdir)"
 		-Dsysvinit-path=
 		-Dsysvrcnd-path=
 		# Avoid infinite exec recursion, bug 642724
@@ -309,6 +310,10 @@ multilib_src_configure() {
 		-Dsysusers=false
 		-Dgshadow=false
 		-Dldconfig=false
+
+		# static-libs
+		-Dstatic-libsystemd=$(usex static-libs true false)
+		-Dstatic-libudev=$(usex static-libs true false)
 	)
 
 	meson_src_configure "${myconf[@]}"
@@ -364,16 +369,15 @@ multilib_src_install_all() {
 	# Symlink /etc/sysctl.conf for easy migration.
 	dosym ../sysctl.conf /etc/sysctl.d/99-sysctl.conf
 
-	local udevdir=/lib/udev
-	use split-usr || udevdir=/usr/lib/udev
-
-	rm -r "${ED}${udevdir}/hwdb.d" || die
+	rm -r "${ED}${rootprefix}"/lib/udev/hwdb.d || die
 
 	if use split-usr; then
 		# Avoid breaking boot/reboot
 		dosym ../../../lib/systemd/systemd /usr/lib/systemd/systemd
 		dosym ../../../lib/systemd/systemd-shutdown /usr/lib/systemd/systemd-shutdown
 	fi
+
+	gen_usr_ldscript -a systemd udev
 }
 
 migrate_locale() {
@@ -432,6 +436,22 @@ save_enabled_units() {
 
 pkg_preinst() {
 	save_enabled_units {machines,remote-{fs}}.target getty@tty1.service
+
+	if ! use split-usr; then
+		local dir
+		for dir in bin sbin lib; do
+			if [[ ! ${EROOT}/${dir} -ef ${EROOT}/usr/${dir} ]]; then
+				eerror "\"${EROOT}/${dir}\" and \"${EROOT}/usr/${dir}\" are not merged."
+				eerror "One of them should be a symbolic link to the other one."
+				FAIL=1
+			fi
+		done
+		if [[ ${FAIL} ]]; then
+			eerror "Migration to system layout with merged directories must be performed before"
+			eerror "rebuilding ${CATEGORY}/${PN} with USE=\"-split-usr\" to avoid run-time breakage."
+			die "System layout with split directories still used"
+		fi
+	fi
 }
 
 pkg_postinst() {
@@ -453,6 +473,14 @@ pkg_postinst() {
 
 	if [[ ${ENABLED_UNITS[@]} ]]; then
 		systemctl --root="${ROOT:-/}" enable "${ENABLED_UNITS[@]}"
+	fi
+
+	if [[ -z ${REPLACING_VERSIONS} ]]; then
+		if type systemctl &>/dev/null; then
+			systemctl --root="${ROOT:-/}" enable getty@.service remote-fs.target || FAIL=1
+		fi
+		elog "To enable a useful set of services, run the following:"
+		elog "  systemctl preset-all --preset-mode=enable-only"
 	fi
 
 	if [[ -L ${EROOT}/var/lib/systemd/timesync ]]; then
