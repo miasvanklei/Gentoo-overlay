@@ -1,0 +1,42 @@
+--- a/configure.ac	2019-10-24 09:32:01.000000000 +0200
++++ b/configure.ac	2019-10-27 11:42:00.180755664 +0100
+@@ -163,6 +163,10 @@
+ 	[AS_HELP_STRING([--enable-test-coverage], [enable test coverage])])
+ AM_CONDITIONAL([ENABLE_TEST_COVERAGE], [test "x$enable_test_coverage" = "xyes"])
+ 
++AC_ARG_ENABLE([tests],
++	[AS_HELP_STRING([--enable-tests], [enable tests])])
++AM_CONDITIONAL([ENABLE_TESTS], [test "x$enable_tests" = "xyes"])
++
+ dnl ====================================================================================
+ dnl  Check types and their sizes.
+ 
+--- a/Makefile.am	2019-10-27 11:38:23.336503311 +0100
++++ b/Makefile.am	2019-10-27 11:40:41.500367216 +0100
+@@ -37,7 +37,9 @@
+ # src/ #
+ ########
+ 
++if ENABLE_TESTS
+ BUILT_SOURCES = src/test_endswap.c
++endif
+ 
+ SYMBOL_FILES = src/Symbols.gnu-binutils src/Symbols.darwin src/libsndfile-1.def src/Symbols.os2 src/Symbols.static
+ 
+@@ -199,6 +201,8 @@
+ # tests/ #
+ ##########
+ 
++if ENABLE_TESTS
++
+ TESTS_ENVIRONMENT = $(SHELL) tests/test_wrapper.sh
+ 
+ if ENABLE_TEST_COVERAGE
+@@ -416,6 +420,7 @@
+ 	  rm -f tests/utils.c && \
+ 	  $(MAKE) $(AM_MAKEFLAGS) tests/utils.c; \
+ 	fi
++endif
+ 
+ ########
+ # man/ #
