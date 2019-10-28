@@ -1,0 +1,35 @@
+--- a/src/text/url.c
++++ b/src/text/url.c
+@@ -499,7 +499,7 @@ void vlc_UrlClean (vlc_url_t *restrict url)
+ }
+ 
+ #if defined (HAVE_IDN)
+-# include <idna.h>
++# include <idn2.h>
+ #elif defined (_WIN32)
+ # include <windows.h>
+ # include <vlc_charset.h>
+@@ -920,9 +920,6 @@
+         case IDNA_MALLOC_ERROR:
+             errno = ENOMEM;
+             return NULL;
+-        case IDNA_DLOPEN_ERROR:
+-            errno = ENOSYS;
+-            return NULL;
+         default:
+             errno = EINVAL;
+             return NULL;
+--- a/configure.ac
++++ b/configure.ac
+@@ -906,9 +906,9 @@
+ dnl
+ dnl Domain name i18n support via GNU libidn
+ dnl
+-PKG_CHECK_MODULES([IDN], [libidn], [
++PKG_CHECK_MODULES([IDN], [libidn2], [
+   have_libidn="yes"
+-  AC_DEFINE([HAVE_IDN], 1, [Define to 1 if you have GNU libidn.])
++  AC_DEFINE([HAVE_IDN], 1, [Define to 1 if you have GNU libidn2.])
+ ], [
+   have_libidn="no"
+ ])
