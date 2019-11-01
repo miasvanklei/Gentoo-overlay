@@ -23,8 +23,8 @@ S=${WORKDIR}/ldc-${MY_PV}-src
 
 PATCHES=(
 	"${FILESDIR}"/fix-linking.patch
+	"${FILESDIR}"/fix-targets.patch
 	"${FILESDIR}"/wrong-type.patch
-	"${FILESDIR}"/llvm-9.patch
 )
 
 src_configure() {
