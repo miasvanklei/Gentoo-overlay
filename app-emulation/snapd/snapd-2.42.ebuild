@@ -39,7 +39,6 @@ PATCHES=(
 	"${FILESDIR}"/add-musl-path.patch
 	"${FILESDIR}"/missing-includes.patch
 	"${FILESDIR}"/remove-xfs.patch
-	"${FILESDIR}"/dirty-fix-fexecve.patch
 	"${FILESDIR}"/use-getenv.patch
 	"${FILESDIR}"/fix-versioninfo-length.patch
 )
@@ -88,7 +87,7 @@ src_compile() {
 	VX="-v -x" # or "-v -x" for verbosity
 	for I in snapctl snap-exec snap snapd snap-seccomp snap-update-ns; do
 		einfo "go building: ${I}"
-		go install $VX "github.com/snapcore/${PN}/cmd/${I}"
+		go install $VX -ldflags '-s -w -linkmode external -extldflags -static'  "github.com/snapcore/${PN}/cmd/${I}" || die
 	done
 	"${S}/bin/snap" help --man > "${C}/snap/snap.1"
 	rst2man.py "${C}/snap-confine/"snap-confine.{rst,1}
