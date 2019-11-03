@@ -3,17 +3,16 @@
 
 EAPI=7
 
-: ${CMAKE_MAKEFILE_GENERATOR:=ninja}
-# (needed due to CMAKE_BUILD_TYPE != Gentoo)
-CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
-
-inherit cmake-utils multilib-minimal multiprocessing pax-utils \
-	python-any-r1 toolchain-funcs
+inherit cmake-utils llvm.org multilib-minimal multiprocessing \
+	pax-utils python-any-r1 toolchain-funcs
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="https://releases.llvm.org/${PV/_//}/${P/_/}.src.tar.xz"
+SRC_URI="
+	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${P}-manpages.tar.bz2 )"
+LLVM_COMPONENTS=( llvm )
+llvm.org_set_globals
 
 # Keep in sync with CMakeLists.txt
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARM BPF Hexagon Lanai Mips MSP430
@@ -31,6 +30,7 @@ SLOT="$(ver_cut 1)"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
+REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
@@ -50,6 +50,8 @@ RDEPEND="
 	z3? ( >=sci-mathematics/z3-4.7.1:0=[${MULTILIB_USEDEP}] )"
 # configparser-3.2 breaks the build (3.3 or none at all are fine)
 DEPEND="${RDEPEND}
+	gold? ( sys-libs/binutils-libs )"
+BDEPEND="
 	dev-lang/perl
 	|| ( >=sys-devel/gcc-3.0 >=sys-devel/llvm-3.5
 		( >=sys-freebsd/freebsd-lib-9.1-r10 sys-libs/libcxx )
@@ -62,7 +64,6 @@ DEPEND="${RDEPEND}
 		dev-python/recommonmark[${PYTHON_USEDEP}]
 		dev-python/sphinx[${PYTHON_USEDEP}]
 	') )
-	gold? ( sys-libs/binutils-libs )
 	libffi? ( virtual/pkgconfig )
 	!!<dev-python/configparser-3.3.0.2
 	${PYTHON_DEPS}"
@@ -73,18 +74,24 @@ RDEPEND="${RDEPEND}
 PDEPEND="sys-devel/llvm-common
 	gold? ( >=sys-devel/llvmgold-${SLOT} )"
 
-REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
-
-S=${WORKDIR}/${P/_/}.src
-
 # least intrusive of all
 CMAKE_BUILD_TYPE=RelWithDebInfo
 
 python_check_deps() {
 	use doc || return 0
 
-	has_version "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
-	has_version "dev-python/sphinx[${PYTHON_USEDEP}]"
+	has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
+	has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
+}
+
+src_unpack() {
+	llvm.org_src_unpack
+
+	if ! use doc; then
+		ebegin "Unpacking llvm-${PV}-manpages.tar.bz2"
+		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
+		eend
+	fi
 }
 
 src_prepare() {
@@ -263,6 +270,13 @@ multilib_src_install_all() {
 		MANPATH="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 	_EOF_
+
+	# install pre-generated manpages
+	if ! use doc; then
+		# (doman does not support custom paths)
+		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
+		doins "${WORKDIR}/${P}-manpages/llvm"/*.1
+	fi
 
 	docompress "/usr/lib/llvm/${SLOT}/share/man"
 }
