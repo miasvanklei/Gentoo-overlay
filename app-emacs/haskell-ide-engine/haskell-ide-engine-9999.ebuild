@@ -76,7 +76,6 @@ DEPEND="${RDEPEND}
 
 PATCHES=(
 	"${FILESDIR}"/cabal.patch
-	"${FILESDIR}"/hlint.patch
 	"${FILESDIR}"/haddock.patch
 	"${FILESDIR}"/disable-test-library.patch
 )
@@ -85,7 +84,8 @@ src_prepare() {
 	default
 
 	cabal_chdeps \
-		'unix-time >= 0.4.7' 'unix-time >= 0.4.5'
+		'unix-time >= 0.4.7' 'unix-time >= 0.4.5' \
+		'hlint >= 2.2.2' 'hlint >= 2.1.11'
 }
 
 
