@@ -32,7 +32,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
 SLOT="$(ver_cut 1)"
 KEYWORDS="~amd64 ~arm ~arm64"
-IUSE="debug +default-compiler-rt +default-libcxx doc +fortran +static-analyzer
+IUSE="debug +default-compiler-rt +default-libunwind +default-libcxx doc +fortran +static-analyzer
 	test +xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}
 	|| ( ${ALL_LLVM_TARGETS[*]} )"
@@ -58,6 +58,7 @@ PDEPEND="
 	~sys-devel/clang-runtime-${PV}
 	fortran? ( dev-lang/flang )
 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
+	default-libunwind? ( =sys-libs/libunwind-${PV%_*}* )
 	default-libcxx? ( >=sys-libs/libcxx-${PV} )"
 
 # least intrusive of all
@@ -137,6 +138,7 @@ multilib_src_configure() {
 		# override default stdlib and rtlib
 		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
 		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
+		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-libunwind libunwind "")
 
 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
