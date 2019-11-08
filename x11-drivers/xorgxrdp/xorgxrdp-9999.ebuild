@@ -16,7 +16,7 @@ IUSE="+glamor"
 KEYWORDS="~amd64 ~x86"
 
 RDEPEND="net-misc/xrdp:0=
-	glamor? ( x11-base/xorg-server[glamor] )"
+	glamor? ( x11-base/xorg-server[-minimal] )"
 DEPEND="${RDEPEND}
 	dev-lang/nasm:0="
 
