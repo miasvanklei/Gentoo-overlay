@@ -78,6 +78,7 @@ PATCHES=(
 	"${FILESDIR}"/cabal.patch
 	"${FILESDIR}"/haddock.patch
 	"${FILESDIR}"/disable-test-library.patch
+	"${FILESDIR}"/hlint.patch
 )
 
 src_prepare() {
