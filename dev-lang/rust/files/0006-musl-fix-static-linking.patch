@@ -4,25 +4,25 @@
              None => continue,
          };
          match lib.kind {
--            NativeLibraryKind::NativeUnknown => cmd.link_dylib(&name.as_str()),
+-            NativeLibraryKind::NativeUnknown => cmd.link_dylib(name),
 +            NativeLibraryKind::NativeUnknown => if sess.crt_static() {
-+                                                    cmd.link_staticlib(&name.as_str())
++                                                    cmd.link_staticlib(name)
 +                                                } else {
-+                                                    cmd.link_dylib(&name.as_str())
++                                                    cmd.link_dylib(name)
 +                                                },
-             NativeLibraryKind::NativeFramework => cmd.link_framework(&name.as_str()),
-             NativeLibraryKind::NativeStaticNobundle => cmd.link_staticlib(&name.as_str()),
-             NativeLibraryKind::NativeStatic => cmd.link_whole_staticlib(&name.as_str(),
+             NativeLibraryKind::NativeFramework => cmd.link_framework(name),
+             NativeLibraryKind::NativeStaticNobundle => cmd.link_staticlib(name),
+             NativeLibraryKind::NativeStatic => cmd.link_whole_staticlib(name,
 @@ -1633,7 +1637,11 @@
                  continue
              }
              match lib.kind {
--                NativeLibraryKind::NativeUnknown => cmd.link_dylib(&name.as_str()),
+-                NativeLibraryKind::NativeUnknown => cmd.link_dylib(name),
 +                NativeLibraryKind::NativeUnknown => if sess.crt_static() {
-+                                                        cmd.link_staticlib(&name.as_str())
++                                                        cmd.link_staticlib(name)
 +                                                    } else {
-+                                                        cmd.link_dylib(&name.as_str())
++                                                        cmd.link_dylib(name)
 +                                                    },
-                 NativeLibraryKind::NativeFramework => cmd.link_framework(&name.as_str()),
+                 NativeLibraryKind::NativeFramework => cmd.link_framework(name),
                  NativeLibraryKind::NativeStaticNobundle => {
                      // Link "static-nobundle" native libs only if the crate they originate from

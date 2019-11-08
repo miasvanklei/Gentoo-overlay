@@ -1,16 +1,14 @@
 # Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 PYTHON_COMPAT=( python3_{6,7} )
 
-inherit llvm multiprocessing toolchain-funcs python-any-r1 versionator
+inherit llvm multiprocessing toolchain-funcs python-any-r1
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
-
-CARGO_DEPEND_VERSION="0.$(($(get_version_component_range 2))).0"
 
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
@@ -21,6 +19,8 @@ LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
 IUSE="debug doc libressl"
 
+LLVM_MAX_SLOT=9
+
 COMMON_DEPEND="sys-libs/zlib
 		!libressl? ( dev-libs/openssl:0= )
 		libressl? ( dev-libs/libressl:0= )
@@ -29,6 +29,7 @@ COMMON_DEPEND="sys-libs/zlib
 		net-libs/http-parser:=
 		net-misc/curl[ssl]
 		>=sys-devel/llvm-6:="
+
 DEPEND="${COMMON_DEPEND}
 	${PYTHON_DEPS}
 	|| (
@@ -36,6 +37,7 @@ DEPEND="${COMMON_DEPEND}
 		>=sys-devel/gcc-4.7
 	)
 	dev-util/cmake"
+
 RDEPEND="${COMMON_DEPEND}
 	!dev-util/cargo
 	!dev-util/rustfmt"
@@ -51,16 +53,12 @@ pkg_setup() {
 	llvm_pkg_setup
 }
 
-PATCHES=(
-)
-
 clear_vendor_checksums() {
 	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
 }
 
 src_prepare() {
 	eapply "${FILESDIR}"/0001-Remove-nostdlib-and-musl_root-from-musl-targets.patch
-	eapply "${FILESDIR}"/0002-link-stage-2-tools-dynamically-to-libstd.patch
 	eapply "${FILESDIR}"/0003-libc-linkage.patch
 	eapply "${FILESDIR}"/0004-libunwind-linkage.patch
 	eapply "${FILESDIR}"/0005-libc++-linkage.patch
