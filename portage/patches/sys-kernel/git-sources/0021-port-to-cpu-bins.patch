@@ -1,0 +1,126 @@
+From 8cd7e52c92f611f4bed80543b90475982514e064 Mon Sep 17 00:00:00 2001
+From: Ondrej Jirman
+Date: Thu, 31 Oct 2019 18:30:14 +0100
+Subject: arm64: dts: allwinner: h6: Port CPU OPP table to use CPU bins
+
+Signed-off-by: Ondrej Jirman <megous@megous.com>
+---
+ arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi | 63 ++++++++++++++++++++--------
+ 1 file changed, 46 insertions(+), 17 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi b/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi
+index 442d07893765..b231dbb05157 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi
+@@ -68,55 +68,80 @@
+ 	};
+ 
+ 	cpu_opp_table: opp_table {
+-		compatible = "operating-points-v2";
++		compatible = "allwinner,sun50i-h6-operating-points";
++		nvmem-cells = <&speedbin_efuse>;
+ 		opp-shared;
+ 
+ 		opp@480000000 {
+-			opp-hz = /bits/ 64 <480000000>;
+-			opp-microvolt = <880000 880000 880000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <480000000>;
++
++			opp-microvolt-speed0 = <880000>;
++			opp-microvolt-speed1 = <820000>;
++			opp-microvolt-speed2 = <820000>;
+ 		};
+ 
+ 		opp@720000000 {
+-			opp-hz = /bits/ 64 <720000000>;
+-			opp-microvolt = <880000 880000 880000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <720000000>;
++
++			opp-microvolt-speed0 = <880000>;
++			opp-microvolt-speed1 = <820000>;
++			opp-microvolt-speed2 = <820000>;
+ 		};
+ 
+ 		opp@816000000 {
+-			opp-hz = /bits/ 64 <816000000>;
+-			opp-microvolt = <880000 880000 880000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <816000000>;
++
++			opp-microvolt-speed0 = <880000>;
++			opp-microvolt-speed1 = <820000>;
++			opp-microvolt-speed2 = <820000>;
+ 		};
+ 
+ 		opp@888000000 {
+-			opp-hz = /bits/ 64 <888000000>;
+-			opp-microvolt = <880000 880000 880000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <888000000>;
++
++			opp-microvolt-speed0 = <880000>;
++			opp-microvolt-speed1 = <820000>;
++			opp-microvolt-speed2 = <820000>;
+ 		};
+ 
+ 		opp@1080000000 {
+-			opp-hz = /bits/ 64 <1080000000>;
+-			opp-microvolt = <940000 940000 940000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <1080000000>;
++
++			opp-microvolt-speed0 = <940000>;
++			opp-microvolt-speed1 = <880000>;
++			opp-microvolt-speed2 = <880000>;
+ 		};
+ 
+ 		opp@1320000000 {
+-			opp-hz = /bits/ 64 <1320000000>;
+-			opp-microvolt = <1000000 1000000 1000000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <1320000000>;
++
++			opp-microvolt-speed0 = <1000000>;
++			opp-microvolt-speed1 = <940000>;
++			opp-microvolt-speed2 = <940000>;
+ 		};
+ 
+ 		opp@1488000000 {
+-			opp-hz = /bits/ 64 <1488000000>;
+-			opp-microvolt = <1060000 1060000 1060000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <1488000000>;
++
++			opp-microvolt-speed0 = <1060000>;
++			opp-microvolt-speed1 = <1000000>;
++			opp-microvolt-speed2 = <1000000>;
+ 		};
+ 
+ 		opp@1800000000 {
+-			opp-hz = /bits/ 64 <1800000000>;
+-			opp-microvolt = <1160000 1160000 1160000>;
+ 			clock-latency-ns = <244144>; /* 8 32k periods */
++			opp-hz = /bits/ 64 <1800000000>;
++
++			opp-microvolt-speed0 = <1160000>;
++			opp-microvolt-speed1 = <1100000>;
++			opp-microvolt-speed2 = <1100000>;
+ 		};
+ 	};
+ 
+@@ -283,6 +308,10 @@
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+ 
++			speedbin_efuse: speed@1c {
++				reg = <0x1c 0x4>;
++			};
++
+ 			ths_calibration: thermal-sensor-calibration@14 {
+ 				reg = <0x14 0x6>;
+ 			};
+-- 
+cgit v1.2.1
+

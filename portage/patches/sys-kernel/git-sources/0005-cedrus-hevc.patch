@@ -801,28 +801,28 @@ diff --git a/include/media/v4l2-ctrls.h b/include/media/v4l2-ctrls.h
 index a8aede26491e..630083e1936d 100644
 --- a/include/media/v4l2-ctrls.h
 +++ b/include/media/v4l2-ctrls.h
-@@ -29,6 +29,7 @@
- #include <media/mpeg2-ctrls.h>
+@@ -21,6 +21,7 @@
  #include <media/fwht-ctrls.h>
  #include <media/h264-ctrls.h>
+ #include <media/vp8-ctrls.h>
 +#include <media/hevc-ctrls.h>
  
  /* forward references */
  struct file;
-@@ -57,6 +58,9 @@ struct poll_table_struct;
-  * @p_h264_scaling_matrix:	Pointer to a struct v4l2_ctrl_h264_scaling_matrix.
+@@ -51,6 +51,9 @@
   * @p_h264_slice_params:	Pointer to a struct v4l2_ctrl_h264_slice_params.
   * @p_h264_decode_params:	Pointer to a struct v4l2_ctrl_h264_decode_params.
+  * @p_vp8_frame_header:		Pointer to a VP8 frame header structure.
 + * @p_hevc_sps:			Pointer to an HEVC sequence parameter set structure.
 + * @p_hevc_pps:			Pointer to an HEVC picture parameter set structure.
-+ * @p_hevc_slice_params		Pointer to an HEVC slice parameters structure.
++ * @p_hevc_slice_params:	Pointer to an HEVC slice parameters structure.
   * @p:				Pointer to a compound value.
   */
  union v4l2_ctrl_ptr {
-@@ -74,6 +78,9 @@ union v4l2_ctrl_ptr {
- 	struct v4l2_ctrl_h264_scaling_matrix *p_h264_scaling_matrix;
+@@ -69,6 +72,9 @@
  	struct v4l2_ctrl_h264_slice_params *p_h264_slice_params;
  	struct v4l2_ctrl_h264_decode_params *p_h264_decode_params;
+ 	struct v4l2_ctrl_vp8_frame_header *p_vp8_frame_header;
 +	struct v4l2_ctrl_hevc_sps *p_hevc_sps;
 +	struct v4l2_ctrl_hevc_pps *p_hevc_pps;
 +	struct v4l2_ctrl_hevc_slice_params *p_hevc_slice_params;
@@ -872,56 +872,6 @@ index 9ea013c88afc..2de83d9f6d47 100644
  #define V4L2_CID_MPEG_VIDEO_HEVC_SPS		(V4L2_CID_MPEG_BASE + 1008)
  #define V4L2_CID_MPEG_VIDEO_HEVC_PPS		(V4L2_CID_MPEG_BASE + 1009)
  #define V4L2_CID_MPEG_VIDEO_HEVC_SLICE_PARAMS	(V4L2_CID_MPEG_BASE + 1010)
--- 
-2.21.0
-
-From 256c89e4dd0621198cad6fbf0689682116cad795 Mon Sep 17 00:00:00 2001
-From: Paul Kocialkowski <paul.kocialkowski@bootlin.com>
-Date: Fri, 24 May 2019 11:36:34 +0200
-Subject: [PATCH 11/12] media: pixfmt: Document the HEVC slice pixel format
-
-Document the current state of the HEVC slice pixel format.
-The format will need to evolve in the future, which is why it is
-not part of the public API.
-
-Signed-off-by: Paul Kocialkowski <paul.kocialkowski@bootlin.com>
-Signed-off-by: Hans Verkuil <hverkuil-cisco@xs4all.nl>
----
- .../media/uapi/v4l/pixfmt-compressed.rst      | 21 +++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
-diff --git a/Documentation/media/uapi/v4l/pixfmt-compressed.rst b/Documentation/media/uapi/v4l/pixfmt-compressed.rst
-index 4b701fc7653e..9d4195723c3e 100644
---- a/Documentation/media/uapi/v4l/pixfmt-compressed.rst
-+++ b/Documentation/media/uapi/v4l/pixfmt-compressed.rst
-@@ -143,6 +143,27 @@ Compressed Formats
-       - ``V4L2_PIX_FMT_HEVC``
-       - 'HEVC'
-       - HEVC/H.265 video elementary stream.
-+    * .. _V4L2-PIX-FMT-HEVC-SLICE:
-+
-+      - ``V4L2_PIX_FMT_HEVC_SLICE``
-+      - 'S265'
-+      - HEVC parsed slice data, as extracted from the HEVC bitstream.
-+	This format is adapted for stateless video decoders that implement a
-+	HEVC pipeline (using the :ref:`codec` and :ref:`media-request-api`).
-+	Metadata associated with the frame to decode is required to be passed
-+	through the following controls :
-+        * ``V4L2_CID_MPEG_VIDEO_HEVC_SPS``
-+        * ``V4L2_CID_MPEG_VIDEO_HEVC_PPS``
-+        * ``V4L2_CID_MPEG_VIDEO_HEVC_SLICE_PARAMS``
-+	See the :ref:`associated Codec Control IDs <v4l2-mpeg-hevc>`.
-+	Buffers associated with this pixel format must contain the appropriate
-+	number of macroblocks to decode a full corresponding frame.
-+
-+	.. note::
-+
-+	   This format is not yet part of the public kernel API and it
-+	   is expected to change.
-+
-     * .. _V4L2-PIX-FMT-FWHT:
- 
-       - ``V4L2_PIX_FMT_FWHT``
 -- 
 2.21.0
 

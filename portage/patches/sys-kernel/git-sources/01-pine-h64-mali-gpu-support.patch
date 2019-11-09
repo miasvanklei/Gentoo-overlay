@@ -1,0 +1,49 @@
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi b/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi
+index 0d5ea19336a1..a029daf67345 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6.dtsi
+@@ -149,6 +149,20 @@
+ 			allwinner,sram = <&ve_sram 1>;
+ 		};
+ 
++		gpu: gpu@1800000 {
++			compatible = "allwinner,sun50i-h6-mali",
++				     "arm,mali-t720";
++			reg = <0x01800000 0x4000>;
++			interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 85 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 83 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-names = "job", "mmu", "gpu";
++			clocks = <&ccu CLK_GPU>, <&ccu CLK_BUS_GPU>;
++			clock-names = "core", "bus";
++			resets = <&ccu RST_BUS_GPU>;
++			status = "disabled";
++		};
++
+ 		syscon: syscon@3000000 {
+ 			compatible = "allwinner,sun50i-h6-system-control",
+ 				     "allwinner,sun50i-a64-system-control";
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts b/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
+index 30102daf83cc..74899ede00fb 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
+@@ -85,6 +85,11 @@
+ 	status = "okay";
+ };
+ 
++&gpu {
++	mali-supply = <&reg_dcdcc>;
++	status = "okay";
++};
++
+ &hdmi {
+ 	status = "okay";
+ };
+@@ -221,6 +226,7 @@
+ 			};
+ 
+ 			reg_dcdcc: dcdcc {
++				regulator-enable-ramp-delay = <32000>;
+ 				regulator-min-microvolt = <810000>;
+ 				regulator-max-microvolt = <1080000>;
+ 				regulator-name = "vdd-gpu";
