@@ -58,7 +58,7 @@ PDEPEND="
 	~sys-devel/clang-runtime-${PV}
 	fortran? ( dev-lang/flang )
 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
-	default-libunwind? ( =sys-libs/libunwind-${PV%_*}* )
+	default-libunwind? ( =sys-libs/llvm-libunwind-${PV%_*}* )
 	default-libcxx? ( >=sys-libs/libcxx-${PV} )"
 
 # least intrusive of all
