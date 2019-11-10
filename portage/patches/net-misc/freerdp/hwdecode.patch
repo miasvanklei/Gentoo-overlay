@@ -1,5 +1,5 @@
---- a/libfreerdp/codec/h264_ffmpeg.c	2019-11-10 20:28:20.415018315 +0100
-+++ b/libfreerdp/codec/h264_ffmpeg.c	2019-11-10 20:37:32.842070000 +0100
+--- a/libfreerdp/codec/h264_ffmpeg.c	2018-11-20 11:43:51.000000000 +0100
++++ b/libfreerdp/codec/h264_ffmpeg.c	2019-11-10 21:35:52.505985774 +0100
 @@ -28,12 +28,12 @@
  #include <libavcodec/avcodec.h>
  #include <libavutil/opt.h>
@@ -15,7 +15,7 @@
  #endif
  #endif
  
-@@ -65,8 +65,17 @@
+@@ -65,8 +65,16 @@
  	error_string((char[64]){0}, 64, errnum)
  #endif
  
@@ -24,18 +24,17 @@
 +#if defined(WITH_HWDECODE)
 +#if WITH_HWDECODE == VAAPI
 +#define HWDECODE_DEVICE "/dev/dri/renderD128"
-+#else
++#define AV_HWDEVICE_TYPE AV_HWDEVICE_TYPE_VAAPI
++#define AV_PIX_FMT AV_PIX_FMT_VAAPI
++#elif WITH_HWDECODE == DRM
 +#define HWDECODE_DEVICE NULL
++#define AV_HWDEVICE_TYPE AV_HWDEVICE_TYPE_DRM
++#define AV_PIX_FMT AV_PIX_FMT_DRM_PRIME
 +#endif
-+
-+#define PPCAT_NX(A, B) A ## B
-+#define PPCAT(A, B) PPCAT_NX(A, B)
-+#define AV_HWDEVICE_TYPE PPCAT(AV_HWDEVICE_TYPE_, WITH_HWDECODE)
-+#define AV_PIX_FMT PPCAT(AV_PIX_FMT_, WITH_HWDECODE)
  #endif
  
  struct _H264_CONTEXT_LIBAVCODEC
-@@ -78,7 +87,7 @@
+@@ -78,7 +86,7 @@
  	AVCodecParserContext* codecParser;
  	AVFrame* videoFrame;
  	AVPacket packet;
@@ -44,7 +43,7 @@
  	AVBufferRef* hwctx;
  	AVFrame* hwVideoFrame;
  	enum AVPixelFormat hw_pix_fmt;
-@@ -210,7 +219,7 @@
+@@ -210,7 +218,7 @@
  
  	do
  	{
@@ -53,7 +52,7 @@
  		status = avcodec_receive_frame(sys->codecDecoderContext,
  		                               sys->hwctx ? sys->hwVideoFrame : sys->videoFrame);
  #else
-@@ -221,7 +230,7 @@
+@@ -221,7 +229,7 @@
  
  	gotFrame = (status == 0);
  #else
@@ -62,7 +61,7 @@
  	status = avcodec_decode_video2(sys->codecDecoderContext,
  	                               sys->hwctx ? sys->hwVideoFrame : sys->videoFrame, &gotFrame,
  	                               &sys->packet);
-@@ -237,7 +246,7 @@
+@@ -237,7 +245,7 @@
  		return -1;
  	}
  
@@ -71,7 +70,7 @@
  
  	if (sys->hwctx)
  	{
-@@ -406,7 +415,7 @@
+@@ -406,7 +414,7 @@
  #endif
  	}
  
@@ -80,7 +79,7 @@
  
  	if (sys->hwVideoFrame)
  	{
-@@ -450,7 +459,7 @@
+@@ -450,7 +458,7 @@
  	h264->pSystemData = NULL;
  }
  
@@ -89,7 +88,7 @@
  static enum AVPixelFormat libavcodec_get_format(struct AVCodecContext* ctx,
          const enum AVPixelFormat* fmts)
  {
-@@ -536,11 +545,11 @@
+@@ -536,11 +544,11 @@
  			sys->codecDecoderContext->flags |= AV_CODEC_FLAG_TRUNCATED;
  		}
  
@@ -103,7 +102,7 @@
  
  			if (ret < 0)
  			{
-@@ -553,7 +562,7 @@
+@@ -553,7 +561,7 @@
  		}
  
  		sys->codecDecoderContext->get_format = libavcodec_get_format;
@@ -112,7 +111,7 @@
  #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 80, 100)
  		sys->codecDecoderContext->hw_device_ctx = av_buffer_ref(sys->hwctx);
  #endif
-@@ -578,7 +587,7 @@
+@@ -578,7 +586,7 @@
  
  #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 18, 102)
  	sys->videoFrame = av_frame_alloc();
@@ -121,7 +120,7 @@
  	sys->hwVideoFrame = av_frame_alloc();
  #endif
  #else
-@@ -591,7 +600,7 @@
+@@ -591,7 +599,7 @@
  		goto EXCEPTION;
  	}
  
@@ -130,8 +129,8 @@
  
  	if (!sys->hwVideoFrame)
  	{
---- a/CMakeLists.txt	2019-11-10 20:26:20.606875053 +0100
-+++ b/CMakeLists.txt	2019-11-10 20:27:29.729266185 +0100
+--- a/CMakeLists.txt	2018-11-20 11:43:51.000000000 +0100
++++ b/CMakeLists.txt	2019-11-10 21:35:49.566019791 +0100
 @@ -726,9 +726,9 @@
  set(FFMPEG_FEATURE_PURPOSE "multimedia")
  set(FFMPEG_FEATURE_DESCRIPTION "multimedia redirection, audio and video playback")
@@ -172,16 +171,29 @@
  	set(GSTREAMER_1_0_FEATURE_TYPE "DISABLED")
  	set(GSTREAMER_0_10_FEATURE_TYPE "DISABLED")
  	set(OPENSLES_FEATURE_TYPE "REQUIRED")
---- a/config.h.in	2018-11-20 11:43:51.000000000 +0100
-+++ b/config.h.in	2019-11-10 20:26:12.326588475 +0100
-@@ -66,7 +66,7 @@
+@@ -955,6 +955,14 @@
+ 	set(HAVE_ALIGNED_REQUIRED 1)
+ endif()
+ 
++if (WITH_FFMPEG AND WITH_HWDECODE)
++	if (WITH_HWDECODE MATCHES "VAAPI")
++		add_compile_definitions(WITH_HWDECODE=VAAPI)
++	elseif (WITH_HWDECODE MATCHES "DRM")
++		add_compile_definitions(WITH_HWDECODE=DRM)
++	endif()
++endif()
++
+ if (WITH_X264 OR WITH_OPENH264 OR WITH_MEDIA_FOUNDATION OR WITH_FFMPEG)
+ 	set(WITH_GFX_H264 ON)
+ else()
+--- a/config.h.in	2019-11-10 21:37:35.010810560 +0100
++++ b/config.h.in	2019-11-10 21:37:51.256626089 +0100
+@@ -66,8 +66,6 @@
  #cmakedefine WITH_X264
  #cmakedefine WITH_MEDIA_FOUNDATION
  
 -#cmakedefine WITH_VAAPI
-+#cmakedefine WITH_HWDECODE "@WITH_HWDECODE@"
- 
+-
  /* Plugins */
  #cmakedefine BUILTIN_CHANNELS
---- libfreerdp/codec/h264_ffmpeg.c	2018-11-20 11:43:51.000000000 +0100
-+++ /h264_ffmpeg.c	2019-11-10 21:05:17.619771050 +0100
+ #cmakedefine WITH_RDPDR
