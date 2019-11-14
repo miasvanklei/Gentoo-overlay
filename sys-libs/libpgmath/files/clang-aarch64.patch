@@ -505,3 +505,54 @@ index 13a1c666..e2fbf3bf 100644
      res = _mm_blendv_ps(res, inf_vec, fix_mask);
  
      return res;
+diff --git a/lib/common/pgstdinit.h b/lib/common/pgstdinit.h
+index d12f65b6..aaeb76f7 100644
+--- a/lib/common/pgstdinit.h
++++ b/lib/common/pgstdinit.h
+@@ -36,7 +36,7 @@ typedef unsigned long long size_t;
+ #define _SIZE_T__
+ #define _SIZE_T_DEFINED
+ #define __SIZE_T__
+-#if defined(LINUX8664) || defined(TARGET_OSX_X8664) || defined(TARGET_LLVM_64)
++#if defined(LINUX8664) || defined(TARGET_OSX_X8664) || defined(TARGET_LLVM_64) || defined(TARGET_LINUX_ARM64)
+ typedef unsigned long size_t;
+ #else
+ typedef unsigned size_t;
+diff --git a/lib/common/sincos/gsincos.cpp b/lib/common/sincos/gsincos.cpp
+index 9e75bb02..68751fed 100644
+--- a/lib/common/sincos/gsincos.cpp
++++ b/lib/common/sincos/gsincos.cpp
+@@ -78,7 +78,7 @@
+   #error Unknown architecture
+ #endif
+ 
+-extern "C" void sincos(double, double*, double*) throw();
++extern "C" void sincos(double, double*, double*);
+ extern "C" VFLOAT  VFLOATRETURN(VFLOAT, VFLOAT);
+ 
+ extern "C" VFLOAT
+diff --git a/tools/mth_mask.awk b/tools/mth_mask.awk
+index 93b3fd45..f78f2018 100644
+--- a/tools/mth_mask.awk
++++ b/tools/mth_mask.awk
+@@ -28,9 +28,6 @@ function print_hdrs()
+  *\n\
+  */\n\
+ \n\n\
+-#ifdef __cplusplus\n\
+-extern \"C\" {\n\
+-#endif\n\n\
+ #include \"mth_intrinsics.h\" \n\
+ #include \"mth_tbldefs.h\" \n\
+ \n\n\
+@@ -41,10 +38,6 @@ static const vrd4_t Cdp1_4={1.0, 1.0, 1.0, 1.0}; \n\
+ static const vrs16_t Csp1_16={1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, \n\
+                              1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}; \n\
+ static const vrd8_t Cdp1_8={1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}; \n\
+-\n\n\
+-#ifdef __cplusplus\n\
+-}\n\
+-#endif\n\
+ #if defined (TARGET_X8664) \n\
+ #include \"immintrin.h\" \n\
+ #elif defined (TARGET_LINUX_POWER) \n\
