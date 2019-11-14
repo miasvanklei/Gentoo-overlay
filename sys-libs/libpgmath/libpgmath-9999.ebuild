@@ -1,9 +1,8 @@
 # Copyright 1999-2018 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
-CMAKE_MIN_VERSION=3.7.0-r1
 PYTHON_COMPAT=( python2_7 )
 
 inherit cmake-utils git-r3
@@ -31,3 +30,19 @@ PATCHES=(
 CMAKE_BUILD_TYPE=Release
 
 S=${WORKDIR}/${P}/runtime/libpgmath
+
+pkg_pretend() {
+	if use arm64 && [ -z ${MCPU} ]; then
+		eerror "please set MCPU to your -mcpu target, without -mcpu"
+	fi
+}
+
+src_configure() {
+	local mycmakeargs=()
+	if use arm64; then
+		mycmakeargs+=(
+			-DLLVM_FLANG_CPU_TARGET=${MCPU}
+		)
+	fi
+	cmake-utils_src_configure
+}
