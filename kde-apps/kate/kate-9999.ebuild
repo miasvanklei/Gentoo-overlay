@@ -57,6 +57,10 @@ RDEPEND="${DEPEND}
 	!kde-misc/ktexteditorpreviewplugin
 "
 
+PATCHES=(
+	"${FILESDIR}/add-hie.patch"
+)
+
 src_prepare() {
 	kde5_src_prepare
 
