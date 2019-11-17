@@ -416,3 +416,71 @@
  	},
  };
  
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
+@@ -52,6 +52,11 @@
+ 		};
+ 	};
+ 
++	wifi_pwrseq: wifi_pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		reset-gpios = <&r_pio 1 3 GPIO_ACTIVE_LOW>; /* PL2 */
++	};
++
+ 	reg_usb_vbus: vbus {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "usb-vbus";
+@@ -119,6 +124,17 @@
+ 	status = "okay";
+ };
+ 
++&mmc1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc1_pins>;
++	vmmc-supply = <&reg_cldo2>;
++	vqmmc-supply = <&reg_bldo2>;
++	mmc-pwrseq = <&wifi_pwrseq>;
++	bus-width = <4>;
++	non-removable;
++	status = "okay";
++};
++
+ &mmc2 {
+ 	vmmc-supply = <&reg_cldo1>;
+ 	vqmmc-supply = <&reg_bldo2>;
+@@ -211,12 +227,14 @@
+ 			};
+ 
+ 			reg_cldo2: cldo2 {
++				regulator-always-on;
+ 				regulator-min-microvolt = <3300000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-name = "vcc-wifi-1";
+ 			};
+ 
+ 			reg_cldo3: cldo3 {
++				regulator-always-on;
+ 				regulator-min-microvolt = <3300000>;
+ 				regulator-max-microvolt = <3300000>;
+ 				regulator-name = "vcc-wifi-2";
+@@ -283,6 +301,20 @@
+ 	status = "okay";
+ };
+ 
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart1_pins>, <&uart1_rts_cts_pins>;
++	status = "okay";
++
++	bluetooth {
++		compatible = "realtek,rtl8723bs-bt";
++		reset-gpios = <&r_pio 1 4 GPIO_ACTIVE_LOW>; /* PM4 */
++		device-wake-gpios = <&r_pio 1 1 GPIO_ACTIVE_HIGH>; /* PM1 */
++		host-wake-gpios = <&r_pio 1 2 GPIO_ACTIVE_HIGH>; /* PM2 */
++		firmware-postfix = "pine64";
++	};
++};
++
+ &usb2otg {
+ 	dr_mode = "host";
+ 	status = "okay";
