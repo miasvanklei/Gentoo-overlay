@@ -34,13 +34,13 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	=dev-haskell/ghc-mod-core-9999:=[profile?]
 	>=dev-haskell/gitrev-1.1:=[profile?]
 	=dev-haskell/hare-9999:=[profile?]
-	=dev-haskell/haskell-lsp-0.17.0.0:=[profile?]
-	=dev-haskell/haskell-lsp-types-0.17.0.0:=[profile?]
+	=dev-haskell/haskell-lsp-0.18.0.0:=[profile?]
+	=dev-haskell/haskell-lsp-types-0.18.0.0:=[profile?]
 	dev-haskell/haskell-src-exts:=[profile?]
 	dev-haskell/haddock-api:=[profile?]
 	dev-haskell/haddock-library:=[profile?]
 	dev-haskell/hie-plugin-api:=[profile?]
-	>=dev-haskell/hlint-2.0.11:=[profile?] <dev-haskell/hlint-2.1.18:=[profile?]
+	>=dev-haskell/hlint-2.2.2:=[profile?]
 	>=dev-haskell/hoogle-5.0.13:=[profile?]
 	dev-haskell/hsimport:=[profile?]
 	dev-haskell/hslogger:=[profile?]
@@ -78,7 +78,6 @@ PATCHES=(
 	"${FILESDIR}"/cabal.patch
 	"${FILESDIR}"/haddock.patch
 	"${FILESDIR}"/disable-test-library.patch
-	"${FILESDIR}"/hlint.patch
 )
 
 src_prepare() {
