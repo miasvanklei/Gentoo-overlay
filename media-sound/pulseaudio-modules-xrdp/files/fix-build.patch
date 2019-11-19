@@ -1,0 +1,48 @@
+diff --git a/config.h b/config.h
+new file mode 100644
+index 0000000..bf42be1
+--- /dev/null
++++ b/config.h
+@@ -0,0 +1,25 @@
++/*
++*  pulseaudio-modules-xrdp
++*
++*  Copyright  2018-2019  Mias van Klei
++*
++*  This program is free software: you can redistribute it and/or modify
++*  it under the terms of the GNU General Public License as published by
++*  the Free Software Foundation, either version 3 of the License, or
++*  (at your option) any later version.
++*
++*  This program is distributed in the hope that it will be useful,
++*  but WITHOUT ANY WARRANTY; without even the implied warranty of
++*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++*  GNU General Public License for more details.
++
++*  You should have received a copy of the GNU General Public License
++*  along with this program. If not, see <http://www.gnu.org/licenses/>.
++*
++*/
++#define PACKAGE
++#define HAVE_ATOMIC_BUILTINS
++
++#define PACKAGE_VERSION "@@VERSION@@"
++
++#include <sys/socket.h>
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 9a82e18..c1632da 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -5,7 +5,11 @@ AM_CFLAGS = -O2   \
+             $(XRDP_CFLAGS)
+ 
+ AM_LDFLAGS = -module \
+-             -avoid-version
++             -avoid-version \
++             -L${libdir}/pulseaudio \
++             -lpulse \
++             -lpulsecore-${PA_MAJORMINOR} \
++             -lpulsecommon-${PA_MAJORMINOR}
+ 
+ modlibexec_LTLIBRARIES = module-xrdp-sink.la module-xrdp-source.la
+ 
