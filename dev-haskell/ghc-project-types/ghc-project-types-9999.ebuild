@@ -52,7 +52,8 @@ src_prepare() {
 
 	cabal_chdeps \
 		'temporary            < 1.3  && >= 1.2.0.3' 'temporary            < 1.4  && >= 1.2.0.3' \
-		'ghc                  < 8.7  && >= 7.6' 'ghc                  < 8.9  && >= 7.6'
+		'ghc                  < 8.7  && >= 7.6' 'ghc                  < 8.9  && >= 7.6' \
+		'haskell-src-exts     < 1.22 && >= 1.18' 'haskell-src-exts     < 1.23 && >= 1.18'
 }
 
 src_configure() {
