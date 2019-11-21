@@ -21,7 +21,7 @@ RDEPEND=">=dev-haskell/aeson-0.11.3.0:=[profile?] <dev-haskell/aeson-1.5:=[profi
 	>=dev-haskell/aeson-pretty-0.8.2:=[profile?] <dev-haskell/aeson-pretty-0.9:=[profile?]
 	>=dev-haskell/attoparsec-0.13.1.0:=[profile?] <dev-haskell/attoparsec-0.14:=[profile?]
 	>=dev-haskell/data-default-0.7.1.1:=[profile?] <dev-haskell/data-default-0.8:=[profile?]
-	>=dev-haskell/haskell-src-exts-1.19:=[profile?] <dev-haskell/haskell-src-exts-1.22:=[profile?]
+	>=dev-haskell/haskell-src-exts-1.19:=[profile?] <dev-haskell/haskell-src-exts-1.23:=[profile?]
 	>=dev-haskell/monad-dijkstra-0.1.1:=[profile?] <dev-haskell/monad-dijkstra-0.2:=[profile?]
 	>=dev-haskell/mtl-2.2.1:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
 	>=dev-haskell/optparse-applicative-0.12.1.0:=[profile?] <dev-haskell/optparse-applicative-0.15:=[profile?]
@@ -35,10 +35,3 @@ DEPEND="${RDEPEND}
 	test? ( >=dev-haskell/exceptions-0.8.3 <dev-haskell/exceptions-0.12
 		>=dev-haskell/hspec-2.2.4 <dev-haskell/hspec-2.8 )
 "
-
-src_prepare() {
-	default
-
-	cabal_chdeps \
-		'base >=4.9 && <4.13' 'base >=4.9 && <4.14'
-}
