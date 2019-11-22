@@ -1,13 +1,13 @@
---- a/src/machine/machine-dbus.c
-+++ b/src/machine/machine-dbus.c
-@@ -11,6 +11,10 @@
- #include <libgen.h>
- #undef basename
+--- a/src/machine/machine-dbus.c	2019-11-22 22:51:40.251457319 +0100
++++ b/src/machine/machine-dbus.c	2019-11-22 22:51:58.449525103 +0100
+@@ -38,6 +38,10 @@
+ #include "tmpfile-util.h"
+ #include "user-util.h"
  
 +#if !defined(__GLIBC__)
 +#define basename(src) (strrchr(src,'/') ? strrchr(src,'/')+1 : src)
 +#endif
 +
- #include "alloc-util.h"
- #include "bus-common-errors.h"
- #include "bus-internal.h"
+ static BUS_DEFINE_PROPERTY_GET_ENUM(property_get_class, machine_class, MachineClass);
+ static BUS_DEFINE_PROPERTY_GET2(property_get_state, "s", Machine, machine_get_state, machine_state_to_string);
+ 

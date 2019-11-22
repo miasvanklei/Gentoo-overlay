@@ -8,16 +8,6 @@
  
  static thread_local Set *keymaps = NULL;
  
---- a/src/basic/missing.h
-+++ b/src/basic/missing.h
-@@ -9,6 +9,7 @@
- #include "missing_drm.h"
- #include "missing_fcntl.h"
- #include "missing_fs.h"
-+#include "missing_ftw.h"
- #include "missing_input.h"
- #include "missing_magic.h"
- #include "missing_mman.h"
 --- a/src/basic/locale-util.c
 +++ b/src/basic/locale-util.c
 @@ -20,6 +20,7 @@
@@ -38,6 +28,16 @@
  
  static void systemd_kmod_log(
                  void *data,
+--- a/src/core/mount-setup.c
++++ b/src/core/mount-setup.c
+@@ -22,6 +22,7 @@
+ #include "log.h"
+ #include "macro.h"
+ #include "mkdir.h"
++#include "missing_ftw.h"
+ #include "mount-setup.h"
+ #include "mountpoint-util.h"
+ #include "nulstr-util.h"
 --- /dev/null
 +++ b/missing_ftw.h
 @@ -0,0 +1,24 @@

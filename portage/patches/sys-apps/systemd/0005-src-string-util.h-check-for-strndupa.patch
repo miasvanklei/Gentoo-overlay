@@ -1,0 +1,80 @@
+--- a/meson.build
++++ b/meson.build
+@@ -572,6 +572,7 @@ foreach ident : [
+                                  #include <unistd.h>'''],
+         ['get_mempolicy',     '''#include <stdlib.h>
+                                  #include <unistd.h>'''],
++        ['strndupa' ,         '''#include <string.h>'''],
+ ]
+ 
+         have = cc.has_function(ident[0], prefix : ident[1], args : '-D_GNU_SOURCE')
+--- a/src/basic/mkdir.c
++++ b/src/basic/mkdir.c
+@@ -14,6 +14,7 @@
+ #include "stat-util.h"
+ #include "stdio-util.h"
+ #include "user-util.h"
++#include "string-util.h"
+ 
+ int mkdir_safe_internal(const char *path, mode_t mode, uid_t uid, gid_t gid, MkdirFlags flags, mkdir_func_t _mkdir) {
+         struct stat st;
+--- a/src/core/dbus-cgroup.c
++++ b/src/core/dbus-cgroup.c
+@@ -15,6 +15,7 @@
+ #include "fileio.h"
+ #include "limits-util.h"
+ #include "path-util.h"
++#include "string-util.h"
+ 
+ static BUS_DEFINE_PROPERTY_GET_ENUM(property_get_cgroup_device_policy, cgroup_device_policy, CGroupDevicePolicy);
+ 
+--- a/src/core/dbus-util.c
++++ b/src/core/dbus-util.c
+@@ -7,6 +7,7 @@
+ #include "unit-printf.h"
+ #include "user-util.h"
+ #include "unit.h"
++#include "string-util.h"
+ 
+ int bus_property_get_triggered_unit(
+                 sd_bus *bus,
+--- a/src/libsystemd/sd-bus/test-bus-benchmark.c
++++ b/src/libsystemd/sd-bus/test-bus-benchmark.c
+@@ -14,6 +14,7 @@
+ #include "missing_resource.h"
+ #include "time-util.h"
+ #include "util.h"
++#include "string-util.h"
+ 
+ #define MAX_SIZE (2*1024*1024)
+ 
+--- a/src/shared/uid-range.c
++++ b/src/shared/uid-range.c
+@@ -9,6 +9,7 @@
+ #include "sort-util.h"
+ #include "uid-range.h"
+ #include "user-util.h"
++#include "string-util.h"
+ 
+ static bool uid_range_intersect(UidRange *range, uid_t start, uid_t nr) {
+         assert(range);
+--- a/src/basic/string-util.h
++++ b/src/basic/string-util.h
+@@ -143,6 +143,17 @@
+                 _d_;                                                    \
+         })
+ 
++#if ! HAVE_STRNDUPA
++#define strndupa(s, n) \
++  ({ \
++    const char *__old = (s); \
++    size_t __len = strnlen(__old, (n)); \
++    char *__new = (char *)alloca(__len + 1); \
++    __new[__len] = '\0'; \
++    (char *)memcpy(__new, __old, __len); \
++  })
++#endif
++
+ char *strstrip(char *s);
+ char *delete_chars(char *s, const char *bad);
+ char *delete_trailing_chars(char *s, const char *bad);
