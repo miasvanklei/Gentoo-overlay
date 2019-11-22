@@ -74,9 +74,6 @@ kde-apps/ark zip lzma
 # unar, libobjc2 needed for clang
 gnustep-base/gnustep-make native-exceptions libobjc2
 
-# kdeconnect: bluetooth interfers with headsets
-kde-misc/kdeconnect -bluetooth
-
 # disable aac
 media-sound/pulseaudio-modules-bt -aac
 
@@ -144,10 +141,6 @@ sys-apps/busybox -pam
 # disable iptables
 sys-apps/iproute2 -iptables
 
-# disable wpa_supplicant, dhcp, ncurses
-net-misc/networkmanager iwd wifi -wext -dhclient -ncurses
-net-wireless/iwd -crda
-
 # configure gtk theme
 kde-plasma/systemsettings gtk
 kde-plasma/plasma-meta gtk -crypt
@@ -160,9 +153,12 @@ kde-apps/kdecore-meta -webengine
 kde-apps/kdeadmin-meta -cron
 kde-apps/kdeutils-meta rar
 
-# disable modemmanager, bluetooth, ppp
+# disable modemmanager, bluetooth, ppp, wpa_supplicant, dhclient, ncurses.
+# enable wifi iwd
 media-sound/pulseaudio -bluetooth
-net-misc/networkmanager -modemmanager -bluetooth -ppp
+net-misc/networkmanager -wext -dhclient -ncurses -modemmanager -bluetooth -ppp iwd wifi
+net-wireless/iwd -crda
+kde-misc/kdeconnect -bluetooth
 
 # report graphics/cpu information
 media-libs/mesa lm-sensors
