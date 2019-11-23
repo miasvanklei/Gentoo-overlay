@@ -10,7 +10,7 @@ inherit haskell-cabal
 
 DESCRIPTION="Library and utiltity for processing cabal's plan.json file"
 HOMEPAGE="http://hackage.haskell.org/package/cabal-plan"
-SRC_URI="mirror://hackage/packages/archive/${PN}/${PV}/${P}.tar.gz"
+SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 
 LICENSE="GPL-3"
 SLOT="0/${PV}"

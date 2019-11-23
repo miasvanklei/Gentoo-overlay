@@ -10,7 +10,7 @@ inherit haskell-cabal
 
 DESCRIPTION="Haskell library for the Microsoft Language Server Protocol"
 HOMEPAGE="https://github.com/alanz/haskell-lsp"
-SRC_URI="mirror://hackage/packages/archive/${PN}/${PV}/${P}.tar.gz"
+SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0/${PV}"

@@ -10,7 +10,7 @@ inherit haskell-cabal
 
 DESCRIPTION="Fold multiple events that happen in a given period of time"
 HOMEPAGE="https://github.com/debug-ito/fold-debounce"
-SRC_URI="mirror://hackage/packages/archive/${PN}/${PV}/${P}.tar.gz"
+SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0/${PV}"

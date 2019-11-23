@@ -10,7 +10,7 @@ inherit haskell-cabal
 
 DESCRIPTION="Print Data instances as a nested tree"
 HOMEPAGE="https://github.com/lspitzner/data-tree-print"
-SRC_URI="mirror://hackage/packages/archive/${PN}/${PV}/${P}.tar.gz"
+SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0/${PV}"
