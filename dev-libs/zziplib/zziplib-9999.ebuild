@@ -3,7 +3,7 @@
 
 EAPI=7
 
-PYTHON_COMPAT=( python3_6 )
+PYTHON_COMPAT=( python{3_6,3_7} )
 
 inherit autotools libtool flag-o-matic python-any-r1 git-r3
 
