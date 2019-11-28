@@ -23,7 +23,7 @@ RDEPEND=">=dev-python/appdirs-1.0[${PYTHON_USEDEP}]
 	>=dev-python/loguru-0.3[${PYTHON_USEDEP}]
 	>=dev-python/pendulum-2.0[${PYTHON_USEDEP}]
 	>=dev-python/natsort-5.0[${PYTHON_USEDEP}]
-	>=dev-python/tbm_utils-1.0.0[${PYTHON_USEDEP}]
+	>=dev-python/tbm-utils-1.0.0[${PYTHON_USEDEP}]
 	>=dev-python/tomlkit-0.5[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}
 	dev-python/setuptools[${PYTHON_USEDEP}]"

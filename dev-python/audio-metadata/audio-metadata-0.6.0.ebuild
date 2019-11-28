@@ -20,7 +20,7 @@ RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
 	>=dev-python/bitstruct-6.0.0[${PYTHON_USEDEP}]
 	>=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
 	>=dev-python/pprintpp-0.4[${PYTHON_USEDEP}]
-	>=dev-python/tbm_utils-1.0.0[${PYTHON_USEDEP}]
+	>=dev-python/tbm-utils-1.0.0[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.0[${PYTHON_USEDEP}]
 "
 DEPEND="${RDEPEND}
