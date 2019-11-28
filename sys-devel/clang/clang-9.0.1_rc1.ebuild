@@ -9,8 +9,6 @@ inherit cmake-utils llvm llvm.org multilib-minimal multiprocessing \
 
 DESCRIPTION="C language family frontend for LLVM"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/llvm-${PV}-manpages.tar.bz2 )"
 LLVM_COMPONENTS=( clang clang-tools-extra )
 LLVM_TEST_COMPONENTS=(
 	llvm/lib/Testing/Support
@@ -86,12 +84,6 @@ src_unpack() {
 	cd x/y || die
 	llvm.org_src_unpack
 	mv clang-tools-extra clang/tools/extra || die
-
-	if ! use doc; then
-		ebegin "Unpacking llvm-${PV}-manpages.tar.bz2"
-		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
-		eend
-	fi
 }
 
 src_prepare() {
@@ -276,9 +268,6 @@ multilib_src_install_all() {
 		python_optimize "${ED}"/usr/lib/llvm/${SLOT}/share/scan-view
 	fi
 
-	docompress "/usr/lib/llvm/${SLOT}/share/man"
-	# match 'html' non-compression
-	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
 	# +x for some reason; TODO: investigate
 	use static-analyzer && fperms a-x "/usr/lib/llvm/${SLOT}/share/man/man1/scan-build.1"
 }

@@ -9,8 +9,6 @@ inherit cmake-utils llvm.org multilib-minimal multiprocessing \
 
 DESCRIPTION="Low Level Virtual Machine"
 HOMEPAGE="https://llvm.org/"
-SRC_URI="
-	!doc? ( https://dev.gentoo.org/~mgorny/dist/llvm/${P}-manpages.tar.bz2 )"
 LLVM_COMPONENTS=( llvm )
 llvm.org_set_globals
 
@@ -82,16 +80,6 @@ python_check_deps() {
 
 	has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
 	has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
-}
-
-src_unpack() {
-	llvm.org_src_unpack
-
-	if ! use doc; then
-		ebegin "Unpacking llvm-${PV}-manpages.tar.bz2"
-		tar -xf "${DISTDIR}/llvm-${PV}-manpages.tar.bz2" || die
-		eend
-	fi
 }
 
 src_prepare() {
@@ -270,15 +258,6 @@ multilib_src_install_all() {
 		MANPATH="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
 		LDPATH="$( IFS=:; echo "${LLVM_LDPATHS[*]}" )"
 	_EOF_
-
-	# install pre-generated manpages
-	if ! use doc; then
-		# (doman does not support custom paths)
-		insinto "/usr/lib/llvm/${SLOT}/share/man/man1"
-		doins "${WORKDIR}/${P}-manpages/llvm"/*.1
-	fi
-
-	docompress "/usr/lib/llvm/${SLOT}/share/man"
 }
 
 pkg_postinst() {
