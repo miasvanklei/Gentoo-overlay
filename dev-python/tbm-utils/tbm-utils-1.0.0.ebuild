@@ -2,23 +2,24 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
+
 PYTHON_COMPAT=( python3_{6,7} )
 
 inherit distutils-r1
 
-DESCRIPTION="A wrapper interface around gmusicapi"
-HOMEPAGE="https://github.com/thebigmunch/google-music-utils"
+DESCRIPTION="A commonly-used set of utilities used by me (thebigmunch)"
+HOMEPAGE="https://github.com/thebigmunch/tbm-utils"
 SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
-LICENSE="BSD"
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
-RDEPEND=">=dev-python/audio-metadata-0.5[${PYTHON_USEDEP}]
-	>=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
-	<dev-python/more-itertools-5.0[${PYTHON_USEDEP}]
-	>=dev-python/multidict-4.0[${PYTHON_USEDEP}]
-	>=dev-python/wrapt-1.10[${PYTHON_USEDEP}]"
+RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
+	>=dev-python/pendulum-2.0[${PYTHON_USEDEP}]
+	>=dev-python/pprintpp-0.4[${PYTHON_USEDEP}]
+	>=dev-python/wrapt-1.0[${PYTHON_USEDEP}]
+"
 DEPEND="${RDEPEND}
 	dev-python/setuptools[${PYTHON_USEDEP}]"
 

@@ -2,25 +2,22 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=6
-
 PYTHON_COMPAT=( python3_{6,7} )
 
 inherit distutils-r1
 
-DESCRIPTION="A library for reading and, in the future, writing metadata from audio files."
-HOMEPAGE="https://github.com/thebigmunch/audio-metadata"
+DESCRIPTION="A wrapper interface around gmusicapi"
+HOMEPAGE="https://github.com/thebigmunch/google-music-utils"
 SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
-LICENSE="MIT"
+LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
-RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
-	>=dev-python/bidict-0.17[${PYTHON_USEDEP}]
-	>=dev-python/bitstruct-6.0.0[${PYTHON_USEDEP}]
+RDEPEND=">=dev-python/audio-metadata-0.5[${PYTHON_USEDEP}]
 	>=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
-	<dev-python/more-itertools-5.0[${PYTHON_USEDEP}]
-	>=dev-python/pprintpp-0.4[${PYTHON_USEDEP}]"
+	>=dev-python/multidict-4.0[${PYTHON_USEDEP}]
+	>=dev-python/wrapt-1.10[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}
 	dev-python/setuptools[${PYTHON_USEDEP}]"
 
