@@ -1,7 +1,7 @@
-diff --git a/hackage-security/src/Hackage/Security/Client.hs b/hackage-security/src/Hackage/Security/Client.hs
+diff --git a/hackage-security/hackage-security/src/Hackage/Security/Client.hs b/hackage-security/hackage-security/src/Hackage/Security/Client.hs
 index 3bf8440..d9fed92 100644
---- a/hackage-security/src/Hackage/Security/Client.hs
-+++ b/hackage-security/src/Hackage/Security/Client.hs
+--- a/hackage-security/hackage-security/src/Hackage/Security/Client.hs
++++ b/hackage-security/hackage-security/src/Hackage/Security/Client.hs
 @@ -334,7 +334,7 @@ cachedVersion CachedInfo{..} remoteFile =
  -- | Get all cached info (if any)
  getCachedInfo ::
@@ -11,10 +11,10 @@ index 3bf8440..d9fed92 100644
  #else
                   MonadIO m
  #endif
-diff --git a/hackage-security/src/Hackage/Security/TUF/FileMap.hs b/hackage-security/src/Hackage/Security/TUF/FileMap.hs
+diff --git a/hackage-security/hackage-security/src/Hackage/Security/TUF/FileMap.hs b/hackage-security/hackage-security/src/Hackage/Security/TUF/FileMap.hs
 index a5d6c85..4d84189 100644
---- a/hackage-security/src/Hackage/Security/TUF/FileMap.hs
-+++ b/hackage-security/src/Hackage/Security/TUF/FileMap.hs
+--- a/hackage-security/hackage-security/src/Hackage/Security/TUF/FileMap.hs
++++ b/hackage-security/hackage-security/src/Hackage/Security/TUF/FileMap.hs
 @@ -13,8 +13,6 @@ module Hackage.Security.TUF.FileMap (
    , (!)
    , insert
@@ -41,10 +41,10 @@ index a5d6c85..4d84189 100644
  {-------------------------------------------------------------------------------
    Comparing filemaps
  -------------------------------------------------------------------------------}
-diff --git a/hackage-security/src/Hackage/Security/TUF/Snapshot.hs b/hackage-security/src/Hackage/Security/TUF/Snapshot.hs
+diff --git a/hackage-security/hackage-security/src/Hackage/Security/TUF/Snapshot.hs b/hackage-security/hackage-security/src/Hackage/Security/TUF/Snapshot.hs
 index e31bf7a..1c6b281 100644
---- a/hackage-security/src/Hackage/Security/TUF/Snapshot.hs
-+++ b/hackage-security/src/Hackage/Security/TUF/Snapshot.hs
+--- a/hackage-security/hackage-security/src/Hackage/Security/TUF/Snapshot.hs
++++ b/hackage-security/hackage-security/src/Hackage/Security/TUF/Snapshot.hs
 @@ -13,6 +13,7 @@ import Hackage.Security.TUF.FileMap
  import Hackage.Security.TUF.Layout.Repo
  import Hackage.Security.TUF.Signed
@@ -69,10 +69,10 @@ index e31bf7a..1c6b281 100644
      let snapshotInfoTar = FileMap.lookup (pathIndexTar repoLayout) snapshotMeta
      return Snapshot{..}
  
-diff --git a/hackage-security/src/Hackage/Security/TUF/Timestamp.hs b/hackage-security/src/Hackage/Security/TUF/Timestamp.hs
+diff --git a/hackage-security/hackage-security/src/Hackage/Security/TUF/Timestamp.hs b/hackage-security/hackage-security/src/Hackage/Security/TUF/Timestamp.hs
 index 175725a..0816a77 100644
---- a/hackage-security/src/Hackage/Security/TUF/Timestamp.hs
-+++ b/hackage-security/src/Hackage/Security/TUF/Timestamp.hs
+--- a/hackage-security/hackage-security/src/Hackage/Security/TUF/Timestamp.hs
++++ b/hackage-security/hackage-security/src/Hackage/Security/TUF/Timestamp.hs
 @@ -13,6 +13,7 @@ import Hackage.Security.TUF.Header
  import Hackage.Security.TUF.Layout.Repo
  import Hackage.Security.TUF.Signed
@@ -93,10 +93,10 @@ index 175725a..0816a77 100644
      return Timestamp{..}
  
  instance (MonadKeys m, MonadReader RepoLayout m) => FromJSON m (Signed Timestamp) where
-diff --git a/Cabal/Distribution/Compat/ReadP.hs b/Cabal/Distribution/Compat/ReadP.hs
+diff --git a/cabal/Cabal/Distribution/Compat/ReadP.hs b/cabal/Cabal/Distribution/Compat/ReadP.hs
 index a9c79c891..0d4f7a74d 100644
---- a/Cabal/Distribution/Compat/ReadP.hs
-+++ b/Cabal/Distribution/Compat/ReadP.hs
+--- a/cabal/Cabal/Distribution/Compat/ReadP.hs
++++ b/cabal/Cabal/Distribution/Compat/ReadP.hs
 @@ -115,8 +115,6 @@ instance Monad (P s) where
    (Result x p) >>= k = k x `mplus` (p >>= k)
    (Final r)    >>= k = final [ys' | (x,s) <- r, ys' <- run (k x) s]
@@ -114,10 +114,10 @@ index a9c79c891..0d4f7a74d 100644
    R m >>= f = R (\k -> m (\a -> let R m' = f a in m' k))
  
  instance Fail.MonadFail (Parser r s) where
-diff --git a/Cabal/Distribution/PackageDescription/Parse.hs b/Cabal/Distribution/PackageDescription/Parse.hs
+diff --git a/cabal/Cabal/Distribution/PackageDescription/Parse.hs b/cabal/Cabal/Distribution/PackageDescription/Parse.hs
 index 565fca9d7..63f32aa40 100644
---- a/Cabal/Distribution/PackageDescription/Parse.hs
-+++ b/Cabal/Distribution/PackageDescription/Parse.hs
+--- a/cabal/Cabal/Distribution/PackageDescription/Parse.hs
++++ b/cabal/Cabal/Distribution/PackageDescription/Parse.hs
 @@ -722,6 +722,9 @@ instance Monad m => Monad (StT s m) where
                          (a,s') <- f s
                          runStT (g a) s'
@@ -128,10 +128,10 @@ index 565fca9d7..63f32aa40 100644
  getSt :: Monad m => StT s m s
  getSt = StT $ \s -> return (s, s)
  
-diff --git a/Cabal/Distribution/ParseUtils.hs b/Cabal/Distribution/ParseUtils.hs
+diff --git a/cabal/Cabal/Distribution/ParseUtils.hs b/cabal/Cabal/Distribution/ParseUtils.hs
 index 0e79049d8..72fca8f7c 100644
---- a/Cabal/Distribution/ParseUtils.hs
-+++ b/Cabal/Distribution/ParseUtils.hs
+--- a/cabal/Cabal/Distribution/ParseUtils.hs
++++ b/cabal/Cabal/Distribution/ParseUtils.hs
 @@ -107,7 +107,6 @@ instance Monad ParseResult where
          ParseOk ws x >>= f = case f x of
                                 ParseFailed err -> ParseFailed err
@@ -140,10 +140,10 @@ index 0e79049d8..72fca8f7c 100644
  
  instance Fail.MonadFail ParseResult where
          fail s = ParseFailed (FromString s Nothing)
-diff --git a/Cabal/Distribution/Simple/PreProcess.hs b/Cabal/Distribution/Simple/PreProcess.hs
+diff --git a/cabal/Cabal/Distribution/Simple/PreProcess.hs b/cabal/Cabal/Distribution/Simple/PreProcess.hs
 index 6835cf55f..82f292b5f 100644
---- a/Cabal/Distribution/Simple/PreProcess.hs
-+++ b/Cabal/Distribution/Simple/PreProcess.hs
+--- a/cabal/Cabal/Distribution/Simple/PreProcess.hs
++++ b/cabal/Cabal/Distribution/Simple/PreProcess.hs
 @@ -650,9 +650,11 @@ knownSuffixHandlers =
    , ("cpphs",  ppCpp)
    ]
