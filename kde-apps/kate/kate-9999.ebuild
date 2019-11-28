@@ -58,7 +58,7 @@ RDEPEND="${DEPEND}
 "
 
 PATCHES=(
-	"${FILESDIR}/add-hie.patch"
+	"${FILESDIR}/add-ghcide.patch"
 )
 
 src_prepare() {
