@@ -103,14 +103,14 @@ DEPEND="${COMMON_DEPEND}
 
 PATCHES=(
 	"${FILESDIR}"/fix-busted-configure.patch
-	"${FILESDIR}"/musl-basic-1.18.patch
+	"${FILESDIR}"/fix-errno.patch
+	"${FILESDIR}"/musl-basic.patch
 	"${FILESDIR}"/musl-compar.patch
-	"${FILESDIR}"/musl-fix-includes-1.18.patch
+	"${FILESDIR}"/musl-fix-includes.patch
 	"${FILESDIR}"/musl-has-not-secure-gentenv.patch
 	"${FILESDIR}"/musl-network-support.patch
-	"${FILESDIR}"/musl-network-support-1.patch
+	"${FILESDIR}"/musl-no-drand.patch
 	"${FILESDIR}"/musl-process-util.patch
-	"${FILESDIR}"/48_r-functions.patch
 )
 
 python_check_deps() {
