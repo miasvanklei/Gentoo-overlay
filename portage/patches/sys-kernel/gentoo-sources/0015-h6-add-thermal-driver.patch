@@ -1,41 +1,23 @@
-From fa3ede8925855c1242b6b18757821ae280266154 Mon Sep 17 00:00:00 2001
-From: Yangtao Li
-Date: Sat, 10 Aug 2019 05:28:12 +0000
-Subject: thermal: sun8i: add thermal driver for H6/H5/H3/A64/R40
-
-This patch adds the support for allwinner thermal sensor, within
-allwinner SoC. It will register sensors for thermal framework
-and use device tree to bind cooling device.
-
-Signed-off-by: Yangtao Li <tiny.windzz@gmail.com>
----
- MAINTAINERS                     |   7 +
- drivers/thermal/Kconfig         |  14 +
- drivers/thermal/Makefile        |   1 +
- drivers/thermal/sun8i_thermal.c | 620 ++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 642 insertions(+)
- create mode 100644 drivers/thermal/sun8i_thermal.c
-
 diff --git a/MAINTAINERS b/MAINTAINERS
-index a50e97a63bc8..e1ee01a07f5c 100644
+index 66cc549ac327..da34f3f2e80b 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -682,6 +682,13 @@ L:	linux-crypto@vger.kernel.org
+@@ -688,6 +688,13 @@ L:	linux-crypto@vger.kernel.org
  S:	Maintained
- F:	drivers/crypto/sunxi-ss/
+ F:	drivers/crypto/allwinner/
  
 +ALLWINNER THERMAL DRIVER
 +M:	Yangtao Li <tiny.windzz@gmail.com>
 +L:	linux-pm@vger.kernel.org
 +S:	Maintained
-+F:	Documentation/devicetree/bindings/thermal/sun8i-thermal.yaml
++F:	Documentation/devicetree/bindings/thermal/allwinner,sun8i-a83t-ths.yaml
 +F:	drivers/thermal/sun8i_thermal.c
 +
  ALLWINNER VPU DRIVER
  M:	Maxime Ripard <mripard@kernel.org>
  M:	Paul Kocialkowski <paul.kocialkowski@bootlin.com>
 diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 9966364a6deb..f8b73b32b92d 100644
+index 001a21abcc28..0b0422e89adb 100644
 --- a/drivers/thermal/Kconfig
 +++ b/drivers/thermal/Kconfig
 @@ -262,6 +262,20 @@ config SPEAR_THERMAL
@@ -73,10 +55,10 @@ index 74a37c7f847a..fa6f8b206281 100644
  obj-$(CONFIG_RCAR_GEN3_THERMAL)	+= rcar_gen3_thermal.o
 diff --git a/drivers/thermal/sun8i_thermal.c b/drivers/thermal/sun8i_thermal.c
 new file mode 100644
-index 000000000000..0de9a56c3775
+index 000000000000..e86b64f51196
 --- /dev/null
 +++ b/drivers/thermal/sun8i_thermal.c
-@@ -0,0 +1,620 @@
+@@ -0,0 +1,643 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Thermal sensor driver for Allwinner SOC
@@ -147,6 +129,7 @@ index 000000000000..0de9a56c3775
 +
 +struct ths_thermal_chip {
 +	bool            has_mod_clk;
++	bool            has_bus_clk_reset;
 +	int		sensor_num;
 +	int		offset;
 +	int		scale;
@@ -156,7 +139,8 @@ index 000000000000..0de9a56c3775
 +				     u16 *caldata, int callen);
 +	int		(*init)(struct ths_device *tmdev);
 +	int             (*irq_ack)(struct ths_device *tmdev);
-+	int		(*calc_temp)(int id, int reg);
++	int		(*calc_temp)(struct ths_device *tmdev,
++				     int id, int reg);
 +};
 +
 +struct ths_device {
@@ -171,16 +155,14 @@ index 000000000000..0de9a56c3775
 +};
 +
 +/* Temp Unit: millidegree Celsius */
-+static int sun8i_ths_reg2temp(struct ths_device *tmdev,
-+			      int id, int reg)
++static int sun8i_ths_calc_temp(struct ths_device *tmdev,
++			       int id, int reg)
 +{
-+	if (tmdev->chip->calc_temp)
-+		return tmdev->chip->calc_temp(id, reg);
-+	else
-+		return tmdev->chip->offset - (reg * tmdev->chip->scale / 10);
++	return tmdev->chip->offset - (reg * tmdev->chip->scale / 10);
 +}
 +
-+static int sun50i_h5_calc_temp(int id, int reg)
++static int sun50i_h5_calc_temp(struct ths_device *tmdev,
++			       int id, int reg)
 +{
 +	if (reg >= 0x500)
 +		return -1191 * reg / 10 + 223000;
@@ -203,7 +185,7 @@ index 000000000000..0de9a56c3775
 +	if (!val)
 +		return -EAGAIN;
 +
-+	*temp = sun8i_ths_reg2temp(tmdev, s->id, val);
++	*temp = tmdev->chip->calc_temp(tmdev, s->id, val);
 +	/*
 +	 * According to the original sdk, there are some platforms(rarely)
 +	 * that add a fixed offset value after calculating the temperature
@@ -226,6 +208,7 @@ index 000000000000..0de9a56c3775
 +	.val_bits = 32,
 +	.reg_stride = 4,
 +	.fast_io = true,
++	.max_register = 0xfc,
 +};
 +
 +static int sun8i_h3_irq_ack(struct ths_device *tmdev)
@@ -330,7 +313,7 @@ index 000000000000..0de9a56c3775
 +	for (i = 0; i < tmdev->chip->sensor_num; i++) {
 +		int sensor_reg = caldata[i + 1];
 +		int cdata, offset;
-+		int sensor_temp = sun8i_ths_reg2temp(tmdev, i, sensor_reg);
++		int sensor_temp = tmdev->chip->calc_temp(tmdev, i, sensor_reg);
 +
 +		/*
 +		 * Calibration data is CALIBRATE_DEFAULT - (calculated
@@ -338,7 +321,8 @@ index 000000000000..0de9a56c3775
 +		 * minus actual factory temperature) * 14.88 (scale from
 +		 * temperature to register values)
 +		 */
-+		cdata = CALIBRATE_DEFAULT - ((sensor_temp - ft_temp) * 10 / tmdev->chip->scale);
++		cdata = CALIBRATE_DEFAULT -
++			((sensor_temp - ft_temp) * 10 / tmdev->chip->scale);
 +		if (cdata & ~TEMP_CALIB_MASK) {
 +			/*
 +			 * Calibration value more than 12-bit, but calibration
@@ -418,13 +402,15 @@ index 000000000000..0de9a56c3775
 +	if (IS_ERR(tmdev->regmap))
 +		return PTR_ERR(tmdev->regmap);
 +
-+	tmdev->reset = devm_reset_control_get(dev, 0);
-+	if (IS_ERR(tmdev->reset))
-+		return PTR_ERR(tmdev->reset);
++	if (tmdev->chip->has_bus_clk_reset) {
++		tmdev->reset = devm_reset_control_get(dev, 0);
++		if (IS_ERR(tmdev->reset))
++			return PTR_ERR(tmdev->reset);
 +
-+	tmdev->bus_clk = devm_clk_get(&pdev->dev, "bus");
-+	if (IS_ERR(tmdev->bus_clk))
-+		return PTR_ERR(tmdev->bus_clk);
++		tmdev->bus_clk = devm_clk_get(&pdev->dev, "bus");
++		if (IS_ERR(tmdev->bus_clk))
++			return PTR_ERR(tmdev->bus_clk);
++	}
 +
 +	if (tmdev->chip->has_mod_clk) {
 +		tmdev->mod_clk = devm_clk_get(&pdev->dev, "mod");
@@ -501,7 +487,7 @@ index 000000000000..0de9a56c3775
 +
 +/*
 + * Without this undocummented value, the returned temperatures would
-+ * be higher than real ones by about 20°C.
++ * be higher than real ones by about 20C.
 + */
 +#define SUN50I_H6_CTRL0_UNK 0x0000002f
 +
@@ -619,17 +605,28 @@ index 000000000000..0de9a56c3775
 +	return 0;
 +}
 +
-+static const struct ths_thermal_chip sun8i_h3_ths = {
-+	.sensor_num = 1,
-+	.has_mod_clk = true,
-+
-+	// original BSP divs by 8.253 adds 217
-+	.scale = 1211,
-+	.offset = 217000,
++static const struct ths_thermal_chip sun8i_a83t_ths = {
++	.sensor_num = 3,
++	.scale = 705,
++	.offset = 191668,
 +	.temp_data_base = SUN8I_THS_TEMP_DATA,
 +	.calibrate = sun8i_h3_ths_calibrate,
 +	.init = sun8i_h3_thermal_init,
 +	.irq_ack = sun8i_h3_irq_ack,
++	.calc_temp = sun8i_ths_calc_temp,
++};
++
++static const struct ths_thermal_chip sun8i_h3_ths = {
++	.sensor_num = 1,
++	.scale = 1211,
++	.offset = 217000,
++	.has_mod_clk = true,
++	.has_bus_clk_reset = true,
++	.temp_data_base = SUN8I_THS_TEMP_DATA,
++	.calibrate = sun8i_h3_ths_calibrate,
++	.init = sun8i_h3_thermal_init,
++	.irq_ack = sun8i_h3_irq_ack,
++	.calc_temp = sun8i_ths_calc_temp,
 +};
 +
 +static const struct ths_thermal_chip sun8i_r40_ths = {
@@ -637,10 +634,12 @@ index 000000000000..0de9a56c3775
 +	.offset = 251086,
 +	.scale = 1130,
 +	.has_mod_clk = true,
++	.has_bus_clk_reset = true,
 +	.temp_data_base = SUN8I_THS_TEMP_DATA,
 +	.calibrate = sun8i_h3_ths_calibrate,
 +	.init = sun8i_h3_thermal_init,
 +	.irq_ack = sun8i_h3_irq_ack,
++	.calc_temp = sun8i_ths_calc_temp,
 +};
 +
 +static const struct ths_thermal_chip sun50i_a64_ths = {
@@ -648,15 +647,18 @@ index 000000000000..0de9a56c3775
 +	.offset = 253890,
 +	.scale = 1170,
 +	.has_mod_clk = true,
++	.has_bus_clk_reset = true,
 +	.temp_data_base = SUN8I_THS_TEMP_DATA,
 +	.calibrate = sun8i_h3_ths_calibrate,
 +	.init = sun8i_h3_thermal_init,
 +	.irq_ack = sun8i_h3_irq_ack,
++	.calc_temp = sun8i_ths_calc_temp,
 +};
 +
 +static const struct ths_thermal_chip sun50i_h5_ths = {
 +	.sensor_num = 2,
 +	.has_mod_clk = true,
++	.has_bus_clk_reset = true,
 +	.temp_data_base = SUN8I_THS_TEMP_DATA,
 +	.calibrate = sun8i_h3_ths_calibrate,
 +	.init = sun8i_h3_thermal_init,
@@ -666,6 +668,7 @@ index 000000000000..0de9a56c3775
 +
 +static const struct ths_thermal_chip sun50i_h6_ths = {
 +	.sensor_num = 2,
++	.has_bus_clk_reset = true,
 +	.ft_deviation = 7000,
 +	.offset = 187744,
 +	.scale = 672,
@@ -673,9 +676,11 @@ index 000000000000..0de9a56c3775
 +	.calibrate = sun50i_h6_ths_calibrate,
 +	.init = sun50i_h6_thermal_init,
 +	.irq_ack = sun50i_h6_irq_ack,
++	.calc_temp = sun8i_ths_calc_temp,
 +};
 +
 +static const struct of_device_id of_ths_match[] = {
++	{ .compatible = "allwinner,sun8i-a83t-ths", .data = &sun8i_a83t_ths },
 +	{ .compatible = "allwinner,sun8i-h3-ths", .data = &sun8i_h3_ths },
 +	{ .compatible = "allwinner,sun8i-r40-ths", .data = &sun8i_r40_ths },
 +	{ .compatible = "allwinner,sun50i-a64-ths", .data = &sun50i_a64_ths },
