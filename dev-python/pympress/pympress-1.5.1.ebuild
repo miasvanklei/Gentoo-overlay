@@ -16,7 +16,7 @@ IUSE=""
 
 RDEPEND=""
 DEPEND="${RDEPEND}
-	app-text/poppler[cairo introspection]
+	app-text/poppler[cairo,introspection]
 	dev-python/pygobject[${PYTHON_USEDEP}]
 	dev-python/watchdog[${PYTHON_USEDEP}]
 	dev-python/setuptools[${PYTHON_USEDEP}]
