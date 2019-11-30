@@ -16,6 +16,7 @@ KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
+	<dev-python/attrs-19.3[${PYTHON_USEDEP}]
 	>=dev-python/pendulum-2.0[${PYTHON_USEDEP}]
 	>=dev-python/pprintpp-0.4[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.0[${PYTHON_USEDEP}]
