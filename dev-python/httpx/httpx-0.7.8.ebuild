@@ -24,4 +24,4 @@ RDEPEND="dev-python/certifi[${PYTHON_USEDEP}]
 	>=dev-python/rfc3986-1.0[${PYTHON_USEDEP}]
 "
 DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]")
+	dev-python/setuptools[${PYTHON_USEDEP}]"
