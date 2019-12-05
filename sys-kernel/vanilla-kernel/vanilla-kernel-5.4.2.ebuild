@@ -13,7 +13,7 @@ S=${WORKDIR}/${MY_P}
 
 LICENSE="GPL-2"
 SLOT="${PV}"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 # install-DEPEND actually
@@ -33,7 +33,7 @@ src_configure() {
 		HOSTLDFLAGS="${LDFLAGS}"
 
 		AS="$(tc-getAS)"
-		CC="$(tc-getCC)"
+		CC="$(tc-getCC) -w"
 		LD="$(tc-getLD)"
 		AR="$(tc-getAR)"
 		NM="$(tc-getNM)"
