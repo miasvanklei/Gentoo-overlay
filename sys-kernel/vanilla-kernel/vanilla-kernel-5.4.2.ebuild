@@ -68,8 +68,7 @@ src_install() {
 	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
 		INSTALL_PATH="${ED}"/usr/lib/kernel \
 		INSTALL_MOD_PATH="${ED}" \
-		INSTALL_HDR_PATH="${ED}"/usr \
-		install modules_install headers_install
+		install modules_install
 
 	save_config "${WORKDIR}"/build/.config
 
