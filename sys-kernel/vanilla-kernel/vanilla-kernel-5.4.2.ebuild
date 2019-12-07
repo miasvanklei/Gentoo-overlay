@@ -24,6 +24,7 @@ pkg_pretend() {
 }
 
 src_configure() {
+	# is different than what linux kernel expects
 	unset ARCH
 	MAKEARGS=(
 		# TODO: cross support
@@ -96,6 +97,8 @@ pkg_postinst() {
 			eend
 		fi
 		mount-boot_umount_boot_partition
+
+		[[ ${fail} ]] && die "Installing the kernel failed"
 	fi
 
 	savedconfig_pkg_postinst
