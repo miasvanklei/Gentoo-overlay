@@ -87,7 +87,6 @@ src_unpack() {
 }
 
 src_prepare() {
-	eapply "${FILESDIR}"/0001-Initialize-all-fields-in-ABIArgInfo.patch
 	eapply "${FILESDIR}"/0002-defines-musl.patch
 	eapply "${FILESDIR}"/0003-fix-ada-in-configure.patch
 	eapply "${FILESDIR}"/0004-static-pie.patch
