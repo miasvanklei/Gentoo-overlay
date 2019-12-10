@@ -1,0 +1,26 @@
+--- a/src/codecompletion.cpp	2019-10-19 11:26:09.000000000 +0200
++++ b/src/codecompletion.cpp	2019-12-03 18:19:23.332374433 +0100
+@@ -140,7 +140,8 @@
+     KILE_DEBUG_CODECOMPLETION << "Text in completion range: " << completionString;
+     m_completionList.clear();
+ 
+-    if(completionString.startsWith('\\')) {
++    bool latexCommand = completionString.startsWith('\\');
++    if(latexCommand) {
+         m_completionList = m_codeCompletionManager->getLaTeXCommands();
+         m_completionList += m_codeCompletionManager->getLocallyDefinedLaTeXCommands(view);
+     }
+@@ -165,7 +166,12 @@
+     }
+     beginResetModel();
+     filterModel(completionString);
+-    std::sort(m_completionList.begin(), m_completionList.end(), laTeXCommandLessThan);
++    if (latexCommand) {
++        std::sort(m_completionList.begin(), m_completionList.end(), laTeXCommandLessThan);
++    }
++    else {
++        std::sort(m_completionList.begin(), m_completionList.end());
++    }
+     endResetModel();
+ }
+ 
