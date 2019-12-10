@@ -43,8 +43,8 @@ PATCHES=(
 	"${FILESDIR}"/fix-versioninfo-length.patch
 )
 
-RDEPEND="!sys-apps/snap-confine
-	sys-libs/libseccomp[static-libs]
+RDEPEND="sys-libs/libseccomp[static-libs]
+	sys-libs/libcap
 	sys-apps/apparmor
 	sec-policy/apparmor-profiles
 	dev-libs/glib
@@ -130,26 +130,34 @@ src_install() {
 		"/var/lib/snapd"
 
 	exeinto "/usr/$(get_libdir)/${PN}"
+	doexe "${C}"/decode-mount-opts/decode-mount-opts
+	doexe "${C}"/snap-discard-ns/snap-discard-ns
+	doexe "${S}/bin"/snapd
+	doexe "${S}/bin"/snap-exec
+	doexe "${S}/bin"/snap-update-ns
+	doexe "${S}/bin"/snap-seccomp ### missing libseccomp
+	doexe "${C}"/snap-confine/snap-device-helper
+	exeopts -m 6755
+	doexe "${C}"/snap-confine/snap-confine
+	doexe "${MY_S}/cmd/snapd-apparmor/snapd-apparmor"
+	doexe "${S}/bin"/{snap,snapctl}
+	dosym "/usr/$(get_libdir)/${PN}/snap" /usr/bin/snap
+	dosym "/usr/$(get_libdir)/${PN}/snapctl" /usr/bin/snapctl
+
 	doexe \
 			data/completion/etelpmoc.sh \
 			data/completion/complete.sh
+
 	insinto "/usr/share/selinux/targeted/include/snapd/"
 	doins \
 			data/selinux/snappy.if \
 			data/selinux/snappy.te \
 			data/selinux/snappy.fc
-	doexe "${C}"/decode-mount-opts/decode-mount-opts
-	doexe "${C}"/snap-discard-ns/snap-discard-ns
 
 	insinto "/usr/share/dbus-1/services/"
 	doins data/dbus/io.snapcraft.Launcher.service
 	insinto "/usr/share/polkit-1/actions/"
 	doins data/polkit/io.snapcraft.snapd.policy
-	doexe "${S}/bin"/snapd
-	doexe "${S}/bin"/snap-exec
-	doexe "${S}/bin"/snap-update-ns
-	doexe "${S}/bin"/snap-seccomp ### missing libseccomp
-	doexe "${MY_S}/cmd/snapd-apparmor/snapd-apparmor"
 
 	insinto "/usr/$(get_libdir)/snapd/"
 	doins "${MY_S}/data/info"
@@ -161,28 +169,8 @@ src_install() {
 	dodoc	"${MY_S}/packaging/ubuntu-14.04"/copyright \
 		"${MY_S}/packaging/ubuntu-16.04"/changelog
 
-	dobin "${S}/bin"/{snap,snapctl}
-
 	dobashcomp data/completion/snap
 
 	domo "${MY_S}/po"/*.mo
 
-	doexe "${C}"/snap-confine/snap-device-helper
-	exeopts -m 6755
-	doexe "${C}"/snap-confine/snap-confine
-}
-
-pkg_postinst() {
-	CMDLINE=$(cat /proc/cmdline)
-	if [[ $CMDLINE == *"apparmor=1"* ]] && [[ $CMDLINE == *"security=apparmor"* ]]; then
-	    apparmor_parser -r /etc/apparmor.d/usr.$(get_libdir).snapd.snap-confine.real
-		einfo "Enable snapd snapd.socket and snapd.apparmor service, then reload the apparmor service to start using snapd"
-	else
-		einfo ""
-		einfo "Apparmor needs to be enabled and configred as the default security"
-		einfo "Ensure /etc/default/grub is updated to include:"
-		einfo "GRUB_CMDLINE_LINIX_DEFAULT=\"apparmor=1 security=apparmor\""
-		einfo "Then update grub, enable snapd, snapd.socket and snapd.apparmor and reboot"
-		einfo ""
-	fi
 }
