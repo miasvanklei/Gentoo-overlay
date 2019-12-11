@@ -69,18 +69,20 @@ src_install() {
 	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
 		INSTALL_PATH="${ED}"/usr/lib/kernel \
 		INSTALL_MOD_PATH="${ED}" \
-		install modules_install
+		$(usex arm zinstall install) modules_install
 
 	save_config "${WORKDIR}"/build/.config
 
-	# install only dtb file for board given in ${DTB_FILE}.
-	if [[ -z ${DTB_FILE} ]]; then
-			emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
-				INSTALL_PATH="${ED}"/usr/lib/kernel \
-				dtbs_install
-	else
-			dodir /usr/lib/kernel/dtbs/${PV}
-			find "${WORKDIR}"/build/arch -name ${DTBS} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV} \; || die
+	if use arm || use arm64; then
+		# install only dtb file for board given in ${DTB_FILE}.
+		if [[ -z ${DTB_FILE} ]]; then
+				emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
+					INSTALL_PATH="${ED}"/usr/lib/kernel \
+					dtbs_install
+		else
+				dodir /usr/lib/kernel/dtbs/${PV}
+				find "${WORKDIR}"/build/arch -name ${DTBS} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV} \; || die
+		fi
 	fi
 
 	# become invalid so delete
