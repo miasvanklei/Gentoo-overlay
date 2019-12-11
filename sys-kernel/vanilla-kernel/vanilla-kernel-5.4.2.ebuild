@@ -96,21 +96,19 @@ pkg_preinst() {
 
 pkg_postinst() {
 	if [[ -z ${ROOT} ]]; then
-		mount-boot_mount_boot_partition
+		mount-boot_pkg_preinst
+
 		if [[ -z ${KINSTALL_PATH} ]]; then
 			ebegin "Installing the kernel by installkernel"
 			installkernel "${PV}" \
 				"${EROOT}/usr/lib/kernel/vmlinuz-${PV}" \
-				"${EROOT}/usr/lib/kernel/System.map-${PV}"
+				"${EROOT}/usr/lib/kernel/System.map-${PV}" || die
 			eend
 		else
 			ebegin "Installing the kernel by coping"
 			cp "${EROOT}/usr/lib/kernel/vmlinuz-${PV}" ${KINSTALL_PATH} || die
 			eend
 		fi
-		mount-boot_umount_boot_partition
-
-		[[ ${fail} ]] && die "Installing the kernel failed"
 	fi
 
 	savedconfig_pkg_postinst
