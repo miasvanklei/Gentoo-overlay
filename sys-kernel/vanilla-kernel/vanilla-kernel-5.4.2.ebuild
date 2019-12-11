@@ -73,6 +73,16 @@ src_install() {
 
 	save_config "${WORKDIR}"/build/.config
 
+	# install only dtb file for board given in ${DTB_FILE}.
+	if [[ -z ${DTB_FILE} ]]; then
+			emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
+				INSTALL_PATH="${ED}"/usr/lib/kernel \
+				dtbs_install
+	else
+			dodir /usr/lib/kernel/dtbs/${PV}
+			find "${WORKDIR}"/build/arch -name ${DTBS} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV} \; || die
+	fi
+
 	# become invalid so delete
 	rm ${ED}/lib/modules/${PV}/build || die
 	rm ${ED}/lib/modules/${PV}/source || die
