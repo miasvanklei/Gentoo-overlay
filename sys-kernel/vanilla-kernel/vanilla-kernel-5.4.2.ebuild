@@ -81,7 +81,7 @@ src_install() {
 					dtbs_install
 		else
 				dodir /usr/lib/kernel/dtbs/${PV}
-				find "${WORKDIR}"/build/arch -name ${DTBS} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV} \; || die
+				find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV} \; || die
 		fi
 	fi
 
