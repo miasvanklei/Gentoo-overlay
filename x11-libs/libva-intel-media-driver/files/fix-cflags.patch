@@ -1,0 +1,52 @@
+--- a/cmrtlib/linux/CMakeLists.txt	2019-11-10 19:32:39.420102356 +0100
++++ b/cmrtlib/linux/CMakeLists.txt	2019-11-10 19:33:04.908725109 +0100
+@@ -26,10 +26,10 @@
+ 
+ # Set up compile options that will be used for the Linux build
+ if(CMAKE_COMPILER_IS_GNUCC)
+-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1 -std=c++11 -fPIC -fpermissive -fstack-protector-all -Werror")
++    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -fpermissive -fstack-protector-all")
+     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fno-strict-aliasing -D_FORTIFY_SOURCE=2")
+     set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG -D__DEBUG -O0")
+-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse4.1 -std=c++11 -fPIC -fpermissive -fstack-protector-all -Werror")
++    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c++11 -fPIC -fpermissive -fstack-protector-all")
+     set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -fno-strict-aliasing -D_FORTIFY_SOURCE=2")
+     set(CMAKE_C_FLAGS_DEBUG   "${CMAKE_C_FLAGS_DEBUG} -D_DEBUG -D__DEBUG -O0")
+ 
+--- a/media_driver/cmake/linux/media_compile_flags_linux.cmake	2019-11-10 19:31:27.051192420 +0100
++++ b/media_driver/cmake/linux/media_compile_flags_linux.cmake	2019-11-10 19:34:36.343397134 +0100
+@@ -37,17 +37,6 @@
+     -Werror=non-virtual-dtor
+     -Werror=return-type
+ 
+-    # General optimization options
+-    -march=${UFO_MARCH}
+-    -mpopcnt
+-    -msse
+-    -msse2
+-    -msse3
+-    -mssse3
+-    -msse4.1
+-    -msse4.2
+-    -msse4
+-    -mfpmath=sse
+     -finline-functions
+     -funswitch-loops
+     -fno-short-enums
+@@ -69,16 +58,12 @@
+     -ffunction-sections
+     -Wl,--gc-sections
+ 
+-    # -m32 or -m64
+-    -m${ARCH}
+-
+     # Global defines
+     -DLINUX=1
+     -DLINUX
+     -DNO_RTTI
+     -DNO_EXCEPTION_HANDLING
+     -DINTEL_NOT_PUBLIC
+-    -g
+ )
+ 
+ 
