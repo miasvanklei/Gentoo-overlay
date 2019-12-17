@@ -40,7 +40,6 @@ PATCHES=(
 	"${FILESDIR}"/missing-includes.patch
 	"${FILESDIR}"/remove-xfs.patch
 	"${FILESDIR}"/use-getenv.patch
-	"${FILESDIR}"/fix-versioninfo-length.patch
 )
 
 RDEPEND="sys-libs/libseccomp[static-libs]
