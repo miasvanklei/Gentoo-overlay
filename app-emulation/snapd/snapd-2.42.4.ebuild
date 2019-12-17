@@ -84,7 +84,7 @@ src_compile() {
 
 	export GOPATH="${S}/"
 	VX="-v -x" # or "-v -x" for verbosity
-	for I in snapctl snap-exec snap snapd snap-seccomp snap-update-ns; do
+	for I in snapctl snap-failure snap-exec snap snapd snap-seccomp snap-update-ns; do
 		einfo "go building: ${I}"
 		go install $VX -ldflags '-s -w -linkmode external -extldflags -static'  "github.com/snapcore/${PN}/cmd/${I}" || die
 	done
@@ -131,21 +131,22 @@ src_install() {
 	exeinto "/usr/$(get_libdir)/${PN}"
 	doexe "${C}"/decode-mount-opts/decode-mount-opts
 	doexe "${C}"/snap-discard-ns/snap-discard-ns
+	doexe "${S}/bin"/snap
 	doexe "${S}/bin"/snapd
+	doexe "${S}/bin"/snapctl
 	doexe "${S}/bin"/snap-exec
+	doexe "${S}/bin"/snap-failure
 	doexe "${S}/bin"/snap-update-ns
 	doexe "${S}/bin"/snap-seccomp ### missing libseccomp
-	doexe "${C}"/snap-confine/snap-device-helper
-	exeopts -m 6755
-	doexe "${C}"/snap-confine/snap-confine
 	doexe "${MY_S}/cmd/snapd-apparmor/snapd-apparmor"
-	doexe "${S}/bin"/{snap,snapctl}
-	dosym "/usr/$(get_libdir)/${PN}/snap" /usr/bin/snap
-	dosym "/usr/$(get_libdir)/${PN}/snapctl" /usr/bin/snapctl
-
 	doexe \
 			data/completion/etelpmoc.sh \
 			data/completion/complete.sh
+	doexe "${C}"/snap-confine/snap-device-helper
+	exeopts -m 6755
+	doexe "${C}"/snap-confine/snap-confine
+	dosym "/usr/$(get_libdir)/${PN}/snap" /usr/bin/snap
+	dosym "/usr/$(get_libdir)/snapd/snapctl" /usr/bin/snapctl
 
 	insinto "/usr/share/selinux/targeted/include/snapd/"
 	doins \
