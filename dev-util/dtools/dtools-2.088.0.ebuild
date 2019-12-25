@@ -1,7 +1,7 @@
-# Copyright 2017 Mias van Klei
+# Copyright 2017-2019 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=6
+EAPI=7
 
 DESCRIPTION="Ancillary tools for the D programming language compiler"
 HOMEPAGE="https://github.com/dlang/tools"
@@ -11,7 +11,10 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm ~arm64"
 IUSE=""
 
-DEPEND="dev-util/dub"
+BDEPEND="dev-util/dub"
+
+DEPEND="dev-lang/ldc2"
+
 RDEPEND="${DEPEND}"
 
 S=${WORKDIR}/"${P//d}"
