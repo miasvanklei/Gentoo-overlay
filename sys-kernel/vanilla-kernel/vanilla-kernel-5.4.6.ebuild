@@ -103,11 +103,11 @@ pkg_postinst() {
 			installkernel "${PV}" \
 				"${EROOT}/usr/lib/kernel/vmlinuz-${PV}" \
 				"${EROOT}/usr/lib/kernel/System.map-${PV}" || die
-			eend
+			eend ${?}
 		else
 			ebegin "Installing the kernel by coping"
 			cp "${EROOT}/usr/lib/kernel/vmlinuz-${PV}" ${KINSTALL_PATH} || die
-			eend
+			eend ${?}
 		fi
 	fi
 
