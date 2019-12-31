@@ -3,7 +3,8 @@
 
 EAPI=7
 
-PYTHON_COMPAT=( python{2_7,3_{5,6,7}} )
+PYTHON_COMPAT=( python3_{6,7,8} )
+
 inherit distutils-r1
 
 DESCRIPTION="VLC bindings for Python"
