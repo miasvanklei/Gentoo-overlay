@@ -158,7 +158,7 @@
 +		reset-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_LOW>;
 +	};
 +
-+        sound {
++	sound {
 +		compatible = "audio-graph-card";
 +		label = "rockchip,rk3399";
 +		dais = <&i2s1_p0>;
@@ -719,8 +719,6 @@
 +			source-pdos = <PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
 +			sink-pdos = <PDO_FIXED(5000, 2500, PDO_FIXED_USB_COMM)>;
 +			op-sink-microwatt = <1000000>;
-+			extcon-cables = <1 2 5 6 9 10 12 44>;
-+			typec-altmodes = <0xff01 1 0x001c0000 1>;
 +
 +			ports {
 +				#address-cells = <1>;
@@ -932,6 +930,10 @@
 +		wifi_enable_h: wifi-enable-h {
 +			rockchip,pins = <0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
++
++		wifi_host_wake_l: wifi-host-wake-l {
++			rockchip,pins = <0 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
 +	};
 +};
 +
@@ -991,8 +993,7 @@
 +&sdhci {
 +	bus-width = <8>;
 +	max-frequency = <25000000>;
-+	mmc-hs400-1_8v;
-+	mmc-hs400-enhanced-strobe;
++	mmc-hs200-1_8v;
 +	non-removable;
 +	status = "okay";
 +};
