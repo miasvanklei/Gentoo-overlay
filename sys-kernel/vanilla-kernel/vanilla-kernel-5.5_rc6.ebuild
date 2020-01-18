@@ -5,10 +5,11 @@ EAPI=7
 
 inherit mount-boot savedconfig toolchain-funcs
 
-MY_P=linux-${PV}
+MY_P=linux-${PV/_/-}
 DESCRIPTION="Linux kernel built from vanilla upstream sources"
 HOMEPAGE="https://www.kernel.org/"
-SRC_URI="https://cdn.kernel.org/pub/linux/kernel/v5.x/${MY_P}.tar.xz"
+SRC_URI="https://git.kernel.org/torvalds/t/${MY_P}.tar.gz"
+#SRC_URI="https://cdn.kernel.org/pub/linux/kernel/v5.x/${MY_P}.tar.xz"
 S=${WORKDIR}/${MY_P}
 
 LICENSE="GPL-2"
