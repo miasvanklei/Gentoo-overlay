@@ -1,0 +1,32 @@
+diff --git a/src/Development/IDE/GHC/CPP.hs b/src/Development/IDE/GHC/CPP.hs
+index 849cf2c..2c3d873 100644
+--- a/src/Development/IDE/GHC/CPP.hs
++++ b/src/Development/IDE/GHC/CPP.hs
+@@ -28,7 +28,9 @@ import Module
+ import DynFlags
+ import Panic
+ import FileCleanup
+-#if MIN_GHC_API_VERSION(8,8,0)
++#if MIN_GHC_API_VERSION(8,8,2)
++import LlvmCodeGen (llvmVersionList)
++#elif MIN_GHC_API_VERSION(8,8,0)
+ import LlvmCodeGen (LlvmVersion (..))
+ #endif
+ 
+@@ -138,8 +140,15 @@ doCpp dflags raw input_fn output_fn = do
+ getBackendDefs :: DynFlags -> IO [String]
+ getBackendDefs dflags | hscTarget dflags == HscLlvm = do
+     llvmVer <- figureLlvmVersion dflags
++#if MIN_GHC_API_VERSION(8,8,2)
++    return $ case fmap llvmVersionList llvmVer of
++#else
+     return $ case llvmVer of
+-#if MIN_GHC_API_VERSION(8,8,0)
++#endif
++#if MIN_GHC_API_VERSION(8,8,2)
++               Just [m] -> [ "-D__GLASGOW_HASKELL_LLVM__=" ++ format (m,0) ]
++               Just (m:n:_) -> [ "-D__GLASGOW_HASKELL_LLVM__=" ++ format (m,n) ]
++#elif MIN_GHC_API_VERSION(8,8,0)
+                Just (LlvmVersion n) -> [ "-D__GLASGOW_HASKELL_LLVM__=" ++ format (n,0) ]
+                Just (LlvmVersionOld m n) -> [ "-D__GLASGOW_HASKELL_LLVM__=" ++ format (m,n) ]
+ #else
