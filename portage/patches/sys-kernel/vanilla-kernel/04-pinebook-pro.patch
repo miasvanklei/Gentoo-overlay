@@ -8,9 +8,9 @@
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-puma-haikou.dtb
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc.dtb
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc-mezzanine.dtb
---- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	1970-01-01 01:00:00.000000000 +0100
-+++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-01-18 14:18:30.504549876 +0100
-@@ -0,0 +1,1162 @@
+--- /dev/null	2020-01-15 18:03:13.909336195 +0100
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-01-19 21:23:41.264542360 +0100
+@@ -0,0 +1,1186 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -158,10 +158,46 @@
 +		reset-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_LOW>;
 +	};
 +
-+	sound {
-+		compatible = "audio-graph-card";
-+		label = "rockchip,rk3399";
-+		dais = <&i2s1_p0>;
++	es8316-sound {
++		status = "okay";
++		compatible = "simple-audio-card";
++		simple-audio-card,name = "rockchip,es8316-codec";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,mclk-fs = <256>;
++
++		simple-audio-card,widgets =
++			"Microphone", "Internal Microphone Left",
++			"Microphone", "Internal Microphone Right",
++			"Headphone", "Headphone Jack",
++			"Speaker", "Internal Speaker";
++		simple-audio-card,routing =
++			"MIC1", "Internal Microphone Left",
++			"MIC2", "Internal Microphone Right",
++			"Headphone Jack", "HPOL",
++			"Headphone Jack", "HPOR",
++			"Speaker Amplifier INL", "HPOL",
++			"Speaker Amplifier INR", "HPOR",
++			"Internal Speaker", "Speaker Amplifier OUTL",
++			"Internal Speaker", "Speaker Amplifier OUTR";
++
++		simple-audio-card,hp-det-gpio = <&gpio0 RK_PB0 GPIO_ACTIVE_HIGH>;
++		simple-audio-card,aux-devs = <&speaker_amp>;
++
++		simple-audio-card,cpu {
++			sound-dai = <&i2s1>;
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&es8316>;
++		};
++	};
++
++	speaker_amp: speaker-amplifier {
++		status = "okay";
++		compatible = "simple-audio-amplifier";
++		enable-gpios = <&gpio4 RK_PD3 GPIO_ACTIVE_HIGH>;
++		vcc-supply = <&pa_5v>;
++		sound-name-prefix = "Speaker Amplifier";
 +	};
 +
 +	/* Root power source */
@@ -421,17 +457,6 @@
 +	status = "okay";
 +};
 +
-+&hdmi_sound {
-+	status = "okay";
-+};
-+
-+&hdmi {
-+	ddc-i2c-bus = <&i2c3>;
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&hdmi_cec>;
-+	status = "disabled";
-+};
-+
 +&gpu {
 +	mali-supply = <&vdd_gpu>;
 +	status = "okay";
@@ -676,18 +701,13 @@
 +	i2c-scl-falling-time-ns = <4>;
 +	status = "okay";
 +
-+	es8316: codec@11 {
++	es8316: es8316@11 {
 +		compatible = "everest,es8316";
 +		reg = <0x11>;
 +		clocks = <&cru SCLK_I2S_8CH_OUT>;
 +		clock-names = "mclk";
 +		#sound-dai-cells = <0>;
-+
-+		port {
-+			es8316_p0_0: endpoint {
-+				remote-endpoint = <&i2s1_p0_0>;
-+			};
-+		};
++		spk-con-gpio = <&gpio4 RK_PD3 GPIO_ACTIVE_HIGH>;
 +	};
 +};
 +
@@ -773,17 +793,13 @@
 +};
 +
 +&i2s1 {
-+	rockchip,playback-channels = <2>;
-+	rockchip,capture-channels = <2>;
++	rockchip,i2s-broken-burst-len;
++	rockchip,playback-channels = <8>;
++	rockchip,capture-channels = <8>;
++	#sound-dai-cells = <0>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2s_8ch_mclk>, <&i2s1_2ch_bus>;
 +	status = "okay";
-+
-+	i2s1_p0: port {
-+		i2s1_p0_0: endpoint {
-+			dai-format = "i2s";
-+			mclk-fs = <256>;
-+			remote-endpoint = <&es8316_p0_0>;
-+		};
-+	};
 +};
 +
 +&i2s2 {
@@ -858,6 +874,13 @@
 +			rockchip,pins = <4 RK_PD0 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
 +	};
++
++	i2s1 {
++		i2s_8ch_mclk: i2s-8ch-mclk {
++			rockchip,pins = <4 0 RK_FUNC_1 &pcfg_pull_none>;
++		};
++	};
++
 +
 +	fusb302x {
 +		fusb0_int: fusb0-int {
@@ -1222,15 +1245,4 @@
 +	}, {
  		.compatible = "cdtech,s043wq26h-ct7",
  		.data = &cdtech_s043wq26h_ct7,
- 	}, {
---- a/drivers/gpu/drm/rockchip/cdn-dp-core.h	2020-01-18 11:56:54.709381000 +0100
-+++ b/drivers/gpu/drm/rockchip/cdn-dp-core.h	2020-01-18 14:21:48.254331949 +0100
-@@ -95,7 +95,7 @@
- 	struct cdn_dp_port *port[MAX_PHY];
- 	u8 ports;
- 	u8 max_lanes;
--	u8 max_rate;
-+	unsigned int max_rate;
- 	u8 lanes;
- 	int active_port;
- 
+ 	}, { 
