@@ -15,7 +15,7 @@ S=${WORKDIR}/${MY_P}
 LICENSE="GPL-2"
 SLOT="${PV}"
 KEYWORDS="~amd64 ~arm ~arm64"
-IUSE="banana-pi pine-h64 pine-book-pro"
+IUSE="banana-pi pine-h64 pinebook-pro"
 
 # install-DEPEND actually
 RDEPEND="sys-apps/debianutils"
@@ -25,11 +25,11 @@ pkg_pretend() {
 }
 
 src_prepare() {
-	if use pine-book-pro; then
-		eapply "${FILESDIR}"/pine-book-pro/01-rk8xx-cleanup.patch
-		eapply "${FILESDIR}"/pine-book-pro/02-add-cw2015.patch
-		eapply "${FILESDIR}"/pine-book-pro/04-pinebook-pro.patch
-		eapply "${FILESDIR}"/pine-book-pro/18-add-spk-mut-gpio.patch
+	if use pinebook-pro; then
+		eapply "${FILESDIR}"/pinebook-pro/01-rk8xx-cleanup.patch
+		eapply "${FILESDIR}"/pinebook-pro/02-add-cw2015.patch
+		eapply "${FILESDIR}"/pinebook-pro/04-pinebook-pro.patch
+		eapply "${FILESDIR}"/pinebook-pro/18-add-spk-mut-gpio.patch
 	fi
 
 	if use pine-h64; then
@@ -124,14 +124,14 @@ src_install() {
 					INSTALL_PATH="${ED}"/usr/lib/kernel \
 					dtbs_install
 		else
-				dodir /usr/lib/kernel/dtbs/${PV}
-				find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV} \; || die
+				dodir /usr/lib/kernel/dtbs/${MY_PV}
+				find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${MY_PV} \; || die
 		fi
 	fi
 
 	# become invalid so delete
-	rm ${ED}/lib/modules/${PV}/build || die
-	rm ${ED}/lib/modules/${PV}/source || die
+	rm ${ED}/lib/modules/${MY_PV}/build
+	rm ${ED}/lib/modules/${MY_PV}/source
 }
 
 pkg_preinst() {
@@ -145,13 +145,20 @@ pkg_postinst() {
 		if [[ -z ${KINSTALL_PATH} ]]; then
 			ebegin "Installing the kernel by installkernel"
 			installkernel "${PV}" \
-				"${EROOT}/usr/lib/kernel/vmlinuz-${PV}" \
-				"${EROOT}/usr/lib/kernel/System.map-${PV}" || die
+				"${EROOT}/usr/lib/kernel/vmlinuz-${MY_PV}" \
+				"${EROOT}/usr/lib/kernel/System.map-${MY_PV}" || die
 			eend ${?}
 		else
 			ebegin "Installing the kernel by coping"
-			cp "${EROOT}/usr/lib/kernel/vmlinuz-${PV}" ${KINSTALL_PATH} || die
+			cp "${EROOT}/usr/lib/kernel/vmlinuz-${MY_PV}" ${KINSTALL_PATH} || die
 			eend ${?}
+		fi
+
+		if use arm || use arm64; then
+			# install dtb file for board given in ${DTB_FILE}.
+			if [[ -z ${DTB_FILE} ]]; then
+				cp "${ED}"/usr/lib/kernel/dtbs/${MY_PV}/${DTB_FILE} /boot
+			fi
 		fi
 	fi
 
