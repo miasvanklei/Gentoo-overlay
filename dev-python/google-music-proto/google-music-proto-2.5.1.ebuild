@@ -20,5 +20,4 @@ RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
 	>=dev-python/marshmallow-2.0[${PYTHON_USEDEP}]
 	>=dev-python/pendulum-2.0[${PYTHON_USEDEP}]
 	>=dev-python/protobuf-python-3.5[${PYTHON_USEDEP}]"
-DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]"
+DEPEND="${RDEPEND}"

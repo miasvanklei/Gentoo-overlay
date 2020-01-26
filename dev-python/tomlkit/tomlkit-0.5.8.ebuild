@@ -22,8 +22,10 @@ RDEPEND="${PYTHON_DEPS}
 	virtual/python-enum34[${PYTHON_USEDEP}]
 	$(python_gen_cond_dep 'dev-python/functools32[${PYTHON_USEDEP}]' '-2')
 	$(python_gen_cond_dep 'dev-python/typing[${PYTHON_USEDEP}]' '-2')"
+
 DEPEND="${RDEPEND}"
-BDEPEND="dev-python/setuptools[${PYTHON_USEDEP}]
+
+BDEPEND="${BDEPEND}
 	test? ( dev-python/pytest[${PYTHON_USEDEP}] )"
 
 src_test() {

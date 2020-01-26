@@ -16,6 +16,6 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
-DEPEND="${PYTHON_DEPS}"
-RDEPEND="${DEPEND}
-	media-video/vlc"
+RDEPEND="media-video/vlc"
+
+DEPEND="${RDEPEND}"

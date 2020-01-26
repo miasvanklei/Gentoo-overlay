@@ -17,5 +17,5 @@ IUSE=""
 
 RDEPEND=">=dev-python/python-dateutil-2.6[${PYTHON_USEDEP}]
 	>=dev-python/pytzdata-2018.7[${PYTHON_USEDEP}]"
-DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]"
+
+DEPEND="${RDEPEND}"

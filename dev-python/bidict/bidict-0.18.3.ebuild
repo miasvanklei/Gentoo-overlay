@@ -15,7 +15,5 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
-RDEPEND=""
-DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]
+BDEPEND="${BDEPEND}
 	dev-python/setuptools_scm[${PYTHON_USEDEP}]"

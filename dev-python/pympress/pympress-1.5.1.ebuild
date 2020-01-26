@@ -15,11 +15,11 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
-RDEPEND=""
-DEPEND="${RDEPEND}
+RDEPEND="
 	app-text/poppler[cairo,introspection]
 	dev-python/pygobject[${PYTHON_USEDEP}]
 	dev-python/watchdog[${PYTHON_USEDEP}]
-	dev-python/setuptools[${PYTHON_USEDEP}]
 	dev-python/python-vlc[${PYTHON_USEDEP}]
 	x11-libs/gtk+:3[introspection]"
+
+DEPEND="${RDEPEND}"

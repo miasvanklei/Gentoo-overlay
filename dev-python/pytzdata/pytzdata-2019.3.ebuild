@@ -17,10 +17,9 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
-RDEPEND="
-	dev-python/setuptools[${PYTHON_USEDEP}]"
-DEPEND="${RDEPEND}
-	sys-libs/timezone-data"
+RDEPEND="sys-libs/timezone-data"
+
+DEPEND="${RDEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/2018.7-zoneinfo-noinstall.patch

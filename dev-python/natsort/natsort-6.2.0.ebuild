@@ -18,7 +18,7 @@ SLOT="0"
 KEYWORDS="arm amd64 ia64 x86"
 IUSE="test"
 
-DEPEND="dev-python/setuptools[${PYTHON_USEDEP}]
+BDEPEND="${BDEPEND}
 	test? ( dev-python/pytest[${PYTHON_USEDEP}]
 		dev-python/hypothesis[${PYTHON_USEDEP}]
 		virtual/python-pathlib[${PYTHON_USEDEP}]

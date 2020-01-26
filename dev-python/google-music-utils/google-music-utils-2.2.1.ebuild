@@ -19,8 +19,8 @@ RDEPEND=">=dev-python/audio-metadata-0.5[${PYTHON_USEDEP}]
 	>=dev-python/more-itertools-4.0[${PYTHON_USEDEP}]
 	>=dev-python/multidict-4.0[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.10[${PYTHON_USEDEP}]"
-DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]"
+
+DEPEND="${RDEPEND}"
 
 PATCHES=(
         "${FILESDIR}"/fix-broken-setup-py.patch

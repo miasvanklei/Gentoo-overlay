@@ -16,8 +16,8 @@ KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 RDEPEND="dev-python/pbr[${PYTHON_USEDEP}]"
-DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]"
+
+DEPEND="${RDEPEND}"
 
 src_prepare() {
 	export PBR_VERSION=${PV}

@@ -23,8 +23,6 @@ RDEPEND=">=dev-python/attrs-18.2[${PYTHON_USEDEP}]
 	>=dev-python/tbm-utils-1.0.0[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.0[${PYTHON_USEDEP}]
 "
-DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]"
 
 PATCHES=(
         "${FILESDIR}"/fix-broken-setup-py.patch

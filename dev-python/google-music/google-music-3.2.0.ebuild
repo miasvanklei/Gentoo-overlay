@@ -25,5 +25,4 @@ RDEPEND=">=dev-python/appdirs-1.4[${PYTHON_USEDEP}]
 	>=dev-python/tenacity-5.0[${PYTHON_USEDEP}]
 	>=dev-python/tbm-utils-1.0.0[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.0[${PYTHON_USEDEP}]"
-DEPEND="${RDEPEND}
-	dev-python/setuptools[${PYTHON_USEDEP}]"
+DEPEND="${RDEPEND}"
