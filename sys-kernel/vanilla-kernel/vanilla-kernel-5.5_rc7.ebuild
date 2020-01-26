@@ -6,6 +6,7 @@ EAPI=7
 inherit mount-boot savedconfig toolchain-funcs
 
 MY_P=linux-${PV/_/-}
+MY_PV="${PV/_rc/.0-rc}"
 DESCRIPTION="Linux kernel built from vanilla upstream sources"
 HOMEPAGE="https://www.kernel.org/"
 SRC_URI="https://git.kernel.org/torvalds/t/${MY_P}.tar.gz"
