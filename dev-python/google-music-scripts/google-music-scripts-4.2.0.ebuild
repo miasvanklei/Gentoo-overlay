@@ -25,9 +25,10 @@ RDEPEND=">=dev-python/appdirs-1.0[${PYTHON_USEDEP}]
 	>=dev-python/natsort-5.0[${PYTHON_USEDEP}]
 	>=dev-python/tbm-utils-1.0.0[${PYTHON_USEDEP}]
 	>=dev-python/tomlkit-0.5[${PYTHON_USEDEP}]"
-DEPEND="${RDEPEND}
+BDEPEND="${RDEPEND}
 	dev-python/setuptools[${PYTHON_USEDEP}]"
 
 PATCHES=(
+	"${FILESDIR}"/logoru-0.4.patch
 	"${FILESDIR}"/fix-broken-setup-py.patch
 )
