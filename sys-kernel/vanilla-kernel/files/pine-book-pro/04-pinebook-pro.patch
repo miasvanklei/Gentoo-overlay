@@ -597,8 +597,8 @@ diff -ur a/drivers/usb/typec/tcpm/tcpm.c b/drivers/usb/typec/tcpm/tcpm.c
  
  static inline struct serdev_device_driver *to_serdev_device_driver(struct device_driver *d)
 --- /dev/null	2020-01-15 18:03:13.909336195 +0100
-+++ arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-01-22 22:35:07.250583452 +0100
-@@ -0,0 +1,1176 @@
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-01-22 22:35:07.250583452 +0100
+@@ -0,0 +1,1155 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -744,14 +744,6 @@ diff -ur a/drivers/usb/typec/tcpm/tcpm.c b/drivers/usb/typec/tcpm/tcpm.c
 +		power-off-delay-us = <500000>;
 +		post-power-on-delay-ms = <100>;
 +		reset-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_LOW>;
-+	};
-+
-+	speaker_amp: speaker-amplifier {
-+		status = "okay";
-+		compatible = "simple-audio-amplifier";
-+		enable-gpios = <&gpio4 RK_PD3 GPIO_ACTIVE_HIGH>;
-+		VCC-supply = <&pa_5v>;
-+		sound-name-prefix = "Speaker Amplifier";
 +	};
 +
 +	sound {
@@ -1531,10 +1523,6 @@ diff -ur a/drivers/usb/typec/tcpm/tcpm.c b/drivers/usb/typec/tcpm/tcpm.c
 +		wifi_enable_h: wifi-enable-h {
 +			rockchip,pins = <0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
-+
-+		wifi_host_wake_l: wifi-host-wake-l {
-+			rockchip,pins = <0 RK_PA3 RK_FUNC_GPIO &pcfg_pull_none>;
-+		};
 +	};
 +};
 +
@@ -1579,16 +1567,6 @@ diff -ur a/drivers/usb/typec/tcpm/tcpm.c b/drivers/usb/typec/tcpm/tcpm.c
 +	pinctrl-0 = <&sdio0_bus4 &sdio0_cmd &sdio0_clk>;
 +	sd-uhs-sdr104;
 +	status = "okay";
-+
-+	brcmf: wifi@1 {
-+		compatible = "brcm,bcm4329-fmac";
-+		reg = <1>;
-+		interrupt-parent = <&gpio0>;
-+		interrupts = <RK_PA3 GPIO_ACTIVE_HIGH>;
-+		interrupt-names = "host-wake";
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&wifi_host_wake_l>;
-+	};
 +};
 +
 +&sdhci {
