@@ -26,7 +26,7 @@ RDEPEND="dev-haskell/filemanip:=[profile?]
 	dev-haskell/temporary:=[profile?]
 	dev-haskell/unix-compat:=[profile?]
 	>=dev-lang/ghc-7.10.1:=
-	>=dev-lang/ghc-8.6.0:=[profile?] <dev-lang/ghc-8.10:=[profile?]
+	>=dev-lang/ghc-8.6.0:=[profile?] <dev-lang/ghc-8.12:=[profile?]
 "
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-1.22.2.0
@@ -44,5 +44,5 @@ src_prepare() {
         default
 
         cabal_chdeps \
-                'ghc >= 8.6.0 && < 8.8' 'ghc >= 8.6.0 && < 8.10'
+                'ghc >= 8.6.0 && < 8.8' 'ghc >= 8.6.0 && < 8.12'
 }
