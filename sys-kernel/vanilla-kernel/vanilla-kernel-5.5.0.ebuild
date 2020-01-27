@@ -5,12 +5,13 @@ EAPI=7
 
 inherit mount-boot savedconfig toolchain-funcs
 
-MY_P=linux-${PV/_/-}
-MY_PV="${PV/_rc/.0-rc}"
+MY_PV="${PV/_/-}"
+MY_P="linux-${MY_PV}"
+
 DESCRIPTION="Linux kernel built from vanilla upstream sources"
 HOMEPAGE="https://www.kernel.org/"
 #SRC_URI="https://git.kernel.org/torvalds/t/${MY_P}.tar.gz"
-SRC_URI="https://cdn.kernel.org/pub/linux/kernel/v5.x/${MY_P}.tar.xz"
+SRC_URI="https://cdn.kernel.org/pub/linux/kernel/v5.x/${MY_P/.0}.tar.xz"
 S=${WORKDIR}/${MY_P}
 
 LICENSE="GPL-2"
@@ -21,6 +22,8 @@ IUSE="banana-pi pine-h64 pinebook-pro"
 # install-DEPEND actually
 RDEPEND="sys-apps/debianutils"
 
+S="${WORKDIR}/${MY_P/.0}"
+
 pkg_pretend() {
 	mount-boot_pkg_pretend
 }
@@ -30,7 +33,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/01-rk8xx-cleanup.patch
 		eapply "${FILESDIR}"/pinebook-pro/02-add-cw2015.patch
 		eapply "${FILESDIR}"/pinebook-pro/04-pinebook-pro.patch
-		eapply "${FILESDIR}"/pinebook-pro/18-add-spk-mut-gpio.patch
 	fi
 
 	if use pine-h64; then
