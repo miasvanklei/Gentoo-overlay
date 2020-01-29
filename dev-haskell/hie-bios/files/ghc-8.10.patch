@@ -1,0 +1,33 @@
+--- a/src/HIE/Bios/Ghc/Gap.hs	2020-01-28 12:36:19.894590382 +0100
++++ b/src/HIE/Bios/Ghc/Gap.hs	2020-01-28 12:38:00.152150206 +0100
+@@ -22,7 +22,6 @@
+ 
+ import DynFlags (DynFlags)
+ import GHC(LHsBind, LHsExpr, LPat, Type, ModSummary, ModuleGraph, HscEnv, setLogAction, GhcMonad)
+-import HsExpr (MatchGroup)
+ import Outputable (PrintUnqualified, PprStyle, Depth(AllTheWay), mkUserStyle)
+ 
+ #if __GLASGOW_HASKELL__ >= 808
+@@ -50,14 +49,20 @@
+ import qualified Data.IntSet as I (IntSet, empty)
+ #endif
+ 
+-#if __GLASGOW_HASKELL__ >= 806
+-import HsExpr (MatchGroupTc(..))
++#if __GLASGOW_HASKELL__ >= 810
++import GHC.Hs.Extension (GhcTc)
++import GHC.Hs.Expr (MatchGroup, MatchGroupTc(..), mg_ext)
++#elif __GLASGOW_HASKELL__ >= 806
+ import HsExtension (GhcTc)
++import HsExpr (MatchGroup, MatchGroupTc(..))
+ import GHC (mg_ext)
+ #elif __GLASGOW_HASKELL__ >= 804
+ import HsExtension (GhcTc)
++import HsExpr (MatchGroup)
+ import GHC (mg_res_ty, mg_arg_tys)
+ #else
++import HsExtension (GhcTc)
++import HsExpr (MatchGroup)
+ import GHC (Id, mg_res_ty, mg_arg_tys)
+ #endif
+ 

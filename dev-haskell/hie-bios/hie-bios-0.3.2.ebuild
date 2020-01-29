@@ -33,3 +33,14 @@ RDEPEND=">=dev-haskell/base16-bytestring-0.1.1:=[profile?] <dev-haskell/base16-b
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.0.0.2
 "
+
+PATCHES=(
+	"${FILESDIR}"/ghc-8.10.patch
+)
+
+src_prepare() {
+        default
+
+        cabal_chdeps \
+                'ghc                  >= 8.2.2 && < 8.9' 'ghc                  >= 8.2.2 && < 8.11'
+}
