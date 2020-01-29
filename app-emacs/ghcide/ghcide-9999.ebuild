@@ -57,6 +57,10 @@ DEPEND="${RDEPEND}
 		dev-haskell/text:=[profile?] )
 "
 
+PATCHES=(
+	"${FILESDIR}"/ghc-8.10.patch
+)
+
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag ghc-lib ghc-lib)
