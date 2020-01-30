@@ -3,12 +3,11 @@
 
 EAPI=7
 
-inherit xorg-3 git-r3
+inherit xorg-3
 
 DESCRIPTION="Xorg drivers for xrdp"
 HOMEPAGE="http://www.xrdp.org/"
-SRC_URI=""
-EGIT_REPO_URI="https://github.com/neutrinolabs/xorgxrdp.git"
+SRC_URI="https://github.com/neutrinolabs/xorgxrdp/releases/download/v${PV}/${P}.tar.gz"
 
 LICENSE="Apache-2.0"
 SLOT="0"
