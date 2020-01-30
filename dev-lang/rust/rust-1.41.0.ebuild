@@ -13,13 +13,13 @@ KEYWORDS="~amd64 ~arm64"
 DESCRIPTION="Systems programming language from Mozilla"
 HOMEPAGE="http://www.rust-lang.org/"
 
-SRC_URI="https://dev-static.rust-lang.org/dist/rustc-${PV}-src.tar.xz"
+SRC_URI="https://static.rust-lang.org/dist/rustc-${PV}-src.tar.xz"
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
 IUSE="debug doc libressl"
 
-LLVM_MAX_SLOT=9
+LLVM_MAX_SLOT=10
 
 COMMON_DEPEND="sys-libs/zlib
 		!libressl? ( dev-libs/openssl:0= )
@@ -59,6 +59,7 @@ clear_vendor_checksums() {
 
 src_prepare() {
 	eapply "${FILESDIR}"/0001-Remove-nostdlib-and-musl_root-from-musl-targets.patch
+	eapply "${FILESDIR}"/0002-llvm-10.patch
 	eapply "${FILESDIR}"/0003-libc-linkage.patch
 	eapply "${FILESDIR}"/0004-libunwind-linkage.patch
 	eapply "${FILESDIR}"/0005-libc++-linkage.patch
