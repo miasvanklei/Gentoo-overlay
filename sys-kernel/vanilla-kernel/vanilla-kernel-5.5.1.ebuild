@@ -61,10 +61,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/fix-wifi-bananapi.patch
 	fi
 
-	if use arm64; then
-		eapply "${FILESDIR}"/0023-panfrost-fixes.patch
-	fi
-
 	eapply "${FILESDIR}"/wireguard.patch
 
 	eapply_user
@@ -159,7 +155,7 @@ pkg_postinst() {
 
 		if use arm || use arm64; then
 			# install dtb file for board given in ${DTB_FILE}.
-			if [[ -z ${DTB_FILE} ]]; then
+			if [[ -n ${DTB_FILE} ]]; then
 				cp "${ED}"/usr/lib/kernel/dtbs/${MY_PV}/${DTB_FILE} /boot
 			fi
 		fi
