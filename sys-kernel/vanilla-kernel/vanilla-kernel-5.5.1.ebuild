@@ -156,7 +156,7 @@ pkg_postinst() {
 		if use arm || use arm64; then
 			# install dtb file for board given in ${DTB_FILE}.
 			if [[ -n ${DTB_FILE} ]]; then
-				cp "${ED}"/usr/lib/kernel/dtbs/${MY_PV}/${DTB_FILE} /boot
+				cp "${EROOT}"/usr/lib/kernel/dtbs/${MY_PV}/${DTB_FILE} /boot
 			fi
 		fi
 	fi
