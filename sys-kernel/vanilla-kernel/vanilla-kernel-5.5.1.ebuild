@@ -61,6 +61,10 @@ src_prepare() {
 		eapply "${FILESDIR}"/fix-wifi-bananapi.patch
 	fi
 
+	if use arm64; then
+		eapply "${FILESDIR}"/fix-lse-atomics.patch
+	fi
+
 	eapply "${FILESDIR}"/wireguard.patch
 
 	eapply_user
