@@ -65,6 +65,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/fix-lse-atomics.patch
 		eapply "${FILESDIR}"/fix-macro-name.patch
 		eapply "${FILESDIR}"/integrated-as.patch
+		eapply "${FILESDIR}"/fix-reclaim-BO.patch
 	fi
 
 	eapply "${FILESDIR}"/wireguard.patch
