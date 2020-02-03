@@ -63,6 +63,8 @@ src_prepare() {
 
 	if use arm64; then
 		eapply "${FILESDIR}"/fix-lse-atomics.patch
+		eapply "${FILESDIR}"/fix-macro-name.patch
+		eapply "${FILESDIR}"/integrated-as.patch
 	fi
 
 	eapply "${FILESDIR}"/wireguard.patch
