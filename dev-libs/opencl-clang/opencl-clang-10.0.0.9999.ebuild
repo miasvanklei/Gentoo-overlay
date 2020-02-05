@@ -1,28 +1,29 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-inherit cmake-multilib llvm
+inherit git-r3 cmake-multilib llvm
 
 DESCRIPTION="OpenCL-oriented thin wrapper library around clang"
 HOMEPAGE="https://github.com/intel/opencl-clang"
-SRC_URI="https://github.com/intel/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI=""
+EGIT_REPO_URI="https://github.com/intel/opencl-clang.git"
+EGIT_BRANCH="ocl-open-100"
 
 LICENSE="UoI-NCSA"
 SLOT="9"
 KEYWORDS="~amd64"
 
-BDEPEND="dev-vcs/git"
-COMMON="sys-devel/clang:9=[static-analyzer,${MULTILIB_USEDEP}]"
-DEPEND="${COMMON}
-	dev-util/spirv-llvm-translator:9=[${MULTILIB_USEDEP}]"
-RDEPEND="${COMMON}"
+DEPEND="sys-devel/clang:10=[static-analyzer,${MULTILIB_USEDEP}]
+	dev-util/spirv-llvm-translator:10=[${MULTILIB_USEDEP}]"
+RDEPEND="${DEPEND}"
 
-LLVM_MAX_SLOT=9
+LLVM_MAX_SLOT=10
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0-clang_library_dir.patch
+	"${FILESDIR}"/link-with-clang-cpp.patch
 )
 
 multilib_src_configure() {
