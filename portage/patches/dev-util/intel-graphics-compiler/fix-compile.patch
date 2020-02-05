@@ -1,0 +1,72 @@
+diff --git a/IGC/Compiler/DebugInfo/VISAIDebugEmitter.hpp b/IGC/Compiler/DebugInfo/VISAIDebugEmitter.hpp
+index 08443927..7e534a2d 100644
+--- a/IGC/Compiler/DebugInfo/VISAIDebugEmitter.hpp
++++ b/IGC/Compiler/DebugInfo/VISAIDebugEmitter.hpp
+@@ -31,6 +31,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "common/LLVMWarningsPop.hpp"
+ #include "common/Types.hpp"
+ #include <string>
++#include <vector>
+ 
+ namespace llvm
+ {
+diff --git a/IGC/Compiler/MetaDataApi/MetaDataValue.h b/IGC/Compiler/MetaDataApi/MetaDataValue.h
+index 37b6ab95..d44b703c 100644
+--- a/IGC/Compiler/MetaDataApi/MetaDataValue.h
++++ b/IGC/Compiler/MetaDataApi/MetaDataValue.h
+@@ -76,11 +76,6 @@ namespace IGC
+             return m_value;
+         }
+ 
+-        llvm::MDNode* getMDNode()
+-        {
+-            return m_pNode;
+-        }
+-
+         void set(const value_type& val)
+         {
+             m_value = val;
+@@ -254,31 +249,6 @@ namespace IGC
+             return llvm::MDNode::get(context, args);
+         }
+ 
+-        NamedMetaDataValue& operator=(llvm::Value* pNode)
+-        {
+-            m_pNode = pNode;
+-            m_id = getIdNode(pNode);
+-            m_value = getValueNode(pNode);
+-
+-            return *this;
+-        }
+-
+-        NamedMetaDataValue& operator=(const char* name)
+-        {
+-            m_pNode = NULL;
+-            m_id = name;
+-
+-            return *this;
+-        }
+-
+-        NamedMetaDataValue& operator=(std::string name)
+-        {
+-            m_pNode = NULL;
+-            m_id = name.c_str();
+-
+-            return *this;
+-        }
+-
+     private:
+         llvm::Metadata* getIdNode(const llvm::Metadata* pNode)
+         {
+diff --git a/IGC/OCLFE/igd_fcl_mcl/headers/clang_tb.h b/IGC/OCLFE/igd_fcl_mcl/headers/clang_tb.h
+index 49fc5de3..5fb92c98 100644
+--- a/IGC/OCLFE/igd_fcl_mcl/headers/clang_tb.h
++++ b/IGC/OCLFE/igd_fcl_mcl/headers/clang_tb.h
+@@ -30,6 +30,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ #include "TranslationBlock.h"
+ #include <string>
+ #include <memory>
++#include <vector>
+ 
+ #include "LoadBuffer.h"
+ #include "AdaptorOCL/CLElfLib/ElfReader.h"
