@@ -301,6 +301,7 @@ multilib_src_configure() {
 
 		# disabled on musl
 		-Didn=false
+		-Dgshadow=false
 		-Defi=false
 		-Dnss-myhostname=false
 		-Dnss-mymachines=false
@@ -308,7 +309,6 @@ multilib_src_configure() {
 		-Dnss-systemd=false
 		-Dutmp=false
 		-Dsysusers=false
-		-Dgshadow=false
 		-Dldconfig=false
 
 		# static-libs
