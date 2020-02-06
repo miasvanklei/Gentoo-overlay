@@ -1,6 +1,6 @@
 --- a/meson.build
 +++ b/meson.build
-@@ -572,6 +572,7 @@ foreach ident : [
+@@ -517,6 +517,7 @@ foreach ident : [
                                   #include <unistd.h>'''],
          ['get_mempolicy',     '''#include <stdlib.h>
                                   #include <unistd.h>'''],
@@ -10,7 +10,7 @@
          have = cc.has_function(ident[0], prefix : ident[1], args : '-D_GNU_SOURCE')
 --- a/src/basic/mkdir.c
 +++ b/src/basic/mkdir.c
-@@ -14,6 +14,7 @@
+@@ -13,6 +13,7 @@
  #include "stat-util.h"
  #include "stdio-util.h"
  #include "user-util.h"
@@ -26,7 +26,7 @@
  #include "path-util.h"
 +#include "string-util.h"
  
- static BUS_DEFINE_PROPERTY_GET_ENUM(property_get_cgroup_device_policy, cgroup_device_policy, CGroupDevicePolicy);
+ BUS_DEFINE_PROPERTY_GET(bus_property_get_tasks_max, "t", TasksMax, tasks_max_resolve);
  
 --- a/src/core/dbus-util.c
 +++ b/src/core/dbus-util.c
