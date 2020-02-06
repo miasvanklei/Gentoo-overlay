@@ -185,6 +185,8 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
+		"${FILESDIR}/245-rc1-network-debug.patch"
+		"${FILESDIR}/245-rc1-sysctl-segfault.patch"
 	)
 
 	if ! use vanilla; then
@@ -302,6 +304,7 @@ multilib_src_configure() {
 		# disabled on musl
 		-Didn=false
 		-Dgshadow=false
+		-Duserdb=false
 		-Defi=false
 		-Dnss-myhostname=false
 		-Dnss-mymachines=false
