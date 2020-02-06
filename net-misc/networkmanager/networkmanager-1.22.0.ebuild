@@ -108,7 +108,6 @@ PATCHES=(
 	"${FILESDIR}"/musl-basic.patch
 	"${FILESDIR}"/musl-compar.patch
 	"${FILESDIR}"/musl-fix-includes.patch
-	"${FILESDIR}"/musl-has-not-secure-gentenv.patch
 	"${FILESDIR}"/musl-network-support.patch
 	"${FILESDIR}"/musl-no-drand.patch
 	"${FILESDIR}"/musl-process-util.patch

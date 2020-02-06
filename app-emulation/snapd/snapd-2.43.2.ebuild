@@ -39,7 +39,6 @@ PATCHES=(
 	"${FILESDIR}"/add-musl-path.patch
 	"${FILESDIR}"/missing-includes.patch
 	"${FILESDIR}"/remove-xfs.patch
-	"${FILESDIR}"/use-getenv.patch
 )
 
 RDEPEND="sys-libs/libseccomp[static-libs]
