@@ -33,6 +33,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/01-rk8xx-cleanup.patch
 		eapply "${FILESDIR}"/pinebook-pro/02-add-cw2015.patch
 		eapply "${FILESDIR}"/pinebook-pro/04-pinebook-pro.patch
+		eapply "${FILESDIR}"/pinebook-pro/05-pinebook-pro-dts.patch
 	fi
 
 	if use pine-h64; then
