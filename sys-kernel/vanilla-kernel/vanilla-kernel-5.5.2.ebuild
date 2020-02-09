@@ -34,6 +34,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/02-add-cw2015.patch
 		eapply "${FILESDIR}"/pinebook-pro/04-pinebook-pro.patch
 		eapply "${FILESDIR}"/pinebook-pro/05-pinebook-pro-dts.patch
+		eapply "${FILESDIR}"/pinebook-pro/06-suspend-pinebook-pro.patch
 	fi
 
 	if use pine-h64; then

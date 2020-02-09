@@ -8,9 +8,9 @@
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-puma-haikou.dtb
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc.dtb
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc-mezzanine.dtb
---- /dev/null	2020-02-06 12:28:00.000000001 +0100
-+++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-07 19:56:59.421249685 +0100
-@@ -0,0 +1,1171 @@
+--- /dev/null	2020-02-05 21:51:29.537283291 +0100
++++ arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-09 17:03:17.104699216 +0100
+@@ -0,0 +1,1203 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -29,6 +29,12 @@
 +/ {
 +	model = "Pine64 Pinebook Pro";
 +	compatible = "pine64,pinebook-pro", "rockchip,rk3399";
++
++	/* first 128k(0xff8d0000~0xff8f0000) for ddr and suspend */
++	iram: sram@ff8d0000 {
++		compatible = "mmio-sram";
++		reg = <0x0 0xff8d0000 0x0 0x20000>; /* 128k */
++	};
 +
 +	edp_panel: edp-panel {
 +		compatible = "boe,nv140fhmn49";
@@ -714,11 +720,11 @@
 +	clock-frequency = <100000>;
 +
 +	es8316: codec@11 {
++		#sound-dai-cells = <0>;
 +		compatible = "everest,es8316";
 +		reg = <0x11>;
 +		clocks = <&cru SCLK_I2S_8CH_OUT>;
 +		clock-names = "mclk";
-+		#sound-dai-cells = <0>;
 +	};
 +};
 +
@@ -801,8 +807,11 @@
 +
 +&i2s1 {
 +	rockchip,i2s-broken-burst-len;
-+	rockchip,playback-channels = <2>;
-+	rockchip,capture-channels = <2>;
++	rockchip,playback-channels = <8>;
++	rockchip,capture-channels = <8>;
++	#sound-dai-cells = <0>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2s_8ch_mclk>, <&i2s1_2ch_bus>;
 +	status = "okay";
 +};
 +
@@ -1181,4 +1190,27 @@
 +			};
 +		};
 +	};
++};
++
++&rockchip_suspend {
++	status = "okay";
++	rockchip,sleep-debug-en = <1>;
++	rockchip,sleep-mode-config = <
++		(0
++		| RKPM_SLP_ARMPD
++		| RKPM_SLP_PERILPPD
++		| RKPM_SLP_DDR_RET
++		| RKPM_SLP_PLLPD
++		| RKPM_SLP_CENTER_PD
++		| RKPM_SLP_AP_PWROFF
++		)
++	>;
++	rockchip,pwm-regulator-config = <
++		(0
++		| PWM2_REGULATOR_EN
++		)
++	>;
++	rockchip,power-ctrl =
++		<&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>,
++		<&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
 +};
