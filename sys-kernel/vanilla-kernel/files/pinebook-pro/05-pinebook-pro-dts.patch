@@ -8,9 +8,10 @@
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-puma-haikou.dtb
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc.dtb
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc-mezzanine.dtb
---- /dev/null	2020-02-05 21:51:29.537283291 +0100
-+++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-09 17:03:17.104699216 +0100
-@@ -0,0 +1,1203 @@
+
+--- /dev/null	2020-02-09 21:53:13.180000000 +0100
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-09 22:08:56.947252465 +0100
+@@ -0,0 +1,1208 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -89,6 +90,8 @@
 +		};
 +	};
 +
++	/* Use separate nodes for gpio-keys to enable selective deactivation of
++	   wakeup sources without disabling the whole key */
 +	gpio-key-power {
 +		compatible = "gpio-keys";
 +		pinctrl-names = "default";
@@ -279,7 +282,7 @@
 +		regulator-always-on;
 +		regulator-boot-on;
 +		regulator-min-microvolt = <800000>;
-+		regulator-max-microvolt = <1700000>;
++		regulator-max-microvolt = <1400000>;
 +		vin-supply = <&vcc_sysin>;
 +
 +		regulator-state-mem {
@@ -719,7 +722,7 @@
 +
 +	clock-frequency = <100000>;
 +
-+	es8316: codec@11 {
++	es8316: es8316@11 {
 +		#sound-dai-cells = <0>;
 +		compatible = "everest,es8316";
 +		reg = <0x11>;
@@ -811,7 +814,7 @@
 +	rockchip,capture-channels = <8>;
 +	#sound-dai-cells = <0>;
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&i2s1_2ch_bus>;
++	pinctrl-0 = <&i2s_8ch_mclk>, <&i2s1_2ch_bus>;
 +	status = "okay";
 +};
 +
@@ -853,18 +856,15 @@
 +&pinctrl {
 +	bt {
 +		bt_enable_h: bt-enable-h {
-+			rockchip,pins =
-+				<0 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
++			rockchip,pins = <0 RK_PB1 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
 +
 +		bt_host_wake_l: bt-host-wake-l {
-+			rockchip,pins =
-+				<0 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
++			rockchip,pins = <0 RK_PA4 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
 +
 +		bt_wake_l: bt-wake-l {
-+			rockchip,pins =
-+				<2 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
++			rockchip,pins = <2 RK_PD3 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
 +	};
 +
@@ -928,7 +928,13 @@
 +		};
 +	};
 +
-+	sd {
++	sdio-pwrseq {
++		wifi_enable_h: wifi-enable-h {
++			rockchip,pins = <0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
++		};
++	};
++
++	sdcard {
 +		sdmmc0_pwr_h: sdmmc0-pwr-h {
 +			rockchip,pins = <0 RK_PA1 RK_FUNC_GPIO &pcfg_pull_none>;
 +		};
@@ -951,9 +957,9 @@
 +		};
 +	};
 +
-+	wifi {
-+		wifi_enable_h: wifi-enable-h {
-+			rockchip,pins = <0 RK_PB2 RK_FUNC_GPIO &pcfg_pull_none>;
++	i2s1 {
++		i2s_8ch_mclk: i2s-8ch-mclk {
++			rockchip,pins = <4 0 RK_FUNC_1 &pcfg_pull_none>;
 +		};
 +	};
 +
@@ -979,37 +985,37 @@
 +
 +&sdmmc {
 +	bus-width = <4>;
++	cap-mmc-highspeed;
 +	cap-sd-highspeed;
 +	cd-gpios = <&gpio0 RK_PA7 GPIO_ACTIVE_LOW>;
 +	disable-wp;
++	sd-uhs-sdr104;
 +	max-frequency = <150000000>;
++	vqmmc-supply = <&vcc_sdio>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&sdmmc_clk &sdmmc_cmd &sdmmc_bus4>;
-+	sd-uhs-sdr104;
-+	vmmc-supply = <&vcc3v0_sd>;
-+	vqmmc-supply = <&vcc_sdio>;
 +	status = "okay";
 +};
 +
 +&sdio0 {
-+	#address-cells = <1>;
-+	#size-cells = <0>;
++	supports-sdio;
 +	bus-width = <4>;
-+	clock-frequency = <50000000>;
 +	cap-sdio-irq;
++	disable-wp;
 +	cap-sd-highspeed;
 +	keep-power-in-suspend;
 +	mmc-pwrseq = <&sdio_pwrseq>;
 +	non-removable;
++	num-slots = <1>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&sdio0_bus4 &sdio0_cmd &sdio0_clk>;
 +	sd-uhs-sdr104;
 +	status = "okay";
++	defer_pcie = <2000>;
 +};
 +
 +&sdhci {
 +	bus-width = <8>;
-+	max-frequency = <25000000>;
 +	mmc-hs200-1_8v;
 +	non-removable;
 +	status = "okay";
