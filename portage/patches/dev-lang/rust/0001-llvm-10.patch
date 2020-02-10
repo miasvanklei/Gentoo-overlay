@@ -1,3 +1,75 @@
+diff --git a/src/libprofiler_builtins/build.rs b/src/libprofiler_builtins/build.rs
+index 04cd2efe0009..8adcff67800f 100644
+--- a/src/libprofiler_builtins/build.rs
++++ b/src/libprofiler_builtins/build.rs
+@@ -21,7 +21,6 @@ fn main() {
+         "InstrProfilingPlatformLinux.c",
+         "InstrProfilingPlatformOther.c",
+         "InstrProfilingPlatformWindows.c",
+-        "InstrProfilingRuntime.cc",
+         "InstrProfilingUtil.c",
+         "InstrProfilingValue.c",
+         "InstrProfilingWriter.c",
+@@ -68,10 +67,17 @@ fn main() {
+     let root = env::var_os("RUST_COMPILER_RT_ROOT").unwrap();
+     let root = Path::new(&root);
+ 
++    let src_root = root.join("lib").join("profile");
+     for src in profile_sources {
+-        cfg.file(root.join("lib").join("profile").join(src));
++        cfg.file(src_root.join(src));
+     }
+ 
++    // The file was renamed in LLVM 10.
++    let old_runtime_path = src_root.join("InstrProfilingRuntime.cc");
++    let new_runtime_path = src_root.join("InstrProfilingRuntime.cpp");
++    cfg.file(if old_runtime_path.exists() { old_runtime_path } else { new_runtime_path });
++
++    cfg.include(root.join("include"));
+     cfg.warnings(false);
+     cfg.compile("profiler-rt");
+ }
+diff --git a/src/librustc_codegen_llvm/context.rs b/src/librustc_codegen_llvm/context.rs
+index f07601ed383f..50a35fe3dcf1 100644
+--- a/src/librustc_codegen_llvm/context.rs
++++ b/src/librustc_codegen_llvm/context.rs
+@@ -143,6 +143,10 @@ fn strip_function_ptr_alignment(data_layout: String) -> String {
+     data_layout.replace("-Fi8-", "-")
+ }
+ 
++fn strip_x86_address_spaces(data_layout: String) -> String {
++    data_layout.replace("-p270:32:32-p271:32:32-p272:64:64-", "-")
++}
++
+ pub unsafe fn create_module(
+     tcx: TyCtxt<'_>,
+     llcx: &'ll llvm::Context,
+@@ -156,6 +160,11 @@ pub unsafe fn create_module(
+     if llvm_util::get_major_version() < 9 {
+         target_data_layout = strip_function_ptr_alignment(target_data_layout);
+     }
++    if llvm_util::get_major_version() < 10 {
++        if sess.target.target.arch == "x86" || sess.target.target.arch == "x86_64" {
++            target_data_layout = strip_x86_address_spaces(target_data_layout);
++        }
++    }
+ 
+     // Ensure the data-layout values hardcoded remain the defaults.
+     if sess.target.target.options.is_builtin {
+diff --git a/src/librustc_target/spec/x86_64_unknown_linux_musl.rs b/src/librustc_target/spec/x86_64_unknown_linux_musl.rs
+index 2e1bc839873c..34c628e8f67b 100644
+--- a/src/librustc_target/spec/x86_64_unknown_linux_musl.rs
++++ b/src/librustc_target/spec/x86_64_unknown_linux_musl.rs
+@@ -12,7 +12,8 @@ pub fn target() -> TargetResult {
+         target_endian: "little".to_string(),
+         target_pointer_width: "64".to_string(),
+         target_c_int_width: "32".to_string(),
+-        data_layout: "e-m:e-i64:64-f80:128-n8:16:32:64-S128".to_string(),
++        data_layout: "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
++            .to_string(),
+         arch: "x86_64".to_string(),
+         target_os: "linux".to_string(),
+         target_env: "musl".to_string(),
 diff -ur a/src/rustllvm/ArchiveWrapper.cpp b/src/rustllvm/ArchiveWrapper.cpp
 --- a/src/rustllvm/ArchiveWrapper.cpp	2020-01-30 23:46:57.165966512 +0100
 +++ b/src/rustllvm/ArchiveWrapper.cpp	2020-01-30 23:50:53.274602512 +0100
