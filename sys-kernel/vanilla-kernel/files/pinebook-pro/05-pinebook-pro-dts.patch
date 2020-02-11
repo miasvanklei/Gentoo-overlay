@@ -11,7 +11,7 @@
 
 --- /dev/null	2020-02-09 21:53:13.180000000 +0100
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-09 22:08:56.947252465 +0100
-@@ -0,0 +1,1224 @@
+@@ -0,0 +1,1223 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -69,13 +69,12 @@
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&pwrled &slpled>;
 +
-+		/* Hack using active_low as inversion. A real, inverted trigger would be nicer */
 +		green-led {
-+			gpios = <&gpio0 RK_PB3 GPIO_ACTIVE_LOW>;
++			gpios = <&gpio0 RK_PB3 GPIO_ACTIVE_HIGH>;
 +			label = "green:disk-activity";
 +			function = LED_FUNCTION_POWER;
-+			linux,default-trigger = "disk-activity";
-+			default-state = "off";
++			linux,default-trigger = "mmc2-inverted";
++			default-state = "on";
 +			color = <LED_COLOR_ID_GREEN>;
 +		};
 +
