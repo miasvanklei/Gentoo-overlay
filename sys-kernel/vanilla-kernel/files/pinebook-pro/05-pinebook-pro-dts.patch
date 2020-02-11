@@ -11,7 +11,7 @@
 
 --- /dev/null	2020-02-09 21:53:13.180000000 +0100
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-09 22:08:56.947252465 +0100
-@@ -0,0 +1,1208 @@
+@@ -0,0 +1,1224 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -393,6 +393,20 @@
 +
 +		regulator-state-mem {
 +			regulator-off-in-suspend;
++		};
++	};
++
++	/* Regulators supplied by vcc_1v8 */
++	/* Primary 0.9 V LDO */
++	vcca0v9_s3: vcca0v9-s3 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc0v9_s3";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		vin-supply = <&vcc_1v8>;
++
++		regulator-state-mem {
++			regulator-on-in-suspend;
 +		};
 +	};
 +
@@ -836,6 +850,8 @@
 +	max-link-speed = <2>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pcie_clkreqn_cpm>;
++	vpcie0v9-supply = <&vcca0v9_s3>;
++	vpcie1v8-supply = <&vcca1v8_s3>;
 +	vpcie3v3-supply = <&vcc3v3_ssd>;
 +	bus-scan-delay-ms = <1000>;
 +	status = "okay";
