@@ -12,7 +12,7 @@ index 0681078c51..292fb3eb3f 100644
  	gtk3? ( x11-libs/gtk+:3 )
  	introspection? ( dev-libs/gobject-introspection )
 diff --git a/app-text/xmlto/xmlto-0.0.28-r1.ebuild b/app-text/xmlto/xmlto-0.0.28-r1.ebuild
-index f75f3368c3..d2970e2d50 100644
+index a1209c4c9d..908e9a9bb8 100644
 --- a/app-text/xmlto/xmlto-0.0.28-r1.ebuild
 +++ b/app-text/xmlto/xmlto-0.0.28-r1.ebuild
 @@ -21,7 +21,7 @@ RDEPEND=">=app-text/docbook-xsl-stylesheets-1.62.0-r1
@@ -25,7 +25,7 @@ index f75f3368c3..d2970e2d50 100644
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
 diff --git a/dev-lang/R/R-3.6.2.ebuild b/dev-lang/R/R-3.6.2.ebuild
-index b428a11127..c0e0b127c8 100644
+index f3312585e0..bef3ac5b73 100644
 --- a/dev-lang/R/R-3.6.2.ebuild
 +++ b/dev-lang/R/R-3.6.2.ebuild
 @@ -85,6 +85,10 @@ pkg_setup() {
@@ -53,7 +53,7 @@ index 93c5f532ff..e50e3dfe59 100644
  		$(use_with xen xen_opt)
  		--without-ikvm-native
 diff --git a/dev-lang/rust/rust-1.41.0.ebuild b/dev-lang/rust/rust-1.41.0.ebuild
-index 0139d99976..e3f00b4fa7 100644
+index 29e67d0e5f..bbdb631f03 100644
 --- a/dev-lang/rust/rust-1.41.0.ebuild
 +++ b/dev-lang/rust/rust-1.41.0.ebuild
 @@ -50,12 +50,13 @@ IUSE="clippy cpu_flags_x86_sse2 debug doc libressl nightly parallel-compiler rls
@@ -166,7 +166,7 @@ index 90864a6bd2..6881491328 100644
  "
  
 diff --git a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
-index 435eb04300..551091cbb0 100644
+index 1a1ff9ab65..16422513ef 100644
 --- a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 +++ b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 @@ -32,7 +32,6 @@ DEPEND="${RDEPEND}"
@@ -177,10 +177,10 @@ index 435eb04300..551091cbb0 100644
  	"
  
  S="${WORKDIR}/${PN}-${MY_COMMIT}"
-diff --git a/media-libs/mesa/mesa-20.0.0_rc1.ebuild b/media-libs/mesa/mesa-20.0.0_rc1.ebuild
+diff --git a/media-libs/mesa/mesa-20.0.0_rc2.ebuild b/media-libs/mesa/mesa-20.0.0_rc2.ebuild
 index 39da329b5d..5bec3f52d1 100644
---- a/media-libs/mesa/mesa-20.0.0_rc1.ebuild
-+++ b/media-libs/mesa/mesa-20.0.0_rc1.ebuild
+--- a/media-libs/mesa/mesa-20.0.0_rc2.ebuild
++++ b/media-libs/mesa/mesa-20.0.0_rc2.ebuild
 @@ -146,9 +146,10 @@ RDEPEND="${RDEPEND}
  # 1. List all the working slots (with min versions) in ||, newest first.
  # 2. Update the := to specify *max* version, e.g. < 10.
@@ -244,10 +244,10 @@ index 03de91fd9e..8301e80cd0 100644
  
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
-diff --git a/sys-devel/distcc/distcc-3.3.3.ebuild b/sys-devel/distcc/distcc-3.3.3.ebuild
-index 826019c734..64a80a215e 100644
---- a/sys-devel/distcc/distcc-3.3.3.ebuild
-+++ b/sys-devel/distcc/distcc-3.3.3.ebuild
+diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
+index 826019c734..7d39d60bc1 100644
+--- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
++++ b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 @@ -3,7 +3,7 @@
  
  EAPI=6
@@ -257,8 +257,16 @@ index 826019c734..64a80a215e 100644
  
  inherit autotools flag-o-matic python-single-r1 systemd \
  	toolchain-funcs user xdg-utils prefix
+@@ -78,6 +78,7 @@ src_prepare() {
+ src_configure() {
+ 	local myconf=(
+ 		--disable-Werror
++		--without-libiberty
+ 		--libdir=/usr/lib
+ 		$(use_enable ipv6 rfc2553)
+ 		$(use_with gtk)
 diff --git a/sys-devel/llvm/llvm-10.0.0.9999.ebuild b/sys-devel/llvm/llvm-10.0.0.9999.ebuild
-index 66f38cdf8f..5e7f707d4a 100644
+index 0382dba1d3..52e99c5916 100644
 --- a/sys-devel/llvm/llvm-10.0.0.9999.ebuild
 +++ b/sys-devel/llvm/llvm-10.0.0.9999.ebuild
 @@ -29,7 +29,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
@@ -302,22 +310,22 @@ index 66f38cdf8f..5e7f707d4a 100644
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
 diff --git a/sys-libs/libapparmor/libapparmor-2.13.3.ebuild b/sys-libs/libapparmor/libapparmor-2.13.3.ebuild
-index 52a2615896..56dcb4946a 100644
+index 2c6b7f9f55..7cd6316f0d 100644
 --- a/sys-libs/libapparmor/libapparmor-2.13.3.ebuild
 +++ b/sys-libs/libapparmor/libapparmor-2.13.3.ebuild
 @@ -4,7 +4,7 @@
  EAPI=6
  
  DISTUTILS_OPTIONAL=1
--PYTHON_COMPAT=( python{2_7,3_6} )
-+PYTHON_COMPAT=( python{2_7,3_6,3_7} )
+-PYTHON_COMPAT=( python3_6 )
++PYTHON_COMPAT=( python3_{6,7} )
  GENTOO_DEPEND_ON_PERL="no"
  
  inherit autotools distutils-r1 eapi7-ver perl-functions
-diff --git a/www-client/firefox/firefox-72.0.2.ebuild b/www-client/firefox/firefox-72.0.2.ebuild
-index 3b3594aa44..9a6f6c806d 100644
---- a/www-client/firefox/firefox-72.0.2.ebuild
-+++ b/www-client/firefox/firefox-72.0.2.ebuild
+diff --git a/www-client/firefox/firefox-73.0.ebuild b/www-client/firefox/firefox-73.0.ebuild
+index 28c979325c..feb1f3efd0 100644
+--- a/www-client/firefox/firefox-73.0.ebuild
++++ b/www-client/firefox/firefox-73.0.ebuild
 @@ -38,7 +38,7 @@ if [[ "${PV}" == *_rc* ]]; then
  	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
  fi
@@ -327,7 +335,7 @@ index 3b3594aa44..9a6f6c806d 100644
  
  inherit check-reqs eapi7-ver flag-o-matic toolchain-funcs eutils \
  		gnome2-utils llvm mozcoreconf-v6 pax-utils xdg-utils \
-@@ -133,12 +133,21 @@ DEPEND="${CDEPEND}
+@@ -134,6 +134,15 @@ DEPEND="${CDEPEND}
  	>=sys-devel/binutils-2.30
  	sys-apps/findutils
  	|| (
@@ -343,10 +351,3 @@ index 3b3594aa44..9a6f6c806d 100644
  		(
  			sys-devel/clang:9
  			!clang? ( sys-devel/llvm:9 )
- 			clang? (
- 				=sys-devel/lld-9*
--				sys-devel/llvm:9[gold]
-+				sys-devel/llvm:9
- 				pgo? ( =sys-libs/compiler-rt-sanitizers-9*[profile] )
- 			)
- 		)
