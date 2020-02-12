@@ -11,15 +11,15 @@ SRC_URI=""
 EGIT_REPO_URI="https://github.com/intel/opencl-clang.git"
 EGIT_BRANCH="ocl-open-100"
 
+LLVM_MAX_SLOT=10
+
 LICENSE="UoI-NCSA"
-SLOT="9"
+SLOT="${LLVM_MAX_SLOT}"
 KEYWORDS="~amd64"
 
-DEPEND="sys-devel/clang:10=[static-analyzer,${MULTILIB_USEDEP}]
-	dev-util/spirv-llvm-translator:10=[${MULTILIB_USEDEP}]"
+DEPEND="sys-devel/clang:${LLVM_MAX_SLOT}=[static-analyzer,${MULTILIB_USEDEP}]
+	dev-util/spirv-llvm-translator:${LLVM_MAX_SLOT}=[${MULTILIB_USEDEP}]"
 RDEPEND="${DEPEND}"
-
-LLVM_MAX_SLOT=10
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0-clang_library_dir.patch

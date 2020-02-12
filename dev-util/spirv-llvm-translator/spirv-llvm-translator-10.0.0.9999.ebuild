@@ -11,19 +11,19 @@ SRC_URI=""
 EGIT_REPO_URI="https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git"
 EGIT_BRANCH="llvm_release_100"
 
+LLVM_MAX_SLOT=10
+
 LICENSE="UoI-NCSA"
-SLOT="9"
+SLOT="${LLVM_MAX_SLOT}"
 KEYWORDS="~amd64"
 IUSE="test tools"
 
-COMMON="sys-devel/llvm:10=[${MULTILIB_USEDEP}]"
+COMMON="sys-devel/llvm:${LLVM_MAX_SLOT}=[${MULTILIB_USEDEP}]"
 DEPEND="${COMMON}
 	test? ( dev-python/lit )"
 RDEPEND="${COMMON}"
 
 REQUIRED_USE="test? ( tools )"
-
-LLVM_MAX_SLOT=10
 
 PATCHES=(
 	"${FILESDIR}"/${PN}-8.0.0.1-no_pkgconfig_files.patch
