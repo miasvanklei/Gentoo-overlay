@@ -438,7 +438,7 @@ save_enabled_units() {
 }
 
 pkg_preinst() {
-	save_enabled_units {machines,remote-{fs}}.target getty@tty1.service
+	save_enabled_units {machines}.target getty@tty1.service
 
 	if ! use split-usr; then
 		local dir

@@ -1,0 +1,67 @@
+--- a/src/basic/kbd-util.c
++++ b/src/basic/kbd-util.c
+@@ -10,6 +10,7 @@
+ #include "string-util.h"
+ #include "strv.h"
+ #include "utf8.h"
++#include "missing_ftw.h"
+ 
+ static thread_local Set *keymaps = NULL;
+ 
+--- a/src/basic/locale-util.c
++++ b/src/basic/locale-util.c
+@@ -20,6 +20,7 @@
+ #include "fd-util.h"
+ #include "hashmap.h"
+ #include "locale-util.h"
++#include "missing_ftw.h"
+ #include "path-util.h"
+ #include "set.h"
+ #include "string-table.h"
+--- a/src/core/kmod-setup.c
++++ b/src/core/kmod-setup.c
+@@ -15,6 +15,7 @@
+ #if HAVE_KMOD
+ #include <libkmod.h>
+ #include "module-util.h"
++#include "missing_ftw.h"
+ 
+ static void systemd_kmod_log(
+                 void *data,
+--- a/src/core/mount-setup.c
++++ b/src/core/mount-setup.c
+@@ -22,6 +22,7 @@
+ #include "log.h"
+ #include "macro.h"
+ #include "mkdir.h"
++#include "missing_ftw.h"
+ #include "mount-setup.h"
+ #include "mountpoint-util.h"
+ #include "nulstr-util.h"
+--- /dev/null
++++ b/missing_ftw.h
+@@ -0,0 +1,24 @@
++/* SPDX-License-Identifier: LGPL-2.1+ */
++#pragma once
++
++#include <ftw.h>
++
++#ifndef FTW_ACTIONRETVAL
++#define FTW_ACTIONRETVAL 16
++#endif
++
++#ifndef FTW_CONTINUE
++#define FTW_CONTINUE 0
++#endif
++
++#ifndef FTW_STOP
++#define FTW_STOP 1
++#endif
++
++#ifndef FTW_SKIP_SUBTREE
++#define FTW_SKIP_SUBTREE 2
++#endif
++
++#ifndef FTW_SKIP_SIBLINGS
++#define FTW_SKIP_SIBLINGS 3
++#endif
