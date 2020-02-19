@@ -32,6 +32,7 @@ src_prepare() {
 	if use pinebook-pro; then
 		eapply "${FILESDIR}"/pinebook-pro/01-rk8xx-cleanup.patch
 		eapply "${FILESDIR}"/pinebook-pro/02-add-cw2015.patch
+		eapply "${FILESDIR}"/pinebook-pro/03-hdmi-codec.patch
 		eapply "${FILESDIR}"/pinebook-pro/04-pinebook-pro.patch
 		eapply "${FILESDIR}"/pinebook-pro/05-pinebook-pro-dts.patch
 		eapply "${FILESDIR}"/pinebook-pro/06-suspend-pinebook-pro.patch

@@ -9,9 +9,9 @@
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc.dtb
  dtb-$(CONFIG_ARCH_ROCKCHIP) += rk3399-roc-pc-mezzanine.dtb
 
---- /dev/null	2020-02-09 21:53:13.180000000 +0100
-+++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-09 22:08:56.947252465 +0100
-@@ -0,0 +1,1223 @@
+--- /dev/null	2020-02-12 18:30:11.972952999 +0100
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-19 19:47:29.726535110 +0100
+@@ -0,0 +1,1244 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -171,6 +171,22 @@
 +		power-off-delay-us = <500000>;
 +		post-power-on-delay-ms = <100>;
 +		reset-gpios = <&gpio0 RK_PB2 GPIO_ACTIVE_LOW>;
++	};
++
++	dp_sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,mclk-fs = <256>;
++		simple-audio-card,name = "dp-sound";
++                status = "okay";
++
++		simple-audio-card,cpu {
++			sound-dai = <&i2s2>;
++		};
++
++		simple-audio-card,codec {
++			sound-dai = <&cdn_dp>;
++		};
 +	};
 +
 +	es8316-sound {
@@ -447,6 +463,7 @@
 +&cdn_dp {
 +	status = "okay";
 +	extcon = <&fusb0>;
++	#sound-dai-cells = <0>;
 +};
 +
 +&cpu_l0 {
@@ -829,6 +846,10 @@
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&i2s_8ch_mclk>, <&i2s1_2ch_bus>;
 +	status = "okay";
++};
++
++&i2s2 {
++        status = "okay";
 +};
 +
 +&io_domains {
