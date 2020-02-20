@@ -11,7 +11,7 @@
 
 --- /dev/null	2020-02-12 18:30:11.972952999 +0100
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-19 19:47:29.726535110 +0100
-@@ -0,0 +1,1244 @@
+@@ -0,0 +1,1222 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -79,10 +79,11 @@
 +		};
 +
 +		red-led {
-+			gpios = <&gpio0 RK_PA2 GPIO_ACTIVE_HIGH>;
++			gpios = <&gpio0 RK_PA2 GPIO_ACTIVE_LOW>;
 +			label = "red:standby";
 +			function = LED_FUNCTION_STANDBY;
-+			default-state = "off";
++			default-state = "on";
++			linux,default-trigger = "default-on";
 +			panic-indicator;
 +			retain-state-suspended;
 +			color = <LED_COLOR_ID_RED>;
@@ -1232,27 +1233,4 @@
 +			};
 +		};
 +	};
-+};
-+
-+&rockchip_suspend {
-+	status = "okay";
-+	rockchip,sleep-debug-en = <1>;
-+	rockchip,sleep-mode-config = <
-+		(0
-+		| RKPM_SLP_ARMPD
-+		| RKPM_SLP_PERILPPD
-+		| RKPM_SLP_DDR_RET
-+		| RKPM_SLP_PLLPD
-+		| RKPM_SLP_CENTER_PD
-+		| RKPM_SLP_AP_PWROFF
-+		)
-+	>;
-+	rockchip,pwm-regulator-config = <
-+		(0
-+		| PWM2_REGULATOR_EN
-+		)
-+	>;
-+	rockchip,power-ctrl =
-+		<&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>,
-+		<&gpio1 RK_PB6 GPIO_ACTIVE_HIGH>;
 +};
