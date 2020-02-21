@@ -1,0 +1,73 @@
+--- a/libraries/Cabal/Cabal/Distribution/Simple/Setup.hs	2020-02-14 17:28:59.000000000 +0100
++++ b/libraries/Cabal/Cabal/Distribution/Simple/Setup.hs	2020-02-21 15:45:10.681298512 +0100
+@@ -359,11 +359,11 @@
+     configArgs         = [],
+     configPrograms_    = Option' (Just (Last' progDb)),
+     configHcFlavor     = maybe NoFlag Flag defaultCompilerFlavor,
+-    configVanillaLib   = Flag True,
++    configVanillaLib   = Flag False,
+     configProfLib      = NoFlag,
+     configSharedLib    = NoFlag,
+     configStaticLib    = NoFlag,
+-    configDynExe       = Flag False,
++    configDynExe       = Flag True,
+     configFullyStaticExe = Flag False,
+     configProfExe      = NoFlag,
+     configProf         = NoFlag,
+--- a/mk/config.mk.in	2020-02-21 15:47:27.211053820 +0100
++++ b/mk/config.mk.in	2020-02-21 15:47:37.312109670 +0100
+@@ -140,14 +140,6 @@
+ DYNAMIC_BY_DEFAULT = YES
+ endif
+ 
+-# For now, we unconditionally disable dynamic-by-default, as the
+-# cabal-install's that are in the wild don't handle it properly.
+-DYNAMIC_BY_DEFAULT = NO
+-
+-# If building both v and dyn ways, then use -dynamic-too to build them.
+-# This makes the build faster.
+-DYNAMIC_TOO = YES
+-
+ # Use the dynamic way when building programs in the GHC tree. In
+ # particular, this means that GHCi will use DLLs rather than loading
+ # object files directly.
+--- a/rules/build-package.mk	2020-02-21 16:23:01.811447647 +0100
++++ b/rules/build-package.mk	2020-02-21 16:23:13.027514427 +0100
+@@ -70,7 +70,7 @@
+ 
+ # Bootstrapping libs are only built one way
+ ifeq "$3" "0"
+-$1_$2_WAYS = v
++$1_$2_WAYS = dyn
+ else
+ $1_$2_WAYS = $$(filter-out $$($1_$2_EXCLUDED_WAYS),$$(GhcLibWays))
+ endif
+--- a/rules/build-prog.mk	2020-02-21 16:22:28.440248847 +0100
++++ b/rules/build-prog.mk	2020-02-21 16:22:36.967299658 +0100
+@@ -144,7 +144,7 @@
+ 
+ ifeq "$$($1_$2_PROGRAM_WAY)" ""
+ ifeq "$3" "0"
+-$1_$2_PROGRAM_WAY = v
++$1_$2_PROGRAM_WAY = dyn
+ else ifeq "$$(DYNAMIC_GHC_PROGRAMS)" "YES"
+ $1_$2_PROGRAM_WAY = dyn
+ else
+--- a/ghc.mk	2020-02-21 19:45:22.684603169 +0100
++++ b/ghc.mk	2020-02-21 19:45:15.185559511 +0100
+@@ -634,7 +634,6 @@
+ BUILD_DIRS += libffi
+ BUILD_DIRS += utils/deriveConstants
+ BUILD_DIRS += includes
+-BUILD_DIRS += rts
+ BUILD_DIRS += bindisttest
+ BUILD_DIRS += utils/genapply
+ ifeq "$(Windows_Host)" "YES"
+@@ -660,6 +659,7 @@
+ BUILD_DIRS += utils/haddock
+ BUILD_DIRS += utils/haddock/doc
+ BUILD_DIRS += compiler
++BUILD_DIRS += rts
+ BUILD_DIRS += utils/hsc2hs
+ BUILD_DIRS += utils/ghc-pkg
+ BUILD_DIRS += utils/testremove
