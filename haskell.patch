@@ -109,19 +109,19 @@ index fc699db32..b33bef2a6 100644
 +		'Cabal      >=1.10 && <3.1' 'Cabal      >=1.10 && <3.3'
 +}
 diff --git a/dev-haskell/cabal-install/Manifest b/dev-haskell/cabal-install/Manifest
-index afee07922..306288422 100644
+index afee07922..eb0994a5c 100644
 --- a/dev-haskell/cabal-install/Manifest
 +++ b/dev-haskell/cabal-install/Manifest
 @@ -1,3 +1,4 @@
-+DIST Cabal-v3.2.0.0-rc2.tar.gz 1926256 BLAKE2B 1dfb5397539cdd9ab6294a208c891dc655723f1afeee33e09720d505b0e4f7a03fc7a9bb59c4196cf31f1bf47dbdb6f48ad3e99a77171ee7655fed8e0cfbac78 SHA512 69e97d8189fed4657ebbdd1fd2e6103e6276c99d3d4a3b229b53be96e62fbd731a2071c7235d2bb3feab7942833bbd0987afb14d67281daaaf8f40795f563190
++DIST Cabal-v3.2.0.0-rc3.tar.gz 1926659 BLAKE2B dcdc42deb7d38a4c479e1f742df3517e71d47e5e49fba67c27835a05e8fd0dbdf25878bd08a5269ba46575850771037c60d4791d164f608e237ce47e1f602248 SHA512 7e3fac10ff8f84df2a7a38a9d3538cc6dd867b112db58b88e0f67207dabd332066a8541e3009868f18ceabcd8283e6880f6433a0b8ba3888399ae7db8872a45c
  DIST cabal-install-1.18.0.3.tar.gz 254044 BLAKE2B 362744f5733bddbf4c58a800b8cddc0994a162c04756c81e2b181a1a23441d0a0bb6dce2e06d97e4429b3eed1b4418ef7f6f01b9775ee6d3a73ceba9a54a60dc SHA512 54c3f9970135447689360b8c185ad5e618461e2fb9dc9089f420f26ccc73d92da927dc8cf32300dd736492bf78e650d92d715b4bf17aeca736499756bc84124c
  DIST cabal-install-1.20.0.6.tar.gz 277147 BLAKE2B 9894deb4d59275caa45d703d191a362aee347b3e99c6c134728adadbcba503967259d1c6b74f117541254238a71bb2dd92b600e24c31051b6ebc5f73d845fa90 SHA512 df02030503a2156af4e228e03d8381619d0dbba9496f6202833e73808a88b519d4d102bc4d944a8762bfc83ce439d46fc166918c19b77263fcf420c61d934192
  DIST cabal-install-1.22.0.1.tar.gz 300793 BLAKE2B 068fe5cbf4292bbf07cbb03c27b472d46fbc4b97347fdb9270b239e259a748d46d276c46765af69eb1fcf0f7c1ed398a834f27d0a8b024e8aee656c0610aeb5f SHA512 9554ce5b132be009b0f52206718f1fbc54d14d17c6e9cb6e758ad11a7e8f0d9f37b248cef77b6f1390591b0073090b840c73bef74214fc20688e94a74d817cf8
-diff --git a/dev-haskell/cabal-install/cabal-install-3.2.0.0_rc2.ebuild b/dev-haskell/cabal-install/cabal-install-3.2.0.0_rc2.ebuild
+diff --git a/dev-haskell/cabal-install/cabal-install-3.2.0.0_rc3.ebuild b/dev-haskell/cabal-install/cabal-install-3.2.0.0_rc3.ebuild
 new file mode 100644
 index 000000000..bff987d9f
 --- /dev/null
-+++ b/dev-haskell/cabal-install/cabal-install-3.2.0.0_rc2.ebuild
++++ b/dev-haskell/cabal-install/cabal-install-3.2.0.0_rc3.ebuild
 @@ -0,0 +1,81 @@
 +# Copyright 1999-2020 Gentoo Authors
 +# Distributed under the terms of the GNU General Public License v2
@@ -523,6 +523,21 @@ index 7fdfbef83..f8efc52a6 100644
  src_configure() {
  	haskell-cabal_src_configure \
  		$(cabal_flag benchmark-uniplate benchmark-uniplate) \
+diff --git a/dev-haskell/lifted-async/lifted-async-0.10.0.5.ebuild b/dev-haskell/lifted-async/lifted-async-0.10.0.5.ebuild
+index 5d59a07b6..0e1c8a2be 100644
+--- a/dev-haskell/lifted-async/lifted-async-0.10.0.5.ebuild
++++ b/dev-haskell/lifted-async/lifted-async-0.10.0.5.ebuild
+@@ -35,3 +35,10 @@ DEPEND="${RDEPEND}
+ 		>=dev-haskell/tasty-hunit-0.9 <dev-haskell/tasty-hunit-0.11
+ 		dev-haskell/tasty-th )
+ "
++
++src_prepare() {
++        default
++
++        cabal_chdeps \
++                'base >= 4.5 && < 4.14' 'base >= 4.5 && < 4.15'
++}
 diff --git a/dev-haskell/mtl/mtl-2.2.2.ebuild b/dev-haskell/mtl/mtl-2.2.2.ebuild
 index 917401694..57411bb0b 100644
 --- a/dev-haskell/mtl/mtl-2.2.2.ebuild
