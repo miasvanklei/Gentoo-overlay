@@ -66,6 +66,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/fix-macro-name.patch
 		eapply "${FILESDIR}"/integrated-as.patch
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
+		eapply "${FILESDIR}"/panfrost-do-not-map-on-error-faults.patch
 	fi
 
 	eapply "${FILESDIR}"/wireguard.patch
