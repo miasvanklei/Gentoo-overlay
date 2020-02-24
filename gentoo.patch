@@ -26,6 +26,103 @@ index 93f8345d01..66f3cca687 100644
 +DIST LibreOffice_6.4.0.3_Linux_x86-64_rpm_langpack_de.tar.gz 21795400 BLAKE2B dfb29534e220b112e4afbb401757452798f6c625685aa907bd39c0a26a234dd71b5263817ac66163af062618947558792feb43340009bc78503de10666ec5d1a SHA512 8d6cf8fd436dbc88d03edb76e3342796d9c8e0da1896b183ff4b006d50b7d05e4a47b64867a1dfaac2cb2e4cdd2c6b7c04c50c998631e86acfe58deca6975d22
 +DIST LibreOffice_6.4.0.3_Linux_x86-64_rpm_langpack_en-GB.tar.gz 7374914 BLAKE2B dbb006a32373d373719106c5019887522014ec423c505ae9d58e78dbd2f23c7abb15bb4436e587aba18a0a07b91a9fa9e8e555a1d3d22e310efffa3013c50cf1 SHA512 16e0fc76e177c0c75305a7b9d81b373238367d36a8e3477f7eeedc2b4ffc4cc62ca19ffb266f97db1042ebb7a664bc9a9bbb3b837f4698fb8b113b4b9a723a74
 +DIST LibreOffice_6.4.0.3_Linux_x86-64_rpm_langpack_ru.tar.gz 1941051 BLAKE2B d38af25e4d91ce6cff039a78f79563a607411c2de745b87eb6dcd8d4ccd1676bd0872482c6891ec49d041ab51079166ef7b1544d4329f6c75b2ae0468cfcec1c SHA512 4359dacaa4916d8c4afc1c0c5778956621b3a1fc1e64e082645a783bb0414a575981ab7117e27e187ac47e5b87a00797b0b555468226bff0e34da8fe546bbd63
+diff --git a/app-office/libreoffice-l10n/libreoffice-l10n-6.4.0.3.ebuild b/app-office/libreoffice-l10n/libreoffice-l10n-6.4.0.3.ebuild
+new file mode 100644
+index 0000000000..5c92461401
+--- /dev/null
++++ b/app-office/libreoffice-l10n/libreoffice-l10n-6.4.0.3.ebuild
+@@ -0,0 +1,91 @@
++# Copyright 1999-2019 Gentoo Authors
++# Distributed under the terms of the GNU General Public License v2
++
++EAPI=7
++
++inherit rpm
++
++BASE_PV=$(ver_cut 1-3)
++MY_PV="${PV/_alpha/.alpha}"
++MY_PV="${MY_PV/_beta/.beta}"
++[[ ${PV} == *alpha* || ${PV} == *beta* ]] && PN_DEV="Dev"
++
++DESCRIPTION="Translations for the Libreoffice suite"
++HOMEPAGE="https://www.libreoffice.org"
++BASE_SRC_URI_TESTING="https://download.documentfoundation.org/${PN/-l10n/}/testing/${BASE_PV}/rpm"
++BASE_SRC_URI_STABLE="https://download.documentfoundation.org/${PN/-l10n/}/stable/${BASE_PV}/rpm"
++
++LICENSE="|| ( LGPL-3 MPL-1.1 )"
++SLOT="0"
++KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~x86-linux"
++IUSE="offlinehelp"
++
++#
++# when changing the language lists, please be careful to preserve the spaces (bug 491728)
++#
++# "en:en-US" for mapping from Gentoo "en" to upstream "en-US" etc.
++LANGUAGES_HELP=" de en-GB en:en-US ru "
++LANGUAGES="${LANGUAGES_HELP} "
++
++for lang in ${LANGUAGES_HELP}; do
++	helppack="offlinehelp? ( ${BASE_SRC_URI_STABLE}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz )"
++	SRC_URI+=" l10n_${lang%:*}? ( ${helppack} )"
++done
++for lang in ${LANGUAGES}; do
++	if [[ ${lang%:*} != en ]]; then
++		langpack="${BASE_SRC_URI_STABLE}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz"
++		SRC_URI+=" l10n_${lang%:*}? ( ${langpack} )"
++	fi
++	IUSE+=" l10n_${lang%:*}"
++done
++unset lang helppack langpack
++
++RDEPEND+="app-text/hunspell"
++
++RESTRICT="strip"
++
++S="${WORKDIR}"
++
++src_prepare() {
++	default
++
++	local lang dir rpmdir
++
++	# First remove dictionaries, we want to use system ones.
++	find "${S}" -name *dict*.rpm -delete || die "Failed to remove dictionaries"
++
++	for lang in ${LANGUAGES}; do
++		# break away if not enabled
++		use l10n_${lang%:*} || continue
++
++		dir=${lang#*:}
++
++		# for english we provide just helppack, as translation is always there
++		if [[ ${lang%:*} != en ]]; then
++			rpmdir="LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${dir}/RPMS/"
++			[[ -d ${rpmdir} ]] || die "Missing directory: ${rpmdir}"
++			rpm_unpack ./${rpmdir}/*.rpm
++		fi
++		if [[ "${LANGUAGES_HELP}" =~ " ${lang} " ]] && use offlinehelp; then
++			rpmdir="LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${dir}/RPMS/"
++			[[ -d ${rpmdir} ]] || die "Missing directory: ${rpmdir}"
++			rpm_unpack ./${rpmdir}/*.rpm
++		fi
++	done
++}
++
++src_configure() { :; }
++src_compile() { :; }
++
++src_install() {
++	local dir="${S}"/opt/${PN/-l10n/}$(ver_cut 1-2)/
++	# Condition required for people who do not install anything e.g. no l10n
++	# or just english with no offlinehelp.
++	if [[ -d "${dir}" ]] ; then
++		insinto /usr/$(get_libdir)/${PN/-l10n/}/
++		doins -r "${dir}"/*
++	fi
++	# remove extensions that are in l10n for some weird reason
++	rm -rf "${ED}"/usr/$(get_libdir)/${PN/-l10n/}/share/extensions/ || \
++		die "Failed to remove extensions"
++}
 diff --git a/app-text/libetonyek/libetonyek-0.1.9.ebuild b/app-text/libetonyek/libetonyek-0.1.9.ebuild
 index 36303b04a6..2d8ce4cdea 100644
 --- a/app-text/libetonyek/libetonyek-0.1.9.ebuild
@@ -62,7 +159,7 @@ index a1209c4c9d..908e9a9bb8 100644
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
 diff --git a/dev-lang/R/R-3.6.2.ebuild b/dev-lang/R/R-3.6.2.ebuild
-index f3312585e0..bef3ac5b73 100644
+index d9a391d0f8..4829362ee4 100644
 --- a/dev-lang/R/R-3.6.2.ebuild
 +++ b/dev-lang/R/R-3.6.2.ebuild
 @@ -85,6 +85,10 @@ pkg_setup() {
@@ -77,7 +174,7 @@ index f3312585e0..bef3ac5b73 100644
  	sed -e "s:../../../library:../../../../$(get_libdir)/R/library:g" \
  		-i src/library/tools/R/Rd.R || die
 diff --git a/dev-lang/mono/mono-6.6.0.161.ebuild b/dev-lang/mono/mono-6.6.0.161.ebuild
-index 93c5f532ff..e50e3dfe59 100644
+index 6b165c5733..134827b507 100644
 --- a/dev-lang/mono/mono-6.6.0.161.ebuild
 +++ b/dev-lang/mono/mono-6.6.0.161.ebuild
 @@ -79,6 +79,8 @@ src_prepare() {
@@ -86,9 +183,9 @@ index 93c5f532ff..e50e3dfe59 100644
  	local myeconfargs=(
 +		--disable-boehm
 +		--without-sigaltstack
- 		--disable-silent-rules
  		$(use_with xen xen_opt)
  		--without-ikvm-native
+ 		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.41.0.ebuild b/dev-lang/rust/rust-1.41.0.ebuild
 index c3b18cdfc5..3ea38a754d 100644
 --- a/dev-lang/rust/rust-1.41.0.ebuild
@@ -231,7 +328,7 @@ index d02cf2adf0..4710eca2f2 100644
  		sys-devel/llvm:8[${MULTILIB_USEDEP}]
  	)
 diff --git a/media-video/vlc/vlc-3.0.8.ebuild b/media-video/vlc/vlc-3.0.8.ebuild
-index c67531ccf4..1b976afa97 100644
+index ff05a37e12..2c5fe067db 100644
 --- a/media-video/vlc/vlc-3.0.8.ebuild
 +++ b/media-video/vlc/vlc-3.0.8.ebuild
 @@ -59,7 +59,7 @@ BDEPEND="
