@@ -63,7 +63,6 @@ src_prepare() {
 	fi
 
 	if use arm64; then
-		eapply "${FILESDIR}"/fix-lse-atomics.patch
 		eapply "${FILESDIR}"/fix-macro-name.patch
 		eapply "${FILESDIR}"/integrated-as.patch
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
