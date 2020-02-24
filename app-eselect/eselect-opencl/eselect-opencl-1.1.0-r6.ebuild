@@ -8,7 +8,7 @@ inherit multilib
 DESCRIPTION="Utility to change the OpenCL implementation being used"
 HOMEPAGE="https://www.gentoo.org/"
 
-H_COMMIT="745c724b4ac623b1c42044454cb867e537d3917e"
+H_COMMIT="96f5bde69064a7f94012b40fffd66ac5508977da"
 
 SRC_URI="
 	https://dev.gentoo.org/~xarthisius/distfiles/${P}-r1.tar.xz
