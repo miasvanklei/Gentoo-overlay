@@ -245,14 +245,16 @@
 +MODULE_DEVICE_TABLE(of, rockchip_cdndp_of_match);
 --- a/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-24 08:38:51.000000000 +0100
 +++ b/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-24 15:49:38.627952737 +0100
-@@ -849,11 +849,34 @@
+@@ -849,11 +849,36 @@
  	return 0;
  }
  
 +static void handle_plugged_change(struct cdn_dp_device *dp)
 +{
-+        if (dp->plugged_cb && dp->codec_dev)
-+                dp->plugged_cb(dp->codec_dev, dp->connected);
++	if (dp->plugged_cb && dp->codec_dev) {
++		printk("came here");
++		dp->plugged_cb(dp->codec_dev, dp->sink_has_audio);
++	}
 +}
 +
 +static int cdn_dp_audio_hook_plugged_cb(struct device *dev, void *data,
