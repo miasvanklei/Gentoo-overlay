@@ -1,0 +1,311 @@
+--- a/sound/soc/rockchip/Kconfig	2020-02-24 15:47:50.545431019 +0100
++++ b/sound/soc/rockchip/Kconfig	2020-02-24 15:48:12.090535079 +0100
+@@ -79,3 +79,10 @@
+ 	help
+ 	  Say Y or M here if you want to add support multiple codecs for SoC
+ 	  audio on Rockchip RK3399 GRU boards.
++config SND_SOC_ROCKCHIP_CDNDP
++	tristate "ASoC support for Rockchip CDN DP common codec"
++	depends on SND_SOC_ROCKCHIP && CLKDEV_LOOKUP
++	select SND_SOC_ROCKCHIP_I2S
++	help
++	  Say Y or M here if you want to add support for SoC audio on Rockchip
++	  boards using CDN DP, such as RK3399 boards.
+--- a/sound/soc/rockchip/Makefile	2020-02-24 15:45:31.988761005 +0100
++++ b/sound/soc/rockchip/Makefile	2020-02-24 15:47:46.223410139 +0100
+@@ -13,8 +13,10 @@
+ snd-soc-rockchip-rt5645-objs := rockchip_rt5645.o
+ snd-soc-rk3288-hdmi-analog-objs := rk3288_hdmi_analog.o
+ snd-soc-rk3399-gru-sound-objs := rk3399_gru_sound.o
++snd-soc-rockchip-cdndp-objs := rockchip_cdndp.o
+ 
+ obj-$(CONFIG_SND_SOC_ROCKCHIP_MAX98090) += snd-soc-rockchip-max98090.o
+ obj-$(CONFIG_SND_SOC_ROCKCHIP_RT5645) += snd-soc-rockchip-rt5645.o
+ obj-$(CONFIG_SND_SOC_RK3288_HDMI_ANALOG) += snd-soc-rk3288-hdmi-analog.o
+ obj-$(CONFIG_SND_SOC_RK3399_GRU_SOUND) += snd-soc-rk3399-gru-sound.o
++obj-$(CONFIG_SND_SOC_ROCKCHIP_CDNDP) += snd-soc-rockchip-cdndp.o
+--- /dev/null	2020-02-12 18:30:11.972952999 +0100
++++ b/sound/soc/rockchip/rockchip_cdndp.c	2020-02-24 15:45:10.081654922 +0100
+@@ -0,0 +1,216 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Rockchip machine ASoC driver for boards using CDN DP
++ *
++ * Copyright (c) 2014, ROCKCHIP CORPORATION.  All rights reserved.
++ */
++
++#include <linux/module.h>
++#include <linux/input.h>
++#include <sound/jack.h>
++#include <sound/hdmi-codec.h>
++#include <sound/soc.h>
++
++#define DRV_NAME "rockchip-cdndp-sound"
++
++#define RK_CDNDP_WIDGETS \
++	SND_SOC_DAPM_LINE("DP", NULL)
++
++static const struct snd_soc_dapm_widget rk_cdndp_dapm_widgets[] = {
++	RK_CDNDP_WIDGETS,
++};
++
++#define RK_CDNDP_AUDIO_MAP \
++	{"DP", NULL, "TX"}
++
++static const struct snd_soc_dapm_route rk_cdndp_audio_map[] = {
++	RK_CDNDP_AUDIO_MAP,
++};
++
++#define RK_CDNDP_CONTROLS \
++	SOC_DAPM_PIN_SWITCH("DP")
++
++static const struct snd_kcontrol_new rk_cdndp_controls[] = {
++	RK_CDNDP_CONTROLS,
++};
++
++static int rk_cdndp_hw_params(struct snd_pcm_substream *substream,
++			     struct snd_pcm_hw_params *params)
++{
++	int ret = 0;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
++	struct snd_soc_dai *codec_dai = rtd->codec_dai;
++	int mclk;
++
++	switch (params_rate(params)) {
++	case 8000:
++	case 16000:
++	case 24000:
++	case 32000:
++	case 48000:
++	case 64000:
++	case 96000:
++		mclk = 12288000;
++		break;
++	case 11025:
++	case 22050:
++	case 44100:
++	case 88200:
++		mclk = 11289600;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	ret = snd_soc_dai_set_sysclk(cpu_dai, 0, mclk,
++				     SND_SOC_CLOCK_OUT);
++	if (ret) {
++		dev_err(cpu_dai->dev, "Can't set cpu dai clock %d\n", ret);
++		return ret;
++	}
++
++	ret = snd_soc_dai_set_sysclk(codec_dai, 0, mclk,
++				     SND_SOC_CLOCK_IN);
++
++	/* DP codec dai does not need to set sysclk. */
++	if (!strcmp(rtd->dai_link->name, "DP"))
++		return 0;
++
++	if (ret) {
++		dev_err(codec_dai->dev, "Can't set codec dai clock %d\n", ret);
++		return ret;
++	}
++
++	return ret;
++}
++
++/*
++static int rk_cdndp_startup(struct snd_pcm_substream *substream)
++{
++	/*
++	 * Set period size to 240 because pl330 has issue
++	 * dealing with larger period in stress testing.
++	 */
++/*	return snd_pcm_hw_constraint_minmax(substream->runtime,
++			SNDRV_PCM_HW_PARAM_PERIOD_SIZE, 240, 240);
++}*/
++
++static const struct snd_soc_ops rk_cdndp_ops = {
++	.hw_params = rk_cdndp_hw_params,
++/*	.startup = rk_cdndp_startup, */
++};
++
++SND_SOC_DAILINK_DEFS(cdndp,
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()),
++		     DAILINK_COMP_ARRAY(COMP_CODEC(NULL, "spdif-hifi")),
++		     DAILINK_COMP_ARRAY(COMP_EMPTY()));
++
++enum {
++	DAILINK_DP,
++};
++
++static struct snd_soc_jack rk_cdndp_jack;
++
++static int rk_cdndp_init(struct snd_soc_pcm_runtime *runtime)
++{
++	struct snd_soc_card *card = runtime->card;
++	struct snd_soc_component *component = runtime->codec_dai->component;
++	int ret;
++
++	/* enable jack detection */
++	ret = snd_soc_card_jack_new(card, "DP Jack", SND_JACK_LINEOUT,
++				    &rk_cdndp_jack, NULL, 0);
++	if (ret) {
++		dev_err(card->dev, "Can't create DP Jack %d\n", ret);
++		return ret;
++	}
++
++	return hdmi_codec_set_jack_detect(component, &rk_cdndp_jack);
++}
++
++/* DP codec dai_link */
++static struct snd_soc_dai_link rk_cdndp_dailinks[] = {
++	{
++		.name = "DP",
++		.stream_name = "DP PCM",
++		.init = rk_cdndp_init,
++		.ops = &rk_cdndp_ops,
++		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
++			SND_SOC_DAIFMT_CBS_CFS,
++		SND_SOC_DAILINK_REG(cdndp),
++	}
++};
++static struct snd_soc_card rockchip_cdndp_card = {
++	.name = "rockchip-cdndp-sound",
++	.owner = THIS_MODULE,
++	.dai_link = rk_cdndp_dailinks,
++	.num_links = ARRAY_SIZE(rk_cdndp_dailinks),
++	.dapm_widgets = rk_cdndp_dapm_widgets,
++	.num_dapm_widgets = ARRAY_SIZE(rk_cdndp_dapm_widgets),
++	.dapm_routes = rk_cdndp_audio_map,
++	.num_dapm_routes = ARRAY_SIZE(rk_cdndp_audio_map),
++	.controls = rk_cdndp_controls,
++	.num_controls = ARRAY_SIZE(rk_cdndp_controls),
++};
++
++static int snd_rk_cdndp_probe(struct platform_device *pdev)
++{
++	int ret = 0;
++	struct snd_soc_card *card;
++	struct device *dev = &pdev->dev;
++	struct device_node *np = pdev->dev.of_node;
++	struct device_node *np_cpu;
++	struct device_node *np_cdndp;
++
++	np_cpu = of_parse_phandle(np, "rockchip,cpu", 0);
++	if (!np_cpu) {
++		dev_err(dev,
++			"Property 'rockchip,cpu missing or invalid\n");
++		return -EINVAL;
++	}
++
++	np_cdndp = of_parse_phandle(np, "rockchip,codec", 0);
++	if (!np_cdndp) {
++		dev_err(dev,
++			"Property 'rockchip,codec missing or invalid\n");
++		return -EINVAL;
++	}
++
++	card = &rockchip_cdn_card;
++	card->dai_link[0].codecs->of_node = np_cdnp;
++	card->dai_link[0].cpus->of_node = np_cpu;
++	card->dai_link[0].platforms->of_node = np_cpu;
++	card->dev = dev;
++
++	ret = devm_snd_soc_register_card(dev, card);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"Soc register card failed %d\n", ret);
++		return ret;
++	}
++
++	return ret;
++}
++
++static const struct of_device_id rockchip_cdndp_of_match[] = {
++	{ .compatible = "rockchip,cdndp-sound", },
++	{},
++};
++
++static struct platform_driver snd_rk_cdndp_driver = {
++	.probe = snd_rk_mc_probe,
++	.driver = {
++		.name = DRV_NAME,
++		.pm = &snd_soc_pm_ops,
++		.of_match_table = rockchip_cdndp_of_match,
++	},
++};
++
++module_platform_driver(snd_rk_cdndp_driver);
++
++MODULE_AUTHOR("jianqun <jay.xu@rock-chips.com>");
++MODULE_DESCRIPTION("Rockchip max98090 machine ASoC driver");
++MODULE_LICENSE("GPL v2");
++MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_DEVICE_TABLE(of, rockchip_cdndp_of_match);
+--- a/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-24 08:38:51.000000000 +0100
++++ b/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-24 15:49:38.627952737 +0100
+@@ -849,11 +849,34 @@
+ 	return 0;
+ }
+ 
++static void handle_plugged_change(struct cdn_dp_device *dp)
++{
++        if (dp->plugged_cb && dp->codec_dev)
++                dp->plugged_cb(dp->codec_dev, dp->connected);
++}
++
++static int cdn_dp_audio_hook_plugged_cb(struct device *dev, void *data,
++					hdmi_codec_plugged_cb fn,
++					struct device *codec_dev)
++{
++	bool connected;
++	struct cdn_dp_device *dp = dev_get_drvdata(dev);
++
++	mutex_lock(&dp->lock);
++	dp->plugged_cb = fn;
++	dp->codec_dev = codec_dev;
++	handle_plugged_change(dp);
++	mutex_unlock(&dp->lock);
++
++	return 0;
++}
++
+ static const struct hdmi_codec_ops audio_codec_ops = {
+ 	.hw_params = cdn_dp_audio_hw_params,
+ 	.audio_shutdown = cdn_dp_audio_shutdown,
+ 	.digital_mute = cdn_dp_audio_digital_mute,
+ 	.get_eld = cdn_dp_audio_get_eld,
++	.hook_plugged_cb = cdn_dp_audio_hook_plugged_cb,
+ };
+ 
+ static int cdn_dp_audio_codec_init(struct cdn_dp_device *dp,
+@@ -977,6 +1000,9 @@
+ 		}
+ 	}
+ 
++	/* update jack status on audio device */
++	handle_plugged_change(dp);
++
+ out:
+ 	mutex_unlock(&dp->lock);
+ 
+--- a/drivers/gpu/drm/rockchip/cdn-dp-core.h	2020-02-24 08:38:51.000000000 +0100
++++ b/drivers/gpu/drm/rockchip/cdn-dp-core.h	2020-02-24 15:49:42.235970138 +0100
+@@ -10,6 +10,7 @@
+ #include <drm/drm_dp_helper.h>
+ #include <drm/drm_panel.h>
+ #include <drm/drm_probe_helper.h>
++#include <sound/hdmi-codec.h>
+ 
+ #include "rockchip_drm_drv.h"
+ 
+@@ -90,6 +91,8 @@
+ 	struct reset_control *dptx_rst;
+ 	struct reset_control *apb_rst;
+ 	struct reset_control *core_rst;
++	hdmi_codec_plugged_cb plugged_cb;
++	struct device *codec_dev;
+ 	struct audio_info audio_info;
+ 	struct video_info video_info;
+ 	struct cdn_dp_port *port[MAX_PHY];

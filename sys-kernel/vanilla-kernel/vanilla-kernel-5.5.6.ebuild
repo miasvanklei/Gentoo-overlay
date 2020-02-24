@@ -35,6 +35,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/03-hdmi-codec.patch
 		eapply "${FILESDIR}"/pinebook-pro/04-pinebook-pro.patch
 		eapply "${FILESDIR}"/pinebook-pro/05-pinebook-pro-dts.patch
+		eapply "${FILESDIR}"/pinebook-pro/06-cdndp-sound.patch
 	fi
 
 	if use pine-h64; then
