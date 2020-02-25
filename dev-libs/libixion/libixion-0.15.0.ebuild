@@ -18,13 +18,14 @@ else
 fi
 
 LICENSE="MIT"
-SLOT="0/0.14" # based on SONAME of libixion.so
+SLOT="0/0.15" # based on SONAME of libixion.so
 IUSE="debug python static-libs +threads"
 
 REQUIRED_USE="python? ( ${PYTHON_REQUIRED_USE} )"
 
 DEPEND="
 	dev-libs/boost:=
+	dev-libs/spdlog:=
 	>=dev-util/mdds-1.5.0:1=
 	python? ( ${PYTHON_DEPS} )
 "
