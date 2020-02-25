@@ -18,7 +18,7 @@ else
 fi
 
 LICENSE="MIT"
-SLOT="0/0.14" # based on SONAME of liborcus.so
+SLOT="0/0.15" # based on SONAME of liborcus.so
 IUSE="python +spreadsheet-model static-libs tools"
 
 RDEPEND="
