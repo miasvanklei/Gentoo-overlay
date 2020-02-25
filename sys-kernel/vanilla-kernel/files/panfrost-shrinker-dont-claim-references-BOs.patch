@@ -1,0 +1,62 @@
+diff --git a/drivers/gpu/drm/panfrost/panfrost_drv.c b/drivers/gpu/drm/panfrost/panfrost_drv.c
+index 88b431a267af3..273d67e251c2e 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_drv.c
++++ b/drivers/gpu/drm/panfrost/panfrost_drv.c
+@@ -166,6 +166,7 @@ panfrost_lookup_bos(struct drm_device *dev,
+ 			break;
+ 		}
+ 
++		atomic_inc(&bo->gpu_usecount);
+ 		job->mappings[i] = mapping;
+ 	}
+ 
+diff --git a/drivers/gpu/drm/panfrost/panfrost_gem.h b/drivers/gpu/drm/panfrost/panfrost_gem.h
+index ca1bc9019600c..b3517ff9630cb 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_gem.h
++++ b/drivers/gpu/drm/panfrost/panfrost_gem.h
+@@ -30,6 +30,12 @@ struct panfrost_gem_object {
+ 		struct mutex lock;
+ 	} mappings;
+ 
++	/*
++	 * Count the number of jobs referencing this BO so we don't let the
++	 * shrinker reclaim this object prematurely.
++	 */
++	atomic_t gpu_usecount;
++
+ 	bool noexec		:1;
+ 	bool is_heap		:1;
+ };
+diff --git a/drivers/gpu/drm/panfrost/panfrost_gem_shrinker.c b/drivers/gpu/drm/panfrost/panfrost_gem_shrinker.c
+index f5dd7b29bc954..288e46c40673a 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_gem_shrinker.c
++++ b/drivers/gpu/drm/panfrost/panfrost_gem_shrinker.c
+@@ -41,6 +41,9 @@ static bool panfrost_gem_purge(struct drm_gem_object *obj)
+ 	struct drm_gem_shmem_object *shmem = to_drm_gem_shmem_obj(obj);
+ 	struct panfrost_gem_object *bo = to_panfrost_bo(obj);
+ 
++	if (atomic_read(&bo->gpu_usecount))
++		return false;
++
+ 	if (!mutex_trylock(&shmem->pages_lock))
+ 		return false;
+ 
+diff --git a/drivers/gpu/drm/panfrost/panfrost_job.c b/drivers/gpu/drm/panfrost/panfrost_job.c
+index e364ee00f3d01..4d383831c1fc2 100644
+--- a/drivers/gpu/drm/panfrost/panfrost_job.c
++++ b/drivers/gpu/drm/panfrost/panfrost_job.c
+@@ -269,8 +269,13 @@ static void panfrost_job_cleanup(struct kref *ref)
+ 	dma_fence_put(job->render_done_fence);
+ 
+ 	if (job->mappings) {
+-		for (i = 0; i < job->bo_count; i++)
++		for (i = 0; i < job->bo_count; i++) {
++			if (!job->mappings[i])
++				break;
++
++			atomic_dec(&job->mappings[i]->obj->gpu_usecount);
+ 			panfrost_gem_mapping_put(job->mappings[i]);
++		}
+ 		kvfree(job->mappings);
+ 	}
+ 
