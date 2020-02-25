@@ -28,101 +28,7 @@ index 93f8345d01..66f3cca687 100644
 +DIST LibreOffice_6.4.0.3_Linux_x86-64_rpm_langpack_ru.tar.gz 1941051 BLAKE2B d38af25e4d91ce6cff039a78f79563a607411c2de745b87eb6dcd8d4ccd1676bd0872482c6891ec49d041ab51079166ef7b1544d4329f6c75b2ae0468cfcec1c SHA512 4359dacaa4916d8c4afc1c0c5778956621b3a1fc1e64e082645a783bb0414a575981ab7117e27e187ac47e5b87a00797b0b555468226bff0e34da8fe546bbd63
 diff --git a/app-office/libreoffice-l10n/libreoffice-l10n-6.4.0.3.ebuild b/app-office/libreoffice-l10n/libreoffice-l10n-6.4.0.3.ebuild
 new file mode 100644
-index 0000000000..5c92461401
---- /dev/null
-+++ b/app-office/libreoffice-l10n/libreoffice-l10n-6.4.0.3.ebuild
-@@ -0,0 +1,91 @@
-+# Copyright 1999-2019 Gentoo Authors
-+# Distributed under the terms of the GNU General Public License v2
-+
-+EAPI=7
-+
-+inherit rpm
-+
-+BASE_PV=$(ver_cut 1-3)
-+MY_PV="${PV/_alpha/.alpha}"
-+MY_PV="${MY_PV/_beta/.beta}"
-+[[ ${PV} == *alpha* || ${PV} == *beta* ]] && PN_DEV="Dev"
-+
-+DESCRIPTION="Translations for the Libreoffice suite"
-+HOMEPAGE="https://www.libreoffice.org"
-+BASE_SRC_URI_TESTING="https://download.documentfoundation.org/${PN/-l10n/}/testing/${BASE_PV}/rpm"
-+BASE_SRC_URI_STABLE="https://download.documentfoundation.org/${PN/-l10n/}/stable/${BASE_PV}/rpm"
-+
-+LICENSE="|| ( LGPL-3 MPL-1.1 )"
-+SLOT="0"
-+KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~x86-linux"
-+IUSE="offlinehelp"
-+
-+#
-+# when changing the language lists, please be careful to preserve the spaces (bug 491728)
-+#
-+# "en:en-US" for mapping from Gentoo "en" to upstream "en-US" etc.
-+LANGUAGES_HELP=" de en-GB en:en-US ru "
-+LANGUAGES="${LANGUAGES_HELP} "
-+
-+for lang in ${LANGUAGES_HELP}; do
-+	helppack="offlinehelp? ( ${BASE_SRC_URI_STABLE}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${lang#*:}.tar.gz )"
-+	SRC_URI+=" l10n_${lang%:*}? ( ${helppack} )"
-+done
-+for lang in ${LANGUAGES}; do
-+	if [[ ${lang%:*} != en ]]; then
-+		langpack="${BASE_SRC_URI_STABLE}/x86_64/LibreOffice${PN_DEV}_${BASE_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz ${BASE_SRC_URI_TESTING}/x86_64/LibreOffice${PN_DEV}_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz -> LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${lang#*:}.tar.gz"
-+		SRC_URI+=" l10n_${lang%:*}? ( ${langpack} )"
-+	fi
-+	IUSE+=" l10n_${lang%:*}"
-+done
-+unset lang helppack langpack
-+
-+RDEPEND+="app-text/hunspell"
-+
-+RESTRICT="strip"
-+
-+S="${WORKDIR}"
-+
-+src_prepare() {
-+	default
-+
-+	local lang dir rpmdir
-+
-+	# First remove dictionaries, we want to use system ones.
-+	find "${S}" -name *dict*.rpm -delete || die "Failed to remove dictionaries"
-+
-+	for lang in ${LANGUAGES}; do
-+		# break away if not enabled
-+		use l10n_${lang%:*} || continue
-+
-+		dir=${lang#*:}
-+
-+		# for english we provide just helppack, as translation is always there
-+		if [[ ${lang%:*} != en ]]; then
-+			rpmdir="LibreOffice_${MY_PV}_Linux_x86-64_rpm_langpack_${dir}/RPMS/"
-+			[[ -d ${rpmdir} ]] || die "Missing directory: ${rpmdir}"
-+			rpm_unpack ./${rpmdir}/*.rpm
-+		fi
-+		if [[ "${LANGUAGES_HELP}" =~ " ${lang} " ]] && use offlinehelp; then
-+			rpmdir="LibreOffice_${MY_PV}_Linux_x86-64_rpm_helppack_${dir}/RPMS/"
-+			[[ -d ${rpmdir} ]] || die "Missing directory: ${rpmdir}"
-+			rpm_unpack ./${rpmdir}/*.rpm
-+		fi
-+	done
-+}
-+
-+src_configure() { :; }
-+src_compile() { :; }
-+
-+src_install() {
-+	local dir="${S}"/opt/${PN/-l10n/}$(ver_cut 1-2)/
-+	# Condition required for people who do not install anything e.g. no l10n
-+	# or just english with no offlinehelp.
-+	if [[ -d "${dir}" ]] ; then
-+		insinto /usr/$(get_libdir)/${PN/-l10n/}/
-+		doins -r "${dir}"/*
-+	fi
-+	# remove extensions that are in l10n for some weird reason
-+	rm -rf "${ED}"/usr/$(get_libdir)/${PN/-l10n/}/share/extensions/ || \
-+		die "Failed to remove extensions"
-+}
+index 0000000000..e69de29bb2
 diff --git a/app-text/libetonyek/libetonyek-0.1.9.ebuild b/app-text/libetonyek/libetonyek-0.1.9.ebuild
 index 36303b04a6..2d8ce4cdea 100644
 --- a/app-text/libetonyek/libetonyek-0.1.9.ebuild
@@ -158,6 +64,19 @@ index a1209c4c9d..908e9a9bb8 100644
  	latex? ( >=app-text/passivetex-1.25 >=dev-tex/xmltex-1.9-r2 )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
+diff --git a/dev-java/java-config/java-config-2.2.0-r4.ebuild b/dev-java/java-config/java-config-2.2.0-r4.ebuild
+index 8f0cddb82b..de3f880c23 100644
+--- a/dev-java/java-config/java-config-2.2.0-r4.ebuild
++++ b/dev-java/java-config/java-config-2.2.0-r4.ebuild
+@@ -4,7 +4,7 @@
+ EAPI=6
+ 
+ # jython depends on java-config, so don't add it or things will break
+-PYTHON_COMPAT=( python{3_6,3_7} )
++PYTHON_COMPAT=( python{3_6,3_7,3_8} )
+ 
+ inherit distutils-r1
+ 
 diff --git a/dev-lang/R/R-3.6.2.ebuild b/dev-lang/R/R-3.6.2.ebuild
 index d9a391d0f8..4829362ee4 100644
 --- a/dev-lang/R/R-3.6.2.ebuild
@@ -379,7 +298,7 @@ index 456493136d..3faa7a2363 100644
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
-index 826019c734..7d39d60bc1 100644
+index 826019c734..945fada9a8 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 +++ b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 @@ -3,7 +3,7 @@
@@ -387,7 +306,7 @@ index 826019c734..7d39d60bc1 100644
  EAPI=6
  
 -PYTHON_COMPAT=( python3_6 )
-+PYTHON_COMPAT=( python3_{6,7} )
++PYTHON_COMPAT=( python3_{6,8} )
  
  inherit autotools flag-o-matic python-single-r1 systemd \
  	toolchain-funcs user xdg-utils prefix
@@ -443,23 +362,23 @@ index 6f27f37321..612b21019e 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-diff --git a/sys-libs/libapparmor/libapparmor-2.13.3.ebuild b/sys-libs/libapparmor/libapparmor-2.13.3.ebuild
-index 2c6b7f9f55..7cd6316f0d 100644
---- a/sys-libs/libapparmor/libapparmor-2.13.3.ebuild
-+++ b/sys-libs/libapparmor/libapparmor-2.13.3.ebuild
-@@ -4,7 +4,7 @@
- EAPI=6
+diff --git a/sys-libs/libblockdev/libblockdev-2.23.ebuild b/sys-libs/libblockdev/libblockdev-2.23.ebuild
+index 5b61abdcb9..5bcbc93b37 100644
+--- a/sys-libs/libblockdev/libblockdev-2.23.ebuild
++++ b/sys-libs/libblockdev/libblockdev-2.23.ebuild
+@@ -3,7 +3,7 @@
  
- DISTUTILS_OPTIONAL=1
--PYTHON_COMPAT=( python3_6 )
-+PYTHON_COMPAT=( python3_{6,7} )
- GENTOO_DEPEND_ON_PERL="no"
+ EAPI=7
  
- inherit autotools distutils-r1 eapi7-ver perl-functions
-diff --git a/www-client/firefox/firefox-73.0.ebuild b/www-client/firefox/firefox-73.0.ebuild
-index 6e104cb56f..b6ba659273 100644
---- a/www-client/firefox/firefox-73.0.ebuild
-+++ b/www-client/firefox/firefox-73.0.ebuild
+-PYTHON_COMPAT=( python3_{6,7} )
++PYTHON_COMPAT=( python3_{6,7,8} )
+ inherit python-single-r1 xdg-utils
+ 
+ DESCRIPTION="A library for manipulating block devices"
+diff --git a/www-client/firefox/firefox-73.0.1.ebuild b/www-client/firefox/firefox-73.0.1.ebuild
+index 106e5b996e..3fc6e31d56 100644
+--- a/www-client/firefox/firefox-73.0.1.ebuild
++++ b/www-client/firefox/firefox-73.0.1.ebuild
 @@ -38,7 +38,7 @@ if [[ "${PV}" == *_rc* ]]; then
  	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
  fi
