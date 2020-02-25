@@ -1,0 +1,21 @@
+--- a/drivers/usb/typec/tcpm/tcpm.c
++++ b/drivers/usb/typec/tcpm/tcpm.c
+@@ -4705,6 +4827,18 @@
+ 	else
+ 		port->try_role = TYPEC_NO_PREFERRED_ROLE; 
+
++#ifdef CONFIG_EXTCON
++	port->extcon = devm_extcon_dev_allocate(dev, port->extcon_cables);
++	if (IS_ERR(port->extcon)) {
++		dev_err(dev, "Failed to allocate extcon device: %ld", PTR_ERR(port->extcon));
++		goto out_destroy_wq;
++	}
++	if((err = devm_extcon_dev_register(dev, port->extcon))) {
++		dev_err(dev, "Failed to register extcon device: %d", err);
++		goto out_destroy_wq;
++	}
++#endif
++
+ 	port->typec_caps.fwnode = tcpc->fwnode;
+ 	port->typec_caps.revision = 0x0120;	/* Type-C spec release 1.2 */
+ 	port->typec_caps.pd_revision = 0x0300;  /* USB-PD spec release 3.0 */

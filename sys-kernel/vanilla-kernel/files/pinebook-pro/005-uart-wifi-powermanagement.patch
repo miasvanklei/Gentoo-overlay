@@ -1,0 +1,125 @@
+--- a/drivers/bluetooth/hci_bcm.c
++++ b/drivers/bluetooth/hci_bcm.c
+@@ -1418,6 +1418,23 @@
+ 	hci_uart_unregister_device(&bcmdev->serdev_hu);
+ }
+ 
++static void bcm_serdev_shutdown(struct serdev_device *serdev)
++{
++	struct bcm_device *bcmdev = serdev_device_get_drvdata(serdev);
++
++/*
++	if (test_bit(HCI_UART_REGISTERED, &bcmdev->hu->flags)) {
++		hci_uart_unregister_device(&bcmdev->serdev_hu);
++	}
++*/
++	dev_info(bcmdev->dev, "Cutting power to bluetooth module\n");
++	if (bcm_gpio_set_power(bcmdev, false)) {
++		dev_err(bcmdev->dev, "Failed to power down\n");
++	}
++	usleep_range(500000, 1000000);
++}
++
++
+ #ifdef CONFIG_OF
+ static const struct of_device_id bcm_bluetooth_of_match[] = {
+ 	{ .compatible = "brcm,bcm20702a1" },
+@@ -1434,6 +1451,7 @@
+ static struct serdev_device_driver bcm_serdev_driver = {
+ 	.probe = bcm_serdev_probe,
+ 	.remove = bcm_serdev_remove,
++	.shutdown = bcm_serdev_shutdown,
+ 	.driver = {
+ 		.name = "hci_uart_bcm",
+ 		.of_match_table = of_match_ptr(bcm_bluetooth_of_match),
+--- a/drivers/bluetooth/hci_serdev.c
++++ b/drivers/bluetooth/hci_serdev.c
+@@ -364,5 +364,7 @@
+ 
+ 	hu->proto->close(hu);
+ 	serdev_device_close(hu->serdev);
++
++	clear_bit(HCI_UART_REGISTERED, &hu->flags);
+ }
+ EXPORT_SYMBOL_GPL(hci_uart_unregister_device);
+--- a/drivers/mmc/core/pwrseq_simple.c
++++ b/drivers/mmc/core/pwrseq_simple.c
+@@ -80,10 +80,8 @@
+ 		msleep(pwrseq->post_power_on_delay_ms);
+ }
+ 
+-static void mmc_pwrseq_simple_power_off(struct mmc_host *host)
++static void __mmc_pwrseq_simple_power_off(struct mmc_pwrseq_simple *pwrseq)
+ {
+-	struct mmc_pwrseq_simple *pwrseq = to_pwrseq_simple(host->pwrseq);
+-
+ 	mmc_pwrseq_simple_set_gpios_value(pwrseq, 1);
+ 
+ 	if (pwrseq->power_off_delay_us)
+@@ -96,6 +94,12 @@
+ 	}
+ }
+ 
++static void mmc_pwrseq_simple_power_off(struct mmc_host *host)
++{
++	struct mmc_pwrseq_simple *pwrseq = to_pwrseq_simple(host->pwrseq);
++	__mmc_pwrseq_simple_power_off(pwrseq);
++}
++
+ static const struct mmc_pwrseq_ops mmc_pwrseq_simple_ops = {
+ 	.pre_power_on = mmc_pwrseq_simple_pre_power_on,
+ 	.post_power_on = mmc_pwrseq_simple_post_power_on,
+@@ -151,9 +155,18 @@
+ 	return 0;
+ }
+ 
++static void mmc_pwrseq_simple_shutdown(struct platform_device *pdev)
++{
++	struct mmc_pwrseq_simple *pwrseq = platform_get_drvdata(pdev);
++
++	dev_info(&pdev->dev, "Turning off mmc\n");
++	__mmc_pwrseq_simple_power_off(pwrseq);
++}
++
+ static struct platform_driver mmc_pwrseq_simple_driver = {
+ 	.probe = mmc_pwrseq_simple_probe,
+ 	.remove = mmc_pwrseq_simple_remove,
++	.shutdown = mmc_pwrseq_simple_shutdown,
+ 	.driver = {
+ 		.name = "pwrseq_simple",
+ 		.of_match_table = mmc_pwrseq_simple_of_match,
+--- a/drivers/tty/serdev/core.c
++++ b/drivers/tty/serdev/core.c
+@@ -431,11 +431,22 @@
+ 	return 0;
+ }
+ 
++static void serdev_drv_shutdown(struct device *dev)
++{
++	const struct serdev_device_driver *sdrv;
++	if (dev->driver) {
++		sdrv = to_serdev_device_driver(dev->driver);
++		if (sdrv->shutdown)
++			sdrv->shutdown(to_serdev_device(dev));
++	}
++}
++
+ static struct bus_type serdev_bus_type = {
+ 	.name		= "serial",
+ 	.match		= serdev_device_match,
+ 	.probe		= serdev_drv_probe,
+ 	.remove		= serdev_drv_remove,
++	.shutdown	= serdev_drv_shutdown,
+ };
+ 
+ /**
+--- a/include/linux/serdev.h
++++ b/include/linux/serdev.h
+@@ -63,6 +63,7 @@
+ 	struct device_driver driver;
+ 	int	(*probe)(struct serdev_device *);
+ 	void	(*remove)(struct serdev_device *);
++	void	(*shutdown)(struct serdev_device *);
+ };
+ 
+ static inline struct serdev_device_driver *to_serdev_device_driver(struct device_driver *d)
