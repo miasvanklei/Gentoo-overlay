@@ -71,6 +71,7 @@ src_prepare() {
 	fi
 
 	eapply "${FILESDIR}"/wireguard.patch
+	eapply "${FILESDIR}"/fix-iwlwifi-3168.patch
 
 	eapply_user
 }
