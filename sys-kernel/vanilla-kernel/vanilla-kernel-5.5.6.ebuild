@@ -40,6 +40,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/008-cdndp-sound.patch
 		eapply "${FILESDIR}"/pinebook-pro/009-pinebook-pro-dts.patch
 		eapply "${FILESDIR}"/pinebook-pro/010-pinebook-pro-dts-makefile.patch
+		eapply "${FILESDIR}"/pinebook-pro/011-revert-round-up-before-giving-to-the-clock-framework.patch
 	fi
 
 	if use pine-h64; then
