@@ -47,7 +47,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/fix-macro-name.patch
 		eapply "${FILESDIR}"/integrated-as.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
-		eapply "${FILESDIR}"/panfrost-shrinker-dont-claim-references-BOs.patch
 	fi
 
 	eapply "${FILESDIR}"/wireguard.patch
