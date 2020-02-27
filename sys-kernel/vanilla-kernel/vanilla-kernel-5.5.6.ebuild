@@ -37,7 +37,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/005-uart-wifi-powermanagement.patch
 		eapply "${FILESDIR}"/pinebook-pro/006-usb-c.patch
 		eapply "${FILESDIR}"/pinebook-pro/007-fix-es8316.patch
-		eapply "${FILESDIR}"/pinebook-pro/008-cdndp-sound.patch
+		eapply "${FILESDIR}"/pinebook-pro/008-cdn-dp-return-zero-when-inactive.patch
 		eapply "${FILESDIR}"/pinebook-pro/009-pinebook-pro-dts.patch
 		eapply "${FILESDIR}"/pinebook-pro/010-pinebook-pro-dts-makefile.patch
 		eapply "${FILESDIR}"/pinebook-pro/011-revert-round-up-before-giving-to-the-clock-framework.patch
