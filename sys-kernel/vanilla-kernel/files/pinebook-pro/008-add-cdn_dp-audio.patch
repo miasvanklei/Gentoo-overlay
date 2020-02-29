@@ -1,0 +1,44 @@
+--- a/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-27 22:36:48.698588219 +0100
++++ b/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-27 22:37:06.050531997 +0100
+@@ -778,7 +778,7 @@
+ 
+ 	mutex_lock(&dp->lock);
+ 	if (!dp->active) {
+-		ret = -ENODEV;
++		ret = 0;
+ 		goto out;
+ 	}
+ 
+@@ -831,7 +831,7 @@
+ 
+ 	mutex_lock(&dp->lock);
+ 	if (!dp->active) {
+-		ret = -ENODEV;
++		ret = 0;
+ 		goto out;
+ 	}
+ 
+--- a/arch/arm64/boot/dts/rockchip/rk3399.dtsi	2020-02-27 22:31:06.635821570 +0100
++++ b/arch/arm64/boot/dts/rockchip/rk3399.dtsi	2020-02-28 22:28:36.647102138 +0100
+@@ -467,6 +467,21 @@
+ 		};
+ 	};
+ 
++	cdn_dp_sound: cdn-dp-sound {
++		compatible = "simple-audio-card";
++		simple-audio-card,format = "i2s";
++		simple-audio-card,mclk-fs = <256>;
++		simple-audio-card,name = "cdn-dp-sound";
++		status = "disabled";
++
++		simple-audio-card,cpu {
++			sound-dai = <&i2s2>;
++		};
++		simple-audio-card,codec {
++			sound-dai = <&cdn_dp 0>;
++		};
++	};
++
+ 	cdn_dp: dp@fec00000 {
+ 		compatible = "rockchip,rk3399-cdn-dp";
+ 		reg = <0x0 0xfec00000 0x0 0x100000>;
