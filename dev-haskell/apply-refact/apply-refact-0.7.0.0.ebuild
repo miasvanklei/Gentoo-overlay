@@ -37,12 +37,5 @@ DEPEND="${RDEPEND}
 "
 
 PATCHES=(
-	"${FILESDIR}"/ghc-8.8.patch
+	"${FILESDIR}"/ghc-8.10.patch
 )
-
-src_prepare() {
-        default
-
-        cabal_chdeps \
-                'ghc >= 8.6.0 && < 8.8' 'ghc >= 8.6.0 && < 8.12'
-}
