@@ -34,7 +34,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/002-add-cw2015.patch
 		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
 		eapply "${FILESDIR}"/pinebook-pro/004-add-panel.patch
-		eapply "${FILESDIR}"/pinebook-pro/005-uart-wifi-powermanagement.patch
 		eapply "${FILESDIR}"/pinebook-pro/006-usb-c.patch
 		eapply "${FILESDIR}"/pinebook-pro/007-fix-es8316.patch
 		eapply "${FILESDIR}"/pinebook-pro/008-add-cdn_dp-audio.patch
