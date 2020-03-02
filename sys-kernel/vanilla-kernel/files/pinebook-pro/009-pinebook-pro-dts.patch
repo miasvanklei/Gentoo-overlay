@@ -1,6 +1,6 @@
 --- /dev/null	2020-02-28 18:52:37.260000000 +0100
-+++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-29 12:03:22.343463771 +0100
-@@ -0,0 +1,1139 @@
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-29 15:40:32.437400148 +0100
+@@ -0,0 +1,1135 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -54,7 +54,7 @@
 +		};
 +	};
 +
-+	/* 
++	/*
 +	 * Use separate nodes for gpio-keys to allow for selective deactivation
 +	 * of wakeup sources without disabling the whole key
 +	 */
@@ -668,11 +668,10 @@
 +};
 +
 +&i2c1 {
-+	i2c-scl-rising-time-ns = <168>;
-+	i2c-scl-falling-time-ns = <4>;
-+	status = "okay";
-+
 +	clock-frequency = <100000>;
++	i2c-scl-falling-time-ns = <4>;
++	i2c-scl-rising-time-ns = <168>;
++	status = "okay";
 +
 +	es8316: es8316@11 {
 +		compatible = "everest,es8316";
@@ -684,14 +683,14 @@
 +};
 +
 +&i2c3 {
-+	i2c-scl-rising-time-ns = <450>;
 +	i2c-scl-falling-time-ns = <15>;
++	i2c-scl-rising-time-ns = <450>;
 +	status = "okay";
 +};
 +
 +&i2c4 {
-+	i2c-scl-rising-time-ns = <600>;
 +	i2c-scl-falling-time-ns = <20>;
++	i2c-scl-rising-time-ns = <600>;
 +	status = "okay";
 +
 +	fusb0: fusb30x@22 {
@@ -775,11 +774,10 @@
 +};
 +
 +&io_domains {
-+	status = "okay";
-+
 +	audio-supply = <&vcc_3v0>;
-+	sdmmc-supply = <&vcc_sdio>;
 +	gpio1830-supply = <&vcc_3v0>;
++	sdmmc-supply = <&vcc_sdio>;
++	status = "okay";
 +};
 +
 +&pcie_phy {
@@ -793,10 +791,10 @@
 +	num-lanes = <4>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pcie_clkreqn_cpm>;
-+	status = "okay";
 +	vpcie0v9-supply = <&vcca0v9_s3>;
 +	vpcie1v8-supply = <&vcca1v8_s3>;
 +	vpcie3v3-supply = <&vcc3v3_ssd>;
++	status = "okay";
 +};
 +
 +&pinctrl {
@@ -844,7 +842,7 @@
 +
 +	i2s1 {
 +		i2s_8ch_mclk_gpio: i2s-8ch-mclk-gpio {
-+			rockchip,pins = <4 0 RK_FUNC_1 &pcfg_pull_none>;
++			rockchip,pins = <4 RK_PA0 1 &pcfg_pull_none>;
 +		};
 +	};
 +
@@ -967,12 +965,10 @@
 +};
 +
 +&spi1 {
-+	status = "okay";
 +	max-freq = <10000000>;
++	status = "okay";
 +
-+	flash@0 {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
++	spiflash: flash@0 {
 +		compatible = "jedec,spi-nor";
 +		m25p,fast-read;
 +		reg = <0>;
@@ -1069,8 +1065,8 @@
 +&uart0 {
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&uart0_xfer &uart0_cts &uart0_rts>;
-+	status = "okay";
 +	uart-has-rtscts;
++	status = "okay";
 +
 +	bluetooth {
 +		compatible = "brcm,bcm4345c5";
