@@ -1,6 +1,6 @@
 --- /dev/null	2020-02-28 18:52:37.260000000 +0100
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-29 15:40:32.437400148 +0100
-@@ -0,0 +1,1135 @@
+@@ -0,0 +1,1130 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -21,7 +21,6 @@
 +	compatible = "pine64,pinebook-pro", "rockchip,rk3399";
 +
 +	chosen {
-+		bootargs = "earlycon=uart8250,mmio32,0xff1a0000";
 +		stdout-path = "serial2:1500000n8";
 +	};
 +
@@ -34,14 +33,10 @@
 +	edp_panel: edp-panel {
 +		compatible = "boe,nv140fhmn49";
 +		backlight = <&backlight>;
-+
-+		enable-delay-ms = <20>;
 +		enable-gpios = <&gpio1 RK_PA0 GPIO_ACTIVE_HIGH>;
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&panel_en_gpio>;
-+
 +		power-supply = <&vcc3v3_panel>;
-+		prepare-delay-ms = <20>;
 +
 +		ports {
 +			#address-cells = <1>;
@@ -99,7 +94,6 @@
 +			function = LED_FUNCTION_POWER;
 +			gpios = <&gpio0 RK_PB3 GPIO_ACTIVE_HIGH>;
 +			label = "green";
-+			linux,default-trigger = "default-on";
 +		};
 +
 +		red-led {
@@ -108,7 +102,6 @@
 +			function = LED_FUNCTION_STANDBY;
 +			gpios = <&gpio0 RK_PA2 GPIO_ACTIVE_LOW>;
 +			label = "red";
-+			linux,default-trigger = "default-on";
 +			panic-indicator;
 +		};
 +	};
@@ -384,6 +377,14 @@
 +	status = "okay";
 +};
 +
++&cpu_b0 {
++	cpu-supply = <&vdd_cpu_b>;
++};
++
++&cpu_b1 {
++	cpu-supply = <&vdd_cpu_b>;
++};
++
 +&cpu_l0 {
 +	cpu-supply = <&vdd_cpu_l>;
 +};
@@ -400,19 +401,11 @@
 +	cpu-supply = <&vdd_cpu_l>;
 +};
 +
-+&cpu_b0 {
-+	cpu-supply = <&vdd_cpu_b>;
-+};
-+
-+&cpu_b1 {
-+	cpu-supply = <&vdd_cpu_b>;
-+};
-+
 +&edp {
-+	status = "okay";
 +	force-hpd;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&edp_hpd>;
++	status = "okay";
 +
 +	ports {
 +		edp_out: port@1 {
@@ -439,8 +432,8 @@
 +
 +&i2c0 {
 +	clock-frequency = <400000>;
-+	i2c-scl-rising-time-ns = <168>;
 +	i2c-scl-falling-time-ns = <4>;
++	i2c-scl-rising-time-ns = <168>;
 +	status = "okay";
 +
 +	rk808: pmic@1b {
@@ -719,18 +712,21 @@
 +				#size-cells = <0>;
 +
 +				port@0 {
++					reg = <0>;
 +					usbc_hs: endpoint {
 +						remote-endpoint = <&u2phy0_typec_hs>;
 +					};
 +				};
 +
 +				port@1 {
++					reg = <1>;
 +					usbc_ss: endpoint {
 +						remote-endpoint = <&tcphy0_typec_ss>;
 +					};
 +				};
 +
 +				port@2 {
++					reg = <2>;
 +					usbc_dp: endpoint {
 +						remote-endpoint = <&tcphy0_typec_dp>;
 +					};
@@ -764,8 +760,8 @@
 +	#sound-dai-cells = <0>;
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&i2s_8ch_mclk_gpio>, <&i2s1_2ch_bus>;
-+	rockchip,playback-channels = <8>;
 +	rockchip,capture-channels = <8>;
++	rockchip,playback-channels = <8>;
 +	status = "okay";
 +};
 +
@@ -970,8 +966,8 @@
 +
 +	spiflash: flash@0 {
 +		compatible = "jedec,spi-nor";
-+		m25p,fast-read;
 +		reg = <0>;
++		m25p,fast-read;
 +		spi-max-frequency = <10000000>;
 +
 +		partitions {
