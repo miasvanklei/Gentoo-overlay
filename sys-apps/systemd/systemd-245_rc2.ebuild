@@ -197,8 +197,6 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
-		"${FILESDIR}/245-rc1-network-debug.patch"
-		"${FILESDIR}/245-rc1-sysctl-segfault.patch"
 	)
 
 	if ! use vanilla; then
