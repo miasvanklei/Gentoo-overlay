@@ -274,36 +274,6 @@ index 995825bc4..21c90ba72 100644
  
 -CABAL_CORE_LIB_GHC_PV="PM:8.10.1_alpha1 PM:8.10.1_alpha2"
 +CABAL_CORE_LIB_GHC_PV="PM:8.10.1_alpha1 PM:8.10.1_alpha2 PM:8.10.1_rc1"
-diff --git a/dev-haskell/ghc-exactprint/ghc-exactprint-0.6.2.ebuild b/dev-haskell/ghc-exactprint/ghc-exactprint-0.6.2.ebuild
-index 199584aeb..e7efe7cf9 100644
---- a/dev-haskell/ghc-exactprint/ghc-exactprint-0.6.2.ebuild
-+++ b/dev-haskell/ghc-exactprint/ghc-exactprint-0.6.2.ebuild
-@@ -21,9 +21,10 @@ IUSE="roundtrip"
- RESTRICT=test # slow
- 
- RDEPEND=">=dev-lang/ghc-7.4.1:=
-+	>=dev-haskell/ghc-paths-0.1:=[profile?]
-+	>=dev-haskell/free-4.12:=[profile?]
- 	roundtrip? ( dev-haskell/diff:=[profile?]
- 			dev-haskell/filemanip:=[profile?]
--			>=dev-haskell/ghc-paths-0.1:=[profile?]
- 			dev-haskell/hunit:=[profile?]
- 			>=dev-haskell/text-1.2.2:=[profile?]
- 			>=dev-haskell/turtle-1.3.0:=[profile?]
-@@ -42,6 +43,13 @@ DEPEND="${RDEPEND}
- 				>=dev-lang/ghc-7.10.2 ) )
- "
- 
-+src_prepare() {
-+        default
-+
-+        cabal_chdeps \
-+		'base >=4.8 && <4.14' 'base >=4.8 && <4.15'
-+}
-+
- src_configure() {
- 	haskell-cabal_src_configure \
- 		--flag=-dev \
 diff --git a/dev-haskell/ghc-exactprint/ghc-exactprint-9999.ebuild b/dev-haskell/ghc-exactprint/ghc-exactprint-9999.ebuild
 new file mode 100644
 index 000000000..280964698
