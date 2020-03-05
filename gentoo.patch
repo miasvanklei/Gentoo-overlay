@@ -114,7 +114,7 @@ index 6b165c5733..134827b507 100644
  		--without-ikvm-native
  		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.41.1.ebuild b/dev-lang/rust/rust-1.41.1.ebuild
-index 94d6e304cb..e015b182c4 100644
+index 8428107646..e015b182c4 100644
 --- a/dev-lang/rust/rust-1.41.1.ebuild
 +++ b/dev-lang/rust/rust-1.41.1.ebuild
 @@ -3,7 +3,7 @@
@@ -126,15 +126,6 @@ index 94d6e304cb..e015b182c4 100644
  
  inherit bash-completion-r1 check-reqs estack flag-o-matic llvm multiprocessing multilib-build python-any-r1 rust-toolchain toolchain-funcs
  
-@@ -18,7 +18,7 @@ else
- 	SLOT="stable/${ABI_VER}"
- 	MY_P="rustc-${PV}"
- 	SRC="${MY_P}-src.tar.xz"
--	KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86"
-+	KEYWORDS="amd64 ~arm ~arm64 ppc64 x86"
- fi
- 
- RUST_STAGE0_VERSION="1.$(($(ver_cut 2) - 1)).0"
 @@ -50,12 +50,13 @@ IUSE="clippy cpu_flags_x86_sse2 debug doc libressl nightly parallel-compiler rls
  # 3. Specify LLVM_MAX_SLOT, e.g. 9.
  LLVM_DEPEND="
@@ -236,7 +227,7 @@ index 33a36d9a29..11a0f1355f 100644
  inherit flag-o-matic gnome.org gnome2-utils linux-info meson multilib multilib-minimal python-any-r1 toolchain-funcs xdg
  
 diff --git a/dev-libs/icu/icu-65.1-r1.ebuild b/dev-libs/icu/icu-65.1-r1.ebuild
-index d11f7406c3..62647fb74f 100644
+index ff9e2bc183..aa137f9fcc 100644
 --- a/dev-libs/icu/icu-65.1-r1.ebuild
 +++ b/dev-libs/icu/icu-65.1-r1.ebuild
 @@ -3,7 +3,7 @@
@@ -373,10 +364,10 @@ index d02cf2adf0..4710eca2f2 100644
  		sys-devel/llvm:9[${MULTILIB_USEDEP}]
  		sys-devel/llvm:8[${MULTILIB_USEDEP}]
  	)
-diff --git a/media-libs/vulkan-loader/vulkan-loader-1.1.125.ebuild b/media-libs/vulkan-loader/vulkan-loader-1.1.125.ebuild
-index 3244a95630..7b42b16942 100644
---- a/media-libs/vulkan-loader/vulkan-loader-1.1.125.ebuild
-+++ b/media-libs/vulkan-loader/vulkan-loader-1.1.125.ebuild
+diff --git a/media-libs/vulkan-loader/vulkan-loader-1.2.133.ebuild b/media-libs/vulkan-loader/vulkan-loader-1.2.133.ebuild
+index 8d64aee32d..d198061f77 100644
+--- a/media-libs/vulkan-loader/vulkan-loader-1.2.133.ebuild
++++ b/media-libs/vulkan-loader/vulkan-loader-1.2.133.ebuild
 @@ -2,7 +2,7 @@
  # Distributed under the terms of the GNU General Public License v2
  
@@ -412,14 +403,14 @@ index 00513e8978..6e06667d46 100644
  PYTHON_REQ_USE="threads(+)"
  inherit bash-completion-r1 eutils flag-o-matic pax-utils python-any-r1 toolchain-funcs xdg-utils
  
-diff --git a/sys-devel/clang/clang-10.0.0.9999.ebuild b/sys-devel/clang/clang-10.0.0.9999.ebuild
-index 456493136d..3faa7a2363 100644
---- a/sys-devel/clang/clang-10.0.0.9999.ebuild
-+++ b/sys-devel/clang/clang-10.0.0.9999.ebuild
+diff --git a/sys-devel/clang/clang-10.0.0_rc3.ebuild b/sys-devel/clang/clang-10.0.0_rc3.ebuild
+index 36520c1159..1ee17ea238 100644
+--- a/sys-devel/clang/clang-10.0.0_rc3.ebuild
++++ b/sys-devel/clang/clang-10.0.0_rc3.ebuild
 @@ -32,7 +32,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
- KEYWORDS=""
+ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
 -IUSE="debug default-compiler-rt default-libcxx doc +static-analyzer
 +IUSE="+gcc-symlinks debug +default-compiler-rt +default-libcxx +default-libunwind doc +static-analyzer
  	test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
@@ -471,20 +462,20 @@ index 826019c734..945fada9a8 100644
  		--libdir=/usr/lib
  		$(use_enable ipv6 rfc2553)
  		$(use_with gtk)
-diff --git a/sys-devel/llvm/llvm-10.0.0.9999.ebuild b/sys-devel/llvm/llvm-10.0.0.9999.ebuild
-index 6f27f37321..612b21019e 100644
---- a/sys-devel/llvm/llvm-10.0.0.9999.ebuild
-+++ b/sys-devel/llvm/llvm-10.0.0.9999.ebuild
+diff --git a/sys-devel/llvm/llvm-10.0.0_rc3.ebuild b/sys-devel/llvm/llvm-10.0.0_rc3.ebuild
+index 904db49c70..9119910b0a 100644
+--- a/sys-devel/llvm/llvm-10.0.0_rc3.ebuild
++++ b/sys-devel/llvm/llvm-10.0.0_rc3.ebuild
 @@ -29,7 +29,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
  SLOT="$(ver_cut 1)"
- KEYWORDS=""
+ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 -IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 +IUSE="+binutils-symlinks debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
  REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
-@@ -301,6 +301,22 @@ get_distribution_components() {
+@@ -266,6 +266,22 @@ get_distribution_components() {
  			opt-viewer
  		)
  
@@ -507,7 +498,7 @@ index 6f27f37321..612b21019e 100644
  		use doc && out+=(
  			docs-dsymutil-man
  			docs-llvm-dwarfdump-man
-@@ -335,6 +351,7 @@ multilib_src_configure() {
+@@ -300,6 +316,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
