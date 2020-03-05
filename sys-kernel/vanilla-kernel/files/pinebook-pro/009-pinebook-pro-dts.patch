@@ -1,6 +1,6 @@
 --- /dev/null	2020-02-28 18:52:37.260000000 +0100
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-02-29 15:40:32.437400148 +0100
-@@ -0,0 +1,1130 @@
+@@ -0,0 +1,1115 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright (c) 2017 Fuzhou Rockchip Electronics Co., Ltd.
@@ -41,7 +41,12 @@
 +		ports {
 +			#address-cells = <1>;
 +			#size-cells = <0>;
++
 +			port@0 {
++				reg = <0>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++
 +				panel_in_edp: endpoint@0 {
 +					remote-endpoint = <&edp_out_panel>;
 +				};
@@ -692,11 +697,11 @@
 +		fcs,int_n = <&gpio1 RK_PA2 GPIO_ACTIVE_HIGH>;
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&fusb0_int_gpio>;
-+		status = "okay";
 +		vbus-supply = <&vbus_typec>;
 +
 +		connector {
 +			compatible = "usb-c-connector";
++			data-role = host";
 +			label = "USB-C";
 +			op-sink-microwatt = <1000000>;
 +			power-role = "dual";
@@ -969,27 +974,6 @@
 +		reg = <0>;
 +		m25p,fast-read;
 +		spi-max-frequency = <10000000>;
-+
-+		partitions {
-+			compatible = "fixed-partitions";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+
-+			loader@8000 {
-+				label = "loader";
-+				reg = <0x0 0x3F8000>;
-+			};
-+
-+			env@3f8000 {
-+				label = "env";
-+				reg = <0x3F8000 0x8000>;
-+			};
-+
-+			vendor@7c0000 {
-+				label = "vendor";
-+				reg = <0x7C0000 0x40000>;
-+			};
-+		};
 +	};
 +};
 +
