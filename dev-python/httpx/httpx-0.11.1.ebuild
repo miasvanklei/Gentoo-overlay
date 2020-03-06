@@ -21,6 +21,9 @@ RDEPEND="dev-python/certifi[${PYTHON_USEDEP}]
 	>=dev-python/hyper-h2-3.0[${PYTHON_USEDEP}]
 	>=dev-python/hstspreload-2019.8.27[${PYTHON_USEDEP}]
 	>=dev-python/idna-2.0[${PYTHON_USEDEP}]
-	>=dev-python/rfc3986-1.0[${PYTHON_USEDEP}]"
+	>=dev-python/rfc3986-1.0[${PYTHON_USEDEP}]
+	dev-python/sniffio[${PYTHON_USEDEP}]
+	dev-python/urllib3[${PYTHON_USEDEP}]
+	"
 
 DEPEND="${RDEPEND}"
