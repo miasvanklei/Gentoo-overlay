@@ -16,13 +16,14 @@ KEYWORDS="~amd64 ~arm ~arm64"
 IUSE=""
 
 RDEPEND=">=dev-python/appdirs-1.4[${PYTHON_USEDEP}]
-	>=dev-python/audio-metadata-0.5[${PYTHON_USEDEP}]
-	>=dev-python/google-music-proto-2.5[${PYTHON_USEDEP}]
-	>=dev-python/httpx-0.7.5[${PYTHON_USEDEP}]
-	<dev-python/httpx-0.8.0[${PYTHON_USEDEP}]
-	>=dev-python/protobuf-python-3.5[${PYTHON_USEDEP}]
+	>=dev-python/audio-metadata-0.8[${PYTHON_USEDEP}]
+	>=dev-python/google-music-proto-2.8.0[${PYTHON_USEDEP}]
+	>=dev-python/httpx-0.11[${PYTHON_USEDEP}]
+	<dev-python/httpx-1.0[${PYTHON_USEDEP}]
 	>=dev-python/oauthlib-3.0[${PYTHON_USEDEP}]
+	>=dev-python/protobuf-python-3.5[${PYTHON_USEDEP}]
+	>=dev-python/tbm-utils-2.3.0[${PYTHON_USEDEP}]
 	>=dev-python/tenacity-5.0[${PYTHON_USEDEP}]
-	>=dev-python/tbm-utils-1.0.0[${PYTHON_USEDEP}]
+	<dev-python/tenacity-7.0[${PYTHON_USEDEP}]
 	>=dev-python/wrapt-1.0[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}"
