@@ -40,6 +40,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/009-pinebook-pro-dts.patch
 		eapply "${FILESDIR}"/pinebook-pro/010-pinebook-pro-dts-makefile.patch
 		eapply "${FILESDIR}"/pinebook-pro/011-revert-round-up-before-giving-to-the-clock-framework.patch
+#		eapply "${FILESDIR}"/pinebook-pro/012-rk3399-gamma_support.patch
 	fi
 
 	if use pine-h64; then
