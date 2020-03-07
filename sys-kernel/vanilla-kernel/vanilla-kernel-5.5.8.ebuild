@@ -17,7 +17,10 @@ S=${WORKDIR}/${MY_P}
 LICENSE="GPL-2"
 SLOT="${PV}"
 KEYWORDS="~amd64 ~arm ~arm64"
-IUSE="banana-pi pine-h64 pinebook-pro"
+IUSE="allwinner banana-pi pine-h64 pinebook-pro"
+REQUIRED_USE="
+	pine-h64? ( allwinner )
+	banana-pi? ( allwinner )"
 
 # install-DEPEND actually
 RDEPEND="sys-apps/debianutils"
@@ -43,33 +46,40 @@ src_prepare() {
 #		eapply "${FILESDIR}"/pinebook-pro/012-rk3399-gamma_support.patch
 	fi
 
+	if use allwinner; then
+
+		eapply "${FILESDIR}"/allwinner/0001-backport-from-5.6.patch
+		eapply "${FILESDIR}"/allwinner/0003-hdmi-improvements.patch
+		eapply "${FILESDIR}"/allwinner/0004-sun4i-i2s-improvements.patch
+		eapply "${FILESDIR}"/allwinner/0005-cedrus-improvements.patch
+		eapply "${FILESDIR}"/allwinner/0006-wip-cec-improvements.patch
+		eapply "${FILESDIR}"/allwinner/0013-force-full-range.patch
+		eapply "${FILESDIR}"/allwinner/06-10-bit-HEVC-hack.patch
+		eapply "${FILESDIR}"/allwinner/16-fix-de2-buggy-layer.patch
+		eapply "${FILESDIR}"/allwinner/17-one-ui-plane-as-cursor.patch
+	fi
+
 	if use pine-h64; then
-		eapply "${FILESDIR}"/pine-h64/0001-backport-from-5.6.patch
-		eapply "${FILESDIR}"/pine-h64/0003-hdmi-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0004-sun4i-i2s-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0005-cedrus-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0006-wip-cec-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0013-force-full-range.patch
 		eapply "${FILESDIR}"/pine-h64/0018-pine-add-cpu-supply-regulator.patch
 		eapply "${FILESDIR}"/pine-h64/0019-h6-add-cpu-opp-table.patch
 		eapply "${FILESDIR}"/pine-h64/0020-h6-add-gpu-opp-table.patch
 		eapply "${FILESDIR}"/pine-h64/0022-add-support-for-rtl8723cs_bs.patch
 		eapply "${FILESDIR}"/pine-h64/03-pineh64-enable-usb3.patch
 		eapply "${FILESDIR}"/pine-h64/05-sound-hack.patch
-		eapply "${FILESDIR}"/pine-h64/06-10-bit-HEVC-hack.patch
 		eapply "${FILESDIR}"/pine-h64/13-h6-add-ext_rmii_pins.patch
 		eapply "${FILESDIR}"/pine-h64/15-RTC-workaround.patch
-		eapply "${FILESDIR}"/pine-h64/16-fix-de2-buggy-layer.patch
-		eapply "${FILESDIR}"/pine-h64/17-one-ui-plane-as-cursor.patch
 	fi
 
 	if use banana-pi; then
-		eapply "${FILESDIR}"/fix-wifi-bananapi.patch
+		eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 	fi
 
-	if use arm64; then
+	if use arm64 || use arm; then
 		eapply "${FILESDIR}"/fix-macro-name.patch
 		eapply "${FILESDIR}"/integrated-as.patch
+	fi
+
+	if use pinebook-pro || use pine-h64; then
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
 		eapply "${FILESDIR}"/panfrost-do-not-map-on-error-faults.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
