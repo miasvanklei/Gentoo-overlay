@@ -74,8 +74,18 @@ src_prepare() {
 		eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 	fi
 
+	if use arm64; then
+		eapply "${FILESDIR}"/arm64/fix-macro-name.patch
+	fi
+
+	if use arm; then
+		eapply "${FILESDIR}"/arm/use-fpu-directives-instead-of-assem-arguments.patch
+		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics-1.patch
+		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics.patch
+		eapply "${FILESDIR}"/arm/warn-on-pre-ual-assembler-syntax.patch
+	fi
+
 	if use arm64 || use arm; then
-		eapply "${FILESDIR}"/fix-macro-name.patch
 		eapply "${FILESDIR}"/integrated-as.patch
 	fi
 
