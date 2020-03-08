@@ -79,10 +79,10 @@ src_prepare() {
 	fi
 
 	if use arm; then
-		eapply "${FILESDIR}"/arm/use-fpu-directives-instead-of-assem-arguments.patch
-		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics-1.patch
-		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics.patch
 		eapply "${FILESDIR}"/arm/warn-on-pre-ual-assembler-syntax.patch
+		eapply "${FILESDIR}"/arm/use-fpu-directives-instead-of-assem-arguments.patch
+		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics.patch
+		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics-1.patch
 	fi
 
 	if use arm64 || use arm; then
