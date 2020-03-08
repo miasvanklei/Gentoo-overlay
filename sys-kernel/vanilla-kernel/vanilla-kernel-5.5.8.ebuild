@@ -38,7 +38,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
 		eapply "${FILESDIR}"/pinebook-pro/004-add-panel.patch
 		eapply "${FILESDIR}"/pinebook-pro/006-usb-c.patch
-		eapply "${FILESDIR}"/pinebook-pro/007-fix-es8316.patch
+		eapply "${FILESDIR}"/pinebook-pro/007-generic-fixes.patch
 		eapply "${FILESDIR}"/pinebook-pro/008-add-cdn_dp-audio.patch
 		eapply "${FILESDIR}"/pinebook-pro/009-pinebook-pro-dts.patch
 		eapply "${FILESDIR}"/pinebook-pro/010-pinebook-pro-dts-makefile.patch
