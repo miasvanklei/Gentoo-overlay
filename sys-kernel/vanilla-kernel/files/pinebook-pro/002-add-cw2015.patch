@@ -25,8 +25,8 @@
  obj-$(CONFIG_BATTERY_DS2780)	+= ds2780_battery.o
  obj-$(CONFIG_BATTERY_DS2781)	+= ds2781_battery.o
 --- /dev/null	2020-02-25 21:19:22.618249083 +0100
-+++ b/drivers/power/supply/cw2015_battery.c	2020-03-09 12:41:07.859469770 +0100
-@@ -0,0 +1,901 @@
++++ drivers/power/supply/cw2015_battery.c	2020-03-09 17:29:28.596122975 +0100
+@@ -0,0 +1,891 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Fuel gauge driver for CellWise 2013 / 2015
@@ -89,18 +89,14 @@
 +
 +#define CW2015_AVERAGING_SAMPLES		3
 +
-+struct cw_bat_platform_data {
-+	u8 *cw_bat_config_info;
-+};
-+
 +struct cw_battery {
 +	struct i2c_client *client;
 +	struct workqueue_struct *battery_workqueue;
 +	struct delayed_work battery_delay_work;
-+	struct cw_bat_platform_data plat_data;
 +	struct regmap *regmap;
 +	struct power_supply *rk_bat;
 +	struct power_supply_battery_info battery;
++	u8 *bat_config_info;
 +
 +#ifdef CONFIG_PM
 +	struct timespec64 suspend_time_before;
@@ -168,9 +164,9 @@
 +	u8 reg_val;
 +	u8 reset_val;
 +
-+	if (!cw_bat->plat_data.cw_bat_config_info) {
-+		cw_err(cw_bat, "No battery config info provided, can't "
-+				"update flash contents");
++	if (!cw_bat->bat_config_info) {
++		cw_err(cw_bat,
++			"No battery config info provided, can't update flash contents");
 +		return -EINVAL;
 +	}
 +
@@ -188,7 +184,7 @@
 +
 +	/* write new battery info */
 +	ret = cw_write_bulk(cw_bat, CW2015_REG_BATINFO,
-+				cw_bat->plat_data.cw_bat_config_info,
++				cw_bat->bat_config_info,
 +				CW2015_SIZE_BATINFO);
 +
 +	if (ret < 0)
@@ -208,7 +204,7 @@
 +	if (ret < 0)
 +		return ret;
 +
-+	msleep(10);
++	msleep(20);
 +	ret = cw_write(cw_bat, CW2015_REG_MODE, reset_val);
 +	if (ret < 0)
 +		return ret;
@@ -249,9 +245,9 @@
 +		return ret;
 +
 +	if (!(reg_val & CW2015_CONFIG_UPDATE_FLG)) {
-+		cw_dbg(cw_bat, "Battery config not present, uploading battery "
-+				"config");
-+		if (cw_bat->plat_data.cw_bat_config_info) {
++		cw_dbg(cw_bat,
++			"Battery config not present, uploading battery config");
++		if (cw_bat->bat_config_info) {
 +			ret = cw_update_config_info(cw_bat);
 +			if (ret < 0) {
 +				cw_err(cw_bat,
@@ -259,17 +255,18 @@
 +				return ret;
 +			}
 +		} else {
-+			cw_warn(cw_bat, "Have no battery config for uploading, "
-+					"continuing without battery config");
++			cw_warn(cw_bat,
++				"Have no battery config for uploading, continuing without config");
 +		}
-+	} else if (cw_bat->plat_data.cw_bat_config_info) {
++	} else if (cw_bat->bat_config_info) {
 +		u8 bat_info[CW2015_SIZE_BATINFO];
++
 +		ret = cw_read_bulk(cw_bat, CW2015_REG_BATINFO, bat_info,
 +					CW2015_SIZE_BATINFO);
 +		if (ret < 0)
 +			return ret;
 +
-+		if (memcmp(bat_info, cw_bat->plat_data.cw_bat_config_info,
++		if (memcmp(bat_info, cw_bat->bat_config_info,
 +				CW2015_SIZE_BATINFO)) {
 +			cw_warn(cw_bat, "Replacing stored battery info");
 +			ret = cw_update_config_info(cw_bat);
@@ -277,8 +274,7 @@
 +				return ret;
 +		}
 +	} else
-+		cw_warn(cw_bat, "Can't check current battery config, no config "
-+				"provided");
++		cw_warn(cw_bat, "Can't check current battery config, no config provided");
 +
 +	for (i = 0; i < CW2015_READ_TRIES; i++) {
 +		ret = cw_read(cw_bat, CW2015_REG_SOC, &reg_val);
@@ -390,9 +386,9 @@
 +			cw_dbg(cw_bat, "Estimated capacity lost during sleep: %d",
 +				sleep_cap);
 +
-+			if (cw_capacity >= cw_bat->capacity - sleep_cap) {
++			if (cw_capacity >= cw_bat->capacity - sleep_cap)
 +				return cw_capacity;
-+			}
++
 +			if (!sleep_cap)
 +				discharging_loop = discharging_loop +
 +					1 + cw_bat->after.tv_sec /
@@ -475,8 +471,7 @@
 +	if (cw_charger_mode < 0) {
 +		cw_warn(cw_bat, "Failed to get supply state: %d",
 +				cw_charger_mode);
-+	}
-+	else if (cw_bat->charger_mode != cw_charger_mode) {
++	} else if (cw_bat->charger_mode != cw_charger_mode) {
 +		cw_bat->charger_mode = cw_charger_mode;
 +		cw_bat->bat_change = 1;
 +		if (cw_charger_mode)
@@ -625,11 +620,10 @@
 +		break;
 +
 +	case POWER_SUPPLY_PROP_TIME_TO_EMPTY_NOW:
-+		if (cw_battery_valid_time_to_empty(cw_bat)) {
++		if (cw_battery_valid_time_to_empty(cw_bat))
 +			val->intval = cw_bat->time_to_empty;
-+		} else {
++		else
 +			val->intval = 0;
-+		}
 +		break;
 +
 +	case POWER_SUPPLY_PROP_TECHNOLOGY:
@@ -699,12 +693,9 @@
 +	int length;
 +	u32 value;
 +	int ret;
-+	struct cw_bat_platform_data *data = &cw_bat->plat_data;
 +
 +	if (!node)
 +		return -ENODEV;
-+
-+	memset(data, 0, sizeof(*data));
 +
 +	prop = of_find_property(node, PREFIX"bat-config-info", &length);
 +	if (prop) {
@@ -714,22 +705,22 @@
 +			return -EINVAL;
 +		}
 +
-+		data->cw_bat_config_info =
++		cw_bat->bat_config_info =
 +			devm_kzalloc(dev, CW2015_SIZE_BATINFO, GFP_KERNEL);
-+		if (!data->cw_bat_config_info) {
-+			cw_err(cw_bat, "Failed to allocate memory for battery "
-+					"config info");
++		if (!cw_bat->bat_config_info) {
++			cw_err(cw_bat,
++				"Failed to allocate memory for battery config info");
 +			return -ENOMEM;
 +		}
 +
 +		ret = of_property_read_u8_array(node, PREFIX"bat-config-info",
-+						 data->cw_bat_config_info,
++						 cw_bat->bat_config_info,
 +						 CW2015_SIZE_BATINFO);
 +		if (ret < 0)
 +			return ret;
 +	} else
-+		cw_warn(cw_bat, "No bat-config-info found, rolling with "
-+				"current flash contents");
++		cw_warn(cw_bat,
++			"No bat-config-info found, rolling with current flash contents");
 +
 +	cw_bat->monitor_sec = CW2015_DEFAULT_MONITOR_MS;
 +
@@ -800,9 +791,8 @@
 +	struct power_supply_config psy_cfg = {0};
 +
 +	cw_bat = devm_kzalloc(&client->dev, sizeof(*cw_bat), GFP_KERNEL);
-+	if (!cw_bat) {
++	if (!cw_bat)
 +		return -ENOMEM;
-+	}
 +
 +	i2c_set_clientdata(client, cw_bat);
 +	cw_bat->client = client;
@@ -845,8 +835,8 @@
 +
 +	ret = power_supply_get_battery_info(cw_bat->rk_bat, &cw_bat->battery);
 +	if (ret) {
-+		cw_warn(cw_bat, "No battery linked, some properties will be "
-+				"missing");
++		cw_warn(cw_bat,
++			"No monitored battery, some properties will be missing");
 +	}
 +
 +	cw_bat->battery_workqueue = create_singlethread_workqueue("rk_battery");
@@ -865,7 +855,7 @@
 +	struct cw_battery *cw_bat = i2c_get_clientdata(client);
 +
 +	ktime_get_boottime_ts64(&cw_bat->suspend_time_before);
-+	cancel_delayed_work(&cw_bat->battery_delay_work);
++	cancel_delayed_work_sync(&cw_bat->battery_delay_work);
 +	return 0;
 +}
 +
@@ -912,7 +902,7 @@
 +
 +static struct i2c_driver cw_bat_driver = {
 +	.driver = {
-+		.name = PREFIX"cw201x",
++		.name = "cw2015",
 +#ifdef CONFIG_PM
 +		.pm = &cw_bat_pm_ops,
 +#endif
