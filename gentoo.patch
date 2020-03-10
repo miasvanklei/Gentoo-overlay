@@ -585,31 +585,15 @@ index 5b61abdcb9..5bcbc93b37 100644
  
  DESCRIPTION="A library for manipulating block devices"
 diff --git a/www-client/firefox/firefox-74.0.ebuild b/www-client/firefox/firefox-74.0.ebuild
-index 3f9a0983c9..94152e066a 100644
+index 30bb87c2dd..f3034e7a3e 100644
 --- a/www-client/firefox/firefox-74.0.ebuild
 +++ b/www-client/firefox/firefox-74.0.ebuild
-@@ -38,7 +38,7 @@ if [[ "${PV}" == *_rc* ]]; then
- 	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
- fi
- 
--LLVM_MAX_SLOT=9
-+LLVM_MAX_SLOT=10
- 
- inherit check-reqs eapi7-ver flag-o-matic toolchain-funcs eutils \
- 		gnome2-utils llvm mozcoreconf-v6 pax-utils xdg-utils \
-@@ -131,6 +131,15 @@ DEPEND="${CDEPEND}
- 	>=sys-devel/binutils-2.30
- 	sys-apps/findutils
- 	|| (
-+		(
-+			sys-devel/clang:10
-+			!clang? ( sys-devel/llvm:10 )
-+			clang? (
-+				=sys-devel/lld-10*
+@@ -136,7 +136,7 @@ DEPEND="${CDEPEND}
+ 			!clang? ( sys-devel/llvm:10 )
+ 			clang? (
+ 				=sys-devel/lld-10*
+-				sys-devel/llvm:10[gold]
 +				sys-devel/llvm:10
-+				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
-+			)
-+		)
- 		(
- 			sys-devel/clang:9
- 			!clang? ( sys-devel/llvm:9 )
+ 				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
+ 			)
+ 		)
