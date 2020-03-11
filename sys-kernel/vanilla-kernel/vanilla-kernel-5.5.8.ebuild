@@ -66,6 +66,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pine-h64/03-pineh64-enable-usb3.patch
 		eapply "${FILESDIR}"/pine-h64/05-sound-hack.patch
 		eapply "${FILESDIR}"/pine-h64/13-h6-add-ext_rmii_pins.patch
+		eapply "${FILESDIR}"/pine-h64/14-eMMC-workaround.patch
 		eapply "${FILESDIR}"/pine-h64/15-RTC-workaround.patch
 	fi
 
