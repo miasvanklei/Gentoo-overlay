@@ -91,7 +91,6 @@ src_prepare() {
 
 	if use pinebook-pro || use pine-h64; then
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
-		eapply "${FILESDIR}"/panfrost-do-not-map-on-error-faults.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
 
