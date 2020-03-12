@@ -20,7 +20,7 @@ IUSE=""
 RDEPEND=">=dev-haskell/base16-bytestring-0.1.1:=[profile?] <dev-haskell/base16-bytestring-0.2:=[profile?]
 	>=dev-haskell/cryptohash-sha1-0.11.100:=[profile?] <dev-haskell/cryptohash-sha1-0.12:=[profile?]
 	>=dev-haskell/conduit-extra-1.3:=[profile?] <dev-haskell/conduit-extra-2:=[profile?]
-	>=dev-haskell/extra-1.6.14:=[profile?] <dev-haskell/extra-1.7:=[profile?]
+	>=dev-haskell/extra-1.6.14:=[profile?] <dev-haskell/extra-1.8:=[profile?]
 	>=dev-haskell/file-embed-0.0.10:=[profile?] <dev-haskell/file-embed-0.1:=[profile?]
 	>=dev-haskell/temporary-1.2:=[profile?] <dev-haskell/temporary-1.4:=[profile?]
 	>=dev-haskell/text-1.2.3:=[profile?] <dev-haskell/text-1.3:=[profile?]
