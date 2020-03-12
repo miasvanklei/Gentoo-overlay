@@ -103,6 +103,7 @@ DEPEND="${COMMON_DEPEND}
 "
 
 PATCHES=(
+	"${FILESDIR}/${PN}-1.20.6-dont_call_helpers_with_full_paths.patch"
 	"${FILESDIR}"/fix-busted-configure.patch
 	"${FILESDIR}"/fix-errno.patch
 	"${FILESDIR}"/musl-basic.patch
