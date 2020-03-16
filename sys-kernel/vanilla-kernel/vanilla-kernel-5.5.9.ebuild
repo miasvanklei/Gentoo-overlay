@@ -53,7 +53,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/allwinner/0004-sun4i-i2s-improvements.patch
 		eapply "${FILESDIR}"/allwinner/0005-cedrus-improvements.patch
 		eapply "${FILESDIR}"/allwinner/0006-wip-cec-improvements.patch
-		eapply "${FILESDIR}"/allwinner/06-10-bit-HEVC-hack.patch
 		eapply "${FILESDIR}"/allwinner/16-fix-de2-buggy-layer.patch
 		eapply "${FILESDIR}"/allwinner/17-one-ui-plane-as-cursor.patch
 	fi
