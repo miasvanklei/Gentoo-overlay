@@ -171,5 +171,4 @@ src_install() {
 	dobashcomp data/completion/snap
 
 	domo "${MY_S}/po"/*.mo
-
 }
