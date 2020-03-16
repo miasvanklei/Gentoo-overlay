@@ -140,6 +140,9 @@ src_prepare() {
 	# fix building on aarch64 with clang
 	eapply "${FILESDIR}"/clang-aarch64.patch
 
+	# fix building with make 4.3
+	eapply "${FILESDIR}"/make-4.3.patch
+
 	default
 	chmod +x configure || die
 }
