@@ -1,11 +1,44 @@
---- a/runtime/os_interface/linux/drm_neo.cpp
-+++ b/runtime/os_interface/linux/drm_neo.cpp
-@@ -26,7 +26,7 @@
+--- a/shared/source/os_interface/linux/sys_calls_linux.cpp	2020-03-16 15:58:14.048368332 +0100
++++ b/shared/source/os_interface/linux/sys_calls_linux.cpp	2020-03-16 16:32:45.351337537 +0100
+@@ -19,7 +19,7 @@
+ int open(const char *file, int flags) {
+     return ::open(file, flags);
+ }
+-int ioctl(int fileDescriptor, unsigned long int request, void *arg) {
++int ioctl(int fileDescriptor, unsigned int request, void *arg) {
+     return ::ioctl(fileDescriptor, request, arg);
+ }
+ } // namespace SysCalls
+--- a/shared/source/os_interface/linux/drm_neo.cpp	2020-03-16 15:59:58.706274418 +0100
++++ b/shared/source/os_interface/linux/drm_neo.cpp	2020-03-16 16:31:24.695093198 +0100
+@@ -56,7 +56,7 @@
+ 
+ } // namespace IoctlHelper
+ 
+-int Drm::ioctl(unsigned long request, void *arg) {
++int Drm::ioctl(unsigned int request, void *arg) {
      int ret;
      SYSTEM_ENTER();
      do {
--        ret = ::ioctl(fd, request, arg);
-+        ret = ::ioctl(fd, (int)request, arg);
-     } while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-     SYSTEM_LEAVE(request);
-     return ret;
+--- a/shared/source/os_interface/linux/drm_neo.h	2020-03-16 16:00:35.370816196 +0100
++++ b/shared/source/os_interface/linux/drm_neo.h	2020-03-16 16:30:56.422358324 +0100
+@@ -47,7 +47,7 @@
+   public:
+     virtual ~Drm();
+ 
+-    virtual int ioctl(unsigned long request, void *arg);
++    virtual int ioctl(unsigned int request, void *arg);
+ 
+     int getDeviceID(int &devId);
+     int getDeviceRevID(int &revId);
+--- a/shared/source/os_interface/linux/drm_null_device.h	2020-03-16 16:03:09.377973954 +0100
++++ b/shared/source/os_interface/linux/drm_null_device.h	2020-03-16 16:30:25.242650866 +0100
+@@ -18,7 +18,7 @@
+ class DrmNullDevice : public Drm {
+ 
+   public:
+-    int ioctl(unsigned long request, void *arg) override {
++    int ioctl(unsigned int request, void *arg) override {
+         if (request == DRM_IOCTL_I915_GETPARAM) {
+             return Drm::ioctl(request, arg);
+         } else if (request == DRM_IOCTL_I915_REG_READ) {
