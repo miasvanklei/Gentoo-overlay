@@ -385,26 +385,26 @@ index 36520c1159..1ee17ea238 100644
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
-index 826019c734..945fada9a8 100644
+index 64a80a215e..f0ecbd1cc3 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 +++ b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 @@ -3,7 +3,7 @@
  
  EAPI=6
  
--PYTHON_COMPAT=( python3_6 )
-+PYTHON_COMPAT=( python3_{6,8} )
+-PYTHON_COMPAT=( python3_{6,7} )
++PYTHON_COMPAT=( python3_{6,7,8} )
  
  inherit autotools flag-o-matic python-single-r1 systemd \
  	toolchain-funcs user xdg-utils prefix
-@@ -78,6 +78,7 @@ src_prepare() {
- src_configure() {
+@@ -79,6 +79,7 @@ src_configure() {
  	local myconf=(
  		--disable-Werror
-+		--without-libiberty
  		--libdir=/usr/lib
++		--without-libiberty
  		$(use_enable ipv6 rfc2553)
  		$(use_with gtk)
+ 		$(use_with gnome)
 diff --git a/sys-devel/llvm/llvm-10.0.0_rc4.ebuild b/sys-devel/llvm/llvm-10.0.0_rc4.ebuild
 index 904db49c70..9119910b0a 100644
 --- a/sys-devel/llvm/llvm-10.0.0_rc4.ebuild
