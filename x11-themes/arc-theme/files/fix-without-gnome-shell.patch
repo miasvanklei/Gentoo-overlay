@@ -1,0 +1,32 @@
+diff --git a/common/Makefile.am b/common/Makefile.am
+index 398a67c..a5c8f70 100644
+--- a/common/Makefile.am
++++ b/common/Makefile.am
+@@ -113,7 +113,6 @@ endif
+ 		$(ithemedarkdir)/gnome-shell/gnome-shell.css
+ endif # ENABLE_DARK
+ 
+-if GNOME_SHELL_3_32_OR_NEWER
+ if ENABLE_LIGHTER
+ 	$(MKDIR_P) $(ithemelighterdir)/gnome-shell
+ 
+@@ -136,7 +135,6 @@ endif
+ 		gnome-shell-lighter.css \
+ 		$(ithemelighterdir)/gnome-shell/gnome-shell.css
+ endif # ENABLE_LIGHTER
+-endif # GNOME_SHELL_3_32_OR_NEWER
+ 
+ endif # ENABLE_GNOME_SHELL
+ 
+diff --git a/m4/arc-gnome-shell.m4 b/m4/arc-gnome-shell.m4
+index 667c41a..1f717dc 100644
+--- a/m4/arc-gnome-shell.m4
++++ b/m4/arc-gnome-shell.m4
+@@ -45,7 +45,6 @@ AC_DEFUN([ARC_GNOME_SHELL], [
+         [! test -e "$GNOME_SHELL_DIR/$GNOME_SHELL_VERSION"],
+         [AC_MSG_ERROR([Invalid GNOME Shell version: $GNOME_SHELL_VERSION])]
+     )
+-    AM_CONDITIONAL([GNOME_SHELL_3_32_OR_NEWER], [test "0$GNOME_SHELL_VERSMNR" -ge 31])
+     AC_SUBST([GNOME_SHELL_VERSION])
+     AC_MSG_RESULT([Building GNOME Shell theme $GNOME_SHELL_VERSION])
+ ])
