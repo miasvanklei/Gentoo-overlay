@@ -28,7 +28,10 @@ RDEPEND="${GNUSTEP_CORE_DEPEND}
 DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
-PATCHES=( "${FILESDIR}"/${P}-no_compress_man.patch )
+PATCHES=(
+	"${FILESDIR}"/${P}-no_compress_man.patch
+	"${FILESDIR}"/use-va-copy.patch
+)
 
 src_configure() {
 	egnustep_env
