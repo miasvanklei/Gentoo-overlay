@@ -1,0 +1,235 @@
+--- a/arch/arm64/boot/dts/rockchip/rk3399.dtsi	2020-03-06 22:41:01.474166459 +0100
++++ b/arch/arm64/boot/dts/rockchip/rk3399.dtsi	2020-03-06 23:09:31.253866932 +0100
+@@ -1602,7 +1602,7 @@
+ 
+ 	vopl: vop@ff8f0000 {
+ 		compatible = "rockchip,rk3399-vop-lit";
+-		reg = <0x0 0xff8f0000 0x0 0x3efc>;
++		reg = <0x0 0xff8f0000 0x0 0x1ffc>, <0x0 0xff8f2000 0x0 0x400>;
+ 		interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH 0>;
+ 		assigned-clocks = <&cru ACLK_VOP1>, <&cru HCLK_VOP1>;
+ 		assigned-clock-rates = <400000000>, <100000000>;
+@@ -1659,7 +1659,7 @@
+ 
+ 	vopb: vop@ff900000 {
+ 		compatible = "rockchip,rk3399-vop-big";
+-		reg = <0x0 0xff900000 0x0 0x3efc>;
++		reg = <0x0 0xff900000 0x0 0x1ffc>, <0x0 0xff902000 0x0 0x1000>;
+ 		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH 0>;
+ 		assigned-clocks = <&cru ACLK_VOP0>, <&cru HCLK_VOP0>;
+ 		assigned-clock-rates = <400000000>, <100000000>;
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.c	2020-03-07 14:45:32.479243858 +0100
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.c	2020-03-07 15:21:41.925536797 +0100
+@@ -62,6 +62,10 @@
+ #define VOP_INTR_SET_MASK(vop, name, mask, v) \
+ 		vop_reg_set(vop, &vop->data->intr->name, 0, mask, v, #name)
+ 
++#define VOP_REG_SUPPORT(vop, group, name) \
++		(!!(vop->data->group->name.mask))
++
++
+ #define VOP_REG_SET(vop, group, name, v) \
+ 		    vop_reg_set(vop, &vop->data->group->name, 0, ~0, v, #name)
+ 
+@@ -1049,6 +1053,11 @@
+ 	return true;
+ }
+ 
++static int vop_lut_buffer_index_read(struct vop *vop)
++{
++       return vop_read_reg(vop, 0, &vop->data->common->lut_buffer_index);
++}
++
+ static bool vop_dsp_lut_is_enabled(struct vop *vop)
+ {
+ 	return vop_read_reg(vop, 0, &vop->data->common->dsp_lut_en);
+@@ -1057,19 +1066,27 @@
+ static void vop_crtc_write_gamma_lut(struct vop *vop, struct drm_crtc *crtc)
+ {
+ 	struct drm_color_lut *lut = crtc->state->gamma_lut->data;
++	unsigned int lut_size = vop->data->lut_size;
+ 	unsigned int i;
++	unsigned int bit_precision;
++
++	if (lut_size == 1024) {
++		bit_precision = 10;
++	} else {
++		bit_precision = 8;
++	}
+ 
+ 	for (i = 0; i < crtc->gamma_size; i++) {
+ 		u32 word;
+ 
+-		word = (drm_color_lut_extract(lut[i].red, 10) << 20) |
+-		       (drm_color_lut_extract(lut[i].green, 10) << 10) |
+-			drm_color_lut_extract(lut[i].blue, 10);
++		word = (drm_color_lut_extract(lut[i].red, bit_precision) << (bit_precision * 2)) |
++		       (drm_color_lut_extract(lut[i].green, bit_precision) << bit_precision) |
++			drm_color_lut_extract(lut[i].blue, bit_precision);
+ 		writel(word, vop->lut_regs + i * 4);
+ 	}
+ }
+ 
+-static void vop_crtc_gamma_set(struct vop *vop, struct drm_crtc *crtc,
++static void vop_crtc_gamma_set_pre_rk3399(struct vop *vop, struct drm_crtc *crtc,
+ 			       struct drm_crtc_state *old_state)
+ {
+ 	struct drm_crtc_state *state = crtc->state;
+@@ -1108,6 +1125,46 @@
+ 	spin_unlock(&vop->reg_lock);
+ }
+ 
++static void vop_crtc_gamma_set_post_rk3399(struct vop *vop, struct drm_crtc *crtc,
++			       struct drm_crtc_state *old_state)
++{
++	unsigned int idle, lut_idx;
++	int ret;
++
++	if (!vop->lut_regs || !crtc->state->gamma_lut)
++		return;
++
++	lut_idx = vop_lut_buffer_index_read(vop);
++
++	spin_lock(&vop->reg_lock);
++	vop_crtc_write_gamma_lut(vop, crtc);
++	VOP_REG_SET(vop, common, dsp_lut_en, 1);
++	VOP_REG_SET(vop, common, update_gamma_lut, 1);
++	vop_cfg_done(vop);
++	spin_unlock(&vop->reg_lock);
++
++	ret = readx_poll_timeout(vop_lut_buffer_index_read, vop,
++				 idle, idle != lut_idx, 5, 33333);
++	if (ret) {
++		DRM_DEV_ERROR(vop->dev, "display LUT index read timeout!\n");
++		return;
++	}
++
++	spin_lock(&vop->reg_lock);
++	VOP_REG_SET(vop, common, update_gamma_lut, 0);
++	spin_unlock(&vop->reg_lock);
++}
++
++static void vop_crtc_gamma_set(struct vop *vop, struct drm_crtc *crtc,
++                               struct drm_crtc_state *old_state)
++{
++	if (!VOP_REG_SUPPORT(vop, common, update_gamma_lut)) {
++		vop_crtc_gamma_set_pre_rk3399(vop, crtc, old_state);
++	} else {
++		vop_crtc_gamma_set_post_rk3399(vop, crtc, old_state);
++	}
++}
++
+ static void vop_crtc_atomic_begin(struct drm_crtc *crtc,
+ 				  struct drm_crtc_state *old_crtc_state)
+ {
+@@ -1209,14 +1209,6 @@
+ 		return;
+ 	}
+ 
+-	/*
+-	 * If we have a GAMMA LUT in the state, then let's make sure
+-	 * it's updated. We might be coming out of suspend,
+-	 * which means the LUT internal memory needs to be re-written.
+-	 */
+-	if (crtc->state->gamma_lut)
+-		vop_crtc_gamma_set(vop, crtc, old_state);
+-
+ 	mutex_lock(&vop->vop_lock);
+ 
+ 	WARN_ON(vop->event);
+@@ -1227,6 +1219,15 @@
+ 		DRM_DEV_ERROR(vop->dev, "Failed to enable vop (%d)\n", ret);
+ 		return;
+ 	}
++
++	/*
++	 * If we have a GAMMA LUT in the state, then let's make sure
++	 * it's updated. We might be coming out of suspend,
++	 * which means the LUT internal memory needs to be re-written.
++	 */
++	if (crtc->state->gamma_lut)
++		vop_crtc_gamma_set(vop, crtc, old_state);
++
+ 	pin_pol = (adjusted_mode->flags & DRM_MODE_FLAG_PHSYNC) ?
+ 		   BIT(HSYNC_POSITIVE) : 0;
+ 	pin_pol |= (adjusted_mode->flags & DRM_MODE_FLAG_PVSYNC) ?
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop.h	2020-03-07 14:45:12.971332283 +0100
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop.h	2020-03-07 14:46:53.094877938 +0100
+@@ -72,6 +72,8 @@
+ 	struct vop_reg dither_down_mode;
+ 	struct vop_reg dither_down_en;
+ 	struct vop_reg dither_up;
++	struct vop_reg update_gamma_lut;
++	struct vop_reg lut_buffer_index;
+ 	struct vop_reg dsp_lut_en;
+ 	struct vop_reg gate_en;
+ 	struct vop_reg mmu_en;
+--- a/drivers/gpu/drm/rockchip/rockchip_vop_reg.c	2020-03-07 14:40:14.708676446 +0100
++++ b/drivers/gpu/drm/rockchip/rockchip_vop_reg.c	2020-03-07 14:40:18.748658359 +0100
+@@ -772,6 +772,24 @@
+ 	.win_size = ARRAY_SIZE(rk3368_vop_win_data),
+ };
+ 
++static const struct vop_common rk3399_common = {
++	.standby = VOP_REG_SYNC(RK3399_SYS_CTRL, 0x1, 22),
++	.gate_en = VOP_REG(RK3399_SYS_CTRL, 0x1, 23),
++	.mmu_en = VOP_REG(RK3399_SYS_CTRL, 0x1, 20),
++	.dither_down_sel = VOP_REG(RK3399_DSP_CTRL1, 0x1, 4),
++	.dither_down_mode = VOP_REG(RK3399_DSP_CTRL1, 0x1, 3),
++	.dither_down_en = VOP_REG(RK3399_DSP_CTRL1, 0x1, 2),
++	.pre_dither_down = VOP_REG(RK3399_DSP_CTRL1, 0x1, 1),
++	.dither_up = VOP_REG(RK3399_DSP_CTRL1, 0x1, 6),
++	.lut_buffer_index = VOP_REG(RK3399_DBG_POST_REG1, 0x1, 1),
++	.update_gamma_lut = VOP_REG(RK3399_DSP_CTRL1, 0x1, 7),
++	.dsp_lut_en = VOP_REG(RK3399_DSP_CTRL1, 0x1, 0),
++	.data_blank = VOP_REG(RK3399_DSP_CTRL0, 0x1, 19),
++	.dsp_blank = VOP_REG(RK3399_DSP_CTRL0, 0x3, 18),
++	.out_mode = VOP_REG(RK3399_DSP_CTRL0, 0xf, 0),
++	.cfg_done = VOP_REG_SYNC(RK3399_REG_CFG_DONE, 0x1, 0),
++};
++
+ static const struct vop_output rk3399_output = {
+ 	.dp_dclk_pol = VOP_REG(RK3399_DSP_CTRL1, 0x1, 19),
+ 	.rgb_dclk_pol = VOP_REG(RK3368_DSP_CTRL1, 0x1, 19),
+@@ -823,13 +841,14 @@
+ 	.version = VOP_VERSION(3, 5),
+ 	.feature = VOP_FEATURE_OUTPUT_RGB10,
+ 	.intr = &rk3366_vop_intr,
+-	.common = &rk3288_common,
++	.common = &rk3399_common,
+ 	.modeset = &rk3288_modeset,
+ 	.output = &rk3399_output,
+ 	.misc = &rk3368_misc,
+ 	.win = rk3368_vop_win_data,
+ 	.win_size = ARRAY_SIZE(rk3368_vop_win_data),
+ 	.win_yuv2yuv = rk3399_vop_big_win_yuv2yuv_data,
++	.lut_size = 1024,
+ };
+ 
+ static const struct vop_win_data rk3399_vop_lit_win_data[] = {
+@@ -848,13 +867,14 @@
+ static const struct vop_data rk3399_vop_lit = {
+ 	.version = VOP_VERSION(3, 6),
+ 	.intr = &rk3366_vop_intr,
+-	.common = &rk3288_common,
++	.common = &rk3399_common,
+ 	.modeset = &rk3288_modeset,
+ 	.output = &rk3399_output,
+ 	.misc = &rk3368_misc,
+ 	.win = rk3399_vop_lit_win_data,
+ 	.win_size = ARRAY_SIZE(rk3399_vop_lit_win_data),
+ 	.win_yuv2yuv = rk3399_vop_lit_win_yuv2yuv_data,
++	.lut_size = 256,
+ };
+ 
+ static const struct vop_win_data rk3228_vop_win_data[] = {
+--- a/drivers/gpu/drm/rockchip/rockchip_vop_reg.h	2020-03-07 14:43:59.711663874 +0100
++++ b/drivers/gpu/drm/rockchip/rockchip_vop_reg.h	2020-03-07 14:44:54.707415022 +0100
+@@ -628,6 +628,7 @@
+ #define RK3399_YUV2YUV_WIN			0x02c0
+ #define RK3399_YUV2YUV_POST			0x02c4
+ #define RK3399_AUTO_GATING_EN			0x02cc
++#define RK3399_DBG_POST_REG1			0x036c
+ #define RK3399_WIN0_CSC_COE			0x03a0
+ #define RK3399_WIN1_CSC_COE			0x03c0
+ #define RK3399_WIN2_CSC_COE			0x03e0
