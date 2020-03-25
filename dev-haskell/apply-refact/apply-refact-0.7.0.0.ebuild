@@ -25,7 +25,6 @@ RDEPEND="dev-haskell/filemanip:=[profile?]
 	dev-haskell/syb:=[profile?]
 	dev-haskell/temporary:=[profile?]
 	dev-haskell/unix-compat:=[profile?]
-	>=dev-lang/ghc-7.10.1:=
 	>=dev-lang/ghc-8.6.0:=[profile?] <dev-lang/ghc-8.12:=[profile?]
 "
 DEPEND="${RDEPEND}
