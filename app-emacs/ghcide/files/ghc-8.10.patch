@@ -1,0 +1,70 @@
+diff --git a/ghcide.cabal b/ghcide.cabal
+index c794a83..adabd96 100644
+--- a/ghcide.cabal
++++ b/ghcide.cabal
+@@ -144,7 +144,7 @@ library
+         Development.IDE.Plugin.CodeAction.RuleTypes
+         Development.IDE.Plugin.Completions.Logic
+         Development.IDE.Plugin.Completions.Types
+-    if impl(ghc > 8.7) || flag(ghc-lib)
++    if impl(ghc > 8.7) && impl(ghc < 8.9) || flag(ghc-lib)
+       other-modules:
+         Development.IDE.GHC.HieAst
+     ghc-options: -Wall -Wno-name-shadowing
+diff --git a/src/Development/IDE/Core/Compile.hs b/src/Development/IDE/Core/Compile.hs
+index d173910..0870edf 100644
+--- a/src/Development/IDE/Core/Compile.hs
++++ b/src/Development/IDE/Core/Compile.hs
+@@ -284,7 +284,11 @@ generateAndWriteHieFile hscEnv tcm =
+     case tm_renamed_source tcm of
+       Just rnsrc -> do
+         hf <- runHsc hscEnv $
++#if MIN_GHC_API_VERSION(8,10,0)
++          GHC.mkHieFile mod_summary (fst $ tm_internals_ tcm) rnsrc
++#else
+           GHC.mkHieFile mod_summary (fst $ tm_internals_ tcm) rnsrc ""
++#endif
+         atomicFileWrite targetPath $ flip GHC.writeHieFile hf
+       _ ->
+         return ()
+diff --git a/src/Development/IDE/Core/Rules.hs b/src/Development/IDE/Core/Rules.hs
+index 6262f20..b720817 100644
+--- a/src/Development/IDE/Core/Rules.hs
++++ b/src/Development/IDE/Core/Rules.hs
+@@ -504,7 +504,11 @@ getHiFileRule = defineEarlyCutoff $ \GetHiFile f -> do
+               case r of
+                 Right iface -> do
+                   let result = HiFileResult ms iface
++#if MIN_GHC_API_VERSION(8,10,0)
++                  return (Just (fingerprintToBS (mi_mod_hash (mi_final_exts iface))), ([], Just result))
++#else
+                   return (Just (fingerprintToBS (mi_mod_hash iface)), ([], Just result))
++#endif
+                 Left err -> do
+                   let diag = ideErrorWithSource (Just "interface file loading") (Just DsError) f . T.pack $ err
+                   return (Nothing, (pure diag, Nothing))
+diff --git a/src/Development/IDE/GHC/Compat.hs b/src/Development/IDE/GHC/Compat.hs
+index a24bdd5..11fe81b 100644
+--- a/src/Development/IDE/GHC/Compat.hs
++++ b/src/Development/IDE/GHC/Compat.hs
+@@ -48,7 +48,19 @@ import qualified GHC
+ import GHC hiding (ClassOpSig, DerivD, ForD, IEThingAll, IEThingWith, InstD, TyClD, ValD, ModLocation)
+ import Avail
+ 
+-#if MIN_GHC_API_VERSION(8,8,0)
++#if MIN_GHC_API_VERSION(8,10,0)
++import Control.Applicative ((<|>))
++import HieAst
++import HieBin
++import HieTypes
++
++supportsHieFiles :: Bool
++supportsHieFiles = True
++
++hieExportNames :: HieFile -> [(SrcSpan, Name)]
++hieExportNames = nameListFromAvails . hie_exports
++
++#elif MIN_GHC_API_VERSION(8,8,0)
+ import Control.Applicative ((<|>))
+ import Development.IDE.GHC.HieAst
+ import HieBin

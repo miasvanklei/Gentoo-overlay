@@ -20,6 +20,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/data-default:=[profile?]
 	dev-haskell/extra:=[profile?]
         dev-haskell/fuzzy:=[profile?]
+        >=dev-haskell/ghc-check-0.1.0.3:=[profile?]
         dev-haskell/ghc-paths:=[profile?]
 	dev-haskell/haddock-library:=[profile?]
 	dev-haskell/hashable:=[profile?]
@@ -56,6 +57,10 @@ DEPEND="${RDEPEND}
 		dev-haskell/tasty-hunit
 		dev-haskell/text:=[profile?] )
 "
+
+PATCHES=(
+	"${FILESDIR}"/ghc-8.10.patch
+)
 
 src_configure() {
 	haskell-cabal_src_configure \
