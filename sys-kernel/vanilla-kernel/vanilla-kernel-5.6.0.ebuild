@@ -35,8 +35,6 @@ src_prepare() {
 	if use pinebook-pro; then
 		eapply "${FILESDIR}"/pinebook-pro/001-rk8xx-cleanup.patch
 		eapply "${FILESDIR}"/pinebook-pro/002-add-cw2015.patch
-		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
-		eapply "${FILESDIR}"/pinebook-pro/004-add-panel.patch
 		eapply "${FILESDIR}"/pinebook-pro/006-usb-c.patch
 		eapply "${FILESDIR}"/pinebook-pro/007-generic-fixes.patch
 		eapply "${FILESDIR}"/pinebook-pro/008-add-cdn_dp-audio.patch
@@ -47,8 +45,6 @@ src_prepare() {
 	fi
 
 	if use allwinner; then
-
-		eapply "${FILESDIR}"/allwinner/0001-backport-from-5.6.patch
 		eapply "${FILESDIR}"/allwinner/0003-hdmi-improvements.patch
 		eapply "${FILESDIR}"/allwinner/0004-sun4i-i2s-improvements.patch
 		eapply "${FILESDIR}"/allwinner/0005-cedrus-improvements.patch
@@ -73,10 +69,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 	fi
 
-	if use arm64; then
-		eapply "${FILESDIR}"/arm64/fix-macro-name.patch
-	fi
-
 	if use arm; then
 		eapply "${FILESDIR}"/arm/warn-on-pre-ual-assembler-syntax.patch
 		eapply "${FILESDIR}"/arm/use-fpu-directives-instead-of-assem-arguments.patch
@@ -85,6 +77,7 @@ src_prepare() {
 	fi
 
 	if use arm64 || use arm; then
+		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
 		eapply "${FILESDIR}"/integrated-as.patch
 	fi
 
@@ -92,8 +85,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
-
-	eapply "${FILESDIR}"/wireguard.patch
 
 	eapply_user
 }
