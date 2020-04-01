@@ -28,10 +28,19 @@ index d173910..0870edf 100644
        _ ->
          return ()
 diff --git a/src/Development/IDE/Core/Rules.hs b/src/Development/IDE/Core/Rules.hs
-index 6262f20..b720817 100644
+index 6262f20..80d3e5c 100644
 --- a/src/Development/IDE/Core/Rules.hs
 +++ b/src/Development/IDE/Core/Rules.hs
-@@ -504,7 +504,11 @@ getHiFileRule = defineEarlyCutoff $ \GetHiFile f -> do
+@@ -5,6 +5,8 @@
+ {-# LANGUAGE FlexibleInstances #-}
+ {-# LANGUAGE DuplicateRecordFields #-}
+ {-# LANGUAGE PatternSynonyms       #-}
++{-# LANGUAGE CPP #-}
++#include "ghc-api-version.h"
+ 
+ -- | A Shake implementation of the compiler service, built
+ --   using the "Shaker" abstraction layer for in-memory use.
+@@ -504,7 +506,11 @@ getHiFileRule = defineEarlyCutoff $ \GetHiFile f -> do
                case r of
                  Right iface -> do
                    let result = HiFileResult ms iface
