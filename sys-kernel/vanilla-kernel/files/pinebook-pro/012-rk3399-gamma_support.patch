@@ -75,7 +75,7 @@
  			       struct drm_crtc_state *old_state)
  {
  	struct drm_crtc_state *state = crtc->state;
-@@ -1108,6 +1125,46 @@
+@@ -1108,6 +1125,39 @@
  	spin_unlock(&vop->reg_lock);
  }
  
@@ -97,16 +97,9 @@
 +	vop_cfg_done(vop);
 +	spin_unlock(&vop->reg_lock);
 +
-+	ret = readx_poll_timeout(vop_lut_buffer_index_read, vop,
++	readx_poll_timeout(vop_lut_buffer_index_read, vop,
 +				 idle, idle != lut_idx, 5, 33333);
-+	if (ret) {
-+		DRM_DEV_ERROR(vop->dev, "display LUT index read timeout!\n");
-+		return;
-+	}
-+
-+	spin_lock(&vop->reg_lock);
 +	VOP_REG_SET(vop, common, update_gamma_lut, 0);
-+	spin_unlock(&vop->reg_lock);
 +}
 +
 +static void vop_crtc_gamma_set(struct vop *vop, struct drm_crtc *crtc,
