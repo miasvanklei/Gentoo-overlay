@@ -33,6 +33,7 @@ pkg_pretend() {
 
 src_prepare() {
 	if use pinebook-pro; then
+		eapply "${FILESDIR}"/rockchip-increase-framebuffer-size.patch
 		eapply "${FILESDIR}"/pinebook-pro/001-rk8xx-cleanup.patch
 		eapply "${FILESDIR}"/pinebook-pro/002-add-cw2015.patch
 		eapply "${FILESDIR}"/pinebook-pro/006-usb-c.patch
