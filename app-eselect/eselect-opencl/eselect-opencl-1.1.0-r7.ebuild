@@ -8,11 +8,8 @@ inherit multilib
 DESCRIPTION="Utility to change the OpenCL implementation being used"
 HOMEPAGE="https://www.gentoo.org/"
 
-H_COMMIT="96f5bde69064a7f94012b40fffd66ac5508977da"
-
 SRC_URI="
 	https://dev.gentoo.org/~xarthisius/distfiles/${P}-r1.tar.xz
-	https://github.com/KhronosGroup/OpenCL-Headers/archive/${H_COMMIT}.zip
 	"
 LICENSE="GPL-2"
 SLOT="0"
@@ -32,9 +29,4 @@ pkg_postinst() {
 src_install() {
 	insinto /usr/share/eselect/modules
 	doins opencl.eselect
-
-	insinto /usr/include
-	doins -r "${WORKDIR}/OpenCL-Headers-${H_COMMIT}/CL"
-	cp "${FILESDIR}"/cl.hpp "${ED}/usr/include/CL" || die
-	cp "${FILESDIR}"/cl2.hpp "${ED}/usr/include/CL" || die
 }
