@@ -41,7 +41,7 @@ DEPEND="${RDEPEND}
 "
 
 PATCHES=(
-	"${FILESDIR}"/ghc-8.10.patch
+	"${FILESDIR}"/use-system-ghc.patch
 )
 
 src_configure() {
