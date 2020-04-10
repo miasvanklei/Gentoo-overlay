@@ -136,7 +136,7 @@ src_install() {
 	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
 		INSTALL_PATH="${ED}"/usr/lib/kernel \
 		INSTALL_MOD_PATH="${ED}" \
-		$(usex arm zinstall install) modules_install
+		$(usex arm zinstall install)
 
 	save_config "${WORKDIR}"/build/.config
 
@@ -151,10 +151,6 @@ src_install() {
 				find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${MY_PV} \; || die
 		fi
 	fi
-
-	# become invalid so delete
-	rm ${ED}/lib/modules/${MY_PV}/build
-	rm ${ED}/lib/modules/${MY_PV}/source
 }
 
 pkg_preinst() {
