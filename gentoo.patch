@@ -275,26 +275,6 @@ index 5d5064b581..814843fc84 100644
  
  inherit distutils-r1
  
-diff --git a/dev-qt/qtcore/qtcore-5.14.2.ebuild b/dev-qt/qtcore/qtcore-5.14.2.ebuild
-index cf3d58126f..e2eaae1744 100644
---- a/dev-qt/qtcore/qtcore-5.14.2.ebuild
-+++ b/dev-qt/qtcore/qtcore-5.14.2.ebuild
-@@ -73,10 +73,14 @@ src_configure() {
- 		-no-feature-statx	# bug 672856
- 		$(qt_use icu)
- 		$(qt_use !icu iconv)
--		$(qt_use !old-kernel feature-renameat2)  # needs Linux 3.16, bug 669994
- 		$(qt_use !old-kernel feature-getentropy) # needs Linux 3.17, bug 669994
- 		$(qt_use systemd journald)
- 	)
-+
-+	if ! use old-kernel && use elibc_glibc; then
-+		myconf+=( -feature-renameat2 ) # needs Linux 3.16 and glibc, bug 669994
-+	fi
-+
- 	qt5-build_src_configure
- }
- 
 diff --git a/dev-util/ninja/ninja-1.10.0.ebuild b/dev-util/ninja/ninja-1.10.0.ebuild
 index aed6612180..83b8b40f9a 100644
 --- a/dev-util/ninja/ninja-1.10.0.ebuild
