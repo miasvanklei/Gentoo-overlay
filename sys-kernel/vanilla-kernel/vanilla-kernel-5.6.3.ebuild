@@ -70,15 +70,11 @@ src_prepare() {
 		eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 	fi
 
-	if use arm; then
-		eapply "${FILESDIR}"/arm/warn-on-pre-ual-assembler-syntax.patch
-		eapply "${FILESDIR}"/arm/use-fpu-directives-instead-of-assem-arguments.patch
-		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics.patch
-		eapply "${FILESDIR}"/arm/use-vfp-assembler-mnemonics-1.patch
-	fi
-
 	if use arm64 || use arm; then
 		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
+	fi
+
+	if use arm64; then
 		eapply "${FILESDIR}"/integrated-as.patch
 	fi
 
