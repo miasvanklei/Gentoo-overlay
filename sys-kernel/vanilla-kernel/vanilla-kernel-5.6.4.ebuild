@@ -126,8 +126,8 @@ src_install() {
 				INSTALL_PATH="${ED}"/usr/lib/kernel \
 				dtbs_install
 		else
-			dodir /usr/lib/kernel/dtbs/${MY_PV}
-			find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${MY_PV} \; || die
+			dodir /usr/lib/kernel/dtbs/${PV}
+			find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV}-vanilla \; || die
 		fi
 	fi
 }
@@ -137,26 +137,24 @@ pkg_preinst() {
 }
 
 pkg_postinst() {
-	if [[ -z ${ROOT} ]]; then
-		mount-boot_pkg_preinst
+	mount-boot_pkg_preinst
 
-		if [[ -z ${KINSTALL_PATH} ]]; then
-			ebegin "Installing the kernel by installkernel"
-			installkernel "${PV}" \
-				"${EROOT}/usr/lib/kernel/vmlinuz-${MY_PV}" \
-				"${EROOT}/usr/lib/kernel/System.map-${MY_PV}" || die
-			eend ${?}
-		else
-			ebegin "Installing the kernel by coping"
-			cp "${EROOT}/usr/lib/kernel/vmlinuz-${MY_PV}" ${KINSTALL_PATH} || die
-			eend ${?}
-		fi
+	if [[ -z ${KINSTALL_PATH} ]]; then
+		ebegin "Installing the kernel by installkernel"
+		installkernel "${PV}" \
+			"${EROOT}/usr/lib/kernel/vmlinuz-${PV}-vanilla" \
+			"${EROOT}/usr/lib/kernel/System.map-${PV}-vanilla" || die
+		eend ${?}
+	else
+		ebegin "Installing the kernel by coping"
+		cp "${EROOT}/usr/lib/kernel/vmlinuz-${PV}-vanilla" ${KINSTALL_PATH} || die
+		eend ${?}
+	fi
 
-		if use arm64; then
-			# install dtb file for board given in ${DTB_FILE}.
-			if [[ -n ${DTB_FILE} ]]; then
-				cp "${EROOT}"/usr/lib/kernel/dtbs/${MY_PV}/${DTB_FILE} /boot
-			fi
+	if use arm64; then
+		# install dtb file for board given in ${DTB_FILE}.
+		if [[ -n ${DTB_FILE} ]]; then
+			cp "${EROOT}"/usr/lib/kernel/dtbs/${PV}-vanilla/${DTB_FILE} /boot
 		fi
 	fi
 
