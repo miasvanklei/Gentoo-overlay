@@ -1,28 +1,24 @@
-# Copyright 2019 Gentoo Authors
+# Copyright 2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI=7
+EAPI="6"
+ETYPE="sources"
+K_WANT_GENPATCHES="base extras experimental"
+K_GENPATCHES_VER="32"
 
-inherit mount-boot savedconfig toolchain-funcs
+inherit kernel-2 mount-boot savedconfig toolchain-funcs
+detect_version
+detect_arch
 
-MY_PV="${PV/_/-}"
-MY_P="linux-${MY_PV}"
+KEYWORDS="~arm"
+HOMEPAGE="https://www.kernel.org/"
+IUSE="experimental"
 
 DESCRIPTION="Linux kernel built from vanilla upstream sources"
-HOMEPAGE="https://www.kernel.org/"
-#SRC_URI="https://git.kernel.org/torvalds/t/${MY_P}.tar.gz"
-SRC_URI="https://cdn.kernel.org/pub/linux/kernel/v5.x/${MY_P/.0}.tar.xz"
-S=${WORKDIR}/${MY_P}
-
-LICENSE="GPL-2"
-SLOT="${PV}"
-KEYWORDS="~amd64 ~arm ~arm64"
-IUSE="banana-pi"
+SRC_URI="${KERNEL_URI} ${GENPATCHES_URI} ${ARCH_URI}"
 
 # install-DEPEND actually
 RDEPEND="sys-apps/debianutils"
-
-S="${WORKDIR}/${MY_P/.0}"
 
 pkg_pretend() {
 	mount-boot_pkg_pretend
@@ -81,20 +77,18 @@ src_install() {
 	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
 		INSTALL_PATH="${ED}"/usr/lib/kernel \
 		INSTALL_MOD_PATH="${ED}" \
-		$(usex arm zinstall install)
+		zinstall
 
 	save_config "${WORKDIR}"/build/.config
 
-	if use arm || use arm64; then
-		# install only dtb file for board given in ${DTB_FILE}.
-		if [[ -z ${DTB_FILE} ]]; then
-				emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
-					INSTALL_PATH="${ED}"/usr/lib/kernel \
-					dtbs_install
-		else
-				dodir /usr/lib/kernel/dtbs/${MY_PV}
-				find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${MY_PV} \; || die
-		fi
+	# install only dtb file for board given in ${DTB_FILE}.
+	if [[ -z ${DTB_FILE} ]]; then
+		emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
+			INSTALL_PATH="${ED}"/usr/lib/kernel \
+				dtbs_install
+	else
+		dodir /usr/lib/kernel/dtbs/${MY_PV}
+		find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${MY_PV} \; || die
 	fi
 }
 
@@ -118,11 +112,9 @@ pkg_postinst() {
 			eend ${?}
 		fi
 
-		if use arm || use arm64; then
-			# install dtb file for board given in ${DTB_FILE}.
-			if [[ -n ${DTB_FILE} ]]; then
-				cp "${EROOT}"/usr/lib/kernel/dtbs/${MY_PV}/${DTB_FILE} /boot
-			fi
+		# install dtb file for board given in ${DTB_FILE}.
+		if [[ -n ${DTB_FILE} ]]; then
+			cp "${EROOT}"/usr/lib/kernel/dtbs/${MY_PV}/${DTB_FILE} /boot
 		fi
 	fi
 
