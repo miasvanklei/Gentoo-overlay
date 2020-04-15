@@ -119,6 +119,12 @@ src_install() {
 
 	save_config "${WORKDIR}"/build/.config
 
+	if use pine-h64; then
+		emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
+			INSTALL_MOD_PATH="${ED}" \
+			modules_install
+	fi
+
 	if use arm64; then
 		# install only dtb file for board given in ${DTB_FILE}.
 		if [[ -z ${DTB_FILE} ]]; then
@@ -146,7 +152,7 @@ pkg_postinst() {
 			"${EROOT}/usr/lib/kernel/System.map-${PV}-vanilla" || die
 		eend ${?}
 	else
-		ebegin "Installing the kernel by coping"
+		ebegin "Installing the kernel by copying"
 		cp "${EROOT}/usr/lib/kernel/vmlinuz-${PV}-vanilla" ${KINSTALL_PATH} || die
 		eend ${?}
 	fi
