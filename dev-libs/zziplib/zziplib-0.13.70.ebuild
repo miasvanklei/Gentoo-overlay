@@ -5,12 +5,13 @@ EAPI=7
 
 PYTHON_COMPAT=( python3_{6,7,8} )
 
-inherit autotools libtool flag-o-matic python-any-r1 git-r3
+inherit autotools libtool flag-o-matic python-any-r1
 
 DESCRIPTION="Lightweight library for extracting data from files archived in a single zip file"
 HOMEPAGE="http://zziplib.sourceforge.net/"
-EGIT_REPO_URI="https://github.com/gdraheim/${PN}.git"
-EGIT_BRANCH="develop"
+SRC_URI="https://github.com/gdraheim/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz
+        https://dev.gentoo.org/~asturm/distfiles/${PN}-0.13.69-man.tar.xz
+        doc? ( https://dev.gentoo.org/~asturm/distfiles/${PN}-0.13.69-html.tar.xz )"
 
 LICENSE="|| ( LGPL-2.1 MPL-1.1 )"
 SLOT="0"
@@ -26,7 +27,10 @@ DEPEND="${RDEPEND}
 	test? ( app-arch/zip )"
 
 PATCHES=(
-	"${FILESDIR}"/${PN}-0.13.69-SDL-test.patch
+	"${FILESDIR}"/zziplib-0.13.69-001-SDL-test.patch
+	"${FILESDIR}"/zziplib-0.13.69-002-disable-docs.patch
+	"${FILESDIR}"/zziplib-0.13.69-003-largefile.patch
+	"${FILESDIR}"/zziplib-0.13.69-004-perror.patch
 )
 
 src_prepare() {
@@ -70,23 +74,14 @@ src_configure() {
 }
 
 src_install() {
-	default
-
-	# fowners fails when we don't have enough permissions (Prefix)
-	if [[ ${EUID} == 0 ]] ; then
-		fowners -R root /usr/share/man #321975
-	fi
-
-	find "${ED}" -name "*.la" -delete || die
-
-	if use doc ; then
-		docinto html
-		dodoc -r docs/*
-	fi
+        use doc && local HTML_DOCS=( "${WORKDIR}"/html/. )
+        default
+        doman "${WORKDIR}"/man3/*
+        find "${D}" -name '*.la' -type f -delete || die
 }
 
 src_test() {
-	# need this because `make test` will always return true
-	# tests fail with -j > 1 (bug #241186)
-	emake -j1 check
+        # need this because `make test` will always return true
+        # tests fail with -j > 1 (bug #241186)
+        emake -j1 check
 }
