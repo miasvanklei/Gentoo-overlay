@@ -63,7 +63,7 @@ index adb8dc5a41..bb78bacbae 100644
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
 diff --git a/dev-java/java-config/java-config-2.2.0-r4.ebuild b/dev-java/java-config/java-config-2.2.0-r4.ebuild
-index 8f0cddb82b..de3f880c23 100644
+index 2913a8f7f6..725ac6dc0e 100644
 --- a/dev-java/java-config/java-config-2.2.0-r4.ebuild
 +++ b/dev-java/java-config/java-config-2.2.0-r4.ebuild
 @@ -4,7 +4,7 @@
@@ -72,9 +72,9 @@ index 8f0cddb82b..de3f880c23 100644
  # jython depends on java-config, so don't add it or things will break
 -PYTHON_COMPAT=( python{3_6,3_7} )
 +PYTHON_COMPAT=( python{3_6,3_7,3_8} )
+ DISTUTILS_USE_SETUPTOOLS=no
  
  inherit distutils-r1
- 
 diff --git a/dev-lang/R/R-3.6.3.ebuild b/dev-lang/R/R-3.6.3.ebuild
 index f797705dcd..f9cc8d3de1 100644
 --- a/dev-lang/R/R-3.6.3.ebuild
@@ -104,7 +104,7 @@ index 8ed539ef2a..4a3260e0ac 100644
  		--without-ikvm-native
  		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.42.0.ebuild b/dev-lang/rust/rust-1.42.0.ebuild
-index 1b72b56f8d..9bb5a052d5 100644
+index d61ae45fa3..8a84ad4b33 100644
 --- a/dev-lang/rust/rust-1.42.0.ebuild
 +++ b/dev-lang/rust/rust-1.42.0.ebuild
 @@ -3,7 +3,7 @@
@@ -124,7 +124,7 @@ index 1b72b56f8d..9bb5a052d5 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -127,6 +126,10 @@ pre_build_checks() {
+@@ -128,6 +127,10 @@ pre_build_checks() {
  	check-reqs_pkg_setup
  }
  
@@ -135,7 +135,7 @@ index 1b72b56f8d..9bb5a052d5 100644
  pkg_pretend() {
  	pre_build_checks
  }
-@@ -160,6 +163,9 @@ src_prepare() {
+@@ -161,6 +164,9 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -145,7 +145,7 @@ index 1b72b56f8d..9bb5a052d5 100644
  	default
  }
  
-@@ -349,6 +355,11 @@ src_install() {
+@@ -350,6 +356,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -157,7 +157,7 @@ index 1b72b56f8d..9bb5a052d5 100644
  }
  
  pkg_postinst() {
-@@ -368,15 +379,6 @@ pkg_postinst() {
+@@ -369,15 +380,6 @@ pkg_postinst() {
  	if has_version app-editors/gvim || has_version app-editors/vim; then
  		elog "install app-vim/rust-vim to get vim support for rust."
  	fi
@@ -200,7 +200,7 @@ index 5a6d0068dd..eb697d7529 100644
  
  DESCRIPTION="International Components for Unicode"
 diff --git a/dev-libs/libffi/libffi-3.3-r1.ebuild b/dev-libs/libffi/libffi-3.3-r1.ebuild
-index 0321d41179..b367e53992 100644
+index f5c93c3812..fc55f2805b 100644
 --- a/dev-libs/libffi/libffi-3.3-r1.ebuild
 +++ b/dev-libs/libffi/libffi-3.3-r1.ebuild
 @@ -61,19 +61,7 @@ src_prepare() {
@@ -348,10 +348,10 @@ index cb2856695f..4f0af34fdd 100644
  	"
  
  S="${WORKDIR}/${PN}-${MY_COMMIT}"
-diff --git a/media-libs/mesa/mesa-20.0.4.ebuild b/media-libs/mesa/mesa-20.0.4.ebuild
-index 18accf194e..1b76d10ee8 100644
---- a/media-libs/mesa/mesa-20.0.4.ebuild
-+++ b/media-libs/mesa/mesa-20.0.4.ebuild
+diff --git a/media-libs/mesa/mesa-20.0.4-r1.ebuild b/media-libs/mesa/mesa-20.0.4-r1.ebuild
+index a0d7a8ff5c..26dc74580e 100644
+--- a/media-libs/mesa/mesa-20.0.4-r1.ebuild
++++ b/media-libs/mesa/mesa-20.0.4-r1.ebuild
 @@ -147,9 +147,10 @@ RDEPEND="${RDEPEND}
  # 1. List all the working slots (with min versions) in ||, newest first.
  # 2. Update the := to specify *max* version, e.g. < 10.
@@ -377,10 +377,10 @@ index ff05a37e12..2c5fe067db 100644
  	sys-libs/zlib[minizip]
  	virtual/libintl
  	virtual/opengl
-diff --git a/net-libs/nodejs/nodejs-13.12.0.ebuild b/net-libs/nodejs/nodejs-13.12.0.ebuild
+diff --git a/net-libs/nodejs/nodejs-13.13.0.ebuild b/net-libs/nodejs/nodejs-13.13.0.ebuild
 index 3bd32e160d..a0ae896ce4 100644
---- a/net-libs/nodejs/nodejs-13.12.0.ebuild
-+++ b/net-libs/nodejs/nodejs-13.12.0.ebuild
+--- a/net-libs/nodejs/nodejs-13.13.0.ebuild
++++ b/net-libs/nodejs/nodejs-13.13.0.ebuild
 @@ -2,7 +2,7 @@
  # Distributed under the terms of the GNU General Public License v2
  
@@ -520,10 +520,10 @@ index 5b61abdcb9..5bcbc93b37 100644
  
  DESCRIPTION="A library for manipulating block devices"
 diff --git a/www-client/firefox/firefox-75.0.ebuild b/www-client/firefox/firefox-75.0.ebuild
-index 6661604f0c..9f213c154a 100644
+index 0468755a92..bb953cffbd 100644
 --- a/www-client/firefox/firefox-75.0.ebuild
 +++ b/www-client/firefox/firefox-75.0.ebuild
-@@ -139,7 +139,7 @@ DEPEND="${CDEPEND}
+@@ -140,7 +140,7 @@ DEPEND="${CDEPEND}
  			!clang? ( sys-devel/llvm:10 )
  			clang? (
  				=sys-devel/lld-10*
