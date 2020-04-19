@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="7"
+K_GENPATCHES_VER="8"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -132,8 +132,8 @@ src_install() {
 				INSTALL_PATH="${ED}"/usr/lib/kernel \
 				dtbs_install
 		else
-			dodir /usr/lib/kernel/dtbs/${PV}
-			find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV}-vanilla \; || die
+			dodir /usr/lib/kernel/dtbs/${PV}-vanilla
+			find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV}-vanilla/ \; || die
 		fi
 	fi
 }
