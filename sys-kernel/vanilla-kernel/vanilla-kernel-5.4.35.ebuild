@@ -88,7 +88,7 @@ src_install() {
 				dtbs_install
 	else
 		dodir /usr/lib/kernel/dtbs/${PV}-vanilla
-		find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV}-vanilla \; || die
+		find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/lib/kernel/dtbs/${PV}-vanilla/ \; || die
 	fi
 }
 
@@ -106,7 +106,7 @@ pkg_postinst() {
 			"${EROOT}/usr/lib/kernel/System.map-${PV}-vanilla" || die
 		eend ${?}
 	else
-		ebegin "Installing the kernel by coping"
+		ebegin "Installing the kernel by copying"
 		cp "${EROOT}/usr/lib/kernel/vmlinuz-${PV}-vanilla" ${KINSTALL_PATH} || die
 		eend ${?}
 	fi
