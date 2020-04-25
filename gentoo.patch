@@ -64,11 +64,11 @@ index 8ed539ef2a..4a3260e0ac 100644
  		$(use_with xen xen_opt)
  		--without-ikvm-native
  		--disable-dtrace
-diff --git a/dev-lang/rust/rust-1.42.0.ebuild b/dev-lang/rust/rust-1.42.0.ebuild
-index 769cc36092..8a84ad4b33 100644
---- a/dev-lang/rust/rust-1.42.0.ebuild
-+++ b/dev-lang/rust/rust-1.42.0.ebuild
-@@ -67,7 +67,6 @@ COMMON_DEPEND="
+diff --git a/dev-lang/rust/rust-1.43.0.ebuild b/dev-lang/rust/rust-1.43.0.ebuild
+index ab17676342..dc862e0636 100644
+--- a/dev-lang/rust/rust-1.43.0.ebuild
++++ b/dev-lang/rust/rust-1.43.0.ebuild
+@@ -69,7 +69,6 @@ COMMON_DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
  	libressl? ( dev-libs/libressl:0= )
@@ -76,7 +76,7 @@ index 769cc36092..8a84ad4b33 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -128,6 +127,10 @@ pre_build_checks() {
+@@ -135,6 +134,10 @@ pre_build_checks() {
  	check-reqs_pkg_setup
  }
  
@@ -87,17 +87,16 @@ index 769cc36092..8a84ad4b33 100644
  pkg_pretend() {
  	pre_build_checks
  }
-@@ -161,6 +164,9 @@ src_prepare() {
+@@ -166,6 +169,8 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
 +	clear_vendor_checksums libc
-+	clear_vendor_checksums libgit2-sys
 +
  	default
  }
  
-@@ -350,6 +356,11 @@ src_install() {
+@@ -386,6 +391,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -109,7 +108,7 @@ index 769cc36092..8a84ad4b33 100644
  }
  
  pkg_postinst() {
-@@ -369,15 +380,6 @@ pkg_postinst() {
+@@ -401,15 +411,6 @@ pkg_postinst() {
  	if has_version app-editors/gvim || has_version app-editors/vim; then
  		elog "install app-vim/rust-vim to get vim support for rust."
  	fi
@@ -202,7 +201,7 @@ index 5d5064b581..814843fc84 100644
  inherit distutils-r1
  
 diff --git a/eclass/rust-toolchain.eclass b/eclass/rust-toolchain.eclass
-index 66266a5b54..0f912d776c 100644
+index 9d7360ed1c..3660a9d468 100644
 --- a/eclass/rust-toolchain.eclass
 +++ b/eclass/rust-toolchain.eclass
 @@ -35,7 +35,8 @@ inherit multilib-build
@@ -227,8 +226,20 @@ index ed2fc5023e..610527a3c6 100644
  	>=dev-qt/qtconcurrent-${QTMIN}:5
  "
  
+diff --git a/kde-apps/kwave/kwave-20.04.0.ebuild b/kde-apps/kwave/kwave-20.04.0.ebuild
+index 7621f3d030..1fcea67f3b 100644
+--- a/kde-apps/kwave/kwave-20.04.0.ebuild
++++ b/kde-apps/kwave/kwave-20.04.0.ebuild
+@@ -61,7 +61,6 @@ RDEPEND="
+ 	)
+ "
+ DEPEND="${RDEPEND}
+-	>=kde-apps/poxml-${PVCUT}:5
+ 	>=dev-qt/qtconcurrent-${QTMIN}:5
+ "
+ 
 diff --git a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
-index 4b89391f25..c4408b8beb 100644
+index 1e7f1b1d63..137963a4c1 100644
 --- a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 +++ b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 @@ -33,7 +33,6 @@ DEPEND="${RDEPEND}"
