@@ -24,23 +24,23 @@ index 0681078c51..292fb3eb3f 100644
  	gtk3? ( x11-libs/gtk+:3 )
  	introspection? ( dev-libs/gobject-introspection )
 diff --git a/app-text/xmlto/xmlto-0.0.28-r1.ebuild b/app-text/xmlto/xmlto-0.0.28-r1.ebuild
-index 05b9426978..ef370afe54 100644
+index 58faafa5f9..43bf2f4f6c 100644
 --- a/app-text/xmlto/xmlto-0.0.28-r1.ebuild
 +++ b/app-text/xmlto/xmlto-0.0.28-r1.ebuild
 @@ -21,7 +21,7 @@ RDEPEND=">=app-text/docbook-xsl-stylesheets-1.62.0-r1
- 	|| ( >=sys-apps/coreutils-6.10-r1 sys-freebsd/freebsd-ubin )
+ 	>=sys-apps/coreutils-6.10-r1
  	|| ( sys-apps/util-linux app-misc/getopt )
- 	|| ( sys-apps/which sys-freebsd/freebsd-ubin )
+ 	sys-apps/which
 -	text? ( || ( virtual/w3m www-client/lynx www-client/elinks ) )
 +	text? ( || ( virtual/w3m www-client/lynx www-client/links ) )
  	latex? ( >=app-text/passivetex-1.25 >=dev-tex/xmltex-1.9-r2 )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
 diff --git a/dev-lang/R/R-3.6.3-r1.ebuild b/dev-lang/R/R-3.6.3-r1.ebuild
-index 0f45bd0490..8c1d5b5816 100644
+index 274948dece..8b45397036 100644
 --- a/dev-lang/R/R-3.6.3-r1.ebuild
 +++ b/dev-lang/R/R-3.6.3-r1.ebuild
-@@ -79,6 +79,10 @@ pkg_setup() {
+@@ -83,6 +83,10 @@ pkg_setup() {
  src_prepare() {
  	default
  
@@ -64,10 +64,10 @@ index 8ed539ef2a..4a3260e0ac 100644
  		$(use_with xen xen_opt)
  		--without-ikvm-native
  		--disable-dtrace
-diff --git a/dev-lang/rust/rust-1.43.0.ebuild b/dev-lang/rust/rust-1.43.0.ebuild
-index ab17676342..dc862e0636 100644
---- a/dev-lang/rust/rust-1.43.0.ebuild
-+++ b/dev-lang/rust/rust-1.43.0.ebuild
+diff --git a/dev-lang/rust/rust-1.43.1.ebuild b/dev-lang/rust/rust-1.43.1.ebuild
+index bac30af017..dc862e0636 100644
+--- a/dev-lang/rust/rust-1.43.1.ebuild
++++ b/dev-lang/rust/rust-1.43.1.ebuild
 @@ -69,7 +69,6 @@ COMMON_DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
@@ -87,7 +87,16 @@ index ab17676342..dc862e0636 100644
  pkg_pretend() {
  	pre_build_checks
  }
-@@ -166,6 +169,8 @@ src_prepare() {
+@@ -143,8 +146,6 @@ pkg_setup() {
+ 	pre_build_checks
+ 	python-any-r1_pkg_setup
+ 
+-	# required to link agains system libs, otherwise
+-	# crates use bundled sources and compile own static version
+ 	export LIBGIT2_SYS_USE_PKG_CONFIG=1
+ 	export LIBSSH2_SYS_USE_PKG_CONFIG=1
+ 	export PKG_CONFIG_ALLOW_CROSS=1
+@@ -168,6 +169,8 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -96,7 +105,7 @@ index ab17676342..dc862e0636 100644
  	default
  }
  
-@@ -386,6 +391,11 @@ src_install() {
+@@ -388,6 +391,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -108,7 +117,7 @@ index ab17676342..dc862e0636 100644
  }
  
  pkg_postinst() {
-@@ -401,15 +411,6 @@ pkg_postinst() {
+@@ -403,15 +411,6 @@ pkg_postinst() {
  	if has_version app-editors/gvim || has_version app-editors/vim; then
  		elog "install app-vim/rust-vim to get vim support for rust."
  	fi
@@ -187,19 +196,6 @@ index 0310d0cfc1..b556438016 100644
  
  inherit distutils-r1
  
-diff --git a/dev-python/rfc3986/rfc3986-1.3.2.ebuild b/dev-python/rfc3986/rfc3986-1.3.2.ebuild
-index 5d5064b581..814843fc84 100644
---- a/dev-python/rfc3986/rfc3986-1.3.2.ebuild
-+++ b/dev-python/rfc3986/rfc3986-1.3.2.ebuild
-@@ -2,7 +2,7 @@
- # Distributed under the terms of the GNU General Public License v2
- 
- EAPI=7
--PYTHON_COMPAT=( python2_7 python3_{6,7} pypy3)
-+PYTHON_COMPAT=( python2_7 python3_{6,7,8} pypy3)
- 
- inherit distutils-r1
- 
 diff --git a/eclass/rust-toolchain.eclass b/eclass/rust-toolchain.eclass
 index 9d7360ed1c..3660a9d468 100644
 --- a/eclass/rust-toolchain.eclass
@@ -214,20 +210,8 @@ index 9d7360ed1c..3660a9d468 100644
  		mips64*)	  echo mips64-unknown-linux-gnuabi64;;
  		powerpc64le*) echo powerpc64le-unknown-linux-gnu;;
  		powerpc64*)   echo powerpc64-unknown-linux-gnu;;
-diff --git a/kde-apps/kwave/kwave-19.12.3.ebuild b/kde-apps/kwave/kwave-19.12.3.ebuild
-index ed2fc5023e..610527a3c6 100644
---- a/kde-apps/kwave/kwave-19.12.3.ebuild
-+++ b/kde-apps/kwave/kwave-19.12.3.ebuild
-@@ -61,7 +61,6 @@ RDEPEND="
- 	)
- "
- DEPEND="${RDEPEND}
--	>=kde-apps/poxml-${PVCUT}:5
- 	>=dev-qt/qtconcurrent-${QTMIN}:5
- "
- 
 diff --git a/kde-apps/kwave/kwave-20.04.0.ebuild b/kde-apps/kwave/kwave-20.04.0.ebuild
-index 7621f3d030..1fcea67f3b 100644
+index 72519d78d0..766f4b73fe 100644
 --- a/kde-apps/kwave/kwave-20.04.0.ebuild
 +++ b/kde-apps/kwave/kwave-20.04.0.ebuild
 @@ -61,7 +61,6 @@ RDEPEND="
@@ -239,7 +223,7 @@ index 7621f3d030..1fcea67f3b 100644
  "
  
 diff --git a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
-index 1e7f1b1d63..137963a4c1 100644
+index c9272f7fa8..377e48eff2 100644
 --- a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 +++ b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 @@ -33,7 +33,6 @@ DEPEND="${RDEPEND}"
@@ -251,10 +235,10 @@ index 1e7f1b1d63..137963a4c1 100644
  
  S="${WORKDIR}/${PN}-${MY_COMMIT}"
 diff --git a/media-libs/mesa/mesa-20.0.5.ebuild b/media-libs/mesa/mesa-20.0.5.ebuild
-index 85944a3614..59a1d4fc57 100644
+index b5ed3341ee..03083871b1 100644
 --- a/media-libs/mesa/mesa-20.0.5.ebuild
 +++ b/media-libs/mesa/mesa-20.0.5.ebuild
-@@ -147,9 +147,10 @@ RDEPEND="${RDEPEND}
+@@ -146,9 +146,10 @@ RDEPEND="${RDEPEND}
  # 1. List all the working slots (with min versions) in ||, newest first.
  # 2. Update the := to specify *max* version, e.g. < 10.
  # 3. Specify LLVM_MAX_SLOT, e.g. 9.
@@ -267,7 +251,7 @@ index 85944a3614..59a1d4fc57 100644
  		sys-devel/llvm:8[${MULTILIB_USEDEP}]
  	)
 diff --git a/media-video/vlc/vlc-3.0.8.ebuild b/media-video/vlc/vlc-3.0.8.ebuild
-index 090c04ddbb..ae22a645c7 100644
+index 7c59a75a78..2c77874719 100644
 --- a/media-video/vlc/vlc-3.0.8.ebuild
 +++ b/media-video/vlc/vlc-3.0.8.ebuild
 @@ -59,7 +59,7 @@ BDEPEND="
@@ -280,7 +264,7 @@ index 090c04ddbb..ae22a645c7 100644
  	virtual/libintl
  	virtual/opengl
 diff --git a/sys-devel/clang/clang-10.0.0.ebuild b/sys-devel/clang/clang-10.0.0.ebuild
-index fb7b2c0d4f..fb963532d8 100644
+index aae5ad123f..a74d192adc 100644
 --- a/sys-devel/clang/clang-10.0.0.ebuild
 +++ b/sys-devel/clang/clang-10.0.0.ebuild
 @@ -35,7 +35,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
@@ -395,10 +379,10 @@ index c36aefaa55..4135b86f5a 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-diff --git a/www-client/firefox/firefox-75.0.ebuild b/www-client/firefox/firefox-75.0.ebuild
-index 9327b64611..e08e3efa9e 100644
---- a/www-client/firefox/firefox-75.0.ebuild
-+++ b/www-client/firefox/firefox-75.0.ebuild
+diff --git a/www-client/firefox/firefox-76.0.1.ebuild b/www-client/firefox/firefox-76.0.1.ebuild
+index 762736485b..00e929bec8 100644
+--- a/www-client/firefox/firefox-76.0.1.ebuild
++++ b/www-client/firefox/firefox-76.0.1.ebuild
 @@ -140,7 +140,7 @@ DEPEND="${CDEPEND}
  			!clang? ( sys-devel/llvm:10 )
  			clang? (
