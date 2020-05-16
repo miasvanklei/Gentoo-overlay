@@ -1,22 +1,31 @@
-# Gentoo repository for musl related patches.
+# Gentoo ebuild repository with musl/clang related patches.
 
-ld.lld from llvm is used as linker for all packages.
+Note: This is a personal repository. Ebuilds may break at any time without notice. However I do try to prevent this from happening.
 
-binutils is not installed, but some tools are still needed:
-      - ld.bfd: for the linux kernel because lld does not work yet, lld can be used if pie patches are merged in kernel
-      - as: for the linux kernel because clang checks emmitted assembly
+# Goal
+To compile all packages on my gentoo system with clang and llvm tools (lld, integrated-as) and gcc + binutils removed:
+ * kde plasma, snap, texlive, rust, ghc + haskell packages, R, firefox, libreoffice, dotnet core, mono
 
-gcc is not needed anymore, for all others clang is used with libcxx, libcxxabi, llvm-libunwind:
-      - gentoo-sources (apply two patches)
-      
-lldb is used as debugger.
+# Systems
+ * Banana pi, rock64, pine h64, pinebook pro, amd threadripper 2n generation, intel 8th generation mobile
 
-Some other ebuilds:
-      - electron and atom: are based on chromium, binary builds use jmalloc which doesn't work with musl. Even if it did work,
-        chromium by default uses some obscure glibc functions.
-      - dlang ebuilds that can be used with musl, no segfaults.
-      
-A lot extra patches are in the patches directory, you can create a symlink for all patches, or only for specific packages.
+# Status (packages on my system)
+ * arm64: all packages including linux kernel. integrated-as can be used for linux kernel. binutils and gcc is not installed
+ * arm: all packages including linux kernel. linux kernel still needs binutils as. only binutils as installed
+ * x86_64: all packages including linux kernel. linux kernel still needs binutils as. only binutils as installed.
 
-# arm
-Most packages can be built for arm with the clang toolchain: gmake is broken with cmake.
+# Toolchain
+ * c++
+   * libc++ is used as replacement for libstdc++
+   * libc++abi is used as replacement for libsupc++
+ * unwinder + builtins: gcc_s = llvm-libunwind + compiler-rt
+   * llvm-libunwind is used as replacement for libgcc_eh (unwinder)
+   * compiler-rt is used as replacement for libgcc (lowlevel builtins)
+ * c library
+   * musl, glibc does not compile/work with clang and probably never will completely
+   
+# Organization
+ * portage: contains package.* for my system, probably only applies to me.
+ * portage/patches: contains patches for fixing compilation of ebuilds in gentoo repo
+ * gentoo.patch: contains some trivial patches for gentoo ebuilds themselves (change of dependencies, extra configure arguments). To lazy to create an ebuild and some are .
+ * haskell.patch: adds ebuilds and patches ebuilds from haskell overlay. Should be upstreamed.
