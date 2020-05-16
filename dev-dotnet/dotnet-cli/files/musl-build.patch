@@ -1,0 +1,90 @@
+--- a/eng/native/configureplatform.cmake
++++ b/eng/native/configureplatform.cmake
+@@ -72,6 +72,9 @@
+         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
+             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
+             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
++        elseif(CLR_CMAKE_LINUX_ID STREQUAL gentoo)
++            set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
++            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
+         endif()
+     endif(DEFINED CLR_CMAKE_LINUX_ID)
+ endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
+@@ -253,6 +256,12 @@
+     set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
+ endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
+ 
++if(CLR_CMAKE_TARGET_OS STREQUAL gentoo)
++    set(CLR_CMAKE_TARGET_UNIX 1)
++    set(CLR_CMAKE_TARGET_LINUX 1)
++    set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
++endif(CLR_CMAKE_TARGET_OS STREQUAL gentoo)
++
+ if(CLR_CMAKE_TARGET_OS STREQUAL Android)
+     set(CLR_CMAKE_TARGET_UNIX 1)
+     set(CLR_CMAKE_TARGET_LINUX 1)
+--- a/src/coreclr/src/pal/src/CMakeLists.txt
++++ b/src/coreclr/src/pal/src/CMakeLists.txt
+@@ -285,7 +285,6 @@
+   # On Android, we don't need to link with gcc_s, pthread and rt
+   if(NOT CLR_CMAKE_TARGET_ANDROID)
+     target_link_libraries(coreclrpal
+-      gcc_s
+       pthread
+       rt
+     )
+--- a/src/installer/corehost/build.sh
++++ b/src/installer/corehost/build.sh
+@@ -5,6 +5,7 @@ usage_list+=("-apphostver <app host version>: Version of the apphost executable.
+ usage_list+=("-fxrver <HostFxr version>: Version of the hostfxr library.")
+ usage_list+=("-policyver <HostPolicy version>: Version of the hostpolicy library.")
+ usage_list+=("-commithash <Git commit hash>: Current commit hash of the repo at build time.")
++usage_list+=("-skipmanaged: do not build managed components.")
+ 
+ set -e
+ 
+@@ -61,6 +62,11 @@ handle_arguments() {
+             __ShiftArgs=1
+             ;;
+ 
++        skipmanaged|-skipmanaged)
++            __SkipManaged=1
++            __BuildTestWrappers=0
++            ;;
++
+         *)
+             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
+     esac
+--- a/src/libraries/Native/Unix/System.Globalization.Native/CMakeLists.txt
++++ b/src/libraries/Native/Unix/System.Globalization.Native/CMakeLists.txt
+@@ -85,7 +85,7 @@ set_target_properties(System.Globalization.Native-Static PROPERTIES OUTPUT_NAME
+ 
+ install (TARGETS System.Globalization.Native-Static DESTINATION .)
+ 
+-if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_ANDROID)
++if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_ANDROID OR NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
+     if (GEN_SHARED_LIB)
+         add_custom_command(TARGET System.Globalization.Native POST_BUILD
+             COMMENT "Verifying System.Globalization.Native.so dependencies"
+--- a/src/libraries/Native/Unix/System.Security.Cryptography.Native/CMakeLists.txt
++++ b/src/libraries/Native/Unix/System.Security.Cryptography.Native/CMakeLists.txt
+@@ -88,7 +88,7 @@ if (FEATURE_DISTRO_AGNOSTIC_SSL)
+     #
+     # on Linux, the build will succeed with undefined symbols, then the script reports them
+     # and fails the build for us.
+-    if (NOT APPLE)
++    if (NOT APPLE OR NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
+         add_custom_command(TARGET System.Security.Cryptography.Native.OpenSsl POST_BUILD
+             COMMENT "Verifying System.Security.Cryptography.Native.OpenSsl.so dependencies"
+             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
+--- a/src/coreclr/src/pal/inc/pal.h
++++ b/src/coreclr/src/pal/inc/pal.h
+@@ -3936,7 +3936,7 @@
+ PALIMPORT void * __cdecl memset(void *, int, size_t);
+ PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
+ PALIMPORT void * __cdecl memchr(const void *, int, size_t);
+-PALIMPORT long long int __cdecl atoll(const char *) THROW_DECL;
++PALIMPORT long long int __cdecl atoll(const char *);
+ PALIMPORT size_t __cdecl strlen(const char *);
+ PALIMPORT int __cdecl strcmp(const char*, const char *);
+ PALIMPORT int __cdecl strncmp(const char*, const char *, size_t);

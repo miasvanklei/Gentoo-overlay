@@ -1,0 +1,31 @@
+--- a/eng/native/configureplatform.cmake
++++ b/eng/native/configureplatform.cmake
+@@ -3,7 +3,7 @@
+ 
+ # If set, indicates that this is not an officially supported release
+ # Keep in sync with IsPrerelease in Directory.Build.props
+-set(PRERELEASE 1)
++#set(PRERELEASE 1)
+ 
+ #----------------------------------------
+ # Detect and set platform variable names
+--- a/src/libraries/Native/Unix/CMakeLists.txt
++++ b/src/libraries/Native/Unix/CMakeLists.txt
+@@ -32,7 +32,6 @@
+ add_compile_options(-Wno-c11-extensions)
+ add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
+ add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
+-add_compile_options(-g)
+ if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+     add_compile_options(-Wthread-safety)
+     add_compile_options(-Wno-thread-safety-analysis)
+--- a/eng/native/configurecompiler.cmake
++++ b/eng/native/configurecompiler.cmake
+@@ -22,7 +22,6 @@
+ if(MSVC)
+     add_compile_options(/Zi /FC /Zc:strictStrings)
+ elseif (CLR_CMAKE_HOST_UNIX)
+-    add_compile_options(-g)
+     add_compile_options(-Wall)
+     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+         add_compile_options(-Wno-null-conversion)
