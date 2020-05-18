@@ -1,0 +1,26 @@
+diff --git a/addons/lspclient/lspclienthover.cpp b/addons/lspclient/lspclienthover.cpp
+index 212a36388..1bf635b9e 100644
+--- a/addons/lspclient/lspclienthover.cpp
++++ b/addons/lspclient/lspclienthover.cpp
+@@ -33,6 +33,7 @@
+ #include <KTextEditor/View>
+ 
+ #include <QToolTip>
++#include <QTextDocument>
+ #include <utility>
+ 
+ class LSPClientHoverImpl : public LSPClientHover
+@@ -97,8 +98,12 @@ public:
+                     finalTooltip.append(QStringLiteral("..."));
+                 }
+ 
++               QTextDocument doc;
++               doc.setMarkdown(finalTooltip);
++               QString pfinalTooltip = doc.toHtml();
++
+                 // show tool tip: think about a better way for "large" stuff
+-                QToolTip::showText(v->mapToGlobal(v->cursorToCoordinate(position)), finalTooltip);
++                QToolTip::showText(v->mapToGlobal(v->cursorToCoordinate(position)), pfinalTooltip);
+             };
+ 
+             m_handle.cancel() = m_server->documentHover(view->document()->url(), position, this, h);
