@@ -1,4 +1,4 @@
-# Copyright 2019 Gentoo Authors
+# Copyright 2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI="7"
@@ -61,6 +61,16 @@ COREFX_FILES=(
 	'libSystem.Security.Cryptography.Native.OpenSsl.so'
 )
 
+CORESETUP_FILES=(
+	'libhostpolicy.so'
+)
+
+PACK_FILES=(
+	'apphost'
+	'libnethost.a'
+	'libnethost.so'
+)
+
 pkg_setup() {
 	if use arm64; then
 		DARCH=arm64
@@ -96,14 +106,19 @@ src_prepare() {
 		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
 	done
 
-	rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/libhostpolicy.so" || die
-	rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/libnethost.a" || die
+	for file in "${CORESETUP_FILES[@]}"; do
+		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
+	done
 
-	rm "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate/apphost" || die
+	for file in "${PACK_FILES[@]}"; do
+		rm "${SDK_S}/${RUNTIME_PACK}/${file}" || die
+	done
+
+	# unecessary files
+	rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/libnethost.a" || die
+	rm -r "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate" || die
+
 	rm "${SDK_S}/host/fxr/${RUNTIME_PV}/libhostfxr.so" || die
-	rm "${SDK_S}/${RUNTIME_PACK}/libnethost.so" || die
-	rm "${SDK_S}/${RUNTIME_PACK}/libnethost.a" || die
-	rm "${SDK_S}/${RUNTIME_PACK}/apphost" || die
 	rm "${SDK_S}/dotnet" || die
 
 	eapply "${FILESDIR}"/musl-build.patch
@@ -129,17 +144,18 @@ src_compile() {
 }
 
 src_install() {
-	local dest="${D}/opt/${P}"
+	local dest="${D}/opt/dotnet"
 	local dest_core="${dest}/shared/Microsoft.NETCore.App/${RUNTIME_PV}"
-	local dest_sdk="${dest}/sdk/${SDK_PV}"
 	local dest_pack="${dest}/${RUNTIME_PACK}"
 	local artifacts_corefx="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
 	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
 	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
 
+	# sdk
 	mkdir -p "${dest}" || die
 	cp -rpP "${SDK_S}"/* ${dest} || die
 
+	# runtime
 	for file in "${CORECLR_FILES[@]}"; do
 		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}" || die
 	done
@@ -148,14 +164,18 @@ src_install() {
 		cp -pP "${artifacts_corefx}/${file}" "${dest_core}" || die
 	done
 
-	cp -pP "${artifacts_coresetup}/apphost" "${dest_sdk}/AppHostTemplate" || die
+	for file in "${CORESETUP_FILES[@]}"; do
+		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}" || die
+	done
+
+	# apphost
 	cp -pP "${artifacts_coresetup}/apphost" "${dest_pack}" || die
 	cp -pP "${artifacts_coresetup}/libnethost.a" "${dest_pack}" || die
 	cp -pP "${artifacts_coresetup}/libnethost.so" "${dest_pack}" || die
-	cp -pP "${artifacts_coresetup}/dotnet" "${dest}" || die
-	cp -pP "${artifacts_coresetup}/libhostfxr.so" "${dest}/host/fxr/${RUNTIME_PV}/" || die
-	cp -pP "${artifacts_coresetup}/libhostpolicy.so" "${dest_core}" || die
-	cp -pP "${artifacts_coresetup}/libnethost.a" "${dest_core}" || die
 
+	# dotnet
+	dolib.so "${artifacts_coresetup}/libhostfxr.so"
+	dosym "/usr/lib/libhostfxr.so" "/opt/dotnet/host/fxr/${RUNTIME_PV}/libhostfxr.so"
+	cp -pP "${artifacts_coresetup}/dotnet" "${dest}" || die
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
 }
