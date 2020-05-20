@@ -7,17 +7,20 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-SDK_PV="5.0.100-preview.3.20216.6"
 RUNTIME_PV="5.0.0-preview.3.20214.6"
-SDK="dotnet-sdk-${SDK_PV}-linux-musl-x64"
-TARGET="linux-musl-x64"
-RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${RUNTIME_PV}/runtimes/${TARGET}/native"
+SDK_PV="5.0.100-preview.3.20216.6"
+SDK="dotnet-sdk-${SDK_PV}-linux"
 
-SRC_URI="https://download.visualstudio.microsoft.com/download/pr/a9d2501d-4089-4255-9d5c-e94e1ec6532c/9abb1d2998427fa23701649a7b1b1513/${SDK}.tar.gz
+SRC_URI="arm64? (
+		https://download.visualstudio.microsoft.com/download/pr/67d8e63e-753d-4900-997f-b332bb63b025/303b7ac855985d077056ef4552f4a4e9/${SDK}-arm64.tar.gz
+	)
+	amd64? (
+		https://download.visualstudio.microsoft.com/download/pr/7ceba34e-5d50-4b23-b326-0a7d02b4decd/62dd73db9be67127a5645ef0efb0bba4/${SDK}-x64.tar.gz
+	)
 	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 
 RDEPEND="
 	>=app-crypt/mit-krb5-1.14.2
@@ -32,10 +35,6 @@ DEPEND="${RDEPEND}
 	>=sys-devel/make-4.1-r1"
 
 S=${WORKDIR}/runtime-${RUNTIME_PV}
-SDK_S="${WORKDIR}/${SDK}"
-CORECLR_S="${S}/src/coreclr"
-COREFX_S="${S}/src/libraries/Native"
-CORESETUP_S="${S}/src/installer/corehost"
 
 CORECLR_FILES=(
 	'libclrjit.so'
@@ -62,16 +61,33 @@ COREFX_FILES=(
 	'libSystem.Security.Cryptography.Native.OpenSsl.so'
 )
 
+pkg_setup() {
+	if use arm64; then
+		DARCH=arm64
+	elif use amd64; then
+		DARCH=x64
+	fi
+
+	DSDK="${SDK}-${DARCH}"
+	TARGET="linux-${DARCH}"
+	export SDK_S="${WORKDIR}/${DSDK}"
+	export CORECLR_S="${S}/src/coreclr"
+	export COREFX_S="${S}/src/libraries/Native"
+	export CORESETUP_S="${S}/src/installer/corehost"
+	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${RUNTIME_PV}/runtimes/${TARGET}/native"
+}
+
 src_unpack() {
-        mkdir "${SDK_S}"
-        pushd "${SDK_S}" || die
-        unpack "${SDK}.tar.gz"
+	mkdir "${SDK_S}"
+	pushd "${SDK_S}" || die
+	unpack "${DSDK}.tar.gz"
 	popd
 
 	unpack "${P}.tar.gz"
 }
 
 src_prepare() {
+	# remove native binaries/libraries
 	for file in "${CORECLR_FILES[@]}"; do
 		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
 	done
@@ -81,6 +97,7 @@ src_prepare() {
 	done
 
 	rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/libhostpolicy.so" || die
+	rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/libnethost.a" || die
 
 	rm "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate/apphost" || die
 	rm "${SDK_S}/host/fxr/${RUNTIME_PV}/libhostfxr.so" || die
@@ -138,5 +155,6 @@ src_install() {
 	cp -pP "${artifacts_coresetup}/libhostfxr.so" "${dest}/host/fxr/${RUNTIME_PV}/" || die
 	cp -pP "${artifacts_coresetup}/libhostpolicy.so" "${dest_core}" || die
 	cp -pP "${artifacts_coresetup}/libnethost.a" "${dest_core}" || die
+
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
 }
