@@ -108,6 +108,7 @@ src_prepare() {
 
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
+	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
 
 	default
 }
@@ -115,15 +116,15 @@ src_prepare() {
 src_compile() {
 	einfo "building corefx"
 	cd "${COREFX_S}" || die
-	./build-native.sh x64 release verbose skipgenerateversion || die
+	./build-native.sh ${DARCH} release verbose skipgenerateversion || die
 
 	einfo "building coreclr"
 	cd "${CORECLR_S}" || die
-	./build-runtime.sh x64 release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata || die
+	./build-runtime.sh ${DARCH} release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata || die
 
 	einfo "building coresetup"
 	cd "${CORESETUP_S}" || die
-	./build.sh x64 release verbose skipmanaged hostver ${RUNTIME_PV} fxrver ${RUNTIME_PV} policyver ${RUNTIME_PV} \
+	./build.sh ${DARCH} release verbose skipmanaged hostver ${RUNTIME_PV} fxrver ${RUNTIME_PV} policyver ${RUNTIME_PV} \
 		commithash 3c523a6 apphostver ${RUNTIME_PV} || die
 }
 
@@ -132,9 +133,9 @@ src_install() {
 	local dest_core="${dest}/shared/Microsoft.NETCore.App/${RUNTIME_PV}"
 	local dest_sdk="${dest}/sdk/${SDK_PV}"
 	local dest_pack="${dest}/${RUNTIME_PACK}"
-	local artifacts_corefx="${S}/artifacts/bin/native/Linux-x64-Release"
-	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.x64.Release"
-	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-x64.Release/corehost"
+	local artifacts_corefx="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
+	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
+	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
 
 	mkdir -p "${dest}" || die
 	cp -rpP "${SDK_S}"/* ${dest} || die
