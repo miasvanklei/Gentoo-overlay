@@ -33,11 +33,3 @@ RDEPEND=">=dev-haskell/base16-bytestring-0.1.1:=[profile?] <dev-haskell/base16-b
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.0.0.2
 "
-
-src_prepare() {
-        default
-
-        cabal_chdeps \
-                'ghc                  >= 8.4.1 && < 8.9' 'ghc                  >= 8.4.1 && < 8.11' \
-		'extra                >= 1.6.14 && < 1.7' 'extra                >= 1.6.14 && < 1.8'
-}
