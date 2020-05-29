@@ -16,7 +16,7 @@
  
 +# config.guess doesn't identify systems running the musl C library, and will
 +# instead return a string with a -gnu suffix. This block detects musl and
-+# modifies the string to have a -musl suffix instead. 
++# modifies the string to have a -musl suffix instead.
 +echo $OUT | grep -- -linux- > /dev/null 2> /dev/null
 +if test $? = 0; then
 +  ldd_version=`ldd --version 2>&1 | head -1 | cut -f1 -d' '`
@@ -154,8 +154,8 @@
    ScratchBlock  *cur = *prev_ptr;
    while (cur) {
      assert(*prev_ptr == cur, "just checking");
---- a/src/hotspot/share/runtime/vm_version.cpp
-+++ b/src/hotspot/share/runtime/vm_version.cpp
+--- a/src/hotspot/share/runtime/abstract_vm_version.cpp
++++ b/src/hotspot/share/runtime/abstract_vm_version.cpp
 @@ -272,7 +272,7 @@
    #endif
  
@@ -545,3 +545,13 @@
                      Assert.assertTrue(command.endsWith(expected), "Command: expected: \'" +
                              expected + "\', actual: " + command);
  
+--- a/src/jdk.incubator.jpackage/unix/native/libapplauncher/PosixPlatform.cpp
++++ b/src/jdk.incubator.jpackage/unix/native/libapplauncher/PosixPlatform.cpp
+@@ -33,7 +33,6 @@
+ #include <stdbool.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+-#include <sys/sysctl.h>
+ #include <sys/file.h>
+ #include <sys/stat.h>
+ #include <sys/wait.h>

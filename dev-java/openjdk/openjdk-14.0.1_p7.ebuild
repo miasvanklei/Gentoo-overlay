@@ -117,8 +117,12 @@ pkg_setup() {
 		fi
 	done
 
+	let PSLOT=$((${SLOT} - 1))
+
 	if has_version --host-root dev-java/openjdk:${SLOT}; then
 		export JDK_HOME=${EPREFIX}/usr/$(get_libdir)/openjdk-${SLOT}
+	elif has_version --host-root dev-java/openjdk:${PSLOT}; then
+		export JDK_HOME=${EPREFIX}/usr/$(get_libdir)/openjdk-${PSLOT}
 	else
 		if [[ ${MERGE_TYPE} != "binary" ]]; then
 			JDK_HOME=$(best_version --host-root dev-java/openjdk-bin:${SLOT})
@@ -136,9 +140,6 @@ src_prepare() {
 
 	# fix building on musl
 	eapply "${FILESDIR}"/build.patch
-
-	# fix building on aarch64 with clang
-	eapply "${FILESDIR}"/clang-aarch64.patch
 
 	# fix building with make 4.3
 	eapply "${FILESDIR}"/make-4.3.patch
@@ -167,6 +168,7 @@ src_configure() {
 		--with-lcms=system
 		--with-libjpeg=system
 		--with-libpng=system
+		--with-stdc++lib=dynamic
 		--with-native-debug-symbols=$(usex debug internal none)
 		--with-vendor-name="Gentoo"
 		--with-vendor-url="https://gentoo.org"
