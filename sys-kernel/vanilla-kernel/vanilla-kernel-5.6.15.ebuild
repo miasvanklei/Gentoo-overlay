@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="18"
+K_GENPATCHES_VER="19"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -115,15 +115,9 @@ src_install() {
 	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
 		INSTALL_PATH="${ED}"/usr/lib/kernel \
 		INSTALL_MOD_PATH="${ED}" \
-		install
+		install modules_install
 
 	save_config "${WORKDIR}"/build/.config
-
-	if use pine-h64; then
-		emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
-			INSTALL_MOD_PATH="${ED}" \
-			modules_install
-	fi
 
 	if use arm64; then
 		# install only dtb file for board given in ${DTB_FILE}.
