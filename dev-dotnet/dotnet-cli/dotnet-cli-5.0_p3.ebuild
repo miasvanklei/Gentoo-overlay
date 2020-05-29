@@ -145,11 +145,12 @@ src_compile() {
 
 src_install() {
 	local dest="${D}/opt/dotnet"
-	local dest_core="${dest}/shared/Microsoft.NETCore.App/${RUNTIME_PV}"
+	local dest_core="${dest}/shared/Microsoft.NETCore.App"
 	local dest_pack="${dest}/${RUNTIME_PACK}"
 	local artifacts_corefx="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
 	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
 	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
+	local dotnetpv="3.1.4"
 
 	# sdk
 	mkdir -p "${dest}" || die
@@ -157,21 +158,29 @@ src_install() {
 
 	# runtime
 	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}" || die
+		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}/${RUNTIME_PV}" || die
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		cp -pP "${artifacts_corefx}/${file}" "${dest_core}" || die
+		cp -pP "${artifacts_corefx}/${file}" "${dest_core}/${RUNTIME_PV}" || die
 	done
 
 	for file in "${CORESETUP_FILES[@]}"; do
-		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}" || die
+		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}/${RUNTIME_PV}" || die
 	done
+
+        # compability symlink with .net core 3.1
+	pushd "${dest_core}"
+	dosym "${RUNTIME_PV}" "${dotnet_pv}"
 
 	# apphost
 	cp -pP "${artifacts_coresetup}/apphost" "${dest_pack}" || die
 	cp -pP "${artifacts_coresetup}/libnethost.a" "${dest_pack}" || die
 	cp -pP "${artifacts_coresetup}/libnethost.so" "${dest_pack}" || die
+
+        # compability symlink with .net core 3.1
+	pushd "${dest}/packs/Microsoft.NETCore.App.Host.${TARGET}"
+	dosym "${RUNTIME_PV}" "${dotnet_pv}"
 
 	# dotnet
 	dolib.so "${artifacts_coresetup}/libhostfxr.so"
