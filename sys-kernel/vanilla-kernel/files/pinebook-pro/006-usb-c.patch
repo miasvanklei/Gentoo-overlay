@@ -211,20 +211,6 @@
  static int tcpm_pd_transmit(struct tcpm_port *port,
  			    enum tcpm_transmit_type type,
  			    const struct pd_message *msg)
-@@ -788,10 +824,11 @@
- 	else
- 		orientation = TYPEC_ORIENTATION_REVERSE;
- 
--	if (data == TYPEC_HOST)
-+	if (data == TYPEC_HOST) {
- 		usb_role = USB_ROLE_HOST;
--	else
-+	} else {
- 		usb_role = USB_ROLE_DEVICE;
-+	}
- 
- 	ret = tcpm_mux_set(port, TYPEC_STATE_USB, usb_role, orientation);
- 	if (ret < 0)
 @@ -806,6 +843,8 @@
  	typec_set_data_role(port->typec_port, data);
  	typec_set_pwr_role(port->typec_port, role);

@@ -1,19 +1,9 @@
---- a/drivers/bluetooth/Kconfig
-+++ b/drivers/bluetooth/Kconfig
-@@ -211,7 +211,6 @@
- 	depends on BT_HCIUART
- 	depends on BT_HCIUART_SERDEV
- 	depends on GPIOLIB
--	depends on ACPI
- 	select BT_HCIUART_3WIRE
- 	select BT_RTL
- 	help
 --- a/include/net/bluetooth/hci.h
 +++ b/include/net/bluetooth/hci.h
-@@ -192,6 +192,13 @@ enum {
- 	 *
+@@ -214,6 +214,13 @@
+ 	 * This quirk must be set before hci_register_dev is called.
  	 */
- 	HCI_QUIRK_NON_PERSISTENT_SETUP,
+ 	HCI_QUIRK_WIDEBAND_SPEECH_SUPPORTED,
 +
 +	/* When this quirk is set, max_page for local extended features
 +	 * is set to 1, even if controller reports higher number. Some
@@ -304,15 +294,7 @@
  #endif
 --- a/drivers/bluetooth/hci_h5.c
 +++ b/drivers/bluetooth/hci_h5.c
-@@ -11,6 +11,7 @@
- #include <linux/gpio/consumer.h>
- #include <linux/kernel.h>
- #include <linux/mod_devicetable.h>
-+#include <linux/of_device.h>
- #include <linux/serdev.h>
- #include <linux/skbuff.h>
- 
-@@ -92,6 +93,7 @@
+@@ -93,6 +93,7 @@
  	const struct h5_vnd *vnd;
  	const char *id;
  
@@ -320,19 +302,16 @@
  	struct gpio_desc *enable_gpio;
  	struct gpio_desc *device_wake_gpio;
  };
-@@ -807,6 +809,11 @@
- 		if (h5->vnd->acpi_gpio_map)
- 			devm_acpi_dev_add_driver_gpios(dev,
- 						       h5->vnd->acpi_gpio_map);
-+	} else {
-+		h5->vnd = (const struct h5_vnd *)
-+				of_device_get_match_data(&serdev->dev);
+@@ -820,6 +821,8 @@
+ 			return -ENODEV;
+ 
+ 		h5->vnd = (const struct h5_vnd *)data;
 +		of_property_read_string(serdev->dev.of_node,
 +					"firmware-postfix", &h5->id);
  	}
  
- 	h5->enable_gpio = devm_gpiod_get_optional(dev, "enable", GPIOD_OUT_LOW);
-@@ -818,6 +825,10 @@
+ 
+@@ -832,6 +835,10 @@
  	if (IS_ERR(h5->device_wake_gpio))
  		return PTR_ERR(h5->device_wake_gpio);
  
@@ -343,7 +322,7 @@
  	return hci_uart_register_device(&h5->serdev_hu, &h5p);
  }
  
-@@ -890,6 +901,10 @@
+@@ -904,6 +911,10 @@
  	err = btrtl_download_firmware(h5->hu->hdev, btrtl_dev);
  	/* Give the device some time before the hci-core sends it a reset */
  	usleep_range(10000, 20000);
@@ -354,68 +333,33 @@
  
  out_free:
  	btrtl_free(btrtl_dev);
-@@ -906,6 +921,9 @@
+@@ -920,6 +931,7 @@
  
  	/* The controller needs up to 500ms to wakeup */
  	gpiod_set_value_cansleep(h5->enable_gpio, 1);
-+	/* Take it out of reset */
-+	gpiod_set_value_cansleep(h5->reset_gpio, 0);
-+	msleep(100);
++	gpiod_set_value_cansleep(h5->reset_gpio, 0)
  	gpiod_set_value_cansleep(h5->device_wake_gpio, 1);
  	msleep(500);
  }
-@@ -913,6 +931,7 @@
+@@ -927,6 +939,7 @@
  static void h5_btrtl_close(struct h5 *h5)
  {
  	gpiod_set_value_cansleep(h5->device_wake_gpio, 0);
-+	gpiod_set_value_cansleep(h5->reset_gpio, 1);
++	gpiod_set_value_cansleep(h5->reset_gpio, 1)
  	gpiod_set_value_cansleep(h5->enable_gpio, 0);
  }
  
-@@ -976,6 +995,7 @@
- 	{},
- };
- 
-+#ifdef CONFIG_ACPI
- static struct h5_vnd rtl_vnd = {
- 	.setup		= h5_btrtl_setup,
- 	.open		= h5_btrtl_open,
-@@ -985,6 +1005,7 @@
- 	.acpi_gpio_map	= acpi_btrtl_gpios,
- };
+@@ -1018,6 +1031,10 @@
+ #ifdef CONFIG_BT_HCIUART_RTL
+ 	{ .compatible = "realtek,rtl8822cs-bt",
+ 	  .data = (const void *)&rtl_vnd },
++	{ .compatible = "realtek,rtl8823bs-bt",
++	  .data = (const void *)&rtl_vnd },
++	{ .compatible = "realtek,rtl8823cs-bt",
++	  .data = (const void *)&rtl_vnd },
  #endif
-+#endif
- 
- #ifdef CONFIG_ACPI
- static const struct acpi_device_id h5_acpi_match[] = {
-@@ -1000,6 +1021,19 @@
- 	SET_SYSTEM_SLEEP_PM_OPS(h5_serdev_suspend, h5_serdev_resume)
+ 	{ },
  };
- 
-+static struct h5_vnd rtl8723_of_vnd = {
-+	.setup		= h5_btrtl_setup,
-+	.open		= h5_btrtl_open,
-+	.close		= h5_btrtl_close,
-+};
-+
-+static const struct of_device_id h5_of_match[] = {
-+	{ .compatible = "realtek,rtl8723bs-bt", .data = &rtl8723_of_vnd },
-+	{ .compatible = "realtek,rtl8723cs-bt", .data = &rtl8723_of_vnd },
-+	{ /* sentinel */ },
-+};
-+MODULE_DEVICE_TABLE(of, h5_of_match);
-+
- static struct serdev_device_driver h5_serdev_driver = {
- 	.probe = h5_serdev_probe,
- 	.remove = h5_serdev_remove,
-@@ -1007,6 +1041,7 @@
- 		.name = "hci_uart_h5",
- 		.acpi_match_table = ACPI_PTR(h5_acpi_match),
- 		.pm = &h5_serdev_pm_ops,
-+		.of_match_table = of_match_ptr(h5_of_match),
- 	},
- };
- 
 --- a/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
 +++ b/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
 @@ -52,6 +52,11 @@

@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="19"
+K_GENPATCHES_VER="1"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -27,13 +27,11 @@ pkg_pretend() {
 src_prepare() {
 	if use pinebook-pro; then
 		eapply "${FILESDIR}"/rockchip-increase-framebuffer-size.patch
-		eapply "${FILESDIR}"/pinebook-pro/001-rk8xx-cleanup.patch
 		eapply "${FILESDIR}"/pinebook-pro/002-add-cw2015.patch
 		eapply "${FILESDIR}"/pinebook-pro/006-usb-c.patch
 		eapply "${FILESDIR}"/pinebook-pro/007-generic-fixes.patch
 		eapply "${FILESDIR}"/pinebook-pro/008-add-cdn_dp-audio.patch
 		eapply "${FILESDIR}"/pinebook-pro/009-pinebook-pro-dts.patch
-		eapply "${FILESDIR}"/pinebook-pro/010-pinebook-pro-dts-makefile.patch
 		eapply "${FILESDIR}"/pinebook-pro/011-revert-round-up-before-giving-to-the-clock-framework.patch
 		eapply "${FILESDIR}"/pinebook-pro/012-rk3399-gamma_support.patch
 	fi
@@ -56,12 +54,8 @@ src_prepare() {
 		eapply "${FILESDIR}"/pine-h64/17-one-ui-plane-as-cursor.patch
 	fi
 
-	if use arm64; then
-		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
-		eapply "${FILESDIR}"/integrated-as.patch
-	fi
-
 	if use pinebook-pro || use pine-h64; then
+		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
@@ -103,7 +97,11 @@ src_configure() {
 }
 
 src_compile() {
-	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" all
+	if use arm64; then
+		emake LLVM_IAS=1 O="${WORKDIR}"/build "${MAKEARGS[@]}" all
+	else
+		emake O="${WORKDIR}"/build "${MAKEARGS[@]}" all
+	fi
 }
 
 src_test() {
