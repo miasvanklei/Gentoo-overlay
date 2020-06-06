@@ -14,13 +14,13 @@ index 28696c25eb..b69da866eb 100644
  # gnome-keyring needed at runtime as explained at https://bugs.gentoo.org/475182#c2
  # Add ksecrets to PDEPEND when it's added to portage
 diff --git a/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild b/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild
-index 0ff90bda9f..088f792f43 100644
+index 091098f53e..44a0481e4f 100644
 --- a/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild
 +++ b/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild
 @@ -12,7 +12,7 @@ SRC_URI="mirror://gnupg/${PN}/${P}.tar.bz2"
  LICENSE="GPL-2"
  SLOT="0"
- KEYWORDS="~alpha amd64 ~arm ~arm64 hppa ~ia64 ~mips ppc ppc64 ~riscv ~s390 sparc ~x86 ~ppc-aix ~x64-cygwin ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris"
+ KEYWORDS="~alpha amd64 arm ~arm64 hppa ~ia64 ~mips ppc ppc64 ~riscv s390 sparc x86 ~ppc-aix ~x64-cygwin ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris"
 -IUSE="caps emacs gnome-keyring fltk gtk ncurses qt5 static"
 +IUSE="caps emacs gnome-keyring fltk libsecret gtk ncurses qt5 static"
  
@@ -110,10 +110,10 @@ index 8ed539ef2a..4a3260e0ac 100644
  		$(use_with xen xen_opt)
  		--without-ikvm-native
  		--disable-dtrace
-diff --git a/dev-lang/rust/rust-1.43.1.ebuild b/dev-lang/rust/rust-1.43.1.ebuild
-index bac30af017..dc862e0636 100644
---- a/dev-lang/rust/rust-1.43.1.ebuild
-+++ b/dev-lang/rust/rust-1.43.1.ebuild
+diff --git a/dev-lang/rust/rust-1.44.0.ebuild b/dev-lang/rust/rust-1.44.0.ebuild
+index 5deb73a502..bbb984eafa 100644
+--- a/dev-lang/rust/rust-1.44.0.ebuild
++++ b/dev-lang/rust/rust-1.44.0.ebuild
 @@ -69,7 +69,6 @@ COMMON_DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
@@ -122,7 +122,7 @@ index bac30af017..dc862e0636 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -135,6 +134,10 @@ pre_build_checks() {
+@@ -136,6 +135,10 @@ pre_build_checks() {
  	check-reqs_pkg_setup
  }
  
@@ -133,16 +133,7 @@ index bac30af017..dc862e0636 100644
  pkg_pretend() {
  	pre_build_checks
  }
-@@ -143,8 +146,6 @@ pkg_setup() {
- 	pre_build_checks
- 	python-any-r1_pkg_setup
- 
--	# required to link agains system libs, otherwise
--	# crates use bundled sources and compile own static version
- 	export LIBGIT2_SYS_USE_PKG_CONFIG=1
- 	export LIBSSH2_SYS_USE_PKG_CONFIG=1
- 	export PKG_CONFIG_ALLOW_CROSS=1
-@@ -168,6 +169,8 @@ src_prepare() {
+@@ -169,6 +172,8 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -151,7 +142,7 @@ index bac30af017..dc862e0636 100644
  	default
  }
  
-@@ -388,6 +391,11 @@ src_install() {
+@@ -389,6 +394,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -163,7 +154,7 @@ index bac30af017..dc862e0636 100644
  }
  
  pkg_postinst() {
-@@ -403,15 +411,6 @@ pkg_postinst() {
+@@ -404,15 +414,6 @@ pkg_postinst() {
  	if has_version app-editors/gvim || has_version app-editors/vim; then
  		elog "install app-vim/rust-vim to get vim support for rust."
  	fi
@@ -358,7 +349,7 @@ index aae5ad123f..a74d192adc 100644
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
 diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
-index 700f331aa6..50d56830d4 100644
+index f4d8d84f5e..16a1d7cd28 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 +++ b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 @@ -77,6 +77,7 @@ src_configure() {
@@ -426,10 +417,10 @@ index c36aefaa55..4135b86f5a 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-diff --git a/www-client/firefox/firefox-76.0.1.ebuild b/www-client/firefox/firefox-76.0.1.ebuild
-index 762736485b..00e929bec8 100644
---- a/www-client/firefox/firefox-76.0.1.ebuild
-+++ b/www-client/firefox/firefox-76.0.1.ebuild
+diff --git a/www-client/firefox/firefox-77.0.1.ebuild b/www-client/firefox/firefox-77.0.1.ebuild
+index 3b122387db..bf7a4a7921 100644
+--- a/www-client/firefox/firefox-77.0.1.ebuild
++++ b/www-client/firefox/firefox-77.0.1.ebuild
 @@ -140,7 +140,7 @@ DEPEND="${CDEPEND}
  			!clang? ( sys-devel/llvm:10 )
  			clang? (
