@@ -7,15 +7,16 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-RUNTIME_PV="5.0.0-preview.3.20214.6"
-SDK_PV="5.0.100-preview.3.20216.6"
+RUNTIME_PV="5.0.0-preview.5.20278.1"
+SDK_PV="5.0.100-preview.5.20279.10"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 
-SRC_URI="arm64? (
-		https://download.visualstudio.microsoft.com/download/pr/67d8e63e-753d-4900-997f-b332bb63b025/303b7ac855985d077056ef4552f4a4e9/${SDK}-arm64.tar.gz
+SRC_URI="
+	arm64? (
+		https://download.visualstudio.microsoft.com/download/pr/a529731c-7c51-42f4-9386-46c6466019dc/e408a0275c2333ae29a6e31c00c1ae64/${SDK}-arm64.tar.gz
 	)
 	amd64? (
-		https://download.visualstudio.microsoft.com/download/pr/7ceba34e-5d50-4b23-b326-0a7d02b4decd/62dd73db9be67127a5645ef0efb0bba4/${SDK}-x64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/7cf9fa3e-af03-4181-baab-e04ed4b05268/fd44776a5169d6b126ee11d6140691be/${SDK}-x64.tar.gz
 	)
 	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> ${P}.tar.gz"
 
@@ -89,9 +90,9 @@ pkg_setup() {
 
 src_unpack() {
 	mkdir "${SDK_S}"
-	pushd "${SDK_S}" || die
+	pushd "${SDK_S}" >/dev/null || die
 	unpack "${DSDK}.tar.gz"
-	popd
+	popd >/dev/null
 
 	unpack "${P}.tar.gz"
 }
@@ -170,8 +171,9 @@ src_install() {
 	done
 
         # compability symlink with .net core 3.1
-	pushd "${dest_core}"
-	dosym "${RUNTIME_PV}" "${dotnet_pv}"
+	pushd "${dest_core}" >/dev/null || die
+	ln -s "${RUNTIME_PV}" "${dotnetpv}"
+	popd >/dev/null
 
 	# apphost
 	cp -pP "${artifacts_coresetup}/apphost" "${dest_pack}" || die
@@ -179,8 +181,9 @@ src_install() {
 	cp -pP "${artifacts_coresetup}/libnethost.so" "${dest_pack}" || die
 
         # compability symlink with .net core 3.1
-	pushd "${dest}/packs/Microsoft.NETCore.App.Host.${TARGET}"
-	dosym "${RUNTIME_PV}" "${dotnet_pv}"
+	pushd "${dest}/packs/Microsoft.NETCore.App.Host.${TARGET}" >/dev/null || die
+	ln -s "${RUNTIME_PV}" "${dotnetpv}"
+	popd >/dev/null
 
 	# dotnet
 	dolib.so "${artifacts_coresetup}/libhostfxr.so"

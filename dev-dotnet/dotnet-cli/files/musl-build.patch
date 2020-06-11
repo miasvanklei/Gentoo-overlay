@@ -61,8 +61,8 @@
  
  install (TARGETS System.Globalization.Native-Static DESTINATION .)
  
--if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_ANDROID)
-+if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_ANDROID OR NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
+-if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID)
++if(NOT CLR_CMAKE_TARGET_OSX AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS AND NOT CLR_CMAKE_TARGET_ANDROID OR NOT CLR_CMAKE_TARGET_ALPINE_LINUX)
      if (GEN_SHARED_LIB)
          add_custom_command(TARGET System.Globalization.Native POST_BUILD
              COMMENT "Verifying System.Globalization.Native.so dependencies"
@@ -79,11 +79,15 @@
              COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-so.sh
 --- a/src/coreclr/src/pal/inc/pal.h
 +++ b/src/coreclr/src/pal/inc/pal.h
-@@ -3936,7 +3936,7 @@
+@@ -3937,11 +3937,7 @@
  PALIMPORT void * __cdecl memset(void *, int, size_t);
  PALIMPORT void * __cdecl memmove(void *, const void *, size_t);
  PALIMPORT void * __cdecl memchr(const void *, int, size_t);
--PALIMPORT long long int __cdecl atoll(const char *) THROW_DECL;
+-PALIMPORT long long int __cdecl atoll(const char *)
+-#ifndef __sun
+-THROW_DECL
+-#endif
+-;
 +PALIMPORT long long int __cdecl atoll(const char *);
  PALIMPORT size_t __cdecl strlen(const char *);
  PALIMPORT int __cdecl strcmp(const char*, const char *);
