@@ -58,6 +58,10 @@ DEPEND="${RDEPEND}
 		dev-haskell/text:=[profile?] )
 "
 
+PATCHES=(
+	"${FILESDIR}"/make-executables-optional.patch
+)
+
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag ghc-lib ghc-lib)
