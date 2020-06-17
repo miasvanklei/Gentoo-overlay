@@ -43,13 +43,6 @@ DEPEND="${RDEPEND}
 		dev-haskell/quickcheck-instances )
 "
 
-src_prepare() {
-        default
-
-        cabal_chdeps \
-                'base >= 4.9 && < 4.14' 'base >= 4.9 && < 4.15'
-}
-
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag demo demo)
