@@ -4,6 +4,7 @@
 EAPI=7
 
 PYTHON_COMPAT=( python3_{6,7,8} )
+DISTUTILS_USE_SETUPTOOLS=bdepend
 
 inherit distutils-r1
 
@@ -20,6 +21,7 @@ RDEPEND="
 	dev-python/pygobject[${PYTHON_USEDEP}]
 	dev-python/watchdog[${PYTHON_USEDEP}]
 	dev-python/python-vlc[${PYTHON_USEDEP}]
+	dev-python/babel[${PYTHON_USEDEP}]
 	x11-libs/gtk+:3[introspection]"
 
 DEPEND="${RDEPEND}"
