@@ -21,7 +21,7 @@ RDEPEND="
 	dev-python/pygobject[${PYTHON_USEDEP}]
 	dev-python/watchdog[${PYTHON_USEDEP}]
 	dev-python/python-vlc[${PYTHON_USEDEP}]
-	dev-python/babel[${PYTHON_USEDEP}]
+	dev-python/Babel[${PYTHON_USEDEP}]
 	x11-libs/gtk+:3[introspection]"
 
 DEPEND="${RDEPEND}"
