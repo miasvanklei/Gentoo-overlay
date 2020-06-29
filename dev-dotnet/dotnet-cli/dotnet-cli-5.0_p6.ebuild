@@ -7,16 +7,16 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-RUNTIME_PV="5.0.0-preview.5.20278.1"
-SDK_PV="5.0.100-preview.5.20279.10"
+RUNTIME_PV="5.0.0-preview.6.20305.6"
+SDK_PV="5.0.100-preview.6.20318.15"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 
 SRC_URI="
 	arm64? (
-		https://download.visualstudio.microsoft.com/download/pr/a529731c-7c51-42f4-9386-46c6466019dc/e408a0275c2333ae29a6e31c00c1ae64/${SDK}-arm64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/164ecfcc-df44-476f-a161-340201aa6fa8/7200eb764dc9ff546d384e3188f98a53/${SDK}-arm64.tar.gz
 	)
 	amd64? (
-		https://download.visualstudio.microsoft.com/download/pr/7cf9fa3e-af03-4181-baab-e04ed4b05268/fd44776a5169d6b126ee11d6140691be/${SDK}-x64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/ec4bba83-4586-4705-a6ae-c648861ca284/d9470c2f68161e3c2b8a0785fe7b3329/${SDK}-x64.tar.gz
 	)
 	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> ${P}.tar.gz"
 
@@ -40,20 +40,16 @@ S=${WORKDIR}/runtime-${RUNTIME_PV}
 CORECLR_FILES=(
 	'libclrjit.so'
 	'libcoreclr.so'
+	'libcoreclrtraceptprovider.so'
 	'libdbgshim.so'
 	'libmscordaccore.so'
-	'libcoreclrtraceptprovider.so'
 	'libmscordbi.so'
 	'createdump'
 )
 
 COREFX_FILES=(
-	'libSystem.Globalization.Native.a'
-	'libSystem.Globalization.Native.so'
 	'libSystem.IO.Compression.Native.a'
 	'libSystem.IO.Compression.Native.so'
-	'libSystem.IO.Ports.Native.so'
-	'libSystem.IO.Ports.Native.a'
 	'libSystem.Native.a'
 	'libSystem.Native.so'
 	'libSystem.Net.Security.Native.a'
@@ -68,6 +64,7 @@ CORESETUP_FILES=(
 
 PACK_FILES=(
 	'apphost'
+        'singlefilehost'
 	'libnethost.a'
 	'libnethost.so'
 )
@@ -125,6 +122,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
+	eapply "${FILESDIR}"/always-use-system-libunwind.patch
 
 	default
 }
@@ -170,15 +168,14 @@ src_install() {
 		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}/${RUNTIME_PV}" || die
 	done
 
+	for file in "${PACK_FILES[@]}"; do
+		cp -pP "${artifacts_coresetup}/${file}" "${dest_pack}" || die
+	done
+
         # compability symlink with .net core 3.1
 	pushd "${dest_core}" >/dev/null || die
 	ln -s "${RUNTIME_PV}" "${dotnetpv}"
 	popd >/dev/null
-
-	# apphost
-	cp -pP "${artifacts_coresetup}/apphost" "${dest_pack}" || die
-	cp -pP "${artifacts_coresetup}/libnethost.a" "${dest_pack}" || die
-	cp -pP "${artifacts_coresetup}/libnethost.so" "${dest_pack}" || die
 
         # compability symlink with .net core 3.1
 	pushd "${dest}/packs/Microsoft.NETCore.App.Host.${TARGET}" >/dev/null || die
