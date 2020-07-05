@@ -122,7 +122,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
-	eapply "${FILESDIR}"/always-use-system-libunwind.patch
+	eapply "${FILESDIR}"/fix-define-libunwind.patch
 
 	default
 }
