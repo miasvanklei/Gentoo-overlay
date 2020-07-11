@@ -4,6 +4,7 @@
 EAPI=7
 
 PYTHON_COMPAT=( python2_7 )
+CMAKE_MAKEFILE_GENERATOR=emake
 
 inherit cmake-utils git-r3
 
@@ -28,5 +29,14 @@ CMAKE_BUILD_TYPE=Release
 
 PATCHES=(
 	${FILESDIR}/fix-compile.patch
+	${FILESDIR}/fix-cpp.patch
 	${FILESDIR}/fix-parallel-build.patch
 )
+
+src_configure() {
+        local mycmakeargs=(
+                -DBUILD_SHARED_LIBS=OFF
+        )
+
+        cmake-utils_src_configure
+}
