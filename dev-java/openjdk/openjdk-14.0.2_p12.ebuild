@@ -144,7 +144,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/build.patch
 
 	# fix building with make 4.3
-	eapply "${FILESDIR}"/make-4.3.patch
+#	eapply "${FILESDIR}"/make-4.3.patch
 
 	default
 	chmod +x configure || die
