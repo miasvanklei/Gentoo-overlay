@@ -7,16 +7,16 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-RUNTIME_PV="5.0.0-preview.6.20305.6"
-SDK_PV="5.0.100-preview.6.20318.15"
+RUNTIME_PV="5.0.0-preview.7.20364.11"
+SDK_PV="5.0.100-preview.7.20366.6"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 
 SRC_URI="
 	arm64? (
-		https://download.visualstudio.microsoft.com/download/pr/164ecfcc-df44-476f-a161-340201aa6fa8/7200eb764dc9ff546d384e3188f98a53/${SDK}-arm64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/a7d933ce-5f1d-4c7b-a388-509ee6ee710c/152fa9acb7ee9cf34d7cb0eeeb36d448/${SDK}-arm64.tar.gz
 	)
 	amd64? (
-		https://download.visualstudio.microsoft.com/download/pr/ec4bba83-4586-4705-a6ae-c648861ca284/d9470c2f68161e3c2b8a0785fe7b3329/${SDK}-x64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/6e9bdda1-72b5-4d2e-8908-be9321b8db26/cbc8ab6c3a1aca2a8dd92e272edd3293/${SDK}-x64.tar.gz
 	)
 	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> ${P}.tar.gz"
 
@@ -122,7 +122,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
-	eapply "${FILESDIR}"/fix-define-libunwind.patch
+	eapply "${FILESDIR}"/fix-lld.patch
 
 	default
 }
