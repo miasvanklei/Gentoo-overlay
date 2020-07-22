@@ -1,7 +1,7 @@
-diff --git a/cmake/config-ix.cmake b/cmake/config-ix.cmake
+diff --git a/compiler-rt/cmake/config-ix.cmake b/compiler-rt/cmake/config-ix.cmake
 index 3aad08e8896..54d1a6bd292 100644
---- a/cmake/config-ix.cmake
-+++ b/cmake/config-ix.cmake
+--- a/compiler-rt/cmake/config-ix.cmake
++++ b/compiler-rt/cmake/config-ix.cmake
 @@ -727,7 +727,7 @@ endif()
  # TODO(hctim): Enable this on Android again. Looks like it's causing a SIGSEGV
  # for Scudo and GWP-ASan, further testing needed.
@@ -11,10 +11,10 @@ index 3aad08e8896..54d1a6bd292 100644
    set(COMPILER_RT_HAS_GWP_ASAN TRUE)
  else()
    set(COMPILER_RT_HAS_GWP_ASAN FALSE)
-diff --git a/lib/asan/asan_linux.cpp b/lib/asan/asan_linux.cpp
+diff --git a/compiler-rt/lib/asan/asan_linux.cpp b/compiler-rt/lib/asan/asan_linux.cpp
 index ce5e873dc51..08949a6151e 100644
---- a/lib/asan/asan_linux.cpp
-+++ b/lib/asan/asan_linux.cpp
+--- a/compiler-rt/lib/asan/asan_linux.cpp
++++ b/compiler-rt/lib/asan/asan_linux.cpp
 @@ -45,7 +45,7 @@
  #include <link.h>
  #endif
@@ -33,10 +33,10 @@ index ce5e873dc51..08949a6151e 100644
  // FIXME: should we do anything for Android?
  void AsanCheckDynamicRTPrereqs() {}
  void AsanCheckIncompatibleRT() {}
-diff --git a/lib/hwasan/hwasan_exceptions.cpp b/lib/hwasan/hwasan_exceptions.cpp
+diff --git a/compiler-rt/lib/hwasan/hwasan_exceptions.cpp b/compiler-rt/lib/hwasan/hwasan_exceptions.cpp
 index 169e7876cb5..6ed1da33542 100644
---- a/lib/hwasan/hwasan_exceptions.cpp
-+++ b/lib/hwasan/hwasan_exceptions.cpp
+--- a/compiler-rt/lib/hwasan/hwasan_exceptions.cpp
++++ b/compiler-rt/lib/hwasan/hwasan_exceptions.cpp
 @@ -29,8 +29,8 @@ typedef _Unwind_Reason_Code PersonalityFn(int version, _Unwind_Action actions,
  // is statically linked and the sanitizer runtime and the program are linked
  // against different unwinders. The _Unwind_Context data structure is opaque so
@@ -48,10 +48,10 @@ index 169e7876cb5..6ed1da33542 100644
  
  extern "C" SANITIZER_INTERFACE_ATTRIBUTE _Unwind_Reason_Code
  __hwasan_personality_wrapper(int version, _Unwind_Action actions,
-diff --git a/lib/interception/interception_linux.cpp b/lib/interception/interception_linux.cpp
+diff --git a/compiler-rt/lib/interception/interception_linux.cpp b/compiler-rt/lib/interception/interception_linux.cpp
 index 950cd512653..6893bea65cf 100644
---- a/lib/interception/interception_linux.cpp
-+++ b/lib/interception/interception_linux.cpp
+--- a/compiler-rt/lib/interception/interception_linux.cpp
++++ b/compiler-rt/lib/interception/interception_linux.cpp
 @@ -64,7 +64,7 @@ bool InterceptFunction(const char *name, uptr *ptr_to_real, uptr func,
  }
  
@@ -61,10 +61,10 @@ index 950cd512653..6893bea65cf 100644
  static void *GetFuncAddr(const char *name, const char *ver) {
    return dlvsym(RTLD_NEXT, name, ver);
  }
-diff --git a/lib/interception/interception_type_test.cpp b/lib/interception/interception_type_test.cpp
+diff --git a/compiler-rt/lib/interception/interception_type_test.cpp b/compiler-rt/lib/interception/interception_type_test.cpp
 index a611604a700..42e0ab90bfc 100644
---- a/lib/interception/interception_type_test.cpp
-+++ b/lib/interception/interception_type_test.cpp
+--- a/compiler-rt/lib/interception/interception_type_test.cpp
++++ b/compiler-rt/lib/interception/interception_type_test.cpp
 @@ -33,7 +33,7 @@ COMPILER_CHECK(sizeof(::OFF64_T) == sizeof(off64_t));
  // rest (they depend on _FILE_OFFSET_BITS setting when building an application).
  # if SANITIZER_ANDROID || !defined _FILE_OFFSET_BITS || \
@@ -74,10 +74,10 @@ index a611604a700..42e0ab90bfc 100644
  # endif
  
  #endif
-diff --git a/lib/msan/msan_linux.cpp b/lib/msan/msan_linux.cpp
+diff --git a/compiler-rt/lib/msan/msan_linux.cpp b/compiler-rt/lib/msan/msan_linux.cpp
 index d61e9dee306..5ea88042235 100644
---- a/lib/msan/msan_linux.cpp
-+++ b/lib/msan/msan_linux.cpp
+--- a/compiler-rt/lib/msan/msan_linux.cpp
++++ b/compiler-rt/lib/msan/msan_linux.cpp
 @@ -12,7 +12,7 @@
  //===----------------------------------------------------------------------===//
  
@@ -87,10 +87,10 @@ index d61e9dee306..5ea88042235 100644
  
  #include "msan.h"
  #include "msan_report.h"
-diff --git a/lib/profile/InstrProfilingUtil.c b/lib/profile/InstrProfilingUtil.c
+diff --git a/compiler-rt/lib/profile/InstrProfilingUtil.c b/compiler-rt/lib/profile/InstrProfilingUtil.c
 index bf5a9670fe1..12e826778c3 100644
---- a/lib/profile/InstrProfilingUtil.c
-+++ b/lib/profile/InstrProfilingUtil.c
+--- a/compiler-rt/lib/profile/InstrProfilingUtil.c
++++ b/compiler-rt/lib/profile/InstrProfilingUtil.c
 @@ -30,6 +30,7 @@
  #if defined(__linux__)
  #include <signal.h>
@@ -99,10 +99,10 @@ index bf5a9670fe1..12e826778c3 100644
  #endif
  
  #include "InstrProfiling.h"
-diff --git a/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc b/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc b/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
 index 490a04b2181..6e860b4ff97 100644
---- a/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
-+++ b/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors_ioctl.inc
 @@ -103,7 +103,7 @@ static void ioctl_table_fill() {
    _(SIOCGETVIFCNT, WRITE, struct_sioc_vif_req_sz);
  #endif
@@ -121,10 +121,10 @@ index 490a04b2181..6e860b4ff97 100644
    // _(SIOCDEVPLIP, WRITE, struct_ifreq_sz); // the same as EQL_ENSLAVE
    _(CYGETDEFTHRESH, WRITE, sizeof(int));
    _(CYGETDEFTIMEOUT, WRITE, sizeof(int));
-diff --git a/lib/sanitizer_common/sanitizer_common_syscalls.inc b/lib/sanitizer_common/sanitizer_common_syscalls.inc
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_common_syscalls.inc b/compiler-rt/lib/sanitizer_common/sanitizer_common_syscalls.inc
 index 31ff48cfd2c..6686db1ff19 100644
---- a/lib/sanitizer_common/sanitizer_common_syscalls.inc
-+++ b/lib/sanitizer_common/sanitizer_common_syscalls.inc
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_common_syscalls.inc
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_common_syscalls.inc
 @@ -2037,7 +2037,7 @@ POST_SYSCALL(setrlimit)(long res, long resource, void *rlim) {
    }
  }
@@ -134,10 +134,10 @@ index 31ff48cfd2c..6686db1ff19 100644
  PRE_SYSCALL(prlimit64)(long pid, long resource, const void *new_rlim,
                         void *old_rlim) {
    if (new_rlim) PRE_READ(new_rlim, struct_rlimit64_sz);
-diff --git a/lib/sanitizer_common/sanitizer_linux.cpp b/lib/sanitizer_common/sanitizer_linux.cpp
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp b/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp
 index 84453f1bd30..6413db50959 100644
---- a/lib/sanitizer_common/sanitizer_linux.cpp
-+++ b/lib/sanitizer_common/sanitizer_linux.cpp
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp
 @@ -1735,7 +1735,7 @@ struct __sanitizer_esr_context {
  
  static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
@@ -147,10 +147,10 @@ index 84453f1bd30..6413db50959 100644
    while (true) {
      _aarch64_ctx *ctx = (_aarch64_ctx *)aux;
      if (ctx->size == 0) break;
-diff --git a/lib/sanitizer_common/sanitizer_linux_libcdep.cpp b/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_linux_libcdep.cpp b/compiler-rt/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
 index edbe8402808..625dbb38f41 100644
---- a/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
-+++ b/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_linux_libcdep.cpp
 @@ -186,7 +186,7 @@ __attribute__((unused)) static bool GetLibcVersion(int *major, int *minor,
  }
  
@@ -202,10 +202,10 @@ index edbe8402808..625dbb38f41 100644
    uptr addr, size;
    GetTls(&addr, &size);
    return size;
-diff --git a/lib/sanitizer_common/sanitizer_platform.h b/lib/sanitizer_common/sanitizer_platform.h
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_platform.h b/compiler-rt/lib/sanitizer_common/sanitizer_platform.h
 index c68bfa25875..8f79bfaa89a 100644
---- a/lib/sanitizer_common/sanitizer_platform.h
-+++ b/lib/sanitizer_common/sanitizer_platform.h
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform.h
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform.h
 @@ -213,6 +213,13 @@
  # define SANITIZER_MYRIAD2 0
  #endif
@@ -220,10 +220,10 @@ index c68bfa25875..8f79bfaa89a 100644
  // By default we allow to use SizeClassAllocator64 on 64-bit platform.
  // But in some cases (e.g. AArch64's 39-bit address space) SizeClassAllocator64
  // does not work well and we need to fallback to SizeClassAllocator32.
-diff --git a/lib/sanitizer_common/sanitizer_platform_interceptors.h b/lib/sanitizer_common/sanitizer_platform_interceptors.h
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_platform_interceptors.h b/compiler-rt/lib/sanitizer_common/sanitizer_platform_interceptors.h
 index 4cc69af1241..97cba588eb8 100644
---- a/lib/sanitizer_common/sanitizer_platform_interceptors.h
-+++ b/lib/sanitizer_common/sanitizer_platform_interceptors.h
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform_interceptors.h
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform_interceptors.h
 @@ -40,12 +40,18 @@
  # include "sanitizer_platform_limits_solaris.h"
  #endif
@@ -253,10 +253,10 @@ index 4cc69af1241..97cba588eb8 100644
     SI_NETBSD || SI_OPENBSD || SI_SOLARIS)  // NOLINT
  #define SANITIZER_INTERCEPT_RANDOM_R SI_LINUX_NOT_ANDROID
  #define SANITIZER_INTERCEPT_PTHREAD_ATTR_GET SI_POSIX
-diff --git a/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp b/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
 index aa845df4dde..1f6506a137e 100644
---- a/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
-+++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp
 @@ -37,6 +37,7 @@
  #include <pwd.h>
  #include <signal.h>
@@ -418,10 +418,10 @@ index aa845df4dde..1f6506a137e 100644
  COMPILER_CHECK(sizeof(__sanitizer__obstack_chunk) <= sizeof(_obstack_chunk));
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, limit);
  CHECK_SIZE_AND_OFFSET(_obstack_chunk, prev);
-diff --git a/lib/sanitizer_common/sanitizer_platform_limits_posix.h b/lib/sanitizer_common/sanitizer_platform_limits_posix.h
+diff --git a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.h b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.h
 index 5337b26b29b..79f1aabc68f 100644
---- a/lib/sanitizer_common/sanitizer_platform_limits_posix.h
-+++ b/lib/sanitizer_common/sanitizer_platform_limits_posix.h
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.h
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.h
 @@ -472,7 +472,7 @@ struct __sanitizer_dirent {
    unsigned short d_reclen;
    // more fields that we don't care about
@@ -431,10 +431,10 @@ index 5337b26b29b..79f1aabc68f 100644
  struct __sanitizer_dirent {
    unsigned long long d_ino;
    unsigned long long d_off;
-diff --git a/lib/tsan/rtl/tsan_platform_linux.cpp b/lib/tsan/rtl/tsan_platform_linux.cpp
+diff --git a/compiler-rt/lib/tsan/rtl/tsan_platform_linux.cpp b/compiler-rt/lib/tsan/rtl/tsan_platform_linux.cpp
 index 33fa586ca1b..1f565561683 100644
---- a/lib/tsan/rtl/tsan_platform_linux.cpp
-+++ b/lib/tsan/rtl/tsan_platform_linux.cpp
+--- a/compiler-rt/lib/tsan/rtl/tsan_platform_linux.cpp
++++ b/compiler-rt/lib/tsan/rtl/tsan_platform_linux.cpp
 @@ -314,7 +314,7 @@ void InitializePlatform() {
  // This is required to properly "close" the fds, because we do not see internal
  // closes within glibc. The code is a pure hack.

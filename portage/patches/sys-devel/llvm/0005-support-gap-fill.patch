@@ -1,7 +1,7 @@
-diff --git a/tools/llvm-objcopy/CopyConfig.cpp b/tools/llvm-objcopy/CopyConfig.cpp
+diff --git a/llvm/tools/llvm-objcopy/CopyConfig.cpp b/llvm/tools/llvm-objcopy/CopyConfig.cpp
 index 73ed00b5cb2..755a830c7d0 100644
---- a/tools/llvm-objcopy/CopyConfig.cpp
-+++ b/tools/llvm-objcopy/CopyConfig.cpp
+--- a/llvm/tools/llvm-objcopy/CopyConfig.cpp
++++ b/llvm/tools/llvm-objcopy/CopyConfig.cpp
 @@ -556,7 +556,21 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
        InputArgs.getLastArgValue(OBJCOPY_prefix_alloc_sections);
    if (auto Arg = InputArgs.getLastArg(OBJCOPY_extract_partition))
@@ -25,10 +25,10 @@ index 73ed00b5cb2..755a830c7d0 100644
    for (auto Arg : InputArgs.filtered(OBJCOPY_redefine_symbol)) {
      if (!StringRef(Arg->getValue()).contains('='))
        return createStringError(errc::invalid_argument,
-diff --git a/tools/llvm-objcopy/CopyConfig.h b/tools/llvm-objcopy/CopyConfig.h
+diff --git a/llvm/tools/llvm-objcopy/CopyConfig.h b/llvm/tools/llvm-objcopy/CopyConfig.h
 index c262934b4a4..44a9a88ae78 100644
---- a/tools/llvm-objcopy/CopyConfig.h
-+++ b/tools/llvm-objcopy/CopyConfig.h
+--- a/llvm/tools/llvm-objcopy/CopyConfig.h
++++ b/llvm/tools/llvm-objcopy/CopyConfig.h
 @@ -165,6 +165,8 @@ struct CopyConfig {
    Optional<StringRef> BuildIdLinkInput;
    Optional<StringRef> BuildIdLinkOutput;
@@ -38,10 +38,10 @@ index c262934b4a4..44a9a88ae78 100644
    StringRef SplitDWO;
    StringRef SymbolsPrefix;
    StringRef AllocSectionsPrefix;
-diff --git a/tools/llvm-objcopy/ELF/ELFObjcopy.cpp b/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
+diff --git a/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp b/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
 index a0cfd9a5ff8..ca26260db08 100644
---- a/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
-+++ b/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
+--- a/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
++++ b/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
 @@ -589,6 +589,153 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
    return Obj.removeSections(Config.AllowBrokenLinks, RemovePred);
  }
@@ -208,10 +208,10 @@ index a0cfd9a5ff8..ca26260db08 100644
    if (Config.EntryExpr)
      Obj.Entry = Config.EntryExpr(Obj.Entry);
    return Error::success();
-diff --git a/tools/llvm-objcopy/ObjcopyOpts.td b/tools/llvm-objcopy/ObjcopyOpts.td
+diff --git a/llvm/tools/llvm-objcopy/ObjcopyOpts.td b/llvm/tools/llvm-objcopy/ObjcopyOpts.td
 index 9e6b6f0005c..3cdb6b36cbb 100644
---- a/tools/llvm-objcopy/ObjcopyOpts.td
-+++ b/tools/llvm-objcopy/ObjcopyOpts.td
+--- a/llvm/tools/llvm-objcopy/ObjcopyOpts.td
++++ b/llvm/tools/llvm-objcopy/ObjcopyOpts.td
 @@ -227,3 +227,13 @@ defm add_symbol
           "compatibility: debug, constructor, warning, indirect, synthetic, "
           "unique-object, before.">,

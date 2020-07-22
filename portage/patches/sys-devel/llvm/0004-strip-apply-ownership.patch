@@ -1,5 +1,5 @@
---- a/include/llvm/Support/FileSystem.h
-+++ b/include/llvm/Support/FileSystem.h
+--- a/llvm/include/llvm/Support/FileSystem.h
++++ b/llvm/include/llvm/Support/FileSystem.h
 @@ -661,6 +661,15 @@ std::error_code status(file_t FD, file_status &Result);
  ///       umask(2) never fails. It is not thread safe.
  unsigned getUmask();
@@ -16,8 +16,8 @@
  /// Set file permissions.
  ///
  /// @param Path File to set permissions on.
---- a/lib/Support/Unix/Path.inc
-+++ b/lib/Support/Unix/Path.inc
+--- a/llvm/lib/Support/Unix/Path.inc
++++ b/llvm/lib/Support/Unix/Path.inc
 @@ -702,6 +702,12 @@ unsigned getUmask() {
    return Mask;
  }
@@ -31,8 +31,8 @@
  std::error_code setPermissions(const Twine &Path, perms Permissions) {
    SmallString<128> PathStorage;
    StringRef P = Path.toNullTerminatedStringRef(PathStorage);
---- a/lib/Support/Windows/Path.inc
-+++ b/lib/Support/Windows/Path.inc
+--- a/llvm/lib/Support/Windows/Path.inc
++++ b/llvm/lib/Support/Windows/Path.inc
 @@ -742,6 +742,10 @@ unsigned getUmask() {
    return 0;
  }
@@ -44,8 +44,8 @@
  std::error_code setPermissions(const Twine &Path, perms Permissions) {
    SmallVector<wchar_t, 128> PathUTF16;
    if (std::error_code EC = widenPath(Path, PathUTF16))
---- a/tools/llvm-objcopy/llvm-objcopy.cpp
-+++ b/tools/llvm-objcopy/llvm-objcopy.cpp
+--- a/llvm/tools/llvm-objcopy/llvm-objcopy.cpp
++++ b/llvm/tools/llvm-objcopy/llvm-objcopy.cpp
 @@ -226,6 +226,11 @@ static Error restoreStatOnFile(StringRef Filename,
    if (std::error_code EC = sys::fs::status(FD, OStat))
      return createFileError(Filename, EC);
