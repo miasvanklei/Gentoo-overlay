@@ -147,7 +147,7 @@ index 996855591a..d9f612fae3 100644
  		$(use_enable static-libs static) \
  		$(use_enable pax_kernel pax_emutramp) \
 diff --git a/dev-util/gn/gn-0.1726.ebuild b/dev-util/gn/gn-0.1726.ebuild
-index aa2740074a..4195bc8689 100644
+index 5f6a1e3c26..3a8d7bcbe4 100644
 --- a/dev-util/gn/gn-0.1726.ebuild
 +++ b/dev-util/gn/gn-0.1726.ebuild
 @@ -2,7 +2,7 @@
@@ -211,20 +211,31 @@ index 4ba64203f4..acd4af1ff8 100644
  	sys-libs/zlib[minizip]
  	virtual/libintl
  	virtual/opengl
-diff --git a/sys-devel/clang/clang-10.0.0.ebuild b/sys-devel/clang/clang-10.0.0.ebuild
-index 81865bfa7b..b787e0ea47 100644
---- a/sys-devel/clang/clang-10.0.0.ebuild
-+++ b/sys-devel/clang/clang-10.0.0.ebuild
-@@ -35,7 +35,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
+diff --git a/sys-devel/clang/clang-10.0.1.ebuild b/sys-devel/clang/clang-10.0.1.ebuild
+index d7adac0611..ff81719066 100644
+--- a/sys-devel/clang/clang-10.0.1.ebuild
++++ b/sys-devel/clang/clang-10.0.1.ebuild
+@@ -30,8 +30,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
- KEYWORDS="amd64 arm arm64 ppc64 ~x86 ~amd64-linux"
+ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
 -IUSE="debug default-compiler-rt default-libcxx doc +static-analyzer
-+IUSE="+gcc-symlinks debug +default-compiler-rt +default-libcxx +default-libunwind doc +static-analyzer
- 	test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
+-	test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
++IUSE="debug +default-compiler-rt +default-libcxx +default-libunwind doc +gcc-symlinks
++	+static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
  REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
-@@ -58,7 +58,8 @@ PDEPEND="
+ RESTRICT="!test? ( test )"
+@@ -43,7 +43,7 @@ RDEPEND="
+ 	${PYTHON_DEPS}"
+ DEPEND="${RDEPEND}"
+ BDEPEND="
+-	dev-python/sphinx
++	doc? ( dev-python/sphinx )
+ 	xml? ( virtual/pkgconfig )
+ 	${PYTHON_DEPS}"
+ RDEPEND="${RDEPEND}
+@@ -53,7 +53,8 @@ PDEPEND="
  	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
  	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
@@ -232,9 +243,25 @@ index 81865bfa7b..b787e0ea47 100644
 +	default-libcxx? ( >=sys-libs/libcxx-${PV} )
 +	default-libunwind? ( >=sys-libs/llvm-libunwind-${PV} )"
  
- # least intrusive of all
- CMAKE_BUILD_TYPE=RelWithDebInfo
-@@ -187,9 +188,13 @@ multilib_src_configure() {
+ # Multilib notes:
+ # 1. ABI_* flags control ABIs libclang* is built for only.
+@@ -195,13 +196,11 @@ get_distribution_components() {
+ 			find-all-symbols
+ 			modularize
+ 			pp-trace
+-
+-			# manpages
+-			docs-clang-man
+-			docs-clang-tools-man
+ 		)
+ 
+ 		use doc && out+=(
++			docs-clang-man
++			docs-clang-tools-man
+ 			docs-clang-html
+ 			docs-clang-tools-html
+ 		)
+@@ -244,9 +243,13 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -242,13 +269,26 @@ index 81865bfa7b..b787e0ea47 100644
 +		# create gcc symlinks: gcc g++ cc cpp c++
 +		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
 +
-+		# override default stdlib, rtlib, and unwind lib
++		# override default stdlib and rtlib and unwind lib
  		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
 +		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-libunwind libunwind "")
  
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
+@@ -260,8 +263,10 @@ multilib_src_configure() {
+ 		mycmakeargs+=(
+ 			# normally copied from LLVM_INCLUDE_DOCS but the latter
+ 			# is lacking value in stand-alone builds
+-			-DCLANG_INCLUDE_DOCS=ON
+-			-DCLANG_TOOLS_EXTRA_INCLUDE_DOCS=ON
++			-DCLANG_INCLUDE_DOCS=$(usex doc)
++			-DCLANG_TOOLS_EXTRA_INCLUDE_DOCS=$(usex doc)
++		)
++		use doc && mycmakeargs+=(
+ 			-DLLVM_BUILD_DOCS=ON
+ 			-DLLVM_ENABLE_SPHINX=ON
+ 			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
 diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 index f4d8d84f5e..16a1d7cd28 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
@@ -274,23 +314,56 @@ index 9bd470297d..fd481026e2 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-10.0.0.ebuild b/sys-devel/llvm/llvm-10.0.0.ebuild
-index 652d6b34d2..7c60b80215 100644
---- a/sys-devel/llvm/llvm-10.0.0.ebuild
-+++ b/sys-devel/llvm/llvm-10.0.0.ebuild
-@@ -32,7 +32,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
+diff --git a/sys-devel/llvm/llvm-10.0.1.ebuild b/sys-devel/llvm/llvm-10.0.1.ebuild
+index 2bdf59cced..3cef781a38 100644
+--- a/sys-devel/llvm/llvm-10.0.1.ebuild
++++ b/sys-devel/llvm/llvm-10.0.1.ebuild
+@@ -29,7 +29,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
  SLOT="$(ver_cut 1)"
- KEYWORDS="amd64 arm arm64 ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
+ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 -IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 +IUSE="+binutils-symlinks debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
  REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
-@@ -223,6 +223,22 @@ get_distribution_components() {
- 			opt-viewer
- 		)
+@@ -59,10 +59,10 @@ BDEPEND="
+ 		>=sys-devel/binutils-apple-5.1
+ 	)
+ 	libffi? ( virtual/pkgconfig )
+-	$(python_gen_any_dep '
++	doc? ( $(python_gen_any_dep '
+ 		dev-python/sphinx[${PYTHON_USEDEP}]
+-		doc? ( dev-python/recommonmark[${PYTHON_USEDEP}] )
+-	')"
++		dev-python/recommonmark[${PYTHON_USEDEP}]
++	') )"
+ # There are no file collisions between these versions but having :0
+ # installed means llvm-config there will take precedence.
+ RDEPEND="${RDEPEND}
+@@ -77,11 +77,10 @@ PATCHES=(
+ )
  
+ python_check_deps() {
+-	if use doc; then
+-		has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" ||
+-			return 1
+-	fi
+-	has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
++        use doc || return 0
++
++        has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
++        has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
+ }
+ 
+ check_distribution_components() {
+@@ -275,15 +274,30 @@ get_distribution_components() {
+ 
+ 			# python modules
+ 			opt-viewer
++		)
+ 
+-			# manpages
 +		use binutils-symlinks && out+=(
 +			addr2line
 +			ar
@@ -305,12 +378,21 @@ index 652d6b34d2..7c60b80215 100644
 +			size
 +			strings
 +			strip
-+		)
++                )
 +
- 		use doc && out+=(
++		use doc && out+=(
++			docs-llvm-html
  			docs-dsymutil-man
  			docs-llvm-dwarfdump-man
-@@ -257,6 +273,7 @@ multilib_src_configure() {
+ 			docs-llvm-man
+ 		)
+-		use doc && out+=(
+-			docs-llvm-html
+-		)
+ 
+ 		use gold && out+=(
+ 			LLVMgold
+@@ -312,6 +326,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -318,8 +400,24 @@ index 652d6b34d2..7c60b80215 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
+@@ -363,11 +378,13 @@ multilib_src_configure() {
+ 
+ 	if multilib_is_native_abi; then
+ 		mycmakeargs+=(
+-			-DLLVM_BUILD_DOCS=ON
++			-DLLVM_BUILD_DOCS=$(usex doc)
+ 			-DLLVM_ENABLE_OCAMLDOC=OFF
+-			-DLLVM_ENABLE_SPHINX=ON
++			-DLLVM_ENABLE_SPHINX=$(usex doc)
+ 			-DLLVM_ENABLE_DOXYGEN=OFF
+ 			-DLLVM_INSTALL_UTILS=ON
++		)
++		use doc && mycmakeargs+=(
+ 			-DCMAKE_INSTALL_MANDIR="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
+ 			-DLLVM_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
+ 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
 diff --git a/www-client/firefox/firefox-78.0.2.ebuild b/www-client/firefox/firefox-78.0.2.ebuild
-index 1fcb4d3a72..27c3cb807b 100644
+index ee6b26b18e..66f181c5c3 100644
 --- a/www-client/firefox/firefox-78.0.2.ebuild
 +++ b/www-client/firefox/firefox-78.0.2.ebuild
 @@ -146,7 +146,7 @@ DEPEND="${CDEPEND}
