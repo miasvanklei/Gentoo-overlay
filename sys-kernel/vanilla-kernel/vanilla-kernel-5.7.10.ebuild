@@ -58,6 +58,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
+		eapply "${FILESDIR}"/revert-use-subsections.patch
 	fi
 
 	eapply_user
