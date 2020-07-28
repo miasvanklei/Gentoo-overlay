@@ -1,7 +1,7 @@
-diff --git a/include/clang/Basic/DiagnosticDriverKinds.td b/include/clang/Basic/DiagnosticDriverKinds.td
+diff --git a/clang/include/clang/Basic/DiagnosticDriverKinds.td b/clang/include/clang/Basic/DiagnosticDriverKinds.td
 index ecd871e36ee..9f2dcf7d12a 100644
---- a/include/clang/Basic/DiagnosticDriverKinds.td
-+++ b/include/clang/Basic/DiagnosticDriverKinds.td
+--- a/clang/include/clang/Basic/DiagnosticDriverKinds.td
++++ b/clang/include/clang/Basic/DiagnosticDriverKinds.td
 @@ -73,6 +73,10 @@ def err_drv_invalid_pgo_instrumentor : Error<
    "invalid PGO instrumentor in argument '%0'">;
  def err_drv_invalid_rtlib_name : Error<
@@ -22,10 +22,10 @@ index ecd871e36ee..9f2dcf7d12a 100644
  
  def err_drv_invalid_malign_branch_EQ : Error<
    "invalid argument '%0' to -malign-branch=; each element must be one of: %1">;
-diff --git a/include/clang/Basic/Sanitizers.def b/include/clang/Basic/Sanitizers.def
+diff --git a/clang/include/clang/Basic/Sanitizers.def b/clang/include/clang/Basic/Sanitizers.def
 index 0037cc2146f..0f51cd0e001 100644
---- a/include/clang/Basic/Sanitizers.def
-+++ b/include/clang/Basic/Sanitizers.def
+--- a/clang/include/clang/Basic/Sanitizers.def
++++ b/clang/include/clang/Basic/Sanitizers.def
 @@ -104,6 +104,8 @@ SANITIZER("signed-integer-overflow", SignedIntegerOverflow)
  SANITIZER("unreachable", Unreachable)
  SANITIZER("vla-bound", VLABound)
@@ -35,10 +35,10 @@ index 0037cc2146f..0f51cd0e001 100644
  
  // IntegerSanitizer
  SANITIZER("unsigned-integer-overflow", UnsignedIntegerOverflow)
-diff --git a/include/clang/Driver/Options.td b/include/clang/Driver/Options.td
+diff --git a/clang/include/clang/Driver/Options.td b/clang/include/clang/Driver/Options.td
 index 0a60873443f..df35270403c 100644
---- a/include/clang/Driver/Options.td
-+++ b/include/clang/Driver/Options.td
+--- a/clang/include/clang/Driver/Options.td
++++ b/clang/include/clang/Driver/Options.td
 @@ -254,7 +254,7 @@ class InternalDriverOpt : Group<internal_driver_Group>,
    Flags<[DriverOption, HelpHidden]>;
  def driver_mode : Joined<["--"], "driver-mode=">, Group<internal_driver_Group>,
@@ -270,10 +270,10 @@ index 0a60873443f..df35270403c 100644
  
  include "CC1Options.td"
  
-diff --git a/include/clang/Driver/ToolChain.h b/include/clang/Driver/ToolChain.h
+diff --git a/clang/include/clang/Driver/ToolChain.h b/clang/include/clang/Driver/ToolChain.h
 index 26d8d43dd2f..a8e477cedbb 100644
---- a/include/clang/Driver/ToolChain.h
-+++ b/include/clang/Driver/ToolChain.h
+--- a/clang/include/clang/Driver/ToolChain.h
++++ b/clang/include/clang/Driver/ToolChain.h
 @@ -595,6 +595,11 @@ public:
    virtual VersionTuple computeMSVCVersion(const Driver *D,
                                            const llvm::opt::ArgList &Args) const;
@@ -286,10 +286,10 @@ index 26d8d43dd2f..a8e477cedbb 100644
    /// Return sanitizers which are available in this toolchain.
    virtual SanitizerMask getSupportedSanitizers() const;
  
-diff --git a/include/clang/Driver/Types.def b/include/clang/Driver/Types.def
+diff --git a/clang/include/clang/Driver/Types.def b/clang/include/clang/Driver/Types.def
 index 79e8d109cd9..9de154811dc 100644
---- a/include/clang/Driver/Types.def
-+++ b/include/clang/Driver/Types.def
+--- a/clang/include/clang/Driver/Types.def
++++ b/clang/include/clang/Driver/Types.def
 @@ -67,12 +67,16 @@ TYPE("objective-c++-header",     ObjCXXHeader, PP_ObjCXXHeader, "h",      phases
  TYPE("c++-module",               CXXModule,    PP_CXXModule,    "cppm",   phases::Preprocess, phases::Precompile, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
  TYPE("c++-module-cpp-output",    PP_CXXModule, INVALID,         "iim",    phases::Precompile, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
@@ -309,10 +309,10 @@ index 79e8d109cd9..9de154811dc 100644
  TYPE("java",                     Java,         INVALID,         nullptr,  phases::Compile, phases::Backend, phases::Assemble, phases::Link)
  
  // LLVM IR/LTO types. We define separate types for IR and LTO because LTO
-diff --git a/lib/Driver/ToolChain.cpp b/lib/Driver/ToolChain.cpp
+diff --git a/clang/lib/Driver/ToolChain.cpp b/clang/lib/Driver/ToolChain.cpp
 index cab97b1a601..25ba04e7ce5 100644
---- a/lib/Driver/ToolChain.cpp
-+++ b/lib/Driver/ToolChain.cpp
+--- a/clang/lib/Driver/ToolChain.cpp
++++ b/clang/lib/Driver/ToolChain.cpp
 @@ -153,6 +153,7 @@ static const DriverSuffix *FindDriverSuffix(StringRef ProgName, size_t &Pos) {
        {"cl", "--driver-mode=cl"},
        {"++", "--driver-mode=g++"},
@@ -383,10 +383,10 @@ index cab97b1a601..25ba04e7ce5 100644
  bool ToolChain::AddFastMathRuntimeIfAvailable(const ArgList &Args,
                                                ArgStringList &CmdArgs) const {
    // Do not check for -fno-fast-math or -fno-unsafe-math when -Ofast passed
-diff --git a/lib/Driver/ToolChains/Clang.cpp b/lib/Driver/ToolChains/Clang.cpp
+diff --git a/clang/lib/Driver/ToolChains/Clang.cpp b/clang/lib/Driver/ToolChains/Clang.cpp
 index 647465863d3..f1736254543 100644
---- a/lib/Driver/ToolChains/Clang.cpp
-+++ b/lib/Driver/ToolChains/Clang.cpp
+--- a/clang/lib/Driver/ToolChains/Clang.cpp
++++ b/clang/lib/Driver/ToolChains/Clang.cpp
 @@ -4364,6 +4364,60 @@ void Clang::ConstructJob(Compilation &C, const JobAction &JA,
  
    Args.AddLastArg(CmdArgs, options::OPT_fveclib);
@@ -448,10 +448,10 @@ index 647465863d3..f1736254543 100644
    if (Args.hasFlag(options::OPT_fmerge_all_constants,
                     options::OPT_fno_merge_all_constants, false))
      CmdArgs.push_back("-fmerge-all-constants");
-diff --git a/lib/Driver/ToolChains/CommonArgs.cpp b/lib/Driver/ToolChains/CommonArgs.cpp
+diff --git a/clang/lib/Driver/ToolChains/CommonArgs.cpp b/clang/lib/Driver/ToolChains/CommonArgs.cpp
 index 37ec7346857..60dcc315c50 100644
---- a/lib/Driver/ToolChains/CommonArgs.cpp
-+++ b/lib/Driver/ToolChains/CommonArgs.cpp
+--- a/clang/lib/Driver/ToolChains/CommonArgs.cpp
++++ b/clang/lib/Driver/ToolChains/CommonArgs.cpp
 @@ -58,6 +58,23 @@ using namespace clang::driver::tools;
  using namespace clang;
  using namespace llvm::opt;
@@ -515,10 +515,10 @@ index 37ec7346857..60dcc315c50 100644
  }
  
  void tools::AddTargetFeature(const ArgList &Args,
-diff --git a/lib/Driver/ToolChains/CommonArgs.h b/lib/Driver/ToolChains/CommonArgs.h
+diff --git a/clang/lib/Driver/ToolChains/CommonArgs.h b/clang/lib/Driver/ToolChains/CommonArgs.h
 index 84b9d2cf59b..5522a205776 100644
---- a/lib/Driver/ToolChains/CommonArgs.h
-+++ b/lib/Driver/ToolChains/CommonArgs.h
+--- a/clang/lib/Driver/ToolChains/CommonArgs.h
++++ b/clang/lib/Driver/ToolChains/CommonArgs.h
 @@ -20,6 +20,8 @@ namespace clang {
  namespace driver {
  namespace tools {
@@ -528,10 +528,10 @@ index 84b9d2cf59b..5522a205776 100644
  void addPathIfExists(const Driver &D, const Twine &Path,
                       ToolChain::path_list &Paths);
  
-diff --git a/lib/Driver/ToolChains/Flang.cpp b/lib/Driver/ToolChains/Flang.cpp
+diff --git a/clang/lib/Driver/ToolChains/Flang.cpp b/clang/lib/Driver/ToolChains/Flang.cpp
 index 9b9eb81fa11..9973d9a8aea 100644
---- a/lib/Driver/ToolChains/Flang.cpp
-+++ b/lib/Driver/ToolChains/Flang.cpp
+--- a/clang/lib/Driver/ToolChains/Flang.cpp
++++ b/clang/lib/Driver/ToolChains/Flang.cpp
 @@ -6,13 +6,36 @@
  //
  //===----------------------------------------------------------------------===//
@@ -1626,10 +1626,10 @@ index 9b9eb81fa11..9973d9a8aea 100644
  }
  
  Flang::Flang(const ToolChain &TC)
-diff --git a/lib/Driver/ToolChains/Flang.h b/lib/Driver/ToolChains/Flang.h
+diff --git a/clang/lib/Driver/ToolChains/Flang.h b/clang/lib/Driver/ToolChains/Flang.h
 index 19e3a8c28f7..40a94c23c2a 100644
---- a/lib/Driver/ToolChains/Flang.h
-+++ b/lib/Driver/ToolChains/Flang.h
+--- a/clang/lib/Driver/ToolChains/Flang.h
++++ b/clang/lib/Driver/ToolChains/Flang.h
 @@ -9,12 +9,14 @@
  #ifndef LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_FLANG_H
  #define LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_FLANG_H
@@ -1662,10 +1662,10 @@ index 19e3a8c28f7..40a94c23c2a 100644
  
    void ConstructJob(Compilation &C, const JobAction &JA,
                      const InputInfo &Output, const InputInfoList &Inputs,
-diff --git a/lib/Driver/ToolChains/Gnu.cpp b/lib/Driver/ToolChains/Gnu.cpp
+diff --git a/clang/lib/Driver/ToolChains/Gnu.cpp b/clang/lib/Driver/ToolChains/Gnu.cpp
 index da197e47662..3316ef48a5b 100644
---- a/lib/Driver/ToolChains/Gnu.cpp
-+++ b/lib/Driver/ToolChains/Gnu.cpp
+--- a/clang/lib/Driver/ToolChains/Gnu.cpp
++++ b/clang/lib/Driver/ToolChains/Gnu.cpp
 @@ -525,6 +525,16 @@ void tools::gnutools::Linker::ConstructJob(Compilation &C, const JobAction &JA,
    // The profile runtime also needs access to system libraries.
    getToolChain().addProfileRTLibs(Args, CmdArgs);
@@ -1683,10 +1683,10 @@ index da197e47662..3316ef48a5b 100644
    if (D.CCCIsCXX() &&
        !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
      if (ToolChain.ShouldLinkCXXStdlib(Args)) {
-diff --git a/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
+diff --git a/clang/lib/Driver/Types.cpp b/clang/lib/Driver/Types.cpp
 index 7d83be2521e..c646fbc168c 100644
---- a/lib/Driver/Types.cpp
-+++ b/lib/Driver/Types.cpp
+--- a/clang/lib/Driver/Types.cpp
++++ b/clang/lib/Driver/Types.cpp
 @@ -123,6 +123,8 @@ bool types::isAcceptedByClang(ID Id) {
  
    case TY_Asm:
@@ -1751,10 +1751,10 @@ index 7d83be2521e..c646fbc168c 100644
             .Case("mii", TY_PP_ObjCXX)
             .Case("obj", TY_Object)
             .Case("ifs", TY_IFS)
-diff --git a/tools/clang-offload-bundler/ClangOffloadBundler.cpp b/tools/clang-offload-bundler/ClangOffloadBundler.cpp
+diff --git a/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp b/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp
 index a75d2a630cf..86cea5a5b96 100644
---- a/tools/clang-offload-bundler/ClangOffloadBundler.cpp
-+++ b/tools/clang-offload-bundler/ClangOffloadBundler.cpp
+--- a/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp
++++ b/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp
 @@ -646,6 +646,8 @@ CreateFileHandler(MemoryBuffer &FirstInput) {
      return std::make_unique<TextFileHandler>(/*Comment=*/"#");
    if (FilesType == "ll")
@@ -1764,10 +1764,10 @@ index a75d2a630cf..86cea5a5b96 100644
    if (FilesType == "bc")
      return std::make_unique<BinaryFileHandler>();
    if (FilesType == "s")
-diff --git a/tools/driver/CMakeLists.txt b/tools/driver/CMakeLists.txt
+diff --git a/clang/tools/driver/CMakeLists.txt b/clang/tools/driver/CMakeLists.txt
 index 2b783cff095..b0d6172f845 100644
---- a/tools/driver/CMakeLists.txt
-+++ b/tools/driver/CMakeLists.txt
+--- a/clang/tools/driver/CMakeLists.txt
++++ b/clang/tools/driver/CMakeLists.txt
 @@ -63,7 +63,7 @@ endif()
  add_dependencies(clang clang-resource-headers)
  

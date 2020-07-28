@@ -1,9 +1,8 @@
---- a/lib/Driver/ToolChains/Gnu.cpp	2019-09-24 14:37:45.061304034 +0200
-+++ b/lib/Driver/ToolChains/Gnu.cpp	2019-09-24 14:42:05.684508084 +0200
+--- a/clang/lib/Driver/ToolChains/Gnu.cpp	2019-09-24 14:37:45.061304034 +0200
++++ b/clang/lib/Driver/ToolChains/Gnu.cpp	2019-09-24 14:42:05.684508084 +0200
 @@ -323,7 +323,9 @@
  
- static bool getStaticPIE(const ArgList &Args,
-                          const toolchains::Linux &ToolChain) {
+ static bool getStaticPIE(const ArgList &Args, const ToolChain &TC) {
 -  bool HasStaticPIE = Args.hasArg(options::OPT_static_pie);
 +  bool HasStaticPIE = Args.hasArg(options::OPT_static_pie) ||
 +                      (Args.hasArg(options::OPT_static) &&
