@@ -69,17 +69,17 @@ index abf4e1cbdb..03fca11061 100644
  	gtk2? ( x11-libs/gtk+:2 )
  	gtk3? ( x11-libs/gtk+:3 )
  	lua? ( dev-lang/lua:= )
-diff --git a/app-text/xmlto/xmlto-0.0.28-r2.ebuild b/app-text/xmlto/xmlto-0.0.28-r2.ebuild
-index f9e88d7925..e63666c2ec 100644
---- a/app-text/xmlto/xmlto-0.0.28-r2.ebuild
-+++ b/app-text/xmlto/xmlto-0.0.28-r2.ebuild
+diff --git a/app-text/xmlto/xmlto-0.0.28-r3.ebuild b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
+index 5602e66567..42815c690d 100644
+--- a/app-text/xmlto/xmlto-0.0.28-r3.ebuild
++++ b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
 @@ -21,7 +21,7 @@ RDEPEND=">=app-text/docbook-xsl-stylesheets-1.62.0-r1
  	>=sys-apps/coreutils-6.10-r1
  	|| ( sys-apps/util-linux app-misc/getopt )
  	sys-apps/which
 -	text? ( || ( virtual/w3m www-client/lynx www-client/elinks ) )
 +	text? ( || ( virtual/w3m www-client/lynx www-client/links ) )
- 	latex? ( >=app-text/passivetex-1.25 dev-texlive/texlive-formatsextra )"
+ 	latex? ( dev-texlive/texlive-formatsextra )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
 diff --git a/dev-lang/R/R-4.0.2.ebuild b/dev-lang/R/R-4.0.2.ebuild
@@ -111,7 +111,7 @@ index bc6f0cf7f0..001c65de87 100644
  		--without-ikvm-native
  		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.45.0.ebuild b/dev-lang/rust/rust-1.45.0.ebuild
-index 12fe630a0d..41e1b84734 100644
+index 35ad9a5d31..708dfce2a0 100644
 --- a/dev-lang/rust/rust-1.45.0.ebuild
 +++ b/dev-lang/rust/rust-1.45.0.ebuild
 @@ -82,7 +82,6 @@ DEPEND="
@@ -122,6 +122,54 @@ index 12fe630a0d..41e1b84734 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
+@@ -136,6 +135,10 @@ pre_build_checks() {
+ 	check-reqs_pkg_setup
+ }
+ 
++clear_vendor_checksums() {
++	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
++}
++
+ pkg_pretend() {
+ 	pre_build_checks
+ }
+@@ -169,6 +172,8 @@ src_prepare() {
+ 			--destdir="${rust_stage0_root}" --prefix=/ || die
+ 	fi
+ 
++	clear_vendor_checksums libc
++
+ 	default
+ }
+ 
+@@ -472,6 +477,11 @@ src_install() {
+ 
+ 	insinto /etc/env.d/rust
+ 	doins "${T}/provider-${P}"
++
++	# remove some clutter
++	pushd "${ED}/usr/lib/rustlib"
++	rm components install.log manifest-* rust-installer-version uninstall.sh || die
++	popd
+ }
+ 
+ pkg_postinst() {
+@@ -487,15 +497,6 @@ pkg_postinst() {
+ 	if has_version app-editors/gvim || has_version app-editors/vim; then
+ 		elog "install app-vim/rust-vim to get vim support for rust."
+ 	fi
+-
+-	if use elibc_musl; then
+-		ewarn "${PN} on *-musl targets is configured with crt-static"
+-		ewarn ""
+-		ewarn "you will need to set RUSTFLAGS=\"-C target-feature=-crt-static\" in make.conf"
+-		ewarn "to use it with portage, otherwise you may see failures like"
+-		ewarn "error: cannot produce proc-macro for serde_derive v1.0.98 as the target "
+-		ewarn "x86_64-unknown-linux-musl does not support these crate types"
+-	fi
+ }
+ 
+ pkg_postrm() {
 diff --git a/dev-libs/libffi/libffi-3.3-r1.ebuild b/dev-libs/libffi/libffi-3.3-r1.ebuild
 index 996855591a..d9f612fae3 100644
 --- a/dev-libs/libffi/libffi-3.3-r1.ebuild
@@ -212,7 +260,7 @@ index 4ba64203f4..acd4af1ff8 100644
  	virtual/libintl
  	virtual/opengl
 diff --git a/sys-devel/clang/clang-10.0.1.ebuild b/sys-devel/clang/clang-10.0.1.ebuild
-index d7adac0611..ff81719066 100644
+index d7adac0611..f5a0ee3034 100644
 --- a/sys-devel/clang/clang-10.0.1.ebuild
 +++ b/sys-devel/clang/clang-10.0.1.ebuild
 @@ -30,8 +30,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
@@ -289,6 +337,15 @@ index d7adac0611..ff81719066 100644
  			-DLLVM_BUILD_DOCS=ON
  			-DLLVM_ENABLE_SPHINX=ON
  			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
+@@ -335,7 +340,7 @@ src_install() {
+ 	local llvm_version=$(llvm-config --version) || die
+ 	local clang_version=$(ver_cut 1 "${llvm_version}")
+ 	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
+-	local clang_tools=( clang clang++ clang-cl clang-cpp )
++	local clang_tools=( clang clang++ clang-cl clang-cpp cpp )
+ 	local abi i
+ 
+ 	# cmake gives us:
 diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 index f4d8d84f5e..16a1d7cd28 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
@@ -416,11 +473,11 @@ index 2bdf59cced..3cef781a38 100644
  			-DCMAKE_INSTALL_MANDIR="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
  			-DLLVM_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
  			-DSPHINX_WARNINGS_AS_ERRORS=OFF
-diff --git a/www-client/firefox/firefox-78.0.2.ebuild b/www-client/firefox/firefox-78.0.2.ebuild
-index ee6b26b18e..66f181c5c3 100644
---- a/www-client/firefox/firefox-78.0.2.ebuild
-+++ b/www-client/firefox/firefox-78.0.2.ebuild
-@@ -146,7 +146,7 @@ DEPEND="${CDEPEND}
+diff --git a/www-client/firefox/firefox-79.0.ebuild b/www-client/firefox/firefox-79.0.ebuild
+index 446adc1705..30b4b68e45 100644
+--- a/www-client/firefox/firefox-79.0.ebuild
++++ b/www-client/firefox/firefox-79.0.ebuild
+@@ -147,7 +147,7 @@ DEPEND="${CDEPEND}
  			!clang? ( sys-devel/llvm:10 )
  			clang? (
  				=sys-devel/lld-10*
