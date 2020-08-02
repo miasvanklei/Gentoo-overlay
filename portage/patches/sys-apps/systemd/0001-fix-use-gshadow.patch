@@ -1,21 +1,20 @@
 --- a/src/shared/userdb.c	2020-02-06 17:42:03.256439760 +0100
 +++ b/src/shared/userdb.c	2020-02-06 17:48:17.075146448 +0100
 @@ -5,7 +5,6 @@
- #include "dirent-util.h"
+ #include "dlfcn-util.h"
  #include "errno-util.h"
  #include "fd-util.h"
 -#include "group-record-nss.h"
  #include "missing_syscall.h"
  #include "parse-util.h"
  #include "set.h"
-@@ -16,6 +15,11 @@
+@@ -16,6 +15,10 @@
  #include "userdb.h"
  #include "varlink.h"
  
 +#if ENABLE_GSHADOW
 +#include "group-record-nss.h"
 +#endif
-+
 +
  DEFINE_PRIVATE_HASH_OPS_WITH_VALUE_DESTRUCTOR(link_hash_ops, void, trivial_hash_func, trivial_compare_func, Varlink, varlink_unref);
  
@@ -26,8 +25,8 @@
  
 +#if ENABLE_GSHADOW
          if (!FLAGS_SET(flags, USERDB_AVOID_NSS) && !(iterator && iterator->nss_covered)) {
-                 r = userdb_nss_compat_disable();
-                 if (r >= 0 || r == -EBUSY) {
+                 r = userdb_iterator_block_nss_systemd(iterator);
+                 if (r >= 0) {
 @@ -830,6 +835,7 @@
                                  return r;
                  }
@@ -42,8 +41,8 @@
  
 +#if ENABLE_GSHADOW
          if (!FLAGS_SET(flags, USERDB_AVOID_NSS) && !(iterator && iterator->nss_covered)) {
-                 r = userdb_nss_compat_disable();
-                 if (r >= 0 || r == -EBUSY) {
+                 r = userdb_iterator_block_nss_systemd(iterator);
+                 if (r >= 0) {
 @@ -876,6 +883,7 @@
                                  return r;
                  }
@@ -81,12 +80,12 @@
  
          assert(ret);
 @@ -1057,6 +1069,7 @@
-         if (iterator->nss_lock < 0 && iterator->nss_lock != -EBUSY)
-                 return iterator->nss_lock;
+         if (r < 0)
+                 return r;
  
 +#if ENABLE_GSHADOW
          /* We ignore all errors here, since the group might be defined by a userdb native service, and we queried them already above. */
-         (void) nss_group_record_by_name(name, &gr);
+         (void) nss_group_record_by_name(name, false, &gr);
          if (gr) {
 @@ -1070,6 +1083,7 @@
                  if (!iterator->found_group_name)

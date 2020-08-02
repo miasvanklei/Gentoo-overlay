@@ -201,9 +201,9 @@ src_prepare() {
 
 	if ! use vanilla; then
 		PATCHES+=(
-			"${FILESDIR}/gentoo-Dont-enable-audit-by-default.patch"
-			"${FILESDIR}/gentoo-systemd-user-pam.patch"
-			"${FILESDIR}/gentoo-generator-path.patch"
+#			"${FILESDIR}/gentoo-Dont-enable-audit-by-default.patch"
+#			"${FILESDIR}/gentoo-systemd-user-pam.patch"
+#			"${FILESDIR}/gentoo-generator-path.patch"
 		)
 	fi
 
