@@ -1,0 +1,186 @@
+--- a/Makefile.in	2020-08-05 11:04:50.395643022 +0200
++++ b/Makefile.in	2020-08-05 11:06:14.587375126 +0200
+@@ -190,8 +190,7 @@
+ ETAGS = etags
+ CTAGS = ctags
+ CSCOPE = cscope
+-DIST_SUBDIRS = config m4 lib libelf libcpu backends libebl libdwelf \
+-	libdwfl libdw libasm src po doc tests debuginfod
++DIST_SUBDIRS = config m4 libelf po doc tests debuginfod
+ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
+ 	$(top_srcdir)/config/ar-lib $(top_srcdir)/config/compile \
+ 	$(top_srcdir)/config/config.guess \
+@@ -396,8 +395,7 @@
+ # Don't make make repeat.
+ AM_MAKEFLAGS = --no-print-directory
+ pkginclude_HEADERS = version.h
+-SUBDIRS = config m4 lib libelf libcpu backends libebl libdwelf libdwfl \
+-	libdw libasm src po doc tests $(am__append_1)
++SUBDIRS = config m4 libelf po doc tests $(am__append_1)
+ EXTRA_DIST = elfutils.spec GPG-KEY NOTES CONTRIBUTING \
+ 	     COPYING COPYING-GPLV2 COPYING-LGPLV3
+ 
+--- a/config/Makefile.in	2020-08-05 11:06:27.733489110 +0200
++++ b/config/Makefile.in	2020-08-05 11:07:13.272883291 +0200
+@@ -308,7 +308,7 @@
+ 	     debuginfod.service debuginfod.sysconfig
+ 
+ pkgconfigdir = $(libdir)/pkgconfig
+-pkgconfig_DATA = libelf.pc libdw.pc $(am__append_1)
++pkgconfig_DATA = libelf.pc $(am__append_1)
+ all: all-am
+ 
+ .SUFFIXES:
+--- a/configure	2020-08-05 11:08:04.903329021 +0200
++++ b/configure	2020-08-05 11:08:40.729637650 +0200
+@@ -5122,54 +5122,6 @@
+ fi
+ 
+ 
+-# We use -std=gnu99 but have explicit checks for some language constructs
+-# and GNU extensions since some compilers claim GNU99 support, but don't
+-# really support all language extensions. In particular we need
+-# Mixed Declarations and Code
+-# https://gcc.gnu.org/onlinedocs/gcc/Mixed-Declarations.html
+-# Nested Functions
+-# https://gcc.gnu.org/onlinedocs/gcc/Nested-Functions.html
+-# Arrays of Variable Length
+-# https://gcc.gnu.org/onlinedocs/gcc/Variable-Length.html
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gcc with GNU99 support" >&5
+-$as_echo_n "checking for gcc with GNU99 support... " >&6; }
+-if ${ac_cv_c99+:} false; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  old_CFLAGS="$CFLAGS"
+-CFLAGS="$CFLAGS -std=gnu99"
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-int foo (int a)
+-{
+-  for (int i = 0; i < a; ++i) if (i % 4) break; int s = a; return s;
+-}
+-
+-double bar (double a, double b)
+-{
+-  double square (double z) { return z * z; }
+-  return square (a) + square (b);
+-}
+-
+-void baz (int n)
+-{
+-  struct S { int x[n]; };
+-}
+-_ACEOF
+-if ac_fn_c_try_compile "$LINENO"; then :
+-  ac_cv_c99=yes
+-else
+-  ac_cv_c99=no
+-fi
+-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+-CFLAGS="$old_CFLAGS"
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_c99" >&5
+-$as_echo "$ac_cv_c99" >&6; }
+-if test "x$ac_cv_c99" != xyes; then :
+-  as_fn_error $? "gcc with GNU99 support required" "$LINENO" 5
+-fi
+-
+ { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether gcc supports __attribute__((visibility()))" >&5
+ $as_echo_n "checking whether gcc supports __attribute__((visibility()))... " >&6; }
+ if ${ac_cv_visibility+:} false; then :
+@@ -6564,84 +6564,6 @@
+ 
+ fi
+ 
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-#include <argp.h>
+-int
+-main ()
+-{
+-int argc=1; char *argv={"test"}; argp_parse(0,argc,&argv,0,0,0); return 0;
+-
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_link "$LINENO"; then :
+-  libc_has_argp="true"
+-else
+-  libc_has_argp="false"
+-
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext conftest.$ac_ext
+-
+-if test "$libc_has_argp" = "false" ; then
+-	{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: \"libc does not have argp\"" >&5
+-$as_echo "$as_me: WARNING: \"libc does not have argp\"" >&2;}
+-	{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for argp_parse in -largp" >&5
+-$as_echo_n "checking for argp_parse in -largp... " >&6; }
+-if ${ac_cv_lib_argp_argp_parse+:} false; then :
+-  $as_echo_n "(cached) " >&6
+-else
+-  ac_check_lib_save_LIBS=$LIBS
+-LIBS="-largp  $LIBS"
+-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+-/* end confdefs.h.  */
+-
+-/* Override any GCC internal prototype to avoid an error.
+-   Use char because int might match the return type of a GCC
+-   builtin and then its argument prototype would still apply.  */
+-#ifdef __cplusplus
+-extern "C"
+-#endif
+-char argp_parse ();
+-int
+-main ()
+-{
+-return argp_parse ();
+-  ;
+-  return 0;
+-}
+-_ACEOF
+-if ac_fn_c_try_link "$LINENO"; then :
+-  ac_cv_lib_argp_argp_parse=yes
+-else
+-  ac_cv_lib_argp_argp_parse=no
+-fi
+-rm -f core conftest.err conftest.$ac_objext \
+-    conftest$ac_exeext conftest.$ac_ext
+-LIBS=$ac_check_lib_save_LIBS
+-fi
+-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_argp_argp_parse" >&5
+-$as_echo "$ac_cv_lib_argp_argp_parse" >&6; }
+-if test "x$ac_cv_lib_argp_argp_parse" = xyes; then :
+-  have_argp="true"
+-else
+-  have_argp="false"
+-fi
+-
+-
+-	if test "$have_argp" = "false"; then
+-		as_fn_error $? "\"no libargp found\"" "$LINENO" 5
+-	else
+-		argp_LDADD="-largp"
+-	fi
+-else
+-	argp_LDADD=""
+-fi
+-
+-
+-
+ ac_config_files="$ac_config_files doc/Makefile"
+ 
+ 
+--- a/libelf/Makefile.in	2020-08-05 11:23:59.891310754 +0200
++++ b/libelf/Makefile.in	2020-08-05 11:24:12.027402559 +0200
+@@ -597,7 +597,7 @@
+ 
+ libelf_pic_a_SOURCES = 
+ am_libelf_pic_a_OBJECTS = $(libelf_a_SOURCES:.c=.os)
+-libelf_so_DEPS = ../lib/libeu.a
++libelf_so_DEPS = 
+ libelf_so_LDLIBS = $(libelf_so_DEPS) -lz $(am__append_5)
+ libelf_so_LIBS = libelf_pic.a
+ libelf_so_SOURCES = 
