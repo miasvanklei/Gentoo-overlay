@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="12"
+K_GENPATCHES_VER="2"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -27,39 +27,37 @@ pkg_pretend() {
 src_prepare() {
 	if use pinebook-pro; then
 		eapply "${FILESDIR}"/rockchip-increase-framebuffer-size.patch
-		eapply "${FILESDIR}"/pinebook-pro/002-add-cw2015.patch
-		eapply "${FILESDIR}"/pinebook-pro/006-usb-c.patch
-		eapply "${FILESDIR}"/pinebook-pro/007-generic-fixes.patch
-		eapply "${FILESDIR}"/pinebook-pro/008-add-cdn_dp-audio.patch
-		eapply "${FILESDIR}"/pinebook-pro/009-pinebook-pro-dts.patch
-		eapply "${FILESDIR}"/pinebook-pro/011-revert-round-up-before-giving-to-the-clock-framework.patch
-		eapply "${FILESDIR}"/pinebook-pro/012-rk3399-gamma_support.patch
+		eapply "${FILESDIR}"/pinebook-pro/001-pinebook-pro-dts.patch
+		eapply "${FILESDIR}"/pinebook-pro/002-add-cdn_dp-audio.patch
+		eapply "${FILESDIR}"/pinebook-pro/003-usb-c.patch
+		eapply "${FILESDIR}"/pinebook-pro/004-generic-fixes.patch
+		eapply "${FILESDIR}"/pinebook-pro/005-revert-round-up-before-giving-to-the-clock-framework.patch
+		eapply "${FILESDIR}"/pinebook-pro/006-rk3399-gamma_support.patch
 	fi
 
 	if use pine-h64; then
-		eapply "${FILESDIR}"/pine-h64/0003-hdmi-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0004-sun4i-i2s-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0005-cedrus-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0006-wip-cec-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/0018-pine-add-cpu-supply-regulator.patch
-		eapply "${FILESDIR}"/pine-h64/0019-h6-add-cpu-opp-table.patch
-		eapply "${FILESDIR}"/pine-h64/0020-h6-add-gpu-opp-table.patch
-		eapply "${FILESDIR}"/pine-h64/0022-add-support-for-rtl8723cs_bs.patch
-		eapply "${FILESDIR}"/pine-h64/03-pineh64-enable-usb3.patch
-		eapply "${FILESDIR}"/pine-h64/05-sound-hack.patch
-		eapply "${FILESDIR}"/pine-h64/13-h6-add-ext_rmii_pins.patch
-		eapply "${FILESDIR}"/pine-h64/14-eMMC-workaround.patch
-		eapply "${FILESDIR}"/pine-h64/15-RTC-workaround.patch
-		eapply "${FILESDIR}"/pine-h64/16-fix-de2-buggy-layer.patch
-		eapply "${FILESDIR}"/pine-h64/17-one-ui-plane-as-cursor.patch
+		eapply "${FILESDIR}"/pine-h64/001-h6-add-gpu-opp-table.patch
+		eapply "${FILESDIR}"/pine-h64/002-pineh64-enable-usb3.patch
+		eapply "${FILESDIR}"/pine-h64/003-eMMC-workaround.patch
+		eapply "${FILESDIR}"/pine-h64/004-add-support-for-rtl8723cs_bs.patch
+		eapply "${FILESDIR}"/pine-h64/005-RTC-workaround.patch
+		eapply "${FILESDIR}"/pine-h64/006-hdmi-improvements.patch
+		eapply "${FILESDIR}"/pine-h64/007-sun4i-i2s-improvements.patch
+		eapply "${FILESDIR}"/pine-h64/008-cedrus-improvements.patch
+		eapply "${FILESDIR}"/pine-h64/009-wip-cec-improvements.patch
+		eapply "${FILESDIR}"/pine-h64/010-sound-hack.patch
+		eapply "${FILESDIR}"/pine-h64/011-h6-add-ext_rmii_pins.patch
+		eapply "${FILESDIR}"/pine-h64/012-fix-de2-buggy-layer.patch
+		eapply "${FILESDIR}"/pine-h64/013-one-ui-plane-as-cursor.patch
 	fi
 
 	if use pinebook-pro || use pine-h64; then
-		eapply "${FILESDIR}"/pinebook-pro/003-hdmi-codec.patch
+		eapply "${FILESDIR}"/003-hdmi-codec.patch
 		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
-		eapply "${FILESDIR}"/revert-use-subsections.patch
 	fi
+
+#	eapply "${FILESDIR}"/fix-when-no-symtab_shndx.patch
 
 	eapply_user
 }

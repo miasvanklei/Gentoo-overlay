@@ -1,5 +1,5 @@
---- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-06-01 01:49:15.000000000 +0200
-+++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2020-06-01 16:05:48.292178199 +0200
+--- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
 @@ -28,6 +28,13 @@
  		pwms = <&pwm0 0 740740 0>;
  	};
@@ -16,7 +16,7 @@
  		backlight = <&backlight>;
 @@ -102,12 +109,11 @@
  
- 		red-led {
+ 		red_led: led-1 {
  			color = <LED_COLOR_ID_RED>;
 -			default-state = "off";
 +			default-state = "on";
@@ -61,7 +61,16 @@
  &i2c0 {
  	clock-frequency = <400000>;
  	i2c-scl-falling-time-ns = <4>;
-@@ -708,6 +720,9 @@
+@@ -698,7 +711,7 @@
+ 
+ 		connector {
+ 			compatible = "usb-c-connector";
+-			data-role = "host";
++			data-role = "dual";
+ 			label = "USB-C";
+ 			op-sink-microwatt = <1000000>;
+ 			power-role = "dual";
+@@ -708,6 +721,9 @@
  				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
  			try-power-role = "sink";
  
@@ -71,7 +80,7 @@
  			ports {
  				#address-cells = <1>;
  				#size-cells = <0>;
-@@ -741,17 +756,39 @@
+@@ -741,6 +757,24 @@
  			};
  		};
  	};
@@ -88,19 +97,15 @@
 +			0x06 0x1A 0x30 0x5A 0x85 0x93 0x96 0x2D
 +			0x48 0x77 0x9C 0xB3 0x80 0x52 0x94 0xCB
 +			0x2F 0x00 0x64 0xA5 0xB5 0x11 0xF0 0x11
-+		>;
-+		cellwise,monitor-interval-ms = <5000>;
-+		monitored-battery = <&bat>;
-+		power-supplies = <&mains_charger>, <&fusb0>;
-+	};
++               >;
++               cellwise,monitor-interval-ms = <5000>;
++               monitored-battery = <&bat>;
++               power-supplies = <&mains_charger>, <&fusb0>;
++       };
  };
  
  &i2s1 {
--	#sound-dai-cells = <0>;
--	pinctrl-names = "default";
- 	pinctrl-0 = <&i2s_8ch_mclk_gpio>, <&i2s1_2ch_bus>;
- 	rockchip,capture-channels = <8>;
- 	rockchip,playback-channels = <8>;
+@@ -751,6 +785,12 @@
  	status = "okay";
  };
  
@@ -113,7 +118,7 @@
  &io_domains {
  	audio-supply = <&vcc_3v0>;
  	gpio1830-supply = <&vcc_3v0>;
-@@ -958,6 +995,7 @@
+@@ -957,6 +997,7 @@
  };
  
  &tcphy0 {
