@@ -1,0 +1,20 @@
+--- a/src/make.bash	2020-08-13 19:50:08.750104917 +0200
++++ b/src/make.bash	2020-08-13 19:50:53.617842495 +0200
+@@ -130,13 +130,10 @@
+ 	export CGO_ENABLED=0
+ fi
+ 
+-# On Alpine Linux, use the musl dynamic linker/loader
+-if [ -f "/etc/alpine-release" ]; then
+-	if type readelf >/dev/null 2>&1; then
+-		echo "int main() { return 0; }" | ${CC:-gcc} -o ./test-alpine-ldso -x c -
+-		export GO_LDSO=$(readelf -l ./test-alpine-ldso | grep 'interpreter:' | sed -e 's/^.*interpreter: \(.*\)[]]/\1/')
+-		rm -f ./test-alpine-ldso
+-	fi
++if type readelf >/dev/null 2>&1; then
++	echo "int main() { return 0; }" | ${CC:-gcc} -o ./test-alpine-ldso -x c -
++	export GO_LDSO=$(readelf -l ./test-alpine-ldso | grep 'interpreter:' | sed -e 's/^.*interpreter: \(.*\)[]]/\1/')
++	rm -f ./test-alpine-ldso
+ fi
+ 
+ # Clean old generated file that will cause problems in the build.
