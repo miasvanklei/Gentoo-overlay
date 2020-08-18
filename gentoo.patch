@@ -260,21 +260,20 @@ index 3e8e9eef5c..8338c2d752 100644
  	virtual/libintl
  	virtual/opengl
 diff --git a/sys-devel/clang/clang-10.0.1.ebuild b/sys-devel/clang/clang-10.0.1.ebuild
-index d7adac0611..f5a0ee3034 100644
+index e50c60093b..a8cdbb01d8 100644
 --- a/sys-devel/clang/clang-10.0.1.ebuild
 +++ b/sys-devel/clang/clang-10.0.1.ebuild
-@@ -30,8 +30,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
+@@ -30,7 +30,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
  KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
--IUSE="debug default-compiler-rt default-libcxx doc +static-analyzer
--	test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
-+IUSE="debug +default-compiler-rt +default-libcxx +default-libunwind doc +gcc-symlinks
-+	+static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
+-IUSE="debug default-compiler-rt default-libcxx default-lld doc
++IUSE="debug +default-compiler-rt +default-libcxx +default-lld
++	+default-libunwind doc +gcc-symlinks
+ 	+static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
  REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
- RESTRICT="!test? ( test )"
-@@ -43,7 +43,7 @@ RDEPEND="
+@@ -43,7 +44,7 @@ RDEPEND="
  	${PYTHON_DEPS}"
  DEPEND="${RDEPEND}"
  BDEPEND="
@@ -283,17 +282,15 @@ index d7adac0611..f5a0ee3034 100644
  	xml? ( virtual/pkgconfig )
  	${PYTHON_DEPS}"
  RDEPEND="${RDEPEND}
-@@ -53,7 +53,8 @@ PDEPEND="
- 	sys-devel/clang-common
+@@ -54,6 +55,7 @@ PDEPEND="
  	~sys-devel/clang-runtime-${PV}
  	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
--	default-libcxx? ( >=sys-libs/libcxx-${PV} )"
-+	default-libcxx? ( >=sys-libs/libcxx-${PV} )
-+	default-libunwind? ( >=sys-libs/llvm-libunwind-${PV} )"
+ 	default-libcxx? ( >=sys-libs/libcxx-${PV} )
++	default-libunwind? ( >=sys-libs/llvm-libunwind-${PV} )
+ 	default-lld? ( sys-devel/lld )"
  
  # Multilib notes:
- # 1. ABI_* flags control ABIs libclang* is built for only.
-@@ -195,13 +196,11 @@ get_distribution_components() {
+@@ -196,13 +198,11 @@ get_distribution_components() {
  			find-all-symbols
  			modularize
  			pp-trace
@@ -309,7 +306,7 @@ index d7adac0611..f5a0ee3034 100644
  			docs-clang-html
  			docs-clang-tools-html
  		)
-@@ -244,9 +243,13 @@ multilib_src_configure() {
+@@ -245,10 +245,14 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -320,11 +317,12 @@ index d7adac0611..f5a0ee3034 100644
 +		# override default stdlib and rtlib and unwind lib
  		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
+ 		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
 +		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-libunwind libunwind "")
  
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
-@@ -260,8 +263,10 @@ multilib_src_configure() {
+@@ -262,8 +266,10 @@ multilib_src_configure() {
  		mycmakeargs+=(
  			# normally copied from LLVM_INCLUDE_DOCS but the latter
  			# is lacking value in stand-alone builds
@@ -337,7 +335,7 @@ index d7adac0611..f5a0ee3034 100644
  			-DLLVM_BUILD_DOCS=ON
  			-DLLVM_ENABLE_SPHINX=ON
  			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
-@@ -335,7 +340,7 @@ src_install() {
+@@ -337,7 +343,7 @@ src_install() {
  	local llvm_version=$(llvm-config --version) || die
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
@@ -474,7 +472,7 @@ index 2bdf59cced..3cef781a38 100644
  			-DLLVM_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
  			-DSPHINX_WARNINGS_AS_ERRORS=OFF
 diff --git a/www-client/firefox/firefox-79.0-r2.ebuild b/www-client/firefox/firefox-79.0-r2.ebuild
-index 3771105111..4c0a3a9d25 100644
+index adf273ae5c..a703dfd04c 100644
 --- a/www-client/firefox/firefox-79.0-r2.ebuild
 +++ b/www-client/firefox/firefox-79.0-r2.ebuild
 @@ -147,7 +147,7 @@ DEPEND="${CDEPEND}
