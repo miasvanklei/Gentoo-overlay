@@ -1,0 +1,33 @@
+--- a/src/core/ConfigureChecks.cmake	2020-08-21 14:05:06.532349041 +0200
++++ b/src/core/ConfigureChecks.cmake	2020-08-21 14:05:20.476476141 +0200
+@@ -24,6 +24,7 @@
+ check_include_files("sys/param.h;sys/mount.h"  HAVE_SYS_MOUNT_H)
+ 
+ check_include_files(sys/types.h   HAVE_SYS_TYPES_H)
++check_include_files(paths.h       HAVE_PATHS_H)
+ check_include_files(fstab.h       HAVE_FSTAB_H)
+ check_include_files(sys/param.h   HAVE_SYS_PARAM_H)
+ 
+--- a/src/core/kmountpoint.cpp	2020-08-21 14:02:42.621988507 +0200
++++ b/src/core/kmountpoint.cpp	2020-08-21 14:06:15.817973419 +0200
+@@ -62,6 +62,10 @@
+ #include <sys/mount.h>
+ #endif
+ 
++#if HAVE_PATHS_H
++#include <paths.h>
++#endif
++
+ #if HAVE_FSTAB_H
+ #include <fstab.h>
+ #endif
+--- a/src/core/config-kmountpoint.h.cmake	2020-08-21 14:07:36.521679979 +0200
++++ b/src/core/config-kmountpoint.h.cmake	2020-08-21 14:07:17.767517607 +0200
+@@ -6,6 +6,7 @@
+ #cmakedefine01 HAVE_SYS_MOUNT_H
+ #cmakedefine01 HAVE_SYS_TYPES_H
+ #cmakedefine01 HAVE_FSTAB_H
++#cmakedefine01 HAVE_PATHS_H
+ #cmakedefine01 HAVE_SYS_PARAM_H
+ #cmakedefine01 HAVE_VOLMGT
+ #cmakedefine01 GETMNTINFO_USES_STATVFS
