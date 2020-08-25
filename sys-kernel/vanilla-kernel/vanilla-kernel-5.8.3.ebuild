@@ -40,7 +40,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/pine-h64/002-pineh64-enable-usb3.patch
 		eapply "${FILESDIR}"/pine-h64/003-eMMC-workaround.patch
 		eapply "${FILESDIR}"/pine-h64/004-add-support-for-rtl8723cs_bs.patch
-		eapply "${FILESDIR}"/pine-h64/005-RTC-workaround.patch
 		eapply "${FILESDIR}"/pine-h64/006-hdmi-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/007-sun4i-i2s-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/008-cedrus-improvements.patch
@@ -53,11 +52,8 @@ src_prepare() {
 
 	if use pinebook-pro || use pine-h64; then
 		eapply "${FILESDIR}"/003-hdmi-codec.patch
-		eapply "${FILESDIR}"/mmu-context-lifetime-not-bount-to_panfrost_priv.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
-
-#	eapply "${FILESDIR}"/fix-when-no-symtab_shndx.patch
 
 	eapply_user
 }
