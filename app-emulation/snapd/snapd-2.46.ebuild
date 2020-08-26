@@ -18,18 +18,18 @@ RESTRICT="primaryuri"
 MY_S="${S}/src/github.com/snapcore/${PN}"
 PKG_LINGUAS="am bs ca cs da de el en_GB es fi fr gl hr ia id it ja lt ms nb oc pt_BR pt ru sv tr ug zh_CN"
 
-CONFIG_CHECK="	CGROUPS \
-		CGROUP_DEVICE \
-		CGROUP_FREEZER \
-		NAMESPACES \
-		SQUASHFS \
-		SQUASHFS_ZLIB \
-		SQUASHFS_LZO \
-		SQUASHFS_XZ \
-		BLK_DEV_LOOP \
-		SECCOMP \
-		SECCOMP_FILTER \
-		SECURITY_APPARMOR"
+CONFIG_CHECK="	~CGROUPS \
+		~CGROUP_DEVICE \
+		~CGROUP_FREEZER \
+		~NAMESPACES \
+		~SQUASHFS \
+		~SQUASHFS_ZLIB \
+		~SQUASHFS_LZO \
+		~SQUASHFS_XZ \
+		~BLK_DEV_LOOP \
+		~SECCOMP \
+		~SECCOMP_FILTER \
+		~SECURITY_APPARMOR"
 
 export GOPATH="${S}/${PN}"
 
