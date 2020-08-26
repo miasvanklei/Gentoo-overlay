@@ -110,6 +110,10 @@ src_install() {
 		INSTALL_MOD_PATH="${ED}" \
 		install modules_install
 
+	# remove unreachable folders
+	rm "${ED}"/lib/modules/${PV}-vanilla/build || die
+	rm "${ED}"/lib/modules/${PV}-vanilla/source || die
+
 	save_config "${WORKDIR}"/build/.config
 
 	if use arm64; then
