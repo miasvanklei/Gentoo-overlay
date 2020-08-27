@@ -7,16 +7,17 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-RUNTIME_PV="5.0.0-preview.7.20364.11"
-SDK_PV="5.0.100-preview.7.20366.6"
+RUNTIME_PV="5.0.0-preview.8.20407.11"
+SDK_PV="5.0.100-preview.8.20417.9"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 
 SRC_URI="
 	arm64? (
-		https://download.visualstudio.microsoft.com/download/pr/a7d933ce-5f1d-4c7b-a388-509ee6ee710c/152fa9acb7ee9cf34d7cb0eeeb36d448/${SDK}-arm64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/a1e93182-8026-4330-b78a-ee7d721107a2/003c59fc228a220df40d90d5ac434873/${SDK}-arm64.tar.gz
 	)
 	amd64? (
-		https://download.visualstudio.microsoft.com/download/pr/6e9bdda1-72b5-4d2e-8908-be9321b8db26/cbc8ab6c3a1aca2a8dd92e272edd3293/${SDK}-x64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/c58adb8a-49cf-466c-9b72-e4c51edae0e5/f915b953a5bfdafc300bd277d80c3513/${SDK}-x64.tar.gz
+
 	)
 	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> ${P}.tar.gz"
 
@@ -128,6 +129,9 @@ src_prepare() {
 }
 
 src_compile() {
+	local artifacts_corefx="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
+	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
+
 	einfo "building corefx"
 	cd "${COREFX_S}" || die
 	./build-native.sh ${DARCH} release verbose skipgenerateversion || die
@@ -139,7 +143,8 @@ src_compile() {
 	einfo "building coresetup"
 	cd "${CORESETUP_S}" || die
 	./build.sh ${DARCH} release verbose skipmanaged hostver ${RUNTIME_PV} fxrver ${RUNTIME_PV} policyver ${RUNTIME_PV} \
-		commithash 3c523a6 apphostver ${RUNTIME_PV} || die
+		commithash 3c523a6 apphostver ${RUNTIME_PV} coreclrartifacts ${artifacts_coreclr} \
+		nativelibsartifacts ${artifacts_corefx} || die
 }
 
 src_install() {
