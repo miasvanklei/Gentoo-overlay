@@ -7,8 +7,8 @@ CABAL_FEATURES="lib profile haddock hoogle hscolour test-suite"
 inherit git-r3 haskell-cabal
 
 DESCRIPTION="The core of an IDE"
-HOMEPAGE="https://github.com/digital-asset/ghcide#readme"
-EGIT_REPO_URI="https://github.com/digital-asset/ghcide.git"
+HOMEPAGE="https://github.com/haskell/ghcide#readme"
+EGIT_REPO_URI="https://github.com/haskell/ghcide.git"
 
 LICENSE="Apache-2.0"
 SLOT="0/${PV}"
@@ -26,7 +26,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/hashable:=[profile?]
 	=dev-haskell/haskell-lsp-0.22.0.0:=[profile?]
 	=dev-haskell/haskell-lsp-types-0.22.0.0:=[profile?]
-	>=dev-haskell/hie-bios-0.6:=[profile?] <dev-haskell/hie-bios-0.7:=[profile?]
+	>=dev-haskell/hie-bios-0.7:=[profile?] <dev-haskell/hie-bios-0.8:=[profile?]
 	dev-haskell/hslogger:=[profile?]
 	dev-haskell/mtl:=[profile?]
 	dev-haskell/network-uri:=[profile?]
