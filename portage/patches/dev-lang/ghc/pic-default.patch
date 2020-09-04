@@ -79,23 +79,7 @@
 -                                         -- #10597 for more
 -                                         -- information.
 -    _                      -> []
-+default_PIC platform = [Opt_PIC]
++default_PIC _ = [Opt_PIC]
  
  -- General flags that are switched on/off when other general flags are switched
  -- on
---- a/compiler/main/DriverPipeline.hs     2018-04-15 17:40:13.449589908 +0200
-+++ b/compiler/main/DriverPipeline.hs     2018-04-15 17:41:11.139481368 +0200
-@@ -2128,12 +2127,8 @@
-       osInfo = platformOS (targetPlatform dflags)
-       ld_r args cc = SysTools.runLink dflags ([
-                        SysTools.Option "-nostdlib",
--                       SysTools.Option "-Wl,-r"
-+                       SysTools.Option "-r"
-                      ]
--                        -- See Note [No PIE while linking] in DynFlags
--                     ++ (if toolSettings_ccSupportsNoPie toolSettings'
--                          then [SysTools.Option "-no-pie"]
--                          else [])
- 
-                      ++ (if any (cc ==) [Clang, AppleClang, AppleClang51]
-                           then []
