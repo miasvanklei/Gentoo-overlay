@@ -20,6 +20,7 @@ IUSE=""
 RDEPEND="
 	dev-haskell/ghc-paths:=[profile?]
 	dev-haskell/transformers:=[profile?]
+	dev-haskell/safe-exceptions:=[profile?]
 	>=dev-lang/ghc-7.10.1:=
 "
 DEPEND="${RDEPEND}
