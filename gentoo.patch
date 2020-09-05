@@ -111,10 +111,27 @@ index bc6f0cf7f0..001c65de87 100644
  		--without-ikvm-native
  		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.46.0.ebuild b/dev-lang/rust/rust-1.46.0.ebuild
-index 68cc5bb4cb..e3429b0cf1 100644
+index 68cc5bb4cb..db9147a429 100644
 --- a/dev-lang/rust/rust-1.46.0.ebuild
 +++ b/dev-lang/rust/rust-1.46.0.ebuild
-@@ -82,7 +82,6 @@ DEPEND="
+@@ -50,13 +50,14 @@ IUSE="clippy cpu_flags_x86_sse2 debug doc libressl miri nightly parallel-compile
+ # 3. Specify LLVM_MAX_SLOT, e.g. 10.
+ LLVM_DEPEND="
+ 	|| (
++		sys-devel/llvm:11[${LLVM_TARGET_USEDEPS// /,}]
+ 		sys-devel/llvm:10[${LLVM_TARGET_USEDEPS// /,}]
+ 		sys-devel/llvm:9[${LLVM_TARGET_USEDEPS// /,}]
+ 	)
+-	<sys-devel/llvm-11:=
++	<sys-devel/llvm-12:=
+ 	wasm? ( sys-devel/lld )
+ "
+-LLVM_MAX_SLOT=10
++LLVM_MAX_SLOT=11
+ 
+ BOOTSTRAP_DEPEND="|| ( >=dev-lang/rust-1.$(($(ver_cut 2) - 1)) >=dev-lang/rust-bin-1.$(($(ver_cut 2) - 1)) )"
+ 
+@@ -82,7 +83,6 @@ DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
  	libressl? ( dev-libs/libressl:0= )
@@ -122,7 +139,7 @@ index 68cc5bb4cb..e3429b0cf1 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -166,6 +165,10 @@ pre_build_checks() {
+@@ -166,6 +166,10 @@ pre_build_checks() {
  	CHECKREQS_DISK_BUILD=${M}M check-reqs_pkg_${EBUILD_PHASE}
  }
  
@@ -133,7 +150,7 @@ index 68cc5bb4cb..e3429b0cf1 100644
  pkg_pretend() {
  	pre_build_checks
  }
-@@ -200,6 +203,8 @@ src_prepare() {
+@@ -200,6 +204,8 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -142,7 +159,7 @@ index 68cc5bb4cb..e3429b0cf1 100644
  	default
  }
  
-@@ -519,6 +524,11 @@ src_install() {
+@@ -519,6 +525,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -154,7 +171,7 @@ index 68cc5bb4cb..e3429b0cf1 100644
  }
  
  pkg_postinst() {
-@@ -534,15 +544,6 @@ pkg_postinst() {
+@@ -534,15 +545,6 @@ pkg_postinst() {
  	if has_version app-editors/gvim || has_version app-editors/vim; then
  		elog "install app-vim/rust-vim to get vim support for rust."
  	fi
@@ -194,6 +211,19 @@ index 996855591a..d9f612fae3 100644
  		--disable-multi-os-directory \
  		$(use_enable static-libs static) \
  		$(use_enable pax_kernel pax_emutramp) \
+diff --git a/dev-python/bitarray/bitarray-0.8.3.ebuild b/dev-python/bitarray/bitarray-0.8.3.ebuild
+index 43f4112ed5..43bfdb3ee8 100644
+--- a/dev-python/bitarray/bitarray-0.8.3.ebuild
++++ b/dev-python/bitarray/bitarray-0.8.3.ebuild
+@@ -3,7 +3,7 @@
+ 
+ EAPI=6
+ 
+-PYTHON_COMPAT=( python{3_6,3_7} )
++PYTHON_COMPAT=( python{3_6,3_7,3_8} )
+ 
+ inherit distutils-r1
+ 
 diff --git a/dev-util/gn/gn-0.1726.ebuild b/dev-util/gn/gn-0.1726.ebuild
 index 5f6a1e3c26..3a8d7bcbe4 100644
 --- a/dev-util/gn/gn-0.1726.ebuild
@@ -233,6 +263,22 @@ index 78c8d372df..0f8305602e 100644
  "
  
  S="${WORKDIR}/${PN}-${MY_COMMIT}"
+diff --git a/media-libs/mesa/mesa-20.2.0_rc4.ebuild b/media-libs/mesa/mesa-20.2.0_rc4.ebuild
+index d7ceac80a2..aa081e8184 100644
+--- a/media-libs/mesa/mesa-20.2.0_rc4.ebuild
++++ b/media-libs/mesa/mesa-20.2.0_rc4.ebuild
+@@ -149,9 +149,10 @@ RDEPEND="${RDEPEND}
+ # 1. List all the working slots (with min versions) in ||, newest first.
+ # 2. Update the := to specify *max* version, e.g. < 10.
+ # 3. Specify LLVM_MAX_SLOT, e.g. 9.
+-LLVM_MAX_SLOT="10"
++LLVM_MAX_SLOT="11"
+ LLVM_DEPSTR="
+ 	|| (
++		sys-devel/llvm:11[${MULTILIB_USEDEP}]
+ 		sys-devel/llvm:10[${MULTILIB_USEDEP}]
+ 		sys-devel/llvm:9[${MULTILIB_USEDEP}]
+ 	)
 diff --git a/media-libs/opencv/opencv-4.1.2-r3.ebuild b/media-libs/opencv/opencv-4.1.2-r3.ebuild
 index 0f86abb641..9a46ac3241 100644
 --- a/media-libs/opencv/opencv-4.1.2-r3.ebuild
@@ -259,54 +305,61 @@ index 3e8e9eef5c..8338c2d752 100644
  	sys-libs/zlib[minizip]
  	virtual/libintl
  	virtual/opengl
-diff --git a/sys-devel/clang/clang-10.0.1.ebuild b/sys-devel/clang/clang-10.0.1.ebuild
-index e50c60093b..a8cdbb01d8 100644
---- a/sys-devel/clang/clang-10.0.1.ebuild
-+++ b/sys-devel/clang/clang-10.0.1.ebuild
-@@ -30,7 +30,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
+diff --git a/sys-devel/clang/clang-11.0.0_rc2.ebuild b/sys-devel/clang/clang-11.0.0_rc2.ebuild
+index 8f5be4425a..4ced8ea7e3 100644
+--- a/sys-devel/clang/clang-11.0.0_rc2.ebuild
++++ b/sys-devel/clang/clang-11.0.0_rc2.ebuild
+@@ -31,8 +31,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
- KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
--IUSE="debug default-compiler-rt default-libcxx default-lld doc
-+IUSE="debug +default-compiler-rt +default-libcxx +default-lld
-+	+default-libunwind doc +gcc-symlinks
- 	+static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
+ KEYWORDS=""
+-IUSE="debug default-compiler-rt default-libcxx default-lld
+-	doc +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
++IUSE="debug +default-compiler-rt +default-libcxx +default-lld +default-libunwind
++	doc +gcc-symlinks +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
  REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
-@@ -43,7 +44,7 @@ RDEPEND="
+ RESTRICT="!test? ( test )"
+@@ -42,9 +42,11 @@ RDEPEND="
+ 	static-analyzer? ( dev-lang/perl:* )
+ 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
  	${PYTHON_DEPS}"
- DEPEND="${RDEPEND}"
+-DEPEND="${RDEPEND}"
++DEPEND="${RDEPEND}
++	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
++	"
  BDEPEND="
 -	dev-python/sphinx
 +	doc? ( dev-python/sphinx )
  	xml? ( virtual/pkgconfig )
  	${PYTHON_DEPS}"
  RDEPEND="${RDEPEND}
-@@ -54,6 +55,7 @@ PDEPEND="
+@@ -53,7 +55,7 @@ RDEPEND="${RDEPEND}
+ PDEPEND="
+ 	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
- 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
- 	default-libcxx? ( >=sys-libs/libcxx-${PV} )
+-	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
 +	default-libunwind? ( >=sys-libs/llvm-libunwind-${PV} )
+ 	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
- # Multilib notes:
-@@ -196,13 +198,11 @@ get_distribution_components() {
+@@ -190,13 +192,12 @@ get_distribution_components() {
  			find-all-symbols
  			modularize
  			pp-trace
--
--			# manpages
--			docs-clang-man
--			docs-clang-tools-man
- 		)
++		)
  
- 		use doc && out+=(
-+			docs-clang-man
-+			docs-clang-tools-man
++		use doc && out+=(
+ 			# manpages
+ 			docs-clang-man
+ 			docs-clang-tools-man
+-		)
+-
+-		use doc && out+=(
  			docs-clang-html
  			docs-clang-tools-html
  		)
-@@ -245,10 +245,14 @@ multilib_src_configure() {
+@@ -239,10 +240,14 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -314,7 +367,7 @@ index e50c60093b..a8cdbb01d8 100644
 +		# create gcc symlinks: gcc g++ cc cpp c++
 +		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
 +
-+		# override default stdlib and rtlib and unwind lib
++		# override default stdlib and rtlib and unwind
  		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
  		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
@@ -322,7 +375,7 @@ index e50c60093b..a8cdbb01d8 100644
  
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
-@@ -262,8 +266,10 @@ multilib_src_configure() {
+@@ -256,8 +261,10 @@ multilib_src_configure() {
  		mycmakeargs+=(
  			# normally copied from LLVM_INCLUDE_DOCS but the latter
  			# is lacking value in stand-alone builds
@@ -335,15 +388,6 @@ index e50c60093b..a8cdbb01d8 100644
  			-DLLVM_BUILD_DOCS=ON
  			-DLLVM_ENABLE_SPHINX=ON
  			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
-@@ -337,7 +343,7 @@ src_install() {
- 	local llvm_version=$(llvm-config --version) || die
- 	local clang_version=$(ver_cut 1 "${llvm_version}")
- 	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
--	local clang_tools=( clang clang++ clang-cl clang-cpp )
-+	local clang_tools=( clang clang++ clang-cl clang-cpp cpp )
- 	local abi i
- 
- 	# cmake gives us:
 diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 index f4d8d84f5e..16a1d7cd28 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
@@ -369,14 +413,14 @@ index 9bd470297d..fd481026e2 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-10.0.1.ebuild b/sys-devel/llvm/llvm-10.0.1.ebuild
-index 2bdf59cced..3cef781a38 100644
---- a/sys-devel/llvm/llvm-10.0.1.ebuild
-+++ b/sys-devel/llvm/llvm-10.0.1.ebuild
+diff --git a/sys-devel/llvm/llvm-11.0.0_rc2.ebuild b/sys-devel/llvm/llvm-11.0.0_rc2.ebuild
+index 6ee898821d..a0ef825ef8 100644
+--- a/sys-devel/llvm/llvm-11.0.0_rc2.ebuild
++++ b/sys-devel/llvm/llvm-11.0.0_rc2.ebuild
 @@ -29,7 +29,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
  SLOT="$(ver_cut 1)"
- KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
+ KEYWORDS=""
 -IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 +IUSE="+binutils-symlinks debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
@@ -396,30 +440,27 @@ index 2bdf59cced..3cef781a38 100644
  # There are no file collisions between these versions but having :0
  # installed means llvm-config there will take precedence.
  RDEPEND="${RDEPEND}
-@@ -77,11 +77,10 @@ PATCHES=(
- )
+@@ -71,10 +71,9 @@ PDEPEND="sys-devel/llvm-common
+ 	gold? ( >=sys-devel/llvmgold-${SLOT} )"
  
  python_check_deps() {
 -	if use doc; then
 -		has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" ||
 -			return 1
 -	fi
--	has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
-+        use doc || return 0
++	use doc || return 0
 +
-+        has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
-+        has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
++	has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
+ 	has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
  }
  
- check_distribution_components() {
-@@ -275,15 +274,30 @@ get_distribution_components() {
+@@ -301,13 +300,29 @@ get_distribution_components() {
  
  			# python modules
  			opt-viewer
 +		)
- 
--			# manpages
-+		use binutils-symlinks && out+=(
++
++               use binutils-symlinks && out+=(
 +			addr2line
 +			ar
 +			c++filt
@@ -434,20 +475,18 @@ index 2bdf59cced..3cef781a38 100644
 +			strings
 +			strip
 +                )
-+
+ 
 +		use doc && out+=(
-+			docs-llvm-html
+ 			# manpages
  			docs-dsymutil-man
  			docs-llvm-dwarfdump-man
  			docs-llvm-man
- 		)
--		use doc && out+=(
--			docs-llvm-html
 -		)
+-		use doc && out+=(
+ 			docs-llvm-html
+ 		)
  
- 		use gold && out+=(
- 			LLVMgold
-@@ -312,6 +326,7 @@ multilib_src_configure() {
+@@ -338,6 +353,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -455,7 +494,7 @@ index 2bdf59cced..3cef781a38 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -363,11 +378,13 @@ multilib_src_configure() {
+@@ -389,11 +405,13 @@ multilib_src_configure() {
  
  	if multilib_is_native_abi; then
  		mycmakeargs+=(
@@ -471,16 +510,32 @@ index 2bdf59cced..3cef781a38 100644
  			-DCMAKE_INSTALL_MANDIR="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
  			-DLLVM_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
  			-DSPHINX_WARNINGS_AS_ERRORS=OFF
-diff --git a/www-client/firefox/firefox-79.0-r2.ebuild b/www-client/firefox/firefox-79.0-r2.ebuild
-index adf273ae5c..a703dfd04c 100644
---- a/www-client/firefox/firefox-79.0-r2.ebuild
-+++ b/www-client/firefox/firefox-79.0-r2.ebuild
-@@ -147,7 +147,7 @@ DEPEND="${CDEPEND}
+diff --git a/www-client/firefox/firefox-80.0.1.ebuild b/www-client/firefox/firefox-80.0.1.ebuild
+index 47cde60ff8..2e7395ade9 100644
+--- a/www-client/firefox/firefox-80.0.1.ebuild
++++ b/www-client/firefox/firefox-80.0.1.ebuild
+@@ -39,7 +39,7 @@ if [[ "${PV}" == *_rc* ]]; then
+ 	MOZ_SRC_URI="${MOZ_HTTP_URI}/source/${PN}-${MOZ_PV}.source.tar.xz -> $P.tar.xz"
+ fi
+ 
+-LLVM_MAX_SLOT=10
++LLVM_MAX_SLOT=11
+ 
+ inherit check-reqs eapi7-ver flag-o-matic toolchain-funcs eutils \
+ 		gnome2-utils llvm mozcoreconf-v6 pax-utils xdg-utils \
+@@ -146,6 +146,15 @@ DEPEND="${CDEPEND}
+ 	virtual/pkgconfig
+ 	>=virtual/rust-1.43.0
+ 	|| (
++		(
++			sys-devel/clang:11
++			!clang? ( sys-devel/llvm:11 )
++			clang? (
++				=sys-devel/lld-11*
++				sys-devel/llvm:11
++				pgo? ( =sys-libs/compiler-rt-sanitizers-11*[profile] )
++			)
++		)
+ 		(
+ 			sys-devel/clang:10
  			!clang? ( sys-devel/llvm:10 )
- 			clang? (
- 				=sys-devel/lld-10*
--				sys-devel/llvm:10[gold]
-+				sys-devel/llvm:10
- 				pgo? ( =sys-libs/compiler-rt-sanitizers-10*[profile] )
- 			)
- 		)
