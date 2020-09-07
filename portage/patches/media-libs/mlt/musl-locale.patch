@@ -1,20 +1,11 @@
---- a/src/framework/mlt_property.h	2019-11-17 19:05:09.592207510 +0100
-+++ b/src/framework/mlt_property.h	2019-11-17 19:05:30.420968169 +0100
-@@ -30,16 +30,7 @@
+--- a/src/framework/mlt_property.h
++++ b/src/framework/mlt_property.h
+@@ -30,7 +30,7 @@
  #include <sys/param.h>
  #endif
  
 -#if (defined(__GLIBC__) && !defined(__APPLE__)) || defined(HAVE_LOCALE_H)
--#  include <locale.h>
--#elif defined(__APPLE__) || (defined(__FreeBSD_version) && __FreeBSD_version >= 900506)
--#  include <xlocale.h>
--#elif defined(__OpenBSD__)
--/* XXX matches __nop_locale glue in libc++ */
--typedef void* locale_t;
--#else
--typedef char* locale_t;
--#endif
-+#include <locale.h>
- 
- extern mlt_property mlt_property_init( );
- extern void mlt_property_clear( mlt_property self );
++#if (defined(__linux__) && !defined(__APPLE__)) || defined(HAVE_LOCALE_H)
+ #  include <locale.h>
+ #elif defined(__APPLE__) || (defined(__FreeBSD_version) && __FreeBSD_version >= 900506)
+ #  include <xlocale.h>
