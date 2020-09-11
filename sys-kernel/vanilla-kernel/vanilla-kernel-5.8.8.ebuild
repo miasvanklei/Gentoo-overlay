@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="10"
+K_GENPATCHES_VER="11"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -92,11 +92,7 @@ src_configure() {
 }
 
 src_compile() {
-	if use arm64; then
-		emake LLVM_IAS=1 O="${WORKDIR}"/build "${MAKEARGS[@]}" all
-	else
-		emake O="${WORKDIR}"/build "${MAKEARGS[@]}" all
-	fi
+	LLVM_IAS=1 LLVM=1 emake O="${WORKDIR}"/build "${MAKEARGS[@]}" all
 }
 
 src_test() {
