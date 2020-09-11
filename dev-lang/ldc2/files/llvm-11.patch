@@ -1,0 +1,3159 @@
+diff --git a/cmake/Modules/FindLLVM.cmake b/cmake/Modules/FindLLVM.cmake
+index f02aa2c445..a192ccd3e8 100644
+--- a/cmake/Modules/FindLLVM.cmake
++++ b/cmake/Modules/FindLLVM.cmake
+@@ -30,7 +30,8 @@
+ # We also want an user-specified LLVM_ROOT_DIR to take precedence over the
+ # system default locations such as /usr/local/bin. Executing find_program()
+ # multiples times is the approach recommended in the docs.
+-set(llvm_config_names llvm-config-10.0 llvm-config100 llvm-config-10
++set(llvm_config_names llvm-config-11.0 llvm-config110 llvm-config-11
++                      llvm-config-10.0 llvm-config100 llvm-config-10
+                       llvm-config-9.0 llvm-config90 llvm-config-9
+                       llvm-config-8.0 llvm-config80 llvm-config-8
+                       llvm-config-7.0 llvm-config70 llvm-config-7
+diff --git a/dmd/root/longdouble.h b/dmd/root/longdouble.h
+index 7916d569bf..31282b6320 100644
+--- a/dmd/root/longdouble.h
++++ b/dmd/root/longdouble.h
+@@ -216,6 +216,7 @@ longdouble_soft ldexpl(longdouble_soft ldval, int exp); // see strtold
+ inline longdouble_soft fabs (longdouble_soft ld) { return fabsl(ld); }
+ inline longdouble_soft sqrt (longdouble_soft ld) { return sqrtl(ld); }
+ 
++#if !IN_LLVM
+ #undef LDBL_DIG
+ #undef LDBL_MAX
+ #undef LDBL_MIN
+@@ -235,6 +236,7 @@ inline longdouble_soft sqrt (longdouble_soft ld) { return sqrtl(ld); }
+ #define LDBL_MIN_EXP    (-16381)
+ #define LDBL_MAX_10_EXP 4932
+ #define LDBL_MIN_10_EXP (-4932)
++#endif // !IN_LLVM
+ 
+ extern const longdouble_soft ld_qnan;
+ extern const longdouble_soft ld_inf;
+diff --git a/driver/archiver.cpp b/driver/archiver.cpp
+index c2c907b92c..743afb42b2 100644
+--- a/driver/archiver.cpp
++++ b/driver/archiver.cpp
+@@ -18,6 +18,9 @@
+ #include "llvm/Object/MachO.h"
+ #include "llvm/Object/ObjectFile.h"
+ #include "llvm/Support/Errc.h"
++#if LDC_LLVM_VER >= 1100
++#include "llvm/Support/Host.h"
++#endif
+ #include "llvm/Support/Path.h"
+ #include "llvm/Support/raw_ostream.h"
+ #include "llvm/ToolDrivers/llvm-lib/LibDriver.h"
+diff --git a/driver/cache.cpp b/driver/cache.cpp
+index 77ddd3ffdd..bb0f26cb9c 100644
+--- a/driver/cache.cpp
++++ b/driver/cache.cpp
+@@ -65,13 +65,22 @@ static bool createSymLink(const char *to, const char *from) {
+ #include <windows.h>
+ namespace llvm {
+ namespace sys {
++#if LDC_LLVM_VER >= 1100
++namespace windows {
++// Fwd declaration to an internal LLVM function.
++std::error_code widenPath(const llvm::Twine &Path8,
++                          llvm::SmallVectorImpl<wchar_t> &Path16,
++                          size_t MaxPathLen = MAX_PATH);
++}
++#else
+ namespace path {
+ // Fwd declaration to an internal LLVM function.
+ std::error_code widenPath(const llvm::Twine &Path8,
+                           llvm::SmallVectorImpl<wchar_t> &Path16);
+ }
+-}
+-}
++#endif // LDC_LLVM_VER < 1100
++} // namespace sys
++} // namespace llvm
+ // Returns true upon error.
+ namespace {
+ template <typename FType>
+@@ -83,11 +92,17 @@ bool createLink(FType f, const char *to, const char *from) {
+   //
+   //===----------------------------------------------------------------------===//
+ 
++#if LDC_LLVM_VER >= 1100
++  using llvm::sys::windows::widenPath;
++#else
++  using llvm::sys::path::widenPath;
++#endif
++
+   llvm::SmallVector<wchar_t, 128> wide_from;
+   llvm::SmallVector<wchar_t, 128> wide_to;
+-  if (llvm::sys::path::widenPath(from, wide_from))
++  if (widenPath(from, wide_from))
+     return true;
+-  if (llvm::sys::path::widenPath(to, wide_to))
++  if (widenPath(to, wide_to))
+     return true;
+ 
+   if (!(*f)(wide_from.begin(), wide_to.begin(), NULL))
+diff --git a/driver/cl_options-llvm.cpp b/driver/cl_options-llvm.cpp
+index 4071074e09..0910ed1bf5 100644
+--- a/driver/cl_options-llvm.cpp
++++ b/driver/cl_options-llvm.cpp
+@@ -11,7 +11,11 @@
+ 
+ // Pull in command-line options and helper functions from special LLVM header
+ // shared by multiple LLVM tools.
+-#if LDC_LLVM_VER >= 700
++#if LDC_LLVM_VER >= 1100
++#include "llvm/CodeGen/CommandFlags.h"
++static llvm::codegen::RegisterCodeGenFlags CGF;
++using namespace llvm;
++#elif LDC_LLVM_VER >= 700
+ #include "llvm/CodeGen/CommandFlags.inc"
+ #else
+ #include "llvm/CodeGen/CommandFlags.def"
+@@ -21,7 +25,7 @@ static cl::opt<bool>
+     DisableRedZone("disable-red-zone", cl::ZeroOrMore,
+                    cl::desc("Do not emit code that uses the red zone."));
+ 
+-#if LDC_LLVM_VER >= 800
++#if LDC_LLVM_VER >= 800 && LDC_LLVM_VER < 1100
+ // legacy option
+ static cl::opt<bool>
+     disableFPElim("disable-fp-elim", cl::ZeroOrMore, cl::ReallyHidden,
+@@ -32,19 +36,43 @@ static cl::opt<bool>
+ // in the opts namespace, including some additional helper functions.
+ namespace opts {
+ 
+-std::string getArchStr() { return ::MArch; }
++std::string getArchStr() {
++#if LDC_LLVM_VER >= 1100
++  return codegen::getMArch();
++#else
++  return ::MArch;
++#endif
++}
+ 
+-Optional<Reloc::Model> getRelocModel() { return ::getRelocModel(); }
++Optional<Reloc::Model> getRelocModel() {
++#if LDC_LLVM_VER >= 1100
++  return codegen::getExplicitRelocModel();
++#else
++  return ::getRelocModel();
++#endif
++}
+ 
+-Optional<CodeModel::Model> getCodeModel() { return ::getCodeModel(); }
++Optional<CodeModel::Model> getCodeModel() {
++#if LDC_LLVM_VER >= 1100
++  return codegen::getExplicitCodeModel();
++#else
++  return ::getCodeModel();
++#endif
++}
+ 
+ #if LDC_LLVM_VER >= 800
+ llvm::Optional<llvm::FramePointer::FP> framePointerUsage() {
++#if LDC_LLVM_VER >= 1100
++  // Defaults to `FP::None`; no way to check if set explicitly by user except
++  // indirectly via setFunctionAttributes()...
++  return codegen::getFramePointerUsage();
++#else
+   if (::FramePointerUsage.getNumOccurrences() > 0)
+     return ::FramePointerUsage.getValue();
+   if (disableFPElim.getNumOccurrences() > 0)
+     return disableFPElim ? llvm::FramePointer::All : llvm::FramePointer::None;
+   return llvm::None;
++#endif
+ }
+ #else
+ cl::boolOrDefault disableFPElim() {
+@@ -57,6 +85,10 @@ cl::boolOrDefault disableFPElim() {
+ bool disableRedZone() { return ::DisableRedZone; }
+ 
+ bool printTargetFeaturesHelp() {
++#if LDC_LLVM_VER >= 1100
++  const auto MCPU = codegen::getMCPU();
++  const auto MAttrs = codegen::getMAttrs();
++#endif
+   if (MCPU == "help")
+     return true;
+   return std::any_of(MAttrs.begin(), MAttrs.end(),
+@@ -64,11 +96,39 @@ bool printTargetFeaturesHelp() {
+ }
+ 
+ TargetOptions InitTargetOptionsFromCodeGenFlags() {
++#if LDC_LLVM_VER >= 1100
++  return codegen::InitTargetOptionsFromCodeGenFlags();
++#else
+   return ::InitTargetOptionsFromCodeGenFlags();
++#endif
++}
++
++std::string getCPUStr() {
++#if LDC_LLVM_VER >= 1100
++  return codegen::getCPUStr();
++#else
++  return ::getCPUStr();
++#endif
++}
++
++std::string getFeaturesStr() {
++#if LDC_LLVM_VER >= 1100
++  return codegen::getFeaturesStr();
++#else
++  return ::getFeaturesStr();
++#endif
+ }
+ 
+-std::string getCPUStr() { return ::getCPUStr(); }
+-std::string getFeaturesStr() { return ::getFeaturesStr(); }
++#if LDC_LLVM_VER >= 1000
++void setFunctionAttributes(StringRef cpu, StringRef features,
++                           Function &function) {
++#if LDC_LLVM_VER >= 1100
++  return codegen::setFunctionAttributes(cpu, features, function);
++#else
++  return ::setFunctionAttributes(cpu, features, function);
++#endif
++}
++#endif
+ } // namespace opts
+ 
+ #if LDC_WITH_LLD
+@@ -81,30 +141,32 @@ TargetOptions initTargetOptionsFromCodeGenFlags() {
+ #else
+ TargetOptions InitTargetOptionsFromCodeGenFlags() {
+ #endif
+-  return ::InitTargetOptionsFromCodeGenFlags();
++  return ::opts::InitTargetOptionsFromCodeGenFlags();
+ }
+ 
+ #if LDC_LLVM_VER >= 1000
+-Optional<Reloc::Model> getRelocModelFromCMModel() { return ::getRelocModel(); }
++Optional<Reloc::Model> getRelocModelFromCMModel() {
++  return ::opts::getRelocModel();
++}
+ #endif
+ 
+ #if LDC_LLVM_VER >= 900
+ Optional<CodeModel::Model> getCodeModelFromCMModel() {
+-  return ::getCodeModel();
+-}
+ #else
+ Optional<CodeModel::Model> GetCodeModelFromCMModel() {
+-  return ::getCodeModel();
+-}
+ #endif
++  return ::opts::getCodeModel();
++}
+ 
+ #if LDC_LLVM_VER >= 900
+-std::string getCPUStr() { return ::getCPUStr(); }
++std::string getCPUStr() { return ::opts::getCPUStr(); }
+ #elif LDC_LLVM_VER >= 700
+-std::string GetCPUStr() { return ::getCPUStr(); }
++std::string GetCPUStr() { return ::opts::getCPUStr(); }
+ #endif
+ 
+-#if LDC_LLVM_VER >= 900
++#if LDC_LLVM_VER >= 1100
++std::vector<std::string> getMAttrs() { return codegen::getMAttrs(); }
++#elif LDC_LLVM_VER >= 900
+ std::vector<std::string> getMAttrs() { return ::MAttrs; }
+ #elif LDC_LLVM_VER >= 800
+ std::vector<std::string> GetMAttrs() { return ::MAttrs; }
+diff --git a/driver/cl_options-llvm.h b/driver/cl_options-llvm.h
+index dda90542e2..d43bc584e2 100644
+--- a/driver/cl_options-llvm.h
++++ b/driver/cl_options-llvm.h
+@@ -14,6 +14,10 @@
+ #include "llvm/Support/CodeGen.h"
+ #include "llvm/Target/TargetOptions.h"
+ 
++namespace llvm {
++class Function;
++}
++
+ namespace opts {
+ 
+ std::string getArchStr();
+@@ -31,4 +35,8 @@ bool printTargetFeaturesHelp();
+ llvm::TargetOptions InitTargetOptionsFromCodeGenFlags();
+ std::string getCPUStr();
+ std::string getFeaturesStr();
++#if LDC_LLVM_VER >= 1000
++void setFunctionAttributes(llvm::StringRef cpu, llvm::StringRef features,
++                           llvm::Function &function);
++#endif
+ }
+diff --git a/driver/cl_options.cpp b/driver/cl_options.cpp
+index 40afb6dd7c..25c13bf04a 100644
+--- a/driver/cl_options.cpp
++++ b/driver/cl_options.cpp
+@@ -620,17 +620,24 @@ void hideLLVMOptions() {
+   static const char *const hiddenOptions[] = {
+       "aarch64-neon-syntax", "addrsig", "arm-add-build-attributes",
+       "arm-implicit-it", "asm-instrumentation", "asm-show-inst",
+-      "atomic-counter-update-promoted", "bounds-checking-single-trap",
++      "atomic-counter-update-promoted", "atomic-first-counter",
++      "basicblock-sections", "bounds-checking-single-trap",
++      "cfg-hide-deoptimize-paths", "cfg-hide-unreachable-paths",
+       "code-model", "cost-kind", "cppfname", "cppfor", "cppgen",
+       "cvp-dont-add-nowrap-flags",
+       "cvp-dont-process-adds", "debug-counter", "debug-entry-values",
+-      "debugger-tune", "denormal-fp-math", "disable-debug-info-verifier",
++      "debugger-tune", "debugify-level", "debugify-quiet",
++      "denormal-fp-math", "denormal-fp-math-f32", "disable-debug-info-verifier",
+       "disable-objc-arc-checkforcfghazards", "disable-spill-fusing",
+-      "do-counter-promotion", "emscripten-cxx-exceptions-whitelist",
++      "do-counter-promotion", "dwarf64", "emit-call-site-info",
++      "emscripten-cxx-exceptions-allowed",
++      "emscripten-cxx-exceptions-whitelist",
+       "emulated-tls", "enable-correct-eh-support",
+       "enable-cse-in-irtranslator", "enable-cse-in-legalizer",
+       "enable-emscripten-cxx-exceptions", "enable-emscripten-sjlj",
+-      "enable-fp-mad", "enable-gvn-memdep", "enable-implicit-null-checks",
++      "enable-fp-mad", "enable-gvn-hoist", "enable-gvn-memdep",
++      "enable-gvn-sink", "enable-implicit-null-checks",
++      "enable-load-in-loop-pre",
+       "enable-load-pre", "enable-loop-simplifycfg-term-folding",
+       "enable-misched", "enable-name-compression", "enable-no-infs-fp-math",
+       "enable-no-nans-fp-math", "enable-no-signed-zeros-fp-math",
+@@ -640,23 +647,27 @@ void hideLLVMOptions() {
+       "exhaustive-register-search", "expensive-combines",
+       "fatal-assembler-warnings", "filter-print-funcs",
+       "force-dwarf-frame-section", "gpsize", "hash-based-counter-split",
++      "hot-cold-split",
+       "imp-null-check-page-size", "imp-null-max-insts-to-consider",
+       "import-all-index", "incremental-linker-compatible",
+       "instcombine-code-sinking", "instcombine-guard-widening-window",
+       "instcombine-max-iterations", "instcombine-max-num-phis",
+-      "instcombine-maxarray-size", "instrprof-atomic-counter-update-all",
+-      "internalize-public-api-file",
++      "instcombine-maxarray-size", "instcombine-negator-enabled",
++      "instcombine-negator-max-depth",
++      "instrprof-atomic-counter-update-all", "internalize-public-api-file",
+       "internalize-public-api-list", "iterative-counter-promotion",
+       "join-liveintervals", "jump-table-type", "limit-float-precision",
+-      "lto-embed-bitcode", "matrix-propagate-shape",
++      "lto-embed-bitcode", "matrix-default-layout", "matrix-propagate-shape",
+       "max-counter-promotions", "max-counter-promotions-per-loop",
+       "mc-relax-all", "mc-x86-disable-arith-relaxation", "meabi",
+       "memop-size-large", "memop-size-range", "merror-missing-parenthesis",
+       "merror-noncontigious-register", "mfuture-regs", "mips-compact-branches",
+-      "mips16-constant-islands", "mips16-hard-float", "mlsm", "mno-compound",
++      "mips16-constant-islands", "mips16-hard-float", "mir-strip-debugify-only",
++      "mlsm", "mno-compound",
+       "mno-fixup", "mno-ldc1-sdc1", "mno-pairing", "mwarn-missing-parenthesis",
+       "mwarn-noncontigious-register", "mwarn-sign-mismatch",
+-      "no-discriminators", "nozero-initialized-in-bss", "nvptx-sched4reg",
++      "no-discriminators", "no-xray-index",
++      "nozero-initialized-in-bss", "nvptx-sched4reg",
+       "objc-arc-annotation-target-identifier", "pie-copy-relocations",
+       "poison-checking-function-local",
+       "polly-dump-after", "polly-dump-after-file", "polly-dump-before",
+@@ -666,7 +677,7 @@ void hideLLVMOptions() {
+       "profile-file", "profile-info-file", "profile-verifier-noassert",
+       "r600-ir-structurize", "rdf-dump", "rdf-limit", "recip", "regalloc",
+       "relax-elf-relocations", "remarks-section", "rewrite-map-file", "rng-seed",
+-      "safepoint-ir-verifier-print-only",
++      "runtime-counter-relocation", "safepoint-ir-verifier-print-only",
+       "sample-profile-check-record-coverage",
+       "sample-profile-check-sample-coverage",
+       "sample-profile-inline-hot-threshold",
+@@ -674,14 +685,15 @@ void hideLLVMOptions() {
+       "speculative-counter-promotion-max-exiting",
+       "speculative-counter-promotion-to-loop", "spiller", "spirv-debug",
+       "spirv-erase-cl-md", "spirv-lower-const-expr", "spirv-mem2reg",
+-      "spirv-no-deref-attr", "spirv-text", "spvbool-validate",
++      "spirv-no-deref-attr", "spirv-text",
++      "spv-lower-saddwithoverflow-validate", "spvbool-validate",
+       "spvmemmove-validate",
+       "stack-alignment", "stack-size-section", "stack-symbol-ordering",
+       "stackmap-version", "static-func-full-module-prefix",
+       "static-func-strip-dirname-prefix", "stats", "stats-json", "strip-debug",
+-      "struct-path-tbaa", "summary-file", "tailcallopt", "thread-model",
+-      "time-passes", "time-trace-granularity", "tls-size",
+-      "unfold-element-atomic-memcpy-max-elements",
++      "struct-path-tbaa", "summary-file", "tail-predication", "tailcallopt",
++      "thread-model", "time-passes", "time-trace-granularity", "tls-size",
++      "unfold-element-atomic-memcpy-max-elements", "unique-bb-section-names",
+       "unique-section-names", "unit-at-a-time", "use-ctors",
+       "verify-debug-info", "verify-dom-info", "verify-loop-info",
+       "verify-loop-lcssa", "verify-machine-dom-info", "verify-regalloc",
+@@ -689,6 +701,7 @@ void hideLLVMOptions() {
+       "vp-counters-per-site", "vp-static-alloc",
+       "x86-align-branch", "x86-align-branch-boundary",
+       "x86-branches-within-32B-boundaries", "x86-early-ifcvt",
++      "x86-pad-max-prefix-size",
+       "x86-recip-refinement-steps", "x86-use-vzeroupper",
+ 
+       // We enable -fdata-sections/-ffunction-sections by default where it makes
+@@ -697,8 +710,7 @@ void hideLLVMOptions() {
+       // We need our own switch as these two are defined by LLVM and linked to
+       // static TargetMachine members, but the default we want to use depends
+       // on the target triple (and thus we do not know it until after the
+-      // command
+-      // line has been parsed).
++      // command line has been parsed).
+       "fdata-sections", "ffunction-sections", "data-sections",
+       "function-sections"};
+ 
+diff --git a/driver/codegenerator.cpp b/driver/codegenerator.cpp
+index 0833df4614..9edbbcf97a 100644
+--- a/driver/codegenerator.cpp
++++ b/driver/codegenerator.cpp
+@@ -23,7 +23,9 @@
+ #include "gen/logger.h"
+ #include "gen/modules.h"
+ #include "gen/runtime.h"
+-#if LDC_LLVM_VER >= 900
++#if LDC_LLVM_VER >= 1100
++#include "llvm/IR/LLVMRemarkStreamer.h"
++#elif LDC_LLVM_VER >= 900
+ #include "llvm/IR/RemarkStreamer.h"
+ #endif
+ #include "llvm/Support/FileSystem.h"
+@@ -52,8 +54,13 @@ createAndSetDiagnosticsOutputFile(IRState &irs, llvm::LLVMContext &ctx,
+     const bool withHotness = opts::isUsingPGOProfile();
+ 
+ #if LDC_LLVM_VER >= 900
+-    auto remarksFileOrError = llvm::setupOptimizationRemarks(
+-        ctx, diagnosticsFilename, "", "", withHotness);
++    auto remarksFileOrError =
++#if LDC_LLVM_VER >= 1100
++        llvm::setupLLVMOptimizationRemarks(
++#else
++        llvm::setupOptimizationRemarks(
++#endif
++            ctx, diagnosticsFilename, "", "", withHotness);
+     if (llvm::Error e = remarksFileOrError.takeError()) {
+       irs.dmodule->error("Could not create file %s: %s",
+                          diagnosticsFilename.c_str(),
+diff --git a/driver/ldmd.cpp b/driver/ldmd.cpp
+index e4dc80d68c..ef50e47fb0 100644
+--- a/driver/ldmd.cpp
++++ b/driver/ldmd.cpp
+@@ -476,7 +476,11 @@ void translateArgs(const llvm::SmallVectorImpl<const char *> &ldmdArgs,
+       else if (strcmp(p + 1, "gf") == 0) {
+         ldcArgs.push_back("-g");
+       } else if (strcmp(p + 1, "gs") == 0) {
++#if LDC_LLVM_VER >= 1100
++        ldcArgs.push_back("-frame-pointer=all");
++#else
+         ldcArgs.push_back("-disable-fp-elim");
++#endif
+       } else if (strcmp(p + 1, "gx") == 0) {
+         goto Lnot_in_ldc;
+       } else if (strcmp(p + 1, "gt") == 0) {
+diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
+index 1b364fb7e6..e2a252318d 100644
+--- a/driver/linker-gcc.cpp
++++ b/driver/linker-gcc.cpp
+@@ -321,7 +321,7 @@ void ArgsBuilder::addSanitizerLinkFlags(const llvm::Triple &triple,
+ 
+   // When we reach here, we did not find the sanitizer library.
+   // Fallback, requires Clang.
+-  args.push_back(fallbackFlag);
++  args.emplace_back(fallbackFlag);
+ }
+ 
+ // Adds all required link flags for -fsanitize=fuzzer when libFuzzer library is
+diff --git a/driver/linker.cpp b/driver/linker.cpp
+index 3fc08ca9d7..ab3ab20573 100644
+--- a/driver/linker.cpp
++++ b/driver/linker.cpp
+@@ -145,7 +145,7 @@ static std::vector<std::string>
+ parseLibNames(llvm::StringRef commaSeparatedList, llvm::StringRef suffix = {}) {
+   std::vector<std::string> result;
+ 
+-  std::stringstream list(commaSeparatedList);
++  std::stringstream list(commaSeparatedList.str());
+   while (list.good()) {
+     std::string lib;
+     std::getline(list, lib, ',');
+diff --git a/gen/aa.cpp b/gen/aa.cpp
+index 6476606692..0c011f8728 100644
+--- a/gen/aa.cpp
++++ b/gen/aa.cpp
+@@ -65,12 +65,10 @@ DLValue *DtoAAIndex(Loc &loc, Type *type, DValue *aa, DValue *key,
+     LLValue *castedAATI = DtoBitCast(rawAATI, funcTy->getParamType(1));
+     LLValue *valsize = DtoConstSize_t(getTypeAllocSize(DtoType(type)));
+     ret = gIR->CreateCallOrInvoke(func, aaval, castedAATI, valsize, pkey,
+-                                  "aa.index")
+-              .getInstruction();
++                                  "aa.index");
+   } else {
+     LLValue *keyti = to_keyti(aa, funcTy->getParamType(1));
+-    ret = gIR->CreateCallOrInvoke(func, aaval, keyti, pkey, "aa.index")
+-              .getInstruction();
++    ret = gIR->CreateCallOrInvoke(func, aaval, keyti, pkey, "aa.index");
+   }
+ 
+   // cast return value
+@@ -91,12 +89,12 @@ DLValue *DtoAAIndex(Loc &loc, Type *type, DValue *aa, DValue *key,
+ 
+     // set up failbb to call the array bounds error runtime function
+ 
+-    gIR->scope() = IRScope(failbb);
++    gIR->ir->SetInsertPoint(failbb);
+ 
+     DtoBoundsCheckFailCall(gIR, loc);
+ 
+     // if ok, proceed in okbb
+-    gIR->scope() = IRScope(okbb);
++    gIR->ir->SetInsertPoint(okbb);
+   }
+   return new DLValue(type, ret);
+ }
+@@ -134,8 +132,7 @@ DValue *DtoAAIn(Loc &loc, Type *type, DValue *aa, DValue *key) {
+   pkey = DtoBitCast(pkey, getVoidPtrType());
+ 
+   // call runtime
+-  LLValue *ret = gIR->CreateCallOrInvoke(func, aaval, keyti, pkey, "aa.in")
+-                     .getInstruction();
++  LLValue *ret = gIR->CreateCallOrInvoke(func, aaval, keyti, pkey, "aa.in");
+ 
+   // cast return value
+   LLType *targettype = DtoType(type);
+@@ -179,9 +176,9 @@ DValue *DtoAARemove(Loc &loc, DValue *aa, DValue *key) {
+   pkey = DtoBitCast(pkey, funcTy->getParamType(2));
+ 
+   // call runtime
+-  LLCallSite call = gIR->CreateCallOrInvoke(func, aaval, keyti, pkey);
++  LLValue *res = gIR->CreateCallOrInvoke(func, aaval, keyti, pkey);
+ 
+-  return new DImValue(Type::tbool, call.getInstruction());
++  return new DImValue(Type::tbool, res);
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+@@ -197,8 +194,7 @@ LLValue *DtoAAEquals(Loc &loc, TOK op, DValue *l, DValue *r) {
+   LLValue *abval = DtoBitCast(DtoRVal(r), funcTy->getParamType(2));
+   LLValue *aaTypeInfo = DtoTypeInfoOf(t);
+   LLValue *res =
+-      gIR->CreateCallOrInvoke(func, aaTypeInfo, aaval, abval, "aaEqRes")
+-          .getInstruction();
++      gIR->CreateCallOrInvoke(func, aaTypeInfo, aaval, abval, "aaEqRes");
+ 
+   const auto predicate = eqTokToICmpPred(op, /* invert = */ true);
+   res = gIR->ir->CreateICmp(predicate, res, DtoConstInt(0));
+diff --git a/gen/abi-generic.h b/gen/abi-generic.h
+index b4d4999ebc..f7c41f42ff 100644
+--- a/gen/abi-generic.h
++++ b/gen/abi-generic.h
+@@ -36,7 +36,12 @@ struct LLTypeMemoryLayout {
+       const size_t sizeInBits = getTypeBitSize(type);
+       assert(sizeInBits % 8 == 0);
+       return llvm::VectorType::get(LLIntegerType::get(gIR->context(), 8),
+-                                   sizeInBits / 8);
++                                   sizeInBits / 8
++#if LDC_LLVM_VER >= 1100
++                                   ,
++                                   /*Scalable=*/false
++#endif
++      );
+     }
+ 
+     if (LLStructType *structType = isaStruct(type)) {
+diff --git a/gen/arrays.cpp b/gen/arrays.cpp
+index b9d22f0148..3d2a3f56b1 100644
+--- a/gen/arrays.cpp
++++ b/gen/arrays.cpp
+@@ -144,7 +144,7 @@ static void DtoArrayInit(Loc &loc, LLValue *ptr, LLValue *length,
+   llvm::BranchInst::Create(condbb, gIR->scopebb());
+ 
+   // replace current scope
+-  gIR->scope() = IRScope(condbb);
++  gIR->ir->SetInsertPoint(condbb);
+ 
+   // create the condition
+   LLValue *cond_val =
+@@ -155,7 +155,7 @@ static void DtoArrayInit(Loc &loc, LLValue *ptr, LLValue *length,
+   llvm::BranchInst::Create(bodybb, endbb, cond_val, gIR->scopebb());
+ 
+   // rewrite scope
+-  gIR->scope() = IRScope(bodybb);
++  gIR->ir->SetInsertPoint(bodybb);
+ 
+   LLValue *itr_val = DtoLoad(itr);
+   // assign array element value
+@@ -171,7 +171,7 @@ static void DtoArrayInit(Loc &loc, LLValue *ptr, LLValue *length,
+   llvm::BranchInst::Create(condbb, gIR->scopebb());
+ 
+   // rewrite the scope
+-  gIR->scope() = IRScope(endbb);
++  gIR->ir->SetInsertPoint(endbb);
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+@@ -198,7 +198,7 @@ static void copySlice(Loc &loc, LLValue *dstarr, LLValue *dstlen, LLValue *srcar
+   const bool checksEnabled =
+       global.params.useAssert == CHECKENABLEon || gIR->emitArrayBoundsChecks();
+   if (checksEnabled && !knownInBounds) {
+-    LLValue *fn = getRuntimeFunction(loc, gIR->module, "_d_array_slice_copy");
++    LLFunction *fn = getRuntimeFunction(loc, gIR->module, "_d_array_slice_copy");
+     gIR->CreateCallOrInvoke(
+         fn, {dstarr, dstlen, srcarr, srclen, DtoConstSize_t(elementSize)}, "",
+         /*isNothrow=*/true);
+@@ -293,20 +293,18 @@ void DtoArrayAssign(Loc &loc, DValue *lhs, DValue *rhs, int op,
+       }
+     } else if (isConstructing) {
+       LLFunction *fn = getRuntimeFunction(loc, gIR->module, "_d_arrayctor");
+-      LLCallSite call = gIR->CreateCallOrInvoke(fn, DtoTypeInfoOf(elemType),
+-                                                DtoSlice(rhsPtr, rhsLength),
+-                                                DtoSlice(lhsPtr, lhsLength));
+-      call.setCallingConv(llvm::CallingConv::C);
++      gIR->CreateCallOrInvoke(fn, DtoTypeInfoOf(elemType),
++                              DtoSlice(rhsPtr, rhsLength),
++                              DtoSlice(lhsPtr, lhsLength));
+     } else // assigning
+     {
+       LLValue *tmpSwap = DtoAlloca(elemType, "arrayAssign.tmpSwap");
+       LLFunction *fn = getRuntimeFunction(
+           loc, gIR->module,
+           !canSkipPostblit ? "_d_arrayassign_l" : "_d_arrayassign_r");
+-      LLCallSite call = gIR->CreateCallOrInvoke(
++      gIR->CreateCallOrInvoke(
+           fn, DtoTypeInfoOf(elemType), DtoSlice(rhsPtr, rhsLength),
+           DtoSlice(lhsPtr, lhsLength), DtoBitCast(tmpSwap, getVoidPtrType()));
+-      call.setCallingConv(llvm::CallingConv::C);
+     }
+   } else {
+     // scalar rhs:
+@@ -335,12 +333,11 @@ void DtoArrayAssign(Loc &loc, DValue *lhs, DValue *rhs, int op,
+       LLFunction *fn = getRuntimeFunction(loc, gIR->module,
+                                           isConstructing ? "_d_arraysetctor"
+                                                          : "_d_arraysetassign");
+-      LLCallSite call = gIR->CreateCallOrInvoke(
++      gIR->CreateCallOrInvoke(
+           fn, lhsPtr, DtoBitCast(makeLValue(loc, rhs), getVoidPtrType()),
+           gIR->ir->CreateTruncOrBitCast(lhsLength,
+                                         LLType::getInt32Ty(gIR->context())),
+           DtoTypeInfoOf(stripModifiers(t2)));
+-      call.setCallingConv(llvm::CallingConv::C);
+     }
+   }
+ }
+@@ -704,8 +701,7 @@ DSliceValue *DtoNewDynArray(Loc &loc, Type *arrayType, DValue *dim,
+ 
+   // call allocator
+   LLValue *newArray =
+-      gIR->CreateCallOrInvoke(fn, arrayTypeInfo, arrayLen, ".gc_mem")
+-          .getInstruction();
++      gIR->CreateCallOrInvoke(fn, arrayTypeInfo, arrayLen, ".gc_mem");
+ 
+   // return a DSliceValue with the well-known length for better optimizability
+   auto ptr =
+@@ -774,8 +770,7 @@ DSliceValue *DtoNewMulDimDynArray(Loc &loc, Type *arrayType, DValue **dims,
+ 
+   // call allocator
+   LLValue *newptr =
+-      gIR->CreateCallOrInvoke(fn, arrayTypeInfo, DtoLoad(darray), ".gc_mem")
+-          .getInstruction();
++      gIR->CreateCallOrInvoke(fn, arrayTypeInfo, DtoLoad(darray), ".gc_mem");
+ 
+   IF_LOG Logger::cout() << "final ptr = " << *newptr << '\n';
+ 
+@@ -802,12 +797,10 @@ DSliceValue *DtoResizeDynArray(Loc &loc, Type *arrayType, DValue *array,
+       getRuntimeFunction(loc, gIR->module, zeroInit ? "_d_arraysetlengthT"
+                                                     : "_d_arraysetlengthiT");
+ 
+-  LLValue *newArray =
+-      gIR->CreateCallOrInvoke(
+-             fn, DtoTypeInfoOf(arrayType), newdim,
+-             DtoBitCast(DtoLVal(array), fn->getFunctionType()->getParamType(2)),
+-             ".gc_mem")
+-          .getInstruction();
++  LLValue *newArray = gIR->CreateCallOrInvoke(
++      fn, DtoTypeInfoOf(arrayType), newdim,
++      DtoBitCast(DtoLVal(array), fn->getFunctionType()->getParamType(2)),
++      ".gc_mem");
+ 
+   return getSlice(arrayType, newArray);
+ }
+@@ -853,14 +846,11 @@ DSliceValue *DtoCatAssignArray(Loc &loc, DValue *arr, Expression *exp) {
+ 
+   LLFunction *fn = getRuntimeFunction(loc, gIR->module, "_d_arrayappendT");
+   // Call _d_arrayappendT(TypeInfo ti, byte[] *px, byte[] y)
+-  LLValue *newArray =
+-      gIR->CreateCallOrInvoke(
+-             fn, DtoTypeInfoOf(arrayType),
+-             DtoBitCast(DtoLVal(arr), fn->getFunctionType()->getParamType(1)),
+-             DtoAggrPaint(DtoSlice(exp),
+-                          fn->getFunctionType()->getParamType(2)),
+-             ".appendedArray")
+-          .getInstruction();
++  LLValue *newArray = gIR->CreateCallOrInvoke(
++      fn, DtoTypeInfoOf(arrayType),
++      DtoBitCast(DtoLVal(arr), fn->getFunctionType()->getParamType(1)),
++      DtoAggrPaint(DtoSlice(exp), fn->getFunctionType()->getParamType(2)),
++      ".appendedArray");
+ 
+   return getSlice(arrayType, newArray);
+ }
+@@ -929,8 +919,7 @@ DSliceValue *DtoCatArrays(Loc &loc, Type *arrayType, Expression *exp1,
+     args.push_back(val);
+   }
+ 
+-  auto newArray =
+-      gIR->CreateCallOrInvoke(fn, args, ".appendedArray").getInstruction();
++  auto newArray = gIR->CreateCallOrInvoke(fn, args, ".appendedArray");
+   return getSlice(arrayType, newArray);
+ }
+ 
+@@ -944,13 +933,10 @@ DSliceValue *DtoAppendDChar(Loc &loc, DValue *arr, Expression *exp,
+   LLFunction *fn = getRuntimeFunction(loc, gIR->module, func);
+ 
+   // Call function (ref string x, dchar c)
+-  LLValue *newArray =
+-      gIR->CreateCallOrInvoke(
+-             fn,
+-             DtoBitCast(DtoLVal(arr), fn->getFunctionType()->getParamType(0)),
+-             DtoBitCast(valueToAppend, fn->getFunctionType()->getParamType(1)),
+-             ".appendedArray")
+-          .getInstruction();
++  LLValue *newArray = gIR->CreateCallOrInvoke(
++      fn, DtoBitCast(DtoLVal(arr), fn->getFunctionType()->getParamType(0)),
++      DtoBitCast(valueToAppend, fn->getFunctionType()->getParamType(1)),
++      ".appendedArray");
+ 
+   return getSlice(arr->type, newArray);
+ }
+@@ -1003,7 +989,7 @@ LLValue *DtoArrayEqCmp_impl(Loc &loc, const char *func, DValue *l,
+     args.push_back(DtoBitCast(tival, fn->getFunctionType()->getParamType(2)));
+   }
+ 
+-  return gIR->CreateCallOrInvoke(fn, args).getInstruction();
++  return gIR->CreateCallOrInvoke(fn, args);
+ }
+ 
+ /// When `true` is returned, the type can be compared using `memcmp`.
+@@ -1118,12 +1104,12 @@ LLValue *DtoArrayEqCmp_memcmp(Loc &loc, DValue *l, DValue *r, IRState &irs) {
+   // Note: no extra null checks are needed before passing the pointers to memcmp.
+   // The array comparison is UB for non-zero length, and memcmp will correctly
+   // return 0 (equality) when the length is zero.
+-  irs.scope() = IRScope(memcmpBB);
++  irs.ir->SetInsertPoint(memcmpBB);
+   auto memcmpAnswer = callMemcmp(loc, irs, l_ptr, r_ptr, l_length);
+   irs.ir->CreateBr(memcmpEndBB);
+ 
+   // Merge the result of length check and memcmp call into a phi node.
+-  irs.scope() = IRScope(memcmpEndBB);
++  irs.ir->SetInsertPoint(memcmpEndBB);
+   llvm::PHINode *phi =
+       irs.ir->CreatePHI(LLType::getInt32Ty(gIR->context()), 2, "cmp_result");
+   phi->addIncoming(DtoConstInt(1), incomingBB);
+@@ -1348,11 +1334,11 @@ void DtoIndexBoundsCheck(Loc &loc, DValue *arr, DValue *index) {
+   gIR->ir->CreateCondBr(cond, okbb, failbb);
+ 
+   // set up failbb to call the array bounds error runtime function
+-  gIR->scope() = IRScope(failbb);
++  gIR->ir->SetInsertPoint(failbb);
+   DtoBoundsCheckFailCall(gIR, loc);
+ 
+   // if ok, proceed in okbb
+-  gIR->scope() = IRScope(okbb);
++  gIR->ir->SetInsertPoint(okbb);
+ }
+ 
+ void DtoBoundsCheckFailCall(IRState *irs, Loc &loc) {
+diff --git a/gen/asmstmt.cpp b/gen/asmstmt.cpp
+index be2f090b7d..d4c76b87fa 100644
+--- a/gen/asmstmt.cpp
++++ b/gen/asmstmt.cpp
+@@ -752,11 +752,11 @@ void CompoundAsmStatement_toIR(CompoundAsmStatement *stmt, IRState *p) {
+                                      pair.second),
+                   casebb);
+ 
+-      p->scope() = IRScope(casebb);
++      p->ir->SetInsertPoint(casebb);
+       DtoGoto(stmt->loc, pair.first);
+     }
+ 
+-    p->scope() = IRScope(bb);
++    p->ir->SetInsertPoint(bb);
+   }
+ }
+ 
+diff --git a/gen/classes.cpp b/gen/classes.cpp
+index 037ef923e2..b78f9295bf 100644
+--- a/gen/classes.cpp
++++ b/gen/classes.cpp
+@@ -103,10 +103,8 @@ DValue *DtoNewClass(Loc &loc, TypeClass *tc, NewExp *newexp) {
+         loc, gIR->module, useEHAlloc ? "_d_newThrowable" : "_d_allocclass");
+     LLConstant *ci = DtoBitCast(getIrAggr(tc->sym)->getClassInfoSymbol(),
+                                 DtoType(getClassInfoType()));
+-    mem = gIR->CreateCallOrInvoke(fn, ci,
+-                                  useEHAlloc ? ".newthrowable_alloc"
+-                                             : ".newclass_gc_alloc")
+-              .getInstruction();
++    mem = gIR->CreateCallOrInvoke(
++        fn, ci, useEHAlloc ? ".newthrowable_alloc" : ".newclass_gc_alloc");
+     mem = DtoBitCast(mem, DtoType(tc),
+                      useEHAlloc ? ".newthrowable" : ".newclass_gc");
+     doInit = !useEHAlloc;
+@@ -221,11 +219,11 @@ void DtoFinalizeScopeClass(Loc &loc, LLValue *inst, bool hasDtor) {
+                           getNullValue(monitor->getType()), ".hasMonitor");
+   llvm::BranchInst::Create(ifbb, endbb, hasMonitor, gIR->scopebb());
+ 
+-  gIR->scope() = IRScope(ifbb);
++  gIR->ir->SetInsertPoint(ifbb);
+   DtoFinalizeClass(loc, inst);
+   gIR->ir->CreateBr(endbb);
+ 
+-  gIR->scope() = IRScope(endbb);
++  gIR->ir->SetInsertPoint(endbb);
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+@@ -375,7 +373,7 @@ DValue *DtoDynamicCastObject(Loc &loc, DValue *val, Type *_to) {
+   assert(funcTy->getParamType(1) == cinfo->getType());
+ 
+   // call it
+-  LLValue *ret = gIR->CreateCallOrInvoke(func, obj, cinfo).getInstruction();
++  LLValue *ret = gIR->CreateCallOrInvoke(func, obj, cinfo);
+ 
+   // cast return value
+   ret = DtoBitCast(ret, DtoType(_to));
+@@ -409,7 +407,7 @@ DValue *DtoDynamicCastInterface(Loc &loc, DValue *val, Type *_to) {
+   cinfo = DtoBitCast(cinfo, funcTy->getParamType(1));
+ 
+   // call it
+-  LLValue *ret = gIR->CreateCallOrInvoke(func, ptr, cinfo).getInstruction();
++  LLValue *ret = gIR->CreateCallOrInvoke(func, ptr, cinfo);
+ 
+   // cast return value
+   ret = DtoBitCast(ret, DtoType(_to));
+diff --git a/gen/dibuilder.cpp b/gen/dibuilder.cpp
+index 4675cc3290..137c79a570 100644
+--- a/gen/dibuilder.cpp
++++ b/gen/dibuilder.cpp
+@@ -207,7 +207,7 @@ void DIBuilder::SetValue(const Loc &loc, llvm::Value *value,
+                                    IR->scopebb());
+ }
+ 
+-DIFile DIBuilder::CreateFile(Loc &loc) {
++DIFile DIBuilder::CreateFile(const Loc &loc) {
+   const char *filename = loc.filename;
+   if (!filename)
+     filename = IR->dmodule->srcfile.toChars();
+@@ -385,14 +385,19 @@ DIType DIBuilder::CreateVectorType(Type *type) {
+   // translate void vectors to byte vectors
+   if (te->toBasetype()->ty == Tvoid)
+     te = Type::tuns8;
+-  int64_t Dim = tv->size(Loc()) / te->size(Loc());
+-  LLMetadata *subscripts[] = {DBuilder.getOrCreateSubrange(0, Dim)};
++  const auto dim = tv->size(Loc()) / te->size(Loc());
++#if LDC_LLVM_VER >= 1100
++  const auto Dim = llvm::ConstantAsMetadata::get(DtoConstSize_t(dim));
++  auto subscript = DBuilder.getOrCreateSubrange(Dim, nullptr, nullptr, nullptr);
++#else
++  auto subscript = DBuilder.getOrCreateSubrange(0, dim);
++#endif
+ 
+   return DBuilder.createVectorType(
+-      getTypeAllocSize(T) * 8,              // size (bits)
+-      getABITypeAlign(T) * 8,               // align (bits)
+-      CreateTypeDescription(te),            // element type
+-      DBuilder.getOrCreateArray(subscripts) // subscripts
++      getTypeAllocSize(T) * 8,               // size (bits)
++      getABITypeAlign(T) * 8,                // align (bits)
++      CreateTypeDescription(te),             // element type
++      DBuilder.getOrCreateArray({subscript}) // subscripts
+   );
+ }
+ 
+@@ -681,8 +686,14 @@ DIType DIBuilder::CreateSArrayType(Type *type) {
+   llvm::SmallVector<LLMetadata *, 8> subscripts;
+   while (t->ty == Tsarray) {
+     TypeSArray *tsa = static_cast<TypeSArray *>(t);
+-    int64_t Count = tsa->dim->toInteger();
+-    auto subscript = DBuilder.getOrCreateSubrange(0, Count);
++    const auto count = tsa->dim->toInteger();
++#if LDC_LLVM_VER >= 1100
++    const auto Count = llvm::ConstantAsMetadata::get(DtoConstSize_t(count));
++    const auto subscript =
++        DBuilder.getOrCreateSubrange(Count, nullptr, nullptr, nullptr);
++#else
++    const auto subscript = DBuilder.getOrCreateSubrange(0, count);
++#endif
+     subscripts.push_back(subscript);
+     t = t->nextOf();
+   }
+@@ -1138,26 +1149,15 @@ void DIBuilder::EmitFuncStart(FuncDeclaration *fd) {
+   Logger::println("D to dwarf funcstart");
+   LOG_SCOPE;
+ 
+-  assert(static_cast<llvm::MDNode *>(getIrFunc(fd)->diSubprogram) != 0);
+-  EmitStopPoint(fd->loc);
+-}
+-
+-void DIBuilder::EmitFuncEnd(FuncDeclaration *fd) {
+-  if (!mustEmitLocationsDebugInfo())
+-    return;
+-
+-  Logger::println("D to dwarf funcend");
+-  LOG_SCOPE;
+-
+   auto irFunc = getIrFunc(fd);
+-
+-  assert(static_cast<llvm::MDNode *>(irFunc->diSubprogram) != 0);
+-  EmitStopPoint(fd->endloc);
+-
++  assert(irFunc->diSubprogram);
+   irFunc->getLLVMFunc()->setSubprogram(irFunc->diSubprogram);
++
++  IR->ir->SetCurrentDebugLocation({}); // clear first
++  EmitStopPoint(fd->loc);
+ }
+ 
+-void DIBuilder::EmitBlockStart(Loc &loc) {
++void DIBuilder::EmitBlockStart(const Loc &loc) {
+   if (!mustEmitLocationsDebugInfo())
+     return;
+ 
+@@ -1182,7 +1182,7 @@ void DIBuilder::EmitBlockEnd() {
+   fn->diLexicalBlocks.pop();
+ }
+ 
+-void DIBuilder::EmitStopPoint(Loc &loc) {
++void DIBuilder::EmitStopPoint(const Loc &loc) {
+   if (!mustEmitLocationsDebugInfo())
+     return;
+ 
+@@ -1191,6 +1191,7 @@ void DIBuilder::EmitStopPoint(Loc &loc) {
+   // cannot do this in all cases).
+   if (!loc.linnum && IR->ir->getCurrentDebugLocation())
+     return;
++
+   unsigned linnum = loc.linnum;
+   // without proper loc use the line of the enclosing symbol that has line
+   // number debug info
+@@ -1204,11 +1205,8 @@ void DIBuilder::EmitStopPoint(Loc &loc) {
+   LOG_SCOPE;
+   IR->ir->SetCurrentDebugLocation(
+       llvm::DebugLoc::get(linnum, col, GetCurrentScope()));
+-  currentLoc = loc;
+ }
+ 
+-Loc DIBuilder::GetCurrentLoc() const { return currentLoc; }
+-
+ void DIBuilder::EmitValue(llvm::Value *val, VarDeclaration *vd) {
+   auto sub = IR->func()->variableMap.find(vd);
+   if (sub == IR->func()->variableMap.end())
+diff --git a/gen/dibuilder.h b/gen/dibuilder.h
+index fb535235f6..2ea095b54e 100644
+--- a/gen/dibuilder.h
++++ b/gen/dibuilder.h
+@@ -72,8 +72,6 @@ class DIBuilder {
+     return CUNode;
+   }
+ 
+-  Loc currentLoc;
+-
+ public:
+   explicit DIBuilder(IRState *const IR);
+ 
+@@ -114,18 +112,13 @@ class DIBuilder {
+   /// \brief Emits debug info for function start
+   void EmitFuncStart(FuncDeclaration *fd);
+ 
+-  /// \brief Emits debug info for function end
+-  void EmitFuncEnd(FuncDeclaration *fd);
+-
+   /// \brief Emits debug info for block start
+-  void EmitBlockStart(Loc &loc);
++  void EmitBlockStart(const Loc &loc);
+ 
+   /// \brief Emits debug info for block end
+   void EmitBlockEnd();
+ 
+-  Loc GetCurrentLoc() const;
+-
+-  void EmitStopPoint(Loc &loc);
++  void EmitStopPoint(const Loc &loc);
+ 
+   void EmitValue(llvm::Value *val, VarDeclaration *vd);
+ 
+@@ -171,7 +164,7 @@ class DIBuilder {
+                  llvm::SmallVector<llvm::Metadata *, 16> &elems);
+   void AddStaticMembers(AggregateDeclaration *sd, ldc::DIFile file,
+                  llvm::SmallVector<llvm::Metadata *, 16> &elems);
+-  DIFile CreateFile(Loc &loc);
++  DIFile CreateFile(const Loc &loc);
+   DIFile CreateFile();
+   DIFile CreateFile(Dsymbol* decl);
+   DIType CreateBasicType(Type *type);
+diff --git a/gen/dynamiccompile.cpp b/gen/dynamiccompile.cpp
+index d59cd00fdc..05d613d6cb 100644
+--- a/gen/dynamiccompile.cpp
++++ b/gen/dynamiccompile.cpp
+@@ -193,8 +193,8 @@ void stripModule(llvm::Module &module) {
+ 
+ void fixRtModule(llvm::Module &newModule,
+                  const decltype(IRState::dynamicCompiledFunctions) &funcs) {
+-  std::unordered_map<std::string, std::string> thunkVar2func;
+-  std::unordered_map<std::string, std::string> thunkFun2func;
++  std::unordered_map<std::string, llvm::StringRef> thunkVar2func;
++  std::unordered_map<std::string, llvm::StringRef> thunkFun2func;
+   std::unordered_set<std::string> externalFuncs;
+   for (auto &&it : funcs) {
+     assert(nullptr != it.first);
+@@ -769,7 +769,12 @@ void createThunkFunc(llvm::Module &module, const llvm::Function *src,
+   for (auto &arg : dst->args()) {
+     args.push_back(&arg);
+   }
++#if LDC_LLVM_VER >= 1100
++  auto ret = builder.CreateCall(
++      llvm::FunctionCallee(dst->getFunctionType(), thunkPtr), args);
++#else
+   auto ret = builder.CreateCall(thunkPtr, args);
++#endif
+   ret->setCallingConv(src->getCallingConv());
+   ret->setAttributes(src->getAttributes());
+   if (dst->getReturnType()->isVoidTy()) {
+diff --git a/gen/funcgenstate.cpp b/gen/funcgenstate.cpp
+index ca61adb7ab..fbdb9a3462 100644
+--- a/gen/funcgenstate.cpp
++++ b/gen/funcgenstate.cpp
+@@ -103,9 +103,10 @@ FuncGenState::FuncGenState(IrFunction &irFunc, IRState &irs)
+     : irFunc(irFunc), scopes(irs), jumpTargets(scopes), switchTargets(),
+       irs(irs) {}
+ 
+-llvm::CallSite FuncGenState::callOrInvoke(llvm::Value *callee,
+-                                          llvm::ArrayRef<llvm::Value *> args,
+-                                          const char *name, bool isNothrow) {
++LLCallBasePtr FuncGenState::callOrInvoke(llvm::Value *callee,
++                                         llvm::FunctionType *calleeType,
++                                         llvm::ArrayRef<llvm::Value *> args,
++                                         const char *name, bool isNothrow) {
+   // If this is a direct call, we might be able to use the callee attributes
+   // to our advantage.
+   llvm::Function *calleeFn = llvm::dyn_cast<llvm::Function>(callee);
+@@ -123,8 +124,14 @@ llvm::CallSite FuncGenState::callOrInvoke(llvm::Value *callee,
+   // calls inside a funclet must be annotated with its value
+   llvm::SmallVector<llvm::OperandBundleDef, 2> BundleList;
+ 
++#if LDC_LLVM_VER >= 1100
++  llvm::FunctionCallee calleeArg(calleeType, callee);
++#else
++  auto calleeArg = callee;
++#endif
++
+   if (doesNotThrow || scopes.empty()) {
+-    llvm::CallInst *call = irs.ir->CreateCall(callee, args, BundleList, name);
++    auto call = irs.ir->CreateCall(calleeArg, args, BundleList, name);
+     if (calleeFn) {
+       call->setAttributes(calleeFn->getAttributes());
+     }
+@@ -134,12 +141,12 @@ llvm::CallSite FuncGenState::callOrInvoke(llvm::Value *callee,
+   llvm::BasicBlock *landingPad = scopes.getLandingPad();
+ 
+   llvm::BasicBlock *postinvoke = irs.insertBB("postinvoke");
+-  llvm::InvokeInst *invoke = irs.ir->CreateInvoke(
+-      callee, postinvoke, landingPad, args, BundleList, name);
++  auto invoke = irs.ir->CreateInvoke(calleeArg, postinvoke, landingPad, args,
++                                     BundleList, name);
+   if (calleeFn) {
+     invoke->setAttributes(calleeFn->getAttributes());
+   }
+ 
+-  irs.scope() = IRScope(postinvoke);
++  irs.ir->SetInsertPoint(postinvoke);
+   return invoke;
+ }
+diff --git a/gen/funcgenstate.h b/gen/funcgenstate.h
+index 365b38bf5a..af719c74b8 100644
+--- a/gen/funcgenstate.h
++++ b/gen/funcgenstate.h
+@@ -18,7 +18,6 @@
+ #include "gen/pgo_ASTbased.h"
+ #include "gen/trycatchfinally.h"
+ #include "llvm/ADT/DenseMap.h"
+-#include "llvm/IR/CallSite.h"
+ #include <vector>
+ 
+ class Identifier;
+@@ -200,9 +199,10 @@ class FuncGenState {
+ 
+   /// Emits a call or invoke to the given callee, depending on whether there
+   /// are catches/cleanups active or not.
+-  llvm::CallSite callOrInvoke(llvm::Value *callee,
+-                              llvm::ArrayRef<llvm::Value *> args,
+-                              const char *name = "", bool isNothrow = false);
++  LLCallBasePtr callOrInvoke(llvm::Value *callee,
++                             llvm::FunctionType *calleeType,
++                             llvm::ArrayRef<llvm::Value *> args,
++                             const char *name = "", bool isNothrow = false);
+ 
+ private:
+   IRState &irs;
+diff --git a/gen/functions.cpp b/gen/functions.cpp
+index c8c0ec3d65..1af45d0806 100644
+--- a/gen/functions.cpp
++++ b/gen/functions.cpp
+@@ -454,20 +454,28 @@ void applyParamAttrsToLLFunc(TypeFunction *f, IrFuncTy &irFty,
+ /// does the same). See https://llvm.org/bugs/show_bug.cgi?id=23172
+ void applyTargetMachineAttributes(llvm::Function &func,
+                                   const llvm::TargetMachine &target) {
+-  const llvm::TargetOptions &TO = target.Options;
++  const auto dcompute = gIR->dcomputetarget;
+ 
+-  // TODO: implement commandline switches to change the default values.
+   // TODO: (correctly) apply these for NVPTX (but not for SPIRV).
+-  if (gIR->dcomputetarget && gIR->dcomputetarget->target == DComputeTarget::OpenCL)
++  if (dcompute && dcompute->target == DComputeTarget::OpenCL)
+     return;
+-  if (!gIR->dcomputetarget) {
+-    // Target CPU capabilities
+-    func.addFnAttr("target-cpu", target.getTargetCPU());
+-    auto featStr = target.getTargetFeatureString();
+-    if (!featStr.empty())
+-      func.addFnAttr("target-features", featStr);
+-  }
++  const auto cpu = dcompute ? "" : target.getTargetCPU();
++  const auto features = dcompute ? "" : target.getTargetFeatureString();
++
++#if LDC_LLVM_VER >= 1000
++  opts::setFunctionAttributes(cpu, features, func);
++  if (opts::fFastMath) // -ffast-math[=true] overrides -enable-unsafe-fp-math
++    func.addFnAttr("unsafe-fp-math", "true");
++  if (!func.hasFnAttribute("frame-pointer")) // not explicitly set by user
++    func.addFnAttr("frame-pointer", isOptimizationEnabled() ? "none" : "all");
++#else
++  if (!cpu.empty())
++    func.addFnAttr("target-cpu", cpu);
++  if (!features.empty())
++    func.addFnAttr("target-features", features);
++
+   // Floating point settings
++  const auto &TO = target.Options;
+   func.addFnAttr("unsafe-fp-math", TO.UnsafeFPMath ? "true" : "false");
+   // This option was removed from llvm::TargetOptions in LLVM 5.0.
+   // Clang sets this to true when `-cl-mad-enable` is passed (OpenCL only).
+@@ -490,10 +498,11 @@ void applyTargetMachineAttributes(llvm::Function &func,
+       func.addFnAttr("frame-pointer", "all");
+       break;
+   }
+-#else
++#else // LDC_LLVM_VER < 800
+   func.addFnAttr("no-frame-pointer-elim",
+                  willEliminateFramePointer() ? "false" : "true");
+ #endif
++#endif // LDC_LLVM_VER < 1000
+ }
+ 
+ void applyXRayAttributes(FuncDeclaration &fdecl, llvm::Function &func) {
+@@ -883,12 +892,11 @@ void emitDMDStyleFunctionTrace(IRState &irs, FuncDeclaration *fd,
+   // Push cleanup block that calls _c_trace_epi at function exit.
+   {
+     auto traceEpilogBB = irs.insertBB("trace_epi");
+-    auto saveScope = irs.scope();
+-    irs.scope() = IRScope(traceEpilogBB);
++    const auto savedInsertPoint = irs.saveInsertPoint();
++    irs.ir->SetInsertPoint(traceEpilogBB);
+     irs.ir->CreateCall(
+         getRuntimeFunction(fd->endloc, irs.module, "_c_trace_epi"));
+     funcGen.scopes.pushCleanup(traceEpilogBB, irs.scopebb());
+-    irs.scope() = saveScope;
+   }
+ }
+ 
+@@ -926,7 +934,7 @@ void emulateWeakAnyLinkageForMSVC(LLFunction *func, LINK linkage) {
+     finalMangle = mangleBuffer;
+   }
+ 
+-  std::string finalWeakMangle = finalMangle;
++  std::string finalWeakMangle = finalMangle.str();
+   if (linkage == LINKcpp) {
+     assert(finalMangle.startswith("?"));
+     // prepend `__weak_` to first identifier
+@@ -1165,13 +1173,10 @@ void DtoDefineFunction(FuncDeclaration *fd, bool linkageAvailableExternally) {
+   llvm::BasicBlock *beginbb =
+       llvm::BasicBlock::Create(gIR->context(), "", func);
+ 
+-  gIR->scopes.push_back(IRScope(beginbb));
+-  SCOPE_EXIT {
+-    gIR->scopes.pop_back();
+-  };
+-
+-  // Set the FastMath options for this function scope.
+-  gIR->scopes.back().builder.setFastMathFlags(irFunc->FMF);
++  // set up the IRBuilder scope for the function
++  const auto savedIRBuilderScope = gIR->setInsertPoint(beginbb);
++  gIR->ir->setFastMathFlags(irFunc->FMF);
++  gIR->DBuilder.EmitFuncStart(fd);
+ 
+   // @naked: emit body and return, no prologue/epilogue
+   if (func->hasFnAttribute(llvm::Attribute::Naked)) {
+@@ -1194,9 +1199,6 @@ void DtoDefineFunction(FuncDeclaration *fd, bool linkageAvailableExternally) {
+                            "alloca_point", beginbb);
+   funcGen.allocapoint = allocaPoint;
+ 
+-  // debug info - after all allocas, but before any llvm.dbg.declare etc
+-  gIR->DBuilder.EmitFuncStart(fd);
+-
+   emitInstrumentationFnEnter(fd);
+ 
+   if (global.params.trace && fd->emitInstrumentation && !fd->isCMain() &&
+@@ -1277,11 +1279,10 @@ void DtoDefineFunction(FuncDeclaration *fd, bool linkageAvailableExternally) {
+     {
+       auto *vaendBB =
+           llvm::BasicBlock::Create(gIR->context(), "vaend", gIR->topfunc());
+-      IRScope saveScope = gIR->scope();
+-      gIR->scope() = IRScope(vaendBB);
++      const auto savedInsertPoint = gIR->saveInsertPoint();
++      gIR->ir->SetInsertPoint(vaendBB);
+       gIR->ir->CreateCall(GET_INTRINSIC_DECL(vaend), llAp);
+       funcGen.scopes.pushCleanup(vaendBB, gIR->scopebb());
+-      gIR->scope() = saveScope;
+     }
+   }
+ 
+@@ -1297,7 +1298,7 @@ void DtoDefineFunction(FuncDeclaration *fd, bool linkageAvailableExternally) {
+       if (!funcGen.retBlock)
+         funcGen.retBlock = gIR->insertBB("return");
+       funcGen.scopes.runCleanups(0, funcGen.retBlock);
+-      gIR->scope() = IRScope(funcGen.retBlock);
++      gIR->ir->SetInsertPoint(funcGen.retBlock);
+     }
+     funcGen.scopes.popCleanups(0);
+   }
+@@ -1322,7 +1323,6 @@ void DtoDefineFunction(FuncDeclaration *fd, bool linkageAvailableExternally) {
+       gIR->ir->CreateRet(llvm::UndefValue::get(func->getReturnType()));
+     }
+   }
+-  gIR->DBuilder.EmitFuncEnd(fd);
+ 
+   // erase alloca point
+   if (allocaPoint->getParent()) {
+diff --git a/gen/irstate.cpp b/gen/irstate.cpp
+index f5e3c299ab..54990b152b 100644
+--- a/gen/irstate.cpp
++++ b/gen/irstate.cpp
+@@ -26,20 +26,9 @@ llvm::TargetMachine *gTargetMachine = nullptr;
+ const llvm::DataLayout *gDataLayout = nullptr;
+ TargetABI *gABI = nullptr;
+ 
+-////////////////////////////////////////////////////////////////////////////////
+-IRScope::IRScope() : builder(gIR->context()) { begin = nullptr; }
+-
+-IRScope::IRScope(llvm::BasicBlock *b) : begin(b), builder(b) {}
+-
+-IRScope &IRScope::operator=(const IRScope &rhs) {
+-  begin = rhs.begin;
+-  builder.SetInsertPoint(begin);
+-  return *this;
+-}
+-
+ ////////////////////////////////////////////////////////////////////////////////
+ IRState::IRState(const char *name, llvm::LLVMContext &context)
+-    : module(name, context), objc(module), DBuilder(this) {
++    : builder(context), module(name, context), objc(module), DBuilder(this) {
+   ir.state = this;
+   mem.addRange(&inlineAsmLocs, sizeof(inlineAsmLocs));
+ }
+@@ -57,20 +46,20 @@ llvm::Function *IRState::topfunc() { return func()->getLLVMFunc(); }
+ 
+ llvm::Instruction *IRState::topallocapoint() { return funcGen().allocapoint; }
+ 
+-IRScope &IRState::scope() {
+-  assert(!scopes.empty());
+-  return scopes.back();
++std::unique_ptr<IRBuilderScope> IRState::setInsertPoint(llvm::BasicBlock *bb) {
++  auto savedScope = llvm::make_unique<IRBuilderScope>(builder);
++  builder.SetInsertPoint(bb);
++  return savedScope;
+ }
+ 
+-llvm::BasicBlock *IRState::scopebb() {
+-  IRScope &s = scope();
+-  assert(s.begin);
+-  return s.begin;
++std::unique_ptr<llvm::IRBuilderBase::InsertPointGuard>
++IRState::saveInsertPoint() {
++  return llvm::make_unique<llvm::IRBuilderBase::InsertPointGuard>(builder);
+ }
+ 
+ bool IRState::scopereturned() {
+-  // return scope().returned;
+-  return !scopebb()->empty() && scopebb()->back().isTerminator();
++  auto bb = scopebb();
++  return !bb->empty() && bb->back().isTerminator();
+ }
+ 
+ llvm::BasicBlock *IRState::insertBBBefore(llvm::BasicBlock *successor,
+@@ -89,35 +78,42 @@ llvm::BasicBlock *IRState::insertBB(const llvm::Twine &name) {
+   return insertBBAfter(scopebb(), name);
+ }
+ 
+-LLCallSite IRState::CreateCallOrInvoke(LLValue *Callee, const char *Name) {
+-  return funcGen().callOrInvoke(Callee, {}, Name);
++llvm::Instruction *IRState::CreateCallOrInvoke(LLFunction *Callee,
++                                               const char *Name) {
++  return CreateCallOrInvoke(Callee, {}, Name);
+ }
+ 
+-LLCallSite IRState::CreateCallOrInvoke(LLValue *Callee,
+-                                       llvm::ArrayRef<LLValue *> Args,
+-                                       const char *Name, bool isNothrow) {
+-  return funcGen().callOrInvoke(Callee, Args, Name, isNothrow);
++llvm::Instruction *IRState::CreateCallOrInvoke(LLFunction *Callee,
++                                               llvm::ArrayRef<LLValue *> Args,
++                                               const char *Name,
++                                               bool isNothrow) {
++  return funcGen().callOrInvoke(Callee, Callee->getFunctionType(), Args, Name,
++                                isNothrow);
+ }
+ 
+-LLCallSite IRState::CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                       const char *Name) {
+-  return funcGen().callOrInvoke(Callee, {Arg1}, Name);
++llvm::Instruction *IRState::CreateCallOrInvoke(LLFunction *Callee,
++                                               LLValue *Arg1,
++                                               const char *Name) {
++  return CreateCallOrInvoke(Callee, llvm::ArrayRef<LLValue *>(Arg1), Name);
+ }
+ 
+-LLCallSite IRState::CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                       LLValue *Arg2, const char *Name) {
++llvm::Instruction *IRState::CreateCallOrInvoke(LLFunction *Callee,
++                                               LLValue *Arg1, LLValue *Arg2,
++                                               const char *Name) {
+   return CreateCallOrInvoke(Callee, {Arg1, Arg2}, Name);
+ }
+ 
+-LLCallSite IRState::CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                       LLValue *Arg2, LLValue *Arg3,
+-                                       const char *Name) {
++llvm::Instruction *IRState::CreateCallOrInvoke(LLFunction *Callee,
++                                               LLValue *Arg1, LLValue *Arg2,
++                                               LLValue *Arg3,
++                                               const char *Name) {
+   return CreateCallOrInvoke(Callee, {Arg1, Arg2, Arg3}, Name);
+ }
+ 
+-LLCallSite IRState::CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                       LLValue *Arg2, LLValue *Arg3,
+-                                       LLValue *Arg4, const char *Name) {
++llvm::Instruction *IRState::CreateCallOrInvoke(LLFunction *Callee,
++                                               LLValue *Arg1, LLValue *Arg2,
++                                               LLValue *Arg3, LLValue *Arg4,
++                                               const char *Name) {
+   return CreateCallOrInvoke(Callee, {Arg1, Arg2, Arg3, Arg4}, Name);
+ }
+ 
+@@ -284,8 +280,8 @@ const Loc &IRState::getInlineAsmSrcLoc(unsigned srcLocCookie) const {
+ ////////////////////////////////////////////////////////////////////////////////
+ 
+ IRBuilder<> *IRBuilderHelper::operator->() {
+-  IRBuilder<> &b = state->scope().builder;
+-  assert(b.GetInsertBlock() != NULL);
++  IRBuilder<> &b = state->builder;
++  assert(b.GetInsertBlock());
+   return &b;
+ }
+ 
+diff --git a/gen/irstate.h b/gen/irstate.h
+index a47c276c00..37b9a119fe 100644
+--- a/gen/irstate.h
++++ b/gen/irstate.h
+@@ -22,7 +22,6 @@
+ #include "ir/irvar.h"
+ #include "llvm/ADT/DenseMap.h"
+ #include "llvm/ADT/StringMap.h"
+-#include "llvm/IR/CallSite.h"
+ #include "llvm/ProfileData/InstrProfReader.h"
+ #include <deque>
+ #include <memory>
+@@ -59,16 +58,15 @@ class StructLiteralExp;
+ struct IrFunction;
+ struct IrModule;
+ 
+-// represents a scope
+-struct IRScope {
+-  llvm::BasicBlock *begin;
+-  IRBuilder<> builder;
+-
+-  IRScope();
+-  IRScope(const IRScope &) = default;
+-  explicit IRScope(llvm::BasicBlock *b);
++// Saves the IRBuilder state and restores it on destruction.
++struct IRBuilderScope {
++private:
++  llvm::IRBuilderBase::InsertPointGuard ipGuard;
++  llvm::IRBuilderBase::FastMathFlagGuard fmfGuard;
+ 
+-  IRScope &operator=(const IRScope &rhs);
++public:
++  explicit IRBuilderScope(llvm::IRBuilderBase &builder)
++      : ipGuard(builder), fmfGuard(builder) {}
+ };
+ 
+ struct IRBuilderHelper {
+@@ -111,6 +109,9 @@ struct IRAsmBlock {
+ // represents the LLVM module (object file)
+ struct IRState {
+ private:
++  IRBuilder<> builder;
++  friend struct IRBuilderHelper;
++
+   std::vector<std::pair<llvm::GlobalVariable *, llvm::Constant *>>
+       globalsToReplace;
+   Array<Loc> inlineAsmLocs; // tracked by GC
+@@ -154,10 +155,16 @@ struct IRState {
+   llvm::Function *topfunc();
+   llvm::Instruction *topallocapoint();
+ 
+-  // basic block scopes
+-  std::vector<IRScope> scopes;
+-  IRScope &scope();
+-  llvm::BasicBlock *scopebb();
++  // Use this to set the IRBuilder's insertion point for a new function.
++  // The previous IRBuilder state is restored when the returned value is
++  // destructed. Use `ir->SetInsertPoint()` instead to change the insertion
++  // point inside the same function.
++  std::unique_ptr<IRBuilderScope> setInsertPoint(llvm::BasicBlock *bb);
++  // Use this to have the IRBuilder's current insertion point (incl. debug
++  // location) restored when the returned value is destructed.
++  std::unique_ptr<llvm::IRBuilderBase::InsertPointGuard> saveInsertPoint();
++  // Returns the basic block the IRBuilder currently inserts into.
++  llvm::BasicBlock *scopebb() { return ir->GetInsertBlock(); }
+   bool scopereturned();
+ 
+   // Creates a new basic block and inserts it before the specified one.
+@@ -171,21 +178,22 @@ struct IRState {
+   llvm::BasicBlock *insertBB(const llvm::Twine &name);
+ 
+   // create a call or invoke, depending on the landing pad info
+-  llvm::CallSite CreateCallOrInvoke(LLValue *Callee, const char *Name = "");
+-  llvm::CallSite CreateCallOrInvoke(LLValue *Callee,
+-                                    llvm::ArrayRef<LLValue *> Args,
+-                                    const char *Name = "",
+-                                    bool isNothrow = false);
+-  llvm::CallSite CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                    const char *Name = "");
+-  llvm::CallSite CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                    LLValue *Arg2, const char *Name = "");
+-  llvm::CallSite CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                    LLValue *Arg2, LLValue *Arg3,
+-                                    const char *Name = "");
+-  llvm::CallSite CreateCallOrInvoke(LLValue *Callee, LLValue *Arg1,
+-                                    LLValue *Arg2, LLValue *Arg3, LLValue *Arg4,
+-                                    const char *Name = "");
++  llvm::Instruction *CreateCallOrInvoke(LLFunction *Callee,
++                                        const char *Name = "");
++  llvm::Instruction *CreateCallOrInvoke(LLFunction *Callee,
++                                        llvm::ArrayRef<LLValue *> Args,
++                                        const char *Name = "",
++                                        bool isNothrow = false);
++  llvm::Instruction *CreateCallOrInvoke(LLFunction *Callee, LLValue *Arg1,
++                                        const char *Name = "");
++  llvm::Instruction *CreateCallOrInvoke(LLFunction *Callee, LLValue *Arg1,
++                                        LLValue *Arg2, const char *Name = "");
++  llvm::Instruction *CreateCallOrInvoke(LLFunction *Callee, LLValue *Arg1,
++                                        LLValue *Arg2, LLValue *Arg3,
++                                        const char *Name = "");
++  llvm::Instruction *CreateCallOrInvoke(LLFunction *Callee, LLValue *Arg1,
++                                        LLValue *Arg2, LLValue *Arg3,
++                                        LLValue *Arg4, const char *Name = "");
+ 
+   // this holds the array being indexed or sliced so $ will work
+   // might be a better way but it works. problem is I only get a
+diff --git a/gen/llvm.h b/gen/llvm.h
+index ade01294a2..bed932f820 100644
+--- a/gen/llvm.h
++++ b/gen/llvm.h
+@@ -30,7 +30,9 @@
+ #include "llvm/IR/DataLayout.h"
+ #include "llvm/IR/IRBuilder.h"
+ #include "llvm/IR/DebugInfo.h"
++#if LDC_LLVM_VER < 800
+ #include "llvm/IR/CallSite.h"
++#endif
+ 
+ #if LDC_LLVM_VER >= 1000
+ // LLVM >= 10 requires C++14 and no longer has llvm::make_unique. Add it back
+@@ -46,8 +48,14 @@ using llvm::APInt;
+ using llvm::IRBuilder;
+ 
+ #if LDC_LLVM_VER >= 1000
++#if LDC_LLVM_VER >= 1100
++#define LLAlign llvm::Align
++#else
++#define LLAlign llvm::MaybeAlign
++#endif
+ #define LLMaybeAlign llvm::MaybeAlign
+ #else
++#define LLAlign
+ #define LLMaybeAlign
+ #endif
+ 
+@@ -75,6 +83,22 @@ using llvm::IRBuilder;
+ #define LLConstantInt llvm::ConstantInt
+ #define LLConstantFP llvm::ConstantFP
+ 
+-#define LLCallSite llvm::CallSite
+-
+ #define LLSmallVector llvm::SmallVector
++
++#if LDC_LLVM_VER >= 800
++using LLCallBasePtr = llvm::CallBase *;
++#else
++class LLCallBasePtr {
++  llvm::CallSite CS;
++
++public:
++  LLCallBasePtr(llvm::CallInst *CI) : CS(CI) {}
++  LLCallBasePtr(llvm::InvokeInst *II) : CS(II) {}
++  explicit LLCallBasePtr(llvm::Instruction *I) : CS(I) {}
++
++  llvm::CallSite *operator->() { return &CS; }
++
++  operator llvm::CallSite &() { return CS; }
++  operator llvm::Instruction *() { return CS.getInstruction(); }
++};
++#endif
+diff --git a/gen/llvmhelpers.cpp b/gen/llvmhelpers.cpp
+index 8096e93fad..8b5ff3c427 100644
+--- a/gen/llvmhelpers.cpp
++++ b/gen/llvmhelpers.cpp
+@@ -85,7 +85,7 @@ LLValue *DtoNew(Loc &loc, Type *newtype) {
+   LLConstant *ti = DtoTypeInfoOf(newtype);
+   assert(isaPointer(ti));
+   // call runtime allocator
+-  LLValue *mem = gIR->CreateCallOrInvoke(fn, ti, ".gc_mem").getInstruction();
++  LLValue *mem = gIR->CreateCallOrInvoke(fn, ti, ".gc_mem");
+   // cast
+   return DtoBitCast(mem, DtoPtrToType(newtype), ".gc_mem");
+ }
+@@ -95,7 +95,7 @@ LLValue *DtoNewStruct(Loc &loc, TypeStruct *newtype) {
+       loc, gIR->module,
+       newtype->isZeroInit(newtype->sym->loc) ? "_d_newitemT" : "_d_newitemiT");
+   LLConstant *ti = DtoTypeInfoOf(newtype);
+-  LLValue *mem = gIR->CreateCallOrInvoke(fn, ti, ".gc_struct").getInstruction();
++  LLValue *mem = gIR->CreateCallOrInvoke(fn, ti, ".gc_struct");
+   return DtoBitCast(mem, DtoPtrToType(newtype), ".gc_struct");
+ }
+ 
+@@ -180,7 +180,9 @@ llvm::AllocaInst *DtoArrayAlloca(Type *type, unsigned arraysize,
+   auto ai = new llvm::AllocaInst(
+       lltype, gIR->module.getDataLayout().getAllocaAddrSpace(),
+       DtoConstUint(arraysize), name, gIR->topallocapoint());
+-  ai->setAlignment(LLMaybeAlign(DtoAlignment(type)));
++  if (auto alignment = DtoAlignment(type)) {
++    ai->setAlignment(LLAlign(alignment));
++  }
+   return ai;
+ }
+ 
+@@ -190,7 +192,7 @@ llvm::AllocaInst *DtoRawAlloca(LLType *lltype, size_t alignment,
+       lltype, gIR->module.getDataLayout().getAllocaAddrSpace(), name,
+       gIR->topallocapoint());
+   if (alignment) {
+-    ai->setAlignment(LLMaybeAlign(alignment));
++    ai->setAlignment(LLAlign(alignment));
+   }
+   return ai;
+ }
+@@ -201,7 +203,7 @@ LLValue *DtoGcMalloc(Loc &loc, LLType *lltype, const char *name) {
+   // parameters
+   LLValue *size = DtoConstSize_t(getTypeAllocSize(lltype));
+   // call runtime allocator
+-  LLValue *mem = gIR->CreateCallOrInvoke(fn, size, name).getInstruction();
++  LLValue *mem = gIR->CreateCallOrInvoke(fn, size, name);
+   // cast
+   return DtoBitCast(mem, getPtrToType(lltype), name);
+ }
+@@ -635,8 +637,7 @@ DValue *DtoCastVector(Loc &loc, DValue *val, Type *to) {
+     LLValue *vector = DtoRVal(val);
+     IF_LOG Logger::cout() << "src: " << *vector << "to type: " << *tolltype
+                           << " (creating temporary)\n";
+-    LLValue *array = DtoAlloca(to);
+-    DtoStore(vector, DtoBitCast(array, getPtrToType(vector->getType())));
++    LLValue *array = DtoAllocaDump(vector, tolltype, DtoAlignment(val->type));
+     return new DLValue(to, array);
+   }
+   if (totype->ty == Tvector && to->size() == val->type->size()) {
+@@ -1231,7 +1232,12 @@ LLConstant *DtoConstExpInit(Loc &loc, Type *targetType, Expression *exp) {
+     assert(tv->basetype->ty == Tsarray);
+     dinteger_t elemCount =
+         static_cast<TypeSArray *>(tv->basetype)->dim->toInteger();
+-    return llvm::ConstantVector::getSplat(elemCount, val);
++#if LDC_LLVM_VER >= 1100
++    const auto elementCount = llvm::ElementCount(elemCount, false);
++#else
++    const auto elementCount = elemCount;
++#endif
++    return llvm::ConstantVector::getSplat(elementCount, val);
+   }
+ 
+   if (llType->isIntegerTy() && targetLLType->isIntegerTy()) {
+@@ -1310,9 +1316,14 @@ static char *DtoOverloadedIntrinsicName(TemplateInstance *ti,
+   if (dtype->isPPC_FP128Ty()) { // special case
+     replacement = "ppcf128";
+   } else if (dtype->isVectorTy()) {
++#if LDC_LLVM_VER >= 1100
++    auto vectorType = llvm::cast<llvm::FixedVectorType>(dtype);
++#else
++    auto vectorType = llvm::cast<llvm::VectorType>(dtype);
++#endif
+     llvm::raw_string_ostream stream(replacement);
+-    stream << 'v' << dtype->getVectorNumElements() << prefix
+-        << gDataLayout->getTypeSizeInBits(dtype->getVectorElementType());
++    stream << 'v' << vectorType->getNumElements() << prefix
++           << gDataLayout->getTypeSizeInBits(vectorType->getElementType());
+     stream.flush();
+   } else {
+     replacement = prefix + std::to_string(gDataLayout->getTypeSizeInBits(dtype));
+diff --git a/gen/optimizer.cpp b/gen/optimizer.cpp
+index 5832251b0a..c4faeb16a7 100644
+--- a/gen/optimizer.cpp
++++ b/gen/optimizer.cpp
+@@ -131,14 +131,14 @@ bool willCrossModuleInline() {
+   return enableCrossModuleInlining == llvm::cl::BOU_TRUE;
+ }
+ 
+-#if LDC_LLVM_VER >= 800
++#if LDC_LLVM_VER >= 800 && LDC_LLVM_VER < 1000
+ llvm::FramePointer::FP whichFramePointersToEmit() {
+   if (auto option = opts::framePointerUsage())
+     return *option;
+   return isOptimizationEnabled() ? llvm::FramePointer::None
+                                  : llvm::FramePointer::All;
+ }
+-#else
++#elif LDC_LLVM_VER < 800
+ bool willEliminateFramePointer() {
+   const llvm::cl::boolOrDefault disableFPElimEnum = opts::disableFPElim();
+   return disableFPElimEnum == llvm::cl::BOU_FALSE ||
+diff --git a/gen/optimizer.h b/gen/optimizer.h
+index 0a5583bb96..eb08f26823 100644
+--- a/gen/optimizer.h
++++ b/gen/optimizer.h
+@@ -34,9 +34,9 @@ bool willInline();
+ 
+ bool willCrossModuleInline();
+ 
+-#if LDC_LLVM_VER >= 800
++#if LDC_LLVM_VER >= 800 && LDC_LLVM_VER < 1000
+ llvm::FramePointer::FP whichFramePointersToEmit();
+-#else
++#elif LDC_LLVM_VER < 800
+ bool willEliminateFramePointer();
+ #endif
+ 
+diff --git a/gen/passes/GarbageCollect2Stack.cpp b/gen/passes/GarbageCollect2Stack.cpp
+index a726f844cb..cbac1620fa 100644
+--- a/gen/passes/GarbageCollect2Stack.cpp
++++ b/gen/passes/GarbageCollect2Stack.cpp
+@@ -28,7 +28,6 @@
+ #include "llvm/ADT/SmallVector.h"
+ #include "llvm/ADT/Statistic.h"
+ #include "llvm/ADT/StringMap.h"
+-#include "llvm/IR/CallSite.h"
+ #include "llvm/IR/Constants.h"
+ #include "llvm/IR/DataLayout.h"
+ #include "llvm/IR/Dominators.h"
+@@ -115,14 +114,14 @@ class FunctionInfo {
+ 
+   // Analyze the current call, filling in some fields. Returns true if
+   // this is an allocation we can stack-allocate.
+-  virtual bool analyze(CallSite CS, const Analysis &A) = 0;
++  virtual bool analyze(LLCallBasePtr CB, const Analysis &A) = 0;
+ 
+   // Returns the alloca to replace this call.
+   // It will always be inserted before the call.
+-  virtual Value *promote(CallSite CS, IRBuilder<> &B, const Analysis &A) {
++  virtual Value *promote(LLCallBasePtr CB, IRBuilder<> &B, const Analysis &A) {
+     NumGcToStack++;
+ 
+-    auto &BB = CS.getCaller()->getEntryBlock();
++    auto &BB = CB->getCaller()->getEntryBlock();
+     Instruction *Begin = &(*BB.begin());
+ 
+     // FIXME: set alignment on alloca?
+@@ -167,8 +166,8 @@ class TypeInfoFI : public FunctionInfo {
+   TypeInfoFI(ReturnType::Type returnType, unsigned tiArgNr)
+       : FunctionInfo(returnType), TypeInfoArgNr(tiArgNr) {}
+ 
+-  bool analyze(CallSite CS, const Analysis &A) override {
+-    Value *TypeInfo = CS.getArgument(TypeInfoArgNr);
++  bool analyze(LLCallBasePtr CB, const Analysis &A) override {
++    Value *TypeInfo = CB->getArgOperand(TypeInfoArgNr);
+     Ty = A.getTypeFor(TypeInfo);
+     if (!Ty) {
+       return false;
+@@ -188,12 +187,12 @@ class ArrayFI : public TypeInfoFI {
+       : TypeInfoFI(returnType, tiArgNr), ArrSizeArgNr(arrSizeArgNr),
+         Initialized(initialized) {}
+ 
+-  bool analyze(CallSite CS, const Analysis &A) override {
+-    if (!TypeInfoFI::analyze(CS, A)) {
++  bool analyze(LLCallBasePtr CB, const Analysis &A) override {
++    if (!TypeInfoFI::analyze(CB, A)) {
+       return false;
+     }
+ 
+-    arrSize = CS.getArgument(ArrSizeArgNr);
++    arrSize = CB->getArgOperand(ArrSizeArgNr);
+ 
+     // Extract the element type from the array type.
+     const StructType *ArrTy = dyn_cast<StructType>(Ty);
+@@ -217,17 +216,17 @@ class ArrayFI : public TypeInfoFI {
+     return true;
+   }
+ 
+-  Value *promote(CallSite CS, IRBuilder<> &B, const Analysis &A) override {
+-    IRBuilder<> Builder = B;
++  Value *promote(LLCallBasePtr CB, IRBuilder<> &B, const Analysis &A) override {
+     // If the allocation is of constant size it's best to put it in the
+     // entry block, so do so if we're not already there.
+     // For dynamically-sized allocations it's best to avoid the overhead
+     // of allocating them if possible, so leave those where they are.
+     // While we're at it, update statistics too.
++    const IRBuilderBase::InsertPointGuard savedInsertPoint(B);
+     if (isa<Constant>(arrSize)) {
+-      BasicBlock &Entry = CS.getCaller()->getEntryBlock();
+-      if (Builder.GetInsertBlock() != &Entry) {
+-        Builder.SetInsertPoint(&Entry, Entry.begin());
++      BasicBlock &Entry = CB->getCaller()->getEntryBlock();
++      if (B.GetInsertBlock() != &Entry) {
++        B.SetInsertPoint(&Entry, Entry.begin());
+       }
+       NumGcToStack++;
+     } else {
+@@ -235,9 +234,9 @@ class ArrayFI : public TypeInfoFI {
+     }
+ 
+     // Convert array size to 32 bits if necessary
+-    Value *count = Builder.CreateIntCast(arrSize, Builder.getInt32Ty(), false);
++    Value *count = B.CreateIntCast(arrSize, B.getInt32Ty(), false);
+     AllocaInst *alloca =
+-        Builder.CreateAlloca(Ty, count, ".nongc_mem"); // FIXME: align?
++        B.CreateAlloca(Ty, count, ".nongc_mem"); // FIXME: align?
+ 
+     if (Initialized) {
+       // For now, only zero-init is supported.
+@@ -250,11 +249,11 @@ class ArrayFI : public TypeInfoFI {
+     }
+ 
+     if (ReturnType == ReturnType::Array) {
+-      Value *arrStruct = llvm::UndefValue::get(CS.getType());
+-      arrStruct = Builder.CreateInsertValue(arrStruct, arrSize, 0);
++      Value *arrStruct = llvm::UndefValue::get(CB->getType());
++      arrStruct = B.CreateInsertValue(arrStruct, arrSize, 0);
+       Value *memPtr =
+-          Builder.CreateBitCast(alloca, PointerType::getUnqual(B.getInt8Ty()));
+-      arrStruct = Builder.CreateInsertValue(arrStruct, memPtr, 1);
++          B.CreateBitCast(alloca, PointerType::getUnqual(B.getInt8Ty()));
++      arrStruct = B.CreateInsertValue(arrStruct, memPtr, 1);
+       return arrStruct;
+     }
+ 
+@@ -265,11 +264,11 @@ class ArrayFI : public TypeInfoFI {
+ // FunctionInfo for _d_allocclass
+ class AllocClassFI : public FunctionInfo {
+ public:
+-  bool analyze(CallSite CS, const Analysis &A) override {
+-    if (CS.arg_size() != 1) {
++  bool analyze(LLCallBasePtr CB, const Analysis &A) override {
++    if (CB->arg_size() != 1) {
+       return false;
+     }
+-    Value *arg = CS.getArgument(0)->stripPointerCasts();
++    Value *arg = CB->getArgOperand(0)->stripPointerCasts();
+     GlobalVariable *ClassInfo = dyn_cast<GlobalVariable>(arg);
+     if (!ClassInfo) {
+       return false;
+@@ -322,12 +321,12 @@ class UntypedMemoryFI : public FunctionInfo {
+   Value *SizeArg;
+ 
+ public:
+-  bool analyze(CallSite CS, const Analysis &A) override {
+-    if (CS.arg_size() < SizeArgNr + 1) {
++  bool analyze(LLCallBasePtr CB, const Analysis &A) override {
++    if (CB->arg_size() < SizeArgNr + 1) {
+       return false;
+     }
+ 
+-    SizeArg = CS.getArgument(SizeArgNr);
++    SizeArg = CB->getArgOperand(SizeArgNr);
+ 
+     // If the user explicitly disabled the limits, don't even check
+     // whether the allocated size fits in 32 bits. This could cause
+@@ -341,21 +340,21 @@ class UntypedMemoryFI : public FunctionInfo {
+     }
+ 
+     // Should be i8.
+-    Ty = CS.getType()->getContainedType(0);
++    Ty = CB->getType()->getContainedType(0);
+     return true;
+   }
+ 
+-  Value *promote(CallSite CS, IRBuilder<> &B, const Analysis &A) override {
+-    IRBuilder<> Builder = B;
++  Value *promote(LLCallBasePtr CB, IRBuilder<> &B, const Analysis &A) override {
+     // If the allocation is of constant size it's best to put it in the
+     // entry block, so do so if we're not already there.
+     // For dynamically-sized allocations it's best to avoid the overhead
+     // of allocating them if possible, so leave those where they are.
+     // While we're at it, update statistics too.
++    const IRBuilderBase::InsertPointGuard savedInsertPoint(B);
+     if (isa<Constant>(SizeArg)) {
+-      BasicBlock &Entry = CS.getCaller()->getEntryBlock();
+-      if (Builder.GetInsertBlock() != &Entry) {
+-        Builder.SetInsertPoint(&Entry, Entry.begin());
++      BasicBlock &Entry = CB->getCaller()->getEntryBlock();
++      if (B.GetInsertBlock() != &Entry) {
++        B.SetInsertPoint(&Entry, Entry.begin());
+       }
+       NumGcToStack++;
+     } else {
+@@ -363,11 +362,11 @@ class UntypedMemoryFI : public FunctionInfo {
+     }
+ 
+     // Convert array size to 32 bits if necessary
+-    Value *count = Builder.CreateIntCast(SizeArg, Builder.getInt32Ty(), false);
++    Value *count = B.CreateIntCast(SizeArg, B.getInt32Ty(), false);
+     AllocaInst *alloca =
+-        Builder.CreateAlloca(Ty, count, ".nongc_mem"); // FIXME: align?
++        B.CreateAlloca(Ty, count, ".nongc_mem"); // FIXME: align?
+ 
+-    return Builder.CreateBitCast(alloca, CS.getType());
++    return B.CreateBitCast(alloca, CB->getType());
+   }
+ 
+   explicit UntypedMemoryFI(unsigned sizeArgNr)
+@@ -430,26 +429,24 @@ GarbageCollect2Stack::GarbageCollect2Stack()
+   KnownFunctions["_d_allocmemory"] = &AllocMemory;
+ }
+ 
+-static void RemoveCall(CallSite CS, const Analysis &A) {
++static void RemoveCall(LLCallBasePtr CB, const Analysis &A) {
+   // For an invoke instruction, we insert a branch to the normal target BB
+   // immediately before it. Ideally, we would find a way to not invalidate
+   // the dominator tree here.
+-  if (CS.isInvoke()) {
+-    InvokeInst *Invoke = cast<InvokeInst>(CS.getInstruction());
+-
++  if (auto Invoke = dyn_cast<InvokeInst>(static_cast<Instruction *>(CB))) {
+     BranchInst::Create(Invoke->getNormalDest(), Invoke);
+-    Invoke->getUnwindDest()->removePredecessor(CS->getParent());
++    Invoke->getUnwindDest()->removePredecessor(CB->getParent());
+   }
+ 
+   // Remove the runtime call.
+   if (A.CGNode) {
+ #if LDC_LLVM_VER >= 900
+-    A.CGNode->removeCallEdgeFor(*cast<CallBase>(CS.getInstruction()));
++    A.CGNode->removeCallEdgeFor(*CB);
+ #else
+-    A.CGNode->removeCallEdgeFor(CS);
++    A.CGNode->removeCallEdgeFor(CB);
+ #endif
+   }
+-  CS->eraseFromParent();
++  static_cast<Instruction *>(CB)->eraseFromParent();
+ }
+ 
+ static bool
+@@ -483,13 +480,20 @@ bool GarbageCollect2Stack::runOnFunction(Function &F) {
+ 
+       // Ignore non-calls.
+       Instruction *Inst = &(*(I++));
+-      CallSite CS(Inst);
+-      if (!CS.getInstruction()) {
++#if LDC_LLVM_VER >= 800
++      auto CB = dyn_cast<CallBase>(Inst);
++      if (!CB) {
++        continue;
++      }
++#else
++      LLCallBasePtr CB(Inst);
++      if (!CB->getInstruction()) {
+         continue;
+       }
++#endif
+ 
+       // Ignore indirect calls and calls to non-external functions.
+-      Function *Callee = CS.getCalledFunction();
++      Function *Callee = CB->getCalledFunction();
+       if (Callee == nullptr || !Callee->isDeclaration() ||
+           !Callee->hasExternalLinkage()) {
+         continue;
+@@ -503,16 +507,16 @@ bool GarbageCollect2Stack::runOnFunction(Function &F) {
+ 
+       FunctionInfo *info = OMI->getValue();
+ 
+-      if (Inst->use_empty()) {
++      if (static_cast<Instruction *>(CB)->use_empty()) {
+         Changed = true;
+         NumDeleted++;
+-        RemoveCall(CS, A);
++        RemoveCall(CB, A);
+         continue;
+       }
+ 
+-      LLVM_DEBUG(errs() << "GarbageCollect2Stack inspecting: " << *Inst);
++      LLVM_DEBUG(errs() << "GarbageCollect2Stack inspecting: " << *CB);
+ 
+-      if (!info->analyze(CS, A)) {
++      if (!info->analyze(CB, A)) {
+         continue;
+       }
+ 
+@@ -522,7 +526,7 @@ bool GarbageCollect2Stack::runOnFunction(Function &F) {
+           continue;
+         }
+       } else {
+-        if (!isSafeToStackAllocate(originalI, Inst, DT, RemoveTailCallInsts)) {
++        if (!isSafeToStackAllocate(originalI, CB, DT, RemoveTailCallInsts)) {
+           continue;
+         }
+       }
+@@ -537,18 +541,18 @@ bool GarbageCollect2Stack::runOnFunction(Function &F) {
+       }
+ 
+       IRBuilder<> Builder(&BB, originalI);
+-      Value *newVal = info->promote(CS, Builder, A);
++      Value *newVal = info->promote(CB, Builder, A);
+ 
+       LLVM_DEBUG(errs() << "Promoted to: " << *newVal);
+ 
+       // Make sure the type is the same as it was before, and replace all
+       // uses of the runtime call with the alloca.
+-      if (newVal->getType() != Inst->getType()) {
+-        newVal = Builder.CreateBitCast(newVal, Inst->getType());
++      if (newVal->getType() != CB->getType()) {
++        newVal = Builder.CreateBitCast(newVal, CB->getType());
+       }
+-      Inst->replaceAllUsesWith(newVal);
++      static_cast<Instruction *>(CB)->replaceAllUsesWith(newVal);
+ 
+-      RemoveCall(CS, A);
++      RemoveCall(CB, A);
+     }
+   }
+ 
+@@ -818,11 +822,15 @@ bool isSafeToStackAllocate(BasicBlock::iterator Alloc, Value *V,
+     switch (I->getOpcode()) {
+     case Instruction::Call:
+     case Instruction::Invoke: {
+-      CallSite CS(I);
++#if LDC_LLVM_VER >= 800
++      auto CB = llvm::cast<CallBase>(I);
++#else
++      LLCallBasePtr CB(I);
++#endif
+       // Not captured if the callee is readonly, doesn't return a copy through
+       // its return value and doesn't unwind (a readonly function can leak bits
+       // by throwing an exception or not depending on the input value).
+-      if (CS.onlyReadsMemory() && CS.doesNotThrow() &&
++      if (CB->onlyReadsMemory() && CB->doesNotThrow() &&
+           I->getType() == llvm::Type::getVoidTy(I->getContext())) {
+         break;
+       }
+@@ -834,18 +842,17 @@ bool isSafeToStackAllocate(BasicBlock::iterator Alloc, Value *V,
+       // that loading a value from a pointer does not cause the pointer to be
+       // captured, even though the loaded value might be the pointer itself
+       // (think of self-referential objects).
+-      CallSite::arg_iterator B = CS.arg_begin(), E = CS.arg_end();
+-      for (CallSite::arg_iterator A = B; A != E; ++A) {
++      auto B = CB->arg_begin(), E = CB->arg_end();
++      for (auto A = B; A != E; ++A) {
+         if (A->get() == V) {
+-          if (!CS.paramHasAttr(A - B, llvm::Attribute::AttrKind::NoCapture)) {
++          if (!CB->paramHasAttr(A - B, llvm::Attribute::AttrKind::NoCapture)) {
+             // The parameter is not marked 'nocapture' - captured.
+             return false;
+           }
+ 
+-          if (CS.isCall()) {
+-            CallInst *CI = cast<CallInst>(I);
+-            if (CI->isTailCall()) {
+-              RemoveTailCallInsts.push_back(CI);
++          if (auto call = dyn_cast<CallInst>(static_cast<Instruction *>(CB))) {
++            if (call->isTailCall()) {
++              RemoveTailCallInsts.push_back(call);
+             }
+           }
+         }
+diff --git a/gen/statements.cpp b/gen/statements.cpp
+index f7e4bbcec9..e5fc593218 100644
+--- a/gen/statements.cpp
++++ b/gen/statements.cpp
+@@ -276,7 +276,7 @@ class ToIRVisitor : public Visitor {
+       // Pop the cleanups pushed during evaluation of the return expression.
+       funcGen.scopes.popCleanups(cleanupScopeBeforeExpression);
+ 
+-      irs->scope() = IRScope(funcGen.retBlock);
++      irs->ir->SetInsertPoint(funcGen.retBlock);
+     }
+ 
+     // If we need to emit the actual return instruction, do so.
+@@ -299,7 +299,7 @@ class ToIRVisitor : public Visitor {
+     // Finally, create a new predecessor-less dummy bb as the current IRScope
+     // to make sure we do not emit any extra instructions after the terminating
+     // instruction (ret or branch to return bb), which would be illegal IR.
+-    irs->scope() = IRScope(irs->insertBB("dummy.afterreturn"));
++    irs->ir->SetInsertPoint(irs->insertBB("dummy.afterreturn"));
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -426,7 +426,7 @@ class ToIRVisitor : public Visitor {
+     PGO.addBranchWeights(brinstr, brweights);
+ 
+     // replace current scope
+-    irs->scope() = IRScope(ifbb);
++    irs->ir->SetInsertPoint(ifbb);
+ 
+     // do scoped statements
+ 
+@@ -441,7 +441,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     if (stmt->elsebody) {
+-      irs->scope() = IRScope(elsebb);
++      irs->ir->SetInsertPoint(elsebb);
+       irs->DBuilder.EmitBlockStart(stmt->elsebody->loc);
+       stmt->elsebody->accept(this);
+       if (!irs->scopereturned()) {
+@@ -454,7 +454,7 @@ class ToIRVisitor : public Visitor {
+     irs->DBuilder.EmitBlockEnd();
+ 
+     // rewrite the scope
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -495,7 +495,7 @@ class ToIRVisitor : public Visitor {
+     irs->ir->CreateBr(whilebb);
+ 
+     // replace current scope
+-    irs->scope() = IRScope(whilebb);
++    irs->ir->SetInsertPoint(whilebb);
+ 
+     // create the condition
+     emitCoverageLinecountInc(stmt->condition->loc);
+@@ -514,7 +514,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // rewrite scope
+-    irs->scope() = IRScope(whilebodybb);
++    irs->ir->SetInsertPoint(whilebodybb);
+ 
+     // while body code
+     irs->funcGen().jumpTargets.pushLoopTarget(stmt, whilebb, endbb);
+@@ -530,7 +530,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // rewrite the scope
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+ 
+     // end the dwarf lexical block
+     irs->DBuilder.EmitBlockEnd();
+@@ -558,7 +558,7 @@ class ToIRVisitor : public Visitor {
+     llvm::BranchInst::Create(dowhilebb, irs->scopebb());
+ 
+     // replace current scope
+-    irs->scope() = IRScope(dowhilebb);
++    irs->ir->SetInsertPoint(dowhilebb);
+ 
+     // do-while body code
+     irs->funcGen().jumpTargets.pushLoopTarget(stmt, condbb, endbb);
+@@ -570,7 +570,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // branch to condition block
+     llvm::BranchInst::Create(condbb, irs->scopebb());
+-    irs->scope() = IRScope(condbb);
++    irs->ir->SetInsertPoint(condbb);
+ 
+     // create the condition
+     emitCoverageLinecountInc(stmt->condition->loc);
+@@ -592,7 +592,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // rewrite the scope
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+ 
+     // end the dwarf lexical block
+     irs->DBuilder.EmitBlockEnd();
+@@ -635,7 +635,7 @@ class ToIRVisitor : public Visitor {
+     irs->funcGen().jumpTargets.pushLoopTarget(scopeStart, forincbb, endbb);
+ 
+     // replace current scope
+-    irs->scope() = IRScope(forbb);
++    irs->ir->SetInsertPoint(forbb);
+ 
+     // create the condition
+     llvm::Value *cond_val;
+@@ -658,7 +658,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // rewrite scope
+-    irs->scope() = IRScope(forbodybb);
++    irs->ir->SetInsertPoint(forbodybb);
+ 
+     // do for body code
+     PGO.emitCounterIncrement(stmt);
+@@ -670,7 +670,7 @@ class ToIRVisitor : public Visitor {
+     if (!irs->scopereturned()) {
+       llvm::BranchInst::Create(forincbb, irs->scopebb());
+     }
+-    irs->scope() = IRScope(forincbb);
++    irs->ir->SetInsertPoint(forincbb);
+ 
+     // increment
+     if (stmt->increment) {
+@@ -687,7 +687,7 @@ class ToIRVisitor : public Visitor {
+     irs->funcGen().jumpTargets.popLoopTarget();
+ 
+     // rewrite the scope
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+ 
+     // end the dwarf lexical block
+     irs->DBuilder.EmitBlockEnd();
+@@ -731,7 +731,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // the break terminated this basicblock, start a new one
+     llvm::BasicBlock *bb = irs->insertBB("afterbreak");
+-    irs->scope() = IRScope(bb);
++    irs->ir->SetInsertPoint(bb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -766,7 +766,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // the continue terminated this basicblock, start a new one
+     llvm::BasicBlock *bb = irs->insertBB("aftercontinue");
+-    irs->scope() = IRScope(bb);
++    irs->ir->SetInsertPoint(bb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -818,7 +818,7 @@ class ToIRVisitor : public Visitor {
+                              : irs->insertBBAfter(finallybb, "try.success");
+ 
+     // Emit the finally block and set up the cleanup scope for it.
+-    irs->scope() = IRScope(finallybb);
++    irs->ir->SetInsertPoint(finallybb);
+     irs->DBuilder.EmitBlockStart(stmt->finalbody->loc);
+     stmt->finalbody->accept(this);
+     irs->DBuilder.EmitBlockEnd();
+@@ -832,7 +832,7 @@ class ToIRVisitor : public Visitor {
+       irs->funcGen().scopes.pushCleanup(finallybb, irs->scopebb());
+     }
+     // Emit the try block.
+-    irs->scope() = IRScope(trybb);
++    irs->ir->SetInsertPoint(trybb);
+ 
+     assert(stmt->_body);
+     irs->DBuilder.EmitBlockStart(stmt->_body->loc);
+@@ -842,7 +842,7 @@ class ToIRVisitor : public Visitor {
+     if (successbb) {
+       if (!computeCode)
+         irs->funcGen().scopes.runCleanups(cleanupBefore, successbb);
+-      irs->scope() = IRScope(successbb);
++      irs->ir->SetInsertPoint(successbb);
+       // PGO counter tracks the continuation of the try-finally statement
+       PGO.emitCounterIncrement(stmt);
+     }
+@@ -874,7 +874,7 @@ class ToIRVisitor : public Visitor {
+     irs->funcGen().scopes.pushTryCatch(stmt, endbb);
+ 
+     // Emit the try block.
+-    irs->scope() = IRScope(trybb);
++    irs->ir->SetInsertPoint(trybb);
+ 
+     assert(stmt->_body);
+     irs->DBuilder.EmitBlockStart(stmt->_body->loc);
+@@ -886,7 +886,7 @@ class ToIRVisitor : public Visitor {
+ 
+     irs->funcGen().scopes.popTryCatch();
+ 
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+ 
+     // PGO counter tracks the continuation of the try statement
+     PGO.emitCounterIncrement(stmt);
+@@ -920,7 +920,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // TODO: Should not be needed.
+     llvm::BasicBlock *bb = irs->insertBB("afterthrow");
+-    irs->scope() = IRScope(bb);
++    irs->ir->SetInsertPoint(bb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -986,7 +986,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // do switch body
+     assert(stmt->_body);
+-    irs->scope() = IRScope(bodybb);
++    irs->ir->SetInsertPoint(bodybb);
+     funcGen.jumpTargets.pushBreakTarget(stmt, endbb);
+     stmt->_body->accept(this);
+     funcGen.jumpTargets.popBreakTarget();
+@@ -994,7 +994,7 @@ class ToIRVisitor : public Visitor {
+       llvm::BranchInst::Create(endbb, irs->scopebb());
+     }
+ 
+-    irs->scope() = IRScope(oldbb);
++    irs->ir->SetInsertPoint(oldbb);
+     if (useSwitchInst) {
+       // The case index value.
+       LLValue *condVal = DtoRVal(toElemDtor(stmt->condition));
+@@ -1018,7 +1018,7 @@ class ToIRVisitor : public Visitor {
+         {
+           llvm::BasicBlock *defaultcntr =
+               irs->insertBBBefore(defaultTargetBB, "defaultcntr");
+-          irs->scope() = IRScope(defaultcntr);
++          irs->ir->SetInsertPoint(defaultcntr);
+           if (stmt->sdefault)
+               PGO.emitCounterIncrement(stmt->sdefault);
+           llvm::BranchInst::Create(defaultTargetBB, defaultcntr);
+@@ -1033,7 +1033,7 @@ class ToIRVisitor : public Visitor {
+           const auto body = funcGen.switchTargets.get(cs);
+ 
+           auto casecntr = irs->insertBBBefore(body, "casecntr");
+-          irs->scope() = IRScope(casecntr);
++          irs->ir->SetInsertPoint(casecntr);
+           PGO.emitCounterIncrement(cs);
+           llvm::BranchInst::Create(body, casecntr);
+           si->addCase(isaConstantInt(indices[i]), casecntr);
+@@ -1068,13 +1068,13 @@ class ToIRVisitor : public Visitor {
+         // Prepend extra BB to "default:" to increment profiling counter.
+         llvm::BasicBlock *defaultcntr =
+             irs->insertBBBefore(defaultTargetBB, "defaultcntr");
+-        irs->scope() = IRScope(defaultcntr);
++        irs->ir->SetInsertPoint(defaultcntr);
+         PGO.emitCounterIncrement(stmt->sdefault);
+         llvm::BranchInst::Create(defaultTargetBB, defaultcntr);
+         defaultTargetBB = defaultcntr;
+       }
+ 
+-      irs->scope() = IRScope(nextbb);
++      irs->ir->SetInsertPoint(nextbb);
+       auto failedCompareCount = incomingPGORegionCount;
+       for (size_t i = 0; i < caseCount; ++i) {
+         LLValue *cmp = irs->ir->CreateICmp(llvm::ICmpInst::ICMP_EQ, indices[i],
+@@ -1087,12 +1087,10 @@ class ToIRVisitor : public Visitor {
+         if (PGO.emitsInstrumentation()) {
+           llvm::BasicBlock *casecntr =
+               irs->insertBBBefore(casejumptargetbb, "casecntr");
+-          auto savedbb = irs->scope();
+-          irs->scope() = IRScope(casecntr);
++          const auto savedInsertPoint = irs->saveInsertPoint();
++          irs->ir->SetInsertPoint(casecntr);
+           PGO.emitCounterIncrement(cs);
+           llvm::BranchInst::Create(casejumptargetbb, casecntr);
+-          irs->scope() = savedbb;
+-
+           casejumptargetbb = casecntr;
+         }
+ 
+@@ -1111,13 +1109,13 @@ class ToIRVisitor : public Visitor {
+           PGO.addBranchWeights(branchinst, brweights);
+         }
+ 
+-        irs->scope() = IRScope(nextbb);
++        irs->ir->SetInsertPoint(nextbb);
+       }
+ 
+       llvm::BranchInst::Create(defaultTargetBB, irs->scopebb());
+     }
+ 
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+     // PGO counter tracks exit point of switch statement:
+     PGO.emitCounterIncrement(stmt);
+   }
+@@ -1141,7 +1139,7 @@ class ToIRVisitor : public Visitor {
+       llvm::BranchInst::Create(body, irs->scopebb());
+     }
+ 
+-    irs->scope() = IRScope(body);
++    irs->ir->SetInsertPoint(body);
+ 
+     assert(stmt->statement);
+     irs->DBuilder.EmitBlockStart(stmt->statement->loc);
+@@ -1172,7 +1170,7 @@ class ToIRVisitor : public Visitor {
+       llvm::BranchInst::Create(body, irs->scopebb());
+     }
+ 
+-    irs->scope() = IRScope(body);
++    irs->ir->SetInsertPoint(body);
+ 
+     assert(stmt->statement);
+     irs->DBuilder.EmitBlockStart(stmt->statement->loc);
+@@ -1231,7 +1229,7 @@ class ToIRVisitor : public Visitor {
+       llvm::BasicBlock *nextbb = (i + 1 == nstmt) ? endbb : blocks[i + 1];
+ 
+       // update scope
+-      irs->scope() = IRScope(thisbb);
++      irs->ir->SetInsertPoint(thisbb);
+ 
+       // push loop scope
+       // continue goes to next statement, break goes to end
+@@ -1251,7 +1249,7 @@ class ToIRVisitor : public Visitor {
+       }
+     }
+ 
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+ 
+     // PGO counter tracks the continuation after the loop
+     PGO.emitCounterIncrement(stmt);
+@@ -1334,7 +1332,7 @@ class ToIRVisitor : public Visitor {
+     llvm::BranchInst::Create(condbb, irs->scopebb());
+ 
+     // condition
+-    irs->scope() = IRScope(condbb);
++    irs->ir->SetInsertPoint(condbb);
+ 
+     LLValue *done = nullptr;
+     LLValue *load = DtoLoad(keyvar);
+@@ -1353,7 +1351,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // init body
+-    irs->scope() = IRScope(bodybb);
++    irs->ir->SetInsertPoint(bodybb);
+     PGO.emitCounterIncrement(stmt);
+ 
+     // get value for this iteration
+@@ -1383,7 +1381,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // next
+-    irs->scope() = IRScope(nextbb);
++    irs->ir->SetInsertPoint(nextbb);
+     if (stmt->op == TOKforeach) {
+       LLValue *load = DtoLoad(keyvar);
+       load = irs->ir->CreateAdd(load, LLConstantInt::get(keytype, 1, false));
+@@ -1395,7 +1393,7 @@ class ToIRVisitor : public Visitor {
+     irs->DBuilder.EmitBlockEnd();
+ 
+     // end
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -1438,7 +1436,7 @@ class ToIRVisitor : public Visitor {
+     llvm::BranchInst::Create(condbb, irs->scopebb());
+ 
+     // CONDITION
+-    irs->scope() = IRScope(condbb);
++    irs->ir->SetInsertPoint(condbb);
+ 
+     // first we test that lwr < upr
+     lower = DtoLoad(keyval);
+@@ -1462,7 +1460,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // BODY
+-    irs->scope() = IRScope(bodybb);
++    irs->ir->SetInsertPoint(bodybb);
+     PGO.emitCounterIncrement(stmt);
+ 
+     // reverse foreach decrements here
+@@ -1486,7 +1484,7 @@ class ToIRVisitor : public Visitor {
+     }
+ 
+     // NEXT
+-    irs->scope() = IRScope(nextbb);
++    irs->ir->SetInsertPoint(nextbb);
+ 
+     // forward foreach increments here
+     if (stmt->op == TOKforeach) {
+@@ -1503,7 +1501,7 @@ class ToIRVisitor : public Visitor {
+     irs->DBuilder.EmitBlockEnd();
+ 
+     // END
+-    irs->scope() = IRScope(endbb);
++    irs->ir->SetInsertPoint(endbb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -1538,7 +1536,7 @@ class ToIRVisitor : public Visitor {
+         llvm::BranchInst::Create(labelBB, irs->scopebb());
+       }
+ 
+-      irs->scope() = IRScope(labelBB);
++      irs->ir->SetInsertPoint(labelBB);
+     }
+ 
+     PGO.emitCounterIncrement(stmt);
+@@ -1565,7 +1563,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // TODO: Should not be needed.
+     llvm::BasicBlock *bb = irs->insertBB("aftergoto");
+-    irs->scope() = IRScope(bb);
++    irs->ir->SetInsertPoint(bb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -1590,7 +1588,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // TODO: Should not be needed.
+     llvm::BasicBlock *bb = irs->insertBB("aftergotodefault");
+-    irs->scope() = IRScope(bb);
++    irs->ir->SetInsertPoint(bb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+@@ -1616,7 +1614,7 @@ class ToIRVisitor : public Visitor {
+ 
+     // TODO: Should not be needed.
+     llvm::BasicBlock *bb = irs->insertBB("aftergotocase");
+-    irs->scope() = IRScope(bb);
++    irs->ir->SetInsertPoint(bb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////
+diff --git a/gen/tocall.cpp b/gen/tocall.cpp
+index fb497446a8..ff4e7359f3 100644
+--- a/gen/tocall.cpp
++++ b/gen/tocall.cpp
+@@ -405,7 +405,9 @@ bool DtoLowerMagicIntrinsic(IRState *p, FuncDeclaration *fndecl, CallExp *e,
+ 
+     llvm::StoreInst *ret = p->ir->CreateStore(val, ptr);
+     ret->setAtomic(llvm::AtomicOrdering(atomicOrdering));
+-    ret->setAlignment(LLMaybeAlign(getTypeAllocSize(val->getType())));
++    if (auto alignment = getTypeAllocSize(val->getType())) {
++      ret->setAlignment(LLAlign(alignment));
++    }
+     return true;
+   }
+ 
+@@ -435,7 +437,9 @@ bool DtoLowerMagicIntrinsic(IRState *p, FuncDeclaration *fndecl, CallExp *e,
+     }
+ 
+     llvm::LoadInst *load = p->ir->CreateLoad(ptr);
+-    load->setAlignment(LLMaybeAlign(getTypeAllocSize(load->getType())));
++    if (auto alignment = getTypeAllocSize(load->getType())) {
++      load->setAlignment(LLAlign(alignment));
++    }
+     load->setAtomic(llvm::AtomicOrdering(atomicOrdering));
+     llvm::Value *val = load;
+     if (val->getType() != pointeeType) {
+@@ -868,21 +872,22 @@ DValue *DtoCallFunction(Loc &loc, Type *resulttype, DValue *fnval,
+   }
+ 
+   // call the function
+-  LLCallSite call = gIR->CreateCallOrInvoke(callable, args, "", tf->isnothrow);
++  LLCallBasePtr call = gIR->funcGen().callOrInvoke(callable, callableTy, args,
++                                                   "", tf->isnothrow);
+ 
+   // PGO: Insert instrumentation or attach profile metadata at indirect call
+   // sites.
+-  if (!call.getCalledFunction()) {
++  if (!call->getCalledFunction()) {
+     auto &PGO = gIR->funcGen().pgo;
+-    PGO.emitIndirectCallPGO(call.getInstruction(), callable);
++    PGO.emitIndirectCallPGO(call, callable);
+   }
+ 
+   // get return value
+   const int sretArgIndex =
+       (irFty.arg_sret && irFty.arg_this && gABI->passThisBeforeSret(tf) ? 1
+                                                                         : 0);
+-  LLValue *retllval =
+-      (irFty.arg_sret ? args[sretArgIndex] : call.getInstruction());
++  LLValue *retllval = irFty.arg_sret ? args[sretArgIndex]
++                                     : static_cast<llvm::Instruction *>(call);
+   bool retValIsLVal =
+       (tf->isref && returnTy != Tvoid) || (irFty.arg_sret != nullptr);
+ 
+@@ -1002,16 +1007,16 @@ DValue *DtoCallFunction(Loc &loc, Type *resulttype, DValue *fnval,
+           gIR->context(),
+           static_cast<llvm::Intrinsic::ID>(llfunc->getIntrinsicID()));
+     } else {
+-      call.setCallingConv(callconv);
++      call->setCallingConv(callconv);
+     }
+   } else {
+-    call.setCallingConv(callconv);
++    call->setCallingConv(callconv);
+   }
+   // merge in function attributes set in callOrInvoke
+   attrlist = attrlist.addAttributes(
+       gIR->context(), LLAttributeList::FunctionIndex,
+-      llvm::AttrBuilder(call.getAttributes(), LLAttributeList::FunctionIndex));
+-  call.setAttributes(attrlist);
++      llvm::AttrBuilder(call->getAttributes(), LLAttributeList::FunctionIndex));
++  call->setAttributes(attrlist);
+ 
+   // Special case for struct constructor calls: For temporaries, using the
+   // this pointer value returned from the constructor instead of the alloca
+diff --git a/gen/toconstelem.cpp b/gen/toconstelem.cpp
+index 9a9ee9943e..282a6276ce 100644
+--- a/gen/toconstelem.cpp
++++ b/gen/toconstelem.cpp
+@@ -664,8 +664,13 @@ class ToConstElemVisitor : public Visitor {
+       // cast.
+       // FIXME: Check DMD source to understand why two different ASTs are
+       //        constructed.
++#if LDC_LLVM_VER >= 1100
++      const auto elementCount = llvm::ElementCount(elemCount, false);
++#else
++      const auto elementCount = elemCount;
++#endif
+       result = llvm::ConstantVector::getSplat(
+-          elemCount, toConstElem(e->e1->optimize(WANTvalue)));
++          elementCount, toConstElem(e->e1->optimize(WANTvalue)));
+     }
+   }
+ 
+diff --git a/gen/toir.cpp b/gen/toir.cpp
+index dfbc3b79b3..2aecb82424 100644
+--- a/gen/toir.cpp
++++ b/gen/toir.cpp
+@@ -187,12 +187,10 @@ namespace {
+ void pushVarDtorCleanup(IRState *p, VarDeclaration *vd) {
+   llvm::BasicBlock *beginBB = p->insertBB(llvm::Twine("dtor.") + vd->toChars());
+ 
+-  // TODO: Clean this up with push/pop insertion point methods.
+-  IRScope oldScope = p->scope();
+-  p->scope() = IRScope(beginBB);
++  const auto savedInsertPoint = p->saveInsertPoint();
++  p->ir->SetInsertPoint(beginBB);
+   toElemDtor(vd->edtor);
+   p->funcGen().scopes.pushCleanup(beginBB, p->scopebb());
+-  p->scope() = oldScope;
+ }
+ }
+ 
+@@ -253,7 +251,7 @@ class ToElemVisitor : public Visitor {
+       llvm::BasicBlock *endbb = p->insertBB("toElem.success");
+       p->funcGen().scopes.runCleanups(initialCleanupScope, endbb);
+       p->funcGen().scopes.popCleanups(initialCleanupScope);
+-      p->scope() = IRScope(endbb);
++      p->ir->SetInsertPoint(endbb);
+ 
+       destructTemporaries = false;
+     }
+@@ -1145,10 +1143,10 @@ class ToElemVisitor : public Visitor {
+ 
+         p->ir->CreateCondBr(okCond, okbb, failbb);
+ 
+-        p->scope() = IRScope(failbb);
++        p->ir->SetInsertPoint(failbb);
+         DtoBoundsCheckFailCall(p, e->loc);
+ 
+-        p->scope() = IRScope(okbb);
++        p->ir->SetInsertPoint(okbb);
+       }
+ 
+       // offset by lower
+@@ -1267,19 +1265,19 @@ class ToElemVisitor : public Visitor {
+                                                    lfptr, rfptr, ".fptreqcmp");
+         llvm::BranchInst::Create(fptreq, fptrneq, fptreqcmp, p->scopebb());
+ 
+-        p->scope() = IRScope(fptreq);
++        p->ir->SetInsertPoint(fptreq);
+         llvm::Value *lctx = p->ir->CreateExtractValue(lhs, 0, ".lctx");
+         llvm::Value *rctx = p->ir->CreateExtractValue(rhs, 0, ".rctx");
+         llvm::Value *ctxcmp =
+             p->ir->CreateICmp(icmpPred, lctx, rctx, ".ctxcmp");
+         llvm::BranchInst::Create(dgcmpend, p->scopebb());
+ 
+-        p->scope() = IRScope(fptrneq);
++        p->ir->SetInsertPoint(fptrneq);
+         llvm::Value *fptrcmp =
+             p->ir->CreateICmp(icmpPred, lfptr, rfptr, ".fptrcmp");
+         llvm::BranchInst::Create(dgcmpend, p->scopebb());
+ 
+-        p->scope() = IRScope(dgcmpend);
++        p->ir->SetInsertPoint(dgcmpend);
+         llvm::PHINode *phi = p->ir->CreatePHI(ctxcmp->getType(), 2, ".dgcmp");
+         phi->addIncoming(ctxcmp, fptreq);
+         phi->addIncoming(fptrcmp, fptrneq);
+@@ -1655,7 +1653,7 @@ class ToElemVisitor : public Visitor {
+     // assign branch weights to this branch instruction.
+ 
+     // failed: call assert runtime function
+-    p->scope() = IRScope(failedbb);
++    p->ir->SetInsertPoint(failedbb);
+ 
+     if (global.params.checkAction == CHECKACTION_halt) {
+       p->ir->CreateCall(GET_INTRINSIC_DECL(trap), {});
+@@ -1679,7 +1677,7 @@ class ToElemVisitor : public Visitor {
+     }
+ 
+     // passed:
+-    p->scope() = IRScope(passedbb);
++    p->ir->SetInsertPoint(passedbb);
+ 
+     // class/struct invariants
+     if (global.params.useInvariants != CHECKENABLEon)
+@@ -1764,7 +1762,7 @@ class ToElemVisitor : public Visitor {
+     p->ir->CreateCondBr(ubool, isAndAnd ? rhsBB : endBB,
+                         isAndAnd ? endBB : rhsBB, branchweights);
+ 
+-    p->scope() = IRScope(rhsBB);
++    p->ir->SetInsertPoint(rhsBB);
+     PGO.emitCounterIncrement(e);
+     emitCoverageLinecountInc(e->e2->loc);
+     DValue *v = toElemDtor(e->e2);
+@@ -1776,7 +1774,7 @@ class ToElemVisitor : public Visitor {
+ 
+     llvm::BasicBlock *newblock = p->scopebb();
+     llvm::BranchInst::Create(endBB, p->scopebb());
+-    p->scope() = IRScope(endBB);
++    p->ir->SetInsertPoint(endBB);
+ 
+     // DMD allows stuff like `x == 0 && assert(false)`
+     if (e->type->toBasetype()->ty == Tvoid) {
+@@ -1821,7 +1819,7 @@ class ToElemVisitor : public Visitor {
+     // this is sensible, since someone might goto behind the assert
+     // and prevents compiler errors if a terminator follows the assert
+     llvm::BasicBlock *bb = p->insertBB("afterhalt");
+-    p->scope() = IRScope(bb);
++    p->ir->SetInsertPoint(bb);
+   }
+ 
+   //////////////////////////////////////////////////////////////////////////////
+@@ -2003,7 +2001,7 @@ class ToElemVisitor : public Visitor {
+     auto branchweights = PGO.createProfileWeights(truecount, falsecount);
+     p->ir->CreateCondBr(cond_val, condtrue, condfalse, branchweights);
+ 
+-    p->scope() = IRScope(condtrue);
++    p->ir->SetInsertPoint(condtrue);
+     PGO.emitCounterIncrement(e);
+     DValue *u = toElem(e->e1);
+     if (retPtr) {
+@@ -2012,7 +2010,7 @@ class ToElemVisitor : public Visitor {
+     }
+     llvm::BranchInst::Create(condend, p->scopebb());
+ 
+-    p->scope() = IRScope(condfalse);
++    p->ir->SetInsertPoint(condfalse);
+     DValue *v = toElem(e->e2);
+     if (retPtr) {
+       LLValue *lval = makeLValue(e->loc, v);
+@@ -2020,7 +2018,7 @@ class ToElemVisitor : public Visitor {
+     }
+     llvm::BranchInst::Create(condend, p->scopebb());
+ 
+-    p->scope() = IRScope(condend);
++    p->ir->SetInsertPoint(condend);
+     if (retPtr)
+       result = new DSpecialRefValue(e->type, retPtr);
+   }
+@@ -2451,8 +2449,7 @@ class ToElemVisitor : public Visitor {
+       LLValue *valuesArray = DtoAggrPaint(slice, funcTy->getParamType(2));
+ 
+       LLValue *aa = gIR->CreateCallOrInvoke(func, aaTypeInfo, keysArray,
+-                                            valuesArray, "aa")
+-                        .getInstruction();
++                                            valuesArray, "aa");
+       if (basetype->ty != Taarray) {
+         LLValue *tmp = DtoAlloca(e->type, "aaliteral");
+         DtoStore(aa, DtoGEP(tmp, 0u, 0));
+@@ -2646,7 +2643,13 @@ class ToElemVisitor : public Visitor {
+       DValue *val = toElem(e->e1);
+       LLValue *llElement = getCastElement(val);
+       if (auto llConstant = isaConstant(llElement)) {
+-        auto vectorConstant = llvm::ConstantVector::getSplat(N, llConstant);
++#if LDC_LLVM_VER >= 1100
++        const auto elementCount = llvm::ElementCount(N, false);
++#else
++        const auto elementCount = N;
++#endif
++        auto vectorConstant =
++            llvm::ConstantVector::getSplat(elementCount, llConstant);
+         DtoStore(vectorConstant, dstMem);
+       } else {
+         for (unsigned int i = 0; i < N; ++i) {
+diff --git a/gen/tollvm.cpp b/gen/tollvm.cpp
+index 0d14027fa6..73f1bce8ae 100644
+--- a/gen/tollvm.cpp
++++ b/gen/tollvm.cpp
+@@ -452,7 +452,9 @@ LLValue *DtoLoad(LLValue *src, const char *name) {
+ // the type.
+ LLValue *DtoAlignedLoad(LLValue *src, const char *name) {
+   llvm::LoadInst *ld = gIR->ir->CreateLoad(src, name);
+-  ld->setAlignment(LLMaybeAlign(getABITypeAlign(ld->getType())));
++  if (auto alignment = getABITypeAlign(ld->getType())) {
++    ld->setAlignment(LLAlign(alignment));
++  }
+   return ld;
+ }
+ 
+@@ -489,7 +491,9 @@ void DtoAlignedStore(LLValue *src, LLValue *dst) {
+   assert(src->getType() != llvm::Type::getInt1Ty(gIR->context()) &&
+          "Should store bools as i8 instead of i1.");
+   llvm::StoreInst *st = gIR->ir->CreateStore(src, dst);
+-  st->setAlignment(LLMaybeAlign(getABITypeAlign(src->getType())));
++  if (auto alignment = getABITypeAlign(src->getType())) {
++    st->setAlignment(LLAlign(alignment));
++  }
+ }
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+diff --git a/gen/trycatchfinally.cpp b/gen/trycatchfinally.cpp
+index b06c4ae3cd..835ed77b85 100644
+--- a/gen/trycatchfinally.cpp
++++ b/gen/trycatchfinally.cpp
+@@ -74,7 +74,7 @@ void TryCatchScope::emitCatchBodies(IRState &irs, llvm::Value *ehPtrSlot) {
+   for (auto c : *stmt->catches) {
+     auto catchBB =
+         irs.insertBBBefore(endbb, llvm::Twine("catch.") + c->type->toChars());
+-    irs.scope() = IRScope(catchBB);
++    irs.ir->SetInsertPoint(catchBB);
+     irs.DBuilder.EmitBlockStart(c->loc);
+     PGO.emitCounterIncrement(c);
+ 
+@@ -218,9 +218,8 @@ void emitBeginCatchMSVC(IRState &irs, Catch *ctch,
+ 
+     // redirect scope to avoid the generation of debug info before the
+     // catchpad
+-    IRScope save = irs.scope();
+-    irs.scope() = IRScope(gIR->topallocapoint()->getParent());
+-    irs.scope().builder.SetInsertPoint(gIR->topallocapoint());
++    const auto savedInsertPoint = irs.saveInsertPoint();
++    irs.ir->SetInsertPoint(gIR->topallocapoint());
+     DtoDeclarationExp(var);
+ 
+     // catch handler will be outlined, so always treat as a nested reference
+@@ -232,9 +231,6 @@ void emitBeginCatchMSVC(IRState &irs, Catch *ctch,
+       cpyObj = exnObj;
+       exnObj = DtoAlloca(var->type, "exnObj");
+     }
+-    irs.scope() = save;
+-    irs.DBuilder.EmitStopPoint(ctch->loc); // re-set debug loc after the
+-                                           // SetInsertPoint(allocaInst) call
+   } else if (ctch->type) {
+     // catch without var
+     exnObj = DtoAlloca(ctch->type, "exnObj");
+@@ -275,7 +271,7 @@ void emitBeginCatchMSVC(IRState &irs, Catch *ctch,
+   // outside the catch funclet
+   llvm::BasicBlock *catchhandler = irs.insertBB("catchhandler");
+   llvm::CatchReturnInst::Create(catchpad, catchhandler, irs.scopebb());
+-  irs.scope() = IRScope(catchhandler);
++  irs.ir->SetInsertPoint(catchhandler);
+   irs.funcGen().pgo.emitCounterIncrement(ctch);
+   if (!isCPPclass) {
+     auto enterCatchFn =
+@@ -302,7 +298,7 @@ void TryCatchScope::emitCatchBodiesMSVC(IRState &irs, llvm::Value *) {
+     auto catchBB =
+         irs.insertBBBefore(endbb, llvm::Twine("catch.") + c->type->toChars());
+ 
+-    irs.scope() = IRScope(catchBB);
++    irs.ir->SetInsertPoint(catchBB);
+     irs.DBuilder.EmitBlockStart(c->loc);
+ 
+     emitBeginCatchMSVC(irs, c, catchSwitchInst);
+@@ -366,9 +362,9 @@ llvm::BasicBlock *CleanupScope::run(IRState &irs, llvm::BasicBlock *sourceBlock,
+   // We need a branch selector if we are here...
+   if (!branchSelector) {
+     // ... and have not created one yet, so do so now.
++    llvm::Type *branchSelectorType = llvm::Type::getInt32Ty(irs.context());
+     branchSelector = new llvm::AllocaInst(
+-        llvm::Type::getInt32Ty(irs.context()),
+-        irs.module.getDataLayout().getAllocaAddrSpace(),
++        branchSelectorType, irs.module.getDataLayout().getAllocaAddrSpace(),
+         llvm::Twine("branchsel.") + beginBlock()->getName(),
+         irs.topallocapoint());
+ 
+@@ -381,7 +377,11 @@ llvm::BasicBlock *CleanupScope::run(IRState &irs, llvm::BasicBlock *sourceBlock,
+     // And convert the BranchInst to the existing branch target to a
+     // SelectInst so we can append the other cases to it.
+     endBlock()->getTerminator()->eraseFromParent();
+-    llvm::Value *sel = new llvm::LoadInst(branchSelector, "", endBlock());
++    llvm::Value *sel = new llvm::LoadInst(
++#if LDC_LLVM_VER >= 1100
++        branchSelectorType,
++#endif
++        branchSelector, "", endBlock());
+     llvm::SwitchInst::Create(
+         sel, exitTargets[0].branchTarget,
+         1, // Expected number of branches, only for pre-allocating.
+@@ -689,12 +689,12 @@ llvm::BasicBlock *TryCatchFinallyScopes::emitLandingPad() {
+   }
+ 
+   // save and rewrite scope
+-  IRScope savedIRScope = irs.scope();
++  const auto savedInsertPoint = irs.saveInsertPoint();
+ 
+   // insert landing pads at the end of the function, in emission order,
+   // to improve human-readability of the IR
+   llvm::BasicBlock *beginBB = irs.insertBBBefore(nullptr, "landingPad");
+-  irs.scope() = IRScope(beginBB);
++  irs.ir->SetInsertPoint(beginBB);
+ 
+   llvm::LandingPadInst *landingPad = createLandingPadInst(irs);
+ 
+@@ -724,7 +724,7 @@ llvm::BasicBlock *TryCatchFinallyScopes::emitLandingPad() {
+       llvm::BasicBlock *afterCleanupBB =
+           irs.insertBB(beginBB->getName() + llvm::Twine(".after.cleanup"));
+       runCleanups(lastCleanup, newCleanup, afterCleanupBB);
+-      irs.scope() = IRScope(afterCleanupBB);
++      irs.ir->SetInsertPoint(afterCleanupBB);
+       lastCleanup = newCleanup;
+     }
+ 
+@@ -747,7 +747,7 @@ llvm::BasicBlock *TryCatchFinallyScopes::emitLandingPad() {
+       irs.ir->CreateCondBr(
+           irs.ir->CreateICmpEQ(irs.ir->CreateLoad(ehSelectorSlot), ehTypeId),
+           cb.bodyBB, mismatchBB, cb.branchWeights);
+-      irs.scope() = IRScope(mismatchBB);
++      irs.ir->SetInsertPoint(mismatchBB);
+     }
+   }
+ 
+@@ -765,7 +765,6 @@ llvm::BasicBlock *TryCatchFinallyScopes::emitLandingPad() {
+     irs.ir->CreateBr(resumeUnwindBlock);
+   }
+ 
+-  irs.scope() = savedIRScope;
+   return beginBB;
+ }
+ 
+@@ -780,13 +779,13 @@ llvm::BasicBlock *TryCatchFinallyScopes::getOrCreateResumeUnwindBlock() {
+     resumeUnwindBlock = irs.insertBB("eh.resume");
+ 
+     llvm::BasicBlock *oldBB = irs.scopebb();
+-    irs.scope() = IRScope(resumeUnwindBlock);
++    irs.ir->SetInsertPoint(resumeUnwindBlock);
+ 
+     llvm::Function *resumeFn = getUnwindResumeFunction(Loc(), irs.module);
+     irs.ir->CreateCall(resumeFn, DtoLoad(getOrCreateEhPtrSlot()));
+     irs.ir->CreateUnreachable();
+ 
+-    irs.scope() = IRScope(oldBB);
++    irs.ir->SetInsertPoint(oldBB);
+   }
+   return resumeUnwindBlock;
+ }
+@@ -844,9 +843,7 @@ TryCatchFinallyScopes::runCleanupPad(CleanupCursor scope,
+   //  can place an exception frame (but not done here)
+   auto frame = getNullPtr(getVoidPtrType());
+ 
+-  auto savedInsertBlock = irs.ir->GetInsertBlock();
+-  auto savedInsertPoint = irs.ir->GetInsertPoint();
+-  auto savedDbgLoc = irs.DBuilder.GetCurrentLoc();
++  const auto savedInsertPoint = irs.saveInsertPoint();
+ 
+   auto endFn = getRuntimeFunction(Loc(), irs.module, "_d_leave_cleanup");
+   irs.ir->SetInsertPoint(cleanupret);
+@@ -865,8 +862,5 @@ TryCatchFinallyScopes::runCleanupPad(CleanupCursor scope,
+       beginFn, frame, {llvm::OperandBundleDef("funclet", cleanuppad)}, "");
+   llvm::BranchInst::Create(copybb, cleanupret, exec, cleanupbb);
+ 
+-  irs.ir->SetInsertPoint(savedInsertBlock, savedInsertPoint);
+-  irs.DBuilder.EmitStopPoint(savedDbgLoc);
+-
+   return cleanupbb;
+ }
+diff --git a/gen/uda.cpp b/gen/uda.cpp
+index 80fa194e56..a8395463e0 100644
+--- a/gen/uda.cpp
++++ b/gen/uda.cpp
+@@ -16,6 +16,7 @@
+ #include "llvm/ADT/StringExtras.h"
+ #include "llvm/ADT/StringSwitch.h"
+ 
++#if LDC_LLVM_VER < 1100
+ namespace llvm {
+ // Auto-generate:
+ // Attribute::AttrKind getAttrKindFromName(StringRef AttrName) { ... }
+@@ -26,6 +27,7 @@ namespace llvm {
+ #include "llvm/IR/Attributes.inc"
+ #endif
+ }
++#endif
+ 
+ namespace {
+ 
+@@ -205,7 +207,11 @@ void applyAttrLLVMAttr(StructLiteralExp *sle, llvm::AttrBuilder &attrs) {
+   llvm::StringRef key = getStringElem(sle, 0);
+   llvm::StringRef value = getStringElem(sle, 1);
+   if (value.empty()) {
++#if LDC_LLVM_VER >= 1100
++    const auto kind = llvm::Attribute::getAttrKindFromName(key);
++#else
+     const auto kind = llvm::getAttrKindFromName(key);
++#endif
+     if (kind != llvm::Attribute::None) {
+       attrs.addAttribute(kind);
+     } else {
+diff --git a/ir/irclass.cpp b/ir/irclass.cpp
+index 9b315f2e88..0d74614e31 100644
+--- a/ir/irclass.cpp
++++ b/ir/irclass.cpp
+@@ -560,8 +560,9 @@ void IrClass::defineInterfaceVtbl(BaseClass *b, bool new_instance,
+       // create entry and end blocks
+       llvm::BasicBlock *beginbb =
+           llvm::BasicBlock::Create(gIR->context(), "", thunk);
+-      gIR->scopes.push_back(IRScope(beginbb));
+ 
++      // set up the IRBuilder scope for the thunk
++      const auto savedIRBuilderScope = gIR->setInsertPoint(beginbb);
+       gIR->DBuilder.EmitFuncStart(thunkFd);
+ 
+       // Copy the function parameters, so later we can pass them to the
+@@ -604,11 +605,6 @@ void IrClass::defineInterfaceVtbl(BaseClass *b, bool new_instance,
+         llvm::ReturnInst::Create(gIR->context(), call, beginbb);
+       }
+ 
+-      gIR->DBuilder.EmitFuncEnd(thunkFd);
+-
+-      // clean up
+-      gIR->scopes.pop_back();
+-
+       gIR->funcGenStates.pop_back();
+     }
+ 
+diff --git a/ir/irtype.cpp b/ir/irtype.cpp
+index f2aaf72ff5..46c94fb208 100644
+--- a/ir/irtype.cpp
++++ b/ir/irtype.cpp
+@@ -220,5 +220,10 @@ llvm::Type *IrTypeVector::vector2llvm(Type *dt) {
+   TypeSArray *tsa = static_cast<TypeSArray *>(tv->basetype);
+   uint64_t dim = static_cast<uint64_t>(tsa->dim->toUInteger());
+   LLType *elemType = DtoMemType(tsa->next);
+-  return llvm::VectorType::get(elemType, dim);
++  return llvm::VectorType::get(elemType, dim
++#if LDC_LLVM_VER >= 1100
++                               ,
++                               /*Scalable=*/false
++#endif
++  );
+ }
+diff --git a/runtime/jit-rt/cpp-so/bind.cpp b/runtime/jit-rt/cpp-so/bind.cpp
+index 37cb7e7999..e1a0bea3b0 100644
+--- a/runtime/jit-rt/cpp-so/bind.cpp
++++ b/runtime/jit-rt/cpp-so/bind.cpp
+@@ -19,8 +19,14 @@
+ #include "valueparser.h"
+ 
+ #if LDC_LLVM_VER >= 1000
++#if LDC_LLVM_VER >= 1100
++#define LLAlign llvm::Align
++#else
++#define LLAlign llvm::MaybeAlign
++#endif
+ #define LLMaybeAlign llvm::MaybeAlign
+ #else
++#define LLAlign
+ #define LLMaybeAlign
+ #endif
+ 
+@@ -77,14 +83,16 @@ allocParam(llvm::IRBuilder<> &builder, llvm::Type &srcType,
+   if (param.type == ParamType::Aggregate && srcType.isPointerTy()) {
+     auto elemType = llvm::cast<llvm::PointerType>(&srcType)->getElementType();
+     auto stackArg = builder.CreateAlloca(elemType);
+-    stackArg->setAlignment(LLMaybeAlign(layout.getABITypeAlignment(elemType)));
++    if (auto alignment = layout.getABITypeAlignment(elemType))
++      stackArg->setAlignment(LLAlign(alignment));
+     auto init =
+         parseInitializer(layout, *elemType, param.data, errHandler, override);
+     builder.CreateStore(init, stackArg);
+     return stackArg;
+   }
+   auto stackArg = builder.CreateAlloca(&srcType);
+-  stackArg->setAlignment(LLMaybeAlign(layout.getABITypeAlignment(&srcType)));
++  if (auto alignment = layout.getABITypeAlignment(&srcType))
++    stackArg->setAlignment(LLAlign(alignment));
+   auto init =
+       parseInitializer(layout, srcType, param.data, errHandler, override);
+   builder.CreateStore(init, stackArg);
+diff --git a/runtime/jit-rt/cpp-so/disassembler.cpp b/runtime/jit-rt/cpp-so/disassembler.cpp
+index 79e477615a..eda0be2285 100644
+--- a/runtime/jit-rt/cpp-so/disassembler.cpp
++++ b/runtime/jit-rt/cpp-so/disassembler.cpp
+@@ -135,11 +135,21 @@ void printFunction(const llvm::MCDisassembler &disasm,
+ 
+       switch (status) {
+       case llvm::MCDisassembler::Fail:
+-        streamer.EmitRawText("failed to disassemble");
++#if LDC_LLVM_VER >= 1100
++        streamer.emitRawText(
++#else
++        streamer.EmitRawText(
++#endif
++            "failed to disassemble");
+         return;
+ 
+       case llvm::MCDisassembler::SoftFail:
+-        streamer.EmitRawText("potentially undefined instruction encoding:");
++#if LDC_LLVM_VER >= 1100
++        streamer.emitRawText(
++#else
++        streamer.EmitRawText(
++#endif
++            "potentially undefined instruction encoding:");
+         LLVM_FALLTHROUGH;
+ 
+       case llvm::MCDisassembler::Success:
+@@ -152,14 +162,22 @@ void printFunction(const llvm::MCDisassembler &disasm,
+           }
+         } else if (Stage::Emit == stage) {
+           if (auto label = symTable.getTargetLabel(pos)) {
++#if LDC_LLVM_VER >= 1100
++            streamer.emitLabel(label);
++#else
+             streamer.EmitLabel(label);
++#endif
+           }
+           commentStream.flush();
+           if (!comment.empty()) {
+             streamer.AddComment(comment);
+             comment.clear();
+           }
++#if LDC_LLVM_VER >= 1100
++          streamer.emitInstruction(inst, sti);
++#else
+           streamer.EmitInstruction(inst, sti);
++#endif
+         }
+         break;
+       }
+@@ -304,7 +322,11 @@ void disassemble(const llvm::TargetMachine &tm,
+   for (const auto &symbol : object.symbols()) {
+     const auto secIt = llvm::cantFail(symbol.getSection());
+     if (object.section_end() != secIt) {
++#if LDC_LLVM_VER >= 1100
++      auto offset = llvm::cantFail(symbol.getValue());
++#else
+       auto offset = symbol.getValue();
++#endif
+       sectionsToProcess[secIt->getIndex()].push_back(offset);
+     }
+   }
+@@ -322,9 +344,7 @@ void disassemble(const llvm::TargetMachine &tm,
+       const auto sec = *secIt;
+       llvm::StringRef data;
+ #if LDC_LLVM_VER >= 900
+-      auto dataOrError = sec.getContents();
+-      assert(dataOrError);
+-      data = *dataOrError;
++      data = llvm::cantFail(sec.getContents());
+ #else
+       sec.getContents(data);
+ #endif
+@@ -333,7 +353,11 @@ void disassemble(const llvm::TargetMachine &tm,
+           llvm::cantFail(symbol.getType())) {
+         symTable.reset();
+         symTable.addLabel(0, 0, name); // Function start
++#if LDC_LLVM_VER >= 1100
++        auto offset = llvm::cantFail(symbol.getValue());
++#else
+         auto offset = symbol.getValue();
++#endif
+         processRelocations(symTable, offset, object, sec);
+ 
+         // TODO: something more optimal
+@@ -360,7 +384,11 @@ void disassemble(const llvm::TargetMachine &tm,
+             reinterpret_cast<const uint8_t *>(data.data() + offset), size);
+ 
+         printFunction(*disasm, *mcia, buff, symTable, *sti, *asmStreamer);
++#if LDC_LLVM_VER >= 1100
++        asmStreamer->emitRawText("");
++#else
+         asmStreamer->EmitRawText("");
++#endif
+       }
+     }
+   }
+diff --git a/runtime/jit-rt/cpp-so/jit_context.cpp b/runtime/jit-rt/cpp-so/jit_context.cpp
+index 2a783e1898..ad4378eb9e 100644
+--- a/runtime/jit-rt/cpp-so/jit_context.cpp
++++ b/runtime/jit-rt/cpp-so/jit_context.cpp
+@@ -202,7 +202,12 @@ std::shared_ptr<llvm::orc::SymbolResolver>
+ DynamicCompilerContext::createResolver() {
+   return llvm::orc::createLegacyLookupResolver(
+       execSession,
++#if LDC_LLVM_VER >= 1100
++      [this](llvm::StringRef name_) -> llvm::JITSymbol {
++        const std::string name = name_.str();
++#else
+       [this](const std::string &name) -> llvm::JITSymbol {
++#endif
+         if (auto Sym = compileLayer.findSymbol(name, false)) {
+           return Sym;
+         } else if (auto Err = Sym.takeError()) {
+diff --git a/utils/gen_gccbuiltins.cpp b/utils/gen_gccbuiltins.cpp
+index 3afdfd12b4..cc7bd1a5be 100644
+--- a/utils/gen_gccbuiltins.cpp
++++ b/utils/gen_gccbuiltins.cpp
+@@ -68,16 +68,17 @@ string dtype(Record* rec, bool readOnlyMem)
+         return "";
+ }
+ 
+-string attributes(ListInit* propertyList)
++StringRef attributes(ListInit* propertyList)
+ {
+-    string prop =
+-        propertyList->size()
+-        ? propertyList->getElementAsRecord(0)->getName() : "";
+-
+-    return
+-        prop == "IntrNoMem" ? " pure @safe" :
+-        prop == "IntrReadArgMem" ? " pure" :
+-        prop == "IntrReadWriteArgMem" ? " pure" : "";
++  const auto prop = propertyList->size()
++                    ? propertyList->getElementAsRecord(0)->getName()
++                    : "";
++
++  if (prop == "IntrNoMem")
++    return " pure @safe";
++  if (prop == "IntrReadArgMem" || prop == "IntrReadWriteArgMem")
++    return " pure";
++  return "";
+ }
+ 
+ void processRecord(raw_ostream& os, Record& rec, string arch)
+@@ -85,8 +86,8 @@ void processRecord(raw_ostream& os, Record& rec, string arch)
+     if(!rec.getValue("GCCBuiltinName"))
+         return;
+ 
+-    string builtinName = rec.getValueAsString("GCCBuiltinName");
+-    string name =  rec.getName();
++    const StringRef builtinName = rec.getValueAsString("GCCBuiltinName");
++    string name = rec.getName().str();
+ 
+     if(name.substr(0, 4) != "int_" || name.find(arch) == string::npos)
+         return;
+@@ -96,9 +97,8 @@ void processRecord(raw_ostream& os, Record& rec, string arch)
+     name = string("llvm.") + name;
+ 
+     ListInit* propsList = rec.getValueAsListInit("IntrProperties");
+-    string prop =
+-        propsList->size()
+-        ? propsList->getElementAsRecord(0)->getName() : "";
++    const StringRef prop =
++        propsList->size() ? propsList->getElementAsRecord(0)->getName() : "";
+ 
+     bool readOnlyMem = prop == "IntrReadArgMem" || prop == "IntrReadMem";
+ 
+@@ -127,8 +127,8 @@ void processRecord(raw_ostream& os, Record& rec, string arch)
+     else
+         return;
+ 
+-    os << "pragma(LDC_intrinsic, \"" + name + "\")\n    ";
+-    os << ret + " " + builtinName + "(";
++    os << "pragma(LDC_intrinsic, \"" << name << "\")\n    ";
++    os << ret << " " << builtinName << "(";
+ 
+     if(params.size())
+         os << params[0];
+@@ -136,7 +136,7 @@ void processRecord(raw_ostream& os, Record& rec, string arch)
+     for(size_t i = 1; i < params.size(); i++)
+         os << ", " << params[i];
+ 
+-    os << ")" + attributes(propsList) + ";\n\n";
++    os << ")" << attributes(propsList) << ";\n\n";
+ }
+ 
+ std::string arch;
