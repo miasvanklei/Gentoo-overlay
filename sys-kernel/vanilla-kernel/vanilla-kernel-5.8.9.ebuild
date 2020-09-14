@@ -92,7 +92,7 @@ src_configure() {
 }
 
 src_compile() {
-	LLVM_IAS=1 LLVM=1 emake O="${WORKDIR}"/build "${MAKEARGS[@]}" all
+	emake LLVM_IAS=1 LLVM=1 O="${WORKDIR}"/build "${MAKEARGS[@]}" all
 }
 
 src_test() {

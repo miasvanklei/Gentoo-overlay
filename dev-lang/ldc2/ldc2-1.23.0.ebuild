@@ -21,6 +21,10 @@ DEPEND=">=dev-util/cmake-2.8
 
 S=${WORKDIR}/ldc-${MY_PV}-src
 
+PATCHES=(
+	"${FILESDIR}"/llvm-11.patch
+)
+
 src_configure() {
 	local mycmakeargs=(
 		-DD_VERSION=2
