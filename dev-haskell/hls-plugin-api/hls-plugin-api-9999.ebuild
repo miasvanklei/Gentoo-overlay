@@ -49,8 +49,4 @@ DEPEND="${RDEPEND}
 		dev-haskell/yaml )
 "
 
-PATCHES=(
-	"${FILESDIR}"/ghcide.patch
-)
-
 S="${WORKDIR}/${P}/hls-plugin-api"
