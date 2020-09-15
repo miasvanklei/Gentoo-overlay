@@ -76,6 +76,8 @@ src_configure() {
 		STRIP=":"
 		OBJCOPY="$(tc-getOBJCOPY)"
 		OBJDUMP="$(tc-getOBJDUMP)"
+		LLVM_IAS=1
+		LLVM=1
 	)
 
 	restore_config .config
@@ -92,7 +94,7 @@ src_configure() {
 }
 
 src_compile() {
-	emake LLVM_IAS=1 LLVM=1 O="${WORKDIR}"/build "${MAKEARGS[@]}" all
+	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" all
 }
 
 src_test() {
