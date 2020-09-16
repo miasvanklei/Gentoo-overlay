@@ -25,8 +25,8 @@
 +  fi
 +fi
 +
- # Test and fix solaris on x86_64
- echo $OUT | grep i386-pc-solaris > /dev/null 2> /dev/null
+ # Test and fix cygwin on x86_64
+ echo $OUT | grep 86-pc-cygwin > /dev/null 2> /dev/null
  if test $? = 0; then
 --- a/make/hotspot/lib/CompileJvm.gmk
 +++ b/make/hotspot/lib/CompileJvm.gmk
@@ -38,8 +38,8 @@
      #
  
  ################################################################################
---- a/make/lib/CoreLibraries.gmk
-+++ b/make/lib/CoreLibraries.gmk
+--- a/make/modules/java.base/lib/CoreLibraries.gmk
++++ b/make/modules/java.base/lib/CoreLibraries.gmk
 @@ -241,6 +241,7 @@
  endif
  
@@ -162,7 +162,7 @@
    #define INTERNAL_VERSION_SUFFIX VM_RELEASE ")" \
 -         " for " OS "-" CPU FLOAT_ARCH_STR \
 +         " for " OS "-" CPU FLOAT_ARCH_STR LIBC \
-          " JRE (" VERSION_STRING "), built on " __DATE__ " " __TIME__ \
+          " JRE (" VERSION_STRING "), built on " HOTSPOT_BUILD_TIME \
           " by " XSTR(HOTSPOT_BUILD_USER) " with " HOTSPOT_BUILD_COMPILER
  
 --- a/src/hotspot/share/utilities/globalDefinitions_gcc.hpp
@@ -223,8 +223,8 @@
  #define ISNAND(d) isnan(d)
  #elif defined(_AIX)
  #include <math.h>
---- a/src/java.base/unix/native/libjli/java_md_solinux.c
-+++ b/src/java.base/unix/native/libjli/java_md_solinux.c
+--- a/src/java.base/unix/native/libjli/java_md.c
++++ b/src/java.base/unix/native/libjli/java_md.c
 @@ -235,6 +235,39 @@
      char *dmllp = NULL;
      char *p; /* a utility pointer */
@@ -276,45 +276,6 @@
  #elif defined(_AIX)
    #include <pthread.h>
    /* Also defined in net/aix_close.c */
---- a/src/java.desktop/unix/native/libawt_xawt/xawt/XToolkit.c
-+++ b/src/java.desktop/unix/native/libawt_xawt/xawt/XToolkit.c
-@@ -27,9 +27,6 @@
- #include <X11/Xutil.h>
- #include <X11/Xos.h>
- #include <X11/Xatom.h>
--#ifdef __linux__
--#include <execinfo.h>
--#endif
- 
- #include <jvm.h>
- #include <jni.h>
-@@ -786,26 +783,6 @@
-     }
-     return ret;
- }
--
--#ifdef __linux__
--void print_stack(void)
--{
--  void *array[10];
--  size_t size;
--  char **strings;
--  size_t i;
--
--  size = backtrace (array, 10);
--  strings = backtrace_symbols (array, size);
--
--  fprintf (stderr, "Obtained %zd stack frames.\n", size);
--
--  for (i = 0; i < size; i++)
--     fprintf (stderr, "%s\n", strings[i]);
--
--  free (strings);
--}
--#endif
- 
- Window get_xawt_root_shell(JNIEnv *env) {
-   static jclass classXRootWindow = NULL;
 --- a/src/jdk.jdwp.agent/share/native/libjdwp/util.h
 +++ b/src/jdk.jdwp.agent/share/native/libjdwp/util.h
 @@ -35,15 +35,15 @@
