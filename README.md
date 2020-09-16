@@ -10,11 +10,13 @@ To compile all packages on my gentoo system with clang and llvm tools (lld, inte
  * Banana pi, rock64, pine h64, pinebook pro, amd threadripper 2n generation, intel 8th generation mobile
 
 # Status (packages on my system)
- * arm64: all packages including linux kernel. integrated-as can be used for linux kernel. binutils and gcc is not installed
- * arm: all packages including linux kernel. linux kernel still needs binutils as. only binutils as installed
- * x86_64: all packages including linux kernel. linux kernel still needs binutils as. only binutils as installed.
+ * arm64: all packages including linux kernel.
+ * arm: all packages including linux kernel.
+ * x86_64: all packages including linux kernel.
 
 # Toolchain
+ * c/c++ compiler: clang
+ * linker: lld
  * c++
    * libc++ is used as replacement for libstdc++
    * libc++abi is used as replacement for libsupc++
@@ -22,8 +24,8 @@ To compile all packages on my gentoo system with clang and llvm tools (lld, inte
    * llvm-libunwind is used as replacement for libgcc_eh (unwinder)
    * compiler-rt is used as replacement for libgcc (lowlevel builtins)
  * c library
-   * musl, glibc does not compile/work with clang and probably never will completely
-   
+   * musl, glibc does not compile/work with clang and probably never will.
+
 # Organization
  * portage: contains package.* for my system, probably only applies to me.
  * portage/patches: contains patches for fixing compilation of ebuilds in gentoo repo
