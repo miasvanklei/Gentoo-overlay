@@ -57,6 +57,7 @@ src_prepare() {
 
 	if use arm; then
 		eapply "${FILESDIR}"/integrated-as.patch
+		eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 	fi
 
 	eapply_user
