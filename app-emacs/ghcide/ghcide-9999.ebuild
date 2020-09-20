@@ -9,6 +9,7 @@ inherit git-r3 haskell-cabal
 DESCRIPTION="The core of an IDE"
 HOMEPAGE="https://github.com/haskell/ghcide#readme"
 EGIT_REPO_URI="https://github.com/haskell/ghcide.git"
+EGIT_BRANCH="hls-3.3"
 
 LICENSE="Apache-2.0"
 SLOT="0/${PV}"
@@ -19,6 +20,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/async:=[profile?]
 	dev-haskell/data-default:=[profile?]
 	dev-haskell/extra:=[profile?]
+	dev-haskell/fingertree:=[profile?]
         dev-haskell/fuzzy:=[profile?]
         >=dev-haskell/ghc-check-0.5.0.1:=[profile?]
         dev-haskell/ghc-paths:=[profile?]
