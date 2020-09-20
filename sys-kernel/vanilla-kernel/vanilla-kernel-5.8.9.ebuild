@@ -55,6 +55,10 @@ src_prepare() {
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
 
+	if use arm; then
+		eapply "${FILESDIR}"/integrated-as.patch
+	fi
+
 	eapply_user
 }
 
@@ -102,19 +106,33 @@ src_test() {
 }
 
 src_install() {
+	local target
+	if use pine-h64; then
+		target=(
+			install
+			modules_install
+		)
+	else
+		target=(
+			install
+		)
+	fi
+
 	dodir /usr/lib/kernel
 	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
 		INSTALL_PATH="${ED}"/usr/lib/kernel \
 		INSTALL_MOD_PATH="${ED}" \
-		install modules_install
+		"${target[@]}"
 
 	# remove unreachable folders
-	rm "${ED}"/lib/modules/${PV}-vanilla/build || die
-	rm "${ED}"/lib/modules/${PV}-vanilla/source || die
+	if use pine-h64; then
+		rm "${ED}"/lib/modules/${PV}-vanilla/build || die
+		rm "${ED}"/lib/modules/${PV}-vanilla/source || die
+	fi
 
 	save_config "${WORKDIR}"/build/.config
 
-	if use arm64; then
+	if use arm || use arm64; then
 		# install only dtb file for board given in ${DTB_FILE}.
 		if [[ -z ${DTB_FILE} ]]; then
 			emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
@@ -146,7 +164,7 @@ pkg_postinst() {
 		eend ${?}
 	fi
 
-	if use arm64; then
+	if use arm || use arm64; then
 		# install dtb file for board given in ${DTB_FILE}.
 		if [[ -n ${DTB_FILE} ]]; then
 			cp "${EROOT}"/usr/lib/kernel/dtbs/${PV}-vanilla/${DTB_FILE} /boot
