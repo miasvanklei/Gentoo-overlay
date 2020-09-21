@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="12"
+K_GENPATCHES_VER="13"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -12,7 +12,7 @@ detect_arch
 
 KEYWORDS="~amd64 ~arm ~arm64"
 HOMEPAGE="https://www.kernel.org/"
-IUSE="experimental pine-h64 pinebook-pro"
+IUSE="experimental banana-pi pine-h64 pinebook-pro"
 
 DESCRIPTION="Linux kernel built from vanilla upstream sources"
 SRC_URI="${KERNEL_URI} ${GENPATCHES_URI} ${ARCH_URI}"
@@ -55,7 +55,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
 
-	if use arm; then
+	if use banana-pi; then
 		eapply "${FILESDIR}"/integrated-as.patch
 		eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 	fi
@@ -112,6 +112,10 @@ src_install() {
 		target=(
 			install
 			modules_install
+		)
+	elif use banana-pi; then
+		target=(
+			zinstall
 		)
 	else
 		target=(
