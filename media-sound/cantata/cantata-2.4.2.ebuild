@@ -12,7 +12,7 @@ SRC_URI="https://github.com/CDrummond/${PN}/releases/download/v${PV}/${P}.tar.bz
 
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="~amd64 x86"
+KEYWORDS="~amd64 ~x86"
 IUSE="cdda cddb cdio http-server libav mtp -musicbrainz replaygain streaming taglib udisks zeroconf"
 REQUIRED_USE="
 	?? ( cdda cdio )
@@ -41,11 +41,11 @@ COMMON_DEPEND="
 	virtual/libudev:=
 	cdda? ( media-sound/cdparanoia )
 	cddb? ( media-libs/libcddb )
-	cdio? ( dev-libs/libcdio-paranoia )
-	mtp? ( media-libs/libmtp )
+	cdio? ( dev-libs/libcdio-paranoia:= )
+	mtp? ( media-libs/libmtp:= )
 	musicbrainz? ( media-libs/musicbrainz:5= )
 	replaygain? (
-		media-libs/libebur128
+		media-libs/libebur128:=
 		media-sound/mpg123
 		libav? ( media-video/libav:= )
 		!libav? ( media-video/ffmpeg:0= )
