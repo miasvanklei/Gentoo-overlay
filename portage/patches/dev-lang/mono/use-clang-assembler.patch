@@ -1,0 +1,52 @@
+--- a/mono/mini/aot-compiler.c
++++ b/mono/mini/aot-compiler.c
+@@ -12056,26 +12056,18 @@
+ 
+ #ifdef TARGET_WIN32_MSVC
+ #define AS_OPTIONS "--target=x86_64-pc-windows-msvc -c -x assembler"
+-#elif defined(TARGET_AMD64) && !defined(TARGET_MACH)
+-#define AS_OPTIONS "--64"
+ #elif defined(TARGET_POWERPC64)
+ #define AS_OPTIONS "-a64 -mppc64"
+ #elif defined(sparc) && TARGET_SIZEOF_VOID_P == 8
+ #define AS_OPTIONS "-xarch=v9"
+-#elif defined(TARGET_X86) && defined(TARGET_MACH)
+-#define AS_OPTIONS "-arch i386"
+-#elif defined(TARGET_X86) && !defined(TARGET_MACH)
+-#define AS_OPTIONS "--32"
+ #else
+ #define AS_OPTIONS ""
+ #endif
+ 
+-#if defined(TARGET_OSX)
+-#define AS_NAME "clang"
+-#elif defined(TARGET_WIN32_MSVC)
++#if defined(TARGET_WIN32_MSVC)
+ #define AS_NAME "clang.exe"
+ #else
+-#define AS_NAME "as"
++#define AS_NAME "clang"
+ #endif
+ 
+ #ifdef TARGET_WIN32_MSVC
+@@ -12134,9 +12126,7 @@
+ 		objfile = g_strdup_printf ("%s." AS_OBJECT_FILE_SUFFIX, acfg->tmpfname);
+ 	}
+ 
+-#ifdef TARGET_OSX
+ 	g_string_append (acfg->as_args, "-c -x assembler");
+-#endif
+ 
+ 	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS,
+ 			acfg->as_args ? acfg->as_args->str : "", 
+--- a/mono/mini/image-writer.c
++++ b/mono/mini/image-writer.c
+@@ -97,7 +97,7 @@
+ #elif defined(TARGET_ASM_GAS) && defined(TARGET_WIN32)
+ #define AS_INT16_DIRECTIVE ".word"
+ #elif defined(TARGET_ASM_GAS)
+-#define AS_INT16_DIRECTIVE ".hword"
++#define AS_INT16_DIRECTIVE ".word"
+ #else
+ #define AS_INT16_DIRECTIVE ".word"
+ #endif
