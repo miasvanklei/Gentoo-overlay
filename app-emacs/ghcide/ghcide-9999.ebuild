@@ -8,8 +8,7 @@ inherit git-r3 haskell-cabal
 
 DESCRIPTION="The core of an IDE"
 HOMEPAGE="https://github.com/haskell/ghcide#readme"
-EGIT_REPO_URI="https://github.com/haskell/ghcide.git"
-EGIT_BRANCH="hls-3.3"
+EGIT_REPO_URI="https://github.com/haskell/haskell-language-server.git"
 
 LICENSE="Apache-2.0"
 SLOT="0/${PV}"
@@ -24,6 +23,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
         dev-haskell/fuzzy:=[profile?]
         >=dev-haskell/ghc-check-0.5.0.1:=[profile?]
         dev-haskell/ghc-paths:=[profile?]
+        dev-haskell/glob:=[profile?]
 	dev-haskell/haddock-library:=[profile?]
 	dev-haskell/hashable:=[profile?]
 	=dev-haskell/haskell-lsp-0.22.0.0:=[profile?]
@@ -61,6 +61,8 @@ DEPEND="${RDEPEND}
 		dev-haskell/tasty-hunit
 		dev-haskell/text:=[profile?] )
 "
+
+S="${WORKDIR}/${P}/ghcide"
 
 PATCHES=(
 	"${FILESDIR}"/make-executables-optional.patch
