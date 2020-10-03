@@ -28,7 +28,7 @@ HOMEPAGE="https://www.freedesktop.org/wiki/Software/systemd"
 
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
-IUSE="acl apparmor audit build cgroup-hybrid cryptsetup curl dns-over-tls elfutils +gcrypt gnuefi http idn importd +kmod +lz4 lzma nat pam pcre pkcs11 policykit pwquality qrcode +resolvconf +seccomp selinux split-usr static-libs +sysv-utils test vanilla xkb"
+IUSE="acl apparmor audit build +cgroup-hybrid cryptsetup curl dns-over-tls elfutils +gcrypt gnuefi http idn importd +kmod +lz4 lzma nat pam pcre pkcs11 policykit pwquality qrcode +resolvconf +seccomp selinux split-usr static-libs +sysv-utils test vanilla xkb"
 
 REQUIRED_USE="importd? ( curl gcrypt lzma )"
 RESTRICT="!test? ( test )"
@@ -310,9 +310,6 @@ multilib_src_configure() {
 		-Dtimesyncd=$(meson_multilib)
 		-Dtmpfiles=$(meson_multilib)
 		-Dvconsole=$(meson_multilib)
-
-		# default hierarchy
-		-Ddefault-hierarchy=unified
 
 		# disabled on musl
 		-Didn=false
