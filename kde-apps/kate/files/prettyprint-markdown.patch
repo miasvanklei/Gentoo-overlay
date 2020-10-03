@@ -1,8 +1,8 @@
 diff --git a/addons/lspclient/lspclienthover.cpp b/addons/lspclient/lspclienthover.cpp
-index 212a36388..1bf635b9e 100644
+index 41c5981b9..e0eec1c8e 100644
 --- a/addons/lspclient/lspclienthover.cpp
 +++ b/addons/lspclient/lspclienthover.cpp
-@@ -33,6 +33,7 @@
+@@ -16,6 +16,7 @@
  #include <KTextEditor/View>
  
  #include <QToolTip>
@@ -10,7 +10,14 @@ index 212a36388..1bf635b9e 100644
  #include <utility>
  
  class LSPClientHoverImpl : public LSPClientHover
-@@ -97,8 +98,12 @@ public:
+@@ -75,13 +76,18 @@ public:
+ 
+                 // we need to cut this a bit if too long until we have
+                 // something more sophisticated than a tool tip for it
+-                if (finalTooltip.size() > 512) {
+-                    finalTooltip.resize(512);
++                if (finalTooltip.size() > 1024) {
++                    finalTooltip.resize(1024);
                      finalTooltip.append(QStringLiteral("..."));
                  }
  
@@ -20,7 +27,8 @@ index 212a36388..1bf635b9e 100644
 +
                  // show tool tip: think about a better way for "large" stuff
 -                QToolTip::showText(v->mapToGlobal(v->cursorToCoordinate(position)), finalTooltip);
-+                QToolTip::showText(v->mapToGlobal(v->cursorToCoordinate(position)), pfinalTooltip);
++                if (finalTooltip.size() > 1)
++                    QToolTip::showText(v->mapToGlobal(v->cursorToCoordinate(position)), pfinalTooltip);
              };
  
              m_handle.cancel() = m_server->documentHover(view->document()->url(), position, this, h);
