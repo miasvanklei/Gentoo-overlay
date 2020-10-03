@@ -18,6 +18,7 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 RDEPEND=">=dev-haskell/exceptions-0.10:=[profile?]
+	>=dev-haskell/logict-0.6:=[profile?]
 	>=dev-haskell/mmorph-1:=[profile?]
 	>=dev-haskell/mtl-2:=[profile?]
 	>=dev-haskell/pipes-4:=[profile?]
