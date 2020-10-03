@@ -11,7 +11,7 @@ inherit git-r3 haskell-cabal
 DESCRIPTION="Haskell Language Server API for plugin communication"
 HOMEPAGE="https://github.com/haskell/haskell-language-server#readme"
 EGIT_REPO_URI="https://github.com/haskell/haskell-language-server.git"
-
+EGIT_SUBMODULES=()
 
 LICENSE="Apache-2.0"
 SLOT="0/${PV}"
