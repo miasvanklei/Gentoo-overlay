@@ -126,83 +126,51 @@ index bc6f0cf7f0..001c65de87 100644
  		$(use_with xen xen_opt)
  		--without-ikvm-native
  		--disable-dtrace
-diff --git a/dev-lang/rust/rust-1.46.0.ebuild b/dev-lang/rust/rust-1.46.0.ebuild
-index a6aeacae24..eacf850ca5 100644
---- a/dev-lang/rust/rust-1.46.0.ebuild
-+++ b/dev-lang/rust/rust-1.46.0.ebuild
-@@ -50,13 +50,14 @@ IUSE="clippy cpu_flags_x86_sse2 debug doc libressl miri nightly parallel-compile
- # 3. Specify LLVM_MAX_SLOT, e.g. 10.
- LLVM_DEPEND="
- 	|| (
-+		sys-devel/llvm:11[${LLVM_TARGET_USEDEPS// /,}]
- 		sys-devel/llvm:10[${LLVM_TARGET_USEDEPS// /,}]
- 		sys-devel/llvm:9[${LLVM_TARGET_USEDEPS// /,}]
- 	)
--	<sys-devel/llvm-11:=
-+	<sys-devel/llvm-12:=
- 	wasm? ( sys-devel/lld )
- "
--LLVM_MAX_SLOT=10
-+LLVM_MAX_SLOT=11
- 
- BOOTSTRAP_DEPEND="|| ( >=dev-lang/rust-1.$(($(ver_cut 2) - 1)) >=dev-lang/rust-bin-1.$(($(ver_cut 2) - 1)) )"
- 
-@@ -82,7 +83,6 @@ DEPEND="
+diff --git a/dev-lang/rust/rust-1.47.0.ebuild b/dev-lang/rust/rust-1.47.0.ebuild
+index a5041ff03f..dbb5655f12 100644
+--- a/dev-lang/rust/rust-1.47.0.ebuild
++++ b/dev-lang/rust/rust-1.47.0.ebuild
+@@ -83,7 +83,6 @@ DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
  	libressl? ( dev-libs/libressl:0= )
--	elibc_musl? ( sys-libs/libunwind )
+-	elibc_musl? ( sys-libs/libunwind:= )
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -165,6 +165,10 @@ pre_build_checks() {
- 	CHECKREQS_DISK_BUILD=${M}M check-reqs_pkg_${EBUILD_PHASE}
+@@ -194,6 +193,10 @@ pkg_setup() {
+ 	fi
  }
  
 +clear_vendor_checksums() {
-+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
++        sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
 +}
 +
- pkg_pretend() {
- 	pre_build_checks
- }
-@@ -199,6 +203,8 @@ src_prepare() {
+ src_prepare() {
+ 	if ! use system-bootstrap; then
+ 		local rust_stage0_root="${WORKDIR}"/rust-stage0
+@@ -203,6 +206,9 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
 +	clear_vendor_checksums libc
++	clear_vendor_checksums libc-0.2.74
 +
  	default
  }
  
-@@ -554,6 +560,11 @@ src_install() {
+@@ -561,6 +567,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
 +
 +	# remove some clutter
-+	pushd "${ED}/usr/lib/${P}/rustlib"
++	pushd "${ED}/usr/lib/${PN}/${PV}/lib/rustlib"
 +	rm components install.log manifest-* rust-installer-version uninstall.sh || die
 +	popd
  }
  
  pkg_postinst() {
-@@ -569,15 +580,6 @@ pkg_postinst() {
- 	if has_version app-editors/gvim || has_version app-editors/vim; then
- 		elog "install app-vim/rust-vim to get vim support for rust."
- 	fi
--
--	if use elibc_musl; then
--		ewarn "${PN} on *-musl targets is configured with crt-static"
--		ewarn ""
--		ewarn "you will need to set RUSTFLAGS=\"-C target-feature=-crt-static\" in make.conf"
--		ewarn "to use it with portage, otherwise you may see failures like"
--		ewarn "error: cannot produce proc-macro for serde_derive v1.0.98 as the target "
--		ewarn "x86_64-unknown-linux-musl does not support these crate types"
--	fi
- }
- 
- pkg_postrm() {
 diff --git a/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild b/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
 index 4296dae816..485ba35747 100644
 --- a/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
