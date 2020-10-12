@@ -220,37 +220,6 @@
  	return 0;
  }
  
-@@ -1016,7 +1055,7 @@
- 		paltmode->mode = i;
- 		paltmode->vdo = le32_to_cpu(payload[i]);
- 
--		tcpm_log(port, " Alternate mode %d: SVID 0x%04x, VDO %d: 0x%08x",
-+		tcpm_log(port, "Alternate mode %d: SVID 0x%04x, VDO %d: 0x%08x",
- 			 pmdata->altmodes, paltmode->svid,
- 			 paltmode->mode, paltmode->vdo);
- 
-@@ -1036,6 +1075,9 @@
- 		if (!altmode)
- 			tcpm_log(port, "Failed to register partner SVID 0x%04x",
- 				 modep->altmode_desc[i].svid);
-+		else
-+			tcpm_log(port, "Registered altmode 0x%04x", modep->altmode_desc[i].svid);
-+
- 		port->partner_altmode[i] = altmode;
- 	}
- }
-@@ -1139,9 +1181,11 @@
- 			modep->svid_index++;
- 			if (modep->svid_index < modep->nsvids) {
- 				u16 svid = modep->svids[modep->svid_index];
-+				tcpm_log(port, "More modes available, sending discover");
- 				response[0] = VDO(svid, 1, CMD_DISCOVER_MODES);
- 				rlen = 1;
- 			} else {
-+				tcpm_log(port, "Got all patner modes, registering");
- 				tcpm_register_partner_altmodes(port);
- 			}
- 			break;
 @@ -2664,6 +2708,7 @@
  static void tcpm_typec_disconnect(struct tcpm_port *port)
  {

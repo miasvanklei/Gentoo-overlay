@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="17"
+K_GENPATCHES_VER="1"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -40,7 +40,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/pine-h64/002-pineh64-enable-usb3.patch
 		eapply "${FILESDIR}"/pine-h64/003-eMMC-workaround.patch
 		eapply "${FILESDIR}"/pine-h64/004-add-support-for-rtl8723cs_bs.patch
-		eapply "${FILESDIR}"/pine-h64/006-hdmi-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/007-sun4i-i2s-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/008-cedrus-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/009-wip-cec-improvements.patch
@@ -51,7 +50,6 @@ src_prepare() {
 	fi
 
 	if use pinebook-pro || use pine-h64; then
-		eapply "${FILESDIR}"/003-hdmi-codec.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
 
