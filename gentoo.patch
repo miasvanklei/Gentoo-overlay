@@ -126,11 +126,11 @@ index bc6f0cf7f0..001c65de87 100644
  		$(use_with xen xen_opt)
  		--without-ikvm-native
  		--disable-dtrace
-diff --git a/dev-lang/rust/rust-1.47.0.ebuild b/dev-lang/rust/rust-1.47.0.ebuild
-index a5041ff03f..dbb5655f12 100644
---- a/dev-lang/rust/rust-1.47.0.ebuild
-+++ b/dev-lang/rust/rust-1.47.0.ebuild
-@@ -83,7 +83,6 @@ DEPEND="
+diff --git a/dev-lang/rust/rust-1.47.0-r1.ebuild b/dev-lang/rust/rust-1.47.0-r1.ebuild
+index cd258a9cb8..5a5f750227 100644
+--- a/dev-lang/rust/rust-1.47.0-r1.ebuild
++++ b/dev-lang/rust/rust-1.47.0-r1.ebuild
+@@ -82,7 +82,6 @@ DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
  	libressl? ( dev-libs/libressl:0= )
@@ -159,7 +159,7 @@ index a5041ff03f..dbb5655f12 100644
  	default
  }
  
-@@ -561,6 +567,11 @@ src_install() {
+@@ -572,6 +578,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -172,7 +172,7 @@ index a5041ff03f..dbb5655f12 100644
  
  pkg_postinst() {
 diff --git a/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild b/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
-index 4296dae816..485ba35747 100644
+index f8fe7c83e9..2265c468fe 100644
 --- a/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
 +++ b/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
 @@ -3,7 +3,7 @@
@@ -274,19 +274,23 @@ index a1a296a1d3..2fce6a91a2 100644
  
  inherit python-single-r1
 diff --git a/eclass/rust-toolchain.eclass b/eclass/rust-toolchain.eclass
-index 9d7360ed1c..3660a9d468 100644
+index 9d7360ed1c..4d7b1af38f 100644
 --- a/eclass/rust-toolchain.eclass
 +++ b/eclass/rust-toolchain.eclass
-@@ -35,7 +35,8 @@ inherit multilib-build
+@@ -35,12 +35,11 @@ inherit multilib-build
  rust_abi() {
  	local CTARGET=${1:-${CHOST}}
  	case ${CTARGET%%*-} in
 -		aarch64*)	  echo aarch64-unknown-linux-gnu;;
 +		aarch64*gnu)	  echo aarch64-unknown-linux-gnu;;
-+		aarch64*musl)	  echo aarch64-unknown-linux-musl;;
  		mips64*)	  echo mips64-unknown-linux-gnuabi64;;
  		powerpc64le*) echo powerpc64le-unknown-linux-gnu;;
  		powerpc64*)   echo powerpc64-unknown-linux-gnu;;
+ 		x86_64*gnu)	  echo x86_64-unknown-linux-gnu;;
+-		x86_64*musl)  echo x86_64-unknown-linux-musl;;
+ 		armv6j*s*)	  echo arm-unknown-linux-gnueabi;;
+ 		armv6j*h*)	  echo arm-unknown-linux-gnueabihf;;
+ 		armv7a*h*)	  echo armv7-unknown-linux-gnueabihf;;
 diff --git a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 index 78c8d372df..0f8305602e 100644
 --- a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
@@ -341,14 +345,14 @@ index 6de7754010..069bf329e7 100644
  	sys-libs/zlib[minizip]
  	virtual/libintl
  	virtual/opengl
-diff --git a/sys-devel/clang/clang-11.0.0_rc6.ebuild b/sys-devel/clang/clang-11.0.0_rc6.ebuild
-index 8f5be4425a..723ef9784a 100644
---- a/sys-devel/clang/clang-11.0.0_rc6.ebuild
-+++ b/sys-devel/clang/clang-11.0.0_rc6.ebuild
+diff --git a/sys-devel/clang/clang-11.0.0.ebuild b/sys-devel/clang/clang-11.0.0.ebuild
+index 0dacfd8c5e..565642c4a9 100644
+--- a/sys-devel/clang/clang-11.0.0.ebuild
++++ b/sys-devel/clang/clang-11.0.0.ebuild
 @@ -31,8 +31,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
- KEYWORDS=""
+ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
 -IUSE="debug default-compiler-rt default-libcxx default-lld
 -	doc +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 +IUSE="debug +default-compiler-rt +default-libcxx +default-lld +default-libunwind
@@ -473,14 +477,14 @@ index 9bd470297d..fd481026e2 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-11.0.0_rc6.ebuild b/sys-devel/llvm/llvm-11.0.0_rc6.ebuild
-index 6ee898821d..a0ef825ef8 100644
---- a/sys-devel/llvm/llvm-11.0.0_rc6.ebuild
-+++ b/sys-devel/llvm/llvm-11.0.0_rc6.ebuild
+diff --git a/sys-devel/llvm/llvm-11.0.0.ebuild b/sys-devel/llvm/llvm-11.0.0.ebuild
+index a1a38d4cbd..62e5139b0e 100644
+--- a/sys-devel/llvm/llvm-11.0.0.ebuild
++++ b/sys-devel/llvm/llvm-11.0.0.ebuild
 @@ -29,7 +29,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
  SLOT="$(ver_cut 1)"
- KEYWORDS=""
+ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 -IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 +IUSE="+binutils-symlinks debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
@@ -583,15 +587,3 @@ index 04aa60d480..c872526a03 100644
  inherit autotools python-single-r1 xdg-utils
  
  DESCRIPTION="A library for manipulating block devices"
-diff --git a/www-client/firefox/firefox-81.0.1.ebuild b/www-client/firefox/firefox-81.0.1.ebuild
-index bddadeb11f..e9e485bf05 100644
---- a/www-client/firefox/firefox-81.0.1.ebuild
-+++ b/www-client/firefox/firefox-81.0.1.ebuild
-@@ -601,6 +601,7 @@ src_configure() {
- 		--disable-cargo-incremental \
- 		--disable-crashreporter \
- 		--disable-install-strip \
-+		--disable-jemalloc \
- 		--disable-strip \
- 		--disable-updater \
- 		--enable-official-branding \
