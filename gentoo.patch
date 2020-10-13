@@ -127,7 +127,7 @@ index bc6f0cf7f0..001c65de87 100644
  		--without-ikvm-native
  		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.47.0-r1.ebuild b/dev-lang/rust/rust-1.47.0-r1.ebuild
-index cd258a9cb8..5a5f750227 100644
+index cd258a9cb8..b4122586b9 100644
 --- a/dev-lang/rust/rust-1.47.0-r1.ebuild
 +++ b/dev-lang/rust/rust-1.47.0-r1.ebuild
 @@ -82,7 +82,6 @@ DEPEND="
@@ -159,6 +159,26 @@ index cd258a9cb8..5a5f750227 100644
  	default
  }
  
+@@ -424,8 +430,8 @@ src_compile() {
+ 	# we need \n IFS to have config.env with spaces loaded properly. #734018
+ 	(
+ 	IFS=$'\n'
+-	env $(cat "${S}"/config.env) RUST_BACKTRACE=1\
+-		"${EPYTHON}" ./x.py dist -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
++	env $(cat "${S}"/config.env) DESTDIR="${D}" \
++		"${EPYTHON}" ./x.py build --stage 2 -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
+ 	)
+ }
+ 
+@@ -492,7 +498,7 @@ src_install() {
+ 	(
+ 	IFS=$'\n'
+ 	env $(cat "${S}"/config.env) DESTDIR="${D}" \
+-		"${EPYTHON}" ./x.py install -vv --config="${S}"/config.toml || die
++		"${EPYTHON}" ./x.py install -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
+ 	)
+ 
+ 	# bug #689562, #689160
 @@ -572,6 +578,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
