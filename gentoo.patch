@@ -44,21 +44,30 @@ index efc797548a..1bc61719c4 100644
  		$(use_enable gnome-keyring pinentry-gnome3) \
  		$(use_enable gtk pinentry-gtk2) \
  		$(use_enable ncurses fallback-curses) \
-diff --git a/app-emulation/docker/docker-19.03.13-r2.ebuild b/app-emulation/docker/docker-19.03.13-r2.ebuild
-index 466ac242d0..b06f42310a 100644
---- a/app-emulation/docker/docker-19.03.13-r2.ebuild
-+++ b/app-emulation/docker/docker-19.03.13-r2.ebuild
-@@ -71,9 +71,7 @@ CONFIG_CHECK="
- 	~CGROUPS ~CGROUP_CPUACCT ~CGROUP_DEVICE ~CGROUP_FREEZER ~CGROUP_SCHED ~CPUSETS ~MEMCG
- 	~KEYS
- 	~VETH ~BRIDGE ~BRIDGE_NETFILTER
--	~IP_NF_FILTER ~IP_NF_TARGET_MASQUERADE
--	~NETFILTER_XT_MATCH_ADDRTYPE ~NETFILTER_XT_MATCH_CONNTRACK ~NETFILTER_XT_MATCH_IPVS
--	~IP_NF_NAT ~NF_NAT
-+	~NF_NAT
- 	~POSIX_MQUEUE
+diff --git a/app-emulation/crun/crun-0.15.ebuild b/app-emulation/crun/crun-0.15.ebuild
+index 888df44272..280cabc77a 100644
+--- a/app-emulation/crun/crun-0.15.ebuild
++++ b/app-emulation/crun/crun-0.15.ebuild
+@@ -21,6 +21,7 @@ DEPEND="
+ 	>=dev-libs/yajl-2.0.0
+ 	caps? ( sys-libs/libcap )
+ 	criu? ( >=sys-process/criu-3.13 )
++	elibc_musl? ( sys-libs/argp-standalone )
+ 	seccomp? ( sys-libs/libseccomp )
+ 	systemd? ( sys-apps/systemd:= )
+ "
+diff --git a/app-emulation/libpod/libpod-2.1.0.ebuild b/app-emulation/libpod/libpod-2.1.0.ebuild
+index 8335388f9f..670453c7f1 100644
+--- a/app-emulation/libpod/libpod-2.1.0.ebuild
++++ b/app-emulation/libpod/libpod-2.1.0.ebuild
+@@ -26,7 +26,6 @@ COMMON_DEPEND="
+ 	dev-libs/libassuan:=
+ 	dev-libs/libgpg-error:=
+ 	>=net-misc/cni-plugins-0.8.6
+-	sys-fs/lvm2
+ 	sys-libs/libseccomp:=
  
- 	~USER_NS
+ 	apparmor? ( sys-libs/libapparmor )
 diff --git a/app-i18n/fcitx/fcitx-4.2.9.6.ebuild b/app-i18n/fcitx/fcitx-4.2.9.6.ebuild
 index abf4e1cbdb..03fca11061 100644
 --- a/app-i18n/fcitx/fcitx-4.2.9.6.ebuild
@@ -72,6 +81,19 @@ index abf4e1cbdb..03fca11061 100644
  	gtk2? ( x11-libs/gtk+:2 )
  	gtk3? ( x11-libs/gtk+:3 )
  	lua? ( dev-lang/lua:= )
+diff --git a/app-misc/solaar/solaar-1.0.3_rc1.ebuild b/app-misc/solaar/solaar-1.0.3_rc1.ebuild
+index 37fb735fd5..b0ef183ad1 100644
+--- a/app-misc/solaar/solaar-1.0.3_rc1.ebuild
++++ b/app-misc/solaar/solaar-1.0.3_rc1.ebuild
+@@ -4,7 +4,7 @@
+ EAPI=7
+ 
+ DISTUTILS_USE_SETUPTOOLS=bdepend
+-PYTHON_COMPAT=( python3_{6,7,8} )
++PYTHON_COMPAT=( python3_{6,7,8,9} )
+ 
+ inherit linux-info udev xdg distutils-r1
+ 
 diff --git a/app-text/xmlto/xmlto-0.0.28-r3.ebuild b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
 index 5602e66567..42815c690d 100644
 --- a/app-text/xmlto/xmlto-0.0.28-r3.ebuild
@@ -267,6 +289,19 @@ index b005f93fdc..64efb49fc2 100644
  
  inherit distutils-r1
  
+diff --git a/dev-python/pyudev/pyudev-0.22.0.ebuild b/dev-python/pyudev/pyudev-0.22.0.ebuild
+index a5698f7762..a8f05a5150 100644
+--- a/dev-python/pyudev/pyudev-0.22.0.ebuild
++++ b/dev-python/pyudev/pyudev-0.22.0.ebuild
+@@ -2,7 +2,7 @@
+ # Distributed under the terms of the GNU General Public License v2
+ 
+ EAPI=7
+-PYTHON_COMPAT=( python3_{6,7,8} )
++PYTHON_COMPAT=( python3_{6,7,8,9} )
+ 
+ inherit distutils-r1
+ 
 diff --git a/dev-util/gdbus-codegen/gdbus-codegen-2.64.5.ebuild b/dev-util/gdbus-codegen/gdbus-codegen-2.64.5.ebuild
 index 63279f3aef..57cc6931a2 100644
 --- a/dev-util/gdbus-codegen/gdbus-codegen-2.64.5.ebuild
@@ -293,24 +328,6 @@ index a1a296a1d3..2fce6a91a2 100644
  PYTHON_REQ_USE="xml"
  
  inherit python-single-r1
-diff --git a/eclass/rust-toolchain.eclass b/eclass/rust-toolchain.eclass
-index 9d7360ed1c..4d7b1af38f 100644
---- a/eclass/rust-toolchain.eclass
-+++ b/eclass/rust-toolchain.eclass
-@@ -35,12 +35,11 @@ inherit multilib-build
- rust_abi() {
- 	local CTARGET=${1:-${CHOST}}
- 	case ${CTARGET%%*-} in
--		aarch64*)	  echo aarch64-unknown-linux-gnu;;
-+		aarch64*gnu)	  echo aarch64-unknown-linux-gnu;;
- 		mips64*)	  echo mips64-unknown-linux-gnuabi64;;
- 		powerpc64le*) echo powerpc64le-unknown-linux-gnu;;
- 		powerpc64*)   echo powerpc64-unknown-linux-gnu;;
- 		x86_64*gnu)	  echo x86_64-unknown-linux-gnu;;
--		x86_64*musl)  echo x86_64-unknown-linux-musl;;
- 		armv6j*s*)	  echo arm-unknown-linux-gnueabi;;
- 		armv6j*h*)	  echo arm-unknown-linux-gnueabihf;;
- 		armv7a*h*)	  echo armv7-unknown-linux-gnueabihf;;
 diff --git a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 index 78c8d372df..0f8305602e 100644
 --- a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
@@ -323,10 +340,10 @@ index 78c8d372df..0f8305602e 100644
  "
  
  S="${WORKDIR}/${PN}-${MY_COMMIT}"
-diff --git a/media-libs/mesa/mesa-20.2.0.ebuild b/media-libs/mesa/mesa-20.2.0.ebuild
-index 402d1049c1..48d1f0be04 100644
---- a/media-libs/mesa/mesa-20.2.0.ebuild
-+++ b/media-libs/mesa/mesa-20.2.0.ebuild
+diff --git a/media-libs/mesa/mesa-20.2.1.ebuild b/media-libs/mesa/mesa-20.2.1.ebuild
+index 092aa16286..b128d3746f 100644
+--- a/media-libs/mesa/mesa-20.2.1.ebuild
++++ b/media-libs/mesa/mesa-20.2.1.ebuild
 @@ -143,9 +143,10 @@ RDEPEND="${RDEPEND}
  # 1. List all the working slots (with min versions) in ||, newest first.
  # 2. Update the := to specify *max* version, e.g. < 10.
@@ -366,7 +383,7 @@ index 6de7754010..069bf329e7 100644
  	virtual/libintl
  	virtual/opengl
 diff --git a/sys-devel/clang/clang-11.0.0.ebuild b/sys-devel/clang/clang-11.0.0.ebuild
-index 0dacfd8c5e..565642c4a9 100644
+index ed86435d86..55f86c9df0 100644
 --- a/sys-devel/clang/clang-11.0.0.ebuild
 +++ b/sys-devel/clang/clang-11.0.0.ebuild
 @@ -31,8 +31,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
@@ -391,10 +408,10 @@ index 0dacfd8c5e..565642c4a9 100644
  BDEPEND="
 -	dev-python/sphinx
 +	doc? ( dev-python/sphinx )
+ 	>=dev-util/cmake-3.16
  	xml? ( virtual/pkgconfig )
  	${PYTHON_DEPS}"
- RDEPEND="${RDEPEND}
-@@ -53,7 +55,7 @@ RDEPEND="${RDEPEND}
+@@ -54,7 +56,7 @@ RDEPEND="${RDEPEND}
  PDEPEND="
  	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
@@ -403,7 +420,7 @@ index 0dacfd8c5e..565642c4a9 100644
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -190,13 +192,12 @@ get_distribution_components() {
+@@ -191,13 +193,12 @@ get_distribution_components() {
  			find-all-symbols
  			modularize
  			pp-trace
@@ -419,7 +436,7 @@ index 0dacfd8c5e..565642c4a9 100644
  			docs-clang-html
  			docs-clang-tools-html
  		)
-@@ -239,10 +240,14 @@ multilib_src_configure() {
+@@ -240,10 +241,14 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -435,7 +452,7 @@ index 0dacfd8c5e..565642c4a9 100644
  
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
-@@ -256,8 +261,10 @@ multilib_src_configure() {
+@@ -259,8 +264,10 @@ multilib_src_configure() {
  		mycmakeargs+=(
  			# normally copied from LLVM_INCLUDE_DOCS but the latter
  			# is lacking value in stand-alone builds
@@ -448,7 +465,7 @@ index 0dacfd8c5e..565642c4a9 100644
  			-DLLVM_BUILD_DOCS=ON
  			-DLLVM_ENABLE_SPHINX=ON
  			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
-@@ -332,6 +339,7 @@ src_install() {
+@@ -335,6 +342,7 @@ src_install() {
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
  	local clang_tools=( clang clang++ clang-cl clang-cpp )
@@ -456,7 +473,7 @@ index 0dacfd8c5e..565642c4a9 100644
  	local abi i
  
  	# cmake gives us:
-@@ -360,6 +368,15 @@ src_install() {
+@@ -363,6 +371,15 @@ src_install() {
  		done
  	done
  
@@ -498,7 +515,7 @@ index 9bd470297d..fd481026e2 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-11.0.0.ebuild b/sys-devel/llvm/llvm-11.0.0.ebuild
-index a1a38d4cbd..62e5139b0e 100644
+index 1a9eb3f640..2b497c63a6 100644
 --- a/sys-devel/llvm/llvm-11.0.0.ebuild
 +++ b/sys-devel/llvm/llvm-11.0.0.ebuild
 @@ -29,7 +29,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
@@ -510,7 +527,7 @@ index a1a38d4cbd..62e5139b0e 100644
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
  REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
-@@ -59,10 +59,10 @@ BDEPEND="
+@@ -60,10 +60,10 @@ BDEPEND="
  		>=sys-devel/binutils-apple-5.1
  	)
  	libffi? ( virtual/pkgconfig )
@@ -524,7 +541,7 @@ index a1a38d4cbd..62e5139b0e 100644
  # There are no file collisions between these versions but having :0
  # installed means llvm-config there will take precedence.
  RDEPEND="${RDEPEND}
-@@ -71,10 +71,9 @@ PDEPEND="sys-devel/llvm-common
+@@ -72,10 +72,9 @@ PDEPEND="sys-devel/llvm-common
  	gold? ( >=sys-devel/llvmgold-${SLOT} )"
  
  python_check_deps() {
@@ -538,7 +555,7 @@ index a1a38d4cbd..62e5139b0e 100644
  	has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
  }
  
-@@ -301,13 +300,29 @@ get_distribution_components() {
+@@ -302,13 +301,29 @@ get_distribution_components() {
  
  			# python modules
  			opt-viewer
@@ -570,7 +587,7 @@ index a1a38d4cbd..62e5139b0e 100644
  			docs-llvm-html
  		)
  
-@@ -338,6 +353,7 @@ multilib_src_configure() {
+@@ -339,6 +354,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -578,7 +595,7 @@ index a1a38d4cbd..62e5139b0e 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -389,11 +405,13 @@ multilib_src_configure() {
+@@ -392,11 +408,13 @@ multilib_src_configure() {
  
  	if multilib_is_native_abi; then
  		mycmakeargs+=(
