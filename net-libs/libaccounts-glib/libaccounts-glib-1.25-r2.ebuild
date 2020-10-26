@@ -29,14 +29,15 @@ BDEPEND="
 	doc? ( dev-util/gtk-doc )
 "
 
-PATCHES=(
-	"${FILESDIR}"/bugus-dependencies.patch
-)
-
 # fails
 RESTRICT="test"
 
 S="${WORKDIR}/${PN}-VERSION_${PV}"
+
+PATCHES=(
+	"${FILESDIR}"/bugus-dependencies.patch
+	"${FILESDIR}/${P}-assert-failure.patch"
+)
 
 src_prepare() {
 	default
