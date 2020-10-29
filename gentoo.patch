@@ -68,6 +68,30 @@ index 8335388f9f..670453c7f1 100644
  	sys-libs/libseccomp:=
  
  	apparmor? ( sys-libs/libapparmor )
+diff --git a/app-emulation/libvirt/libvirt-6.8.0.ebuild b/app-emulation/libvirt/libvirt-6.8.0.ebuild
+index 0ac6ec64fe..a6ba2cf0c8 100644
+--- a/app-emulation/libvirt/libvirt-6.8.0.ebuild
++++ b/app-emulation/libvirt/libvirt-6.8.0.ebuild
+@@ -103,7 +103,6 @@ RDEPEND="
+ 	selinux? ( >=sys-libs/libselinux-2.0.85 )
+ 	virt-network? (
+ 		net-dns/dnsmasq[script]
+-		net-firewall/ebtables
+ 		>=net-firewall/iptables-1.4.10[ipv6]
+ 		net-misc/radvd
+ 		sys-apps/iproute2[-minimal]
+diff --git a/app-emulation/virt-manager/virt-manager-3.1.0.ebuild b/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
+index cb575dc4df..8f524a1272 100644
+--- a/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
++++ b/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
+@@ -42,7 +42,6 @@ RDEPEND="!app-emulation/virtinst
+ 		gnome-base/dconf
+ 		>=net-libs/gtk-vnc-0.3.8[gtk3(+),introspection]
+ 		net-misc/spice-gtk[usbredir,gtk3,introspection,sasl?]
+-		net-misc/x11-ssh-askpass
+ 		x11-libs/gtk+:3[introspection]
+ 		x11-libs/gtksourceview:4[introspection]
+ 		x11-libs/vte:2.91[introspection]
 diff --git a/app-i18n/fcitx/fcitx-4.2.9.6.ebuild b/app-i18n/fcitx/fcitx-4.2.9.6.ebuild
 index abf4e1cbdb..03fca11061 100644
 --- a/app-i18n/fcitx/fcitx-4.2.9.6.ebuild
@@ -81,19 +105,6 @@ index abf4e1cbdb..03fca11061 100644
  	gtk2? ( x11-libs/gtk+:2 )
  	gtk3? ( x11-libs/gtk+:3 )
  	lua? ( dev-lang/lua:= )
-diff --git a/app-misc/solaar/solaar-1.0.3_rc1.ebuild b/app-misc/solaar/solaar-1.0.3_rc1.ebuild
-index 37fb735fd5..b0ef183ad1 100644
---- a/app-misc/solaar/solaar-1.0.3_rc1.ebuild
-+++ b/app-misc/solaar/solaar-1.0.3_rc1.ebuild
-@@ -4,7 +4,7 @@
- EAPI=7
- 
- DISTUTILS_USE_SETUPTOOLS=bdepend
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6,7,8,9} )
- 
- inherit linux-info udev xdg distutils-r1
- 
 diff --git a/app-text/xmlto/xmlto-0.0.28-r3.ebuild b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
 index 5602e66567..42815c690d 100644
 --- a/app-text/xmlto/xmlto-0.0.28-r3.ebuild
@@ -107,19 +118,6 @@ index 5602e66567..42815c690d 100644
  	latex? ( dev-texlive/texlive-formatsextra )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
-diff --git a/dev-java/java-config/java-config-2.3.1.ebuild b/dev-java/java-config/java-config-2.3.1.ebuild
-index 87732bf9ec..8fee8e4942 100644
---- a/dev-java/java-config/java-config-2.3.1.ebuild
-+++ b/dev-java/java-config/java-config-2.3.1.ebuild
-@@ -4,7 +4,7 @@
- EAPI=7
- 
- # jython depends on java-config, so don't add it or things will break
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6..9} )
- DISTUTILS_USE_SETUPTOOLS=no
- 
- inherit distutils-r1
 diff --git a/dev-lang/R/R-4.0.2.ebuild b/dev-lang/R/R-4.0.2.ebuild
 index 83d1ecd938..9725452cda 100644
 --- a/dev-lang/R/R-4.0.2.ebuild
@@ -149,7 +147,7 @@ index bc6f0cf7f0..001c65de87 100644
  		--without-ikvm-native
  		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.47.0-r1.ebuild b/dev-lang/rust/rust-1.47.0-r1.ebuild
-index cd258a9cb8..b4122586b9 100644
+index 371a9cd72b..72a5d1dfae 100644
 --- a/dev-lang/rust/rust-1.47.0-r1.ebuild
 +++ b/dev-lang/rust/rust-1.47.0-r1.ebuild
 @@ -82,7 +82,6 @@ DEPEND="
@@ -160,7 +158,7 @@ index cd258a9cb8..b4122586b9 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -194,6 +193,10 @@ pkg_setup() {
+@@ -195,6 +194,10 @@ pkg_setup() {
  	fi
  }
  
@@ -171,7 +169,7 @@ index cd258a9cb8..b4122586b9 100644
  src_prepare() {
  	if ! use system-bootstrap; then
  		local rust_stage0_root="${WORKDIR}"/rust-stage0
-@@ -203,6 +206,9 @@ src_prepare() {
+@@ -204,6 +207,9 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -181,7 +179,7 @@ index cd258a9cb8..b4122586b9 100644
  	default
  }
  
-@@ -424,8 +430,8 @@ src_compile() {
+@@ -425,8 +431,8 @@ src_compile() {
  	# we need \n IFS to have config.env with spaces loaded properly. #734018
  	(
  	IFS=$'\n'
@@ -192,7 +190,7 @@ index cd258a9cb8..b4122586b9 100644
  	)
  }
  
-@@ -492,7 +498,7 @@ src_install() {
+@@ -493,7 +499,7 @@ src_install() {
  	(
  	IFS=$'\n'
  	env $(cat "${S}"/config.env) DESTDIR="${D}" \
@@ -201,7 +199,7 @@ index cd258a9cb8..b4122586b9 100644
  	)
  
  	# bug #689562, #689160
-@@ -572,6 +578,11 @@ src_install() {
+@@ -573,6 +579,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -213,19 +211,6 @@ index cd258a9cb8..b4122586b9 100644
  }
  
  pkg_postinst() {
-diff --git a/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild b/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
-index f8fe7c83e9..2265c468fe 100644
---- a/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
-+++ b/dev-libs/gobject-introspection/gobject-introspection-1.64.1-r1.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=7
- 
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6..9} )
- PYTHON_REQ_USE="xml"
- inherit gnome.org meson python-single-r1 toolchain-funcs xdg
- 
 diff --git a/dev-libs/libffi/libffi-3.3-r2.ebuild b/dev-libs/libffi/libffi-3.3-r2.ebuild
 index 19e01b0832..5f4817a3c2 100644
 --- a/dev-libs/libffi/libffi-3.3-r2.ebuild
@@ -250,84 +235,18 @@ index 19e01b0832..5f4817a3c2 100644
  		--disable-multi-os-directory \
  		$(use_enable static-libs static) \
  		$(use_enable pax_kernel pax_emutramp) \
-diff --git a/dev-libs/marisa/marisa-0.2.5.ebuild b/dev-libs/marisa/marisa-0.2.5.ebuild
-index 4289f375ea..1ecccb7e5c 100644
---- a/dev-libs/marisa/marisa-0.2.5.ebuild
-+++ b/dev-libs/marisa/marisa-0.2.5.ebuild
-@@ -2,7 +2,7 @@
- # Distributed under the terms of the GNU General Public License v2
- 
- EAPI="7"
--PYTHON_COMPAT=(python{3_6,3_7})
-+PYTHON_COMPAT=(python3_{6..9})
- DISTUTILS_OPTIONAL="1"
- 
- inherit autotools distutils-r1
-diff --git a/dev-python/bitarray/bitarray-0.8.3.ebuild b/dev-python/bitarray/bitarray-0.8.3.ebuild
-index 43f4112ed5..43bfdb3ee8 100644
---- a/dev-python/bitarray/bitarray-0.8.3.ebuild
-+++ b/dev-python/bitarray/bitarray-0.8.3.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=6
- 
--PYTHON_COMPAT=( python{3_6,3_7} )
-+PYTHON_COMPAT=( python{3_6,3_7,3_8} )
- 
- inherit distutils-r1
- 
-diff --git a/dev-python/pypax/pypax-0.9.5.ebuild b/dev-python/pypax/pypax-0.9.5.ebuild
-index b005f93fdc..64efb49fc2 100644
---- a/dev-python/pypax/pypax-0.9.5.ebuild
-+++ b/dev-python/pypax/pypax-0.9.5.ebuild
-@@ -4,7 +4,7 @@
- EAPI=6
- 
- DISTUTILS_USE_SETUPTOOLS=no
--PYTHON_COMPAT=( python{3_6,3_7,3_8} )
-+PYTHON_COMPAT=( python3_{6..9} )
- 
- inherit distutils-r1
- 
-diff --git a/dev-python/pyudev/pyudev-0.22.0.ebuild b/dev-python/pyudev/pyudev-0.22.0.ebuild
-index a5698f7762..a8f05a5150 100644
---- a/dev-python/pyudev/pyudev-0.22.0.ebuild
-+++ b/dev-python/pyudev/pyudev-0.22.0.ebuild
-@@ -2,7 +2,7 @@
- # Distributed under the terms of the GNU General Public License v2
- 
- EAPI=7
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6,7,8,9} )
- 
- inherit distutils-r1
- 
-diff --git a/dev-util/gdbus-codegen/gdbus-codegen-2.64.5.ebuild b/dev-util/gdbus-codegen/gdbus-codegen-2.64.5.ebuild
-index 63279f3aef..57cc6931a2 100644
---- a/dev-util/gdbus-codegen/gdbus-codegen-2.64.5.ebuild
-+++ b/dev-util/gdbus-codegen/gdbus-codegen-2.64.5.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=7
- GNOME_ORG_MODULE="glib"
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6..9} )
- PYTHON_REQ_USE="xml"
- DISTUTILS_SINGLE_IMPL=1
- DISTUTILS_USE_SETUPTOOLS=no
-diff --git a/dev-util/itstool/itstool-2.0.6-r1.ebuild b/dev-util/itstool/itstool-2.0.6-r1.ebuild
-index a1a296a1d3..2fce6a91a2 100644
---- a/dev-util/itstool/itstool-2.0.6-r1.ebuild
-+++ b/dev-util/itstool/itstool-2.0.6-r1.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=7
- 
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6..9} )
- PYTHON_REQ_USE="xml"
- 
- inherit python-single-r1
+diff --git a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
+index 6c1c22aa4d..5dee76d662 100644
+--- a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
++++ b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
+@@ -21,6 +21,7 @@ RDEPEND="
+ 	>=dev-libs/libxml2-2.4:=
+ 	dev-libs/json-glib:=
+ 	net-misc/curl:=
++	elibc_musl? ( dev-libs/libdwarf )
+ 	yaml? ( dev-libs/libyaml:= )
+ "
+ DEPEND="${RDEPEND}"
 diff --git a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
 index 78c8d372df..0f8305602e 100644
 --- a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
@@ -356,19 +275,6 @@ index 092aa16286..b128d3746f 100644
  		sys-devel/llvm:10[${MULTILIB_USEDEP}]
  		sys-devel/llvm:9[${MULTILIB_USEDEP}]
  	)
-diff --git a/media-libs/opencv/opencv-4.1.2-r3.ebuild b/media-libs/opencv/opencv-4.1.2-r3.ebuild
-index 0f86abb641..08b6a65d99 100644
---- a/media-libs/opencv/opencv-4.1.2-r3.ebuild
-+++ b/media-libs/opencv/opencv-4.1.2-r3.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=7
- 
--PYTHON_COMPAT=( python3_{6,7} )
-+PYTHON_COMPAT=( python3_{6..9} )
- 
- inherit java-pkg-opt-2 java-ant-2 python-r1 toolchain-funcs cmake-multilib
- 
 diff --git a/media-video/vlc/vlc-3.0.11.1.ebuild b/media-video/vlc/vlc-3.0.11.1.ebuild
 index 6de7754010..069bf329e7 100644
 --- a/media-video/vlc/vlc-3.0.11.1.ebuild
@@ -382,11 +288,36 @@ index 6de7754010..069bf329e7 100644
  	sys-libs/zlib[minizip]
  	virtual/libintl
  	virtual/opengl
+diff --git a/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild b/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
+index 1a09512465..01f1584d81 100644
+--- a/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
++++ b/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
+@@ -60,7 +60,7 @@ src_configure() {
+ 		$(meson_feature pulseaudio)
+ 		$(meson_feature sasl)
+ 		-Denable-werror=false
+-		-Dwith-coroutine=auto # gthread on windows, libc ucontext elsewhere; neither has extra deps
++		-Dwith-coroutine=gthread # gthread on windows, libc ucontext elsewhere; neither has extra deps
+ 		$(meson_use vala with-vala)
+ 	)
+ 	meson_src_configure
+diff --git a/net-misc/spice-gtk/spice-gtk-0.38.ebuild b/net-misc/spice-gtk/spice-gtk-0.38.ebuild
+index f370fa8c0e..b8e0a759a9 100644
+--- a/net-misc/spice-gtk/spice-gtk-0.38.ebuild
++++ b/net-misc/spice-gtk/spice-gtk-0.38.ebuild
+@@ -93,6 +93,7 @@ src_configure() {
+ 		$(meson_feature usbredir)
+ 		$(meson_feature vala vapi)
+ 		$(meson_feature webdav)
++		-Dcoroutine=gthread
+ 	)
+ 
+ 	if use usbredir; then
 diff --git a/sys-devel/clang/clang-11.0.0.ebuild b/sys-devel/clang/clang-11.0.0.ebuild
-index ed86435d86..55f86c9df0 100644
+index eb33776038..7f1e4b89cb 100644
 --- a/sys-devel/clang/clang-11.0.0.ebuild
 +++ b/sys-devel/clang/clang-11.0.0.ebuild
-@@ -31,8 +31,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
+@@ -32,8 +32,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
  KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
@@ -397,7 +328,7 @@ index ed86435d86..55f86c9df0 100644
  REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
-@@ -42,9 +42,11 @@ RDEPEND="
+@@ -43,7 +43,9 @@ RDEPEND="
  	static-analyzer? ( dev-lang/perl:* )
  	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
  	${PYTHON_DEPS}"
@@ -406,12 +337,9 @@ index ed86435d86..55f86c9df0 100644
 +	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
 +	"
  BDEPEND="
--	dev-python/sphinx
-+	doc? ( dev-python/sphinx )
  	>=dev-util/cmake-3.16
- 	xml? ( virtual/pkgconfig )
- 	${PYTHON_DEPS}"
-@@ -54,7 +56,7 @@ RDEPEND="${RDEPEND}
+ 	doc? ( dev-python/sphinx )
+@@ -55,7 +57,7 @@ RDEPEND="${RDEPEND}
  PDEPEND="
  	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
@@ -420,23 +348,7 @@ index ed86435d86..55f86c9df0 100644
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -191,13 +193,12 @@ get_distribution_components() {
- 			find-all-symbols
- 			modularize
- 			pp-trace
-+		)
- 
-+		use doc && out+=(
- 			# manpages
- 			docs-clang-man
- 			docs-clang-tools-man
--		)
--
--		use doc && out+=(
- 			docs-clang-html
- 			docs-clang-tools-html
- 		)
-@@ -240,10 +241,14 @@ multilib_src_configure() {
+@@ -245,10 +247,14 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -452,32 +364,19 @@ index ed86435d86..55f86c9df0 100644
  
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
-@@ -259,8 +264,10 @@ multilib_src_configure() {
- 		mycmakeargs+=(
- 			# normally copied from LLVM_INCLUDE_DOCS but the latter
- 			# is lacking value in stand-alone builds
--			-DCLANG_INCLUDE_DOCS=ON
--			-DCLANG_TOOLS_EXTRA_INCLUDE_DOCS=ON
-+			-DCLANG_INCLUDE_DOCS=$(usex doc)
-+			-DCLANG_TOOLS_EXTRA_INCLUDE_DOCS=$(usex doc)
-+		)
-+		use doc && mycmakeargs+=(
- 			-DLLVM_BUILD_DOCS=ON
- 			-DLLVM_ENABLE_SPHINX=ON
- 			-DCLANG_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
-@@ -335,6 +342,7 @@ src_install() {
+@@ -347,6 +353,7 @@ src_install() {
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
  	local clang_tools=( clang clang++ clang-cl clang-cpp )
-+	local gcc_tools=( gcc g++ )
++	local gcc_tools=( gcc g++ cpp )
  	local abi i
  
  	# cmake gives us:
-@@ -363,6 +371,15 @@ src_install() {
+@@ -375,6 +382,15 @@ src_install() {
  		done
  	done
  
-+	# now create target symlinks for all supported ABIs
++	# and finally create target symlinks for all supported ABIs compat
 +	for abi in $(get_all_abis); do
 +		local abi_chost=$(get_abi_CHOST "${abi}")
 +		for i in "${gcc_tools[@]}"; do
@@ -515,10 +414,10 @@ index 9bd470297d..fd481026e2 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-11.0.0.ebuild b/sys-devel/llvm/llvm-11.0.0.ebuild
-index 1a9eb3f640..2b497c63a6 100644
+index ad20115fb6..027fc947b9 100644
 --- a/sys-devel/llvm/llvm-11.0.0.ebuild
 +++ b/sys-devel/llvm/llvm-11.0.0.ebuild
-@@ -29,7 +29,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
+@@ -30,7 +30,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
  SLOT="$(ver_cut 1)"
  KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
@@ -527,41 +426,12 @@ index 1a9eb3f640..2b497c63a6 100644
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
  REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
-@@ -60,10 +60,10 @@ BDEPEND="
- 		>=sys-devel/binutils-apple-5.1
- 	)
- 	libffi? ( virtual/pkgconfig )
--	$(python_gen_any_dep '
-+	doc? ( $(python_gen_any_dep '
- 		dev-python/sphinx[${PYTHON_USEDEP}]
--		doc? ( dev-python/recommonmark[${PYTHON_USEDEP}] )
--	')"
-+		dev-python/recommonmark[${PYTHON_USEDEP}]
-+	') )"
- # There are no file collisions between these versions but having :0
- # installed means llvm-config there will take precedence.
- RDEPEND="${RDEPEND}
-@@ -72,10 +72,9 @@ PDEPEND="sys-devel/llvm-common
- 	gold? ( >=sys-devel/llvmgold-${SLOT} )"
- 
- python_check_deps() {
--	if use doc; then
--		has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" ||
--			return 1
--	fi
-+	use doc || return 0
+@@ -319,6 +319,23 @@ get_distribution_components() {
+ 				docs-llvm-man
+ 			)
+ 		fi
 +
-+	has_version -b "dev-python/recommonmark[${PYTHON_USEDEP}]" &&
- 	has_version -b "dev-python/sphinx[${PYTHON_USEDEP}]"
- }
- 
-@@ -302,13 +301,29 @@ get_distribution_components() {
- 
- 			# python modules
- 			opt-viewer
-+		)
-+
-+               use binutils-symlinks && out+=(
++		use binutils-symlinks && out+=(
 +			addr2line
 +			ar
 +			c++filt
@@ -576,18 +446,11 @@ index 1a9eb3f640..2b497c63a6 100644
 +			strings
 +			strip
 +                )
- 
-+		use doc && out+=(
- 			# manpages
- 			docs-dsymutil-man
- 			docs-llvm-dwarfdump-man
- 			docs-llvm-man
--		)
--		use doc && out+=(
++
+ 		use doc && out+=(
  			docs-llvm-html
  		)
- 
-@@ -339,6 +354,7 @@ multilib_src_configure() {
+@@ -350,6 +367,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -595,32 +458,3 @@ index 1a9eb3f640..2b497c63a6 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -392,11 +408,13 @@ multilib_src_configure() {
- 
- 	if multilib_is_native_abi; then
- 		mycmakeargs+=(
--			-DLLVM_BUILD_DOCS=ON
-+			-DLLVM_BUILD_DOCS=$(usex doc)
- 			-DLLVM_ENABLE_OCAMLDOC=OFF
--			-DLLVM_ENABLE_SPHINX=ON
-+			-DLLVM_ENABLE_SPHINX=$(usex doc)
- 			-DLLVM_ENABLE_DOXYGEN=OFF
- 			-DLLVM_INSTALL_UTILS=ON
-+		)
-+		use doc && mycmakeargs+=(
- 			-DCMAKE_INSTALL_MANDIR="${EPREFIX}/usr/lib/llvm/${SLOT}/share/man"
- 			-DLLVM_INSTALL_SPHINX_HTML_DIR="${EPREFIX}/usr/share/doc/${PF}/html"
- 			-DSPHINX_WARNINGS_AS_ERRORS=OFF
-diff --git a/sys-libs/libblockdev/libblockdev-2.24.ebuild b/sys-libs/libblockdev/libblockdev-2.24.ebuild
-index 04aa60d480..c872526a03 100644
---- a/sys-libs/libblockdev/libblockdev-2.24.ebuild
-+++ b/sys-libs/libblockdev/libblockdev-2.24.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=7
- 
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6..9} )
- inherit autotools python-single-r1 xdg-utils
- 
- DESCRIPTION="A library for manipulating block devices"
