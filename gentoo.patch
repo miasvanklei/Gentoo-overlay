@@ -147,7 +147,7 @@ index bc6f0cf7f0..001c65de87 100644
  		--without-ikvm-native
  		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.47.0-r1.ebuild b/dev-lang/rust/rust-1.47.0-r1.ebuild
-index 371a9cd72b..72a5d1dfae 100644
+index 371a9cd72b..ba7363721b 100644
 --- a/dev-lang/rust/rust-1.47.0-r1.ebuild
 +++ b/dev-lang/rust/rust-1.47.0-r1.ebuild
 @@ -82,7 +82,6 @@ DEPEND="
@@ -158,7 +158,7 @@ index 371a9cd72b..72a5d1dfae 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -195,6 +194,10 @@ pkg_setup() {
+@@ -195,15 +194,22 @@ pkg_setup() {
  	fi
  }
  
@@ -169,7 +169,10 @@ index 371a9cd72b..72a5d1dfae 100644
  src_prepare() {
  	if ! use system-bootstrap; then
  		local rust_stage0_root="${WORKDIR}"/rust-stage0
-@@ -204,6 +207,9 @@ src_prepare() {
+-		local rust_stage0="rust-${RUST_STAGE0_VERSION}-$(rust_abi)"
++		local rust_stage0="rust-${RUST_STAGE0_VERSION}-${CHOST}"
+ 
+ 		"${WORKDIR}/${rust_stage0}"/install.sh --disable-ldconfig \
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -179,6 +182,33 @@ index 371a9cd72b..72a5d1dfae 100644
  	default
  }
  
+@@ -212,7 +218,7 @@ src_configure() {
+ 
+ 	# Collect rust target names to compile standard libs for all ABIs.
+ 	for v in $(multilib_get_enabled_abi_pairs); do
+-		rust_targets="${rust_targets},\"$(rust_abi $(get_abi_CHOST ${v##*.}))\""
++		rust_targets="${rust_targets},\"$(get_abi_CHOST ${v##*.})\""
+ 	done
+ 	if use wasm; then
+ 		rust_targets="${rust_targets},\"wasm32-unknown-unknown\""
+@@ -245,7 +251,7 @@ src_configure() {
+ 		rust_stage0_root="${WORKDIR}"/rust-stage0
+ 	fi
+ 
+-	rust_target="$(rust_abi)"
++	rust_target="${CHOST}"
+ 
+ 	cat <<- _EOF_ > "${S}"/config.toml
+ 		[llvm]
+@@ -307,7 +313,7 @@ src_configure() {
+ 	_EOF_
+ 
+ 	for v in $(multilib_get_enabled_abi_pairs); do
+-		rust_target=$(rust_abi $(get_abi_CHOST ${v##*.}))
++		rust_target=$(get_abi_CHOST ${v##*.})
+ 		arch_cflags="$(get_abi_CFLAGS ${v##*.})"
+ 
+ 		cat <<- _EOF_ >> "${S}"/config.env
 @@ -425,8 +431,8 @@ src_compile() {
  	# we need \n IFS to have config.env with spaces loaded properly. #734018
  	(
@@ -236,7 +266,7 @@ index 19e01b0832..5f4817a3c2 100644
  		$(use_enable static-libs static) \
  		$(use_enable pax_kernel pax_emutramp) \
 diff --git a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
-index 6c1c22aa4d..5dee76d662 100644
+index acd734bbb1..cc6bfc7f38 100644
 --- a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 +++ b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 @@ -21,6 +21,7 @@ RDEPEND="
