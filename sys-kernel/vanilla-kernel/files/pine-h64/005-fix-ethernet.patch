@@ -1,0 +1,32 @@
+From 39b809dabfa0b585cc1b18c1365e8b156ea9c3e4 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@siol.net>
+Date: Fri, 23 Oct 2020 21:43:42 +0200
+Subject: [PATCH 4/4] arm64: dts: allwinner: h6: Pine H64: Fix ethernet node
+
+Ethernet PHY provides RX and TX delay on both models, A and B. Although
+schematic for model A suggests only TX delay, network never worked with
+such configuration.
+
+Fix ethernet node to reflect PHY delays.
+
+Fixes: 729e1ffcf47e ("arm64: allwinner: h6: add support for the Ethernet on Pine H64")
+Signed-off-by: Jernej Skrabec <jernej.skrabec@siol.net>
+---
+ arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts b/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
+index af85b2074867..961732c52aa0 100644
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64.dts
+@@ -100,7 +100,7 @@ &ehci3 {
+ &emac {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&ext_rgmii_pins>;
+-	phy-mode = "rgmii";
++	phy-mode = "rgmii-id";
+ 	phy-handle = <&ext_rgmii_phy>;
+ 	phy-supply = <&reg_gmac_3v3>;
+ 	allwinner,rx-delay-ps = <200>;
+-- 
+2.29.0
