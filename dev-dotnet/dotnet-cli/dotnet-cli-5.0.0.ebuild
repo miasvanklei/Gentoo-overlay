@@ -7,18 +7,18 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-RUNTIME_PV="5.0.0-rc.2.20475.5"
-SDK_PV="5.0.100-rc.2.20479.15"
+RUNTIME_PV="rtm.20519.4"
+SDK_PV="5.0.100"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 
 SRC_URI="
 	arm64? (
-		https://download.visualstudio.microsoft.com/download/pr/b416bc12-1478-4241-bc31-6fe68f8b73b6/582f018a97172f4975973390cf3f58e7/${SDK}-arm64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/27840e8b-d61c-472d-8e11-c16784d40091/ae9780ccda4499405cf6f0924f6f036a/${SDK}-arm64.tar.gz
 	)
 	amd64? (
-		https://download.visualstudio.microsoft.com/download/pr/69cb8922-7bb0-4d3a-aa92-8cb885fdd0a6/2fd4da9e026f661caf8db9c1602e7b2f/${SDK}-x64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/820db713-c9a5-466e-b72a-16f2f5ed00e2/628aa2a75f6aa270e77f4a83b3742fb8/${SDK}-x64.tar.gz
 	)
-	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> ${P}.tar.gz"
+	https://github.com/dotnet/runtime/archive/v${PV}-${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -35,7 +35,7 @@ DEPEND="${RDEPEND}
 	>=sys-devel/gettext-0.19.7
 	>=sys-devel/make-4.1-r1"
 
-S=${WORKDIR}/runtime-${RUNTIME_PV}
+S=${WORKDIR}/runtime-${PV}-${RUNTIME_PV}
 
 CORECLR_FILES=(
 	'libclrjit.so'
@@ -82,7 +82,7 @@ pkg_setup() {
 	export CORECLR_S="${S}/src/coreclr"
 	export COREFX_S="${S}/src/libraries/Native"
 	export CORESETUP_S="${S}/src/installer/corehost"
-	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${RUNTIME_PV}/runtimes/${TARGET}/native"
+	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${PV}/runtimes/${TARGET}/native"
 }
 
 src_unpack() {
@@ -97,15 +97,15 @@ src_unpack() {
 src_prepare() {
 	# remove native binaries/libraries
 	for file in "${CORECLR_FILES[@]}"; do
-		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
+		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
+		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
 	done
 
 	for file in "${CORESETUP_FILES[@]}"; do
-		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
+		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
 	done
 
 	for file in "${PACK_FILES[@]}"; do
@@ -113,16 +113,17 @@ src_prepare() {
 	done
 
 	# unecessary files
-	rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/libnethost.a" || die
+	rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/libnethost.a" || die
 	rm -r "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate" || die
 
-	rm "${SDK_S}/host/fxr/${RUNTIME_PV}/libhostfxr.so" || die
+	rm "${SDK_S}/host/fxr/${PV}/libhostfxr.so" || die
 	rm "${SDK_S}/dotnet" || die
 
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
 	eapply "${FILESDIR}"/fix-lld.patch
+	eapply "${FILESDIR}"/option-to-not-strip.patch
 
 	default
 }
@@ -133,16 +134,16 @@ src_compile() {
 
 	einfo "building corefx"
 	cd "${COREFX_S}" || die
-	./build-native.sh ${DARCH} release verbose skipgenerateversion || die
+	./build-native.sh ${DARCH} release verbose skipgenerateversion keepnativesymbols || die
 
 	einfo "building coreclr"
 	cd "${CORECLR_S}" || die
-	./build-runtime.sh ${DARCH} release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata || die
+	./build-runtime.sh ${DARCH} release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols || die
 
 	einfo "building coresetup"
 	cd "${CORESETUP_S}" || die
-	./build.sh ${DARCH} release verbose skipmanaged hostver ${RUNTIME_PV} fxrver ${RUNTIME_PV} policyver ${RUNTIME_PV} \
-		commithash 3c523a6 apphostver ${RUNTIME_PV} coreclrartifacts ${artifacts_coreclr} \
+	./build.sh ${DARCH} release verbose skipmanaged keepnativesymbols hostver ${PV} fxrver ${PV} policyver ${PV} \
+		commithash 3c523a6 apphostver ${PV} coreclrartifacts ${artifacts_coreclr} \
 		nativelibsartifacts ${artifacts_corefx} || die
 }
 
@@ -161,15 +162,15 @@ src_install() {
 
 	# runtime
 	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}/${RUNTIME_PV}" || die
+		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}/${PV}" || die
 	done
 
 	for file in "${COREFX_FILES[@]}"; do
-		cp -pP "${artifacts_corefx}/${file}" "${dest_core}/${RUNTIME_PV}" || die
+		cp -pP "${artifacts_corefx}/${file}" "${dest_core}/${PV}" || die
 	done
 
 	for file in "${CORESETUP_FILES[@]}"; do
-		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}/${RUNTIME_PV}" || die
+		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}/${PV}" || die
 	done
 
 	for file in "${PACK_FILES[@]}"; do
@@ -178,17 +179,17 @@ src_install() {
 
         # compability symlink with .net core 3.1
 	pushd "${dest_core}" >/dev/null || die
-	ln -s "${RUNTIME_PV}" "${dotnetpv}"
+	ln -s "${PV}" "${dotnetpv}"
 	popd >/dev/null
 
         # compability symlink with .net core 3.1
 	pushd "${dest}/packs/Microsoft.NETCore.App.Host.${TARGET}" >/dev/null || die
-	ln -s "${RUNTIME_PV}" "${dotnetpv}"
+	ln -s "${PV}" "${dotnetpv}"
 	popd >/dev/null
 
 	# dotnet
 	dolib.so "${artifacts_coresetup}/libhostfxr.so"
-	dosym "/usr/lib/libhostfxr.so" "/opt/dotnet/host/fxr/${RUNTIME_PV}/libhostfxr.so"
+	dosym "/usr/lib/libhostfxr.so" "/opt/dotnet/host/fxr/${PV}/libhostfxr.so"
 	cp -pP "${artifacts_coresetup}/dotnet" "${dest}" || die
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
 }
