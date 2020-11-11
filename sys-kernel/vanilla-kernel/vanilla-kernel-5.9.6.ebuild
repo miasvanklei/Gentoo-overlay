@@ -5,7 +5,8 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="3"
+K_GENPATCHES_VER="6"
+K_NODRYRUN="1"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -41,6 +42,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pine-h64/002-pineh64-enable-usb3.patch
 		eapply "${FILESDIR}"/pine-h64/003-eMMC-workaround.patch
 		eapply "${FILESDIR}"/pine-h64/004-add-support-for-rtl8723cs_bs.patch
+		eapply "${FILESDIR}"/pine-h64/005-fix-ethernet.patch
 		eapply "${FILESDIR}"/pine-h64/007-sun4i-i2s-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/008-cedrus-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/009-wip-cec-improvements.patch
