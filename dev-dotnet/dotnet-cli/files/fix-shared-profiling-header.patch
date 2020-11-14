@@ -1,0 +1,126 @@
+diff --git a/src/coreclr/src/debug/daccess/nidump.cpp b/src/coreclr/src/debug/daccess/nidump.cpp
+index b385e278d698..e59fc9195954 100644
+--- a/src/coreclr/src/debug/daccess/nidump.cpp
++++ b/src/coreclr/src/debug/daccess/nidump.cpp
+@@ -92,7 +92,6 @@ FORCEINLINE ULONG DacSigUncompressData(
+         return *pData++;
+     return DacSigUncompressBigData(pData);
+ }
+-//const static mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+ 
+ // uncompress a token
+ inline mdToken DacSigUncompressToken(   // return the token.
+@@ -102,7 +101,7 @@ inline mdToken DacSigUncompressToken(   // return the token.
+     mdToken     tkType;
+ 
+     tk = DacSigUncompressData(pData);
+-    tkType = g_tkCorEncodeToken[tk & 0x3];
++    tkType = CorSigDecodeTokenType(tk & 0x3);
+     tk = TokenFromRid(tk >> 2, tkType);
+     return tk;
+ }
+diff --git a/src/coreclr/src/inc/cor.h b/src/coreclr/src/inc/cor.h
+index 035ba44e7f87..70370baa3e4e 100644
+--- a/src/coreclr/src/inc/cor.h
++++ b/src/coreclr/src/inc/cor.h
+@@ -2093,7 +2093,11 @@ inline ULONG CorSigUncompressData(      // return number of bytes of that compre
+ }
+ 
+ 
+-extern const mdToken g_tkCorEncodeToken[];
++FORCEINLINE mdToken CorSigDecodeTokenType(int encoded)
++{
++    static const mdToken s_tableTokenTypes[] = {mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
++    return s_tableTokenTypes[encoded];
++}
+ 
+ // uncompress a token
+ inline mdToken CorSigUncompressToken(   // return the token.
+@@ -2103,7 +2107,7 @@ inline mdToken CorSigUncompressToken(   // return the token.
+     mdToken tkType;
+ 
+     tk = CorSigUncompressData(pData);
+-    tkType = g_tkCorEncodeToken[tk & 0x3];
++    tkType = CorSigDecodeTokenType(tk & 0x3);
+     tk = TokenFromRid(tk >> 2, tkType);
+     return tk;
+ }
+@@ -2118,7 +2122,7 @@ inline ULONG CorSigUncompressToken( // return number of bytes of that compressed
+     mdToken tkType;
+ 
+     cb = CorSigUncompressData(pData, (ULONG *)&tk);
+-    tkType = g_tkCorEncodeToken[tk & 0x3];
++    tkType = CorSigDecodeTokenType(tk & 0x3);
+     tk = TokenFromRid(tk >> 2, tkType);
+     *pToken = tk;
+     return cb;
+@@ -2137,7 +2141,7 @@ inline HRESULT CorSigUncompressToken(
+ 
+     if (SUCCEEDED(hr))
+     {
+-        tkType = g_tkCorEncodeToken[tk & 0x3];
++        tkType = CorSigDecodeTokenType(tk & 0x3);
+         tk = TokenFromRid(tk >> 2, tkType);
+         *pToken = tk;
+     }
+@@ -2290,17 +2294,17 @@ inline ULONG CorSigCompressToken(   // return number of bytes that compressed fo
+     // TypeSpec is encoded with low bits 10
+     // BaseType is encoded with low bit 11
+     //
+-    if (ulTyp == g_tkCorEncodeToken[1])
++    if (ulTyp == CorSigDecodeTokenType(1))
+     {
+         // make the last two bits 01
+         rid |= 0x1;
+     }
+-    else if (ulTyp == g_tkCorEncodeToken[2])
++    else if (ulTyp == CorSigDecodeTokenType(2))
+     {
+         // make last two bits 0
+         rid |= 0x2;
+     }
+-    else if (ulTyp == g_tkCorEncodeToken[3])
++    else if (ulTyp == CorSigDecodeTokenType(3))
+     {
+         rid |= 0x3;
+     }
+diff --git a/src/coreclr/src/utilcode/sigbuilder.cpp b/src/coreclr/src/utilcode/sigbuilder.cpp
+index 4a8f8fe6c183..368815c55b5d 100644
+--- a/src/coreclr/src/utilcode/sigbuilder.cpp
++++ b/src/coreclr/src/utilcode/sigbuilder.cpp
+@@ -6,8 +6,6 @@
+ #include "sigbuilder.h"
+ #include "ex.h"
+ 
+-const mdToken g_tkCorEncodeToken[4] ={mdtTypeDef, mdtTypeRef, mdtTypeSpec, mdtBaseType};
+-
+ void SigBuilder::AppendByte(BYTE b)
+ {
+     STANDARD_VM_CONTRACT;
+@@ -84,22 +82,22 @@ void SigBuilder::AppendToken(mdToken tk)
+     // TypeSpec is encoded with low bits 10
+     // BaseType is encoded with low bit 11
+     //
+-    if (ulTyp == g_tkCorEncodeToken[0])
++    if (ulTyp == CorSigDecodeTokenType(0))
+     {
+         // make the last two bits 00
+         // nothing to do
+     }
+-    else if (ulTyp == g_tkCorEncodeToken[1])
++    else if (ulTyp == CorSigDecodeTokenType(1))
+     {
+         // make the last two bits 01
+         rid |= 0x1;
+     }
+-    else if (ulTyp == g_tkCorEncodeToken[2])
++    else if (ulTyp == CorSigDecodeTokenType(2))
+     {
+         // make last two bits 0
+         rid |= 0x2;
+     }
+-    else if (ulTyp == g_tkCorEncodeToken[3])
++    else if (ulTyp == CorSigDecodeTokenType(3))
+     {
+         rid |= 0x3;
+     }

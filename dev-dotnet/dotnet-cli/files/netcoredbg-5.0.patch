@@ -1,0 +1,41 @@
+--- a/src/debug/netcoredbg/cputil.cpp	2020-11-14 12:33:13.721444966 +0100
++++ b/src/debug/netcoredbg/cputil.cpp	2020-11-14 12:38:24.114054773 +0100
+@@ -494,7 +494,6 @@
+         CASE_OF(CORDBG_E_UNSUPPORTED_DELEGATE, "The delegate contains a delegate currently not supported by the API.");
+         CASE_OF(PEFMT_E_64BIT, "File is PE32+.");
+         CASE_OF(PEFMT_E_32BIT, "File is PE32");
+-        CASE_OF(NGEN_E_SYS_ASM_NI_MISSING, "NGen cannot proceed because Mscorlib.dll does not have a native image");
+         CASE_OF(CLDB_E_INTERNALERROR, "CLDB_E_INTERNALERROR");
+         CASE_OF(CLR_E_BIND_ASSEMBLY_VERSION_TOO_LOW, "The bound assembly has a version that is lower than that of the request.");
+         CASE_OF(CLR_E_BIND_ASSEMBLY_PUBLIC_KEY_MISMATCH, "The assembly version has a public key token that does not match that of the request.");
+@@ -502,7 +501,7 @@
+         CASE_OF(CLR_E_BIND_UNRECOGNIZED_IDENTITY_FORMAT, "The provided identity format is not recognized.");
+         CASE_OF(CLR_E_BIND_ASSEMBLY_NOT_FOUND, "A binding for the specified assembly name was not found.");
+         CASE_OF(CLR_E_BIND_TYPE_NOT_FOUND, "A binding for the specified type name was not found.");
+-        CASE_OF(CLR_E_BIND_SYS_ASM_NI_MISSING, "Could not use native image because Mscorlib.dll is missing a native image");
++        CASE_OF(CLR_E_BIND_SYS_ASM_NI_MISSING, "Could not use native image because System.Private.CoreLib.dll is missing a native image");
+         CASE_OF(CLR_E_BIND_NI_SECURITY_FAILURE, "Native image was generated in a different trust level than present at runtime");
+         CASE_OF(CLR_E_BIND_NI_DEP_IDENTITY_MISMATCH, "Native image identity mismatch with respect to its dependencies");
+         CASE_OF(CLR_E_GC_OOM, "Failfast due to an OOM during a GC");
+--- a/src/debug/netcoredbg/CMakeLists.txt	2020-11-14 12:31:30.180520405 +0100
++++ b/src/debug/netcoredbg/CMakeLists.txt	2020-11-14 12:32:59.605319222 +0100
+@@ -26,7 +26,7 @@
+ include_directories(${CORECLR_DIR}/src/debug/inc)
+ include_directories(${CORECLR_DIR}/src/debug/shim)
+ include_directories(${CORECLR_DIR}/src/dlls/dbgshim)
+-include_directories(${CORECLR_DIR}/src/coreclr/hosts/inc)
++include_directories(${CORECLR_DIR}/src/hosts/inc)
+ 
+ # Build native part of the debugger
+ 
+--- a/src/debug/netcoredbg/manageddebugger.cpp	2020-11-14 12:58:45.240553316 +0100
++++ b/src/debug/netcoredbg/manageddebugger.cpp	2020-11-14 12:59:29.272969123 +0100
+@@ -27,6 +27,8 @@
+ using std::vector;
+ using std::map;
+ 
++const IID IID_IUnknown = { 0x00000000, 0x0000, 0x0000, { 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 } };
++
+ #ifdef FEATURE_PAL
+ #include <dlfcn.h>
+ 

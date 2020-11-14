@@ -10,6 +10,8 @@ LICENSE="MIT"
 RUNTIME_PV="rtm.20519.4"
 SDK_PV="5.0.100"
 SDK="dotnet-sdk-${SDK_PV}-linux"
+NDBG_PV="1.2.0-635"
+NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
 	arm64? (
@@ -18,7 +20,8 @@ SRC_URI="
 	amd64? (
 		https://download.visualstudio.microsoft.com/download/pr/820db713-c9a5-466e-b72a-16f2f5ed00e2/628aa2a75f6aa270e77f4a83b3742fb8/${SDK}-x64.tar.gz
 	)
-	https://github.com/dotnet/runtime/archive/v${PV}-${PV}.tar.gz -> ${P}.tar.gz"
+	https://github.com/dotnet/runtime/archive/v${PV}-${PV}.tar.gz -> ${P}.tar.gz
+	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -83,6 +86,7 @@ pkg_setup() {
 	export COREFX_S="${S}/src/libraries/Native"
 	export CORESETUP_S="${S}/src/installer/corehost"
 	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${PV}/runtimes/${TARGET}/native"
+	export NDBG_S="${WORKDIR}/${NDBG}"
 }
 
 src_unpack() {
@@ -92,6 +96,7 @@ src_unpack() {
 	popd >/dev/null
 
 	unpack "${P}.tar.gz"
+	unpack "${NDBG}.tar.gz"
 }
 
 src_prepare() {
@@ -119,11 +124,21 @@ src_prepare() {
 	rm "${SDK_S}/host/fxr/${PV}/libhostfxr.so" || die
 	rm "${SDK_S}/dotnet" || die
 
+	# netcoredbg builddir
+	mkdir "${NDBG_S}/build"
+
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
 	eapply "${FILESDIR}"/fix-lld.patch
 	eapply "${FILESDIR}"/option-to-not-strip.patch
+	eapply "${FILESDIR}"/fix-shared-profiling-header.patch
+	eapply "${FILESDIR}"/disable-stack-size.patch
+
+	# netcoredbg patches
+	pushd ${NDBG_S} >/dev/null || die
+	eapply "${FILESDIR}"/netcoredbg-5.0.patch
+	popd >/dev/null
 
 	default
 }
@@ -145,6 +160,11 @@ src_compile() {
 	./build.sh ${DARCH} release verbose skipmanaged keepnativesymbols hostver ${PV} fxrver ${PV} policyver ${PV} \
 		commithash 3c523a6 apphostver ${PV} coreclrartifacts ${artifacts_coreclr} \
 		nativelibsartifacts ${artifacts_corefx} || die
+
+	cd ${NDBG_S}/build || die
+#	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} -DBUILD_MANAGED=OFF ../ || die
+	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} ../ || die
+	emake
 }
 
 src_install() {
@@ -154,7 +174,7 @@ src_install() {
 	local artifacts_corefx="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
 	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
 	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
-	local dotnetpv="3.1.4"
+	local dotnetpv="3.1.100"
 
 	# sdk
 	mkdir -p "${dest}" || die
@@ -187,9 +207,18 @@ src_install() {
 	ln -s "${PV}" "${dotnetpv}"
 	popd >/dev/null
 
+	# netcoredbg
+	cd ${NDBG_S}/build
+	make install DESTDIR="${dest_core}/${PV}"
+	dosym "${dest_core}/${PV}/netcoredbg" "/usr/bin/netcoredbg"
+
 	# dotnet
 	dolib.so "${artifacts_coresetup}/libhostfxr.so"
 	dosym "/usr/lib/libhostfxr.so" "/opt/dotnet/host/fxr/${PV}/libhostfxr.so"
 	cp -pP "${artifacts_coresetup}/dotnet" "${dest}" || die
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
+
+	newenvd - "60dotnet" <<-_EOF_
+		DOTNET_ROOT="/opt/dotnet"
+	_EOF_
 }
