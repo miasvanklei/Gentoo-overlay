@@ -39,7 +39,7 @@ src_prepare() {
 }
 
 src_compile() {
-	export DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=/opt/dotnet-cli
+	export DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=/opt/dotnet
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	./eng/cibuild_bootstrapped_msbuild.sh \
 	--host_type mono --configuration Release --skip_tests /p:DisableNerdbankVersioning=true || die

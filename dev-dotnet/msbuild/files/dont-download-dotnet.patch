@@ -16,3 +16,34 @@
 +#}
  
  ExitWithExitCode 0
+--- a/mono/build/get_sdk_files.sh	2020-11-12 17:27:32.749805003 +0100
++++ b/mono/build/get_sdk_files.sh	2020-11-12 17:31:16.307604867 +0100
+@@ -7,26 +7,11 @@
+ 	exit 1
+ fi
+ 
+-DESTDIR=$2
+-
+-ABSOLUTE_PATH=$(cd `dirname "${BASH_SOURCE[0]}"` && pwd)/`basename "${BASH_SOURCE[0]}"`
+-THIS_DIR=`dirname $ABSOLUTE_PATH`
+-
+-source $THIS_DIR/../../eng/common/tools.sh
+-
+-ReadGlobalVersion "dotnet"
+-dotnet_sdk_version=$_ReadGlobalVersion
+-
+-TMPDIR=`mktemp -d`
+-DOTNET_DIR=$TMPDIR/.dotnet-sdk
+-
+ OLDCWD=`pwd`
+ cd $TMPDIR
+ 
+-GetDotNetInstallScript $TMPDIR
+-sh ./dotnet-install.sh --version $dotnet_sdk_version --install-dir $DOTNET_DIR --architecture x64 --skip-non-versioned-files
+-find $DOTNET_DIR -name Microsoft.NETCoreSdk.BundledVersions.props -exec cp -v {} $1 \;
+-find $DOTNET_DIR -name RuntimeIdentifierGraph.json -exec cp -v {} $1 \;
++find $DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR -name Microsoft.NETCoreSdk.BundledVersions.props -exec cp -v {} $1 \;
++find $DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR -name RuntimeIdentifierGraph.json -exec cp -v {} $1 \;
+ 
+ cd $OLDCWD
+ #rm -Rf $TMPDIR
