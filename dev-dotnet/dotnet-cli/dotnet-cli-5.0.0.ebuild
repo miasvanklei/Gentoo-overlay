@@ -134,6 +134,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/option-to-not-strip.patch
 	eapply "${FILESDIR}"/fix-shared-profiling-header.patch
 	eapply "${FILESDIR}"/disable-stack-size.patch
+#	eapply "${FILESDIR}"/use-system-unwind.patch
 
 	# netcoredbg patches
 	pushd ${NDBG_S} >/dev/null || die
@@ -162,7 +163,6 @@ src_compile() {
 		nativelibsartifacts ${artifacts_corefx} || die
 
 	cd ${NDBG_S}/build || die
-#	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} -DBUILD_MANAGED=OFF ../ || die
 	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} ../ || die
 	emake
 }
