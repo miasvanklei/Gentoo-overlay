@@ -1,5 +1,5 @@
 diff --git a/app-crypt/libsecret/libsecret-0.20.3.ebuild b/app-crypt/libsecret/libsecret-0.20.3.ebuild
-index e5125875d2..b1b5a96f7d 100644
+index be5c5bb142..daa1b9f246 100644
 --- a/app-crypt/libsecret/libsecret-0.20.3.ebuild
 +++ b/app-crypt/libsecret/libsecret-0.20.3.ebuild
 @@ -26,8 +26,8 @@ RDEPEND="
@@ -68,18 +68,6 @@ index 8335388f9f..670453c7f1 100644
  	sys-libs/libseccomp:=
  
  	apparmor? ( sys-libs/libapparmor )
-diff --git a/app-emulation/libvirt/libvirt-6.8.0.ebuild b/app-emulation/libvirt/libvirt-6.8.0.ebuild
-index 0ac6ec64fe..a6ba2cf0c8 100644
---- a/app-emulation/libvirt/libvirt-6.8.0.ebuild
-+++ b/app-emulation/libvirt/libvirt-6.8.0.ebuild
-@@ -103,7 +103,6 @@ RDEPEND="
- 	selinux? ( >=sys-libs/libselinux-2.0.85 )
- 	virt-network? (
- 		net-dns/dnsmasq[script]
--		net-firewall/ebtables
- 		>=net-firewall/iptables-1.4.10[ipv6]
- 		net-misc/radvd
- 		sys-apps/iproute2[-minimal]
 diff --git a/app-emulation/virt-manager/virt-manager-3.1.0.ebuild b/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
 index cb575dc4df..8f524a1272 100644
 --- a/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
@@ -92,11 +80,11 @@ index cb575dc4df..8f524a1272 100644
  		x11-libs/gtk+:3[introspection]
  		x11-libs/gtksourceview:4[introspection]
  		x11-libs/vte:2.91[introspection]
-diff --git a/app-i18n/fcitx/fcitx-4.2.9.6.ebuild b/app-i18n/fcitx/fcitx-4.2.9.6.ebuild
-index abf4e1cbdb..03fca11061 100644
---- a/app-i18n/fcitx/fcitx-4.2.9.6.ebuild
-+++ b/app-i18n/fcitx/fcitx-4.2.9.6.ebuild
-@@ -57,7 +57,7 @@ DEPEND="dev-libs/glib:2
+diff --git a/app-i18n/fcitx/fcitx-4.2.9.8.ebuild b/app-i18n/fcitx/fcitx-4.2.9.8.ebuild
+index 445151b051..0b9336e8a5 100644
+--- a/app-i18n/fcitx/fcitx-4.2.9.8.ebuild
++++ b/app-i18n/fcitx/fcitx-4.2.9.8.ebuild
+@@ -59,7 +59,7 @@ DEPEND="dev-libs/glib:2
  		pango? ( x11-libs/pango )
  		!pango? ( media-libs/fontconfig )
  	)
@@ -118,36 +106,8 @@ index 5602e66567..42815c690d 100644
  	latex? ( dev-texlive/texlive-formatsextra )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
-diff --git a/dev-lang/R/R-4.0.2.ebuild b/dev-lang/R/R-4.0.2.ebuild
-index 83d1ecd938..9725452cda 100644
---- a/dev-lang/R/R-4.0.2.ebuild
-+++ b/dev-lang/R/R-4.0.2.ebuild
-@@ -92,6 +92,10 @@ pkg_setup() {
- src_prepare() {
- 	default
- 
-+	if use elibc_musl; then
-+		append-cxxflags "-D__MUSL__"
-+	fi
-+
- 	# fix packages.html for doc (gentoo bug #205103)
- 	sed -e "s:../../../library:../../../../$(get_libdir)/R/library:g" \
- 		-i src/library/tools/R/Rd.R || die
-diff --git a/dev-lang/mono/mono-6.6.0.161.ebuild b/dev-lang/mono/mono-6.6.0.161.ebuild
-index bc6f0cf7f0..001c65de87 100644
---- a/dev-lang/mono/mono-6.6.0.161.ebuild
-+++ b/dev-lang/mono/mono-6.6.0.161.ebuild
-@@ -79,6 +79,8 @@ src_prepare() {
- 
- multilib_src_configure() {
- 	local myeconfargs=(
-+		--disable-boehm
-+		--without-sigaltstack
- 		$(use_with xen xen_opt)
- 		--without-ikvm-native
- 		--disable-dtrace
 diff --git a/dev-lang/rust/rust-1.47.0-r1.ebuild b/dev-lang/rust/rust-1.47.0-r1.ebuild
-index 371a9cd72b..ba7363721b 100644
+index eb58cb752e..64815c0564 100644
 --- a/dev-lang/rust/rust-1.47.0-r1.ebuild
 +++ b/dev-lang/rust/rust-1.47.0-r1.ebuild
 @@ -82,7 +82,6 @@ DEPEND="
@@ -158,7 +118,7 @@ index 371a9cd72b..ba7363721b 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -195,15 +194,22 @@ pkg_setup() {
+@@ -195,6 +194,10 @@ pkg_setup() {
  	fi
  }
  
@@ -169,10 +129,7 @@ index 371a9cd72b..ba7363721b 100644
  src_prepare() {
  	if ! use system-bootstrap; then
  		local rust_stage0_root="${WORKDIR}"/rust-stage0
--		local rust_stage0="rust-${RUST_STAGE0_VERSION}-$(rust_abi)"
-+		local rust_stage0="rust-${RUST_STAGE0_VERSION}-${CHOST}"
- 
- 		"${WORKDIR}/${rust_stage0}"/install.sh --disable-ldconfig \
+@@ -204,6 +207,9 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -196,7 +153,7 @@ index 371a9cd72b..ba7363721b 100644
  	fi
  
 -	rust_target="$(rust_abi)"
-+	rust_target="${CHOST}"
++	rust_target="$(get_abi_CHOST ${v##*.})"
  
  	cat <<- _EOF_ > "${S}"/config.toml
  		[llvm]
@@ -242,10 +199,10 @@ index 371a9cd72b..ba7363721b 100644
  
  pkg_postinst() {
 diff --git a/dev-libs/libffi/libffi-3.3-r2.ebuild b/dev-libs/libffi/libffi-3.3-r2.ebuild
-index 19e01b0832..5f4817a3c2 100644
+index 55138eb082..6a794ea251 100644
 --- a/dev-libs/libffi/libffi-3.3-r2.ebuild
 +++ b/dev-libs/libffi/libffi-3.3-r2.ebuild
-@@ -54,19 +54,7 @@ pkg_setup() {
+@@ -41,19 +41,7 @@ ECONF_SOURCE=${S}
  
  multilib_src_configure() {
  	use userland_BSD && export HOST="${CHOST}"
@@ -266,7 +223,7 @@ index 19e01b0832..5f4817a3c2 100644
  		$(use_enable static-libs static) \
  		$(use_enable pax_kernel pax_emutramp) \
 diff --git a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
-index acd734bbb1..cc6bfc7f38 100644
+index a8017f003f..27fdf16889 100644
 --- a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 +++ b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 @@ -21,6 +21,7 @@ RDEPEND="
@@ -277,22 +234,10 @@ index acd734bbb1..cc6bfc7f38 100644
  	yaml? ( dev-libs/libyaml:= )
  "
  DEPEND="${RDEPEND}"
-diff --git a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
-index 78c8d372df..0f8305602e 100644
---- a/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
-+++ b/media-libs/libsndfile/libsndfile-1.0.29_pre2_p20191024.ebuild
-@@ -33,7 +33,6 @@ DEPEND="${RDEPEND}"
- BDEPEND="
- 	virtual/pkgconfig
- 	${PYTHON_DEPS}
--	sys-devel/autogen
- "
- 
- S="${WORKDIR}/${PN}-${MY_COMMIT}"
-diff --git a/media-libs/mesa/mesa-20.2.1.ebuild b/media-libs/mesa/mesa-20.2.1.ebuild
+diff --git a/media-libs/mesa/mesa-20.2.2.ebuild b/media-libs/mesa/mesa-20.2.2.ebuild
 index 092aa16286..b128d3746f 100644
---- a/media-libs/mesa/mesa-20.2.1.ebuild
-+++ b/media-libs/mesa/mesa-20.2.1.ebuild
+--- a/media-libs/mesa/mesa-20.2.2.ebuild
++++ b/media-libs/mesa/mesa-20.2.2.ebuild
 @@ -143,9 +143,10 @@ RDEPEND="${RDEPEND}
  # 1. List all the working slots (with min versions) in ||, newest first.
  # 2. Update the := to specify *max* version, e.g. < 10.
@@ -343,14 +288,23 @@ index f370fa8c0e..b8e0a759a9 100644
  	)
  
  	if use usbredir; then
+diff --git a/profiles/default/linux/amd64/17.0/musl/parent b/profiles/default/linux/amd64/17.0/musl/parent
+index 8b660ec6dc..d8074cd72a 100644
+--- a/profiles/default/linux/amd64/17.0/musl/parent
++++ b/profiles/default/linux/amd64/17.0/musl/parent
+@@ -1,3 +1,3 @@
+-..
++../../17.1
+ ../../../../../arch/amd64/no-multilib
+ ../../../../../features/musl/
 diff --git a/sys-devel/clang/clang-11.0.0.ebuild b/sys-devel/clang/clang-11.0.0.ebuild
-index eb33776038..7f1e4b89cb 100644
+index 23ee5eee92..5dd79be307 100644
 --- a/sys-devel/clang/clang-11.0.0.ebuild
 +++ b/sys-devel/clang/clang-11.0.0.ebuild
 @@ -32,8 +32,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
- KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux"
+ KEYWORDS="amd64 arm ~arm64 ppc64 ~x86 ~amd64-linux"
 -IUSE="debug default-compiler-rt default-libcxx default-lld
 -	doc +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 +IUSE="debug +default-compiler-rt +default-libcxx +default-lld +default-libunwind
@@ -444,13 +398,13 @@ index 9bd470297d..fd481026e2 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-11.0.0.ebuild b/sys-devel/llvm/llvm-11.0.0.ebuild
-index ad20115fb6..027fc947b9 100644
+index eac3bcb175..dc57b5ac26 100644
 --- a/sys-devel/llvm/llvm-11.0.0.ebuild
 +++ b/sys-devel/llvm/llvm-11.0.0.ebuild
 @@ -30,7 +30,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
  SLOT="$(ver_cut 1)"
- KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
+ KEYWORDS="amd64 arm ~arm64 ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 -IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 +IUSE="+binutils-symlinks debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
@@ -488,3 +442,16 @@ index ad20115fb6..027fc947b9 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
+diff --git a/sys-libs/liburing/liburing-0.7-r1.ebuild b/sys-libs/liburing/liburing-0.7-r1.ebuild
+index 284efb838d..fa9a849d62 100644
+--- a/sys-libs/liburing/liburing-0.7-r1.ebuild
++++ b/sys-libs/liburing/liburing-0.7-r1.ebuild
+@@ -39,7 +39,7 @@ multilib_src_configure() {
+ }
+ 
+ multilib_src_compile() {
+-	emake V=1 AR="$(tc-getAR)" RANLIB="$(tc-getRANLIB)"
++	emake V=1 AR="$(tc-getAR)" RANLIB="$(tc-getRANLIB)" src
+ }
+ 
+ multilib_src_install_all() {
