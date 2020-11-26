@@ -167,19 +167,19 @@
 @@ -592,7 +585,6 @@
              set(&mut config.llvm_tools_enabled, rust.llvm_tools);
              config.rustc_parallel = rust.parallel_compiler.unwrap_or(false);
-             config.rustc_default_linker = rust.default_linker.clone();
--            config.musl_root = rust.musl_root.clone().map(PathBuf::from);
-             config.save_toolstates = rust.save_toolstates.clone().map(PathBuf::from);
+             config.rustc_default_linker = rust.default_linker;
+-            config.musl_root = rust.musl_root.map(PathBuf::from);
+             config.save_toolstates = rust.save_toolstates.map(PathBuf::from);
              set(&mut config.deny_warnings, flags.deny_warnings.or(rust.deny_warnings));
              set(&mut config.backtrace_on_ice, rust.backtrace_on_ice);
 @@ -632,8 +624,6 @@
-                 target.ranlib = cfg.ranlib.clone().map(PathBuf::from);
-                 target.linker = cfg.linker.clone().map(PathBuf::from);
+                 target.ranlib = cfg.ranlib.map(PathBuf::from);
+                 target.linker = cfg.linker.map(PathBuf::from);
                  target.crt_static = cfg.crt_static;
--                target.musl_root = cfg.musl_root.clone().map(PathBuf::from);
--                target.musl_libdir = cfg.musl_libdir.clone().map(PathBuf::from);
-                 target.wasi_root = cfg.wasi_root.clone().map(PathBuf::from);
-                 target.qemu_rootfs = cfg.qemu_rootfs.clone().map(PathBuf::from);
+-                target.musl_root = cfg.musl_root.map(PathBuf::from);
+-                target.musl_libdir = cfg.musl_libdir.map(PathBuf::from);
+                 target.wasi_root = cfg.wasi_root.map(PathBuf::from);
+                 target.qemu_rootfs = cfg.qemu_rootfs.map(PathBuf::from);
  
 --- a/src/bootstrap/configure.py	2020-08-27 22:57:19.567961941 +0200
 +++ b/src/bootstrap/configure.py	2020-08-27 23:01:28.342262372 +0200
@@ -277,8 +277,8 @@
          if target.contains("msvc") {
              // There are three builds of cmake on windows: MSVC, MinGW, and
              // Cygwin. The Cygwin build does not have generators for Visual
---- a/src/librustc_target/spec/crt_objects.rs	2020-08-27 22:56:43.499628535 +0200
-+++ b/src/librustc_target/spec/crt_objects.rs	2020-08-27 23:03:41.106490555 +0200
+--- a/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 22:56:43.499628535 +0200
++++ b/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 23:03:41.106490555 +0200
 @@ -61,21 +61,6 @@
      ])
  }
@@ -301,8 +301,8 @@
  pub(super) fn pre_mingw_fallback() -> CrtObjects {
      new(&[
          (LinkOutputKind::DynamicNoPicExe, &["crt2.o", "rsbegin.o"]),
---- a/src/librustc_target/spec/linux_musl_base.rs	2020-08-27 22:56:51.508702566 +0200
-+++ b/src/librustc_target/spec/linux_musl_base.rs	2020-08-27 23:02:52.007036315 +0200
+--- a/compiler/rustc_target/src/spec/linux_musl_base.rs	2020-08-27 22:56:51.508702566 +0200
++++ b/compiler/rustc_target/src/spec/linux_musl_base.rs	2020-08-27 23:02:52.007036315 +0200
 @@ -1,13 +1,8 @@
 -use crate::spec::crt_objects::{self, CrtObjectsFallback};
  use crate::spec::TargetOptions;
