@@ -10,7 +10,7 @@ LICENSE="MIT"
 RUNTIME_PV="rtm.20519.4"
 SDK_PV="5.0.100"
 SDK="dotnet-sdk-${SDK_PV}-linux"
-NDBG_PV="1.2.0-635"
+NDBG_PV="1.2.0-672"
 NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
@@ -20,7 +20,7 @@ SRC_URI="
 	amd64? (
 		https://download.visualstudio.microsoft.com/download/pr/820db713-c9a5-466e-b72a-16f2f5ed00e2/628aa2a75f6aa270e77f4a83b3742fb8/${SDK}-x64.tar.gz
 	)
-	https://github.com/dotnet/runtime/archive/v${PV}-${PV}.tar.gz -> ${P}.tar.gz
+	https://github.com/dotnet/runtime/archive/v${PV}-${RUNTIME_PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
 
 SLOT="0"
@@ -40,16 +40,6 @@ DEPEND="${RDEPEND}
 
 S=${WORKDIR}/runtime-${PV}-${RUNTIME_PV}
 
-CORECLR_FILES=(
-	'libclrjit.so'
-	'libcoreclr.so'
-	'libcoreclrtraceptprovider.so'
-	'libdbgshim.so'
-	'libmscordaccore.so'
-	'libmscordbi.so'
-	'createdump'
-)
-
 COREFX_FILES=(
 	'libSystem.IO.Compression.Native.a'
 	'libSystem.IO.Compression.Native.so'
@@ -61,6 +51,16 @@ COREFX_FILES=(
 	'libSystem.Security.Cryptography.Native.OpenSsl.so'
 )
 
+CORECLR_FILES=(
+	'libclrjit.so'
+	'libcoreclr.so'
+	'libcoreclrtraceptprovider.so'
+	'libdbgshim.so'
+	'libmscordaccore.so'
+	'libmscordbi.so'
+	'createdump'
+)
+
 CORESETUP_FILES=(
 	'libhostpolicy.so'
 )
@@ -70,6 +70,14 @@ PACK_FILES=(
         'singlefilehost'
 	'libnethost.a'
 	'libnethost.so'
+)
+
+NDBG_FILES=(
+	'Microsoft.CodeAnalysis.dll'
+	'Microsoft.CodeAnalysis.CSharp.dll'
+	'Microsoft.CodeAnalysis.Scripting.dll'
+	'Microsoft.CodeAnalysis.CSharp.Scripting.dll'
+	'SymbolReader.dll'
 )
 
 pkg_setup() {
@@ -87,6 +95,10 @@ pkg_setup() {
 	export CORESETUP_S="${S}/src/installer/corehost"
 	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${PV}/runtimes/${TARGET}/native"
 	export NDBG_S="${WORKDIR}/${NDBG}"
+
+	# no telemetry or first time experience
+	export DOTNET_CLI_TELEMETRY_OPTOUT=1
+	export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 }
 
 src_unpack() {
@@ -101,11 +113,11 @@ src_unpack() {
 
 src_prepare() {
 	# remove native binaries/libraries
-	for file in "${CORECLR_FILES[@]}"; do
+	for file in "${COREFX_FILES[@]}"; do
 		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
 	done
 
-	for file in "${COREFX_FILES[@]}"; do
+	for file in "${CORECLR_FILES[@]}"; do
 		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
 	done
 
@@ -124,9 +136,6 @@ src_prepare() {
 	rm "${SDK_S}/host/fxr/${PV}/libhostfxr.so" || die
 	rm "${SDK_S}/dotnet" || die
 
-	# netcoredbg builddir
-	mkdir "${NDBG_S}/build"
-
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
@@ -134,11 +143,11 @@ src_prepare() {
 	eapply "${FILESDIR}"/option-to-not-strip.patch
 	eapply "${FILESDIR}"/fix-shared-profiling-header.patch
 	eapply "${FILESDIR}"/disable-stack-size.patch
-#	eapply "${FILESDIR}"/use-system-unwind.patch
+	eapply "${FILESDIR}"/use-system-unwind.patch
 
 	# netcoredbg patches
 	pushd ${NDBG_S} >/dev/null || die
-	eapply "${FILESDIR}"/netcoredbg-5.0.patch
+	eapply "${FILESDIR}"/netcoredbg-fix-build.patch
 	popd >/dev/null
 
 	default
@@ -147,48 +156,31 @@ src_prepare() {
 src_compile() {
 	local artifacts_corefx="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
 	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
+	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
+	local dest_core="${SDK_S}/shared/Microsoft.NETCore.App"
+	local dest_pack="${SDK_S}/${RUNTIME_PACK}"
 
 	einfo "building corefx"
 	cd "${COREFX_S}" || die
-	./build-native.sh ${DARCH} release verbose skipgenerateversion keepnativesymbols || die
-
-	einfo "building coreclr"
-	cd "${CORECLR_S}" || die
-	./build-runtime.sh ${DARCH} release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols || die
-
-	einfo "building coresetup"
-	cd "${CORESETUP_S}" || die
-	./build.sh ${DARCH} release verbose skipmanaged keepnativesymbols hostver ${PV} fxrver ${PV} policyver ${PV} \
-		commithash 3c523a6 apphostver ${PV} coreclrartifacts ${artifacts_coreclr} \
-		nativelibsartifacts ${artifacts_corefx} || die
-
-	cd ${NDBG_S}/build || die
-	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} ../ || die
-	emake
-}
-
-src_install() {
-	local dest="${D}/opt/dotnet"
-	local dest_core="${dest}/shared/Microsoft.NETCore.App"
-	local dest_pack="${dest}/${RUNTIME_PACK}"
-	local artifacts_corefx="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
-	local artifacts_coreclr="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
-	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
-	local dotnetpv="3.1.100"
-
-	# sdk
-	mkdir -p "${dest}" || die
-	cp -rpP "${SDK_S}"/* ${dest} || die
-
-	# runtime
-	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}/${PV}" || die
-	done
+	./build-native.sh ${DARCH} Release verbose skipgenerateversion keepnativesymbols || die
 
 	for file in "${COREFX_FILES[@]}"; do
 		cp -pP "${artifacts_corefx}/${file}" "${dest_core}/${PV}" || die
 	done
 
+	einfo "building coreclr"
+	cd "${CORECLR_S}" || die
+	./build-runtime.sh ${DARCH} Release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols || die
+
+	for file in "${CORECLR_FILES[@]}"; do
+		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}/${PV}" || die
+	done
+
+	einfo "building coresetup"
+	cd "${CORESETUP_S}" || die
+	./build.sh ${DARCH} Release skipmanaged keepnativesymbols hostver ${PV} fxrver ${PV} policyver ${PV} \
+		commithash 3c523a6 apphostver ${PV} coreclrartifacts ${artifacts_coreclr} \
+		nativelibsartifacts ${artifacts_corefx} || die
 	for file in "${CORESETUP_FILES[@]}"; do
 		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}/${PV}" || die
 	done
@@ -197,25 +189,35 @@ src_install() {
 		cp -pP "${artifacts_coresetup}/${file}" "${dest_pack}" || die
 	done
 
-        # compability symlink with .net core 3.1
-	pushd "${dest_core}" >/dev/null || die
-	ln -s "${PV}" "${dotnetpv}"
-	popd >/dev/null
+	cp "${artifacts_coresetup}/libhostfxr.so" "${SDK_S}/host/fxr/${PV}/libhostfxr.so"
+	cp -pP "${artifacts_coresetup}/dotnet" "${SDK_S}" || die
 
-        # compability symlink with .net core 3.1
-	pushd "${dest}/packs/Microsoft.NETCore.App.Host.${TARGET}" >/dev/null || die
-	ln -s "${PV}" "${dotnetpv}"
+	einfo "building netcoredbg"
+	cd "${NDBG_S}" || die
+	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} ./ || die
+	emake VERBOSE=1
+
+	einfo "building System.Private.CoreLib.dll"
+	pushd ${CORECLR_S}/src/System.Private.CoreLib>/dev/null || die
+	${SDK_S}/dotnet build -c Release || die
 	popd >/dev/null
+	cp "${artifacts_coreclr}/IL/System.Private.CoreLib.dll" "${dest_core}/${PV}" || die
+}
+
+src_install() {
+	local dest="${D}/usr/share/dotnet"
+	local dest_core="${dest}/shared/Microsoft.NETCore.App"
+
+	# install everything
+	mkdir -p "${dest}" || die
+	cp -rpP "${SDK_S}"/* ${dest} || die
 
 	# netcoredbg
-	cd ${NDBG_S}/build
-	make install DESTDIR="${dest_core}/${PV}"
+	cd ${NDBG_S} || die
+	make install DESTDIR="${dest_core}/${PV}" || die
 	dosym "${dest_core}/${PV}/netcoredbg" "/usr/bin/netcoredbg"
 
 	# dotnet
-	dolib.so "${artifacts_coresetup}/libhostfxr.so"
-	dosym "/usr/lib/libhostfxr.so" "/opt/dotnet/host/fxr/${PV}/libhostfxr.so"
-	cp -pP "${artifacts_coresetup}/dotnet" "${dest}" || die
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
 
 	newenvd - "60dotnet" <<-_EOF_
