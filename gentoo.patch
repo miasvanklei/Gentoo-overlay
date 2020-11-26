@@ -80,19 +80,6 @@ index cb575dc4df..8f524a1272 100644
  		x11-libs/gtk+:3[introspection]
  		x11-libs/gtksourceview:4[introspection]
  		x11-libs/vte:2.91[introspection]
-diff --git a/app-i18n/fcitx/fcitx-4.2.9.8.ebuild b/app-i18n/fcitx/fcitx-4.2.9.8.ebuild
-index 445151b051..0b9336e8a5 100644
---- a/app-i18n/fcitx/fcitx-4.2.9.8.ebuild
-+++ b/app-i18n/fcitx/fcitx-4.2.9.8.ebuild
-@@ -59,7 +59,7 @@ DEPEND="dev-libs/glib:2
- 		pango? ( x11-libs/pango )
- 		!pango? ( media-libs/fontconfig )
- 	)
--	enchant? ( app-text/enchant:0= )
-+	enchant? ( app-text/enchant:= )
- 	gtk2? ( x11-libs/gtk+:2 )
- 	gtk3? ( x11-libs/gtk+:3 )
- 	lua? ( dev-lang/lua:= )
 diff --git a/app-text/xmlto/xmlto-0.0.28-r3.ebuild b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
 index 5602e66567..42815c690d 100644
 --- a/app-text/xmlto/xmlto-0.0.28-r3.ebuild
@@ -106,11 +93,11 @@ index 5602e66567..42815c690d 100644
  	latex? ( dev-texlive/texlive-formatsextra )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
-diff --git a/dev-lang/rust/rust-1.47.0-r1.ebuild b/dev-lang/rust/rust-1.47.0-r1.ebuild
-index eb58cb752e..64815c0564 100644
---- a/dev-lang/rust/rust-1.47.0-r1.ebuild
-+++ b/dev-lang/rust/rust-1.47.0-r1.ebuild
-@@ -82,7 +82,6 @@ DEPEND="
+diff --git a/dev-lang/rust/rust-1.48.0.ebuild b/dev-lang/rust/rust-1.48.0.ebuild
+index be32053aee..88331b386d 100644
+--- a/dev-lang/rust/rust-1.48.0.ebuild
++++ b/dev-lang/rust/rust-1.48.0.ebuild
+@@ -91,7 +91,6 @@ DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
  	libressl? ( dev-libs/libressl:0= )
@@ -118,28 +105,27 @@ index eb58cb752e..64815c0564 100644
  	system-llvm? (
  		${LLVM_DEPEND}
  	)
-@@ -195,6 +194,10 @@ pkg_setup() {
+@@ -208,6 +207,10 @@ pkg_setup() {
  	fi
  }
  
 +clear_vendor_checksums() {
-+        sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
++	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
 +}
 +
  src_prepare() {
  	if ! use system-bootstrap; then
  		local rust_stage0_root="${WORKDIR}"/rust-stage0
-@@ -204,6 +207,9 @@ src_prepare() {
+@@ -217,6 +220,8 @@ src_prepare() {
  			--destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
 +	clear_vendor_checksums libc
-+	clear_vendor_checksums libc-0.2.74
 +
  	default
  }
  
-@@ -212,7 +218,7 @@ src_configure() {
+@@ -225,7 +230,7 @@ src_configure() {
  
  	# Collect rust target names to compile standard libs for all ABIs.
  	for v in $(multilib_get_enabled_abi_pairs); do
@@ -148,7 +134,7 @@ index eb58cb752e..64815c0564 100644
  	done
  	if use wasm; then
  		rust_targets="${rust_targets},\"wasm32-unknown-unknown\""
-@@ -245,7 +251,7 @@ src_configure() {
+@@ -258,7 +263,7 @@ src_configure() {
  		rust_stage0_root="${WORKDIR}"/rust-stage0
  	fi
  
@@ -157,7 +143,7 @@ index eb58cb752e..64815c0564 100644
  
  	cat <<- _EOF_ > "${S}"/config.toml
  		[llvm]
-@@ -307,7 +313,7 @@ src_configure() {
+@@ -320,7 +325,7 @@ src_configure() {
  	_EOF_
  
  	for v in $(multilib_get_enabled_abi_pairs); do
@@ -166,27 +152,16 @@ index eb58cb752e..64815c0564 100644
  		arch_cflags="$(get_abi_CFLAGS ${v##*.})"
  
  		cat <<- _EOF_ >> "${S}"/config.env
-@@ -425,8 +431,8 @@ src_compile() {
- 	# we need \n IFS to have config.env with spaces loaded properly. #734018
+@@ -439,7 +444,7 @@ src_compile() {
  	(
  	IFS=$'\n'
--	env $(cat "${S}"/config.env) RUST_BACKTRACE=1\
+ 	env $(cat "${S}"/config.env) RUST_BACKTRACE=1\
 -		"${EPYTHON}" ./x.py dist -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
-+	env $(cat "${S}"/config.env) DESTDIR="${D}" \
 +		"${EPYTHON}" ./x.py build --stage 2 -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
  	)
  }
  
-@@ -493,7 +499,7 @@ src_install() {
- 	(
- 	IFS=$'\n'
- 	env $(cat "${S}"/config.env) DESTDIR="${D}" \
--		"${EPYTHON}" ./x.py install -vv --config="${S}"/config.toml || die
-+		"${EPYTHON}" ./x.py install -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
- 	)
- 
- 	# bug #689562, #689160
-@@ -573,6 +579,11 @@ src_install() {
+@@ -591,6 +596,11 @@ src_install() {
  
  	insinto /etc/env.d/rust
  	doins "${T}/provider-${P}"
@@ -234,22 +209,6 @@ index a8017f003f..27fdf16889 100644
  	yaml? ( dev-libs/libyaml:= )
  "
  DEPEND="${RDEPEND}"
-diff --git a/media-libs/mesa/mesa-20.2.2.ebuild b/media-libs/mesa/mesa-20.2.2.ebuild
-index 092aa16286..b128d3746f 100644
---- a/media-libs/mesa/mesa-20.2.2.ebuild
-+++ b/media-libs/mesa/mesa-20.2.2.ebuild
-@@ -143,9 +143,10 @@ RDEPEND="${RDEPEND}
- # 1. List all the working slots (with min versions) in ||, newest first.
- # 2. Update the := to specify *max* version, e.g. < 10.
- # 3. Specify LLVM_MAX_SLOT, e.g. 9.
--LLVM_MAX_SLOT="10"
-+LLVM_MAX_SLOT="11"
- LLVM_DEPSTR="
- 	|| (
-+		sys-devel/llvm:11[${MULTILIB_USEDEP}]
- 		sys-devel/llvm:10[${MULTILIB_USEDEP}]
- 		sys-devel/llvm:9[${MULTILIB_USEDEP}]
- 	)
 diff --git a/media-video/vlc/vlc-3.0.11.1.ebuild b/media-video/vlc/vlc-3.0.11.1.ebuild
 index 6de7754010..069bf329e7 100644
 --- a/media-video/vlc/vlc-3.0.11.1.ebuild
@@ -298,13 +257,13 @@ index 8b660ec6dc..d8074cd72a 100644
  ../../../../../arch/amd64/no-multilib
  ../../../../../features/musl/
 diff --git a/sys-devel/clang/clang-11.0.0.ebuild b/sys-devel/clang/clang-11.0.0.ebuild
-index 23ee5eee92..5dd79be307 100644
+index a7451bfd4b..426f622671 100644
 --- a/sys-devel/clang/clang-11.0.0.ebuild
 +++ b/sys-devel/clang/clang-11.0.0.ebuild
 @@ -32,8 +32,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
  SLOT="$(ver_cut 1)"
- KEYWORDS="amd64 arm ~arm64 ppc64 ~x86 ~amd64-linux"
+ KEYWORDS="amd64 arm arm64 ppc64 x86 ~amd64-linux"
 -IUSE="debug default-compiler-rt default-libcxx default-lld
 -	doc +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
 +IUSE="debug +default-compiler-rt +default-libcxx +default-lld +default-libunwind
@@ -398,13 +357,13 @@ index 9bd470297d..fd481026e2 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-11.0.0.ebuild b/sys-devel/llvm/llvm-11.0.0.ebuild
-index eac3bcb175..dc57b5ac26 100644
+index 1b22698435..d16b7efddb 100644
 --- a/sys-devel/llvm/llvm-11.0.0.ebuild
 +++ b/sys-devel/llvm/llvm-11.0.0.ebuild
 @@ -30,7 +30,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
  LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
  SLOT="$(ver_cut 1)"
- KEYWORDS="amd64 arm ~arm64 ppc64 ~x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
+ KEYWORDS="amd64 arm arm64 ppc64 x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
 -IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
 +IUSE="+binutils-symlinks debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
