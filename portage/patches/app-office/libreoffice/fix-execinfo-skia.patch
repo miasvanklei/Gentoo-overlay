@@ -1,0 +1,33 @@
+--- a/external/skia/UnpackedTarball_skia.mk	2020-11-17 20:19:09.600491541 +0100
++++ b/external/skia/UnpackedTarball_skia.mk	2020-11-17 20:19:39.669774639 +0100
+@@ -39,6 +39,7 @@
+     windows-raster-surface-no-copies.patch.1 \
+     fix-windows-dwrite.patch.1 \
+     public-make-from-backend-texture.patch.1 \
++    fix-execinfo-skia.patch \
+ 
+ $(eval $(call gb_UnpackedTarball_set_patchlevel,skia,1))
+ 
+--- /dev/null	2020-11-16 09:39:42.652234756 +0100
++++ b/external/skia/fix-execinfo-skia.patch	2020-11-17 19:53:37.269338336 +0100
+@@ -0,0 +1,20 @@
++--- a/tools/gpu/vk/VkTestUtils.cpp	2020-11-17 19:30:10.816736497 +0100
+++++ b/tools/gpu/vk/VkTestUtils.cpp	2020-11-17 19:34:14.341628997 +0100
++@@ -17,7 +17,7 @@
++     #endif
++ #endif
++ 
++-#if defined(SK_BUILD_FOR_UNIX)
+++#if defined(__GLIBC__)
++ #include <execinfo.h>
++ #endif
++ #include "include/gpu/vk/GrVkBackendContext.h"
++@@ -91,7 +91,7 @@
++ }
++ 
++ static void print_backtrace() {
++-#if defined(SK_BUILD_FOR_UNIX)
+++#if defined(__GLIBC__)
++     void* stack[64];
++     int count = backtrace(stack, SK_ARRAY_COUNT(stack));
++     backtrace_symbols_fd(stack, count, 2);
