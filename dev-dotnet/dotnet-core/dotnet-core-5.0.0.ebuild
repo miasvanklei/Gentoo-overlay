@@ -199,7 +199,7 @@ src_compile() {
 
 	einfo "building System.Private.CoreLib.dll"
 	pushd ${CORECLR_S}/src/System.Private.CoreLib>/dev/null || die
-	${SDK_S}/dotnet build -c Release || die
+	${SDK_S}/dotnet build -c Release /p:Platform=${DARCH} /p:TargetArchitecture=${DARCH} || die
 	popd >/dev/null
 	cp "${artifacts_coreclr}/IL/System.Private.CoreLib.dll" "${dest_core}/${PV}" || die
 }
