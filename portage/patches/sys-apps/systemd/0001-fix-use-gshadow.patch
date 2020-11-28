@@ -1,25 +1,6 @@
---- a/src/shared/userdb.c	2020-02-06 17:42:03.256439760 +0100
-+++ b/src/shared/userdb.c	2020-02-06 17:48:17.075146448 +0100
-@@ -5,7 +5,6 @@
- #include "dlfcn-util.h"
- #include "errno-util.h"
- #include "fd-util.h"
--#include "group-record-nss.h"
- #include "missing_syscall.h"
- #include "parse-util.h"
- #include "set.h"
-@@ -16,6 +15,10 @@
- #include "userdb.h"
- #include "varlink.h"
- 
-+#if ENABLE_GSHADOW
-+#include "group-record-nss.h"
-+#endif
-+
- DEFINE_PRIVATE_HASH_OPS_WITH_VALUE_DESTRUCTOR(link_hash_ops, void, trivial_hash_func, trivial_compare_func, Varlink, varlink_unref);
- 
- typedef enum LookupWhat {
-@@ -820,6 +824,7 @@
+--- a/src/shared/userdb.c	2020-11-26 22:26:14.784927743 +0100
++++ b/src/shared/userdb.c	2020-11-26 22:29:36.940525702 +0100
+@@ -823,6 +823,7 @@
                          return r;
          }
  
@@ -27,7 +8,7 @@
          if (!FLAGS_SET(flags, USERDB_AVOID_NSS) && !(iterator && iterator->nss_covered)) {
                  r = userdb_iterator_block_nss_systemd(iterator);
                  if (r >= 0) {
-@@ -830,6 +835,7 @@
+@@ -831,6 +832,7 @@
                                  return r;
                  }
          }
@@ -35,7 +16,7 @@
  
          if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
                  if (streq(name, "root"))
-@@ -866,6 +872,7 @@
+@@ -867,6 +869,7 @@
                          return r;
          }
  
@@ -43,7 +24,7 @@
          if (!FLAGS_SET(flags, USERDB_AVOID_NSS) && !(iterator && iterator->nss_covered)) {
                  r = userdb_iterator_block_nss_systemd(iterator);
                  if (r >= 0) {
-@@ -876,6 +883,7 @@
+@@ -875,6 +878,7 @@
                                  return r;
                  }
          }
@@ -51,17 +32,15 @@
  
          if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
                  if (gid == 0)
-@@ -928,7 +936,8 @@
+@@ -921,6 +925,7 @@
          assert(iterator);
          assert(iterator->what == LOOKUP_GROUP);
  
--        if (iterator->nss_iterating) {
 +#if ENABLE_GSHADOW
-+       if (iterator->nss_iterating) {
+         if (iterator->nss_iterating) {
                  struct group *gr;
  
-                 errno = 0;
-@@ -964,6 +973,7 @@
+@@ -957,6 +962,7 @@
                  iterator->nss_iterating = false;
                  endgrent();
          }
@@ -69,7 +48,7 @@
  
          r = userdb_process(iterator, NULL, ret, NULL, NULL);
          if (r < 0) {
-@@ -1032,7 +1042,9 @@
+@@ -1025,7 +1031,9 @@
  int membershipdb_by_group(const char *name, UserDBFlags flags, UserDBIterator **ret) {
          _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
          _cleanup_(json_variant_unrefp) JsonVariant *query = NULL;
@@ -79,7 +58,7 @@
          int r;
  
          assert(ret);
-@@ -1057,6 +1069,7 @@
+@@ -1050,6 +1058,7 @@
          if (r < 0)
                  return r;
  
@@ -87,7 +66,7 @@
          /* We ignore all errors here, since the group might be defined by a userdb native service, and we queried them already above. */
          (void) nss_group_record_by_name(name, false, &gr);
          if (gr) {
-@@ -1070,6 +1083,7 @@
+@@ -1063,6 +1072,7 @@
                  if (!iterator->found_group_name)
                          return -ENOMEM;
          }
@@ -95,27 +74,42 @@
  
          r = 0;
  
---- a/src/shared/meson.build	2020-02-06 17:38:34.276635761 +0100
-+++ b/src/shared/meson.build	2020-02-06 17:43:48.256891230 +0100
-@@ -89,8 +89,6 @@
-         generator.h
-         gpt.c
-         gpt.h
--        group-record-nss.c
--        group-record-nss.h
-         group-record-show.c
-         group-record-show.h
-         group-record.c
-@@ -240,6 +238,12 @@
-         shared_sources += files('utmp-wtmp.c')
- endif
+--- a/src/shared/user-record-nss.c	2020-11-26 22:23:47.767782564 +0100
++++ b/src/shared/user-record-nss.c	2020-11-26 22:25:37.508635820 +0100
+@@ -317,6 +317,7 @@
+         return 0;
+ }
  
-+if conf.get('ENABLE_GSHADOW') == 1
-+        shared_sources += files('group-record-nss.c',
-+                                'group-record-nss.h')
-+endif
-+
-+
- if conf.get('HAVE_SECCOMP') == 1
-         shared_sources += files('seccomp-util.c')
- endif
++#if ENABLE_GSHADOW
+ int nss_group_to_group_record(
+                 const struct group *grp,
+                 const struct sgrp *sgrp,
+@@ -529,3 +530,4 @@
+         (*ret)->incomplete = incomplete;
+         return 0;
+ }
++#endif
+--- a/src/shared/user-record-nss.h	2020-11-26 22:22:58.535403188 +0100
++++ b/src/shared/user-record-nss.h	2020-11-26 22:25:44.881693485 +0100
+@@ -2,7 +2,9 @@
+ #pragma once
+ 
+ #include <grp.h>
+-#include <gshadow.h>
++#if ENABLE_GSHADOW
++#include <gshadow.h>
++#endif
+ #include <pwd.h>
+ #include <shadow.h>
+ 
+@@ -17,8 +19,10 @@
+ int nss_user_record_by_name(const char *name, bool with_shadow, UserRecord **ret);
+ int nss_user_record_by_uid(uid_t uid, bool with_shadow, UserRecord **ret);
+ 
++#if ENABLE_GSHADOW
+ int nss_group_to_group_record(const struct group *grp, const struct sgrp *sgrp, GroupRecord **ret);
+ int nss_sgrp_for_group(const struct group *grp, struct sgrp *ret_sgrp, char **ret_buffer);
+ 
+ int nss_group_record_by_name(const char *name, bool with_shadow, GroupRecord **ret);
+ int nss_group_record_by_gid(gid_t gid, bool with_shadow, GroupRecord **ret);
++#endif

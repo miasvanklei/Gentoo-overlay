@@ -62,15 +62,14 @@
  
 --- a/src/shared/format-table.c
 +++ b/src/shared/format-table.c
-@@ -850,31 +850,33 @@ static int cell_data_compare(TableData *a, size_t index_a, TableData *b, size_t
+@@ -1243,30 +1243,32 @@
          return CMP(index_a, index_b);
  }
  
 -static int table_data_compare(const size_t *a, const size_t *b, Table *t) {
 +static Table *user_table;
 +static int table_data_compare(const void *x, const void *y) {
-+        const size_t *a = x, *b=y;
-         size_t i;
++        const size_t *a = x, *b = y;
          int r;
  
 -        assert(t);
@@ -90,8 +89,8 @@
                  return 1;
  
          /* Order other lines by the sorting map */
--        for (i = 0; i < t->n_sort_map; i++) {
-+        for (i = 0; i < user_table->n_sort_map; i++) {
+-        for (size_t i = 0; i < t->n_sort_map; i++) {
++        for (size_t i = 0; i < user_table->n_sort_map; i++) {
                  TableData *d, *dd;
  
 -                d = t->data[*a + t->sort_map[i]];
@@ -106,7 +105,7 @@
          }
  
          /* Order identical lines by the order there were originally added in */
-@@ -1107,7 +1109,12 @@ int table_print(Table *t, FILE *f) {
+@@ -1407,7 +1409,12 @@ int table_print(Table *t, FILE *f) {
                  for (i = 0; i < n_rows; i++)
                          sorted[i] = i * t->n_columns;
  

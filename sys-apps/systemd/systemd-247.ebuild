@@ -208,9 +208,9 @@ src_prepare() {
 	if ! use vanilla; then
 		PATCHES+=(
 			"${FILESDIR}/gentoo-generator-path-r2.patch"
-			"${FILESDIR}/gentoo-systemctl-disable-sysv-sync.patch"
-			"${FILESDIR}/gentoo-journald-audit.patch"
-			"${FILESDIR}/gentoo-pam.patch"
+#			"${FILESDIR}/gentoo-systemctl-disable-sysv-sync.patch"
+#			"${FILESDIR}/gentoo-journald-audit.patch"
+#			"${FILESDIR}/gentoo-pam.patch"
 		)
 	fi
 
