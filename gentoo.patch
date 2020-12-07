@@ -68,10 +68,23 @@ index 8335388f9f..670453c7f1 100644
  	sys-libs/libseccomp:=
  
  	apparmor? ( sys-libs/libapparmor )
-diff --git a/app-emulation/virt-manager/virt-manager-3.1.0.ebuild b/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
+diff --git a/app-emulation/libvirt/libvirt-6.10.0-r1.ebuild b/app-emulation/libvirt/libvirt-6.10.0-r1.ebuild
+index 2e38192ba1..6cc81f4f20 100644
+--- a/app-emulation/libvirt/libvirt-6.10.0-r1.ebuild
++++ b/app-emulation/libvirt/libvirt-6.10.0-r1.ebuild
+@@ -101,8 +101,6 @@ RDEPEND="
+ 	selinux? ( >=sys-libs/libselinux-2.0.85 )
+ 	virt-network? (
+ 		net-dns/dnsmasq[script]
+-		net-firewall/ebtables
+-		>=net-firewall/iptables-1.4.10[ipv6]
+ 		net-misc/radvd
+ 		sys-apps/iproute2[-minimal]
+ 	)
+diff --git a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
 index cb575dc4df..8f524a1272 100644
---- a/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
-+++ b/app-emulation/virt-manager/virt-manager-3.1.0.ebuild
+--- a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
++++ b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
 @@ -42,7 +42,6 @@ RDEPEND="!app-emulation/virtinst
  		gnome-base/dconf
  		>=net-libs/gtk-vnc-0.3.8[gtk3(+),introspection]
@@ -94,7 +107,7 @@ index 5602e66567..42815c690d 100644
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
 diff --git a/dev-lang/rust/rust-1.48.0.ebuild b/dev-lang/rust/rust-1.48.0.ebuild
-index be32053aee..88331b386d 100644
+index 19da77c7c3..39e136687b 100644
 --- a/dev-lang/rust/rust-1.48.0.ebuild
 +++ b/dev-lang/rust/rust-1.48.0.ebuild
 @@ -91,7 +91,6 @@ DEPEND="
@@ -256,42 +269,34 @@ index 8b660ec6dc..d8074cd72a 100644
 +../../17.1
  ../../../../../arch/amd64/no-multilib
  ../../../../../features/musl/
-diff --git a/sys-devel/clang/clang-11.0.0.ebuild b/sys-devel/clang/clang-11.0.0.ebuild
-index a7451bfd4b..426f622671 100644
---- a/sys-devel/clang/clang-11.0.0.ebuild
-+++ b/sys-devel/clang/clang-11.0.0.ebuild
-@@ -32,8 +32,8 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
- LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
- SLOT="$(ver_cut 1)"
- KEYWORDS="amd64 arm arm64 ppc64 x86 ~amd64-linux"
--IUSE="debug default-compiler-rt default-libcxx default-lld
--	doc +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
-+IUSE="debug +default-compiler-rt +default-libcxx +default-lld +default-libunwind
-+	doc +gcc-symlinks +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
- REQUIRED_USE="${PYTHON_REQUIRED_USE}
+diff --git a/sys-devel/clang/clang-11.0.1_rc1.ebuild b/sys-devel/clang/clang-11.0.1_rc1.ebuild
+index 4a3a05b4df..29173b02bb 100644
+--- a/sys-devel/clang/clang-11.0.1_rc1.ebuild
++++ b/sys-devel/clang/clang-11.0.1_rc1.ebuild
+@@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
-@@ -43,7 +43,9 @@ RDEPEND="
+ 
++IUSE="${IUSE} default-libunwind gcc-symlinks"
++
+ RDEPEND="
+ 	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${MULTILIB_USEDEP}]
  	static-analyzer? ( dev-lang/perl:* )
- 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
- 	${PYTHON_DEPS}"
--DEPEND="${RDEPEND}"
-+DEPEND="${RDEPEND}
-+	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
-+	"
- BDEPEND="
- 	>=dev-util/cmake-3.16
- 	doc? ( dev-python/sphinx )
-@@ -55,7 +57,7 @@ RDEPEND="${RDEPEND}
- PDEPEND="
+@@ -54,11 +56,12 @@ PDEPEND="
  	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
--	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
+ 	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
 +	default-libunwind? ( >=sys-libs/llvm-libunwind-${PV} )
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -245,10 +247,14 @@ multilib_src_configure() {
+ LLVM_COMPONENTS=( clang clang-tools-extra )
+-LLVM_MANPAGES=build
++#LLVM_MANPAGES=build
+ LLVM_TEST_COMPONENTS=(
+ 	llvm/lib/Testing/Support
+ 	llvm/utils/{lit,llvm-lit,unittest}
+@@ -252,8 +255,13 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -299,15 +304,14 @@ index a7451bfd4b..426f622671 100644
 +		# create gcc symlinks: gcc g++ cc cpp c++
 +		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
 +
-+		# override default stdlib and rtlib and unwind
++
++		# override default stdlib and rtlib and libunwind
  		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
++		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-libunwind libunwind "")
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
  		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
-+		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-libunwind libunwind "")
  
- 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
- 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
-@@ -347,6 +353,7 @@ src_install() {
+@@ -354,6 +362,7 @@ src_install() {
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
  	local clang_tools=( clang clang++ clang-cl clang-cpp )
@@ -315,22 +319,34 @@ index a7451bfd4b..426f622671 100644
  	local abi i
  
  	# cmake gives us:
-@@ -375,6 +382,15 @@ src_install() {
+@@ -382,6 +391,18 @@ src_install() {
  		done
  	done
  
-+	# and finally create target symlinks for all supported ABIs compat
-+	for abi in $(get_all_abis); do
-+		local abi_chost=$(get_abi_CHOST "${abi}")
-+		for i in "${gcc_tools[@]}"; do
-+			dosym "clang-${clang_version}" \
-+				"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
++	if use gcc-symlinks; then
++		# and finally create target symlinks for all supported ABIs for compat
++		for abi in $(get_all_abis); do
++			local abi_chost=$(get_abi_CHOST "${abi}")
++			for i in "${gcc_tools[@]}"; do
++				dosym "clang-${clang_version}" \
++			"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
++			done
 +		done
-+	done
++	fi
++
 +
  	# Remove unnecessary headers on FreeBSD, bug #417171
  	if use kernel_FreeBSD; then
  		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
+@@ -405,7 +426,7 @@ multilib_src_install_all() {
+ 	fi
+ 
+ 	docompress "/usr/lib/llvm/${SLOT}/share/man"
+-	llvm_install_manpages
++	use doc && llvm_install_manpages
+ 	# match 'html' non-compression
+ 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
+ 	# +x for some reason; TODO: investigate
 diff --git a/sys-devel/distcc/distcc-3.3.3-r1.ebuild b/sys-devel/distcc/distcc-3.3.3-r1.ebuild
 index f4d8d84f5e..16a1d7cd28 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r1.ebuild
@@ -356,20 +372,29 @@ index 9bd470297d..fd481026e2 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-11.0.0.ebuild b/sys-devel/llvm/llvm-11.0.0.ebuild
-index 1b22698435..d16b7efddb 100644
---- a/sys-devel/llvm/llvm-11.0.0.ebuild
-+++ b/sys-devel/llvm/llvm-11.0.0.ebuild
-@@ -30,7 +30,7 @@ ALL_LLVM_TARGETS=( "${ALL_LLVM_TARGETS[@]/#/llvm_targets_}" )
- LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA BSD public-domain rc"
- SLOT="$(ver_cut 1)"
- KEYWORDS="amd64 arm arm64 ppc64 x86 ~amd64-linux ~ppc-macos ~x64-macos ~x86-macos"
--IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
-+IUSE="+binutils-symlinks debug doc exegesis gold libedit +libffi ncurses test xar xml z3
- 	kernel_Darwin ${ALL_LLVM_TARGETS[*]}"
+diff --git a/sys-devel/llvm/llvm-11.0.1_rc1.ebuild b/sys-devel/llvm/llvm-11.0.1_rc1.ebuild
+index 9c6edd9239..50c8244faf 100644
+--- a/sys-devel/llvm/llvm-11.0.1_rc1.ebuild
++++ b/sys-devel/llvm/llvm-11.0.1_rc1.ebuild
+@@ -32,6 +32,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
-@@ -319,6 +319,23 @@ get_distribution_components() {
+ 
++IUSE="${IUSE} binutils-symlinks"
++
+ RDEPEND="
+ 	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
+ 	exegesis? ( dev-libs/libpfm:= )
+@@ -66,7 +68,7 @@ PDEPEND="sys-devel/llvm-common
+ 	gold? ( >=sys-devel/llvmgold-${SLOT} )"
+ 
+ LLVM_COMPONENTS=( llvm )
+-LLVM_MANPAGES=build
++#LLVM_MANPAGES=build
+ llvm.org_set_globals
+ 
+ python_check_deps() {
+@@ -309,6 +311,23 @@ get_distribution_components() {
  				docs-llvm-man
  			)
  		fi
@@ -393,7 +418,7 @@ index 1b22698435..d16b7efddb 100644
  		use doc && out+=(
  			docs-llvm-html
  		)
-@@ -350,6 +367,7 @@ multilib_src_configure() {
+@@ -340,6 +359,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -401,6 +426,17 @@ index 1b22698435..d16b7efddb 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
+@@ -502,7 +522,9 @@ multilib_src_install_all() {
+ 	_EOF_
+ 
+ 	docompress "/usr/lib/llvm/${SLOT}/share/man"
+-	llvm_install_manpages
++	if use doc; then
++		llvm_install_manpages
++	fi
+ }
+ 
+ pkg_postinst() {
 diff --git a/sys-libs/liburing/liburing-0.7-r1.ebuild b/sys-libs/liburing/liburing-0.7-r1.ebuild
 index 284efb838d..fa9a849d62 100644
 --- a/sys-libs/liburing/liburing-0.7-r1.ebuild
