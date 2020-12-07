@@ -144,6 +144,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/fix-shared-profiling-header.patch
 	eapply "${FILESDIR}"/disable-stack-size.patch
 	eapply "${FILESDIR}"/use-system-unwind.patch
+	eapply "${FILESDIR}"/libunwind-arm64.patch
 
 	# netcoredbg patches
 	pushd ${NDBG_S} >/dev/null || die
@@ -192,21 +193,22 @@ src_compile() {
 	cp "${artifacts_coresetup}/libhostfxr.so" "${SDK_S}/host/fxr/${PV}/libhostfxr.so"
 	cp -pP "${artifacts_coresetup}/dotnet" "${SDK_S}" || die
 
+	einfo "building System.Private.CoreLib.dll"
+	pushd ${CORECLR_S}/src/System.Private.CoreLib >/dev/null || die
+	${SDK_S}/dotnet build -c Release /p:Platform=${ARCH} /p:TargetArchitecture=${DARCH} || die
+	popd >/dev/null
+	cp "${artifacts_coreclr}/IL/System.Private.CoreLib.dll" "${dest_core}/${PV}" || die
+
 	einfo "building netcoredbg"
 	cd "${NDBG_S}" || die
 	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} ./ || die
 	emake VERBOSE=1
-
-	einfo "building System.Private.CoreLib.dll"
-	pushd ${CORECLR_S}/src/System.Private.CoreLib>/dev/null || die
-	${SDK_S}/dotnet build -c Release /p:Platform=${DARCH} /p:TargetArchitecture=${DARCH} || die
-	popd >/dev/null
-	cp "${artifacts_coreclr}/IL/System.Private.CoreLib.dll" "${dest_core}/${PV}" || die
 }
 
 src_install() {
-	local dest="${D}/usr/share/dotnet"
-	local dest_core="${dest}/shared/Microsoft.NETCore.App"
+        local dest_core="/usr/share/dotnet"
+	local dest="${D}${dest_core}"
+	local dest_app="${dest}/shared/Microsoft.NETCore.App"
 
 	# install everything
 	mkdir -p "${dest}" || die
@@ -221,6 +223,6 @@ src_install() {
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
 
 	newenvd - "60dotnet" <<-_EOF_
-		DOTNET_ROOT="/opt/dotnet"
+		MSBuildSDKsPath=${dest_core}/sdk/${SDK_PV}/Sdks
 	_EOF_
 }
