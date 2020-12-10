@@ -5,7 +5,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="12"
+K_GENPATCHES_VER="13"
 K_NODRYRUN="1"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
@@ -82,7 +82,6 @@ src_configure() {
 		STRIP=":"
 		OBJCOPY="$(tc-getOBJCOPY)"
 		OBJDUMP="$(tc-getOBJDUMP)"
-		LLVM_IAS=1
 		LLVM=1
 	)
 
