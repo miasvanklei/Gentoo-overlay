@@ -1,250 +1,201 @@
 diff --git a/CMake/CMakeLists.txt b/CMake/CMakeLists.txt
-index 0bfd1bd..e9b5827 100644
+index 0bfd1bd..a4423c5 100644
 --- a/CMake/CMakeLists.txt
 +++ b/CMake/CMakeLists.txt
-@@ -3,6 +3,12 @@ project(test_cxx_runtime)
- 
+@@ -4,6 +4,13 @@ project(test_cxx_runtime)
  add_executable(test_cxx_runtime typeinfo_test.cc)
  add_executable(test_cxx_stdlib typeinfo_test.cc)
-+set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "")
-+if (CXX_ABI_IS_GNU)
-+	add_definitions(-DCXX_ABI_IS_GNU=1)
-+else ()
-+	add_definitions(-DCXX_ABI_IS_GNU=0)
-+endif ()
  if (CXX_RUNTIME)
++	if (CXX_RUNTIME MATCHES ".*libc\\+\\+abi.*")
++		find_library(M_LIBRARY m)
++		if (M_LIBRARY)
++			target_link_libraries(test_cxx_runtime ${M_LIBRARY})
++		endif()
++	endif()
++	set(CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "")
  	target_link_libraries(test_cxx_runtime ${CXX_RUNTIME})
  	set_target_properties(test_cxx_runtime PROPERTIES
-diff --git a/CMake/typeinfo_non_gnu.cc b/CMake/typeinfo_non_gnu.cc
-new file mode 100644
-index 0000000..6515502
---- /dev/null
-+++ b/CMake/typeinfo_non_gnu.cc
-@@ -0,0 +1,20 @@
-+#include <typeinfo>
-+/*
-+ * This intentionally subclasses std::type_info in a way that is incompatible
-+ * with the API exposed by libstdc++, but not libc++. This means that the
-+ * resulting file will fail to compile under libstdc++, but not libc++.
-+ */
-+class type_info2 : public std::type_info
-+{
-+	public:
-+	type_info2() : type_info("foo") {}
-+	virtual int __is_pointer_p() const;
-+};
-+int type_info2::__is_pointer_p() const { return 123; }
-+
-+
-+int main()
-+{
-+	type_info2 s;
-+	return s.__is_pointer_p();
-+}
+ 		LINKER_LANGUAGE C)
 diff --git a/CMake/typeinfo_test.cc b/CMake/typeinfo_test.cc
-index 74802f9..b259768 100644
+index 74802f9..1d5536b 100644
 --- a/CMake/typeinfo_test.cc
 +++ b/CMake/typeinfo_test.cc
-@@ -1,44 +1,5 @@
- #include <stdint.h>
--
--namespace __cxxabiv1
--{
--	struct __class_type_info;
--}
--
--using __cxxabiv1::__class_type_info;
--
--namespace std
--{
--	/**
--	 * std::type_info defined with the GCC ABI.  This may not be exposed in
--	 * public headers, but is required for correctly implementing the unified
--	 * exception model.
--	 */
--	class type_info
--	{
--				public:
--				virtual ~type_info();
--				bool operator==(const type_info &) const;
--				bool operator!=(const type_info &) const;
--				bool before(const type_info &) const;
--				private:
--				type_info(const type_info& rhs);
--				type_info& operator= (const type_info& rhs);
--				const char *__type_name;
--				protected:
--				type_info(const char *name): __type_name(name) { }
--				public:
--				const char* name() const { return __type_name; }
--				virtual bool __is_pointer_p() const;
--				virtual bool __is_function_p() const;
--				virtual bool __do_catch(const type_info *thrown_type,
--				                        void **thrown_object,
--				                        unsigned outer) const;
--				virtual bool __do_upcast(
--				                const __class_type_info *target,
--				                void **thrown_object) const;
--	};
--}
-+#include "../type_info.h"
- 
- class type_info2 : public std::type_info
- {
-@@ -49,9 +10,14 @@ class type_info2 : public std::type_info
+@@ -49,6 +49,9 @@ class type_info2 : public std::type_info
  	virtual bool __do_catch(const type_info *thrown_type,
  	                        void **thrown_object,
  	                        unsigned outer) const { return true; }
-+	virtual bool can_catch(const CXX_TYPE_INFO_CLASS *thrown_type,
-+	                        void *&thrown_object) const { return true; }
-+	virtual void noop1() const {}
-+	virtual void noop2() const {}
++	virtual bool __do_upcast(
++					const __class_type_info *target,
++					void **thrown_object) const { return true; };
  };
  bool type_info2::__is_pointer_p() const { return true; }
  
-+
- int main()
- {
- 	type_info2 s;
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 80b7dfe..364aa70 100644
+index 80b7dfe..16928b7 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -221,7 +221,7 @@ set_source_files_properties(
- #
- 
- 
--function(test_cxx CXX_RUNTIME_NAME IS_STDLIB)
-+function(test_cxx CXX_RUNTIME_NAME IS_STDLIB USE_GNU_ABI)
- 	set(CXX_RUNTIME_NAME_FULL "${CMAKE_SHARED_LIBRARY_PREFIX}${CXX_RUNTIME_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}")
- 	find_library(CXX_RUNTIME_LIB NAMES ${CXX_RUNTIME_NAME_FULL} ${CXX_RUNTIME_NAME})
- 	if (CXX_RUNTIME_LIB)
-@@ -234,7 +234,7 @@ function(test_cxx CXX_RUNTIME_NAME IS_STDLIB)
- 			"${CMAKE_BINARY_DIR}/CMake"
- 			"${CMAKE_CURRENT_LIST_DIR}/CMake"
- 			test_cxx_runtime
--			CMAKE_FLAGS "-DCXX_RUNTIME=${CXX_RUNTIME_LIB}" ${CXX_RUNTIME_FLAGS})
-+			CMAKE_FLAGS "-DCXX_RUNTIME=${CXX_RUNTIME_LIB}" "-DCXX_ABI_IS_GNU=${USE_GNU_ABI}" ${CXX_RUNTIME_FLAGS})
- 		if (USERUNTIME)
- 			set(CXX_RUNTIME ${CXX_RUNTIME_LIB} PARENT_SCOPE)
- 		else ()
-@@ -283,19 +283,43 @@ if (ENABLE_OBJCXX)
- 		message(STATUS "Using MSVC-compatible exception model")
- 	else ()
- 		message(STATUS "Testing C++ interop")
-+		try_compile(CXX_STDLIB_IS_NON_GNU
-+			"${CMAKE_BINARY_DIR}/CMake"
-+			"${CMAKE_CURRENT_LIST_DIR}/CMake/typeinfo_non_gnu.cc"
-+		)
-+		if (CXX_STDLIB_IS_NON_GNU)
-+			set(CXX_ABI_IS_GNU 0)
-+			message(STATUS "C++ standard library is not libstdc++")
-+		else ()
-+			set(CXX_ABI_IS_GNU 1)
-+			message(STATUS "C++ standard library is libstdc++")
-+		endif ()
- 		# Try to find libcxxrt.so.  We can link to this to provide the C++ ABI
- 		# layer, if it exists.
--		test_cxx(cxxrt false)
--		# If it doesn't, then look for GNU libsupc++.so instead (either works,
--		# they're ABI compatible).
--		if (NOT CXX_RUNTIME)
--			test_cxx(supc++ false)
--		endif (NOT CXX_RUNTIME)
+@@ -291,9 +291,11 @@ if (ENABLE_OBJCXX)
+ 		if (NOT CXX_RUNTIME)
+ 			test_cxx(supc++ false)
+ 		endif (NOT CXX_RUNTIME)
 -		# libc++abi does not currently work, don't try it.
-+		test_cxx(cxxrt false 1)
-+
-+		if (CXX_RUNTIME)
-+			# libcxxrt was usable, correct our assessment to use GNU ABI
-+			set(CXX_ABI_IS_GNU 1)
-+		else ()
-+			# If it doesn't, then look for GNU libsupc++.so instead (either works,
-+			# they're ABI compatible).
-+			test_cxx(supc++ false 1)
-+			if (CXX_RUNTIME)
-+				# likewise, if libsupc++ was usable, we want the GNU ABI
-+				set(CXX_ABI_IS_GNU 1)
-+			endif ()
-+		endif ()
-+
  		if (NOT CXX_RUNTIME)
 -			# test_cxx(c++abi false)
-+			test_cxx(c++abi false 0)
-+			if (CXX_RUNTIME)
-+				# working libc++abi means the LLVM ABI needs to be used
-+				set(CXX_ABI_IS_GNU 0)
-+			endif ()
++			list (FIND CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "c++" _libcxx_index)
++			if (${_libcxx_index} GREATER -1)
++				test_cxx(c++abi false)
++			endif()
  		endif (NOT CXX_RUNTIME)
  
-+
  		# If we have a C++ ABI library, then we can produce a single libobjc that
- 		# works for Objective-C and Objective-C++.  If not, then we need to provide
- 		# a separate libobjcxx.
-@@ -307,7 +331,9 @@ if (ENABLE_OBJCXX)
- 			try_compile(USERUNTIME 
- 				"${CMAKE_BINARY_DIR}/CMake"
- 				"${CMAKE_CURRENT_LIST_DIR}/CMake"
--				test_cxx_stdlib)
-+				test_cxx_stdlib
-+				CMAKE_FLAGS "-DCXX_ABI_IS_GNU=${CXX_ABI_IS_GNU}"
-+			)
- 			if (${USERUNTIME})
- 				message(STATUS "libobjc will depend on C++ standard library")
- 				set(CXXRT_IS_STDLIB true)
-@@ -316,6 +342,7 @@ if (ENABLE_OBJCXX)
- 				set(ENABLE_OBJCXX false)
- 			endif()
- 		endif ()
-+		add_definitions( -DCXX_ABI_IS_GNU=${CXX_ABI_IS_GNU})
- 		add_custom_command(OUTPUT eh_trampoline.s
- 			COMMAND ${CMAKE_CXX_COMPILER} -fPIC -S "${CMAKE_SOURCE_DIR}/eh_trampoline.cc" -o - -fexceptions -fno-inline | sed "s/__gxx_personality_v0/test_eh_personality/g" > "${CMAKE_BINARY_DIR}/eh_trampoline.s"
+@@ -321,6 +323,9 @@ if (ENABLE_OBJCXX)
  			MAIN_DEPENDENCY eh_trampoline.cc)
+ 		list(APPEND libobjc_ASM_SRCS eh_trampoline.s)
+ 		list(APPEND libobjc_CXX_SRCS objcxx_eh.cc)
++
++		# Find libm for linking, as some versions of libc++ don't link against it
++		find_library(M_LIBRARY m)
+ 	endif ()
+ endif (ENABLE_OBJCXX)
+ 
+@@ -373,6 +378,11 @@ if (LIBGC)
+ 	target_link_libraries(objc ${LIBGC})
+ endif ()
+ 
++# Explicitly link libm, as an implicit dependency of the C++ runtime
++if (M_LIBRARY)
++	target_link_libraries(objc ${M_LIBRARY})
++endif ()
++
+ # Make weak symbols work on OS X
+ if (APPLE)
+ 	set(CMAKE_SHARED_LIBRARY_CREATE_C_FLAGS
+@@ -455,8 +465,18 @@ include (CPack)
+ if (BOEHM_GC)
+ 	set(PC_REQUIRES_PRIVATE_BOEHM_GC "Requires.private: bdw-gc")
+ endif ()
+-if (ENABLE_OBJCXX AND NOT CXXRT_IS_STDLIB)
+-	set(PC_LIBS_PRIVATE "Libs.private: -l${CXX_RUNTIME}")
++if (ENABLE_OBJCXX)
++	if (CXXRT_IS_STDLIB)
++		set(PC_LIBS_PRIVATE ${CMAKE_CXX_IMPLICIT_LINK_LIBRARIES})
++	else()
++		list(APPEND PC_LIBS_PRIVATE ${CXX_RUNTIME})
++		if (M_LIBRARY)
++			list(APPEND PC_LIBS_PRIVATE ${M_LIBRARY})
++		endif ()
++	endif()
++	list(REMOVE_DUPLICATES PC_LIBS_PRIVATE)
++	string(REPLACE  ";" " -l" PC_LIBS_PRIVATE "${PC_LIBS_PRIVATE}")
++	set(PC_LIBS_PRIVATE "Libs.private: -l${PC_LIBS_PRIVATE}")
+ endif()
+ 
+ configure_file("libobjc.pc.in" "libobjc.pc" @ONLY)
+diff --git a/Test/CMakeLists.txt b/Test/CMakeLists.txt
+index 10993b8..e4b1bbe 100644
+--- a/Test/CMakeLists.txt
++++ b/Test/CMakeLists.txt
+@@ -141,6 +141,7 @@ addtest_variants("CXXExceptions" "CXXException.m;CXXException.cc" true)
+ addtest_variants("ForwardDeclareProtocolAccess" "ForwardDeclareProtocolAccess.m;ForwardDeclareProtocol.m" true)
+ if (ENABLE_OBJCXX)
+ 	addtest_variants(ObjCXXEHInterop "ObjCXXEHInterop.mm;ObjCXXEHInterop.m" true)
++	addtest_variants(ObjCXXEHInteropTwice "ObjCXXEHInteropTwice.mm" true)
+ 	# This test is failing on Win32, but not for any obvious reason.  Disable
+ 	# it for now to keep CI happy.
+ 	if (WIN32)
+diff --git a/Test/ObjCXXEHInteropTwice.mm b/Test/ObjCXXEHInteropTwice.mm
+new file mode 100644
+index 0000000..11d542d
+--- /dev/null
++++ b/Test/ObjCXXEHInteropTwice.mm
+@@ -0,0 +1,22 @@
++#import "Test.h"
++
++#import "stdio.h"
++
++
++void excerciseExceptionCXX(Test *e) {
++  @try {
++    printf("Raising Test\n");
++    @throw e;
++  } @catch (Test *localException) {
++    printf("Caught\n");
++  }
++}
++
++int main(void)
++{
++  Test *e = [Test new];
++  excerciseExceptionCXX(e);
++  excerciseExceptionCXX(e);
++  [e release];
++}
++
+diff --git a/azure-pipelines.yml b/azure-pipelines.yml
+index 6653475..d48600f 100644
+--- a/azure-pipelines.yml
++++ b/azure-pipelines.yml
+@@ -7,20 +7,36 @@ jobs:
+       matrix:
+         Debug:
+           BuildType: Debug
++          StdLib: libstdc++
++          CxxFlags: ""
+         Release:
+           BuildType: Release
++          StdLib: libstdc++
++          CxxFlags: ""
++        Debug-libc++:
++          BuildType: Debug
++          StdLib: libc++
++          CxxFlags: "-stdlib=libc++"
++        Release-libc++:
++          BuildType: Release
++          StdLib: libc++
++          CxxFlags: "-stdlib=libc++"
+     steps:
+     - checkout: self
+       submodules: true
+     - script: |
+         sudo add-apt-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main"
+         sudo apt-get update
+-        sudo apt-get install -y ninja-build
+-        sudo apt-get install -y clang-8
++        sudo apt-get install -y ninja-build clang-8
++        if [ "$(StdLib)" = "libc++" ]; then
++          sudo apt-get install -qy libc++-8-dev libc++abi-8-dev
++        fi
++      displayName: Install Dependencies
+ 
+     - task: CMake@1
++      displayName: Generate Build Scripts
+       inputs:
+-        cmakeArgs: '.. -GNinja -DCMAKE_BUILD_TYPE=$(BuildType) -DTESTS=ON -DCMAKE_CXX_COMPILER=clang++-8 -DCMAKE_C_COMPILER=clang-8'
++        cmakeArgs: '.. -GNinja -DCMAKE_BUILD_TYPE=$(BuildType) -DTESTS=ON -DCMAKE_CXX_COMPILER=clang++-8 -DCMAKE_C_COMPILER=clang-8 -DCMAKE_CXX_FLAGS="$(CxxFlags)"'
+ 
+     - script: |
+         ninja
+@@ -32,6 +48,7 @@ jobs:
+     - script: |
+         ctest -j 4 --output-on-failure -T test
+ 
++      displayName: 'Test'
+       workingDirectory: build
+       failOnStderr: false
+     - task: PublishTestResults@2
 diff --git a/objcxx_eh.cc b/objcxx_eh.cc
-index bc4740b..6af6fd5 100644
+index bc4740b..add5dea 100644
 --- a/objcxx_eh.cc
 +++ b/objcxx_eh.cc
-@@ -16,6 +16,7 @@ int eh_trampoline();
- 
- uint64_t cxx_exception_class;
- 
-+
- extern "C" void *__cxa_allocate_exception(size_t) noexcept;
- 
- /**
-@@ -280,18 +281,41 @@ namespace gnustep
- 			 */
- 			__objc_id_type_info() : __objc_type_info("@id") {};
- 			virtual ~__objc_id_type_info();
-+#if CXX_ABI_IS_GNU != 1
-+			virtual void noop1() const {};
-+			virtual void noop2() const {};
-+#endif
- 			virtual bool __do_catch(const type_info *thrownType,
- 			                        void **obj,
+@@ -292,6 +292,16 @@ namespace gnustep
  			                        unsigned outer) const;
-+#if CXX_ABI_IS_GNU != 1
-+			virtual bool can_catch(const type_info *thrownType,
-+			                       void *&obj) const;
-+#endif
- 		};
- 		struct __objc_class_type_info : __objc_type_info
- 		{
- 			virtual ~__objc_class_type_info();
-+#if CXX_ABI_IS_GNU != 1
-+			virtual void noop1() const {};
-+			virtual void noop2() const {};
-+#endif
- 			virtual bool __do_catch(const type_info *thrownType,
- 			                        void **obj,
- 			                        unsigned outer) const;
-+#if CXX_ABI_IS_GNU != 1
-+			virtual bool can_catch(const type_info *thrownType,
-+			                       void *&obj) const;
-+#endif
  		};
  	}
 +
-+	static inline id adjust_thrown_object_pointer(void** obj) {
++	static inline id dereference_thrown_object_pointer(void** obj) {
++		/* libc++-abi does not have  __is_pointer_p and won't do the double dereference 
++		 * required to get the object pointer. We need to do it ourselves if we have
++		 * caught an exception with libc++'s exception class. */
 +		 if (cxx_exception_class == llvm_cxx_exception_class) {
 +			 return **(id**)obj;
 +		 }
@@ -253,202 +204,21 @@ index bc4740b..6af6fd5 100644
  };
  
  
-@@ -316,7 +340,7 @@ bool gnustep::libobjc::__objc_class_type_info::__do_catch(const type_info *throw
+@@ -316,7 +326,7 @@ bool gnustep::libobjc::__objc_class_type_info::__do_catch(const type_info *throw
  	    || (AppleCompatibleMode && 
  	        dynamic_cast<const __objc_class_type_info*>(thrownType)))
  	{
 -		thrown = *(id*)obj;
-+		thrown = adjust_thrown_object_pointer(obj);
++		thrown = dereference_thrown_object_pointer(obj);
  		// nil only matches id catch handlers in Apple-compatible mode, or when thrown as an id
  		if (0 == thrown)
  		{
-@@ -328,7 +352,8 @@ bool gnustep::libobjc::__objc_class_type_info::__do_catch(const type_info *throw
+@@ -328,7 +338,7 @@ bool gnustep::libobjc::__objc_class_type_info::__do_catch(const type_info *throw
  	}
  	else if (dynamic_cast<const __objc_class_type_info*>(thrownType))
  	{
 -		thrown = *(id*)obj;
-+
-+		thrown = adjust_thrown_object_pointer(obj);
++		thrown = dereference_thrown_object_pointer(obj);
  		found = isKindOfClass((Class)objc_getClass(thrownType->name()),
  		                      (Class)objc_getClass(name()));
  	}
-@@ -339,6 +364,14 @@ bool gnustep::libobjc::__objc_class_type_info::__do_catch(const type_info *throw
- 	return found;
- };
- 
-+#if CXX_ABI_IS_GNU != 1
-+bool gnustep::libobjc::__objc_class_type_info::can_catch(const type_info *thrownType,
-+                                                          void *&obj) const
-+{
-+	return __do_catch(thrownType, &obj, 0);
-+}
-+#endif
-+
- bool gnustep::libobjc::__objc_id_type_info::__do_catch(const type_info *thrownType,
-                                                        void **obj,
-                                                        unsigned outer) const
-@@ -357,6 +390,14 @@ bool gnustep::libobjc::__objc_id_type_info::__do_catch(const type_info *thrownTy
- 	return false;
- };
- 
-+#if CXX_ABI_IS_GNU != 1
-+bool gnustep::libobjc::__objc_id_type_info::can_catch(const type_info *thrownType,
-+                                                          void *&obj) const
-+{
-+	return __do_catch(thrownType, &obj, 0);
-+}
-+#endif
-+
- /**
-  * Public interface to the Objective-C++ exception mechanism
-  */
-diff --git a/objcxx_eh.h b/objcxx_eh.h
-index 9dacc95..f175549 100644
---- a/objcxx_eh.h
-+++ b/objcxx_eh.h
-@@ -51,6 +51,7 @@ void *objc_object_for_cxx_exception(void *thrown_exception, int *isValid);
- __attribute__((weak))
- void print_type_info(void *thrown_exception);
- 
-+
- /**
-  * The exception class that we've detected that C++ runtime library uses.
-  */
-diff --git a/type_info.h b/type_info.h
-new file mode 100644
-index 0000000..cc0a615
---- /dev/null
-+++ b/type_info.h
-@@ -0,0 +1,9 @@
-+#ifndef _TYPE_INFO_H_INCLUDED_
-+#define _TYPE_INFO_H_INCLUDED_
-+
-+#if CXX_ABI_IS_GNU == 1
-+#	include "type_info_gnu.h"
-+#else
-+#	include "type_info_llvm.h"
-+#endif
-+#endif //_TYPE_INFO_H_INCLUDED_
-\ No newline at end of file
-diff --git a/type_info_gnu.h b/type_info_gnu.h
-new file mode 100644
-index 0000000..4147469
---- /dev/null
-+++ b/type_info_gnu.h
-@@ -0,0 +1,48 @@
-+#ifndef _TYPE_INFO_GNU_H_INCLUDED_
-+#define _TYPE_INFO_GNU_H_INCLUDED_
-+#include <stdint.h>
-+
-+namespace __cxxabiv1
-+{
-+	struct __class_type_info;
-+}
-+
-+using namespace __cxxabiv1;
-+
-+namespace std
-+{
-+	/**
-+	 * std::type_info defined with the GCC ABI.  This may not be exposed in
-+	 * public headers, but is required for correctly implementing the unified
-+	 * exception model.
-+	 */
-+	class type_info
-+	{
-+				public:
-+				virtual ~type_info();
-+				bool operator==(const type_info &) const;
-+				bool operator!=(const type_info &) const;
-+				bool before(const type_info &) const;
-+				type_info();
-+				private:
-+				type_info(const type_info& rhs);
-+				type_info& operator= (const type_info& rhs);
-+				const char *__type_name;
-+				protected:
-+				type_info(const char *name): __type_name(name) { }
-+				public:
-+				const char* name() const { return __type_name; }
-+				virtual bool __is_pointer_p() const;
-+				virtual bool __is_function_p() const;
-+				virtual bool __do_catch(const type_info *thrown_type,
-+				                        void **thrown_object,
-+				                        unsigned outer) const;
-+				virtual bool __do_upcast(
-+				                const __class_type_info *target,
-+				                void **thrown_object) const;
-+	};
-+}
-+
-+#define CXX_TYPE_INFO_CLASS std::type_info
-+
-+#endif //_TYPE_INFO_GNU_H_INCLUDED_
-\ No newline at end of file
-diff --git a/type_info_llvm.h b/type_info_llvm.h
-new file mode 100644
-index 0000000..9a8d189
---- /dev/null
-+++ b/type_info_llvm.h
-@@ -0,0 +1,61 @@
-+#ifndef _TYPE_INFO_LLVM_H_INCLUDED_
-+#define _TYPE_INFO_LLVM_H_INCLUDED_
-+#include <stdint.h>
-+
-+namespace __cxxabiv1
-+{
-+	struct __class_type_info;
-+	struct __shim_type_info;
-+}
-+
-+namespace std
-+{
-+	/**
-+	 * std::type_info defined with the Clang ABI (for use with libc++). This may
-+	 * not be exposed in public headers, but is required for correctly implementing
-+	 * the unified exception model.
-+	 *
-+	 * NOTE: libc++ assumes that type_info instances are always layed out by the compiler,
-+	 * which is not true for libobjc2, where we allocate a static type_info class for
-+	 * `id' exception handlers. For this reason, the definition has been modified so
-+	 * that this is possible, while still allowing vtables to match up correctly.
-+	 */
-+	class type_info
-+	{
-+				public:
-+				virtual ~type_info();
-+				bool operator==(const type_info &) const;
-+				bool operator!=(const type_info &) const;
-+				bool before(const type_info &) const;
-+				type_info();
-+				private:
-+				type_info(const type_info& rhs);
-+				type_info& operator= (const type_info& rhs);
-+				const char *__type_name;
-+				protected:
-+				type_info(const char *name): __type_name(name) { }
-+				public:
-+				const char* name() const { return __type_name; }
-+				// Padding to get subclass vtable to line up
-+				virtual void noop1() const;
-+				// Padding to get subnclass vtable to line up
-+				virtual void noop2() const;
-+				virtual bool can_catch(const __cxxabiv1::__shim_type_info *thrown_type,
-+		                       void *&adjustedPtr) const = 0;
-+	};
-+}
-+
-+namespace __cxxabiv1
-+{
-+	class __shim_type_info : public std::type_info {
-+		public:
-+		virtual ~__shim_type_info();
-+
-+		virtual bool can_catch(const __shim_type_info *thrown_type,
-+		                       void *&adjustedPtr) const = 0;
-+	};
-+}
-+
-+#define CXX_TYPE_INFO_CLASS __cxxabiv1::__shim_type_info
-+
-+#endif //_TYPE_INFO_LLVM_H_INCLUDED_
