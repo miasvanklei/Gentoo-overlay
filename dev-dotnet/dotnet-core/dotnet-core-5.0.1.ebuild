@@ -7,18 +7,18 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-RUNTIME_PV="rtm.20519.4"
-SDK_PV="5.0.100"
+RUNTIME_PV="servicing.20575.16"
+SDK_PV="5.0.101"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 NDBG_PV="1.2.0-672"
 NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
 	arm64? (
-		https://download.visualstudio.microsoft.com/download/pr/27840e8b-d61c-472d-8e11-c16784d40091/ae9780ccda4499405cf6f0924f6f036a/${SDK}-arm64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/2add7523-39ec-413a-b8a7-24361cc4e599/30489ebd7ebcc723da48a64669860fd0/${SDK}-arm64.tar.gz
 	)
 	amd64? (
-		https://download.visualstudio.microsoft.com/download/pr/820db713-c9a5-466e-b72a-16f2f5ed00e2/628aa2a75f6aa270e77f4a83b3742fb8/${SDK}-x64.tar.gz
+		https://download.visualstudio.microsoft.com/download/pr/a0487784-534a-4912-a4dd-017382083865/be16057043a8f7b6f08c902dc48dd677/${SDK}-x64.tar.gz
 	)
 	https://github.com/dotnet/runtime/archive/v${PV}-${RUNTIME_PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
@@ -216,8 +216,8 @@ src_install() {
 
 	# netcoredbg
 	cd ${NDBG_S} || die
-	make install DESTDIR="${dest_core}/${PV}" || die
-	dosym "${dest_core}/${PV}/netcoredbg" "/usr/bin/netcoredbg"
+	make install DESTDIR="${dest}/${PV}" || die
+	dosym "${dest}/${PV}/netcoredbg" "/usr/bin/netcoredbg"
 
 	# dotnet
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
