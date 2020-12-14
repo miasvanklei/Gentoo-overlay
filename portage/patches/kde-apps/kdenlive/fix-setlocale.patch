@@ -3,7 +3,7 @@
 @@ -20,11 +20,7 @@
      QList<QString> localesToTest;
      localesToTest << lcName << lcName + ".utf-8" << lcName + ".UTF-8" << lcName + ".utf8" << lcName + ".UTF8";
-     for (const auto &locale : localesToTest) {
+     for (const auto &locale : qAsConst(localesToTest)) {
 -#ifdef Q_OS_FREEBSD
          auto *result = setlocale(MLT_LC_CATEGORY, locale.toStdString().c_str());
 -#else
@@ -27,14 +27,14 @@
 --- a/src/mltconnection.cpp	2020-09-07 12:31:28.570750801 +0200
 +++ b/src/mltconnection.cpp	2020-09-07 12:34:33.083259496 +0200
 @@ -88,11 +88,7 @@
+     // to ensure numbers are always serialised with . as decimal point.
      m_repository = std::unique_ptr<Mlt::Repository>(Mlt::Factory::init());
-     LocaleHandling::resetLocale();
  
 -#ifdef Q_OS_FREEBSD
      auto locale = strdup(setlocale(MLT_LC_CATEGORY, nullptr));
 -#else
 -    auto locale = strdup(std::setlocale(MLT_LC_CATEGORY, nullptr));
 -#endif
-     qDebug() << "NEW LC_ALL" << locale;
  
      locateMeltAndProfilesPath(mltPath);
+ 
