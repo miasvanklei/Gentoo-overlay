@@ -21,7 +21,7 @@ RDEPEND=">=dev-haskell/base16-bytestring-0.1.1:=[profile?] <dev-haskell/base16-b
 	>=dev-haskell/extra-1.6.14:=[profile?] <dev-haskell/extra-1.8:=[profile?]
 	>=dev-haskell/hie-bios-0.7.0:=[profile?]
 	>=dev-haskell/hslogger-1.2:=[profile?] <dev-haskell/hslogger-1.4:=[profile?]
-	dev-haskell/implicit-hie:=[profile?]
+	>=dev-haskell/implicit-hie-0.1.2.5:=[profile?] <=dev-haskell/implicit-hie-1.0:=[profile?]
 	>=dev-haskell/temporary-1.2:=[profile?] <dev-haskell/temporary-1.4:=[profile?]
 	>=dev-haskell/text-1.2.3:=[profile?] <dev-haskell/text-1.3:=[profile?]
 	>=dev-haskell/unix-compat-0.5.1:=[profile?] <dev-haskell/unix-compat-0.6:=[profile?]
