@@ -5,7 +5,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="13"
+K_GENPATCHES_VER="2"
 K_NODRYRUN="1"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
@@ -42,13 +42,12 @@ src_prepare() {
 		eapply "${FILESDIR}"/pine-h64/002-pineh64-enable-usb3.patch
 		eapply "${FILESDIR}"/pine-h64/003-eMMC-workaround.patch
 		eapply "${FILESDIR}"/pine-h64/004-add-support-for-rtl8723cs_bs.patch
-		eapply "${FILESDIR}"/pine-h64/005-fix-ethernet.patch
+		eapply "${FILESDIR}"/pine-h64/005-cedrus-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/007-sun4i-i2s-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/008-cedrus-improvements.patch
+		eapply "${FILESDIR}"/pine-h64/008-drm-fixes.patch
 		eapply "${FILESDIR}"/pine-h64/009-wip-cec-improvements.patch
 		eapply "${FILESDIR}"/pine-h64/010-sound-hack.patch
 		eapply "${FILESDIR}"/pine-h64/011-h6-add-ext_rmii_pins.patch
-		eapply "${FILESDIR}"/pine-h64/012-fix-de2-buggy-layer.patch
 		eapply "${FILESDIR}"/pine-h64/013-one-ui-plane-as-cursor.patch
 	fi
 
@@ -83,6 +82,7 @@ src_configure() {
 		OBJCOPY="$(tc-getOBJCOPY)"
 		OBJDUMP="$(tc-getOBJDUMP)"
 		LLVM=1
+		LLVM_IAS=1
 	)
 
 	restore_config .config
