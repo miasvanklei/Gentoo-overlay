@@ -70,12 +70,13 @@ DEPEND="${RDEPEND}
 		dev-haskell/yaml )
 "
 
-PATCHES=(
-        "${FILESDIR}"/disable-fourmolu.patch
-)
-
 src_configure() {
 	haskell-cabal_src_configure \
 		$(cabal_flag agpl agpl) \
-		$(cabal_flag pedantic pedantic)
+		$(cabal_flag pedantic pedantic) \
+		--flags=-all-formatters \
+		--flags=brittany \
+		--flags=ormolu \
+		--flags=floskell \
+		--flags=stylishHaskell
 }
