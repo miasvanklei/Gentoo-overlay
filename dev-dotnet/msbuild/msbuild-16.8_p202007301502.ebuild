@@ -25,21 +25,22 @@ RDEPEND="
 "
 DEPEND="${RDEPEND}"
 
-S=${WORKDIR}/${PN}-${MY_PV}
+#S=${WORKDIR}/${PN}-${MY_PV}
+S=${WORKDIR}
+
+src_unpack() {
+	tar xf ${DISTDIR}/${P}.tar.zst
+}
 
 src_prepare() {
-	eapply "${FILESDIR}/fix_bashisms.patch"
-	eapply "${FILESDIR}/copy_hostfxr.patch"
-	eapply "${FILESDIR}/license_check_is_case_sensitive.diff"
-	eapply "${FILESDIR}/case_sensitive_dotnetbits.patch"
-	eapply "${FILESDIR}/fix-compile.patch"
-	eapply "${FILESDIR}/dont-download-dotnet.patch"
+	eapply "${FILESDIR}"/mono-msbuild-license-case.patch
+	eapply "${FILESDIR}"/mono-msbuild-use-bash.patch
 
 	eapply_user
 }
 
 src_compile() {
-	export DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=/opt/dotnet
+	export DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=/usr/share/dotnet
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	./eng/cibuild_bootstrapped_msbuild.sh \
 	--host_type mono --configuration Release --skip_tests /p:DisableNerdbankVersioning=true || die
@@ -55,5 +56,5 @@ src_compile() {
 }
 
 src_install() {
-	cp -dr --no-preserve='ownership' ${S}/target/usr "${D}"
+	cp -dr --no-preserve='ownership' ${S}/usr "${D}"
 }
