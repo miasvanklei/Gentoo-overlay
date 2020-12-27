@@ -12,13 +12,13 @@ index c29109aa42..052651e8fb 100644
  	dev-libs/libxslt
  	dev-util/gdbus-codegen
 diff --git a/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild b/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild
-index efc797548a..1bc61719c4 100644
+index 0a6eb6d4c5..12994f91b3 100644
 --- a/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild
 +++ b/app-crypt/pinentry/pinentry-1.1.0-r3.ebuild
 @@ -12,7 +12,7 @@ SRC_URI="mirror://gnupg/${PN}/${P}.tar.bz2"
  LICENSE="GPL-2"
  SLOT="0"
- KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~mips ppc ppc64 ~riscv s390 sparc x86 ~ppc-aix ~x64-cygwin ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris"
+ KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~mips ppc ppc64 ~riscv s390 sparc x86 ~x64-cygwin ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris"
 -IUSE="caps emacs gnome-keyring fltk gtk ncurses qt5"
 +IUSE="caps emacs gnome-keyring fltk gtk libsecret ncurses qt5"
  
@@ -93,10 +93,10 @@ index 359c95c43d..0b0b021279 100644
  
  DESCRIPTION="SPICE server"
 diff --git a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
-index cb575dc4df..8f524a1272 100644
+index 91e20874b0..8f7a42e14d 100644
 --- a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
 +++ b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
-@@ -42,7 +42,6 @@ RDEPEND="!app-emulation/virtinst
+@@ -41,7 +41,6 @@ RDEPEND="${PYTHON_DEPS}
  		gnome-base/dconf
  		>=net-libs/gtk-vnc-0.3.8[gtk3(+),introspection]
  		net-misc/spice-gtk[usbredir,gtk3,introspection,sasl?]
@@ -211,7 +211,7 @@ index 779372ba4e..5ff181d4d2 100644
  
  pkg_postinst() {
 diff --git a/dev-libs/libffi/libffi-3.3-r2.ebuild b/dev-libs/libffi/libffi-3.3-r2.ebuild
-index 438d54d74f..bba5cd8c34 100644
+index d6512f716d..a18acf722f 100644
 --- a/dev-libs/libffi/libffi-3.3-r2.ebuild
 +++ b/dev-libs/libffi/libffi-3.3-r2.ebuild
 @@ -50,19 +50,7 @@ src_prepare() {
@@ -247,19 +247,6 @@ index bfa8924e39..57eac2018f 100644
  
  inherit distutils-r1
  
-diff --git a/dev-qt/qtdeclarative/qtdeclarative-5.15.2.ebuild b/dev-qt/qtdeclarative/qtdeclarative-5.15.2.ebuild
-index 5c7e4ff9c8..535b8f89f3 100644
---- a/dev-qt/qtdeclarative/qtdeclarative-5.15.2.ebuild
-+++ b/dev-qt/qtdeclarative/qtdeclarative-5.15.2.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=7
- 
--PYTHON_COMPAT=( python3_{6,7,8} )
-+PYTHON_COMPAT=( python3_{6,7,8,9} )
- inherit python-any-r1 qt5-build
- 
- DESCRIPTION="The QML and Quick modules for the Qt5 framework"
 diff --git a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 index a8017f003f..27fdf16889 100644
 --- a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
@@ -333,7 +320,7 @@ index f370fa8c0e..b8e0a759a9 100644
  
  	if use usbredir; then
 diff --git a/sys-devel/clang/clang-11.0.1_rc2.ebuild b/sys-devel/clang/clang-11.0.1_rc2.ebuild
-index 4a3a05b4df..29173b02bb 100644
+index c5362450b5..42714233a0 100644
 --- a/sys-devel/clang/clang-11.0.1_rc2.ebuild
 +++ b/sys-devel/clang/clang-11.0.1_rc2.ebuild
 @@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -359,7 +346,7 @@ index 4a3a05b4df..29173b02bb 100644
  LLVM_TEST_COMPONENTS=(
  	llvm/lib/Testing/Support
  	llvm/utils/{lit,llvm-lit,unittest}
-@@ -252,8 +255,13 @@ multilib_src_configure() {
+@@ -261,8 +264,13 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -374,7 +361,7 @@ index 4a3a05b4df..29173b02bb 100644
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
  		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
  
-@@ -354,6 +362,7 @@ src_install() {
+@@ -363,6 +371,7 @@ src_install() {
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
  	local clang_tools=( clang clang++ clang-cl clang-cpp )
@@ -382,7 +369,7 @@ index 4a3a05b4df..29173b02bb 100644
  	local abi i
  
  	# cmake gives us:
-@@ -382,6 +391,18 @@ src_install() {
+@@ -391,6 +400,18 @@ src_install() {
  		done
  	done
  
@@ -401,7 +388,7 @@ index 4a3a05b4df..29173b02bb 100644
  	# Remove unnecessary headers on FreeBSD, bug #417171
  	if use kernel_FreeBSD; then
  		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
-@@ -405,7 +426,7 @@ multilib_src_install_all() {
+@@ -414,7 +435,7 @@ multilib_src_install_all() {
  	fi
  
  	docompress "/usr/lib/llvm/${SLOT}/share/man"
