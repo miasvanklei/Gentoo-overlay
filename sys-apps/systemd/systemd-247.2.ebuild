@@ -95,13 +95,18 @@ RDEPEND="${COMMON_DEPEND}
 	acct-group/disk
 	acct-group/input
 	acct-group/kvm
+	acct-group/lp
 	acct-group/render
 	acct-group/tape
+	acct-group/users
 	acct-group/video
 	acct-group/systemd-journal
+	acct-user/root
+	acct-user/nobody
 	acct-user/systemd-journal-remote
 	acct-user/systemd-coredump
 	acct-user/systemd-network
+	acct-user/systemd-oom
 	acct-user/systemd-resolve
 	acct-user/systemd-timesync
 	>=sys-apps/baselayout-2.2
@@ -207,10 +212,10 @@ src_prepare() {
 
 	if ! use vanilla; then
 		PATCHES+=(
-			"${FILESDIR}/gentoo-generator-path-r2.patch"
-#			"${FILESDIR}/gentoo-systemctl-disable-sysv-sync.patch"
-#			"${FILESDIR}/gentoo-journald-audit.patch"
-#			"${FILESDIR}/gentoo-pam.patch"
+			"${FILESDIR}/gentoo-generator-path.patch"
+			"${FILESDIR}/gentoo-systemctl-disable-sysv-sync.patch"
+			"${FILESDIR}/gentoo-journald-audit.patch"
+			"${FILESDIR}/gentoo-pam.patch"
 		)
 	fi
 
