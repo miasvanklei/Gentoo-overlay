@@ -17,6 +17,7 @@ IUSE="ghc-lib"
 
 RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/async:=[profile?]
+	dev-haskell/case-insensitive:=[profile?]
 	dev-haskell/data-default:=[profile?]
 	dev-haskell/extra:=[profile?]
 	dev-haskell/fingertree:=[profile?]
