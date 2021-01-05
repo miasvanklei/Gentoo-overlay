@@ -25,21 +25,18 @@ RDEPEND="
 "
 DEPEND="${RDEPEND}"
 
-#S=${WORKDIR}/${PN}-${MY_PV}
-S=${WORKDIR}
-
-src_unpack() {
-	tar xf ${DISTDIR}/${P}.tar.zst
-}
+S=${WORKDIR}/${PN}-${MY_PV}
 
 src_prepare() {
 	eapply "${FILESDIR}"/mono-msbuild-license-case.patch
 	eapply "${FILESDIR}"/mono-msbuild-use-bash.patch
+	eapply "${FILESDIR}"/fix-compile.patch
 
 	eapply_user
 }
 
 src_compile() {
+	unset MSBuildSDKsPath
 	export DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=/usr/share/dotnet
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	./eng/cibuild_bootstrapped_msbuild.sh \
@@ -56,5 +53,6 @@ src_compile() {
 }
 
 src_install() {
-	cp -dr --no-preserve='ownership' ${S}/usr "${D}"
+	cp -dr --no-preserve='ownership' ${S}/target/usr "${D}"
+	find "${D}" -name "*.pdb" -delete
 }
