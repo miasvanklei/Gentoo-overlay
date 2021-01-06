@@ -1,13 +1,13 @@
 --- a/library/unwind/build.rs
 +++ b/library/unwind/build.rs
-@@ -12,7 +12,6 @@
+@@ -14,7 +14,6 @@
      } else if target.contains("linux") {
+         // linking for Linux is handled in lib.rs
          if target.contains("musl") {
-             // linking for musl is handled in lib.rs
 -            llvm_libunwind::compile();
-         } else if !target.contains("android") {
-             println!("cargo:rustc-link-lib=gcc_s");
          }
+     } else if target.contains("freebsd") {
+         println!("cargo:rustc-link-lib=gcc_s");
 --- a/library/unwind/src/lib.rs
 +++ b/library/unwind/src/lib.rs
 @@ -19,8 +19,7 @@
