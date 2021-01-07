@@ -129,10 +129,10 @@ src_prepare() {
 		rm "${SDK_S}/${RUNTIME_PACK}/${file}" || die
 	done
 
-	# unecessary files
+	# unecessary file
 	rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/libnethost.a" || die
-	rm -r "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate" || die
 
+	rm "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate/apphost" || die
 	rm "${SDK_S}/host/fxr/${PV}/libhostfxr.so" || die
 	rm "${SDK_S}/dotnet" || die
 
@@ -190,6 +190,7 @@ src_compile() {
 		cp -pP "${artifacts_coresetup}/${file}" "${dest_pack}" || die
 	done
 
+	cp "${artifacts_coresetup}/apphost" "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate/apphost"
 	cp "${artifacts_coresetup}/libhostfxr.so" "${SDK_S}/host/fxr/${PV}/libhostfxr.so"
 	cp -pP "${artifacts_coresetup}/dotnet" "${SDK_S}" || die
 
@@ -221,8 +222,4 @@ src_install() {
 
 	# dotnet
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
-
-	newenvd - "60dotnet" <<-_EOF_
-		MSBuildSDKsPath=${dest_core}/sdk/${SDK_PV}/Sdks
-	_EOF_
 }
