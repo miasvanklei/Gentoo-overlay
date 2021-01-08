@@ -11,7 +11,6 @@ inherit haskell-cabal git-r3
 DESCRIPTION="Retrie integration plugin for Haskell Language Server"
 HOMEPAGE="http://hackage.haskell.org/package/hls-retrie-plugin"
 EGIT_REPO_URI="https://github.com/haskell/haskell-language-server.git"
-EGIT_SUBMODULES=()
 
 LICENSE="Apache-2.0"
 SLOT="0/${PV}"

@@ -11,7 +11,6 @@ inherit git-r3 haskell-cabal
 DESCRIPTION="Explicit imports plugin for Haskell Language Server"
 HOMEPAGE="https://hackage.haskell.org/package/hls-class-plugin"
 EGIT_REPO_URI="https://github.com/haskell/haskell-language-server.git"
-EGIT_SUBMODULES=()
 
 LICENSE="Apache-2.0"
 SLOT="0/${PV}"
