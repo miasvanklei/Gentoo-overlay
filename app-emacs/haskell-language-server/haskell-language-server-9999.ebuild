@@ -82,8 +82,5 @@ src_configure() {
 		$(cabal_flag agpl agpl) \
 		$(cabal_flag pedantic pedantic) \
 		--flags=-all-formatters \
-		--flags=brittany \
-		--flags=ormolu \
-		--flags=floskell \
-		--flags=stylishHaskell
+		--flags=-fourmolu
 }
