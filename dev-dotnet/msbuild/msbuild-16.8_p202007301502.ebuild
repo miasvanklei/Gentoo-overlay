@@ -21,7 +21,7 @@ IUSE=""
 
 RDEPEND="
 	>=dev-lang/mono-6.0
-	dev-dotnet/dotnet-cli
+	dev-dotnet/dotnet-core
 "
 DEPEND="${RDEPEND}"
 
@@ -36,7 +36,6 @@ src_prepare() {
 }
 
 src_compile() {
-	unset MSBuildSDKsPath
 	export DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=/usr/share/dotnet
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	./eng/cibuild_bootstrapped_msbuild.sh \
