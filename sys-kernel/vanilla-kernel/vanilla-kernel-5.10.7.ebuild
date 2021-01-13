@@ -55,10 +55,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
 
-	if use banana-pi; then
-		eapply "${FILESDIR}"/integrated-as.patch
-		eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
-	fi
+	use banana-pi && eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 
 	eapply_user
 }
