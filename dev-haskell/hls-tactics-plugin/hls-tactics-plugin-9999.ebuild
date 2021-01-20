@@ -41,7 +41,7 @@ DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.4.0.1
 "
 
-S="${WORKDIR}/${P}/plugins/tactics"
+S="${WORKDIR}/${P}/plugins/${PN}"
 
 src_configure() {
 	haskell-cabal_src_configure \
