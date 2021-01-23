@@ -25,7 +25,7 @@ RDEPEND=">=dev-haskell/aeson-0.6:=[profile?] <dev-haskell/aeson-1.6:=[profile?]
 	>=dev-haskell/mtl-2.0:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
 	>=dev-haskell/optparse-applicative-0.12:=[profile?] <dev-haskell/optparse-applicative-0.16:=[profile?]
 	>=dev-haskell/semigroups-0.18:=[profile?] <dev-haskell/semigroups-0.20:=[profile?]
-	>=dev-haskell/strict-0.3:=[profile?] <dev-haskell/strict-0.4:=[profile?]
+	>=dev-haskell/strict-0.3:=[profile?] <dev-haskell/strict-0.5:=[profile?]
 	>=dev-haskell/syb-0.3:=[profile?] <dev-haskell/syb-0.8:=[profile?]
 	>=dev-lang/ghc-8.0.1:=
 "
