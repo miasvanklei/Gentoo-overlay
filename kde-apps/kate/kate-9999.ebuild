@@ -63,7 +63,6 @@ RDEPEND="${DEPEND}
 "
 
 PATCHES=(
-	"${FILESDIR}"/add-ghcide.patch
 	"${FILESDIR}"/prettyprint-markdown.patch
 )
 
