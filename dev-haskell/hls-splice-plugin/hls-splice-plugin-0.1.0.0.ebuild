@@ -22,7 +22,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/dlist:=[profile?]
 	dev-haskell/foldl:=[profile?]
 	dev-haskell/ghc-exactprint:=[profile?]
-	app-emacs/ghcide:=[profile?]
+	dev-haskell/ghcide:=[profile?]
 	dev-haskell/haskell-lsp:=[profile?]
 	dev-haskell/hls-plugin-api:=[profile?]
 	dev-haskell/lens:=[profile?]
@@ -37,5 +37,3 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.2
 "
-
-S="${WORKDIR}/${P}/plugins/${PN}"
