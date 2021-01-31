@@ -7,20 +7,17 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-RUNTIME_PV="servicing.20575.16"
-SDK_PV="5.0.101"
+SDK_PV="5.0.102"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 NDBG_PV="1.2.0-672"
 NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
-	arm64? (
-		https://download.visualstudio.microsoft.com/download/pr/2add7523-39ec-413a-b8a7-24361cc4e599/30489ebd7ebcc723da48a64669860fd0/${SDK}-arm64.tar.gz
+	arm64? ( https://download.visualstudio.microsoft.com/download/pr/4fdd4708-8990-42db-998d-36ccfa593070/d67cb90c382e4eedbca8af1aebcbbe19/${SDK}-arm64.tar.gz
 	)
-	amd64? (
-		https://download.visualstudio.microsoft.com/download/pr/a0487784-534a-4912-a4dd-017382083865/be16057043a8f7b6f08c902dc48dd677/${SDK}-x64.tar.gz
+	amd64? ( https://download.visualstudio.microsoft.com/download/pr/7f736160-9f34-4595-8d72-13630c437aef/b9c4513afb0f8872eb95793c70ac52f6/${SDK}-x64.tar.gz
 	)
-	https://github.com/dotnet/runtime/archive/v${PV}-${RUNTIME_PV}.tar.gz -> ${P}.tar.gz
+	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
 
 SLOT="0"
@@ -38,7 +35,7 @@ DEPEND="${RDEPEND}
 	>=sys-devel/gettext-0.19.7
 	>=sys-devel/make-4.1-r1"
 
-S=${WORKDIR}/runtime-${PV}-${RUNTIME_PV}
+S=${WORKDIR}/runtime-${PV}
 
 COREFX_FILES=(
 	'libSystem.IO.Compression.Native.a'
@@ -136,6 +133,7 @@ src_prepare() {
 	rm "${SDK_S}/host/fxr/${PV}/libhostfxr.so" || die
 	rm "${SDK_S}/dotnet" || die
 
+	eapply "${FILESDIR}"/fix-icu68.patch
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
