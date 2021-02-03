@@ -11,14 +11,14 @@ index 813591a159..68da27ce96 100644
  BDEPEND="
  	dev-libs/libxslt
  	dev-util/gdbus-codegen
-diff --git a/app-emulation/crun/crun-0.15.ebuild b/app-emulation/crun/crun-0.15.ebuild
-index fc58b334ca..6d6332d67e 100644
---- a/app-emulation/crun/crun-0.15.ebuild
-+++ b/app-emulation/crun/crun-0.15.ebuild
+diff --git a/app-emulation/crun/crun-0.17.ebuild b/app-emulation/crun/crun-0.17.ebuild
+index bc97b2bddb..c5115af251 100644
+--- a/app-emulation/crun/crun-0.17.ebuild
++++ b/app-emulation/crun/crun-0.17.ebuild
 @@ -21,6 +21,7 @@ DEPEND="
  	>=dev-libs/yajl-2.0.0
  	caps? ( sys-libs/libcap )
- 	criu? ( >=sys-process/criu-3.13 )
+ 	criu? ( >=sys-process/criu-3.15 )
 +	elibc_musl? ( sys-libs/argp-standalone )
  	seccomp? ( sys-libs/libseccomp )
  	systemd? ( sys-apps/systemd:= )
@@ -99,10 +99,10 @@ index 21e100a548..c7a8a51f70 100644
  	latex? ( dev-texlive/texlive-formatsextra )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
-diff --git a/dev-lang/rust/rust-1.48.0.ebuild b/dev-lang/rust/rust-1.48.0.ebuild
-index b5c4bdb4f9..4c1ee6e6da 100644
---- a/dev-lang/rust/rust-1.48.0.ebuild
-+++ b/dev-lang/rust/rust-1.48.0.ebuild
+diff --git a/dev-lang/rust/rust-1.49.0.ebuild b/dev-lang/rust/rust-1.49.0.ebuild
+index 776c4276d3..cb47d2c514 100644
+--- a/dev-lang/rust/rust-1.49.0.ebuild
++++ b/dev-lang/rust/rust-1.49.0.ebuild
 @@ -91,7 +91,6 @@ DEPEND="
  	sys-libs/zlib:=
  	!libressl? ( dev-libs/openssl:0= )
@@ -241,7 +241,7 @@ index a8017f003f..27fdf16889 100644
  "
  DEPEND="${RDEPEND}"
 diff --git a/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild b/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
-index 1229170f28..bdb58850c8 100644
+index 1229170f28..f1d4da0962 100644
 --- a/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
 +++ b/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
 @@ -2,7 +2,7 @@
@@ -253,6 +253,15 @@ index 1229170f28..bdb58850c8 100644
  
  inherit gnome.org vala meson python-any-r1 xdg
  
+@@ -60,7 +60,7 @@ src_configure() {
+ 		$(meson_feature pulseaudio)
+ 		$(meson_feature sasl)
+ 		-Denable-werror=false
+-		-Dwith-coroutine=auto # gthread on windows, libc ucontext elsewhere; neither has extra deps
++		-Dwith-coroutine=gthread # gthread on windows, libc ucontext elsewhere; neither has extra deps
+ 		$(meson_use vala with-vala)
+ 	)
+ 	meson_src_configure
 diff --git a/net-misc/spice-gtk/spice-gtk-0.38.ebuild b/net-misc/spice-gtk/spice-gtk-0.38.ebuild
 index f370fa8c0e..b8e0a759a9 100644
 --- a/net-misc/spice-gtk/spice-gtk-0.38.ebuild
