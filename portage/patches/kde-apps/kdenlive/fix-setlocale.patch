@@ -12,7 +12,7 @@
          if (result != nullptr) {
              ::qputenv(MLT_LC_NAME, locale.toStdString().c_str());
              newLocale = locale;
-@@ -39,11 +35,7 @@
+@@ -39,21 +35,12 @@
  
  void LocaleHandling::resetLocale()
  {
@@ -21,9 +21,19 @@
 -#else
 -    std::setlocale(MLT_LC_CATEGORY, "C");
 -#endif
-     ::qputenv(MLT_LC_NAME, "C");
-     qDebug() << "LC_NUMERIC reset to C";
+-    ::qputenv(MLT_LC_NAME, "C");
  }
+ 
+ void LocaleHandling::resetAllLocale()
+ {
+-#ifdef Q_OS_FREEBSD
+     setlocale(LC_ALL, "C");
+-#else
+-    std::setlocale(LC_ALL, "C");
+-#endif
+     ::qputenv("LC_ALL", "C");
+ }
+ 
 --- a/src/mltconnection.cpp	2020-09-07 12:31:28.570750801 +0200
 +++ b/src/mltconnection.cpp	2020-09-07 12:34:33.083259496 +0200
 @@ -88,11 +88,7 @@
@@ -37,4 +47,4 @@
 -#endif
  
      locateMeltAndProfilesPath(mltPath);
- 
+  
