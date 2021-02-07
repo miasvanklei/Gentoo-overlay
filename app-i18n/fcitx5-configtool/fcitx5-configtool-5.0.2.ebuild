@@ -8,6 +8,7 @@ inherit cmake
 DESCRIPTION="Configuration module for Fcitx"
 HOMEPAGE="https://fcitx-im.org"
 SRC_URI="https://download.fcitx-im.org/fcitx5/${PN}/${P}.tar.xz"
+KEYWORDS="~amd64"
 
 LICENSE="GPL-2+"
 SLOT="5"
