@@ -148,9 +148,9 @@
      pub qemu_rootfs: Option<PathBuf>,
      pub no_std: bool,
 @@ -327,7 +323,6 @@
-     parallel_compiler: Option<bool>,
      default_linker: Option<String>,
      channel: Option<String>,
+     description: Option<String>,
 -    musl_root: Option<String>,
      rpath: Option<bool>,
      verbose_tests: Option<bool>,
@@ -257,7 +257,7 @@
 -            // If this is a native target (host is also musl) and no musl-root is given,
 -            // fall back to the system toolchain in /usr before giving up
 -            if build.musl_root(*target).is_none() && build.config.build == *target {
--                let target = build.config.target_config.entry(target.clone()).or_default();
+-                let target = build.config.target_config.entry(*target).or_default();
 -                target.musl_root = Some("/usr".into());
 -            }
 -            match build.musl_libdir(*target) {
