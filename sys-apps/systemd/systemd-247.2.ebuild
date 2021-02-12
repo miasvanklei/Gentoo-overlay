@@ -16,10 +16,10 @@ else
 	MY_P=${MY_PN}-${MY_PV}
 	S=${WORKDIR}/${MY_P}
 	SRC_URI="https://github.com/systemd/${MY_PN}/archive/v${MY_PV}/${MY_P}.tar.gz"
-	KEYWORDS="~alpha amd64 arm arm64 ~hppa ~ia64 ~mips ppc ppc64 sparc x86"
+	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
-PYTHON_COMPAT=( python3_{6..9} )
+PYTHON_COMPAT=( python3_{7..9} )
 
 inherit bash-completion-r1 linux-info meson multilib-minimal ninja-utils pam python-any-r1 systemd toolchain-funcs udev usr-ldscript
 
@@ -28,7 +28,7 @@ HOMEPAGE="https://www.freedesktop.org/wiki/Software/systemd"
 
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
-IUSE="acl apparmor audit build cgroup-hybrid cryptsetup curl dns-over-tls elfutils +gcrypt gnuefi homed http +hwdb idn importd +kmod +lz4 lzma nat pam pcre pkcs11 policykit pwquality qrcode repart +resolvconf +seccomp selinux split-usr static-libs +sysv-utils test vanilla xkb +zstd"
+IUSE="acl apparmor audit build cgroup-hybrid cryptsetup curl +dns-over-tls elfutils +gcrypt gnuefi homed http +hwdb idn importd +kmod +lz4 lzma nat pam pcre pkcs11 policykit pwquality qrcode repart +resolvconf +seccomp selinux split-usr static-libs +sysv-utils test vanilla xkb +zstd"
 
 REQUIRED_USE="
 	homed? ( cryptsetup )
@@ -84,31 +84,31 @@ DEPEND="${COMMON_DEPEND}
 
 # baselayout-2.2 has /run
 RDEPEND="${COMMON_DEPEND}
-	acct-group/adm
-	acct-group/wheel
-	acct-group/kmem
-	acct-group/tty
-	acct-group/utmp
-	acct-group/audio
-	acct-group/cdrom
-	acct-group/dialout
-	acct-group/disk
-	acct-group/input
-	acct-group/kvm
-	acct-group/lp
-	acct-group/render
-	acct-group/tape
+	>=acct-group/adm-0-r1
+	>=acct-group/wheel-0-r1
+	>=acct-group/kmem-0-r1
+	>=acct-group/tty-0-r1
+	>=acct-group/utmp-0-r1
+	>=acct-group/audio-0-r1
+	>=acct-group/cdrom-0-r1
+	>=acct-group/dialout-0-r1
+	>=acct-group/disk-0-r1
+	>=acct-group/input-0-r1
+	>=acct-group/kvm-0-r1
+	>=acct-group/lp-0-r1
+	>=acct-group/render-0-r1
+	>=acct-group/tape-0-r1
 	acct-group/users
-	acct-group/video
-	acct-group/systemd-journal
-	acct-user/root
+	>=acct-group/video-0-r1
+	>=acct-group/systemd-journal-0-r1
+	>=acct-user/root-0-r1
 	acct-user/nobody
-	acct-user/systemd-journal-remote
-	acct-user/systemd-coredump
-	acct-user/systemd-network
+	>=acct-user/systemd-journal-remote-0-r1
+	>=acct-user/systemd-coredump-0-r1
+	>=acct-user/systemd-network-0-r1
 	acct-user/systemd-oom
-	acct-user/systemd-resolve
-	acct-user/systemd-timesync
+	>=acct-user/systemd-resolve-0-r1
+	>=acct-user/systemd-timesync-0-r1
 	>=sys-apps/baselayout-2.2
 	selinux? ( sec-policy/selinux-base-policy[systemd] )
 	sysv-utils? ( !sys-apps/sysvinit )
@@ -328,7 +328,6 @@ multilib_src_configure() {
 
 		# disabled on musl
 		-Dgshadow=false
-		-Duserdb=false
 		-Defi=false
 		-Dnss-myhostname=false
 		-Dnss-mymachines=false
@@ -337,7 +336,6 @@ multilib_src_configure() {
 		-Dutmp=false
 		-Dsysusers=false
 		-Dldconfig=false
-
 
 		# static-libs
 		-Dstatic-libsystemd=$(usex static-libs true false)

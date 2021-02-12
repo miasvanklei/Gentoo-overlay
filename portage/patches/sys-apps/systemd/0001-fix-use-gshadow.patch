@@ -113,3 +113,41 @@
  int nss_group_record_by_name(const char *name, bool with_shadow, GroupRecord **ret);
  int nss_group_record_by_gid(gid_t gid, bool with_shadow, GroupRecord **ret);
 +#endif
+--- a/src/userdb/userwork.c	2021-02-08 19:59:44.169698355 +0100
++++ b/src/userdb/userwork.c	2021-02-08 20:03:03.828295188 +0100
+@@ -322,7 +322,7 @@
+                 return r;
+ 
+         if (streq_ptr(p.service, "io.systemd.NameServiceSwitch")) {
+-
++#if ENABLE_GSHADOW
+                 if (gid_is_valid(p.gid))
+                         r = nss_group_record_by_gid(p.gid, true, &g);
+                 else if (p.group_name)
+@@ -381,7 +381,7 @@
+ 
+                         return varlink_reply(link, last);
+                 }
+-
++#endif
+         } else if (streq_ptr(p.service, "io.systemd.Multiplexer")) {
+ 
+                 if (gid_is_valid(p.gid))
+@@ -461,7 +461,7 @@
+                 return r;
+ 
+         if (streq_ptr(p.service, "io.systemd.NameServiceSwitch")) {
+-
++#if ENABLE_GSHADOW
+                 if (p.group_name) {
+                         _cleanup_(group_record_unrefp) GroupRecord *g = NULL;
+                         const char *last = NULL;
+@@ -563,7 +563,7 @@
+                                                               JSON_BUILD_PAIR("userName", JSON_BUILD_STRING(last_user_name)),
+                                                               JSON_BUILD_PAIR("groupName", JSON_BUILD_STRING(last_group_name))));
+                 }
+-
++#endif
+         } else if (streq_ptr(p.service, "io.systemd.Multiplexer")) {
+ 
+                 _cleanup_free_ char *last_user_name = NULL, *last_group_name = NULL;
