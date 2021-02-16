@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jernej Skrabec <jernej.skrabec@siol.net>
+Date: Thu, 29 Oct 2020 21:04:24 +0100
+Subject: [PATCH] pineh64 model b - bluetooth wip
+
+Signed-off-by: Jernej Skrabec <jernej.skrabec@siol.net>
+---
+ .../dts/allwinner/sun50i-h6-pine-h64-model-b.dts | 15 ++++++++++++++++
+ 2 files changed, 19 insertions(+)
+
+--- a/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64-model-b.dts
++++ b/arch/arm64/boot/dts/allwinner/sun50i-h6-pine-h64-model-b.dts
+@@ -34,3 +34,18 @@
+ 	non-removable;
+ 	status = "okay";
+ };
++
++&uart1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart1_pins>, <&uart1_rts_cts_pins>;
++	uart-has-rtscts;
++	status = "okay";
++
++	bluetooth {
++		compatible = "realtek,rtl8723bs-bt";
++		device-wakeup-gpios = <&r_pio 1 2 GPIO_ACTIVE_HIGH>; /* PM2 */
++		host-wakeup-gpios = <&r_pio 1 1 GPIO_ACTIVE_HIGH>; /* PM1 */
++		enable-gpios = <&r_pio 1 4 GPIO_ACTIVE_HIGH>; /* PM4 */
++		max-speed = <1500000>;
++	};
++};
