@@ -1,0 +1,22 @@
+--- a/src/nspawn/nspawn.c
++++ b/src/nspawn/nspawn.c
+@@ -4890,7 +4890,7 @@
+         if (fd < 0)
+                 return log_error_errno(errno, "Failed to allocate udev control socket: %m");
+ 
+-        if (connect(fd, &sa.un, SOCKADDR_UN_LEN(sa.un)) < 0) {
++        if (connect(fd, (const struct sockaddr *)&sa.un, SOCKADDR_UN_LEN(sa.un)) < 0) {
+ 
+                 if (errno == ENOENT || ERRNO_IS_DISCONNECT(errno))
+                         return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP),
+--- src/userdb/userdbctl.c.bak	2021-02-08 20:03:26.732478365 +0100
++++ src/userdb/userdbctl.c	2021-02-08 20:09:29.463379165 +0100
+@@ -511,7 +511,7 @@
+                 if (fd < 0)
+                         return log_error_errno(r, "Failed to allocate AF_UNIX/SOCK_STREAM socket: %m");
+ 
+-                if (connect(fd, &sockaddr.un, sockaddr_len) < 0) {
++                if (connect(fd, (struct sockaddr *)&sockaddr.un, sockaddr_len) < 0) {
+                         no = strjoin("No (", errno_to_name(errno), ")");
+                         if (!no)
+                                 return log_oom();

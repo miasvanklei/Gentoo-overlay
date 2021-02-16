@@ -62,10 +62,6 @@ RDEPEND="${DEPEND}
 	!kde-misc/ktexteditorpreviewplugin
 "
 
-PATCHES=(
-	"${FILESDIR}"/prettyprint-markdown.patch
-)
-
 src_prepare() {
 	ecm_src_prepare
 
