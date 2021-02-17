@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="18"
+K_GENPATCHES_VER="1"
 K_NODRYRUN="1"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
@@ -37,17 +37,10 @@ src_prepare() {
 	fi
 
 	if use pine-h64; then
-		eapply "${FILESDIR}"/pine-h64/001-h6-add-gpu-opp-table.patch
-		eapply "${FILESDIR}"/pine-h64/002-pineh64-enable-usb3.patch
-		eapply "${FILESDIR}"/pine-h64/003-eMMC-workaround.patch
-		eapply "${FILESDIR}"/pine-h64/004-add-support-for-rtl8723cs_bs.patch
-		eapply "${FILESDIR}"/pine-h64/005-cedrus-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/007-sun4i-i2s-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/008-drm-fixes.patch
-		eapply "${FILESDIR}"/pine-h64/009-wip-cec-improvements.patch
-		eapply "${FILESDIR}"/pine-h64/010-sound-hack.patch
-		eapply "${FILESDIR}"/pine-h64/011-h6-add-ext_rmii_pins.patch
-		eapply "${FILESDIR}"/pine-h64/013-one-ui-plane-as-cursor.patch
+		eapply "${FILESDIR}"/pine-h64/0001-arm64-allwinner-dts-h6-enable-USB3-port-on-Pine-H64.patch
+		eapply "${FILESDIR}"/pine-h64/0002-mmc-sunxi-fix-unusuable-eMMC-on-some-H6-boards-by-di.patch
+		eapply "${FILESDIR}"/pine-h64/0003-pineh64-model-b-bluetooth-wip.patch
+		eapply "${FILESDIR}"/pine-h64/0005-one-ui-plane-as-cursor.patch
 	fi
 
 	if use pinebook-pro || use pine-h64; then
