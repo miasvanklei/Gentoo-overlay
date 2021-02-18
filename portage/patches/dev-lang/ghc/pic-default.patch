@@ -1,85 +1,22 @@
---- a/mk/ways.mk	2018-02-09 09:33:13.733219177 +0100
-+++ b/mk/ways.mk	2018-02-09 09:34:33.084020377 +0100
-@@ -42,15 +42,15 @@
- 
- # Way 'v':
- WAY_v_NAME=vanilla
--WAY_v_HC_OPTS= -static
-+WAY_v_HC_OPTS= -fPIC -static
- 
- # Way 'p':
- WAY_p_NAME=profiling
--WAY_p_HC_OPTS= -static -prof -eventlog
-+WAY_p_HC_OPTS= -fPIC -static -prof -eventlog
- 
- # Way 'l':
- WAY_l_NAME=event logging
--WAY_l_HC_OPTS= -static -eventlog
-+WAY_l_HC_OPTS= -fPIC -static -eventlog
- 
- #
- # These ways apply to the RTS only:
-@@ -58,35 +58,35 @@
- 
- # Way 'thr':
- WAY_thr_NAME=threaded
--WAY_thr_HC_OPTS= -static -optc-DTHREADED_RTS
-+WAY_thr_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS
- 
- # Way 'thr_p':
- WAY_thr_p_NAME=threaded profiling
--WAY_thr_p_HC_OPTS= -static -prof -eventlog -optc-DTHREADED_RTS
-+WAY_thr_p_HC_OPTS= -fPIC -static -prof -eventlog -optc-DTHREADED_RTS
- 
- # Way 'thr_l':
- WAY_thr_l_NAME=threaded event logging
--WAY_thr_l_HC_OPTS= -static -optc-DTHREADED_RTS -eventlog
-+WAY_thr_l_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS -eventlog
- 
- # Way 'debug':
- WAY_debug_NAME=debug
--WAY_debug_HC_OPTS= -static -optc-DDEBUG -ticky -DTICKY_TICKY -eventlog
-+WAY_debug_HC_OPTS= -fPIC -static -optc-DDEBUG -ticky -DTICKY_TICKY -eventlog
- 
- # Way 'debug_p':
- WAY_debug_p_NAME=debug profiled
--WAY_debug_p_HC_OPTS= -static -optc-DDEBUG -prof -eventlog
-+WAY_debug_p_HC_OPTS= -fPIC -static -optc-DDEBUG -prof -eventlog
- 
- # Way 'p':
- WAY_p_NAME=profiling
--WAY_p_HC_OPTS= -static -prof -eventlog
-+WAY_p_HC_OPTS= -fPIC -static -prof -eventlog
- 
- # Way 'thr_debug':
- WAY_thr_debug_NAME=threaded debug
--WAY_thr_debug_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG -eventlog
-+WAY_thr_debug_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS -optc-DDEBUG -eventlog
- 
- # Way 'thr_debug_p':
- WAY_thr_debug_p_NAME=threaded debug profiling event logging
--WAY_thr_debug_p_HC_OPTS= -static -optc-DTHREADED_RTS -optc-DDEBUG -prof -eventlog
-+WAY_thr_debug_p_HC_OPTS= -fPIC -static -optc-DTHREADED_RTS -optc-DDEBUG -prof -eventlog
- 
- # Way 'dyn': build dynamic shared libraries
- WAY_dyn_NAME=dyn
---- a/compiler/main/DynFlags.hs   2018-02-01 05:20:33.000000000 +0100
-+++ b/compiler/main/DynFlags.hs   2018-04-15 17:38:55.219737734 +0200
-@@ -4152,16 +4151,7 @@
-     where platform = sTargetPlatform settings
- 
+--- a/compiler/main/DynFlags.hs   2021-02-17 18:33:53.436949901 +0100
++++ b/compiler/main/DynFlags.hs   2021-02-17 18:35:34.516806445 +0100
+@@ -4646,6 +4646,8 @@
  default_PIC :: Platform -> [GeneralFlag]
--default_PIC platform =
--  case (platformOS platform, platformArch platform) of
--    (OSDarwin, ArchX86_64) -> [Opt_PIC]
--    (OSOpenBSD, ArchX86_64) -> [Opt_PIC] -- Due to PIE support in
--                                         -- OpenBSD since 5.3 release
--                                         -- (1 May 2013) we need to
--                                         -- always generate PIC. See
--                                         -- #10597 for more
--                                         -- information.
--    _                      -> []
-+default_PIC _ = [Opt_PIC]
- 
- -- General flags that are switched on/off when other general flags are switched
- -- on
+ default_PIC platform =
+   case (platformOS platform, platformArch platform) of
++    (OSLinux, ArchX86_64) -> [Opt_PIC, Opt_ExternalDynamicRefs]
++    (OSLinux, ArchARM64) -> [Opt_PIC, Opt_ExternalDynamicRefs]
+     (OSDarwin, ArchX86_64) -> [Opt_PIC]
+     (OSOpenBSD, ArchX86_64) -> [Opt_PIC] -- Due to PIE support in
+                                          -- OpenBSD since 5.3 release
+--- a/includes/rts/Flags.h	2021-02-17 15:59:34.640783683 +0100
++++ b/includes/rts/Flags.h	2021-02-17 16:00:07.766190465 +0100
+@@ -202,7 +202,7 @@
+  * files were compiled with -fPIC -fexternal-dynamic-refs and load them
+  * anywhere in the address space.
+  */
+-#if defined(x86_64_HOST_ARCH) && defined(darwin_HOST_OS)
++#if defined(darwin_HOST_OS) || defined(aarch64_HOST_ARCH) || defined(x86_64_HOST_ARCH)
+ #define DEFAULT_LINKER_ALWAYS_PIC true
+ #else
+ #define DEFAULT_LINKER_ALWAYS_PIC false
