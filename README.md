@@ -29,5 +29,4 @@ To compile all packages on my gentoo system with clang and llvm tools (lld, inte
 # Organization
  * portage: contains package.* for my system, probably only applies to me.
  * portage/patches: contains patches for fixing compilation of ebuilds in gentoo repo
- * gentoo.patch: contains some trivial patches for gentoo ebuilds themselves (change of dependencies, extra configure arguments). To lazy to create an ebuild and some are .
- * haskell.patch: adds ebuilds and patches ebuilds from haskell overlay. Should be upstreamed.
+ * gentoo.patch: contains some trivial patches for gentoo ebuilds themselves (change of dependencies, extra configure arguments).
