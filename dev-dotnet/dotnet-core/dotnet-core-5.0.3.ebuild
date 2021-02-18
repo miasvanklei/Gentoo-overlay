@@ -7,15 +7,15 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-SDK_PV="5.0.102"
+SDK_PV="5.0.103"
 SDK="dotnet-sdk-${SDK_PV}-linux"
 NDBG_PV="1.2.0-672"
 NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
-	arm64? ( https://download.visualstudio.microsoft.com/download/pr/4fdd4708-8990-42db-998d-36ccfa593070/d67cb90c382e4eedbca8af1aebcbbe19/${SDK}-arm64.tar.gz
+	arm64? ( https://download.visualstudio.microsoft.com/download/pr/5c2e5668-d7f9-4705-acb0-04ceeda6dadf/4eca3d1ffd92cb2b5f9152155a5529b4/${SDK}-arm64.tar.gz
 	)
-	amd64? ( https://download.visualstudio.microsoft.com/download/pr/7f736160-9f34-4595-8d72-13630c437aef/b9c4513afb0f8872eb95793c70ac52f6/${SDK}-x64.tar.gz
+	amd64? ( https://download.visualstudio.microsoft.com/download/pr/a2052604-de46-4cd4-8256-9bc222537d32/a798771950904eaf91c0c37c58f516e1/${SDK}-x64.tar.gz
 	)
 	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
