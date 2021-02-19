@@ -1,0 +1,104 @@
+--- a/runtime/flang/hand.c
++++ b/runtime/flang/hand.c
+@@ -15,7 +15,7 @@
+  *
+  */
+ 
+-#include <sys/signal.h>
++#include <signal.h>
+ #include "stdioInterf.h"
+ #include "fioMacros.h"
+ 
+--- a/runtime/flangrti/iostdinit.c
++++ b/runtime/flangrti/iostdinit.c
+@@ -160,7 +160,7 @@ __io_ferror(void *p)
+ int
+ __io_getfd(void *fp)
+ {
+-  return (((FILE *)fp)->_fileno);
++  return fileno((FILE *)fp);
+ }
+ 
+ /* is a tty? */
+--- a/runtime/flangrti/ktrap.c
++++ b/runtime/flangrti/ktrap.c
+@@ -35,6 +35,7 @@ extern int __ktrapval __attribute__ ((weak));
+ void
+ __ktrap(void)
+ {
++#ifdef __GLIBC__
+   if (&__ktrapval != 0) {
+     int bv = __ktrapval;
+     if (bv != 0) {
+@@ -63,6 +64,7 @@ __ktrap(void)
+       feenableexcept(excepts);  /* glibc 2.2 extension to fenv.h */
+     }
+   }
++#endif
+ }
+ 
+ #else
+--- a/runtime/flangrti/trace_lin.c
++++ b/runtime/flangrti/trace_lin.c
+@@ -18,7 +18,9 @@
+ #include <stdint.h>
+ #include <signal.h>
+ #include <sys/ucontext.h>
++#ifdef __GLIBC__
+ #include <execinfo.h>
++#endif
+ #include <stdioInterf.h>
+ #include "dumpregs.h"
+ #include <stdlib.h>
+@@ -186,10 +188,13 @@ __abort_trace(int skip)
+     dumpregs(regs);
+   }
+ 
++#ifdef __GLIBC__
+   size = backtrace(array, MAXTRACE);
+   if (skip + 1 >= size) {
++#endif
+     fprintf(__io_stderr(), "  --- traceback not available\n");
+     return;
++#ifdef __GLIBC__
+   }
+   strings = backtrace_symbols(array, size);
+   if (size < 100) {
+@@ -203,6 +208,7 @@ __abort_trace(int skip)
+       print_back_trace_line(strings[i], array[i]);
+   }
+   free(strings);
++#endif
+ }
+ 
+ /*
+diff --git a/tools/flang2/flang2exe/gbldefs.h b/tools/flang2/flang2exe/gbldefs.h
+index bc7b0edf..718d9a25 100644
+--- a/tools/flang2/flang2exe/gbldefs.h
++++ b/tools/flang2/flang2exe/gbldefs.h
+@@ -25,6 +25,7 @@
+ #define BE_GBLDEFS_H_
+ 
+ #include <stdint.h>
++#include <alloca.h>
+ #include "universal.h"
+ #include "platform.h"
+ #include "pgifeat.h"
+diff --git a/runtime/flang/red_norm2.c b/runtime/flang/red_norm2.c
+index 434dbd92..97e0f836 100644
+--- a/runtime/flang/red_norm2.c
++++ b/runtime/flang/red_norm2.c
+@@ -20,11 +20,11 @@
+ #include "norm2.h"
+
+ void F90_I8(stride_1_norm2_real4) (__POINT_T *src_pointer, __INT_T *size, __REAL4_T *result) {
+-    F90_I8(norm2_real4) (src_pointer, size, result);
++    NORM2_REAL4 (src_pointer, size, result);
+ }
+
+ void F90_I8(stride_1_norm2_real8) (__POINT_T *src_pointer, __INT_T *size, __REAL8_T *result) {
+-    F90_I8(norm2_real8) (src_pointer, size, result);
++    NORM2_REAL8 (src_pointer, size, result);
+ }
+
+ void ENTFTN(NORM2_NODIM, norm2_nodim) (__POINT_T *result, __POINT_T *src, __INT4_T * pfr, _DIST_TYPE *result_kind, F90_Desc *src_desc) {
