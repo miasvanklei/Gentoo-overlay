@@ -62,10 +62,10 @@ index 95c2c45cdec..8936ada069a 100644
  
  DESCRIPTION="SPICE server"
 diff --git a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
-index 91e20874b0a..8f7a42e14d1 100644
+index 71e23226d3f..651e5c33767 100644
 --- a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
 +++ b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
-@@ -41,7 +41,6 @@ RDEPEND="${PYTHON_DEPS}
+@@ -40,7 +40,6 @@ RDEPEND="${PYTHON_DEPS}
  		gnome-base/dconf
  		>=net-libs/gtk-vnc-0.3.8[gtk3(+),introspection]
  		net-misc/spice-gtk[usbredir,gtk3,introspection,sasl?]
@@ -299,28 +299,41 @@ index f370fa8c0e7..b8e0a759a98 100644
  	)
  
  	if use usbredir; then
-diff --git a/sys-devel/clang/clang-11.0.1.ebuild b/sys-devel/clang/clang-11.0.1.ebuild
-index 74831679d50..f2235cae03e 100644
---- a/sys-devel/clang/clang-11.0.1.ebuild
-+++ b/sys-devel/clang/clang-11.0.1.ebuild
+diff --git a/sys-devel/clang/clang-11.1.0.ebuild b/sys-devel/clang/clang-11.1.0.ebuild
+index d27e969b8fd..b6548f5733b 100644
+--- a/sys-devel/clang/clang-11.1.0.ebuild
++++ b/sys-devel/clang/clang-11.1.0.ebuild
 @@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
  
-+IUSE="${IUSE} default-libunwind gcc-symlinks"
++IUSE="${IUSE} default-libunwind +flang gcc-symlinks"
 +
  RDEPEND="
- 	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${MULTILIB_USEDEP}]
+ 	~sys-devel/llvm-${PV}:${SLOT%/*}=[debug=,${MULTILIB_USEDEP}]
  	static-analyzer? ( dev-lang/perl:* )
-@@ -53,6 +55,7 @@ PDEPEND="
+@@ -52,7 +54,12 @@ RDEPEND="${RDEPEND}
+ PDEPEND="
  	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
++	flang? (
++		dev-libs/libpgmath
++		dev-lang/flang
++		sys-devel/llvm[flang] )
  	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
 +	default-libunwind? ( >=sys-libs/llvm-libunwind-${PV} )
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -260,8 +263,13 @@ multilib_src_configure() {
+@@ -250,6 +257,7 @@ multilib_src_configure() {
+ 
+ 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
+ 		-DLLVM_BUILD_TESTS=$(usex test)
++		-DLLVM_ENABLE_CLASSIC_FLANG=$(usex flang)
+ 
+ 		# these are not propagated reliably, so redefine them
+ 		-DLLVM_ENABLE_EH=ON
+@@ -260,8 +268,13 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -335,7 +348,7 @@ index 74831679d50..f2235cae03e 100644
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
  		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
  
-@@ -362,6 +370,7 @@ src_install() {
+@@ -362,6 +375,7 @@ src_install() {
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
  	local clang_tools=( clang clang++ clang-cl clang-cpp )
@@ -343,7 +356,7 @@ index 74831679d50..f2235cae03e 100644
  	local abi i
  
  	# cmake gives us:
-@@ -390,6 +399,18 @@ src_install() {
+@@ -390,6 +404,18 @@ src_install() {
  		done
  	done
  
@@ -353,7 +366,7 @@ index 74831679d50..f2235cae03e 100644
 +			local abi_chost=$(get_abi_CHOST "${abi}")
 +			for i in "${gcc_tools[@]}"; do
 +				dosym "clang-${clang_version}" \
-+			"/usr/lib/llvm/${SLOT}/bin/${abi_chost}-${i}"
++			"/usr/lib/llvm/${SLOT%/*}/bin/${abi_chost}-${i}"
 +			done
 +		done
 +	fi
@@ -362,10 +375,10 @@ index 74831679d50..f2235cae03e 100644
  	# Remove unnecessary headers on FreeBSD, bug #417171
  	if use kernel_FreeBSD; then
  		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
-@@ -413,7 +434,7 @@ multilib_src_install_all() {
+@@ -413,7 +439,7 @@ multilib_src_install_all() {
  	fi
  
- 	docompress "/usr/lib/llvm/${SLOT}/share/man"
+ 	docompress "/usr/lib/llvm/${SLOT%/*}/share/man"
 -	llvm_install_manpages
 +	use doc && llvm_install_manpages
  	# match 'html' non-compression
@@ -396,15 +409,15 @@ index 9bd470297df..fd481026e27 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-11.0.1.ebuild b/sys-devel/llvm/llvm-11.0.1.ebuild
-index 3f27a9d16c4..e784899193d 100644
---- a/sys-devel/llvm/llvm-11.0.1.ebuild
-+++ b/sys-devel/llvm/llvm-11.0.1.ebuild
+diff --git a/sys-devel/llvm/llvm-11.1.0.ebuild b/sys-devel/llvm/llvm-11.1.0.ebuild
+index 3f27a9d16c4..3b156b27b8a 100644
+--- a/sys-devel/llvm/llvm-11.1.0.ebuild
++++ b/sys-devel/llvm/llvm-11.1.0.ebuild
 @@ -32,6 +32,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
  
-+IUSE="${IUSE} binutils-symlinks"
++IUSE="${IUSE} +flang binutils-symlinks"
 +
  RDEPEND="
  	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
@@ -441,7 +454,15 @@ index 3f27a9d16c4..e784899193d 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -503,7 +523,9 @@ multilib_src_install_all() {
+@@ -356,6 +376,7 @@ multilib_src_configure() {
+ 		-DLLVM_ENABLE_EH=ON
+ 		-DLLVM_ENABLE_RTTI=ON
+ 		-DLLVM_ENABLE_Z3_SOLVER=$(usex z3)
++		-DLLVM_ENABLE_CLASSIC_FLANG=$(usex flang)
+ 
+ 		-DLLVM_HOST_TRIPLE="${CHOST}"
+ 
+@@ -503,7 +524,9 @@ multilib_src_install_all() {
  	_EOF_
  
  	docompress "/usr/lib/llvm/${SLOT}/share/man"
