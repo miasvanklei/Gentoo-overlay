@@ -300,7 +300,7 @@ index f370fa8c0e7..b8e0a759a98 100644
  
  	if use usbredir; then
 diff --git a/sys-devel/clang/clang-11.1.0.ebuild b/sys-devel/clang/clang-11.1.0.ebuild
-index d27e969b8fd..b6548f5733b 100644
+index d27e969b8fd..85649901d88 100644
 --- a/sys-devel/clang/clang-11.1.0.ebuild
 +++ b/sys-devel/clang/clang-11.1.0.ebuild
 @@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -348,15 +348,22 @@ index d27e969b8fd..b6548f5733b 100644
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
  		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
  
-@@ -362,6 +375,7 @@ src_install() {
+@@ -362,8 +375,14 @@ src_install() {
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
  	local clang_tools=( clang clang++ clang-cl clang-cpp )
 +	local gcc_tools=( gcc g++ cpp )
  	local abi i
  
++	if use flang; then
++		clang_tools+=( flang )
++		gcc_tools+=( flang )
++	fi
++
  	# cmake gives us:
-@@ -390,6 +404,18 @@ src_install() {
+ 	# - clang-X
+ 	# - clang -> clang-X
+@@ -390,6 +409,18 @@ src_install() {
  		done
  	done
  
@@ -375,17 +382,17 @@ index d27e969b8fd..b6548f5733b 100644
  	# Remove unnecessary headers on FreeBSD, bug #417171
  	if use kernel_FreeBSD; then
  		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
-@@ -413,7 +439,7 @@ multilib_src_install_all() {
+@@ -413,7 +444,7 @@ multilib_src_install_all() {
  	fi
  
  	docompress "/usr/lib/llvm/${SLOT%/*}/share/man"
 -	llvm_install_manpages
-+	use doc && llvm_install_manpages
++	lvm_install_manpages
  	# match 'html' non-compression
  	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
  	# +x for some reason; TODO: investigate
 diff --git a/sys-devel/distcc/distcc-3.3.3-r2.ebuild b/sys-devel/distcc/distcc-3.3.3-r2.ebuild
-index b35b55c2ca0..9334ed4515b 100644
+index 73461688bb7..5bc4dde9325 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r2.ebuild
 +++ b/sys-devel/distcc/distcc-3.3.3-r2.ebuild
 @@ -73,6 +73,7 @@ src_configure() {
@@ -410,7 +417,7 @@ index 9bd470297df..fd481026e27 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-11.1.0.ebuild b/sys-devel/llvm/llvm-11.1.0.ebuild
-index 3f27a9d16c4..3b156b27b8a 100644
+index 3f27a9d16c4..fc0803b0aa9 100644
 --- a/sys-devel/llvm/llvm-11.1.0.ebuild
 +++ b/sys-devel/llvm/llvm-11.1.0.ebuild
 @@ -32,6 +32,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
@@ -462,17 +469,6 @@ index 3f27a9d16c4..3b156b27b8a 100644
  
  		-DLLVM_HOST_TRIPLE="${CHOST}"
  
-@@ -503,7 +524,9 @@ multilib_src_install_all() {
- 	_EOF_
- 
- 	docompress "/usr/lib/llvm/${SLOT}/share/man"
--	llvm_install_manpages
-+	if use doc; then
-+		llvm_install_manpages
-+	fi
- }
- 
- pkg_postinst() {
 diff --git a/sys-libs/liburing/liburing-0.7-r1.ebuild b/sys-libs/liburing/liburing-0.7-r1.ebuild
 index dc6b6076077..104a31b4f5d 100644
 --- a/sys-libs/liburing/liburing-0.7-r1.ebuild
