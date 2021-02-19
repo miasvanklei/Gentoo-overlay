@@ -80,26 +80,6 @@
      /// Create a new descriptor for the specified variable.
      /// \param Context     Variable scope.
      /// \param Name        Name of the variable.
-@@ -594,14 +614,16 @@
-         DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *File,
-         unsigned LineNo, DIType *Ty, bool IsLocalToUnit, bool isDefined = true,
-         DIExpression *Expr = nullptr, MDNode *Decl = nullptr,
--        MDTuple *TemplateParams = nullptr, uint32_t AlignInBits = 0);
-+        MDTuple *TemplateParams = nullptr,
-+        DINode::DIFlags Flags = DINode::FlagZero, uint32_t AlignInBits = 0);
- 
-     /// Identical to createGlobalVariable
-     /// except that the resulting DbgNode is temporary and meant to be RAUWed.
-     DIGlobalVariable *createTempGlobalVariableFwdDecl(
-         DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *File,
--        unsigned LineNo, DIType *Ty, bool IsLocalToUnit, MDNode *Decl = nullptr,
--        MDTuple *TemplateParams= nullptr, uint32_t AlignInBits = 0);
-+        unsigned LineNo, DIType *Ty, bool isLocalToUnit, MDNode *Decl = nullptr,
-+        MDTuple *TemplateParams = nullptr,
-+        DINode::DIFlags Flags = DINode::FlagZero, uint32_t AlignInBits = 0);
- 
-     /// Create a new descriptor for an auto variable.  This is a local variable
-     /// that is not a subprogram parameter.
 @@ -727,6 +749,17 @@
                                       StringRef Name, DIFile *File,
                                       unsigned LineNo);
@@ -432,90 +412,6 @@
  /// Type array for a subprogram.
  ///
  /// TODO: Fold the array of types in directly as operands.
-@@ -2695,12 +2950,14 @@
- 
-   bool IsLocalToUnit;
-   bool IsDefinition;
-+  DIFlags Flags;
- 
-   DIGlobalVariable(LLVMContext &C, StorageType Storage, unsigned Line,
--                   bool IsLocalToUnit, bool IsDefinition, uint32_t AlignInBits,
--                   ArrayRef<Metadata *> Ops)
-+                   bool IsLocalToUnit, bool IsDefinition, DIFlags Flags,
-+                   uint32_t AlignInBits, ArrayRef<Metadata *> Ops)
-       : DIVariable(C, DIGlobalVariableKind, Storage, Line, Ops, AlignInBits),
--        IsLocalToUnit(IsLocalToUnit), IsDefinition(IsDefinition) {}
-+        IsLocalToUnit(IsLocalToUnit), IsDefinition(IsDefinition),
-+        Flags(Flags) {}
-   ~DIGlobalVariable() = default;
- 
-   static DIGlobalVariable *
-@@ -2708,25 +2965,27 @@
-           StringRef LinkageName, DIFile *File, unsigned Line, DIType *Type,
-           bool IsLocalToUnit, bool IsDefinition,
-           DIDerivedType *StaticDataMemberDeclaration, MDTuple *TemplateParams,
--          uint32_t AlignInBits, StorageType Storage, bool ShouldCreate = true) {
-+          DIFlags Flags, uint32_t AlignInBits, StorageType Storage,
-+          bool ShouldCreate = true) {
-     return getImpl(Context, Scope, getCanonicalMDString(Context, Name),
-                    getCanonicalMDString(Context, LinkageName), File, Line, Type,
-                    IsLocalToUnit, IsDefinition, StaticDataMemberDeclaration,
--                   cast_or_null<Metadata>(TemplateParams), AlignInBits, Storage,
--                   ShouldCreate);
-+                   cast_or_null<Metadata>(TemplateParams), Flags, AlignInBits,
-+                   Storage, ShouldCreate);
-   }
-   static DIGlobalVariable *
-   getImpl(LLVMContext &Context, Metadata *Scope, MDString *Name,
-           MDString *LinkageName, Metadata *File, unsigned Line, Metadata *Type,
-           bool IsLocalToUnit, bool IsDefinition,
-           Metadata *StaticDataMemberDeclaration, Metadata *TemplateParams,
--          uint32_t AlignInBits, StorageType Storage, bool ShouldCreate = true);
-+          DIFlags Flags, uint32_t AlignInBits, StorageType Storage,
-+          bool ShouldCreate = true);
- 
-   TempDIGlobalVariable cloneImpl() const {
-     return getTemporary(getContext(), getScope(), getName(), getLinkageName(),
-                         getFile(), getLine(), getType(), isLocalToUnit(),
-                         isDefinition(), getStaticDataMemberDeclaration(),
--                        getTemplateParams(), getAlignInBits());
-+                        getTemplateParams(), getFlags(), getAlignInBits());
-   }
- 
- public:
-@@ -2735,24 +2994,28 @@
-                      DIFile *File, unsigned Line, DIType *Type,
-                      bool IsLocalToUnit, bool IsDefinition,
-                      DIDerivedType *StaticDataMemberDeclaration,
--                     MDTuple *TemplateParams, uint32_t AlignInBits),
-+                     MDTuple *TemplateParams, DIFlags Flags,
-+                     uint32_t AlignInBits),
-                     (Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
-                      IsDefinition, StaticDataMemberDeclaration, TemplateParams,
--                     AlignInBits))
-+                     Flags, AlignInBits))
-   DEFINE_MDNODE_GET(DIGlobalVariable,
-                     (Metadata * Scope, MDString *Name, MDString *LinkageName,
-                      Metadata *File, unsigned Line, Metadata *Type,
-                      bool IsLocalToUnit, bool IsDefinition,
-                      Metadata *StaticDataMemberDeclaration,
--                     Metadata *TemplateParams, uint32_t AlignInBits),
-+                     Metadata *TemplateParams, DIFlags Flags,
-+                     uint32_t AlignInBits),
-                     (Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
-                      IsDefinition, StaticDataMemberDeclaration, TemplateParams,
--                     AlignInBits))
-+                     Flags, AlignInBits))
- 
-   TempDIGlobalVariable clone() const { return cloneImpl(); }
- 
-   bool isLocalToUnit() const { return IsLocalToUnit; }
-   bool isDefinition() const { return IsDefinition; }
-+  DIFlags getFlags() const { return Flags; }
-+  bool isArtificial() const { return getFlags() & FlagArtificial; }
-   StringRef getDisplayName() const { return getStringOperand(4); }
-   StringRef getLinkageName() const { return getStringOperand(5); }
-   DIDerivedType *getStaticDataMemberDeclaration() const {
 --- a/llvm/include/llvm/IR/Metadata.def	2021-02-18 22:01:01.978290594 +0100
 +++ b/llvm/include/llvm/IR/Metadata.def	2021-02-18 22:01:32.532553660 +0100
 @@ -113,6 +113,9 @@
@@ -540,25 +436,6 @@
    LLVMDICommonBlockMetadataKind
  };
  typedef unsigned LLVMMetadataKind;
-@@ -1120,7 +1123,8 @@
-     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
-     size_t NameLen, const char *Linkage, size_t LinkLen, LLVMMetadataRef File,
-     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
--    LLVMMetadataRef Expr, LLVMMetadataRef Decl, uint32_t AlignInBits);
-+    LLVMMetadataRef Expr, LLVMMetadataRef Decl, LLVMDIFlags Flags,
-+    uint32_t AlignInBits);
- 
- /**
-  * Retrieves the \c DIVariable associated with this global variable expression.
-@@ -1212,7 +1216,7 @@
-     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
-     size_t NameLen, const char *Linkage, size_t LnkLen, LLVMMetadataRef File,
-     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
--    LLVMMetadataRef Decl, uint32_t AlignInBits);
-+    LLVMMetadataRef Decl, LLVMDIFlags Flags, uint32_t AlignInBits);
- 
- /**
-  * Insert a new llvm.dbg.declare intrinsic call before the given instruction.
 --- a/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-02-18 22:01:01.997290757 +0100
 +++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-02-18 22:01:32.533553669 +0100
 @@ -27,7 +27,9 @@
@@ -1159,16 +1036,6 @@
    PARSE_MD_FIELDS();
  #undef VISIT_MD_FIELDS
  
-@@ -5009,7 +5093,8 @@
-       GET_OR_DISTINCT(DIGlobalVariable,
-                       (Context, scope.Val, name.Val, linkageName.Val, file.Val,
-                        line.Val, type.Val, isLocal.Val, isDefinition.Val,
--                       declaration.Val, templateParams.Val, align.Val));
-+                       declaration.Val, templateParams.Val, flags.Val,
-+                       align.Val));
-   return false;
- }
- 
 --- a/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-02-18 22:01:02.004290818 +0100
 +++ b/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-02-18 22:01:32.534553678 +0100
 @@ -851,10 +851,13 @@
@@ -1266,63 +1133,6 @@
    case bitc::METADATA_SUBROUTINE_TYPE: {
      if (Record.size() < 3 || Record.size() > 4)
        return error("Invalid record");
-@@ -1729,20 +1792,34 @@
-     break;
-   }
-   case bitc::METADATA_GLOBAL_VAR: {
--    if (Record.size() < 11 || Record.size() > 13)
-+    if (Record.size() < 11 || Record.size() > 14)
-       return error("Invalid record");
- 
-     IsDistinct = Record[0] & 1;
-     unsigned Version = Record[0] >> 1;
- 
--    if (Version == 2) {
-+    if (Version == 3) {
-+      // Add support for DIFlags
-+      MetadataList.assignValue(
-+          GET_OR_DISTINCT(
-+              DIGlobalVariable,
-+              (Context, getMDOrNull(Record[1]), getMDString(Record[2]),
-+               getMDString(Record[3]), getMDOrNull(Record[4]), Record[5],
-+               getDITypeRefOrNull(Record[6]), Record[7], Record[8],
-+               getMDOrNull(Record[9]), getMDOrNull(Record[10]),
-+               static_cast<DINode::DIFlags>(Record[11]), Record[12])),
-+          NextMetadataNo);
-+
-+      NextMetadataNo++;
-+    } else if (Version == 2) {
-       MetadataList.assignValue(
-           GET_OR_DISTINCT(
-               DIGlobalVariable,
-               (Context, getMDOrNull(Record[1]), getMDString(Record[2]),
-                getMDString(Record[3]), getMDOrNull(Record[4]), Record[5],
-                getDITypeRefOrNull(Record[6]), Record[7], Record[8],
--               getMDOrNull(Record[9]), getMDOrNull(Record[10]), Record[11])),
-+               getMDOrNull(Record[9]), getMDOrNull(Record[10]),
-+               DINode::FlagZero, Record[11])),
-           NextMetadataNo);
- 
-       NextMetadataNo++;
-@@ -1755,7 +1832,8 @@
-                            getMDString(Record[2]), getMDString(Record[3]),
-                            getMDOrNull(Record[4]), Record[5],
-                            getDITypeRefOrNull(Record[6]), Record[7], Record[8],
--                           getMDOrNull(Record[10]), nullptr, Record[11])),
-+                           getMDOrNull(Record[10]), nullptr, DINode::FlagZero,
-+                           Record[11])),
-           NextMetadataNo);
- 
-       NextMetadataNo++;
-@@ -1788,7 +1866,7 @@
-           (Context, getMDOrNull(Record[1]), getMDString(Record[2]),
-            getMDString(Record[3]), getMDOrNull(Record[4]), Record[5],
-            getDITypeRefOrNull(Record[6]), Record[7], Record[8],
--           getMDOrNull(Record[10]), nullptr, AlignInBits));
-+           getMDOrNull(Record[10]), nullptr, DINode::FlagZero, AlignInBits));
- 
-       DIGlobalVariableExpression *DGVE = nullptr;
-       if (Attach || Expr)
 --- a/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-02-18 22:01:02.003290809 +0100
 +++ b/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-02-18 22:01:32.535553686 +0100
 @@ -296,14 +296,22 @@
@@ -1421,23 +1231,6 @@
  void ModuleBitcodeWriter::writeDISubroutineType(
      const DISubroutineType *N, SmallVectorImpl<uint64_t> &Record,
      unsigned Abbrev) {
-@@ -1847,7 +1907,7 @@
- void ModuleBitcodeWriter::writeDIGlobalVariable(
-     const DIGlobalVariable *N, SmallVectorImpl<uint64_t> &Record,
-     unsigned Abbrev) {
--  const uint64_t Version = 2 << 1;
-+  const uint64_t Version = 3 << 1;
-   Record.push_back((uint64_t)N->isDistinct() | Version);
-   Record.push_back(VE.getMetadataOrNullID(N->getScope()));
-   Record.push_back(VE.getMetadataOrNullID(N->getRawName()));
-@@ -1859,6 +1919,7 @@
-   Record.push_back(N->isDefinition());
-   Record.push_back(VE.getMetadataOrNullID(N->getStaticDataMemberDeclaration()));
-   Record.push_back(VE.getMetadataOrNullID(N->getTemplateParams()));
-+  Record.push_back(N->getFlags());
-   Record.push_back(N->getAlignInBits());
- 
-   Stream.EmitRecord(bitc::METADATA_GLOBAL_VAR, Record, Abbrev);
 --- a/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-02-18 22:01:02.012290887 +0100
 +++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-02-18 22:01:32.535553686 +0100
 @@ -178,6 +178,9 @@
@@ -1506,16 +1299,6 @@
      if (GTy)
        addType(*VariableDIE, GTy);
  
-@@ -172,6 +173,9 @@
-   else
-     addGlobalName(GV->getName(), *VariableDIE, DeclContext);
- 
-+  if (GV->isArtificial())
-+    addFlag(*VariableDIE, dwarf::DW_AT_artificial);
-+
-   if (uint32_t AlignInBytes = GV->getAlignInBytes())
-     addUInt(*VariableDIE, dwarf::DW_AT_alignment, dwarf::DW_FORM_udata,
-             AlignInBytes);
 @@ -186,7 +190,12 @@
  }
  
@@ -2171,7 +1954,7 @@
  static void writeDIDerivedType(raw_ostream &Out, const DIDerivedType *N,
                                 TypePrinting *TypePrinter, SlotTracker *Machine,
                                 const Module *Context) {
-@@ -1965,6 +2000,25 @@
+@@ -1965,6 +2000,24 @@
    Out << ")";
  }
  
@@ -2189,7 +1972,6 @@
 +  Printer.printInt("size", N->getSizeInBits());
 +  Printer.printInt("align", N->getAlignInBits());
 +  Printer.printInt("offset", N->getOffsetInBits());
-+  Printer.printDIFlags("flags", N->getFlags());
 +  Printer.printMetadata("elements", N->getRawElements());
 +  Out << ")";
 +}
@@ -2197,14 +1979,6 @@
  static void writeDISubroutineType(raw_ostream &Out, const DISubroutineType *N,
                                    TypePrinting *TypePrinter,
                                    SlotTracker *Machine, const Module *Context) {
-@@ -2184,6 +2238,7 @@
-   Printer.printBool("isDefinition", N->isDefinition());
-   Printer.printMetadata("declaration", N->getRawStaticDataMemberDeclaration());
-   Printer.printMetadata("templateParams", N->getRawTemplateParams());
-+  Printer.printDIFlags("flags", N->getFlags());
-   Printer.printInt("align", N->getAlignInBits());
-   Out << ")";
- }
 --- a/llvm/lib/IR/DIBuilder.cpp	2021-02-18 22:01:02.018290938 +0100
 +++ b/llvm/lib/IR/DIBuilder.cpp	2021-02-18 22:01:32.538553712 +0100
 @@ -267,6 +267,12 @@
@@ -2249,76 +2023,6 @@
  static void checkGlobalVariableScope(DIScope *Context) {
  #ifndef NDEBUG
    if (auto *CT =
-@@ -655,14 +676,15 @@
- DIGlobalVariableExpression *DIBuilder::createGlobalVariableExpression(
-     DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *F,
-     unsigned LineNumber, DIType *Ty, bool IsLocalToUnit,
--    bool isDefined, DIExpression *Expr,
--    MDNode *Decl, MDTuple *TemplateParams, uint32_t AlignInBits) {
-+    bool IsDefined, DIExpression *Expr,
-+    MDNode *Decl, MDTuple *TemplateParams, DINode::DIFlags Flags,
-+    uint32_t AlignInBits) {
-   checkGlobalVariableScope(Context);
- 
-   auto *GV = DIGlobalVariable::getDistinct(
-       VMContext, cast_or_null<DIScope>(Context), Name, LinkageName, F,
--      LineNumber, Ty, IsLocalToUnit, isDefined, cast_or_null<DIDerivedType>(Decl),
--      TemplateParams, AlignInBits);
-+      LineNumber, Ty, IsLocalToUnit, IsDefined, cast_or_null<DIDerivedType>(Decl),
-+      TemplateParams, Flags, AlignInBits);
-   if (!Expr)
-     Expr = createExpression();
-   auto *N = DIGlobalVariableExpression::get(VMContext, GV, Expr);
-@@ -673,13 +695,14 @@
- DIGlobalVariable *DIBuilder::createTempGlobalVariableFwdDecl(
-     DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *F,
-     unsigned LineNumber, DIType *Ty, bool IsLocalToUnit, MDNode *Decl,
--    MDTuple *TemplateParams, uint32_t AlignInBits) {
-+    MDTuple *TemplateParams, DINode::DIFlags Flags, uint32_t AlignInBits) {
-   checkGlobalVariableScope(Context);
- 
-   return DIGlobalVariable::getTemporary(
-              VMContext, cast_or_null<DIScope>(Context), Name, LinkageName, F,
-              LineNumber, Ty, IsLocalToUnit, false,
--             cast_or_null<DIDerivedType>(Decl), TemplateParams, AlignInBits)
-+             cast_or_null<DIDerivedType>(Decl), TemplateParams, Flags,
-+             AlignInBits)
-       .release();
- }
- 
---- a/llvm/lib/IR/DebugInfo.cpp	2021-02-18 22:01:02.016290921 +0100
-+++ b/llvm/lib/IR/DebugInfo.cpp	2021-02-18 22:01:32.538553712 +0100
-@@ -1292,12 +1292,13 @@
-     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
-     size_t NameLen, const char *Linkage, size_t LinkLen, LLVMMetadataRef File,
-     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
--    LLVMMetadataRef Expr, LLVMMetadataRef Decl, uint32_t AlignInBits) {
-+    LLVMMetadataRef Expr, LLVMMetadataRef Decl, LLVMDIFlags Flags,
-+    uint32_t AlignInBits) {
-   return wrap(unwrap(Builder)->createGlobalVariableExpression(
-       unwrapDI<DIScope>(Scope), {Name, NameLen}, {Linkage, LinkLen},
-       unwrapDI<DIFile>(File), LineNo, unwrapDI<DIType>(Ty), LocalToUnit,
-       true, unwrap<DIExpression>(Expr), unwrapDI<MDNode>(Decl),
--      nullptr, AlignInBits));
-+      nullptr, map_from_llvmDIFlags(Flags), AlignInBits));
- }
- 
- LLVMMetadataRef LLVMDIGlobalVariableExpressionGetVariable(LLVMMetadataRef GVE) {
-@@ -1342,11 +1343,12 @@
-     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
-     size_t NameLen, const char *Linkage, size_t LnkLen, LLVMMetadataRef File,
-     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
--    LLVMMetadataRef Decl, uint32_t AlignInBits) {
-+    LLVMMetadataRef Decl, LLVMDIFlags Flags, uint32_t AlignInBits) {
-   return wrap(unwrap(Builder)->createTempGlobalVariableFwdDecl(
-       unwrapDI<DIScope>(Scope), {Name, NameLen}, {Linkage, LnkLen},
-       unwrapDI<DIFile>(File), LineNo, unwrapDI<DIType>(Ty), LocalToUnit,
--      unwrapDI<MDNode>(Decl), nullptr, AlignInBits));
-+      unwrapDI<MDNode>(Decl), nullptr, map_from_llvmDIFlags(Flags),
-+      AlignInBits));
- }
- 
- LLVMValueRef
 --- a/llvm/lib/IR/DebugInfoMetadata.cpp	2021-02-18 22:01:02.016290921 +0100
 +++ b/llvm/lib/IR/DebugInfoMetadata.cpp	2021-02-18 22:01:32.538553712 +0100
 @@ -435,6 +435,15 @@
@@ -2382,35 +2086,6 @@
  DICompositeType *DICompositeType::getImpl(
      LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
      unsigned Line, Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
-@@ -863,14 +903,15 @@
-                           MDString *LinkageName, Metadata *File, unsigned Line,
-                           Metadata *Type, bool IsLocalToUnit, bool IsDefinition,
-                           Metadata *StaticDataMemberDeclaration,
--                          Metadata *TemplateParams, uint32_t AlignInBits,
--                          StorageType Storage, bool ShouldCreate) {
-+                          Metadata *TemplateParams, DIFlags Flags,
-+                          uint32_t AlignInBits, StorageType Storage,
-+                          bool ShouldCreate) {
-   assert(isCanonical(Name) && "Expected canonical MDString");
-   assert(isCanonical(LinkageName) && "Expected canonical MDString");
-   DEFINE_GETIMPL_LOOKUP(DIGlobalVariable, (Scope, Name, LinkageName, File, Line,
-                                            Type, IsLocalToUnit, IsDefinition,
-                                            StaticDataMemberDeclaration,
--                                           TemplateParams, AlignInBits));
-+                                           TemplateParams, Flags, AlignInBits));
-   Metadata *Ops[] = {Scope,
-                      Name,
-                      File,
-@@ -880,7 +921,8 @@
-                      StaticDataMemberDeclaration,
-                      TemplateParams};
-   DEFINE_GETIMPL_STORE(DIGlobalVariable,
--                       (Line, IsLocalToUnit, IsDefinition, AlignInBits), Ops);
-+                       (Line, IsLocalToUnit, IsDefinition, Flags, AlignInBits),
-+                       Ops);
- }
- 
- DILocalVariable *DILocalVariable::getImpl(LLVMContext &Context, Metadata *Scope,
 --- a/llvm/lib/IR/LLVMContextImpl.h	2021-02-18 22:01:02.018290938 +0100
 +++ b/llvm/lib/IR/LLVMContextImpl.h	2021-02-18 22:01:32.539553720 +0100
 @@ -366,6 +366,42 @@
@@ -2549,54 +2224,6 @@
  template <> struct MDNodeKeyImpl<DISubroutineType> {
    unsigned Flags;
    uint8_t CC;
-@@ -922,25 +1037,27 @@
-   bool IsDefinition;
-   Metadata *StaticDataMemberDeclaration;
-   Metadata *TemplateParams;
-+  unsigned Flags;
-   uint32_t AlignInBits;
- 
-   MDNodeKeyImpl(Metadata *Scope, MDString *Name, MDString *LinkageName,
-                 Metadata *File, unsigned Line, Metadata *Type,
-                 bool IsLocalToUnit, bool IsDefinition,
-                 Metadata *StaticDataMemberDeclaration, Metadata *TemplateParams,
--                uint32_t AlignInBits)
-+                unsigned Flags, uint32_t AlignInBits)
-       : Scope(Scope), Name(Name), LinkageName(LinkageName), File(File),
-         Line(Line), Type(Type), IsLocalToUnit(IsLocalToUnit),
-         IsDefinition(IsDefinition),
-         StaticDataMemberDeclaration(StaticDataMemberDeclaration),
--        TemplateParams(TemplateParams), AlignInBits(AlignInBits) {}
-+        TemplateParams(TemplateParams), Flags(Flags),
-+        AlignInBits(AlignInBits) {}
-   MDNodeKeyImpl(const DIGlobalVariable *N)
-       : Scope(N->getRawScope()), Name(N->getRawName()),
-         LinkageName(N->getRawLinkageName()), File(N->getRawFile()),
-         Line(N->getLine()), Type(N->getRawType()),
-         IsLocalToUnit(N->isLocalToUnit()), IsDefinition(N->isDefinition()),
-         StaticDataMemberDeclaration(N->getRawStaticDataMemberDeclaration()),
--        TemplateParams(N->getRawTemplateParams()),
-+        TemplateParams(N->getRawTemplateParams()), Flags(N->getFlags()),
-         AlignInBits(N->getAlignInBits()) {}
- 
-   bool isKeyOf(const DIGlobalVariable *RHS) const {
-@@ -952,6 +1069,7 @@
-            StaticDataMemberDeclaration ==
-                RHS->getRawStaticDataMemberDeclaration() &&
-            TemplateParams == RHS->getRawTemplateParams() &&
-+           Flags == RHS->getFlags() &&
-            AlignInBits == RHS->getAlignInBits();
-   }
- 
-@@ -965,7 +1083,7 @@
-     // TODO: make hashing work fine with such situations
-     return hash_combine(Scope, Name, LinkageName, File, Line, Type,
-                         IsLocalToUnit, IsDefinition, /* AlignInBits, */
--                        StaticDataMemberDeclaration);
-+                        StaticDataMemberDeclaration, Flags);
-   }
- };
- 
 --- a/llvm/lib/IR/Verifier.cpp	2021-02-18 22:01:02.017290930 +0100
 +++ b/llvm/lib/IR/Verifier.cpp	2021-02-18 22:01:32.539553720 +0100
 @@ -920,6 +920,14 @@
@@ -2649,15 +2276,6 @@
  void Verifier::visitDISubroutineType(const DISubroutineType &N) {
    AssertDI(N.getTag() == dwarf::DW_TAG_subroutine_type, "invalid tag", &N);
    if (auto *Types = N.getRawTypeArray()) {
-@@ -1278,6 +1307,8 @@
-   visitDIVariable(N);
- 
-   AssertDI(N.getTag() == dwarf::DW_TAG_variable, "invalid tag", &N);
-+  AssertDI(!N.getName().empty() || N.isArtificial(),
-+           "missing global variable name", &N);
-   AssertDI(isType(N.getRawType()), "invalid type ref", &N, N.getRawType());
-   // Assert only if the global variable is not an extern
-   if (N.isDefinition())
 --- a/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-02-18 22:01:02.158292143 +0100
 +++ b/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-02-18 22:01:32.540553729 +0100
 @@ -5200,8 +5200,10 @@
@@ -2673,137 +2291,3 @@
          continue;
  
        // Examine PHI nodes that are reduction variables. Update the type to
---- a/llvm/tools/llvm-c-test/debuginfo.c	2021-02-18 22:01:03.438303164 +0100
-+++ b/llvm/tools/llvm-c-test/debuginfo.c	2021-02-18 22:01:32.540553729 +0100
-@@ -64,7 +64,7 @@
-       LLVMDIBuilderCreateConstantValueExpression(DIB, 0);
-   LLVMDIBuilderCreateGlobalVariableExpression(
-       DIB, Module, "globalClass", 11, "", 0, File, 1, ClassTy, true,
--      GlobalClassValueExpr, NULL, 0);
-+      GlobalClassValueExpr, NULL, LLVMDIFlagZero, 0);
- 
-   LLVMMetadataRef Int64Ty =
-       LLVMDIBuilderCreateBasicType(DIB, "Int64", 5, 64, 0, LLVMDIFlagZero);
-@@ -75,7 +75,7 @@
-       LLVMDIBuilderCreateConstantValueExpression(DIB, 0);
-   LLVMDIBuilderCreateGlobalVariableExpression(
-       DIB, Module, "global", 6, "", 0, File, 1, Int64TypeDef, true,
--      GlobalVarValueExpr, NULL, 0);
-+      GlobalVarValueExpr, NULL, LLVMDIFlagZero, 0);
- 
-   LLVMMetadataRef NameSpace =
-       LLVMDIBuilderCreateNameSpace(DIB, Module, "NameSpace", 9, false);
---- a/llvm/unittests/IR/MetadataTest.cpp	2021-02-18 22:01:03.455303310 +0100
-+++ b/llvm/unittests/IR/MetadataTest.cpp	2021-02-18 22:01:32.541553738 +0100
-@@ -2372,11 +2372,13 @@
-   DIDerivedType *StaticDataMemberDeclaration =
-       cast<DIDerivedType>(getDerivedType());
- 
-+  DINode::DIFlags Flags = static_cast<DINode::DIFlags>(7);
-   uint32_t AlignInBits = 8;
- 
-   auto *N = DIGlobalVariable::get(
-       Context, Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
--      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
-+      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
-+      AlignInBits);
- 
-   EXPECT_EQ(dwarf::DW_TAG_variable, N->getTag());
-   EXPECT_EQ(Scope, N->getScope());
-@@ -2389,56 +2391,65 @@
-   EXPECT_EQ(IsDefinition, N->isDefinition());
-   EXPECT_EQ(StaticDataMemberDeclaration, N->getStaticDataMemberDeclaration());
-   EXPECT_EQ(templateParams, N->getTemplateParams());
-+  EXPECT_EQ(Flags, N->getFlags());
-   EXPECT_EQ(AlignInBits, N->getAlignInBits());
-   EXPECT_EQ(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
- 
-   EXPECT_NE(N, DIGlobalVariable::get(
-                    Context, getSubprogram(), Name, LinkageName, File, Line,
-                    Type, IsLocalToUnit, IsDefinition,
--                   StaticDataMemberDeclaration, templateParams, AlignInBits));
-+                   StaticDataMemberDeclaration, templateParams, Flags,
-+                   AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, "other", LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, "other", File, Line,
-                                      Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName,
-                                      getFile(), Line, Type, IsLocalToUnit,
-                                      IsDefinition, StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line + 1, Type, IsLocalToUnit,
-                                      IsDefinition, StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, getDerivedType(), IsLocalToUnit,
-                                      IsDefinition, StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, !IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, !IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      cast<DIDerivedType>(getDerivedType()),
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration, nullptr,
-+                                     Flags, AlignInBits));
-+  EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-+                                     Line, Type, IsLocalToUnit, IsDefinition,
-+                                     StaticDataMemberDeclaration,
-+                                     templateParams,
-+                                     static_cast<DINode::DIFlags>(Flags + 1),
-                                      AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, (AlignInBits << 1)));
-+                                     templateParams, Flags,
-+                                     (AlignInBits << 1)));
- 
-   TempDIGlobalVariable Temp = N->clone();
-   EXPECT_EQ(N, MDNode::replaceWithUniqued(std::move(Temp)));
-@@ -2460,14 +2471,17 @@
-   auto *Expr2 = DIExpression::get(Context, {1, 2, 3});
-   DIDerivedType *StaticDataMemberDeclaration =
-       cast<DIDerivedType>(getDerivedType());
-+  DINode::DIFlags Flags = static_cast<DINode::DIFlags>(7);
-   uint32_t AlignInBits = 8;
- 
-   auto *Var = DIGlobalVariable::get(
-       Context, Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
--      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
-+      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
-+      AlignInBits);
-   auto *Var2 = DIGlobalVariable::get(
-       Context, Scope, "other", LinkageName, File, Line, Type, IsLocalToUnit,
--      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
-+      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
-+      AlignInBits);
-   auto *N = DIGlobalVariableExpression::get(Context, Var, Expr);
- 
-   EXPECT_EQ(Var, N->getVariable());
