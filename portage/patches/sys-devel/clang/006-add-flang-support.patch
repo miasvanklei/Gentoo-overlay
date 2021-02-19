@@ -1,0 +1,2139 @@
+--- a/clang/include/clang/Basic/CodeGenOptions.def	2021-02-18 21:25:16.438036572 +0100
++++ b/clang/include/clang/Basic/CodeGenOptions.def	2021-02-18 21:34:43.195809515 +0100
+@@ -337,7 +337,7 @@
+ ENUM_CODEGENOPT(Inlining, InliningMethod, 2, NormalInlining)
+ 
+ // Vector functions library to use.
+-ENUM_CODEGENOPT(VecLib, VectorLibrary, 2, NoLibrary)
++ENUM_CODEGENOPT(VecLib, VectorLibrary, 3, NoLibrary)
+ 
+ /// The default TLS model to use.
+ ENUM_CODEGENOPT(DefaultTLSModel, TLSModel, 2, GeneralDynamicTLSModel)
+--- a/clang/include/clang/Basic/CodeGenOptions.h	2021-02-18 21:25:16.439036581 +0100
++++ b/clang/include/clang/Basic/CodeGenOptions.h	2021-02-18 21:42:15.913632288 +0100
+@@ -55,6 +55,9 @@
+     NoLibrary,  // Don't use any vector library.
+     Accelerate, // Use the Accelerate framework.
+     MASSV,      // IBM MASS vector library.
++#ifdef ENABLE_CLASSIC_FLANG
++    PGMATH,     // PGI math library.
++#endif
+     SVML        // Intel short vector math library.
+   };
+ 
+--- a/clang/include/clang/Basic/DiagnosticDriverKinds.td	2021-02-18 21:25:16.439036581 +0100
++++ b/clang/include/clang/Basic/DiagnosticDriverKinds.td	2021-02-18 21:34:43.195809515 +0100
+@@ -81,6 +81,10 @@
+   "invalid PGO instrumentor in argument '%0'">;
+ def err_drv_invalid_rtlib_name : Error<
+   "invalid runtime library name in argument '%0'">;
++def err_drv_invalid_allocatable_mode : Error<
++  "invalid semantic mode for assignments to allocatables in argument '%0'">;
++def err_drv_unsupported_fixed_line_length : Error<
++  "unsupported fixed-format line length in argument '%0'">;
+ def err_drv_unsupported_rtlib_for_platform : Error<
+   "unsupported runtime library '%0' for platform '%1'">;
+ def err_drv_invalid_unwindlib_name : Error<
+@@ -264,6 +268,8 @@
+     : Error<"%0 is not supported with -fembed-bitcode">;
+ def err_drv_bitcode_unsupported_on_toolchain : Error<
+   "-fembed-bitcode is not supported on versions of iOS prior to 6.0">;
++def err_drv_clang_unsupported_minfo_arg : Error<
++  "'%0' option does not support '%1' value">;
+ 
+ def err_drv_invalid_malign_branch_EQ : Error<
+   "invalid argument '%0' to -malign-branch=; each element must be one of: %1">;
+--- a/clang/include/clang/Basic/MacroBuilder.h	2021-02-18 21:25:16.439036581 +0100
++++ b/clang/include/clang/Basic/MacroBuilder.h	2021-02-18 21:34:43.195809515 +0100
+@@ -24,9 +24,10 @@
+   raw_ostream &Out;
+ public:
+   MacroBuilder(raw_ostream &Output) : Out(Output) {}
++  virtual ~MacroBuilder() {}
+ 
+   /// Append a \#define line for macro of the form "\#define Name Value\n".
+-  void defineMacro(const Twine &Name, const Twine &Value = "1") {
++  virtual void defineMacro(const Twine &Name, const Twine &Value = "1") {
+     Out << "#define " << Name << ' ' << Value << '\n';
+   }
+ 
+--- a/clang/include/clang/Basic/Sanitizers.def	2021-02-18 21:25:16.439036581 +0100
++++ b/clang/include/clang/Basic/Sanitizers.def	2021-02-18 21:34:43.195809515 +0100
+@@ -104,6 +104,8 @@
+ SANITIZER("unreachable", Unreachable)
+ SANITIZER("vla-bound", VLABound)
+ SANITIZER("vptr", Vptr)
++// fortran contiguous pointer checks
++SANITIZER("discontiguous", Discontiguous)
+ 
+ // IntegerSanitizer
+ SANITIZER("unsigned-integer-overflow", UnsignedIntegerOverflow)
+--- a/clang/include/clang/Driver/Options.td	2021-02-18 21:25:16.434036537 +0100
++++ b/clang/include/clang/Driver/Options.td	2021-02-18 21:42:45.983888314 +0100
+@@ -282,7 +282,7 @@
+   Flags<[DriverOption, HelpHidden]>;
+ def driver_mode : Joined<["--"], "driver-mode=">, Group<internal_driver_Group>,
+   Flags<[CoreOption, DriverOption, HelpHidden]>,
+-  HelpText<"Set the driver mode to either 'gcc', 'g++', 'cpp', or 'cl'">;
++  HelpText<"Set the driver mode to either 'gcc', 'g++', 'cpp', 'cl', or 'fortran'">;
+ def rsp_quoting : Joined<["--"], "rsp-quoting=">, Group<internal_driver_Group>,
+   Flags<[CoreOption, DriverOption, HelpHidden]>,
+   HelpText<"Set the rsp quoting to either 'posix', or 'windows'">;
+@@ -1534,8 +1534,13 @@
+ def fno_experimental_new_pass_manager : Flag<["-"], "fno-experimental-new-pass-manager">,
+   Group<f_clang_Group>, Flags<[CC1Option]>,
+   HelpText<"Disables an experimental new pass manager in LLVM.">;
++#ifdef ENABLE_CLASSIC_FLANG
++def fveclib : Joined<["-"], "fveclib=">, Group<f_Group>, Flags<[CC1Option]>,
++    HelpText<"Use the given vector functions library">, Values<"Accelerate,MASSV,PGMATH,SVML,none">;
++#else
+ def fveclib : Joined<["-"], "fveclib=">, Group<f_Group>, Flags<[CC1Option]>,
+     HelpText<"Use the given vector functions library">, Values<"Accelerate,MASSV,SVML,none">;
++#endif
+ def fno_lax_vector_conversions : Flag<["-"], "fno-lax-vector-conversions">, Group<f_Group>,
+   Alias<flax_vector_conversions_EQ>, AliasArgs<["none"]>;
+ def fno_merge_all_constants : Flag<["-"], "fno-merge-all-constants">, Group<f_Group>,
+@@ -3365,11 +3370,19 @@
+ defm devirtualize_speculatively : BooleanFFlag<"devirtualize-speculatively">,
+     Group<clang_ignored_gcc_optimization_f_Group>;
+ 
++// gfortran options that we recognize in the driver and pass along when
++// invoking GCC to compile Fortran code.
++def flang_rt_Group : OptionGroup<"Flang runtime library Group">;
++def pgi_fortran_Group : OptionGroup<"PGI Fortran compatibility Group">,
++  Flags<[HelpHidden]>;
++
+ // Generic gfortran options.
+ def A_DASH : Joined<["-"], "A-">, Group<gfortran_Group>;
+ def J : JoinedOrSeparate<["-"], "J">, Flags<[RenderJoined]>, Group<gfortran_Group>;
+-def cpp : Flag<["-"], "cpp">, Group<gfortran_Group>;
+-def nocpp : Flag<["-"], "nocpp">, Group<gfortran_Group>;
++def cpp : Flag<["-"], "cpp">, Group<gfortran_Group>,
++  HelpText<"Preprocess Fortran files">;
++def nocpp : Flag<["-"], "nocpp">, Group<gfortran_Group>,
++  HelpText<"Don't preprocess Fortran files">;
+ def static_libgfortran : Flag<["-"], "static-libgfortran">, Group<gfortran_Group>;
+ 
+ // "f" options with values for gfortran.
+@@ -3377,7 +3390,8 @@
+ def fcheck_EQ : Joined<["-"], "fcheck=">, Group<gfortran_Group>;
+ def fcoarray_EQ : Joined<["-"], "fcoarray=">, Group<gfortran_Group>;
+ def fconvert_EQ : Joined<["-"], "fconvert=">, Group<gfortran_Group>;
+-def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<gfortran_Group>;
++def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<gfortran_Group>,
++  HelpText<"Set line length in fixed-form format Fortran, current supporting only 72 and 132 characters">;
+ def ffpe_trap_EQ : Joined<["-"], "ffpe-trap=">, Group<gfortran_Group>;
+ def ffree_line_length_VALUE : Joined<["-"], "ffree-line-length-">, Group<gfortran_Group>;
+ def finit_character_EQ : Joined<["-"], "finit-character=">, Group<gfortran_Group>;
+@@ -3390,12 +3404,17 @@
+ def fmax_subrecord_length_EQ : Joined<["-"], "fmax-subrecord-length=">, Group<gfortran_Group>;
+ def frecord_marker_EQ : Joined<["-"], "frecord-marker=">, Group<gfortran_Group>;
+ 
++// Define a group for Fortran source format
++def fortran_format_Group : OptionGroup<"Fortran format Group">, Group<gfortran_Group>;
+ // "f" flags for gfortran.
+ defm aggressive_function_elimination : BooleanFFlag<"aggressive-function-elimination">, Group<gfortran_Group>;
+ defm align_commons : BooleanFFlag<"align-commons">, Group<gfortran_Group>;
+ defm all_intrinsics : BooleanFFlag<"all-intrinsics">, Group<gfortran_Group>;
+ defm automatic : BooleanFFlag<"automatic">, Group<gfortran_Group>;
+-defm backslash : BooleanFFlag<"backslash">, Group<gfortran_Group>;
++def fbackslash: Flag<["-"], "fbackslash">, Group<gfortran_Group>,
++  HelpText<"Treat backslash as C-style escape character">;
++def fnobackslash: Flag<["-"], "fno-backslash">, Group<gfortran_Group>,
++  HelpText<"Treat backslash like any other character in character strings">;
+ defm backtrace : BooleanFFlag<"backtrace">, Group<gfortran_Group>;
+ defm bounds_check : BooleanFFlag<"bounds-check">, Group<gfortran_Group>;
+ defm check_array_temporaries : BooleanFFlag<"check-array-temporaries">, Group<gfortran_Group>;
+@@ -3403,17 +3422,27 @@
+ defm d_lines_as_code : BooleanFFlag<"d-lines-as-code">, Group<gfortran_Group>;
+ defm d_lines_as_comments : BooleanFFlag<"d-lines-as-comments">, Group<gfortran_Group>;
+ defm default_double_8 : BooleanFFlag<"default-double-8">, Group<gfortran_Group>;
+-defm default_integer_8 : BooleanFFlag<"default-integer-8">, Group<gfortran_Group>;
+-defm default_real_8 : BooleanFFlag<"default-real-8">, Group<gfortran_Group>;
++def default_integer_8_f : Flag<["-"], "fdefault-integer-8">, Group<gfortran_Group>,
++  HelpText<"Treat INTEGER and LOGICAL as INTEGER*8 and LOGICAL*8">;
++def default_integer_8_fno : Flag<["-"], "fno-default-integer-8">, Group<gfortran_Group>;
++def default_real_8_f : Flag<["-"], "fdefault-real-8">, Group<gfortran_Group>,
++  HelpText<"Treat REAL as REAL*8">;
++def default_real_8_fno : Flag<["-"], "fno-default-real-8">, Group<gfortran_Group>;
+ defm dollar_ok : BooleanFFlag<"dollar-ok">, Group<gfortran_Group>;
+ defm dump_fortran_optimized : BooleanFFlag<"dump-fortran-optimized">, Group<gfortran_Group>;
+ defm dump_fortran_original : BooleanFFlag<"dump-fortran-original">, Group<gfortran_Group>;
+ defm dump_parse_tree : BooleanFFlag<"dump-parse-tree">, Group<gfortran_Group>;
+ defm external_blas : BooleanFFlag<"external-blas">, Group<gfortran_Group>;
+ defm f2c : BooleanFFlag<"f2c">, Group<gfortran_Group>;
+-defm fixed_form : BooleanFFlag<"fixed-form">, Group<gfortran_Group>;
+-defm free_form : BooleanFFlag<"free-form">, Group<gfortran_Group>;
+-defm frontend_optimize : BooleanFFlag<"frontend-optimize">, Group<gfortran_Group>;
++def fixed_form_on : Flag<["-"], "ffixed-form">, Group<fortran_format_Group>,
++  HelpText<"Enable fixed-form format for Fortran">;
++def fixed_form_off : Flag<["-"], "fno-fixed-form">, Group<fortran_format_Group>,
++  HelpText<"Disable fixed-form format for Fortran">;
++def free_form_on : Flag<["-"], "ffree-form">, Group<fortran_format_Group>,
++  HelpText<"Enable free-form format for Fortran">;
++def free_form_off : Flag<["-"], "fno-free-form">, Group<fortran_format_Group>,
++  HelpText<"Disable free-form format for Fortran">;
++defm frontend_optimize : BooleanFFlag<"frontend-optimize">, Group<fortran_format_Group>;
+ defm implicit_none : BooleanFFlag<"implicit-none">, Group<gfortran_Group>;
+ defm init_local_zero : BooleanFFlag<"init-local-zero">, Group<gfortran_Group>;
+ defm integer_4_integer_8 : BooleanFFlag<"integer-4-integer-8">, Group<gfortran_Group>;
+@@ -4848,3 +4877,136 @@
+ def _SLASH_Zg : CLFlag<"Zg">;
+ def _SLASH_ZI : CLFlag<"ZI">;
+ def _SLASH_ZW : CLJoined<"ZW">;
++
++// Flang-specific options
++multiclass BooleanKFlag<string name> {
++  def _on : Flag<["-"], "K"#name>;
++  def _off : Flag<["-"], "Kno"#name>;
++}
++
++multiclass BooleanMFlag<string name> {
++  def _on : Flag<["-"], "M"#name>;
++  def _off : Flag<["-"], "Mno"#name>;
++}
++
++def Mfixed : Flag<["-"], "Mfixed">, Group<fortran_format_Group>,
++  HelpText<"Force fixed-form format Fortran">,
++  Flags<[HelpHidden]>;
++def Mfree_on: Flag<["-"], "Mfree">, Group<fortran_format_Group>,
++  HelpText<"Enable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
++def Mfree_off: Flag<["-"], "Mnofree">, Group<fortran_format_Group>,
++  HelpText<"Disable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
++def Mfreeform_on: Flag<["-"], "Mfreeform">, Group<fortran_format_Group>,
++  HelpText<"Enable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
++def Mfreeform_off: Flag<["-"], "Mnofreeform">, Group<fortran_format_Group>,
++  HelpText<"Disable free-form format for Fortran">,
++  Flags<[HelpHidden]>;
++
++def Minfo_EQ : CommaJoined<["-"], "Minfo=">,
++  HelpText<"Diagnostic information about successful optimizations">,
++  Values<"all,vect,inline">;
++def Minfoall : Flag<["-"], "Minfo">,
++  HelpText<"Diagnostic information about all successful optimizations">;
++def Mneginfo_EQ : CommaJoined<["-"], "Mneginfo=">,
++  HelpText<"Diagnostic information about missed optimizations">,
++  Values<"all,vect,inline">;
++def Mneginfoall : Flag<["-"], "Mneginfo">,
++  HelpText<"Diagnostic information about all missed optimizations">;
++
++def Mipa: Joined<["-"], "Mipa">, Group<pgi_fortran_Group>;
++def Mstackarrays: Joined<["-"], "Mstack_arrays">, Group<pgi_fortran_Group>;
++def pc: JoinedOrSeparate<["-"], "pc">, Group<pgi_fortran_Group>;
++def Mfprelaxed: Joined<["-"], "Mfprelaxed">, Group<pgi_fortran_Group>;
++def Mnofprelaxed: Joined<["-"], "Mnofprelaxed">, Group<pgi_fortran_Group>;
++defm Mstride0: BooleanMFlag<"stride0">, Group<pgi_fortran_Group>;
++defm Mrecursive: BooleanMFlag<"recursive">, Group<pgi_fortran_Group>;
++defm Mreentrant: BooleanMFlag<"reentrant">, Group<pgi_fortran_Group>;
++defm Mbounds: BooleanMFlag<"bounds">, Group<pgi_fortran_Group>;
++def Mdaz_on: Flag<["-"], "Mdaz">, Group<pgi_fortran_Group>,
++  HelpText<"Treat denormalized numbers as zero">;
++def Mdaz_off: Flag<["-"], "Mnodaz">, Group<pgi_fortran_Group>,
++  HelpText<"Disable treating denormalized numbers as zero">;
++def Kieee_on : Flag<["-"], "Kieee">, Group<pgi_fortran_Group>,
++  HelpText<"Enable IEEE division">;
++def Kieee_off : Flag<["-"], "Knoieee">, Group<pgi_fortran_Group>,
++  HelpText<"Disable IEEE division">;
++def Mextend : Flag<["-"], "Mextend">, Group<pgi_fortran_Group>,
++  HelpText<"Allow lines up to 132 characters in Fortran sources">;
++def Mpreprocess : Flag<["-"], "Mpreprocess">, Group<pgi_fortran_Group>,
++  HelpText<"Preprocess Fortran files">;
++def Mstandard: Flag<["-"], "Mstandard">, Group<pgi_fortran_Group>,
++  HelpText<"Check Fortran standard conformance">;
++def Mchkptr: Flag<["-"], "Mchkptr">, Group<pgi_fortran_Group>;
++def Mwritable_constants: Flag<["-"], "Mwritable-constants">, Group<pgi_fortran_Group>,
++  HelpText<"Store constants in the writable data segment">;
++defm Minline: BooleanMFlag<"inline">, Group<pgi_fortran_Group>;
++def fma: Flag<["-"], "fma">, Group<pgi_fortran_Group>,
++  HelpText<"Enable generation of FMA instructions">;
++def nofma: Flag<["-"], "nofma">, Group<pgi_fortran_Group>,
++  HelpText<"Disable generation of FMA instructions">;
++defm Mfma: BooleanMFlag<"fma">, Group<pgi_fortran_Group>,
++  HelpText<"Enable generation of FMA instructions">;
++def mp: Flag<["-"], "mp">, Group<pgi_fortran_Group>,
++  HelpText<"Enable OpenMP">;
++def nomp: Flag<["-"], "nomp">, Group<pgi_fortran_Group>,
++  HelpText<"Do not link with OpenMP library libomp">;
++def Mflushz_on: Flag<["-"], "Mflushz">, Group<pgi_fortran_Group>,
++  HelpText<"Set SSE to flush-to-zero mode">;
++def Mflushz_off: Flag<["-"], "Mnoflushz">, Group<pgi_fortran_Group>,
++  HelpText<"Disabling setting SSE to flush-to-zero mode">;
++def Msave_on: Flag<["-"], "Msave">, Group<pgi_fortran_Group>,
++  HelpText<"Assume all Fortran variables have SAVE attribute">;
++def Msave_off: Flag<["-"], "Mnosave">, Group<pgi_fortran_Group>,
++  HelpText<"Assume no Fortran variables have SAVE attribute">;
++def Mcache_align_on: Flag<["-"], "Mcache_align">, Group<pgi_fortran_Group>,
++  HelpText<"Align large objects on cache-line boundaries">;
++def Mcache_align_off: Flag<["-"], "Mnocache_align">, Group<pgi_fortran_Group>,
++  HelpText<"Disable aligning large objects on cache-line boundaries">;
++def ModuleDir : Separate<["-"], "module">, Group<pgi_fortran_Group>,
++  HelpText<"Fortran module path">;
++def Minform_EQ : Joined<["-"], "Minform=">,
++  HelpText<"Set error level of messages to display">;
++def Mallocatable_EQ : Joined<["-"], "Mallocatable=">,
++  HelpText<"Select semantics for assignments to allocatables (F03 or F95)">;
++def Mbyteswapio: Flag<["-"], "Mbyteswapio">, Group<pgi_fortran_Group>,
++  HelpText<"Swap byte-order for unformatted input/output">;
++def byteswapio: Flag<["-"], "byteswapio">, Group<gfortran_Group>,
++  HelpText<"Swap byte-order for unformatted input/output">;
++def Mbackslash: Flag<["-"], "Mbackslash">, Group<pgi_fortran_Group>,
++  HelpText<"Treat backslash like any other character in character strings">;
++def Mnobackslash: Flag<["-"], "Mnobackslash">, Group<pgi_fortran_Group>,
++  HelpText<"Treat backslash as C-style escape character">;
++def staticFlangLibs: Flag<["-"], "static-flang-libs">, Group<flang_rt_Group>,
++  HelpText<"Link using static Flang libraries">;
++def noFlangLibs: Flag<["-"], "no-flang-libs">, Group<flang_rt_Group>,
++  HelpText<"Do not link against Flang libraries">;
++def r8: Flag<["-"], "r8">, Group<pgi_fortran_Group>,
++  HelpText<"Treat REAL as REAL*8">;
++def i8: Flag<["-"], "i8">, Group<pgi_fortran_Group>,
++  HelpText<"Treat INTEGER and LOGICAL as INTEGER*8 and LOGICAL*8">;
++def no_fortran_main: Flag<["-"], "fno-fortran-main">, Group<gfortran_Group>,
++  HelpText<"Don't link in Fortran main">;
++def Mnomain: Flag<["-"], "Mnomain">, Group<pgi_fortran_Group>,
++  HelpText<"Don't link in Fortran main">;
++def frelaxed_math : Flag<["-"], "frelaxed-math">, Group<pgi_fortran_Group>,
++  HelpText<"Use relaxed Math intrinsic functions">;
++def Memit_dwarf_common_blocks_name: Flag<["-"], "Memit-dwarf-common-blocks-name">,
++  Group<pgi_fortran_Group>, HelpText<"Emit COMMON blocks name in DWARF">;
++def Munixlogical: Flag<["-"], "Munixlogical">, Group<pgi_fortran_Group>,
++  HelpText<"Use unixlogical for all loigical operations">;
++
++// Flang internal debug options
++def Mx_EQ : Joined<["-"], "Mx,">, Group<pgi_fortran_Group>;
++def My_EQ : Joined<["-"], "My,">, Group<pgi_fortran_Group>;
++def Hx_EQ : Joined<["-"], "Hx,">, Group<pgi_fortran_Group>;
++def Hy_EQ : Joined<["-"], "Hy,">, Group<pgi_fortran_Group>;
++def Wm_EQ : Joined<["-"], "Wm,">, Group<pgi_fortran_Group>;
++
++def Mq_EQ : Joined<["-"], "Mq,">, Group<pgi_fortran_Group>;
++def Hq_EQ : Joined<["-"], "Hq,">, Group<pgi_fortran_Group>;
++def Mqq_EQ : Joined<["-"], "Mqq,">, Group<pgi_fortran_Group>;
++def Hqq_EQ : Joined<["-"], "Hqq,">, Group<pgi_fortran_Group>;
++def Wh_EQ : Joined<["-"], "Wh,">, Group<pgi_fortran_Group>;
+--- a/clang/include/clang/Driver/ToolChain.h	2021-02-18 21:25:16.434036537 +0100
++++ b/clang/include/clang/Driver/ToolChain.h	2021-02-18 21:35:25.161160542 +0100
+@@ -639,6 +647,11 @@
+   virtual VersionTuple computeMSVCVersion(const Driver *D,
+                                           const llvm::opt::ArgList &Args) const;
+ 
++  /// AddFortranStdlibLibArgs - Add the system specific linker arguments to use
++  /// for the given Fortran runtime library type.
++  virtual void AddFortranStdlibLibArgs(const llvm::opt::ArgList &Args,
++                                       llvm::opt::ArgStringList &CmdArgs) const;
++
+   /// Return sanitizers which are available in this toolchain.
+   virtual SanitizerMask getSupportedSanitizers() const;
+ 
+--- a/clang/include/clang/Driver/Types.def	2021-02-18 21:25:16.434036537 +0100
++++ b/clang/include/clang/Driver/Types.def	2021-02-18 21:35:25.162160551 +0100
+@@ -71,8 +71,15 @@
+ TYPE("ada",                      Ada,          INVALID,         nullptr,  phases::Compile, phases::Backend, phases::Assemble, phases::Link)
+ TYPE("assembler",                PP_Asm,       INVALID,         "s",      phases::Assemble, phases::Link)
+ TYPE("assembler-with-cpp",       Asm,          PP_Asm,          "S",      phases::Preprocess, phases::Assemble, phases::Link)
++#ifdef ENABLE_CLASSIC_FLANG
++TYPE("f77",                      PP_F_FixedForm, INVALID,       "f",      phases::Compile, phases::Backend, phases::Assemble, phases::Link)
++TYPE("f77-cpp-input",            F_FixedForm,  PP_F_FixedForm,  "F",      phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
++TYPE("f95",                      PP_F_FreeForm, INVALID,        "f95",    phases::Compile, phases::Backend, phases::Assemble, phases::Link)
++TYPE("f95-cpp-input",            F_FreeForm,   PP_F_FreeForm,   "F95",    phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
++#else
+ TYPE("f95",                      PP_Fortran,   INVALID,         nullptr,  phases::Compile, phases::Backend, phases::Assemble, phases::Link)
+ TYPE("f95-cpp-input",            Fortran,      PP_Fortran,      nullptr,  phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
++#endif
+ TYPE("java",                     Java,         INVALID,         nullptr,  phases::Compile, phases::Backend, phases::Assemble, phases::Link)
+ 
+ // LLVM IR/LTO types. We define separate types for IR and LTO because LTO
+--- a/clang/include/clang/Driver/Types.h	2021-02-18 21:25:16.434036537 +0100
++++ b/clang/include/clang/Driver/Types.h	2021-02-18 21:34:43.196809523 +0100
+@@ -84,6 +84,14 @@
+   /// isFortran - Is this a Fortran input.
+   bool isFortran(ID Id);
+ 
++#ifdef ENABLE_CLASSIC_FLANG
++  /// isFreeFormFortran -- is it a free form layout Fortran input
++  bool isFreeFormFortran(ID Id);
++
++  /// isFixedFormFortran -- is it a fixed form layout Fortran input
++  bool isFixedFormFortran(ID Id);
++#endif
++
+   /// isSrcFile - Is this a source file, i.e. something that still has to be
+   /// preprocessed. The logic behind this is the same that decides if the first
+   /// compilation phase is a preprocessing one.
+--- a/clang/include/clang/Frontend/Utils.h	2021-02-18 21:25:16.433036529 +0100
++++ b/clang/include/clang/Frontend/Utils.h	2021-02-18 21:34:43.197809532 +0100
+@@ -17,6 +17,7 @@
+ #include "clang/Basic/LLVM.h"
+ #include "clang/Driver/OptionUtils.h"
+ #include "clang/Frontend/DependencyOutputOptions.h"
++#include "clang/Basic/TargetInfo.h"
+ #include "llvm/ADT/ArrayRef.h"
+ #include "llvm/ADT/IntrusiveRefCntPtr.h"
+ #include "llvm/ADT/StringMap.h"
+@@ -34,6 +35,7 @@
+ namespace llvm {
+ 
+ class Triple;
++class StringRef;
+ 
+ } // namespace llvm
+ 
+@@ -48,6 +50,7 @@
+ class HeaderSearch;
+ class HeaderSearchOptions;
+ class LangOptions;
++class MacroBuilder;
+ class PCHContainerReader;
+ class Preprocessor;
+ class PreprocessorOptions;
+@@ -69,6 +72,29 @@
+ void DoPrintPreprocessedInput(Preprocessor &PP, raw_ostream *OS,
+                               const PreprocessorOutputOptions &Opts);
+ 
++/// DefineTypeSize - Emit a macro to the predefines buffer that declares a macro
++/// named MacroName with the max value for a type with width 'TypeWidth' a
++/// signedness of 'isSigned' and with a value suffix of 'ValSuffix' (e.g. LL).
++template<typename T>
++static void DefineTypeSize(const Twine &MacroName, unsigned TypeWidth,
++                           StringRef ValSuffix, bool isSigned,
++                           T &Builder) {
++  static_assert(std::is_base_of<MacroBuilder, T>::value, "Illegal T value");
++  llvm::APInt MaxVal = isSigned ? llvm::APInt::getSignedMaxValue(TypeWidth)
++                                : llvm::APInt::getMaxValue(TypeWidth);
++  Builder.defineMacro(MacroName, MaxVal.toString(10, isSigned) + ValSuffix);
++}
++
++/// DefineTypeSize - An overloaded helper that uses TargetInfo to determine
++/// the width, suffix, and signedness of the given type
++template<typename T>
++static void DefineTypeSize(const Twine &MacroName, TargetInfo::IntType Ty,
++                           const TargetInfo &TI, T &Builder) {
++  static_assert(std::is_base_of<MacroBuilder, T>::value, "Illegal T value");
++  DefineTypeSize(MacroName, TI.getTypeWidth(Ty), TI.getTypeConstantSuffix(Ty),
++                 TI.isTypeSigned(Ty), Builder);
++}
++
+ /// An interface for collecting the dependencies of a compilation. Users should
+ /// use \c attachToPreprocessor and \c attachToASTReader to get all of the
+ /// dependencies.
+--- a/clang/lib/CodeGen/BackendUtil.cpp	2021-02-18 21:25:16.465036807 +0100
++++ b/clang/lib/CodeGen/BackendUtil.cpp	2021-02-18 21:43:11.476105509 +0100
+@@ -366,6 +366,11 @@
+   case CodeGenOptions::SVML:
+     TLII->addVectorizableFunctionsFromVecLib(TargetLibraryInfoImpl::SVML);
+     break;
++#ifdef ENABLE_CLASSIC_FLANG
++  case CodeGenOptions::PGMATH:
++    TLII->addVectorizableFunctionsFromVecLib(TargetLibraryInfoImpl::PGMATH);
++    break;
++#endif
+   default:
+     break;
+   }
+--- a/clang/lib/CodeGen/CGDebugInfo.cpp
++++ b/clang/lib/CodeGen/CGDebugInfo.cpp
+@@ -3585,7 +3585,8 @@ CGDebugInfo::getGlobalVariableForwardDeclaration(const VarDecl *VD) {
+   auto Align = getDeclAlignIfRequired(VD, CGM.getContext());
+   auto *GV = DBuilder.createTempGlobalVariableFwdDecl(
+       DContext, Name, LinkageName, Unit, Line, getOrCreateType(T, Unit),
+-      !VD->isExternallyVisible(), nullptr, TemplateParameters, Align);
++      !VD->isExternallyVisible(), nullptr, TemplateParameters,
++      llvm::DINode::FlagZero, Align);
+   FwdDeclReplaceMap.emplace_back(
+       std::piecewise_construct,
+       std::make_tuple(cast<VarDecl>(VD->getCanonicalDecl())),
+@@ -4664,7 +4665,7 @@ void CGDebugInfo::EmitGlobalVariable(llvm::GlobalVariable *Var,
+         Var->hasLocalLinkage(), true,
+         Expr.empty() ? nullptr : DBuilder.createExpression(Expr),
+         getOrCreateStaticDataMemberDeclarationOrNull(D), TemplateParameters,
+-        Align);
++        llvm::DINode::FlagZero, Align);
+     Var->addDebugInfo(GVE);
+   }
+   DeclCache[D->getCanonicalDecl()].reset(GVE);
+@@ -4765,7 +4766,7 @@ void CGDebugInfo::EmitGlobalVariable(const ValueDecl *VD, const APValue &Init) {
+   GV.reset(DBuilder.createGlobalVariableExpression(
+       DContext, Name, StringRef(), Unit, getLineNumber(VD->getLocation()), Ty,
+       true, true, InitExpr, getOrCreateStaticDataMemberDeclarationOrNull(VarD),
+-      TemplateParameters, Align));
++      TemplateParameters, llvm::DINode::FlagZero, Align));
+ }
+ 
+ void CGDebugInfo::EmitExternalVariable(llvm::GlobalVariable *Var,
+@@ -4783,7 +4784,8 @@ void CGDebugInfo::EmitExternalVariable(llvm::GlobalVariable *Var,
+   llvm::DIGlobalVariableExpression *GVE =
+       DBuilder.createGlobalVariableExpression(
+           DContext, Name, StringRef(), Unit, getLineNumber(D->getLocation()),
+-          Ty, false, false, nullptr, nullptr, nullptr, Align);
++          Ty, false, false, nullptr, nullptr, nullptr, llvm::DINode::FlagZero,
++          Align);
+   Var->addDebugInfo(GVE);
+ }
+ 
+--- a/clang/lib/CodeGen/CodeGenAction.cpp	2021-02-18 21:25:16.465036807 +0100
++++ b/clang/lib/CodeGen/CodeGenAction.cpp	2021-02-18 21:34:43.197809532 +0100
+@@ -1170,13 +1170,14 @@
+     std::unique_ptr<llvm::ToolOutputFile> OptRecordFile =
+         std::move(*OptRecordFileOrErr);
+ 
+-    EmitBackendOutput(Diagnostics, CI.getHeaderSearchOpts(), CodeGenOpts,
+-                      TargetOpts, CI.getLangOpts(),
++    EmitBackendOutput(CI.getDiagnostics(), CI.getHeaderSearchOpts(),
++                      CI.getCodeGenOpts(), TargetOpts, CI.getLangOpts(),
+                       CI.getTarget().getDataLayout(), TheModule.get(), BA,
+                       std::move(OS));
+ 
+     if (OptRecordFile)
+       OptRecordFile->keep();
++
+     return;
+   }
+ 
+--- a/clang/lib/Driver/CMakeLists.txt	2021-02-18 21:25:16.468036833 +0100
++++ b/clang/lib/Driver/CMakeLists.txt	2021-02-18 21:34:43.197809532 +0100
+@@ -10,6 +10,10 @@
+   set(system_libs version)
+ endif()
+ 
++if(LLVM_ENABLE_CLASSIC_FLANG)
++  set(CLASSIC_FLANG_FILES ToolChains/ClassicFlang.cpp)
++endif()
++
+ add_clang_library(clangDriver
+   Action.cpp
+   Compilation.cpp
+@@ -75,6 +79,7 @@
+   ToolChains/InterfaceStubs.cpp
+   Types.cpp
+   XRayArgs.cpp
++  ${CLASSIC_FLANG_FILES}
+ 
+   DEPENDS
+   ClangDriverOptions
+--- a/clang/lib/Driver/Driver.cpp	2021-02-18 21:25:16.468036833 +0100
++++ b/clang/lib/Driver/Driver.cpp	2021-02-18 21:35:25.162160551 +0100
+@@ -3357,6 +3357,14 @@
+       if (InputArg->isClaimed())
+         continue;
+ 
++#ifdef ENABLE_CLASSIC_FLANG
++      // If the input is detected as already preprocessed (e.g. has the .f95
++      // extension), and the user specifies -E, preprocess the file anyway.
++      if (IsFlangMode() && InitialPhase == phases::Compile &&
++          FinalPhase == phases::Preprocess)
++        continue;
++#endif
++
+       // Claim here to avoid the more general unused warning.
+       InputArg->claim();
+ 
+@@ -3737,6 +3745,10 @@
+       return C.MakeAction<CompileJobAction>(Input, types::TY_ModuleFile);
+     if (Args.hasArg(options::OPT_verify_pch))
+       return C.MakeAction<VerifyPCHJobAction>(Input, types::TY_Nothing);
++#ifdef ENABLE_CLASSIC_FLANG
++    if (IsFlangMode())
++      return C.MakeAction<CompileJobAction>(Input, types::TY_LLVM_IR);
++#endif
+     return C.MakeAction<CompileJobAction>(Input, types::TY_LLVM_BC);
+   }
+   case phases::Backend: {
+@@ -4079,6 +4091,10 @@
+     if (!T)
+       return nullptr;
+ 
++    // Classic Flang is not integrated with the backend.
++    if (C.getDriver().IsFlangMode() && !T->hasIntegratedAssembler())
++      return nullptr;
++
+     if (T->canEmitIR() && ((SaveTemps && !InputIsBitcode) || EmbedBitcode))
+       return nullptr;
+ 
+@@ -5079,7 +5095,11 @@
+     return false;
+ 
+   // And say "no" if this is not a kind of action flang understands.
+-  if (!isa<PreprocessJobAction>(JA) && !isa<CompileJobAction>(JA) && !isa<BackendJobAction>(JA))
++  if (!isa<PreprocessJobAction>(JA) && !isa<CompileJobAction>(JA)
++#ifndef ENABLE_CLASSIC_FLANG
++      && !isa<BackendJobAction>(JA)
++#endif
++  )
+     return false;
+ 
+   return true;
+--- a/clang/lib/Driver/ToolChain.cpp	2021-02-18 21:25:16.468036833 +0100
++++ b/clang/lib/Driver/ToolChain.cpp	2021-02-18 21:35:25.163160559 +0100
+@@ -10,6 +10,7 @@
+ #include "InputInfo.h"
+ #include "ToolChains/Arch/ARM.h"
+ #include "ToolChains/Clang.h"
++#include "ToolChains/ClassicFlang.h"
+ #include "ToolChains/InterfaceStubs.h"
+ #include "ToolChains/Flang.h"
+ #include "clang/Basic/ObjCRuntime.h"
+@@ -154,6 +154,7 @@
+       {"cl", "--driver-mode=cl"},
+       {"++", "--driver-mode=g++"},
+       {"flang", "--driver-mode=flang"},
++      {"gfortran", "--driver-mode=flang"},
+   };
+ 
+   for (size_t i = 0; i < llvm::array_lengthof(DriverSuffixes); ++i) {
+@@ -263,7 +264,11 @@
+ 
+ Tool *ToolChain::getFlang() const {
+   if (!Flang)
++#ifdef ENABLE_CLASSIC_FLANG
++    Flang.reset(new tools::ClassicFlang(*this));
++#else
+     Flang.reset(new tools::Flang(*this));
++#endif
+   return Flang.get();
+ }
+ 
+@@ -585,13 +590,13 @@
+ 
+ types::ID ToolChain::LookupTypeForExtension(StringRef Ext) const {
+   types::ID id = types::lookupTypeForExtension(Ext);
+-
++#ifndef ENABLE_CLASSIC_FLANG
+   // Flang always runs the preprocessor and has no notion of "preprocessed
+   // fortran". Here, TY_PP_Fortran is coerced to TY_Fortran to avoid treating
+   // them differently.
+   if (D.IsFlangMode() && id == types::TY_PP_Fortran)
+     id = types::TY_Fortran;
+-
++#endif
+   return id;
+ }
+ 
+@@ -954,6 +959,45 @@
+   CmdArgs.push_back("-lcc_kext");
+ }
+ 
++void ToolChain::AddFortranStdlibLibArgs(const ArgList &Args,
++                                    ArgStringList &CmdArgs) const {
++ bool staticFlangLibs = false;
++ bool useOpenMP = false;
++
++  if (Args.hasArg(options::OPT_staticFlangLibs)) {
++    for (auto *A: Args.filtered(options::OPT_staticFlangLibs)) {
++      A->claim();
++      staticFlangLibs = true;
++    }
++  }
++
++  Arg *A = Args.getLastArg(options::OPT_mp, options::OPT_nomp,
++                           options::OPT_fopenmp, options::OPT_fno_openmp);
++  if (A &&
++      (A->getOption().matches(options::OPT_mp) ||
++       A->getOption().matches(options::OPT_fopenmp))) {
++      useOpenMP = true;
++  }
++
++  if (staticFlangLibs)
++    CmdArgs.push_back("-Bstatic");
++  CmdArgs.push_back("-lflang");
++  CmdArgs.push_back("-lflangrti");
++  CmdArgs.push_back("-lpgmath");
++  if (useOpenMP)
++    CmdArgs.push_back("-lomp");
++  else
++    CmdArgs.push_back("-lompstub");
++  if (staticFlangLibs)
++    CmdArgs.push_back("-Bdynamic");
++
++  CmdArgs.push_back("-lm");
++  CmdArgs.push_back("-lrt");
++
++  // Allways link Fortran executables with Pthreads
++  CmdArgs.push_back("-lpthread");
++}
++
+ bool ToolChain::isFastMathRuntimeAvailable(const ArgList &Args,
+                                            std::string &Path) const {
+   // Do not check for -fno-fast-math or -fno-unsafe-math when -Ofast passed
+--- a/clang/lib/Driver/ToolChains/Clang.cpp	2021-02-18 21:25:16.467036824 +0100
++++ b/clang/lib/Driver/ToolChains/Clang.cpp	2021-02-18 21:44:01.834534930 +0100
+@@ -4455,7 +4455,68 @@
+     }
+   }
+ 
++#ifdef ENABLE_CLASSIC_FLANG
++  if (Args.getLastArg(options::OPT_fveclib))
++    Args.AddLastArg(CmdArgs, options::OPT_fveclib);
++  else
++    CmdArgs.push_back("-fveclib=PGMATH");
++#else
+   Args.AddLastArg(CmdArgs, options::OPT_fveclib);
++#endif
++
++  std::string PassRemarkVal(""), PassRemarkOpt("");
++  if (Args.getLastArg(options::OPT_Minfoall)) {
++    PassRemarkVal = ".*";
++    Args.ClaimAllArgs(options::OPT_Minfoall);
++  } else if (Arg *A = Args.getLastArg(options::OPT_Minfo_EQ)) {
++    for (const StringRef &val : A->getValues()) {
++      if (val.equals("all")) {
++        PassRemarkVal = ".*";
++        break;
++      } else if (val.equals("inline") || val.equals("vect")) {
++        PassRemarkVal += PassRemarkVal.empty() ? "" : "|";
++        PassRemarkVal += val;
++      } else {
++        D.Diag(diag::err_drv_clang_unsupported_minfo_arg)
++          << A->getOption().getName()
++          << val.str();
++        break;
++      }
++    }
++  }
++  PassRemarkOpt = "-pass-remarks=" + PassRemarkVal;
++  CmdArgs.push_back("-mllvm");
++  CmdArgs.push_back(Args.MakeArgString(PassRemarkOpt));
++  Args.ClaimAllArgs(options::OPT_Minfo_EQ);
++  PassRemarkVal.clear();
++  PassRemarkOpt.clear();
++
++  if (Args.getLastArg(options::OPT_Mneginfoall)) {
++    PassRemarkVal = ".*";
++    Args.ClaimAllArgs(options::OPT_Mneginfoall);
++  } else if (Arg *A = Args.getLastArg(options::OPT_Mneginfo_EQ)) {
++    for (const StringRef &val : A->getValues()) {
++      if (val.equals("all")) {
++        PassRemarkVal = ".*";
++        break;
++      } else if (val.equals("inline") || val.equals("vect")) {
++        PassRemarkVal += PassRemarkVal.empty() ? "" : "|";
++        PassRemarkVal += val;
++      } else {
++        D.Diag(diag::err_drv_clang_unsupported_minfo_arg)
++          << A->getOption().getName()
++          << val.str();
++        break;
++      }
++    }
++  }
++  PassRemarkOpt = "-pass-remarks-missed=" + PassRemarkVal;
++  CmdArgs.push_back("-mllvm");
++  CmdArgs.push_back(Args.MakeArgString(PassRemarkOpt));
++  PassRemarkOpt = "-pass-remarks-analysis=" + PassRemarkVal;
++  CmdArgs.push_back("-mllvm");
++  CmdArgs.push_back(Args.MakeArgString(PassRemarkOpt));
++  Args.ClaimAllArgs(options::OPT_Mneginfo_EQ);
+ 
+   if (Args.hasFlag(options::OPT_fmerge_all_constants,
+                    options::OPT_fno_merge_all_constants, false))
+--- a/clang/lib/Driver/ToolChains/ClassicFlang.cpp	1970-01-01 01:00:00.000000000 +0100
++++ b/clang/lib/Driver/ToolChains/ClassicFlang.cpp	2021-02-18 21:46:35.526848091 +0100
+@@ -0,0 +1,1067 @@
++//===-- ClassicFlang.cpp - Flang+LLVM ToolChain Implementations -*- C++ -*-===//
++//
++//                     The LLVM Compiler Infrastructure
++//
++// This file is distributed under the University of Illinois Open Source
++// License. See LICENSE.TXT for details.
++//
++//===----------------------------------------------------------------------===//
++
++#include "ClassicFlang.h"
++#include "CommonArgs.h"
++#include "InputInfo.h"
++#include "clang/Basic/CharInfo.h"
++#include "clang/Basic/LangOptions.h"
++#include "clang/Basic/MacroBuilder.h"
++#include "clang/Basic/ObjCRuntime.h"
++#include "clang/Basic/TargetInfo.h"
++#include "clang/Basic/TargetOptions.h"
++#include "clang/Basic/Version.h"
++#include "clang/Config/config.h"
++#include "clang/Driver/DriverDiagnostic.h"
++#include "clang/Driver/Options.h"
++#include "clang/Driver/SanitizerArgs.h"
++#include "clang/Driver/XRayArgs.h"
++#include "clang/Frontend/CompilerInstance.h"
++#include "clang/Frontend/Utils.h"
++#include "llvm/ADT/StringExtras.h"
++#include "llvm/Option/ArgList.h"
++#include "llvm/Support/CodeGen.h"
++#include "llvm/Support/Compression.h"
++#include "llvm/Support/FileSystem.h"
++#include "llvm/Support/Path.h"
++#include "llvm/Support/Process.h"
++#include "llvm/Support/TargetParser.h"
++#include "llvm/Support/YAMLParser.h"
++
++#ifdef LLVM_ON_UNIX
++#include <unistd.h> // For getuid().
++#endif
++
++using namespace clang::driver;
++using namespace clang::driver::tools;
++using namespace clang;
++using namespace llvm::opt;
++
++class ClassicFlangMacroBuilder : public MacroBuilder {
++  ArgStringList &CmdArgs;
++  const ArgList &DriverArgs;
++  public:
++    ClassicFlangMacroBuilder(ArgStringList &UpperCmdArgs, const ArgList &DriverArgs, llvm::raw_string_ostream &Output)
++      : MacroBuilder(Output), CmdArgs(UpperCmdArgs), DriverArgs(DriverArgs) {
++    }
++    virtual void defineMacro(const Twine &Name, const Twine &Value = "1") {
++      CmdArgs.push_back("-def");
++      CmdArgs.push_back(DriverArgs.MakeArgString(Name + Twine('=') + Value));
++    }
++};
++
++void ClassicFlang::ConstructJob(Compilation &C, const JobAction &JA,
++                         const InputInfo &Output, const InputInfoList &Inputs,
++                         const ArgList &Args, const char *LinkingOutput) const {
++  ArgStringList CommonCmdArgs;
++  ArgStringList UpperCmdArgs;
++  ArgStringList LowerCmdArgs;
++  SmallString<256> Stem;
++  std::string OutFile;
++  bool NeedIEEE = false;
++  bool NeedFastMath = false;
++  bool NeedRelaxedMath = false;
++
++  // Check number of inputs for sanity. We need at least one input.
++  assert(Inputs.size() >= 1 && "Must have at least one input.");
++
++  /***** Process file arguments to both parts *****/
++  const InputInfo &Input = Inputs[0];
++  types::ID InputType = Input.getType();
++  // Check file type sanity
++  assert(types::isFortran(InputType) && "Can only accept Fortran");
++
++  if (Args.hasArg(options::OPT_fsyntax_only)) {
++    // For -fsyntax-only produce temp files only
++    Stem = C.getDriver().GetTemporaryPath("", "");
++  } else {
++    OutFile = Output.getFilename();
++    Stem = llvm::sys::path::filename(OutFile);
++    llvm::sys::path::replace_extension(Stem, "");
++  }
++
++  // Add input file name to the compilation line
++  UpperCmdArgs.push_back(Input.getBaseInput());
++
++  // Add temporary output for ILM
++  const char * ILMFile = Args.MakeArgString(Stem + ".ilm");
++  LowerCmdArgs.push_back(ILMFile);
++  C.addTempFile(ILMFile);
++
++  // Generate -cmdline
++  std::string CmdLine("'+flang");
++  // ignore the first argument which reads "--driver-mode=fortran"
++  for (unsigned i = 1; i < Args.getNumInputArgStrings(); ++i) {
++    CmdLine.append(" ");
++    CmdLine.append(Args.getArgString(i));
++  }
++  CmdLine.append("'");
++
++  CommonCmdArgs.push_back("-cmdline");
++  CommonCmdArgs.push_back(Args.MakeArgString(CmdLine));
++
++  /***** Process common args *****/
++
++  // Add "inform level" flag
++  if (Args.hasArg(options::OPT_Minform_EQ)) {
++    // Parse arguments to set its value
++    for (Arg *A : Args.filtered(options::OPT_Minform_EQ)) {
++      A->claim();
++      CommonCmdArgs.push_back("-inform");
++      CommonCmdArgs.push_back(A->getValue(0));
++    }
++  } else {
++    // Default value
++    CommonCmdArgs.push_back("-inform");
++    CommonCmdArgs.push_back("warn");
++  }
++
++  for (auto Arg : Args.filtered(options::OPT_Msave_on)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-save");
++  }
++
++  for (auto Arg : Args.filtered(options::OPT_Msave_off)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-nosave");
++  }
++
++  // Treat denormalized numbers as zero: On
++  for (auto Arg : Args.filtered(options::OPT_Mdaz_on)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("129");
++    CommonCmdArgs.push_back("4");
++    CommonCmdArgs.push_back("-y");
++    CommonCmdArgs.push_back("129");
++    CommonCmdArgs.push_back("0x400");
++  }
++
++  // Treat denormalized numbers as zero: Off
++  for (auto Arg : Args.filtered(options::OPT_Mdaz_off)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-y");
++    CommonCmdArgs.push_back("129");
++    CommonCmdArgs.push_back("4");
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("129");
++    CommonCmdArgs.push_back("0x400");
++  }
++
++  // Store constants in writable data segment
++  for (auto Arg : Args.filtered(options::OPT_Mwritable_constants)) {
++    Arg->claim();
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("183");
++    LowerCmdArgs.push_back("0x20000000");
++  }
++
++  // Bounds checking: On
++  for (auto Arg : Args.filtered(options::OPT_Mbounds_on)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("70");
++    CommonCmdArgs.push_back("2");
++  }
++
++  // Bounds checking: Off
++  for (auto Arg : Args.filtered(options::OPT_Mbounds_off)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-y");
++    CommonCmdArgs.push_back("70");
++    CommonCmdArgs.push_back("2");
++  }
++
++  // Generate code allowing recursive subprograms
++  for (auto Arg : Args.filtered(options::OPT_Mrecursive_on)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-recursive");
++  }
++
++  // Disable recursive subprograms
++  for (auto Arg : Args.filtered(options::OPT_Mrecursive_off)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-norecursive");
++  }
++
++  // Enable generating reentrant code (disable optimizations that inhibit it)
++  for (auto Arg : Args.filtered(options::OPT_Mreentrant_on)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-reentrant");
++  }
++
++  // Allow optimizations inhibiting reentrancy
++  for (auto Arg : Args.filtered(options::OPT_Mreentrant_off)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-noreentrant");
++  }
++
++  // Swap byte order for unformatted IO
++  for (auto Arg : Args.filtered(options::OPT_Mbyteswapio, options::OPT_byteswapio)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("125");
++    CommonCmdArgs.push_back("2");
++  }
++
++  // Contiguous pointer checks
++  if (Arg *A = Args.getLastArg(options::OPT_fsanitize_EQ)) {
++    for (const StringRef &val : A->getValues()) {
++      if (val.equals("discontiguous") || val.equals("undefined") ) {
++        // -x 54 0x40 -x 54 0x80 -x 54 0x200
++        UpperCmdArgs.push_back("-x");
++        UpperCmdArgs.push_back("54");
++        UpperCmdArgs.push_back("0x2c0");
++
++        // -fsanitze=discontiguous has no meaning in LLVM, only flang driver needs to
++        // recognize it. However -fsanitize=undefined needs to be passed on for further
++        // processing by the non-flang part of the driver.
++        if (val.equals("discontiguous"))
++          A->claim();
++        break;
++      }
++    }
++  }
++
++  // Treat backslashes as regular characters
++  for (auto Arg : Args.filtered(options::OPT_fnobackslash, options::OPT_Mbackslash)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("124");
++    CommonCmdArgs.push_back("0x40");
++  }
++
++  // Treat backslashes as C-style escape characters
++  for (auto Arg : Args.filtered(options::OPT_fbackslash, options::OPT_Mnobackslash)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-y");
++    CommonCmdArgs.push_back("124");
++    CommonCmdArgs.push_back("0x40");
++  }
++
++  // handle OpemMP options
++  if (auto *A = Args.getLastArg(options::OPT_mp, options::OPT_nomp,
++                             options::OPT_fopenmp, options::OPT_fno_openmp)) {
++    for (auto Arg : Args.filtered(options::OPT_mp, options::OPT_nomp)) {
++      Arg->claim();
++    }
++    for (auto Arg : Args.filtered(options::OPT_fopenmp,
++                                  options::OPT_fno_openmp)) {
++      Arg->claim();
++    }
++
++    if (A->getOption().matches(options::OPT_mp) ||
++        A->getOption().matches(options::OPT_fopenmp)) {
++
++      CommonCmdArgs.push_back("-mp");
++
++       // Allocate threadprivate data local to the thread
++      CommonCmdArgs.push_back("-x");
++      CommonCmdArgs.push_back("69");
++      CommonCmdArgs.push_back("0x200");
++
++      // Use the 'fair' schedule as the default static schedule
++      // for parallel do loops
++      CommonCmdArgs.push_back("-x");
++      CommonCmdArgs.push_back("69");
++      CommonCmdArgs.push_back("0x400");
++
++      // Disable use of native atomic instructions
++      // for OpenMP atomics pending either a named
++      // option or a libatomic bundled with flang.
++      UpperCmdArgs.push_back("-x");
++      UpperCmdArgs.push_back("69");
++      UpperCmdArgs.push_back("0x1000");
++    }
++  }
++
++  // Align large objects on cache lines
++  for (auto Arg : Args.filtered(options::OPT_Mcache_align_on)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("119");
++    CommonCmdArgs.push_back("0x10000000");
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("129");
++    LowerCmdArgs.push_back("0x40000000");
++  }
++
++  // Disable special alignment of large objects
++  for (auto Arg : Args.filtered(options::OPT_Mcache_align_off)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-y");
++    CommonCmdArgs.push_back("119");
++    CommonCmdArgs.push_back("0x10000000");
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("129");
++    LowerCmdArgs.push_back("0x40000000");
++  }
++
++  // -Mstack_arrays
++  for (auto Arg : Args.filtered(options::OPT_Mstackarrays)) {
++    Arg->claim();
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("54");
++    CommonCmdArgs.push_back("8");
++  }
++
++  // -Memit-dwarf-common-blocks-name, only add xbit to flang2.
++  for (auto Arg : Args.filtered(options::OPT_Memit_dwarf_common_blocks_name)) {
++    Arg->claim();
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("183");
++    LowerCmdArgs.push_back("0x40000000");
++  }
++
++  // -Munixlogical, only add xbit to flang2.
++  for (auto Arg : Args.filtered(options::OPT_Munixlogical)) {
++    Arg->claim();
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("125");
++    LowerCmdArgs.push_back("0x8");
++  }
++
++  // Last argument of -g/-gdwarfX should be taken.
++  Arg *GArg = Args.getLastArg(options::OPT_g_Flag);
++  Arg *GDwarfArg = Args.getLastArg(options::OPT_gdwarf_2,
++                                   options::OPT_gdwarf_3,
++                                   options::OPT_gdwarf_4,
++                                   options::OPT_gdwarf_5);
++
++  if (GArg || GDwarfArg) {
++
++    for (auto Arg : Args.filtered(options::OPT_g_Flag, options::OPT_gdwarf_2,
++                                  options::OPT_gdwarf_3, options::OPT_gdwarf_4,
++                                  options::OPT_gdwarf_5)) {
++      Arg->claim();
++    }
++
++    CommonCmdArgs.push_back("-x");
++    CommonCmdArgs.push_back("120");
++
++    if (!GDwarfArg) // -g without -gdwarf-X produces default (DWARFv4)
++      CommonCmdArgs.push_back("0x1000000");
++    else if (GDwarfArg->getOption().matches(options::OPT_gdwarf_2)) // -gdwarf-2
++      CommonCmdArgs.push_back("0x200");
++    else if (GDwarfArg->getOption().matches(options::OPT_gdwarf_3)) // -gdwarf-3
++      CommonCmdArgs.push_back("0x4000");
++    else if (GDwarfArg->getOption().matches(options::OPT_gdwarf_4)) // -gdwarf-4
++      CommonCmdArgs.push_back("0x1000000");
++    else if (GDwarfArg->getOption().matches(options::OPT_gdwarf_5)) // -gdwarf-5
++      CommonCmdArgs.push_back("0x2000000");
++  }
++
++  // -Mipa has no effect
++  if (Arg *A = Args.getLastArg(options::OPT_Mipa)) {
++    getToolChain().getDriver().Diag(diag::warn_drv_clang_unsupported)
++      << A->getAsString(Args);
++  }
++
++  // -Minline has no effect
++  if (Arg *A = Args.getLastArg(options::OPT_Minline_on)) {
++    getToolChain().getDriver().Diag(diag::warn_drv_clang_unsupported)
++      << A->getAsString(Args);
++  }
++
++  // Handle -fdefault-real-8 (and its alias, -r8) and -fno-default-real-8
++  if (Arg *A = Args.getLastArg(options::OPT_r8,
++                               options::OPT_default_real_8_f,
++                               options::OPT_default_real_8_fno)) {
++    const char * fl;
++    // For -f version add -x flag, for -fno add -y
++    if (A->getOption().matches(options::OPT_default_real_8_fno)) {
++      fl = "-y";
++    } else {
++      fl = "-x";
++    }
++
++    for (Arg *A : Args.filtered(options::OPT_r8,
++                                options::OPT_default_real_8_f,
++                                options::OPT_default_real_8_fno)) {
++      A->claim();
++    }
++
++    UpperCmdArgs.push_back(fl);
++    UpperCmdArgs.push_back("124");
++    UpperCmdArgs.push_back("0x8");
++    UpperCmdArgs.push_back(fl);
++    UpperCmdArgs.push_back("124");
++    UpperCmdArgs.push_back("0x80000");
++  }
++
++  // Process and claim -i8/-fdefault-integer-8/-fno-default-integer-8 argument
++  if (Arg *A = Args.getLastArg(options::OPT_i8,
++                               options::OPT_default_integer_8_f,
++                               options::OPT_default_integer_8_fno)) {
++    const char * fl;
++
++    if (A->getOption().matches(options::OPT_default_integer_8_fno)) {
++      fl = "-y";
++    } else {
++      fl = "-x";
++    }
++
++    for (Arg *A : Args.filtered(options::OPT_i8,
++                                options::OPT_default_integer_8_f,
++                                options::OPT_default_integer_8_fno)) {
++      A->claim();
++    }
++
++    UpperCmdArgs.push_back(fl);
++    UpperCmdArgs.push_back("124");
++    UpperCmdArgs.push_back("0x10");
++  }
++
++  // Pass an arbitrary flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Wh_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    SmallVector<StringRef, 8> PassArgs;
++    Value.split(PassArgs, StringRef(","));
++    for (StringRef PassArg : PassArgs) {
++      UpperCmdArgs.push_back(Args.MakeArgString(PassArg));
++    }
++  }
++
++  // Flush to zero mode
++  // Disabled by default, but can be enabled by a switch
++  if (Args.hasArg(options::OPT_Mflushz_on)) {
++    // For -Mflushz set -x 129 2 for second part of Fortran frontend
++    for (Arg *A: Args.filtered(options::OPT_Mflushz_on)) {
++      A->claim();
++      LowerCmdArgs.push_back("-x");
++      LowerCmdArgs.push_back("129");
++      LowerCmdArgs.push_back("2");
++    }
++  } else {
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("129");
++    LowerCmdArgs.push_back("2");
++    for (Arg *A: Args.filtered(options::OPT_Mflushz_off)) {
++      A->claim();
++    }
++  }
++
++  // Enable FMA
++  for (Arg *A: Args.filtered(options::OPT_Mfma_on, options::OPT_fma)) {
++    A->claim();
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("172");
++    LowerCmdArgs.push_back("0x40000000");
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("179");
++    LowerCmdArgs.push_back("1");
++  }
++
++  // Disable FMA
++  for (Arg *A: Args.filtered(options::OPT_Mfma_off, options::OPT_nofma)) {
++    A->claim();
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("171");
++    LowerCmdArgs.push_back("0x40000000");
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("178");
++    LowerCmdArgs.push_back("1");
++  }
++
++  // For -fPIC set -x 62 8 for second part of Fortran frontend
++  for (Arg *A: Args.filtered(options::OPT_fPIC)) {
++    A->claim();
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("62");
++    LowerCmdArgs.push_back("8");
++  }
++
++  StringRef OptOStr("0");
++  if (Arg *A = Args.getLastArg(options::OPT_O_Group)) {
++    if (A->getOption().matches(options::OPT_O4)) {
++      OptOStr = "4"; // FIXME what should this be?
++    } else if (A->getOption().matches(options::OPT_Ofast)) {
++      OptOStr = "2"; // FIXME what should this be?
++    } else if (A->getOption().matches(options::OPT_O0)) {
++      // intentionally do nothing
++    } else {
++      assert(A->getOption().matches(options::OPT_O) && "Must have a -O flag");
++      StringRef S(A->getValue());
++      if ((S == "s") || (S == "z")) {
++	// -Os = size; -Oz = more size
++	OptOStr = "2"; // FIXME -Os|-Oz => -opt ?
++      } else if ((S == "1") || (S == "2") || (S == "3")) {
++	OptOStr = S;
++      } else {
++	OptOStr = "4";
++      }
++    }
++  }
++  unsigned OptLevel = std::stoi(OptOStr.str());
++
++  if (Args.hasArg(options::OPT_g_Group)) {
++    // pass -g to lower and upper
++    CommonCmdArgs.push_back("-debug");
++  }
++
++  /* Pick the last among conflicting flags, if a positive and negative flag
++     exists for ex. "-ffast-math -fno-fast-math" they get nullified. Also any
++     previously overwritten flag remains that way.
++     For ex. "-Kieee -ffast-math -fno-fast-math". -Kieee gets overwritten by
++     -ffast-math which then gets negated by -fno-fast-math, finally behaving as
++     if none of those flags were passed.
++  */
++  for(Arg *A: Args.filtered(options::OPT_ffast_math, options::OPT_fno_fast_math,
++                        options::OPT_Ofast, options::OPT_Kieee_off,
++                        options::OPT_Kieee_on, options::OPT_frelaxed_math)) {
++    if (A->getOption().matches(options::OPT_ffast_math) ||
++        A->getOption().matches(options::OPT_Ofast)) {
++      NeedIEEE = NeedRelaxedMath = false;
++      NeedFastMath = true;
++    } else if (A->getOption().matches(options::OPT_Kieee_on)) {
++      NeedFastMath = NeedRelaxedMath = false;
++      NeedIEEE = true;
++    } else if (A->getOption().matches(options::OPT_frelaxed_math)) {
++      NeedFastMath = NeedIEEE = false;
++      NeedRelaxedMath = true;
++    } else if (A->getOption().matches(options::OPT_fno_fast_math)) {
++      NeedFastMath = false;
++    } else if (A->getOption().matches(options::OPT_Kieee_off)) {
++      NeedIEEE = false;
++    }
++    A->claim();
++  }
++
++  if (NeedFastMath) {
++    // Lower: -x 216 1
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("216");
++    LowerCmdArgs.push_back("1");
++    // Lower: -ieee 0
++    CommonCmdArgs.push_back("-ieee");
++    CommonCmdArgs.push_back("0");
++  } else if (NeedIEEE) {
++    // Common: -y 129 2
++    CommonCmdArgs.push_back("-y");
++    CommonCmdArgs.push_back("129");
++    CommonCmdArgs.push_back("2");
++    // Lower: -x 6 0x100
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("6");
++    LowerCmdArgs.push_back("0x100");
++    // Lower: -x 42 0x400000
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("42");
++    LowerCmdArgs.push_back("0x400000");
++    // Lower: -y 129 4
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("129");
++    LowerCmdArgs.push_back("4");
++    // Lower: -x 129 0x400
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("129");
++    LowerCmdArgs.push_back("0x400");
++    // Lower: -y 216 1 (OPT_fno_fast_math)
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("216");
++    LowerCmdArgs.push_back("1");
++    // Lower: -ieee 1
++    CommonCmdArgs.push_back("-ieee");
++    CommonCmdArgs.push_back("1");
++  } else if (NeedRelaxedMath) {
++    // Lower: -x 15 0x400
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back("15");
++    LowerCmdArgs.push_back("0x400");
++    // Lower: -y 216 1 (OPT_fno_fast_math)
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back("216");
++    LowerCmdArgs.push_back("1");
++    // Lower: -ieee 0
++    CommonCmdArgs.push_back("-ieee");
++    CommonCmdArgs.push_back("0");
++  } else {
++    // Lower: -ieee 0
++    CommonCmdArgs.push_back("-ieee");
++    CommonCmdArgs.push_back("0");
++  }
++
++  /***** Upper part of the Fortran frontend *****/
++
++  // TODO do we need to invoke this under GDB sometimes?
++  const char *UpperExec = Args.MakeArgString(getToolChain().GetProgramPath("flang1"));
++
++  UpperCmdArgs.push_back("-opt"); UpperCmdArgs.push_back(Args.MakeArgString(OptOStr));
++  UpperCmdArgs.push_back("-terse"); UpperCmdArgs.push_back("1");
++  UpperCmdArgs.push_back("-inform"); UpperCmdArgs.push_back("warn");
++  UpperCmdArgs.push_back("-nohpf");
++  UpperCmdArgs.push_back("-nostatic");
++  UpperCmdArgs.append(CommonCmdArgs.begin(), CommonCmdArgs.end()); // Append common arguments
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("19"); UpperCmdArgs.push_back("0x400000");
++  UpperCmdArgs.push_back("-quad");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("68"); UpperCmdArgs.push_back("0x1");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("59"); UpperCmdArgs.push_back("4");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("15"); UpperCmdArgs.push_back("2");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("49"); UpperCmdArgs.push_back("0x400004");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("51"); UpperCmdArgs.push_back("0x20");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("57"); UpperCmdArgs.push_back("0x4c");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("58"); UpperCmdArgs.push_back("0x10000");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("124"); UpperCmdArgs.push_back("0x1000");
++  UpperCmdArgs.push_back("-tp"); UpperCmdArgs.push_back("px");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("57"); UpperCmdArgs.push_back("0xfb0000");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("58"); UpperCmdArgs.push_back("0x78031040");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("47"); UpperCmdArgs.push_back("0x08");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("48"); UpperCmdArgs.push_back("4608");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("49"); UpperCmdArgs.push_back("0x100");
++  if (OptLevel >= 2) {
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back("70");
++    UpperCmdArgs.push_back("0x6c00");
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back("119");
++    UpperCmdArgs.push_back("0x10000000");
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back("129");
++    UpperCmdArgs.push_back("2");
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back("47");
++    UpperCmdArgs.push_back("0x400000");
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back("52");
++    UpperCmdArgs.push_back("2");
++  }
++
++  // Use clang's predefined macros
++  DiagnosticsEngine DE(new DiagnosticIDs(), new DiagnosticOptions, new IgnoringDiagConsumer());
++  std::shared_ptr<clang::TargetOptions> TO = std::make_shared<clang::TargetOptions>();
++  TO->Triple = getToolChain().getEffectiveTriple().getTriple();
++  std::shared_ptr<TargetInfo> TI(clang::TargetInfo::CreateTargetInfo(DE, TO));
++  std::string PredefineBuffer;
++  llvm::raw_string_ostream Predefines(PredefineBuffer);
++  ClassicFlangMacroBuilder Builder(UpperCmdArgs, Args, Predefines);
++
++  LangOptions LO;
++  VersionTuple VT = getToolChain().computeMSVCVersion(&getToolChain().getDriver(), Args);
++  if (!VT.empty()) {
++    // Set the MSCompatibility version. Subminor version has 5 decimal digits.
++    // Minor and major versions have 2 decimal digits each.
++    LO.MSCompatibilityVersion = VT.getMajor() * 10000000 +
++                                VT.getMinor().getValueOr(0) * 100000 +
++                                VT.getSubminor().getValueOr(0);
++  }
++
++  // Define Target specific macros like __linux__
++  TI->getTargetDefines(LO, Builder);
++
++  Builder.defineMacro("__SIZE_TYPE__", TargetInfo::getTypeName(TI->getSizeType()));
++  Builder.defineMacro("__PTRDIFF_TYPE__", TargetInfo::getTypeName(TI->getPtrDiffType(0)));
++
++  if (TI->getPointerWidth(0) == 64 && TI->getLongWidth() == 64
++      && TI->getIntWidth() == 32) {
++    Builder.defineMacro("_LP64");
++    Builder.defineMacro("__LP64__");
++  }
++
++  if (TI->getPointerWidth(0) == 32 && TI->getLongWidth() == 32
++      && TI->getIntWidth() == 32) {
++    Builder.defineMacro("_ILP32");
++    Builder.defineMacro("__ILP32__");
++  }
++
++  DefineTypeSize("__LONG_MAX__", TargetInfo::SignedLong, *TI, Builder);
++
++  // Add additional predefined macros
++  switch (getToolChain().getEffectiveTriple().getArch()) {
++  case llvm::Triple::aarch64:
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__ARM_ARCH__=8");
++    break;
++  case llvm::Triple::x86_64:
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__amd_64__amd64__");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__k8");
++    UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__k8__");
++    break;
++  default: /* generic 64-bit */
++    ;
++  }
++  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__THROW=");
++  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__extension__=");
++  UpperCmdArgs.push_back("-def"); UpperCmdArgs.push_back("__PGLLVM__");
++
++  // Enable preprocessor
++  if (Args.hasArg(options::OPT_Mpreprocess) ||
++      Args.hasArg(options::OPT_cpp) ||
++      Args.hasArg(options::OPT_E) ||
++      types::getPreprocessedType(InputType) != types::TY_INVALID) {
++    UpperCmdArgs.push_back("-preprocess");
++    for (auto Arg : Args.filtered(options::OPT_Mpreprocess, options::OPT_cpp, options::OPT_E)) {
++      Arg->claim();
++    }
++
++    // When -E option is provided, run only the fortran preprocessor.
++    // Only in -E mode, consume -P if it exists
++    if (Args.hasArg(options::OPT_E)) {
++      UpperCmdArgs.push_back("-es");
++      // Line marker mode is disabled
++      if (Args.hasArg(options::OPT_P)) {
++        Args.ClaimAllArgs(options::OPT_P);
++      } else {
++        // -pp enables line marker mode in fortran preprocessor
++        UpperCmdArgs.push_back("-pp");
++      }
++    }
++  }
++
++  // Enable standards checking
++  if (Args.hasArg(options::OPT_Mstandard)) {
++    UpperCmdArgs.push_back("-standard");
++    for (auto Arg : Args.filtered(options::OPT_Mstandard)) {
++      Arg->claim();
++    }
++  }
++
++  // Free or fixed form file
++  if (Args.hasArg(options::OPT_fortran_format_Group)) {
++    // Override file name suffix, scan arguments for that
++    for (Arg *A : Args.filtered(options::OPT_fortran_format_Group)) {
++      A->claim();
++      switch (A->getOption().getID()) {
++        default:
++          llvm_unreachable("missed a case");
++         case options::OPT_fixed_form_on:
++         case options::OPT_free_form_off:
++         case options::OPT_Mfixed:
++         case options::OPT_Mfree_off:
++         case options::OPT_Mfreeform_off:
++           UpperCmdArgs.push_back("-nofreeform");
++           break;
++         case options::OPT_free_form_on:
++         case options::OPT_fixed_form_off:
++         case options::OPT_Mfree_on:
++         case options::OPT_Mfreeform_on:
++           UpperCmdArgs.push_back("-freeform");
++           break;
++      }
++    }
++  } else {
++    // Deduce format from file name suffix
++    if (types::isFreeFormFortran(InputType)) {
++      UpperCmdArgs.push_back("-freeform");
++    } else {
++      UpperCmdArgs.push_back("-nofreeform");
++    }
++  }
++
++  // Extend lines to 132 characters
++  for (auto Arg : Args.filtered(options::OPT_Mextend)) {
++    Arg->claim();
++    UpperCmdArgs.push_back("-extend");
++  }
++
++  for (auto Arg : Args.filtered(options::OPT_ffixed_line_length_VALUE)) {
++    StringRef Value = Arg->getValue();
++    if (Value == "72") {
++      Arg->claim();
++    } else if (Value == "132") {
++      Arg->claim();
++      UpperCmdArgs.push_back("-extend");
++    } else {
++      getToolChain().getDriver().Diag(diag::err_drv_unsupported_fixed_line_length)
++        << Arg->getAsString(Args);
++    }
++  }
++
++  // Add user-defined include directories
++  for (auto Arg : Args.filtered(options::OPT_I)) {
++    Arg->claim();
++    UpperCmdArgs.push_back("-idir");
++    UpperCmdArgs.push_back(Arg->getValue(0));
++  }
++
++  // Add user-defined module directories
++  for (auto Arg : Args.filtered(options::OPT_ModuleDir, options::OPT_J)) {
++    Arg->claim();
++    UpperCmdArgs.push_back("-moddir");
++    UpperCmdArgs.push_back(Arg->getValue(0));
++  }
++
++  // "Define" preprocessor flags
++  for (auto Arg : Args.filtered(options::OPT_D)) {
++    Arg->claim();
++    UpperCmdArgs.push_back("-def");
++    UpperCmdArgs.push_back(Arg->getValue(0));
++  }
++
++  // "Define" preprocessor flags
++  for (auto Arg : Args.filtered(options::OPT_U)) {
++    Arg->claim();
++    UpperCmdArgs.push_back("-undef");
++    UpperCmdArgs.push_back(Arg->getValue(0));
++  }
++
++  UpperCmdArgs.push_back("-vect"); UpperCmdArgs.push_back("48");
++
++  // Semantics for assignments to allocatables
++  if (Arg *A = Args.getLastArg(options::OPT_Mallocatable_EQ)) {
++    // Argument is passed explicitly
++    StringRef Value = A->getValue();
++    if (Value == "03") { // Enable Fortran 2003 semantics
++      UpperCmdArgs.push_back("-x"); // Set XBIT
++    } else if (Value == "95") { // Enable Fortran 2003 semantics
++      UpperCmdArgs.push_back("-y"); // Unset XBIT
++    } else {
++      getToolChain().getDriver().Diag(diag::err_drv_invalid_allocatable_mode)
++        << A->getAsString(Args);
++    }
++  } else { // No argument passed
++    UpperCmdArgs.push_back("-x"); // Default is 03
++  }
++  UpperCmdArgs.push_back("54"); UpperCmdArgs.push_back("1"); // XBIT value
++
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("70"); UpperCmdArgs.push_back("0x40000000");
++  UpperCmdArgs.push_back("-y"); UpperCmdArgs.push_back("163"); UpperCmdArgs.push_back("0xc0000000");
++  UpperCmdArgs.push_back("-x"); UpperCmdArgs.push_back("189"); UpperCmdArgs.push_back("0x10");
++
++  // Enable NULL pointer checking
++  if (Args.hasArg(options::OPT_Mchkptr)) {
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back("70");
++    UpperCmdArgs.push_back("4");
++    for (auto Arg : Args.filtered(options::OPT_Mchkptr)) {
++      Arg->claim();
++    }
++  }
++
++  // Set a -x flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hx_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-x");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -y flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hy_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-y");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -q (debug) flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-q");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -qq (debug) flag for first part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Hqq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    UpperCmdArgs.push_back("-qq");
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    UpperCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  const char * STBFile = Args.MakeArgString(Stem + ".stb");
++  C.addTempFile(STBFile);
++  UpperCmdArgs.push_back("-stbfile");
++  UpperCmdArgs.push_back(STBFile);
++
++  const char * ModuleExportFile = Args.MakeArgString(Stem + ".cmod");
++  C.addTempFile(ModuleExportFile);
++  UpperCmdArgs.push_back("-modexport");
++  UpperCmdArgs.push_back(ModuleExportFile);
++
++  const char * ModuleIndexFile = Args.MakeArgString(Stem + ".cmdx");
++  C.addTempFile(ModuleIndexFile);
++  UpperCmdArgs.push_back("-modindex");
++  UpperCmdArgs.push_back(ModuleIndexFile);
++
++  UpperCmdArgs.push_back("-output");
++  UpperCmdArgs.push_back(ILMFile);
++
++  SmallString<256> Path;
++  if(Args.getAllArgValues(options::OPT_fopenmp_targets_EQ).size() > 0) {
++    SmallString<128> TargetInfo;
++    Path = llvm::sys::path::parent_path(Output.getFilename());
++    Arg* Tgts = Args.getLastArg(options::OPT_fopenmp_targets_EQ);
++    assert(Tgts && Tgts->getNumValues() &&
++           "OpenMP offloading has to have targets specified.");
++    for (unsigned i = 0; i < Tgts->getNumValues(); ++i) {
++      if (i)
++        TargetInfo += ',';
++      llvm::Triple T(Tgts->getValue(i));
++      TargetInfo += T.getTriple();
++    }
++    UpperCmdArgs.push_back("-fopenmp-targets");
++    UpperCmdArgs.push_back(Args.MakeArgString(TargetInfo.str()));
++  }
++
++  C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::AtFileUTF8(), UpperExec, UpperCmdArgs, Inputs));
++
++  // For -fsyntax-only or -E that is it
++  if (Args.hasArg(options::OPT_fsyntax_only) ||
++      Args.hasArg(options::OPT_E)) return;
++
++  /***** Lower part of Fortran frontend *****/
++
++  const char *LowerExec = Args.MakeArgString(getToolChain().GetProgramPath("flang2"));
++
++  // TODO FLANG arg handling
++  LowerCmdArgs.push_back("-fn"); LowerCmdArgs.push_back(Input.getBaseInput());
++  LowerCmdArgs.push_back("-opt"); LowerCmdArgs.push_back(Args.MakeArgString(OptOStr));
++  LowerCmdArgs.push_back("-terse"); LowerCmdArgs.push_back("1");
++  LowerCmdArgs.push_back("-inform"); LowerCmdArgs.push_back("warn");
++  LowerCmdArgs.append(CommonCmdArgs.begin(), CommonCmdArgs.end()); // Append common arguments
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("68"); LowerCmdArgs.push_back("0x1");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("51"); LowerCmdArgs.push_back("0x20");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("119"); LowerCmdArgs.push_back("0xa10000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("122"); LowerCmdArgs.push_back("0x40");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("123"); LowerCmdArgs.push_back("0x1000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("127"); LowerCmdArgs.push_back("4");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("127"); LowerCmdArgs.push_back("17");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("19"); LowerCmdArgs.push_back("0x400000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("28"); LowerCmdArgs.push_back("0x40000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("120"); LowerCmdArgs.push_back("0x10000000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("70"); LowerCmdArgs.push_back("0x8000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("122"); LowerCmdArgs.push_back("1");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("125"); LowerCmdArgs.push_back("0x20000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("164"); LowerCmdArgs.push_back("0x800000");
++  LowerCmdArgs.push_back("-quad");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("59"); LowerCmdArgs.push_back("4");
++  LowerCmdArgs.push_back("-tp"); LowerCmdArgs.push_back("px");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("120"); LowerCmdArgs.push_back("0x1000"); // debug lite
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("124"); LowerCmdArgs.push_back("0x1400");
++  LowerCmdArgs.push_back("-y"); LowerCmdArgs.push_back("15"); LowerCmdArgs.push_back("2");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("57"); LowerCmdArgs.push_back("0x3b0000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("58"); LowerCmdArgs.push_back("0x48000000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("49"); LowerCmdArgs.push_back("0x100");
++  LowerCmdArgs.push_back("-astype"); LowerCmdArgs.push_back("0");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("183"); LowerCmdArgs.push_back("4");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("121"); LowerCmdArgs.push_back("0x800");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("54"); LowerCmdArgs.push_back("0x10");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("70"); LowerCmdArgs.push_back("0x40000000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("249"); LowerCmdArgs.push_back("90"); // LLVM version
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("124"); LowerCmdArgs.push_back("1");
++  LowerCmdArgs.push_back("-y"); LowerCmdArgs.push_back("163"); LowerCmdArgs.push_back("0xc0000000");
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("189"); LowerCmdArgs.push_back("0x10");
++  LowerCmdArgs.push_back("-y"); LowerCmdArgs.push_back("189"); LowerCmdArgs.push_back("0x4000000");
++
++  // Remove "noinline" attriblute
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("183"); LowerCmdArgs.push_back("0x10");
++
++  // Set a -x flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Mx_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-x");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -y flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_My_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-y");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -q (debug) flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Mq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-q");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Set a -qq (debug) flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Mqq_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    auto XFlag = Value.split(",");
++    LowerCmdArgs.push_back("-qq");
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.first));
++    LowerCmdArgs.push_back(Args.MakeArgString(XFlag.second));
++  }
++
++  // Pass an arbitrary flag for second part of Fortran frontend
++  for (Arg *A : Args.filtered(options::OPT_Wm_EQ)) {
++    A->claim();
++    StringRef Value = A->getValue();
++    SmallVector<StringRef, 8> PassArgs;
++    Value.split(PassArgs, StringRef(","));
++    for (StringRef PassArg : PassArgs) {
++      LowerCmdArgs.push_back(Args.MakeArgString(PassArg));
++    }
++  }
++
++  LowerCmdArgs.push_back("-stbfile");
++  LowerCmdArgs.push_back(STBFile);
++
++  Path = llvm::sys::path::parent_path(Output.getFilename());
++  bool IsOpenMPDevice = JA.isDeviceOffloading(Action::OFK_OpenMP);
++
++  /* OpenMP GPU Offload */
++  if(Args.getAllArgValues(options::OPT_fopenmp_targets_EQ).size() > 0) {
++    SmallString<128> TargetInfo;//("-fopenmp-targets ");
++    SmallString<256> TargetInfoAsm;//("-fopenmp-targets-asm ");
++
++    Arg* Tgts = Args.getLastArg(options::OPT_fopenmp_targets_EQ);
++    assert(Tgts && Tgts->getNumValues() &&
++           "OpenMP offloading has to have targets specified.");
++    for (unsigned i = 0; i < Tgts->getNumValues(); ++i) {
++      if (i)
++        TargetInfo += ',';
++      // We need to get the string from the triple because it may be not exactly
++      // the same as the one we get directly from the arguments.
++      llvm::Triple T(Tgts->getValue(i));
++      TargetInfo += T.getTriple();
++      // We also need to give a output file
++      TargetInfoAsm += Path;
++      TargetInfoAsm += "/";
++      TargetInfoAsm += Stem;
++      TargetInfoAsm += "-";
++      TargetInfoAsm += T.getTriple();
++      TargetInfoAsm += ".ll";
++    }
++    // The driver is aware that flang2 can generate multiple files at the same time.
++    // We mimic it here by exchanging the output files.
++    // The driver always uses the output file of -asm.
++    LowerCmdArgs.push_back("-fopenmp-targets");
++    LowerCmdArgs.push_back(Args.MakeArgString(TargetInfo.str()));
++    if(IsOpenMPDevice) {
++      LowerCmdArgs.push_back("-fopenmp-targets-asm");
++      LowerCmdArgs.push_back(Args.MakeArgString(OutFile));
++      LowerCmdArgs.push_back("-asm");
++      LowerCmdArgs.push_back(Args.MakeArgString(TargetInfoAsm.str()));
++    } else {
++      LowerCmdArgs.push_back("-fopenmp-targets-asm");
++      LowerCmdArgs.push_back(Args.MakeArgString(TargetInfoAsm.str()));
++      LowerCmdArgs.push_back("-asm");
++      LowerCmdArgs.push_back(Args.MakeArgString(OutFile));
++    }
++  } else {
++    LowerCmdArgs.push_back("-asm");
++    LowerCmdArgs.push_back(Args.MakeArgString(OutFile));
++  }
++
++  C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::AtFileUTF8(), LowerExec, LowerCmdArgs, Inputs));
++}
++
+--- a/clang/lib/Driver/ToolChains/ClassicFlang.h	1970-01-01 01:00:00.000000000 +0100
++++ b/clang/lib/Driver/ToolChains/ClassicFlang.h	2021-02-18 21:35:25.163160559 +0100
+@@ -0,0 +1,49 @@
++//===--- ClassicFlang.h - Flang ToolChain Implementations -------*- C++ -*-===//
++//
++//                     The LLVM Compiler Infrastructure
++//
++// This file is distributed under the University of Illinois Open Source
++// License. See LICENSE.TXT for details.
++//
++//===----------------------------------------------------------------------===//
++
++#ifndef LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_Flang_H
++#define LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_Flang_H
++
++#include "MSVC.h"
++#include "clang/Basic/DebugInfoOptions.h"
++#include "clang/Driver/Driver.h"
++#include "clang/Driver/Tool.h"
++#include "clang/Driver/Types.h"
++#include "llvm/ADT/Triple.h"
++#include "llvm/Option/Option.h"
++#include "llvm/Support/raw_ostream.h"
++
++namespace clang {
++namespace driver {
++
++namespace tools {
++
++/// \brief Flang Fortran frontend
++class LLVM_LIBRARY_VISIBILITY ClassicFlang : public Tool {
++public:
++  ClassicFlang(const ToolChain &TC)
++      : Tool("flang:frontend",
++             "Fortran frontend to LLVM", TC) {}
++
++  bool hasGoodDiagnostics() const override { return true; }
++  bool hasIntegratedAssembler() const override { return false; }
++  bool hasIntegratedCPP() const override { return true; }
++
++  void ConstructJob(Compilation &C, const JobAction &JA,
++                    const InputInfo &Output, const InputInfoList &Inputs,
++                    const llvm::opt::ArgList &TCArgs,
++                    const char *LinkingOutput) const override;
++};
++
++} // end namespace tools
++
++} // end namespace driver
++} // end namespace clang
++
++#endif // LLVM_CLANG_LIB_DRIVER_TOOLCHAINS_CLANG_H
+--- a/clang/lib/Driver/ToolChains/CommonArgs.cpp	2021-02-18 21:25:16.467036824 +0100
++++ b/clang/lib/Driver/ToolChains/CommonArgs.cpp	2021-02-18 21:34:43.200809557 +0100
+@@ -60,6 +60,23 @@
+ using namespace clang;
+ using namespace llvm::opt;
+ 
++/// \brief Determine if Fortran link libraies are needed
++bool tools::needFortranLibs(const Driver &D, const ArgList &Args) {
++  if (D.IsFlangMode() && !Args.hasArg(options::OPT_nostdlib) &&
++      !Args.hasArg(options::OPT_noFlangLibs)) {
++    return true;
++  }
++
++  return false;
++}
++
++/// \brief Determine if Fortran "main" object is needed
++static bool needFortranMain(const Driver &D, const ArgList &Args) {
++  return (needFortranLibs(D, Args)
++       && (!Args.hasArg(options::OPT_Mnomain) ||
++           !Args.hasArg(options::OPT_no_fortran_main)));
++}
++
+ void tools::addPathIfExists(const Driver &D, const Twine &Path,
+                             ToolChain::path_list &Paths) {
+   if (D.getVFS().exists(Path))
+@@ -167,6 +184,7 @@
+                             const ArgList &Args, ArgStringList &CmdArgs,
+                             const JobAction &JA) {
+   const Driver &D = TC.getDriver();
++  bool SeenFirstLinkerInput = false;
+ 
+   // Add extra linker input arguments which are not treated as inputs
+   // (constructed via -Xarch_).
+@@ -196,6 +214,14 @@
+       continue;
+     }
+ 
++    // Add Fortan "main" before the first linker input
++    if (!SeenFirstLinkerInput) {
++      if (needFortranMain(D, Args)) {
++        CmdArgs.push_back("-lflangmain");
++      }
++      SeenFirstLinkerInput = true;
++    }
++
+     // Otherwise, this is a linker input argument.
+     const Arg &A = II.getInputArg();
+ 
+@@ -212,6 +238,15 @@
+       A.renderAsInput(Args, CmdArgs);
+     }
+   }
++
++  if (!SeenFirstLinkerInput && needFortranMain(D, Args)) {
++    CmdArgs.push_back("-lflangmain");
++  }
++
++  // Claim "no Fortran main" arguments
++  for (auto Arg : Args.filtered(options::OPT_no_fortran_main, options::OPT_Mnomain)) {
++    Arg->claim();
++  }
+ }
+ 
+ void tools::AddTargetFeature(const ArgList &Args,
+--- a/clang/lib/Driver/ToolChains/CommonArgs.h	2021-02-18 21:25:16.467036824 +0100
++++ b/clang/lib/Driver/ToolChains/CommonArgs.h	2021-02-18 21:34:43.200809557 +0100
+@@ -20,6 +20,8 @@
+ namespace driver {
+ namespace tools {
+ 
++bool needFortranLibs(const Driver &D, const llvm::opt::ArgList &Args);
++
+ void addPathIfExists(const Driver &D, const Twine &Path,
+                      ToolChain::path_list &Paths);
+ 
+--- a/clang/lib/Driver/ToolChains/Gnu.cpp	2021-02-18 21:25:16.467036824 +0100
++++ b/clang/lib/Driver/ToolChains/Gnu.cpp	2021-02-18 21:34:43.201809565 +0100
+@@ -572,6 +572,16 @@
+   // The profile runtime also needs access to system libraries.
+   getToolChain().addProfileRTLibs(Args, CmdArgs);
+ 
++  // Add Fortran runtime libraries
++  if (needFortranLibs(D, Args)) {
++    ToolChain.AddFortranStdlibLibArgs(Args, CmdArgs);
++  } else {
++  // Claim "no Flang libraries" arguments if any
++    for (auto Arg : Args.filtered(options::OPT_noFlangLibs)) {
++      Arg->claim();
++    }
++  }
++
+   if (D.CCCIsCXX() &&
+       !Args.hasArg(options::OPT_nostdlib, options::OPT_nodefaultlibs)) {
+     if (ToolChain.ShouldLinkCXXStdlib(Args)) {
+--- a/clang/lib/Driver/Types.cpp	2021-02-18 21:25:16.468036833 +0100
++++ b/clang/lib/Driver/Types.cpp	2021-02-18 21:35:25.163160559 +0100
+@@ -55,9 +55,11 @@
+ 
+ types::ID types::getPreprocessedType(ID Id) {
+   ID PPT = getInfo(Id).PreprocessedType;
++#ifndef ENABLE_CLASSIC_FLANG
+   assert((getInfo(Id).Phases.contains(phases::Preprocess) !=
+           (PPT == TY_INVALID)) &&
+          "Unexpected Preprocess Type.");
++#endif
+   return PPT;
+ }
+ 
+@@ -126,6 +128,10 @@
+ 
+   case TY_Asm:
+   case TY_C: case TY_PP_C:
++#ifdef ENABLE_CLASSIC_FLANG
++  case TY_F_FreeForm: case TY_PP_F_FreeForm:
++  case TY_F_FixedForm: case TY_PP_F_FixedForm:
++#endif
+   case TY_CL:
+   case TY_CUDA: case TY_PP_CUDA:
+   case TY_CUDA_DEVICE:
+@@ -220,11 +226,35 @@
+   default:
+     return false;
+ 
+-  case TY_Fortran: case TY_PP_Fortran:
++#ifdef ENABLE_CLASSIC_FLANG
++  case TY_F_FreeForm:
++  case TY_PP_F_FreeForm:
++  case TY_F_FixedForm:
++  case TY_PP_F_FixedForm:
++#else
++  case TY_Fortran:
++  case TY_PP_Fortran:
++#endif
+     return true;
+   }
+ }
+ 
++#ifdef ENABLE_CLASSIC_FLANG
++bool types::isFreeFormFortran(ID Id) {
++  if (!isFortran(Id))
++    return false;
++
++  return (Id == TY_F_FreeForm || Id == TY_PP_F_FreeForm);
++}
++
++bool types::isFixedFormFortran(ID Id) {
++  if (!isFortran(Id))
++    return false;
++
++  return (Id == TY_F_FixedForm || Id == TY_PP_F_FixedForm);
++}
++#endif
++
+ bool types::isSrcFile(ID Id) {
+   return Id != TY_Object && getPreprocessedType(Id) != TY_INVALID;
+ }
+@@ -233,8 +263,13 @@
+   return llvm::StringSwitch<types::ID>(Ext)
+            .Case("c", TY_C)
+            .Case("C", TY_CXX)
++#ifdef ENABLE_CLASSIC_FLANG
++           .Case("F", TY_F_FixedForm)
++           .Case("f", TY_PP_F_FixedForm)
++#else
+            .Case("F", TY_Fortran)
+            .Case("f", TY_PP_Fortran)
++#endif
+            .Case("h", TY_CHeader)
+            .Case("H", TY_CXXHeader)
+            .Case("i", TY_PP_C)
+@@ -267,6 +302,20 @@
+            .Case("cui", TY_PP_CUDA)
+            .Case("cxx", TY_CXX)
+            .Case("CXX", TY_CXX)
++#ifdef ENABLE_CLASSIC_FLANG
++           .Case("for", TY_PP_F_FixedForm)
++           .Case("FOR", TY_PP_F_FixedForm)
++           .Case("fpp", TY_F_FixedForm)
++           .Case("FPP", TY_F_FixedForm)
++           .Case("f90", TY_PP_F_FreeForm)
++           .Case("f95", TY_PP_F_FreeForm)
++           .Case("f03", TY_PP_F_FreeForm)
++           .Case("f08", TY_PP_F_FreeForm)
++           .Case("F90", TY_F_FreeForm)
++           .Case("F95", TY_F_FreeForm)
++           .Case("F03", TY_F_FreeForm)
++           .Case("F08", TY_F_FreeForm)
++#else
+            .Case("F90", TY_Fortran)
+            .Case("f90", TY_PP_Fortran)
+            .Case("F95", TY_Fortran)
+@@ -275,6 +324,7 @@
+            .Case("FOR", TY_PP_Fortran)
+            .Case("fpp", TY_Fortran)
+            .Case("FPP", TY_Fortran)
++#endif
+            .Case("gch", TY_PCH)
+            .Case("hip", TY_HIP)
+            .Case("hpp", TY_CXXHeader)
+@@ -323,13 +373,21 @@
+   phases::ID LastPhase;
+ 
+   // Filter to compiler mode. When the compiler is run as a preprocessor then
+-  // compilation is not an option.
++  // compilation is not an option, except when the input is Fortran, for which
++  // preprocessing may be delegated to the classic Flang frontend.
+   // -S runs the compiler in Assembly listing mode.
+   if (Driver.CCCIsCPP() || DAL.getLastArg(options::OPT_E) ||
+       DAL.getLastArg(options::OPT__SLASH_EP) ||
+       DAL.getLastArg(options::OPT_M, options::OPT_MM) ||
+       DAL.getLastArg(options::OPT__SLASH_P))
++#ifdef ENABLE_CLASSIC_FLANG
++    if (Driver.IsFlangMode())
++      LastPhase = phases::Compile;
++    else
++      LastPhase = phases::Preprocess;
++#else
+     LastPhase = phases::Preprocess;
++#endif
+ 
+   // --precompile only runs up to precompilation.
+   // This is a clang extension and is not compatible with GCC.
+--- a/clang/lib/Frontend/CompilerInvocation.cpp	2021-02-18 21:25:16.470036850 +0100
++++ b/clang/lib/Frontend/CompilerInvocation.cpp	2021-02-18 21:43:32.082281167 +0100
+@@ -753,6 +753,10 @@
+       Opts.setVecLib(CodeGenOptions::MASSV);
+     else if (Name == "SVML")
+       Opts.setVecLib(CodeGenOptions::SVML);
++#ifdef ENABLE_CLASSIC_FLANG
++    else if (Name == "PGMATH")
++      Opts.setVecLib(CodeGenOptions::PGMATH);
++#endif
+     else if (Name == "none")
+       Opts.setVecLib(CodeGenOptions::NoLibrary);
+     else
+--- a/clang/lib/Frontend/InitPreprocessor.cpp	2021-02-18 21:25:16.470036850 +0100
++++ b/clang/lib/Frontend/InitPreprocessor.cpp	2021-02-18 21:34:43.202809573 +0100
+@@ -159,26 +159,6 @@
+   Builder.defineMacro(DefPrefix + "MIN__", Twine(Min)+Ext);
+ }
+ 
+-
+-/// DefineTypeSize - Emit a macro to the predefines buffer that declares a macro
+-/// named MacroName with the max value for a type with width 'TypeWidth' a
+-/// signedness of 'isSigned' and with a value suffix of 'ValSuffix' (e.g. LL).
+-static void DefineTypeSize(const Twine &MacroName, unsigned TypeWidth,
+-                           StringRef ValSuffix, bool isSigned,
+-                           MacroBuilder &Builder) {
+-  llvm::APInt MaxVal = isSigned ? llvm::APInt::getSignedMaxValue(TypeWidth)
+-                                : llvm::APInt::getMaxValue(TypeWidth);
+-  Builder.defineMacro(MacroName, MaxVal.toString(10, isSigned) + ValSuffix);
+-}
+-
+-/// DefineTypeSize - An overloaded helper that uses TargetInfo to determine
+-/// the width, suffix, and signedness of the given type
+-static void DefineTypeSize(const Twine &MacroName, TargetInfo::IntType Ty,
+-                           const TargetInfo &TI, MacroBuilder &Builder) {
+-  DefineTypeSize(MacroName, TI.getTypeWidth(Ty), TI.getTypeConstantSuffix(Ty),
+-                 TI.isTypeSigned(Ty), Builder);
+-}
+-
+ static void DefineFmt(const Twine &Prefix, TargetInfo::IntType Ty,
+                       const TargetInfo &TI, MacroBuilder &Builder) {
+   bool IsSigned = TI.isTypeSigned(Ty);
+--- a/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp	2021-02-18 21:25:16.933040872 +0100
++++ b/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp	2021-02-18 21:34:43.202809573 +0100
+@@ -737,6 +737,8 @@
+     return std::make_unique<TextFileHandler>(/*Comment=*/"#");
+   if (FilesType == "ll")
+     return std::make_unique<TextFileHandler>(/*Comment=*/";");
++  if (FilesType == "f95")
++    return std::make_unique<TextFileHandler>(/*Comment=*/"!");
+   if (FilesType == "bc")
+     return std::make_unique<BinaryFileHandler>();
+   if (FilesType == "s")
+--- a/clang/tools/driver/CMakeLists.txt	2021-02-18 21:25:16.934040880 +0100
++++ b/clang/tools/driver/CMakeLists.txt	2021-02-18 21:34:43.202809573 +0100
+@@ -63,7 +63,7 @@
+ add_dependencies(clang clang-resource-headers)
+ 
+ if(NOT CLANG_LINKS_TO_CREATE)
+-  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp)
++  set(CLANG_LINKS_TO_CREATE clang++ clang-cl clang-cpp flang)
+ endif()
+ 
+ foreach(link ${CLANG_LINKS_TO_CREATE})
