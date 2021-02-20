@@ -22,6 +22,7 @@ DEPEND="${RDEPEND}
 	${PYTHON_DEPS}"
 
 PATCHES=(
+	"${FILESDIR}"/fix-build.patch
 	"${FILESDIR}"/fix-definition.patch
 	"${FILESDIR}"/fenv.patch
 )
