@@ -7,15 +7,16 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-SDK_PV="5.0.103"
+SDK_PV="5.0.201"
 SDK="dotnet-sdk-${SDK_PV}-linux"
-NDBG_PV="1.2.0-672"
+NDBG_PV="1.2.0-738"
 NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
-	arm64? ( https://download.visualstudio.microsoft.com/download/pr/5c2e5668-d7f9-4705-acb0-04ceeda6dadf/4eca3d1ffd92cb2b5f9152155a5529b4/${SDK}-arm64.tar.gz
+	arm64? ( https://download.visualstudio.microsoft.com/download/pr/2e5353f1-8818-4d87-af94-0e5cec730b40/58172cde97795b55bcfc7177dbcf3c68/${SDK}-arm64.tar.gz
+
 	)
-	amd64? ( https://download.visualstudio.microsoft.com/download/pr/a2052604-de46-4cd4-8256-9bc222537d32/a798771950904eaf91c0c37c58f516e1/${SDK}-x64.tar.gz
+	amd64? ( https://download.visualstudio.microsoft.com/download/pr/73a9cb2a-1acd-4d20-b864-d12797ca3d40/075dbe1dc3bba4aa85ca420167b861b6/${SDK}-x64.tar.gz
 	)
 	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
@@ -143,11 +144,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/disable-stack-size.patch
 	eapply "${FILESDIR}"/use-system-unwind.patch
 	eapply "${FILESDIR}"/libunwind-arm64.patch
-
-	# netcoredbg patches
-	pushd ${NDBG_S} >/dev/null || die
-	eapply "${FILESDIR}"/netcoredbg-fix-build.patch
-	popd >/dev/null
 
 	default
 }
