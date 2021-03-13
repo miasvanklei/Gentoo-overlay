@@ -8,16 +8,13 @@ HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
 SDK_PV="5.0.201"
-SDK="dotnet-sdk-${SDK_PV}-linux"
+SDK="dotnet-sdk-${SDK_PV}-linux-musl"
 NDBG_PV="1.2.0-738"
 NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
-	arm64? ( https://download.visualstudio.microsoft.com/download/pr/2e5353f1-8818-4d87-af94-0e5cec730b40/58172cde97795b55bcfc7177dbcf3c68/${SDK}-arm64.tar.gz
-
-	)
-	amd64? ( https://download.visualstudio.microsoft.com/download/pr/73a9cb2a-1acd-4d20-b864-d12797ca3d40/075dbe1dc3bba4aa85ca420167b861b6/${SDK}-x64.tar.gz
-	)
+        arm64? ( https://download.visualstudio.microsoft.com/download/pr/b334c33b-ac9d-4216-9a89-29961ea5ab77/b9409125a942f37c583da09175bc4699/${SDK}-arm64.tar.gz )
+        amd64? ( https://download.visualstudio.microsoft.com/download/pr/9d29393e-788a-4435-a7b9-1f52268ca194/bd43949f39d6a5e85357daba91d99831/${SDK}-x64.tar.gz )
 	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz
 	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
 
@@ -35,6 +32,8 @@ DEPEND="${RDEPEND}
 	>=dev-util/cmake-3.3.1-r1
 	>=sys-devel/gettext-0.19.7
 	>=sys-devel/make-4.1-r1"
+
+PDEPEND="=virtual/dotnet-runtime-${PV}"
 
 S=${WORKDIR}/runtime-${PV}
 
@@ -86,7 +85,7 @@ pkg_setup() {
 	fi
 
 	DSDK="${SDK}-${DARCH}"
-	TARGET="linux-${DARCH}"
+	TARGET="linux-musl-${DARCH}"
 	export SDK_S="${WORKDIR}/${DSDK}"
 	export CORECLR_S="${S}/src/coreclr"
 	export COREFX_S="${S}/src/libraries/Native"
@@ -200,6 +199,12 @@ src_compile() {
 	emake VERBOSE=1
 }
 
+change_version() {
+        pushd $1 >/dev/null || die
+        mv ${PV} current || die
+        popd >/dev/null || die
+}
+
 src_install() {
         local dest_core="/usr/share/dotnet"
 	local dest="${D}${dest_core}"
@@ -209,9 +214,19 @@ src_install() {
 	mkdir -p "${dest}" || die
 	cp -rpP "${SDK_S}"/* ${dest} || die
 
+	# change version to current
+	pushd ${dest} >/dev/null || die
+	change_version host/fxr
+	change_version packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH}
+	change_version shared/Microsoft.NETCore.App
+	change_version shared/Microsoft.AspNetCore.App
+	change_version templates
+	popd || die
+
 	# netcoredbg
-	cd ${NDBG_S} || die
+	pushd ${NDBG_S} || die
 	make install DESTDIR="${dest}/${PV}" || die
+	popd || die
 	dosym "${dest}/${PV}/netcoredbg" "/usr/bin/netcoredbg"
 
 	# dotnet
