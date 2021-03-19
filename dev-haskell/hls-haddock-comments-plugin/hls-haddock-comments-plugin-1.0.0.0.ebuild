@@ -8,8 +8,8 @@ EAPI=7
 CABAL_FEATURES="lib profile haddock hoogle hscolour"
 inherit haskell-cabal
 
-DESCRIPTION="Haddock comments generator plugin for Haskell Language Server"
-HOMEPAGE="https://hackage.haskell.org/package/hls-haddock-comments-plugin"
+DESCRIPTION="Haddock comments plugin for Haskell Language Server"
+HOMEPAGE="https://github.com/haskell/haskell-language-server"
 SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 
 LICENSE="Apache-2.0"
@@ -18,14 +18,14 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 RDEPEND="dev-haskell/ghc-exactprint:=[profile?]
-	dev-haskell/ghcide:=[profile?]
-	dev-haskell/haskell-lsp-types:=[profile?]
-	dev-haskell/hls-plugin-api:=[profile?]
+	>=dev-haskell/ghcide-1.0.0.0:=[profile?] <dev-haskell/ghcide-1.1:=[profile?]
+	>=dev-haskell/hls-plugin-api-1.0.0.0:=[profile?] <dev-haskell/hls-plugin-api-1.1:=[profile?]
+	dev-haskell/lsp-types:=[profile?]
 	dev-haskell/text:=[profile?]
 	dev-haskell/unordered-containers:=[profile?]
 	dev-lang/ghc:=[profile?]
-	>=dev-lang/ghc-7.4.1:=
+	>=dev-lang/ghc-8.6.3:=
 "
 DEPEND="${RDEPEND}
-	>=dev-haskell/cabal-2.2
+	>=dev-haskell/cabal-2.4.0.1
 "
