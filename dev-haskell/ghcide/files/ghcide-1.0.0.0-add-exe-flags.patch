@@ -1,0 +1,44 @@
+--- a/ghcide.cabal	2021-03-18 19:06:13.521394886 +0100
++++ b/ghcide.cabal	2021-03-18 19:09:20.060149847 +0100
+@@ -198,7 +198,13 @@
+     if flag(ghc-patched-unboxed-bytecode)
+       cpp-options: -DGHC_PATCHED_UNBOXED_BYTECODE
+ 
++flag test-exe
++    description: Build the ghcide-test-preprocessor executable
++    default: False
++
+ executable ghcide-test-preprocessor
++    if !flag(test-exe)
++        buildable: False    
+     default-language: Haskell2010
+     hs-source-dirs: test/preprocessor
+     ghc-options: -Wall -Wno-name-shadowing
+@@ -244,7 +250,13 @@
+         text,
+         yaml
+ 
++flag executable
++    description: Build the ghcide executable
++    default: False
++
+ executable ghcide
++    if !flag(executable)
++      buildable: False
+     default-language:   Haskell2010
+     include-dirs:
+         include
+@@ -382,7 +394,13 @@
+         TypeApplications
+         ViewPatterns
+ 
++flag bench-exe
++    description: Build the ghcide-bench executable
++    default: False
++
+ executable ghcide-bench
++    if !flag(bench-exe)
++        buildable: False
+     default-language: Haskell2010
+     build-tool-depends:
+         ghcide:ghcide
