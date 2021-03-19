@@ -31,13 +31,18 @@ src_prepare() {
 	eapply "${FILESDIR}"/mono-msbuild-license-case.patch
 	eapply "${FILESDIR}"/mono-msbuild-use-bash.patch
 	eapply "${FILESDIR}"/fix-compile.patch
+	eapply "${FILESDIR}"/remove-myget-feeds-and-replace-with-AzDO-feeds.patch
 
 	eapply_user
 }
 
 src_compile() {
 	export DOTNET_MSBUILD_SDK_RESOLVER_CLI_DIR=/usr/share/dotnet
+
+	# no telemetry or first time experience
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
+	export DOTNET_NOLOGO=1
+
 	./eng/cibuild_bootstrapped_msbuild.sh \
 	--host_type mono --configuration Release --skip_tests /p:DisableNerdbankVersioning=true || die
 
@@ -54,4 +59,8 @@ src_compile() {
 src_install() {
 	cp -dr --no-preserve='ownership' ${S}/target/usr "${D}"
 	find "${D}" -name "*.pdb" -delete
+
+	# msbuild needs a link to libhostfxr
+	hostfxr=/usr/lib/mono/msbuild/Current/bin/SdkResolvers/Microsoft.DotNet.MSBuildSdkResolver/libhostfxr.so
+	dosym /usr/share/dotnet/host/fxr/current/libhostfxr.so $hostfxr
 }
