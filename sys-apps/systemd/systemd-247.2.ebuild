@@ -327,6 +327,8 @@ multilib_src_configure() {
 		-Dvconsole=$(meson_multilib)
 
 		# disabled on musl
+		-Dlibidn=false
+		-Dlibidn2=false
 		-Dgshadow=false
 		-Defi=false
 		-Dnss-myhostname=false
