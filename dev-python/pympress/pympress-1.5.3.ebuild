@@ -14,13 +14,14 @@ SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
 LICENSE="MPL-2.0"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
-IUSE=""
+IUSE="gstreamer vlc"
 
 RDEPEND="
 	app-text/poppler[cairo,introspection]
 	dev-python/pygobject[${PYTHON_USEDEP}]
 	dev-python/watchdog[${PYTHON_USEDEP}]
-	dev-python/python-vlc[${PYTHON_USEDEP}]
+	vlc? ( dev-python/python-vlc[${PYTHON_USEDEP}] )
+	gstreamer? ( dev-python/gst-python[${PYTHON_USEDEP}] )
 	dev-python/Babel[${PYTHON_USEDEP}]
 	x11-libs/gtk+:3[introspection]"
 
