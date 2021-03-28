@@ -18,6 +18,7 @@ RDEPEND="
 	>=kde-apps/juk-${PV}:${SLOT}
 	>=kde-apps/kdenlive-${PV}:${SLOT}
 	>=kde-apps/kwave-${PV}:${SLOT}
+	>=kde-apps/dragon-${PV}:${SLOT}
 	cdrom? (
 		>=kde-apps/audiocd-kio-${PV}:${SLOT}
 		>=kde-apps/libkcompactdisc-${PV}:${SLOT}
