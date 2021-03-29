@@ -1,0 +1,72 @@
+--- a/rtkit-daemon.c	2021-03-23 15:42:49.182780865 +0100
++++ b/rtkit-daemon.c	2021-03-23 15:43:13.075986881 +0100
+@@ -44,6 +44,7 @@
+ #include <assert.h>
+ #include <getopt.h>
+ #include <signal.h>
++#include <sys/syscall.h>
+ #include <sys/poll.h>
+ #include <sys/eventfd.h>
+ #include <pthread.h>
+@@ -196,6 +197,16 @@
+ static pthread_t canary_thread_id = 0, watchdog_thread_id = 0;
+ static volatile uint32_t refuse_until = 0;
+ 
++/**
++ * Wrapper for the "sched_setscheduler" system call.  We don't use the
++ * one from the C library because Musl has an intentionally broken
++ * implementation.
++ */
++static int linux_sched_setscheduler(pid_t pid, int sched, const struct sched_param *param)
++{
++        return syscall(__NR_sched_setscheduler, pid, sched, param);
++}
++
+ static const char *get_proc_path(void) {
+         /* Useful for chroot environments */
+ 
+@@ -564,7 +575,7 @@
+         memset(&param, 0, sizeof(param));
+         param.sched_priority = priority;
+ 
+-        if (sched_setscheduler(0, sched_policy|SCHED_RESET_ON_FORK, &param) < 0) {
++        if (linux_sched_setscheduler(0, sched_policy|SCHED_RESET_ON_FORK, &param) < 0) {
+                 r = -errno;
+                 syslog(LOG_ERR, "Failed to make ourselves RT: %s\n", strerror(errno));
+                 goto finish;
+@@ -581,7 +592,7 @@
+ 
+         memset(&param, 0, sizeof(param));
+ 
+-        if (sched_setscheduler(0, SCHED_OTHER, &param) < 0)
++        if (linux_sched_setscheduler(0, SCHED_OTHER, &param) < 0)
+                 syslog(LOG_WARNING, "Warning: Failed to reset scheduling to SCHED_OTHER: %s\n", strerror(errno));
+ 
+         if (setpriority(PRIO_PROCESS, 0, nice_level) < 0)
+@@ -696,7 +707,7 @@
+         memset(&param, 0, sizeof(param));
+         param.sched_priority = 0;
+ 
+-        if (sched_setscheduler(tid, SCHED_OTHER, &param) < 0) {
++        if (linux_sched_setscheduler(tid, SCHED_OTHER, &param) < 0) {
+                 if (errno != ESRCH)
+                         syslog(LOG_WARNING, "Warning: Failed to reset scheduling to SCHED_OTHER for thread %llu: %s\n", (unsigned long long) tid, strerror(errno));
+                 r = -1;
+@@ -748,7 +759,7 @@
+         /* Ok, everything seems to be in order, now, let's do it */
+         memset(&param, 0, sizeof(param));
+         param.sched_priority = (int) priority;
+-        if (sched_setscheduler(t->pid, sched_policy|SCHED_RESET_ON_FORK, &param) < 0) {
++        if (linux_sched_setscheduler(t->pid, sched_policy|SCHED_RESET_ON_FORK, &param) < 0) {
+                 r = -errno;
+                 syslog(LOG_ERR, "Failed to make thread %llu RT: %s\n", (unsigned long long) t->pid, strerror(errno));
+                 goto finish;
+@@ -809,7 +820,7 @@
+         /* Ok, everything seems to be in order, now, let's do it */
+         memset(&param, 0, sizeof(param));
+         param.sched_priority = 0;
+-        if (sched_setscheduler(t->pid, SCHED_OTHER|SCHED_RESET_ON_FORK, &param) < 0) {
++        if (linux_sched_setscheduler(t->pid, SCHED_OTHER|SCHED_RESET_ON_FORK, &param) < 0) {
+                 r = -errno;
+                 syslog(LOG_ERR, "Failed to make process %llu SCHED_NORMAL: %s\n", (unsigned long long) t->pid, strerror(errno));
+                 goto finish;

@@ -1,8 +1,8 @@
 diff --git a/app-crypt/libsecret/libsecret-0.20.4.ebuild b/app-crypt/libsecret/libsecret-0.20.4.ebuild
-index 813591a1594..68da27ce963 100644
+index 786c9a4187e..048e62cf83c 100644
 --- a/app-crypt/libsecret/libsecret-0.20.4.ebuild
 +++ b/app-crypt/libsecret/libsecret-0.20.4.ebuild
-@@ -26,7 +26,7 @@ DEPEND="
+@@ -29,7 +29,7 @@ DEPEND="
  "
  RDEPEND="${DEPEND}"
  # gnome-keyring needed at runtime as explained at https://bugs.gentoo.org/475182#c2
@@ -23,10 +23,10 @@ index bc97b2bddb1..c5115af2510 100644
  	seccomp? ( sys-libs/libseccomp )
  	systemd? ( sys-apps/systemd:= )
  "
-diff --git a/app-emulation/libvirt/libvirt-7.0.0-r1.ebuild b/app-emulation/libvirt/libvirt-7.0.0-r1.ebuild
-index fcc41af4f91..2ec1d72c4c9 100644
---- a/app-emulation/libvirt/libvirt-7.0.0-r1.ebuild
-+++ b/app-emulation/libvirt/libvirt-7.0.0-r1.ebuild
+diff --git a/app-emulation/libvirt/libvirt-7.1.0.ebuild b/app-emulation/libvirt/libvirt-7.1.0.ebuild
+index 16755a56b8a..74ed45961a3 100644
+--- a/app-emulation/libvirt/libvirt-7.1.0.ebuild
++++ b/app-emulation/libvirt/libvirt-7.1.0.ebuild
 @@ -105,8 +105,6 @@ RDEPEND="
  	selinux? ( >=sys-libs/libselinux-2.0.85 )
  	virt-network? (
@@ -36,18 +36,6 @@ index fcc41af4f91..2ec1d72c4c9 100644
  		net-misc/radvd
  		sys-apps/iproute2[-minimal]
  	)
-diff --git a/app-emulation/podman/podman-3.0.1.ebuild b/app-emulation/podman/podman-3.0.1.ebuild
-index f82494e1737..04abe6eee87 100644
---- a/app-emulation/podman/podman-3.0.1.ebuild
-+++ b/app-emulation/podman/podman-3.0.1.ebuild
-@@ -24,7 +24,6 @@ COMMON_DEPEND="
- 	dev-libs/libassuan:=
- 	dev-libs/libgpg-error:=
- 	>=net-misc/cni-plugins-0.8.6
--	sys-fs/lvm2
- 	sys-libs/libseccomp:=
- 
- 	apparmor? ( sys-libs/libapparmor )
 diff --git a/app-emulation/spice/spice-0.14.3.ebuild b/app-emulation/spice/spice-0.14.3.ebuild
 index 95c2c45cdec..8936ada069a 100644
 --- a/app-emulation/spice/spice-0.14.3.ebuild
@@ -179,7 +167,7 @@ index e98848b6f30..68159417257 100644
  
  pkg_postinst() {
 diff --git a/dev-libs/icu/icu-68.2.ebuild b/dev-libs/icu/icu-68.2.ebuild
-index 9f6649c9de0..06c44d2b7a4 100644
+index 1b834bbdc0c..aba1f56f535 100644
 --- a/dev-libs/icu/icu-68.2.ebuild
 +++ b/dev-libs/icu/icu-68.2.ebuild
 @@ -31,7 +31,6 @@ MULTILIB_CHOST_TOOLS=(
@@ -239,19 +227,48 @@ index a8017f003f1..27fdf168897 100644
  	yaml? ( dev-libs/libyaml:= )
  "
  DEPEND="${RDEPEND}"
-diff --git a/media-libs/graphene/graphene-1.10.2.ebuild b/media-libs/graphene/graphene-1.10.2.ebuild
-index bb80f5eb2d5..902e42b19bd 100644
---- a/media-libs/graphene/graphene-1.10.2.ebuild
-+++ b/media-libs/graphene/graphene-1.10.2.ebuild
-@@ -3,7 +3,7 @@
+diff --git a/media-video/pipewire/pipewire-0.3.24.ebuild b/media-video/pipewire/pipewire-0.3.24.ebuild
+index 77f2f8a90cb..5e7ac46ac6f 100644
+--- a/media-video/pipewire/pipewire-0.3.24.ebuild
++++ b/media-video/pipewire/pipewire-0.3.24.ebuild
+@@ -19,7 +19,7 @@ HOMEPAGE="https://pipewire.org/"
  
- EAPI=7
+ LICENSE="LGPL-2.1+"
+ SLOT="0/0.3"
+-IUSE="bluetooth debug doc ffmpeg gstreamer jack sdl sndfile systemd test vulkan X"
++IUSE="aac bluetooth debug doc ffmpeg gstreamer jack sdl sndfile systemd +realtime test vulkan X"
  
--PYTHON_COMPAT=( python3_{7,8} )
-+PYTHON_COMPAT=( python3_{7,8,9} )
- inherit xdg-utils meson multilib-minimal python-any-r1
+ BDEPEND="
+ 	app-doc/xmltoman
+@@ -32,8 +32,11 @@ RDEPEND="
+ 	>=media-libs/alsa-lib-1.1.7
+ 	sys-apps/dbus
+ 	virtual/libudev
++	aac? ( media-libs/fdk-aac )
+ 	bluetooth? (
+ 		media-libs/sbc
++		media-libs/libopenaptx
++		media-libs/libldac
+ 		net-wireless/bluez:=
+ 	)
+ 	ffmpeg? ( media-video/ffmpeg:= )
+@@ -43,6 +46,7 @@ RDEPEND="
+ 		media-libs/gst-plugins-base:1.0
+ 	)
+ 	jack? ( >=media-sound/jack2-1.9.10:2 )
++	realtime? ( sys-auth/rtkit )
+ 	sdl? ( media-libs/libsdl2 )
+ 	sndfile? ( >=media-libs/libsndfile-1.0.20 )
+ 	systemd? ( sys-apps/systemd )
+@@ -68,7 +72,7 @@ src_prepare() {
  
- DESCRIPTION="A thin layer of types for graphic libraries"
+ 	default
+ 	spa_use libcamera
+-	spa_use rtkit
++	spa_use realtime rtkit
+ 	spa_use bluetooth bluez5
+ 	spa_use jack
+ 	spa_use vulkan
 diff --git a/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild b/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
 index 1229170f286..f1d4da09624 100644
 --- a/net-libs/gtk-vnc/gtk-vnc-1.0.0.ebuild
@@ -286,8 +303,20 @@ index f370fa8c0e7..b8e0a759a98 100644
  	)
  
  	if use usbredir; then
+diff --git a/net-misc/spice-gtk/spice-gtk-0.39.ebuild b/net-misc/spice-gtk/spice-gtk-0.39.ebuild
+index 8f9a666c3e7..dd1186f619f 100644
+--- a/net-misc/spice-gtk/spice-gtk-0.39.ebuild
++++ b/net-misc/spice-gtk/spice-gtk-0.39.ebuild
+@@ -92,6 +92,7 @@ src_prepare() {
+ 
+ src_configure() {
+ 	local emesonargs=(
++		-Dcoroutine=gthread
+ 		$(meson_feature gtk3 gtk)
+ 		$(meson_feature introspection)
+ 		$(meson_use mjpeg builtin-mjpeg)
 diff --git a/sys-devel/clang/clang-11.1.0.ebuild b/sys-devel/clang/clang-11.1.0.ebuild
-index d27e969b8fd..62ef355e21f 100644
+index c9f1e660780..d2708984f40 100644
 --- a/sys-devel/clang/clang-11.1.0.ebuild
 +++ b/sys-devel/clang/clang-11.1.0.ebuild
 @@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
@@ -369,11 +398,11 @@ index d27e969b8fd..62ef355e21f 100644
  	# Remove unnecessary headers on FreeBSD, bug #417171
  	if use kernel_FreeBSD; then
  		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
-diff --git a/sys-devel/distcc/distcc-3.3.3-r2.ebuild b/sys-devel/distcc/distcc-3.3.3-r2.ebuild
-index b5d02e4bf2c..e43b83d06ed 100644
---- a/sys-devel/distcc/distcc-3.3.3-r2.ebuild
-+++ b/sys-devel/distcc/distcc-3.3.3-r2.ebuild
-@@ -73,6 +73,7 @@ src_configure() {
+diff --git a/sys-devel/distcc/distcc-3.3.3-r3.ebuild b/sys-devel/distcc/distcc-3.3.3-r3.ebuild
+index 729f2211d69..1d01590ae4b 100644
+--- a/sys-devel/distcc/distcc-3.3.3-r3.ebuild
++++ b/sys-devel/distcc/distcc-3.3.3-r3.ebuild
+@@ -75,6 +75,7 @@ src_configure() {
  	local myconf=(
  		--disable-Werror
  		--libdir=/usr/lib
@@ -395,7 +424,7 @@ index 9bd470297df..fd481026e27 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-11.1.0.ebuild b/sys-devel/llvm/llvm-11.1.0.ebuild
-index 3f27a9d16c4..fc0803b0aa9 100644
+index 9b74cd6a434..e580286f861 100644
 --- a/sys-devel/llvm/llvm-11.1.0.ebuild
 +++ b/sys-devel/llvm/llvm-11.1.0.ebuild
 @@ -32,6 +32,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
@@ -448,10 +477,10 @@ index 3f27a9d16c4..fc0803b0aa9 100644
  		-DLLVM_HOST_TRIPLE="${CHOST}"
  
 diff --git a/sys-libs/liburing/liburing-0.7-r1.ebuild b/sys-libs/liburing/liburing-0.7-r1.ebuild
-index dc6b6076077..104a31b4f5d 100644
+index 715212503eb..3eb405715f9 100644
 --- a/sys-libs/liburing/liburing-0.7-r1.ebuild
 +++ b/sys-libs/liburing/liburing-0.7-r1.ebuild
-@@ -39,7 +39,7 @@ multilib_src_configure() {
+@@ -43,7 +43,7 @@ multilib_src_configure() {
  }
  
  multilib_src_compile() {
