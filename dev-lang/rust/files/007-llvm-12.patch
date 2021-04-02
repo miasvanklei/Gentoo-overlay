@@ -1,0 +1,1030 @@
+diff --color -urN a/compiler/rustc_codegen_llvm/src/abi.rs b/compiler/rustc_codegen_llvm/src/abi.rs
+--- a/compiler/rustc_codegen_llvm/src/abi.rs	2021-04-02 09:30:19.205189240 +0200
++++ b/compiler/rustc_codegen_llvm/src/abi.rs	2021-04-02 09:30:35.436352217 +0200
+@@ -430,7 +430,13 @@
+             PassMode::Indirect { ref attrs, extra_attrs: _, on_stack } => {
+                 assert!(!on_stack);
+                 let i = apply(attrs);
+-                llvm::Attribute::StructRet.apply_llfn(llvm::AttributePlace::Argument(i), llfn);
++                unsafe {
++                    llvm::LLVMRustAddStructRetAttr(
++                        llfn,
++                        llvm::AttributePlace::Argument(i).as_uint(),
++                        self.ret.layout.llvm_type(cx),
++                    );
++                }
+             }
+             _ => {}
+         }
+@@ -486,8 +492,13 @@
+             PassMode::Indirect { ref attrs, extra_attrs: _, on_stack } => {
+                 assert!(!on_stack);
+                 let i = apply(attrs);
+-                llvm::Attribute::StructRet
+-                    .apply_callsite(llvm::AttributePlace::Argument(i), callsite);
++                unsafe {
++                    llvm::LLVMRustAddStructRetCallSiteAttr(
++                        callsite,
++                        llvm::AttributePlace::Argument(i).as_uint(),
++                        self.ret.layout.llvm_type(bx),
++                    );
++                }
+             }
+             _ => {}
+         }
+diff --color -urN a/compiler/rustc_codegen_llvm/src/asm.rs b/compiler/rustc_codegen_llvm/src/asm.rs
+--- a/compiler/rustc_codegen_llvm/src/asm.rs	2021-04-02 09:30:19.205189240 +0200
++++ b/compiler/rustc_codegen_llvm/src/asm.rs	2021-04-02 09:30:40.766405682 +0200
+@@ -304,6 +304,7 @@
+             } else if options.contains(InlineAsmOptions::READONLY) {
+                 llvm::Attribute::ReadOnly.apply_callsite(llvm::AttributePlace::Function, result);
+             }
++            llvm::Attribute::WillReturn.apply_callsite(llvm::AttributePlace::Function, result);
+         } else if options.contains(InlineAsmOptions::NOMEM) {
+             llvm::Attribute::InaccessibleMemOnly
+                 .apply_callsite(llvm::AttributePlace::Function, result);
+diff --color -urN a/compiler/rustc_codegen_llvm/src/attributes.rs b/compiler/rustc_codegen_llvm/src/attributes.rs
+--- a/compiler/rustc_codegen_llvm/src/attributes.rs	2021-04-02 09:30:19.205189240 +0200
++++ b/compiler/rustc_codegen_llvm/src/attributes.rs	2021-04-02 09:30:32.281320557 +0200
+@@ -53,6 +53,9 @@
+     if enabled.contains(SanitizerSet::THREAD) {
+         llvm::Attribute::SanitizeThread.apply_llfn(Function, llfn);
+     }
++    if enabled.contains(SanitizerSet::HWADDRESS) {
++        llvm::Attribute::SanitizeHWAddress.apply_llfn(Function, llfn);
++    }
+ }
+ 
+ /// Tell LLVM to emit or not emit the information necessary to unwind the stack for the function.
+diff --color -urN a/compiler/rustc_codegen_llvm/src/back/write.rs b/compiler/rustc_codegen_llvm/src/back/write.rs
+--- a/compiler/rustc_codegen_llvm/src/back/write.rs	2021-04-02 09:30:19.205189240 +0200
++++ b/compiler/rustc_codegen_llvm/src/back/write.rs	2021-04-02 09:30:47.772475918 +0200
+@@ -139,7 +139,7 @@
+     }
+ }
+ 
+-fn to_llvm_code_model(code_model: Option<CodeModel>) -> llvm::CodeModel {
++pub(crate) fn to_llvm_code_model(code_model: Option<CodeModel>) -> llvm::CodeModel {
+     match code_model {
+         Some(CodeModel::Tiny) => llvm::CodeModel::Tiny,
+         Some(CodeModel::Small) => llvm::CodeModel::Small,
+@@ -440,6 +440,8 @@
+             sanitize_memory_recover: config.sanitizer_recover.contains(SanitizerSet::MEMORY),
+             sanitize_memory_track_origins: config.sanitizer_memory_track_origins as c_int,
+             sanitize_thread: config.sanitizer.contains(SanitizerSet::THREAD),
++            sanitize_hwaddress: config.sanitizer.contains(SanitizerSet::HWADDRESS),
++            sanitize_hwaddress_recover: config.sanitizer_recover.contains(SanitizerSet::HWADDRESS),
+         })
+     } else {
+         None
+@@ -652,6 +654,10 @@
+     if config.sanitizer.contains(SanitizerSet::THREAD) {
+         passes.push(llvm::LLVMRustCreateThreadSanitizerPass());
+     }
++    if config.sanitizer.contains(SanitizerSet::HWADDRESS) {
++        let recover = config.sanitizer_recover.contains(SanitizerSet::HWADDRESS);
++        passes.push(llvm::LLVMRustCreateHWAddressSanitizerPass(recover));
++    }
+ }
+ 
+ pub(crate) fn link(
+diff --color -urN a/compiler/rustc_codegen_llvm/src/context.rs b/compiler/rustc_codegen_llvm/src/context.rs
+--- a/compiler/rustc_codegen_llvm/src/context.rs	2021-04-02 09:30:19.205189240 +0200
++++ b/compiler/rustc_codegen_llvm/src/context.rs	2021-04-02 09:30:47.772475918 +0200
+@@ -1,4 +1,5 @@
+ use crate::attributes;
++use crate::back::write::to_llvm_code_model;
+ use crate::callee::get_fn;
+ use crate::coverageinfo;
+ use crate::debuginfo;
+@@ -104,6 +105,10 @@
+     data_layout.replace("-p270:32:32-p271:32:32-p272:64:64-", "-")
+ }
+ 
++fn strip_powerpc64_vectors(data_layout: String) -> String {
++    data_layout.replace("-v256:256:256-v512:512:512", "")
++}
++
+ pub unsafe fn create_module(
+     tcx: TyCtxt<'_>,
+     llcx: &'ll llvm::Context,
+@@ -119,6 +124,9 @@
+     {
+         target_data_layout = strip_x86_address_spaces(target_data_layout);
+     }
++    if llvm_util::get_version() < (12, 0, 0) && sess.target.arch == "powerpc64" {
++        target_data_layout = strip_powerpc64_vectors(target_data_layout);
++    }
+ 
+     // Ensure the data-layout values hardcoded remain the defaults.
+     if sess.target.is_builtin {
+@@ -174,6 +182,13 @@
+         }
+     }
+ 
++    // Linking object files with different code models is undefined behavior
++    // because the compiler would have to generate additional code (to span
++    // longer jumps) if a larger code model is used with a smaller one.
++    //
++    // See https://reviews.llvm.org/D52322 and https://reviews.llvm.org/D52323.
++    llvm::LLVMRustSetModuleCodeModel(llmod, to_llvm_code_model(sess.code_model()));
++
+     // If skipping the PLT is enabled, we need to add some module metadata
+     // to ensure intrinsic calls don't use it.
+     if !sess.needs_plt() {
+diff --color -urN a/compiler/rustc_codegen_llvm/src/coverageinfo/mod.rs b/compiler/rustc_codegen_llvm/src/coverageinfo/mod.rs
+--- a/compiler/rustc_codegen_llvm/src/coverageinfo/mod.rs	2021-04-02 09:30:19.205189240 +0200
++++ b/compiler/rustc_codegen_llvm/src/coverageinfo/mod.rs	2021-04-02 09:30:38.037378311 +0200
+@@ -162,7 +162,7 @@
+ pub(crate) fn write_mapping_to_buffer(
+     virtual_file_mapping: Vec<u32>,
+     expressions: Vec<CounterExpression>,
+-    mut mapping_regions: Vec<CounterMappingRegion>,
++    mapping_regions: Vec<CounterMappingRegion>,
+     buffer: &RustString,
+ ) {
+     unsafe {
+@@ -171,7 +171,7 @@
+             virtual_file_mapping.len() as c_uint,
+             expressions.as_ptr(),
+             expressions.len() as c_uint,
+-            mapping_regions.as_mut_ptr(),
++            mapping_regions.as_ptr(),
+             mapping_regions.len() as c_uint,
+             buffer,
+         );
+diff --color -urN a/compiler/rustc_codegen_llvm/src/llvm/ffi.rs b/compiler/rustc_codegen_llvm/src/llvm/ffi.rs
+--- a/compiler/rustc_codegen_llvm/src/llvm/ffi.rs	2021-04-02 09:30:19.205189240 +0200
++++ b/compiler/rustc_codegen_llvm/src/llvm/ffi.rs	2021-04-02 09:30:47.773475928 +0200
+@@ -131,6 +131,8 @@
+     ReturnsTwice = 25,
+     ReadNone = 26,
+     InaccessibleMemOnly = 27,
++    SanitizeHWAddress = 28,
++    WillReturn = 29,
+ }
+ 
+ /// LLVMIntPredicate
+@@ -238,6 +240,7 @@
+     Token = 16,
+     ScalableVector = 17,
+     BFloat = 18,
++    X86_AMX = 19,
+ }
+ 
+ impl TypeKind {
+@@ -262,6 +265,7 @@
+             TypeKind::Token => rustc_codegen_ssa::common::TypeKind::Token,
+             TypeKind::ScalableVector => rustc_codegen_ssa::common::TypeKind::ScalableVector,
+             TypeKind::BFloat => rustc_codegen_ssa::common::TypeKind::BFloat,
++            TypeKind::X86_AMX => rustc_codegen_ssa::common::TypeKind::X86_AMX,
+         }
+     }
+ }
+@@ -439,6 +443,8 @@
+     pub sanitize_memory_recover: bool,
+     pub sanitize_memory_track_origins: c_int,
+     pub sanitize_thread: bool,
++    pub sanitize_hwaddress: bool,
++    pub sanitize_hwaddress_recover: bool,
+ }
+ 
+ /// LLVMRelocMode
+@@ -671,9 +677,7 @@
+     /// array", encoded separately), and source location (start and end positions of the represented
+     /// code region).
+     ///
+-    /// Aligns with [llvm::coverage::CounterMappingRegion](https://github.com/rust-lang/llvm-project/blob/rustc/11.0-2020-10-12/llvm/include/llvm/ProfileData/Coverage/CoverageMapping.h#L224-L227)
+-    /// Important: The Rust struct layout (order and types of fields) must match its C++
+-    /// counterpart.
++    /// Matches LLVMRustCounterMappingRegion.
+     #[derive(Copy, Clone, Debug)]
+     #[repr(C)]
+     pub struct CounterMappingRegion {
+@@ -1070,6 +1074,7 @@
+     pub fn LLVMRustAddDereferenceableAttr(Fn: &Value, index: c_uint, bytes: u64);
+     pub fn LLVMRustAddDereferenceableOrNullAttr(Fn: &Value, index: c_uint, bytes: u64);
+     pub fn LLVMRustAddByValAttr(Fn: &Value, index: c_uint, ty: &Type);
++    pub fn LLVMRustAddStructRetAttr(Fn: &Value, index: c_uint, ty: &Type);
+     pub fn LLVMRustAddFunctionAttribute(Fn: &Value, index: c_uint, attr: Attribute);
+     pub fn LLVMRustAddFunctionAttrStringValue(
+         Fn: &Value,
+@@ -1105,6 +1110,7 @@
+     pub fn LLVMRustAddDereferenceableCallSiteAttr(Instr: &Value, index: c_uint, bytes: u64);
+     pub fn LLVMRustAddDereferenceableOrNullCallSiteAttr(Instr: &Value, index: c_uint, bytes: u64);
+     pub fn LLVMRustAddByValCallSiteAttr(Instr: &Value, index: c_uint, ty: &Type);
++    pub fn LLVMRustAddStructRetCallSiteAttr(Instr: &Value, index: c_uint, ty: &Type);
+ 
+     // Operations on load/store instructions (only)
+     pub fn LLVMSetVolatile(MemoryAccessInst: &Value, volatile: Bool);
+@@ -1789,7 +1795,7 @@
+         NumVirtualFileMappingIDs: c_uint,
+         Expressions: *const coverage_map::CounterExpression,
+         NumExpressions: c_uint,
+-        MappingRegions: *mut coverageinfo::CounterMappingRegion,
++        MappingRegions: *const coverageinfo::CounterMappingRegion,
+         NumMappingRegions: c_uint,
+         BufferOut: &RustString,
+     );
+@@ -2128,6 +2134,7 @@
+         Recover: bool,
+     ) -> &'static mut Pass;
+     pub fn LLVMRustCreateThreadSanitizerPass() -> &'static mut Pass;
++    pub fn LLVMRustCreateHWAddressSanitizerPass(Recover: bool) -> &'static mut Pass;
+     pub fn LLVMRustAddPass(PM: &PassManager<'_>, Pass: &'static mut Pass);
+     pub fn LLVMRustAddLastExtensionPasses(
+         PMB: &PassManagerBuilder,
+@@ -2319,6 +2326,7 @@
+     pub fn LLVMRustUnsetComdat(V: &Value);
+     pub fn LLVMRustSetModulePICLevel(M: &Module);
+     pub fn LLVMRustSetModulePIELevel(M: &Module);
++    pub fn LLVMRustSetModuleCodeModel(M: &Module, Model: CodeModel);
+     pub fn LLVMRustModuleBufferCreate(M: &Module) -> &'static mut ModuleBuffer;
+     pub fn LLVMRustModuleBufferPtr(p: &ModuleBuffer) -> *const u8;
+     pub fn LLVMRustModuleBufferLen(p: &ModuleBuffer) -> usize;
+diff --color -urN a/compiler/rustc_codegen_ssa/src/back/link.rs b/compiler/rustc_codegen_ssa/src/back/link.rs
+--- a/compiler/rustc_codegen_ssa/src/back/link.rs	2021-04-02 09:30:19.204189230 +0200
++++ b/compiler/rustc_codegen_ssa/src/back/link.rs	2021-04-02 09:30:32.282320567 +0200
+@@ -893,6 +893,9 @@
+     if sanitizer.contains(SanitizerSet::THREAD) {
+         link_sanitizer_runtime(sess, linker, "tsan");
+     }
++    if sanitizer.contains(SanitizerSet::HWADDRESS) {
++        link_sanitizer_runtime(sess, linker, "hwasan");
++    }
+ }
+ 
+ fn link_sanitizer_runtime(sess: &Session, linker: &mut dyn Linker, name: &str) {
+diff --color -urN a/compiler/rustc_codegen_ssa/src/common.rs b/compiler/rustc_codegen_ssa/src/common.rs
+--- a/compiler/rustc_codegen_ssa/src/common.rs	2021-04-02 09:30:19.204189230 +0200
++++ b/compiler/rustc_codegen_ssa/src/common.rs	2021-04-02 09:30:35.437352227 +0200
+@@ -95,6 +95,7 @@
+     Token,
+     ScalableVector,
+     BFloat,
++    X86_AMX,
+ }
+ 
+ // FIXME(mw): Anything that is produced via DepGraph::with_task() must implement
+diff --color -urN a/compiler/rustc_llvm/llvm-wrapper/CoverageMappingWrapper.cpp b/compiler/rustc_llvm/llvm-wrapper/CoverageMappingWrapper.cpp
+--- a/compiler/rustc_llvm/llvm-wrapper/CoverageMappingWrapper.cpp	2021-04-02 09:30:19.169188879 +0200
++++ b/compiler/rustc_llvm/llvm-wrapper/CoverageMappingWrapper.cpp	2021-04-02 09:30:38.038378321 +0200
+@@ -8,6 +8,17 @@
+ 
+ using namespace llvm;
+ 
++struct LLVMRustCounterMappingRegion {
++  coverage::Counter Count;
++  uint32_t FileID;
++  uint32_t ExpandedFileID;
++  uint32_t LineStart;
++  uint32_t ColumnStart;
++  uint32_t LineEnd;
++  uint32_t ColumnEnd;
++  coverage::CounterMappingRegion::RegionKind Kind;
++};
++
+ extern "C" void LLVMRustCoverageWriteFilenamesSectionToBuffer(
+     const char* const Filenames[],
+     size_t FilenamesLen,
+@@ -27,13 +38,22 @@
+     unsigned NumVirtualFileMappingIDs,
+     const coverage::CounterExpression *Expressions,
+     unsigned NumExpressions,
+-    coverage::CounterMappingRegion *MappingRegions,
++    LLVMRustCounterMappingRegion *RustMappingRegions,
+     unsigned NumMappingRegions,
+     RustStringRef BufferOut) {
++  // Convert from FFI representation to LLVM representation.
++  SmallVector<coverage::CounterMappingRegion, 0> MappingRegions;
++  MappingRegions.reserve(NumMappingRegions);
++  for (const auto &Region : makeArrayRef(RustMappingRegions, NumMappingRegions)) {
++    MappingRegions.emplace_back(
++        Region.Count, Region.FileID, Region.ExpandedFileID,
++        Region.LineStart, Region.ColumnStart, Region.LineEnd, Region.ColumnEnd,
++        Region.Kind);
++  }
+   auto CoverageMappingWriter = coverage::CoverageMappingWriter(
+       makeArrayRef(VirtualFileMappingIDs, NumVirtualFileMappingIDs),
+       makeArrayRef(Expressions, NumExpressions),
+-      makeMutableArrayRef(MappingRegions, NumMappingRegions));
++      MappingRegions);
+   RawRustStringOstream OS(BufferOut);
+   CoverageMappingWriter.write(OS);
+ }
+diff --color -urN a/compiler/rustc_llvm/llvm-wrapper/LLVMWrapper.h b/compiler/rustc_llvm/llvm-wrapper/LLVMWrapper.h
+--- a/compiler/rustc_llvm/llvm-wrapper/LLVMWrapper.h	2021-04-02 09:30:19.169188879 +0200
++++ b/compiler/rustc_llvm/llvm-wrapper/LLVMWrapper.h	2021-04-02 09:30:40.766405682 +0200
+@@ -85,6 +85,8 @@
+   ReturnsTwice = 25,
+   ReadNone = 26,
+   InaccessibleMemOnly = 27,
++  SanitizeHWAddress = 28,
++  WillReturn = 29,
+ };
+ 
+ typedef struct OpaqueRustString *RustStringRef;
+diff --color -urN a/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp b/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp
+--- a/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp	2021-04-02 09:30:19.169188879 +0200
++++ b/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp	2021-04-02 09:30:47.773475928 +0200
+@@ -5,6 +5,7 @@
+ 
+ #include "LLVMWrapper.h"
+ 
++#include "llvm/Analysis/AliasAnalysis.h"
+ #include "llvm/Analysis/TargetLibraryInfo.h"
+ #include "llvm/Analysis/TargetTransformInfo.h"
+ #include "llvm/CodeGen/TargetSubtargetInfo.h"
+@@ -33,6 +34,7 @@
+ #include "llvm/Support/TimeProfiler.h"
+ #include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
+ #include "llvm/Transforms/Instrumentation/MemorySanitizer.h"
++#include "llvm/Transforms/Instrumentation/HWAddressSanitizer.h"
+ #include "llvm/Transforms/Utils/CanonicalizeAliases.h"
+ #include "llvm/Transforms/Utils/NameAnonGlobals.h"
+ 
+@@ -133,6 +135,12 @@
+   return wrap(createThreadSanitizerLegacyPassPass());
+ }
+ 
++extern "C" LLVMPassRef LLVMRustCreateHWAddressSanitizerPass(bool Recover) {
++  const bool CompileKernel = false;
++
++  return wrap(createHWAddressSanitizerLegacyPassPass(CompileKernel, Recover));
++}
++
+ extern "C" LLVMRustPassKind LLVMRustPassKind(LLVMPassRef RustPass) {
+   assert(RustPass);
+   Pass *Pass = unwrap(RustPass);
+@@ -676,6 +684,25 @@
+     PassInstrumentationCallbacks& PIC, void* LlvmSelfProfiler,
+     LLVMRustSelfProfileBeforePassCallback BeforePassCallback,
+     LLVMRustSelfProfileAfterPassCallback AfterPassCallback) {
++#if LLVM_VERSION_GE(12, 0)
++  PIC.registerBeforeNonSkippedPassCallback([LlvmSelfProfiler, BeforePassCallback](
++                                           StringRef Pass, llvm::Any Ir) {
++    std::string PassName = Pass.str();
++    std::string IrName = LLVMRustwrappedIrGetName(Ir);
++    BeforePassCallback(LlvmSelfProfiler, PassName.c_str(), IrName.c_str());
++  });
++
++  PIC.registerAfterPassCallback(
++      [LlvmSelfProfiler, AfterPassCallback](StringRef Pass, llvm::Any IR,
++                                            const PreservedAnalyses &Preserved) {
++        AfterPassCallback(LlvmSelfProfiler);
++      });
++
++  PIC.registerAfterPassInvalidatedCallback(
++      [LlvmSelfProfiler, AfterPassCallback](StringRef Pass, const PreservedAnalyses &Preserved) {
++        AfterPassCallback(LlvmSelfProfiler);
++      });
++#else
+   PIC.registerBeforePassCallback([LlvmSelfProfiler, BeforePassCallback](
+                                      StringRef Pass, llvm::Any Ir) {
+     std::string PassName = Pass.str();
+@@ -693,6 +720,7 @@
+       [LlvmSelfProfiler, AfterPassCallback](StringRef Pass) {
+         AfterPassCallback(LlvmSelfProfiler);
+       });
++#endif
+ 
+   PIC.registerBeforeAnalysisCallback([LlvmSelfProfiler, BeforePassCallback](
+                                          StringRef Pass, llvm::Any Ir) {
+@@ -722,6 +750,8 @@
+   bool SanitizeMemoryRecover;
+   int  SanitizeMemoryTrackOrigins;
+   bool SanitizeThread;
++  bool SanitizeHWAddress;
++  bool SanitizeHWAddressRecover;
+ };
+ 
+ extern "C" void
+@@ -742,17 +772,28 @@
+   TargetMachine *TM = unwrap(TMRef);
+   PassBuilder::OptimizationLevel OptLevel = fromRust(OptLevelRust);
+ 
+-  // FIXME: MergeFunctions is not supported by NewPM yet.
+-  (void) MergeFunctions;
+ 
+   PipelineTuningOptions PTO;
+   PTO.LoopUnrolling = UnrollLoops;
+   PTO.LoopInterleaving = UnrollLoops;
+   PTO.LoopVectorization = LoopVectorize;
+   PTO.SLPVectorization = SLPVectorize;
++#if LLVM_VERSION_GE(12, 0)
++  PTO.MergeFunctions = MergeFunctions;
++#else
++  // MergeFunctions is not supported by NewPM in older LLVM versions.
++  (void) MergeFunctions;
++#endif
++
++  // FIXME: We may want to expose this as an option.
++  bool DebugPassManager = false;
+ 
+   PassInstrumentationCallbacks PIC;
++#if LLVM_VERSION_GE(12, 0)
++  StandardInstrumentations SI(DebugPassManager);
++#else
+   StandardInstrumentations SI;
++#endif
+   SI.registerCallbacks(PIC);
+ 
+   if (LlvmSelfProfiler){
+@@ -768,10 +809,12 @@
+     PGOOpt = PGOOptions(PGOUsePath, "", "", PGOOptions::IRUse);
+   }
+ 
++#if LLVM_VERSION_GE(12, 0)
++  PassBuilder PB(DebugPassManager, TM, PTO, PGOOpt, &PIC);
++#else
+   PassBuilder PB(TM, PTO, PGOOpt, &PIC);
++#endif
+ 
+-  // FIXME: We may want to expose this as an option.
+-  bool DebugPassManager = false;
+   LoopAnalysisManager LAM(DebugPassManager);
+   FunctionAnalysisManager FAM(DebugPassManager);
+   CGSCCAnalysisManager CGAM(DebugPassManager);
+@@ -793,7 +836,8 @@
+ 
+   // We manually collect pipeline callbacks so we can apply them at O0, where the
+   // PassBuilder does not create a pipeline.
+-  std::vector<std::function<void(ModulePassManager &)>> PipelineStartEPCallbacks;
++  std::vector<std::function<void(ModulePassManager &, PassBuilder::OptimizationLevel)>>
++      PipelineStartEPCallbacks;
+ #if LLVM_VERSION_GE(11, 0)
+   std::vector<std::function<void(ModulePassManager &, PassBuilder::OptimizationLevel)>>
+       OptimizerLastEPCallbacks;
+@@ -803,9 +847,11 @@
+ #endif
+ 
+   if (VerifyIR) {
+-    PipelineStartEPCallbacks.push_back([VerifyIR](ModulePassManager &MPM) {
++    PipelineStartEPCallbacks.push_back(
++      [VerifyIR](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
+         MPM.addPass(VerifierPass());
+-    });
++      }
++    );
+   }
+ 
+   if (SanitizerOptions) {
+@@ -823,9 +869,11 @@
+       );
+ #else
+ #if LLVM_VERSION_GE(10, 0)
+-      PipelineStartEPCallbacks.push_back([Options](ModulePassManager &MPM) {
+-        MPM.addPass(MemorySanitizerPass(Options));
+-      });
++      PipelineStartEPCallbacks.push_back(
++        [Options](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
++          MPM.addPass(MemorySanitizerPass(Options));
++        }
++      );
+ #endif
+       OptimizerLastEPCallbacks.push_back(
+         [Options](FunctionPassManager &FPM, PassBuilder::OptimizationLevel Level) {
+@@ -845,9 +893,11 @@
+       );
+ #else
+ #if LLVM_VERSION_GE(10, 0)
+-      PipelineStartEPCallbacks.push_back([](ModulePassManager &MPM) {
+-        MPM.addPass(ThreadSanitizerPass());
+-      });
++      PipelineStartEPCallbacks.push_back(
++        [](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
++          MPM.addPass(ThreadSanitizerPass());
++        }
++      );
+ #endif
+       OptimizerLastEPCallbacks.push_back(
+         [](FunctionPassManager &FPM, PassBuilder::OptimizationLevel Level) {
+@@ -870,9 +920,11 @@
+         }
+       );
+ #else
+-      PipelineStartEPCallbacks.push_back([&](ModulePassManager &MPM) {
+-        MPM.addPass(RequireAnalysisPass<ASanGlobalsMetadataAnalysis, Module>());
+-      });
++      PipelineStartEPCallbacks.push_back(
++        [&](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
++          MPM.addPass(RequireAnalysisPass<ASanGlobalsMetadataAnalysis, Module>());
++        }
++      );
+       OptimizerLastEPCallbacks.push_back(
+         [SanitizerOptions](FunctionPassManager &FPM, PassBuilder::OptimizationLevel Level) {
+           FPM.addPass(AddressSanitizerPass(
+@@ -881,45 +933,80 @@
+         }
+       );
+       PipelineStartEPCallbacks.push_back(
+-        [SanitizerOptions](ModulePassManager &MPM) {
++        [SanitizerOptions](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
+           MPM.addPass(ModuleAddressSanitizerPass(
+               /*CompileKernel=*/false, SanitizerOptions->SanitizeAddressRecover));
+         }
+       );
+ #endif
+     }
++    if (SanitizerOptions->SanitizeHWAddress) {
++#if LLVM_VERSION_GE(11, 0)
++      OptimizerLastEPCallbacks.push_back(
++        [SanitizerOptions](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
++          MPM.addPass(HWAddressSanitizerPass(
++              /*CompileKernel=*/false, SanitizerOptions->SanitizeHWAddressRecover));
++        }
++      );
++#else
++      PipelineStartEPCallbacks.push_back(
++        [SanitizerOptions](ModulePassManager &MPM, PassBuilder::OptimizationLevel Level) {
++          MPM.addPass(HWAddressSanitizerPass(
++              /*CompileKernel=*/false, SanitizerOptions->SanitizeHWAddressRecover));
++        }
++      );
++#endif
++    }
+   }
+ 
+   ModulePassManager MPM(DebugPassManager);
++  bool NeedThinLTOBufferPasses = UseThinLTOBuffers;
+   if (!NoPrepopulatePasses) {
+     if (OptLevel == PassBuilder::OptimizationLevel::O0) {
++#if LLVM_VERSION_GE(12, 0)
+       for (const auto &C : PipelineStartEPCallbacks)
+-        C(MPM);
++        PB.registerPipelineStartEPCallback(C);
++      for (const auto &C : OptimizerLastEPCallbacks)
++        PB.registerOptimizerLastEPCallback(C);
+ 
+-#if LLVM_VERSION_GE(11, 0)
++      // Pass false as we manually schedule ThinLTOBufferPasses below.
++      MPM = PB.buildO0DefaultPipeline(OptLevel, /* PreLinkLTO */ false);
++#else
++      for (const auto &C : PipelineStartEPCallbacks)
++        C(MPM, OptLevel);
++
++# if LLVM_VERSION_GE(11, 0)
+       for (const auto &C : OptimizerLastEPCallbacks)
+         C(MPM, OptLevel);
+-#else
++# else
+       if (!OptimizerLastEPCallbacks.empty()) {
+         FunctionPassManager FPM(DebugPassManager);
+         for (const auto &C : OptimizerLastEPCallbacks)
+           C(FPM, OptLevel);
+         MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
+       }
+-#endif
++# endif
+ 
+       MPM.addPass(AlwaysInlinerPass(EmitLifetimeMarkers));
+ 
+-#if LLVM_VERSION_GE(10, 0)
++# if LLVM_VERSION_GE(10, 0)
+       if (PGOOpt) {
+         PB.addPGOInstrPassesForO0(
+             MPM, DebugPassManager, PGOOpt->Action == PGOOptions::IRInstr,
+             /*IsCS=*/false, PGOOpt->ProfileFile, PGOOpt->ProfileRemappingFile);
+       }
++# endif
+ #endif
+     } else {
++#if LLVM_VERSION_GE(12, 0)
+       for (const auto &C : PipelineStartEPCallbacks)
+         PB.registerPipelineStartEPCallback(C);
++#else
++      for (const auto &C : PipelineStartEPCallbacks)
++        PB.registerPipelineStartEPCallback([C, OptLevel](ModulePassManager &MPM) {
++          C(MPM, OptLevel);
++        });
++#endif
+       if (OptStage != LLVMRustOptStage::PreLinkThinLTO) {
+         for (const auto &C : OptimizerLastEPCallbacks)
+           PB.registerOptimizerLastEPCallback(C);
+@@ -930,7 +1017,17 @@
+         MPM = PB.buildPerModuleDefaultPipeline(OptLevel, DebugPassManager);
+         break;
+       case LLVMRustOptStage::PreLinkThinLTO:
++#if LLVM_VERSION_GE(12, 0)
++        MPM = PB.buildThinLTOPreLinkDefaultPipeline(OptLevel);
++        // The ThinLTOPreLink pipeline already includes ThinLTOBuffer passes. However, callback
++        // passes may still run afterwards. This means we need to run the buffer passes again.
++        // FIXME: In LLVM 13, the ThinLTOPreLink pipeline also runs OptimizerLastEPCallbacks
++        // before the RequiredLTOPreLinkPasses, in which case we can remove these hacks.
++        if (OptimizerLastEPCallbacks.empty())
++          NeedThinLTOBufferPasses = false;
++#else
+         MPM = PB.buildThinLTOPreLinkDefaultPipeline(OptLevel, DebugPassManager);
++#endif
+ #if LLVM_VERSION_GE(11, 0)
+         for (const auto &C : OptimizerLastEPCallbacks)
+           C(MPM, OptLevel);
+@@ -944,21 +1041,34 @@
+ #endif
+         break;
+       case LLVMRustOptStage::PreLinkFatLTO:
++#if LLVM_VERSION_GE(12, 0)
++        MPM = PB.buildLTOPreLinkDefaultPipeline(OptLevel);
++        NeedThinLTOBufferPasses = false;
++#else
+         MPM = PB.buildLTOPreLinkDefaultPipeline(OptLevel, DebugPassManager);
++#endif
+         break;
+       case LLVMRustOptStage::ThinLTO:
+         // FIXME: Does it make sense to pass the ModuleSummaryIndex?
+         // It only seems to be needed for C++ specific optimizations.
++#if LLVM_VERSION_GE(12, 0)
++        MPM = PB.buildThinLTODefaultPipeline(OptLevel, nullptr);
++#else
+         MPM = PB.buildThinLTODefaultPipeline(OptLevel, DebugPassManager, nullptr);
++#endif
+         break;
+       case LLVMRustOptStage::FatLTO:
++#if LLVM_VERSION_GE(12, 0)
++        MPM = PB.buildLTODefaultPipeline(OptLevel, nullptr);
++#else
+         MPM = PB.buildLTODefaultPipeline(OptLevel, DebugPassManager, nullptr);
++#endif
+         break;
+       }
+     }
+   }
+ 
+-  if (UseThinLTOBuffers) {
++  if (NeedThinLTOBufferPasses) {
+     MPM.addPass(CanonicalizeAliasesPass());
+     MPM.addPass(NameAnonGlobalPass());
+   }
+@@ -1154,6 +1264,14 @@
+   unwrap(M)->setPIELevel(PIELevel::Level::Large);
+ }
+ 
++extern "C" void LLVMRustSetModuleCodeModel(LLVMModuleRef M,
++                                           LLVMRustCodeModel Model) {
++  auto CM = fromRust(Model);
++  if (!CM.hasValue())
++    return;
++  unwrap(M)->setCodeModel(*CM);
++}
++
+ // Here you'll find an implementation of ThinLTO as used by the Rust compiler
+ // right now. This ThinLTO support is only enabled on "recent ish" versions of
+ // LLVM, and otherwise it's just blanket rejected from other compilers.
+diff --color -urN a/compiler/rustc_llvm/llvm-wrapper/RustWrapper.cpp b/compiler/rustc_llvm/llvm-wrapper/RustWrapper.cpp
+--- a/compiler/rustc_llvm/llvm-wrapper/RustWrapper.cpp	2021-04-02 09:30:19.169188879 +0200
++++ b/compiler/rustc_llvm/llvm-wrapper/RustWrapper.cpp	2021-04-02 09:30:40.766405682 +0200
+@@ -205,6 +205,10 @@
+     return Attribute::ReadNone;
+   case InaccessibleMemOnly:
+     return Attribute::InaccessibleMemOnly;
++  case SanitizeHWAddress:
++    return Attribute::SanitizeHWAddress;
++  case WillReturn:
++    return Attribute::WillReturn;
+   }
+   report_fatal_error("bad AttributeKind");
+ }
+@@ -261,6 +265,17 @@
+   Call->addAttribute(Index, Attr);
+ }
+ 
++extern "C" void LLVMRustAddStructRetCallSiteAttr(LLVMValueRef Instr, unsigned Index,
++                                                 LLVMTypeRef Ty) {
++  CallBase *Call = unwrap<CallBase>(Instr);
++#if LLVM_VERSION_GE(12, 0)
++  Attribute Attr = Attribute::getWithStructRetType(Call->getContext(), unwrap(Ty));
++#else
++  Attribute Attr = Attribute::get(Call->getContext(), Attribute::StructRet);
++#endif
++  Call->addAttribute(Index, Attr);
++}
++
+ extern "C" void LLVMRustAddFunctionAttribute(LLVMValueRef Fn, unsigned Index,
+                                              LLVMRustAttribute RustAttr) {
+   Function *A = unwrap<Function>(Fn);
+@@ -302,6 +317,17 @@
+   F->addAttribute(Index, Attr);
+ }
+ 
++extern "C" void LLVMRustAddStructRetAttr(LLVMValueRef Fn, unsigned Index,
++                                         LLVMTypeRef Ty) {
++  Function *F = unwrap<Function>(Fn);
++#if LLVM_VERSION_GE(12, 0)
++  Attribute Attr = Attribute::getWithStructRetType(F->getContext(), unwrap(Ty));
++#else
++  Attribute Attr = Attribute::get(F->getContext(), Attribute::StructRet);
++#endif
++  F->addAttribute(Index, Attr);
++}
++
+ extern "C" void LLVMRustAddFunctionAttrStringValue(LLVMValueRef Fn,
+                                                    unsigned Index,
+                                                    const char *Name,
+@@ -906,6 +906,7 @@
+ #endif
+       InitExpr, unwrapDIPtr<MDNode>(Decl),
+       /* templateParams */ nullptr,
++      llvm::DINode::FlagZero,
+       AlignInBits);
+ 
+   InitVal->setMetadata("dbg", VarExpr);
+@@ -1005,12 +1031,19 @@
+ 
+ extern "C" LLVMMetadataRef
+ LLVMRustDIBuilderCreateDebugLocation(unsigned Line, unsigned Column,
+-                                     LLVMMetadataRef Scope,
++                                     LLVMMetadataRef ScopeRef,
+                                      LLVMMetadataRef InlinedAt) {
+-  DebugLoc debug_loc = DebugLoc::get(Line, Column, unwrapDIPtr<MDNode>(Scope),
++#if LLVM_VERSION_GE(12, 0)
++  MDNode *Scope = unwrapDIPtr<MDNode>(ScopeRef);
++  DILocation *Loc = DILocation::get(
++      Scope->getContext(), Line, Column, Scope,
++      unwrapDIPtr<MDNode>(InlinedAt));
++  return wrap(Loc);
++#else
++  DebugLoc debug_loc = DebugLoc::get(Line, Column, unwrapDIPtr<MDNode>(ScopeRef),
+                                      unwrapDIPtr<MDNode>(InlinedAt));
+-
+   return wrap(debug_loc.getAsMDNode());
++#endif
+ }
+ 
+ extern "C" int64_t LLVMRustDIBuilderCreateOpDeref() {
+@@ -1261,6 +1294,10 @@
+   case Type::BFloatTyID:
+     return LLVMBFloatTypeKind;
+ #endif
++#if LLVM_VERSION_GE(12, 0)
++  case Type::X86_AMXTyID:
++    return LLVMX86_AMXTypeKind;
++#endif
+   }
+   report_fatal_error("Unhandled TypeID.");
+ }
+@@ -1706,11 +1743,23 @@
+ }
+ extern "C" LLVMValueRef
+ LLVMRustBuildVectorReduceFMin(LLVMBuilderRef B, LLVMValueRef Src, bool NoNaN) {
+-   return wrap(unwrap(B)->CreateFPMinReduce(unwrap(Src), NoNaN));
++#if LLVM_VERSION_GE(12, 0)
++  Instruction *I = unwrap(B)->CreateFPMinReduce(unwrap(Src));
++  I->setHasNoNaNs(NoNaN);
++  return wrap(I);
++#else
++  return wrap(unwrap(B)->CreateFPMinReduce(unwrap(Src), NoNaN));
++#endif
+ }
+ extern "C" LLVMValueRef
+ LLVMRustBuildVectorReduceFMax(LLVMBuilderRef B, LLVMValueRef Src, bool NoNaN) {
++#if LLVM_VERSION_GE(12, 0)
++  Instruction *I = unwrap(B)->CreateFPMaxReduce(unwrap(Src));
++  I->setHasNoNaNs(NoNaN);
++  return wrap(I);
++#else
+   return wrap(unwrap(B)->CreateFPMaxReduce(unwrap(Src), NoNaN));
++#endif
+ }
+ 
+ extern "C" LLVMValueRef
+diff --color -urN a/compiler/rustc_session/src/config.rs b/compiler/rustc_session/src/config.rs
+--- a/compiler/rustc_session/src/config.rs	2021-04-02 09:30:19.186189050 +0200
++++ b/compiler/rustc_session/src/config.rs	2021-04-02 09:30:32.283320578 +0200
+@@ -41,6 +41,7 @@
+         const LEAK    = 1 << 1;
+         const MEMORY  = 1 << 2;
+         const THREAD  = 1 << 3;
++        const HWADDRESS  = 1 << 4;
+     }
+ }
+ 
+@@ -54,6 +55,7 @@
+                 SanitizerSet::LEAK => "leak",
+                 SanitizerSet::MEMORY => "memory",
+                 SanitizerSet::THREAD => "thread",
++                SanitizerSet::HWADDRESS => "hwaddress",
+                 _ => panic!("unrecognized sanitizer {:?}", s),
+             };
+             if !first {
+@@ -71,12 +73,18 @@
+     type IntoIter = std::vec::IntoIter<SanitizerSet>;
+ 
+     fn into_iter(self) -> Self::IntoIter {
+-        [SanitizerSet::ADDRESS, SanitizerSet::LEAK, SanitizerSet::MEMORY, SanitizerSet::THREAD]
+-            .iter()
+-            .copied()
+-            .filter(|&s| self.contains(s))
+-            .collect::<Vec<_>>()
+-            .into_iter()
++        [
++            SanitizerSet::ADDRESS,
++            SanitizerSet::LEAK,
++            SanitizerSet::MEMORY,
++            SanitizerSet::THREAD,
++            SanitizerSet::HWADDRESS,
++        ]
++        .iter()
++        .copied()
++        .filter(|&s| self.contains(s))
++        .collect::<Vec<_>>()
++        .into_iter()
+     }
+ }
+ 
+diff --color -urN a/compiler/rustc_session/src/options.rs b/compiler/rustc_session/src/options.rs
+--- a/compiler/rustc_session/src/options.rs	2021-04-02 09:30:19.186189050 +0200
++++ b/compiler/rustc_session/src/options.rs	2021-04-02 09:30:32.283320578 +0200
+@@ -252,7 +252,7 @@
+         pub const parse_passes: &str = "a space-separated list of passes, or `all`";
+         pub const parse_panic_strategy: &str = "either `unwind` or `abort`";
+         pub const parse_relro_level: &str = "one of: `full`, `partial`, or `off`";
+-        pub const parse_sanitizers: &str = "comma separated list of sanitizers: `address`, `leak`, `memory` or `thread`";
++        pub const parse_sanitizers: &str = "comma separated list of sanitizers: `address`, `hwaddress`, `leak`, `memory` or `thread`";
+         pub const parse_sanitizer_memory_track_origins: &str = "0, 1, or 2";
+         pub const parse_cfguard: &str =
+             "either a boolean (`yes`, `no`, `on`, `off`, etc), `checks`, or `nochecks`";
+@@ -475,6 +475,7 @@
+                         "leak" => SanitizerSet::LEAK,
+                         "memory" => SanitizerSet::MEMORY,
+                         "thread" => SanitizerSet::THREAD,
++                        "hwaddress" => SanitizerSet::HWADDRESS,
+                         _ => return false,
+                     }
+                 }
+diff --color -urN a/compiler/rustc_session/src/session.rs b/compiler/rustc_session/src/session.rs
+--- a/compiler/rustc_session/src/session.rs	2021-04-02 09:30:19.186189050 +0200
++++ b/compiler/rustc_session/src/session.rs	2021-04-02 09:30:32.283320578 +0200
+@@ -1126,7 +1126,8 @@
+         self.opts.optimize != config::OptLevel::No
+         // AddressSanitizer uses lifetimes to detect use after scope bugs.
+         // MemorySanitizer uses lifetimes to detect use of uninitialized stack variables.
+-        || self.opts.debugging_opts.sanitizer.intersects(SanitizerSet::ADDRESS | SanitizerSet::MEMORY)
++        // HWAddressSanitizer will use lifetimes to detect use after scope bugs in the future.
++        || self.opts.debugging_opts.sanitizer.intersects(SanitizerSet::ADDRESS | SanitizerSet::MEMORY | SanitizerSet::HWADDRESS)
+     }
+ 
+     pub fn link_dead_code(&self) -> bool {
+@@ -1562,6 +1563,8 @@
+         "x86_64-unknown-freebsd",
+         "x86_64-unknown-linux-gnu",
+     ];
++    const HWASAN_SUPPORTED_TARGETS: &[&str] =
++        &["aarch64-linux-android", "aarch64-unknown-linux-gnu"];
+ 
+     // Sanitizers can only be used on some tested platforms.
+     for s in sess.opts.debugging_opts.sanitizer {
+@@ -1570,6 +1573,7 @@
+             SanitizerSet::LEAK => LSAN_SUPPORTED_TARGETS,
+             SanitizerSet::MEMORY => MSAN_SUPPORTED_TARGETS,
+             SanitizerSet::THREAD => TSAN_SUPPORTED_TARGETS,
++            SanitizerSet::HWADDRESS => HWASAN_SUPPORTED_TARGETS,
+             _ => panic!("unrecognized sanitizer {}", s),
+         };
+         if !supported_targets.contains(&&*sess.opts.target_triple.triple()) {
+diff --color -urN a/compiler/rustc_span/src/symbol.rs b/compiler/rustc_span/src/symbol.rs
+--- a/compiler/rustc_span/src/symbol.rs	2021-04-02 09:30:19.168188869 +0200
++++ b/compiler/rustc_span/src/symbol.rs	2021-04-02 09:30:32.284320588 +0200
+@@ -593,6 +593,7 @@
+         html_no_source,
+         html_playground_url,
+         html_root_url,
++        hwaddress,
+         i,
+         i128,
+         i128_type,
+diff --color -urN a/compiler/rustc_target/src/spec/powerpc64_unknown_linux_gnu.rs b/compiler/rustc_target/src/spec/powerpc64_unknown_linux_gnu.rs
+--- a/compiler/rustc_target/src/spec/powerpc64_unknown_linux_gnu.rs	2021-04-02 09:30:19.173188919 +0200
++++ b/compiler/rustc_target/src/spec/powerpc64_unknown_linux_gnu.rs	2021-04-02 09:30:35.438352237 +0200
+@@ -14,7 +14,7 @@
+     Target {
+         llvm_target: "powerpc64-unknown-linux-gnu".to_string(),
+         pointer_width: 64,
+-        data_layout: "E-m:e-i64:64-n32:64".to_string(),
++        data_layout: "E-m:e-i64:64-n32:64-v256:256:256-v512:512:512".to_string(),
+         arch: "powerpc64".to_string(),
+         options: TargetOptions { endian: Endian::Big, mcount: "_mcount".to_string(), ..base },
+     }
+diff --color -urN a/compiler/rustc_target/src/spec/powerpc64_unknown_linux_musl.rs b/compiler/rustc_target/src/spec/powerpc64_unknown_linux_musl.rs
+--- a/compiler/rustc_target/src/spec/powerpc64_unknown_linux_musl.rs	2021-04-02 09:30:19.173188919 +0200
++++ b/compiler/rustc_target/src/spec/powerpc64_unknown_linux_musl.rs	2021-04-02 09:30:35.438352237 +0200
+@@ -10,7 +10,7 @@
+     Target {
+         llvm_target: "powerpc64-unknown-linux-musl".to_string(),
+         pointer_width: 64,
+-        data_layout: "E-m:e-i64:64-n32:64".to_string(),
++        data_layout: "E-m:e-i64:64-n32:64-v256:256:256-v512:512:512".to_string(),
+         arch: "powerpc64".to_string(),
+         options: TargetOptions { endian: Endian::Big, mcount: "_mcount".to_string(), ..base },
+     }
+diff --color -urN a/compiler/rustc_target/src/spec/powerpc64_wrs_vxworks.rs b/compiler/rustc_target/src/spec/powerpc64_wrs_vxworks.rs
+--- a/compiler/rustc_target/src/spec/powerpc64_wrs_vxworks.rs	2021-04-02 09:30:19.173188919 +0200
++++ b/compiler/rustc_target/src/spec/powerpc64_wrs_vxworks.rs	2021-04-02 09:30:35.438352237 +0200
+@@ -10,7 +10,7 @@
+     Target {
+         llvm_target: "powerpc64-unknown-linux-gnu".to_string(),
+         pointer_width: 64,
+-        data_layout: "E-m:e-i64:64-n32:64".to_string(),
++        data_layout: "E-m:e-i64:64-n32:64-v256:256:256-v512:512:512".to_string(),
+         arch: "powerpc64".to_string(),
+         options: TargetOptions { endian: Endian::Big, ..base },
+     }
+diff --color -urN a/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_gnu.rs b/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_gnu.rs
+--- a/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_gnu.rs	2021-04-02 09:30:19.173188919 +0200
++++ b/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_gnu.rs	2021-04-02 09:30:35.438352237 +0200
+@@ -9,7 +9,7 @@
+     Target {
+         llvm_target: "powerpc64le-unknown-linux-gnu".to_string(),
+         pointer_width: 64,
+-        data_layout: "e-m:e-i64:64-n32:64".to_string(),
++        data_layout: "e-m:e-i64:64-n32:64-v256:256:256-v512:512:512".to_string(),
+         arch: "powerpc64".to_string(),
+         options: TargetOptions { mcount: "_mcount".to_string(), ..base },
+     }
+diff --color -urN a/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_musl.rs b/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_musl.rs
+--- a/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_musl.rs	2021-04-02 09:30:19.173188919 +0200
++++ b/compiler/rustc_target/src/spec/powerpc64le_unknown_linux_musl.rs	2021-04-02 09:30:35.438352237 +0200
+@@ -9,7 +9,7 @@
+     Target {
+         llvm_target: "powerpc64le-unknown-linux-musl".to_string(),
+         pointer_width: 64,
+-        data_layout: "e-m:e-i64:64-n32:64".to_string(),
++        data_layout: "e-m:e-i64:64-n32:64-v256:256:256-v512:512:512".to_string(),
+         arch: "powerpc64".to_string(),
+         options: TargetOptions { mcount: "_mcount".to_string(), ..base },
+     }
+diff --color -urN a/compiler/rustc_typeck/src/collect.rs b/compiler/rustc_typeck/src/collect.rs
+--- a/compiler/rustc_typeck/src/collect.rs	2021-04-02 09:30:19.184189029 +0200
++++ b/compiler/rustc_typeck/src/collect.rs	2021-04-02 09:30:32.284320588 +0200
+@@ -2640,10 +2640,12 @@
+                         codegen_fn_attrs.no_sanitize |= SanitizerSet::MEMORY;
+                     } else if item.has_name(sym::thread) {
+                         codegen_fn_attrs.no_sanitize |= SanitizerSet::THREAD;
++                    } else if item.has_name(sym::hwaddress) {
++                        codegen_fn_attrs.no_sanitize |= SanitizerSet::HWADDRESS;
+                     } else {
+                         tcx.sess
+                             .struct_span_err(item.span(), "invalid argument for `no_sanitize`")
+-                            .note("expected one of: `address`, `memory` or `thread`")
++                            .note("expected one of: `address`, `hwaddress`, `memory` or `thread`")
+                             .emit();
+                     }
+                 }
+diff --color -urN a/src/bootstrap/configure.py b/src/bootstrap/configure.py
+--- a/src/bootstrap/configure.py	2021-04-02 09:30:22.224219574 +0200
++++ b/src/bootstrap/configure.py	2021-04-02 09:30:32.284320588 +0200
+@@ -51,7 +51,7 @@
+ o("ninja", "llvm.ninja", "build LLVM using the Ninja generator (for MSVC, requires building in the correct environment)")
+ o("locked-deps", "build.locked-deps", "force Cargo.lock to be up to date")
+ o("vendor", "build.vendor", "enable usage of vendored Rust crates")
+-o("sanitizers", "build.sanitizers", "build the sanitizer runtimes (asan, lsan, msan, tsan)")
++o("sanitizers", "build.sanitizers", "build the sanitizer runtimes (asan, lsan, msan, tsan, hwasan)")
+ o("dist-src", "rust.dist-src", "when building tarballs enables building a source tarball")
+ o("cargo-native-static", "build.cargo-native-static", "static native libraries in cargo")
+ o("profiler", "build.profiler", "build the profiler runtime")
+diff --color -urN a/src/bootstrap/native.rs b/src/bootstrap/native.rs
+--- a/src/bootstrap/native.rs	2021-04-02 09:30:22.223219564 +0200
++++ b/src/bootstrap/native.rs	2021-04-02 09:30:32.284320588 +0200
+@@ -804,7 +804,7 @@
+         "aarch64-apple-darwin" => darwin_libs("osx", &["asan", "lsan", "tsan"]),
+         "aarch64-fuchsia" => common_libs("fuchsia", "aarch64", &["asan"]),
+         "aarch64-unknown-linux-gnu" => {
+-            common_libs("linux", "aarch64", &["asan", "lsan", "msan", "tsan"])
++            common_libs("linux", "aarch64", &["asan", "lsan", "msan", "tsan", "hwasan"])
+         }
+         "x86_64-apple-darwin" => darwin_libs("osx", &["asan", "lsan", "tsan"]),
+         "x86_64-fuchsia" => common_libs("fuchsia", "x86_64", &["asan"]),
+diff --color -urN a/src/tools/compiletest/src/header.rs b/src/tools/compiletest/src/header.rs
+--- a/src/tools/compiletest/src/header.rs	2021-04-02 09:30:19.359190788 +0200
++++ b/src/tools/compiletest/src/header.rs	2021-04-02 09:30:32.285320597 +0200
+@@ -48,6 +48,7 @@
+         let has_lsan = util::LSAN_SUPPORTED_TARGETS.contains(&&*config.target);
+         let has_msan = util::MSAN_SUPPORTED_TARGETS.contains(&&*config.target);
+         let has_tsan = util::TSAN_SUPPORTED_TARGETS.contains(&&*config.target);
++        let has_hwasan = util::HWASAN_SUPPORTED_TARGETS.contains(&&*config.target);
+ 
+         iter_header(testfile, None, rdr, &mut |ln| {
+             // we should check if any only-<platform> exists and if it exists
+@@ -101,6 +102,10 @@
+                     props.ignore = true;
+                 }
+ 
++                if !has_hwasan && config.parse_name_directive(ln, "needs-sanitizer-hwaddress") {
++                    props.ignore = true;
++                }
++
+                 if config.target == "wasm32-unknown-unknown" && config.parse_check_run_results(ln) {
+                     props.ignore = true;
+                 }
+diff --color -urN a/src/tools/compiletest/src/util.rs b/src/tools/compiletest/src/util.rs
+--- a/src/tools/compiletest/src/util.rs	2021-04-02 09:30:19.358190778 +0200
++++ b/src/tools/compiletest/src/util.rs	2021-04-02 09:30:32.285320597 +0200
+@@ -110,6 +110,9 @@
+     "x86_64-unknown-linux-gnu",
+ ];
+ 
++pub const HWASAN_SUPPORTED_TARGETS: &[&str] =
++    &["aarch64-linux-android", "aarch64-unknown-linux-gnu"];
++
+ const BIG_ENDIAN: &[&str] = &[
+     "aarch64_be",
+     "armebv7r",
