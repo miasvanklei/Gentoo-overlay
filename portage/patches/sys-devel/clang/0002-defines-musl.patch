@@ -1,9 +1,9 @@
 --- a/clang/lib/Basic/Targets/OSTargets.h
 +++ b/clang/lib/Basic/Targets/OSTargets.h
 @@ -384,7 +384,7 @@
-       this->PlatformMinVersion = VersionTuple(Maj, Min, Rev);
-       if (Maj)
-         Builder.defineMacro("__ANDROID_API__", Twine(Maj));
+         // defined for compatibility.
+         Builder.defineMacro("__ANDROID_API__", "__ANDROID_MIN_SDK_VERSION__");
+       }
 -    } else {
 +    } else if (!Triple.isMusl()) {
          Builder.defineMacro("__gnu_linux__");
