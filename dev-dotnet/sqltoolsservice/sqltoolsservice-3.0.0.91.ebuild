@@ -9,10 +9,7 @@ LICENSE="MIT"
 
 MY_PV="$(ver_cut 0-3)-release.$(ver_cut 4-)"
 
-SRC_URI="https://github.com/microsoft/${PN}/archive/v${MY_PV}.tar.gz -> ${P}.tar.gz
-	https://github.com/microsoft/sqltoolsservice/raw/9fc5dfa64753c335a63c9b0f7350783f17f8622d/bin/nuget/Microsoft.SqlServer.Migration.Assessment.1.0.20201001.204.nupkg
-	https://github.com/microsoft/sqltoolsservice/raw/9fc5dfa64753c335a63c9b0f7350783f17f8622d/bin/nuget/Microsoft.SqlServer.TransactSql.ScriptDom.NRT.1.2.65626.134.nupkg
-"
+SRC_URI="https://github.com/microsoft/${PN}/archive/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -21,10 +18,6 @@ RDEPEND="dev-dotnet/dotnet-core"
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}/${PN}-${MY_PV}"
-
-PATCHES=(
-	"${FILESDIR}"/fix-nuget.patch
-)
 
 QA_PRESTRIPPED="
 	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsServiceLayer
@@ -38,12 +31,6 @@ build_sqltool()
 	dotnet restore
 	dotnet publish -c release -o "${WORKDIR}/sqltoolsservice" || die
 	popd
-}
-
-src_unpack(){
-	unpack ${P}.tar.gz
-	mkdir ${S}/bin/nuget || die
-	cp  ${DISTDIR}/*.nupkg ${S}/bin/nuget/ || die
 }
 
 src_compile() {
