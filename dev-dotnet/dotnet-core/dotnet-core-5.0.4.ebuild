@@ -9,14 +9,11 @@ LICENSE="MIT"
 
 SDK_PV="5.0.201"
 SDK="dotnet-sdk-${SDK_PV}-linux-musl"
-NDBG_PV="1.2.0-738"
-NDBG="netcoredbg-${NDBG_PV}"
 
 SRC_URI="
         arm64? ( https://download.visualstudio.microsoft.com/download/pr/b334c33b-ac9d-4216-9a89-29961ea5ab77/b9409125a942f37c583da09175bc4699/${SDK}-arm64.tar.gz )
         amd64? ( https://download.visualstudio.microsoft.com/download/pr/9d29393e-788a-4435-a7b9-1f52268ca194/bd43949f39d6a5e85357daba91d99831/${SDK}-x64.tar.gz )
-	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz
-	https://github.com/Samsung/netcoredbg/archive/${NDBG_PV}.tar.gz -> ${NDBG}.tar.gz"
+	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -91,7 +88,6 @@ pkg_setup() {
 	export COREFX_S="${S}/src/libraries/Native"
 	export CORESETUP_S="${S}/src/installer/corehost"
 	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${PV}/runtimes/${TARGET}/native"
-	export NDBG_S="${WORKDIR}/${NDBG}"
 
 	# no telemetry or first time experience
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -105,7 +101,6 @@ src_unpack() {
 	popd >/dev/null
 
 	unpack "${P}.tar.gz"
-	unpack "${NDBG}.tar.gz"
 }
 
 src_prepare() {
@@ -192,11 +187,6 @@ src_compile() {
 	${SDK_S}/dotnet build -c Release /p:Platform=${ARCH} /p:TargetArchitecture=${DARCH} || die
 	popd >/dev/null
 	cp "${artifacts_coreclr}/IL/System.Private.CoreLib.dll" "${dest_core}/${PV}" || die
-
-	einfo "building netcoredbg"
-	cd "${NDBG_S}" || die
-	cmake -DCMAKE_INSTALL_PREFIX=/ -DCORECLR_DIR=${CORECLR_S} -DDOTNET_DIR=${SDK_S} ./ || die
-	emake VERBOSE=1
 }
 
 change_version() {
@@ -222,12 +212,6 @@ src_install() {
 	change_version shared/Microsoft.AspNetCore.App
 	change_version templates
 	popd || die
-
-	# netcoredbg
-	pushd ${NDBG_S} || die
-	make install DESTDIR="${dest}/${PV}" || die
-	popd || die
-	dosym "${dest}/${PV}/netcoredbg" "/usr/bin/netcoredbg"
 
 	# dotnet
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
