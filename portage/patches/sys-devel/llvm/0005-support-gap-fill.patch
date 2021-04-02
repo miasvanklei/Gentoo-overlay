@@ -1,19 +1,30 @@
-diff --git a/llvm/tools/llvm-objcopy/CopyConfig.cpp b/llvm/tools/llvm-objcopy/CopyConfig.cpp
-index 73ed00b5cb2..755a830c7d0 100644
+--- a/llvm/tools/llvm-objcopy/CopyConfig.h
++++ b/llvm/tools/llvm-objcopy/CopyConfig.h
+@@ -167,6 +167,8 @@
+   Optional<StringRef> BuildIdLinkInput;
+   Optional<StringRef> BuildIdLinkOutput;
+   Optional<StringRef> ExtractPartition;
++  Optional<uint8_t> GapFill;
++  Optional<uint64_t> PadTo;
+   StringRef SplitDWO;
+   StringRef SymbolsPrefix;
+   StringRef AllocSectionsPrefix;
 --- a/llvm/tools/llvm-objcopy/CopyConfig.cpp
 +++ b/llvm/tools/llvm-objcopy/CopyConfig.cpp
-@@ -556,7 +556,21 @@ parseObjcopyOptions(ArrayRef<const char *> ArgsArr,
-       InputArgs.getLastArgValue(OBJCOPY_prefix_alloc_sections);
+@@ -621,6 +621,24 @@
    if (auto Arg = InputArgs.getLastArg(OBJCOPY_extract_partition))
      Config.ExtractPartition = Arg->getValue();
--
+ 
 +  if (auto Arg = InputArgs.getLastArg(OBJCOPY_gap_fill)) {
-+    // Truncation is not allowed.
-+    ErrorOr<uint8_t> Val = getAsInteger<uint8_t>(Arg->getValue());
++    ErrorOr<APInt> Val = getAsInteger<APInt>(Arg->getValue());
 +    if (!Val)
 +      return createStringError(Val.getError(), "bad number for --gap-fill: %s",
 +                               Arg->getValue());
-+    Config.GapFill = *Val;
++    // Truncation if needed.
++    if (Val.get().getBitWidth() > 64)
++      Config.GapFill = 0xff;
++    else
++      Config.GapFill = static_cast<uint8_t>(Val.get().getZExtValue());
 +  }
 +  if (auto Arg = InputArgs.getLastArg(OBJCOPY_pad_to)) {
 +    ErrorOr<uint64_t> Addr = getAsInteger<uint64_t>(Arg->getValue());
@@ -25,32 +36,9 @@ index 73ed00b5cb2..755a830c7d0 100644
    for (auto Arg : InputArgs.filtered(OBJCOPY_redefine_symbol)) {
      if (!StringRef(Arg->getValue()).contains('='))
        return createStringError(errc::invalid_argument,
-diff --git a/llvm/tools/llvm-objcopy/CopyConfig.h b/llvm/tools/llvm-objcopy/CopyConfig.h
-index c262934b4a4..44a9a88ae78 100644
---- a/llvm/tools/llvm-objcopy/CopyConfig.h
-+++ b/llvm/tools/llvm-objcopy/CopyConfig.h
-@@ -165,6 +165,8 @@ struct CopyConfig {
-   Optional<StringRef> BuildIdLinkInput;
-   Optional<StringRef> BuildIdLinkOutput;
-   Optional<StringRef> ExtractPartition;
-+  Optional<uint8_t> GapFill;
-+  Optional<uint64_t> PadTo;
-   StringRef SplitDWO;
-   StringRef SymbolsPrefix;
-   StringRef AllocSectionsPrefix;
-diff --git a/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp b/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
-index a0cfd9a5ff8..ca26260db08 100644
 --- a/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
 +++ b/llvm/tools/llvm-objcopy/ELF/ELFObjcopy.cpp
-@@ -40,6 +40,7 @@
- #include <cstdlib>
- #include <functional>
- #include <iterator>
-+#include <map>
- #include <memory>
- #include <string>
- #include <system_error>
-@@ -589,6 +589,153 @@ static Error replaceAndRemoveSections(const CopyConfig &Config, Object &Obj) {
+@@ -613,6 +613,155 @@
    return Obj.removeSections(Config.AllowBrokenLinks, RemovePred);
  }
  
@@ -73,7 +61,7 @@ index a0cfd9a5ff8..ca26260db08 100644
 +                      return (LHS->Size < RHS->Size);
 +                    });
 +
-+  std::map<SectionBase *, uint64_t> SectionGapMap;
++  DenseMap<SectionBase *, uint64_t> SectionGapMap;
 +  // Default filled value for '--pad-to' option.
 +  uint8_t Value = 0;
 +
@@ -117,7 +105,7 @@ index a0cfd9a5ff8..ca26260db08 100644
 +
 +  // Populate section and segment content.
 +  // First, resize the section and its containing segment if needed.
-+  std::map<Segment *, uint8_t *> NewSegments;
++  DenseMap<Segment *, uint8_t *> NewSegments;
 +  for (auto &It : SectionGapMap) {
 +    SectionBase *Sec = It.first;
 +    uint64_t GapsSize = It.second;
@@ -154,10 +142,12 @@ index a0cfd9a5ff8..ca26260db08 100644
 +  Index++;
 +  Twine Msg;
 +  for (auto Size = Obj.sections().size(); Index < Size; ++Index) {
-+    auto CurSec = Obj.sections().getSection(Index, Msg);
-+    if (CurSec->OriginalOffset < PreSecEnd) {
-+      CurSec->OriginalOffset = PreSecEnd;
-+      PreSecEnd = CurSec->OriginalOffset + CurSec->Size;
++    if (auto ExpectedSec = Obj.sections().getSection(Index, Msg)) {
++      SectionBase *CurSec = ExpectedSec.get();
++      if (CurSec->OriginalOffset < PreSecEnd) {
++        CurSec->OriginalOffset = PreSecEnd;
++        PreSecEnd = CurSec->OriginalOffset + CurSec->Size;
++      }
 +    }
 +  }
 +
@@ -204,8 +194,8 @@ index a0cfd9a5ff8..ca26260db08 100644
  // This function handles the high level operations of GNU objcopy including
  // handling command line options. It's important to outline certain properties
  // we expect to hold of the command line operations. Any operation that "keeps"
-@@ -737,6 +884,11 @@ static Error handleArgs(const CopyConfig &Config, Object &Obj,
-         Sec ? (uint16_t)SYMBOL_SIMPLE_INDEX : (uint16_t)SHN_ABS, 0);
+@@ -771,6 +920,11 @@
+     }
    }
  
 +  if ((Config.GapFill || Config.PadTo) && Obj.sections().size()) {
@@ -216,21 +206,20 @@ index a0cfd9a5ff8..ca26260db08 100644
    if (Config.EntryExpr)
      Obj.Entry = Config.EntryExpr(Obj.Entry);
    return Error::success();
-diff --git a/llvm/tools/llvm-objcopy/ObjcopyOpts.td b/llvm/tools/llvm-objcopy/ObjcopyOpts.td
-index 9e6b6f0005c..3cdb6b36cbb 100644
 --- a/llvm/tools/llvm-objcopy/ObjcopyOpts.td
 +++ b/llvm/tools/llvm-objcopy/ObjcopyOpts.td
-@@ -227,3 +227,13 @@ defm add_symbol
+@@ -227,3 +227,14 @@
           "compatibility: debug, constructor, warning, indirect, synthetic, "
           "unique-object, before.">,
        MetaVarName<"name=[section:]value[,flags]">;
 +
 +defm gap_fill
-+    : Eq<"gap-fill",
-+      "Fill gaps between two loadable sections with <val>.">,
++    : Eq<"gap-fill", "Fill gaps between two loadable sections with <val>. "
++                     "The value will be truncated to 8 bits or 0xff if larger "
++                     "than 64-bit integer.">,
 +      MetaVarName<"val">;
 +
 +defm pad_to
-+    : Eq<"pad-to",
-+      "Pad the last loadable section up to <addr> with the value specified by --gap-fill if present or zero by default.">,
++    : Eq<"pad-to", "Pad the last loadable section up to <addr> with the value "
++                   "specified by --gap-fill if present or zero by default.">,
 +      MetaVarName<"addr">;

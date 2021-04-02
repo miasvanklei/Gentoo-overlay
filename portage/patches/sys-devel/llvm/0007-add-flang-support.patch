@@ -1,5 +1,6 @@
---- a/llvm/cmake/modules/HandleLLVMOptions.cmake	2021-02-18 22:01:01.935290223 +0100
-+++ b/llvm/cmake/modules/HandleLLVMOptions.cmake	2021-02-18 22:06:06.651480238 +0100
+diff --color -urN llvm/cmake/modules/HandleLLVMOptions.cmake b/cmake/modules/HandleLLVMOptions.cmake
+--- a/llvm/cmake/modules/HandleLLVMOptions.cmake	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/cmake/modules/HandleLLVMOptions.cmake	2021-04-01 22:08:22.195948407 +0200
 @@ -77,6 +77,14 @@
    endif()
  endif()
@@ -15,72 +16,41 @@
  if(LLVM_ENABLE_EXPENSIVE_CHECKS)
    add_definitions(-DEXPENSIVE_CHECKS)
  
---- a/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-02-18 22:01:01.961290447 +0100
-+++ b/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-02-18 22:01:32.531553652 +0100
-@@ -89,6 +89,7 @@
-     NoLibrary,  // Don't use any vector library.
+diff --color -urN llvm/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
+--- a/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-04-01 22:08:22.271948948 +0200
+@@ -90,6 +90,7 @@
      Accelerate, // Use Accelerate framework.
+     LIBMVEC_X86,// GLIBC Vector Math library.
      MASSV,      // IBM MASS vector library.
 +    PGMATH,     // PGI math library.
      SVML        // Intel short vector math library.
    };
  
---- a/llvm/include/llvm/Bitcode/LLVMBitCodes.h	2021-02-18 22:01:01.968290508 +0100
-+++ b/llvm/include/llvm/Bitcode/LLVMBitCodes.h	2021-02-18 22:01:32.531553652 +0100
-@@ -338,6 +338,9 @@
-   METADATA_INDEX_OFFSET = 38,           // [offset]
-   METADATA_INDEX = 39,                  // [bitpos]
-   METADATA_LABEL = 40,                  // [distinct, scope, name, file, line]
-+  METADATA_STRING_TYPE = 41,      // [distinct, name, size, align, ...]
-+  METADATA_FORTRAN_ARRAY_TYPE = 42, // [distinct, name, [bounds ...], ...]
-+  METADATA_FORTRAN_SUBRANGE = 43, // [distinct, lbound, lbnde, ubound, ubnde]
-   METADATA_COMMON_BLOCK = 44,     // [distinct, scope, name, variable,...]
- };
+diff --color -urN llvm/include/llvm/IR/DIBuilder.h b/include/llvm/IR/DIBuilder.h
+--- a/llvm/include/llvm/IR/DIBuilder.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/include/llvm/IR/DIBuilder.h	2021-04-01 22:08:22.308949212 +0200
+@@ -622,14 +622,16 @@
+         DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *File,
+         unsigned LineNo, DIType *Ty, bool IsLocalToUnit, bool isDefined = true,
+         DIExpression *Expr = nullptr, MDNode *Decl = nullptr,
+-        MDTuple *TemplateParams = nullptr, uint32_t AlignInBits = 0);
++        MDTuple *TemplateParams = nullptr,
++        DINode::DIFlags Flags = DINode::FlagZero, uint32_t AlignInBits = 0);
  
---- a/llvm/include/llvm/IR/DIBuilder.h	2021-02-18 22:01:01.976290577 +0100
-+++ b/llvm/include/llvm/IR/DIBuilder.h	2021-02-18 22:01:32.531553652 +0100
-@@ -199,6 +199,12 @@
-                                  unsigned Encoding,
-                                  DINode::DIFlags Flags = DINode::FlagZero);
+     /// Identical to createGlobalVariable
+     /// except that the resulting DbgNode is temporary and meant to be RAUWed.
+     DIGlobalVariable *createTempGlobalVariableFwdDecl(
+         DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *File,
+-        unsigned LineNo, DIType *Ty, bool IsLocalToUnit, MDNode *Decl = nullptr,
+-        MDTuple *TemplateParams= nullptr, uint32_t AlignInBits = 0);
++        unsigned LineNo, DIType *Ty, bool isLocalToUnit, MDNode *Decl = nullptr,
++        MDTuple *TemplateParams = nullptr,
++        DINode::DIFlags Flags = DINode::FlagZero, uint32_t AlignInBits = 0);
  
-+    /// Create debugging information entry for a string
-+    /// type.
-+    /// \param Name        Type name.
-+    /// \param SizeInBits  Size of the type.
-+    DIStringType *createStringType(StringRef Name, uint64_t SizeInBits);
-+
-     /// Create debugging information entry for a qualified
-     /// type, e.g. 'const int'.
-     /// \param Tag         Tag identifing type, e.g. dwarf::TAG_volatile_type
-@@ -491,6 +497,14 @@
-     DICompositeType *createArrayType(uint64_t Size, uint32_t AlignInBits,
-                                      DIType *Ty, DINodeArray Subscripts);
- 
-+    /// Create debugging information entry for a Fortran array.
-+    /// \param Size         Array size.
-+    /// \param AlignInBits  Alignment.
-+    /// \param Ty           Element type.
-+    /// \param Subscripts   Subscripts.
-+    DIFortranArrayType *createFortranArrayType(
-+        uint64_t Size, uint32_t AlignInBits, DIType *Ty, DINodeArray Subs);
-+
-     /// Create debugging information entry for a vector type.
-     /// \param Size         Array size.
-     /// \param AlignInBits  Alignment.
-@@ -576,6 +590,12 @@
-     DISubrange *getOrCreateSubrange(Metadata *Count, Metadata *LowerBound,
-                                     Metadata *UpperBound, Metadata *Stride);
- 
-+    /// Create a descriptor for a value range.  This
-+    /// implicitly uniques the values returned.
-+    DIFortranSubrange *getOrCreateFortranSubrange(
-+        int64_t CLBound, int64_t CUBound, bool NoUBound, Metadata *Lbound,
-+        Metadata * Lbndexp, Metadata *Ubound, Metadata * Ubndexp);
-+
-     /// Create a new descriptor for the specified variable.
-     /// \param Context     Variable scope.
-     /// \param Name        Name of the variable.
-@@ -727,6 +749,17 @@
+     /// Create a new descriptor for an auto variable.  This is a local variable
+     /// that is not a subprogram parameter.
+@@ -755,6 +757,17 @@
                                       StringRef Name, DIFile *File,
                                       unsigned LineNo);
  
@@ -98,347 +68,119 @@
      /// This creates new descriptor for a namespace with the specified
      /// parent scope.
      /// \param Scope       Namespace scope
---- a/llvm/include/llvm/IR/DebugInfoMetadata.h	2021-02-18 22:01:01.976290577 +0100
-+++ b/llvm/include/llvm/IR/DebugInfoMetadata.h	2021-02-18 22:01:32.532553660 +0100
-@@ -180,10 +180,13 @@
-       return false;
-     case GenericDINodeKind:
-     case DISubrangeKind:
-+    case DIFortranSubrangeKind:
-     case DIEnumeratorKind:
-     case DIBasicTypeKind:
-+    case DIStringTypeKind:
-     case DIDerivedTypeKind:
-     case DICompositeTypeKind:
-+    case DIFortranArrayTypeKind:
-     case DISubroutineTypeKind:
-     case DIFileKind:
-     case DICompileUnitKind:
-@@ -350,6 +353,71 @@
-   }
- };
+diff --color -urN llvm/include/llvm/IR/DebugInfoMetadata.h b/include/llvm/IR/DebugInfoMetadata.h
+--- a/llvm/include/llvm/IR/DebugInfoMetadata.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/include/llvm/IR/DebugInfoMetadata.h	2021-04-01 22:08:22.308949212 +0200
+@@ -2879,12 +2879,14 @@
  
-+/// Fortran array subrange
-+class DIFortranSubrange : public DINode {
-+  friend class LLVMContextImpl;
-+  friend class MDNode;
-+
-+  int64_t CLowerBound;
-+  int64_t CUpperBound;
-+  bool NoUpperBound;
-+
-+  DIFortranSubrange(LLVMContext &C, StorageType Storage, int64_t CLowerBound,
-+                    int64_t CUpperBound, bool NoUpperBound,
-+                    ArrayRef<Metadata *> Ops)
-+      : DINode(C, DIFortranSubrangeKind, Storage,
-+               dwarf::DW_TAG_subrange_type, Ops), CLowerBound(CLowerBound),
-+        CUpperBound(CUpperBound), NoUpperBound(NoUpperBound) {}
-+  ~DIFortranSubrange() = default;
-+
-+  static DIFortranSubrange *getImpl(LLVMContext &Context, int64_t CLBound,
-+                                    int64_t CUBound, bool NoUpperBound,
-+                                    Metadata *Lbound, Metadata *Lbndexp,
-+                                    Metadata *Ubound, Metadata *Ubndexp,
-+                                    StorageType Storage,
-+                                    bool ShouldCreate = true);
-+
-+  TempDIFortranSubrange cloneImpl() const {
-+    return getTemporary(getContext(), getCLowerBound(), getCUpperBound(),
-+                        noUpperBound(), getRawLowerBound(),
-+                        getRawLowerBoundExpression(), getRawUpperBound(),
-+                        getRawUpperBoundExpression());
-+  }
-+
-+public:
-+  DEFINE_MDNODE_GET(DIFortranSubrange, (int64_t CLB, int64_t CUB, bool NUB,
-+                                        Metadata *LBound, Metadata *LBndExp,
-+                                        Metadata *UBound, Metadata *UBndExp),
-+                    (CLB, CUB, NUB, LBound, LBndExp, UBound, UBndExp))
-+
-+  TempDIFortranSubrange clone() const { return cloneImpl(); }
-+
-+  DIVariable *getLowerBound() const {
-+    return cast_or_null<DIVariable>(getRawLowerBound());
-+  }
-+  DIExpression *getLowerBoundExp() const {
-+    return cast_or_null<DIExpression>(getRawLowerBoundExpression());
-+  }
-+  DIVariable *getUpperBound() const {
-+    return  cast_or_null<DIVariable>(getRawUpperBound());
-+  }
-+  DIExpression *getUpperBoundExp() const {
-+    return cast_or_null<DIExpression>(getRawUpperBoundExpression());
-+  }
-+
-+  int64_t getCLowerBound() const { return CLowerBound; }
-+  int64_t getCUpperBound() const { return CUpperBound; }
-+  Metadata *getRawLowerBound() const { return getOperand(0); }
-+  Metadata *getRawLowerBoundExpression() const { return getOperand(1); }
-+  Metadata *getRawUpperBound() const { return getOperand(2); }
-+  Metadata *getRawUpperBoundExpression() const { return getOperand(3); }
-+  bool noUpperBound() const { return NoUpperBound; }
-+
-+  static bool classof(const Metadata *MD) {
-+    return MD->getMetadataID() == DIFortranSubrangeKind;
-+  }
-+};
-+
- /// Enumeration value.
- ///
- /// TODO: Add a pointer to the context (DW_TAG_enumeration_type) once that no
-@@ -451,8 +519,10 @@
-     default:
-       return false;
-     case DIBasicTypeKind:
-+    case DIStringTypeKind:
-     case DIDerivedTypeKind:
-     case DICompositeTypeKind:
-+    case DIFortranArrayTypeKind:
-     case DISubroutineTypeKind:
-     case DIFileKind:
-     case DICompileUnitKind:
-@@ -697,8 +767,10 @@
-     default:
-       return false;
-     case DIBasicTypeKind:
-+    case DIStringTypeKind:
-     case DIDerivedTypeKind:
-     case DICompositeTypeKind:
-+    case DIFortranArrayTypeKind:
-     case DISubroutineTypeKind:
-       return true;
-     }
-@@ -747,6 +819,12 @@
-   DEFINE_MDNODE_GET(DIBasicType, (unsigned Tag, StringRef Name),
-                     (Tag, Name, 0, 0, 0, FlagZero))
-   DEFINE_MDNODE_GET(DIBasicType,
-+                    (unsigned Tag, StringRef Name, uint64_t SizeInBits),
-+                    (Tag, Name, SizeInBits, 0, 0, FlagZero))
-+  DEFINE_MDNODE_GET(DIBasicType,
-+                    (unsigned Tag, MDString *Name, uint64_t SizeInBits),
-+                    (Tag, Name, SizeInBits, 0, 0, FlagZero))
-+  DEFINE_MDNODE_GET(DIBasicType,
-                     (unsigned Tag, StringRef Name, uint64_t SizeInBits,
-                      uint32_t AlignInBits, unsigned Encoding, DIFlags Flags),
-                     (Tag, Name, SizeInBits, AlignInBits, Encoding, Flags))
-@@ -770,6 +848,99 @@
-   }
- };
+   bool IsLocalToUnit;
+   bool IsDefinition;
++  DIFlags Flags;
  
-+/// String type, Fortran CHARACTER(n)
-+class DIStringType : public DIType {
-+  friend class LLVMContextImpl;
-+  friend class MDNode;
-+
-+  unsigned Encoding;
-+
-+  DIStringType(LLVMContext &C, StorageType Storage, unsigned Tag,
-+               uint64_t SizeInBits, uint32_t AlignInBits, unsigned Encoding,
-+               ArrayRef<Metadata *> Ops)
-+      : DIType(C, DIStringTypeKind, Storage, Tag, 0, SizeInBits, AlignInBits, 0,
-+               FlagZero, Ops),
-+        Encoding(Encoding) {}
-+  ~DIStringType() = default;
-+
-+  static DIStringType *getImpl(LLVMContext &Context, unsigned Tag,
-+                               StringRef Name, Metadata *StringLength,
-+                               Metadata *StrLenExp, uint64_t SizeInBits,
-+                               uint32_t AlignInBits, unsigned Encoding,
-+                               StorageType Storage, bool ShouldCreate = true) {
-+    return getImpl(Context, Tag, getCanonicalMDString(Context, Name),
-+                   StringLength, StrLenExp, SizeInBits, AlignInBits, Encoding,
-+                   Storage, ShouldCreate);
-+  }
-+  static DIStringType *getImpl(LLVMContext &Context, unsigned Tag,
-+                               MDString *Name, Metadata *StringLength,
-+                               Metadata *StrLenExp, uint64_t SizeInBits,
-+                               uint32_t AlignInBits, unsigned Encoding,
-+                               StorageType Storage, bool ShouldCreate = true);
-+
-+  TempDIStringType cloneImpl() const {
-+    return getTemporary(getContext(), getTag(), getName(), getRawStringLength(),
-+                        getRawStringLengthExp(), getSizeInBits(),
-+                        getAlignInBits(), getEncoding());
-+  }
-+
-+public:
-+  DEFINE_MDNODE_GET(DIStringType, (unsigned Tag, StringRef Name),
-+                    (Tag, Name, nullptr, nullptr, 0, 0, 0))
-+  DEFINE_MDNODE_GET(DIStringType,
-+                    (unsigned Tag, StringRef Name, uint64_t SizeInBits,
-+                     uint32_t AlignInBits),
-+                    (Tag, Name, nullptr, nullptr, SizeInBits, AlignInBits, 0))
-+  DEFINE_MDNODE_GET(DIStringType,
-+                    (unsigned Tag, MDString *Name, uint64_t SizeInBits,
-+                     uint32_t AlignInBits),
-+                    (Tag, Name, nullptr, nullptr, SizeInBits, AlignInBits, 0))
-+  DEFINE_MDNODE_GET(DIStringType,
-+                    (unsigned Tag, StringRef Name, Metadata *StringLength,
-+                     Metadata *StringLengthExp, uint64_t SizeInBits,
-+                     uint32_t AlignInBits),
-+                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
-+                     AlignInBits, 0))
-+  DEFINE_MDNODE_GET(DIStringType,
-+                    (unsigned Tag, MDString *Name, Metadata *StringLength,
-+                     Metadata *StringLengthExp, uint64_t SizeInBits,
-+                     uint32_t AlignInBits),
-+                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
-+                     AlignInBits, 0))
-+  DEFINE_MDNODE_GET(DIStringType,
-+                    (unsigned Tag, StringRef Name, Metadata *StringLength,
-+                     Metadata *StringLengthExp, uint64_t SizeInBits,
-+                     uint32_t AlignInBits, unsigned Encoding),
-+                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
-+                     AlignInBits, Encoding))
-+  DEFINE_MDNODE_GET(DIStringType,
-+                    (unsigned Tag, MDString *Name, Metadata *StringLength,
-+                     Metadata *StringLengthExp, uint64_t SizeInBits,
-+                     uint32_t AlignInBits, unsigned Encoding),
-+                    (Tag, Name, StringLength, StringLengthExp, SizeInBits,
-+                     AlignInBits, Encoding))
-+
-+  TempDIStringType clone() const { return cloneImpl(); }
-+
-+  static bool classof(const Metadata *MD) {
-+    return MD->getMetadataID() == DIStringTypeKind;
-+  }
-+
-+  DIVariable *getStringLength() const {
-+    return cast_or_null<DIVariable>(getRawStringLength());
-+  }
-+
-+  DIExpression *getStringLengthExp() const {
-+    return cast_or_null<DIExpression>(getRawStringLengthExp());
-+  }
-+
-+  unsigned getEncoding() const { return Encoding; }
-+
-+  Metadata *getRawStringLength() const { return getOperand(3); }
-+
-+  Metadata *getRawStringLengthExp() const { return getOperand(4); }
-+};
-+
- /// Derived types.
- ///
- /// This includes qualified types, pointers, references, friends, typedefs, and
-@@ -1088,6 +1259,90 @@
-   }
- };
+   DIGlobalVariable(LLVMContext &C, StorageType Storage, unsigned Line,
+-                   bool IsLocalToUnit, bool IsDefinition, uint32_t AlignInBits,
+-                   ArrayRef<Metadata *> Ops)
++                   bool IsLocalToUnit, bool IsDefinition, DIFlags Flags,
++                   uint32_t AlignInBits, ArrayRef<Metadata *> Ops)
+       : DIVariable(C, DIGlobalVariableKind, Storage, Line, Ops, AlignInBits),
+-        IsLocalToUnit(IsLocalToUnit), IsDefinition(IsDefinition) {}
++        IsLocalToUnit(IsLocalToUnit), IsDefinition(IsDefinition),
++        Flags(Flags) {}
+   ~DIGlobalVariable() = default;
  
-+/// Fortran array types.
-+class DIFortranArrayType : public DIType {
-+  friend class LLVMContextImpl;
-+  friend class MDNode;
-+
-+  DIFortranArrayType(LLVMContext &C, StorageType Storage, unsigned Tag,
-+                     unsigned Line, uint64_t SizeInBits, uint32_t AlignInBits,
-+                     uint64_t OffsetInBits, DIFlags Flags,
-+                     ArrayRef<Metadata *> Ops)
-+      : DIType(C, DIFortranArrayTypeKind, Storage, Tag, Line, SizeInBits,
-+               AlignInBits, OffsetInBits, Flags, Ops) {}
-+  ~DIFortranArrayType() = default;
-+
-+  static DIFortranArrayType *
-+  getImpl(LLVMContext &Context, unsigned Tag, StringRef Name, Metadata *File,
-+          unsigned Line, DIScope *Scope, DIType *BaseType,
-+          uint64_t SizeInBits, uint32_t AlignInBits, uint64_t OffsetInBits,
-+          DIFlags Flags, DINodeArray Elements, StorageType Storage,
+   static DIGlobalVariable *
+@@ -2892,25 +2894,27 @@
+           StringRef LinkageName, DIFile *File, unsigned Line, DIType *Type,
+           bool IsLocalToUnit, bool IsDefinition,
+           DIDerivedType *StaticDataMemberDeclaration, MDTuple *TemplateParams,
+-          uint32_t AlignInBits, StorageType Storage, bool ShouldCreate = true) {
++          DIFlags Flags, uint32_t AlignInBits, StorageType Storage,
 +          bool ShouldCreate = true) {
-+    return getImpl(
-+        Context, Tag, getCanonicalMDString(Context, Name), File, Line, Scope,
-+        BaseType, SizeInBits, AlignInBits, OffsetInBits, Flags, Elements.get(),
-+        Storage, ShouldCreate);
-+  }
-+  static DIFortranArrayType *
-+  getImpl(LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
-+          unsigned Line, Metadata *Scope, Metadata *BaseType,
-+          uint64_t SizeInBits, uint32_t AlignInBits, uint64_t OffsetInBits,
-+          DIFlags Flags, Metadata *Elements, StorageType Storage,
+     return getImpl(Context, Scope, getCanonicalMDString(Context, Name),
+                    getCanonicalMDString(Context, LinkageName), File, Line, Type,
+                    IsLocalToUnit, IsDefinition, StaticDataMemberDeclaration,
+-                   cast_or_null<Metadata>(TemplateParams), AlignInBits, Storage,
+-                   ShouldCreate);
++                   cast_or_null<Metadata>(TemplateParams), Flags, AlignInBits,
++                   Storage, ShouldCreate);
+   }
+   static DIGlobalVariable *
+   getImpl(LLVMContext &Context, Metadata *Scope, MDString *Name,
+           MDString *LinkageName, Metadata *File, unsigned Line, Metadata *Type,
+           bool IsLocalToUnit, bool IsDefinition,
+           Metadata *StaticDataMemberDeclaration, Metadata *TemplateParams,
+-          uint32_t AlignInBits, StorageType Storage, bool ShouldCreate = true);
++          DIFlags Flags, uint32_t AlignInBits, StorageType Storage,
 +          bool ShouldCreate = true);
-+
-+  TempDIFortranArrayType cloneImpl() const {
-+    return getTemporary(getContext(), getTag(), getName(), getFile(), getLine(),
-+                        getScope(), getBaseType(), getSizeInBits(),
-+                        getAlignInBits(), getOffsetInBits(), getFlags(),
-+                        getElements());
-+  }
-+
-+public:
-+  DEFINE_MDNODE_GET(DIFortranArrayType,
-+                    (unsigned Tag, StringRef Name, DIFile *File, unsigned Line,
-+                     DIScope *Scope, DIType *BaseType, uint64_t SizeInBits,
-+                     uint32_t AlignInBits, uint64_t OffsetInBits,
-+                     DIFlags Flags, DINodeArray Elements),
-+                    (Tag, Name, File, Line, Scope, BaseType, SizeInBits,
-+                     AlignInBits, OffsetInBits, Flags, Elements))
-+  DEFINE_MDNODE_GET(DIFortranArrayType,
-+                    (unsigned Tag, MDString *Name, Metadata *File,
-+                     unsigned Line, Metadata *Scope, Metadata *BaseType,
-+                     uint64_t SizeInBits, uint32_t AlignInBits,
-+                     uint64_t OffsetInBits, DIFlags Flags, Metadata *Elements),
-+                    (Tag, Name, File, Line, Scope, BaseType, SizeInBits,
-+                     AlignInBits, OffsetInBits, Flags, Elements))
-+
-+  TempDIFortranArrayType clone() const { return cloneImpl(); }
-+
-+  DIType *getBaseType() const { return cast_or_null<DIType>(getRawBaseType()); }
-+  DINodeArray getElements() const {
-+    return cast_or_null<MDTuple>(getRawElements());
-+  }
-+
-+  Metadata *getRawBaseType() const { return getOperand(3); }
-+  Metadata *getRawElements() const { return getOperand(4); }
-+
-+  /// Replace operands.
-+  ///
-+  /// If this \a isUniqued() and not \a isResolved(), on a uniquing collision
-+  /// this will be RAUW'ed and deleted.  Use a \a TrackingMDRef to keep track
-+  /// of its movement if necessary.
-+  /// @{
-+  void replaceElements(DINodeArray Elements) {
-+#ifndef NDEBUG
-+    for (DINode *Op : getElements())
-+      assert(is_contained(Elements->operands(), Op) &&
-+             "Lost a member during member list replacement");
-+#endif
-+    replaceOperandWith(4, Elements.get());
-+  }
-+
-+  static bool classof(const Metadata *MD) {
-+    return MD->getMetadataID() == DIFortranArrayTypeKind;
-+  }
-+};
-+
- /// Type array for a subprogram.
- ///
- /// TODO: Fold the array of types in directly as operands.
---- a/llvm/include/llvm/IR/Metadata.def	2021-02-18 22:01:01.978290594 +0100
-+++ b/llvm/include/llvm/IR/Metadata.def	2021-02-18 22:01:32.532553660 +0100
-@@ -113,6 +113,9 @@
- HANDLE_SPECIALIZED_MDNODE_BRANCH(DIMacroNode)
- HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIMacro)
- HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIMacroFile)
-+HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIStringType)
-+HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIFortranArrayType)
-+HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DIFortranSubrange)
- HANDLE_SPECIALIZED_MDNODE_LEAF_UNIQUABLE(DICommonBlock)
  
- #undef HANDLE_METADATA
---- a/llvm/include/llvm-c/DebugInfo.h	2021-02-18 22:01:01.994290731 +0100
-+++ b/llvm/include/llvm-c/DebugInfo.h	2021-02-18 22:01:32.531553652 +0100
-@@ -159,6 +159,9 @@
-   LLVMDIImportedEntityMetadataKind,
-   LLVMDIMacroMetadataKind,
-   LLVMDIMacroFileMetadataKind,
-+  LLVMDIStringTypeMetadataKind,
-+  LLVMDIFortranArrayTypeMetadataKind,
-+  LLVMDIFortranSubrangeMetadataKind,
-   LLVMDICommonBlockMetadataKind
- };
- typedef unsigned LLVMMetadataKind;
---- a/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-02-18 22:01:01.997290757 +0100
-+++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-02-18 22:01:32.533553669 +0100
-@@ -27,7 +27,9 @@
+   TempDIGlobalVariable cloneImpl() const {
+     return getTemporary(getContext(), getScope(), getName(), getLinkageName(),
+                         getFile(), getLine(), getType(), isLocalToUnit(),
+                         isDefinition(), getStaticDataMemberDeclaration(),
+-                        getTemplateParams(), getAlignInBits());
++                        getTemplateParams(), getFlags(), getAlignInBits());
+   }
+ 
+ public:
+@@ -2919,24 +2923,28 @@
+                      DIFile *File, unsigned Line, DIType *Type,
+                      bool IsLocalToUnit, bool IsDefinition,
+                      DIDerivedType *StaticDataMemberDeclaration,
+-                     MDTuple *TemplateParams, uint32_t AlignInBits),
++                     MDTuple *TemplateParams, DIFlags Flags,
++                     uint32_t AlignInBits),
+                     (Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
+                      IsDefinition, StaticDataMemberDeclaration, TemplateParams,
+-                     AlignInBits))
++                     Flags, AlignInBits))
+   DEFINE_MDNODE_GET(DIGlobalVariable,
+                     (Metadata * Scope, MDString *Name, MDString *LinkageName,
+                      Metadata *File, unsigned Line, Metadata *Type,
+                      bool IsLocalToUnit, bool IsDefinition,
+                      Metadata *StaticDataMemberDeclaration,
+-                     Metadata *TemplateParams, uint32_t AlignInBits),
++                     Metadata *TemplateParams, DIFlags Flags,
++                     uint32_t AlignInBits),
+                     (Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
+                      IsDefinition, StaticDataMemberDeclaration, TemplateParams,
+-                     AlignInBits))
++                     Flags, AlignInBits))
+ 
+   TempDIGlobalVariable clone() const { return cloneImpl(); }
+ 
+   bool isLocalToUnit() const { return IsLocalToUnit; }
+   bool isDefinition() const { return IsDefinition; }
++  DIFlags getFlags() const { return Flags; }
++  bool isArtificial() const { return getFlags() & FlagArtificial; }
+   StringRef getDisplayName() const { return getStringOperand(4); }
+   StringRef getLinkageName() const { return getStringOperand(5); }
+   DIDerivedType *getStaticDataMemberDeclaration() const {
+diff --color -urN llvm/include/llvm-c/DebugInfo.h b/include/llvm-c/DebugInfo.h
+--- a/llvm/include/llvm-c/DebugInfo.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/include/llvm-c/DebugInfo.h	2021-04-01 22:08:22.256948841 +0200
+@@ -1122,7 +1122,8 @@
+     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
+     size_t NameLen, const char *Linkage, size_t LinkLen, LLVMMetadataRef File,
+     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
+-    LLVMMetadataRef Expr, LLVMMetadataRef Decl, uint32_t AlignInBits);
++    LLVMMetadataRef Expr, LLVMMetadataRef Decl, LLVMDIFlags Flags,
++    uint32_t AlignInBits);
+ 
+ /**
+  * Retrieves the \c DIVariable associated with this global variable expression.
+@@ -1214,7 +1215,7 @@
+     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
+     size_t NameLen, const char *Linkage, size_t LnkLen, LLVMMetadataRef File,
+     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
+-    LLVMMetadataRef Decl, uint32_t AlignInBits);
++    LLVMMetadataRef Decl, LLVMDIFlags Flags, uint32_t AlignInBits);
+ 
+ /**
+  * Insert a new llvm.dbg.declare intrinsic call before the given instruction.
+diff --color -urN llvm/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
+--- a/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-04-01 22:08:22.461950302 +0200
+@@ -29,7 +29,9 @@
                 clEnumValN(TargetLibraryInfoImpl::MASSV, "MASSV",
                            "IBM MASS vector library"),
                 clEnumValN(TargetLibraryInfoImpl::SVML, "SVML",
@@ -449,7 +191,7 @@
  
  StringLiteral const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] =
      {
-@@ -562,7 +564,6 @@
+@@ -572,7 +574,6 @@
  TargetLibraryInfoImpl::TargetLibraryInfoImpl(const Triple &T) {
    // Default to everything being available.
    memset(AvailableArray, -1, sizeof(AvailableArray));
@@ -457,7 +199,7 @@
    initialize(*this, T, StandardNames);
  }
  
-@@ -1565,6 +1566,456 @@
+@@ -1597,6 +1598,456 @@
      addVectorizableFunctions(VecFuncs);
      break;
    }
@@ -914,100 +656,13 @@
    case NoLibrary:
      break;
    }
---- a/llvm/lib/AsmParser/LLParser.cpp	2021-02-18 22:01:02.003290809 +0100
-+++ b/llvm/lib/AsmParser/LLParser.cpp	2021-02-18 22:06:06.652480249 +0100
-@@ -4565,6 +4565,28 @@
-   return false;
- }
- 
-+/// ParseDIFortranSubrange:
-+///   ::= !DIFortranSubrange(lowerBound: 2)
-+bool LLParser::ParseDIFortranSubrange(MDNode *&Result, bool IsDistinct) {
-+#define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
-+  OPTIONAL(constLowerBound, MDSignedField, (0, INT64_MIN, INT64_MAX));         \
-+  OPTIONAL(constUpperBound, MDSignedField, (0, INT64_MIN, INT64_MAX));         \
-+  OPTIONAL(lowerBound, MDField, );                                             \
-+  OPTIONAL(lowerBoundExpression, MDField, );                                   \
-+  OPTIONAL(upperBound, MDField, );                                             \
-+  OPTIONAL(upperBoundExpression, MDField, );
-+  PARSE_MD_FIELDS();
-+#undef VISIT_MD_FIELDS
-+
-+  Result = GET_OR_DISTINCT(DIFortranSubrange,
-+                           (Context, constLowerBound.Val, constUpperBound.Val,
-+                            (!constUpperBound.Seen) && (!upperBound.Seen),
-+                            lowerBound.Val, lowerBoundExpression.Val,
-+                            upperBound.Val, upperBoundExpression.Val));
-+  return false;
-+}
-+
-+
- /// ParseDIEnumerator:
- ///   ::= !DIEnumerator(value: 30, isUnsigned: true, name: "SomeKind")
- bool LLParser::ParseDIEnumerator(MDNode *&Result, bool IsDistinct) {
-@@ -4609,6 +4631,26 @@
-   return false;
- }
- 
-+/// ParseDIStringType:
-+///   ::= !DIStringType(name: "character(4)", size: 32, align: 32)
-+bool LLParser::ParseDIStringType(MDNode *&Result, bool IsDistinct) {
-+#define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
-+  OPTIONAL(tag, DwarfTagField, (dwarf::DW_TAG_string_type));                   \
-+  OPTIONAL(name, MDStringField, );                                             \
-+  OPTIONAL(stringLength, MDField, );                                           \
-+  OPTIONAL(stringLengthExpression, MDField, );                                 \
-+  OPTIONAL(size, MDUnsignedField, (0, UINT64_MAX));                            \
-+  OPTIONAL(align, MDUnsignedField, (0, UINT32_MAX));                           \
-+  OPTIONAL(encoding, DwarfAttEncodingField, );
-+  PARSE_MD_FIELDS();
-+#undef VISIT_MD_FIELDS
-+
-+  Result = GET_OR_DISTINCT(DIStringType, (Context, tag.Val, name.Val,
-+      stringLength.Val, stringLengthExpression.Val, size.Val, align.Val,
-+      encoding.Val));
-+  return false;
-+}
-+
- /// ParseDIDerivedType:
- ///   ::= !DIDerivedType(tag: DW_TAG_pointer_type, name: "int", file: !0,
- ///                      line: 7, scope: !1, baseType: !2, size: 32,
-@@ -4687,6 +4729,31 @@
-   return false;
- }
- 
-+bool LLParser::ParseDIFortranArrayType(MDNode *&Result, bool IsDistinct) {
-+#define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
-+  OPTIONAL(tag, DwarfTagField, (dwarf::DW_TAG_array_type));                    \
-+  OPTIONAL(name, MDStringField, );                                             \
-+  OPTIONAL(file, MDField, );                                                   \
-+  OPTIONAL(line, LineField, );                                                 \
-+  OPTIONAL(scope, MDField, );                                                  \
-+  OPTIONAL(baseType, MDField, );                                               \
-+  OPTIONAL(size, MDUnsignedField, (0, UINT64_MAX));                            \
-+  OPTIONAL(align, MDUnsignedField, (0, UINT32_MAX));                           \
-+  OPTIONAL(offset, MDUnsignedField, (0, UINT64_MAX));                          \
-+  OPTIONAL(flags, DIFlagField, );                                              \
-+  OPTIONAL(elements, MDField, );
-+  PARSE_MD_FIELDS();
-+#undef VISIT_MD_FIELDS
-+
-+  // Create a new node, and save it in the context if it belongs in the type
-+  // map.
-+  Result = GET_OR_DISTINCT(
-+      DIFortranArrayType,
-+      (Context, tag.Val, name.Val, file.Val, line.Val, scope.Val, baseType.Val,
-+       size.Val, align.Val, offset.Val, flags.Val, elements.Val));
-+  return false;
-+}
-+
- bool LLParser::ParseDISubroutineType(MDNode *&Result, bool IsDistinct) {
- #define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
-   OPTIONAL(flags, DIFlagField, );                                              \
-@@ -4990,6 +5057,21 @@
+diff --color -urN llvm/lib/AsmParser/LLParser.cpp b/lib/AsmParser/LLParser.cpp
+--- a/llvm/lib/AsmParser/LLParser.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/AsmParser/LLParser.cpp	2021-04-01 22:08:22.465950331 +0200
+@@ -5184,6 +5184,21 @@
  ///                         isDefinition: true, templateParams: !3,
  ///                         declaration: !4, align: 8)
- bool LLParser::ParseDIGlobalVariable(MDNode *&Result, bool IsDistinct) {
+ bool LLParser::parseDIGlobalVariable(MDNode *&Result, bool IsDistinct) {
 +#ifdef ENABLE_CLASSIC_FLANG
 +#define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
 +  OPTIONAL(name, MDStringField, (/* AllowEmpty */ true));                      \
@@ -1026,7 +681,7 @@
  #define VISIT_MD_FIELDS(OPTIONAL, REQUIRED)                                    \
    REQUIRED(name, MDStringField, (/* AllowEmpty */ false));                     \
    OPTIONAL(scope, MDField, );                                                  \
-@@ -5001,7 +5083,9 @@
+@@ -5195,7 +5210,9 @@
    OPTIONAL(isDefinition, MDBoolField, (true));                                 \
    OPTIONAL(templateParams, MDField, );                                         \
    OPTIONAL(declaration, MDField, );                                            \
@@ -1036,203 +691,99 @@
    PARSE_MD_FIELDS();
  #undef VISIT_MD_FIELDS
  
---- a/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-02-18 22:01:02.004290818 +0100
-+++ b/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-02-18 22:01:32.534553678 +0100
-@@ -851,10 +851,13 @@
-       case bitc::METADATA_LOCATION:
-       case bitc::METADATA_GENERIC_DEBUG:
-       case bitc::METADATA_SUBRANGE:
-+      case bitc::METADATA_FORTRAN_SUBRANGE:
-       case bitc::METADATA_ENUMERATOR:
-       case bitc::METADATA_BASIC_TYPE:
-+      case bitc::METADATA_STRING_TYPE:
-       case bitc::METADATA_DERIVED_TYPE:
-       case bitc::METADATA_COMPOSITE_TYPE:
-+      case bitc::METADATA_FORTRAN_ARRAY_TYPE:
-       case bitc::METADATA_SUBROUTINE_TYPE:
-       case bitc::METADATA_MODULE:
-       case bitc::METADATA_FILE:
-@@ -1286,6 +1289,20 @@
-     NextMetadataNo++;
-     break;
-   }
-+  case bitc::METADATA_FORTRAN_SUBRANGE: {
-+    if (Record.size() != 8)
-+      return error("Invalid record");
-+
-+    IsDistinct = Record[0];
-+    MetadataList.assignValue(
-+        GET_OR_DISTINCT(DIFortranSubrange,
-+                        (Context, Record[1], Record[2], Record[3],
-+                         getMDOrNull(Record[4]), getMDOrNull(Record[5]),
-+                         getMDOrNull(Record[6]), getMDOrNull(Record[7]))),
-+        NextMetadataNo);
-+    NextMetadataNo++;
-+    break;
-+  }
-   case bitc::METADATA_ENUMERATOR: {
-     if (Record.size() < 3)
-       return error("Invalid record");
-@@ -1325,6 +1342,20 @@
-     NextMetadataNo++;
-     break;
-   }
-+  case bitc::METADATA_STRING_TYPE: {
-+    if (Record.size() != 8)
-+      return error("Invalid record");
-+
-+    IsDistinct = Record[0];
-+    MetadataList.assignValue(
-+        GET_OR_DISTINCT(DIStringType,
-+                        (Context, Record[1], getMDString(Record[2]),
-+                         getMDOrNull(Record[3]), getMDOrNull(Record[4]),
-+                         Record[5], Record[6], Record[7])),
-+        NextMetadataNo);
-+    NextMetadataNo++;
-+    break;
-+  }
-   case bitc::METADATA_DERIVED_TYPE: {
-     if (Record.size() < 12 || Record.size() > 13)
-       return error("Invalid record");
-@@ -1421,6 +1452,38 @@
-     NextMetadataNo++;
-     break;
-   }
-+  case bitc::METADATA_FORTRAN_ARRAY_TYPE: {
-+    if (Record.size() != 12)
-+      return error("Invalid record");
-+
-+    // If we have a UUID and this is not a forward declaration, lookup the
-+    // mapping.
-+    IsDistinct = Record[0] & 0x1;
-+    unsigned Tag = Record[1];
-+    MDString *Name = getMDString(Record[2]);
-+    Metadata *File = getMDOrNull(Record[3]);
-+    unsigned Line = Record[4];
-+    Metadata *Scope = getDITypeRefOrNull(Record[5]);
-+    Metadata *BaseType = nullptr;
-+    uint64_t SizeInBits = Record[7];
-+    if (Record[8] > (uint64_t)std::numeric_limits<uint32_t>::max())
-+      return error("Alignment value is too large");
-+    uint32_t AlignInBits = Record[8];
-+    uint64_t OffsetInBits = 0;
-+    DINode::DIFlags Flags = static_cast<DINode::DIFlags>(Record[10]);
-+    Metadata *Elements = nullptr;
-+    BaseType = getDITypeRefOrNull(Record[6]);
-+    OffsetInBits = Record[9];
-+    Elements = getMDOrNull(Record[11]);
-+    DIFortranArrayType *CT =
-+      GET_OR_DISTINCT(DIFortranArrayType,
-+                      (Context, Tag, Name, File, Line, Scope, BaseType,
-+                       SizeInBits, AlignInBits, OffsetInBits, Flags,
-+                       Elements));
-+    MetadataList.assignValue(CT, NextMetadataNo);
-+    NextMetadataNo++;
-+    break;
-+  }
-   case bitc::METADATA_SUBROUTINE_TYPE: {
-     if (Record.size() < 3 || Record.size() > 4)
-       return error("Invalid record");
---- a/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-02-18 22:01:02.003290809 +0100
-+++ b/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-02-18 22:01:32.535553686 +0100
-@@ -296,14 +296,22 @@
-                           SmallVectorImpl<uint64_t> &Record, unsigned &Abbrev);
-   void writeDISubrange(const DISubrange *N, SmallVectorImpl<uint64_t> &Record,
-                        unsigned Abbrev);
-+  void writeDIFortranSubrange(const DIFortranSubrange *N,
-+                              SmallVectorImpl<uint64_t> &Record,
-+                              unsigned Abbrev);
-   void writeDIEnumerator(const DIEnumerator *N,
-                          SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
-   void writeDIBasicType(const DIBasicType *N, SmallVectorImpl<uint64_t> &Record,
-                         unsigned Abbrev);
-+  void writeDIStringType(const DIStringType *N,
-+                         SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
-   void writeDIDerivedType(const DIDerivedType *N,
-                           SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
-   void writeDICompositeType(const DICompositeType *N,
-                             SmallVectorImpl<uint64_t> &Record, unsigned Abbrev);
-+  void writeDIFortranArrayType(const DIFortranArrayType *N,
-+                               SmallVectorImpl<uint64_t> &Record,
-+                               unsigned Abbrev);
-   void writeDISubroutineType(const DISubroutineType *N,
-                              SmallVectorImpl<uint64_t> &Record,
-                              unsigned Abbrev);
-@@ -1553,6 +1561,22 @@
-     emitSignedInt64(Vals, RawData[i]);
+@@ -5203,7 +5220,8 @@
+       GET_OR_DISTINCT(DIGlobalVariable,
+                       (Context, scope.Val, name.Val, linkageName.Val, file.Val,
+                        line.Val, type.Val, isLocal.Val, isDefinition.Val,
+-                       declaration.Val, templateParams.Val, align.Val));
++                       declaration.Val, templateParams.Val, flags.Val,
++                       align.Val));
+   return false;
  }
  
-+void ModuleBitcodeWriter::writeDIFortranSubrange(
-+    const DIFortranSubrange *N, SmallVectorImpl<uint64_t> &Record,
-+    unsigned Abbrev) {
-+  Record.push_back(N->isDistinct());
-+  Record.push_back(N->getCLowerBound());
-+  Record.push_back(N->getCUpperBound());
-+  Record.push_back(N->noUpperBound());
-+  Record.push_back(VE.getMetadataOrNullID(N->getLowerBound()));
-+  Record.push_back(VE.getMetadataOrNullID(N->getLowerBoundExp()));
-+  Record.push_back(VE.getMetadataOrNullID(N->getUpperBound()));
-+  Record.push_back(VE.getMetadataOrNullID(N->getUpperBoundExp()));
-+
-+  Stream.EmitRecord(bitc::METADATA_FORTRAN_SUBRANGE, Record, Abbrev);
-+  Record.clear();
-+}
-+
- void ModuleBitcodeWriter::writeDIEnumerator(const DIEnumerator *N,
-                                             SmallVectorImpl<uint64_t> &Record,
-                                             unsigned Abbrev) {
-@@ -1581,6 +1605,22 @@
-   Record.clear();
- }
+diff --color -urN llvm/lib/Bitcode/Reader/MetadataLoader.cpp b/lib/Bitcode/Reader/MetadataLoader.cpp
+--- a/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-04-01 22:08:22.467950345 +0200
+@@ -1854,20 +1854,34 @@
+     break;
+   }
+   case bitc::METADATA_GLOBAL_VAR: {
+-    if (Record.size() < 11 || Record.size() > 13)
++    if (Record.size() < 11 || Record.size() > 14)
+       return error("Invalid record");
  
-+void ModuleBitcodeWriter::writeDIStringType(const DIStringType *N,
-+                                           SmallVectorImpl<uint64_t> &Record,
-+                                           unsigned Abbrev) {
-+  Record.push_back(N->isDistinct());
-+  Record.push_back(N->getTag());
-+  Record.push_back(VE.getMetadataOrNullID(N->getRawName()));
-+  Record.push_back(VE.getMetadataOrNullID(N->getStringLength()));
-+  Record.push_back(VE.getMetadataOrNullID(N->getStringLengthExp()));
-+  Record.push_back(N->getSizeInBits());
-+  Record.push_back(N->getAlignInBits());
-+  Record.push_back(N->getEncoding());
-+
-+  Stream.EmitRecord(bitc::METADATA_STRING_TYPE, Record, Abbrev);
-+  Record.clear();
-+}
-+
- void ModuleBitcodeWriter::writeDIDerivedType(const DIDerivedType *N,
-                                              SmallVectorImpl<uint64_t> &Record,
-                                              unsigned Abbrev) {
-@@ -1635,6 +1675,26 @@
-   Record.clear();
- }
+     IsDistinct = Record[0] & 1;
+     unsigned Version = Record[0] >> 1;
  
-+void ModuleBitcodeWriter::writeDIFortranArrayType(
-+    const DIFortranArrayType *N, SmallVectorImpl<uint64_t> &Record,
-+    unsigned Abbrev) {
-+  Record.push_back(N->isDistinct());
-+  Record.push_back(N->getTag());
-+  Record.push_back(VE.getMetadataOrNullID(N->getRawName()));
-+  Record.push_back(VE.getMetadataOrNullID(N->getFile()));
-+  Record.push_back(N->getLine());
-+  Record.push_back(VE.getMetadataOrNullID(N->getScope()));
-+  Record.push_back(VE.getMetadataOrNullID(N->getBaseType()));
-+  Record.push_back(N->getSizeInBits());
-+  Record.push_back(N->getAlignInBits());
-+  Record.push_back(N->getOffsetInBits());
-+  Record.push_back(N->getFlags());
-+  Record.push_back(VE.getMetadataOrNullID(N->getElements().get()));
+-    if (Version == 2) {
++    if (Version == 3) {
++      // Add support for DIFlags
+       MetadataList.assignValue(
+           GET_OR_DISTINCT(
+               DIGlobalVariable,
+               (Context, getMDOrNull(Record[1]), getMDString(Record[2]),
+                getMDString(Record[3]), getMDOrNull(Record[4]), Record[5],
+                getDITypeRefOrNull(Record[6]), Record[7], Record[8],
+-               getMDOrNull(Record[9]), getMDOrNull(Record[10]), Record[11])),
++               getMDOrNull(Record[9]), getMDOrNull(Record[10]),
++               static_cast<DINode::DIFlags>(Record[11]), Record[12])),
++          NextMetadataNo);
 +
-+  Stream.EmitRecord(bitc::METADATA_FORTRAN_ARRAY_TYPE, Record, Abbrev);
-+  Record.clear();
-+}
-+
- void ModuleBitcodeWriter::writeDISubroutineType(
-     const DISubroutineType *N, SmallVectorImpl<uint64_t> &Record,
++      NextMetadataNo++;
++    } else if (Version == 2) {
++      MetadataList.assignValue(
++          GET_OR_DISTINCT(
++              DIGlobalVariable,
++              (Context, getMDOrNull(Record[1]), getMDString(Record[2]),
++               getMDString(Record[3]), getMDOrNull(Record[4]), Record[5],
++               getDITypeRefOrNull(Record[6]), Record[7], Record[8],
++               getMDOrNull(Record[9]), getMDOrNull(Record[10]),
++               DINode::FlagZero, Record[11])),
+           NextMetadataNo);
+ 
+       NextMetadataNo++;
+@@ -1880,7 +1894,8 @@
+                            getMDString(Record[2]), getMDString(Record[3]),
+                            getMDOrNull(Record[4]), Record[5],
+                            getDITypeRefOrNull(Record[6]), Record[7], Record[8],
+-                           getMDOrNull(Record[10]), nullptr, Record[11])),
++                           getMDOrNull(Record[10]), nullptr, DINode::FlagZero,
++                           Record[11])),
+           NextMetadataNo);
+ 
+       NextMetadataNo++;
+@@ -1913,7 +1928,7 @@
+           (Context, getMDOrNull(Record[1]), getMDString(Record[2]),
+            getMDString(Record[3]), getMDOrNull(Record[4]), Record[5],
+            getDITypeRefOrNull(Record[6]), Record[7], Record[8],
+-           getMDOrNull(Record[10]), nullptr, AlignInBits));
++           getMDOrNull(Record[10]), nullptr, DINode::FlagZero, AlignInBits));
+ 
+       DIGlobalVariableExpression *DGVE = nullptr;
+       if (Attach || Expr)
+diff --color -urN llvm/lib/Bitcode/Writer/BitcodeWriter.cpp b/lib/Bitcode/Writer/BitcodeWriter.cpp
+--- a/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-04-01 22:08:22.468950352 +0200
+@@ -1906,7 +1906,7 @@
+ void ModuleBitcodeWriter::writeDIGlobalVariable(
+     const DIGlobalVariable *N, SmallVectorImpl<uint64_t> &Record,
      unsigned Abbrev) {
---- a/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-02-18 22:01:02.012290887 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-02-18 22:01:32.535553686 +0100
+-  const uint64_t Version = 2 << 1;
++  const uint64_t Version = 3 << 1;
+   Record.push_back((uint64_t)N->isDistinct() | Version);
+   Record.push_back(VE.getMetadataOrNullID(N->getScope()));
+   Record.push_back(VE.getMetadataOrNullID(N->getRawName()));
+@@ -1918,6 +1918,7 @@
+   Record.push_back(N->isDefinition());
+   Record.push_back(VE.getMetadataOrNullID(N->getStaticDataMemberDeclaration()));
+   Record.push_back(VE.getMetadataOrNullID(N->getTemplateParams()));
++  Record.push_back(N->getFlags());
+   Record.push_back(N->getAlignInBits());
+ 
+   Stream.EmitRecord(bitc::METADATA_GLOBAL_VAR, Record, Abbrev);
+diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h b/lib/CodeGen/AsmPrinter/DebugLocEntry.h
+--- a/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-04-01 22:08:22.471950373 +0200
 @@ -178,6 +178,9 @@
                  DebugLocStream::ListBuilder &List,
                  const DIBasicType *BT,
@@ -1243,8 +794,9 @@
  };
  
  /// Compare two DbgValueLocs for equality.
---- a/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-02-18 22:01:02.012290887 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-02-18 22:01:32.535553686 +0100
+diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp b/lib/CodeGen/AsmPrinter/DebugLocStream.cpp
+--- a/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-04-01 22:08:22.471950373 +0200
 @@ -37,7 +37,10 @@
           "Popped off more entries than are in the list");
  }
@@ -1257,8 +809,9 @@
    if (!Locs.finalizeList(Asm))
      return;
    V.initializeDbgValue(&MI);
---- a/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h	2021-02-18 22:01:02.011290878 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h	2021-02-18 22:01:32.535553686 +0100
+diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h b/lib/CodeGen/AsmPrinter/DebugLocStream.h
+--- a/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h	2021-04-01 22:08:22.471950373 +0200
 @@ -160,22 +160,25 @@
    const MachineInstr &MI;
    size_t ListIndex;
@@ -1287,9 +840,10 @@
  
    DebugLocStream &getLocs() { return Locs; }
  };
---- a/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp	2021-02-18 22:01:02.012290887 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp	2021-02-18 22:02:19.186955386 +0100
-@@ -155,7 +155,8 @@
+diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
+--- a/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp	2021-04-01 22:08:22.472950381 +0200
+@@ -143,7 +143,8 @@
    } else {
      DeclContext = GV->getScope();
      // Add name and type.
@@ -1299,7 +853,17 @@
      if (GTy)
        addType(*VariableDIE, GTy);
  
-@@ -186,7 +190,12 @@
+@@ -160,6 +161,9 @@
+   else
+     addGlobalName(GV->getName(), *VariableDIE, DeclContext);
+ 
++  if (GV->isArtificial())
++    addFlag(*VariableDIE, dwarf::DW_AT_artificial);
++
+   if (uint32_t AlignInBytes = GV->getAlignInBytes())
+     addUInt(*VariableDIE, dwarf::DW_AT_alignment, dwarf::DW_FORM_udata,
+             AlignInBytes);
+@@ -174,7 +178,12 @@
  }
  
  void DwarfCompileUnit::addLocationAttribute(
@@ -1313,7 +877,7 @@
    bool addToAccelTable = false;
    DIELoc *Loc = nullptr;
    Optional<unsigned> NVPTXAddressSpace;
-@@ -295,7 +304,7 @@
+@@ -285,7 +294,7 @@
              NVPTXAddressSpace ? *NVPTXAddressSpace : NVPTX_ADDR_global_space);
    }
    if (Loc)
@@ -1322,7 +886,7 @@
  
    if (DD->useAllLinkageNames())
      addLinkageName(*VariableDIE, GV->getLinkageName());
-@@ -311,6 +320,13 @@
+@@ -301,6 +310,13 @@
    }
  }
  
@@ -1336,136 +900,10 @@
  DIE *DwarfCompileUnit::getOrCreateCommonBlock(
      const DICommonBlock *CB, ArrayRef<GlobalExpr> GlobalExprs) {
    // Construct the context before querying for the existence of the DIE in case
-@@ -687,21 +703,28 @@
-   }
- 
-   // Add variable address.
-+  constructDieLocation(*VariableDie, dwarf::DW_AT_location, DV);
-+  return VariableDie;
-+}
- 
--  unsigned Offset = DV.getDebugLocListIndex();
--  if (Offset != ~0U) {
--    addLocationList(*VariableDie, dwarf::DW_AT_location, Offset);
--    auto TagOffset = DV.getDebugLocListTagOffset();
--    if (TagOffset)
--      addUInt(*VariableDie, dwarf::DW_AT_LLVM_tag_offset, dwarf::DW_FORM_data1,
--              *TagOffset);
--    return VariableDie;
-+void DwarfCompileUnit::constructDieLocation(
-+    DIE &Die, dwarf::Attribute Attribute, const DbgVariable &DV) {
-+  if (Attribute == dwarf::DW_AT_location) {
-+    unsigned Offset = DV.getDebugLocListIndex();
-+    if (Offset != ~0U) {
-+      addLocationList(Die, Attribute, Offset);
-+      auto TagOffset = DV.getDebugLocListTagOffset();
-+      if (TagOffset)
-+        addUInt(Die, dwarf::DW_AT_LLVM_tag_offset, dwarf::DW_FORM_data1,
-+                *TagOffset);
-+      return;
-+    }
-   }
- 
-   // Check if variable has a single location description.
-   if (auto *DVal = DV.getValueLoc()) {
-     if (DVal->isLocation())
--      addVariableAddress(DV, *VariableDie, DVal->getLoc());
-+      addVariableAddress(DV, Die, DVal->getLoc());
-     else if (DVal->isInt()) {
-       auto *Expr = DV.getSingleExpression();
-       if (Expr && Expr->getNumElements()) {
-@@ -711,24 +734,23 @@
-         DwarfExpr.addFragmentOffset(Expr);
-         DwarfExpr.addUnsignedConstant(DVal->getInt());
-         DwarfExpr.addExpression(Expr);
--        addBlock(*VariableDie, dwarf::DW_AT_location, DwarfExpr.finalize());
-+        addBlock(Die, dwarf::DW_AT_location, DwarfExpr.finalize());
-         if (DwarfExpr.TagOffset)
--          addUInt(*VariableDie, dwarf::DW_AT_LLVM_tag_offset,
-+          addUInt(Die, dwarf::DW_AT_LLVM_tag_offset,
-                   dwarf::DW_FORM_data1, *DwarfExpr.TagOffset);
--
-       } else
--        addConstantValue(*VariableDie, DVal->getInt(), DV.getType());
-+        addConstantValue(Die, DVal->getInt(), DV.getType());
-     } else if (DVal->isConstantFP()) {
--      addConstantFPValue(*VariableDie, DVal->getConstantFP());
-+      addConstantFPValue(Die, DVal->getConstantFP());
-     } else if (DVal->isConstantInt()) {
--      addConstantValue(*VariableDie, DVal->getConstantInt(), DV.getType());
-+      addConstantValue(Die, DVal->getConstantInt(), DV.getType());
-     }
--    return VariableDie;
-+    return;
-   }
- 
-   // .. else use frame index.
-   if (!DV.hasFrameIndexExprs())
--    return VariableDie;
-+    return;
- 
-   Optional<unsigned> NVPTXAddressSpace;
-   DIELoc *Loc = new (DIEValueAllocator) DIELoc;
-@@ -773,15 +795,52 @@
-     // cuda-gdb requires DW_AT_address_class for all variables to be able to
-     // correctly interpret address space of the variable address.
-     const unsigned NVPTX_ADDR_local_space = 6;
--    addUInt(*VariableDie, dwarf::DW_AT_address_class, dwarf::DW_FORM_data1,
-+    addUInt(Die, dwarf::DW_AT_address_class, dwarf::DW_FORM_data1,
-             NVPTXAddressSpace ? *NVPTXAddressSpace : NVPTX_ADDR_local_space);
-   }
--  addBlock(*VariableDie, dwarf::DW_AT_location, DwarfExpr.finalize());
-+  addBlock(Die, dwarf::DW_AT_location, DwarfExpr.finalize());
-   if (DwarfExpr.TagOffset)
--    addUInt(*VariableDie, dwarf::DW_AT_LLVM_tag_offset, dwarf::DW_FORM_data1,
-+    addUInt(Die, dwarf::DW_AT_LLVM_tag_offset, dwarf::DW_FORM_data1,
-             *DwarfExpr.TagOffset);
- 
--  return VariableDie;
-+  return;
-+}
-+
-+void DwarfCompileUnit::constructDieLocationAddExpr(
-+    DIE &Die, dwarf::Attribute Attribute, const DbgVariable &DV,
-+    DIExpression *SubExpr) {
-+  if (Attribute == dwarf::DW_AT_location)
-+    return; // clients like gdb don't handle location lists correctly
-+  if (DV.getValueLoc())
-+    return; // temp should not have a DBG_VALUE instruction
-+  if (!DV.hasFrameIndexExprs())
-+    return; // but it should have a frame index expression
-+
-+  DIELoc *Loc = new (DIEValueAllocator) DIELoc;
-+  DIEDwarfExpression DwarfExpr(*Asm, *this, *Loc);
-+  for (auto &Fragment : DV.getFrameIndexExprs()) {
-+    Register FrameReg = 0;
-+    const DIExpression *Expr = Fragment.Expr;
-+    const TargetFrameLowering *TFI = Asm->MF->getSubtarget().getFrameLowering();
-+    int Offset = TFI->getFrameIndexReference(*Asm->MF, Fragment.FI, FrameReg);
-+    DwarfExpr.addFragmentOffset(Expr);
-+    SmallVector<uint64_t, 8> Ops;
-+    Ops.push_back(dwarf::DW_OP_plus_uconst);
-+    Ops.push_back(Offset);
-+    Ops.append(Expr->elements_begin(), Expr->elements_end());
-+    if (SubExpr) {
-+      for (unsigned SEOp : SubExpr->getElements())
-+        Ops.push_back(SEOp);
-+    } else {
-+      Ops.push_back(dwarf::DW_OP_deref);
-+    }
-+    DIExpressionCursor Cursor(Ops);
-+    DwarfExpr.setMemoryLocationKind();
-+    DwarfExpr.addMachineRegExpression(
-+        *Asm->MF->getSubtarget().getRegisterInfo(), Cursor, FrameReg);
-+    DwarfExpr.addExpression(std::move(Cursor));
-+  }
-+  addBlock(Die, Attribute, DwarfExpr.finalize());
- }
- 
- DIE *DwarfCompileUnit::constructVariableDIE(DbgVariable &DV,
---- a/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h	2021-02-18 22:01:02.012290887 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h	2021-02-18 22:01:32.536553695 +0100
-@@ -142,6 +142,15 @@
+diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
+--- a/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h	2021-04-01 22:08:22.472950381 +0200
+@@ -144,6 +144,15 @@
  
    std::vector<BaseTypeRef> ExprRefedBaseTypes;
  
@@ -1481,7 +919,7 @@
    /// Get or create global variable DIE.
    DIE *
    getOrCreateGlobalVariableDIE(const DIGlobalVariable *GV,
-@@ -152,6 +161,9 @@
+@@ -154,6 +163,9 @@
  
    void addLocationAttribute(DIE *ToDIE, const DIGlobalVariable *GV,
                              ArrayRef<GlobalExpr> GlobalExprs);
@@ -1491,22 +929,10 @@
  
    /// addLabelAddress - Add a dwarf label attribute data and value using
    /// either DW_FORM_addr or DW_FORM_GNU_addr_index.
-@@ -360,6 +372,12 @@
-   uint64_t getDWOId() const { return DWOId; }
-   void setDWOId(uint64_t DwoId) { DWOId = DwoId; }
- 
-+  void constructDieLocation(DIE &Die, dwarf::Attribute Attribute,
-+                            const DbgVariable &DV);
-+  void constructDieLocationAddExpr(DIE &Die, dwarf::Attribute Attribute,
-+                                   const DbgVariable &DV,
-+                                   DIExpression *SubExpr);
-+
-   bool hasDwarfPubSections() const;
- 
-   void addBaseTypeRef(DIEValueList &Die, int64_t Idx);
---- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-02-18 22:01:02.013290895 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-02-18 22:01:32.536553695 +0100
-@@ -1203,11 +1203,13 @@
+diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp b/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
+--- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-04-01 22:08:22.472950381 +0200
+@@ -1217,11 +1217,13 @@
          GVMapEntry.push_back({nullptr, Expr});
      }
      DenseSet<DIGlobalVariable *> Processed;
@@ -1520,76 +946,7 @@
  
      for (auto *Ty : CUNode->getEnumTypes()) {
        // The enum types array by design contains pointers to
-@@ -1489,6 +1491,56 @@
-     CU.createAbstractEntity(Node, Scope);
- }
- 
-+DIE *DwarfDebug::getSubrangeDie(const DIFortranSubrange *SR) const {
-+  auto I = SubrangeDieMap.find(SR);
-+  return (I == SubrangeDieMap.end()) ? nullptr : I->second;
-+}
-+
-+void DwarfDebug::constructSubrangeDie(const DIFortranArrayType *AT,
-+                                      DbgVariable &DV,
-+                                      DwarfCompileUnit &TheCU) {
-+  const DIFortranSubrange *WFS = nullptr;
-+  DIExpression *WUEx = nullptr;
-+  DIExpression *WLEx = nullptr;
-+  const DIVariable *DI = DV.getVariable();
-+  DINodeArray Elements = AT->getElements();
-+
-+  for (unsigned i = 0, N = Elements.size(); i < N; ++i) {
-+    DINode *Element = cast<DINode>(Elements[i]);
-+    if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(Element)) {
-+      if (DIVariable *UBV = FS->getUpperBound())
-+        if (UBV == DI) {
-+          WFS = FS;
-+          WUEx = FS->getUpperBoundExp();
-+        }
-+      if (DIVariable *LBV = FS->getLowerBound())
-+        if (LBV == DI) {
-+          WFS = FS;
-+          WLEx = FS->getLowerBoundExp();
-+        }
-+    }
-+    if (WFS) {
-+      DIE *Die;
-+      auto I = SubrangeDieMap.find(WFS);
-+      if (I == SubrangeDieMap.end()) {
-+        Die = DIE::get(DIEValueAllocator, dwarf::DW_TAG_subrange_type);
-+        SubrangeDieMap[WFS] = Die;
-+      } else {
-+        Die = I->second;
-+      }
-+
-+      assert(Die);
-+      if (WLEx)
-+        TheCU.constructDieLocationAddExpr(
-+            *Die, dwarf::DW_AT_lower_bound, DV, WLEx);
-+      if (WUEx)
-+        TheCU.constructDieLocationAddExpr(
-+            *Die, dwarf::DW_AT_upper_bound, DV, WUEx);
-+      WFS = nullptr;
-+    }
-+  }
-+}
-+
- // Collect variable information from side table maintained by MF.
- void DwarfDebug::collectVariableInfoFromMFTable(
-     DwarfCompileUnit &TheCU, DenseSet<InlinedEntity> &Processed) {
-@@ -1517,6 +1569,11 @@
-     RegVar->initializeMMI(VI.Expr, VI.Slot);
-     LLVM_DEBUG(dbgs() << "Created DbgVariable for " << VI.Var->getName()
-                       << "\n");
-+    if (VariableInDependentType.count(VI.Var)) {
-+      const DIType *DT = VariableInDependentType[VI.Var];
-+      if (const DIFortranArrayType *AT = dyn_cast<DIFortranArrayType>(DT))
-+        constructSubrangeDie(AT, *RegVar.get(), TheCU);
-+    }
-     if (DbgVariable *DbgVar = MFVars.lookup(Var))
-       DbgVar->addMMIEntry(*RegVar);
-     else if (InfoHolder.addScopeVariable(Scope, RegVar.get())) {
-@@ -1773,10 +1830,38 @@
+@@ -1762,10 +1764,26 @@
    return ConcreteEntities.back().get();
  }
  
@@ -1603,18 +960,6 @@
 +              static_cast<const Metadata *>(DIV->getType())))
 +        if (const DIVariable *LV = ST->getStringLength())
 +          VariableInDependentType[LV] = ST;
-+
-+      if (const DIFortranArrayType *AT = dyn_cast<DIFortranArrayType>(
-+              static_cast<const Metadata *>(DIV->getType()))) {
-+        for (const DINode *S : AT->getElements()) {
-+          if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(S)) {
-+            if (const DIVariable *LBV = FS->getLowerBound())
-+              VariableInDependentType[LBV] = AT;
-+            if (const DIVariable *UBV = FS->getUpperBound())
-+              VariableInDependentType[UBV] = AT;
-+          }
-+        }
-+      }
 +    }
 +  }
 +}
@@ -1628,7 +973,7 @@
    // Grab the variable info that was squirreled away in the MMI side-table.
    collectVariableInfoFromMFTable(TheCU, Processed);
  
-@@ -1798,7 +1883,9 @@
+@@ -1780,7 +1798,9 @@
        continue;
  
      LexicalScope *Scope = nullptr;
@@ -1639,7 +984,7 @@
      if (const DILocation *IA = IV.second)
        Scope = LScopes.findInlinedScope(LocalVar->getScope(), IA);
      else
-@@ -1859,6 +1946,22 @@
+@@ -1839,6 +1859,22 @@
      // Finalize the entry by lowering it into a DWARF bytestream.
      for (auto &Entry : Entries)
        Entry.finalize(*Asm, List, BT, TheCU);
@@ -1662,7 +1007,7 @@
    }
  
    // For each InlinedEntity collected from DBG_LABEL instructions, convert to
-@@ -2549,6 +2652,33 @@
+@@ -2546,6 +2582,33 @@
      List.setTagOffset(*DwarfExpr.TagOffset);
  }
  
@@ -1696,8 +1041,9 @@
  void DwarfDebug::emitDebugLocEntryLocation(const DebugLocStream::Entry &Entry,
                                             const DwarfCompileUnit *CU) {
    // Emit the size.
---- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-02-18 22:01:02.012290887 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-02-18 22:01:32.536553695 +0100
+diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h b/lib/CodeGen/AsmPrinter/DwarfDebug.h
+--- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-04-01 22:08:22.473950388 +0200
 @@ -283,6 +283,8 @@
    DwarfCompileUnit *CU;
  };
@@ -1707,22 +1053,16 @@
  /// The kind of accelerator tables we should emit.
  enum class AccelTableKind {
    Default, ///< Platform default.
-@@ -409,6 +411,14 @@
-   bool SingleCU;
-   bool IsDarwin;
+@@ -429,6 +431,8 @@
+   /// Map for tracking Fortran deferred CHARACTER lengths.
+   DenseMap<const DIStringType *, unsigned> StringTypeLocMap;
  
-+  /// Map for tracking Fortran deferred CHARACTER lengths
-+  DenseMap<const DIStringType*, unsigned> StringTypeLocMap;
-+
-+  /// Map for tracking Fortran assumed shape array descriptors
-+  DenseMap<const DIFortranSubrange*, DIE*> SubrangeDieMap;
-+
 +  DenseMap<const DIVariable*,const DIType*> VariableInDependentType;
 +
    AddressPool AddrPool;
  
    /// Accelerator tables.
-@@ -604,6 +614,12 @@
+@@ -622,6 +626,12 @@
    /// Emit the reference to the section.
    void emitSectionReference(const DwarfCompileUnit &CU);
  
@@ -1735,550 +1075,225 @@
  protected:
    /// Gather pre-function debug information.
    void beginFunctionImpl(const MachineFunction *MF) override;
-@@ -768,6 +784,21 @@
-     return CUDieMap.lookup(Die);
-   }
- 
-+  unsigned getStringTypeLoc(const DIStringType *ST) const {
-+    auto I = StringTypeLocMap.find(ST);
-+    return I != StringTypeLocMap.end() ? I->second : 0;
-+  }
-+
-+  void addStringTypeLoc(const DIStringType *ST, unsigned Loc) {
-+    assert(ST);
-+    if (Loc)
-+      StringTypeLocMap[ST] = Loc;
-+  }
-+
-+  DIE *getSubrangeDie(const DIFortranSubrange *SR) const;
-+  void constructSubrangeDie(const DIFortranArrayType *AT,
-+                            DbgVariable &DV, DwarfCompileUnit &TheCU);
-+
-   /// \defgroup DebuggerTuning Predicates to tune DWARF for a given debugger.
-   ///
-   /// Returns whether we are "tuning" for a given debugger.
---- a/llvm/lib/CodeGen/AsmPrinter/DwarfUnit.cpp	2021-02-18 22:01:02.012290887 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DwarfUnit.cpp	2021-02-18 22:01:32.537553704 +0100
-@@ -654,8 +654,12 @@
- 
-   if (auto *BT = dyn_cast<DIBasicType>(Ty))
-     constructTypeDIE(TyDIE, BT);
-+  else if (auto *ST = dyn_cast<DIStringType>(Ty))
-+    constructTypeDIE(TyDIE, ST);
-   else if (auto *STy = dyn_cast<DISubroutineType>(Ty))
-     constructTypeDIE(TyDIE, STy);
-+  else if (auto *ATy = dyn_cast<DIFortranArrayType>(Ty))
-+    constructArrayTypeDIE(TyDIE, ATy);
-   else if (auto *CTy = dyn_cast<DICompositeType>(Ty)) {
-     if (DD->generateTypeUnits() && !Ty->isForwardDecl() &&
-         (Ty->getRawName() || CTy->getRawIdentifier())) {
-@@ -772,8 +776,9 @@
-   if (BTy->getTag() == dwarf::DW_TAG_unspecified_type)
-     return;
- 
--  addUInt(Buffer, dwarf::DW_AT_encoding, dwarf::DW_FORM_data1,
--          BTy->getEncoding());
-+  if (BTy->getTag() != dwarf::DW_TAG_string_type)
-+    addUInt(Buffer, dwarf::DW_AT_encoding, dwarf::DW_FORM_data1,
-+            BTy->getEncoding());
- 
-   uint64_t Size = BTy->getSizeInBits() >> 3;
-   addUInt(Buffer, dwarf::DW_AT_byte_size, None, Size);
-@@ -784,6 +789,31 @@
-     addUInt(Buffer, dwarf::DW_AT_endianity, None, dwarf::DW_END_little);
- }
- 
-+void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIStringType *STy) {
-+  // Get core information.
-+  StringRef Name = STy->getName();
-+  // Add name if not anonymous or intermediate type.
-+  if (!Name.empty())
-+    addString(Buffer, dwarf::DW_AT_name, Name);
-+
-+  if (unsigned LLI = DD->getStringTypeLoc(STy)) {
-+    // DW_TAG_string_type has a DW_AT_string_length location
-+    dwarf::Form Form = (DD->getDwarfVersion() >= 4)
-+      ? dwarf::DW_FORM_sec_offset : dwarf::DW_FORM_data4;
-+    Buffer.addValue(DIEValueAllocator, dwarf::DW_AT_string_length, Form,
-+                    DIELocList(LLI));
-+  }
-+
-+  uint64_t Size = STy->getSizeInBits() >> 3;
-+  addUInt(Buffer, dwarf::DW_AT_byte_size, None, Size);
-+
-+  if (STy->getEncoding()) {
-+    // for eventual unicode support
-+    addUInt(Buffer, dwarf::DW_AT_encoding, dwarf::DW_FORM_data1,
-+            STy->getEncoding());
-+  }
-+}
-+
- void DwarfUnit::constructTypeDIE(DIE &Buffer, const DIDerivedType *DTy) {
-   // Get core information.
-   StringRef Name = DTy->getName();
-@@ -1385,6 +1415,48 @@
-   addBoundTypeEntry(dwarf::DW_AT_byte_stride, SR->getStride());
- }
- 
-+void DwarfUnit::constructFortranSubrangeDIE(DIE &Buffer,
-+                                            const DIFortranSubrange *SR) {
-+  DIE *IndexTy = getIndexTyDie();
-+  DIE *Die = DD->getSubrangeDie(SR);
-+  if ((!Die) || Die->getParent())
-+    Die = DIE::get(DIEValueAllocator, dwarf::DW_TAG_subrange_type);
-+  DIE &DW_Subrange = Buffer.addChild(Die);
-+  addDIEEntry(DW_Subrange, dwarf::DW_AT_type, *IndexTy);
-+
-+  if (DIVariable *GV = SR->getLowerBound()) {
-+    if (DIGlobalVariable *GVar = dyn_cast<DIGlobalVariable>(GV)) {
-+      ArrayRef<DwarfCompileUnit::GlobalExpr> GEL = getCU().findGlobalExprList(GVar);
-+      if (GEL.size() >= 1) {
-+        DwarfCompileUnit::GlobalExpr GE = {GEL.front().Var, SR->getLowerBoundExp()};
-+        SmallVector<DwarfCompileUnit::GlobalExpr, 1> GEV;
-+        GEV.emplace_back(GE);
-+        getCU().addLocationBlock(Die, dwarf::DW_AT_lower_bound, GVar, GEV);
-+      }
-+    }
-+  } else {
-+    int64_t BVC = SR->getCLowerBound();
-+    addSInt(DW_Subrange, dwarf::DW_AT_lower_bound, dwarf::DW_FORM_sdata, BVC);
-+  }
-+
-+  if (SR->noUpperBound()) {
-+    // do nothing
-+  } else if (DIVariable *GV = SR->getUpperBound()) {
-+    if (DIGlobalVariable *GVar = dyn_cast<DIGlobalVariable>(GV)) {
-+      ArrayRef<DwarfCompileUnit::GlobalExpr> GEL = getCU().findGlobalExprList(GVar);
-+      if (GEL.size() >= 1) {
-+        DwarfCompileUnit::GlobalExpr GE = {GEL.front().Var, SR->getUpperBoundExp()};
-+        SmallVector<DwarfCompileUnit::GlobalExpr, 1> GEV;
-+        GEV.emplace_back(GE);
-+        getCU().addLocationBlock(Die, dwarf::DW_AT_upper_bound, GVar, GEV);
-+      }
-+    }
-+  } else {
-+    int64_t BVC = SR->getCUpperBound();
-+    addSInt(DW_Subrange, dwarf::DW_AT_upper_bound, dwarf::DW_FORM_sdata, BVC);
-+  }
-+}
-+
- DIE *DwarfUnit::getIndexTyDie() {
-   if (IndexTyDie)
-     return IndexTyDie;
-@@ -1465,6 +1537,20 @@
-   }
- }
- 
-+void DwarfUnit::constructArrayTypeDIE(DIE &Buffer,
-+                                      const DIFortranArrayType *ATy) {
-+  // Emit the element type.
-+  addType(Buffer, ATy->getBaseType());
-+
-+  // Add subranges to array type.
-+  DINodeArray Elements = ATy->getElements();
-+  for (unsigned i = 0, N = Elements.size(); i < N; ++i) {
-+    DINode *Element = cast<DINode>(Elements[i]);
-+    if (const DIFortranSubrange *FS = dyn_cast<DIFortranSubrange>(Element))
-+      constructFortranSubrangeDIE(Buffer, FS);
-+  }
-+}
-+
- void DwarfUnit::constructEnumTypeDIE(DIE &Buffer, const DICompositeType *CTy) {
-   const DIType *DTy = CTy->getBaseType();
-   bool IsUnsigned = DTy && isUnsignedDIType(DD, DTy);
---- a/llvm/lib/CodeGen/AsmPrinter/DwarfUnit.h	2021-02-18 22:01:02.012290887 +0100
-+++ b/llvm/lib/CodeGen/AsmPrinter/DwarfUnit.h	2021-02-18 22:01:32.537553704 +0100
-@@ -306,10 +306,14 @@
- 
- private:
-   void constructTypeDIE(DIE &Buffer, const DIBasicType *BTy);
-+  void constructTypeDIE(DIE &Buffer, const DIStringType *BTy);
-+  void constructTypeDIE(DIE &Buffer, const DIFortranArrayType *ATy);
-   void constructTypeDIE(DIE &Buffer, const DIDerivedType *DTy);
-   void constructTypeDIE(DIE &Buffer, const DISubroutineType *CTy);
-   void constructSubrangeDIE(DIE &Buffer, const DISubrange *SR, DIE *IndexTy);
-+  void constructFortranSubrangeDIE(DIE &Buffer, const DIFortranSubrange *SR);
-   void constructArrayTypeDIE(DIE &Buffer, const DICompositeType *CTy);
-+  void constructArrayTypeDIE(DIE &Buffer, const DIFortranArrayType *ATy);
-   void constructEnumTypeDIE(DIE &Buffer, const DICompositeType *CTy);
-   DIE &constructMemberDIE(DIE &Buffer, const DIDerivedType *DT);
-   void constructTemplateTypeParameterDIE(DIE &Buffer,
---- a/llvm/lib/IR/AsmWriter.cpp	2021-02-18 22:01:02.017290930 +0100
-+++ b/llvm/lib/IR/AsmWriter.cpp	2021-02-18 22:01:32.537553704 +0100
-@@ -1889,6 +1889,24 @@
+diff --color -urN llvm/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
+--- a/llvm/lib/IR/AsmWriter.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/IR/AsmWriter.cpp	2021-04-01 22:08:22.538950851 +0200
+@@ -2294,6 +2294,7 @@
+   Printer.printBool("isDefinition", N->isDefinition());
+   Printer.printMetadata("declaration", N->getRawStaticDataMemberDeclaration());
+   Printer.printMetadata("templateParams", N->getRawTemplateParams());
++  Printer.printDIFlags("flags", N->getFlags());
+   Printer.printInt("align", N->getAlignInBits());
    Out << ")";
  }
+diff --color -urN llvm/lib/IR/DIBuilder.cpp b/lib/IR/DIBuilder.cpp
+--- a/llvm/lib/IR/DIBuilder.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/IR/DIBuilder.cpp	2021-04-01 22:08:22.541950872 +0200
+@@ -685,14 +685,15 @@
+ DIGlobalVariableExpression *DIBuilder::createGlobalVariableExpression(
+     DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *F,
+     unsigned LineNumber, DIType *Ty, bool IsLocalToUnit,
+-    bool isDefined, DIExpression *Expr,
+-    MDNode *Decl, MDTuple *TemplateParams, uint32_t AlignInBits) {
++    bool IsDefined, DIExpression *Expr,
++    MDNode *Decl, MDTuple *TemplateParams, DINode::DIFlags Flags,
++    uint32_t AlignInBits) {
+   checkGlobalVariableScope(Context);
  
-+static void writeDIFortranSubrange(raw_ostream &Out, const DIFortranSubrange *N,
-+                                   TypePrinting *TypePrinter,
-+                                   SlotTracker *Machine,
-+                                   const Module *Context) {
-+  Out << "!DIFortranSubrange(";
-+  MDFieldPrinter Printer(Out, TypePrinter, Machine, Context);
-+  Printer.printInt("constLowerBound", N->getCLowerBound(), false);
-+  if (!N->noUpperBound())
-+    Printer.printInt("constUpperBound", N->getCUpperBound(), false);
-+  Printer.printMetadata("lowerBound", N->getRawLowerBound());
-+  Printer.printMetadata("lowerBoundExpression",
-+                        N->getRawLowerBoundExpression());
-+  Printer.printMetadata("upperBound", N->getRawUpperBound());
-+  Printer.printMetadata("upperBoundExpression",
-+                        N->getRawUpperBoundExpression());
-+  Out << ")";
-+}
-+
- static void writeDIEnumerator(raw_ostream &Out, const DIEnumerator *N,
-                               TypePrinting *, SlotTracker *, const Module *) {
-   Out << "!DIEnumerator(";
-@@ -1916,6 +1934,23 @@
-   Out << ")";
+   auto *GV = DIGlobalVariable::getDistinct(
+       VMContext, cast_or_null<DIScope>(Context), Name, LinkageName, F,
+-      LineNumber, Ty, IsLocalToUnit, isDefined, cast_or_null<DIDerivedType>(Decl),
+-      TemplateParams, AlignInBits);
++      LineNumber, Ty, IsLocalToUnit, IsDefined, cast_or_null<DIDerivedType>(Decl),
++      TemplateParams, Flags, AlignInBits);
+   if (!Expr)
+     Expr = createExpression();
+   auto *N = DIGlobalVariableExpression::get(VMContext, GV, Expr);
+@@ -703,13 +704,14 @@
+ DIGlobalVariable *DIBuilder::createTempGlobalVariableFwdDecl(
+     DIScope *Context, StringRef Name, StringRef LinkageName, DIFile *F,
+     unsigned LineNumber, DIType *Ty, bool IsLocalToUnit, MDNode *Decl,
+-    MDTuple *TemplateParams, uint32_t AlignInBits) {
++    MDTuple *TemplateParams, DINode::DIFlags Flags, uint32_t AlignInBits) {
+   checkGlobalVariableScope(Context);
+ 
+   return DIGlobalVariable::getTemporary(
+              VMContext, cast_or_null<DIScope>(Context), Name, LinkageName, F,
+              LineNumber, Ty, IsLocalToUnit, false,
+-             cast_or_null<DIDerivedType>(Decl), TemplateParams, AlignInBits)
++             cast_or_null<DIDerivedType>(Decl), TemplateParams, Flags,
++             AlignInBits)
+       .release();
  }
  
-+static void writeDIStringType(raw_ostream &Out, const DIStringType *N,
-+                             TypePrinting *TypePrinter, SlotTracker *Machine,
-+                              const Module *Context) {
-+  Out << "!DIStringType(";
-+  MDFieldPrinter Printer(Out, TypePrinter, Machine, Context);
-+  if (N->getTag() != dwarf::DW_TAG_string_type)
-+    Printer.printTag(N);
-+  Printer.printString("name", N->getName());
-+  Printer.printMetadata("stringLength", N->getRawStringLength());
-+  Printer.printMetadata("stringLengthExpression", N->getRawStringLengthExp());
-+  Printer.printInt("size", N->getSizeInBits());
-+  Printer.printInt("align", N->getAlignInBits());
-+  Printer.printDwarfEnum("encoding", N->getEncoding(),
-+                         dwarf::AttributeEncodingString);
-+  Out << ")";
-+}
-+
- static void writeDIDerivedType(raw_ostream &Out, const DIDerivedType *N,
-                                TypePrinting *TypePrinter, SlotTracker *Machine,
-                                const Module *Context) {
-@@ -1965,6 +2000,24 @@
-   Out << ")";
+diff --color -urN llvm/lib/IR/DebugInfo.cpp b/lib/IR/DebugInfo.cpp
+--- a/llvm/lib/IR/DebugInfo.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/IR/DebugInfo.cpp	2021-04-01 22:08:22.541950872 +0200
+@@ -1325,12 +1325,13 @@
+     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
+     size_t NameLen, const char *Linkage, size_t LinkLen, LLVMMetadataRef File,
+     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
+-    LLVMMetadataRef Expr, LLVMMetadataRef Decl, uint32_t AlignInBits) {
++    LLVMMetadataRef Expr, LLVMMetadataRef Decl, LLVMDIFlags Flags,
++    uint32_t AlignInBits) {
+   return wrap(unwrap(Builder)->createGlobalVariableExpression(
+       unwrapDI<DIScope>(Scope), {Name, NameLen}, {Linkage, LinkLen},
+       unwrapDI<DIFile>(File), LineNo, unwrapDI<DIType>(Ty), LocalToUnit,
+       true, unwrap<DIExpression>(Expr), unwrapDI<MDNode>(Decl),
+-      nullptr, AlignInBits));
++      nullptr, map_from_llvmDIFlags(Flags), AlignInBits));
  }
  
-+static void writeDIFortranArrayType(
-+    raw_ostream &Out, const DIFortranArrayType *N, TypePrinting *TypePrinter,
-+    SlotTracker *Machine, const Module *Context) {
-+  Out << "!DIFortranArrayType(";
-+  MDFieldPrinter Printer(Out, TypePrinter, Machine, Context);
-+  Printer.printTag(N);
-+  Printer.printString("name", N->getName());
-+  Printer.printMetadata("scope", N->getRawScope());
-+  Printer.printMetadata("file", N->getRawFile());
-+  Printer.printInt("line", N->getLine());
-+  Printer.printMetadata("baseType", N->getRawBaseType());
-+  Printer.printInt("size", N->getSizeInBits());
-+  Printer.printInt("align", N->getAlignInBits());
-+  Printer.printInt("offset", N->getOffsetInBits());
-+  Printer.printMetadata("elements", N->getRawElements());
-+  Out << ")";
-+}
-+
- static void writeDISubroutineType(raw_ostream &Out, const DISubroutineType *N,
-                                   TypePrinting *TypePrinter,
-                                   SlotTracker *Machine, const Module *Context) {
---- a/llvm/lib/IR/DIBuilder.cpp	2021-02-18 22:01:02.018290938 +0100
-+++ b/llvm/lib/IR/DIBuilder.cpp	2021-02-18 22:01:32.538553712 +0100
-@@ -267,6 +267,12 @@
-                           0, Encoding, Flags);
+ LLVMMetadataRef LLVMDIGlobalVariableExpressionGetVariable(LLVMMetadataRef GVE) {
+@@ -1375,11 +1376,12 @@
+     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
+     size_t NameLen, const char *Linkage, size_t LnkLen, LLVMMetadataRef File,
+     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
+-    LLVMMetadataRef Decl, uint32_t AlignInBits) {
++    LLVMMetadataRef Decl, LLVMDIFlags Flags, uint32_t AlignInBits) {
+   return wrap(unwrap(Builder)->createTempGlobalVariableFwdDecl(
+       unwrapDI<DIScope>(Scope), {Name, NameLen}, {Linkage, LnkLen},
+       unwrapDI<DIFile>(File), LineNo, unwrapDI<DIType>(Ty), LocalToUnit,
+-      unwrapDI<MDNode>(Decl), nullptr, AlignInBits));
++      unwrapDI<MDNode>(Decl), nullptr, map_from_llvmDIFlags(Flags),
++      AlignInBits));
  }
  
-+DIStringType *DIBuilder::createStringType(StringRef Name, uint64_t SizeInBits) {
-+  assert(!Name.empty() && "Unable to create type without name");
-+  return DIStringType::get(VMContext, dwarf::DW_TAG_string_type, Name,
-+                           SizeInBits, 0);
-+}
-+
- DIDerivedType *DIBuilder::createQualifiedType(unsigned Tag, DIType *FromTy) {
-   return DIDerivedType::get(VMContext, Tag, "", nullptr, 0, nullptr, FromTy, 0,
-                             0, 0, None, DINode::FlagZero);
-@@ -529,6 +535,15 @@
-   return R;
- }
- 
-+DIFortranArrayType *DIBuilder::createFortranArrayType(
-+    uint64_t Size, uint32_t AlignInBits, DIType *Ty, DINodeArray Subscripts) {
-+  auto *R = DIFortranArrayType::get(VMContext, dwarf::DW_TAG_array_type, "",
-+                                    nullptr, 0, nullptr, Ty, Size, AlignInBits,
-+                                    0, DINode::FlagZero, Subscripts);
-+  trackIfUnresolved(R);
-+  return R;
-+}
-+
- DICompositeType *DIBuilder::createVectorType(uint64_t Size,
-                                              uint32_t AlignInBits, DIType *Ty,
-                                              DINodeArray Subscripts) {
-@@ -643,6 +658,12 @@
-   return DISubrange::get(VMContext, CountNode, LB, UB, Stride);
- }
- 
-+DIFortranSubrange *DIBuilder::getOrCreateFortranSubrange(
-+    int64_t CLB, int64_t CUB, bool NUB, Metadata *LB, Metadata *LBE,
-+    Metadata *UB, Metadata *UBE) {
-+  return DIFortranSubrange::get(VMContext, CLB, CUB, NUB, LB, LBE, UB, UBE);
-+}
-+
- static void checkGlobalVariableScope(DIScope *Context) {
- #ifndef NDEBUG
-   if (auto *CT =
---- a/llvm/lib/IR/DebugInfoMetadata.cpp	2021-02-18 22:01:02.016290921 +0100
-+++ b/llvm/lib/IR/DebugInfoMetadata.cpp	2021-02-18 22:01:32.538553712 +0100
-@@ -435,6 +435,15 @@
-   return BoundType();
- }
- 
-+DIFortranSubrange *DIFortranSubrange::getImpl(
-+    LLVMContext &Context, int64_t CLB, int64_t CUB, bool NUB, Metadata *LB,
-+    Metadata *LBE, Metadata *UB, Metadata *UBE, StorageType Storage,
-+    bool ShouldCreate) {
-+  DEFINE_GETIMPL_LOOKUP(DIFortranSubrange, (CLB, CUB, NUB, LB, LBE, UB, UBE));
-+  Metadata *Ops[] = {LB, LBE, UB, UBE};
-+  DEFINE_GETIMPL_STORE(DIFortranSubrange, (CLB, CUB, NUB), Ops);
-+}
-+
- DIEnumerator *DIEnumerator::getImpl(LLVMContext &Context, const APInt &Value,
-                                     bool IsUnsigned, MDString *Name,
-                                     StorageType Storage, bool ShouldCreate) {
-@@ -457,6 +466,21 @@
-                       Flags), Ops);
- }
- 
-+DIStringType *DIStringType::getImpl(LLVMContext &Context, unsigned Tag,
-+                                    MDString *Name, Metadata *StringLength,
-+                                    Metadata *StringLengthExp,
-+                                    uint64_t SizeInBits, uint32_t AlignInBits,
-+                                    unsigned Encoding, StorageType Storage,
-+                                    bool ShouldCreate) {
-+  assert(isCanonical(Name) && "Expected canonical MDString");
-+  DEFINE_GETIMPL_LOOKUP(DIStringType,
-+                        (Tag, Name, StringLength, StringLengthExp, SizeInBits,
-+                         AlignInBits, Encoding));
-+  Metadata *Ops[] = {nullptr, nullptr, Name, StringLength, StringLengthExp};
-+  DEFINE_GETIMPL_STORE(DIStringType, (Tag, SizeInBits, AlignInBits, Encoding),
+ LLVMValueRef
+diff --color -urN llvm/lib/IR/DebugInfoMetadata.cpp b/lib/IR/DebugInfoMetadata.cpp
+--- a/llvm/lib/IR/DebugInfoMetadata.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/IR/DebugInfoMetadata.cpp	2021-04-01 22:08:22.541950872 +0200
+@@ -961,14 +961,15 @@
+                           MDString *LinkageName, Metadata *File, unsigned Line,
+                           Metadata *Type, bool IsLocalToUnit, bool IsDefinition,
+                           Metadata *StaticDataMemberDeclaration,
+-                          Metadata *TemplateParams, uint32_t AlignInBits,
+-                          StorageType Storage, bool ShouldCreate) {
++                          Metadata *TemplateParams, DIFlags Flags,
++                          uint32_t AlignInBits, StorageType Storage,
++                          bool ShouldCreate) {
+   assert(isCanonical(Name) && "Expected canonical MDString");
+   assert(isCanonical(LinkageName) && "Expected canonical MDString");
+   DEFINE_GETIMPL_LOOKUP(DIGlobalVariable, (Scope, Name, LinkageName, File, Line,
+                                            Type, IsLocalToUnit, IsDefinition,
+                                            StaticDataMemberDeclaration,
+-                                           TemplateParams, AlignInBits));
++                                           TemplateParams, Flags, AlignInBits));
+   Metadata *Ops[] = {Scope,
+                      Name,
+                      File,
+@@ -978,7 +979,8 @@
+                      StaticDataMemberDeclaration,
+                      TemplateParams};
+   DEFINE_GETIMPL_STORE(DIGlobalVariable,
+-                       (Line, IsLocalToUnit, IsDefinition, AlignInBits), Ops);
++                       (Line, IsLocalToUnit, IsDefinition, Flags, AlignInBits),
 +                       Ops);
-+}
-+
- Optional<DIBasicType::Signedness> DIBasicType::getSignedness() const {
-   switch (getEncoding()) {
-   case dwarf::DW_ATE_signed:
-@@ -487,6 +511,22 @@
-                       DWARFAddressSpace, Flags), Ops);
  }
  
-+DIFortranArrayType *DIFortranArrayType::getImpl(
-+    LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
-+    unsigned Line, Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
-+    uint32_t AlignInBits, uint64_t OffsetInBits, DIFlags Flags,
-+    Metadata *Elements, StorageType Storage, bool ShouldCreate) {
-+  assert(isCanonical(Name) && "Expected canonical MDString");
-+
-+  // Keep this in sync with buildODRType.
-+  DEFINE_GETIMPL_LOOKUP(
-+      DIFortranArrayType, (Tag, Name, File, Line, Scope, BaseType, SizeInBits,
-+                           AlignInBits, OffsetInBits, Flags, Elements));
-+  Metadata *Ops[] = {File, Scope, Name, BaseType, Elements};
-+  DEFINE_GETIMPL_STORE(DIFortranArrayType, (Tag, Line, SizeInBits, AlignInBits,
-+                                            OffsetInBits, Flags), Ops);
-+}
-+
- DICompositeType *DICompositeType::getImpl(
-     LLVMContext &Context, unsigned Tag, MDString *Name, Metadata *File,
-     unsigned Line, Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
---- a/llvm/lib/IR/LLVMContextImpl.h	2021-02-18 22:01:02.018290938 +0100
-+++ b/llvm/lib/IR/LLVMContextImpl.h	2021-02-18 22:01:32.539553720 +0100
-@@ -366,6 +366,42 @@
-   }
- };
- 
-+template <> struct MDNodeKeyImpl<DIFortranSubrange> {
-+  int64_t CLBound;
-+  int64_t CUBound;
-+  bool NoUBound;
-+  Metadata *LowerBound;
-+  Metadata *LowerBoundExp;
-+  Metadata *UpperBound;
-+  Metadata *UpperBoundExp;
-+
-+  MDNodeKeyImpl(int64_t CLB, int64_t CUB, bool NUB, Metadata *LB, Metadata *LBE,
-+                Metadata *UB, Metadata *UBE)
-+      : CLBound(CLB), CUBound(CUB), NoUBound(NUB), LowerBound(LB),
-+        LowerBoundExp(LBE), UpperBound(UB), UpperBoundExp(UBE) {}
-+  MDNodeKeyImpl(const DIFortranSubrange *N)
-+      : CLBound(N->getCLowerBound()), CUBound(N->getCUpperBound()),
-+        NoUBound(N->noUpperBound()), LowerBound(N->getRawLowerBound()),
-+        LowerBoundExp(N->getRawLowerBoundExpression()),
-+        UpperBound(N->getRawUpperBound()),
-+        UpperBoundExp(N->getRawUpperBoundExpression()) {}
-+
-+  bool isKeyOf(const DIFortranSubrange *RHS) const {
-+    return CLBound == RHS->getCLowerBound() &&
-+      CUBound == RHS->getCUpperBound() &&
-+      NoUBound == RHS->noUpperBound() &&
-+      LowerBound == RHS->getRawLowerBound() &&
-+      LowerBoundExp == RHS->getRawLowerBoundExpression() &&
-+      UpperBound == RHS->getRawUpperBound() &&
-+      UpperBoundExp == RHS->getRawUpperBoundExpression();
-+  }
-+
-+  unsigned getHashValue() const {
-+    return hash_combine(CLBound, CUBound, NoUBound, UpperBound, UpperBoundExp,
-+                        LowerBound, LowerBoundExp);
-+  }
-+};
-+
- template <> struct MDNodeKeyImpl<DIEnumerator> {
-   APInt Value;
-   MDString *Name;
-@@ -417,6 +453,39 @@
-   }
- };
- 
-+template <> struct MDNodeKeyImpl<DIStringType> {
-+  unsigned Tag;
-+  MDString *Name;
-+  Metadata *StringLength;
-+  Metadata *StringLengthExp;
-+  uint64_t SizeInBits;
-+  uint32_t AlignInBits;
-+  unsigned Encoding;
-+
-+  MDNodeKeyImpl(unsigned Tag, MDString *Name, Metadata *StringLength,
-+                Metadata *StringLengthExp, uint64_t SizeInBits,
-+                uint32_t AlignInBits, unsigned Encoding)
-+      : Tag(Tag), Name(Name), StringLength(StringLength),
-+        StringLengthExp(StringLengthExp), SizeInBits(SizeInBits),
-+        AlignInBits(AlignInBits), Encoding(Encoding) {}
-+  MDNodeKeyImpl(const DIStringType *N)
-+      : Tag(N->getTag()), Name(N->getRawName()),
-+        StringLength(N->getRawStringLength()),
-+        StringLengthExp(N->getRawStringLengthExp()),
-+        SizeInBits(N->getSizeInBits()),
-+        AlignInBits(N->getAlignInBits()), Encoding(N->getEncoding()) {}
-+
-+  bool isKeyOf(const DIStringType *RHS) const {
-+    return Tag == RHS->getTag() && Name == RHS->getRawName() &&
-+           SizeInBits == RHS->getSizeInBits() &&
-+           AlignInBits == RHS->getAlignInBits() &&
-+           Encoding == RHS->getEncoding();
-+  }
-+  unsigned getHashValue() const {
-+    return hash_combine(Tag, Name, SizeInBits, AlignInBits, Encoding);
-+  }
-+};
-+
- template <> struct MDNodeKeyImpl<DIDerivedType> {
-   unsigned Tag;
-   MDString *Name;
-@@ -577,6 +646,52 @@
-   }
- };
- 
-+template <> struct MDNodeKeyImpl<DIFortranArrayType> {
-+  unsigned Tag;
-+  MDString *Name;
-+  Metadata *File;
-+  unsigned Line;
-+  Metadata *Scope;
-+  Metadata *BaseType;
-+  uint64_t SizeInBits;
-+  uint64_t OffsetInBits;
-+  uint32_t AlignInBits;
+ DILocalVariable *DILocalVariable::getImpl(LLVMContext &Context, Metadata *Scope,
+diff --color -urN llvm/lib/IR/LLVMContextImpl.h b/lib/IR/LLVMContextImpl.h
+--- a/llvm/lib/IR/LLVMContextImpl.h	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/IR/LLVMContextImpl.h	2021-04-01 22:08:22.543950886 +0200
+@@ -975,25 +975,27 @@
+   bool IsDefinition;
+   Metadata *StaticDataMemberDeclaration;
+   Metadata *TemplateParams;
 +  unsigned Flags;
-+  Metadata *Elements;
-+
-+  MDNodeKeyImpl(unsigned Tag, MDString *Name, Metadata *File, unsigned Line,
-+                Metadata *Scope, Metadata *BaseType, uint64_t SizeInBits,
-+                uint32_t AlignInBits, uint64_t OffsetInBits, unsigned Flags,
-+                Metadata *Elements)
-+      : Tag(Tag), Name(Name), File(File), Line(Line), Scope(Scope),
-+        BaseType(BaseType), SizeInBits(SizeInBits), OffsetInBits(OffsetInBits),
-+        AlignInBits(AlignInBits), Flags(Flags), Elements(Elements) {}
-+  MDNodeKeyImpl(const DIFortranArrayType *N)
-+      : Tag(N->getTag()), Name(N->getRawName()), File(N->getRawFile()),
-+        Line(N->getLine()), Scope(N->getRawScope()),
-+        BaseType(N->getRawBaseType()), SizeInBits(N->getSizeInBits()),
-+        OffsetInBits(N->getOffsetInBits()), AlignInBits(N->getAlignInBits()),
-+        Flags(N->getFlags()), Elements(N->getRawElements()) {}
-+
-+  bool isKeyOf(const DIFortranArrayType *RHS) const {
-+    return Tag == RHS->getTag() && Name == RHS->getRawName() &&
-+           File == RHS->getRawFile() && Line == RHS->getLine() &&
-+           Scope == RHS->getRawScope() && BaseType == RHS->getRawBaseType() &&
-+           SizeInBits == RHS->getSizeInBits() &&
-+           AlignInBits == RHS->getAlignInBits() &&
-+           OffsetInBits == RHS->getOffsetInBits() && Flags == RHS->getFlags() &&
-+           Elements == RHS->getRawElements();
-+  }
-+
-+  unsigned getHashValue() const {
-+    // Intentionally computes the hash on a subset of the operands for
-+    // performance reason. The subset has to be significant enough to avoid
-+    // collision "most of the time". There is no correctness issue in case of
-+    // collision because of the full check above.
-+    return hash_combine(Name, File, Line, BaseType, Scope, Elements);
-+  }
-+};
-+
- template <> struct MDNodeKeyImpl<DISubroutineType> {
-   unsigned Flags;
-   uint8_t CC;
---- a/llvm/lib/IR/Verifier.cpp	2021-02-18 22:01:02.017290930 +0100
-+++ b/llvm/lib/IR/Verifier.cpp	2021-02-18 22:01:32.539553720 +0100
-@@ -920,6 +920,14 @@
-            "Stride must be signed constant or DIVariable or DIExpression", &N);
- }
+   uint32_t AlignInBits;
  
-+void Verifier::visitDIFortranSubrange(const DIFortranSubrange &N) {
-+  AssertDI(N.getTag() == dwarf::DW_TAG_subrange_type, "invalid tag", &N);
-+  AssertDI(N.getLowerBound() ? (N.getLowerBoundExp() != nullptr) : true,
-+           "no lower bound", &N);
-+  AssertDI(N.getUpperBound() ? (N.getUpperBoundExp() != nullptr) : true,
-+           "no upper bound", &N);
-+}
-+
- void Verifier::visitDIEnumerator(const DIEnumerator &N) {
-   AssertDI(N.getTag() == dwarf::DW_TAG_enumerator, "invalid tag", &N);
- }
-@@ -932,6 +940,11 @@
-             "has conflicting flags", &N);
- }
+   MDNodeKeyImpl(Metadata *Scope, MDString *Name, MDString *LinkageName,
+                 Metadata *File, unsigned Line, Metadata *Type,
+                 bool IsLocalToUnit, bool IsDefinition,
+                 Metadata *StaticDataMemberDeclaration, Metadata *TemplateParams,
+-                uint32_t AlignInBits)
++                unsigned Flags, uint32_t AlignInBits)
+       : Scope(Scope), Name(Name), LinkageName(LinkageName), File(File),
+         Line(Line), Type(Type), IsLocalToUnit(IsLocalToUnit),
+         IsDefinition(IsDefinition),
+         StaticDataMemberDeclaration(StaticDataMemberDeclaration),
+-        TemplateParams(TemplateParams), AlignInBits(AlignInBits) {}
++        TemplateParams(TemplateParams), Flags(Flags),
++        AlignInBits(AlignInBits) {}
+   MDNodeKeyImpl(const DIGlobalVariable *N)
+       : Scope(N->getRawScope()), Name(N->getRawName()),
+         LinkageName(N->getRawLinkageName()), File(N->getRawFile()),
+         Line(N->getLine()), Type(N->getRawType()),
+         IsLocalToUnit(N->isLocalToUnit()), IsDefinition(N->isDefinition()),
+         StaticDataMemberDeclaration(N->getRawStaticDataMemberDeclaration()),
+-        TemplateParams(N->getRawTemplateParams()),
++        TemplateParams(N->getRawTemplateParams()), Flags(N->getFlags()),
+         AlignInBits(N->getAlignInBits()) {}
  
-+void Verifier::visitDIStringType(const DIStringType &N) {
-+  AssertDI( N.getTag() == dwarf::DW_TAG_string_type,
-+           "invalid tag", &N);
-+}
-+
- void Verifier::visitDIDerivedType(const DIDerivedType &N) {
-   // Common scope checks.
-   visitDIScope(N);
-@@ -1037,6 +1050,22 @@
+   bool isKeyOf(const DIGlobalVariable *RHS) const {
+@@ -1005,6 +1007,7 @@
+            StaticDataMemberDeclaration ==
+                RHS->getRawStaticDataMemberDeclaration() &&
+            TemplateParams == RHS->getRawTemplateParams() &&
++           Flags == RHS->getFlags() &&
+            AlignInBits == RHS->getAlignInBits();
    }
+ 
+@@ -1018,7 +1021,7 @@
+     // TODO: make hashing work fine with such situations
+     return hash_combine(Scope, Name, LinkageName, File, Line, Type,
+                         IsLocalToUnit, IsDefinition, /* AlignInBits, */
+-                        StaticDataMemberDeclaration);
++                        StaticDataMemberDeclaration, Flags);
+   }
+ };
+ 
+diff --color -urN llvm/lib/IR/Verifier.cpp b/lib/IR/Verifier.cpp
+--- a/llvm/lib/IR/Verifier.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/IR/Verifier.cpp	2021-04-01 22:08:22.546950908 +0200
+@@ -1339,6 +1339,8 @@
+   visitDIVariable(N);
+ 
+   AssertDI(N.getTag() == dwarf::DW_TAG_variable, "invalid tag", &N);
++  AssertDI(!N.getName().empty() || N.isArtificial(),
++           "missing global variable name", &N);
+   AssertDI(isType(N.getRawType()), "invalid type ref", &N, N.getRawType());
+   // Assert only if the global variable is not an extern
+   if (N.isDefinition())
+diff --color -urN llvm/lib/Support/Unix/Threading.inc b/lib/Support/Unix/Threading.inc
+--- a/llvm/lib/Support/Unix/Threading.inc	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/Support/Unix/Threading.inc	2021-04-01 22:08:22.575951114 +0200
+@@ -164,6 +164,7 @@
+   if (get_max_thread_name_length() > 0)
+     NameStr = NameStr.take_back(get_max_thread_name_length() - 1);
+   (void)NameStr;
++#if 0
+ #if defined(__linux__)
+ #if (defined(__GLIBC__) && defined(_GNU_SOURCE)) || defined(__ANDROID__)
+ #if HAVE_PTHREAD_SETNAME_NP
+@@ -178,6 +179,7 @@
+ #elif defined(__APPLE__)
+   ::pthread_setname_np(NameStr.data());
+ #endif
++#endif
  }
  
-+void Verifier::visitDIFortranArrayType(const DIFortranArrayType &N) {
-+  // Common scope checks.
-+  visitDIScope(N);
-+
-+  AssertDI(N.getTag() == dwarf::DW_TAG_array_type, "invalid tag", &N);
-+
-+  AssertDI(isScope(N.getRawScope()), "invalid scope", &N, N.getRawScope());
-+  AssertDI(isType(N.getRawBaseType()), "invalid base type", &N,
-+           N.getRawBaseType());
-+
-+  AssertDI(!N.getRawElements() || isa<MDTuple>(N.getRawElements()),
-+           "invalid composite elements", &N, N.getRawElements());
-+  AssertDI(!hasConflictingReferenceFlags(N.getFlags()),
-+           "invalid reference flags", &N);
-+}
-+
- void Verifier::visitDISubroutineType(const DISubroutineType &N) {
-   AssertDI(N.getTag() == dwarf::DW_TAG_subroutine_type, "invalid tag", &N);
-   if (auto *Types = N.getRawTypeArray()) {
---- a/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-02-18 22:01:02.158292143 +0100
-+++ b/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-02-18 22:01:32.540553729 +0100
-@@ -5200,8 +5200,10 @@
+ void llvm::get_thread_name(SmallVectorImpl<char> &Name) {
+@@ -232,6 +234,7 @@
+ 
+   Name.append(buf, buf + strlen(buf));
+ #elif defined(__linux__)
++#if 0
+ #if HAVE_PTHREAD_GETNAME_NP
+   constexpr uint32_t len = get_max_thread_name_length_impl();
+   char Buffer[len] = {'\0'};  // FIXME: working around MSan false positive.
+@@ -239,6 +242,7 @@
+     Name.append(Buffer, Buffer + strlen(Buffer));
+ #endif
+ #endif
++#endif
+ }
+ 
+ SetThreadPriorityResult llvm::set_thread_priority(ThreadPriority Priority) {
+diff --color -urN llvm/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
+--- a/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-04-01 22:13:36.272305489 +0200
+@@ -5975,8 +5975,10 @@
        if (ValuesToIgnore.count(&I))
          continue;
  
@@ -2291,3 +1306,288 @@
          continue;
  
        // Examine PHI nodes that are reduction variables. Update the type to
+diff --color -urN llvm/test/Assembler/invalid-diglobalvariable-empty-name.ll b/test/Assembler/invalid-diglobalvariable-empty-name.ll
+--- a/llvm/test/Assembler/invalid-diglobalvariable-empty-name.ll	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/test/Assembler/invalid-diglobalvariable-empty-name.ll	2021-04-01 22:08:22.969953922 +0200
+@@ -1,4 +1,5 @@
+ ; RUN: not llvm-as < %s -disable-output 2>&1 | FileCheck %s
++; UNSUPPORTED: classic_flang
+ 
+ ; CHECK: <stdin>:[[@LINE+1]]:30: error: 'name' cannot be empty
+ !0 = !DIGlobalVariable(name: "")
+diff --color -urN llvm/test/Assembler/invalid-diglobalvariable-missing-name.ll b/test/Assembler/invalid-diglobalvariable-missing-name.ll
+--- a/llvm/test/Assembler/invalid-diglobalvariable-missing-name.ll	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/test/Assembler/invalid-diglobalvariable-missing-name.ll	2021-04-01 22:08:22.969953922 +0200
+@@ -1,4 +1,5 @@
+ ; RUN: not llvm-as < %s -disable-output 2>&1 | FileCheck %s
++; UNSUPPORTED: classic_flang
+ 
+ ; CHECK: <stdin>:[[@LINE+1]]:24: error: missing required field 'name'
+ !0 = !DIGlobalVariable()
+diff --color -urN llvm/test/DebugInfo/Generic/fortran-subprogram-at.ll b/test/DebugInfo/Generic/fortran-subprogram-at.ll
+--- a/llvm/test/DebugInfo/Generic/fortran-subprogram-at.ll	1970-01-01 01:00:00.000000000 +0100
++++ b/llvm/test/DebugInfo/Generic/fortran-subprogram-at.ll	2021-04-01 22:08:24.304963439 +0200
+@@ -0,0 +1,24 @@
++; Test for DIFlagPure, DIFlagElement and DIFlagRecursive. These three
++; DIFlags are used to attach DW_AT_pure, DW_AT_element, and DW_AT_recursive
++; attributes to DW_TAG_subprogram DIEs.
++
++; RUN: llvm-as < %s | llvm-dis | llvm-as | llvm-dis | FileCheck %s
++; CHECK: !DISubprogram({{.*}}, spFlags: DISPFlagDefinition | DISPFlagPure | DISPFlagElemental | DISPFlagRecursive,
++
++!llvm.module.flags = !{!0, !1}
++!llvm.dbg.cu = !{!2}
++
++define void @subprgm() !dbg !6 {
++L:
++  ret void
++}
++
++!0 = !{i32 2, !"Dwarf Version", i32 2}
++!1 = !{i32 1, !"Debug Info Version", i32 3}
++!2 = distinct !DICompileUnit(language: DW_LANG_Fortran90, file: !3, producer: "Flang", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !4, globals: !4, imports: !4)
++!3 = !DIFile(filename: "fortran-subprogram-at.f", directory: "/")
++!4 = !{}
++!5 = !DIBasicType(name: "real", size: 32, align: 32, encoding: DW_ATE_float)
++!6 = distinct !DISubprogram(name: "subprgm", scope: !2, file: !3, line: 256, type: !7, scopeLine: 256, spFlags: DISPFlagDefinition | DISPFlagPure | DISPFlagElemental | DISPFlagRecursive, unit: !2)
++!7 = !DISubroutineType(types: !8)
++!8 = !{null, !5}
+diff --color -urN llvm/test/DebugInfo/Generic/more-subprogram-attr.ll b/test/DebugInfo/Generic/more-subprogram-attr.ll
+--- a/llvm/test/DebugInfo/Generic/more-subprogram-attr.ll	1970-01-01 01:00:00.000000000 +0100
++++ b/llvm/test/DebugInfo/Generic/more-subprogram-attr.ll	2021-04-01 22:08:24.305963446 +0200
+@@ -0,0 +1,38 @@
++; REQUIRES: object-emission
++
++; RUN: %llc_dwarf -O0 -filetype=obj < %s > %t
++; RUN: llvm-dwarfdump -v -debug-info %t | FileCheck %s
++
++; Make sure we're emitting DW_AT_{pure,elemental,recursive}.
++; CHECK: DW_TAG_subprogram
++; CHECK-NOT: {{DW_TAG|NULL}}
++; CHECK:   DW_AT_name {{.*}} "main"
++; CHECK-NOT: {{DW_TAG|NULL}}
++; CHECK:   DW_AT_pure [DW_FORM_flag_present] (true)
++; CHECK:   DW_AT_elemental [DW_FORM_flag_present] (true)
++; CHECK:   DW_AT_recursive [DW_FORM_flag_present] (true)
++
++define dso_local i32 @main() !dbg !7 {
++entry:
++  %retval = alloca i32, align 4
++  store i32 0, i32* %retval, align 4
++  ret i32 0, !dbg !12
++}
++
++!llvm.dbg.cu = !{!0}
++!llvm.module.flags = !{!3, !4, !5}
++!llvm.ident = !{!6}
++
++!0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1, producer: "clang", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2, nameTableKind: None)
++!1 = !DIFile(filename: "x.c", directory: "/tmp")
++!2 = !{}
++!3 = !{i32 2, !"Dwarf Version", i32 4}
++!4 = !{i32 2, !"Debug Info Version", i32 3}
++!5 = !{i32 1, !"wchar_size", i32 4}
++!6 = !{!"clang"}
++!7 = distinct !DISubprogram(name: "main", scope: !8, file: !8, line: 1, type: !9, scopeLine: 2, spFlags: DISPFlagDefinition | DISPFlagPure | DISPFlagElemental | DISPFlagRecursive, unit: !0, retainedNodes: !2)
++!8 = !DIFile(filename: "x.c", directory: "/tmp")
++!9 = !DISubroutineType(types: !10)
++!10 = !{!11}
++!11 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
++!12 = !DILocation(line: 3, column: 3, scope: !7)
+diff --color -urN llvm/test/DebugInfo/X86/DICommonBlock.ll b/test/DebugInfo/X86/DICommonBlock.ll
+--- a/llvm/test/DebugInfo/X86/DICommonBlock.ll	1970-01-01 01:00:00.000000000 +0100
++++ b/llvm/test/DebugInfo/X86/DICommonBlock.ll	2021-04-01 22:08:24.324963581 +0200
+@@ -0,0 +1,36 @@
++; ModuleID = 'none.f90'
++; RUN: llc %s -o %t -filetype=obj
++; RUN: llvm-dwarfdump -debug-info %t | FileCheck %s
++; CHECK: DW_TAG_common_block
++
++target datalayout = "e-m:o-i64:64-f80:128-n8:16:32:64-S128"
++target triple = "x86_64-apple-macosx"
++
++@common_a = common global [32 x i8] zeroinitializer, align 8, !dbg !13
++
++define i32 @subr() !dbg !9 {
++    %1 = getelementptr inbounds [32 x i8], [32 x i8]* @common_a, i64 0, i32 8
++    %2 = bitcast i8* %1 to i32*
++    %3 = load i32, i32* %2
++    ret i32 %3
++}
++
++!llvm.dbg.cu = !{!0}
++!llvm.module.flags = !{!6, !7}
++!llvm.ident = !{!8}
++
++!0 = distinct !DICompileUnit(language: DW_LANG_Fortran90, file: !1, producer: "PGI Fortran", isOptimized: false, runtimeVersion: 2, emissionKind: FullDebug, retainedTypes: !14, globals: !2)
++!1 = !DIFile(filename: "none.f90", directory: "/not/here/")
++!2 = !{!13}
++!3 = !{}
++!4 = !DIGlobalVariable(name: "common /a/", scope: !5, file: !1, line: 4, isLocal: false, isDefinition: true, type: !12)
++!5 = !DICommonBlock(scope: !9, declaration: !4, name: "a", file: !1, line: 4)
++!6 = !{i32 2, !"Dwarf Version", i32 4}
++!7 = !{i32 2, !"Debug Info Version", i32 3}
++!8 = !{!"PGI Fortran"}
++!9 = distinct !DISubprogram(name: "subrtn", scope: !0, file: !1, line: 1, type: !10, isLocal: false, isDefinition: true, unit: !0)
++!10 = !DISubroutineType(types: !11)
++!11 = !{!12, !12}
++!12 = !DIBasicType(name: "int", size: 32)
++!13 = !DIGlobalVariableExpression(var: !4, expr: !DIExpression())
++!14 = !{!12, !10}
+diff --color -urN llvm/test/lit.cfg.py b/test/lit.cfg.py
+--- a/llvm/test/lit.cfg.py	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/test/lit.cfg.py	2021-04-01 22:08:25.231970050 +0200
+@@ -381,3 +381,6 @@
+ 
+ if config.expensive_checks:
+     config.available_features.add('expensive_checks')
++
++if config.use_classic_flang:
++    config.available_features.add("classic_flang")
+diff --color -urN llvm/test/lit.site.cfg.py.in b/test/lit.site.cfg.py.in
+--- a/llvm/test/lit.site.cfg.py.in	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/test/lit.site.cfg.py.in	2021-04-01 22:08:25.231970050 +0200
+@@ -51,6 +51,7 @@
+ config.have_tf_aot = @LLVM_HAVE_TF_AOT@
+ config.have_tf_api = @LLVM_HAVE_TF_API@
+ config.expensive_checks = @LLVM_ENABLE_EXPENSIVE_CHECKS@
++config.use_classic_flang = @LLVM_ENABLE_CLASSIC_FLANG@
+ 
+ # Support substitution of the tools_dir with user parameters. This is
+ # used when we can't determine the tool dir at configuration time.
+diff --color -urN llvm/tools/llvm-c-test/debuginfo.c b/tools/llvm-c-test/debuginfo.c
+--- a/llvm/tools/llvm-c-test/debuginfo.c	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/tools/llvm-c-test/debuginfo.c	2021-04-01 22:08:25.532972197 +0200
+@@ -64,7 +64,7 @@
+       LLVMDIBuilderCreateConstantValueExpression(DIB, 0);
+   LLVMDIBuilderCreateGlobalVariableExpression(
+       DIB, Module, "globalClass", 11, "", 0, File, 1, ClassTy, true,
+-      GlobalClassValueExpr, NULL, 0);
++      GlobalClassValueExpr, NULL, LLVMDIFlagZero, 0);
+ 
+   LLVMMetadataRef Int64Ty =
+       LLVMDIBuilderCreateBasicType(DIB, "Int64", 5, 64, 0, LLVMDIFlagZero);
+@@ -75,7 +75,7 @@
+       LLVMDIBuilderCreateConstantValueExpression(DIB, 0);
+   LLVMDIBuilderCreateGlobalVariableExpression(
+       DIB, Module, "global", 6, "", 0, File, 1, Int64TypeDef, true,
+-      GlobalVarValueExpr, NULL, 0);
++      GlobalVarValueExpr, NULL, LLVMDIFlagZero, 0);
+ 
+   LLVMMetadataRef NameSpace =
+       LLVMDIBuilderCreateNameSpace(DIB, Module, "NameSpace", 9, false);
+diff --color -urN llvm/unittests/IR/MetadataTest.cpp b/unittests/IR/MetadataTest.cpp
+--- a/llvm/unittests/IR/MetadataTest.cpp	2021-03-31 21:10:37.000000000 +0200
++++ b/llvm/unittests/IR/MetadataTest.cpp	2021-04-01 22:08:25.578972525 +0200
+@@ -2570,11 +2570,13 @@
+   DIDerivedType *StaticDataMemberDeclaration =
+       cast<DIDerivedType>(getDerivedType());
+ 
++  DINode::DIFlags Flags = static_cast<DINode::DIFlags>(7);
+   uint32_t AlignInBits = 8;
+ 
+   auto *N = DIGlobalVariable::get(
+       Context, Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
+-      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
++      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
++      AlignInBits);
+ 
+   EXPECT_EQ(dwarf::DW_TAG_variable, N->getTag());
+   EXPECT_EQ(Scope, N->getScope());
+@@ -2587,56 +2589,65 @@
+   EXPECT_EQ(IsDefinition, N->isDefinition());
+   EXPECT_EQ(StaticDataMemberDeclaration, N->getStaticDataMemberDeclaration());
+   EXPECT_EQ(templateParams, N->getTemplateParams());
++  EXPECT_EQ(Flags, N->getFlags());
+   EXPECT_EQ(AlignInBits, N->getAlignInBits());
+   EXPECT_EQ(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line, Type, IsLocalToUnit, IsDefinition,
+                                      StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+ 
+   EXPECT_NE(N, DIGlobalVariable::get(
+                    Context, getSubprogram(), Name, LinkageName, File, Line,
+                    Type, IsLocalToUnit, IsDefinition,
+-                   StaticDataMemberDeclaration, templateParams, AlignInBits));
++                   StaticDataMemberDeclaration, templateParams, Flags,
++                   AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, "other", LinkageName, File,
+                                      Line, Type, IsLocalToUnit, IsDefinition,
+                                      StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, "other", File, Line,
+                                      Type, IsLocalToUnit, IsDefinition,
+                                      StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName,
+                                      getFile(), Line, Type, IsLocalToUnit,
+                                      IsDefinition, StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line + 1, Type, IsLocalToUnit,
+                                      IsDefinition, StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line, getDerivedType(), IsLocalToUnit,
+                                      IsDefinition, StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line, Type, !IsLocalToUnit, IsDefinition,
+                                      StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line, Type, IsLocalToUnit, !IsDefinition,
+                                      StaticDataMemberDeclaration,
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line, Type, IsLocalToUnit, IsDefinition,
+                                      cast<DIDerivedType>(getDerivedType()),
+-                                     templateParams, AlignInBits));
++                                     templateParams, Flags, AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line, Type, IsLocalToUnit, IsDefinition,
+                                      StaticDataMemberDeclaration, nullptr,
++                                     Flags, AlignInBits));
++  EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
++                                     Line, Type, IsLocalToUnit, IsDefinition,
++                                     StaticDataMemberDeclaration,
++                                     templateParams,
++                                     static_cast<DINode::DIFlags>(Flags + 1),
+                                      AlignInBits));
+   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
+                                      Line, Type, IsLocalToUnit, IsDefinition,
+                                      StaticDataMemberDeclaration,
+-                                     templateParams, (AlignInBits << 1)));
++                                     templateParams, Flags,
++                                     (AlignInBits << 1)));
+ 
+   TempDIGlobalVariable Temp = N->clone();
+   EXPECT_EQ(N, MDNode::replaceWithUniqued(std::move(Temp)));
+@@ -2658,14 +2669,17 @@
+   auto *Expr2 = DIExpression::get(Context, {1, 2, 3});
+   DIDerivedType *StaticDataMemberDeclaration =
+       cast<DIDerivedType>(getDerivedType());
++  DINode::DIFlags Flags = static_cast<DINode::DIFlags>(7);
+   uint32_t AlignInBits = 8;
+ 
+   auto *Var = DIGlobalVariable::get(
+       Context, Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
+-      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
++      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
++      AlignInBits);
+   auto *Var2 = DIGlobalVariable::get(
+       Context, Scope, "other", LinkageName, File, Line, Type, IsLocalToUnit,
+-      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
++      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
++      AlignInBits);
+   auto *N = DIGlobalVariableExpression::get(Context, Var, Expr);
+ 
+   EXPECT_EQ(Var, N->getVariable());
