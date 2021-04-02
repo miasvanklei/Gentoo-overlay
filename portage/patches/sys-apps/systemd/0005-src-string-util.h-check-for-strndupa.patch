@@ -1,9 +1,9 @@
 --- a/meson.build
 +++ b/meson.build
 @@ -517,6 +517,7 @@ foreach ident : [
-                                  #include <sys/wait.h>'''],
          ['mallinfo',          '''#include <malloc.h>'''],
          ['close_range',       '''#include <unistd.h>'''],
+         ['epoll_pwait2',      '''#include <sys/epoll.h>'''],
 +        ['strndupa' ,         '''#include <string.h>'''],
  ]
  
@@ -21,9 +21,9 @@
 --- a/src/core/dbus-cgroup.c
 +++ b/src/core/dbus-cgroup.c
 @@ -15,6 +15,7 @@
- #include "fileio.h"
- #include "limits-util.h"
  #include "path-util.h"
+ #include "path-util.h"
+ #include "percent-util.h"
 +#include "string-util.h"
  
  BUS_DEFINE_PROPERTY_GET(bus_property_get_tasks_max, "t", TasksMax, tasks_max_resolve);
