@@ -5,7 +5,7 @@ EAPI=7
 
 PYTHON_COMPAT=( python3_9 )
 
-inherit cmake-utils git-r3
+inherit cmake git-r3
 
 DESCRIPTION="flang compiler"
 HOMEPAGE="https://github.com/flang-compiler/flang"
@@ -30,3 +30,12 @@ PATCHES=(
 	"${FILESDIR}"/fix-build.patch
 	"${FILESDIR}"/fix-compile.patch
 )
+
+src_configure()
+{
+	local mycmakeargs=(
+		-DWITH_WERROR=OFF
+	)
+
+	cmake_src_configure
+}
