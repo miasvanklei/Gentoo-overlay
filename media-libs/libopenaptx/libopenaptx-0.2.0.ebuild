@@ -18,6 +18,10 @@ DEPEND=""
 RDEPEND="${DEPEND}"
 BDEPEND=""
 
+src_compile() {
+	emake CC=$(tc-getCC) LDFLAGS=${LDFLAGS}
+}
+
 src_install() {
-	emake DESTDIR="${D}" PREFIX="${EPREFIX}"/usr LIBDIR="$(get_libdir)" install
+	emake PREFIX="${D}"/usr LIBDIR="$(get_libdir)" install
 }
