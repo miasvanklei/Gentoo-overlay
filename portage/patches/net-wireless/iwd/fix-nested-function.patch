@@ -1,0 +1,59 @@
+--- a/src/eap.c	2021-03-29 15:06:08.000000000 +0200
++++ b/src/eap.c	2021-03-30 16:46:47.855449833 +0200
+@@ -389,6 +389,14 @@
+ #define IS_EXPANDED_RESPONSE(id, t) \
+ 	(type == EAP_TYPE_EXPANDED && vendor_id == (id) && vendor_type == (t))
+ 
++static inline bool response_is(enum eap_type type, enum eap_type wanted, uint32_t vendor_id, uint32_t vendor_type)
++{
++	if (type == wanted)
++		return true;
++
++	return IS_EXPANDED_RESPONSE(0, wanted);
++}
++
+ static void eap_handle_response(struct eap_state *eap, const uint8_t *pkt,
+ 				size_t len)
+ {
+@@ -401,14 +409,6 @@
+ 				eap->method->vendor_id[2];
+ 	uint32_t our_vendor_type = eap->method->vendor_type;
+ 
+-	bool response_is(enum eap_type wanted)
+-	{
+-		if (type == wanted)
+-			return true;
+-
+-		return IS_EXPANDED_RESPONSE(0, wanted);
+-	}
+-
+ 	if (len < 1)
+ 		/* Invalid packets to be ignored */
+ 		return;
+@@ -434,7 +434,7 @@
+ 			return;
+ 	}
+ 
+-	if (response_is(EAP_TYPE_NAK)) {
++	if (response_is(type, EAP_TYPE_NAK, vendor_id, vendor_type)) {
+ 		l_debug("EAP peer not configured for method: %s",
+ 			eap_type_to_str(our_type, our_vendor_id,
+ 							our_vendor_type));
+@@ -473,7 +473,7 @@
+ 	 */
+ 
+ 	if (!eap->identity) {
+-		if (!response_is(EAP_TYPE_IDENTITY))
++		if (!response_is(type, EAP_TYPE_IDENTITY, vendor_id, vendor_type))
+ 			goto unsupported_method;
+ 
+ 		/*
+@@ -501,7 +501,7 @@
+ 	 * (with the exception of the Nak)
+ 	 */
+ 	if (our_type != EAP_TYPE_EXPANDED) {
+-		if (response_is(our_type))
++		if (response_is(type, our_type, vendor_id, vendor_type))
+ 			goto handle_response;
+ 	} else if (IS_EXPANDED_RESPONSE(our_vendor_id, our_vendor_type))
+ 		goto handle_response;
