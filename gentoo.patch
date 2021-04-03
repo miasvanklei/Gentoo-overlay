@@ -1,5 +1,5 @@
 diff --git a/app-crypt/libsecret/libsecret-0.20.4.ebuild b/app-crypt/libsecret/libsecret-0.20.4.ebuild
-index 786c9a4187e..048e62cf83c 100644
+index c9c4c19e256..c08be7bbf7f 100644
 --- a/app-crypt/libsecret/libsecret-0.20.4.ebuild
 +++ b/app-crypt/libsecret/libsecret-0.20.4.ebuild
 @@ -29,7 +29,7 @@ DEPEND="
@@ -24,7 +24,7 @@ index bc97b2bddb1..c5115af2510 100644
  	systemd? ( sys-apps/systemd:= )
  "
 diff --git a/app-emulation/libvirt/libvirt-7.1.0.ebuild b/app-emulation/libvirt/libvirt-7.1.0.ebuild
-index 16755a56b8a..74ed45961a3 100644
+index f8732725c51..281e4cb17af 100644
 --- a/app-emulation/libvirt/libvirt-7.1.0.ebuild
 +++ b/app-emulation/libvirt/libvirt-7.1.0.ebuild
 @@ -105,8 +105,6 @@ RDEPEND="
@@ -50,7 +50,7 @@ index 95c2c45cdec..8936ada069a 100644
  
  DESCRIPTION="SPICE server"
 diff --git a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
-index 71e23226d3f..651e5c33767 100644
+index 373dc31ea2b..1b9173e029c 100644
 --- a/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
 +++ b/app-emulation/virt-manager/virt-manager-3.2.0.ebuild
 @@ -40,7 +40,6 @@ RDEPEND="${PYTHON_DEPS}
@@ -62,10 +62,10 @@ index 71e23226d3f..651e5c33767 100644
  		x11-libs/gtksourceview:4[introspection]
  		x11-libs/vte:2.91[introspection]
 diff --git a/app-text/xmlto/xmlto-0.0.28-r3.ebuild b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
-index 21e100a5484..c7a8a51f701 100644
+index fcc8c8274dc..a324dec6cef 100644
 --- a/app-text/xmlto/xmlto-0.0.28-r3.ebuild
 +++ b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
-@@ -21,7 +21,7 @@ RDEPEND=">=app-text/docbook-xsl-stylesheets-1.62.0-r1
+@@ -22,7 +22,7 @@ RDEPEND=">=app-text/docbook-xsl-stylesheets-1.62.0-r1
  	>=sys-apps/coreutils-6.10-r1
  	|| ( sys-apps/util-linux app-misc/getopt )
  	sys-apps/which
@@ -74,98 +74,6 @@ index 21e100a5484..c7a8a51f701 100644
  	latex? ( dev-texlive/texlive-formatsextra )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
-diff --git a/dev-lang/rust/rust-1.50.0.ebuild b/dev-lang/rust/rust-1.50.0.ebuild
-index e98848b6f30..68159417257 100644
---- a/dev-lang/rust/rust-1.50.0.ebuild
-+++ b/dev-lang/rust/rust-1.50.0.ebuild
-@@ -91,7 +91,6 @@ DEPEND="
- 	sys-libs/zlib:=
- 	!libressl? ( dev-libs/openssl:0= )
- 	libressl? ( dev-libs/libressl:0= )
--	elibc_musl? ( sys-libs/libunwind:= )
- 	system-llvm? (
- 		${LLVM_DEPEND}
- 	)
-@@ -209,6 +208,10 @@ pkg_setup() {
- 	fi
- }
- 
-+clear_vendor_checksums() {
-+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
-+}
-+
- src_prepare() {
- 	if ! use system-bootstrap; then
- 		local rust_stage0_root="${WORKDIR}"/rust-stage0
-@@ -218,6 +221,9 @@ src_prepare() {
- 			--destdir="${rust_stage0_root}" --prefix=/ || die
- 	fi
- 
-+	clear_vendor_checksums libc
-+	clear_vendor_checksums libc-0.2.79
-+
- 	default
- }
- 
-@@ -226,7 +232,7 @@ src_configure() {
- 
- 	# Collect rust target names to compile standard libs for all ABIs.
- 	for v in $(multilib_get_enabled_abi_pairs); do
--		rust_targets="${rust_targets},\"$(rust_abi $(get_abi_CHOST ${v##*.}))\""
-+		rust_targets="${rust_targets},\"$(get_abi_CHOST ${v##*.})\""
- 	done
- 	if use wasm; then
- 		rust_targets="${rust_targets},\"wasm32-unknown-unknown\""
-@@ -259,7 +265,7 @@ src_configure() {
- 		rust_stage0_root="${WORKDIR}"/rust-stage0
- 	fi
- 
--	rust_target="$(rust_abi)"
-+	rust_target="$(get_abi_CHOST ${v##*.})"
- 
- 	cat <<- _EOF_ > "${S}"/config.toml
- 		[llvm]
-@@ -321,7 +327,7 @@ src_configure() {
- 	_EOF_
- 
- 	for v in $(multilib_get_enabled_abi_pairs); do
--		rust_target=$(rust_abi $(get_abi_CHOST ${v##*.}))
-+		rust_target=$(get_abi_CHOST ${v##*.})
- 		arch_cflags="$(get_abi_CFLAGS ${v##*.})"
- 
- 		cat <<- _EOF_ >> "${S}"/config.env
-@@ -440,7 +446,7 @@ src_compile() {
- 	(
- 	IFS=$'\n'
- 	env $(cat "${S}"/config.env) RUST_BACKTRACE=1\
--		"${EPYTHON}" ./x.py dist -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
-+		"${EPYTHON}" ./x.py build --stage 2 -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
- 	)
- }
- 
-@@ -511,9 +517,9 @@ src_install() {
- 	)
- 
- 	# bug #689562, #689160
-+	dobashcomp "${ED}/usr/lib/${PN}/${PV}/etc/bash_completion.d/cargo"
- 	rm -v "${ED}/usr/lib/${PN}/${PV}/etc/bash_completion.d/cargo" || die
- 	rmdir -v "${ED}/usr/lib/${PN}/${PV}"/etc{/bash_completion.d,} || die
--	newbashcomp src/tools/cargo/src/etc/cargo.bashcomp.sh cargo
- 
- 	local symlinks=(
- 		cargo
-@@ -595,6 +601,11 @@ src_install() {
- 
- 	insinto /etc/env.d/rust
- 	doins "${T}/provider-${P}"
-+
-+	# remove some clutter
-+	pushd "${ED}/usr/lib/${PN}/${PV}/lib/rustlib"
-+	rm components install.log manifest-* rust-installer-version uninstall.sh || die
-+	popd
- }
- 
- pkg_postinst() {
 diff --git a/dev-libs/icu/icu-68.2.ebuild b/dev-libs/icu/icu-68.2.ebuild
 index 1b834bbdc0c..aba1f56f535 100644
 --- a/dev-libs/icu/icu-68.2.ebuild
@@ -227,6 +135,34 @@ index a8017f003f1..27fdf168897 100644
  	yaml? ( dev-libs/libyaml:= )
  "
  DEPEND="${RDEPEND}"
+diff --git a/eclass/linux-mod.eclass b/eclass/linux-mod.eclass
+index 11b0fd0cfb5..7c73787135c 100644
+--- a/eclass/linux-mod.eclass
++++ b/eclass/linux-mod.eclass
+@@ -683,6 +683,7 @@ linux-mod_src_compile() {
+ 			eval "emake HOSTCC=\"$(tc-getBUILD_CC)\" \
+ 						CROSS_COMPILE=${CHOST}- \
+ 						LDFLAGS=\"$(get_abi_LDFLAGS)\" \
++						LLVM_IAS=1 \
+ 						${BUILD_FIXES} \
+ 						${BUILD_PARAMS} \
+ 						${BUILD_TARGETS} " \
+diff --git a/media-libs/mesa/mesa-21.0.1.ebuild b/media-libs/mesa/mesa-21.0.1.ebuild
+index ebeac9698ee..5e3fe231752 100644
+--- a/media-libs/mesa/mesa-21.0.1.ebuild
++++ b/media-libs/mesa/mesa-21.0.1.ebuild
+@@ -142,9 +142,10 @@ RDEPEND="${RDEPEND}
+ # 1. List all the working slots (with min versions) in ||, newest first.
+ # 2. Update the := to specify *max* version, e.g. < 10.
+ # 3. Specify LLVM_MAX_SLOT, e.g. 9.
+-LLVM_MAX_SLOT="11"
++LLVM_MAX_SLOT="12"
+ LLVM_DEPSTR="
+ 	|| (
++		sys-devel/llvm:12[${MULTILIB_USEDEP}]
+ 		sys-devel/llvm:11[${MULTILIB_USEDEP}]
+ 		sys-devel/llvm:10[${MULTILIB_USEDEP}]
+ 	)
 diff --git a/media-video/pipewire/pipewire-0.3.24.ebuild b/media-video/pipewire/pipewire-0.3.24.ebuild
 index 77f2f8a90cb..5e7ac46ac6f 100644
 --- a/media-video/pipewire/pipewire-0.3.24.ebuild
@@ -291,18 +227,6 @@ index 1229170f286..f1d4da09624 100644
  		$(meson_use vala with-vala)
  	)
  	meson_src_configure
-diff --git a/net-misc/spice-gtk/spice-gtk-0.38.ebuild b/net-misc/spice-gtk/spice-gtk-0.38.ebuild
-index f370fa8c0e7..b8e0a759a98 100644
---- a/net-misc/spice-gtk/spice-gtk-0.38.ebuild
-+++ b/net-misc/spice-gtk/spice-gtk-0.38.ebuild
-@@ -93,6 +93,7 @@ src_configure() {
- 		$(meson_feature usbredir)
- 		$(meson_feature vala vapi)
- 		$(meson_feature webdav)
-+		-Dcoroutine=gthread
- 	)
- 
- 	if use usbredir; then
 diff --git a/net-misc/spice-gtk/spice-gtk-0.39.ebuild b/net-misc/spice-gtk/spice-gtk-0.39.ebuild
 index 8f9a666c3e7..dd1186f619f 100644
 --- a/net-misc/spice-gtk/spice-gtk-0.39.ebuild
@@ -315,10 +239,10 @@ index 8f9a666c3e7..dd1186f619f 100644
  		$(meson_feature gtk3 gtk)
  		$(meson_feature introspection)
  		$(meson_use mjpeg builtin-mjpeg)
-diff --git a/sys-devel/clang/clang-11.1.0.ebuild b/sys-devel/clang/clang-11.1.0.ebuild
-index c9f1e660780..d2708984f40 100644
---- a/sys-devel/clang/clang-11.1.0.ebuild
-+++ b/sys-devel/clang/clang-11.1.0.ebuild
+diff --git a/sys-devel/clang/clang-12.0.0_rc4.ebuild b/sys-devel/clang/clang-12.0.0_rc4.ebuild
+index f0164c6eaea..92ce8749315 100644
+--- a/sys-devel/clang/clang-12.0.0_rc4.ebuild
++++ b/sys-devel/clang/clang-12.0.0_rc4.ebuild
 @@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
@@ -326,9 +250,9 @@ index c9f1e660780..d2708984f40 100644
 +IUSE="${IUSE} default-libunwind +flang gcc-symlinks"
 +
  RDEPEND="
- 	~sys-devel/llvm-${PV}:${SLOT%/*}=[debug=,${MULTILIB_USEDEP}]
+ 	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${MULTILIB_USEDEP}]
  	static-analyzer? ( dev-lang/perl:* )
-@@ -52,7 +54,12 @@ RDEPEND="${RDEPEND}
+@@ -52,12 +54,17 @@ RDEPEND="${RDEPEND}
  PDEPEND="
  	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
@@ -341,7 +265,17 @@ index c9f1e660780..d2708984f40 100644
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -250,6 +257,7 @@ multilib_src_configure() {
+ LLVM_COMPONENTS=( clang clang-tools-extra )
+-LLVM_MANPAGES=build
++LLVM_MANPAGES=
+ LLVM_TEST_COMPONENTS=(
+ 	llvm/lib/Testing/Support
+ 	llvm/utils/{lit,llvm-lit,unittest}
+@@ -245,9 +252,11 @@ multilib_src_configure() {
+ 		-DBUILD_SHARED_LIBS=OFF
+ 		-DCLANG_LINK_CLANG_DYLIB=ON
+ 		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
++		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
  
  		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
  		-DLLVM_BUILD_TESTS=$(usex test)
@@ -349,7 +283,7 @@ index c9f1e660780..d2708984f40 100644
  
  		# these are not propagated reliably, so redefine them
  		-DLLVM_ENABLE_EH=ON
-@@ -260,8 +268,13 @@ multilib_src_configure() {
+@@ -258,9 +267,13 @@ multilib_src_configure() {
  		# furthermore, it provides only syntax checking
  		-DCLANG_DEFAULT_OPENMP_RUNTIME=libomp
  
@@ -357,47 +291,37 @@ index c9f1e660780..d2708984f40 100644
 +		# create gcc symlinks: gcc g++ cc cpp c++
 +		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
 +
-+
 +		# override default stdlib and rtlib and libunwind
  		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
-+		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-libunwind libunwind "")
  		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
++		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-libunwind libunwind "")
  		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
  
-@@ -362,8 +375,14 @@ src_install() {
+ 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
+@@ -357,9 +370,13 @@ src_install() {
+ 	local llvm_version=$(llvm-config --version) || die
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
- 	local clang_tools=( clang clang++ clang-cl clang-cpp )
-+	local gcc_tools=( gcc g++ cpp )
+-	local clang_tools=( clang clang++ clang-cl clang-cpp )
++	local clang_tools=( clang clang++ clang-cl clang-cpp gcc g++ cpp )
  	local abi i
  
 +	if use flang; then
-+		clang_tools+=( flang )
-+		gcc_tools+=( gfortran )
++		clang_tools+=( flang gfortran )
 +	fi
 +
  	# cmake gives us:
  	# - clang-X
  	# - clang -> clang-X
-@@ -390,6 +409,18 @@ src_install() {
- 		done
- 	done
+@@ -409,7 +426,7 @@ multilib_src_install_all() {
+ 	fi
  
-+	if use gcc-symlinks; then
-+		# and finally create target symlinks for all supported ABIs for compat
-+		for abi in $(get_all_abis); do
-+			local abi_chost=$(get_abi_CHOST "${abi}")
-+			for i in "${gcc_tools[@]}"; do
-+				dosym "clang-${clang_version}" \
-+			"/usr/lib/llvm/${SLOT%/*}/bin/${abi_chost}-${i}"
-+			done
-+		done
-+	fi
-+
-+
- 	# Remove unnecessary headers on FreeBSD, bug #417171
- 	if use kernel_FreeBSD; then
- 		rm "${ED}"/usr/lib/clang/${clang_full_version}/include/{std,float,iso,limits,tgmath,varargs}*.h || die
+ 	docompress "/usr/lib/llvm/${SLOT}/share/man"
+-	llvm_install_manpages
++	#llvm_install_manpages
+ 	# match 'html' non-compression
+ 	use doc && docompress -x "/usr/share/doc/${PF}/tools-extra"
+ 	# +x for some reason; TODO: investigate
 diff --git a/sys-devel/distcc/distcc-3.3.3-r3.ebuild b/sys-devel/distcc/distcc-3.3.3-r3.ebuild
 index 729f2211d69..1d01590ae4b 100644
 --- a/sys-devel/distcc/distcc-3.3.3-r3.ebuild
@@ -423,10 +347,10 @@ index 9bd470297df..fd481026e27 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-11.1.0.ebuild b/sys-devel/llvm/llvm-11.1.0.ebuild
-index 9b74cd6a434..e580286f861 100644
---- a/sys-devel/llvm/llvm-11.1.0.ebuild
-+++ b/sys-devel/llvm/llvm-11.1.0.ebuild
+diff --git a/sys-devel/llvm/llvm-12.0.0_rc4.ebuild b/sys-devel/llvm/llvm-12.0.0_rc4.ebuild
+index 099dadeda31..11e8b9c7e16 100644
+--- a/sys-devel/llvm/llvm-12.0.0_rc4.ebuild
++++ b/sys-devel/llvm/llvm-12.0.0_rc4.ebuild
 @@ -32,6 +32,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
  REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
@@ -436,7 +360,16 @@ index 9b74cd6a434..e580286f861 100644
  RDEPEND="
  	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
  	exegesis? ( dev-libs/libpfm:= )
-@@ -309,6 +311,23 @@ get_distribution_components() {
+@@ -66,7 +68,7 @@ PDEPEND="sys-devel/llvm-common
+ 	gold? ( >=sys-devel/llvmgold-${SLOT} )"
+ 
+ LLVM_COMPONENTS=( llvm )
+-LLVM_MANPAGES=build
++LLVM_MANPAGES=
+ llvm.org_set_globals
+ 
+ python_check_deps() {
+@@ -318,6 +320,23 @@ get_distribution_components() {
  				docs-llvm-man
  			)
  		fi
@@ -460,7 +393,7 @@ index 9b74cd6a434..e580286f861 100644
  		use doc && out+=(
  			docs-llvm-html
  		)
-@@ -340,6 +359,7 @@ multilib_src_configure() {
+@@ -349,6 +368,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -468,7 +401,7 @@ index 9b74cd6a434..e580286f861 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -356,6 +376,7 @@ multilib_src_configure() {
+@@ -365,6 +385,7 @@ multilib_src_configure() {
  		-DLLVM_ENABLE_EH=ON
  		-DLLVM_ENABLE_RTTI=ON
  		-DLLVM_ENABLE_Z3_SOLVER=$(usex z3)
@@ -476,6 +409,15 @@ index 9b74cd6a434..e580286f861 100644
  
  		-DLLVM_HOST_TRIPLE="${CHOST}"
  
+@@ -512,7 +533,7 @@ multilib_src_install_all() {
+ 	_EOF_
+ 
+ 	docompress "/usr/lib/llvm/${SLOT}/share/man"
+-	llvm_install_manpages
++	#llvm_install_manpages
+ }
+ 
+ pkg_postinst() {
 diff --git a/sys-libs/liburing/liburing-0.7-r1.ebuild b/sys-libs/liburing/liburing-0.7-r1.ebuild
 index 715212503eb..3eb405715f9 100644
 --- a/sys-libs/liburing/liburing-0.7-r1.ebuild
@@ -489,6 +431,46 @@ index 715212503eb..3eb405715f9 100644
  }
  
  multilib_src_install_all() {
+diff --git a/www-client/firefox/firefox-87.0.ebuild b/www-client/firefox/firefox-87.0.ebuild
+index 863cf66dd2d..80c9ccf75a4 100644
+--- a/www-client/firefox/firefox-87.0.ebuild
++++ b/www-client/firefox/firefox-87.0.ebuild
+@@ -5,7 +5,7 @@ EAPI="7"
+ 
+ FIREFOX_PATCHSET="firefox-87-patches-03.tar.xz"
+ 
+-LLVM_MAX_SLOT=11
++LLVM_MAX_SLOT=12
+ 
+ PYTHON_COMPAT=( python3_{7..9} )
+ PYTHON_REQ_USE="ncurses,sqlite,ssl"
+@@ -77,6 +77,14 @@ BDEPEND="${PYTHON_DEPS}
+ 	virtual/pkgconfig
+ 	>=virtual/rust-1.47.0
+ 	|| (
++		(
++			sys-devel/clang:12
++			sys-devel/llvm:12
++			clang? (
++				=sys-devel/lld-12*
++				pgo? ( =sys-libs/compiler-rt-sanitizers-12*[profile] )
++			)
++		)
+ 		(
+ 			sys-devel/clang:11
+ 			sys-devel/llvm:11
+@@ -502,11 +510,6 @@ src_prepare() {
+ 		|| die "sed failed to set num_cores"
+ 
+ 	# sed-in toolchain prefix
+-	sed -i \
+-		-e "s/objdump/${CHOST}-objdump/" \
+-		"${S}"/python/mozbuild/mozbuild/configure/check_debug_ranges.py \
+-		|| die "sed failed to set toolchain prefix"
+-
+ 	sed -i \
+ 		-e 's/ccache_stats = None/return None/' \
+ 		"${S}"/python/mozbuild/mozbuild/controller/building.py \
 diff --git a/x11-misc/sddm/Manifest b/x11-misc/sddm/Manifest
 index 09a0d01520a..cfad9e72954 100644
 --- a/x11-misc/sddm/Manifest
