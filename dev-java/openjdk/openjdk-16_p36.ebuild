@@ -130,6 +130,8 @@ pkg_setup() {
 }
 
 src_prepare() {
+	eapply "${FILESDIR}/001-fix-build-clang-12.patch"
+
 	default
 	chmod +x configure || die
 }
