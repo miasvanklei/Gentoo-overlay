@@ -7,12 +7,12 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-SDK_PV="5.0.201"
+SDK_PV="5.0.202"
 SDK="dotnet-sdk-${SDK_PV}-linux-musl"
 
 SRC_URI="
-        arm64? ( https://download.visualstudio.microsoft.com/download/pr/b334c33b-ac9d-4216-9a89-29961ea5ab77/b9409125a942f37c583da09175bc4699/${SDK}-arm64.tar.gz )
-        amd64? ( https://download.visualstudio.microsoft.com/download/pr/9d29393e-788a-4435-a7b9-1f52268ca194/bd43949f39d6a5e85357daba91d99831/${SDK}-x64.tar.gz )
+        amd64? ( https://download.visualstudio.microsoft.com/download/pr/21fdb75c-4eb5-476d-a8b8-1d096e4b7b14/c1f853410a58713cf5a56518ceeb87e8/${SDK}-x64.tar.gz )
+        arm64? ( https://download.visualstudio.microsoft.com/download/pr/8b55f4c6-4082-4128-8667-9b3e561e1c87/f543bc73c12ac8f9414cfb25c6019529/${SDK}-arm64.tar.gz )
 	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
@@ -128,7 +128,6 @@ src_prepare() {
 	rm "${SDK_S}/host/fxr/${PV}/libhostfxr.so" || die
 	rm "${SDK_S}/dotnet" || die
 
-	eapply "${FILESDIR}"/fix-icu68.patch
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
