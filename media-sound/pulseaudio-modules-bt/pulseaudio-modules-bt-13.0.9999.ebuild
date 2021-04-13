@@ -24,7 +24,7 @@ DEPEND="
 	aac? ( media-libs/fdk-aac )
 	ldac? ( media-libs/libldac )
 	ofono? ( >=net-misc/ofono-1.13 )
-	virtual/ffmpeg
+	media-video/ffmpeg
 	media-libs/sbc
 	>=net-wireless/bluez-5
 	>=sys-apps/dbus-1.0.0
