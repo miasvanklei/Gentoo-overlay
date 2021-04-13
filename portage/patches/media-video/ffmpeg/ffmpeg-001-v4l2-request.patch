@@ -71,9 +71,9 @@ index 8569a60bf8..9f9909a236 100755
 --- a/configure
 +++ b/configure
 @@ -274,6 +274,7 @@ External library support:
-   --enable-libtls          enable LibreSSL (via libtls), needed for https support
                             if openssl, gnutls or mbedtls is not used [no]
    --enable-libtwolame      enable MP2 encoding via libtwolame [no]
+   --enable-libuavs3d       enable AVS3 decoding via libuavs3d [no]
 +  --enable-libudev         enable libudev [no]
    --enable-libv4l2         enable libv4l2/v4l-utils [no]
    --enable-libvidstab      enable video stabilization using vid.stab [no]
@@ -87,9 +87,9 @@ index 8569a60bf8..9f9909a236 100755
    --disable-vdpau          disable Nvidia Video Decode and Presentation API for Unix code [autodetect]
    --disable-videotoolbox   disable VideoToolbox code [autodetect]
 @@ -1807,6 +1809,7 @@ EXTERNAL_LIBRARY_LIST="
-     libtesseract
      libtheora
      libtwolame
+     libuavs3d
 +    libudev
      libv4l2
      libvorbis
@@ -111,9 +111,9 @@ index 8569a60bf8..9f9909a236 100755
  videotoolbox_hwaccel_deps="videotoolbox pthreads"
  videotoolbox_hwaccel_extralibs="-framework QuartzCore"
 @@ -6376,6 +6381,7 @@ enabled libtls            && require_pkg_config libtls libtls tls.h tls_configur
- enabled libtwolame        && require libtwolame twolame.h twolame_init -ltwolame &&
                               { check_lib libtwolame twolame.h twolame_encode_buffer_float32_interleaved -ltwolame ||
                                 die "ERROR: libtwolame must be installed and version must be >= 0.3.10"; }
+ enabled libuavs3d         && require_pkg_config libuavs3d "uavs3d >= 1.1.41" uavs3d.h uavs3d_decode
 +enabled libudev           && require_pkg_config libudev libudev libudev.h udev_new
  enabled libv4l2           && require_pkg_config libv4l2 libv4l2 libv4l2.h v4l2_ioctl
  enabled libvidstab        && require_pkg_config libvidstab "vidstab >= 0.98" vid.stab/libvidstab.h vsMotionDetectInit
@@ -1280,7 +1280,7 @@ index d742205168..8963bd3e91 100644
 @@ -922,6 +922,7 @@ OBJS-$(CONFIG_MPEG2_D3D11VA_HWACCEL)      += dxva2_mpeg2.o
  OBJS-$(CONFIG_MPEG2_DXVA2_HWACCEL)        += dxva2_mpeg2.o
  OBJS-$(CONFIG_MPEG2_NVDEC_HWACCEL)        += nvdec_mpeg12.o
- OBJS-$(CONFIG_MPEG2_QSV_HWACCEL)          += qsvdec_other.o
+ OBJS-$(CONFIG_MPEG2_QSV_HWACCEL)          += qsvdec.o
 +OBJS-$(CONFIG_MPEG2_V4L2REQUEST_HWACCEL)  += v4l2_request_mpeg2.o
  OBJS-$(CONFIG_MPEG2_VAAPI_HWACCEL)        += vaapi_mpeg2.o
  OBJS-$(CONFIG_MPEG2_VDPAU_HWACCEL)        += vdpau_mpeg12.o
@@ -1527,7 +1527,7 @@ index 8963bd3e91..9a10a292e3 100644
 @@ -903,6 +903,7 @@ OBJS-$(CONFIG_H264_D3D11VA_HWACCEL)       += dxva2_h264.o
  OBJS-$(CONFIG_H264_DXVA2_HWACCEL)         += dxva2_h264.o
  OBJS-$(CONFIG_H264_NVDEC_HWACCEL)         += nvdec_h264.o
- OBJS-$(CONFIG_H264_QSV_HWACCEL)           += qsvdec_h2645.o
+ OBJS-$(CONFIG_H264_QSV_HWACCEL)           += qsvdec.o
 +OBJS-$(CONFIG_H264_V4L2REQUEST_HWACCEL)   += v4l2_request_h264.o
  OBJS-$(CONFIG_H264_VAAPI_HWACCEL)         += vaapi_h264.o
  OBJS-$(CONFIG_H264_VDPAU_HWACCEL)         += vdpau_h264.o
@@ -2091,7 +2091,7 @@ index 9a10a292e3..5d0e1d7dae 100644
 @@ -911,6 +911,7 @@ OBJS-$(CONFIG_HEVC_D3D11VA_HWACCEL)       += dxva2_hevc.o
  OBJS-$(CONFIG_HEVC_DXVA2_HWACCEL)         += dxva2_hevc.o
  OBJS-$(CONFIG_HEVC_NVDEC_HWACCEL)         += nvdec_hevc.o
- OBJS-$(CONFIG_HEVC_QSV_HWACCEL)           += qsvdec_h2645.o
+ OBJS-$(CONFIG_HEVC_QSV_HWACCEL)           += qsvdec.o
 +OBJS-$(CONFIG_HEVC_V4L2REQUEST_HWACCEL)   += v4l2_request_hevc.o
  OBJS-$(CONFIG_HEVC_VAAPI_HWACCEL)         += vaapi_hevc.o h265_profile_level.o
  OBJS-$(CONFIG_HEVC_VDPAU_HWACCEL)         += vdpau_hevc.o
@@ -2953,15 +2953,6 @@ index bab4223aca..0e1edb46fb 100644
  #endif
          AV_PIX_FMT_YUV420P,
          AV_PIX_FMT_NONE,
-@@ -198,7 +201,7 @@ int update_dimensions(VP8Context *s, int width, int height, int is_vp7)
-             return ret;
-     }
- 
--    if (!s->actually_webp && !is_vp7) {
-+    if (!s->actually_webp && !is_vp7 && s->pix_fmt == AV_PIX_FMT_NONE) {
-         s->pix_fmt = get_pixel_format(s);
-         if (s->pix_fmt < 0)
-             return AVERROR(EINVAL);
 @@ -2968,6 +2971,9 @@ AVCodec ff_vp8_decoder = {
  #endif
  #if CONFIG_VP8_NVDEC_HWACCEL
