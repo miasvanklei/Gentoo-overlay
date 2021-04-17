@@ -1,0 +1,29 @@
+--- a/seccomp-bpf.c	2021-04-17 06:56:53.000000000 +0200
++++ b/seccomp-bpf.c	2021-04-17 16:29:28.084017262 +0200
+@@ -105,6 +105,9 @@
+ 	int base_syscalls[] = {
+ 		/* We write the most w/scanelf.  */
+ 		SCMP_SYS(write),
++		SCMP_SYS(writev),
++		SCMP_SYS(pwrite64),
++		SCMP_SYS(pwritev),
+ 
+ 		/* Then the stat family of functions.  */
+ 		SCMP_SYS(newfstatat),
+@@ -136,6 +139,8 @@
+ 		/* Then the file reading functions.  */
+ 		SCMP_SYS(pread64),
+ 		SCMP_SYS(read),
++		SCMP_SYS(readv),
++		SCMP_SYS(preadv),
+ 
+ 		/* Then the fd manipulation functions.  */
+ 		SCMP_SYS(fcntl),
+@@ -164,6 +169,7 @@
+ 
+ 		/* Syscalls listed because of sandbox.  */
+ 		SCMP_SYS(readlink),
++		SCMP_SYS(readlinkat),
+ 
+ 		/* Syscalls listed because of fakeroot.  */
+ 		SCMP_SYS(msgget),
