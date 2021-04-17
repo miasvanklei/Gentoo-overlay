@@ -18,10 +18,6 @@ IUSE=""
 DEPEND="sys-libs/musl"
 RDEPEND="${DEPEND}"
 
-PATCHES=(
-	"${FILESDIR}"/fix-cflags.patch
-)
-
 src_compile() {
 	emake LIBINTL=MUSL prefix=/usr
 }
