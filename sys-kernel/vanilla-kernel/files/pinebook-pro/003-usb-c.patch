@@ -155,16 +155,16 @@
 --- a/drivers/usb/typec/tcpm/tcpm.c
 +++ b/drivers/usb/typec/tcpm/tcpm.c
 @@ -8,6 +8,7 @@
+ #include <linux/completion.h>
  #include <linux/debugfs.h>
  #include <linux/device.h>
- #include <linux/hrtimer.h>
 +#include <linux/extcon-provider.h>
+ #include <linux/hrtimer.h>
  #include <linux/jiffies.h>
  #include <linux/kernel.h>
- #include <linux/kthread.h>
-@@ -322,6 +323,12 @@
- 	/* port belongs to a self powered device */
- 	bool self_powered;
+@@ -369,6 +370,12 @@ struct tcpm_port {
+ 	/* Sink caps have been queried */
+ 	bool sink_cap_done;
  
 +
 +#ifdef CONFIG_EXTCON
@@ -175,7 +175,7 @@
  #ifdef CONFIG_DEBUG_FS
  	struct dentry *dentry;
  	struct mutex logbuffer_lock;	/* log buffer access lock */
-@@ -599,6 +606,35 @@
+@@ -654,6 +661,33 @@ static void tcpm_debugfs_exit(const struct tcpm_port *port) { }
  
  #endif
  
@@ -189,15 +189,13 @@
 +		extcon_set_state(port->extcon, EXTCON_USB, true);
 +		extcon_set_state(port->extcon, EXTCON_USB_HOST, attached);
 +	}
-+	while (*capability != EXTCON_NONE) {
-+		if (attached) {
-+			union extcon_property_value val;
-+			val.intval = (port->polarity == TYPEC_POLARITY_CC2);
-+			extcon_set_property(port->extcon, *capability,
-+				EXTCON_PROP_USB_TYPEC_POLARITY, val);
-+		} else {
-+			extcon_set_state(port->extcon, *capability, false);
-+		}
++	while(*capability != EXTCON_NONE) {
++		union extcon_property_value val;
++		val.intval = true;
++		extcon_set_property(port->extcon, *capability, EXTCON_PROP_USB_SS, val);
++		val.intval = (port->polarity == TYPEC_POLARITY_CC2);
++		extcon_set_property(port->extcon, *capability,
++			EXTCON_PROP_USB_TYPEC_POLARITY, val);
 +		extcon_sync(port->extcon, *capability);
 +		capability++;
 +	}
@@ -211,7 +209,7 @@
  static int tcpm_pd_transmit(struct tcpm_port *port,
  			    enum tcpm_transmit_type type,
  			    const struct pd_message *msg)
-@@ -806,6 +843,8 @@
+@@ -881,6 +915,8 @@ static int tcpm_set_roles(struct tcpm_port *port, bool attached,
  	typec_set_data_role(port->typec_port, data);
  	typec_set_pwr_role(port->typec_port, role);
  
@@ -220,15 +218,24 @@
  	return 0;
  }
  
-@@ -2664,6 +2708,7 @@
- static void tcpm_typec_disconnect(struct tcpm_port *port)
- {
- 	if (port->connected) {
-+		tcpm_update_extcon_data(port, false);
- 		typec_unregister_partner(port->partner);
- 		port->partner = NULL;
- 		port->connected = false;
-@@ -2721,6 +2766,8 @@
+@@ -1132,7 +1168,7 @@ static void svdm_consume_modes(struct tcpm_port *port, const u32 *p, int cnt)
+ 		paltmode->mode = i;
+ 		paltmode->vdo = p[i];
+ 
+-		tcpm_log(port, " Alternate mode %d: SVID 0x%04x, VDO %d: 0x%08x",
++		tcpm_log(port, "Alternate mode %d: SVID 0x%04x, VDO %d: 0x%08x",
+ 			 pmdata->altmodes, paltmode->svid,
+ 			 paltmode->mode, paltmode->vdo);
+ 
+@@ -1216,6 +1216,7 @@ static int tcpm_pd_svdm(struct tcpm_port *port, struct typec_altmode *adev,
+ 			modep->svid_index++;
+ 			if (modep->svid_index < modep->nsvids) {
+ 				u16 svid = modep->svids[modep->svid_index];
++				tcpm_log(port, "More modes available, sending discover");
+ 				response[0] = VDO(svid, 1, CMD_DISCOVER_MODES);
+ 				rlen = 1;
+ 			} else {
+@@ -2902,6 +2938,8 @@ static void tcpm_detach(struct tcpm_port *port)
  		port->hard_reset_count = 0;
  
  	tcpm_reset_port(port);
