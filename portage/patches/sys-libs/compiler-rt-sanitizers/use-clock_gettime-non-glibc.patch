@@ -1,0 +1,107 @@
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors.inc	2021-04-18 13:53:35.705946167 +0200
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_common_interceptors.inc	2021-04-18 13:53:50.721827495 +0200
+@@ -2178,6 +2178,7 @@
+   }
+   return res;
+ }
++#if SANITIZER_GLIBC
+ namespace __sanitizer {
+ extern "C" {
+ int real_clock_gettime(u32 clk_id, void *tp) {
+@@ -2187,6 +2188,7 @@
+ }
+ }  // extern "C"
+ }  // namespace __sanitizer
++#endif
+ INTERCEPTOR(int, clock_settime, u32 clk_id, const void *tp) {
+   void *ctx;
+   COMMON_INTERCEPTOR_ENTER(ctx, clock_settime, clk_id, tp);
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp	2021-04-18 13:53:35.701946199 +0200
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp	2021-04-18 13:53:50.729827431 +0200
+@@ -489,22 +489,24 @@
+ }
+ #endif
+ 
+-#if !SANITIZER_SOLARIS && !SANITIZER_NETBSD
++#if SANITIZER_GLIBC
+ u64 NanoTime() {
+-#if SANITIZER_FREEBSD
+-  timeval tv;
+-#else
+   kernel_timeval tv;
+-#endif
+   internal_memset(&tv, 0, sizeof(tv));
+   internal_syscall(SYSCALL(gettimeofday), &tv, 0);
+-  return (u64)tv.tv_sec * 1000*1000*1000 + tv.tv_usec * 1000;
++  return (u64)tv.tv_sec * 1000 * 1000 * 1000 + tv.tv_usec * 1000;
+ }
+-
++// Used by real_clock_gettime.
+ uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, void *tp) {
+   return internal_syscall(SYSCALL(clock_gettime), clk_id, tp);
+ }
+-#endif  // !SANITIZER_SOLARIS && !SANITIZER_NETBSD
++#elif !SANITIZER_SOLARIS && !SANITIZER_NETBSD
++u64 NanoTime() {
++  struct timespec ts;
++  clock_gettime(CLOCK_REALTIME, &ts);
++  return (u64)ts.tv_sec * 1000 * 1000 * 1000 + ts.tv_nsec;
++}
++#endif
+ 
+ // Like getenv, but reads env directly from /proc (on Linux) or parses the
+ // 'environ' array (on some others) and does not use libc. This function
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_linux.h	2021-04-18 13:53:35.701946199 +0200
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_linux.h	2021-04-18 13:53:50.725827463 +0200
+@@ -49,7 +49,9 @@
+ uptr internal_sigaltstack(const void* ss, void* oss);
+ uptr internal_sigprocmask(int how, __sanitizer_sigset_t *set,
+     __sanitizer_sigset_t *oldset);
++#if SANITIZER_GLIBC
+ uptr internal_clock_gettime(__sanitizer_clockid_t clk_id, void *tp);
++#endif
+ 
+ // Linux-only syscalls.
+ #if SANITIZER_LINUX
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_linux_libcdep.cpp	2021-04-18 13:53:35.701946199 +0200
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_linux_libcdep.cpp	2021-04-18 13:59:16.327276452 +0200
+@@ -803,20 +803,13 @@
+ 
+ #endif  // SANITIZER_LINUX
+ 
+-#if SANITIZER_LINUX && !SANITIZER_GO
++#if SANITIZER_GLIBC && !SANITIZER_GO
+ // glibc crashes when using clock_gettime from a preinit_array function as the
+ // vDSO function pointers haven't been initialized yet. __progname is
+ // initialized after the vDSO function pointers, so if it exists, is not null
+ // and is not empty, we can use clock_gettime.
+ extern "C" SANITIZER_WEAK_ATTRIBUTE char *__progname;
+-inline bool CanUseVDSO() {
+-  // Bionic is safe, it checks for the vDSO function pointers to be initialized.
+-  if (SANITIZER_ANDROID)
+-    return true;
+-  if (&__progname && __progname && *__progname)
+-    return true;
+-  return false;
+-}
++inline bool CanUseVDSO() { return &__progname && __progname && *__progname; }
+ 
+ // MonotonicNanoTime is a timing function that can leverage the vDSO by calling
+ // clock_gettime. real_clock_gettime only exists if clock_gettime is
+@@ -836,13 +829,13 @@
+   return (u64)ts.tv_sec * (1000ULL * 1000 * 1000) + ts.tv_nsec;
+ }
+ #else
+-// Non-Linux & Go always use the syscall.
++// Non-glibc & Go always use the regular function.
+ u64 MonotonicNanoTime() {
+   timespec ts;
+-  internal_clock_gettime(CLOCK_MONOTONIC, &ts);
++  clock_gettime(CLOCK_MONOTONIC, &ts);
+   return (u64)ts.tv_sec * (1000ULL * 1000 * 1000) + ts.tv_nsec;
+ }
+-#endif  // SANITIZER_LINUX && !SANITIZER_GO
++#endif  // SANITIZER_GLIBC && !SANITIZER_GO
+ 
+ void ReExec() {
+   const char *pathname = "/proc/self/exe";

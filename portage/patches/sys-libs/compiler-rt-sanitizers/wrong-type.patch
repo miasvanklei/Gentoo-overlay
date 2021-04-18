@@ -1,0 +1,11 @@
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp	2021-04-18 14:01:09.666395937 +0200
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_linux.cpp	2021-04-18 14:08:06.009289830 +0200
+@@ -1797,7 +1797,7 @@
+ 
+ static bool Aarch64GetESR(ucontext_t *ucontext, u64 *esr) {
+   static const u32 kEsrMagic = 0x45535201;
+-  u8 *aux = ucontext->uc_mcontext.__reserved;
++  long double *aux = ucontext->uc_mcontext.__reserved;
+   while (true) {
+     _aarch64_ctx *ctx = (_aarch64_ctx *)aux;
+     if (ctx->size == 0) break;
