@@ -121,6 +121,7 @@ QA_SONAME="
 RESTRICT="test"
 
 PATCHES=(
+	"${FILESDIR}"/1.51.0-bootstrap-panic.patch
 	"${FILESDIR}"/001-remove-crt-and-musl_root-from-musl-targets.patch
 	"${FILESDIR}"/002-link-static-when-required.patch
 	"${FILESDIR}"/003-aarch64-static-pie.patch
