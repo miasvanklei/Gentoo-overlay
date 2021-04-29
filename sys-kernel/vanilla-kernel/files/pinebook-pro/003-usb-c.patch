@@ -227,14 +227,6 @@
  			 pmdata->altmodes, paltmode->svid,
  			 paltmode->mode, paltmode->vdo);
  
-@@ -1216,6 +1216,7 @@ static int tcpm_pd_svdm(struct tcpm_port *port, struct typec_altmode *adev,
- 			modep->svid_index++;
- 			if (modep->svid_index < modep->nsvids) {
- 				u16 svid = modep->svids[modep->svid_index];
-+				tcpm_log(port, "More modes available, sending discover");
- 				response[0] = VDO(svid, 1, CMD_DISCOVER_MODES);
- 				rlen = 1;
- 			} else {
 @@ -2902,6 +2938,8 @@ static void tcpm_detach(struct tcpm_port *port)
  		port->hard_reset_count = 0;
  
