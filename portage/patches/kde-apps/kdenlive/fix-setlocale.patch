@@ -34,17 +34,17 @@
      ::qputenv("LC_ALL", "C");
  }
  
---- a/src/mltconnection.cpp	2020-09-07 12:31:28.570750801 +0200
-+++ b/src/mltconnection.cpp	2020-09-07 12:34:33.083259496 +0200
-@@ -88,11 +88,7 @@
+--- a/src/mltconnection.cpp	2021-04-26 13:37:43.087574901 +0200
++++ b/src/mltconnection.cpp	2021-04-26 13:37:58.619739760 +0200
+@@ -66,11 +66,7 @@
      // to ensure numbers are always serialised with . as decimal point.
      m_repository = std::unique_ptr<Mlt::Repository>(Mlt::Factory::init());
  
 -#ifdef Q_OS_FREEBSD
-     auto locale = strdup(setlocale(MLT_LC_CATEGORY, nullptr));
+     setlocale(MLT_LC_CATEGORY, nullptr);
 -#else
--    auto locale = strdup(std::setlocale(MLT_LC_CATEGORY, nullptr));
+-    std::setlocale(MLT_LC_CATEGORY, nullptr);
 -#endif
  
      locateMeltAndProfilesPath(mltPath);
-  
+ 
