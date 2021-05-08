@@ -1,0 +1,143 @@
+diff --color -ur a/ell/cert.c b/ell/cert.c
+--- a/ell/cert.c	2021-05-02 13:06:43.000000000 +0200
++++ b/ell/cert.c	2021-05-05 15:36:43.504110239 +0200
+@@ -311,6 +311,11 @@
+ 	return ca;
+ }
+ 
++void l_certchain_free_cleanup(struct l_certchain **chain)
++{
++	l_certchain_free(*chain);
++}
++
+ LIB_EXPORT void l_certchain_free(struct l_certchain *chain)
+ {
+ 	while (chain && chain->ca)
+@@ -451,7 +456,7 @@
+ 					const char **error)
+ {
+ 	struct l_keyring *ca_ring = NULL;
+-	_auto_(l_keyring_free) struct l_keyring *verify_ring = NULL;
++	_auto_(l_keyring_free_cleanup) struct l_keyring *verify_ring = NULL;
+ 	struct l_cert *cert;
+ 	struct l_key *prev_key = NULL;
+ 	int verified = 0;
+diff --color -ur a/ell/cert.h b/ell/cert.h
+--- a/ell/cert.h	2021-02-04 17:11:59.000000000 +0100
++++ b/ell/cert.h	2021-05-05 15:36:43.504110239 +0200
+@@ -48,6 +48,7 @@
+ enum l_cert_key_type l_cert_get_pubkey_type(struct l_cert *cert);
+ struct l_key *l_cert_get_pubkey(struct l_cert *cert);
+ 
++void l_certchain_free_cleanup(struct l_certchain **chain);
+ void l_certchain_free(struct l_certchain *chain);
+ 
+ struct l_cert *l_certchain_get_leaf(struct l_certchain *chain);
+diff --color -ur a/ell/key.c b/ell/key.c
+--- a/ell/key.c	2021-03-29 14:19:13.000000000 +0200
++++ b/ell/key.c	2021-05-05 15:36:43.504110239 +0200
+@@ -712,6 +712,11 @@
+ 	return result == 0;
+ }
+ 
++void l_keyring_free_cleanup(struct l_keyring **keyring)
++{
++	l_keyring_free(*keyring);
++}
++
+ LIB_EXPORT void l_keyring_free(struct l_keyring *keyring)
+ {
+ 	if (unlikely(!keyring))
+diff --color -ur a/ell/key.h b/ell/key.h
+--- a/ell/key.h	2019-04-03 19:49:21.000000000 +0200
++++ b/ell/key.h	2021-05-05 15:36:43.504110239 +0200
+@@ -107,6 +107,7 @@
+ bool l_keyring_restrict(struct l_keyring *keyring, enum l_keyring_restriction res,
+ 			const struct l_keyring *trust);
+ 
++void l_keyring_free_cleanup(struct l_keyring **keyring);
+ void l_keyring_free(struct l_keyring *keyring);
+ void l_keyring_free_norevoke(struct l_keyring *keyring);
+ 
+diff --color -ur a/ell/settings.c b/ell/settings.c
+--- a/ell/settings.c	2021-05-02 13:06:43.000000000 +0200
++++ b/ell/settings.c	2021-05-05 15:36:43.504110239 +0200
+@@ -116,6 +116,11 @@
+ 	return settings;
+ }
+ 
++LIB_EXPORT void l_settings_free_cleanup(struct l_settings **settings)
++{
++	l_settings_free(*settings);
++}
++
+ LIB_EXPORT void l_settings_free(struct l_settings *settings)
+ {
+ 	if (unlikely(!settings))
+diff --color -ur a/ell/settings.h b/ell/settings.h
+--- a/ell/settings.h	2021-05-02 13:06:43.000000000 +0200
++++ b/ell/settings.h	2021-05-05 15:36:43.504110239 +0200
+@@ -36,6 +36,7 @@
+ typedef void (*l_settings_destroy_cb_t) (void *user_data);
+ 
+ struct l_settings *l_settings_new(void);
++void l_settings_free_cleanup(struct l_settings **settings);
+ void l_settings_free(struct l_settings *settings);
+ 
+ bool l_settings_load_from_data(struct l_settings *settings,
+diff --color -ur a/ell/tls.c b/ell/tls.c
+--- a/ell/tls.c	2021-05-02 13:06:43.000000000 +0200
++++ b/ell/tls.c	2021-05-05 15:36:43.504110239 +0200
+@@ -1892,7 +1892,7 @@
+ 					const uint8_t *buf, size_t len)
+ {
+ 	size_t total;
+-	_auto_(l_certchain_free) struct l_certchain *certchain = NULL;
++	_auto_(l_certchain_free_cleanup) struct l_certchain *certchain = NULL;
+ 	struct l_cert *leaf;
+ 	size_t der_len;
+ 	const uint8_t *der;
+diff --color -ur a/ell/useful.h b/ell/useful.h
+--- a/ell/useful.h	2021-03-29 14:19:13.000000000 +0200
++++ b/ell/useful.h	2021-05-05 15:36:43.504110239 +0200
+@@ -52,13 +52,4 @@
+ 	return (oct >> start) & mask;
+ }
+ 
+-#define __AUTODESTRUCT(var, func)			\
+-	void cleanup_ ## var(void *ptr)			\
+-	{ func(*(void **) ptr); }			\
+-	__attribute((cleanup(cleanup_ ## var)))
+-
+-#define _AUTODESTRUCT(var, func)			\
+-	__AUTODESTRUCT(var, func)
+-
+-#define _auto_(func)					\
+-	_AUTODESTRUCT(__COUNTER__, func)
++#define _auto_(func) __attribute((cleanup(func)))
+diff --color -ur a/ell/util.c b/ell/util.c
+--- a/ell/util.c	2021-03-29 14:19:13.000000000 +0200
++++ b/ell/util.c	2021-05-05 15:36:43.504110239 +0200
+@@ -131,6 +131,11 @@
+  *
+  * Free the allocated memory area.
+  **/
++LIB_EXPORT void l_free_cleanup(void **ptr)
++{
++	free(*ptr);
++}
++
+ LIB_EXPORT void l_free(void *ptr)
+ {
+ 	free(ptr);
+diff --color -ur a/ell/util.h b/ell/util.h
+--- a/ell/util.h	2021-05-02 13:06:43.000000000 +0200
++++ b/ell/util.h	2021-05-05 15:36:43.504110239 +0200
+@@ -234,6 +234,7 @@
+ void *l_malloc(size_t size) __attribute__ ((warn_unused_result, malloc));
+ void *l_memdup(const void *mem, size_t size)
+ 			__attribute__ ((warn_unused_result, malloc));
++void l_free_cleanup(void **ptr);
+ void l_free(void *ptr);
+ 
+ void *l_realloc(void *mem, size_t size)
