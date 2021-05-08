@@ -23,9 +23,9 @@
 -# The full path to the musl libdir.
 -#musl-libdir = musl-root/lib
 -
- # The root location of the `wasm32-wasi` sysroot.
- #wasi-root = "..."
- 
+ # The root location of the `wasm32-wasi` sysroot. Only used for the
+ # `wasm32-wasi` target. If you are building wasm32-wasi target, make sure to
+ # create a `[target.wasm32-wasi]` section and move this field there.
 --- a/src/bootstrap/cc_detect.rs	2020-08-27 22:57:54.722286935 +0200
 +++ b/src/bootstrap/cc_detect.rs	2020-08-27 22:59:36.731230131 +0200
 @@ -99,7 +99,7 @@
@@ -83,7 +83,7 @@
  }
 --- a/src/bootstrap/compile.rs	2020-08-27 22:57:42.818176881 +0200
 +++ b/src/bootstrap/compile.rs	2020-08-27 23:00:19.487625539 +0200
-@@ -169,26 +169,7 @@
+@@ -176,34 +176,7 @@
      t!(fs::create_dir_all(&libdir_self_contained));
      let mut target_deps = vec![];
  
@@ -95,7 +95,9 @@
 -    // To do that we have to distribute musl startup objects as a part of Rust toolchain
 -    // and link with them manually in the self-contained mode.
 -    if target.contains("musl") {
--        let srcdir = builder.musl_libdir(target).unwrap();
+-        let srcdir = builder.musl_libdir(target).unwrap_or_else(|| {
+-            panic!("Target {:?} does not have a \"musl-libdir\" key", target.triple)
+-        });
 -        for &obj in &["crt1.o", "Scrt1.o", "rcrt1.o", "crti.o", "crtn.o"] {
 -            copy_and_stamp(
 -                builder,
@@ -106,11 +108,17 @@
 -                DependencyType::TargetSelfContained,
 -            );
 -        }
+-        for &obj in &["crtbegin.o", "crtbeginS.o", "crtend.o", "crtendS.o"] {
+-            let src = compiler_file(builder, builder.cc(target), target, obj);
+-            let target = libdir_self_contained.join(obj);
+-            builder.copy(&src, &target);
+-            target_deps.push((target, DependencyType::TargetSelfContained));
+-        }
 -    } else if target.ends_with("-wasi") {
 +    if target.ends_with("-wasi") {
-         let srcdir = builder.wasi_root(target).unwrap().join("lib/wasm32-wasi");
-         copy_and_stamp(
-             builder,
+         let srcdir = builder
+             .wasi_root(target)
+             .unwrap_or_else(|| {
 @@ -263,15 +244,6 @@
              .arg("--manifest-path")
              .arg(builder.src.join("src/libtest/Cargo.toml"));
@@ -279,23 +287,30 @@
              // Cygwin. The Cygwin build does not have generators for Visual
 --- a/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 22:56:43.499628535 +0200
 +++ b/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 23:03:41.106490555 +0200
-@@ -61,21 +61,6 @@
+@@ -62,28 +62,6 @@
      ])
  }
  
 -pub(super) fn pre_musl_fallback() -> CrtObjects {
 -    new(&[
--        (LinkOutputKind::DynamicNoPicExe, &["crt1.o", "crti.o"]),
--        (LinkOutputKind::DynamicPicExe, &["Scrt1.o", "crti.o"]),
--        (LinkOutputKind::StaticNoPicExe, &["crt1.o", "crti.o"]),
--        (LinkOutputKind::StaticPicExe, &["rcrt1.o", "crti.o"]),
--        (LinkOutputKind::DynamicDylib, &["crti.o"]),
--        (LinkOutputKind::StaticDylib, &["crti.o"]),
+-        (LinkOutputKind::DynamicNoPicExe, &["crt1.o", "crti.o", "crtbegin.o"]),
+-        (LinkOutputKind::DynamicPicExe, &["Scrt1.o", "crti.o", "crtbeginS.o"]),
+-        (LinkOutputKind::StaticNoPicExe, &["crt1.o", "crti.o", "crtbegin.o"]),
+-        (LinkOutputKind::StaticPicExe, &["rcrt1.o", "crti.o", "crtbeginS.o"]),
+-        (LinkOutputKind::DynamicDylib, &["crti.o", "crtbeginS.o"]),
+-        (LinkOutputKind::StaticDylib, &["crti.o", "crtbeginS.o"]),
 -    ])
 -}
 -
 -pub(super) fn post_musl_fallback() -> CrtObjects {
--    all("crtn.o")
+-    new(&[
+-        (LinkOutputKind::DynamicNoPicExe, &["crtend.o", "crtn.o"]),
+-        (LinkOutputKind::DynamicPicExe, &["crtendS.o", "crtn.o"]),
+-        (LinkOutputKind::StaticNoPicExe, &["crtend.o", "crtn.o"]),
+-        (LinkOutputKind::StaticPicExe, &["crtendS.o", "crtn.o"]),
+-        (LinkOutputKind::DynamicDylib, &["crtendS.o", "crtn.o"]),
+-        (LinkOutputKind::StaticDylib, &["crtendS.o", "crtn.o"]),
+-    ])
 -}
 -
  pub(super) fn pre_mingw_fallback() -> CrtObjects {

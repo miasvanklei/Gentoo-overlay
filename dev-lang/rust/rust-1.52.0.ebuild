@@ -121,14 +121,12 @@ QA_SONAME="
 RESTRICT="test"
 
 PATCHES=(
-	"${FILESDIR}"/1.51.0-bootstrap-panic.patch
 	"${FILESDIR}"/001-remove-crt-and-musl_root-from-musl-targets.patch
 	"${FILESDIR}"/002-link-static-when-required.patch
 	"${FILESDIR}"/003-aarch64-static-pie.patch
 	"${FILESDIR}"/004-libc-linkage.patch
 	"${FILESDIR}"/005-libunwind-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
-	"${FILESDIR}"/007-llvm-12.patch
 )
 
 S="${WORKDIR}/${MY_P}-src"
@@ -203,8 +201,7 @@ clear_vendor_checksums() {
 
 src_prepare() {
 	clear_vendor_checksums libc
-	clear_vendor_checksums libc-0.2.82
-	clear_vendor_checksums libc-0.2.84
+	clear_vendor_checksums libc-0.2.86
 
 	default
 }
