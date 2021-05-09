@@ -127,6 +127,7 @@ PATCHES=(
 	"${FILESDIR}"/004-libc-linkage.patch
 	"${FILESDIR}"/005-libunwind-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
+	"${FILESDIR}"/007-llvm-12.patch
 )
 
 S="${WORKDIR}/${MY_P}-src"
