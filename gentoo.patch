@@ -49,6 +49,23 @@ index 6b8268c5f68..e0de1c43e12 100644
  	latex? ( dev-texlive/texlive-formatsextra )"
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
+diff --git a/dev-libs/elfutils/elfutils-0.184.ebuild b/dev-libs/elfutils/elfutils-0.184.ebuild
+index 5860b8abf50..b0563dfed87 100644
+--- a/dev-libs/elfutils/elfutils-0.184.ebuild
++++ b/dev-libs/elfutils/elfutils-0.184.ebuild
+@@ -18,6 +18,12 @@ RDEPEND=">=sys-libs/zlib-1.2.8-r1[static-libs?,${MULTILIB_USEDEP}]
+ 	bzip2? ( >=app-arch/bzip2-1.0.6-r4[static-libs?,${MULTILIB_USEDEP}] )
+ 	lzma? ( >=app-arch/xz-utils-5.0.5-r1[static-libs?,${MULTILIB_USEDEP}] )
+ 	zstd? ( app-arch/zstd:=[static-libs?,${MULTILIB_USEDEP}] )
++        elibc_musl? (
++                sys-libs/argp-standalone
++                sys-libs/fts-standalone
++                sys-libs/obstack-standalone
++                dev-libs/libbsd
++        )
+ 	!dev-libs/libelf
+ "
+ DEPEND="${RDEPEND}
 diff --git a/dev-libs/icu/icu-68.2.ebuild b/dev-libs/icu/icu-68.2.ebuild
 index 1b834bbdc0c..aba1f56f535 100644
 --- a/dev-libs/icu/icu-68.2.ebuild
@@ -122,10 +139,10 @@ index 11b0fd0cfb5..7c73787135c 100644
  						${BUILD_FIXES} \
  						${BUILD_PARAMS} \
  						${BUILD_TARGETS} " \
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.4.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.4.ebuild
-index beb08dab9bc..b8aa0039d9f 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.4.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.4.ebuild
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild
+index c19ad83bd2c..2ef4c222700 100644
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild
 @@ -21,7 +21,6 @@ BDEPEND="
  	dev-lang/sassc
  "
@@ -162,19 +179,31 @@ index ebeac9698ee..5e3fe231752 100644
  		sys-devel/llvm:11[${MULTILIB_USEDEP}]
  		sys-devel/llvm:10[${MULTILIB_USEDEP}]
  	)
+diff --git a/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild b/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild
+index 3e12ab881f7..66eff30dcbc 100644
+--- a/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild
++++ b/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild
+@@ -79,7 +79,6 @@ RDEPEND="${DEPEND}"
+ 
+ PATCHES=(
+ 	"${FILESDIR}/${PN}-26.1.2-fix-alsa-crash.patch"
+-	"${FILESDIR}/${PN}-26.1.2-python-3.8.patch" # https://github.com/obsproject/obs-studio/pull/3335
+ )
+ 
+ pkg_setup() {
 diff --git a/net-libs/gtk-vnc/gtk-vnc-1.2.0.ebuild b/net-libs/gtk-vnc/gtk-vnc-1.2.0.ebuild
-index f5587f996c2..4124f4e6065 100644
+index e879d2277a2..d7b27fab021 100644
 --- a/net-libs/gtk-vnc/gtk-vnc-1.2.0.ebuild
 +++ b/net-libs/gtk-vnc/gtk-vnc-1.2.0.ebuild
-@@ -54,7 +54,7 @@ src_configure() {
+@@ -56,7 +56,7 @@ src_configure() {
  		$(meson_feature introspection)
  		$(meson_feature pulseaudio)
  		$(meson_feature sasl)
--		$(meson_feature vala with-vala)
-+		$(meson_feature vala)
+-		-Dwith-coroutine=auto # gthread on windows, libc ucontext elsewhere; neither has extra deps
++		-Dwith-coroutine=gthread # gthread on windows, libc ucontext elsewhere; neither has extra deps
+ 		$(meson_feature vala with-vala)
  	)
- 
- 	if use elibc_musl; then
+ 	meson_src_configure
 diff --git a/net-misc/spice-gtk/spice-gtk-0.39.ebuild b/net-misc/spice-gtk/spice-gtk-0.39.ebuild
 index 99eeb178546..98c246501b0 100644
 --- a/net-misc/spice-gtk/spice-gtk-0.39.ebuild
@@ -257,11 +286,11 @@ index dc275ccc4b7..15d80b6c4ba 100644
  	# cmake gives us:
  	# - clang-X
  	# - clang -> clang-X
-diff --git a/sys-devel/distcc/distcc-3.3.3-r3.ebuild b/sys-devel/distcc/distcc-3.3.3-r3.ebuild
-index c535bb1a9fe..28ca4ccd6a4 100644
---- a/sys-devel/distcc/distcc-3.3.3-r3.ebuild
-+++ b/sys-devel/distcc/distcc-3.3.3-r3.ebuild
-@@ -75,6 +75,7 @@ src_configure() {
+diff --git a/sys-devel/distcc/distcc-3.4.ebuild b/sys-devel/distcc/distcc-3.4.ebuild
+index 314dfd4b44b..1129047eb26 100644
+--- a/sys-devel/distcc/distcc-3.4.ebuild
++++ b/sys-devel/distcc/distcc-3.4.ebuild
+@@ -67,6 +67,7 @@ src_configure() {
  	local myconf=(
  		--disable-Werror
  		--libdir=/usr/lib
@@ -348,31 +377,3 @@ index 715212503eb..3eb405715f9 100644
  }
  
  multilib_src_install_all() {
-diff --git a/www-client/firefox/firefox-88.0-r1.ebuild b/www-client/firefox/firefox-88.0-r1.ebuild
-index d8805e8f672..83b47af8ddd 100644
---- a/www-client/firefox/firefox-88.0-r1.ebuild
-+++ b/www-client/firefox/firefox-88.0-r1.ebuild
-@@ -5,7 +5,7 @@ EAPI="7"
- 
- FIREFOX_PATCHSET="firefox-88-patches-02.tar.xz"
- 
--LLVM_MAX_SLOT=11
-+LLVM_MAX_SLOT=12
- 
- PYTHON_COMPAT=( python3_{7..9} )
- PYTHON_REQ_USE="ncurses,sqlite,ssl"
-@@ -77,6 +77,14 @@ BDEPEND="${PYTHON_DEPS}
- 	virtual/pkgconfig
- 	>=virtual/rust-1.47.0
- 	|| (
-+		(
-+			sys-devel/clang:12
-+			sys-devel/llvm:12
-+			clang? (
-+				=sys-devel/lld-12*
-+				pgo? ( =sys-libs/compiler-rt-sanitizers-12*[profile] )
-+			)
-+		)
- 		(
- 			sys-devel/clang:11
- 			sys-devel/llvm:11
