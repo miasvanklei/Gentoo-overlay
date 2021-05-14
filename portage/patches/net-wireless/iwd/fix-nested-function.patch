@@ -5,7 +5,22 @@
  	struct ap_if_data *ap_if = user_data;
  	const char *ssid;
 -	_auto_(l_settings_free) struct l_settings *config = NULL;
-+	_auto_(l_settings_free_cleanup) struct l_settings *config = NULL;
++	autofree struct l_settings *config = NULL;
  	char *config_path;
  	int err;
+ 
+--- a/src/network.c	2021-05-14 14:52:17.848810282 +0200
++++ b/src/network.c	2021-05-14 14:52:40.892988237 +0200
+@@ -380,10 +380,10 @@
+ 	size_t psk_len;
+ 	uint8_t *psk = l_settings_get_bytes(network->settings, "Security",
+ 						"PreSharedKey", &psk_len);
+-	_auto_(l_free) char *passphrase =
++	autofree char *passphrase =
+ 			l_settings_get_string(network->settings,
+ 						"Security", "Passphrase");
+-	_auto_(l_free) char *path =
++	autofree char *path =
+ 		storage_get_network_file_path(security, ssid);
+ 	int r;
  
