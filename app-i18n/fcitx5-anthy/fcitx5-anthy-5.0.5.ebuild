@@ -16,7 +16,7 @@ IUSE=""
 
 RDEPEND="
 	app-i18n/anthy
-	app-i18n/fcitx5
+	>=app-i18n/fcitx5-5.0.6
 	virtual/libiconv
         virtual/libintl
 "
