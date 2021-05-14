@@ -31,7 +31,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/mono-msbuild-license-case.patch
 	eapply "${FILESDIR}"/mono-msbuild-use-bash.patch
 	eapply "${FILESDIR}"/fix-compile.patch
-	eapply "${FILESDIR}"/remove-myget-feeds-and-replace-with-AzDO-feeds.patch
 
 	eapply_user
 }
