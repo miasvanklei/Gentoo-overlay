@@ -1,10 +1,10 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 21743620..796041d1 100644
+index 0898222f..f61c4d74 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -6,10 +6,6 @@
  
- cmake_minimum_required(VERSION 2.8)
+ cmake_minimum_required(VERSION 3.3)
  
 -# In order to bootstrap the runtime library we need to skip
 -# CMake's Fortran tests
@@ -103,7 +103,7 @@ index ada03055..30bb3689 100644
   host-fp-folding.c
   int128.c
 diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
-index be3a0c48..f2a5003c 100644
+index 8ad885de..6d9a425f 100644
 --- a/runtime/flang/CMakeLists.txt
 +++ b/runtime/flang/CMakeLists.txt
 @@ -4,6 +4,27 @@
@@ -134,7 +134,7 @@ index be3a0c48..f2a5003c 100644
  enable_language(C ASM Fortran) # Enable assembly and Fortran
  
  SET(ASM_OPTIONS "-DLINUX_ELF")
-@@ -188,7 +209,7 @@ SET(FTN_INTRINSICS_DESC_DEP
+@@ -187,7 +208,7 @@ SET(FTN_INTRINSICS_DESC_DEP
    red_any.c
    red_count.c
    red_findloc.c
@@ -143,7 +143,7 @@ index be3a0c48..f2a5003c 100644
    red_maxloc.c
    red_minloc.c
    red_maxval.c
-@@ -250,10 +271,11 @@ SET(FTN_SUPPORT_DESC_INDEP
+@@ -249,10 +270,11 @@ SET(FTN_SUPPORT_DESC_INDEP
    gather_cmplx8.F95
    gather_real4.F95
    gather_real8.F95
@@ -305,64 +305,7 @@ index be3a0c48..f2a5003c 100644
    INT32PTR64
    TM_I8
    DESC_I8
-@@ -559,93 +541,25 @@ set_source_files_properties(
- ## CMake does not handle module dependencies between Fortran files,
- ## we need to help it
- 
--# State the module that the source is producing
--set_source_files_properties(
--  iso_c_bind.F95
--  PROPERTIES
--  OBJECT_OUTPUTS ${CMAKE_Fortran_MODULE_DIRECTORY}/iso_c_binding.mod
--  )
--
--# State a dependency on the module
--set_source_files_properties(
--  ieee_arithmetic.F95
--  PROPERTIES
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/iso_c_binding.mod
--  OBJECT_OUTPUTS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_arithmetic.mod
--  )
--
--set_source_files_properties(
--  ieee_exceptions.F95
--  PROPERTIES
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/iso_c_binding.mod
--  OBJECT_OUTPUTS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_exceptions.mod
--  )
--
--# State a dependency on the module
--set_source_files_properties(
--  ${I8_FILES_DIR}/ieee_arithmetic.F95
--  PROPERTIES 
--  COMPILE_DEFINITIONS DESC_I8
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/iso_c_binding.mod
--  OBJECT_OUTPUTS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_arithmetic_la.mod
--  )
--
--set_source_files_properties(
--  ${I8_FILES_DIR}/ieee_exceptions.F95
--  PROPERTIES 
--  COMPILE_DEFINITIONS DESC_I8
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/iso_c_binding.mod
--  OBJECT_OUTPUTS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_exceptions_la.mod
--  )
--
--set_source_files_properties(
--  norm2_1.F95
--  PROPERTIES 
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_arithmetic.mod
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_exceptions.mod
--)
--
--set_source_files_properties(
--   ${I8_FILES_DIR}/norm2_1.F95
--  PROPERTIES 
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_arithmetic_la.mod
--  OBJECT_DEPENDS ${CMAKE_Fortran_MODULE_DIRECTORY}/ieee_exceptions_la.mod
--)
--
- set_target_properties(flang_static flang_shared
+@@ -618,36 +600,21 @@ set_target_properties(flang_static flang_shared
    PROPERTIES
    ARCHIVE_OUTPUT_DIRECTORY ${FLANG_RTE_LIB_DIR}
    )
@@ -425,10 +368,10 @@ index 2a6ccf5f..b5d8e1dc 100644
  
  set_property(
 diff --git a/runtime/flangrti/CMakeLists.txt b/runtime/flangrti/CMakeLists.txt
-index 97fe5663..bc9e261f 100644
+index 6c72f070..afdee924 100644
 --- a/runtime/flangrti/CMakeLists.txt
 +++ b/runtime/flangrti/CMakeLists.txt
-@@ -62,21 +62,24 @@ SET(PGC_SRC_FILES
+@@ -57,21 +57,24 @@ SET(PGC_SRC_FILES
    llcrit.c
    )
  
@@ -455,8 +398,8 @@ index 97fe5663..bc9e261f 100644
 -target_link_libraries(flangrti_shared m)
 +target_link_libraries(flangrti_shared m pgmath)
  
- # Import OpenMP
- if (NOT DEFINED LIBOMP_EXPORT_DIR)
+ # Resolve symbols against libpthread
+ find_package(Threads REQUIRED)
 diff --git a/runtime/ompstub/CMakeLists.txt b/runtime/ompstub/CMakeLists.txt
 index c3c5c044..b7a7b6c5 100644
 --- a/runtime/ompstub/CMakeLists.txt
