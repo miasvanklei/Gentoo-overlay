@@ -7,12 +7,12 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-SDK_PV="5.0.203"
+SDK_PV="5.0.301"
 SDK="dotnet-sdk-${SDK_PV}-linux-musl"
 
 SRC_URI="
-        amd64? ( https://download.visualstudio.microsoft.com/download/pr/6f3836d9-506e-4284-aa31-93ab52c5395c/8eb25aa85c3953bae3cd1935a893b938/${SDK}-x64.tar.gz )
-        arm64? ( https://download.visualstudio.microsoft.com/download/pr/9c8d1814-32d6-4295-813e-9b00948f6278/7ed9d8f9eff80070cef9d92b46d15bcf/${SDK}-arm64.tar.gz )
+        amd64? ( https://download.visualstudio.microsoft.com/download/pr/63259871-ebc8-459b-8872-9746ef377b0e/f367702ef840d326859fb3800e893759/${SDK}-x64.tar.gz )
+        arm64? ( https://download.visualstudio.microsoft.com/download/pr/a1293b16-00d7-42bf-b6ab-38b8cf3ca66b/88d2f4c57baa2ddb36f48514d80f29ba/${SDK}-arm64.tar.gz )
 	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
