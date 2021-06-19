@@ -5,7 +5,7 @@ EAPI=7
 
 DESCRIPTION="Virtual for dotnet core"
 
-SLOT="${PV}"
+SLOT="5"
 KEYWORDS="amd64 arm64"
 IUSE=""
 
@@ -31,7 +31,7 @@ src_install() {
 	cd ${D}/usr/share/dotnet
 
 	create_symlink host/fxr
-	create_symlink packs/Microsoft.NETCore.App.Host.linux-${DARCH}
+	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH}
 	create_symlink shared/Microsoft.NETCore.App
 	create_symlink shared/Microsoft.AspNetCore.App
 	create_symlink templates
