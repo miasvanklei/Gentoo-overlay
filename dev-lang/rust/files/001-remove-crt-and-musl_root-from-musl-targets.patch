@@ -1,31 +1,3 @@
---- a/config.toml.example	2020-08-27 22:58:03.675369707 +0200
-+++ b/config.toml.example	2020-08-27 22:58:26.500580740 +0200
-@@ -382,9 +382,6 @@
- # nightly features
- #channel = "dev"
- 
--# The root location of the musl installation directory.
--#musl-root = "..."
--
- # By default the `rustc` executable is built with `-Wl,-rpath` flags on Unix
- # platforms to ensure that the compiler is usable by default from the build
- # directory (as it links to a number of dynamic libraries). This may not be
-@@ -525,15 +522,6 @@
- # only use static libraries. If unset, the target's default linkage is used.
- #crt-static = false
- 
--# The root location of the musl installation directory. The library directory
--# will also need to contain libunwind.a for an unwinding implementation. Note
--# that this option only makes sense for musl targets that produce statically
--# linked binaries
--#musl-root = "..."
--
--# The full path to the musl libdir.
--#musl-libdir = musl-root/lib
--
- # The root location of the `wasm32-wasi` sysroot. Only used for the
- # `wasm32-wasi` target. If you are building wasm32-wasi target, make sure to
- # create a `[target.wasm32-wasi]` section and move this field there.
 --- a/src/bootstrap/cc_detect.rs	2020-08-27 22:57:54.722286935 +0200
 +++ b/src/bootstrap/cc_detect.rs	2020-08-27 22:59:36.731230131 +0200
 @@ -99,7 +99,7 @@
@@ -83,7 +55,7 @@
  }
 --- a/src/bootstrap/compile.rs	2020-08-27 22:57:42.818176881 +0200
 +++ b/src/bootstrap/compile.rs	2020-08-27 23:00:19.487625539 +0200
-@@ -176,34 +176,7 @@
+@@ -176,35 +176,7 @@
      t!(fs::create_dir_all(&libdir_self_contained));
      let mut target_deps = vec![];
  
@@ -108,8 +80,9 @@
 -                DependencyType::TargetSelfContained,
 -            );
 -        }
+-        let crt_path = builder.ensure(native::CrtBeginEnd { target });
 -        for &obj in &["crtbegin.o", "crtbeginS.o", "crtend.o", "crtendS.o"] {
--            let src = compiler_file(builder, builder.cc(target), target, obj);
+-            let src = crt_path.join(obj);
 -            let target = libdir_self_contained.join(obj);
 -            builder.copy(&src, &target);
 -            target_deps.push((target, DependencyType::TargetSelfContained));
