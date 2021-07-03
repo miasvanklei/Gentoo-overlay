@@ -12,7 +12,7 @@ index 5db7cd23014..a91e8be3909 100644
  	dev-libs/libxslt
  	dev-util/gdbus-codegen
 diff --git a/app-emulation/libvirt/libvirt-7.3.0.ebuild b/app-emulation/libvirt/libvirt-7.3.0.ebuild
-index 2de18dcd6e2..ff7cd54bfd2 100644
+index a07c38034e3..7edb92bf60d 100644
 --- a/app-emulation/libvirt/libvirt-7.3.0.ebuild
 +++ b/app-emulation/libvirt/libvirt-7.3.0.ebuild
 @@ -109,8 +109,6 @@ RDEPEND="
@@ -80,10 +80,10 @@ index 1b834bbdc0c..aba1f56f535 100644
  
  src_prepare() {
 diff --git a/dev-libs/libffi/libffi-3.3-r2.ebuild b/dev-libs/libffi/libffi-3.3-r2.ebuild
-index 3433babf3ae..553dac48abc 100644
+index 40e5b2deafa..77c657f756c 100644
 --- a/dev-libs/libffi/libffi-3.3-r2.ebuild
 +++ b/dev-libs/libffi/libffi-3.3-r2.ebuild
-@@ -50,19 +50,7 @@ src_prepare() {
+@@ -53,19 +53,7 @@ src_prepare() {
  
  multilib_src_configure() {
  	use userland_BSD && export HOST="${CHOST}"
@@ -102,7 +102,7 @@ index 3433babf3ae..553dac48abc 100644
 -		--includedir="${EPREFIX}"/usr/$(get_libdir)/${PN}/include \
  		--disable-multi-os-directory \
  		$(use_enable static-libs static) \
- 		$(use_enable pax_kernel pax_emutramp) \
+ 		$(use_enable pax-kernel pax_emutramp) \
 diff --git a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 index a8017f003f1..27fdf168897 100644
 --- a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
@@ -116,10 +116,10 @@ index a8017f003f1..27fdf168897 100644
  "
  DEPEND="${RDEPEND}"
 diff --git a/eclass/linux-mod.eclass b/eclass/linux-mod.eclass
-index 11b0fd0cfb5..7c73787135c 100644
+index e87c5ec0cdb..25da17cb7fc 100644
 --- a/eclass/linux-mod.eclass
 +++ b/eclass/linux-mod.eclass
-@@ -683,6 +683,7 @@ linux-mod_src_compile() {
+@@ -695,6 +695,7 @@ linux-mod_src_compile() {
  			eval "emake HOSTCC=\"$(tc-getBUILD_CC)\" \
  						CROSS_COMPILE=${CHOST}- \
  						LDFLAGS=\"$(get_abi_LDFLAGS)\" \
@@ -127,10 +127,10 @@ index 11b0fd0cfb5..7c73787135c 100644
  						${BUILD_FIXES} \
  						${BUILD_PARAMS} \
  						${BUILD_TARGETS} " \
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild
-index 1568b0e460b..039e8a118de 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.21.5.ebuild
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.2.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.2.ebuild
+index c19ad83bd2c..2ef4c222700 100644
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.2.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.2.ebuild
 @@ -21,7 +21,6 @@ BDEPEND="
  	dev-lang/sassc
  "
@@ -167,18 +167,21 @@ index 9d8170f4f79..2b395475a22 100644
  		sys-devel/llvm:11[${MULTILIB_USEDEP}]
  		sys-devel/llvm:10[${MULTILIB_USEDEP}]
  	)
-diff --git a/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild b/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild
-index 3e12ab881f7..66eff30dcbc 100644
---- a/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild
-+++ b/media-video/obs-studio/obs-studio-26.1.2-r1.ebuild
-@@ -79,7 +79,6 @@ RDEPEND="${DEPEND}"
+diff --git a/media-video/obs-studio/obs-studio-27.0.1.ebuild b/media-video/obs-studio/obs-studio-27.0.1.ebuild
+index 56839893506..a033049eb6c 100644
+--- a/media-video/obs-studio/obs-studio-27.0.1.ebuild
++++ b/media-video/obs-studio/obs-studio-27.0.1.ebuild
+@@ -114,10 +114,6 @@ QA_PREBUILT="
+ 	usr/lib*/obs-plugins/swiftshader/libGLESv2.so
+ "
  
- PATCHES=(
- 	"${FILESDIR}/${PN}-26.1.2-fix-alsa-crash.patch"
--	"${FILESDIR}/${PN}-26.1.2-python-3.8.patch" # https://github.com/obsproject/obs-studio/pull/3335
- )
- 
+-PATCHES=(
+-	"${FILESDIR}/${PN}-26.1.2-python-3.8.patch"
+-)
+-
  pkg_setup() {
+ 	use lua && lua-single_pkg_setup
+ 	use python && python-single-r1_pkg_setup
 diff --git a/net-libs/gtk-vnc/gtk-vnc-1.2.0.ebuild b/net-libs/gtk-vnc/gtk-vnc-1.2.0.ebuild
 index e879d2277a2..d7b27fab021 100644
 --- a/net-libs/gtk-vnc/gtk-vnc-1.2.0.ebuild
@@ -205,16 +208,10 @@ index 99eeb178546..98c246501b0 100644
  		$(meson_feature introspection)
  		$(meson_use mjpeg builtin-mjpeg)
 diff --git a/sys-devel/clang/clang-12.0.0-r1.ebuild b/sys-devel/clang/clang-12.0.0-r1.ebuild
-index c7e07fa36cf..b70637ad488 100644
+index add1ceb34bf..0cc8ffbc4ea 100644
 --- a/sys-devel/clang/clang-12.0.0-r1.ebuild
 +++ b/sys-devel/clang/clang-12.0.0-r1.ebuild
-@@ -24,11 +24,13 @@ LICENSE="Apache-2.0-with-LLVM-exceptions UoI-NCSA MIT"
- SLOT="$(ver_cut 1)"
- KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~x64-macos"
- IUSE="debug default-compiler-rt default-libcxx default-lld
--	doc llvm-libunwind +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
-+	doc +llvm-libunwind +static-analyzer test xml kernel_FreeBSD ${ALL_LLVM_TARGETS[*]}"
- REQUIRED_USE="${PYTHON_REQUIRED_USE}
+@@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
  	|| ( ${ALL_LLVM_TARGETS[*]} )"
  RESTRICT="!test? ( test )"
  
@@ -234,11 +231,7 @@ index c7e07fa36cf..b70637ad488 100644
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -246,9 +252,11 @@ multilib_src_configure() {
- 		-DBUILD_SHARED_LIBS=OFF
- 		-DCLANG_LINK_CLANG_DYLIB=ON
- 		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
-+		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
+@@ -249,6 +255,7 @@ multilib_src_configure() {
  
  		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
  		-DLLVM_BUILD_TESTS=$(usex test)
@@ -246,7 +239,7 @@ index c7e07fa36cf..b70637ad488 100644
  
  		# these are not propagated reliably, so redefine them
  		-DLLVM_ENABLE_EH=ON
-@@ -262,12 +270,15 @@ multilib_src_configure() {
+@@ -262,12 +269,15 @@ multilib_src_configure() {
  		# disable using CUDA to autodetect GPU, just build for all
  		-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON
  
@@ -263,7 +256,7 @@ index c7e07fa36cf..b70637ad488 100644
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
  
-@@ -362,9 +373,13 @@ src_install() {
+@@ -362,9 +372,13 @@ src_install() {
  	local llvm_version=$(llvm-config --version) || die
  	local clang_version=$(ver_cut 1 "${llvm_version}")
  	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
@@ -279,7 +272,7 @@ index c7e07fa36cf..b70637ad488 100644
  	# - clang-X
  	# - clang -> clang-X
 diff --git a/sys-devel/distcc/distcc-3.4.ebuild b/sys-devel/distcc/distcc-3.4.ebuild
-index d16540b5515..1af64ec9ca4 100644
+index 7f74770ee18..09484f84f66 100644
 --- a/sys-devel/distcc/distcc-3.4.ebuild
 +++ b/sys-devel/distcc/distcc-3.4.ebuild
 @@ -67,6 +67,7 @@ src_configure() {
@@ -304,7 +297,7 @@ index 9bd470297df..fd481026e27 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-12.0.0.ebuild b/sys-devel/llvm/llvm-12.0.0.ebuild
-index 96705239ff0..139e5ff2b07 100644
+index 7fe87fbbd13..4d07ca0da35 100644
 --- a/sys-devel/llvm/llvm-12.0.0.ebuild
 +++ b/sys-devel/llvm/llvm-12.0.0.ebuild
 @@ -32,6 +32,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
