@@ -40,8 +40,6 @@ RDEPEND="${COMMON_DEPEND}
 	!<app-emulation/podman-1.3.2-r1"
 
 src_prepare() {
-	eapply "${FILESDIR}"/fix-compile.patch
-
 	default
 
 	sed -e '/^GIT_.*/d' \
@@ -72,12 +70,18 @@ src_compile() {
 		hack/selinux_tag.sh || die; }
 
 	mkdir -p bin || die
-	GOBIN="${S}/bin" \
-		emake all
+
+	emake all \
+		GOBIN="${S}/bin" \
+		GO_BUILD="go build ${GOFLAGS}" \
+		GO_MD2MAN="$(which go-md2man)"
 }
 
 src_install() {
-	emake DESTDIR="${D}" PREFIX="${D}${EPREFIX}/usr" install install.config install.systemd
+	emake install install.config install.systemd \
+		DESTDIR="${D}" \
+		GO_MD2MAN="$(which go-md2man)" \
+		PREFIX="${D}${EPREFIX}/usr"
 
 	keepdir /etc/crio
 
