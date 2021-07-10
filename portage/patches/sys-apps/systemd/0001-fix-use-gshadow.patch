@@ -1,81 +1,5 @@
---- a/src/shared/userdb.c	2020-11-26 22:26:14.784927743 +0100
-+++ b/src/shared/userdb.c	2020-11-26 22:29:36.940525702 +0100
-@@ -823,6 +823,7 @@
-                         return r;
-         }
- 
-+#if ENABLE_GSHADOW
-         if (!FLAGS_SET(flags, USERDB_AVOID_NSS) && !(iterator && iterator->nss_covered)) {
-                 r = userdb_iterator_block_nss_systemd(iterator);
-                 if (r >= 0) {
-@@ -831,6 +832,7 @@
-                                 return r;
-                 }
-         }
-+#endif
- 
-         if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
-                 if (streq(name, "root"))
-@@ -867,6 +869,7 @@
-                         return r;
-         }
- 
-+#if ENABLE_GSHADOW
-         if (!FLAGS_SET(flags, USERDB_AVOID_NSS) && !(iterator && iterator->nss_covered)) {
-                 r = userdb_iterator_block_nss_systemd(iterator);
-                 if (r >= 0) {
-@@ -875,6 +878,7 @@
-                                 return r;
-                 }
-         }
-+#endif
- 
-         if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
-                 if (gid == 0)
-@@ -921,6 +925,7 @@
-         assert(iterator);
-         assert(iterator->what == LOOKUP_GROUP);
- 
-+#if ENABLE_GSHADOW
-         if (iterator->nss_iterating) {
-                 struct group *gr;
- 
-@@ -957,6 +962,7 @@
-                 iterator->nss_iterating = false;
-                 endgrent();
-         }
-+#endif
- 
-         r = userdb_process(iterator, NULL, ret, NULL, NULL);
-         if (r < 0) {
-@@ -1025,7 +1031,9 @@
- int membershipdb_by_group(const char *name, UserDBFlags flags, UserDBIterator **ret) {
-         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
-         _cleanup_(json_variant_unrefp) JsonVariant *query = NULL;
-+#if ENABLE_GSHADOW
-         _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
-+#endif
-         int r;
- 
-         assert(ret);
-@@ -1050,6 +1058,7 @@
-         if (r < 0)
-                 return r;
- 
-+#if ENABLE_GSHADOW
-         /* We ignore all errors here, since the group might be defined by a userdb native service, and we queried them already above. */
-         (void) nss_group_record_by_name(name, false, &gr);
-         if (gr) {
-@@ -1063,6 +1072,7 @@
-                 if (!iterator->found_group_name)
-                         return -ENOMEM;
-         }
-+#endif
- 
-         r = 0;
- 
---- a/src/shared/user-record-nss.c	2020-11-26 22:23:47.767782564 +0100
-+++ b/src/shared/user-record-nss.c	2020-11-26 22:25:37.508635820 +0100
+--- a/src/shared/user-record-nss.c	2021-07-09 23:05:57.795285798 +0200
++++ b/src/shared/user-record-nss.c	2021-07-09 22:34:29.547591543 +0200
 @@ -317,6 +317,7 @@
          return 0;
  }
@@ -89,15 +13,14 @@
          return 0;
  }
 +#endif
---- a/src/shared/user-record-nss.h	2020-11-26 22:22:58.535403188 +0100
-+++ b/src/shared/user-record-nss.h	2020-11-26 22:25:44.881693485 +0100
+--- a/src/shared/user-record-nss.h	2021-07-09 23:06:02.173249153 +0200
++++ b/src/shared/user-record-nss.h	2021-07-09 23:06:40.536928109 +0200
 @@ -2,7 +2,9 @@
  #pragma once
  
  #include <grp.h>
--#include <gshadow.h>
 +#if ENABLE_GSHADOW
-+#include <gshadow.h>
+ #include <gshadow.h>
 +#endif
  #include <pwd.h>
  #include <shadow.h>
@@ -113,41 +36,69 @@
  int nss_group_record_by_name(const char *name, bool with_shadow, GroupRecord **ret);
  int nss_group_record_by_gid(gid_t gid, bool with_shadow, GroupRecord **ret);
 +#endif
---- a/src/userdb/userwork.c	2021-02-08 19:59:44.169698355 +0100
-+++ b/src/userdb/userwork.c	2021-02-08 20:03:03.828295188 +0100
-@@ -322,7 +322,7 @@
-                 return r;
+--- a/src/shared/userdb.c	2021-07-09 23:05:11.132676446 +0200
++++ b/src/shared/userdb.c	2021-07-09 22:34:06.746779085 +0200
+@@ -922,6 +922,7 @@
+         }
  
-         if (streq_ptr(p.service, "io.systemd.NameServiceSwitch")) {
--
+ 
 +#if ENABLE_GSHADOW
-                 if (gid_is_valid(p.gid))
-                         r = nss_group_record_by_gid(p.gid, true, &g);
-                 else if (p.group_name)
-@@ -381,7 +381,7 @@
- 
-                         return varlink_reply(link, last);
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_NSS) && !(iterator && iterator->nss_covered)) {
+                 r = userdb_iterator_block_nss_systemd(iterator);
+                 if (r >= 0) {
+@@ -930,6 +931,7 @@
+                                 return r;
                  }
--
+         }
 +#endif
-         } else if (streq_ptr(p.service, "io.systemd.Multiplexer")) {
  
-                 if (gid_is_valid(p.gid))
-@@ -461,7 +461,7 @@
-                 return r;
+         if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
+                 if (streq(name, "root"))
+@@ -972,6 +974,7 @@
+                         return r;
+         }
  
-         if (streq_ptr(p.service, "io.systemd.NameServiceSwitch")) {
--
 +#if ENABLE_GSHADOW
-                 if (p.group_name) {
-                         _cleanup_(group_record_unrefp) GroupRecord *g = NULL;
-                         const char *last = NULL;
-@@ -563,7 +563,7 @@
-                                                               JSON_BUILD_PAIR("userName", JSON_BUILD_STRING(last_user_name)),
-                                                               JSON_BUILD_PAIR("groupName", JSON_BUILD_STRING(last_group_name))));
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_NSS) && !(iterator && iterator->nss_covered)) {
+                 r = userdb_iterator_block_nss_systemd(iterator);
+                 if (r >= 0) {
+@@ -980,6 +983,7 @@
+                                 return r;
                  }
--
+         }
 +#endif
-         } else if (streq_ptr(p.service, "io.systemd.Multiplexer")) {
  
-                 _cleanup_free_ char *last_user_name = NULL, *last_group_name = NULL;
+         if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
+                 if (gid == 0)
+@@ -1033,6 +1037,7 @@
+         return 0;
+ }
+ 
++#if ENABLE_GSHADOW
+ int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret) {
+         int r;
+ 
+@@ -1134,6 +1139,7 @@
+ 
+         return r;
+ }
++#endif
+ 
+ static void discover_membership_dropins(UserDBIterator *i, UserDBFlags flags) {
+         int r;
+@@ -1219,6 +1225,7 @@
+ 
+         qr = userdb_start_query(iterator, "io.systemd.UserDatabase.GetMemberships", true, query, flags);
+ 
++#if ENABLE_GSHADOW
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_NSS) && (qr < 0 || !iterator->nss_covered)) {
+                 _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
+ 
+@@ -1240,6 +1247,7 @@
+                                 return -ENOMEM;
+                 }
+         }
++#endif
+ 
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_DROPIN) && (qr < 0 || !iterator->dropin_covered))
+                 discover_membership_dropins(iterator, flags);

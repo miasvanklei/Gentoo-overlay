@@ -208,14 +208,14 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
+		"${FILESDIR}/249-hostnamed-error-variable.patch"
 	)
 
 	if ! use vanilla; then
 		PATCHES+=(
-			"${FILESDIR}/gentoo-generator-path.patch"
-			"${FILESDIR}/gentoo-systemctl-disable-sysv-sync.patch"
-			"${FILESDIR}/gentoo-journald-audit.patch"
-			"${FILESDIR}/gentoo-pam.patch"
+                        "${FILESDIR}/gentoo-generator-path-r2.patch"
+                        "${FILESDIR}/gentoo-systemctl-disable-sysv-sync-r1.patch"
+                        "${FILESDIR}/gentoo-journald-audit.patch"
 		)
 	fi
 
@@ -338,6 +338,7 @@ multilib_src_configure() {
 		-Dutmp=false
 		-Dsysusers=false
 		-Dldconfig=false
+		-Duserdb=false
 
 		# static-libs
 		-Dstatic-libsystemd=$(usex static-libs true false)
