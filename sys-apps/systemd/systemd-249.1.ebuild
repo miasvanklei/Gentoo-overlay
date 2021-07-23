@@ -208,7 +208,6 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
-		"${FILESDIR}/249-hostnamed-error-variable.patch"
 	)
 
 	if ! use vanilla; then
