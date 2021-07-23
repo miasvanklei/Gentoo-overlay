@@ -6,8 +6,10 @@ Documentation=https://kubernetes.io/docs/reference/command-line-tools-reference/
 ConfigurationDirectory=kubernetes
 CPUAccounting=true
 IPAccounting=true
-EnvironmentFile=-/etc/kubernetes/kubelet.env
-ExecStart=/usr/bin/kubelet $KUBELET_ARGS
+Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS
 KillMode=process
 MemoryAccounting=true
 StartLimitInterval=0
