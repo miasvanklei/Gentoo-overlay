@@ -7,9 +7,9 @@ KEYWORDS="~amd64 ~arm64"
 SLOT="0"
 
 # msbuild version
-MY_PV=$(ver_cut 0-2)
+MY_PV=$(ver_cut 0-3)
 # build date
-BPV=$(ver_cut 4-)
+BPV=$(ver_cut 5-)
 # build date version
 CPV=${BPV:0:4}.${BPV:4:2}.${BPV:6:2}.${BPV:8:2}.${BPV:10:2}
 
@@ -30,7 +30,6 @@ S=${WORKDIR}/${PN}-${MY_PV}
 src_prepare() {
 	eapply "${FILESDIR}"/mono-msbuild-license-case.patch
 	eapply "${FILESDIR}"/mono-msbuild-use-bash.patch
-	eapply "${FILESDIR}"/fix-compile.patch
 
 	eapply_user
 }
