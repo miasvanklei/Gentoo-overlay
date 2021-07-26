@@ -5,21 +5,20 @@ EAPI="7"
 
 inherit cmake
 
-RPV="5.0.7"
+RPV="6.0.0-preview.6.21352.12"
+MY_PV="6.0.0_pre6"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 SRC_URI="https://github.com/Samsung/netcoredbg/archive/${PV/_p/-}.tar.gz -> ${P}.tar.gz
-	https://github.com/dotnet/runtime/archive/v${RPV}.tar.gz -> dotnet-core-${RPV}.tar.gz"
+	https://github.com/dotnet/runtime/archive/v${RPV}.tar.gz -> dotnet-runtime-${MY_PV}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
-RDEPEND="dev-dotnet/dotnet-core"
+RDEPEND="dev-dotnet/dotnet-runtime"
 DEPEND="${RDEPEND}"
-
-QA_PRESTRIPPED="/usr/share/dotnet/libdbgshim.so"
 
 S="${WORKDIR}/${P/_p/-}"
 
@@ -29,16 +28,7 @@ pkg_setup() {
 	export DOTNET_NOLOGO=1
 }
 
-src_prepare() {
-	pushd ${WORKDIR}/runtime-${RPV} >/dev/null
-	eapply "${FILESDIR}/fix-shared-profiling-header.patch"
-	popd >/dev/null
-
-	cmake_src_prepare
-}
-
-src_configure()
-{
+src_configure() {
 	local mycmakeargs=(
 		-DDOTNET_DIR=/usr/share/dotnet
 		-DCORECLR_DIR=${WORKDIR}/runtime-${RPV}/src/coreclr
@@ -47,11 +37,15 @@ src_configure()
 	cmake_src_configure
 }
 
-src_install()
-{
+src_install() {
+	local install_path=${D}/usr/share/dotnet/shared/Microsoft.NETCore.App/current
+
 	cmake_src_install
-	mv ${D}/usr ${D}/temp || die
-	mkdir -p ${D}/usr/share || die
-	mv ${D}/temp ${D}/usr/share/dotnet || die
-	dosym "${D}/usr/share/dotnet/netcoredbg" "/usr/bin/netcoredbg"
+
+	mkdir -p ${install_path} || die
+	mv ${D}/usr/*.dll ${install_path} || die
+	mv ${D}/usr/netcoredbg ${install_path} || die
+	rm ${D}/usr/libdbgshim.so || die
+
+	dosym "${D}/usr/share/dotnet/shared/Microsoft.NETCore.App/current/netcoredbg" "/usr/bin/netcoredbg"
 }

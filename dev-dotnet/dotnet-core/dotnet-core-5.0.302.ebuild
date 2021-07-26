@@ -7,13 +7,15 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-SDK_PV="5.0.301"
-SDK="dotnet-sdk-${SDK_PV}-linux-musl"
+SDK_PV="${PV}"
+RUNTIME_PV="${PV:0:3}.8"
+SDK="dotnet-sdk-${PV}-linux-musl"
 
 SRC_URI="
-        amd64? ( https://download.visualstudio.microsoft.com/download/pr/63259871-ebc8-459b-8872-9746ef377b0e/f367702ef840d326859fb3800e893759/${SDK}-x64.tar.gz )
-        arm64? ( https://download.visualstudio.microsoft.com/download/pr/a1293b16-00d7-42bf-b6ab-38b8cf3ca66b/88d2f4c57baa2ddb36f48514d80f29ba/${SDK}-arm64.tar.gz )
-	https://github.com/dotnet/runtime/archive/v${PV}.tar.gz -> ${P}.tar.gz"
+        amd64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${SDK_PV}/${SDK}-x64.tar.gz )
+        arm64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${SDK_PV}/${SDK}-arm64.tar.gz )
+        https://github.com/dotnet/runtime/archive/refs/tags/v${RUNTIME_PV}.tar.gz -> ${PN}-${RUNTIME_PV}.tar.gz
+"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -30,9 +32,9 @@ DEPEND="${RDEPEND}
 	>=sys-devel/gettext-0.19.7
 	>=sys-devel/make-4.1-r1"
 
-PDEPEND="=virtual/dotnet-runtime-${PV}"
+PDEPEND="=virtual/dotnet-runtime-${RUNTIME_PV}"
 
-S=${WORKDIR}/runtime-${PV}
+S=${WORKDIR}/runtime-${RUNTIME_PV}
 
 COREFX_FILES=(
 	'libSystem.IO.Compression.Native.a'
@@ -87,7 +89,7 @@ pkg_setup() {
 	export CORECLR_S="${S}/src/coreclr"
 	export COREFX_S="${S}/src/libraries/Native"
 	export CORESETUP_S="${S}/src/installer/corehost"
-	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${PV}/runtimes/${TARGET}/native"
+	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/${RUNTIME_PV}/runtimes/${TARGET}/native"
 
 	# no telemetry or first time experience
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -100,21 +102,21 @@ src_unpack() {
 	unpack "${DSDK}.tar.gz"
 	popd >/dev/null
 
-	unpack "${P}.tar.gz"
+	unpack "${PN}-${RUNTIME_PV}.tar.gz"
 }
 
 src_prepare() {
 	# remove native binaries/libraries
 	for file in "${COREFX_FILES[@]}"; do
-		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
+		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
 	done
 
 	for file in "${CORECLR_FILES[@]}"; do
-		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
+		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
 	done
 
 	for file in "${CORESETUP_FILES[@]}"; do
-		rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/${file}" || die
+		rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/${file}" || die
 	done
 
 	for file in "${PACK_FILES[@]}"; do
@@ -122,21 +124,21 @@ src_prepare() {
 	done
 
 	# unecessary file
-	rm "${SDK_S}/shared/Microsoft.NETCore.App/${PV}/libnethost.a" || die
+	rm "${SDK_S}/shared/Microsoft.NETCore.App/${RUNTIME_PV}/libnethost.a" || die
 
 	rm "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate/apphost" || die
-	rm "${SDK_S}/host/fxr/${PV}/libhostfxr.so" || die
+	rm "${SDK_S}/host/fxr/${RUNTIME_PV}/libhostfxr.so" || die
 	rm "${SDK_S}/dotnet" || die
 
-	eapply "${FILESDIR}"/musl-build.patch
+	eapply "${FILESDIR}"/5/musl-build.patch
+	eapply "${FILESDIR}"/5/fix-duplicate-symbols.patch
+	eapply "${FILESDIR}"/5/fix-lld.patch
+	eapply "${FILESDIR}"/5/option-to-not-strip.patch
+	eapply "${FILESDIR}"/5/fix-shared-profiling-header.patch
+	eapply "${FILESDIR}"/5/disable-stack-size.patch
+	eapply "${FILESDIR}"/5/use-system-unwind.patch
+	eapply "${FILESDIR}"/5/libunwind-arm64.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
-	eapply "${FILESDIR}"/fix-duplicate-symbols.patch
-	eapply "${FILESDIR}"/fix-lld.patch
-	eapply "${FILESDIR}"/option-to-not-strip.patch
-	eapply "${FILESDIR}"/fix-shared-profiling-header.patch
-	eapply "${FILESDIR}"/disable-stack-size.patch
-	eapply "${FILESDIR}"/use-system-unwind.patch
-	eapply "${FILESDIR}"/libunwind-arm64.patch
 
 	default
 }
@@ -153,7 +155,7 @@ src_compile() {
 	./build-native.sh ${DARCH} Release verbose skipgenerateversion keepnativesymbols || die
 
 	for file in "${COREFX_FILES[@]}"; do
-		cp -pP "${artifacts_corefx}/${file}" "${dest_core}/${PV}" || die
+		cp -pP "${artifacts_corefx}/${file}" "${dest_core}/${RUNTIME_PV}" || die
 	done
 
 	einfo "building coreclr"
@@ -161,16 +163,16 @@ src_compile() {
 	./build-runtime.sh ${DARCH} Release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols || die
 
 	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}/${PV}" || die
+		cp -pP "${artifacts_coreclr}/${file}" "${dest_core}/${RUNTIME_PV}" || die
 	done
 
 	einfo "building coresetup"
 	cd "${CORESETUP_S}" || die
-	./build.sh ${DARCH} Release skipmanaged keepnativesymbols hostver ${PV} fxrver ${PV} policyver ${PV} \
-		commithash 3c523a6 apphostver ${PV} coreclrartifacts ${artifacts_coreclr} \
+	./build.sh ${DARCH} Release skipmanaged keepnativesymbols hostver ${RUNTIME_PV} fxrver ${RUNTIME_PV} policyver ${RUNTIME_PV} \
+		commithash 3c523a6 apphostver ${RUNTIME_PV} coreclrartifacts ${artifacts_coreclr} \
 		nativelibsartifacts ${artifacts_corefx} || die
 	for file in "${CORESETUP_FILES[@]}"; do
-		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}/${PV}" || die
+		cp -pP "${artifacts_coresetup}/${file}" "${dest_core}/${RUNTIME_PV}" || die
 	done
 
 	for file in "${PACK_FILES[@]}"; do
@@ -178,19 +180,19 @@ src_compile() {
 	done
 
 	cp "${artifacts_coresetup}/apphost" "${SDK_S}/sdk/${SDK_PV}/AppHostTemplate/apphost"
-	cp "${artifacts_coresetup}/libhostfxr.so" "${SDK_S}/host/fxr/${PV}/libhostfxr.so"
+	cp "${artifacts_coresetup}/libhostfxr.so" "${SDK_S}/host/fxr/${RUNTIME_PV}/libhostfxr.so"
 	cp -pP "${artifacts_coresetup}/dotnet" "${SDK_S}" || die
 
 	einfo "building System.Private.CoreLib.dll"
 	pushd ${CORECLR_S}/src/System.Private.CoreLib >/dev/null || die
 	${SDK_S}/dotnet build -c Release /p:Platform=${ARCH} /p:TargetArchitecture=${DARCH} || die
 	popd >/dev/null
-	cp "${artifacts_coreclr}/IL/System.Private.CoreLib.dll" "${dest_core}/${PV}" || die
+	cp "${artifacts_coreclr}/IL/System.Private.CoreLib.dll" "${dest_core}/${RUNTIME_PV}" || die
 }
 
 change_version() {
         pushd $1 >/dev/null || die
-        mv ${PV} current || die
+        mv ${RUNTIME_PV} current || die
         popd >/dev/null || die
 }
 
