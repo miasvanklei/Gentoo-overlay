@@ -1,0 +1,37 @@
+--- a/eng/native/configureplatform.cmake
++++ b/eng/native/configureplatform.cmake
+@@ -72,6 +72,9 @@
+         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
+             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
+             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
++        elseif(CLR_CMAKE_LINUX_ID STREQUAL gentoo)
++            set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
++            set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
+         endif()
+     endif(DEFINED CLR_CMAKE_LINUX_ID)
+ endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
+@@ -253,6 +256,12 @@
+     set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
+ endif(CLR_CMAKE_TARGET_OS STREQUAL alpine)
+ 
++if(CLR_CMAKE_TARGET_OS STREQUAL gentoo)
++    set(CLR_CMAKE_TARGET_UNIX 1)
++    set(CLR_CMAKE_TARGET_LINUX 1)
++    set(CLR_CMAKE_TARGET_ALPINE_LINUX 1)
++endif(CLR_CMAKE_TARGET_OS STREQUAL gentoo)
++
+ if(CLR_CMAKE_TARGET_OS STREQUAL Android)
+     set(CLR_CMAKE_TARGET_UNIX 1)
+     set(CLR_CMAKE_TARGET_LINUX 1)
+--- a/src/coreclr/pal/src/CMakeLists.txt	2020-11-14 00:56:09.442947775 +0100
++++ b/src/coreclr/pal/src/CMakeLists.txt	2020-11-14 00:56:19.858033703 +0100
+@@ -82,9 +82,6 @@
+ if(CLR_CMAKE_HOST_ALPINE_LINUX)
+   # Setting RLIMIT_NOFILE breaks debugging of coreclr on Alpine Linux for some reason
+   add_definitions(-DDONT_SET_RLIMIT_NOFILE)
+-  # On Alpine Linux, we need to ensure that the reported stack range for the primary thread is
+-  # larger than the initial committed stack size.
+-  add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
+ endif(CLR_CMAKE_HOST_ALPINE_LINUX)
+ 
+ # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)

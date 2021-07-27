@@ -1,0 +1,22 @@
+--- a/src/native/corehost/build.sh
++++ b/src/native/corehost/build.sh
+@@ -5,6 +5,7 @@ usage_list+=("-apphostver <app host version>: Version of the apphost executable.
+ usage_list+=("-fxrver <HostFxr version>: Version of the hostfxr library.")
+ usage_list+=("-policyver <HostPolicy version>: Version of the hostpolicy library.")
+ usage_list+=("-commithash <Git commit hash>: Current commit hash of the repo at build time.")
++usage_list+=("-skipmanaged: do not build managed components.")
+ 
+ set -e
+ 
+@@ -61,6 +62,11 @@ handle_arguments() {
+             __ShiftArgs=1
+             ;;
+ 
++        skipmanaged|-skipmanaged)
++            __SkipManaged=1
++            __BuildTestWrappers=0
++            ;;
++
+         *)
+             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
+     esac
