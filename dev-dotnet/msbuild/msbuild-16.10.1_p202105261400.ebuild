@@ -21,7 +21,7 @@ IUSE=""
 
 RDEPEND="
 	>=dev-lang/mono-6.0
-	dev-dotnet/dotnet-core
+	virtual/dotnet-core
 "
 DEPEND="${RDEPEND}"
 
