@@ -14,7 +14,7 @@ SRC_URI="https://github.com/microsoft/${PN}/archive/v${MY_PV}.tar.gz -> ${P}.tar
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
-RDEPEND="dev-dotnet/dotnet-core"
+RDEPEND="virtual/dotnet-core"
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}/${PN}-${MY_PV}"
