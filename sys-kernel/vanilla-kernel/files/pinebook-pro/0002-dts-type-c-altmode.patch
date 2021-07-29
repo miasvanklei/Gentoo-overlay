@@ -1,0 +1,47 @@
+--- a/rk3399-pinebook-pro.dts	2021-07-29 22:07:49.400749524 +0200
++++ b/rk3399-pinebook-pro.dts	2021-07-29 22:18:17.202419731 +0200
+@@ -386,6 +386,7 @@
+ };
+ 
+ &cdn_dp {
++	extcon = <&fusb0>;
+ 	status = "okay";
+ };
+ 
+@@ -753,6 +750,12 @@
+ 				};
+ 			};
+ 		};
++
++		port {
++			fusb0_role_sw: endpoint {
++				remote-endpoint = <&usbdrd_dwc3_0_role_sw>;
++			};
++		};
+ 	};
+ 
+ 	cw2015@62 {
+@@ -987,6 +990,7 @@
+ };
+ 
+ &tcphy0 {
++	extcon = <&fusb0>;
+ 	status = "okay";
+ };
+ 
+@@ -1096,8 +1100,15 @@
+ };
+ 
+ &usbdrd_dwc3_0 {
++	extcon = <&fusb0>;
+ 	dr_mode = "host";
+ 	status = "okay";
++
++	port {
++		usbdrd_dwc3_0_role_sw: endpoint {
++			remote-endpoint = <&fusb0_role_sw>;
++		};
++	};
+ };
+ 
+ &usbdrd3_1 {

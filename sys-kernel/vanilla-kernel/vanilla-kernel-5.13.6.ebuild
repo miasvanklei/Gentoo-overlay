@@ -27,12 +27,13 @@ pkg_pretend() {
 src_prepare() {
 	if use pinebook-pro; then
 		eapply "${FILESDIR}"/rockchip-increase-framebuffer-size.patch
-		eapply "${FILESDIR}"/pinebook-pro/001-pinebook-pro-dts.patch
-		eapply "${FILESDIR}"/pinebook-pro/002-add-cdn_dp-audio.patch
-		eapply "${FILESDIR}"/pinebook-pro/003-usb-c.patch
-		eapply "${FILESDIR}"/pinebook-pro/004-generic-fixes.patch
-		eapply "${FILESDIR}"/pinebook-pro/005-revert-round-up-before-giving-to-the-clock-framework.patch
-		eapply "${FILESDIR}"/pinebook-pro/006-rk3399-gamma_support.patch
+		eapply "${FILESDIR}"/pinebook-pro/0001-pinebook-pro-dts.patch
+		eapply "${FILESDIR}"/pinebook-pro/0002-dts-type-c-altmode.patch
+		eapply "${FILESDIR}"/pinebook-pro/0003-fusb302-add-excton.patch
+		eapply "${FILESDIR}"/pinebook-pro/0004-add-cdn_dp-audio.patch
+		eapply "${FILESDIR}"/pinebook-pro/0005-generic-fixes.patch
+		eapply "${FILESDIR}"/pinebook-pro/0007-revert-round-up-before-giving-to-the-clock-framework.patch
+		eapply "${FILESDIR}"/pinebook-pro/0006-rk3399-gamma_support.patch
 	fi
 
 	if use pine-h64; then
