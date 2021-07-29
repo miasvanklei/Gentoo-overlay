@@ -17,7 +17,7 @@ EGIT_SUBMODULES=()
 
 LICENSE="LGPL-2.1"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm64"
 IUSE="aac +ldac ofono"
 
 DEPEND="
