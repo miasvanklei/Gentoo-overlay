@@ -1,23 +1,43 @@
---- a/compiler/rustc_codegen_ssa/src/back/link.rs
-+++ b/compiler/rustc_codegen_ssa/src/back/link.rs
-@@ -2015,7 +2013,19 @@
-                 continue;
-             }
+--- a/compiler/rustc_codegen_ssa/src/back/link.rs	2021-07-26 16:43:01.000000000 +0200
++++ b/compiler/rustc_codegen_ssa/src/back/link.rs	2021-07-30 15:07:51.989199801 +0200
+@@ -2397,9 +2397,12 @@
+             let verbatim = lib.verbatim.unwrap_or(false);
              match lib.kind {
--                NativeLibKind::Dylib | NativeLibKind::Unspecified => cmd.link_dylib(name),
-+                NativeLibKind::Dylib | NativeLibKind::Unspecified => {
-+                    // On some targets, like Linux, linking a static executable inhibits using
-+                    // dylibs at all. Force native libraries to be static, even if for example
-+                    // an upstream rlib was originally linked against a native shared library.
-+                    if crate_type == config::CrateType::Executable
-+                        && sess.crt_static(Some(crate_type))
-+                        && !sess.target.options.crt_static_allows_dylibs
-+                    {
-+                        cmd.link_staticlib(name)
-+                    } else {
-+                        cmd.link_dylib(name)
-+                    }
-+                },
-                 NativeLibKind::Framework => cmd.link_framework(name),
-                 NativeLibKind::StaticNoBundle => {
-                     // Link "static-nobundle" native libs only if the crate they originate from
+                 NativeLibKind::Dylib { as_needed } => {
+-                    cmd.link_dylib(name, verbatim, as_needed.unwrap_or(true))
++                    let as_needed = as_needed.unwrap_or(true);
++                    force_static_link_when_rlib_dynamic(cmd, sess, crate_type, name, verbatim, as_needed)
++                }
++                NativeLibKind::Unspecified => {
++                    force_static_link_when_rlib_dynamic(cmd, sess, crate_type, name, verbatim, true)
+                 }
+-                NativeLibKind::Unspecified => cmd.link_dylib(name, verbatim, true),
+                 NativeLibKind::Framework { as_needed } => {
+                     cmd.link_framework(name, as_needed.unwrap_or(true))
+                 }
+@@ -2422,6 +2425,25 @@
+     }
+ }
+ 
++fn force_static_link_when_rlib_dynamic(
++    cmd: &mut dyn Linker,
++    sess: &Session,
++    crate_type: CrateType,
++    name: Symbol,
++    verbatim: bool,
++    as_needed: bool,
++)
++{
++    if crate_type == config::CrateType::Executable
++        && sess.crt_static(Some(crate_type))
++        && !sess.target.options.crt_static_allows_dylibs
++    {
++        cmd.link_staticlib(name, verbatim)
++    } else {
++        cmd.link_dylib(name, verbatim, as_needed)
++    }
++}
++
+ fn relevant_lib(sess: &Session, lib: &NativeLib) -> bool {
+     match lib.cfg {
+         Some(ref cfg) => rustc_attr::cfg_matches(cfg, &sess.parse_sess, None),

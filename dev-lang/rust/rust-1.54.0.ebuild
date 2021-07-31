@@ -121,13 +121,10 @@ QA_SONAME="
 RESTRICT="test"
 
 PATCHES=(
-	"${FILESDIR}"/1.53.0-miri-vergen.patch
-	"${FILESDIR}"/1.53.0-rustversion-1.0.5.patch
 	"${FILESDIR}"/001-remove-crt-and-musl_root-from-musl-targets.patch
 	"${FILESDIR}"/002-link-static-when-required.patch
 	"${FILESDIR}"/003-aarch64-static-pie.patch
 	"${FILESDIR}"/004-libc-linkage.patch
-	"${FILESDIR}"/005-libunwind-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
 	"${FILESDIR}"/007-llvm-12.patch
 )
@@ -205,6 +202,7 @@ clear_vendor_checksums() {
 src_prepare() {
 	clear_vendor_checksums libc
 	clear_vendor_checksums libc-0.2.86
+	clear_vendor_checksums libc-0.2.93
 
 	default
 }
@@ -297,6 +295,7 @@ src_configure() {
 		lld = false
 		backtrace-on-ice = true
 		jemalloc = false
+		llvm-libunwind = "system"
 		[dist]
 		src-tarball = false
 	_EOF_
