@@ -21,11 +21,17 @@ KEYWORDS="~amd64 ~arm64"
 RDEPEND=""
 DEPEND="${RDEPEND}"
 
-PATCHES=(
-	"${FILESDIR}"/missing-runtime.patch
-)
-
 S="${WORKDIR}"
+
+src_prepare() {
+	if use amd64; then
+		eapply "${FILESDIR}"/missing-runtime-x64.patch
+	elif use arm64; then
+		eapply "${FILESDIR}"/missing-runtime-arm64.patch
+	fi
+
+	eapply_user
+}
 
 src_install() {
         local dest_core="usr/share/dotnet/shared/Microsoft.NETCore.App"
