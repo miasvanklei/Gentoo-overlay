@@ -86,6 +86,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
 	eapply "${FILESDIR}"/use-system-unwind.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
+	eapply "${FILESDIR}"/arm64-fix-duplicate-symbols.patch
 
 	default
 }
