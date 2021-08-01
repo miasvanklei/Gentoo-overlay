@@ -10,7 +10,7 @@ LICENSE="MIT"
 MY_PV="${PV/_pre/-preview.}.21352.12"
 SDK_PV="6.0.100_pre6"
 
-SRC_URI="https://github.com/dotnet/${PN}/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"

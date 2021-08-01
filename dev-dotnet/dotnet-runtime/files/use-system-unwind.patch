@@ -9,3 +9,60 @@
  
  if(NOT DEFINED ENV{ROOTFS_DIR})
    include_directories(SYSTEM /usr/local/include)
+--- a/src/coreclr/pal/src/exception/seh-unwind.cpp	2021-08-01 11:48:56.944177602 +0200
++++ b/src/coreclr/pal/src/exception/seh-unwind.cpp	2021-08-01 11:53:20.193366356 +0200
+@@ -54,8 +54,8 @@
+ 
+ #endif // HOST_UNIX
+ 
+-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
+-// MacOS uses ARM64 instead of AARCH64 to describe these registers
++#if defined(FEATURE_USE_SYSTEM_LIBUNWIND) && defined(TARGET_ARM64)
++// llvm libunwind uses ARM64 instead of AARCH64 to describe these registers
+ // Create aliases to reuse more code
+ enum
+ {
+@@ -72,7 +72,7 @@
+     UNW_AARCH64_X29 = UNW_ARM64_X29,
+     UNW_AARCH64_X30 = UNW_ARM64_X30
+ };
+-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
++#endif // defined(FEATURE_USE_SYSTEM_LIBUNWIND) && defined(TARGET_ARM64)
+ 
+ 
+ //----------------------------------------------------------------------
+@@ -163,7 +163,7 @@
+     unwContext->regs[13] = winContext->Sp;
+     unwContext->regs[14] = winContext->Lr;
+     unwContext->regs[15] = winContext->Pc;
+-#elif defined(HOST_ARM64) && !defined(TARGET_OSX)
++#elif defined(HOST_ARM64) && !defined(FEATURE_USE_SYSTEM_LIBUNWIND)
+     unwContext->uc_mcontext.pc       = winContext->Pc;
+     unwContext->uc_mcontext.sp       = winContext->Sp;
+     unwContext->uc_mcontext.regs[29] = winContext->Fp;
+@@ -200,8 +200,8 @@
+     unw_set_reg(cursor, UNW_X86_EBX, winContext->Ebx);
+     unw_set_reg(cursor, UNW_X86_ESI, winContext->Esi);
+     unw_set_reg(cursor, UNW_X86_EDI, winContext->Edi);
+-#elif defined(HOST_ARM64) && defined(TARGET_OSX)
+-    // unw_cursor_t is an opaque data structure on macOS
++#elif defined(HOST_ARM64) && defined(FEATURE_USE_SYSTEM_LIBUNWIND)
++    // unw_cursor_t is an opaque data structure on llvm lubunwind
+     // As noted in WinContextToUnwindContext this didn't work for Linux
+     // TBD whether this will work for macOS.
+     unw_set_reg(cursor, UNW_REG_IP, winContext->Pc);
+@@ -268,12 +268,12 @@
+     unw_get_reg(cursor, UNW_AARCH64_X27, (unw_word_t *) &winContext->X27);
+     unw_get_reg(cursor, UNW_AARCH64_X28, (unw_word_t *) &winContext->X28);
+ 
+-#if defined(TARGET_OSX) && defined(TARGET_ARM64)
++#if defined(FEATURE_USE_SYSTEM_LIBUNWIND) && defined(TARGET_ARM64)
+     // Strip pointer authentication bits which seem to be leaking out of libunwind
+     // Seems like ptrauth_strip() / __builtin_ptrauth_strip() should work, but currently
+     // errors with "this target does not support pointer authentication"
+     winContext->Pc = winContext->Pc & 0x7fffffffffffull;
+-#endif // defined(TARGET_OSX) && defined(TARGET_ARM64)
++#endif // defined(FEATURE_USE_SYSTEM_LIBUNWIND) && defined(TARGET_ARM64)
+ #elif (defined(HOST_UNIX) && defined(HOST_S390X))
+     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
+     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
