@@ -32,8 +32,8 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/0003-fusb302-add-excton.patch
 		eapply "${FILESDIR}"/pinebook-pro/0004-add-cdn_dp-audio.patch
 		eapply "${FILESDIR}"/pinebook-pro/0005-generic-fixes.patch
-		eapply "${FILESDIR}"/pinebook-pro/0007-revert-round-up-before-giving-to-the-clock-framework.patch
-		eapply "${FILESDIR}"/pinebook-pro/0006-rk3399-gamma_support.patch
+		eapply "${FILESDIR}"/pinebook-pro/0006-revert-round-up-before-giving-to-the-clock-framework.patch
+		eapply "${FILESDIR}"/pinebook-pro/0007-rk3399-gamma_support.patch
 	fi
 
 	if use pine-h64; then
@@ -75,12 +75,11 @@ src_configure() {
 	)
 
 	restore_config .config
-        mkdir -p "${WORKDIR}"/modprep || die
-        mv .config "${WORKDIR}"/modprep/ || die
+	mkdir -p "${WORKDIR}"/modprep || die
+	mv .config "${WORKDIR}"/modprep/ || die
 	emake O="${WORKDIR}"/modprep "${MAKEARGS[@]}" olddefconfig
-        emake O="${WORKDIR}"/modprep "${MAKEARGS[@]}" modules_prepare
-        cp -pR "${WORKDIR}"/modprep "${WORKDIR}"/build || die
-
+	emake O="${WORKDIR}"/modprep "${MAKEARGS[@]}" modules_prepare
+	cp -pR "${WORKDIR}"/modprep "${WORKDIR}"/build || die
 }
 
 src_compile() {
@@ -92,10 +91,10 @@ src_test() {
 }
 
 src_install() {
-        local kern_arch=$(tc-arch-kernel)
-        local ver="${PV}${KV_LOCALVERSION}-vanilla"
-        local targets=( modules_install )
-        dodir "/usr/src/linux-${ver}/arch/${kern_arch}"
+	local kern_arch=$(tc-arch-kernel)
+	local ver="${PV}${KV_LOCALVERSION}-vanilla"
+	local targets=( modules_install )
+	dodir "/usr/src/linux-${ver}/arch/${kern_arch}"
 
 	# install target is named differently on arm
 	if use arm; then
@@ -104,57 +103,50 @@ src_install() {
 		targets+=( install )
 	fi
 
-        # on arm or arm64 you also need dtb
-        if use arm || use arm64; then
-		# install only dtb file for board given in ${DTB_FILE}.
-		if [[ -z ${DTB_FILE} ]]; then
-	                targets+=( dtbs_install )
-		else
-			dodir /usr/src/linux-${ver}/dtb
-			find "${WORKDIR}"/build/arch -name ${DTB_FILE} -exec cp {} "${ED}"/usr/src/linux-${ver}/dtb/ \; || die
-		fi
-        fi
+	# on arm or arm64 you also need dtb
+	if use arm || use arm64; then
+		targets+=( dtbs_install )
+	fi
 
-        emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
-                INSTALL_MOD_PATH="${ED}" INSTALL_PATH="${ED}"/usr/src/linux-${ver} "${targets[@]}"
-        rename -- "-${ver}" "" "${ED}"/usr/src/linux-${ver}/* || die
+	emake O="${WORKDIR}"/build "${MAKEARGS[@]}" \
+		INSTALL_MOD_PATH="${ED}" INSTALL_PATH="${ED}"/usr/src/linux-${ver} "${targets[@]}"
+	rename -- "-${ver}" "" "${ED}"/usr/src/linux-${ver}/* || die
 
-        # note: we're using mv rather than doins to save space and time
-        # install main and arch-specific headers first, and scripts
-        mv include scripts "${ED}/usr/src/linux-${ver}/" || die
-        mv "arch/${kern_arch}/include" \
-                "${ED}/usr/src/linux-${ver}/arch/${kern_arch}/" || die
-        # some arches need module.lds linker script to build external modules
-        if [[ -f arch/${kern_arch}/kernel/module.lds ]]; then
-                insinto "/usr/src/linux-${ver}/arch/${kern_arch}/kernel"
-                doins "arch/${kern_arch}/kernel/module.lds"
-        fi
+	# note: we're using mv rather than doins to save space and time
+	# install main and arch-specific headers first, and scripts
+	mv include scripts "${ED}/usr/src/linux-${ver}/" || die
+	mv "arch/${kern_arch}/include" \
+		"${ED}/usr/src/linux-${ver}/arch/${kern_arch}/" || die
+	# some arches need module.lds linker script to build external modules
+	if [[ -f arch/${kern_arch}/kernel/module.lds ]]; then
+		insinto "/usr/src/linux-${ver}/arch/${kern_arch}/kernel"
+		doins "arch/${kern_arch}/kernel/module.lds"
+	fi
 
-        # remove everything but Makefile* and Kconfig*
-        find -type f '!' '(' -name 'Makefile*' -o -name 'Kconfig*' ')' \
-                -delete || die
-        find -type l -delete || die
-        cp -p -R * "${ED}/usr/src/linux-${ver}/" || die
+	# remove everything but Makefile* and Kconfig*
+	find -type f '!' '(' -name 'Makefile*' -o -name 'Kconfig*' ')' -delete || die
+	find -type l -delete || die
+	cp -p -R * "${ED}/usr/src/linux-${ver}/" || die
 
-        cd "${WORKDIR}" || die
-        # strip out-of-source build stuffs from modprep
-        # and then copy built files as well
-        find modprep -type f '(' \
-                        -name Makefile -o \
-                        -name '*.[ao]' -o \
-                        '(' -name '.*' -a -not -name '.config' ')' \
-                ')' -delete || die
-        rm modprep/source || die
-        cp -p -R modprep/. "${ED}/usr/src/linux-${ver}"/ || die
+	cd "${WORKDIR}" || die
+	# strip out-of-source build stuffs from modprep
+	# and then copy built files as well
+	find modprep -type f '(' \
+			-name Makefile -o \
+			-name '*.[ao]' -o \
+			'(' -name '.*' -a -not -name '.config' ')' \
+			')' -delete || die
+	rm modprep/source || die
+	cp -p -R modprep/. "${ED}/usr/src/linux-${ver}"/ || die
 
-        # strip empty directories
-        find "${D}" -type d -empty -exec rmdir {} + || die
+	# strip empty directories
+	find "${D}" -type d -empty -exec rmdir {} + || die
 
-        # fix source tree and build dir symlinks
-        dosym ../../../usr/src/linux-${ver} /lib/modules/${ver}/build
-        dosym ../../../usr/src/linux-${ver} /lib/modules/${ver}/source
+	# fix source tree and build dir symlinks
+	dosym ../../../usr/src/linux-${ver} /lib/modules/${ver}/build
+	dosym ../../../usr/src/linux-${ver} /lib/modules/${ver}/source
 
-        save_config build/.config
+	save_config build/.config
 }
 
 pkg_preinst() {
@@ -164,7 +156,7 @@ pkg_preinst() {
 pkg_postinst() {
 	mount-boot_pkg_preinst
 
-        local ver="${PV}${KV_LOCALVERSION}-vanilla"
+	local ver="${PV}${KV_LOCALVERSION}-vanilla"
 
 	if [[ -z ${KINSTALL_PATH} ]]; then
 		ebegin "Installing the kernel by installkernel"
@@ -181,7 +173,7 @@ pkg_postinst() {
 	if use arm || use arm64; then
 		# install dtb file for board given in ${DTB_FILE}.
 		if [[ -n ${DTB_FILE} ]]; then
-			cp "${EROOT}"/usr/lib/kernel/dtbs/${PV}-vanilla/${DTB_FILE} /boot
+			cp "${EROOT}"/usr/src/linux-${ver}/${DTB_FILE} /boot || die
 		fi
 	fi
 
