@@ -29,6 +29,10 @@ BDEPEND="
 
 DEPEND="${RDEPEND}"
 
+PATCHES=(
+	"${FILESDIR}"/missing-include.patch
+)
+
 src_prepare() {
 	cmake_src_prepare
 	xdg_environment_reset
