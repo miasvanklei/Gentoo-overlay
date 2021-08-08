@@ -1,16 +1,16 @@
---- a/llvm/tools/llvm-objcopy/CopyConfig.h
-+++ b/llvm/tools/llvm-objcopy/CopyConfig.h
+--- a/llvm/tools/llvm-objcopy/CommonConfig.h
++++ b/llvm/tools/llvm-objcopy/CommonConfig.h
 @@ -167,6 +167,8 @@
-   Optional<StringRef> BuildIdLinkInput;
-   Optional<StringRef> BuildIdLinkOutput;
+   // Cached gnu_debuglink's target CRC
+   uint32_t GnuDebugLinkCRC32;
    Optional<StringRef> ExtractPartition;
 +  Optional<uint8_t> GapFill;
 +  Optional<uint64_t> PadTo;
    StringRef SplitDWO;
    StringRef SymbolsPrefix;
    StringRef AllocSectionsPrefix;
---- a/llvm/tools/llvm-objcopy/CopyConfig.cpp
-+++ b/llvm/tools/llvm-objcopy/CopyConfig.cpp
+--- a/llvm/tools/llvm-objcopy/ConfigManager.cpp
++++ b/llvm/tools/llvm-objcopy/ConfigManager.cpp
 @@ -621,6 +621,24 @@
    if (auto Arg = InputArgs.getLastArg(OBJCOPY_extract_partition))
      Config.ExtractPartition = Arg->getValue();
@@ -42,7 +42,7 @@
    return Obj.removeSections(Config.AllowBrokenLinks, RemovePred);
  }
  
-+static Error padSections(const CopyConfig &Config, Object &Obj) {
++static Error padSections(const CommonConfig &Config, Object &Obj) {
 +  SmallVector<SectionBase *, 30> LoadableSections;
 +  for (SectionBase &Sec : Obj.sections()) {
 +    if ((Sec.Flags & SectionFlag::SecLoad) && (Sec.Type != SHT_NOBITS))

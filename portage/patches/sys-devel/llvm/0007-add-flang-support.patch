@@ -1,4 +1,3 @@
-diff --color -urN llvm/cmake/modules/HandleLLVMOptions.cmake b/cmake/modules/HandleLLVMOptions.cmake
 --- a/llvm/cmake/modules/HandleLLVMOptions.cmake	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/cmake/modules/HandleLLVMOptions.cmake	2021-04-01 22:08:22.195948407 +0200
 @@ -77,6 +77,14 @@
@@ -16,18 +15,467 @@ diff --color -urN llvm/cmake/modules/HandleLLVMOptions.cmake b/cmake/modules/Han
  if(LLVM_ENABLE_EXPENSIVE_CHECKS)
    add_definitions(-DEXPENSIVE_CHECKS)
  
-diff --color -urN llvm/include/llvm/Analysis/TargetLibraryInfo.h b/include/llvm/Analysis/TargetLibraryInfo.h
 --- a/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-04-01 22:08:22.271948948 +0200
 @@ -90,6 +90,7 @@
-     Accelerate, // Use Accelerate framework.
-     LIBMVEC_X86,// GLIBC Vector Math library.
-     MASSV,      // IBM MASS vector library.
-+    PGMATH,     // PGI math library.
-     SVML        // Intel short vector math library.
+     DarwinLibSystemM, // Use Darwin's libsystem_m.
+     LIBMVEC_X86,      // GLIBC Vector Math library.
+     MASSV,            // IBM MASS vector library.
++    PGMATH,           // PGI math library.
+     SVML              // Intel short vector math library.
    };
  
-diff --color -urN llvm/include/llvm/IR/DIBuilder.h b/include/llvm/IR/DIBuilder.h
+--- a/llvm/include/llvm/Analysis/VecFuncs.def	2021-08-03 07:58:39.000000000 +0200
++++ b/llvm/include/llvm/Analysis/VecFuncs.def	2021-08-04 12:18:29.787392285 +0200
+@@ -466,6 +466,448 @@
+ TLI_DEFINE_VECFUNC("__exp2f_finite", "__svml_exp2f8", FIXED(8))
+ TLI_DEFINE_VECFUNC("__exp2f_finite", "__svml_exp2f16", FIXED(16))
+ 
++#elif defined(TLI_DEFINE_PGMATH_VECFUNCS)
++// NVIDIA PGI math library's Vector Functions
++TLI_DEFINE_VECFUNC("__fd_sin_1", "__fd_sin_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_sin_1", "__fd_sin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_sin_1", "__fd_sin_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_sin_1", "__fs_sin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_sin_1", "__fs_sin_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_sin_1", "__fs_sin_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_sin_1", "__pd_sin_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_sin_1", "__pd_sin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_sin_1", "__pd_sin_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_sin_1", "__ps_sin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_sin_1", "__ps_sin_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_sin_1", "__ps_sin_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_sin_1", "__rd_sin_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_sin_1", "__rd_sin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_sin_1", "__rd_sin_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_sin_1", "__rs_sin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_sin_1", "__rs_sin_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_sin_1", "__rs_sin_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_cos_1", "__fd_cos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_cos_1", "__fd_cos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_cos_1", "__fd_cos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_cos_1", "__fs_cos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_cos_1", "__fs_cos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_cos_1", "__fs_cos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_cos_1", "__pd_cos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_cos_1", "__pd_cos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_cos_1", "__pd_cos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_cos_1", "__ps_cos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_cos_1", "__ps_cos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_cos_1", "__ps_cos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_cos_1", "__rd_cos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_cos_1", "__rd_cos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_cos_1", "__rd_cos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_cos_1", "__rs_cos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_cos_1", "__rs_cos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_cos_1", "__rs_cos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_sincos_1", "__fd_sincos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_sincos_1", "__fd_sincos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_sincos_1", "__fd_sincos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_sincos_1", "__fs_sincos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_sincos_1", "__fs_sincos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_sincos_1", "__fs_sincos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_sincos_1", "__pd_sincos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_sincos_1", "__pd_sincos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_sincos_1", "__pd_sincos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_sincos_1", "__ps_sincos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_sincos_1", "__ps_sincos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_sincos_1", "__ps_sincos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_sincos_1", "__rd_sincos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_sincos_1", "__rd_sincos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_sincos_1", "__rd_sincos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_sincos_1", "__rs_sincos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_sincos_1", "__rs_sincos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_sincos_1", "__rs_sincos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_tan_1", "__fd_tan_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_tan_1", "__fd_tan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_tan_1", "__fd_tan_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_tan_1", "__fs_tan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_tan_1", "__fs_tan_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_tan_1", "__fs_tan_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_tan_1", "__pd_tan_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_tan_1", "__pd_tan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_tan_1", "__pd_tan_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_tan_1", "__ps_tan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_tan_1", "__ps_tan_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_tan_1", "__ps_tan_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_tan_1", "__rd_tan_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_tan_1", "__rd_tan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_tan_1", "__rd_tan_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_tan_1", "__rs_tan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_tan_1", "__rs_tan_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_tan_1", "__rs_tan_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_sinh_1", "__fd_sinh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_sinh_1", "__fd_sinh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_sinh_1", "__fd_sinh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_sinh_1", "__fs_sinh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_sinh_1", "__fs_sinh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_sinh_1", "__fs_sinh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_sinh_1", "__pd_sinh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_sinh_1", "__pd_sinh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_sinh_1", "__pd_sinh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_sinh_1", "__ps_sinh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_sinh_1", "__ps_sinh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_sinh_1", "__ps_sinh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_sinh_1", "__rd_sinh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_sinh_1", "__rd_sinh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_sinh_1", "__rd_sinh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_sinh_1", "__rs_sinh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_sinh_1", "__rs_sinh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_sinh_1", "__rs_sinh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_cosh_1", "__fd_cosh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_cosh_1", "__fd_cosh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_cosh_1", "__fd_cosh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_cosh_1", "__fs_cosh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_cosh_1", "__fs_cosh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_cosh_1", "__fs_cosh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_cosh_1", "__pd_cosh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_cosh_1", "__pd_cosh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_cosh_1", "__pd_cosh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_cosh_1", "__ps_cosh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_cosh_1", "__ps_cosh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_cosh_1", "__ps_cosh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_cosh_1", "__rd_cosh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_cosh_1", "__rd_cosh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_cosh_1", "__rd_cosh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_cosh_1", "__rs_cosh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_cosh_1", "__rs_cosh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_cosh_1", "__rs_cosh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_tanh_1", "__fd_tanh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_tanh_1", "__fd_tanh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_tanh_1", "__fd_tanh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_tanh_1", "__fs_tanh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_tanh_1", "__fs_tanh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_tanh_1", "__fs_tanh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_tanh_1", "__pd_tanh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_tanh_1", "__pd_tanh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_tanh_1", "__pd_tanh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_tanh_1", "__ps_tanh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_tanh_1", "__ps_tanh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_tanh_1", "__ps_tanh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_tanh_1", "__rd_tanh_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_tanh_1", "__rd_tanh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_tanh_1", "__rd_tanh_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_tanh_1", "__rs_tanh_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_tanh_1", "__rs_tanh_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_tanh_1", "__rs_tanh_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_asin_1", "__fd_asin_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_asin_1", "__fd_asin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_asin_1", "__fd_asin_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_asin_1", "__fs_asin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_asin_1", "__fs_asin_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_asin_1", "__fs_asin_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_asin_1", "__pd_asin_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_asin_1", "__pd_asin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_asin_1", "__pd_asin_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_asin_1", "__ps_asin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_asin_1", "__ps_asin_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_asin_1", "__ps_asin_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_asin_1", "__rd_asin_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_asin_1", "__rd_asin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_asin_1", "__rd_asin_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_asin_1", "__rs_asin_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_asin_1", "__rs_asin_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_asin_1", "__rs_asin_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_acos_1", "__fd_acos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_acos_1", "__fd_acos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_acos_1", "__fd_acos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_acos_1", "__fs_acos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_acos_1", "__fs_acos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_acos_1", "__fs_acos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_acos_1", "__pd_acos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_acos_1", "__pd_acos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_acos_1", "__pd_acos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_acos_1", "__ps_acos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_acos_1", "__ps_acos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_acos_1", "__ps_acos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_acos_1", "__rd_acos_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_acos_1", "__rd_acos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_acos_1", "__rd_acos_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_acos_1", "__rs_acos_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_acos_1", "__rs_acos_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_acos_1", "__rs_acos_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_atan_1", "__fd_atan_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_atan_1", "__fd_atan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_atan_1", "__fd_atan_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_atan_1", "__fs_atan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_atan_1", "__fs_atan_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_atan_1", "__fs_atan_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_atan_1", "__pd_atan_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_atan_1", "__pd_atan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_atan_1", "__pd_atan_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_atan_1", "__ps_atan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_atan_1", "__ps_atan_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_atan_1", "__ps_atan_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_atan_1", "__rd_atan_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_atan_1", "__rd_atan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_atan_1", "__rd_atan_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_atan_1", "__rs_atan_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_atan_1", "__rs_atan_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_atan_1", "__rs_atan_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_atan2_1", "__fd_atan2_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_atan2_1", "__fd_atan2_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_atan2_1", "__fd_atan2_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_atan2_1", "__fs_atan2_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_atan2_1", "__fs_atan2_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_atan2_1", "__fs_atan2_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_atan2_1", "__pd_atan2_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_atan2_1", "__pd_atan2_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_atan2_1", "__pd_atan2_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_atan2_1", "__ps_atan2_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_atan2_1", "__ps_atan2_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_atan2_1", "__ps_atan2_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_atan2_1", "__rd_atan2_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_atan2_1", "__rd_atan2_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_atan2_1", "__rd_atan2_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_atan2_1", "__rs_atan2_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_atan2_1", "__rs_atan2_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_atan2_1", "__rs_atan2_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_pow_1", "__fd_pow_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_pow_1", "__fd_pow_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_pow_1", "__fd_pow_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_pow_1", "__fs_pow_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_pow_1", "__fs_pow_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_pow_1", "__fs_pow_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_pow_1", "__pd_pow_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_pow_1", "__pd_pow_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_pow_1", "__pd_pow_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_pow_1", "__ps_pow_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_pow_1", "__ps_pow_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_pow_1", "__ps_pow_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_pow_1", "__rd_pow_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_pow_1", "__rd_pow_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_pow_1", "__rd_pow_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_pow_1", "__rs_pow_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_pow_1", "__rs_pow_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_pow_1", "__rs_pow_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fs_powi_1", "__fs_powi_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_powi_1", "__fs_powi_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_powi_1", "__fs_powi_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__ps_powi_1", "__ps_powi_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_powi_1", "__ps_powi_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_powi_1", "__ps_powi_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rs_powi_1", "__rs_powi_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_powi_1", "__rs_powi_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_powi_1", "__rs_powi_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_powi1_1", "__fd_powi1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_powi1_1", "__fd_powi1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_powi1_1", "__fd_powi1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_powi1_1", "__fs_powi1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_powi1_1", "__fs_powi1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_powi1_1", "__fs_powi1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_powi1_1", "__pd_powi1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_powi1_1", "__pd_powi1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_powi1_1", "__pd_powi1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_powi1_1", "__ps_powi1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_powi1_1", "__ps_powi1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_powi1_1", "__ps_powi1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_powi1_1", "__rd_powi1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_powi1_1", "__rd_powi1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_powi1_1", "__rd_powi1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_powi1_1", "__rs_powi1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_powi1_1", "__rs_powi1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_powi1_1", "__rs_powi1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_powk_1", "__fd_powk_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_powk_1", "__fd_powk_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_powk_1", "__fd_powk_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_powk1_1", "__fs_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_powk1_1", "__fs_powk1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_powk1_1", "__fs_powk1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_powk1_1", "__pd_powk1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_powk1_1", "__pd_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_powk1_1", "__pd_powk1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_powk1_1", "__ps_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_powk1_1", "__ps_powk1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_powk1_1", "__ps_powk1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_powk1_1", "__rd_powk1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_powk1_1", "__rd_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_powk1_1", "__rd_powk1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_powk1_1", "__rs_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_powk1_1", "__rs_powk1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_powk1_1", "__rs_powk1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_powk1_1", "__fd_powk1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_powk1_1", "__fd_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_powk1_1", "__fd_powk1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_powk1_1", "__fs_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_powk1_1", "__fs_powk1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_powk1_1", "__fs_powk1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_powk1_1", "__pd_powk1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_powk1_1", "__pd_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_powk1_1", "__pd_powk1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_powk1_1", "__ps_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_powk1_1", "__ps_powk1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_powk1_1", "__ps_powk1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_powk1_1", "__rd_powk1_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_powk1_1", "__rd_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_powk1_1", "__rd_powk1_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_powk1_1", "__rs_powk1_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_powk1_1", "__rs_powk1_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_powk1_1", "__rs_powk1_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_log10_1", "__fd_log10_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_log10_1", "__fd_log10_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_log10_1", "__fd_log10_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_log10_1", "__fs_log10_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_log10_1", "__fs_log10_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_log10_1", "__fs_log10_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_log10_1", "__pd_log10_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_log10_1", "__pd_log10_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_log10_1", "__pd_log10_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_log10_1", "__ps_log10_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_log10_1", "__ps_log10_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_log10_1", "__ps_log10_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_log10_1", "__rd_log10_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_log10_1", "__rd_log10_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_log10_1", "__rd_log10_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_log10_1", "__rs_log10_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_log10_1", "__rs_log10_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_log10_1", "__rs_log10_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fd_log_1", "__fd_log_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__fd_log_1", "__fd_log_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fd_log_1", "__fd_log_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__fs_log_1", "__fs_log_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_log_1", "__fs_log_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_log_1", "__fs_log_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_log_1", "__pd_log_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_log_1", "__pd_log_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_log_1", "__pd_log_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_log_1", "__ps_log_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_log_1", "__ps_log_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_log_1", "__ps_log_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_log_1", "__rd_log_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_log_1", "__rd_log_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_log_1", "__rd_log_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_log_1", "__rs_log_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_log_1", "__rs_log_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_log_1", "__rs_log_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__fs_exp_1", "__fs_exp_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__fs_exp_1", "__fs_exp_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__fs_exp_1", "__fs_exp_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__pd_exp_1", "__pd_exp_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__pd_exp_1", "__pd_exp_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__pd_exp_1", "__pd_exp_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__ps_exp_1", "__ps_exp_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__ps_exp_1", "__ps_exp_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__ps_exp_1", "__ps_exp_16", FIXED(16))
++
++TLI_DEFINE_VECFUNC("__rd_exp_1", "__rd_exp_2", FIXED(2))
++TLI_DEFINE_VECFUNC("__rd_exp_1", "__rd_exp_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rd_exp_1", "__rd_exp_8", FIXED(8))
++
++TLI_DEFINE_VECFUNC("__rs_exp_1", "__rs_exp_4", FIXED(4))
++TLI_DEFINE_VECFUNC("__rs_exp_1", "__rs_exp_8", FIXED(8))
++TLI_DEFINE_VECFUNC("__rs_exp_1", "__rs_exp_16", FIXED(16))
++
+ #else
+ #error "Must choose which vector library functions are to be defined."
+ #endif
 --- a/llvm/include/llvm/IR/DIBuilder.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/include/llvm/IR/DIBuilder.h	2021-04-01 22:08:22.308949212 +0200
 @@ -622,14 +622,16 @@
@@ -68,7 +516,6 @@ diff --color -urN llvm/include/llvm/IR/DIBuilder.h b/include/llvm/IR/DIBuilder.h
      /// This creates new descriptor for a namespace with the specified
      /// parent scope.
      /// \param Scope       Namespace scope
-diff --color -urN llvm/include/llvm/IR/DebugInfoMetadata.h b/include/llvm/IR/DebugInfoMetadata.h
 --- a/llvm/include/llvm/IR/DebugInfoMetadata.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/include/llvm/IR/DebugInfoMetadata.h	2021-04-01 22:08:22.308949212 +0200
 @@ -2879,12 +2879,14 @@
@@ -155,7 +602,6 @@ diff --color -urN llvm/include/llvm/IR/DebugInfoMetadata.h b/include/llvm/IR/Deb
    StringRef getDisplayName() const { return getStringOperand(4); }
    StringRef getLinkageName() const { return getStringOperand(5); }
    DIDerivedType *getStaticDataMemberDeclaration() const {
-diff --color -urN llvm/include/llvm-c/DebugInfo.h b/include/llvm-c/DebugInfo.h
 --- a/llvm/include/llvm-c/DebugInfo.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/include/llvm-c/DebugInfo.h	2021-04-01 22:08:22.256948841 +0200
 @@ -1122,7 +1122,8 @@
@@ -177,7 +623,6 @@ diff --color -urN llvm/include/llvm-c/DebugInfo.h b/include/llvm-c/DebugInfo.h
  
  /**
   * Insert a new llvm.dbg.declare intrinsic call before the given instruction.
-diff --color -urN llvm/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetLibraryInfo.cpp
 --- a/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-04-01 22:08:22.461950302 +0200
 @@ -29,7 +29,9 @@
@@ -191,15 +636,7 @@ diff --color -urN llvm/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetL
  
  StringLiteral const TargetLibraryInfoImpl::StandardNames[LibFunc::NumLibFuncs] =
      {
-@@ -572,7 +574,6 @@
- TargetLibraryInfoImpl::TargetLibraryInfoImpl(const Triple &T) {
-   // Default to everything being available.
-   memset(AvailableArray, -1, sizeof(AvailableArray));
--
-   initialize(*this, T, StandardNames);
- }
- 
-@@ -1597,6 +1598,456 @@
+@@ -1597,6 +1598,19 @@
      addVectorizableFunctions(VecFuncs);
      break;
    }
@@ -209,445 +646,8 @@ diff --color -urN llvm/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetL
 +  // vector width should be chosen correctly.
 +  case PGMATH: {
 +    const VecDesc VecFuncs[] = {
-+        {"__fd_sin_1", "__fd_sin_2", 2},
-+        {"__fd_sin_1", "__fd_sin_4", 4},
-+        {"__fd_sin_1", "__fd_sin_8", 8},
-+
-+        {"__fs_sin_1", "__fs_sin_4", 4},
-+        {"__fs_sin_1", "__fs_sin_8", 8},
-+        {"__fs_sin_1", "__fs_sin_16", 16},
-+
-+        {"__pd_sin_1", "__pd_sin_2", 2},
-+        {"__pd_sin_1", "__pd_sin_4", 4},
-+        {"__pd_sin_1", "__pd_sin_8", 8},
-+
-+        {"__ps_sin_1", "__ps_sin_4", 4},
-+        {"__ps_sin_1", "__ps_sin_8", 8},
-+        {"__ps_sin_1", "__ps_sin_16", 16},
-+
-+        {"__rd_sin_1", "__rd_sin_2", 2},
-+        {"__rd_sin_1", "__rd_sin_4", 4},
-+        {"__rd_sin_1", "__rd_sin_8", 8},
-+
-+        {"__rs_sin_1", "__rs_sin_4", 4},
-+        {"__rs_sin_1", "__rs_sin_8", 8},
-+        {"__rs_sin_1", "__rs_sin_16", 16},
-+
-+        {"__fd_cos_1", "__fd_cos_2", 2},
-+        {"__fd_cos_1", "__fd_cos_4", 4},
-+        {"__fd_cos_1", "__fd_cos_8", 8},
-+
-+        {"__fs_cos_1", "__fs_cos_4", 4},
-+        {"__fs_cos_1", "__fs_cos_8", 8},
-+        {"__fs_cos_1", "__fs_cos_16", 16},
-+
-+        {"__pd_cos_1", "__pd_cos_2", 2},
-+        {"__pd_cos_1", "__pd_cos_4", 4},
-+        {"__pd_cos_1", "__pd_cos_8", 8},
-+
-+        {"__ps_cos_1", "__ps_cos_4", 4},
-+        {"__ps_cos_1", "__ps_cos_8", 8},
-+        {"__ps_cos_1", "__ps_cos_16", 16},
-+
-+        {"__rd_cos_1", "__rd_cos_2", 2},
-+        {"__rd_cos_1", "__rd_cos_4", 4},
-+        {"__rd_cos_1", "__rd_cos_8", 8},
-+
-+        {"__rs_cos_1", "__rs_cos_4", 4},
-+        {"__rs_cos_1", "__rs_cos_8", 8},
-+        {"__rs_cos_1", "__rs_cos_16", 16},
-+
-+        {"__fd_sincos_1", "__fd_sincos_2", 2},
-+        {"__fd_sincos_1", "__fd_sincos_4", 4},
-+        {"__fd_sincos_1", "__fd_sincos_8", 8},
-+
-+        {"__fs_sincos_1", "__fs_sincos_4", 4},
-+        {"__fs_sincos_1", "__fs_sincos_8", 8},
-+        {"__fs_sincos_1", "__fs_sincos_16", 16},
-+
-+        {"__pd_sincos_1", "__pd_sincos_2", 2},
-+        {"__pd_sincos_1", "__pd_sincos_4", 4},
-+        {"__pd_sincos_1", "__pd_sincos_8", 8},
-+
-+        {"__ps_sincos_1", "__ps_sincos_4", 4},
-+        {"__ps_sincos_1", "__ps_sincos_8", 8},
-+        {"__ps_sincos_1", "__ps_sincos_16", 16},
-+
-+        {"__rd_sincos_1", "__rd_sincos_2", 2},
-+        {"__rd_sincos_1", "__rd_sincos_4", 4},
-+        {"__rd_sincos_1", "__rd_sincos_8", 8},
-+
-+        {"__rs_sincos_1", "__rs_sincos_4", 4},
-+        {"__rs_sincos_1", "__rs_sincos_8", 8},
-+        {"__rs_sincos_1", "__rs_sincos_16", 16},
-+
-+        {"__fd_tan_1", "__fd_tan_2", 2},
-+        {"__fd_tan_1", "__fd_tan_4", 4},
-+        {"__fd_tan_1", "__fd_tan_8", 8},
-+
-+        {"__fs_tan_1", "__fs_tan_4", 4},
-+        {"__fs_tan_1", "__fs_tan_8", 8},
-+        {"__fs_tan_1", "__fs_tan_16", 16},
-+
-+        {"__pd_tan_1", "__pd_tan_2", 2},
-+        {"__pd_tan_1", "__pd_tan_4", 4},
-+        {"__pd_tan_1", "__pd_tan_8", 8},
-+
-+        {"__ps_tan_1", "__ps_tan_4", 4},
-+        {"__ps_tan_1", "__ps_tan_8", 8},
-+        {"__ps_tan_1", "__ps_tan_16", 16},
-+
-+        {"__rd_tan_1", "__rd_tan_2", 2},
-+        {"__rd_tan_1", "__rd_tan_4", 4},
-+        {"__rd_tan_1", "__rd_tan_8", 8},
-+
-+        {"__rs_tan_1", "__rs_tan_4", 4},
-+        {"__rs_tan_1", "__rs_tan_8", 8},
-+        {"__rs_tan_1", "__rs_tan_16", 16},
-+
-+        {"__fd_sinh_1", "__fd_sinh_2", 2},
-+        {"__fd_sinh_1", "__fd_sinh_4", 4},
-+        {"__fd_sinh_1", "__fd_sinh_8", 8},
-+
-+        {"__fs_sinh_1", "__fs_sinh_4", 4},
-+        {"__fs_sinh_1", "__fs_sinh_8", 8},
-+        {"__fs_sinh_1", "__fs_sinh_16", 16},
-+
-+        {"__pd_sinh_1", "__pd_sinh_2", 2},
-+        {"__pd_sinh_1", "__pd_sinh_4", 4},
-+        {"__pd_sinh_1", "__pd_sinh_8", 8},
-+
-+        {"__ps_sinh_1", "__ps_sinh_4", 4},
-+        {"__ps_sinh_1", "__ps_sinh_8", 8},
-+        {"__ps_sinh_1", "__ps_sinh_16", 16},
-+
-+        {"__rd_sinh_1", "__rd_sinh_2", 2},
-+        {"__rd_sinh_1", "__rd_sinh_4", 4},
-+        {"__rd_sinh_1", "__rd_sinh_8", 8},
-+
-+        {"__rs_sinh_1", "__rs_sinh_4", 4},
-+        {"__rs_sinh_1", "__rs_sinh_8", 8},
-+        {"__rs_sinh_1", "__rs_sinh_16", 16},
-+
-+        {"__fd_cosh_1", "__fd_cosh_2", 2},
-+        {"__fd_cosh_1", "__fd_cosh_4", 4},
-+        {"__fd_cosh_1", "__fd_cosh_8", 8},
-+
-+        {"__fs_cosh_1", "__fs_cosh_4", 4},
-+        {"__fs_cosh_1", "__fs_cosh_8", 8},
-+        {"__fs_cosh_1", "__fs_cosh_16", 16},
-+
-+        {"__pd_cosh_1", "__pd_cosh_2", 2},
-+        {"__pd_cosh_1", "__pd_cosh_4", 4},
-+        {"__pd_cosh_1", "__pd_cosh_8", 8},
-+
-+        {"__ps_cosh_1", "__ps_cosh_4", 4},
-+        {"__ps_cosh_1", "__ps_cosh_8", 8},
-+        {"__ps_cosh_1", "__ps_cosh_16", 16},
-+
-+        {"__rd_cosh_1", "__rd_cosh_2", 2},
-+        {"__rd_cosh_1", "__rd_cosh_4", 4},
-+        {"__rd_cosh_1", "__rd_cosh_8", 8},
-+
-+        {"__rs_cosh_1", "__rs_cosh_4", 4},
-+        {"__rs_cosh_1", "__rs_cosh_8", 8},
-+        {"__rs_cosh_1", "__rs_cosh_16", 16},
-+
-+        {"__fd_tanh_1", "__fd_tanh_2", 2},
-+        {"__fd_tanh_1", "__fd_tanh_4", 4},
-+        {"__fd_tanh_1", "__fd_tanh_8", 8},
-+
-+        {"__fs_tanh_1", "__fs_tanh_4", 4},
-+        {"__fs_tanh_1", "__fs_tanh_8", 8},
-+        {"__fs_tanh_1", "__fs_tanh_16", 16},
-+
-+        {"__pd_tanh_1", "__pd_tanh_2", 2},
-+        {"__pd_tanh_1", "__pd_tanh_4", 4},
-+        {"__pd_tanh_1", "__pd_tanh_8", 8},
-+
-+        {"__ps_tanh_1", "__ps_tanh_4", 4},
-+        {"__ps_tanh_1", "__ps_tanh_8", 8},
-+        {"__ps_tanh_1", "__ps_tanh_16", 16},
-+
-+        {"__rd_tanh_1", "__rd_tanh_2", 2},
-+        {"__rd_tanh_1", "__rd_tanh_4", 4},
-+        {"__rd_tanh_1", "__rd_tanh_8", 8},
-+
-+        {"__rs_tanh_1", "__rs_tanh_4", 4},
-+        {"__rs_tanh_1", "__rs_tanh_8", 8},
-+        {"__rs_tanh_1", "__rs_tanh_16", 16},
-+
-+        {"__fd_asin_1", "__fd_asin_2", 2},
-+        {"__fd_asin_1", "__fd_asin_4", 4},
-+        {"__fd_asin_1", "__fd_asin_8", 8},
-+
-+        {"__fs_asin_1", "__fs_asin_4", 4},
-+        {"__fs_asin_1", "__fs_asin_8", 8},
-+        {"__fs_asin_1", "__fs_asin_16", 16},
-+
-+        {"__pd_asin_1", "__pd_asin_2", 2},
-+        {"__pd_asin_1", "__pd_asin_4", 4},
-+        {"__pd_asin_1", "__pd_asin_8", 8},
-+
-+        {"__ps_asin_1", "__ps_asin_4", 4},
-+        {"__ps_asin_1", "__ps_asin_8", 8},
-+        {"__ps_asin_1", "__ps_asin_16", 16},
-+
-+        {"__rd_asin_1", "__rd_asin_2", 2},
-+        {"__rd_asin_1", "__rd_asin_4", 4},
-+        {"__rd_asin_1", "__rd_asin_8", 8},
-+
-+        {"__rs_asin_1", "__rs_asin_4", 4},
-+        {"__rs_asin_1", "__rs_asin_8", 8},
-+        {"__rs_asin_1", "__rs_asin_16", 16},
-+
-+        {"__fd_acos_1", "__fd_acos_2", 2},
-+        {"__fd_acos_1", "__fd_acos_4", 4},
-+        {"__fd_acos_1", "__fd_acos_8", 8},
-+
-+        {"__fs_acos_1", "__fs_acos_4", 4},
-+        {"__fs_acos_1", "__fs_acos_8", 8},
-+        {"__fs_acos_1", "__fs_acos_16", 16},
-+
-+        {"__pd_acos_1", "__pd_acos_2", 2},
-+        {"__pd_acos_1", "__pd_acos_4", 4},
-+        {"__pd_acos_1", "__pd_acos_8", 8},
-+
-+        {"__ps_acos_1", "__ps_acos_4", 4},
-+        {"__ps_acos_1", "__ps_acos_8", 8},
-+        {"__ps_acos_1", "__ps_acos_16", 16},
-+
-+        {"__rd_acos_1", "__rd_acos_2", 2},
-+        {"__rd_acos_1", "__rd_acos_4", 4},
-+        {"__rd_acos_1", "__rd_acos_8", 8},
-+
-+        {"__rs_acos_1", "__rs_acos_4", 4},
-+        {"__rs_acos_1", "__rs_acos_8", 8},
-+        {"__rs_acos_1", "__rs_acos_16", 16},
-+
-+        {"__fd_atan_1", "__fd_atan_2", 2},
-+        {"__fd_atan_1", "__fd_atan_4", 4},
-+        {"__fd_atan_1", "__fd_atan_8", 8},
-+
-+        {"__fs_atan_1", "__fs_atan_4", 4},
-+        {"__fs_atan_1", "__fs_atan_8", 8},
-+        {"__fs_atan_1", "__fs_atan_16", 16},
-+
-+        {"__pd_atan_1", "__pd_atan_2", 2},
-+        {"__pd_atan_1", "__pd_atan_4", 4},
-+        {"__pd_atan_1", "__pd_atan_8", 8},
-+
-+        {"__ps_atan_1", "__ps_atan_4", 4},
-+        {"__ps_atan_1", "__ps_atan_8", 8},
-+        {"__ps_atan_1", "__ps_atan_16", 16},
-+
-+        {"__rd_atan_1", "__rd_atan_2", 2},
-+        {"__rd_atan_1", "__rd_atan_4", 4},
-+        {"__rd_atan_1", "__rd_atan_8", 8},
-+
-+        {"__rs_atan_1", "__rs_atan_4", 4},
-+        {"__rs_atan_1", "__rs_atan_8", 8},
-+        {"__rs_atan_1", "__rs_atan_16", 16},
-+
-+        {"__fd_atan2_1", "__fd_atan2_2", 2},
-+        {"__fd_atan2_1", "__fd_atan2_4", 4},
-+        {"__fd_atan2_1", "__fd_atan2_8", 8},
-+
-+        {"__fs_atan2_1", "__fs_atan2_4", 4},
-+        {"__fs_atan2_1", "__fs_atan2_8", 8},
-+        {"__fs_atan2_1", "__fs_atan2_16", 16},
-+
-+        {"__pd_atan2_1", "__pd_atan2_2", 2},
-+        {"__pd_atan2_1", "__pd_atan2_4", 4},
-+        {"__pd_atan2_1", "__pd_atan2_8", 8},
-+
-+        {"__ps_atan2_1", "__ps_atan2_4", 4},
-+        {"__ps_atan2_1", "__ps_atan2_8", 8},
-+        {"__ps_atan2_1", "__ps_atan2_16", 16},
-+
-+        {"__rd_atan2_1", "__rd_atan2_2", 2},
-+        {"__rd_atan2_1", "__rd_atan2_4", 4},
-+        {"__rd_atan2_1", "__rd_atan2_8", 8},
-+
-+        {"__rs_atan2_1", "__rs_atan2_4", 4},
-+        {"__rs_atan2_1", "__rs_atan2_8", 8},
-+        {"__rs_atan2_1", "__rs_atan2_16", 16},
-+
-+        {"__fd_pow_1", "__fd_pow_2", 2},
-+        {"__fd_pow_1", "__fd_pow_4", 4},
-+        {"__fd_pow_1", "__fd_pow_8", 8},
-+
-+        {"__fs_pow_1", "__fs_pow_4", 4},
-+        {"__fs_pow_1", "__fs_pow_8", 8},
-+        {"__fs_pow_1", "__fs_pow_16", 16},
-+
-+        {"__pd_pow_1", "__pd_pow_2", 2},
-+        {"__pd_pow_1", "__pd_pow_4", 4},
-+        {"__pd_pow_1", "__pd_pow_8", 8},
-+
-+        {"__ps_pow_1", "__ps_pow_4", 4},
-+        {"__ps_pow_1", "__ps_pow_8", 8},
-+        {"__ps_pow_1", "__ps_pow_16", 16},
-+
-+        {"__rd_pow_1", "__rd_pow_2", 2},
-+        {"__rd_pow_1", "__rd_pow_4", 4},
-+        {"__rd_pow_1", "__rd_pow_8", 8},
-+
-+        {"__rs_pow_1", "__rs_pow_4", 4},
-+        {"__rs_pow_1", "__rs_pow_8", 8},
-+        {"__rs_pow_1", "__rs_pow_16", 16},
-+
-+        {"__fs_powi_1", "__fs_powi_4", 4},
-+        {"__fs_powi_1", "__fs_powi_8", 8},
-+        {"__fs_powi_1", "__fs_powi_16", 16},
-+
-+        {"__ps_powi_1", "__ps_powi_4", 4},
-+        {"__ps_powi_1", "__ps_powi_8", 8},
-+        {"__ps_powi_1", "__ps_powi_16", 16},
-+
-+        {"__rs_powi_1", "__rs_powi_4", 4},
-+        {"__rs_powi_1", "__rs_powi_8", 8},
-+        {"__rs_powi_1", "__rs_powi_16", 16},
-+
-+        {"__fd_powi1_1", "__fd_powi1_2", 2},
-+        {"__fd_powi1_1", "__fd_powi1_4", 4},
-+        {"__fd_powi1_1", "__fd_powi1_8", 8},
-+
-+        {"__fs_powi1_1", "__fs_powi1_4", 4},
-+        {"__fs_powi1_1", "__fs_powi1_8", 8},
-+        {"__fs_powi1_1", "__fs_powi1_16", 16},
-+
-+        {"__pd_powi1_1", "__pd_powi1_2", 2},
-+        {"__pd_powi1_1", "__pd_powi1_4", 4},
-+        {"__pd_powi1_1", "__pd_powi1_8", 8},
-+
-+        {"__ps_powi1_1", "__ps_powi1_4", 4},
-+        {"__ps_powi1_1", "__ps_powi1_8", 8},
-+        {"__ps_powi1_1", "__ps_powi1_16", 16},
-+
-+        {"__rd_powi1_1", "__rd_powi1_2", 2},
-+        {"__rd_powi1_1", "__rd_powi1_4", 4},
-+        {"__rd_powi1_1", "__rd_powi1_8", 8},
-+
-+        {"__rs_powi1_1", "__rs_powi1_4", 4},
-+        {"__rs_powi1_1", "__rs_powi1_8", 8},
-+        {"__rs_powi1_1", "__rs_powi1_16", 16},
-+
-+        {"__fd_powk_1", "__fd_powk_2", 2},
-+        {"__fd_powk_1", "__fd_powk_4", 4},
-+        {"__fd_powk_1", "__fd_powk_8", 8},
-+
-+        {"__fs_powk_1", "__fs_powk_4", 4},
-+        {"__fs_powk_1", "__fs_powk_8", 8},
-+        {"__fs_powk_1", "__fs_powk_16", 16},
-+
-+        {"__pd_powk_1", "__pd_powk_2", 2},
-+        {"__pd_powk_1", "__pd_powk_4", 4},
-+        {"__pd_powk_1", "__pd_powk_8", 8},
-+
-+        {"__ps_powk_1", "__ps_powk_4", 4},
-+        {"__ps_powk_1", "__ps_powk_8", 8},
-+        {"__ps_powk_1", "__ps_powk_16", 16},
-+
-+        {"__rd_powk_1", "__rd_powk_2", 2},
-+        {"__rd_powk_1", "__rd_powk_4", 4},
-+        {"__rd_powk_1", "__rd_powk_8", 8},
-+
-+        {"__rs_powk_1", "__rs_powk_4", 4},
-+        {"__rs_powk_1", "__rs_powk_8", 8},
-+        {"__rs_powk_1", "__rs_powk_16", 16},
-+
-+        {"__fd_powk1_1", "__fd_powk1_2", 2},
-+        {"__fd_powk1_1", "__fd_powk1_4", 4},
-+        {"__fd_powk1_1", "__fd_powk1_8", 8},
-+
-+        {"__fs_powk1_1", "__fs_powk1_4", 4},
-+        {"__fs_powk1_1", "__fs_powk1_8", 8},
-+        {"__fs_powk1_1", "__fs_powk1_16", 16},
-+
-+        {"__pd_powk1_1", "__pd_powk1_2", 2},
-+        {"__pd_powk1_1", "__pd_powk1_4", 4},
-+        {"__pd_powk1_1", "__pd_powk1_8", 8},
-+
-+        {"__ps_powk1_1", "__ps_powk1_4", 4},
-+        {"__ps_powk1_1", "__ps_powk1_8", 8},
-+        {"__ps_powk1_1", "__ps_powk1_16", 16},
-+
-+        {"__rd_powk1_1", "__rd_powk1_2", 2},
-+        {"__rd_powk1_1", "__rd_powk1_4", 4},
-+        {"__rd_powk1_1", "__rd_powk1_8", 8},
-+
-+        {"__rs_powk1_1", "__rs_powk1_4", 4},
-+        {"__rs_powk1_1", "__rs_powk1_8", 8},
-+        {"__rs_powk1_1", "__rs_powk1_16", 16},
-+
-+        {"__fd_log10_1", "__fd_log10_2", 2},
-+        {"__fd_log10_1", "__fd_log10_4", 4},
-+        {"__fd_log10_1", "__fd_log10_8", 8},
-+
-+        {"__fs_log10_1", "__fs_log10_4", 4},
-+        {"__fs_log10_1", "__fs_log10_8", 8},
-+        {"__fs_log10_1", "__fs_log10_16", 16},
-+
-+        {"__pd_log10_1", "__pd_log10_2", 2},
-+        {"__pd_log10_1", "__pd_log10_4", 4},
-+        {"__pd_log10_1", "__pd_log10_8", 8},
-+
-+        {"__ps_log10_1", "__ps_log10_4", 4},
-+        {"__ps_log10_1", "__ps_log10_8", 8},
-+        {"__ps_log10_1", "__ps_log10_16", 16},
-+
-+        {"__rd_log10_1", "__rd_log10_2", 2},
-+        {"__rd_log10_1", "__rd_log10_4", 4},
-+        {"__rd_log10_1", "__rd_log10_8", 8},
-+
-+        {"__rs_log10_1", "__rs_log10_4", 4},
-+        {"__rs_log10_1", "__rs_log10_8", 8},
-+        {"__rs_log10_1", "__rs_log10_16", 16},
-+
-+        {"__fd_log_1", "__fd_log_2", 2},
-+        {"__fd_log_1", "__fd_log_4", 4},
-+        {"__fd_log_1", "__fd_log_8", 8},
-+
-+        {"__fs_log_1", "__fs_log_4", 4},
-+        {"__fs_log_1", "__fs_log_8", 8},
-+        {"__fs_log_1", "__fs_log_16", 16},
-+
-+        {"__pd_log_1", "__pd_log_2", 2},
-+        {"__pd_log_1", "__pd_log_4", 4},
-+        {"__pd_log_1", "__pd_log_8", 8},
-+
-+        {"__ps_log_1", "__ps_log_4", 4},
-+        {"__ps_log_1", "__ps_log_8", 8},
-+        {"__ps_log_1", "__ps_log_16", 16},
-+
-+        {"__rd_log_1", "__rd_log_2", 2},
-+        {"__rd_log_1", "__rd_log_4", 4},
-+        {"__rd_log_1", "__rd_log_8", 8},
-+
-+        {"__rs_log_1", "__rs_log_4", 4},
-+        {"__rs_log_1", "__rs_log_8", 8},
-+        {"__rs_log_1", "__rs_log_16", 16},
-+
-+        {"__fs_exp_1", "__fs_exp_4", 4},
-+        {"__fs_exp_1", "__fs_exp_8", 8},
-+        {"__fs_exp_1", "__fs_exp_16", 16},
-+
-+        {"__pd_exp_1", "__pd_exp_2", 2},
-+        {"__pd_exp_1", "__pd_exp_4", 4},
-+        {"__pd_exp_1", "__pd_exp_8", 8},
-+
-+        {"__ps_exp_1", "__ps_exp_4", 4},
-+        {"__ps_exp_1", "__ps_exp_8", 8},
-+        {"__ps_exp_1", "__ps_exp_16", 16},
-+
-+        {"__rd_exp_1", "__rd_exp_2", 2},
-+        {"__rd_exp_1", "__rd_exp_4", 4},
-+        {"__rd_exp_1", "__rd_exp_8", 8},
-+
-+        {"__rs_exp_1", "__rs_exp_4", 4},
-+        {"__rs_exp_1", "__rs_exp_8", 8},
-+        {"__rs_exp_1", "__rs_exp_16", 16}
++    #define TLI_DEFINE_PGMATH_VECFUNCS
++    #include "llvm/Analysis/VecFuncs.def"
 +    };
 +    addVectorizableFunctions(VecFuncs);
 +    break;
@@ -656,7 +656,6 @@ diff --color -urN llvm/lib/Analysis/TargetLibraryInfo.cpp b/lib/Analysis/TargetL
    case NoLibrary:
      break;
    }
-diff --color -urN llvm/lib/AsmParser/LLParser.cpp b/lib/AsmParser/LLParser.cpp
 --- a/llvm/lib/AsmParser/LLParser.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/AsmParser/LLParser.cpp	2021-04-01 22:08:22.465950331 +0200
 @@ -5184,6 +5184,21 @@
@@ -701,7 +700,6 @@ diff --color -urN llvm/lib/AsmParser/LLParser.cpp b/lib/AsmParser/LLParser.cpp
    return false;
  }
  
-diff --color -urN llvm/lib/Bitcode/Reader/MetadataLoader.cpp b/lib/Bitcode/Reader/MetadataLoader.cpp
 --- a/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/Bitcode/Reader/MetadataLoader.cpp	2021-04-01 22:08:22.467950345 +0200
 @@ -1854,20 +1854,34 @@
@@ -761,7 +759,6 @@ diff --color -urN llvm/lib/Bitcode/Reader/MetadataLoader.cpp b/lib/Bitcode/Reade
  
        DIGlobalVariableExpression *DGVE = nullptr;
        if (Attach || Expr)
-diff --color -urN llvm/lib/Bitcode/Writer/BitcodeWriter.cpp b/lib/Bitcode/Writer/BitcodeWriter.cpp
 --- a/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/Bitcode/Writer/BitcodeWriter.cpp	2021-04-01 22:08:22.468950352 +0200
 @@ -1906,7 +1906,7 @@
@@ -781,7 +778,6 @@ diff --color -urN llvm/lib/Bitcode/Writer/BitcodeWriter.cpp b/lib/Bitcode/Writer
    Record.push_back(N->getAlignInBits());
  
    Stream.EmitRecord(bitc::METADATA_GLOBAL_VAR, Record, Abbrev);
-diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h b/lib/CodeGen/AsmPrinter/DebugLocEntry.h
 --- a/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-04-01 22:08:22.471950373 +0200
 @@ -178,6 +178,9 @@
@@ -794,7 +790,6 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h b/lib/CodeGen/AsmP
  };
  
  /// Compare two DbgValueLocs for equality.
-diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp b/lib/CodeGen/AsmPrinter/DebugLocStream.cpp
 --- a/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-04-01 22:08:22.471950373 +0200
 @@ -37,7 +37,10 @@
@@ -809,7 +804,6 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp b/lib/CodeGen/A
    if (!Locs.finalizeList(Asm))
      return;
    V.initializeDbgValue(&MI);
-diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h b/lib/CodeGen/AsmPrinter/DebugLocStream.h
 --- a/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h	2021-04-01 22:08:22.471950373 +0200
 @@ -160,22 +160,25 @@
@@ -840,7 +834,6 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DebugLocStream.h b/lib/CodeGen/Asm
  
    DebugLocStream &getLocs() { return Locs; }
  };
-diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp
 --- a/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp	2021-04-01 22:08:22.472950381 +0200
 @@ -143,7 +143,8 @@
@@ -900,7 +893,6 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.cpp b/lib/CodeGen
  DIE *DwarfCompileUnit::getOrCreateCommonBlock(
      const DICommonBlock *CB, ArrayRef<GlobalExpr> GlobalExprs) {
    // Construct the context before querying for the existence of the DIE in case
-diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h b/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h
 --- a/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h	2021-04-01 22:08:22.472950381 +0200
 @@ -144,6 +144,15 @@
@@ -929,7 +921,6 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfCompileUnit.h b/lib/CodeGen/A
  
    /// addLabelAddress - Add a dwarf label attribute data and value using
    /// either DW_FORM_addr or DW_FORM_GNU_addr_index.
-diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp b/lib/CodeGen/AsmPrinter/DwarfDebug.cpp
 --- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-04-01 22:08:22.472950381 +0200
 @@ -1217,11 +1217,13 @@
@@ -1012,7 +1003,7 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp b/lib/CodeGen/AsmPr
  }
  
 +inline static DbgValueLoc mkDbgValueLoc(const DIExpression *expr,
-+                                        DbgValueLoc &value) {
++                                        const DbgValueLocEntry &value) {
 +  if (value.isInt())
 +    return DbgValueLoc(expr, value.getInt());
 +  if (value.isLocation())
@@ -1033,7 +1024,7 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp b/lib/CodeGen/AsmPr
 +  DbgValueLoc &Value = Values[0];
 +  assert(!Value.isFragment());
 +  assert(Values.size() == 1 && "only fragments may have >1 value");
-+  Value = mkDbgValueLoc(ST->getStringLengthExp(), Value);
++  Value = mkDbgValueLoc(ST->getStringLengthExp(), Value.getLocEntries()[0]);
 +  DwarfDebug::emitDebugLocValue(AP, nullptr, Value, DwarfExpr);
 +  DwarfExpr.finalize();
 +}
@@ -1041,7 +1032,6 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp b/lib/CodeGen/AsmPr
  void DwarfDebug::emitDebugLocEntryLocation(const DebugLocStream::Entry &Entry,
                                             const DwarfCompileUnit *CU) {
    // Emit the size.
-diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h b/lib/CodeGen/AsmPrinter/DwarfDebug.h
 --- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-04-01 22:08:22.473950388 +0200
 @@ -283,6 +283,8 @@
@@ -1075,7 +1065,6 @@ diff --color -urN llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h b/lib/CodeGen/AsmPrin
  protected:
    /// Gather pre-function debug information.
    void beginFunctionImpl(const MachineFunction *MF) override;
-diff --color -urN llvm/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
 --- a/llvm/lib/IR/AsmWriter.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/IR/AsmWriter.cpp	2021-04-01 22:08:22.538950851 +0200
 @@ -2294,6 +2294,7 @@
@@ -1086,7 +1075,6 @@ diff --color -urN llvm/lib/IR/AsmWriter.cpp b/lib/IR/AsmWriter.cpp
    Printer.printInt("align", N->getAlignInBits());
    Out << ")";
  }
-diff --color -urN llvm/lib/IR/DIBuilder.cpp b/lib/IR/DIBuilder.cpp
 --- a/llvm/lib/IR/DIBuilder.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/IR/DIBuilder.cpp	2021-04-01 22:08:22.541950872 +0200
 @@ -685,14 +685,15 @@
@@ -1126,7 +1114,6 @@ diff --color -urN llvm/lib/IR/DIBuilder.cpp b/lib/IR/DIBuilder.cpp
        .release();
  }
  
-diff --color -urN llvm/lib/IR/DebugInfo.cpp b/lib/IR/DebugInfo.cpp
 --- a/llvm/lib/IR/DebugInfo.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/IR/DebugInfo.cpp	2021-04-01 22:08:22.541950872 +0200
 @@ -1325,12 +1325,13 @@
@@ -1160,7 +1147,6 @@ diff --color -urN llvm/lib/IR/DebugInfo.cpp b/lib/IR/DebugInfo.cpp
  }
  
  LLVMValueRef
-diff --color -urN llvm/lib/IR/DebugInfoMetadata.cpp b/lib/IR/DebugInfoMetadata.cpp
 --- a/llvm/lib/IR/DebugInfoMetadata.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/IR/DebugInfoMetadata.cpp	2021-04-01 22:08:22.541950872 +0200
 @@ -961,14 +961,15 @@
@@ -1192,7 +1178,6 @@ diff --color -urN llvm/lib/IR/DebugInfoMetadata.cpp b/lib/IR/DebugInfoMetadata.c
  }
  
  DILocalVariable *DILocalVariable::getImpl(LLVMContext &Context, Metadata *Scope,
-diff --color -urN llvm/lib/IR/LLVMContextImpl.h b/lib/IR/LLVMContextImpl.h
 --- a/llvm/lib/IR/LLVMContextImpl.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/IR/LLVMContextImpl.h	2021-04-01 22:08:22.543950886 +0200
 @@ -975,25 +975,27 @@
@@ -1243,7 +1228,6 @@ diff --color -urN llvm/lib/IR/LLVMContextImpl.h b/lib/IR/LLVMContextImpl.h
    }
  };
  
-diff --color -urN llvm/lib/IR/Verifier.cpp b/lib/IR/Verifier.cpp
 --- a/llvm/lib/IR/Verifier.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/IR/Verifier.cpp	2021-04-01 22:08:22.546950908 +0200
 @@ -1339,6 +1339,8 @@
@@ -1255,7 +1239,6 @@ diff --color -urN llvm/lib/IR/Verifier.cpp b/lib/IR/Verifier.cpp
    AssertDI(isType(N.getRawType()), "invalid type ref", &N, N.getRawType());
    // Assert only if the global variable is not an extern
    if (N.isDefinition())
-diff --color -urN llvm/lib/Support/Unix/Threading.inc b/lib/Support/Unix/Threading.inc
 --- a/llvm/lib/Support/Unix/Threading.inc	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/Support/Unix/Threading.inc	2021-04-01 22:08:22.575951114 +0200
 @@ -164,6 +164,7 @@
@@ -1290,7 +1273,6 @@ diff --color -urN llvm/lib/Support/Unix/Threading.inc b/lib/Support/Unix/Threadi
  }
  
  SetThreadPriorityResult llvm::set_thread_priority(ThreadPriority Priority) {
-diff --color -urN llvm/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transforms/Vectorize/LoopVectorize.cpp
 --- a/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-04-01 22:13:36.272305489 +0200
 @@ -5975,8 +5975,10 @@
@@ -1306,156 +1288,6 @@ diff --color -urN llvm/lib/Transforms/Vectorize/LoopVectorize.cpp b/lib/Transfor
          continue;
  
        // Examine PHI nodes that are reduction variables. Update the type to
-diff --color -urN llvm/test/Assembler/invalid-diglobalvariable-empty-name.ll b/test/Assembler/invalid-diglobalvariable-empty-name.ll
---- a/llvm/test/Assembler/invalid-diglobalvariable-empty-name.ll	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/test/Assembler/invalid-diglobalvariable-empty-name.ll	2021-04-01 22:08:22.969953922 +0200
-@@ -1,4 +1,5 @@
- ; RUN: not llvm-as < %s -disable-output 2>&1 | FileCheck %s
-+; UNSUPPORTED: classic_flang
- 
- ; CHECK: <stdin>:[[@LINE+1]]:30: error: 'name' cannot be empty
- !0 = !DIGlobalVariable(name: "")
-diff --color -urN llvm/test/Assembler/invalid-diglobalvariable-missing-name.ll b/test/Assembler/invalid-diglobalvariable-missing-name.ll
---- a/llvm/test/Assembler/invalid-diglobalvariable-missing-name.ll	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/test/Assembler/invalid-diglobalvariable-missing-name.ll	2021-04-01 22:08:22.969953922 +0200
-@@ -1,4 +1,5 @@
- ; RUN: not llvm-as < %s -disable-output 2>&1 | FileCheck %s
-+; UNSUPPORTED: classic_flang
- 
- ; CHECK: <stdin>:[[@LINE+1]]:24: error: missing required field 'name'
- !0 = !DIGlobalVariable()
-diff --color -urN llvm/test/DebugInfo/Generic/fortran-subprogram-at.ll b/test/DebugInfo/Generic/fortran-subprogram-at.ll
---- a/llvm/test/DebugInfo/Generic/fortran-subprogram-at.ll	1970-01-01 01:00:00.000000000 +0100
-+++ b/llvm/test/DebugInfo/Generic/fortran-subprogram-at.ll	2021-04-01 22:08:24.304963439 +0200
-@@ -0,0 +1,24 @@
-+; Test for DIFlagPure, DIFlagElement and DIFlagRecursive. These three
-+; DIFlags are used to attach DW_AT_pure, DW_AT_element, and DW_AT_recursive
-+; attributes to DW_TAG_subprogram DIEs.
-+
-+; RUN: llvm-as < %s | llvm-dis | llvm-as | llvm-dis | FileCheck %s
-+; CHECK: !DISubprogram({{.*}}, spFlags: DISPFlagDefinition | DISPFlagPure | DISPFlagElemental | DISPFlagRecursive,
-+
-+!llvm.module.flags = !{!0, !1}
-+!llvm.dbg.cu = !{!2}
-+
-+define void @subprgm() !dbg !6 {
-+L:
-+  ret void
-+}
-+
-+!0 = !{i32 2, !"Dwarf Version", i32 2}
-+!1 = !{i32 1, !"Debug Info Version", i32 3}
-+!2 = distinct !DICompileUnit(language: DW_LANG_Fortran90, file: !3, producer: "Flang", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !4, retainedTypes: !4, globals: !4, imports: !4)
-+!3 = !DIFile(filename: "fortran-subprogram-at.f", directory: "/")
-+!4 = !{}
-+!5 = !DIBasicType(name: "real", size: 32, align: 32, encoding: DW_ATE_float)
-+!6 = distinct !DISubprogram(name: "subprgm", scope: !2, file: !3, line: 256, type: !7, scopeLine: 256, spFlags: DISPFlagDefinition | DISPFlagPure | DISPFlagElemental | DISPFlagRecursive, unit: !2)
-+!7 = !DISubroutineType(types: !8)
-+!8 = !{null, !5}
-diff --color -urN llvm/test/DebugInfo/Generic/more-subprogram-attr.ll b/test/DebugInfo/Generic/more-subprogram-attr.ll
---- a/llvm/test/DebugInfo/Generic/more-subprogram-attr.ll	1970-01-01 01:00:00.000000000 +0100
-+++ b/llvm/test/DebugInfo/Generic/more-subprogram-attr.ll	2021-04-01 22:08:24.305963446 +0200
-@@ -0,0 +1,38 @@
-+; REQUIRES: object-emission
-+
-+; RUN: %llc_dwarf -O0 -filetype=obj < %s > %t
-+; RUN: llvm-dwarfdump -v -debug-info %t | FileCheck %s
-+
-+; Make sure we're emitting DW_AT_{pure,elemental,recursive}.
-+; CHECK: DW_TAG_subprogram
-+; CHECK-NOT: {{DW_TAG|NULL}}
-+; CHECK:   DW_AT_name {{.*}} "main"
-+; CHECK-NOT: {{DW_TAG|NULL}}
-+; CHECK:   DW_AT_pure [DW_FORM_flag_present] (true)
-+; CHECK:   DW_AT_elemental [DW_FORM_flag_present] (true)
-+; CHECK:   DW_AT_recursive [DW_FORM_flag_present] (true)
-+
-+define dso_local i32 @main() !dbg !7 {
-+entry:
-+  %retval = alloca i32, align 4
-+  store i32 0, i32* %retval, align 4
-+  ret i32 0, !dbg !12
-+}
-+
-+!llvm.dbg.cu = !{!0}
-+!llvm.module.flags = !{!3, !4, !5}
-+!llvm.ident = !{!6}
-+
-+!0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1, producer: "clang", isOptimized: false, runtimeVersion: 0, emissionKind: FullDebug, enums: !2, nameTableKind: None)
-+!1 = !DIFile(filename: "x.c", directory: "/tmp")
-+!2 = !{}
-+!3 = !{i32 2, !"Dwarf Version", i32 4}
-+!4 = !{i32 2, !"Debug Info Version", i32 3}
-+!5 = !{i32 1, !"wchar_size", i32 4}
-+!6 = !{!"clang"}
-+!7 = distinct !DISubprogram(name: "main", scope: !8, file: !8, line: 1, type: !9, scopeLine: 2, spFlags: DISPFlagDefinition | DISPFlagPure | DISPFlagElemental | DISPFlagRecursive, unit: !0, retainedNodes: !2)
-+!8 = !DIFile(filename: "x.c", directory: "/tmp")
-+!9 = !DISubroutineType(types: !10)
-+!10 = !{!11}
-+!11 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
-+!12 = !DILocation(line: 3, column: 3, scope: !7)
-diff --color -urN llvm/test/DebugInfo/X86/DICommonBlock.ll b/test/DebugInfo/X86/DICommonBlock.ll
---- a/llvm/test/DebugInfo/X86/DICommonBlock.ll	1970-01-01 01:00:00.000000000 +0100
-+++ b/llvm/test/DebugInfo/X86/DICommonBlock.ll	2021-04-01 22:08:24.324963581 +0200
-@@ -0,0 +1,36 @@
-+; ModuleID = 'none.f90'
-+; RUN: llc %s -o %t -filetype=obj
-+; RUN: llvm-dwarfdump -debug-info %t | FileCheck %s
-+; CHECK: DW_TAG_common_block
-+
-+target datalayout = "e-m:o-i64:64-f80:128-n8:16:32:64-S128"
-+target triple = "x86_64-apple-macosx"
-+
-+@common_a = common global [32 x i8] zeroinitializer, align 8, !dbg !13
-+
-+define i32 @subr() !dbg !9 {
-+    %1 = getelementptr inbounds [32 x i8], [32 x i8]* @common_a, i64 0, i32 8
-+    %2 = bitcast i8* %1 to i32*
-+    %3 = load i32, i32* %2
-+    ret i32 %3
-+}
-+
-+!llvm.dbg.cu = !{!0}
-+!llvm.module.flags = !{!6, !7}
-+!llvm.ident = !{!8}
-+
-+!0 = distinct !DICompileUnit(language: DW_LANG_Fortran90, file: !1, producer: "PGI Fortran", isOptimized: false, runtimeVersion: 2, emissionKind: FullDebug, retainedTypes: !14, globals: !2)
-+!1 = !DIFile(filename: "none.f90", directory: "/not/here/")
-+!2 = !{!13}
-+!3 = !{}
-+!4 = !DIGlobalVariable(name: "common /a/", scope: !5, file: !1, line: 4, isLocal: false, isDefinition: true, type: !12)
-+!5 = !DICommonBlock(scope: !9, declaration: !4, name: "a", file: !1, line: 4)
-+!6 = !{i32 2, !"Dwarf Version", i32 4}
-+!7 = !{i32 2, !"Debug Info Version", i32 3}
-+!8 = !{!"PGI Fortran"}
-+!9 = distinct !DISubprogram(name: "subrtn", scope: !0, file: !1, line: 1, type: !10, isLocal: false, isDefinition: true, unit: !0)
-+!10 = !DISubroutineType(types: !11)
-+!11 = !{!12, !12}
-+!12 = !DIBasicType(name: "int", size: 32)
-+!13 = !DIGlobalVariableExpression(var: !4, expr: !DIExpression())
-+!14 = !{!12, !10}
-diff --color -urN llvm/test/lit.cfg.py b/test/lit.cfg.py
---- a/llvm/test/lit.cfg.py	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/test/lit.cfg.py	2021-04-01 22:08:25.231970050 +0200
-@@ -381,3 +381,6 @@
- 
- if config.expensive_checks:
-     config.available_features.add('expensive_checks')
-+
-+if config.use_classic_flang:
-+    config.available_features.add("classic_flang")
-diff --color -urN llvm/test/lit.site.cfg.py.in b/test/lit.site.cfg.py.in
---- a/llvm/test/lit.site.cfg.py.in	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/test/lit.site.cfg.py.in	2021-04-01 22:08:25.231970050 +0200
-@@ -51,6 +51,7 @@
- config.have_tf_aot = @LLVM_HAVE_TF_AOT@
- config.have_tf_api = @LLVM_HAVE_TF_API@
- config.expensive_checks = @LLVM_ENABLE_EXPENSIVE_CHECKS@
-+config.use_classic_flang = @LLVM_ENABLE_CLASSIC_FLANG@
- 
- # Support substitution of the tools_dir with user parameters. This is
- # used when we can't determine the tool dir at configuration time.
-diff --color -urN llvm/tools/llvm-c-test/debuginfo.c b/tools/llvm-c-test/debuginfo.c
 --- a/llvm/tools/llvm-c-test/debuginfo.c	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/tools/llvm-c-test/debuginfo.c	2021-04-01 22:08:25.532972197 +0200
 @@ -64,7 +64,7 @@
@@ -1476,118 +1308,3 @@ diff --color -urN llvm/tools/llvm-c-test/debuginfo.c b/tools/llvm-c-test/debugin
  
    LLVMMetadataRef NameSpace =
        LLVMDIBuilderCreateNameSpace(DIB, Module, "NameSpace", 9, false);
-diff --color -urN llvm/unittests/IR/MetadataTest.cpp b/unittests/IR/MetadataTest.cpp
---- a/llvm/unittests/IR/MetadataTest.cpp	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/unittests/IR/MetadataTest.cpp	2021-04-01 22:08:25.578972525 +0200
-@@ -2570,11 +2570,13 @@
-   DIDerivedType *StaticDataMemberDeclaration =
-       cast<DIDerivedType>(getDerivedType());
- 
-+  DINode::DIFlags Flags = static_cast<DINode::DIFlags>(7);
-   uint32_t AlignInBits = 8;
- 
-   auto *N = DIGlobalVariable::get(
-       Context, Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
--      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
-+      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
-+      AlignInBits);
- 
-   EXPECT_EQ(dwarf::DW_TAG_variable, N->getTag());
-   EXPECT_EQ(Scope, N->getScope());
-@@ -2587,56 +2589,65 @@
-   EXPECT_EQ(IsDefinition, N->isDefinition());
-   EXPECT_EQ(StaticDataMemberDeclaration, N->getStaticDataMemberDeclaration());
-   EXPECT_EQ(templateParams, N->getTemplateParams());
-+  EXPECT_EQ(Flags, N->getFlags());
-   EXPECT_EQ(AlignInBits, N->getAlignInBits());
-   EXPECT_EQ(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
- 
-   EXPECT_NE(N, DIGlobalVariable::get(
-                    Context, getSubprogram(), Name, LinkageName, File, Line,
-                    Type, IsLocalToUnit, IsDefinition,
--                   StaticDataMemberDeclaration, templateParams, AlignInBits));
-+                   StaticDataMemberDeclaration, templateParams, Flags,
-+                   AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, "other", LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, "other", File, Line,
-                                      Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName,
-                                      getFile(), Line, Type, IsLocalToUnit,
-                                      IsDefinition, StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line + 1, Type, IsLocalToUnit,
-                                      IsDefinition, StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, getDerivedType(), IsLocalToUnit,
-                                      IsDefinition, StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, !IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, !IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      cast<DIDerivedType>(getDerivedType()),
--                                     templateParams, AlignInBits));
-+                                     templateParams, Flags, AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration, nullptr,
-+                                     Flags, AlignInBits));
-+  EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-+                                     Line, Type, IsLocalToUnit, IsDefinition,
-+                                     StaticDataMemberDeclaration,
-+                                     templateParams,
-+                                     static_cast<DINode::DIFlags>(Flags + 1),
-                                      AlignInBits));
-   EXPECT_NE(N, DIGlobalVariable::get(Context, Scope, Name, LinkageName, File,
-                                      Line, Type, IsLocalToUnit, IsDefinition,
-                                      StaticDataMemberDeclaration,
--                                     templateParams, (AlignInBits << 1)));
-+                                     templateParams, Flags,
-+                                     (AlignInBits << 1)));
- 
-   TempDIGlobalVariable Temp = N->clone();
-   EXPECT_EQ(N, MDNode::replaceWithUniqued(std::move(Temp)));
-@@ -2658,14 +2669,17 @@
-   auto *Expr2 = DIExpression::get(Context, {1, 2, 3});
-   DIDerivedType *StaticDataMemberDeclaration =
-       cast<DIDerivedType>(getDerivedType());
-+  DINode::DIFlags Flags = static_cast<DINode::DIFlags>(7);
-   uint32_t AlignInBits = 8;
- 
-   auto *Var = DIGlobalVariable::get(
-       Context, Scope, Name, LinkageName, File, Line, Type, IsLocalToUnit,
--      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
-+      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
-+      AlignInBits);
-   auto *Var2 = DIGlobalVariable::get(
-       Context, Scope, "other", LinkageName, File, Line, Type, IsLocalToUnit,
--      IsDefinition, StaticDataMemberDeclaration, templateParams, AlignInBits);
-+      IsDefinition, StaticDataMemberDeclaration, templateParams, Flags,
-+      AlignInBits);
-   auto *N = DIGlobalVariableExpression::get(Context, Var, Expr);
- 
-   EXPECT_EQ(Var, N->getVariable());
