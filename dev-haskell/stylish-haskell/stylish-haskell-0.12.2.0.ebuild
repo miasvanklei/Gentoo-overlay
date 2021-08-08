@@ -18,7 +18,7 @@ KEYWORDS="~amd64 ~x86"
 IUSE=""
 
 RDEPEND=">=dev-haskell/aeson-0.6:=[profile?] <dev-haskell/aeson-1.6:=[profile?]
-	>=dev-haskell/cabal-2.4:=[profile?] <dev-haskell/cabal-3.3:=[profile?]
+	>=dev-haskell/cabal-2.4:=[profile?] <dev-haskell/cabal-3.5:=[profile?]
 	>=dev-haskell/file-embed-0.0.10:=[profile?] <dev-haskell/file-embed-0.1:=[profile?]
 	>=dev-haskell/hsyaml-0.2:=[profile?] <dev-haskell/hsyaml-0.3:=[profile?]
 	>=dev-haskell/hsyaml-aeson-0.2:=[profile?] <dev-haskell/hsyaml-aeson-0.3:=[profile?]
