@@ -2,13 +2,13 @@ diff --color -urN clang/include/clang/Basic/CodeGenOptions.h b/include/clang/Bas
 --- a/clang/include/clang/Basic/CodeGenOptions.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/clang/include/clang/Basic/CodeGenOptions.h	2021-04-01 22:08:19.108926428 +0200
 @@ -58,6 +58,7 @@
-     Accelerate, // Use the Accelerate framework.
-     LIBMVEC,    // GLIBC vector math library.
-     MASSV,      // IBM MASS vector library.
-+    PGMATH,     // PGI math library.
-     SVML        // Intel short vector math library.
+     Accelerate,        // Use the Accelerate framework.
+     LIBMVEC,           // GLIBC vector math library.
+     MASSV,             // IBM MASS vector library.
++    PGMATH,            // PGI math library.
+     SVML,              // Intel short vector math library.
+     Darwin_libsystem_m // Use Darwin's libsytem_m vector functions.
    };
- 
 diff --color -urN clang/include/clang/Basic/DiagnosticDriverKinds.td b/include/clang/Basic/DiagnosticDriverKinds.td
 --- a/clang/include/clang/Basic/DiagnosticDriverKinds.td	2021-03-31 21:10:37.000000000 +0200
 +++ b/clang/include/clang/Basic/DiagnosticDriverKinds.td	2021-04-01 22:08:19.109926435 +0200
@@ -24,9 +24,9 @@ diff --color -urN clang/include/clang/Basic/DiagnosticDriverKinds.td b/include/c
    "unsupported runtime library '%0' for platform '%1'">;
  def err_drv_invalid_unwindlib_name : Error<
 @@ -273,6 +277,8 @@
-     : Error<"%0 is not supported with -fembed-bitcode">;
- def err_drv_bitcode_unsupported_on_toolchain : Error<
-   "-fembed-bitcode is not supported on versions of iOS prior to 6.0">;
+     "invalid value '%1' in '%0', value must be 'none' or a positive integer">;
+ def err_drv_small_columns : Error<
+     "invalid value '%1' in '%0', value must be '%2' or greater">;
 +def err_drv_clang_unsupported_minfo_arg : Error<
 +  "'%0' option does not support '%1' value">;
  
@@ -62,7 +62,7 @@ diff --color -urN clang/include/clang/Basic/Sanitizers.def b/include/clang/Basic
 diff --color -urN clang/include/clang/Driver/Options.td b/include/clang/Driver/Options.td
 --- a/clang/include/clang/Driver/Options.td	2021-03-31 21:10:37.000000000 +0200
 +++ b/clang/include/clang/Driver/Options.td	2021-04-01 22:08:19.120926514 +0200
-@@ -479,7 +479,7 @@
+@@ -506,7 +506,7 @@
    Flags<[NoXarchOption, HelpHidden]>;
  def driver_mode : Joined<["--"], "driver-mode=">, Group<internal_driver_Group>,
    Flags<[CoreOption, NoXarchOption, HelpHidden]>,
@@ -71,19 +71,19 @@ diff --color -urN clang/include/clang/Driver/Options.td b/include/clang/Driver/O
  def rsp_quoting : Joined<["--"], "rsp-quoting=">, Group<internal_driver_Group>,
    Flags<[CoreOption, NoXarchOption, HelpHidden]>,
    HelpText<"Set the rsp quoting to either 'posix', or 'windows'">;
-@@ -1995,9 +1995,9 @@
+@@ -2218,9 +2218,9 @@
    Alias<fno_global_isel>;
  def fveclib : Joined<["-"], "fveclib=">, Group<f_Group>, Flags<[CC1Option]>,
      HelpText<"Use the given vector functions library">,
--    Values<"Accelerate,libmvec,MASSV,SVML,none">,
-+    Values<"Accelerate,libmvec,MASSV,PGMATH,SVML,none">,
+-    Values<"Accelerate,libmvec,MASSV,SVML,Darwin_libsystem_m,none">,
++    Values<"Accelerate,libmvec,MASSV,SVML,PGMATH,Darwin_libsystem_m,none">,
      NormalizedValuesScope<"CodeGenOptions">,
--    NormalizedValues<["Accelerate", "LIBMVEC", "MASSV", "SVML", "NoLibrary"]>,
-+    NormalizedValues<["Accelerate", "LIBMVEC", "MASSV", "PGMATH", "SVML", "NoLibrary"]>,
-     MarshallingInfoString<CodeGenOpts<"VecLib">, "NoLibrary">, AutoNormalizeEnum;
+-    NormalizedValues<["Accelerate", "LIBMVEC", "MASSV", "SVML",
++    NormalizedValues<["Accelerate", "LIBMVEC", "MASSV", "SVML", "PGMATH",
+                       "Darwin_libsystem_m", "NoLibrary"]>,
+     MarshallingInfoEnum<CodeGenOpts<"VecLib">, "NoLibrary">;
  def fno_lax_vector_conversions : Flag<["-"], "fno-lax-vector-conversions">, Group<f_Group>,
-   Alias<flax_vector_conversions_EQ>, AliasArgs<["none"]>;
-@@ -4075,11 +4075,19 @@
+@@ -4382,8 +4382,19 @@
  defm devirtualize_speculatively : BooleanFFlag<"devirtualize-speculatively">,
      Group<clang_ignored_gcc_optimization_f_Group>;
  
@@ -95,9 +95,7 @@ diff --color -urN clang/include/clang/Driver/Options.td b/include/clang/Driver/O
 +
  // Generic gfortran options.
  def A_DASH : Joined<["-"], "A-">, Group<gfortran_Group>;
- def J : JoinedOrSeparate<["-"], "J">, Flags<[RenderJoined]>, Group<gfortran_Group>;
--def cpp : Flag<["-"], "cpp">, Group<gfortran_Group>;
--def nocpp : Flag<["-"], "nocpp">, Group<gfortran_Group>;
++def J : JoinedOrSeparate<["-"], "J">, Flags<[RenderJoined]>, Group<gfortran_Group>;
 +def cpp : Flag<["-"], "cpp">, Group<gfortran_Group>,
 +  HelpText<"Preprocess Fortran files">;
 +def nocpp : Flag<["-"], "nocpp">, Group<gfortran_Group>,
@@ -105,17 +103,16 @@ diff --color -urN clang/include/clang/Driver/Options.td b/include/clang/Driver/O
  def static_libgfortran : Flag<["-"], "static-libgfortran">, Group<gfortran_Group>;
  
  // "f" options with values for gfortran.
-@@ -4087,7 +4095,8 @@
+@@ -4391,6 +4402,8 @@
  def fcheck_EQ : Joined<["-"], "fcheck=">, Group<gfortran_Group>;
  def fcoarray_EQ : Joined<["-"], "fcoarray=">, Group<gfortran_Group>;
  def fconvert_EQ : Joined<["-"], "fconvert=">, Group<gfortran_Group>;
--def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<gfortran_Group>;
 +def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<gfortran_Group>,
 +  HelpText<"Set line length in fixed-form format Fortran, current supporting only 72 and 132 characters">;
  def ffpe_trap_EQ : Joined<["-"], "ffpe-trap=">, Group<gfortran_Group>;
  def ffree_line_length_VALUE : Joined<["-"], "ffree-line-length-">, Group<gfortran_Group>;
  def finit_character_EQ : Joined<["-"], "finit-character=">, Group<gfortran_Group>;
-@@ -4100,12 +4109,17 @@
+@@ -4403,26 +4416,49 @@
  def fmax_subrecord_length_EQ : Joined<["-"], "fmax-subrecord-length=">, Group<gfortran_Group>;
  def frecord_marker_EQ : Joined<["-"], "frecord-marker=">, Group<gfortran_Group>;
  
@@ -126,48 +123,163 @@ diff --color -urN clang/include/clang/Driver/Options.td b/include/clang/Driver/O
  defm align_commons : BooleanFFlag<"align-commons">, Group<gfortran_Group>;
  defm all_intrinsics : BooleanFFlag<"all-intrinsics">, Group<gfortran_Group>;
  defm automatic : BooleanFFlag<"automatic">, Group<gfortran_Group>;
--defm backslash : BooleanFFlag<"backslash">, Group<gfortran_Group>;
 +def fbackslash: Flag<["-"], "fbackslash">, Group<gfortran_Group>,
 +  HelpText<"Treat backslash as C-style escape character">;
-+def fnobackslash: Flag<["-"], "fno-backslash">, Group<gfortran_Group>,
++def fno_backslash: Flag<["-"], "fno-backslash">, Group<gfortran_Group>,
 +  HelpText<"Treat backslash like any other character in character strings">;
  defm backtrace : BooleanFFlag<"backtrace">, Group<gfortran_Group>;
  defm bounds_check : BooleanFFlag<"bounds-check">, Group<gfortran_Group>;
  defm check_array_temporaries : BooleanFFlag<"check-array-temporaries">, Group<gfortran_Group>;
-@@ -4113,17 +4127,27 @@
+ defm cray_pointer : BooleanFFlag<"cray-pointer">, Group<gfortran_Group>;
  defm d_lines_as_code : BooleanFFlag<"d-lines-as-code">, Group<gfortran_Group>;
  defm d_lines_as_comments : BooleanFFlag<"d-lines-as-comments">, Group<gfortran_Group>;
- defm default_double_8 : BooleanFFlag<"default-double-8">, Group<gfortran_Group>;
--defm default_integer_8 : BooleanFFlag<"default-integer-8">, Group<gfortran_Group>;
--defm default_real_8 : BooleanFFlag<"default-real-8">, Group<gfortran_Group>;
-+def default_integer_8_f : Flag<["-"], "fdefault-integer-8">, Group<gfortran_Group>,
++defm default_double_8 : BooleanFFlag<"default-double-8">, Group<gfortran_Group>;
++def fdefault_integer_8 : Flag<["-"], "fdefault-integer-8">, Group<gfortran_Group>,
 +  HelpText<"Treat INTEGER and LOGICAL as INTEGER*8 and LOGICAL*8">;
-+def default_integer_8_fno : Flag<["-"], "fno-default-integer-8">, Group<gfortran_Group>;
-+def default_real_8_f : Flag<["-"], "fdefault-real-8">, Group<gfortran_Group>,
++def fno_default_integer_8 : Flag<["-"], "fno-default-integer-8">, Group<gfortran_Group>;
++def fdefault_real_8 : Flag<["-"], "fdefault-real-8">, Group<gfortran_Group>,
 +  HelpText<"Treat REAL as REAL*8">;
-+def default_real_8_fno : Flag<["-"], "fno-default-real-8">, Group<gfortran_Group>;
++def fno_default_real_8 : Flag<["-"], "fno-default-real-8">, Group<gfortran_Group>;
  defm dollar_ok : BooleanFFlag<"dollar-ok">, Group<gfortran_Group>;
  defm dump_fortran_optimized : BooleanFFlag<"dump-fortran-optimized">, Group<gfortran_Group>;
  defm dump_fortran_original : BooleanFFlag<"dump-fortran-original">, Group<gfortran_Group>;
  defm dump_parse_tree : BooleanFFlag<"dump-parse-tree">, Group<gfortran_Group>;
  defm external_blas : BooleanFFlag<"external-blas">, Group<gfortran_Group>;
  defm f2c : BooleanFFlag<"f2c">, Group<gfortran_Group>;
--defm fixed_form : BooleanFFlag<"fixed-form">, Group<gfortran_Group>;
--defm free_form : BooleanFFlag<"free-form">, Group<gfortran_Group>;
 -defm frontend_optimize : BooleanFFlag<"frontend-optimize">, Group<gfortran_Group>;
-+def fixed_form_on : Flag<["-"], "ffixed-form">, Group<fortran_format_Group>,
++def ffixed_form : Flag<["-"], "ffixed-form">, Group<fortran_format_Group>,
 +  HelpText<"Enable fixed-form format for Fortran">;
-+def fixed_form_off : Flag<["-"], "fno-fixed-form">, Group<fortran_format_Group>,
++def fno_fixed_form : Flag<["-"], "fno-fixed-form">, Group<fortran_format_Group>,
 +  HelpText<"Disable fixed-form format for Fortran">;
-+def free_form_on : Flag<["-"], "ffree-form">, Group<fortran_format_Group>,
++def ffree_form : Flag<["-"], "ffree-form">, Group<fortran_format_Group>,
 +  HelpText<"Enable free-form format for Fortran">;
-+def free_form_off : Flag<["-"], "fno-free-form">, Group<fortran_format_Group>,
++def fno_free_form : Flag<["-"], "fno-free-form">, Group<fortran_format_Group>,
 +  HelpText<"Disable free-form format for Fortran">;
 +defm frontend_optimize : BooleanFFlag<"frontend-optimize">, Group<fortran_format_Group>;
- defm implicit_none : BooleanFFlag<"implicit-none">, Group<gfortran_Group>;
++defm implicit_none : BooleanFFlag<"implicit-none">, Group<gfortran_Group>;
  defm init_local_zero : BooleanFFlag<"init-local-zero">, Group<gfortran_Group>;
  defm integer_4_integer_8 : BooleanFFlag<"integer-4-integer-8">, Group<gfortran_Group>;
-@@ -5847,3 +5871,136 @@
++defm intrinsic_modules_path : BooleanFFlag<"intrinsic-modules-path">, Group<gfortran_Group>;
+ defm max_identifier_length : BooleanFFlag<"max-identifier-length">, Group<gfortran_Group>;
+ defm module_private : BooleanFFlag<"module-private">, Group<gfortran_Group>;
+ defm pack_derived : BooleanFFlag<"pack-derived">, Group<gfortran_Group>;
+@@ -4463,115 +4499,39 @@
+ //===----------------------------------------------------------------------===//
+ let Flags = [FC1Option, FlangOption, FlangOnlyOption] in {
+ 
+-def cpp : Flag<["-"], "cpp">, Group<f_Group>,
+-  HelpText<"Enable predefined and command line preprocessor macros">;
+-def nocpp : Flag<["-"], "nocpp">, Group<f_Group>,
+-  HelpText<"Disable predefined and command line preprocessor macros">;
+ def module_dir : Separate<["-"], "module-dir">, MetaVarName<"<dir>">,
+   HelpText<"Put MODULE files in <dir>">,
+   DocBrief<[{This option specifies where to put .mod files for compiled modules.
+ It is also added to the list of directories to be searched by an USE statement.
+ The default is the current directory.}]>;
+ 
+-def ffixed_form : Flag<["-"], "ffixed-form">, Group<f_Group>,
+-  HelpText<"Process source files in fixed form">;
+-def ffree_form : Flag<["-"], "ffree-form">, Group<f_Group>,
+-  HelpText<"Process source files in free form">;
+ def ffixed_line_length_EQ : Joined<["-"], "ffixed-line-length=">, Group<f_Group>,
+   HelpText<"Use <value> as character line width in fixed mode">,
+   DocBrief<[{Set column after which characters are ignored in typical fixed-form lines in the source
+ file}]>;
+-def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<f_Group>, Alias<ffixed_line_length_EQ>;
+ def fopenacc : Flag<["-"], "fopenacc">, Group<f_Group>,
+   HelpText<"Enable OpenACC">;
+-def fdefault_double_8 : Flag<["-"],"fdefault-double-8">, Group<f_Group>,
+-  HelpText<"Set the default double precision kind to an 8 byte wide type">;
+-def fdefault_integer_8 : Flag<["-"],"fdefault-integer-8">, Group<f_Group>,
+-  HelpText<"Set the default integer kind to an 8 byte wide type">;
+-def fdefault_real_8 : Flag<["-"],"fdefault-real-8">, Group<f_Group>,
+-  HelpText<"Set the default real kind to an 8 byte wide type">;
+ def flarge_sizes : Flag<["-"],"flarge-sizes">, Group<f_Group>,
+   HelpText<"Use INTEGER(KIND=8) for the result type in size-related intrinsics">;
+-def fbackslash : Flag<["-"], "fbackslash">, Group<f_Group>,
+-  HelpText<"Specify that backslash in string introduces an escape character">,
+-  DocBrief<[{Change the interpretation of backslashes in string literals from
+-a single backslash character to "C-style" escape characters.}]>;
+-def fno_backslash : Flag<["-"], "fno-backslash">, Group<f_Group>;
+ def fxor_operator : Flag<["-"], "fxor-operator">, Group<f_Group>,
+   HelpText<"Enable .XOR. as a synonym of .NEQV.">;
+ def fno_xor_operator : Flag<["-"], "fno-xor-operator">, Group<f_Group>;
+ def flogical_abbreviations : Flag<["-"], "flogical-abbreviations">, Group<f_Group>,
+   HelpText<"Enable logical abbreviations">;
+ def fno_logical_abbreviations : Flag<["-"], "fno-logical-abbreviations">, Group<f_Group>;
+-def fimplicit_none : Flag<["-"], "fimplicit-none">, Group<f_Group>,
+-  HelpText<"No implicit typing allowed unless overridden by IMPLICIT statements">;
+-def fno_implicit_none : Flag<["-"], "fno-implicit-none">, Group<f_Group>;
+ def falternative_parameter_statement : Flag<["-"], "falternative-parameter-statement">, Group<f_Group>,
+   HelpText<"Enable the old style PARAMETER statement">;
+-def fintrinsic_modules_path : Separate<["-"], "fintrinsic-modules-path">,  Group<f_Group>, MetaVarName<"<dir>">,
+-  HelpText<"Specify where to find the compiled intrinsic modules">,
+-  DocBrief<[{This option specifies the location of pre-compiled intrinsic modules, 
+-  if they are not in the default location expected by the compiler.}]>;
+ }
+ 
+-def J : JoinedOrSeparate<["-"], "J">,
+-  Flags<[RenderJoined, FlangOption, FC1Option, FlangOnlyOption]>,
+-  Group<gfortran_Group>,
+-  Alias<module_dir>;
+-
+ //===----------------------------------------------------------------------===//
+ // FC1 Options
+ //===----------------------------------------------------------------------===//
+ let Flags = [FC1Option, FlangOnlyOption] in {
+ 
+-def fget_definition : MultiArg<["-"], "fget-definition", 3>,
+-  HelpText<"Get the symbol definition from <line> <start-column> <end-column>">,
+-  Group<Action_Group>;
+ def test_io : Flag<["-"], "test-io">, Group<Action_Group>,
+   HelpText<"Run the InputOuputTest action. Use for development and testing only.">;
+-def fdebug_unparse_no_sema : Flag<["-"], "fdebug-unparse-no-sema">, Group<Action_Group>,
+-  HelpText<"Unparse and stop (skips the semantic checks)">,
+-  DocBrief<[{Only run the parser, then unparse the parse-tree and output the
+-generated Fortran source file. Semantic checks are disabled.}]>;
+-def fdebug_unparse : Flag<["-"], "fdebug-unparse">, Group<Action_Group>,
+-  HelpText<"Unparse and stop.">,
+-  DocBrief<[{Run the parser and the semantic checks. Then unparse the
+-parse-tree and output the generated Fortran source file.}]>;
+-def fdebug_unparse_with_symbols : Flag<["-"], "fdebug-unparse-with-symbols">, Group<Action_Group>,
+-  HelpText<"Unparse and stop.">;
+-def fdebug_dump_symbols : Flag<["-"], "fdebug-dump-symbols">, Group<Action_Group>,
+-  HelpText<"Dump symbols after the semantic analysis">;
+-def fdebug_dump_parse_tree : Flag<["-"], "fdebug-dump-parse-tree">, Group<Action_Group>,
+-  HelpText<"Dump the parse tree">,
+-  DocBrief<[{Run the Parser and the semantic checks, and then output the
+-parse tree.}]>;
+-def fdebug_dump_parse_tree_no_sema : Flag<["-"], "fdebug-dump-parse-tree-no-sema">, Group<Action_Group>,
+-  HelpText<"Dump the parse tree (skips the semantic checks)">,
+-  DocBrief<[{Run the Parser and then output the parse tree. Semantic
+-checks are disabled.}]>;
+-def fdebug_dump_all : Flag<["-"], "fdebug-dump-all">, Group<Action_Group>,
+-  HelpText<"Dump symbols and the parse tree after the semantic checks">;
+-def fdebug_dump_provenance : Flag<["-"], "fdebug-dump-provenance">, Group<Action_Group>,
+-  HelpText<"Dump provenance">;
+-def fdebug_dump_parsing_log : Flag<["-"], "fdebug-dump-parsing-log">, Group<Action_Group>,
+-  HelpText<"Run instrumented parse and dump the parsing log">;
+-def fdebug_measure_parse_tree : Flag<["-"], "fdebug-measure-parse-tree">, Group<Action_Group>,
+-  HelpText<"Measure the parse tree">;
+-def fdebug_pre_fir_tree : Flag<["-"], "fdebug-pre-fir-tree">, Group<Action_Group>,
+-  HelpText<"Dump the pre-FIR tree">;
+ def fdebug_module_writer : Flag<["-"],"fdebug-module-writer">, 
+   HelpText<"Enable debug messages while writing module files">;
+-def fget_symbols_sources : Flag<["-"], "fget-symbols-sources">, Group<Action_Group>,
+-  HelpText<"Dump symbols and their source code locations">;
+-
+-def module_suffix : Separate<["-"], "module-suffix">,  Group<f_Group>, MetaVarName<"<suffix>">,
+-  HelpText<"Use <suffix> as the suffix for module files (the default value is `.mod`)">;
+-def fanalyzed_objects_for_unparse : Flag<["-"],
+-  "fanalyzed-objects-for-unparse">,  Group<f_Group>;
+-def fno_analyzed_objects_for_unparse : Flag<["-"],
+-  "fno-analyzed-objects-for-unparse">,  Group<f_Group>,
+-  HelpText<"Do not use the analyzed objects when unparsing">;
+-
+ }
+ 
+ //===----------------------------------------------------------------------===//
+@@ -6339,3 +6299,136 @@
  def _SLASH_Zg : CLFlag<"Zg">;
  def _SLASH_ZI : CLFlag<"ZI">;
  def _SLASH_ZW : CLJoined<"ZW">;
@@ -412,7 +524,7 @@ diff --color -urN clang/include/clang/Frontend/Utils.h b/include/clang/Frontend/
 +  static_assert(std::is_base_of<MacroBuilder, T>::value, "Illegal T value");
 +  llvm::APInt MaxVal = isSigned ? llvm::APInt::getSignedMaxValue(TypeWidth)
 +                                : llvm::APInt::getMaxValue(TypeWidth);
-+  Builder.defineMacro(MacroName, MaxVal.toString(10, isSigned) + ValSuffix);
++  Builder.defineMacro(MacroName, toString(MaxVal, 10, isSigned) + ValSuffix);
 +}
 +
 +/// DefineTypeSize - An overloaded helper that uses TargetInfo to determine
@@ -509,6 +621,29 @@ diff --color -urN clang/lib/Driver/CMakeLists.txt b/lib/Driver/CMakeLists.txt
 diff --color -urN clang/lib/Driver/Driver.cpp b/lib/Driver/Driver.cpp
 --- a/clang/lib/Driver/Driver.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/clang/lib/Driver/Driver.cpp	2021-04-01 22:08:19.193927033 +0200
+@@ -2233,9 +2233,11 @@
+ 
+         // stdin must be handled specially.
+         if (memcmp(Value, "-", 2) == 0) {
++#ifndef ENABLE_CLASSIC_FLANG
+           if (IsFlangMode()) {
+             Ty = types::TY_Fortran;
+           } else {
++#endif
+             // If running with -E, treat as a C input (this changes the
+             // builtin macros, for example). This may be overridden by -ObjC
+             // below.
+@@ -2246,7 +2248,9 @@
+               Diag(IsCLMode() ? clang::diag::err_drv_unknown_stdin_type_clang_cl
+                               : clang::diag::err_drv_unknown_stdin_type);
+             Ty = types::TY_C;
++#ifndef ENABLE_CLASSIC_FLANG
+           }
++#endif
+         } else {
+           // Otherwise lookup by extension.
+           // Fallback is C if invoked as C preprocessor, C++ if invoked with
+
 @@ -3447,6 +3447,14 @@
        if (InputArg->isClaimed())
          continue;
@@ -739,7 +874,6 @@ diff --color -urN clang/lib/Driver/ToolChains/ClassicFlang.cpp b/lib/Driver/Tool
 +
 +#include "ClassicFlang.h"
 +#include "CommonArgs.h"
-+#include "InputInfo.h"
 +#include "clang/Basic/CharInfo.h"
 +#include "clang/Basic/LangOptions.h"
 +#include "clang/Basic/MacroBuilder.h"
@@ -749,6 +883,7 @@ diff --color -urN clang/lib/Driver/ToolChains/ClassicFlang.cpp b/lib/Driver/Tool
 +#include "clang/Basic/Version.h"
 +#include "clang/Config/config.h"
 +#include "clang/Driver/DriverDiagnostic.h"
++#include "clang/Driver/InputInfo.h"
 +#include "clang/Driver/Options.h"
 +#include "clang/Driver/SanitizerArgs.h"
 +#include "clang/Driver/XRayArgs.h"
@@ -960,7 +1095,7 @@ diff --color -urN clang/lib/Driver/ToolChains/ClassicFlang.cpp b/lib/Driver/Tool
 +  }
 +
 +  // Treat backslashes as regular characters
-+  for (auto Arg : Args.filtered(options::OPT_fnobackslash, options::OPT_Mbackslash)) {
++  for (auto Arg : Args.filtered(options::OPT_fno_backslash, options::OPT_Mbackslash)) {
 +    Arg->claim();
 +    CommonCmdArgs.push_back("-x");
 +    CommonCmdArgs.push_back("124");
@@ -1101,19 +1236,19 @@ diff --color -urN clang/lib/Driver/ToolChains/ClassicFlang.cpp b/lib/Driver/Tool
 +
 +  // Handle -fdefault-real-8 (and its alias, -r8) and -fno-default-real-8
 +  if (Arg *A = Args.getLastArg(options::OPT_r8,
-+                               options::OPT_default_real_8_f,
-+                               options::OPT_default_real_8_fno)) {
++                               options::OPT_fdefault_real_8,
++                               options::OPT_fno_default_real_8)) {
 +    const char * fl;
 +    // For -f version add -x flag, for -fno add -y
-+    if (A->getOption().matches(options::OPT_default_real_8_fno)) {
++    if (A->getOption().matches(options::OPT_fno_default_real_8)) {
 +      fl = "-y";
 +    } else {
 +      fl = "-x";
 +    }
 +
 +    for (Arg *A : Args.filtered(options::OPT_r8,
-+                                options::OPT_default_real_8_f,
-+                                options::OPT_default_real_8_fno)) {
++                                options::OPT_fdefault_real_8,
++                                options::OPT_fno_default_real_8)) {
 +      A->claim();
 +    }
 +
@@ -1127,19 +1262,19 @@ diff --color -urN clang/lib/Driver/ToolChains/ClassicFlang.cpp b/lib/Driver/Tool
 +
 +  // Process and claim -i8/-fdefault-integer-8/-fno-default-integer-8 argument
 +  if (Arg *A = Args.getLastArg(options::OPT_i8,
-+                               options::OPT_default_integer_8_f,
-+                               options::OPT_default_integer_8_fno)) {
++                               options::OPT_fdefault_integer_8,
++                               options::OPT_fno_default_integer_8)) {
 +    const char * fl;
 +
-+    if (A->getOption().matches(options::OPT_default_integer_8_fno)) {
++    if (A->getOption().matches(options::OPT_fno_default_integer_8)) {
 +      fl = "-y";
 +    } else {
 +      fl = "-x";
 +    }
 +
 +    for (Arg *A : Args.filtered(options::OPT_i8,
-+                                options::OPT_default_integer_8_f,
-+                                options::OPT_default_integer_8_fno)) {
++                                options::OPT_fdefault_integer_8,
++                                options::OPT_fno_default_integer_8)) {
 +      A->claim();
 +    }
 +
@@ -1462,15 +1597,15 @@ diff --color -urN clang/lib/Driver/ToolChains/ClassicFlang.cpp b/lib/Driver/Tool
 +      switch (A->getOption().getID()) {
 +        default:
 +          llvm_unreachable("missed a case");
-+         case options::OPT_fixed_form_on:
-+         case options::OPT_free_form_off:
++         case options::OPT_ffixed_form:
++         case options::OPT_fno_free_form:
 +         case options::OPT_Mfixed:
 +         case options::OPT_Mfree_off:
 +         case options::OPT_Mfreeform_off:
 +           UpperCmdArgs.push_back("-nofreeform");
 +           break;
-+         case options::OPT_free_form_on:
-+         case options::OPT_fixed_form_off:
++         case options::OPT_ffree_form:
++         case options::OPT_fno_fixed_form:
 +         case options::OPT_Mfree_on:
 +         case options::OPT_Mfreeform_on:
 +           UpperCmdArgs.push_back("-freeform");
@@ -1685,7 +1820,7 @@ diff --color -urN clang/lib/Driver/ToolChains/ClassicFlang.cpp b/lib/Driver/Tool
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("121"); LowerCmdArgs.push_back("0x800");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("54"); LowerCmdArgs.push_back("0x10");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("70"); LowerCmdArgs.push_back("0x40000000");
-+  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("249"); LowerCmdArgs.push_back("90"); // LLVM version
++  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("249"); LowerCmdArgs.push_back("130"); // LLVM version
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("124"); LowerCmdArgs.push_back("1");
 +  LowerCmdArgs.push_back("-y"); LowerCmdArgs.push_back("163"); LowerCmdArgs.push_back("0xc0000000");
 +  LowerCmdArgs.push_back("-x"); LowerCmdArgs.push_back("189"); LowerCmdArgs.push_back("0x10");
@@ -2236,7 +2371,7 @@ diff --color -urN clang/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
 +  case TY_F_FreeForm: case TY_PP_F_FreeForm:
 +  case TY_F_FixedForm: case TY_PP_F_FixedForm:
 +#endif
-   case TY_CL:
+   case TY_CL: case TY_CLCXX:
    case TY_CUDA: case TY_PP_CUDA:
    case TY_CUDA_DEVICE:
 @@ -220,11 +226,35 @@
@@ -2330,9 +2465,9 @@ diff --color -urN clang/lib/Driver/Types.cpp b/lib/Driver/Types.cpp
    // -test-io is used by Flang to run InputOutputTest action
    if (Driver.CCCIsCPP() || DAL.getLastArg(options::OPT_E) ||
 @@ -331,7 +382,14 @@
+       DAL.getLastArg(options::OPT__SLASH_EP) ||
        DAL.getLastArg(options::OPT_M, options::OPT_MM) ||
-       DAL.getLastArg(options::OPT__SLASH_P) ||
-       DAL.getLastArg(options::OPT_test_io))
+       DAL.getLastArg(options::OPT__SLASH_P))
 +#ifdef ENABLE_CLASSIC_FLANG
 +    if (Driver.IsFlangMode())
 +      LastPhase = phases::Compile;
@@ -2360,7 +2495,7 @@ diff --color -urN clang/lib/Frontend/InitPreprocessor.cpp b/lib/Frontend/InitPre
 -                           MacroBuilder &Builder) {
 -  llvm::APInt MaxVal = isSigned ? llvm::APInt::getSignedMaxValue(TypeWidth)
 -                                : llvm::APInt::getMaxValue(TypeWidth);
--  Builder.defineMacro(MacroName, MaxVal.toString(10, isSigned) + ValSuffix);
+-  Builder.defineMacro(MacroName, toString(MaxVal, 10, isSigned) + ValSuffix);
 -}
 -
 -/// DefineTypeSize - An overloaded helper that uses TargetInfo to determine
