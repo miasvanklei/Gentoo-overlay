@@ -7,11 +7,11 @@ EAPI=7
 #hackport: flags: -dev
 
 CABAL_FEATURES="lib profile haddock hoogle hscolour test-suite"
-inherit haskell-cabal
+inherit git-r3 haskell-cabal
 
 DESCRIPTION="A formatter for Haskell source code"
 HOMEPAGE="https://github.com/tweag/ormolu"
-SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
+EGIT_REPO_URI="https://github.com/tweag/ormolu.git"
 
 LICENSE="BSD"
 SLOT="0/${PV}"
@@ -29,11 +29,11 @@ RDEPEND=">=dev-haskell/ansi-terminal-0.10:=[profile?] <dev-haskell/ansi-terminal
 			>=dev-haskell/optparse-applicative-0.14:=[profile?] <dev-haskell/optparse-applicative-0.17:=[profile?] )
 	>=dev-lang/ghc-8.6.3:=
         ghc-lib? (
-                >=dev-haskell/ghc-lib-parser-8.10:=[profile?] <dev-haskell/ghc-lib-parser-8.11:=[profile?]
-                >=dev-haskell/ghc-lib-parser-ex-8.10.0.2:=[profile?] <dev-haskell/ghc-lib-parser-ex-8.10.1:=[profile?]
+                >=dev-haskell/ghc-lib-parser-9.0:=[profile?] <dev-haskell/ghc-lib-parser-9.1:=[profile?]
+                >=dev-haskell/ghc-lib-parser-ex-9.0.0.4:=[profile?] <dev-haskell/ghc-lib-parser-ex-9.1:=[profile?]
         )
         !ghc-lib? (
-                >=dev-lang/ghc-8.10:= <dev-lang/ghc-8.11:=
+                >=dev-lang/ghc-9.0:= <dev-lang/ghc-9.1:=
         )
 "
 DEPEND="${RDEPEND}
@@ -45,12 +45,7 @@ DEPEND="${RDEPEND}
 
 src_prepare() {
 	eapply "${FILESDIR}"/use-system-ghc.patch
-
-	if use examples; then
-		eapply "${FILESDIR}/${P}-add-executable-flag.patch"
-	else
-		eapply "${FILESDIR}/${P}-add-executable-flag-no-examples.patch"
-	fi
+	eapply "${FILESDIR}"/add-executable-flag.patch
 
 	default
 }
