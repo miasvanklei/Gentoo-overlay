@@ -19,7 +19,7 @@ IUSE="ghc-lib"
 
 RDEPEND=">=dev-haskell/extra-1.6.19:=[profile?]
 	ghc-lib? ( dev-haskell/ghc-lib-parser:=[profile?] )
-	!ghc-lib? ( =dev-lang/ghc-8.10*:= )
+	!ghc-lib? ( =dev-lang/ghc-9.0*:= )
 	>=dev-haskell/uniplate-1.5:=[profile?]
 	>=dev-lang/ghc-8.2.1:=
 "
