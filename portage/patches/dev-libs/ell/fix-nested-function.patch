@@ -25,25 +25,28 @@ diff --color -ur a/ell/tls.c b/ell/tls.c
 diff --color -ur a/ell/useful.h b/ell/useful.h
 --- a/ell/useful.h	2021-03-29 14:19:13.000000000 +0200
 +++ b/ell/useful.h	2021-05-14 11:46:46.527476860 +0200
-@@ -52,13 +52,12 @@
- 	return (oct >> start) & mask;
- }
+@@ -59,16 +59,16 @@
+ 	_x / _d;					\
+ })
  
 -#define __AUTODESTRUCT(var, func)			\
 -	void cleanup_ ## var(void *ptr)			\
 -	{ func(*(void **) ptr); }			\
 -	__attribute((cleanup(cleanup_ ## var)))
--
+ 
 -#define _AUTODESTRUCT(var, func)			\
 -	__AUTODESTRUCT(var, func)
 +static inline void
 +autoptr_cleanup_generic_free (void *p)
 +{
-+  void **pp = (void**)p;
-+  free (*pp);
++	void **pp = (void**)p;
++	free (*pp);
 +}
  
 -#define _auto_(func)					\
 -	_AUTODESTRUCT(__COUNTER__, func)
 +#define _CLEANUP(func) __attribute__((cleanup(func)))
 +#define autofree _CLEANUP(autoptr_cleanup_generic_free)
+ 
+ /*
+  * Trick the compiler into thinking that var might be changed somehow by
