@@ -1,25 +1,14 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 0898222f..f61c4d74 100644
+index e49be68c..a3289800 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -6,10 +6,6 @@
- 
- cmake_minimum_required(VERSION 3.3)
- 
--# In order to bootstrap the runtime library we need to skip
--# CMake's Fortran tests
--SET(CMAKE_Fortran_COMPILER_WORKS 1)
--
- if( NOT DEFINED TARGET_ARCHITECTURE )
-   execute_process(COMMAND uname -m OUTPUT_STRIP_TRAILING_WHITESPACE
-                   OUTPUT_VARIABLE TARGET_ARCHITECTURE)
-@@ -289,24 +285,26 @@ if (APPLE)
+@@ -292,24 +292,26 @@ if (APPLE)
    set(CMAKE_MODULE_LINKER_FLAGS "-Wl,-flat_namespace -Wl,-undefined -Wl,suppress")
  endif ()
  
 -macro(add_flang_library name)
 -  llvm_process_sources(srcs ${ARGN})
-+macro(add_flang_object name)
++macro(add_flang_objects name)
 +  add_library( ${name} OBJECT ${ARGN} )
 +  llvm_update_compile_flags(${name} ${ARGN})
 +  if( LLVM_COMMON_DEPENDS )
@@ -27,7 +16,7 @@ index 0898222f..f61c4d74 100644
 +  endif( LLVM_COMMON_DEPENDS )
 +
 +  llvm_config( ${name} ${LLVM_LINK_COMPONENTS} )
-+endmacro(add_flang_object)
++endmacro(add_flang_objects)
 +
 +macro(add_flang_library name objectname)
    if (MODULE)
@@ -61,7 +50,7 @@ index d8f41fad..e807f0f0 100644
  
 -add_flang_library(flangADT
 -  hash.c
-+add_flang_object(flangADTObject
++add_flang_objects(flangADTObject
 + hash.c
  )
 +
@@ -75,7 +64,7 @@ index 0a49654c..237fbfc8 100644
  #
  
 -add_flang_library(flangArgParser
-+add_flang_object(flangArgParserObject
++add_flang_objects(flangArgParserObject
    arg_parser.c
    debug_action.c
    xflag.c
@@ -103,143 +92,30 @@ index ada03055..30bb3689 100644
   host-fp-folding.c
   int128.c
 diff --git a/runtime/flang/CMakeLists.txt b/runtime/flang/CMakeLists.txt
-index 8ad885de..6d9a425f 100644
+index 4b775a15..31504e86 100644
 --- a/runtime/flang/CMakeLists.txt
 +++ b/runtime/flang/CMakeLists.txt
-@@ -4,6 +4,27 @@
- # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
- #
- 
-+# make flang bootstrappable
-+set(CMAKE_Fortran_COMPILER_WORKS 1)
-+set(CMAKE_Fortran_ABI_COMPILED 1)
-+set(CMAKE_Fortran_COMPILER_SUPPORTS_F90 1)
-+include(Compiler/Clang)
-+__compiler_clang(Fortran)
-+
-+set(CMAKE_Fortran_SUBMODULE_SEP "-")
-+set(CMAKE_Fortran_SUBMODULE_EXT ".mod")
-+
-+set(CMAKE_Fortran_PREPROCESS_SOURCE
-+    "<CMAKE_Fortran_COMPILER> -cpp <DEFINES> <INCLUDES> <FLAGS> -E <SOURCE> > <PREPROCESSED_SOURCE>")
-+
-+set(CMAKE_Fortran_FORMAT_FIXED_FLAG "-ffixed-form")
-+set(CMAKE_Fortran_FORMAT_FREE_FLAG "-ffree-form")
-+
-+set(CMAKE_Fortran_MODDIR_FLAG "-J")
-+
-+set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_ON "-cpp")
-+set(CMAKE_Fortran_COMPILE_OPTIONS_PREPROCESS_OFF "-nocpp")
-+
- enable_language(C ASM Fortran) # Enable assembly and Fortran
- 
- SET(ASM_OPTIONS "-DLINUX_ELF")
-@@ -187,7 +208,7 @@ SET(FTN_INTRINSICS_DESC_DEP
-   red_any.c
-   red_count.c
-   red_findloc.c
--  red_iany.c 
-+  red_iany.c
-   red_maxloc.c
-   red_minloc.c
-   red_maxval.c
-@@ -249,10 +270,11 @@ SET(FTN_SUPPORT_DESC_INDEP
-   gather_cmplx8.F95
-   gather_real4.F95
-   gather_real8.F95
-+  ieee_arithmetic.F95
-+  ieee_exceptions.F95
-   ieee_features.F95
-   initpar.c
-   inquire.c
--  iso_c_bind.F95
-   iso_fortran_env.f90
-   ldread.c
-   ldwrite.c
-@@ -395,6 +417,7 @@ SET(FTN_SUPPORT_DESC_DEP
-   nmlread.c
-   nmlwrite.c
-   nmlutil.c
-+  norm2.F95
-   olap.c
-   pack.c
-   ptr.c
-@@ -412,39 +435,6 @@ SET(FTN_SUPPORT_DESC_DEP
- set(I8_FILES_DIR I8_sources)
- separate_arguments(SEPARATED_CMAKE_Fortran_FLAGS NATIVE_COMMAND ${CMAKE_Fortran_FLAGS})
- 
--# Fortran files with macros as module names need to be preprocessed.
--# CMake has an internal Fortran parser that parses the module name, but it doesn't
--# consider macros which results in wrong dependencies.
--add_custom_command(
--  OUTPUT "${I8_FILES_DIR}/ieee_arithmetic.F95"
--  COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
--  "${CMAKE_CURRENT_SOURCE_DIR}/ieee_arithmetic.F95" -DDESC_I8 
--  > "${I8_FILES_DIR}/ieee_arithmetic.F95"
--  COMMENT "Preprocessing ieee_arithmetic.F95"
--  VERBATIM
--  DEPENDS flang1 flang2
--)
--
--add_custom_command(
--  OUTPUT "${I8_FILES_DIR}/ieee_exceptions.F95"
--  COMMAND "${CMAKE_Fortran_COMPILER}" -E -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
--  "${CMAKE_CURRENT_SOURCE_DIR}/ieee_exceptions.F95" -DDESC_I8 
--  > "${I8_FILES_DIR}/ieee_exceptions.F95"
--  COMMENT "Preprocessing ieee_exceptions.F95"
--  VERBATIM
--  DEPENDS flang1 flang2
--)
--
--add_custom_command(
--  OUTPUT ${I8_FILES_DIR}/norm2_1.F95 norm2_1.F95
--  COMMAND "${CMAKE_Fortran_COMPILER}" -E -DDESC_I8 -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
--  ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "${I8_FILES_DIR}/norm2_1.F95"
--  COMMAND "${CMAKE_Fortran_COMPILER}" -E -DPGFLANG -cpp ${SEPARATED_CMAKE_Fortran_FLAGS}
--  ${CMAKE_CURRENT_SOURCE_DIR}/norm2.F95 > "norm2_1.F95"
--  VERBATIM
--  DEPENDS flang1 flang2
--)
--
- # The files lists FTN_INTRINSICS_DESC_DEP and FTN_SUPPORT_DESC_DEP need to be compiled twice (with and without 'DESC_I8' compile definition). So an actual copy is made in a temp file on which this is done.
- 
- FOREACH(file ${FTN_INTRINSICS_DESC_DEP})
-@@ -459,14 +449,16 @@ FOREACH(file ${FTN_SUPPORT_DESC_DEP})
-     LIST(APPEND FTN_SUPPORT_I8 ${I8_FILE})
- ENDFOREACH(file)
- 
--LIST(APPEND FTN_SUPPORT_DESC_DEP ieee_arithmetic.F95 ieee_exceptions.F95 norm2_1.F95)
--LIST(APPEND FTN_SUPPORT_I8 
--"${I8_FILES_DIR}/ieee_arithmetic.F95"
--"${I8_FILES_DIR}/ieee_exceptions.F95"
--"${I8_FILES_DIR}/norm2_1.F95"
--)
-+# iee* depends on this module
-+SET(ISO_C_BIND_SRC iso_c_bind.F95)
+@@ -470,7 +493,7 @@ LIST(APPEND FTN_SUPPORT_I8
+ "${I8_FILES_DIR}/norm2_1.F95"
+ )
  
 -add_flang_library(flang_static
-+add_flang_object(iso_c_binding ${ISO_C_BIND_SRC})
-+
-+add_dependencies(iso_c_binding flang1 flang2)
-+
-+
-+# create object library
-+add_flang_object(flang_objects
++add_flang_objects(flang_objects
    ${FTN_INTRINSICS_DESC_INDEP}
    ${FTN_INTRINSICS_DESC_DEP}
    ${FTN_INTRINSICS_I8}
-@@ -475,30 +467,20 @@ add_flang_library(flang_static
+@@ -479,6 +502,9 @@ add_flang_library(flang_static
    ${FTN_SUPPORT_I8}
    ${SHARED_SOURCES}
    )
-+
-+# create static library
 +add_flang_library(flang_static
 +  flang_objects
 +  )
- set_property(TARGET flang_static PROPERTY OUTPUT_NAME flang)
+ if (MSVC)
+   set_property(TARGET flang_static PROPERTY OUTPUT_NAME libflang)
+ else()
+@@ -487,13 +513,7 @@ endif()
  
-+# create dynamic library
  set(SHARED_LIBRARY TRUE)
  add_flang_library(flang_shared
 -  ${FTN_INTRINSICS_DESC_INDEP}
@@ -253,100 +129,50 @@ index 8ad885de..6d9a425f 100644
    )
  set_property(TARGET flang_shared PROPERTY OUTPUT_NAME flang)
  
--#
--# Seralize the building of flang_shared and flang_static to eliminate
--# conflicts with the same module files from the shared and static builds
--# being created/recreated in the common directory
--# ${CMAKE_Fortran_MODULE_DIRECTORY}.
--#
--# Note: building of each library is still parallelized.
--#
--add_dependencies(flang_shared flang_static)
--
- target_link_libraries(flang_shared ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/lib/libflangrti.so)
- # Resolve symbols against libm and librt
- target_link_libraries(flang_shared m rt)
-@@ -507,7 +489,7 @@ set(SHARED_LIBRARY FALSE)
- 
- set_property(
-   SOURCE ${FTN_INTRINSICS_DESC_INDEP} ${FTN_INTRINSICS_DESC_DEP} ${SHARED_SOURCES}
--  PROPERTY COMPILE_DEFINITIONS 
-+  PROPERTY COMPILE_DEFINITIONS
-   PGF90
-   KANJI
-   INT32PTR64
-@@ -517,7 +499,7 @@ set_property(
- 
- set_property(
-   SOURCE ${FTN_INTRINSICS_I8}
--  PROPERTY COMPILE_DEFINITIONS 
-+  PROPERTY COMPILE_DEFINITIONS
-   PGF90
-   KANJI
-   INT32PTR64
-@@ -527,16 +509,16 @@ set_property(
-  )
- 
- set_property(
--  SOURCE ${FTN_SUPPORT_DESC_INDEP} ${FTN_SUPPORT_DESC_DEP} 
--  PROPERTY COMPILE_DEFINITIONS 
-+  SOURCE ${FTN_SUPPORT_DESC_INDEP} ${FTN_SUPPORT_DESC_DEP}
-+  PROPERTY COMPILE_DEFINITIONS
-   INT32PTR64
-   TM_I8
-   HAVE_LONG_LONG_INT
-  )
- 
- set_property(
--  SOURCE ${FTN_SUPPORT_I8} 
--  PROPERTY COMPILE_DEFINITIONS 
-+  SOURCE ${FTN_SUPPORT_I8}
-+  PROPERTY COMPILE_DEFINITIONS
-   INT32PTR64
-   TM_I8
-   DESC_I8
-@@ -618,36 +600,21 @@ set_target_properties(flang_static flang_shared
-   PROPERTIES
+@@ -635,39 +655,22 @@ set_target_properties(flang_static flang_shared
    ARCHIVE_OUTPUT_DIRECTORY ${FLANG_RTE_LIB_DIR}
    )
--  
--target_include_directories(flang_static 
+ 
+-target_include_directories(flang_static
 -  PRIVATE
 -  ${CMAKE_CURRENT_SOURCE_DIR}
 -  ${CMAKE_CURRENT_BINARY_DIR}
 -  )
- 
+-
 -target_include_directories(flang_shared
 +target_include_directories(flang_objects
    PRIVATE
    ${CMAKE_CURRENT_SOURCE_DIR}
    ${CMAKE_CURRENT_BINARY_DIR}
-+  ${CMAKE_Fortran_MODULE_DIRECTORY}
    )
  
  # Make sure the compiler is built before we bootstrap
--add_dependencies(flang_static 
-+add_dependencies(flang_objects
-   flang1
-   flang2
-+  iso_c_binding
-   )
- 
--# Make sure the compiler is built before we bootstrap
--add_dependencies(flang_shared 
+-add_dependencies(flang_static
 -  flang1
 -  flang2
 -  )
 -
--target_compile_options(flang_static PRIVATE -fPIC)
--
--target_compile_options(flang_shared PRIVATE -fPIC)
--
+-# Make sure the compiler is built before we bootstrap
+-add_dependencies(flang_shared
++add_dependencies(flang_objects
+   flang1
+   flang2
+   )
+ 
+ if (NOT MSVC)
+-  target_compile_options(flang_static PRIVATE -fPIC)
+-  target_compile_options(flang_shared PRIVATE -fPIC)
++  target_compile_options(flang_objects PRIVATE -fPIC)
+ else()
+-  set_target_properties(flang_static PROPERTIES LINKER_LANGUAGE CXX)
+-  set_target_properties(flang_shared PROPERTIES LINKER_LANGUAGE CXX)
++  set_target_properties(flang_objects PROPERTIES LINKER_LANGUAGE CXX)
+ endif()
+ 
 -target_compile_options(flang_static PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
 -
 -target_compile_options(flang_shared PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
-+target_compile_options(flang_objects PRIVATE -fPIC)
- 
+-
 +target_compile_options(flang_objects PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
 diff --git a/runtime/flangmain/CMakeLists.txt b/runtime/flangmain/CMakeLists.txt
 index 2a6ccf5f..b5d8e1dc 100644
@@ -358,7 +184,7 @@ index 2a6ccf5f..b5d8e1dc 100644
  
 -add_flang_library(flangmain
 -  STATIC
-+add_flang_object(flangmainobject
++add_flang_objects(flangmainobject
    flangmain.c
 +)
 +
@@ -368,55 +194,98 @@ index 2a6ccf5f..b5d8e1dc 100644
  
  set_property(
 diff --git a/runtime/flangrti/CMakeLists.txt b/runtime/flangrti/CMakeLists.txt
-index 6c72f070..afdee924 100644
+index d99c3a5e..bb7b4eb0 100644
 --- a/runtime/flangrti/CMakeLists.txt
 +++ b/runtime/flangrti/CMakeLists.txt
-@@ -57,21 +57,24 @@ SET(PGC_SRC_FILES
+@@ -58,10 +58,14 @@ SET(PGC_SRC_FILES
    llcrit.c
    )
  
 -add_flang_library(flangrti_static
-+add_flang_object(flangrti_object
++add_flang_objects(flangrti_objects
    ${PGC_SRC_FILES}
    ${SHARED_SOURCES}
    )
 +
 +add_flang_library(flangrti_static
-+  flangrti_object
++  flangrti_objects
 +  )
- set_property(TARGET flangrti_static PROPERTY OUTPUT_NAME flangrti)
- 
+ if (MSVC)
+   set_property(TARGET flangrti_static PROPERTY OUTPUT_NAME libflangrti)
+ else()
+@@ -71,8 +75,7 @@ endif()
  
  set(SHARED_LIBRARY TRUE)
  add_flang_library(flangrti_shared
 -  ${PGC_SRC_FILES}
 -  ${SHARED_SOURCES}
-+  flangrti_object
++  flangrti_objects
    )
  
  # Resolve symbols against libm
--target_link_libraries(flangrti_shared m)
-+target_link_libraries(flangrti_shared m pgmath)
+@@ -103,22 +106,15 @@ find_library(
+ target_link_libraries(flangrti_shared PRIVATE ${LIBPGMATH})
  
- # Resolve symbols against libpthread
- find_package(Threads REQUIRED)
+ if( ${TARGET_ARCHITECTURE} STREQUAL "aarch64" )
+-  target_compile_definitions(flangrti_static PRIVATE TARGET_LINUX_ARM)
+-  target_compile_definitions(flangrti_shared PRIVATE TARGET_LINUX_ARM)
++  target_compile_definitions(flangrti_objects PRIVATE TARGET_LINUX_ARM)
+ elseif( ${TARGET_ARCHITECTURE} STREQUAL "ppc64le" )
+-  target_compile_definitions(flangrti_static PRIVATE TARGET_LINUX_POWER)
+-  target_compile_definitions(flangrti_shared PRIVATE TARGET_LINUX_POWER)
++  target_compile_definitions(flangrti_objects PRIVATE TARGET_LINUX_POWER)
+ endif()
+ 
+ set_property(TARGET flangrti_shared PROPERTY OUTPUT_NAME flangrti)
+ set(SHARED_LIBRARY FALSE)
+ 
+-target_include_directories(flangrti_static
+-  PRIVATE
+-  ${CMAKE_CURRENT_SOURCE_DIR}
+-  )
+-
+-target_include_directories(flangrti_shared
++target_include_directories(flangrti_objects
+   PRIVATE
+   ${CMAKE_CURRENT_SOURCE_DIR}
+   )
+@@ -127,13 +123,9 @@ set_target_properties(flangrti_shared flangrti_static
+                       PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${FLANG_RTE_LIB_DIR})
+ 
+ if (NOT MSVC)
+-  target_compile_options(flangrti_static PRIVATE -fPIC)
+-  target_compile_options(flangrti_shared PRIVATE -fPIC)
++  target_compile_options(flangrti_objects PRIVATE -fPIC)
+ else()
+-  set_target_properties(flangrti_shared PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
++  set_target_properties(flangrti_objects PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+ endif()
+ 
+-target_compile_options(flangrti_static PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
+-
+-target_compile_options(flangrti_shared PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
+-
++target_compile_options(flangrti_objects PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:-Mreentrant>)
 diff --git a/runtime/ompstub/CMakeLists.txt b/runtime/ompstub/CMakeLists.txt
-index c3c5c044..b7a7b6c5 100644
+index 9b3890ac..14177d26 100644
 --- a/runtime/ompstub/CMakeLists.txt
 +++ b/runtime/ompstub/CMakeLists.txt
-@@ -6,11 +6,13 @@
+@@ -6,7 +6,8 @@
  
  set(OMPSTUB_SRC init_nomp.c  ompstubs.c)
  
 -add_flang_library(ompstub_static ${OMPSTUB_SRC})
-+add_flang_object(ompstub_object ${OMPSTUB_SRC})
-+
++add_flang_objects(ompstub_object ${OMPSTUB_SRC})
 +add_flang_library(ompstub_static ompstub_object)
- set_property(TARGET ompstub_static PROPERTY OUTPUT_NAME ompstub)
+ if (MSVC)
+   set_property(TARGET ompstub_static PROPERTY OUTPUT_NAME libompstub)
+ else()
+@@ -14,7 +15,7 @@ else()
+ endif()
  
  set(SHARED_LIBRARY TRUE)
 -add_flang_library(ompstub_shared ${OMPSTUB_SRC})
 +add_flang_library(ompstub_shared ompstub_object)
  set_property(TARGET ompstub_shared PROPERTY OUTPUT_NAME ompstub)
- set(SHARED_LIBRARY FALSE)
- 
+ if (MSVC)
+   set_target_properties(ompstub_shared PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)

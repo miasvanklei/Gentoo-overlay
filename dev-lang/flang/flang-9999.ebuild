@@ -35,6 +35,8 @@ src_configure()
 {
 	local mycmakeargs=(
 		-DWITH_WERROR=OFF
+		-DCMAKE_Fortran_COMPILER_ID=Flang
+		-DFLANG_LLVM_EXTENSIONS=ON
 	)
 
 	cmake_src_configure
