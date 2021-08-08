@@ -11,9 +11,25 @@
  
 --- a/src/network.c	2021-05-14 14:52:17.848810282 +0200
 +++ b/src/network.c	2021-05-14 14:52:40.892988237 +0200
-@@ -380,10 +380,10 @@
+@@ -532,9 +532,9 @@
+ 					unsigned int group,
+ 					struct l_ecc_point **out_pt)
+ {
+-	_auto_(l_free) char *key = l_strdup_printf(SAE_PT_SETTING, group);
++	autofree char *key = l_strdup_printf(SAE_PT_SETTING, group);
+ 	size_t pt_len;
+-	_auto_(l_free) uint8_t *pt = l_settings_get_bytes(network->settings,
++	autofree uint8_t *pt = l_settings_get_bytes(network->settings,
+ 						"Security", key, &pt_len);
+ 	const struct l_ecc_curve *curve = l_ecc_curve_from_ike_group((group));
+ 
+@@ -571,13 +571,13 @@
+ 	const char *ssid = network_get_ssid(network);
+ 	enum security security = network_get_security(network);
  	size_t psk_len;
- 	uint8_t *psk = l_settings_get_bytes(network->settings, "Security",
+-	_auto_(l_free) uint8_t *psk =
++	autofree uint8_t *psk =
+ 			l_settings_get_bytes(network->settings, "Security",
  						"PreSharedKey", &psk_len);
 -	_auto_(l_free) char *passphrase =
 +	autofree char *passphrase =
@@ -22,5 +38,47 @@
 -	_auto_(l_free) char *path =
 +	autofree char *path =
  		storage_get_network_file_path(security, ssid);
- 	int r;
  
+ 	if (psk && psk_len != 32) {
+@@ -620,7 +620,7 @@
+ {
+ 	const struct l_ecc_curve *curve = l_ecc_point_get_curve(pt);
+ 	unsigned int group = l_ecc_curve_get_ike_group(curve);
+-	_auto_(l_free) char *key = l_strdup_printf(SAE_PT_SETTING, group);
++	autofree char *key = l_strdup_printf(SAE_PT_SETTING, group);
+ 	uint8_t buf[256];
+ 	ssize_t len;
+ 
+--- a/src/crypto.c	2021-08-02 22:56:50.368122067 +0200
++++ b/src/crypto.c	2021-08-02 22:57:58.571933783 +0200
+@@ -1150,11 +1150,11 @@
+ 	uint8_t pwd_seed[64]; /* SHA512 is the biggest possible right now */
+ 	uint8_t pwd_value[128];
+ 	size_t pwd_value_len;
+-	_auto_(l_ecc_scalar_free) struct l_ecc_scalar *u1 = NULL;
+-	_auto_(l_ecc_scalar_free) struct l_ecc_scalar *u2 = NULL;
+-	_auto_(l_ecc_point_free) struct l_ecc_point *p1 = NULL;
+-	_auto_(l_ecc_point_free) struct l_ecc_point *p2 = NULL;
+-	_auto_(l_ecc_point_free) struct l_ecc_point *pt = NULL;
++	autofree struct l_ecc_scalar *u1 = NULL;
++	autofree struct l_ecc_scalar *u2 = NULL;
++	autofree struct l_ecc_point *p1 = NULL;
++	autofree struct l_ecc_point *p2 = NULL;
++	autofree struct l_ecc_point *pt = NULL;
+ 
+ 	if (!curve)
+ 		return NULL;
+--- a/src/wsc.c	2021-08-02 22:58:17.102154430 +0200
++++ b/src/wsc.c	2021-08-02 22:58:42.842460997 +0200
+@@ -529,9 +529,9 @@
+ 	for (i = 0; i < n_creds; i++) {
+ 		enum security security = creds[i].security;
+ 		const char *ssid = creds[i].ssid;
+-		_auto_(l_settings_free) struct l_settings *settings =
++		autofree struct l_settings *settings =
+ 							l_settings_new();
+-		_auto_(l_free) char *path =
++		autofree char *path =
+ 				storage_get_network_file_path(security, ssid);
+ 
+ 		if (l_settings_load_from_file(settings, path)) {
