@@ -67,5 +67,4 @@ src_install() {
 pkg_postinst() {
 	go-module_pkg_postinst
 	readme.gentoo_print_elog
-	tmpfiles_process gitlab-runner.conf
 }
