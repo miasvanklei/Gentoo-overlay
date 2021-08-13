@@ -18,8 +18,8 @@ RDEPEND="
 
 S=${WORKDIR}
 COMMON_PV="${PV/_pre/-preview.}"
-SDK_PV="${COMMON_PV}.21355.2"
-RUNTIME_PV="${COMMON_PV}.21352.12"
+SDK_PV="${COMMON_PV}.21378.6"
+RUNTIME_PV="${COMMON_PV}.21377.19"
 
 create_symlink() {
 	mkdir -p $1
