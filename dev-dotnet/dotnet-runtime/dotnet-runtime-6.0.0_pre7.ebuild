@@ -7,8 +7,7 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-MY_PV="${PV/_pre/-preview.}.21352.12"
-SDK_PV="6.0.100_pre6"
+MY_PV="${PV/_pre/-preview.}.21377.19"
 
 SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
