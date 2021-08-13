@@ -9,17 +9,6 @@
  #include "stdioInterf.h"
  #include "fioMacros.h"
  
---- a/runtime/flangrti/iostdinit.c
-+++ b/runtime/flangrti/iostdinit.c
-@@ -160,7 +160,7 @@ __io_ferror(void *p)
- int
- __io_getfd(void *fp)
- {
--  return (((FILE *)fp)->_fileno);
-+  return fileno((FILE *)fp);
- }
- 
- /* is a tty? */
 --- a/runtime/flangrti/ktrap.c
 +++ b/runtime/flangrti/ktrap.c
 @@ -35,6 +35,7 @@ extern int __ktrapval __attribute__ ((weak));
@@ -41,15 +30,15 @@
 --- a/runtime/flangrti/trace_lin.c
 +++ b/runtime/flangrti/trace_lin.c
 @@ -18,7 +18,9 @@
- #include <stdint.h>
- #include <signal.h>
- #include <sys/ucontext.h>
+ #ifdef _WIN64
+ #include <windows.h>
+ #else
 +#ifdef __GLIBC__
  #include <execinfo.h>
 +#endif
- #include <stdioInterf.h>
- #include "dumpregs.h"
- #include <stdlib.h>
+ #include <unistd.h>
+ #include <linux/limits.h>
+ #endif
 @@ -186,10 +188,13 @@ __abort_trace(int skip)
      dumpregs(regs);
    }
