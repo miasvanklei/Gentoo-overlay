@@ -42,4 +42,6 @@ src_install() {
         mkdir -p "${dest}" || die
         cp -rpP "${S}"/sdk ${dest} || die
         cp -rpP "${S}"/templates ${dest} || die
+
+	change_version "$dest/sdk" "${MY_PV}"
 }

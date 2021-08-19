@@ -21,7 +21,7 @@ S=${WORKDIR}
 create_symlink() {
 	mkdir -p $1
 	pushd $1 >/dev/null
-	ln -s current ${PV}
+	ln -s current $2
 	popd >/dev/null
 }
 
@@ -35,8 +35,9 @@ src_install() {
 	mkdir -p ${D}/usr/share/dotnet
 	cd ${D}/usr/share/dotnet
 
-	create_symlink host/fxr
-	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH}
-	create_symlink shared/Microsoft.NETCore.App
-	create_symlink shared/Microsoft.AspNetCore.App
+	create_symlink host/fxr ${PV}
+	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH} ${PV}
+	create_symlink shared/Microsoft.NETCore.App ${PV}
+	create_symlink shared/Microsoft.AspNetCore.App ${PV}
+	create_symlink sdk 5.0.102
 }
