@@ -7,11 +7,11 @@ EAPI=7
 #hackport: flags: -dev
 
 CABAL_FEATURES="lib profile haddock hoogle hscolour test-suite"
-inherit git-r3 haskell-cabal
+inherit haskell-cabal
 
 DESCRIPTION="A formatter for Haskell source code"
 HOMEPAGE="https://github.com/tweag/ormolu"
-EGIT_REPO_URI="https://github.com/tweag/ormolu.git"
+SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0/${PV}"
