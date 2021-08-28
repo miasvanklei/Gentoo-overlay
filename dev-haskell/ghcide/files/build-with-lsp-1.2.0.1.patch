@@ -1,0 +1,134 @@
+diff --git a/bench/lib/Experiments.hs b/bench/lib/Experiments.hs
+index 70f764c48..80035ba11 100644
+--- a/bench/lib/Experiments.hs
++++ b/bench/lib/Experiments.hs
+@@ -36,7 +36,10 @@ import           Development.Shake               (CmdOption (Cwd, FileStdout),
+                                                   cmd_)
+ import           Experiments.Types
+ import           Language.LSP.Test
+-import           Language.LSP.Types
++import           Language.LSP.Types              hiding
++                                                 (SemanticTokenAbsolute (length, line),
++                                                  SemanticTokenRelative (length),
++                                                  SemanticTokensEdit (_start))
+ import           Language.LSP.Types.Capabilities
+ import           Numeric.Natural
+ import           Options.Applicative
+diff --git a/src/Development/IDE/Core/PositionMapping.hs b/src/Development/IDE/Core/PositionMapping.hs
+index 4048908b7..bd4ae9dc6 100644
+--- a/src/Development/IDE/Core/PositionMapping.hs
++++ b/src/Development/IDE/Core/PositionMapping.hs
+@@ -30,7 +30,8 @@ import           Data.Bifunctor
+ import           Data.List
+ import qualified Data.Text           as T
+ import qualified Data.Vector.Unboxed as V
+-import           Language.LSP.Types
++import           Language.LSP.Types  (Position (Position), Range (Range),
++                                      TextDocumentContentChangeEvent (TextDocumentContentChangeEvent))
+ 
+ -- | Either an exact position, or the range of text that was substituted
+ data PositionResult a
+diff --git a/src/Development/IDE/LSP/Outline.hs b/src/Development/IDE/LSP/Outline.hs
+index f90b96f04..22e1a3fa8 100644
+--- a/src/Development/IDE/LSP/Outline.hs
++++ b/src/Development/IDE/LSP/Outline.hs
+@@ -22,7 +22,13 @@ import           Development.IDE.GHC.Error      (rangeToRealSrcSpan,
+                                                  realSrcSpanToRange)
+ import           Development.IDE.Types.Location
+ import           Language.LSP.Server            (LspM)
+-import           Language.LSP.Types
++import           Language.LSP.Types             (DocumentSymbol (..),
++                                                 DocumentSymbolParams (DocumentSymbolParams, _textDocument),
++                                                 List (..), ResponseError,
++                                                 SymbolInformation,
++                                                 SymbolKind (SkConstructor, SkField, SkFile, SkFunction, SkInterface, SkMethod, SkModule, SkObject, SkStruct, SkTypeParameter, SkUnknown),
++                                                 TextDocumentIdentifier (TextDocumentIdentifier),
++                                                 type (|?) (InL), uriToFilePath)
+ import           Outputable                     (Outputable, ppr,
+                                                  showSDocUnsafe)
+ 
+diff --git a/src/Development/IDE/Plugin/CodeAction.hs b/src/Development/IDE/Plugin/CodeAction.hs
+index 1fda96d75..05c207588 100644
+--- a/src/Development/IDE/Plugin/CodeAction.hs
++++ b/src/Development/IDE/Plugin/CodeAction.hs
+@@ -62,7 +62,20 @@ import           HscTypes                                          (ImportedMods
+ import           Ide.PluginUtils                                   (subRange)
+ import           Ide.Types
+ import qualified Language.LSP.Server                               as LSP
+-import           Language.LSP.Types
++import           Language.LSP.Types                                (CodeAction (..),
++                                                                    CodeActionContext (CodeActionContext, _diagnostics),
++                                                                    CodeActionKind (CodeActionQuickFix, CodeActionUnknown),
++                                                                    CodeActionParams (CodeActionParams),
++                                                                    Command,
++                                                                    Diagnostic (..),
++                                                                    List (..),
++                                                                    ResponseError,
++                                                                    SMethod (STextDocumentCodeAction),
++                                                                    TextDocumentIdentifier (TextDocumentIdentifier),
++                                                                    TextEdit (TextEdit),
++                                                                    WorkspaceEdit (WorkspaceEdit, _changeAnnotations, _changes, _documentChanges),
++                                                                    type (|?) (InR),
++                                                                    uriToFilePath)
+ import           Language.LSP.VFS
+ import           Module                                            (moduleEnvElts)
+ import           OccName
+diff --git a/src/Development/IDE/Plugin/CodeAction/PositionIndexed.hs b/src/Development/IDE/Plugin/CodeAction/PositionIndexed.hs
+index 24f3a867e..305a08a53 100644
+--- a/src/Development/IDE/Plugin/CodeAction/PositionIndexed.hs
++++ b/src/Development/IDE/Plugin/CodeAction/PositionIndexed.hs
+@@ -12,7 +12,8 @@ where
+ 
+ import           Data.Char
+ import           Data.List
+-import           Language.LSP.Types
++import           Language.LSP.Types (Position (Position),
++                                     Range (Range, _end, _start))
+ 
+ type PositionIndexed a = [(Position, a)]
+ 
+diff --git a/src/Development/IDE/Spans/AtPoint.hs b/src/Development/IDE/Spans/AtPoint.hs
+index b87c58e57..da49cc1a5 100644
+--- a/src/Development/IDE/Spans/AtPoint.hs
++++ b/src/Development/IDE/Spans/AtPoint.hs
+@@ -206,7 +206,7 @@ atPoint IdeOptions{} (HAR _ hf _ _ kind) (DKMap dm km) df pos = listToMaybe $ po
+     hoverInfo ast = (Just range, prettyNames ++ pTypes)
+       where
+         pTypes
+-          | length names == 1 = dropEnd1 $ map wrapHaskell prettyTypes
++          | Prelude.length names == 1 = dropEnd1 $ map wrapHaskell prettyTypes
+           | otherwise = map wrapHaskell prettyTypes
+ 
+         range = realSrcSpanToRange $ nodeSpan ast
+diff --git a/test/exe/Main.hs b/test/exe/Main.hs
+index 81216debf..ecf4e24f0 100644
+--- a/test/exe/Main.hs
++++ b/test/exe/Main.hs
+@@ -60,7 +60,10 @@ import           Development.Shake                        (getDirectoryFilesIO)
+ import qualified Experiments                              as Bench
+ import           Ide.Plugin.Config
+ import           Language.LSP.Test
+-import           Language.LSP.Types                       hiding (mkRange)
++import           Language.LSP.Types                                 hiding
++                                                                    (mkRange, SemanticTokenAbsolute (length, line),
++                                                                     SemanticTokenRelative (length),
++                                                                     SemanticTokensEdit (_start))
+ import           Language.LSP.Types.Capabilities
+ import qualified Language.LSP.Types.Lens                  as Lsp (diagnostics,
+                                                                   message,
+diff --git a/test/src/Development/IDE/Test.hs b/test/src/Development/IDE/Test.hs
+index e58de86a3..88f00741f 100644
+--- a/test/src/Development/IDE/Test.hs
++++ b/test/src/Development/IDE/Test.hs
+@@ -36,7 +36,10 @@ import           Development.IDE.Plugin.Test     (TestRequest (..),
+ import           Development.IDE.Test.Diagnostic
+ import           Language.LSP.Test               hiding (message)
+ import qualified Language.LSP.Test               as LspTest
+-import           Language.LSP.Types
++import           Language.LSP.Types              hiding
++                                                 (SemanticTokenAbsolute (length, line),
++                                                  SemanticTokenRelative (length),
++                                                  SemanticTokensEdit (_start))
+ import           Language.LSP.Types.Lens         as Lsp
+ import           System.Directory                (canonicalizePath)
+ import           System.Time.Extra
