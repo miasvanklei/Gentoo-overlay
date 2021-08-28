@@ -1,0 +1,184 @@
+# -*-eselect-*-  vim: ft=eselect
+# Copyright 1999-2021 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+inherit config
+
+DESCRIPTION="Manage D symlinks"
+VERSION="20210821"
+
+ETC_PATH="${EROOT}/etc"
+COMPILER_PATH="${EROOT}/usr/bin"
+MAN1_PATH="${EROOT}/usr/share/man/man1"
+MAN5_PATH="${EROOT}/usr/share/man/man5"
+INC_PATH="${EROOT}/usr/include/dlang"
+CONFIG_FILE="${EROOT}/var/lib/dlang"
+
+
+### list action ###
+
+describe_list() {
+	echo "List installed D compilers by vendor (or all installed compilers)"
+}
+
+describe_list_options() {
+	printf "% -11s : List installed ldc2 compilers\n"
+}
+
+describe_list_parameters() {
+	echo "[<vendor>]"
+}
+
+do_list() {
+	if [[ $# -eq 0 ]]; then
+		write_list_start "Available ldc2 compilers:"
+		local targets=($(find_targets))
+		local active="$(do_show)"
+		local mode="$(load_config "$CONFIG_FILE" ldc2)"
+		for ((i = 0; i < ${#targets[@]}; i++)); do
+			if [[ "${targets[$i]}" == "$active" ]]; then
+				if [[ "${mode:-auto}" == "auto" ]]; then
+					targets[$i]="$(highlight_marker "${targets[$i]}" auto)"
+				else
+					targets[$i]="$(highlight_marker "${targets[$i]}" manual)"
+				fi
+			fi
+		done
+		write_numbered_list -m "(none found)" "${targets[@]}"
+		echo
+	fi
+}
+
+
+### set action ###
+
+describe_set() {
+	echo "Set active version of D compilers"
+}
+
+describe_set_options() {
+	printf "% -11s : Set active ldc2 compiler\n"
+}
+
+describe_set_parameters() {
+	echo "<vendor>"
+}
+
+do_set() {
+	[[ $# -eq 1 ]] || die -q "1 argument required: eselect dlang set <version|index|\"auto\">"
+
+	local targets=($(find_targets))
+	local target="$1"
+	if [[ "$target" == "auto" ]]; then
+		local autoTarget="${targets[$((${#targets[@]} - 1))]}"
+		if [[ -n "${targets[$(($target - 1))]}" ]]; then
+			target="$autoTarget"
+		fi
+	elif is_number "$1" && [[ $1 -ge 1 ]]; then
+		local idxToTarget="${targets[$(($target - 1))]}"
+		if [[ -n "${targets[$(($target - 1))]}" ]]; then
+			target="$idxToTarget"
+		fi
+	fi
+
+	has "$target" "${targets[@]}" || die -q "Invalid or unavailable target"
+	if [[ "$1" == "auto" ]]; then
+		echo -n "Switching $1 to always latest version, currently $target..."
+	else
+		echo -n "Switching $1 to $target..."
+	fi
+
+	symlink_helper "${EROOT}/usr/lib/ldc2/${target}/bin/ldc2"  "${COMPILER_PATH}/ldc2"
+	symlink_helper "${EROOT}/usr/lib/ldc2/${target}/bin/ldmd2" "${COMPILER_PATH}/ldmd2"
+	symlink_helper "${EROOT}/usr/lib/ldc2/${target}/include/d" "${INC_PATH}/ldc"
+
+	store_config "$CONFIG_FILE" $1
+
+	echo " done"
+}
+
+
+### show action ###
+
+describe_show() {
+	echo "Show active D compiler by vendor"
+}
+
+describe_show_options() {
+	printf "% -11s : Show active ldc2 compiler\n"
+}
+
+describe_show_parameters() {
+	echo "<vendor>"
+}
+
+do_show() {
+	local interpreter="$(readlink "${COMPILER_PATH}/ldc2" | sed -r "s#^/usr/lib(32|64)?/$1/##;s#/bin/$1\$##")"
+	[[ -n "$interpreter" ]] && echo "$interpreter"
+}
+
+
+### update action ###
+
+describe_update() {
+	echo "Update active D compilers to the latest installed version in absense of a manually set version"
+}
+
+describe_update_options() {
+	printf "% -11s : Update active ldc2 compiler\n"
+}
+
+describe_update_parameters() {
+	echo "<vendor>"
+}
+
+do_update() {
+	local targets=($(find_targets))
+	if [[ ${#targets[@]} -eq 0 ]]; then
+		# No compiler avalable, remove symlinks
+		echo "No installed ldc2 compiler. Removing any existing symlinks."
+		rm -f "${COMPILER_PATH}/ldc2"
+		rm -f "${COMPILER_PATH}/ldmd2"
+	else
+		# Check if the active compiler is actually available, update otherwise
+		local active="$(do_show)"
+		local latest="${targets[$((${#targets[@]} - 1))]}"
+		local mode="$(load_config "$CONFIG_FILE" ldc2)"
+		if [[ "$active" == "" ]]; then
+			# First installation of a compiler
+			do_set auto
+		elif ! has "$active" "${targets[@]}"; then
+			# Active compiler is no longer valid (uninstalled), switch to "auto"
+			echo "Switching ldc2 from uninstalled version '$active' to '$latest'"
+			do_set auto
+		elif [[ "${mode:-auto}" == "auto" ]] && [[ "$active" != "$latest" ]]; then
+			# Active compiler was set to auto and we have a more recent version
+			echo "Updating active ldc2 version from '$active' to '$latest'"
+			do_set auto
+		fi
+	fi
+}
+
+
+### helper functions ###
+
+# Find a list of D versions
+find_targets() {
+	ls -v /usr/lib/ldc2/?.*/bin/ldc2 2> /dev/null | sed "s#^/usr/lib/ldc2/##;s#/.*##"
+}
+
+# Creates a symlink or prints a message and quits on error
+symlink_helper() {
+	local link="$(canonicalise "$1")"
+	ln -nfs "$link" "$2" || die -q "Couldn't symlink '$link' as '$2'!"
+}
+
+# Prints compilers as argument options <comp1|comp2|...>
+compiler_options() {
+	local additional=0
+	echo -n "<"
+	[[ $additional -eq 1 ]] && echo -n "|"
+	echo -n ldc2
+	additional=1
+	echo -n ">"
+}
