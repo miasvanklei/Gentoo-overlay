@@ -17,7 +17,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE="example executable"
 
-PATCHES=( "${FILESDIR}/${P}-modify-flags.patch" )
+PATCHES=( "${FILESDIR}/modify-flags.patch" )
 
 RDEPEND=">=dev-haskell/ansi-terminal-0.10.3:=[profile?] <dev-haskell/ansi-terminal-0.12:=[profile?]
 	>=dev-haskell/async-2.2.2:=[profile?] <dev-haskell/async-2.3:=[profile?]
@@ -42,13 +42,6 @@ DEPEND="${RDEPEND}
 		dev-haskell/temporary
 		>=dev-haskell/haskell-src-exts-1.23.0 <dev-haskell/haskell-src-exts-1.24
 		dev-vcs/mercurial )"
-
-src_prepare() {
-	default
-
-	cabal_chdeps \
-		'ansi-terminal >= 0.10.3 && < 0.11' 'ansi-terminal >= 0.10.3'
-}
 
 src_configure() {
 	haskell-cabal_src_configure \
