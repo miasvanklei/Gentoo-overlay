@@ -1,0 +1,826 @@
+diff --git a/compat/GHC/Driver/Monad.hs b/compat/GHC/Driver/Monad.hs
+new file mode 100644
+index 0000000..400e560
+--- /dev/null
++++ b/compat/GHC/Driver/Monad.hs
+@@ -0,0 +1,2 @@
++module GHC.Driver.Monad (module GhcMonad) where
++import GhcMonad
+diff --git a/compat/GHC/Driver/Session.hs b/compat/GHC/Driver/Session.hs
+new file mode 100644
+index 0000000..41916b7
+--- /dev/null
++++ b/compat/GHC/Driver/Session.hs
+@@ -0,0 +1,2 @@
++module GHC.Driver.Session (module DynFlags) where
++import DynFlags
+diff --git a/compat/GHC/Hs/Type.hs b/compat/GHC/Hs/Type.hs
+new file mode 100644
+index 0000000..208ee5d
+--- /dev/null
++++ b/compat/GHC/Hs/Type.hs
+@@ -0,0 +1,9 @@
++{-# LANGUAGE CPP #-}
++module GHC.Hs.Type
++#if MIN_VERSION_ghc(8,10,0)
++(module GHC.Hs.Types) where
++import GHC.Hs.Types
++#else
++(module HsTypes) where
++import HsTypes
++#endif
+diff --git a/compat/GHC/Hs/Types.hs b/compat/GHC/Hs/Types.hs
+deleted file mode 100644
+index c2dc3e8..0000000
+--- a/compat/GHC/Hs/Types.hs
++++ /dev/null
+@@ -1,2 +0,0 @@
+-module GHC.Hs.Types (module HsTypes) where
+-import HsTypes
+diff --git a/compat/GHC/Utils/Outputable.hs b/compat/GHC/Utils/Outputable.hs
+new file mode 100644
+index 0000000..69bc10b
+--- /dev/null
++++ b/compat/GHC/Utils/Outputable.hs
+@@ -0,0 +1,2 @@
++module GHC.Utils.Outputable (module Outputable) where
++import Outputable
+diff --git a/src/GHC/SourceGen/Binds.hs b/src/GHC/SourceGen/Binds.hs
+index cf8344e..5b4eabb 100644
+--- a/src/GHC/SourceGen/Binds.hs
++++ b/src/GHC/SourceGen/Binds.hs
+@@ -4,6 +4,7 @@
+ -- license that can be found in the LICENSE file or at
+ -- https://developers.google.com/open-source/licenses/bsd
+ 
++{-# LANGUAGE CPP #-}
+ -- | This module provides combinators for constructing Haskell declarations.
+ module GHC.SourceGen.Binds
+     (  -- * Bindings
+@@ -46,14 +46,19 @@
+     , (<--)
+     ) where
+ 
+-import BasicTypes (LexicalFixity(..))
+ import Data.Bool (bool)
+ import Data.Maybe (fromMaybe)
+ import GHC.Hs.Binds
+ import GHC.Hs.Expr
+-import GHC.Hs.Types
++import GHC.Hs.Type
+ import GhcPlugins (isSymOcc)
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Basic (LexicalFixity(..))
++import GHC.Tc.Types.Evidence (HsWrapper(WpHole))
++#else
++import BasicTypes (LexicalFixity(..))
+ import TcEvidence (HsWrapper(WpHole))
++#endif
+ 
+ import GHC.SourceGen.Binds.Internal
+ import GHC.SourceGen.Name
+@@ -94,7 +100,11 @@ typeSig n = typeSigs [n]
+ funBinds :: HasValBind t => OccNameStr -> [RawMatch] -> t
+ funBinds name matches = bindB $ withPlaceHolder
+         (noExt FunBind name'
+-            (matchGroup context matches) WpHole)
++            (matchGroup context matches)
++#if !MIN_VERSION_ghc(9,0,0)
++            WpHole
++#endif
++        )
+         []
+   where
+     name' = valueRdrName $ unqual name
+@@ -265,7 +275,10 @@ stmt e =
+ -- > =====
+ -- > bvar "x" <-- var "act"
+ (<--) :: Pat' -> HsExpr' -> Stmt'
+-p <-- e = withPlaceHolder $ noExt BindStmt (builtPat p) (builtLoc e) noSyntaxExpr noSyntaxExpr
++p <-- e = withPlaceHolder $ noExt BindStmt (builtPat p) (builtLoc e)
++#if !MIN_VERSION_ghc(9,0,0)
++         noSyntaxExpr noSyntaxExpr
++#endif
+ infixl 1 <--
+ 
+ -- | Syntax types which can declare/define pattern bindings.
+diff --git a/src/GHC/SourceGen/Binds/Internal.hs b/src/GHC/SourceGen/Binds/Internal.hs
+index 255f41d..444a273 100644
+--- a/src/GHC/SourceGen/Binds/Internal.hs
++++ b/src/GHC/SourceGen/Binds/Internal.hs
+@@ -7,12 +7,18 @@
+ {-# LANGUAGE CPP #-}
+ module GHC.SourceGen.Binds.Internal where
+ 
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Basic (Origin(Generated))
++import GHC.Data.Bag (listToBag)
++import GHC.Types.SrcLoc (Located)
++#else
+ import BasicTypes (Origin(Generated))
+ import Bag (listToBag)
++import SrcLoc (Located)
++#endif
+ import GHC.Hs.Binds
+ import GHC.Hs.Decls
+ import GHC.Hs.Expr (MatchGroup(..), Match(..), GRHSs(..))
+-import SrcLoc (Located)
+ 
+ #if !MIN_VERSION_ghc(8,6,0)
+ import PlaceHolder (PlaceHolder(..))
+diff --git a/src/GHC/SourceGen/Decl.hs b/src/GHC/SourceGen/Decl.hs
+index 9523729..3f2f3d9 100644
+--- a/src/GHC/SourceGen/Decl.hs
++++ b/src/GHC/SourceGen/Decl.hs
+@@ -45,14 +45,21 @@ module GHC.SourceGen.Decl
+     , patSynBind
+     ) where
+ 
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Basic (LexicalFixity(Prefix))
++import GHC.Data.Bag (listToBag)
++import GHC.Types.SrcLoc (Located, LayoutInfo(..))
++#else
+ import BasicTypes (LexicalFixity(Prefix))
++import Bag (listToBag)
++import SrcLoc (Located)
++#endif
+ #if !MIN_VERSION_ghc(8,6,0)
+ import BasicTypes (DerivStrategy(..))
+ #endif
+-import Bag (listToBag)
+ import GHC.Hs.Binds
+ import GHC.Hs.Decls
+-import GHC.Hs.Types
++import GHC.Hs.Type
+     ( ConDeclField(..)
+     , FieldOcc(..)
+     , HsConDetails(..)
+@@ -63,8 +70,10 @@ import GHC.Hs.Types
+ #endif
+     , SrcStrictness(..)
+     , SrcUnpackedness(..)
++#if MIN_VERSION_ghc(9,0,0)
++    , hsUnrestricted
++#endif
+     )
+-import SrcLoc (Located)
+ 
+ #if MIN_VERSION_ghc(8,10,0)
+ import GHC.Hs.Extension (NoExtField(NoExtField))
+@@ -146,7 +155,9 @@ class'
+ class' context name vars decls
+     = noExt TyClD $ ClassDecl
+             { tcdCtxt = builtLoc $ map builtLoc context
+-#if MIN_VERSION_ghc(8,10,0)
++#if MIN_VERSION_ghc(9,0,0)
++            , tcdCExt = NoLayoutInfo
++#elif MIN_VERSION_ghc(8,10,0)
+             , tcdCExt = NoExtField
+ #elif MIN_VERSION_ghc(8,6,0)
+             , tcdCExt = NoExt
+@@ -298,10 +309,10 @@ data' = newOrDataType DataType
+ --
+ -- > Foo a Int
+ -- > =====
+--- > conDecl "Foo" [field (var "a"), field (var "Int")]
++-- > prefixCon "Foo" [field (var "a"), field (var "Int")]
+ prefixCon :: OccNameStr -> [Field] -> ConDecl'
+ prefixCon name fields = renderCon98Decl name
+-    $ PrefixCon $ map renderField fields
++    $ PrefixCon $ map (hsUnrestricted . renderField) fields
+ 
+ -- | Declares a Haskell-98-style infix constructor for a data or type
+ -- declaration.
+@@ -311,7 +322,7 @@ prefixCon name fields = renderCon98Decl name
+ -- > infixCon (field (var "A" @@ var "b")) ":+:" (field (Var "C" @@ var "d"))
+ infixCon :: Field -> OccNameStr -> Field -> ConDecl'
+ infixCon f name f' = renderCon98Decl name
+-    $ InfixCon (renderField f) (renderField f')
++    $ InfixCon (hsUnrestricted $ renderField f) (hsUnrestricted $ renderField f')
+ 
+ -- | Declares Haskell-98-style record constructor for a data or type
+ -- declaration.
+@@ -363,6 +374,11 @@ strict f = f { strictness = SrcStrict }
+ lazy :: Field -> Field
+ lazy f = f { strictness = SrcLazy }
+ 
++#if !MIN_VERSION_ghc(9,0,0)
++hsUnrestricted :: a -> a
++hsUnrestricted = id
++#endif
++
+ renderField :: Field -> Located HsType'
+ -- TODO: parenthesizeTypeForApp is an overestimate in the case of
+ -- rendering an infix or record type.
+diff --git a/src/GHC/SourceGen/Expr.hs b/src/GHC/SourceGen/Expr.hs
+index b8f0267..e5700ff 100644
+--- a/src/GHC/SourceGen/Expr.hs
++++ b/src/GHC/SourceGen/Expr.hs
+@@ -31,9 +31,14 @@ module GHC.SourceGen.Expr
+ import GHC.Hs.Expr
+ import GHC.Hs.Extension (GhcPs)
+ import GHC.Hs.Pat (HsRecField'(..), HsRecFields(..))
+-import GHC.Hs.Types (FieldOcc(..), AmbiguousFieldOcc(..))
++import GHC.Hs.Type (FieldOcc(..), AmbiguousFieldOcc(..))
++import GHC.Hs.Utils (mkHsIf)
+ import Data.String (fromString)
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.SrcLoc (unLoc, GenLocated(..), Located)
++#else
+ import SrcLoc (unLoc, GenLocated(..), Located)
++#endif
+ 
+ import GHC.SourceGen.Binds.Internal
+ import GHC.SourceGen.Binds
+@@ -68,7 +73,7 @@ lambdaCase :: [RawMatch] -> HsExpr'
+ lambdaCase = noExt HsLamCase . matchGroup CaseAlt
+ 
+ if' :: HsExpr' -> HsExpr' -> HsExpr' -> HsExpr'
+-if' x y z = noExt HsIf Nothing (builtLoc x) (builtLoc y) (builtLoc z)
++if' x y z = mkHsIf (builtLoc x) (builtLoc y) (builtLoc z)
+ 
+ -- | A MultiWayIf expression.
+ --
+@@ -94,7 +99,12 @@ multiIf = noExtOrPlaceHolder HsMultiIf . map builtLoc
+ -- > =====
+ -- > do' [bvar "x" <-- var "act", stmt $ var "return" @@ var "x"]
+ do' :: [Stmt'] -> HsExpr'
+-do' = withPlaceHolder . noExt HsDo DoExpr
++do' = withPlaceHolder
++#if MIN_VERSION_ghc(9,0,0)
++        . noExt HsDo (DoExpr Nothing)
++#else
++        . noExt HsDo DoExpr
++#endif
+         . builtLoc . map (builtLoc . parenthesizeIfLet)
+   where
+   -- Put parentheses around a "let" in a do-binding, to avoid:
+@@ -120,7 +130,12 @@ do' = withPlaceHolder . noExt HsDo DoExpr
+ -- >          ]
+ listComp :: HsExpr' -> [Stmt'] -> HsExpr'
+ listComp lastExpr stmts =
+-    let lastStmt = noExt LastStmt (builtLoc lastExpr) False noSyntaxExpr
++    let lastStmt = noExt LastStmt (builtLoc lastExpr) ret noSyntaxExpr
++#if MIN_VERSION_ghc(9,0,0)
++        ret = Nothing
++#else
++        ret = False
++#endif
+      in withPlaceHolder . noExt HsDo ListComp . builtLoc . map builtLoc $
+             stmts ++ [lastStmt]
+ 
+diff --git a/src/GHC/SourceGen/Expr/Internal.hs b/src/GHC/SourceGen/Expr/Internal.hs
+index fc171ae..0ecf23c 100644
+--- a/src/GHC/SourceGen/Expr/Internal.hs
++++ b/src/GHC/SourceGen/Expr/Internal.hs
+@@ -8,7 +8,11 @@
+ module GHC.SourceGen.Expr.Internal where
+ 
+ import GHC.Hs.Expr
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.SrcLoc (Located, unLoc)
++#else
+ import SrcLoc (Located, unLoc)
++#endif
+ 
+ import GHC.SourceGen.Lit.Internal
+ import GHC.SourceGen.Syntax.Internal
+diff --git a/src/GHC/SourceGen/Lit.hs b/src/GHC/SourceGen/Lit.hs
+index 2904aa7..0c00195 100644
+--- a/src/GHC/SourceGen/Lit.hs
++++ b/src/GHC/SourceGen/Lit.hs
+@@ -6,6 +6,7 @@
+ 
+ -- | This module provides combinators for constructing Haskell literals,
+ -- which may be used in either patterns or expressions.
++{-# LANGUAGE CPP #-}
+ module GHC.SourceGen.Lit
+     ( HsLit'
+     , HsOverLit'
+@@ -16,12 +17,16 @@ module GHC.SourceGen.Lit
+     , frac
+     ) where
+ 
+-import BasicTypes (FractionalLit(..))
+-import BasicTypes(IntegralLit(..), SourceText(..))
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Basic (FractionalLit(..), IntegralLit(..), SourceText(..))
++import GHC.Data.FastString (fsLit)
++#else
++import BasicTypes (FractionalLit(..), IntegralLit(..), SourceText(..))
++import FastString (fsLit)
++#endif
+ import GHC.Hs.Lit
+ import GHC.Hs.Expr (noExpr, noSyntaxExpr, HsExpr(..))
+ import GHC.Hs.Pat (Pat(..))
+-import FastString (fsLit)
+ 
+ import GHC.SourceGen.Lit.Internal
+ import GHC.SourceGen.Syntax.Internal
+diff --git a/src/GHC/SourceGen/Lit/Internal.hs b/src/GHC/SourceGen/Lit/Internal.hs
+index ca4e9e9..7dad501 100644
+--- a/src/GHC/SourceGen/Lit/Internal.hs
++++ b/src/GHC/SourceGen/Lit/Internal.hs
+@@ -4,10 +4,14 @@
+ -- license that can be found in the LICENSE file or at
+ -- https://developers.google.com/open-source/licenses/bsd
+ 
++{-# LANGUAGE CPP #-}
+ module GHC.SourceGen.Lit.Internal where
+ 
+-import BasicTypes (SourceText(NoSourceText), FractionalLit(..))
+-import BasicTypes (IntegralLit(..))
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Basic (SourceText(NoSourceText), FractionalLit(..), IntegralLit(..))
++#else
++import BasicTypes (SourceText(NoSourceText), FractionalLit(..), IntegralLit(..))
++#endif
+ import GHC.Hs.Lit
+ import GHC.SourceGen.Syntax.Internal
+ 
+diff --git a/src/GHC/SourceGen/Module.hs b/src/GHC/SourceGen/Module.hs
+index ab0d316..dffb1c4 100644
+--- a/src/GHC/SourceGen/Module.hs
++++ b/src/GHC/SourceGen/Module.hs
+@@ -34,7 +34,13 @@ import GHC.Hs
+     , ImportDeclQualifiedStyle(..)
+ #endif
+     )
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.SrcLoc (LayoutInfo(..))
++import GHC.Unit.Module (IsBootInterface(..))
++import GHC.Types.Name.Reader (RdrName)
++#else
+ import RdrName (RdrName)
++#endif
+ 
+ import GHC.SourceGen.Syntax.Internal
+ import GHC.SourceGen.Name
+@@ -54,6 +60,9 @@ module' name exports imports decls = HsModule
+     , hsmodDecls = fmap builtLoc decls
+     , hsmodDeprecMessage = Nothing
+     , hsmodHaddockModHeader = Nothing
++#if MIN_VERSION_ghc(9,0,0)
++    , hsmodLayout = NoLayoutInfo
++#endif
+     }
+ 
+ qualified' :: ImportDecl' -> ImportDecl'
+@@ -71,7 +80,13 @@ as' d m = d { ideclAs = Just (builtLoc $ unModuleNameStr m) }
+ import' :: ModuleNameStr -> ImportDecl'
+ import' m = noSourceText (noExt ImportDecl)
+             (builtLoc $ unModuleNameStr m)
+-            Nothing False False
++            Nothing
++#if MIN_VERSION_ghc(9,0,0)
++            NotBoot
++#else
++            False
++#endif
++            False
+ #if MIN_VERSION_ghc(8,10,0)
+             NotQualified
+ #else
+@@ -89,7 +104,13 @@ hiding d ies = d
+ 
+ -- | Adds the @{-# SOURCE #-}@ pragma to an import.
+ source :: ImportDecl' -> ImportDecl'
+-source d = d { ideclSource = True }
++source d = d { ideclSource =
++#if MIN_VERSION_ghc(9,0,0)
++    IsBoot
++#else
++    True
++#endif
++}
+ 
+ -- | Exports all methods and/or constructors.
+ --
+diff --git a/src/GHC/SourceGen/Name.hs b/src/GHC/SourceGen/Name.hs
+index 7eec70d..3fa6056 100644
+--- a/src/GHC/SourceGen/Name.hs
++++ b/src/GHC/SourceGen/Name.hs
+@@ -9,6 +9,7 @@
+ --
+ -- These types are all instances of 'Data.String.IsString'.  For ease of use,
+ -- we recommend enabling the @OverloadedStrings@ extension.
++{-# LANGUAGE CPP #-}
+ module GHC.SourceGen.Name
+     ( -- * RdrNameStr
+       RdrNameStr(..)
+@@ -27,11 +28,18 @@ module GHC.SourceGen.Name
+     , moduleNameStrToString
+     ) where
+ 
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Data.FastString (unpackFS)
++import GHC.Unit.Module (moduleNameString)
++import GHC.Types.Name.Occurrence (OccName, occNameFS, occNameSpace, isVarNameSpace)
++import GHC.Types.Name (Name, nameOccName)
++#else
+ import FastString (unpackFS)
+ import Module (moduleNameString)
+-import GHC.SourceGen.Name.Internal
+ import OccName (OccName, occNameFS, occNameSpace, isVarNameSpace)
+ import Name (Name, nameOccName)
++#endif
++import GHC.SourceGen.Name.Internal
+ 
+ unqual :: OccNameStr -> RdrNameStr
+ unqual = UnqualStr
+diff --git a/src/GHC/SourceGen/Name/Internal.hs b/src/GHC/SourceGen/Name/Internal.hs
+index 7d7e16d..19773cb 100644
+--- a/src/GHC/SourceGen/Name/Internal.hs
++++ b/src/GHC/SourceGen/Name/Internal.hs
+@@ -4,16 +4,25 @@
+ -- license that can be found in the LICENSE file or at
+ -- https://developers.google.com/open-source/licenses/bsd
+ 
++{-# LANGUAGE CPP #-}
+ module GHC.SourceGen.Name.Internal where
+ 
+ import Data.Char (isAlphaNum, isUpper)
+ import Data.List (intercalate)
+ import Data.String (IsString(..))
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Data.FastString (FastString, fsLit)
++import GHC.Unit.Module (mkModuleNameFS, ModuleName, moduleNameString)
++import GHC.Types.Name.Occurrence
++import GHC.Types.Name.Reader
++import GHC.Types.SrcLoc (Located)
++#else
+ import FastString (FastString, fsLit)
+ import Module (mkModuleNameFS, ModuleName, moduleNameString)
+-import RdrName
+ import OccName
++import RdrName
+ import SrcLoc (Located)
++#endif
+ 
+ import GHC.SourceGen.Syntax.Internal (builtLoc)
+ 
+diff --git a/src/GHC/SourceGen/Overloaded.hs b/src/GHC/SourceGen/Overloaded.hs
+index fc8f1f0..d5d5885 100644
+--- a/src/GHC/SourceGen/Overloaded.hs
++++ b/src/GHC/SourceGen/Overloaded.hs
+@@ -18,8 +18,7 @@ module GHC.SourceGen.Overloaded
+     , BVar(..)
+     ) where
+ 
+-import BasicTypes (Boxity(..))
+-import GHC.Hs.Types
++import GHC.Hs.Type
+     ( HsType(..)
+     , HsTyVarBndr(..)
+     )
+@@ -34,10 +33,20 @@ import GHC.Hs
+     , HsTupArg(..)
+     , HsTupleSort(..)
+     )
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Basic (Boxity(..))
++import GHC.Core.DataCon (dataConName)
++import GHC.Types.Name.Reader (RdrName(..), nameRdrName)
++import GHC.Types.SrcLoc (Located)
++import GHC.Builtin.Types (consDataCon_RDR, nilDataCon, unitDataCon)
++import GHC.Types.Var (Specificity(..))
++#else
++import BasicTypes (Boxity(..))
+ import DataCon (dataConName)
+ import RdrName (RdrName(..), nameRdrName)
+ import SrcLoc (Located)
+ import TysWiredIn (consDataCon_RDR, nilDataCon, unitDataCon)
++#endif
+ 
+ import GHC.SourceGen.Expr.Internal
+ import GHC.SourceGen.Name.Internal
+@@ -241,8 +250,16 @@ instance Var HsType' where
+ instance BVar HsType' where
+     bvar = var . UnqualStr
+ 
++#if MIN_VERSION_ghc(9,0,0)
++instance BVar HsTyVarBndr' where
++    bvar = noExt UserTyVar () . typeRdrName . UnqualStr
++
++instance BVar HsTyVarBndrS' where
++    bvar = noExt UserTyVar SpecifiedSpec . typeRdrName . UnqualStr
++#else
+ instance BVar HsTyVarBndr' where
+     bvar = noExt UserTyVar . typeRdrName . UnqualStr
++#endif
+ 
+ instance Var IE' where
+     var n = noExt IEVar $ builtLoc $ IEName $ exportRdrName n
+diff --git a/src/GHC/SourceGen/Pat.hs b/src/GHC/SourceGen/Pat.hs
+index f28f118..83a8196 100644
+--- a/src/GHC/SourceGen/Pat.hs
++++ b/src/GHC/SourceGen/Pat.hs
+@@ -18,13 +18,13 @@ module GHC.SourceGen.Pat
+     , sigP
+     ) where
+ 
+-import GHC.Hs.Types
++import GHC.Hs.Type
+ import GHC.Hs.Pat hiding (LHsRecField')
+ 
+ import GHC.SourceGen.Name.Internal
+ import GHC.SourceGen.Pat.Internal
+ import GHC.SourceGen.Syntax.Internal
+-import GHC.SourceGen.Type.Internal (sigWcType)
++import GHC.SourceGen.Type.Internal (patSigType)
+ 
+ -- | A wild pattern (@_@).
+ wildP :: Pat'
+@@ -44,7 +44,13 @@ v `asP` p = noExt AsPat (valueRdrName v) $ builtPat $ parenthesize p
+ -- > =====
+ -- > conP "A" [bvar "b", bvar "c"]
+ conP :: RdrNameStr -> [Pat'] -> Pat'
+-conP c xs = ConPatIn (valueRdrName c) $ PrefixCon
++conP c xs =
++#if MIN_VERSION_ghc(9,0,0)
++  noExt ConPat
++#else
++  ConPatIn
++#endif
++  (valueRdrName c) $ PrefixCon
+                 $ map (builtPat . parenthesize) xs
+ 
+ -- | A pattern constructor with no arguments.
+@@ -56,8 +62,13 @@ conP_ :: RdrNameStr -> Pat'
+ conP_ c = conP c []
+ 
+ recordConP :: RdrNameStr -> [(RdrNameStr, Pat')] -> Pat'
+-recordConP c fs
+-    = ConPatIn (valueRdrName c)
++recordConP c fs =
++#if MIN_VERSION_ghc(9,0,0)
++  noExt ConPat
++#else
++  ConPatIn
++#endif
++  (valueRdrName c)
+         $ RecCon $ HsRecFields (map mkRecField fs) Nothing -- No ".."
+   where
+     mkRecField :: (RdrNameStr, Pat') -> LHsRecField' LPat'
+@@ -92,9 +103,9 @@ lazyP = noExt LazyPat . builtPat . parenthesize
+ -- > sigPat (bvar "x") (var "y")
+ sigP :: Pat' -> HsType' -> Pat'
+ #if MIN_VERSION_ghc(8,8,0)
+-sigP p t = noExt SigPat (builtPat p) (sigWcType t)
++sigP p t = noExt SigPat (builtPat p) (patSigType t)
+ #elif MIN_VERSION_ghc(8,6,0)
+-sigP p t = SigPat (sigWcType t) (builtPat p)
++sigP p t = SigPat (patSigType t) (builtPat p)
+ #else
+-sigP p t = SigPatIn (builtPat p) (sigWcType t)
++sigP p t = SigPatIn (builtPat p) (patSigType t)
+ #endif
+diff --git a/src/GHC/SourceGen/Pat/Internal.hs b/src/GHC/SourceGen/Pat/Internal.hs
+index 01677f8..fdff839 100644
+--- a/src/GHC/SourceGen/Pat/Internal.hs
++++ b/src/GHC/SourceGen/Pat/Internal.hs
+@@ -2,11 +2,16 @@
+ module GHC.SourceGen.Pat.Internal where
+ 
+ import GHC.Hs.Pat (Pat(..))
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Hs.Type (HsConDetails(..))
++import GHC.Types.SrcLoc (unLoc)
++#else
+ import GHC.Hs.Types (HsConDetails(..))
++import SrcLoc (unLoc)
++#endif
+ 
+ import GHC.SourceGen.Lit.Internal (litNeedsParen, overLitNeedsParen)
+ import GHC.SourceGen.Syntax.Internal
+-import SrcLoc (unLoc)
+ 
+ -- Note: GHC>=8.6 inserts parentheses automatically when pretty-printing patterns.
+ -- When we stop supporting lower versions, we may be able to simplify this.
+@@ -24,9 +29,14 @@ needsPar (NPat _ l _ _) = overLitNeedsParen $ unLoc l
+ needsPar (LitPat l) = litNeedsParen l
+ needsPar (NPat l _ _ _) = overLitNeedsParen $ unLoc l
+ #endif
++#if MIN_VERSION_ghc(9,0,0)
++needsPar (ConPat _ _ (PrefixCon xs)) = not $ null xs
++needsPar (ConPat _ _ (InfixCon _ _)) = True
++#else
+ needsPar (ConPatIn _ (PrefixCon xs)) = not $ null xs
+ needsPar (ConPatIn _ (InfixCon _ _)) = True
+ needsPar ConPatOut{} = True
++#endif
+ #if MIN_VERSION_ghc(8,6,0)
+ needsPar SigPat{} = True
+ #else
+diff --git a/src/GHC/SourceGen/Pretty.hs b/src/GHC/SourceGen/Pretty.hs
+index 783fe46..d0c9148 100644
+--- a/src/GHC/SourceGen/Pretty.hs
++++ b/src/GHC/SourceGen/Pretty.hs
+@@ -11,15 +11,15 @@ module GHC.SourceGen.Pretty
+     , hPutPpr
+     ) where
+ 
+-import DynFlags
+-import GhcMonad
+-import Outputable
++import GHC.Driver.Monad
++import GHC.Driver.Session
++import GHC.Utils.Outputable
+ import System.IO
+ 
+ hPutPpr :: Outputable a => Handle -> a -> Ghc ()
+ hPutPpr h x = do
+     dflags <- getDynFlags
+-    liftIO $ printForUser dflags h neverQualify $ ppr x
++    liftIO $ printForUser dflags h neverQualify AllTheWay $ ppr x
+ 
+ putPpr :: Outputable a => a -> Ghc ()
+ putPpr = hPutPpr stdout
+diff --git a/src/GHC/SourceGen/Syntax/Internal.hs b/src/GHC/SourceGen/Syntax/Internal.hs
+index 4b477ba..c9190b3 100644
+--- a/src/GHC/SourceGen/Syntax/Internal.hs
++++ b/src/GHC/SourceGen/Syntax/Internal.hs
+@@ -38,6 +38,9 @@ import GHC.Hs
+ #if !MIN_VERSION_ghc(8,8,0)
+     , LHsRecField
+     , LHsRecUpdField
++#endif
++#if MIN_VERSION_ghc(9,0,0)
++    , HsPatSigType
+ #endif
+     )
+ import GHC.Hs.Binds (Sig, HsLocalBinds)
+@@ -48,10 +51,17 @@ import BasicTypes (DerivStrategy)
+ #endif
+ import GHC.Hs.Decls (HsDerivingClause)
+ import GHC.Hs.Pat
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Name.Reader (RdrName)
++import GHC.Types.SrcLoc (SrcSpan, Located, GenLocated(..), mkGeneralSrcSpan)
++#else
+ import RdrName (RdrName)
+ import SrcLoc (SrcSpan, Located, GenLocated(..), mkGeneralSrcSpan)
++#endif
+ 
+-#if MIN_VERSION_ghc(8,8,0)
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Basic (PromotionFlag(..))
++#elif MIN_VERSION_ghc(8,8,0)
+ import BasicTypes (PromotionFlag(..))
+ #else
+ import GHC.Hs.Types (Promoted(..))
+@@ -65,6 +75,10 @@ import GHC.Hs.Extension (NoExt(NoExt))
+ import PlaceHolder(PlaceHolder(..))
+ #endif
+ 
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Types.Var (Specificity)
++#endif
++
+ import GHC.Hs.Extension (GhcPs)
+ 
+ #if MIN_VERSION_ghc(8,6,0)
+@@ -194,15 +208,29 @@ type IE' = IE GhcPs
+ -- Instances:
+ --
+ -- * 'GHC.SourceGen.Overloaded.BVar'
++#if MIN_VERSION_ghc(9,0,0)
++type HsTyVarBndr' = HsTyVarBndr () GhcPs
++type HsTyVarBndrS' = HsTyVarBndr Specificity GhcPs
++#else
+ type HsTyVarBndr' = HsTyVarBndr GhcPs
++type HsTyVarBndrS' = HsTyVarBndr GhcPs
++#endif
+ 
+ type HsLit' = HsLit GhcPs
++#if MIN_VERSION_ghc(9,0,0)
++type HsModule' = HsModule
++#else
+ type HsModule' = HsModule GhcPs
++#endif
+ type HsBind' = HsBind GhcPs
+ type HsLocalBinds' = HsLocalBinds GhcPs
+ type HsValBinds' = HsValBinds GhcPs
+ type Sig' = Sig GhcPs
++#if MIN_VERSION_ghc(9,0,0)
++type HsMatchContext' = HsMatchContext GhcPs
++#else
+ type HsMatchContext' = HsMatchContext RdrName
++#endif
+ type Match' = Match GhcPs
+ type MatchGroup' = MatchGroup GhcPs
+ type GRHS' = GRHS GhcPs
+@@ -228,3 +256,9 @@ type DerivStrategy' = DerivStrategy GhcPs
+ #else
+ type DerivStrategy' = DerivStrategy
+ #endif
++
++#if MIN_VERSION_ghc(9,0,0)
++type HsPatSigType' = HsPatSigType GhcPs
++#else
++type HsPatSigType' = LHsSigWcType'
++#endif
+diff --git a/src/GHC/SourceGen/Type.hs b/src/GHC/SourceGen/Type.hs
+index 6c4cf0c..63c8b9a 100644
+--- a/src/GHC/SourceGen/Type.hs
++++ b/src/GHC/SourceGen/Type.hs
+@@ -22,7 +22,11 @@ module GHC.SourceGen.Type
+     ) where
+ 
+ import Data.String (fromString)
+-import GHC.Hs.Types
++import GHC.Hs.Type
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Parser.Annotation
++import GHC.Types.Var (Specificity(..))
++#endif
+ 
+ import GHC.SourceGen.Syntax.Internal
+ import GHC.SourceGen.Lit.Internal (noSourceText)
+@@ -56,7 +60,11 @@ tuplePromotedTy = withPlaceHolders (noExt HsExplicitTupleTy) . map builtLoc
+ -- > =====
+ -- > var "a" --> var "b"
+ (-->) :: HsType' -> HsType' -> HsType'
+-a --> b = noExt HsFunTy (parenthesizeTypeForFun $ builtLoc a) (builtLoc b)
++a --> b = noExt HsFunTy
++#if MIN_VERSION_ghc(9,0,0)
++         (HsUnrestrictedArrow NormalSyntax)
++#endif
++         (parenthesizeTypeForFun $ builtLoc a) (builtLoc b)
+ 
+ infixr 0 -->
+ 
+@@ -65,12 +73,15 @@ infixr 0 -->
+ -- > forall a . T a
+ -- > =====
+ -- > forall' [bvar "a"] $ var "T" @@ var "a"
+-forall' :: [HsTyVarBndr'] -> HsType' -> HsType'
++forall' :: [HsTyVarBndrS'] -> HsType' -> HsType'
+ forall' ts = noExt HsForAllTy
+-#if MIN_VERSION_ghc(8,10,0)
++#if MIN_VERSION_ghc(9,0,0)
++        (mkHsForAllInvisTele (map builtLoc ts))
++#elif MIN_VERSION_ghc(8,10,0)
+         ForallInvis  -- "Invisible" forall, i.e., with a dot
++        (map builtLoc ts)
+ #endif
+-        (map builtLoc ts) . builtLoc
++        . builtLoc
+ 
+ -- | Qualify a type with constraints.
+ --
+@@ -87,6 +98,9 @@ infixr 0 ==>
+ -- > x :: A
+ -- > =====
+ -- > kindedVar "x" (var "A")
+-kindedVar :: OccNameStr -> HsType' -> HsTyVarBndr'
+-kindedVar v t = noExt KindedTyVar (typeRdrName $  UnqualStr v)
+-                        (builtLoc t)
++kindedVar :: OccNameStr -> HsType' -> HsTyVarBndrS'
++kindedVar v t = noExt KindedTyVar
++#if MIN_VERSION_ghc(9,0,0)
++                SpecifiedSpec
++#endif
++                (typeRdrName $ UnqualStr v) (builtLoc t)
+diff --git a/src/GHC/SourceGen/Type/Internal.hs b/src/GHC/SourceGen/Type/Internal.hs
+index 6a0cd2c..4ea4f14 100644
+--- a/src/GHC/SourceGen/Type/Internal.hs
++++ b/src/GHC/SourceGen/Type/Internal.hs
+@@ -7,8 +7,13 @@
+ {-# LANGUAGE CPP #-}
+ module GHC.SourceGen.Type.Internal where
+ 
++#if MIN_VERSION_ghc(9,0,0)
++import GHC.Hs.Type as Types
++import GHC.Types.SrcLoc (Located, unLoc)
++#else
+ import GHC.Hs.Types as Types
+ import SrcLoc (Located, unLoc)
++#endif
+ 
+ import GHC.SourceGen.Syntax.Internal
+ 
+@@ -62,3 +67,10 @@ sigWcType = noExt (withPlaceHolder Types.HsWC) . sigType
+ 
+ wcType :: HsType' -> LHsWcType'
+ wcType = noExt (withPlaceHolder Types.HsWC) . builtLoc
++
++patSigType :: HsType' -> HsPatSigType'
++#if MIN_VERSION_ghc(9,0,0)
++patSigType = mkHsPatSigType . builtLoc
++#else
++patSigType = sigWcType
++#endif
+--- a/ghc-source-gen.cabal	2021-08-07 23:39:16.901121294 +0200
++++ b/ghc-source-gen.cabal	2021-08-07 23:39:46.201456004 +0200
+@@ -61,7 +61,8 @@
+       TypeSynonymInstances
+   build-depends:
+       base >=4.7 && <5
+-    , ghc >=8.4 && <8.11
++    , ghc >=8.4 && <9.1
++    , ghc-api-compat
+   if impl(ghc<8.10)
+     other-modules:
+         GHC.Hs
