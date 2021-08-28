@@ -1,0 +1,154 @@
+--- a/driver/cache.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/driver/cache.cpp	2021-08-21 21:04:29.493896791 +0200
+@@ -319,7 +319,10 @@
+   const auto codeModel = opts::getCodeModel();
+   if (codeModel.hasValue())
+     hash_os << codeModel.getValue();
+-#if LDC_LLVM_VER >= 800
++#if LDC_LLVM_VER >= 1300
++  const auto framePointerUsage = opts::framePointerUsage();
++  hash_os << (int)framePointerUsage;
++#elif LDC_LLVM_VER >= 800
+   const auto framePointerUsage = opts::framePointerUsage();
+   if (framePointerUsage.hasValue())
+     hash_os << framePointerUsage.getValue();
+--- a/driver/cl_options-llvm.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/driver/cl_options-llvm.cpp	2021-08-21 21:04:29.493896791 +0200
+@@ -63,8 +63,11 @@
+   return ::getCodeModel();
+ #endif
+ }
+-
+-#if LDC_LLVM_VER >= 800
++#if LDC_LLVM_VER >= 1300
++llvm::FramePointerKind framePointerUsage() {
++    return codegen::getFramePointerUsage();
++}
++#elif LDC_LLVM_VER >= 800
+ llvm::Optional<llvm::FramePointer::FP> framePointerUsage() {
+ #if LDC_LLVM_VER >= 1100
+   // Defaults to `FP::None`; no way to check if set explicitly by user except
+--- a/driver/cl_options-llvm.h	2021-08-14 21:11:20.000000000 +0200
++++ b/driver/cl_options-llvm.h	2021-08-21 21:04:29.493896791 +0200
+@@ -24,7 +24,9 @@
+ std::string getArchStr();
+ llvm::Optional<llvm::Reloc::Model> getRelocModel();
+ llvm::Optional<llvm::CodeModel::Model> getCodeModel();
+-#if LDC_LLVM_VER >= 800
++#if LDC_LLVM_VER >= 1300
++llvm::FramePointerKind framePointerUsage();
++#elif LDC_LLVM_VER >= 800
+ llvm::Optional<llvm::FramePointer::FP> framePointerUsage();
+ #else
+ llvm::cl::boolOrDefault disableFPElim();
+--- a/driver/cl_options_sanitizers.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/driver/cl_options_sanitizers.cpp	2021-08-21 21:04:29.493896791 +0200
+@@ -21,6 +21,7 @@
+ #include "llvm/ADT/StringSwitch.h"
+ #include "llvm/Support/raw_ostream.h"
+ #include "llvm/Support/SpecialCaseList.h"
++#include "llvm/Support/VirtualFileSystem.h"
+ 
+ namespace {
+ 
+--- a/driver/codegenerator.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/driver/codegenerator.cpp	2021-08-21 21:04:29.493896791 +0200
+@@ -263,9 +263,9 @@
+   Version.append(global.ldc_version.ptr, global.ldc_version.length);
+   llvm::Metadata *IdentNode[] = {llvm::MDString::get(ir_->context(), Version)};
+   IdentMetadata->addOperand(llvm::MDNode::get(ir_->context(), IdentNode));
+-
++#if LDC_LLVM_VER < 1300
+   context_.setInlineAsmDiagnosticHandler(inlineAsmDiagnosticHandler, ir_);
+-
++#endif
+   std::unique_ptr<llvm::ToolOutputFile> diagnosticsOutputFile =
+       createAndSetDiagnosticsOutputFile(*ir_, context_, filename);
+ 
+--- a/driver/ldmd.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/driver/ldmd.cpp	2021-08-21 21:04:29.492896796 +0200
+@@ -712,7 +712,7 @@
+       }
+     } else {
+       const auto ext = ls::path::extension(p);
+-      if (ext.equals_lower(".exe")) {
++      if (ext.equals_insensitive(".exe")) {
+         // should be for Windows targets only
+         ldcArgs.push_back(concat("-of=", p));
+         continue;
+--- a/driver/linker-msvc.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/driver/linker-msvc.cpp	2021-08-21 21:04:29.490896806 +0200
+@@ -37,14 +37,14 @@
+   // Pick one of the 4 variants matching the selected main UCRT lib.
+ 
+   if (useInternalToolchain) {
+-    assert(mscrtlibName.contains_lower("vcruntime"));
++    assert(mscrtlibName.contains_insensitive("vcruntime"));
+     return;
+   }
+ 
+-  const bool isStatic = mscrtlibName.contains_lower("libcmt");
++  const bool isStatic = mscrtlibName.contains_insensitive("libcmt");
+ 
+   const bool isDebug =
+-      mscrtlibName.endswith_lower("d") || mscrtlibName.endswith_lower("d.lib");
++      mscrtlibName.endswith_insensitive("d") || mscrtlibName.endswith_insensitive("d.lib");
+ 
+   const llvm::StringRef prefix = isStatic ? "lib" : "";
+   const llvm::StringRef suffix = isDebug ? "d" : "";
+@@ -91,7 +91,7 @@
+ 
+   const bool forceMSVC = env::has(L"LDC_VSDIR_FORCE");
+   const bool useInternalToolchain =
+-      (!forceMSVC && getExplicitMscrtLibName().contains_lower("vcruntime")) ||
++      (!forceMSVC && getExplicitMscrtLibName().contains_insensitive("vcruntime")) ||
+       !msvcEnv.setup();
+ 
+   if (forceMSVC && useInternalToolchain) {
+--- a/gen/coverage.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/gen/coverage.cpp	2021-08-21 21:04:29.621896152 +0200
+@@ -43,6 +43,7 @@
+   case opts::CoverageIncrement::atomic:
+     // Do an atomic increment, so this works when multiple threads are executed.
+     gIR->ir->CreateAtomicRMW(llvm::AtomicRMWInst::Add, ptr, DtoConstUint(1),
++                             llvm::MaybeAlign(),
+                              llvm::AtomicOrdering::Monotonic);
+     break;
+   case opts::CoverageIncrement::nonatomic: {
+--- a/gen/tocall.cpp	2021-08-14 21:11:20.000000000 +0200
++++ b/gen/tocall.cpp	2021-08-21 21:04:29.623896142 +0200
+@@ -508,8 +508,12 @@
+       fatal();
+     }
+ 
+-    auto ret = p->ir->CreateAtomicCmpXchg(ptr, cmp, val, successOrdering,
+-                                           failureOrdering);
++    auto ret = p->ir->CreateAtomicCmpXchg(ptr, cmp, val,
++#if LDC_LLVM_VER >= 1300
++                                          llvm::MaybeAlign(),
++#endif
++                                          successOrdering,
++                                          failureOrdering);
+     ret->setWeak(isWeak);
+ 
+     // we return a struct; allocate on stack and store to both fields manually
+@@ -554,6 +558,9 @@
+     LLValue *val = DtoRVal(exp2);
+     LLValue *ret =
+         p->ir->CreateAtomicRMW(llvm::AtomicRMWInst::BinOp(op), ptr, val,
++#if LDC_LLVM_VER >= 1300
++                                          llvm::MaybeAlign(),
++#endif
+                                llvm::AtomicOrdering(atomicOrdering));
+     result = new DImValue(exp2->type, ret);
+     return true;
+--- a/runtime/druntime/src/ldc/intrinsics.di	2021-08-14 21:11:25.000000000 +0200
++++ b/runtime/druntime/src/ldc/intrinsics.di	2021-08-21 21:04:29.463896941 +0200
+@@ -28,6 +28,7 @@
+ else version (LDC_LLVM_1100) enum LLVM_version = 1100;
+ else version (LDC_LLVM_1101) enum LLVM_version = 1101;
+ else version (LDC_LLVM_1200) enum LLVM_version = 1200;
++else version (LDC_LLVM_1300) enum LLVM_version = 1300;
+ else static assert(false, "LDC LLVM version not supported");
+ 
+ enum LLVM_atleast(int major) = (LLVM_version >= major * 100);
