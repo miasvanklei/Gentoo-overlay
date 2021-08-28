@@ -1,0 +1,34 @@
+diff --git a/hls-refine-imports-plugin.cabal b/hls-refine-imports-plugin.cabal
+index 7b16113a..5c02e52b 100644
+--- a/hls-refine-imports-plugin.cabal
++++ b/hls-refine-imports-plugin.cabal
+@@ -22,6 +22,7 @@ library
+     , containers
+     , deepseq
+     , ghc
++    , ghc-api-compat
+     , ghcide                       ^>=1.4
+     , hls-explicit-imports-plugin  ^>=1.0.0.1
+     , hls-graph
+diff --git a/src/Ide/Plugin/RefineImports.hs b/src/Ide/Plugin/RefineImports.hs
+index 283f569f..18d7620f 100644
+--- a/src/Ide/Plugin/RefineImports.hs
++++ b/src/Ide/Plugin/RefineImports.hs
+@@ -32,7 +32,7 @@ import           Development.IDE.GHC.Compat           (AvailInfo,
+                                                        HsModule (hsmodImports),
+                                                        ImportDecl (ImportDecl, ideclHiding, ideclName),
+                                                        LIE, LImportDecl,
+-                                                       Module (moduleName),
++                                                       moduleName,
+                                                        ModuleName,
+                                                        ParsedModule (ParsedModule, pm_parsed_source),
+                                                        SrcSpan (RealSrcSpan),
+@@ -257,7 +257,7 @@ refineImportsRule = define $ \RefineImports nfp -> do
+ 
+ mkExplicitEdit :: PositionMapping -> LImportDecl pass -> T.Text -> Maybe TextEdit
+ mkExplicitEdit posMapping (L src imp) explicit
+-  | RealSrcSpan l <- src,
++  | RealSrcSpan l _ <- src,
+     L _ mn <- ideclName imp,
+     -- (almost) no one wants to see an refine import list for Prelude
+     mn /= moduleName pRELUDE,
