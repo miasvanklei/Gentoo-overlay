@@ -1,0 +1,118 @@
+diff --git a/hls-plugin-api.cabal b/hls-plugin-api.cabal
+index 6bb02cf96..b4dbe11eb 100644
+--- a/hls-plugin-api.cabal
++++ b/hls-plugin-api.cabal
+@@ -49,7 +49,7 @@ library
+     , hls-graph             ^>=1.4
+     , hslogger
+     , lens
+-    , lsp                   ^>=1.2
++    , lsp                   ^>=1.2.0.1
+     , opentelemetry
+     , optparse-applicative
+     , process
+diff --git a/src/Ide/PluginUtils.hs b/src/Ide/PluginUtils.hs
+index 384735e19..bf65f5f51 100644
+--- a/src/Ide/PluginUtils.hs
++++ b/src/Ide/PluginUtils.hs
+@@ -30,17 +30,19 @@ where
+ 
+ import           Data.Algorithm.Diff
+ import           Data.Algorithm.DiffOutput
++import           Data.Containers.ListUtils       (nubOrdOn)
+ import qualified Data.HashMap.Strict             as H
+ import qualified Data.Text                       as T
+-import           Ide.Types
+-import           Language.LSP.Types
+-import qualified Language.LSP.Types              as J
+-import           Language.LSP.Types.Capabilities
+-
+-import           Data.Containers.ListUtils       (nubOrdOn)
+ import           Ide.Plugin.Config
+ import           Ide.Plugin.Properties
++import           Ide.Types
+ import           Language.LSP.Server
++import           Language.LSP.Types              hiding
++                                                 (SemanticTokenAbsolute (length, line),
++                                                  SemanticTokenRelative (length),
++                                                  SemanticTokensEdit (_start))
++import qualified Language.LSP.Types              as J
++import           Language.LSP.Types.Capabilities
+ 
+ -- ---------------------------------------------------------------------
+ 
+diff --git a/src/Ide/Types.hs b/src/Ide/Types.hs
+index 7eb109f19..ef6153e3c 100644
+--- a/src/Ide/Types.hs
++++ b/src/Ide/Types.hs
+@@ -1,20 +1,20 @@
+-{-# LANGUAGE BangPatterns         #-}
+-{-# LANGUAGE CPP                  #-}
+-{-# LANGUAGE ConstraintKinds      #-}
+-{-# LANGUAGE DefaultSignatures    #-}
+-{-# LANGUAGE DeriveAnyClass       #-}
+-{-# LANGUAGE DeriveGeneric        #-}
+-{-# LANGUAGE DerivingStrategies   #-}
+-{-# LANGUAGE FlexibleContexts     #-}
+-{-# LANGUAGE FlexibleInstances    #-}
+-{-# LANGUAGE GADTs                #-}
++{-# LANGUAGE BangPatterns               #-}
++{-# LANGUAGE CPP                        #-}
++{-# LANGUAGE ConstraintKinds            #-}
++{-# LANGUAGE DefaultSignatures          #-}
++{-# LANGUAGE DeriveAnyClass             #-}
++{-# LANGUAGE DeriveGeneric              #-}
++{-# LANGUAGE DerivingStrategies         #-}
++{-# LANGUAGE FlexibleContexts           #-}
++{-# LANGUAGE FlexibleInstances          #-}
++{-# LANGUAGE GADTs                      #-}
+ {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+-{-# LANGUAGE OverloadedStrings    #-}
+-{-# LANGUAGE PolyKinds            #-}
+-{-# LANGUAGE ScopedTypeVariables  #-}
+-{-# LANGUAGE TypeFamilies         #-}
+-{-# LANGUAGE UndecidableInstances #-}
+-{-# LANGUAGE ViewPatterns         #-}
++{-# LANGUAGE OverloadedStrings          #-}
++{-# LANGUAGE PolyKinds                  #-}
++{-# LANGUAGE ScopedTypeVariables        #-}
++{-# LANGUAGE TypeFamilies               #-}
++{-# LANGUAGE UndecidableInstances       #-}
++{-# LANGUAGE ViewPatterns               #-}
+ 
+ module Ide.Types
+     where
+@@ -46,9 +46,21 @@ import           GHC.Generics
+ import           Ide.Plugin.Config
+ import           Ide.Plugin.Properties
+ import           Language.LSP.Server             (LspM, getVirtualFile)
+-import           Language.LSP.Types
+-import           Language.LSP.Types.Capabilities
+-import           Language.LSP.Types.Lens         as J hiding (id)
++import           Language.LSP.Types              hiding (SemanticTokenAbsolute(length, line), SemanticTokenRelative(length), SemanticTokensEdit(_start))
++import           Language.LSP.Types.Capabilities (ClientCapabilities (ClientCapabilities),
++                                                  TextDocumentClientCapabilities (_codeAction, _documentSymbol))
++import           Language.LSP.Types.Lens         as J (HasChildren (children),
++                                                       HasCommand (command),
++                                                       HasContents (contents),
++                                                       HasDeprecated (deprecated),
++                                                       HasEdit (edit),
++                                                       HasKind (kind),
++                                                       HasName (name),
++                                                       HasOptions (..),
++                                                       HasRange (range),
++                                                       HasTextDocument (..),
++                                                       HasTitle (title),
++                                                       HasUri (..))
+ import           Language.LSP.VFS
+ import           OpenTelemetry.Eventlog
+ import           Options.Applicative             (ParserInfo)
+@@ -467,7 +479,7 @@ instance HasTracing CallHierarchyOutgoingCallsParams
+ -- ---------------------------------------------------------------------
+ 
+ {-# NOINLINE pROCESS_ID #-}
+-{-# LANGUAGE DerivingStrategies #-}
++{-# LANGUAGE DerivingStrategies         #-}
+ {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+ pROCESS_ID :: T.Text
+ pROCESS_ID = unsafePerformIO getPid
