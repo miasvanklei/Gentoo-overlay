@@ -1,0 +1,43 @@
+--- a/src/Ide/Plugin/Class.hs	2021-08-08 15:15:39.244338376 +0200
++++ b/src/Ide/Plugin/Class.hs	2021-08-08 15:18:23.700298099 +0200
+@@ -33,6 +33,7 @@
+ import           Ide.PluginUtils
+ import           Ide.Types
+ import           Language.Haskell.GHC.ExactPrint
++import           Language.Haskell.GHC.ExactPrint.Utils
+ import           Language.Haskell.GHC.ExactPrint.Parsers (parseDecl)
+ import           Language.Haskell.GHC.ExactPrint.Types   hiding (GhcPs, Parens)
+ import           Language.LSP.Server
+@@ -90,20 +91,20 @@
+         Right (ann, d) -> Just (setPrecedingLines d 1 indent ann, d)
+         Left _         -> Nothing
+ 
+-    addMethodDecls :: ParsedSource -> [LHsDecl GhcPs] -> Transform (Located (HsModule GhcPs))
++    addMethodDecls :: ParsedSource -> [LHsDecl GhcPs] -> Transform (Located HsModule)
+     addMethodDecls ps mDecls = do
+       d <- findInstDecl ps
+       newSpan <- uniqueSrcSpanT
+       let
+         annKey = mkAnnKey d
+-        newAnnKey = AnnKey newSpan (CN "HsValBinds")
++        newAnnKey = AnnKey (rs newSpan) (CN "HsValBinds")
+         addWhere mkds@(Map.lookup annKey -> Just ann)
+           = Map.insert newAnnKey ann2 mkds2
+           where
+             ann1 = ann
+                    { annsDP = annsDP ann ++ [(G AnnWhere, DP (0, 1))]
+                    , annCapturedSpan = Just newAnnKey
+-                   , annSortKey = Just (fmap getLoc mDecls)
++                   , annSortKey = Just (fmap (rs . getLoc) mDecls)
+                    }
+             mkds2 = Map.insert annKey ann1 mkds
+             ann2 = annNone
+@@ -173,7 +174,7 @@
+           pure
+             $ head . head
+             $ pointCommand hf (fromJust (fromCurrentRange pmap range) ^. J.start & J.character -~ 1)
+-              ( (Map.keys . Map.filter isClassNodeIdentifier . nodeIdentifiers . nodeInfo)
++              ( ((Map.keys . Map.filter isClassNodeIdentifier . nodeIdentifiers =<<) . Map.elems . getSourcedNodeInfo . sourcedNodeInfo)
+                 <=< nodeChildren
+               )
+ 
