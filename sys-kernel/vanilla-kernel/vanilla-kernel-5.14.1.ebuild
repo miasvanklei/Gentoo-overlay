@@ -4,7 +4,7 @@
 EAPI="6"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="14"
+K_GENPATCHES_VER="2"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -48,8 +48,6 @@ src_prepare() {
 	fi
 
 	use banana-pi && eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
-
-	eapply "${FILESDIR}"/f2fs-fix-inplace-io.patch
 
 	eapply_user
 }
