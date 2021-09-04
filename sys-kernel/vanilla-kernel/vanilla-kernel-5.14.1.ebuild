@@ -76,7 +76,12 @@ src_configure() {
 	mkdir -p "${WORKDIR}"/modprep || die
 	mv .config "${WORKDIR}"/modprep/ || die
 	emake O="${WORKDIR}"/modprep "${MAKEARGS[@]}" olddefconfig
-	emake O="${WORKDIR}"/modprep "${MAKEARGS[@]}" modules_prepare
+
+	if grep -q "CONFIG_MODULES=y" "${WORKDIR}"/modprep/.config; then
+		emake O="${WORKDIR}"/modprep "${MAKEARGS[@]}" modules_prepare
+	fi
+
+
 	cp -pR "${WORKDIR}"/modprep "${WORKDIR}"/build || die
 }
 
@@ -91,7 +96,7 @@ src_test() {
 src_install() {
 	local kern_arch=$(tc-arch-kernel)
 	local ver="${PV}${KV_LOCALVERSION}-vanilla"
-	local targets=( modules_install )
+	local targets=( )
 	dodir "/usr/src/linux-${ver}/arch/${kern_arch}"
 
 	# install target is named differently on arm
@@ -99,6 +104,10 @@ src_install() {
 		targets+=( zinstall )
 	else
 		targets+=( install )
+	fi
+
+	if grep -q "CONFIG_MODULES"; then
+		targets+=( modules_install )
 	fi
 
 	# on arm or arm64 you also need dtb
