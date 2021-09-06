@@ -49,6 +49,8 @@ src_prepare() {
 
 	use banana-pi && eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
 
+	eapply "${FILESDIR}"/f2fs-fix-inplace-io.patch
+
 	eapply_user
 }
 
