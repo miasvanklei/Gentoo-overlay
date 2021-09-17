@@ -5,8 +5,8 @@ EAPI="7"
 
 inherit cmake
 
-RPV="6.0.0-preview.6.21352.12"
-MY_PV="6.0.0_pre6"
+RPV="6.0.0-rc.1.21451.13"
+MY_PV="6.0.0_rc1"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
