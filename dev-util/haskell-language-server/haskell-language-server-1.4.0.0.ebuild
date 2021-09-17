@@ -7,13 +7,12 @@ EAPI=8
 #hackport: flags: class:hls_plugins_class,eval:hls_plugins_eval,hlint:hls_plugins_hlint,haddockcomments:hls_plugins_haddock-comments,importlens:hls_plugins_import-lens,modulename:hls_plugins_module-name,pragmas:hls_plugins_pragmas,refineImports:hls_plugins_refine-imports,retrie:hls_plugins_retrie,splice:hls_plugins_splice,tactic:hls_plugins_tactic,brittany:hls_formatters_brittany,floskell:hls_formatters_floskell,fourmolu:hls_formatters_fourmolu,ormolu:hls_formatters_ormolu,stylishhaskell:hls_formatters_stylish-haskell,-pedantic,-all-plugins,-all-formatters
 
 CABAL_FEATURES="lib profile haddock hoogle hscolour"
-inherit git-r3 haskell-cabal
+inherit haskell-cabal
 RESTRICT="test" # Missing files
 
 DESCRIPTION="LSP server for GHC"
 HOMEPAGE="https://github.com/haskell/haskell-language-server#readme"
-EGIT_REPO_URI="https://github.com/haskell/haskell-language-server.git"
-EGIT_COMMIT="1.3.0"
+SRC_URI="https://hackage.haskell.org/package/${P}/${P}.tar.gz"
 
 LICENSE="Apache-2.0"
 SLOT="0/${PV}"
@@ -51,7 +50,6 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/cryptohash-sha1:=[profile?]
 	dev-haskell/data-default:=[profile?]
 	dev-haskell/extra:=[profile?]
-	dev-haskell/ghc-api-compat:=[profile?]
 	dev-haskell/ghc-paths:=[profile?]
 	>=dev-haskell/ghcide-1.4:=[profile?] <dev-haskell/ghcide-1.5:=[profile?]
 	dev-haskell/gitrev:=[profile?]
@@ -93,6 +91,10 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 "
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.4.0.1"
+
+PATCHES=(
+        "${FILESDIR}"/remove-ghc-compat.patch
+)
 
 src_configure() {
 	haskell-cabal_src_configure \
