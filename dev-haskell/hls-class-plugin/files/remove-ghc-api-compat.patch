@@ -1,0 +1,66 @@
+diff --git a/hls-class-plugin.cabal b/hls-class-plugin.cabal
+index 76e0c31a17..766965e1a9 100644
+--- a/hls-class-plugin.cabal
++++ b/hls-class-plugin.cabal
+@@ -36,22 +36,6 @@ library
+     , text
+     , transformers
+ 
+-  if impl(ghc < 8.10.5)
+-    build-depends:
+-      ghc-api-compat ==8.6
+-  elif impl(ghc == 8.10.5)
+-    build-depends:
+-      ghc-api-compat ==8.10.5
+-  elif impl(ghc == 8.10.6)
+-    build-depends:
+-      ghc-api-compat ==8.10.6
+-  elif impl(ghc == 8.10.7)
+-    build-depends:
+-      ghc-api-compat ==8.10.7
+-  elif impl(ghc == 9.0.1)
+-    build-depends:
+-      ghc-api-compat ==9.0.1
+-
+   default-language:   Haskell2010
+   default-extensions:
+     DataKinds
+diff --git a/src/Ide/Plugin/Class.hs b/src/Ide/Plugin/Class.hs
+index 6ec932e4a5..fa81a76c07 100644
+--- a/src/Ide/Plugin/Class.hs
++++ b/src/Ide/Plugin/Class.hs
+@@ -8,12 +8,10 @@ module Ide.Plugin.Class
+   ( descriptor
+   ) where
+ 
+-import           BooleanFormula
+-import           Class
+-import           ConLike
+ import           Control.Applicative
+ import           Control.Lens                            hiding (List, use)
+ import           Control.Monad
++import           Control.Monad.IO.Class
+ import           Control.Monad.Trans.Class
+ import           Control.Monad.Trans.Maybe
+ import           Data.Aeson
+@@ -26,10 +24,9 @@ import           Development.IDE                         hiding (pluginHandlers)
+ import           Development.IDE.Core.PositionMapping    (fromCurrentRange,
+                                                           toCurrentRange)
+ import           Development.IDE.GHC.Compat
++import           Development.IDE.GHC.Compat.Util
+ import           Development.IDE.Spans.AtPoint
+ import qualified GHC.Generics                            as Generics
+-import           GhcPlugins                              hiding (Var, getLoc,
+-                                                          (<>))
+ import           Ide.PluginUtils
+ import           Ide.Types
+ import           Language.Haskell.GHC.ExactPrint
+@@ -38,8 +35,6 @@ import           Language.Haskell.GHC.ExactPrint.Types   hiding (GhcPs, Parens)
+ import           Language.LSP.Server
+ import           Language.LSP.Types
+ import qualified Language.LSP.Types.Lens                 as J
+-import           TcEnv
+-import           TcRnMonad
+ 
+ descriptor :: PluginId -> PluginDescriptor IdeState
+ descriptor plId = (defaultPluginDescriptor plId) 
