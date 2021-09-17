@@ -25,9 +25,3 @@ DEPEND="${RDEPEND}
 		>=dev-haskell/tasty-hunit-0.10 <dev-haskell/tasty-hunit-0.11
 		>=dev-haskell/tasty-quickcheck-0.9 <dev-haskell/tasty-quickcheck-0.11 )
 "
-
-src_prepare() {
-	eapply "${FILESDIR}"/ghc-9.0.patch
-
-	default
-}
