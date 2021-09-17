@@ -1,0 +1,98 @@
+diff --git a/hls-retrie-plugin.cabal b/hls-retrie-plugin.cabal
+index 277cb904f0..411429f7e2 100644
+--- a/hls-retrie-plugin.cabal
++++ b/hls-retrie-plugin.cabal
+@@ -34,22 +34,6 @@ library
+     , transformers
+     , unordered-containers
+ 
+-  if impl(ghc < 8.10.5)
+-    build-depends:
+-      ghc-api-compat ==8.6
+-  elif impl(ghc == 8.10.5)
+-    build-depends:
+-      ghc-api-compat ==8.10.5
+-  elif impl(ghc == 8.10.6)
+-    build-depends:
+-      ghc-api-compat ==8.10.6
+-  elif impl(ghc == 8.10.7)
+-    build-depends:
+-      ghc-api-compat ==8.10.7
+-  elif impl(ghc == 9.0.1)
+-    build-depends:
+-      ghc-api-compat ==9.0.1
+-
+   default-language:   Haskell2010
+   default-extensions:
+     DataKinds
+diff --git a/src/Ide/Plugin/Retrie.hs b/src/Ide/Plugin/Retrie.hs
+index cf41005407..5771964067 100644
+--- a/src/Ide/Plugin/Retrie.hs
++++ b/src/Ide/Plugin/Retrie.hs
+@@ -57,28 +57,30 @@ import           Development.IDE.GHC.Compat           (GenLocated (L), GhcRn,
+                                                        HscEnv, IdP, LRuleDecls,
+                                                        ModSummary (ModSummary, ms_hspp_buf, ms_mod),
+                                                        NHsValBindsLR (..),
++                                                       Outputable,
+                                                        ParsedModule (..),
+                                                        RuleDecl (HsRule),
+                                                        RuleDecls (HsRules),
++                                                       SourceText (..),
+                                                        SrcSpan (..),
+                                                        TyClDecl (SynDecl),
+                                                        TyClGroup (..), fun_id,
++                                                       hm_iface, isQual,
++                                                       isQual_maybe,
+                                                        mi_fixities,
+                                                        moduleNameString,
++                                                       nameModule_maybe,
++                                                       nameRdrName, occNameFS,
++                                                       occNameString,
+                                                        parseModule,
+                                                        pattern IsBoot,
+                                                        pattern NotBoot,
+-                                                       pattern OldRealSrcSpan,
+-                                                       rds_rules, srcSpanFile)
++                                                       pattern RealSrcSpan,
++                                                       rdrNameOcc, rds_rules,
++                                                       srcSpanFile)
++import           Development.IDE.GHC.Compat.Util      hiding (catch, try)
++import qualified GHC                                  (parseModule)
+ import           GHC.Generics                         (Generic)
+-import           GhcPlugins                           (Outputable,
+-                                                       SourceText (NoSourceText),
+-                                                       hm_iface, isQual,
+-                                                       isQual_maybe,
+-                                                       nameModule_maybe,
+-                                                       nameRdrName, occNameFS,
+-                                                       occNameString,
+-                                                       rdrNameOcc, unpackFS)
+ import           Ide.PluginUtils
+ import           Ide.Types
+ import           Language.LSP.Server                  (LspM,
+@@ -106,7 +108,6 @@ import           Retrie.Replace                       (Change (..),
+ import           Retrie.Rewrites
+ import           Retrie.SYB                           (listify)
+ import           Retrie.Util                          (Verbosity (Loud))
+-import           StringBuffer                         (stringToStringBuffer)
+ import           System.Directory                     (makeAbsolute)
+ 
+ descriptor :: PluginId -> PluginDescriptor IdeState
+@@ -374,7 +375,7 @@ callRetrie state session rewrites origin restrictToOriginatingFile = do
+                       }
+               logPriority (ideLogger state) Info $ T.pack $ "Parsing module: " <> t
+               parsed <-
+-                evalGhcEnv session (parseModule ms')
++                evalGhcEnv session (GHC.parseModule ms')
+                   `catch` \e -> throwIO (GHCParseError nt (show @SomeException e))
+               (fixities, parsed) <- fixFixities f (fixAnns parsed)
+               return (fixities, parsed)
+@@ -473,7 +474,7 @@ asTextEdits NoChange = []
+ asTextEdits (Change reps _imports) =
+   [ (filePathToUri spanLoc, edit)
+     | Replacement {..} <- nubOrdOn (realSpan . replLocation) reps,
+-      (OldRealSrcSpan rspan) <- [replLocation],
++      (RealSrcSpan rspan _) <- [replLocation],
+       let spanLoc = unpackFS $ srcSpanFile rspan,
+       let edit = TextEdit (realSrcSpanToRange rspan) (T.pack replReplacement)
+   ]
