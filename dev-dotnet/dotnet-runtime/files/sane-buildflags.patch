@@ -8,6 +8,15 @@
  if(CMAKE_C_COMPILER_ID STREQUAL Clang)
      add_compile_options(-Wthread-safety)
      add_compile_options(-Wno-thread-safety-analysis)
+@@ -197,8 +197,6 @@
+     # Otherwise use O3 option in release build
+     if (CLR_CMAKE_TARGET_ARCH_ARMV7L AND DEFINED ENV{CROSSCOMPILE} AND CMAKE_C_COMPILER_VERSION VERSION_LESS 3.9)
+         add_compile_options (-O1)
+-    else()
+-        add_compile_options (-O3)
+     endif()
+     add_definitions(-DNDEBUG)
+ else ()
 --- a/eng/native/configurecompiler.cmake
 +++ b/eng/native/configurecompiler.cmake
 @@ -22,7 +22,6 @@
@@ -18,8 +27,8 @@
      add_compile_options(-Wall)
      if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
          add_compile_options(-Wno-null-conversion)
---- a/eng/native/configureplatform.cmake	2021-08-06 21:13:58.053408078 +0200
-+++ b/eng/native/configureplatform.cmake	2021-08-06 21:14:05.929505006 +0200
+--- a/eng/native/configureplatform.cmake
++++ b/eng/native/configureplatform.cmake
 @@ -2,7 +2,7 @@
  
  # If set, indicates that this is not an officially supported release
@@ -29,3 +38,12 @@
  
  #----------------------------------------
  # Detect and set platform variable names
+--- a/eng/native/configureoptimization.cmake
++++ b/eng/native/configureoptimization.cmake
+@@ -6,6 +6,5 @@
+ elseif(CLR_CMAKE_HOST_UNIX)
+     add_compile_options($<$<CONFIG:Debug>:-O0>)
+     add_compile_options($<$<CONFIG:Checked>:-O2>)
+-    add_compile_options($<$<CONFIG:Release>:-O3>)
+     add_compile_options($<$<CONFIG:RelWithDebInfo>:-O2>)
+ endif()

@@ -7,7 +7,7 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-MY_PV="${PV/_pre/-preview.}.21377.19"
+MY_PV="${PV/_rc/-rc.}.21451.13"
 
 SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
@@ -85,7 +85,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
 	eapply "${FILESDIR}"/use-system-unwind.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
-	eapply "${FILESDIR}"/arm64-fix-duplicate-symbols.patch
 
 	default
 }
