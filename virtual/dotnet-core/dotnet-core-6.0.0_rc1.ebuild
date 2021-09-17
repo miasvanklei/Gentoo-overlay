@@ -17,9 +17,9 @@ RDEPEND="
 "
 
 S=${WORKDIR}
-COMMON_PV="${PV/_pre/-preview.}"
-SDK_PV="${COMMON_PV}.21378.6"
-RUNTIME_PV="${COMMON_PV}.21377.19"
+COMMON_PV="${PV/_rc/-rc.}"
+ASPNET_PV="${COMMON_PV}.21452.15"
+RUNTIME_PV="${COMMON_PV}.21451.13"
 
 create_symlink() {
 	mkdir -p $1
@@ -41,6 +41,5 @@ src_install() {
 	create_symlink host/fxr ${RUNTIME_PV}
 	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH} ${RUNTIME_PV}
 	create_symlink shared/Microsoft.NETCore.App ${RUNTIME_PV}
-	create_symlink shared/Microsoft.AspNetCore.App ${SDK_PV}
-	create_symlink sdk ${SDK_PV}
+	create_symlink shared/Microsoft.AspNetCore.App $ASPNET_PV}
 }
