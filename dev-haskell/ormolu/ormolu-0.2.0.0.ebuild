@@ -43,12 +43,10 @@ DEPEND="${RDEPEND}
 		>=dev-haskell/path-io-1.4.2 <dev-haskell/path-io-2.0 )
 "
 
-src_prepare() {
-	eapply "${FILESDIR}"/use-system-ghc.patch
-	eapply "${FILESDIR}"/add-executable-flag.patch
-
-	default
-}
+PATCHES=(
+	"${FILESDIR}"/use-system-ghc.patch
+	"${FILESDIR}"/add-executable-flag.patch
+)
 
 src_configure() {
 	haskell-cabal_src_configure \
