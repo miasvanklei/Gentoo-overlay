@@ -20,7 +20,7 @@ NATIVE_WATCHDOG_V=1.3.0
 NODE_PTY_V=0.11.0-beta7
 SPDLOG_V=0.13.5
 NSFW_V=2.1.2
-VSCODE_SQLITE3_V=4.0.11
+VSCODE_SQLITE3_V=4.0.12
 ARGON2_V=0.28.2
 
 SRC_URI="
@@ -32,7 +32,7 @@ SRC_URI="
         https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
         https://registry.npmjs.org/spdlog/-/spdlog-${SPDLOG_V}.tgz -> vscodedep-spdlog-${SPDLOG_V}.tar.gz
         https://registry.npmjs.org/nsfw/-/nsfw-${NSFW_V}.tgz -> vscodedep-nsfw-${NSFW_V}.tar.gz
-        https://registry.npmjs.org/vscode-sqlite3/-/vscode-sqlite3-${VSCODE_SQLITE3_V}.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
+        https://registry.npmjs.org/@vscode/sqlite3/-/sqlite3-${VSCODE_SQLITE3_V}.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
         https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
         https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
 "
@@ -125,10 +125,14 @@ src_prepare() {
 	rm ./lib/coder-cloud-agent || die "failed to remove bundled coder-cloud-agent"
 
 	# remove bundled binaries
-	rm ./lib/vscode/node_modules/vscode-ripgrep/bin/rg \
+	rm ./vendor/modules/code-oss-dev/node_modules/vscode-ripgrep/bin/rg \
 		|| die "failed to remove bundled ripgrep"
 	for binmod in "${VSCODE_BINMODS[@]}"; do
-		rm -r "${S}/lib/vscode/node_modules/${binmod}/build/Release" || die
+		if [ ${binmod} = "vscode-sqlite3" ]; then
+			rm -r "${S}/vendor/modules/code-oss-dev/node_modules/@vscode/sqlite3/build/Release" || die
+		else
+			rm -r "${S}/vendor/modules/code-oss-dev/node_modules/${binmod}/build/Release" || die
+		fi
 	done
 
 	# remove argon2
@@ -172,7 +176,11 @@ src_compile() {
 		rm -r build/Release/obj.target || die
 		rm -r node_modules/nan || die
 		rm -r node_modules/node-addon-api || die
-		cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" "${S}/lib/vscode/node_modules/${binmod}/build" || die
+		if [ ${binmod} = "vscode-sqlite3" ]; then
+			cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" "${S}/vendor/modules/code-oss-dev/node_modules/@vscode/sqlite3/build" || die
+		else
+			cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" "${S}/vendor/modules/code-oss-dev/node_modules/${binmod}/build" || die
+		fi
 	done
 
 	# argon2
@@ -189,7 +197,7 @@ src_install() {
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
 	dosym "../../usr/lib/${PN}/bin/${PN}" "${EPREFIX}/usr/bin/${PN}"
 
-	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/vscode-ripgrep/bin/rg"
+	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/vendor/modules/code-oss-dev/node_modules/vscode-ripgrep/bin/rg"
 	dosym "/usr/bin/coder-cloud-agent" "${EPREFIX}/usr/lib/${PN}/lib/coder-cloud-agent"
 
 	systemd_douserunit "${FILESDIR}/${PN}.service"
