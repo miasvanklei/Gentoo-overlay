@@ -141,4 +141,7 @@ src_install() {
 
 	# dotnet
 	dosym "${dest}/dotnet" "/usr/bin/dotnet"
+
+	# create dummy symlink, fix acces violation
+	dosym /usr/share/dotnet/metadata /dev/null
 }
