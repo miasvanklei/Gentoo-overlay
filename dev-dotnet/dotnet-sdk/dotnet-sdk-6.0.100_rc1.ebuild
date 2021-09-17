@@ -7,7 +7,7 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-MY_PV="${PV/_pre/-preview.}.21379.14"
+MY_PV="${PV/_rc/-rc.}.21458.32"
 SDK="${PN}-${MY_PV}-linux-musl"
 
 SRC_URI="
@@ -42,6 +42,4 @@ src_install() {
         mkdir -p "${dest}" || die
         cp -rpP "${S}"/sdk ${dest} || die
         cp -rpP "${S}"/templates ${dest} || die
-
-	change_version "$dest/sdk" "${MY_PV}"
 }
