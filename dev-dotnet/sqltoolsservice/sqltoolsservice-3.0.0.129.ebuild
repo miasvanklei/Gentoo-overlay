@@ -25,10 +25,13 @@ QA_PRESTRIPPED="
 	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsCredentials
 "
 
-build_sqltool()
+PATCHES=(
+	"${FILESDIR}"/fix-resources.patch
+)
+
+publish_sqltool()
 {
 	pushd src/Microsoft.SqlTools.$1 >/dev/null
-	dotnet restore
 	dotnet publish -c release -o "${WORKDIR}/sqltoolsservice" || die
 	popd
 }
@@ -38,8 +41,11 @@ src_compile() {
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	export DOTNET_NOLOGO=1
 
-	build_sqltool ServiceLayer
-	build_sqltool ResourceProvider
+	mkdir -p ${WORKDIR}/sqltoolsservice/zh-hans
+	mkdir -p ${WORKDIR}/sqltoolsservice/zh-hant
+
+	publish_sqltool ServiceLayer
+	publish_sqltool ResourceProvider
 }
 
 src_install() {
