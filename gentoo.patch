@@ -1,5 +1,5 @@
 diff --git a/app-emulation/libvirt/libvirt-7.3.0.ebuild b/app-emulation/libvirt/libvirt-7.3.0.ebuild
-index 36e4bd27d74..ba7e7cf6e16 100644
+index 08386a30d6f..79445915611 100644
 --- a/app-emulation/libvirt/libvirt-7.3.0.ebuild
 +++ b/app-emulation/libvirt/libvirt-7.3.0.ebuild
 @@ -109,8 +109,6 @@ RDEPEND="
@@ -23,11 +23,11 @@ index 8529c5b317c..ccc4d037c36 100644
  		x11-libs/gtk+:3[introspection]
  		x11-libs/gtksourceview:4[introspection]
  		x11-libs/vte:2.91[introspection]
-diff --git a/app-office/libreoffice/libreoffice-7.1.5.2.ebuild b/app-office/libreoffice/libreoffice-7.1.5.2.ebuild
-index c44dee00e18..f7e2565307d 100644
---- a/app-office/libreoffice/libreoffice-7.1.5.2.ebuild
-+++ b/app-office/libreoffice/libreoffice-7.1.5.2.ebuild
-@@ -185,6 +185,9 @@ COMMON_DEPEND="${PYTHON_DEPS}
+diff --git a/app-office/libreoffice/libreoffice-7.1.6.2.ebuild b/app-office/libreoffice/libreoffice-7.1.6.2.ebuild
+index f2d42758311..578ff1cebf5 100644
+--- a/app-office/libreoffice/libreoffice-7.1.6.2.ebuild
++++ b/app-office/libreoffice/libreoffice-7.1.6.2.ebuild
+@@ -188,6 +188,9 @@ COMMON_DEPEND="${PYTHON_DEPS}
  	)
  	clang? (
  		|| (
@@ -51,7 +51,7 @@ index 6b8268c5f68..e0de1c43e12 100644
  # We only depend on flex when we patch the imput lexer.
  DEPEND="${RDEPEND}"
 diff --git a/dev-libs/elfutils/elfutils-0.185.ebuild b/dev-libs/elfutils/elfutils-0.185.ebuild
-index a4f1cc56536..0756715751f 100644
+index fd5ccd26159..ba3e00bd128 100644
 --- a/dev-libs/elfutils/elfutils-0.185.ebuild
 +++ b/dev-libs/elfutils/elfutils-0.185.ebuild
 @@ -22,6 +22,13 @@ RDEPEND=">=sys-libs/zlib-1.2.8-r1[static-libs?,${MULTILIB_USEDEP}]
@@ -117,41 +117,33 @@ index a8017f003f1..27fdf168897 100644
  "
  DEPEND="${RDEPEND}"
 diff --git a/eclass/linux-mod.eclass b/eclass/linux-mod.eclass
-index eda5e9aee01..fe57b4f16f4 100644
+index 943efa5cd9b..add3b711401 100644
 --- a/eclass/linux-mod.eclass
 +++ b/eclass/linux-mod.eclass
-@@ -708,6 +708,7 @@ linux-mod_src_compile() {
+@@ -711,6 +711,7 @@ linux-mod_src_compile() {
+ 			# fails.
  			eval "emake HOSTCC=\"$(tc-getBUILD_CC)\" \
- 						CROSS_COMPILE=${CHOST}- \
  						LDFLAGS=\"$(get_abi_LDFLAGS)\" \
 +						LLVM_IAS=1 \
  						${BUILD_FIXES} \
  						${BUILD_PARAMS} \
  						${BUILD_TARGETS} " \
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.4.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.4.ebuild
-index 7e2fb65d39f..0f068695eb8 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.4.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.4.ebuild
-@@ -21,7 +21,6 @@ BDEPEND="
- 	dev-lang/sassc
- "
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.5.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.5.ebuild
+index 58aaf0fd540..d3c443ce093 100644
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.5.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.22.5.ebuild
+@@ -18,7 +18,6 @@ KEYWORDS="amd64 ~arm arm64 ~ppc64 ~riscv x86"
+ IUSE=""
+ 
  DEPEND="
 -	dev-cpp/glibmm:2
  	dev-libs/glib:2
  	>=dev-qt/qtdbus-${QTMIN}:5
  	>=dev-qt/qtgui-${QTMIN}:5
-@@ -33,7 +32,6 @@ DEPEND="
- 	>=kde-frameworks/kdbusaddons-${KFMIN}:5
- 	>=kde-frameworks/kguiaddons-${KFMIN}:5
- 	>=kde-plasma/kdecoration-${PVCUT}:5
--	x11-libs/gtk+:2
- 	x11-libs/gtk+:3
- "
- RDEPEND="${DEPEND}
-diff --git a/media-libs/mesa/mesa-21.2.1.ebuild b/media-libs/mesa/mesa-21.2.1.ebuild
+diff --git a/media-libs/mesa/mesa-21.2.2.ebuild b/media-libs/mesa/mesa-21.2.2.ebuild
 index e3fd921bbaa..9772ca544e5 100644
---- a/media-libs/mesa/mesa-21.2.1.ebuild
-+++ b/media-libs/mesa/mesa-21.2.1.ebuild
+--- a/media-libs/mesa/mesa-21.2.2.ebuild
++++ b/media-libs/mesa/mesa-21.2.2.ebuild
 @@ -139,9 +139,10 @@ RDEPEND="${RDEPEND}
  # 1. List all the working slots (with min versions) in ||, newest first.
  # 2. Update the := to specify *max* version, e.g. < 10.
@@ -222,10 +214,10 @@ index e879d2277a2..d7b27fab021 100644
  		$(meson_feature vala with-vala)
  	)
  	meson_src_configure
-diff --git a/net-misc/spice-gtk/spice-gtk-0.39.ebuild b/net-misc/spice-gtk/spice-gtk-0.39.ebuild
-index 99eeb178546..98c246501b0 100644
---- a/net-misc/spice-gtk/spice-gtk-0.39.ebuild
-+++ b/net-misc/spice-gtk/spice-gtk-0.39.ebuild
+diff --git a/net-misc/spice-gtk/spice-gtk-0.39-r1.ebuild b/net-misc/spice-gtk/spice-gtk-0.39-r1.ebuild
+index 7005e220e2e..2378f98e552 100644
+--- a/net-misc/spice-gtk/spice-gtk-0.39-r1.ebuild
++++ b/net-misc/spice-gtk/spice-gtk-0.39-r1.ebuild
 @@ -91,6 +91,7 @@ src_prepare() {
  
  src_configure() {
@@ -235,11 +227,11 @@ index 99eeb178546..98c246501b0 100644
  		$(meson_feature introspection)
  		$(meson_use mjpeg builtin-mjpeg)
 diff --git a/sys-devel/clang/clang-13.0.0.9999.ebuild b/sys-devel/clang/clang-13.0.0.9999.ebuild
-index d5bd5c8e6ea..359e0b51eea 100644
+index 3c3e637a0d1..ac7b486301d 100644
 --- a/sys-devel/clang/clang-13.0.0.9999.ebuild
 +++ b/sys-devel/clang/clang-13.0.0.9999.ebuild
-@@ -29,6 +29,8 @@ REQUIRED_USE="${PYTHON_REQUIRED_USE}
- 	|| ( ${ALL_LLVM_TARGETS[*]} )"
+@@ -21,6 +21,8 @@ IUSE="debug default-compiler-rt default-libcxx default-lld
+ REQUIRED_USE="${PYTHON_REQUIRED_USE}"
  RESTRICT="!test? ( test )"
  
 +IUSE="${IUSE} +flang gcc-symlinks"
@@ -247,7 +239,7 @@ index d5bd5c8e6ea..359e0b51eea 100644
  RDEPEND="
  	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${MULTILIB_USEDEP}]
  	static-analyzer? ( dev-lang/perl:* )
-@@ -57,6 +59,10 @@ PDEPEND="
+@@ -41,6 +43,10 @@ PDEPEND="
  		llvm-libunwind? ( sys-libs/llvm-libunwind )
  		!llvm-libunwind? ( sys-libs/libunwind )
  	)
@@ -258,7 +250,7 @@ index d5bd5c8e6ea..359e0b51eea 100644
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -234,8 +240,7 @@ get_distribution_components() {
+@@ -219,8 +225,7 @@ get_distribution_components() {
  }
  
  multilib_src_configure() {
@@ -268,7 +260,7 @@ index d5bd5c8e6ea..359e0b51eea 100644
  
  	local mycmakeargs=(
  		-DLLVM_CMAKE_PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)/cmake/llvm"
-@@ -250,6 +255,7 @@ multilib_src_configure() {
+@@ -235,6 +240,7 @@ multilib_src_configure() {
  
  		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
  		-DLLVM_BUILD_TESTS=$(usex test)
@@ -276,7 +268,7 @@ index d5bd5c8e6ea..359e0b51eea 100644
  
  		# these are not propagated reliably, so redefine them
  		-DLLVM_ENABLE_EH=ON
-@@ -263,12 +269,15 @@ multilib_src_configure() {
+@@ -248,12 +254,15 @@ multilib_src_configure() {
  		# disable using CUDA to autodetect GPU, just build for all
  		-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON
  
@@ -293,7 +285,7 @@ index d5bd5c8e6ea..359e0b51eea 100644
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
  
-@@ -360,12 +369,15 @@ src_install() {
+@@ -345,12 +354,15 @@ src_install() {
  
  	# Apply CHOST and version suffix to clang tools
  	# note: we use two version components here (vs 3 in runtime path)
@@ -339,11 +331,11 @@ index 9bd470297df..fd481026e27 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-13.0.0.9999.ebuild b/sys-devel/llvm/llvm-13.0.0.9999.ebuild
-index ebe79aea74c..972398b1a91 100644
+index 84ccd0ebedb..311736e8cd3 100644
 --- a/sys-devel/llvm/llvm-13.0.0.9999.ebuild
 +++ b/sys-devel/llvm/llvm-13.0.0.9999.ebuild
-@@ -32,6 +32,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
- REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )"
+@@ -23,6 +23,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
+ 	kernel_Darwin"
  RESTRICT="!test? ( test )"
  
 +IUSE="${IUSE} +flang binutils-symlinks"
@@ -351,7 +343,7 @@ index ebe79aea74c..972398b1a91 100644
  RDEPEND="
  	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
  	exegesis? ( dev-libs/libpfm:= )
-@@ -314,6 +316,23 @@ get_distribution_components() {
+@@ -304,6 +306,23 @@ get_distribution_components() {
  				docs-llvm-man
  			)
  		fi
@@ -375,7 +367,7 @@ index ebe79aea74c..972398b1a91 100644
  		use doc && out+=(
  			docs-llvm-html
  		)
-@@ -345,6 +364,7 @@ multilib_src_configure() {
+@@ -335,6 +354,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -383,7 +375,7 @@ index ebe79aea74c..972398b1a91 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -361,6 +381,7 @@ multilib_src_configure() {
+@@ -351,6 +371,7 @@ multilib_src_configure() {
  		-DLLVM_ENABLE_EH=ON
  		-DLLVM_ENABLE_RTTI=ON
  		-DLLVM_ENABLE_Z3_SOLVER=$(usex z3)
@@ -391,19 +383,6 @@ index ebe79aea74c..972398b1a91 100644
  
  		-DLLVM_HOST_TRIPLE="${CHOST}"
  
-diff --git a/sys-libs/libcap/files/libcap-2.52-build-system-fixes.patch b/sys-libs/libcap/files/libcap-2.52-build-system-fixes.patch
-index 2d6b441c485..e0f5ddc4d91 100644
---- a/sys-libs/libcap/files/libcap-2.52-build-system-fixes.patch
-+++ b/sys-libs/libcap/files/libcap-2.52-build-system-fixes.patch
-@@ -146,7 +146,7 @@ index a4c4891..a15feae 100644
-  
-  pam_cap.so: pam_cap.o execable.o
- -	$(LD) -o pam_cap.so $+ $(LIBCAPLIB) $(LDFLAGS) --entry=__so_start
--+	$(LD) $(CFLAGS) -o pam_cap.so $+ $(LIBCAPLIB) $(LDFLAGS) --entry=__so_start
-++	$(LD) $(CFLAGS) -o pam_cap.so $+ $(LIBCAPLIB) $(LDFLAGS) -Wl,-e,__so_start
-  
-  pam_cap.o: pam_cap.c
- -	$(CC) $(CFLAGS) $(IPATH) -c $< -o $@
 diff --git a/sys-libs/liburing/liburing-0.7-r1.ebuild b/sys-libs/liburing/liburing-0.7-r1.ebuild
 index 715212503eb..3eb405715f9 100644
 --- a/sys-libs/liburing/liburing-0.7-r1.ebuild
@@ -417,13 +396,13 @@ index 715212503eb..3eb405715f9 100644
  }
  
  multilib_src_install_all() {
-diff --git a/www-client/firefox/firefox-91.0.2.ebuild b/www-client/firefox/firefox-91.0.2.ebuild
-index b606ecd707c..b7e747e3abe 100644
---- a/www-client/firefox/firefox-91.0.2.ebuild
-+++ b/www-client/firefox/firefox-91.0.2.ebuild
+diff --git a/www-client/firefox/firefox-92.0.ebuild b/www-client/firefox/firefox-92.0.ebuild
+index 6f11db5bf68..2f9fcf2545f 100644
+--- a/www-client/firefox/firefox-92.0.ebuild
++++ b/www-client/firefox/firefox-92.0.ebuild
 @@ -5,7 +5,7 @@ EAPI="7"
  
- FIREFOX_PATCHSET="firefox-91-patches-03.tar.xz"
+ FIREFOX_PATCHSET="firefox-92-patches-01.tar.xz"
  
 -LLVM_MAX_SLOT=12
 +LLVM_MAX_SLOT=13
