@@ -5558,9 +5558,9 @@ diff --git a/src/Development/IDE/Plugin/Completions/Logic.hs b/src/Development/I
 index c3f1de1a4a..fbf66ab366 100644
 --- a/src/Development/IDE/Plugin/Completions/Logic.hs
 +++ b/src/Development/IDE/Plugin/Completions/Logic.hs
-@@ -26,27 +26,17 @@ import           Data.Maybe                               (fromMaybe, isJust,
+@@ -26,17 +26,6 @@
  import qualified Data.Text                                as T
- import qualified Text.Fuzzy                               as Fuzzy
+ import qualified Text.Fuzzy.Parallel                      as Fuzzy
  
 -import           HscTypes
 -import           Name
@@ -5576,11 +5576,8 @@ index c3f1de1a4a..fbf66ab366 100644
  import           Control.Monad
  import           Data.Aeson                               (ToJSON (toJSON))
  import           Data.Either                              (fromRight)
- import           Data.Functor
- import qualified Data.HashMap.Strict                      as HM
--import qualified Data.Set                                 as Set
- import qualified Data.HashSet                             as HashSet
-+import qualified Data.Set                                 as Set
+@@ -46,7 +35,8 @@
+ import qualified Data.Set                                 as Set
  import           Development.IDE.Core.Compile
  import           Development.IDE.Core.PositionMapping
 -import           Development.IDE.GHC.Compat               as GHC
@@ -5623,17 +5620,6 @@ index c3f1de1a4a..fbf66ab366 100644
  
        iDeclToModName :: ImportDecl name -> ModuleName
        iDeclToModName = unLoc . ideclName
-@@ -611,8 +598,8 @@ getCompletions plId ideOpts CC {allModNamesAsNS, anyQualCompls, unqualCompls, qu
-           | otherwise = []
- 
-   if
--    -- TODO: handle multiline imports 
--    | "import " `T.isPrefixOf` fullLine 
-+    -- TODO: handle multiline imports
-+    | "import " `T.isPrefixOf` fullLine
-       && (List.length (words (T.unpack fullLine)) >= 2)
-       && "(" `isInfixOf` T.unpack fullLine
-     -> do
 diff --git a/src/Development/IDE/Plugin/Completions/Types.hs b/src/Development/IDE/Plugin/Completions/Types.hs
 index b8660887b6..3eea61d146 100644
 --- a/src/Development/IDE/Plugin/Completions/Types.hs
