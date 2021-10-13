@@ -10,7 +10,7 @@ SLOT=${MY_PV%%[.+]*}
 
 DESCRIPTION="Open source implementation of the Java programming language"
 HOMEPAGE="https://openjdk.java.net"
-SRC_URI="https://github.com/openjdk/jdk16u/archive/jdk-${MY_PV}.tar.gz"
+SRC_URI="https://github.com/openjdk/jdk17u/archive/jdk-${MY_PV}.tar.gz"
 
 LICENSE="GPL-2"
 KEYWORDS="~amd64 ~arm ~arm64 ~ppc64"
@@ -70,7 +70,7 @@ DEPEND="
 
 REQUIRED_USE="javafx? ( alsa !headless-awt )"
 
-S="${WORKDIR}/jdk16u-jdk-${PV/_p/-}"
+S="${WORKDIR}/jdk17u-jdk-${PV/_p/-}"
 
 # The space required to build varies wildly depending on USE flags,
 # ranging from 2GB to 16GB. This function is certainly not exact but
@@ -96,7 +96,7 @@ pkg_setup() {
 	openjdk_check_requirements
 	java-vm-2_pkg_setup
 
-	JAVA_PKG_WANT_BUILD_VM="openjdk-15 openjdk-bin-${SLOT}"
+	JAVA_PKG_WANT_BUILD_VM="openjdk-16 openjdk-bin-${SLOT}"
 	JAVA_PKG_WANT_SOURCE="${SLOT}"
 	JAVA_PKG_WANT_TARGET="${SLOT}"
 
@@ -130,8 +130,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	eapply "${FILESDIR}/001-fix-build-clang-12.patch"
-
+	eapply "${FILESDIR}"/001-fix-crash-callstack.patch
 	default
 	chmod +x configure || die
 }
