@@ -39,5 +39,5 @@ src_install() {
 	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH} ${PV}
 	create_symlink shared/Microsoft.NETCore.App ${PV}
 	create_symlink shared/Microsoft.AspNetCore.App ${PV}
-	create_symlink sdk 5.0.103
+	create_symlink sdk 5.0.400
 }
