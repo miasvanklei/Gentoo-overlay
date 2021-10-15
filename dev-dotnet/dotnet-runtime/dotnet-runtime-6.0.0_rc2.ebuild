@@ -7,7 +7,7 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-MY_PV="${PV/_rc/-rc.}.21451.13"
+MY_PV="${PV/_rc/-rc.}.21480.5"
 
 SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
@@ -44,7 +44,6 @@ COREFX_FILES=(
 CORECLR_FILES=(
 	'libclrjit.so'
 	'libcoreclr.so'
-	'libcoreclrtraceptprovider.so'
 	'libdbgshim.so'
 	'libmscordaccore.so'
 	'libmscordbi.so'
@@ -85,6 +84,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
 	eapply "${FILESDIR}"/use-system-unwind.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
+	eapply "${FILESDIR}"/clang-misoptimize.patch
 
 	default
 }
