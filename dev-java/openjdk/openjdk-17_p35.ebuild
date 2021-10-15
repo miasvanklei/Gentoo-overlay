@@ -130,7 +130,7 @@ pkg_setup() {
 }
 
 src_prepare() {
-	eapply "${FILESDIR}"/001-fix-crash-callstack.patch
+	eapply "${FILESDIR}"/001-fix-null-pointer.patch
 	default
 	chmod +x configure || die
 }
