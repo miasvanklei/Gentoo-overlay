@@ -1,12 +1,11 @@
 --- a/src/hotspot/share/prims/jni.cpp	2021-10-15 17:13:09.324284409 +0200
 +++ b/src/hotspot/share/prims/jni.cpp	2021-10-15 17:13:28.702563003 +0200
-@@ -2234,7 +2234,8 @@
+@@ -2234,7 +2234,7 @@
    if (s_value != NULL) {
      size_t length = java_lang_String::utf8_length(java_string, s_value);
      /* JNI Specification states return NULL on OOM */
 -    result = AllocateHeap(length + 1, mtInternal, 0, AllocFailStrategy::RETURN_NULL);
-+    NativeCallStack stack;
-+    result = AllocateHeap(length + 1, mtInternal, stack, AllocFailStrategy::RETURN_NULL);
++    result = AllocateHeap(length + 1, mtInternal, CALLER_PC, AllocFailStrategy::RETURN_NULL);
      if (result != NULL) {
        java_lang_String::as_utf8_string(java_string, s_value, result, (int) length + 1);
        if (isCopy != NULL) {
