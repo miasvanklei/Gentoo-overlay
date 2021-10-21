@@ -1,0 +1,40 @@
+--- a/pdf/pdf_file.c
++++ b/pdf/pdf_file.c
+@@ -53,8 +53,6 @@
+ #  include "sjpx_luratech.h"
+ #elif defined(USE_OPENJPEG_JP2)
+ #  include "sjpx_openjpeg.h"
+-#else
+-#  include "sjpx.h"
+ #endif
+ 
+ static void pdfi_close_filter_chain(pdf_context *ctx, stream *s, stream *target);
+@@ -435,6 +433,7 @@
+     return 0;
+ }
+ 
++#if defined(USE_LWF_JP2) || defined(USE_OPENJPEG_JP2)
+ /*
+  * dict -- the dict that contained the decoder (i.e. the image dict)
+  * decode -- the decoder dict
+@@ -559,6 +558,7 @@
+ 
+     return 0;
+ }
++#endif
+ 
+ private_st_jpeg_decompress_data();
+ 
+@@ -809,10 +809,12 @@
+         code = pdfi_DCT_filter(ctx, dict, decode, source, new_stream);
+         return code;
+     }
++    #if defined(USE_LWF_JP2) || defined(USE_OPENJPEG_JP2)
+     if (pdfi_name_is(n, "JPXDecode")) {
+         code = pdfi_JPX_filter(ctx, dict, decode, source, new_stream);
+         return code;
+     }
++    #endif
+ 
+     if (pdfi_name_is(n, "AHx")) {
+         if (!inline_image) {
