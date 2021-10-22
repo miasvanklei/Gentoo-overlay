@@ -55,7 +55,7 @@
  }
 --- a/src/bootstrap/compile.rs	2020-08-27 22:57:42.818176881 +0200
 +++ b/src/bootstrap/compile.rs	2020-08-27 23:00:19.487625539 +0200
-@@ -176,35 +176,7 @@
+@@ -176,38 +176,7 @@
      t!(fs::create_dir_all(&libdir_self_contained));
      let mut target_deps = vec![];
  
@@ -87,6 +87,9 @@
 -            builder.copy(&src, &target);
 -            target_deps.push((target, DependencyType::TargetSelfContained));
 -        }
+-
+-        let libunwind_path = copy_llvm_libunwind(builder, target, &libdir_self_contained);
+-        target_deps.push((libunwind_path, DependencyType::TargetSelfContained));
 -    } else if target.ends_with("-wasi") {
 +    if target.ends_with("-wasi") {
          let srcdir = builder
