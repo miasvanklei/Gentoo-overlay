@@ -7,6 +7,8 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
+inherit toolchain-funcs
+
 MY_PV="${PV/_rc/-rc.}.21480.5"
 
 SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
@@ -91,6 +93,8 @@ src_prepare() {
 
 src_compile() {
 	local dest_core="${SDK_S}/shared/Microsoft.NETCore.App"
+	export CLR_CC="$(tc-getCC)"
+	export CLR_CC="$(tc-getCXX)"
 
 	einfo "building corefx"
 	cd "${COREFX_S}" || die
