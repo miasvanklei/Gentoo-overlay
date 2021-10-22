@@ -1,0 +1,32 @@
+diff --git a/meson.build b/meson.build
+index a95fefcd4ae11387fe6f092ee092847db9a6af7d..944dcbb8940935dad50fbfbdf85bcd77b54aa65c 100644
+--- a/meson.build
++++ b/meson.build
+@@ -216,7 +216,6 @@ endif
+ check_headers = [
+   'arpa/inet.h',
+   'byteswap.h',
+-  'cpuid.h',
+   'dlfcn.h',
+   'execinfo.h',
+   'grp.h',
+@@ -276,6 +275,19 @@ if cc.has_header_symbol('pthread.h', 'PTHREAD_PRIO_INHERIT')
+   cdata.set('HAVE_PTHREAD_PRIO_INHERIT', 1)
+ endif
+ 
++# Headers which are usable
++
++check_usable_headers = [
++  'cpuid.h',
++]
++
++foreach h : check_usable_headers
++  if cc.check_header(h)
++    define = 'HAVE_' + h.underscorify().to_upper()
++    cdata.set(define, 1)
++  endif
++endforeach
++
+ # Functions
+ 
+ check_functions = [
