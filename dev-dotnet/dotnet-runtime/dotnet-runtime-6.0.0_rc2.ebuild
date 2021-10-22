@@ -84,7 +84,6 @@ pkg_setup() {
 src_prepare() {
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
-	eapply "${FILESDIR}"/use-system-unwind.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
 	eapply "${FILESDIR}"/clang-misoptimize.patch
 
@@ -94,7 +93,7 @@ src_prepare() {
 src_compile() {
 	local dest_core="${SDK_S}/shared/Microsoft.NETCore.App"
 	export CLR_CC="$(tc-getCC)"
-	export CLR_CC="$(tc-getCXX)"
+	export CLR_CXX="$(tc-getCXX)"
 
 	einfo "building corefx"
 	cd "${COREFX_S}" || die
@@ -103,7 +102,7 @@ src_compile() {
 
 	einfo "building coreclr"
 	cd "${CORECLR_S}" || die
-	./build-runtime.sh ${DARCH} Release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols || die
+	./build-runtime.sh ${DARCH} Release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols cmakeargs -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON || die
 
 	einfo "building coresetup"
 	cd "${CORESETUP_S}" || die
