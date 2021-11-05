@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="15"
+K_GENPATCHES_VER="2"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -32,18 +32,7 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/0003-usb-c-dts.patch
 		eapply "${FILESDIR}"/pinebook-pro/0004-add-cdn_dp-audio.patch
 		eapply "${FILESDIR}"/pinebook-pro/0005-generic-fixes.patch
-		eapply "${FILESDIR}"/pinebook-pro/0006-revert-round-up-before-giving-to-the-clock-framework.patch
 		eapply "${FILESDIR}"/pinebook-pro/0007-rk3399-gamma_support.patch
-	fi
-
-	if use pine-h64; then
-		eapply "${FILESDIR}"/pine-h64/0001-arm64-allwinner-dts-h6-enable-USB3-port-on-Pine-H64.patch
-		eapply "${FILESDIR}"/pine-h64/0002-mmc-sunxi-fix-unusuable-eMMC-on-some-H6-boards-by-di.patch
-		eapply "${FILESDIR}"/pine-h64/0003-pineh64-model-b-bluetooth-wip.patch
-		eapply "${FILESDIR}"/pine-h64/0005-one-ui-plane-as-cursor.patch
-	fi
-
-	if use pinebook-pro || use pine-h64; then
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 	fi
 
