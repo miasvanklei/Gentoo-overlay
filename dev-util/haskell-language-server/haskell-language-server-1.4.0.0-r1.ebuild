@@ -94,6 +94,7 @@ DEPEND="${RDEPEND}
 
 PATCHES=(
         "${FILESDIR}"/remove-ghc-compat.patch
+	"${FILESDIR}"/haskell-language-server-1.4.0.0-add-paralellism-rtsopts.patch
 )
 
 src_configure() {
