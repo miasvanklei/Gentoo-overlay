@@ -1,0 +1,23 @@
+--- a/source/common/aarch64/asm.S	2021-10-23 23:37:32.525261816 +0200
++++ b/source/common/aarch64/asm.S	2021-10-23 23:41:43.824345684 +0200
+@@ -46,7 +46,6 @@
+ .macro function name, export=1
+     .macro endfunc
+ ELF     .size   \name, . - \name
+-FUNC    .endfunc
+         .purgem endfunc
+     .endm
+         .align  2
+@@ -54,12 +53,10 @@
+         .global EXTERN_ASM\name
+ ELF     .hidden EXTERN_ASM\name
+ ELF     .type   EXTERN_ASM\name, %function
+-FUNC    .func   EXTERN_ASM\name
+ EXTERN_ASM\name:
+ .else
+ ELF     .hidden \name
+ ELF     .type   \name, %function
+-FUNC    .func   \name
+ \name:
+ .endif
+ .endm
