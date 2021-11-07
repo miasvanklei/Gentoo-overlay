@@ -27,6 +27,7 @@ QA_PRESTRIPPED="
 
 PATCHES=(
 	"${FILESDIR}"/fix-resources.patch
+	"${FILESDIR}"/update-sdk.patch
 )
 
 publish_sqltool()
@@ -57,4 +58,6 @@ src_install() {
 	chmod +x MicrosoftSqlToolsCredentials || die
 	chmod +x SqlToolsResourceProviderService || die
 	chmod +x MicrosoftSqlToolsServiceLayer || die
+
+	cp runtimes/unix/lib/netcoreapp3.1/*.dll ./ || die
 }
