@@ -5,13 +5,12 @@ EAPI="7"
 
 inherit cmake
 
-RPV="6.0.0-rc.1.21451.13"
-MY_PV="6.0.0_rc1"
+RUNTIME_PV="6.0.0"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 SRC_URI="https://github.com/Samsung/netcoredbg/archive/${PV/_p/-}.tar.gz -> ${P}.tar.gz
-	https://github.com/dotnet/runtime/archive/v${RPV}.tar.gz -> dotnet-runtime-${MY_PV}.tar.gz"
+	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> dotnet-runtime-${MY_PV}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
@@ -31,7 +30,7 @@ pkg_setup() {
 src_configure() {
 	local mycmakeargs=(
 		-DDOTNET_DIR=/usr/share/dotnet
-		-DCORECLR_DIR=${WORKDIR}/runtime-${RPV}/src/coreclr
+		-DCORECLR_DIR=${WORKDIR}/runtime-${RUNTIME_PV}/src/coreclr
 	)
 
 	cmake_src_configure
