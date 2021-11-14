@@ -7,12 +7,12 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-MY_PV="${PV/_rc/-rc.}.21505.57"
-SDK="${PN}-${MY_PV}-linux-musl"
+MY_PV="6.0.100"
+SDK="${PN}-${PV}-linux-musl"
 
 SRC_URI="
-        amd64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${MY_PV}/${SDK}-x64.tar.gz )
-        arm64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${MY_PV}/${SDK}-arm64.tar.gz )
+        amd64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-x64.tar.gz )
+        arm64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-arm64.tar.gz )
 "
 
 SLOT="0"
@@ -24,7 +24,7 @@ DEPEND="${RDEPEND}"
 S="${WORKDIR}"
 
 src_prepare() {
-        rm "${S}/sdk/${MY_PV}/AppHostTemplate/apphost" || die
+        rm "${S}/sdk/${PV}/AppHostTemplate/apphost" || die
 
         default
 }
