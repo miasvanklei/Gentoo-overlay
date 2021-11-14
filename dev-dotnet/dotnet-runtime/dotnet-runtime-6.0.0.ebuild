@@ -9,9 +9,7 @@ LICENSE="MIT"
 
 inherit toolchain-funcs
 
-MY_PV="${PV/_rc/-rc.}.21480.5"
-
-SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -63,7 +61,7 @@ PACK_FILES=(
 	'libnethost.so'
 )
 
-S="${WORKDIR}/runtime-${MY_PV}"
+S="${WORKDIR}/runtime-${PV}"
 
 pkg_setup() {
 	if use arm64; then
@@ -102,12 +100,12 @@ src_compile() {
 
 	einfo "building coreclr"
 	cd "${CORECLR_S}" || die
-	./build-runtime.sh ${DARCH} Release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols cmakeargs -DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON || die
+	./build-runtime.sh ${DARCH} Release verbose skiptests skipmanaged skipnuget skiprestore skiprestoreoptdata keepnativesymbols || die
 
 	einfo "building coresetup"
 	cd "${CORESETUP_S}" || die
-	./build.sh ${DARCH} Release verbose skipmanaged keepnativesymbols hostver ${MY_PV} fxrver ${MY_PV} policyver ${MY_PV} \
-		commithash 770d630b apphostver ${MY_PV} coreclrartifacts ${ARTIFACTS_CORECLR} nativelibsartifacts ${ARTIFACTS_COREFX} || die
+	./build.sh ${DARCH} Release verbose skipmanaged keepnativesymbols hostver ${PV} fxrver ${PV} policyver ${PV} \
+		commithash 770d630b apphostver ${PV} coreclrartifacts ${ARTIFACTS_CORECLR} nativelibsartifacts ${ARTIFACTS_COREFX} || die
 }
 
 src_install() {
