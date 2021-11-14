@@ -11,18 +11,14 @@ ETC_PATH="${EROOT}/etc"
 COMPILER_PATH="${EROOT}/usr/bin"
 MAN1_PATH="${EROOT}/usr/share/man/man1"
 MAN5_PATH="${EROOT}/usr/share/man/man5"
-INC_PATH="${EROOT}/usr/include/dlang"
+INC_PATH="${EROOT}/usr/include"
 CONFIG_FILE="${EROOT}/var/lib/dlang"
 
 
 ### list action ###
 
 describe_list() {
-	echo "List installed D compilers by vendor (or all installed compilers)"
-}
-
-describe_list_options() {
-	printf "% -11s : List installed ldc2 compilers\n"
+	echo "List installed ldc2 compiler"
 }
 
 describe_list_parameters() {
@@ -53,11 +49,7 @@ do_list() {
 ### set action ###
 
 describe_set() {
-	echo "Set active version of D compilers"
-}
-
-describe_set_options() {
-	printf "% -11s : Set active ldc2 compiler\n"
+	echo "Set active version of ldc2"
 }
 
 describe_set_parameters() {
@@ -90,9 +82,9 @@ do_set() {
 
 	symlink_helper "${EROOT}/usr/lib/ldc2/${target}/bin/ldc2"  "${COMPILER_PATH}/ldc2"
 	symlink_helper "${EROOT}/usr/lib/ldc2/${target}/bin/ldmd2" "${COMPILER_PATH}/ldmd2"
-	symlink_helper "${EROOT}/usr/lib/ldc2/${target}/include/d" "${INC_PATH}/ldc"
+	symlink_helper "${EROOT}/usr/lib/ldc2/${target}/include/d" "${INC_PATH}/d"
 
-	store_config "$CONFIG_FILE" $1
+	store_config "$CONFIG_FILE" ldc2 $target
 
 	echo " done"
 }
@@ -101,11 +93,7 @@ do_set() {
 ### show action ###
 
 describe_show() {
-	echo "Show active D compiler by vendor"
-}
-
-describe_show_options() {
-	printf "% -11s : Show active ldc2 compiler\n"
+	echo "Show active ldc2 compiler"
 }
 
 describe_show_parameters() {
@@ -121,11 +109,7 @@ do_show() {
 ### update action ###
 
 describe_update() {
-	echo "Update active D compilers to the latest installed version in absense of a manually set version"
-}
-
-describe_update_options() {
-	printf "% -11s : Update active ldc2 compiler\n"
+	echo "Update active ld2 compiler"
 }
 
 describe_update_parameters() {
