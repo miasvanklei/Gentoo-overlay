@@ -36,10 +36,6 @@ DEPEND=">=dev-util/cmake-2.8
 	sys-devel/llvm:=
 	${RDEPEND}"
 
-PATCHES=(
-	"${FILESDIR}"/llvm-13.patch
-)
-
 S=${WORKDIR}/ldc-${MY_PV}-src
 
 src_configure() {
