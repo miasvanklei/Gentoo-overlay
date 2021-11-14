@@ -5,7 +5,7 @@ EAPI=8
 
 DESCRIPTION="Virtual for dotnet core"
 
-SLOT="5"
+SLOT="6"
 KEYWORDS="amd64 arm64"
 IUSE=""
 
@@ -39,5 +39,4 @@ src_install() {
 	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH} ${PV}
 	create_symlink shared/Microsoft.NETCore.App ${PV}
 	create_symlink shared/Microsoft.AspNetCore.App ${PV}
-	create_symlink sdk 5.0.400
 }

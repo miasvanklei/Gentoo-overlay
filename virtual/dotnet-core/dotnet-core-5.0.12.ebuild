@@ -5,7 +5,7 @@ EAPI=8
 
 DESCRIPTION="Virtual for dotnet core"
 
-SLOT="6"
+SLOT="5"
 KEYWORDS="amd64 arm64"
 IUSE=""
 
@@ -17,9 +17,6 @@ RDEPEND="
 "
 
 S=${WORKDIR}
-COMMON_PV="${PV/_rc/-rc.}"
-ASPNET_PV="${COMMON_PV}.21480.10"
-RUNTIME_PV="${COMMON_PV}.21480.5"
 
 create_symlink() {
 	mkdir -p $1
@@ -38,8 +35,8 @@ src_install() {
 	mkdir -p ${D}/usr/share/dotnet
 	cd ${D}/usr/share/dotnet
 
-	create_symlink host/fxr ${RUNTIME_PV}
-	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH} ${RUNTIME_PV}
-	create_symlink shared/Microsoft.NETCore.App ${RUNTIME_PV}
-	create_symlink shared/Microsoft.AspNetCore.App $ASPNET_PV}
+	create_symlink host/fxr ${PV}
+	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH} ${PV}
+	create_symlink shared/Microsoft.NETCore.App ${PV}
+	create_symlink shared/Microsoft.AspNetCore.App ${PV}
 }
