@@ -42,7 +42,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	>=dev-haskell/hie-bios-0.7.1:=[profile?] <dev-haskell/hie-bios-0.9.0:=[profile?]
 	>=dev-haskell/hie-compat-0.2.0.0:=[profile?] <dev-haskell/hie-compat-0.3:=[profile?]
 	>=dev-haskell/hiedb-0.4.1:=[profile?] <dev-haskell/hiedb-0.4.2:=[profile?]
-	>=dev-haskell/hls-graph-1.4:=[profile?] <dev-haskell/hls-graph-1.5:=[profile?]
+	>=dev-haskell/hls-graph-1.5:=[profile?] <dev-haskell/hls-graph-1.6:=[profile?]
 	>=dev-haskell/hls-plugin-api-1.2.0.0:=[profile?] <dev-haskell/hls-plugin-api-1.3:=[profile?]
 	dev-haskell/hslogger:=[profile?]
 	>=dev-haskell/implicit-hie-cradle-0.3.0.2:=[profile?] <dev-haskell/implicit-hie-cradle-0.4:=[profile?]
@@ -82,7 +82,6 @@ DEPEND="${RDEPEND}
 "
 
 PATCHES=(
-	"${FILESDIR}/remove-ghc-api-compat.patch"
 	"${FILESDIR}/add-exe-flags.patch"
 )
 
