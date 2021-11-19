@@ -15,7 +15,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 
 RDEPEND=">=dev-haskell/floskell-0.10:=[profile?] <dev-haskell/floskell-0.11:=[profile?]
-	>=dev-haskell/ghcide-1.2:=[profile?] <dev-haskell/ghcide-1.5:=[profile?]
+	>=dev-haskell/ghcide-1.2:=[profile?] <dev-haskell/ghcide-1.6:=[profile?]
 	>=dev-haskell/hls-plugin-api-1.1:=[profile?] <dev-haskell/hls-plugin-api-1.3:=[profile?]
 	dev-haskell/lsp-types:=[profile?]
 	dev-haskell/text:=[profile?]
