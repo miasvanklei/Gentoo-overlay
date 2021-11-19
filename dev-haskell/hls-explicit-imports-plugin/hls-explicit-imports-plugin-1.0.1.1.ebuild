@@ -15,7 +15,7 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 
 RDEPEND="dev-haskell/aeson:=[profile?]
-	>=dev-haskell/ghcide-1.4:=[profile?] <dev-haskell/ghcide-1.5:=[profile?]
+	>=dev-haskell/ghcide-1.4:=[profile?] <dev-haskell/ghcide-1.6:=[profile?]
 	dev-haskell/hls-graph:=[profile?]
 	>=dev-haskell/hls-plugin-api-1.1:=[profile?] <dev-haskell/hls-plugin-api-1.3:=[profile?]
 	dev-haskell/lsp:=[profile?]
@@ -26,7 +26,3 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.4.0.1
 "
-
-PATCHES=(
-	"${FILESDIR}"/remove-ghc-api-compat.patch
-)
