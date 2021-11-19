@@ -14,7 +14,7 @@ LICENSE="Apache-2.0"
 SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 
-RDEPEND=">=dev-haskell/ghcide-1.2:=[profile?] <dev-haskell/ghcide-1.5:=[profile?]
+RDEPEND=">=dev-haskell/ghcide-1.2:=[profile?] <dev-haskell/ghcide-1.6:=[profile?]
 	>=dev-haskell/hls-plugin-api-1.1:=[profile?] <dev-haskell/hls-plugin-api-1.3:=[profile?]
 	dev-haskell/lens:=[profile?]
 	dev-haskell/lsp:=[profile?]
@@ -27,7 +27,3 @@ DEPEND="${RDEPEND}
 	test? ( >=dev-haskell/hls-test-utils-1.0 <dev-haskell/hls-test-utils-1.1
 		dev-haskell/lsp-types )
 "
-
-PATCHES=(
-	"${FILESDIR}"/remove-ghc-api-compat.patch
-)
