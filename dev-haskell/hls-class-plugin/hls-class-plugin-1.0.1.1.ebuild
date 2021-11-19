@@ -16,7 +16,7 @@ KEYWORDS="~amd64 ~x86"
 
 RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/ghc-exactprint:=[profile?]
-	>=dev-haskell/ghcide-1.2:=[profile?] <dev-haskell/ghcide-1.5:=[profile?]
+	>=dev-haskell/ghcide-1.2:=[profile?] <dev-haskell/ghcide-1.6:=[profile?]
 	>=dev-haskell/hls-plugin-api-1.1:=[profile?] <dev-haskell/hls-plugin-api-1.3:=[profile?]
 	dev-haskell/lens:=[profile?]
 	dev-haskell/lsp:=[profile?]
@@ -31,5 +31,4 @@ DEPEND="${RDEPEND}
 
 PATCHES=(
 	"${FILESDIR}"/ghc-9.0.patch
-	"${FILESDIR}"/remove-ghc-api-compat.patch
 )
