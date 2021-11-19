@@ -21,7 +21,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	>=dev-haskell/diff-0.4.0:=[profile?] <dev-haskell/diff-0.5:=[profile?]
 	dev-haskell/dlist:=[profile?]
 	dev-haskell/hashable:=[profile?]
-	>=dev-haskell/hls-graph-1.4:=[profile?] <dev-haskell/hls-graph-1.5:=[profile?]
+	>=dev-haskell/hls-graph-1.4:=[profile?] <dev-haskell/hls-graph-1.6:=[profile?]
 	dev-haskell/hslogger:=[profile?]
 	dev-haskell/lens:=[profile?]
 	>=dev-haskell/lsp-1.2:=[profile?] <dev-haskell/lsp-1.3:=[profile?]
@@ -34,10 +34,6 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.4.0.1
 "
-
-PATCHES=(
-	"${FILESDIR}"/remove-ghc-api-compat.patch
-)
 
 src_configure() {
 	haskell-cabal_src_configure \
