@@ -51,13 +51,13 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	dev-haskell/data-default:=[profile?]
 	dev-haskell/extra:=[profile?]
 	dev-haskell/ghc-paths:=[profile?]
-	>=dev-haskell/ghcide-1.4:=[profile?] <dev-haskell/ghcide-1.5:=[profile?]
+	>=dev-haskell/ghcide-1.4:=[profile?] <dev-haskell/ghcide-1.6:=[profile?]
 	dev-haskell/gitrev:=[profile?]
 	dev-haskell/hashable:=[profile?]
 	dev-haskell/hie-bios:=[profile?]
 	dev-haskell/hiedb:=[profile?]
 	dev-haskell/hls-graph:=[profile?]
-	>=dev-haskell/hls-plugin-api-1.2:=[profile?] <dev-haskell/hls-plugin-api-1.3:=[profile?]
+	>=dev-haskell/hls-plugin-api-1.2.0.2:=[profile?] <dev-haskell/hls-plugin-api-1.3:=[profile?]
 	dev-haskell/hslogger:=[profile?]
 	dev-haskell/lens:=[profile?]
 	dev-haskell/lsp:=[profile?]
@@ -78,7 +78,7 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	hls_formatters_stylish-haskell? ( >=dev-haskell/hls-stylish-haskell-plugin-1.0.0.0:=[profile?] <dev-haskell/hls-stylish-haskell-plugin-1.1:=[profile?] )
 	hls_plugins_call_hierarchy? ( >=dev-haskell/hls-call-hierarchy-plugin-1.0.0.0:=[profile?] <dev-haskell/hls-call-hierarchy-plugin-1.1:=[profile?] )
 	hls_plugins_class? ( >=dev-haskell/hls-class-plugin-1.0.0.1:=[profile?] <dev-haskell/hls-class-plugin-1.1:=[profile?] )
-	hls_plugins_eval? ( >=dev-haskell/hls-eval-plugin-1.1.0.0:=[profile?] <dev-haskell/hls-eval-plugin-1.2:=[profile?] )
+	hls_plugins_eval? ( >=dev-haskell/hls-eval-plugin-1.2.0.0:=[profile?] <dev-haskell/hls-eval-plugin-1.3:=[profile?] )
 	hls_plugins_haddock-comments? ( >=dev-haskell/hls-haddock-comments-plugin-1.0.0.1:=[profile?] <dev-haskell/hls-haddock-comments-plugin-1.1:=[profile?] )
 	hls_plugins_hlint? ( >=dev-haskell/hls-hlint-plugin-1.0.0.2:=[profile?] <dev-haskell/hls-hlint-plugin-1.1:=[profile?] )
 	hls_plugins_import-lens? ( >=dev-haskell/hls-explicit-imports-plugin-1.0.0.1:=[profile?] <dev-haskell/hls-explicit-imports-plugin-1.1:=[profile?] )
@@ -87,13 +87,12 @@ RDEPEND="dev-haskell/aeson:=[profile?]
 	hls_plugins_refine-imports? ( dev-haskell/hls-refine-imports-plugin:=[profile?] )
 	hls_plugins_retrie? ( >=dev-haskell/hls-retrie-plugin-1.0.0.1:=[profile?] <dev-haskell/hls-retrie-plugin-1.1:=[profile?] )
 	hls_plugins_splice? ( >=dev-haskell/hls-splice-plugin-1.0.0.1:=[profile?] <dev-haskell/hls-splice-plugin-1.1:=[profile?] )
-	hls_plugins_tactic? ( >=dev-haskell/hls-tactics-plugin-1.2.0.0:=[profile?] <dev-haskell/hls-tactics-plugin-1.3:=[profile?] )
+	hls_plugins_tactic? ( >=dev-haskell/hls-tactics-plugin-1.2.0.0:=[profile?] <dev-haskell/hls-tactics-plugin-1.6:=[profile?] )
 "
 DEPEND="${RDEPEND}
 	>=dev-haskell/cabal-2.4.0.1"
 
 PATCHES=(
-        "${FILESDIR}"/remove-ghc-compat.patch
 	"${FILESDIR}"/haskell-language-server-1.4.0.0-add-paralellism-rtsopts.patch
 )
 
