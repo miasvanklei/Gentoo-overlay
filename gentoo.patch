@@ -71,20 +71,6 @@ index de5cdd6f843..4ba6a1c6517 100644
  
  inherit linux-info udev xdg distutils-r1
  
-diff --git a/app-office/libreoffice/libreoffice-7.1.6.2.ebuild b/app-office/libreoffice/libreoffice-7.1.6.2.ebuild
-index f2d42758311..578ff1cebf5 100644
---- a/app-office/libreoffice/libreoffice-7.1.6.2.ebuild
-+++ b/app-office/libreoffice/libreoffice-7.1.6.2.ebuild
-@@ -188,6 +188,9 @@ COMMON_DEPEND="${PYTHON_DEPS}
- 	)
- 	clang? (
- 		|| (
-+			(	sys-devel/clang:13
-+				sys-devel/llvm:13
-+				=sys-devel/lld-13*	)
- 			(	sys-devel/clang:12
- 				sys-devel/llvm:12
- 				=sys-devel/lld-12*	)
 diff --git a/app-text/xmlto/xmlto-0.0.28-r3.ebuild b/app-text/xmlto/xmlto-0.0.28-r3.ebuild
 index 6b8268c5f68..e0de1c43e12 100644
 --- a/app-text/xmlto/xmlto-0.0.28-r3.ebuild
@@ -111,10 +97,10 @@ index 69ba112dacf..45feed60cc3 100644
  DISTUTILS_USE_SETUPTOOLS=no
  
  inherit distutils-r1
-diff --git a/dev-java/openjdk/openjdk-17_p35.ebuild b/dev-java/openjdk/openjdk-17_p35.ebuild
+diff --git a/dev-java/openjdk/openjdk-17.0.1_p12.ebuild b/dev-java/openjdk/openjdk-17.0.1_p12.ebuild
 index b5e1cacf951..2709151130a 100644
---- a/dev-java/openjdk/openjdk-17_p35.ebuild
-+++ b/dev-java/openjdk/openjdk-17_p35.ebuild
+--- a/dev-java/openjdk/openjdk-17.0.1_p12.ebuild
++++ b/dev-java/openjdk/openjdk-17.0.1_p12.ebuild
 @@ -62,6 +62,8 @@ DEPEND="
  	x11-libs/libXtst
  	javafx? ( dev-java/openjfx:${SLOT}= )
@@ -133,24 +119,6 @@ index b5e1cacf951..2709151130a 100644
  	JAVA_PKG_WANT_SOURCE="${SLOT}"
  	JAVA_PKG_WANT_TARGET="${SLOT}"
  
-diff --git a/dev-libs/elfutils/elfutils-0.185.ebuild b/dev-libs/elfutils/elfutils-0.185.ebuild
-index a73fbfc0492..fa6ddae272f 100644
---- a/dev-libs/elfutils/elfutils-0.185.ebuild
-+++ b/dev-libs/elfutils/elfutils-0.185.ebuild
-@@ -22,6 +22,13 @@ RDEPEND=">=sys-libs/zlib-1.2.8-r1[static-libs?,${MULTILIB_USEDEP}]
- "
- DEPEND="${RDEPEND}
- 	valgrind? ( dev-util/valgrind )
-+	elibc_musl? (
-+		dev-libs/libbsd
-+		sys-libs/argp-standalone
-+		sys-libs/fts-standalone
-+		sys-libs/obstack-standalone
-+	)
-+
- "
- BDEPEND="nls? ( sys-devel/gettext )
- 	>=sys-devel/flex-2.5.4a
 diff --git a/dev-libs/icu/icu-69.1-r1.ebuild b/dev-libs/icu/icu-69.1-r1.ebuild
 index 6f632a02fd2..3cdbad15f5d 100644
 --- a/dev-libs/icu/icu-69.1-r1.ebuild
@@ -290,10 +258,10 @@ index a5545f400e7..929c1310ba7 100644
  inherit gnome.org gnome2-utils meson python-any-r1 xdg
  
  DESCRIPTION="Collection of GSettings schemas for GNOME desktop"
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.2.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.2.ebuild
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.3.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.3.ebuild
 index 8ebcf8b1fc8..52abaf91d76 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.2.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.2.ebuild
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.3.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.3.ebuild
 @@ -18,7 +18,6 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
  IUSE=""
  
@@ -316,7 +284,7 @@ index ab7fb554651..c7ff2715520 100644
  
  DESCRIPTION="A thin layer of types for graphic libraries"
 diff --git a/media-libs/libglvnd/libglvnd-1.3.4.ebuild b/media-libs/libglvnd/libglvnd-1.3.4.ebuild
-index 43050041496..f3579afc1b9 100644
+index 8c83eaea578..4e4423833af 100644
 --- a/media-libs/libglvnd/libglvnd-1.3.4.ebuild
 +++ b/media-libs/libglvnd/libglvnd-1.3.4.ebuild
 @@ -9,7 +9,7 @@ if [[ ${PV} = 9999* ]]; then
@@ -328,22 +296,6 @@ index 43050041496..f3579afc1b9 100644
  VIRTUALX_REQUIRED=manual
  
  inherit ${GIT_ECLASS} meson-multilib python-any-r1 virtualx
-diff --git a/media-libs/mesa/mesa-21.2.2.ebuild b/media-libs/mesa/mesa-21.2.2.ebuild
-index e3fd921bbaa..9772ca544e5 100644
---- a/media-libs/mesa/mesa-21.2.2.ebuild
-+++ b/media-libs/mesa/mesa-21.2.2.ebuild
-@@ -139,9 +139,10 @@ RDEPEND="${RDEPEND}
- # 1. List all the working slots (with min versions) in ||, newest first.
- # 2. Update the := to specify *max* version, e.g. < 10.
- # 3. Specify LLVM_MAX_SLOT, e.g. 9.
--LLVM_MAX_SLOT="12"
-+LLVM_MAX_SLOT="13"
- LLVM_DEPSTR="
- 	|| (
-+		sys-devel/llvm:13[${MULTILIB_USEDEP}]
- 		sys-devel/llvm:12[${MULTILIB_USEDEP}]
- 		sys-devel/llvm:11[${MULTILIB_USEDEP}]
- 	)
 diff --git a/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild b/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild
 index cd70327db01..d2d56536d98 100644
 --- a/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild
@@ -453,19 +405,6 @@ index 08fdbf6d9fa..0d1d4fe990c 100644
  		$(meson_feature gtk3 gtk)
  		$(meson_feature introspection)
  		$(meson_use mjpeg builtin-mjpeg)
-diff --git a/sys-apps/flatpak/flatpak-1.12.2.ebuild b/sys-apps/flatpak/flatpak-1.12.2.ebuild
-index a931e50425a..0796956affd 100644
---- a/sys-apps/flatpak/flatpak-1.12.2.ebuild
-+++ b/sys-apps/flatpak/flatpak-1.12.2.ebuild
-@@ -2,7 +2,7 @@
- # Distributed under the terms of the GNU General Public License v2
- 
- EAPI=7
--PYTHON_COMPAT=( python3_{8,9} )
-+PYTHON_COMPAT=( python3_{8,9,10} )
- 
- inherit autotools linux-info python-any-r1
- 
 diff --git a/sys-auth/pambase/pambase-20210201.1.ebuild b/sys-auth/pambase/pambase-20210201.1.ebuild
 index b4166689528..6b1d2ac83aa 100644
 --- a/sys-auth/pambase/pambase-20210201.1.ebuild
@@ -480,7 +419,7 @@ index b4166689528..6b1d2ac83aa 100644
  inherit pam python-any-r1 readme.gentoo-r1
  
 diff --git a/sys-devel/clang/clang-13.0.0.ebuild b/sys-devel/clang/clang-13.0.0.ebuild
-index 8cc5e5097bf..9e2580e7c01 100644
+index 707bb762d95..27a1ed5907a 100644
 --- a/sys-devel/clang/clang-13.0.0.ebuild
 +++ b/sys-devel/clang/clang-13.0.0.ebuild
 @@ -21,6 +21,8 @@ IUSE="debug default-compiler-rt default-libcxx default-lld
@@ -593,10 +532,10 @@ index 9bd470297df..fd481026e27 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-13.0.0.ebuild b/sys-devel/llvm/llvm-13.0.0.ebuild
-index b233b121c0b..3f0705cf776 100644
+index 4b33fd90585..62755f3c3a3 100644
 --- a/sys-devel/llvm/llvm-13.0.0.ebuild
 +++ b/sys-devel/llvm/llvm-13.0.0.ebuild
-@@ -23,6 +23,8 @@ IUSE="debug doc exegesis gold libedit +libffi ncurses test xar xml z3
+@@ -23,6 +23,8 @@ IUSE="debug doc exegesis +gold libedit +libffi ncurses test xar xml z3
  	kernel_Darwin"
  RESTRICT="!test? ( test )"
  
