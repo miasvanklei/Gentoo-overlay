@@ -108,11 +108,6 @@ src_install() {
 		INSTALL_MOD_PATH="${ED}" INSTALL_PATH="${ED}"/usr/src/linux-${ver} "${targets[@]}"
 	rename -- "-${ver}" "" "${ED}"/usr/src/linux-${ver}/* || die
 
-	if use arm || user arm64; then
-		mv ${D}/dtbs/${P}/* ${D}/dtbs/ || die
-		rmdir ${D}/dtbs/${P} || die
-	fi
-
 	# note: we're using mv rather than doins to save space and time
 	# install main and arch-specific headers first, and scripts
 	mv include scripts "${ED}/usr/src/linux-${ver}/" || die
