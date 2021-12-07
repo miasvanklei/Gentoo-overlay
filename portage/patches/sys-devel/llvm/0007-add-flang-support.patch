@@ -15,6 +15,29 @@
  if(LLVM_ENABLE_EXPENSIVE_CHECKS)
    add_definitions(-DEXPENSIVE_CHECKS)
  
+diff --git a/llvm/include/llvm-c/DebugInfo.h b/llvm/include/llvm-c/DebugInfo.h
+index 8c085807914b..32a978456279 100644
+--- a/llvm/include/llvm-c/DebugInfo.h
++++ b/llvm/include/llvm-c/DebugInfo.h
+@@ -1123,7 +1123,8 @@ LLVMMetadataRef LLVMDIBuilderCreateGlobalVariableExpression(
+     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
+     size_t NameLen, const char *Linkage, size_t LinkLen, LLVMMetadataRef File,
+     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
+-    LLVMMetadataRef Expr, LLVMMetadataRef Decl, uint32_t AlignInBits);
++    LLVMMetadataRef Expr, LLVMMetadataRef Decl, LLVMDIFlags Flags,
++    uint32_t AlignInBits);
+ 
+ /**
+  * Retrieves the \c DIVariable associated with this global variable expression.
+@@ -1215,7 +1216,7 @@ LLVMMetadataRef LLVMDIBuilderCreateTempGlobalVariableFwdDecl(
+     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
+     size_t NameLen, const char *Linkage, size_t LnkLen, LLVMMetadataRef File,
+     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
+-    LLVMMetadataRef Decl, uint32_t AlignInBits);
++    LLVMMetadataRef Decl, LLVMDIFlags Flags, uint32_t AlignInBits);
+ 
+ /**
+  * Insert a new llvm.dbg.declare intrinsic call before the given instruction.
 --- a/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/include/llvm/Analysis/TargetLibraryInfo.h	2021-04-01 22:08:22.271948948 +0200
 @@ -90,6 +90,7 @@
@@ -602,27 +625,6 @@
    StringRef getDisplayName() const { return getStringOperand(4); }
    StringRef getLinkageName() const { return getStringOperand(5); }
    DIDerivedType *getStaticDataMemberDeclaration() const {
---- a/llvm/include/llvm-c/DebugInfo.h	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/include/llvm-c/DebugInfo.h	2021-04-01 22:08:22.256948841 +0200
-@@ -1122,7 +1122,8 @@
-     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
-     size_t NameLen, const char *Linkage, size_t LinkLen, LLVMMetadataRef File,
-     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
--    LLVMMetadataRef Expr, LLVMMetadataRef Decl, uint32_t AlignInBits);
-+    LLVMMetadataRef Expr, LLVMMetadataRef Decl, LLVMDIFlags Flags,
-+    uint32_t AlignInBits);
- 
- /**
-  * Retrieves the \c DIVariable associated with this global variable expression.
-@@ -1214,7 +1215,7 @@
-     LLVMDIBuilderRef Builder, LLVMMetadataRef Scope, const char *Name,
-     size_t NameLen, const char *Linkage, size_t LnkLen, LLVMMetadataRef File,
-     unsigned LineNo, LLVMMetadataRef Ty, LLVMBool LocalToUnit,
--    LLVMMetadataRef Decl, uint32_t AlignInBits);
-+    LLVMMetadataRef Decl, LLVMDIFlags Flags, uint32_t AlignInBits);
- 
- /**
-  * Insert a new llvm.dbg.declare intrinsic call before the given instruction.
 --- a/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/Analysis/TargetLibraryInfo.cpp	2021-04-01 22:08:22.461950302 +0200
 @@ -29,7 +29,9 @@
@@ -778,18 +780,134 @@
    Record.push_back(N->getAlignInBits());
  
    Stream.EmitRecord(bitc::METADATA_GLOBAL_VAR, Record, Abbrev);
---- a/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h	2021-04-01 22:08:22.471950373 +0200
-@@ -178,6 +178,9 @@
+diff --git a/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h b/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h
+index 62ebadaf3cbe..3721c4522dc4 100644
+--- a/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h
++++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocEntry.h
+@@ -112,6 +112,29 @@ class DbgValueLoc {
+   SmallVector<DbgValueLocEntry, 2> ValueLocEntries;
+ 
+   bool IsVariadic;
++  /// Type of entry that this represents.
++  enum EntryType {
++    E_Location,
++    E_Integer,
++    E_ConstantFP,
++    E_ConstantInt,
++    E_TargetIndexLocation
++  };
++  enum EntryType EntryKind;
++
++  /// Either a constant,
++  union {
++    int64_t Int;
++    const ConstantFP *CFP;
++    const ConstantInt *CIP;
++  } Constant;
++
++  union {
++    /// Or a location in the machine frame.
++    MachineLocation Loc;
++    /// Or a location from target specific location.
++    TargetIndexLocation TIL;
++  };
+ 
+ public:
+   DbgValueLoc(const DIExpression *Expr, ArrayRef<DbgValueLocEntry> Locs)
+@@ -146,6 +169,37 @@ class DbgValueLoc {
+     assert(((Expr && Expr->isValid()) || !Loc.isLocation()) &&
+            "DBG_VALUE with a machine location must have a valid expression.");
+   }
++  DbgValueLoc(const DIExpression *Expr, int64_t i)
++      : Expression(Expr), EntryKind(E_Integer) {
++    Constant.Int = i;
++  }
++  DbgValueLoc(const DIExpression *Expr, const ConstantFP *CFP)
++      : Expression(Expr), EntryKind(E_ConstantFP) {
++    Constant.CFP = CFP;
++  }
++  DbgValueLoc(const DIExpression *Expr, const ConstantInt *CIP)
++      : Expression(Expr), EntryKind(E_ConstantInt) {
++    Constant.CIP = CIP;
++  }
++  DbgValueLoc(const DIExpression *Expr, MachineLocation Loc)
++      : Expression(Expr), EntryKind(E_Location), Loc(Loc) {
++    assert(cast<DIExpression>(Expr)->isValid());
++  }
++  DbgValueLoc(const DIExpression *Expr, TargetIndexLocation Loc)
++      : Expression(Expr), EntryKind(E_TargetIndexLocation), TIL(Loc) {}
++
++  bool isLocation() const { return EntryKind == E_Location; }
++  bool isTargetIndexLocation() const {
++    return EntryKind == E_TargetIndexLocation;
++  }
++  bool isInt() const { return EntryKind == E_Integer; }
++  bool isConstantFP() const { return EntryKind == E_ConstantFP; }
++  bool isConstantInt() const { return EntryKind == E_ConstantInt; }
++  int64_t getInt() const { return Constant.Int; }
++  const ConstantFP *getConstantFP() const { return Constant.CFP; }
++  const ConstantInt *getConstantInt() const { return Constant.CIP; }
++  MachineLocation getLoc() const { return Loc; }
++  TargetIndexLocation getTargetIndexLocation() const { return TIL; }
+ 
+   bool isFragment() const { return getExpression()->isFragment(); }
+   bool isEntryVal() const { return getExpression()->isEntryValue(); }
+@@ -160,6 +214,15 @@ class DbgValueLoc {
+   LLVM_DUMP_METHOD void dump() const {
+     for (DbgValueLocEntry DV : ValueLocEntries)
+       DV.dump();
++//    if (isLocation()) {
++//      llvm::dbgs() << "Loc = { reg=" << Loc.getReg() << " ";
++//      if (Loc.isIndirect())
++//        llvm::dbgs() << "+0";
++//      llvm::dbgs() << "} ";
++//    } else if (isConstantInt())
++//      Constant.CIP->dump();
++//    else if (isConstantFP())
++//      Constant.CFP->dump();
+     if (Expression)
+       Expression->dump();
+   }
+@@ -227,6 +290,9 @@ class DebugLocEntry {
                  DebugLocStream::ListBuilder &List,
                  const DIBasicType *BT,
                  DwarfCompileUnit &TheCU);
 +
-+  void finalize(const AsmPrinter &AP, DebugLocStream::ListBuilder &List,
-+                const DIStringType *ST, DwarfCompileUnit &TheCU);
++//  void finalize(const AsmPrinter &AP, DebugLocStream::ListBuilder &List,
++//                const DIStringType *ST, DwarfCompileUnit &TheCU);
  };
  
- /// Compare two DbgValueLocs for equality.
+ /// Compare two DbgValueLocEntries for equality.
+@@ -255,6 +321,29 @@ inline bool operator==(const DbgValueLoc &A, const DbgValueLoc &B) {
+          A.Expression == B.Expression && A.IsVariadic == B.IsVariadic;
+ }
+ 
++//inline bool operator==(const DbgValueLoc &A,
++//                       const DbgValueLoc &B) {
++//  if (A.EntryKind != B.EntryKind)
++//    return false;
++//
++//  if (A.Expression != B.Expression)
++//   return false;
++//
++//  switch (A.EntryKind) {
++//  case DbgValueLoc::E_Location:
++//    return A.Loc == B.Loc;
++//  case DbgValueLoc::E_TargetIndexLocation:
++//    return A.TIL == B.TIL;
++//  case DbgValueLoc::E_Integer:
++//    return A.Constant.Int == B.Constant.Int;
++//  case DbgValueLoc::E_ConstantFP:
++//    return A.Constant.CFP == B.Constant.CFP;
++//  case DbgValueLoc::E_ConstantInt:
++//    return A.Constant.CIP == B.Constant.CIP;
++//  }
++//  llvm_unreachable("unhandled EntryKind");
++//}
++
+ /// Compare two fragments based on their offset.
+ inline bool operator<(const DbgValueLoc &A,
+                       const DbgValueLoc &B) {
 --- a/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DebugLocStream.cpp	2021-04-01 22:08:22.471950373 +0200
 @@ -37,7 +37,10 @@
@@ -921,117 +1039,6 @@
  
    /// addLabelAddress - Add a dwarf label attribute data and value using
    /// either DW_FORM_addr or DW_FORM_GNU_addr_index.
---- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.cpp	2021-04-01 22:08:22.472950381 +0200
-@@ -1217,11 +1217,13 @@
-         GVMapEntry.push_back({nullptr, Expr});
-     }
-     DenseSet<DIGlobalVariable *> Processed;
-+    CU.setGlobalVarMap(&GVMap);
-     for (auto *GVE : CUNode->getGlobalVariables()) {
-       DIGlobalVariable *GV = GVE->getVariable();
-       if (Processed.insert(GV).second)
-         CU.getOrCreateGlobalVariableDIE(GV, sortGlobalExprs(GVMap[GV]));
-     }
-+    CU.setGlobalVarMap();
- 
-     for (auto *Ty : CUNode->getEnumTypes()) {
-       // The enum types array by design contains pointers to
-@@ -1762,10 +1764,26 @@
-   return ConcreteEntities.back().get();
- }
- 
-+void DwarfDebug::populateDependentTypeMap() {
-+  for (const auto &I : DbgValues) {
-+    InlinedEntity IV = I.first;
-+    if (I.second.empty())
-+      continue;
-+    if (const DIVariable *DIV = dyn_cast<DIVariable>(IV.first)) {
-+      if (const DIStringType *ST = dyn_cast<DIStringType>(
-+              static_cast<const Metadata *>(DIV->getType())))
-+        if (const DIVariable *LV = ST->getStringLength())
-+          VariableInDependentType[LV] = ST;
-+    }
-+  }
-+}
-+
- // Find variables for each lexical scope.
- void DwarfDebug::collectEntityInfo(DwarfCompileUnit &TheCU,
-                                    const DISubprogram *SP,
-                                    DenseSet<InlinedEntity> &Processed) {
-+  clearDependentTracking();
-+  populateDependentTypeMap();
-   // Grab the variable info that was squirreled away in the MMI side-table.
-   collectVariableInfoFromMFTable(TheCU, Processed);
- 
-@@ -1780,7 +1798,9 @@
-       continue;
- 
-     LexicalScope *Scope = nullptr;
--    const DILocalVariable *LocalVar = cast<DILocalVariable>(IV.first);
-+    const DILocalVariable *LocalVar = dyn_cast<DILocalVariable>(IV.first);
-+    if (!LocalVar)
-+      continue;
-     if (const DILocation *IA = IV.second)
-       Scope = LScopes.findInlinedScope(LocalVar->getScope(), IA);
-     else
-@@ -1839,6 +1859,22 @@
-     // Finalize the entry by lowering it into a DWARF bytestream.
-     for (auto &Entry : Entries)
-       Entry.finalize(*Asm, List, BT, TheCU);
-+    List.finalize();
-+
-+    if (VariableInDependentType.count(LocalVar)) {
-+      const DIType *DT = VariableInDependentType[LocalVar];
-+      if (const DIStringType *ST = dyn_cast<DIStringType>(DT)) {
-+        unsigned Offset;
-+        DbgVariable TVar = {LocalVar, IV.second};
-+        DebugLocStream::ListBuilder LB(DebugLocs, TheCU, *Asm, TVar, *MInsn);
-+        for (auto &Entry : Entries)
-+          Entry.finalize(*Asm, LB, ST, TheCU);
-+        LB.finalize();
-+        Offset = TVar.getDebugLocListIndex();
-+        if (Offset != ~0u)
-+          addStringTypeLoc(ST, Offset);
-+      }
-+    }
-   }
- 
-   // For each InlinedEntity collected from DBG_LABEL instructions, convert to
-@@ -2546,6 +2582,33 @@
-     List.setTagOffset(*DwarfExpr.TagOffset);
- }
- 
-+inline static DbgValueLoc mkDbgValueLoc(const DIExpression *expr,
-+                                        const DbgValueLocEntry &value) {
-+  if (value.isInt())
-+    return DbgValueLoc(expr, value.getInt());
-+  if (value.isLocation())
-+    return DbgValueLoc(expr, value.getLoc());
-+  if (value.isConstantInt())
-+    return DbgValueLoc(expr, value.getConstantInt());
-+  assert(value.isConstantFP());
-+  return DbgValueLoc(expr, value.getConstantFP());
-+}
-+
-+void DebugLocEntry::finalize(const AsmPrinter &AP,
-+                             DebugLocStream::ListBuilder &List,
-+                             const DIStringType *ST,
-+                             DwarfCompileUnit &TheCU) {
-+  DebugLocStream::EntryBuilder Entry(List, Begin, End);
-+  BufferByteStreamer Streamer = Entry.getStreamer();
-+  DebugLocDwarfExpression DwarfExpr(AP.getDwarfVersion(), Streamer, TheCU);
-+  DbgValueLoc &Value = Values[0];
-+  assert(!Value.isFragment());
-+  assert(Values.size() == 1 && "only fragments may have >1 value");
-+  Value = mkDbgValueLoc(ST->getStringLengthExp(), Value.getLocEntries()[0]);
-+  DwarfDebug::emitDebugLocValue(AP, nullptr, Value, DwarfExpr);
-+  DwarfExpr.finalize();
-+}
-+
- void DwarfDebug::emitDebugLocEntryLocation(const DebugLocStream::Entry &Entry,
-                                            const DwarfCompileUnit *CU) {
-   // Emit the size.
 --- a/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/CodeGen/AsmPrinter/DwarfDebug.h	2021-04-01 22:08:22.473950388 +0200
 @@ -283,6 +283,8 @@
@@ -1052,19 +1059,6 @@
    AddressPool AddrPool;
  
    /// Accelerator tables.
-@@ -622,6 +626,12 @@
-   /// Emit the reference to the section.
-   void emitSectionReference(const DwarfCompileUnit &CU);
- 
-+  /// Populate dependent type variable map
-+  void populateDependentTypeMap();
-+
-+  /// Clear dependent type tracking map
-+  void clearDependentTracking() { VariableInDependentType.clear(); }
-+
- protected:
-   /// Gather pre-function debug information.
-   void beginFunctionImpl(const MachineFunction *MF) override;
 --- a/llvm/lib/IR/AsmWriter.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/IR/AsmWriter.cpp	2021-04-01 22:08:22.538950851 +0200
 @@ -2294,6 +2294,7 @@
@@ -1239,40 +1233,6 @@
    AssertDI(isType(N.getRawType()), "invalid type ref", &N, N.getRawType());
    // Assert only if the global variable is not an extern
    if (N.isDefinition())
---- a/llvm/lib/Support/Unix/Threading.inc	2021-03-31 21:10:37.000000000 +0200
-+++ b/llvm/lib/Support/Unix/Threading.inc	2021-04-01 22:08:22.575951114 +0200
-@@ -164,6 +164,7 @@
-   if (get_max_thread_name_length() > 0)
-     NameStr = NameStr.take_back(get_max_thread_name_length() - 1);
-   (void)NameStr;
-+#if 0
- #if defined(__linux__)
- #if (defined(__GLIBC__) && defined(_GNU_SOURCE)) || defined(__ANDROID__)
- #if HAVE_PTHREAD_SETNAME_NP
-@@ -178,6 +179,7 @@
- #elif defined(__APPLE__)
-   ::pthread_setname_np(NameStr.data());
- #endif
-+#endif
- }
- 
- void llvm::get_thread_name(SmallVectorImpl<char> &Name) {
-@@ -232,6 +234,7 @@
- 
-   Name.append(buf, buf + strlen(buf));
- #elif defined(__linux__)
-+#if 0
- #if HAVE_PTHREAD_GETNAME_NP
-   constexpr uint32_t len = get_max_thread_name_length_impl();
-   char Buffer[len] = {'\0'};  // FIXME: working around MSan false positive.
-@@ -239,6 +242,7 @@
-     Name.append(Buffer, Buffer + strlen(Buffer));
- #endif
- #endif
-+#endif
- }
- 
- SetThreadPriorityResult llvm::set_thread_priority(ThreadPriority Priority) {
 --- a/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-03-31 21:10:37.000000000 +0200
 +++ b/llvm/lib/Transforms/Vectorize/LoopVectorize.cpp	2021-04-01 22:13:36.272305489 +0200
 @@ -5975,8 +5975,10 @@
