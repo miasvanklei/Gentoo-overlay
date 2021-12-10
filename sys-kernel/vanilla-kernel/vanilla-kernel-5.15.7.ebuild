@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="8"
+K_GENPATCHES_VER="9"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
