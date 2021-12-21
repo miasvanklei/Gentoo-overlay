@@ -26,3 +26,10 @@ RDEPEND="
 	x11-libs/gtk+:3[introspection]"
 
 DEPEND="${RDEPEND}"
+
+src_install() {
+	distutils-r1_src_install
+
+	insinto /usr/share/icons/hicolor/128x128/apps
+	doins ${FILESDIR}/pympress.png
+}
