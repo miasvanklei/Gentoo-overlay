@@ -127,7 +127,7 @@ PATCHES=(
 	"${FILESDIR}"/003-aarch64-static-pie.patch
 	"${FILESDIR}"/004-libc-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
-	"${FILESDIR}"/007-llvm-12.patch
+	"${FILESDIR}"/007-flang-llvm-change.patch
 )
 
 S="${WORKDIR}/${MY_P}-src"
