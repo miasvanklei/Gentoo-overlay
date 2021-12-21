@@ -1996,8 +1996,8 @@ IUSE="btrfs +device-mapper iptables +nftables selinux systemd"
 
 COMMON_DEPEND="
 	app-crypt/gpgme:=
-	app-emulation/conmon
-	app-emulation/runc
+	app-containers/conmon
+	app-containers/runc
 	dev-libs/glib:=
 	dev-libs/libassuan:=
 	dev-libs/libgpg-error:=
