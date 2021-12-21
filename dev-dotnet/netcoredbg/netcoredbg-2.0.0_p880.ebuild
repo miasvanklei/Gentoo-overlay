@@ -5,12 +5,12 @@ EAPI="7"
 
 inherit cmake
 
-RUNTIME_PV="6.0.0"
+RUNTIME_PV="6.0.1"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 SRC_URI="https://github.com/Samsung/netcoredbg/archive/${PV/_p/-}.tar.gz -> ${P}.tar.gz
-	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> dotnet-runtime-${MY_PV}.tar.gz"
+	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> dotnet-runtime-${RUNTIME_PV}.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
@@ -20,6 +20,10 @@ RDEPEND="dev-dotnet/dotnet-runtime"
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}/${P/_p/-}"
+
+PATCHES=(
+	"${FILESDIR}"/fix-compile.patch
+)
 
 pkg_setup() {
 	# no telemetry or first time experience
