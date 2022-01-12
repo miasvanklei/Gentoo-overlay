@@ -8,20 +8,20 @@
 +#define M_PIl 3.141592653589793238462643383279502884L
 +#endif
 +
- static void test_tokenizer(const char *data, ...) {
+ static void test_tokenizer_one(const char *data, ...) {
          unsigned line = 0, column = 0;
          void *state = NULL;
 --- a/src/test/test-cpu-set-util.c
 +++ b/src/test/test-cpu-set-util.c
 @@ -5,6 +5,10 @@
- #include "string-util.h"
+ #include "tests.h"
  #include "macro.h"
  
 +#ifndef __cpu_mask
 +#define __cpu_mask unsigned long
 +#endif
 +
- static void test_parse_cpu_set(void) {
+ TEST(parse_cpu_set) {
          CPUSet c = {};
          _cleanup_free_ char *str = NULL;
 --- a/src/test/test-sizeof.c

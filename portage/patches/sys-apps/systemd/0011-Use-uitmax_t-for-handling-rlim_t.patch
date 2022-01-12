@@ -17,24 +17,24 @@
  #  define DEV_FMT "%" PRIu64
 --- a/src/basic/rlimit-util.c
 +++ b/src/basic/rlimit-util.c
-@@ -307,13 +307,13 @@ int rlimit_format(const struct rlimit *rl, char **ret) {
+@@ -307,13 +307,13 @@
          if (rl->rlim_cur >= RLIM_INFINITY && rl->rlim_max >= RLIM_INFINITY)
-                 s = strdup("infinity");
+                 r = free_and_strdup(&s, "infinity");
          else if (rl->rlim_cur >= RLIM_INFINITY)
--                (void) asprintf(&s, "infinity:" RLIM_FMT, rl->rlim_max);
-+                (void) asprintf(&s, "infinity:" RLIM_FMT, (uintmax_t)rl->rlim_max);
+-                r = asprintf(&s, "infinity:" RLIM_FMT, rl->rlim_max);
++                r = asprintf(&s, "infinity:" RLIM_FMT, (uintmax_t)rl->rlim_max);
          else if (rl->rlim_max >= RLIM_INFINITY)
--                (void) asprintf(&s, RLIM_FMT ":infinity", rl->rlim_cur);
-+                (void) asprintf(&s, RLIM_FMT ":infinity", (uintmax_t)rl->rlim_cur);
+-                r = asprintf(&s, RLIM_FMT ":infinity", rl->rlim_cur);
++                r = asprintf(&s, RLIM_FMT ":infinity", (uintmax_t)rl->rlim_cur);
          else if (rl->rlim_cur == rl->rlim_max)
--                (void) asprintf(&s, RLIM_FMT, rl->rlim_cur);
-+                (void) asprintf(&s, RLIM_FMT, (uintmax_t)rl->rlim_cur);
+-                r = asprintf(&s, RLIM_FMT, rl->rlim_cur);
++                r = asprintf(&s, RLIM_FMT, (uintmax_t)rl->rlim_cur);
          else
--                (void) asprintf(&s, RLIM_FMT ":" RLIM_FMT, rl->rlim_cur, rl->rlim_max);
-+                (void) asprintf(&s, RLIM_FMT ":" RLIM_FMT, (uintmax_t)rl->rlim_cur, (uintmax_t)rl->rlim_max);
- 
-         if (!s)
+-                r = asprintf(&s, RLIM_FMT ":" RLIM_FMT, rl->rlim_cur, rl->rlim_max);
++                r = asprintf(&s, RLIM_FMT ":" RLIM_FMT, rl->rlim_cur, (uintmax_t)rl->rlim_max);
+         if (r < 0)
                  return -ENOMEM;
+ 
 @@ -404,7 +404,7 @@ int rlimit_nofile_safe(void) {
  
          rl.rlim_cur = FD_SETSIZE;

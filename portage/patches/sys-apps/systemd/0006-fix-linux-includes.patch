@@ -18,16 +18,6 @@
  
  #include "alloc-util.h"
  #include "dhcp-client-internal.h"
---- a/src/network/networkd-dhcp6.c	2020-02-06 16:17:44.522106940 +0100
-+++ b/src/network/networkd-dhcp6.c	2020-02-06 16:18:19.435292269 +0100
-@@ -5,7 +5,6 @@
- 
- #include <netinet/in.h>
- #include <linux/if.h>
--#include <linux/if_arp.h>
- 
- #include "sd-dhcp6-client.h"
- 
 --- a/src/network/networkd-dhcp-common.c	2020-11-26 22:38:21.065742239 +0100
 +++ b/src/network/networkd-dhcp-common.c	2020-11-26 22:40:36.656842867 +0100
 @@ -1,7 +1,7 @@
@@ -84,9 +74,9 @@
  #include <netinet/in.h>
  #include <linux/if.h>
 -#include <linux/if_arp.h>
+ #include <linux/if_bridge.h>
  
  #include "missing_network.h"
- #include "netlink-util.h"
 --- a/src/network/networkd-link.c	2021-07-07 19:41:29.000000000 +0200
 +++ b/src/network/networkd-link.c	2021-07-10 18:19:19.377073169 +0200
 @@ -2,7 +2,7 @@
@@ -98,3 +88,286 @@
  #include <linux/if_link.h>
  #include <sys/socket.h>
  #include <unistd.h>
+--- a/src/network/netdev/bareudp.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/bareudp.c	2021-12-24 14:01:25.587033449 +0100
+@@ -2,7 +2,6 @@
+  * Copyright © 2020 VMware, Inc. */
+ 
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ 
+ #include "bareudp.h"
+ #include "netlink-util.h"
+--- a/src/network/netdev/batadv.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/batadv.c	2021-12-24 14:01:27.541055848 +0100
+@@ -3,7 +3,6 @@
+ #include <inttypes.h>
+ #include <netinet/in.h>
+ #include <linux/genetlink.h>
+-#include <linux/if_arp.h>
+ 
+ #include "batadv.h"
+ #include "fileio.h"
+--- a/src/network/netdev/bond.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/bond.c	2021-12-24 14:01:29.113073869 +0100
+@@ -1,7 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ 
+ #include "alloc-util.h"
+ #include "bond.h"
+--- a/src/network/netdev/bridge.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/bridge.c	2021-12-24 14:01:31.370099742 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ #include <linux/if_bridge.h>
+ 
+ #include "bridge.h"
+--- a/src/network/netdev/dummy.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/dummy.c	2021-12-24 14:01:33.324122143 +0100
+@@ -1,7 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/if_arp.h>
+-
+ #include "dummy.h"
+ 
+ const NetDevVTable dummy_vtable = {
+--- a/src/network/netdev/geneve.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/geneve.c	2021-12-24 14:01:39.267190273 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ 
+ #include "alloc-util.h"
+ #include "conf-parser.h"
+--- a/src/network/netdev/ifb.c	2021-12-24 14:01:15.474917528 +0100
++++ b/src/network/netdev/ifb.c	2021-12-24 14:01:41.422214978 +0100
+@@ -1,8 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later
+  * Copyright © 2019 VMware, Inc. */
+ 
+-#include <linux/if_arp.h>
+-
+ #include "ifb.h"
+ 
+ const NetDevVTable ifb_vtable = {
+--- a/src/network/netdev/ipoib.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/ipoib.c	2021-12-24 14:01:43.739241540 +0100
+@@ -1,6 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/if_arp.h>
+ #include <linux/if_link.h>
+ 
+ #include "ipoib.h"
+--- a/src/network/netdev/ipvlan.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/ipvlan.c	2021-12-24 14:01:45.813265316 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ 
+ #include "conf-parser.h"
+ #include "ipvlan.h"
+--- a/src/network/netdev/macsec.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/macsec.c	2021-12-24 14:01:48.998301828 +0100
+@@ -1,7 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ #include <linux/if_ether.h>
+ #include <linux/if_macsec.h>
+ #include <linux/genetlink.h>
+--- a/src/network/netdev/macvlan.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/macvlan.c	2021-12-24 14:01:51.152326522 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ 
+ #include "conf-parser.h"
+ #include "macvlan.h"
+--- a/src/network/netdev/netdev.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/netdev.c	2021-12-24 14:01:53.046348235 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ #include <unistd.h>
+ 
+ #include "alloc-util.h"
+--- a/src/network/netdev/netdevsim.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/netdevsim.c	2021-12-24 14:01:55.544376873 +0100
+@@ -1,7 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/if_arp.h>
+-
+ #include "netdevsim.h"
+ 
+ const NetDevVTable netdevsim_vtable = {
+--- a/src/network/netdev/nlmon.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/nlmon.c	2021-12-24 14:01:57.216396042 +0100
+@@ -1,7 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/if_arp.h>
+-
+ #include "nlmon.h"
+ 
+ static int netdev_nlmon_verify(NetDev *netdev, const char *filename) {
+--- a/src/network/netdev/tunnel.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/tunnel.c	2021-12-24 14:02:00.681435765 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <netinet/in.h>
+ #include <linux/fou.h>
+-#include <linux/if_arp.h>
+ #include <linux/if_tunnel.h>
+ #include <linux/ip.h>
+ #include <linux/ip6_tunnel.h>
+--- a/src/network/netdev/vcan.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/vcan.c	2021-12-24 14:02:05.535491411 +0100
+@@ -1,7 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/if_arp.h>
+-
+ #include "vcan.h"
+ 
+ const NetDevVTable vcan_vtable = {
+--- a/src/network/netdev/veth.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/veth.c	2021-12-24 14:02:08.981530917 +0100
+@@ -3,7 +3,6 @@
+ #include <errno.h>
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ #include <linux/veth.h>
+ 
+ #include "netlink-util.h"
+--- a/src/network/netdev/vlan.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/vlan.c	2021-12-24 14:02:10.975553777 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <errno.h>
+ #include <net/if.h>
+-#include <linux/if_arp.h>
+ #include <linux/if_vlan.h>
+ 
+ #include "parse-util.h"
+--- a/src/network/netdev/vrf.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/vrf.c	2021-12-24 14:02:13.070577796 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ 
+ #include "vrf.h"
+ 
+--- a/src/network/netdev/vxcan.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/vxcan.c	2021-12-24 14:02:15.043600411 +0100
+@@ -1,7 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <linux/can/vxcan.h>
+-#include <linux/if_arp.h>
+ 
+ #include "vxcan.h"
+ 
+--- a/src/network/netdev/vxlan.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/vxlan.c	2021-12-24 14:02:16.855621183 +0100
+@@ -2,7 +2,6 @@
+ 
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ 
+ #include "conf-parser.h"
+ #include "alloc-util.h"
+--- a/src/network/netdev/wireguard.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/wireguard.c	2021-12-24 14:02:20.241659999 +0100
+@@ -6,7 +6,6 @@
+ #include <sys/ioctl.h>
+ #include <net/if.h>
+ #include <netinet/in.h>
+-#include <linux/if_arp.h>
+ #include <linux/ipv6_route.h>
+ 
+ #include "sd-resolve.h"
+--- a/src/network/netdev/xfrm.c	2021-12-24 14:01:15.475917540 +0100
++++ b/src/network/netdev/xfrm.c	2021-12-24 14:02:22.436685161 +0100
+@@ -1,7 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/if_arp.h>
+-
+ #include "missing_network.h"
+ #include "xfrm.h"
+ 
+--- a/src/network/networkd-dhcp-prefix-delegation.c	2021-12-24 14:04:25.356094333 +0100
++++ b/src/network/networkd-dhcp-prefix-delegation.c	2021-12-24 14:04:37.468233194 +0100
+@@ -1,9 +1,9 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/ipv6_route.h>
+-
+ #include "sd-dhcp6-client.h"
+ 
++#include <linux/ipv6_route.h>
++
+ #include "hashmap.h"
+ #include "in-addr-prefix-util.h"
+ #include "networkd-address-generation.h"
+--- a/src/network/networkd-bridge-mdb.c	2021-12-24 14:05:41.860971424 +0100
++++ b/src/network/networkd-bridge-mdb.c	2021-12-24 14:06:12.538323133 +0100
+@@ -1,7 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <net/if.h>
+-#include <linux/if_bridge.h>
+ 
+ #include "netlink-util.h"
+ #include "networkd-bridge-mdb.h"
+@@ -12,6 +11,8 @@
+ #include "string-util.h"
+ #include "vlan-util.h"
+ 
++#include <linux/if_bridge.h>
++
+ #define STATIC_BRIDGE_MDB_ENTRIES_PER_NETWORK_MAX 1024U
+ 
+ /* remove MDB entry. */
+--- a/src/udev/udev-builtin-net_id.c	2021-12-24 14:08:20.742793017 +0100
++++ b/src/udev/udev-builtin-net_id.c	2021-12-24 14:08:27.225867349 +0100
+@@ -18,7 +18,6 @@
+ #include <stdarg.h>
+ #include <unistd.h>
+ #include <linux/if.h>
+-#include <linux/if_arp.h>
+ #include <linux/netdevice.h>
+ #include <linux/pci_regs.h>
+ 
+--- a/src/shared/netif-util.c	2021-12-24 14:09:10.772366634 +0100
++++ b/src/shared/netif-util.c	2021-12-24 14:09:17.170439992 +0100
+@@ -1,7 +1,5 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+-#include <linux/if_arp.h>
+-
+ #include "arphrd-util.h"
+ #include "device-util.h"
+ #include "log-link.h"

@@ -1,9 +1,9 @@
 --- a/meson.build
 +++ b/meson.build
 @@ -517,6 +517,7 @@ foreach ident : [
-         ['mount_setattr',     '''#include <sys/mount.h>'''],
          ['move_mount',        '''#include <sys/mount.h>'''],
          ['open_tree',         '''#include <sys/mount.h>'''],
+         ['getdents64',        '''#include <dirent.h>'''],
 +        ['strndupa' ,         '''#include <string.h>'''],
  ]
  
@@ -22,8 +22,8 @@
 +++ b/src/core/dbus-cgroup.c
 @@ -15,6 +15,7 @@
  #include "path-util.h"
- #include "path-util.h"
  #include "percent-util.h"
+ #include "socket-util.h"
 +#include "string-util.h"
  
  BUS_DEFINE_PROPERTY_GET(bus_property_get_tasks_max, "t", TasksMax, tasks_max_resolve);
