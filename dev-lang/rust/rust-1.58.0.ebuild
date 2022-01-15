@@ -203,6 +203,7 @@ clear_vendor_checksums() {
 src_prepare() {
 	clear_vendor_checksums libc
 	clear_vendor_checksums libc-0.2.98
+	clear_vendor_checksums libc-0.2.106
 
 	default
 }

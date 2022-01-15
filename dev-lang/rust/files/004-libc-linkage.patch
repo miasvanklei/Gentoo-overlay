@@ -1,8 +1,23 @@
 --- a/vendor/libc/src/unix/mod.rs
 +++ b/vendor/libc/src/unix/mod.rs
 @@ -318,11 +318,7 @@
-         // cargo build, don't pull in anything extra as the libstd dep
-         // already pulls in all libs.
+         #[link(name = "c", cfg(not(target_feature = "crt-static")))]
+         extern {}
+     } else if #[cfg(target_env = "musl")] {
+-        #[cfg_attr(feature = "rustc-dep-of-std",
+-                   link(name = "c", kind = "static", modifiers = "-bundle",
+-                        cfg(target_feature = "crt-static")))]
+-        #[cfg_attr(feature = "rustc-dep-of-std",
+-                   link(name = "c", cfg(not(target_feature = "crt-static"))))]
++        #[link(name = "c")]
+         extern {}
+     } else if #[cfg(target_os = "emscripten")] {
+         #[link(name = "c")]
+--- a/vendor/libc-0.2.106/src/unix/mod.rs
++++ b/vendor/libc-0.2.106/src/unix/mod.rs
+@@ -318,11 +318,7 @@
+         #[link(name = "c", cfg(not(target_feature = "crt-static")))]
+         extern {}
      } else if #[cfg(target_env = "musl")] {
 -        #[cfg_attr(feature = "rustc-dep-of-std",
 -                   link(name = "c", kind = "static",
