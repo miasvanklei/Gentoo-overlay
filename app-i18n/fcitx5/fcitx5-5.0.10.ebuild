@@ -67,6 +67,7 @@ src_configure() {
 		-DENABLE_COVERAGE=$(usex coverage)
 		-DENABLE_ENCHANT=$(usex enchant)
 		-DENABLE_WAYLAND=$(usex wayland)
+		-DENABLE_X11=$(usex X)
 		-DENABLE_DOC=$(usex doc)
 		-DUSE_SYSTEMD=$(usex systemd)
 	)
