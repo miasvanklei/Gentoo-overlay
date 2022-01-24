@@ -1,0 +1,118 @@
+--- a/src/efisecdb.c	2022-01-14 20:29:35.000000000 +0100
++++ b/src/efisecdb.c	2022-01-16 22:45:59.814526565 +0100
+@@ -186,13 +186,21 @@
+ 	list_add_tail(&action->list, list);
+ }
+ 
++/*
++ * These need to be static globals so that they're not on main's stack when
++ * on_exit() fires.
++ */
++static efi_secdb_t *secdb = NULL;
++static list_t infiles;
++static list_t actions;
++static char *outfile = NULL;
++
+ static void
+-free_actions(int status UNUSED, void *actionsp)
++free_actions(int status UNUSED)
+ {
+-	list_t *actions = (list_t *)actionsp;
+ 	list_t *pos, *tmp;
+ 
+-	for_each_action_safe(pos, tmp, actions) {
++	for_each_action_safe(pos, tmp, &actions) {
+ 		action_t *action = list_entry(pos, action_t, list);
+ 
+ 		list_del(&action->list);
+@@ -202,12 +210,11 @@
+ }
+ 
+ static void
+-free_infiles(int status UNUSED, void *infilesp)
++free_infiles(int status UNUSED)
+ {
+-	list_t *infiles = (list_t *)infilesp;
+ 	list_t *pos, *tmp;
+ 
+-	for_each_ptr_safe(pos, tmp, infiles) {
++	for_each_ptr_safe(pos, tmp, &infiles) {
+ 		ptrlist_t *entry = list_entry(pos, ptrlist_t, list);
+ 
+ 		list_del(&entry->list);
+@@ -216,27 +223,23 @@
+ }
+ 
+ static void
+-maybe_free_secdb(int status UNUSED, void *voidp)
++maybe_free_secdb(int status UNUSED)
+ {
+-	efi_secdb_t **secdbp = (efi_secdb_t **)voidp;
+-
+-	if (secdbp == NULL || *secdbp == NULL)
++	if (secdb == NULL)
+ 		return;
+ 
+-	efi_secdb_free(*secdbp);
++	efi_secdb_free(secdb);
+ }
+ 
+ static void
+-maybe_do_unlink(int status, void *filep)
++maybe_do_unlink(int status)
+ {
+-	char **file = (char **)filep;
+-
+ 	if (status == 0)
+ 		return;
+-	if (file == NULL || *file == NULL)
++	if (outfile == NULL)
+ 		return;
+ 
+-	unlink(*file);
++	unlink(outfile);
+ }
+ 
+ static void
+@@ -323,15 +326,6 @@
+ 	return status;
+ }
+ 
+-/*
+- * These need to be static globals so that they're not on main's stack when
+- * on_exit() fires.
+- */
+-static efi_secdb_t *secdb = NULL;
+-static list_t infiles;
+-static list_t actions;
+-static char *outfile = NULL;
+-
+ int
+ main(int argc, char *argv[])
+ {
+@@ -376,10 +370,10 @@
+ 	INIT_LIST_HEAD(&infiles);
+ 	INIT_LIST_HEAD(&actions);
+ 
+-	on_exit(free_actions, &actions);
+-	on_exit(free_infiles, &infiles);
+-	on_exit(maybe_free_secdb, &secdb);
+-	on_exit(maybe_do_unlink, &outfile);
++	atexit(free_actions);
++	atexit(free_infiles);
++	atexit(maybe_free_secdb);
++	atexit(maybe_do_unlink);
+ 
+ 	/*
+ 	 * parse the command line.
+--- a/src/compiler.h	2022-01-16 22:47:17.045435134 +0100
++++ b/src/compiler.h	2022-01-16 22:56:59.622291109 +0100
+@@ -7,8 +7,6 @@
+ #ifndef COMPILER_H_
+ #define COMPILER_H_
+ 
+-#include <sys/cdefs.h>
+-
+ /* GCC version checking borrowed from glibc. */
+ #if defined(__GNUC__) && defined(__GNUC_MINOR__)
+ #  define GNUC_PREREQ(maj,min) \
