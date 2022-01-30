@@ -1,4 +1,4 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -11,7 +11,7 @@ SRC_URI="https://www.freedesktop.org/software/${PN}/releases/${P}.tar.gz"
 
 LICENSE="LGPL-2"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64 ~mips ~ppc64 ~riscv ~s390 ~x86"
+KEYWORDS="amd64 arm arm64 ~mips ppc64 ~riscv ~s390 x86"
 IUSE="+duktape examples gtk +introspection kde pam selinux systemd test"
 #RESTRICT="!test? ( test )"
 # Tests currently don't work with meson. See
@@ -64,6 +64,8 @@ QA_MULTILIB_PATHS="
 PATCHES=(
         "${FILESDIR}"/support-duktape.patch
         "${FILESDIR}"/make-netgroup-support-optional.patch
+	"${FILESDIR}"/polkit-0.120-meson.patch
+	"${FILESDIR}"/polkit-0.120-CVE-2021-4043.patch
 )
 
 src_prepare() {
