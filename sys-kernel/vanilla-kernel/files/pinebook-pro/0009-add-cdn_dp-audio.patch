@@ -1,5 +1,3 @@
---- a/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-27 22:36:48.698588219 +0100
-+++ b/drivers/gpu/drm/rockchip/cdn-dp-core.c	2020-02-27 22:37:06.050531997 +0100
 --- a/arch/arm64/boot/dts/rockchip/rk3399.dtsi	2020-02-27 22:31:06.635821570 +0100
 +++ b/arch/arm64/boot/dts/rockchip/rk3399.dtsi	2020-02-28 22:28:36.647102138 +0100
 @@ -467,6 +467,14 @@
@@ -143,15 +141,14 @@
  #endif  /* _CDN_DP_CORE_H */
 --- a/sound/soc/rockchip/Kconfig
 +++ b/sound/soc/rockchip/Kconfig
-@@ -90,3 +90,13 @@
+@@ -90,3 +90,12 @@
  	help
  	  Say Y or M here if you want to add support multiple codecs for SoC
  	  audio on Rockchip RK3399 GRU boards.
 +
 +config SND_SOC_RK3399_CDNDP_SOUND
 +	tristate "ASoC support for Rockchip built-in DP"
-+	depends on SND_SOC_ROCKCHIP && CLKDEV_LOOKUP
-+	depends on ROCKCHIP_CDN_DP
++	depends on SND_SOC_ROCKCHIP && I2C && GPIOLIB && HAVE_CLK && SPI
 +	select SND_SOC_ROCKCHIP_I2S
 +	select SND_SOC_HDMI_CODEC
 +	help
@@ -170,9 +167,10 @@
  obj-$(CONFIG_SND_SOC_RK3288_HDMI_ANALOG) += snd-soc-rk3288-hdmi-analog.o
  obj-$(CONFIG_SND_SOC_RK3399_GRU_SOUND) += snd-soc-rk3399-gru-sound.o
 +obj-$(CONFIG_SND_SOC_RK3399_CDNDP_SOUND) += snd-soc-rk3399_cdndp_sound.o
---- /dev/null	2022-01-23 13:49:12.840319298 +0100
-+++ rk3399-cdndp-sound.c	2022-01-30 17:30:31.575339817 +0100
-@@ -0,0 +1,151  @@
+
+--- /dev/null
++++ b/sound/soc/rockchip/rk3399_cdndp_sound.c
+@@ -0,0 +1,149 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + *  Rockchip machine ASoC driver for Rockchip built-in DP audio output
@@ -230,21 +228,19 @@
 +	DAILINK_COMP_ARRAY(COMP_CODEC(NULL, "spdif-hifi")),
 +	DAILINK_COMP_ARRAY(COMP_EMPTY()));
 +
-+static const struct snd_soc_dai_link rockchip_dailink[] = {
-+	{
-+		.name = "DP",
-+		.stream_name = "DP PCM",
-+		.init = rockchip_sound_cdndp_init
-+		.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
-+			SND_SOC_DAIFMT_CBS_CFS,
-+		SND_SOC_DAILINK_REG(cdndp),
-+	}
++static const struct snd_soc_dai_link rockchip_cdndp_dailink = {
++	.name = "DP",
++	.stream_name = "DP PCM",
++	.init = rockchip_sound_cdndp_init,
++	.dai_fmt = SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_NB_NF |
++		SND_SOC_DAIFMT_CBS_CFS,
++	SND_SOC_DAILINK_REG(cdndp),
 +};
 +
 +static struct snd_soc_card rockchip_sound_card = {
 +	.name = "rk3399-cdndp-sound",
 +	.owner = THIS_MODULE,
-+	.dai_link = rockchip_cdndp_dailink,
++	.dai_link = &rockchip_cdndp_dailink,
 +	.num_links = ARRAY_SIZE(rockchip_cdndp_dailink),
 +	.dapm_widgets = rockchip_cdndp_dapm_widgets,
 +	.num_dapm_widgets = ARRAY_SIZE(rockchip_cdndp_dapm_widgets),
@@ -276,7 +272,7 @@
 +
 +	if (!np_cpu) {
 +		dev_err(dev, "Missing 'rockchip,cpu' for %s\n",
-+			rockchip_dais[0].name);
++			rockchip_cdndp_dailink.name);
 +		return -EINVAL;
 +	}
 +
