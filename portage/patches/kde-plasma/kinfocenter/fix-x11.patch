@@ -1,0 +1,24 @@
+--- a/CMakeLists.txt	2022-02-03 21:20:30.122541718 +0100
++++ b/CMakeLists.txt	2022-02-03 21:21:44.855409518 +0100
+@@ -59,13 +59,14 @@
+                        PURPOSE "Required for OpenGL Information Module"
+                       )
+ 
+-find_package(X11)
+-set_package_properties(X11 PROPERTIES DESCRIPTION "X11 libraries"
+-    URL "https://www.x.org"
+-    TYPE OPTIONAL
+-    PURPOSE "Required for building the X11 based workspace"
+-)
+-if(X11_FOUND)
++option(WITH_X11 "Build with X11 integration" ON)
++if (WITH_X11)
++    find_package(X11 REQUIRED)
++    set_package_properties(X11 PROPERTIES DESCRIPTION "X11 libraries"
++        URL "https://www.x.org"
++        TYPE OPTIONAL
++        PURPOSE "Required for building the X11 based workspace"
++    )
+     set(HAVE_X11 TRUE)
+ endif()
+ 
