@@ -1,13 +1,13 @@
-diff --git a/app-emulation/libvirt/libvirt-8.0.0.ebuild b/app-emulation/libvirt/libvirt-8.0.0.ebuild
-index db6e3e909b5..52314473265 100644
---- a/app-emulation/libvirt/libvirt-8.0.0.ebuild
-+++ b/app-emulation/libvirt/libvirt-8.0.0.ebuild
+diff --git a/app-emulation/libvirt/libvirt-8.0.0-r1.ebuild b/app-emulation/libvirt/libvirt-8.0.0-r1.ebuild
+index d62e076fcb1..78a44f5f7c5 100644
+--- a/app-emulation/libvirt/libvirt-8.0.0-r1.ebuild
++++ b/app-emulation/libvirt/libvirt-8.0.0-r1.ebuild
 @@ -110,8 +110,6 @@ RDEPEND="
  	selinux? ( >=sys-libs/libselinux-2.0.85 )
  	virt-network? (
- 		net-dns/dnsmasq[dhcp,ipv6,script]
+ 		net-dns/dnsmasq[dhcp,ipv6(+),script]
 -		net-firewall/ebtables
--		>=net-firewall/iptables-1.4.10[ipv6]
+-		>=net-firewall/iptables-1.4.10[ipv6(+)]
  		net-misc/radvd
  		sys-apps/iproute2[-minimal]
  	)
@@ -37,7 +37,7 @@ index cad0500253b..8f4af711b8b 100644
  inherit linux-info udev xdg distutils-r1
  
 diff --git a/dev-java/openjdk/openjdk-17.0.2_p8.ebuild b/dev-java/openjdk/openjdk-17.0.2_p8.ebuild
-index 8f6a2ebb74a..92f96f4c9fd 100644
+index 501c0e15b4d..94f4cd048a3 100644
 --- a/dev-java/openjdk/openjdk-17.0.2_p8.ebuild
 +++ b/dev-java/openjdk/openjdk-17.0.2_p8.ebuild
 @@ -96,6 +96,8 @@ DEPEND="
@@ -122,19 +122,6 @@ index 1da867b776a..dfa1e123aa5 100644
  
  inherit distutils-r1
  
-diff --git a/dev-python/pyudev/pyudev-0.22.0.ebuild b/dev-python/pyudev/pyudev-0.22.0.ebuild
-index b37a850f365..215065ea953 100644
---- a/dev-python/pyudev/pyudev-0.22.0.ebuild
-+++ b/dev-python/pyudev/pyudev-0.22.0.ebuild
-@@ -2,7 +2,7 @@
- # Distributed under the terms of the GNU General Public License v2
- 
- EAPI=7
--PYTHON_COMPAT=( python3_{7..9} )
-+PYTHON_COMPAT=( python3_{7..10} )
- 
- inherit distutils-r1
- 
 diff --git a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 index a8017f003f1..27fdf168897 100644
 --- a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
@@ -148,10 +135,10 @@ index a8017f003f1..27fdf168897 100644
  "
  DEPEND="${RDEPEND}"
 diff --git a/eclass/linux-mod.eclass b/eclass/linux-mod.eclass
-index 496b9c98b52..1f6d33f5677 100644
+index e327be7ca13..5d4f1c3094e 100644
 --- a/eclass/linux-mod.eclass
 +++ b/eclass/linux-mod.eclass
-@@ -711,6 +711,7 @@ linux-mod_src_compile() {
+@@ -710,6 +710,7 @@ linux-mod_src_compile() {
  			# fails.
  			eval "emake HOSTCC=\"$(tc-getBUILD_CC)\" \
  						LDFLAGS=\"$(get_abi_LDFLAGS)\" \
@@ -225,7 +212,7 @@ index 68c5fea49fd..e4912dbf5d3 100644
  
  	ecm_src_configure
 diff --git a/kde-frameworks/kinit/kinit-5.90.0.ebuild b/kde-frameworks/kinit/kinit-5.90.0.ebuild
-index 591d4a01dda..c29b68ac1ce 100644
+index 1c01dd6421e..8eba6966a4e 100644
 --- a/kde-frameworks/kinit/kinit-5.90.0.ebuild
 +++ b/kde-frameworks/kinit/kinit-5.90.0.ebuild
 @@ -43,8 +43,8 @@ src_configure() {
@@ -238,8 +225,22 @@ index 591d4a01dda..c29b68ac1ce 100644
  	)
  
  	ecm_src_configure
+diff --git a/kde-frameworks/kinit/kinit-5.91.0.ebuild b/kde-frameworks/kinit/kinit-5.91.0.ebuild
+index 591d4a01dda..c29b68ac1ce 100644
+--- a/kde-frameworks/kinit/kinit-5.91.0.ebuild
++++ b/kde-frameworks/kinit/kinit-5.91.0.ebuild
+@@ -43,8 +43,8 @@ src_configure() {
+ 	local mycmakeargs=(
+ 		$(cmake_use_find_package caps Libcap)
+ 		$(cmake_use_find_package man KF5DocTools)
+-		$(cmake_use_find_package X X11)
+ 		$(cmake_use_find_package X XCB)
++		-DWITH_X11=$(usex X)
+ 	)
+ 
+ 	ecm_src_configure
 diff --git a/kde-frameworks/kio/kio-5.90.0.ebuild b/kde-frameworks/kio/kio-5.90.0.ebuild
-index 4c11583c2ae..5b8e6948d23 100644
+index aca994a76c5..d1cedc9cb60 100644
 --- a/kde-frameworks/kio/kio-5.90.0.ebuild
 +++ b/kde-frameworks/kio/kio-5.90.0.ebuild
 @@ -77,7 +77,7 @@ src_configure() {
@@ -251,11 +252,24 @@ index 4c11583c2ae..5b8e6948d23 100644
  	)
  
  	ecm_src_configure
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.5.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.5.ebuild
-index 218fb12bd18..d78b6c2ddb2 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.5.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.23.5.ebuild
-@@ -18,7 +18,6 @@ KEYWORDS="amd64 ~arm arm64 ~ppc64 ~riscv x86"
+diff --git a/kde-frameworks/kio/kio-5.91.0.ebuild b/kde-frameworks/kio/kio-5.91.0.ebuild
+index 4c11583c2ae..5b8e6948d23 100644
+--- a/kde-frameworks/kio/kio-5.91.0.ebuild
++++ b/kde-frameworks/kio/kio-5.91.0.ebuild
+@@ -77,7 +77,7 @@ src_configure() {
+ 		$(cmake_use_find_package handbook KF5DocTools)
+ 		$(cmake_use_find_package kerberos GSSAPI)
+ 		$(cmake_use_find_package kwallet KF5Wallet)
+-		$(cmake_use_find_package X X11)
++		-DWITH_X11=$(usex X)
+ 	)
+ 
+ 	ecm_src_configure
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.1.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.1.ebuild
+index 0292f04f026..5111ec4080d 100644
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.1.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.1.ebuild
+@@ -18,7 +18,6 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
  IUSE=""
  
  DEPEND="
@@ -263,19 +277,19 @@ index 218fb12bd18..d78b6c2ddb2 100644
  	dev-libs/glib:2
  	>=dev-qt/qtdbus-${QTMIN}:5
  	>=dev-qt/qtgui-${QTMIN}:5
-diff --git a/kde-plasma/kinfocenter/kinfocenter-5.23.5-r1.ebuild b/kde-plasma/kinfocenter/kinfocenter-5.23.5-r1.ebuild
-index 8932c05d294..be9419b87e7 100644
---- a/kde-plasma/kinfocenter/kinfocenter-5.23.5-r1.ebuild
-+++ b/kde-plasma/kinfocenter/kinfocenter-5.23.5-r1.ebuild
-@@ -59,7 +59,7 @@ src_configure() {
- 		$(cmake_use_find_package ieee1394 RAW1394)
- 		$(cmake_use_find_package pci PCIUTILS)
- 		$(cmake_use_find_package usb USB1)
+diff --git a/kde-plasma/libksysguard/libksysguard-5.24.1.ebuild b/kde-plasma/libksysguard/libksysguard-5.24.1.ebuild
+index 5b960e03fd2..2bd9288cc7c 100644
+--- a/kde-plasma/libksysguard/libksysguard-5.24.1.ebuild
++++ b/kde-plasma/libksysguard/libksysguard-5.24.1.ebuild
+@@ -65,7 +65,7 @@ src_configure() {
+ 	local mycmakeargs=(
+ 		$(cmake_use_find_package webengine Qt5WebChannel)
+ 		$(cmake_use_find_package webengine Qt5WebEngineWidgets)
 -		$(cmake_use_find_package X X11)
 +		-DWITH_X11=$(usex X)
  	)
  
- 	if has_version "dev-qt/qtgui[gles2-only]"; then
+ 	ecm_src_configure
 diff --git a/media-libs/graphene/graphene-1.10.6-r1.ebuild b/media-libs/graphene/graphene-1.10.6-r1.ebuild
 index 29dbe538437..8fc0b8a05d5 100644
 --- a/media-libs/graphene/graphene-1.10.6-r1.ebuild
@@ -360,7 +374,7 @@ index 3af43132fb4..a64f5cc0f2d 100644
  
  DESCRIPTION="C library for the Public Suffix List"
 diff --git a/net-misc/spice-gtk/spice-gtk-0.39-r2.ebuild b/net-misc/spice-gtk/spice-gtk-0.39-r2.ebuild
-index af1ce907709..c55a949e360 100644
+index 26009d625fe..b76c83918ab 100644
 --- a/net-misc/spice-gtk/spice-gtk-0.39-r2.ebuild
 +++ b/net-misc/spice-gtk/spice-gtk-0.39-r2.ebuild
 @@ -95,6 +95,7 @@ src_prepare() {
@@ -558,7 +572,7 @@ index 199c5a6badd..33eb35625eb 100644
  
  if [[ ${PV} == 9999 ]] ; then
 diff --git a/x11-libs/vte/vte-0.64.2.ebuild b/x11-libs/vte/vte-0.64.2.ebuild
-index 21873ac96c9..4bb5fc1466d 100644
+index 10cf451a638..093f5a71b59 100644
 --- a/x11-libs/vte/vte-0.64.2.ebuild
 +++ b/x11-libs/vte/vte-0.64.2.ebuild
 @@ -2,7 +2,7 @@
@@ -568,7 +582,7 @@ index 21873ac96c9..4bb5fc1466d 100644
 -PYTHON_COMPAT=( python3_{7..9} )
 +PYTHON_COMPAT=( python3_{7..10} )
  VALA_USE_DEPEND="vapigen"
- VALA_MIN_API_VERSION="0.32"
+ VALA_MIN_API_VERSION="0.48"
  
 diff --git a/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild b/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
 index a9248abf20d..629a3b10447 100644
