@@ -35,3 +35,25 @@
  endif(CLR_CMAKE_HOST_ALPINE_LINUX)
  
  # turn off capability to remove unused functions (which was enabled in debug build with sanitizers)
+--- a/src/coreclr/pal/src/thread/process.cpp	2022-02-15 10:51:12.586307418 +0100
++++ b/src/coreclr/pal/src/thread/process.cpp	2022-02-15 10:51:54.719829577 +0100
+@@ -3062,7 +3062,7 @@
+ PROCNotifyProcessShutdown(bool isExecutingOnAltStack)
+ {
+     // Call back into the coreclr to clean up the debugger transport pipes
+-    PSHUTDOWN_CALLBACK callback = InterlockedExchangePointer(&g_shutdownCallback, NULL);
++    PSHUTDOWN_CALLBACK callback = InterlockedExchangePointer(&g_shutdownCallback, 0);
+     if (callback != NULL)
+     {
+         callback(isExecutingOnAltStack);
+--- a/src/coreclr/pal/src/init/pal.cpp	2022-02-15 10:47:35.789617140 +0100
++++ b/src/coreclr/pal/src/init/pal.cpp	2022-02-15 10:47:46.033744416 +0100
+@@ -347,7 +347,7 @@
+             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
+             InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
+ 
+-            if(NULL != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, NULL))
++            if(NULL != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, 0))
+             {
+                 // Another thread got in before us! shouldn't happen, if the PAL
+                 // isn't initialized there shouldn't be any other threads
