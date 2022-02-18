@@ -1,9 +1,9 @@
-# Copyright 1999-2021 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
 
-EGIT_COMMIT=9b7f5ae815c22a1d754abfbc2890d8d4c10e240d
+EGIT_COMMIT=53ada6de691b5c48f03b7975f3e8d5216fc13cea
 
 inherit go-module
 
@@ -124,6 +124,7 @@ EGO_SUM=(
 "github.com/Microsoft/hcsshim v0.8.16/go.mod"
 "github.com/Microsoft/hcsshim v0.8.18/go.mod"
 "github.com/Microsoft/hcsshim v0.8.20/go.mod"
+"github.com/Microsoft/hcsshim v0.8.21/go.mod"
 "github.com/Microsoft/hcsshim v0.8.22/go.mod"
 "github.com/Microsoft/hcsshim v0.8.23"
 "github.com/Microsoft/hcsshim v0.8.23/go.mod"
@@ -291,8 +292,8 @@ EGO_SUM=(
 "github.com/containerd/containerd v1.5.0-beta.4/go.mod"
 "github.com/containerd/containerd v1.5.0-rc.0/go.mod"
 "github.com/containerd/containerd v1.5.1/go.mod"
-"github.com/containerd/containerd v1.5.4/go.mod"
 "github.com/containerd/containerd v1.5.5/go.mod"
+"github.com/containerd/containerd v1.5.7/go.mod"
 "github.com/containerd/containerd v1.5.8"
 "github.com/containerd/containerd v1.5.8/go.mod"
 "github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc/go.mod"
@@ -366,8 +367,8 @@ EGO_SUM=(
 "github.com/containers/conmon v2.0.20+incompatible/go.mod"
 "github.com/containers/image/v5 v5.10.4/go.mod"
 "github.com/containers/image/v5 v5.16.0/go.mod"
-"github.com/containers/image/v5 v5.16.1"
-"github.com/containers/image/v5 v5.16.1/go.mod"
+"github.com/containers/image/v5 v5.17.0"
+"github.com/containers/image/v5 v5.17.0/go.mod"
 "github.com/containers/libtrust v0.0.0-20190913040956-14b96171aa3b"
 "github.com/containers/libtrust v0.0.0-20190913040956-14b96171aa3b/go.mod"
 "github.com/containers/ocicrypt v1.0.1/go.mod"
@@ -451,8 +452,9 @@ EGO_SUM=(
 "github.com/docker/docker v1.4.2-0.20191219165747-a9416c67da9f/go.mod"
 "github.com/docker/docker v20.10.7+incompatible/go.mod"
 "github.com/docker/docker v20.10.8+incompatible/go.mod"
-"github.com/docker/docker v20.10.9+incompatible"
 "github.com/docker/docker v20.10.9+incompatible/go.mod"
+"github.com/docker/docker v20.10.11+incompatible"
+"github.com/docker/docker v20.10.11+incompatible/go.mod"
 "github.com/docker/docker-credential-helpers v0.6.3/go.mod"
 "github.com/docker/docker-credential-helpers v0.6.4"
 "github.com/docker/docker-credential-helpers v0.6.4/go.mod"
@@ -840,7 +842,6 @@ EGO_SUM=(
 "github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod"
 "github.com/jstemmer/go-junit-report v0.9.1/go.mod"
 "github.com/jtolds/gls v4.20.0+incompatible/go.mod"
-"github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a"
 "github.com/juju/ansiterm v0.0.0-20180109212912-720a0952cc2a/go.mod"
 "github.com/julienschmidt/httprouter v1.2.0/go.mod"
 "github.com/julienschmidt/httprouter v1.3.0/go.mod"
@@ -891,7 +892,6 @@ EGO_SUM=(
 "github.com/lithammer/dedent v1.1.0/go.mod"
 "github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e/go.mod"
 "github.com/lpabon/godbc v0.1.1/go.mod"
-"github.com/lunixbochs/vtclean v0.0.0-20180621232353-2d01aacdc34a"
 "github.com/lunixbochs/vtclean v0.0.0-20180621232353-2d01aacdc34a/go.mod"
 "github.com/magefile/mage v1.10.0/go.mod"
 "github.com/magefile/mage v1.11.0/go.mod"
@@ -902,8 +902,9 @@ EGO_SUM=(
 "github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e/go.mod"
 "github.com/mailru/easyjson v0.7.0/go.mod"
 "github.com/mailru/easyjson v0.7.6/go.mod"
-"github.com/manifoldco/promptui v0.8.0"
 "github.com/manifoldco/promptui v0.8.0/go.mod"
+"github.com/manifoldco/promptui v0.9.0"
+"github.com/manifoldco/promptui v0.9.0/go.mod"
 "github.com/maratori/testpackage v1.0.1/go.mod"
 "github.com/marstr/guid v1.1.0/go.mod"
 "github.com/matoous/godox v0.0.0-20190911065817-5d6d842e92eb/go.mod"
@@ -1558,8 +1559,9 @@ EGO_SUM=(
 "golang.org/x/net v0.0.0-20210525063256-abc453219eb5/go.mod"
 "golang.org/x/net v0.0.0-20210805182204-aaa1db679c0d/go.mod"
 "golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d/go.mod"
-"golang.org/x/net v0.0.0-20210825183410-e898025ed96a"
 "golang.org/x/net v0.0.0-20210825183410-e898025ed96a/go.mod"
+"golang.org/x/net v0.0.0-20211005001312-d4b1ae081e3b"
+"golang.org/x/net v0.0.0-20211005001312-d4b1ae081e3b/go.mod"
 "golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod"
 "golang.org/x/oauth2 v0.0.0-20181106182150-f42d05182288/go.mod"
 "golang.org/x/oauth2 v0.0.0-20190226205417-e64efc72b421/go.mod"
@@ -1706,8 +1708,9 @@ EGO_SUM=(
 "golang.org/x/sys v0.0.0-20210831042530-f4d43177bf5e/go.mod"
 "golang.org/x/sys v0.0.0-20210903071746-97244b99971b/go.mod"
 "golang.org/x/sys v0.0.0-20210906170528-6f6e22806c34/go.mod"
-"golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0"
 "golang.org/x/sys v0.0.0-20210910150752-751e447fb3d0/go.mod"
+"golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef"
+"golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef/go.mod"
 "golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod"
 "golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b"
 "golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b/go.mod"
