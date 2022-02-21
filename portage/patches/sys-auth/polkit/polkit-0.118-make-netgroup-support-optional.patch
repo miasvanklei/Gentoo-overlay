@@ -1,13 +1,18 @@
---- a/meson.build
-+++ b/meson.build
-@@ -89,6 +89,7 @@
- check_functions = [
-   'clearenv',
-   'fdatasync',
-+  'setnetgrent'
- ]
+diff --git a/configure.ac b/configure.ac
+index 4809dc9..d1ea325 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -100,7 +100,7 @@ AC_CHECK_LIB(expat,XML_ParserCreate,[EXPAT_LIBS="-lexpat"],
+ 	     [AC_MSG_ERROR([Can't find expat library. Please install expat.])])
+ AC_SUBST(EXPAT_LIBS)
  
- foreach func: check_functions
+-AC_CHECK_FUNCS(clearenv fdatasync)
++AC_CHECK_FUNCS(clearenv fdatasync setnetgrent)
+ 
+ if test "x$GCC" = "xyes"; then
+   LDFLAGS="-Wl,--as-needed $LDFLAGS"
+diff --git a/src/polkit/polkitidentity.c b/src/polkit/polkitidentity.c
+index 3aa1f7f..793f17d 100644
 --- a/src/polkit/polkitidentity.c
 +++ b/src/polkit/polkitidentity.c
 @@ -182,7 +182,15 @@ polkit_identity_from_string  (const gchar   *str,
@@ -49,6 +54,8 @@
      }
    else
      {
+diff --git a/src/polkit/polkitunixnetgroup.c b/src/polkit/polkitunixnetgroup.c
+index 8a2b369..83f8d4a 100644
 --- a/src/polkit/polkitunixnetgroup.c
 +++ b/src/polkit/polkitunixnetgroup.c
 @@ -194,6 +194,9 @@ polkit_unix_netgroup_set_name (PolkitUnixNetgroup *group,
@@ -61,6 +68,8 @@
    g_return_val_if_fail (name != NULL, NULL);
    return POLKIT_IDENTITY (g_object_new (POLKIT_TYPE_UNIX_NETGROUP,
                                         "name", name,
+diff --git a/src/polkitbackend/polkitbackendinteractiveauthority.c b/src/polkitbackend/polkitbackendinteractiveauthority.c
+index 056d9a8..36c2f3d 100644
 --- a/src/polkitbackend/polkitbackendinteractiveauthority.c
 +++ b/src/polkitbackend/polkitbackendinteractiveauthority.c
 @@ -2233,25 +2233,26 @@ get_users_in_net_group (PolkitIdentity                    *group,
@@ -104,6 +113,8 @@
    return ret;
  }
  
+diff --git a/src/polkitbackend/polkitbackendjsauthority.cpp b/src/polkitbackend/polkitbackendjsauthority.cpp
+index 1d91103..366cbdf 100644
 --- a/src/polkitbackend/polkitbackendjsauthority.cpp
 +++ b/src/polkitbackend/polkitbackendjsauthority.cpp
 @@ -1519,6 +1519,7 @@ js_polkit_user_is_in_netgroup (JSContext  *cx,
@@ -122,6 +133,26 @@
  
    ret = true;
  
+--- a/src/polkitbackend/polkitbackendduktapeauthority.c
++++ b/src/polkitbackend/polkitbackendduktapeauthority.c
+@@ -1036,6 +1036,7 @@
+   user = duk_require_string (cx, 0);
+   netgroup = duk_require_string (cx, 1);
+ 
++#ifdef HAVE_SETNETGRENT
+   if (innetgr (netgroup,
+                NULL,  /* host */
+                user,
+@@ -1043,6 +1044,7 @@
+     {
+       is_in_netgroup = TRUE;
+     }
++#endif
+ 
+   duk_push_boolean (cx, is_in_netgroup);
+   return 1;
+diff --git a/test/polkit/polkitidentitytest.c b/test/polkit/polkitidentitytest.c
+index e91967b..e829aaa 100644
 --- a/test/polkit/polkitidentitytest.c
 +++ b/test/polkit/polkitidentitytest.c
 @@ -19,6 +19,7 @@
@@ -163,6 +194,8 @@
  
    add_comparison_tests ();
  
+diff --git a/test/polkit/polkitunixnetgrouptest.c b/test/polkit/polkitunixnetgrouptest.c
+index 3701ba1..e3352eb 100644
 --- a/test/polkit/polkitunixnetgrouptest.c
 +++ b/test/polkit/polkitunixnetgrouptest.c
 @@ -19,6 +19,7 @@
@@ -183,6 +216,8 @@
 +#endif
    return g_test_run ();
  }
+diff --git a/test/polkitbackend/test-polkitbackendjsauthority.c b/test/polkitbackend/test-polkitbackendjsauthority.c
+index 71aad23..fdd28f3 100644
 --- a/test/polkitbackend/test-polkitbackendjsauthority.c
 +++ b/test/polkitbackend/test-polkitbackendjsauthority.c
 @@ -137,12 +137,14 @@ test_get_admin_identities (void)
