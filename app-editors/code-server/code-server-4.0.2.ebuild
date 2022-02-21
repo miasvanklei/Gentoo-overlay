@@ -21,7 +21,7 @@ NODE_PTY_V=0.11.0-beta11
 SPDLOG_V=0.13.5
 VSCODE_NSFW_V=2.1.8
 VSCODE_SQLITE3_V=4.0.12
-ARGON2_V=0.28.2
+ARGON2_V=1.1.0
 PARCEL_WATCHER_V=2.0.3
 
 SRC_URI="
@@ -36,7 +36,7 @@ SRC_URI="
         https://registry.npmjs.org/@vscode/sqlite3/-/sqlite3-${VSCODE_SQLITE3_V}.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
         https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
         https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
-        https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
+        https://registry.npmjs.org/@node-rs/argon2/-/argon2-${ARGON2_V}.tgz -> node-rs-argon2-${ARGON2_V}.tar.gz
 "
 
 VSCODE_BINMODS=(
@@ -110,14 +110,6 @@ src_prepare() {
 			"${pkgdir}/node_modules/nan" || die
 	done
 
-	# argon2
-	pkgdir="${WORKDIR}/$(package_dir argon2)"
-	mkdir -p "${pkgdir}/node_modules" || die
-	ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
-		"${pkgdir}/node_modules/node-addon-api" || die
-	ln -s "${WORKDIR}/nodejs-nan-${NAN_V}" \
-		"${pkgdir}/node_modules/nan" || die
-
 	eapply "${FILESDIR}/${PN}-node.patch"
 
         eapply_user
@@ -131,12 +123,10 @@ src_prepare() {
 	rm ./vendor/modules/code-oss-dev/node_modules/vscode-ripgrep/bin/rg \
 		|| die "failed to remove bundled ripgrep"
 	for binmod in "${VSCODE_BINMODS[@]}"; do
-		rm -r "$(get_binmod_loc ${binmod})/Release" || die
+		rm -r "$(get_binmod_loc_build ${binmod})" || die
 	done
 
-	# remove argon2
-	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
-	rm -r "${S}/vendor/modules/code-oss-dev/node_modules/@parcel/watcher/prebuilds" || die
+	rm -r "${S}/node_modules/@node-rs/argon2-linux-x64-gnu" || die
 
 	# not needed
 	rm ${S}/code-server || die
@@ -144,6 +134,7 @@ src_prepare() {
 
 	# remove electron, not used and is huge
         rm -r "${S}/vendor/modules/code-oss-dev/node_modules/electron" || die
+        rm -r "${S}/vendor/modules/code-oss-dev/node_modules/.bin/electron" || die
 
 	# already in /usr/portage/licenses/MIT
 	rm ${S}/LICENSE.txt || die
@@ -177,15 +168,11 @@ src_compile() {
 		cd "${WORKDIR}/$(package_dir ${binmod})" || die
 		enodegyp --verbose --jobs="$(makeopts_jobs)" build
 		rm -r build/Release/obj.target || die
+		rm -r build/Release/.deps || die
 		rm -r node_modules/nan || die
 		rm -r node_modules/node-addon-api || die
-		cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" $(get_binmod_loc ${binmod}) || die
+		cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" $(get_binmod_loc_release ${binmod}) || die
 	done
-
-	# argon2
-	einfo "rebuilding argon2..."
-	enodepregyp rebuild -C "${WORKDIR}/$(package_dir argon2)"
-	cp "${WORKDIR}/$(package_dir argon2)/lib/binding/napi-v3/argon2.node" "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node"
 }
 
 src_install() {
@@ -229,12 +216,30 @@ package_dir() {
 	echo ${1}-${!binmod_v}
 }
 
-# Some binmods have path is different than usual
+# Some binmods have path that is different than usual
 get_binmod_loc()
 {
 	if [ ${1} = "vscode-sqlite3" ] || [ ${1} = "parcel-watcher" ]; then
-		echo "${S}/vendor/modules/code-oss-dev/node_modules/@${1%-*}/${1#*-}/build"
+		echo "${S}/vendor/modules/code-oss-dev/node_modules/@${1%-*}/${1#*-}"
 	else
-		echo "${S}/vendor/modules/code-oss-dev/node_modules/${1}/build"
+		echo "${S}/vendor/modules/code-oss-dev/node_modules/${1}"
+	fi
+}
+
+# return binmod release path
+get_binmod_loc_release()
+{
+		local path="$(get_binmod_loc ${1})/build"
+		mkdir -p "$path"
+		echo "$path"
+}
+
+# return binmod build path
+get_binmod_loc_build()
+{
+	if [ ${1} = "parcel-watcher" ]; then
+		echo "$(get_binmod_loc ${1})/prebuilds"
+	else
+		echo "$(get_binmod_loc ${1})/build"
 	fi
 }
