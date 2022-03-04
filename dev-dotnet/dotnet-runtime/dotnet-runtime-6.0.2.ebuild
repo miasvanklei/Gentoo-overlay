@@ -44,6 +44,7 @@ COREFX_FILES=(
 CORECLR_FILES=(
 	'libclrjit.so'
 	'libcoreclr.so'
+	'libcoreclrtraceptprovider.so'
 	'libdbgshim.so'
 	'libmscordaccore.so'
 	'libmscordbi.so'
