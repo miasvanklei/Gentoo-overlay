@@ -52,12 +52,13 @@ VSCODE_BINMODS=(
 RESTRICT="test"
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64"
+KEYWORDS="~amd64"
 IUSE="gnome-keyring"
 
 DEPEND=""
 RDEPEND="
 	${DEPEND}
+	app-crypt/node-rs_argon2
 	>=net-libs/nodejs-14.16.1:0/14[ssl]
 	dev-go/cloud-agent
 	sys-apps/ripgrep
@@ -126,8 +127,6 @@ src_prepare() {
 		rm -r "$(get_binmod_loc_build ${binmod})" || die
 	done
 
-	rm -r "${S}/node_modules/@node-rs/argon2-linux-x64-gnu" || die
-
 	# not needed
 	rm ${S}/code-server || die
 	rm ${S}/postinstall.sh || die
@@ -173,6 +172,8 @@ src_compile() {
 		rm -r node_modules/node-addon-api || die
 		cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" $(get_binmod_loc_release ${binmod}) || die
 	done
+
+	$(fix_node-rs-argon2)
 }
 
 src_install() {
@@ -217,8 +218,7 @@ package_dir() {
 }
 
 # Some binmods have path that is different than usual
-get_binmod_loc()
-{
+get_binmod_loc() {
 	if [ ${1} = "vscode-sqlite3" ] || [ ${1} = "parcel-watcher" ]; then
 		echo "${S}/vendor/modules/code-oss-dev/node_modules/@${1%-*}/${1#*-}"
 	else
@@ -227,19 +227,57 @@ get_binmod_loc()
 }
 
 # return binmod release path
-get_binmod_loc_release()
-{
+get_binmod_loc_release() {
 		local path="$(get_binmod_loc ${1})/build"
 		mkdir -p "$path"
 		echo "$path"
 }
 
 # return binmod build path
-get_binmod_loc_build()
-{
+get_binmod_loc_build() {
 	if [ ${1} = "parcel-watcher" ]; then
 		echo "$(get_binmod_loc ${1})/prebuilds"
 	else
 		echo "$(get_binmod_loc ${1})/build"
+	fi
+}
+
+# argon2 is a rust library, custom logic is implemented in index.js of
+# argon2 to select the correct type based on libc and target.
+# Here we remove all non-supported variants and symlink the version available on the host
+fix_node_rs_argon2() {
+	local argon_arch=$(get_argon2_arch)
+	local argon_libc=$(get_argon2_libc)
+
+	pushd "${S}"/node_modules/@node-rs
+
+	mv argon2-linux-${argon_arch}-${argon_libc} argon2-to-install || die
+	rm -r argon2* || die
+	rm argon2-to-install/argon2.linux-${argon_arch}-${argon_libc}.node || die
+	ln -s /usr/lib/node-rs/argon2/lib/libnode_rs_argon2.so argon2-to-install/argon2.linux-${argon_arch}-${argon_libc}.node
+	mv argon2-to-install argon2-linux-${argon_arch}-${argon_libc}
+
+	popd
+}
+
+get_argon2_arch() {
+        case ${ARCH} in
+                amd64)
+                        echo x64
+                        ;;
+                arm64)
+                        echo arm64
+                        ;;
+                *)
+                        die "unsupported ARCH=${ARCH}"
+                        ;;
+        esac
+}
+
+get_argon2_libc() {
+	if use elibc_musl; then
+		echo "musl"
+	else
+		echo "gnu"
 	fi
 }
