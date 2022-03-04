@@ -128,6 +128,7 @@ PATCHES=(
 	"${FILESDIR}"/004-libc-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
 	"${FILESDIR}"/007-flang-llvm-change.patch
+	"${FILESDIR}"/008-do-not-install-libunwind-source.patch
 )
 
 S="${WORKDIR}/${MY_P}-src"
@@ -202,8 +203,7 @@ clear_vendor_checksums() {
 
 src_prepare() {
 	clear_vendor_checksums libc
-	clear_vendor_checksums libc-0.2.98
-	clear_vendor_checksums libc-0.2.106
+	clear_vendor_checksums libc-0.2.108
 
 	default
 }

@@ -1,3 +1,68 @@
+--- a/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 22:56:43.499628535 +0200
++++ b/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 23:03:41.106490555 +0200
+@@ -62,28 +62,6 @@
+     ])
+ }
+ 
+-pub(super) fn pre_musl_fallback() -> CrtObjects {
+-    new(&[
+-        (LinkOutputKind::DynamicNoPicExe, &["crt1.o", "crti.o", "crtbegin.o"]),
+-        (LinkOutputKind::DynamicPicExe, &["Scrt1.o", "crti.o", "crtbeginS.o"]),
+-        (LinkOutputKind::StaticNoPicExe, &["crt1.o", "crti.o", "crtbegin.o"]),
+-        (LinkOutputKind::StaticPicExe, &["rcrt1.o", "crti.o", "crtbeginS.o"]),
+-        (LinkOutputKind::DynamicDylib, &["crti.o", "crtbeginS.o"]),
+-        (LinkOutputKind::StaticDylib, &["crti.o", "crtbeginS.o"]),
+-    ])
+-}
+-
+-pub(super) fn post_musl_fallback() -> CrtObjects {
+-    new(&[
+-        (LinkOutputKind::DynamicNoPicExe, &["crtend.o", "crtn.o"]),
+-        (LinkOutputKind::DynamicPicExe, &["crtendS.o", "crtn.o"]),
+-        (LinkOutputKind::StaticNoPicExe, &["crtend.o", "crtn.o"]),
+-        (LinkOutputKind::StaticPicExe, &["crtendS.o", "crtn.o"]),
+-        (LinkOutputKind::DynamicDylib, &["crtendS.o", "crtn.o"]),
+-        (LinkOutputKind::StaticDylib, &["crtendS.o", "crtn.o"]),
+-    ])
+-}
+-
+ pub(super) fn pre_mingw_fallback() -> CrtObjects {
+     new(&[
+         (LinkOutputKind::DynamicNoPicExe, &["crt2.o", "rsbegin.o"]),
+--- a/compiler/rustc_target/src/spec/linux_musl_base.rs	2020-12-31 19:07:19.216270236 +0100
++++ b/compiler/rustc_target/src/spec/linux_musl_base.rs	2020-12-31 19:07:53.639438587 +0100
+@@ -1,13 +1,9 @@
+-use crate::spec::crt_objects::{self, CrtObjectsFallback};
+ use crate::spec::TargetOptions;
+ 
+ pub fn opts() -> TargetOptions {
+     let mut base = super::linux_base::opts();
+ 
+     base.env = "musl".to_string();
+-    base.pre_link_objects_fallback = crt_objects::pre_musl_fallback();
+-    base.post_link_objects_fallback = crt_objects::post_musl_fallback();
+-    base.crt_objects_fallback = Some(CrtObjectsFallback::Musl);
+ 
+     // These targets statically link libc by default
+     base.crt_static_default = true;
+--- a/config.toml.example
++++ b/config.toml.example
+@@ -668,15 +668,6 @@ changelog-seen = 2
+ # only use static libraries. If unset, the target's default linkage is used.
+ #crt-static = <platform-specific> (bool)
+ 
+-# The root location of the musl installation directory. The library directory
+-# will also need to contain libunwind.a for an unwinding implementation. Note
+-# that this option only makes sense for musl targets that produce statically
+-# linked binaries.
+-#musl-root = build.musl-root (path)
+-
+-# The full path to the musl libdir.
+-#musl-libdir = musl-root/lib
+-
+ # The root location of the `wasm32-wasi` sysroot. Only used for the
+ # `wasm32-wasi` target. If you are building wasm32-wasi target, make sure to
+ # create a `[target.wasm32-wasi]` section and move this field there.
 --- a/src/bootstrap/cc_detect.rs	2020-08-27 22:57:54.722286935 +0200
 +++ b/src/bootstrap/cc_detect.rs	2020-08-27 22:59:36.731230131 +0200
 @@ -99,7 +99,7 @@
@@ -131,23 +196,23 @@
      pub wasi_root: Option<PathBuf>,
      pub qemu_rootfs: Option<PathBuf>,
      pub no_std: bool,
-@@ -327,7 +323,6 @@
-     default_linker: Option<String>,
-     channel: Option<String>,
-     description: Option<String>,
--    musl_root: Option<String>,
-     rpath: Option<bool>,
-     verbose_tests: Option<bool>,
-     optimize_tests: Option<bool>,
-@@ -363,8 +358,6 @@
-     llvm_filecheck: Option<String>,
-     android_ndk: Option<String>,
-     crt_static: Option<bool>,
--    musl_root: Option<String>,
--    musl_libdir: Option<String>,
-     wasi_root: Option<String>,
-     qemu_rootfs: Option<String>,
-     no_std: Option<bool>,
+@@ -527,7 +527,6 @@
+         default_linker: Option<String>,
+         channel: Option<String>,
+         description: Option<String>,
+-        musl_root: Option<String>,
+         rpath: Option<bool>,
+         verbose_tests: Option<bool>,
+         optimize_tests: Option<bool>,
+@@ -573,8 +572,6 @@
+         sanitizers: Option<bool>,
+         profiler: Option<bool>,
+         crt_static: Option<bool>,
+-        musl_root: Option<String>,
+-        musl_libdir: Option<String>,
+         wasi_root: Option<String>,
+         qemu_rootfs: Option<String>,
+         no_std: Option<bool>,
 @@ -592,7 +585,6 @@
              set(&mut config.llvm_tools_enabled, rust.llvm_tools);
              config.rustc_parallel = rust.parallel_compiler.unwrap_or(false);
@@ -269,50 +334,3 @@
          if need_cmake && target.contains("msvc") {
              // There are three builds of cmake on windows: MSVC, MinGW, and
              // Cygwin. The Cygwin build does not have generators for Visual
---- a/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 22:56:43.499628535 +0200
-+++ b/compiler/rustc_target/src/spec/crt_objects.rs	2020-08-27 23:03:41.106490555 +0200
-@@ -62,28 +62,6 @@
-     ])
- }
- 
--pub(super) fn pre_musl_fallback() -> CrtObjects {
--    new(&[
--        (LinkOutputKind::DynamicNoPicExe, &["crt1.o", "crti.o", "crtbegin.o"]),
--        (LinkOutputKind::DynamicPicExe, &["Scrt1.o", "crti.o", "crtbeginS.o"]),
--        (LinkOutputKind::StaticNoPicExe, &["crt1.o", "crti.o", "crtbegin.o"]),
--        (LinkOutputKind::StaticPicExe, &["rcrt1.o", "crti.o", "crtbeginS.o"]),
--        (LinkOutputKind::DynamicDylib, &["crti.o", "crtbeginS.o"]),
--        (LinkOutputKind::StaticDylib, &["crti.o", "crtbeginS.o"]),
--    ])
--}
--
--pub(super) fn post_musl_fallback() -> CrtObjects {
--    new(&[
--        (LinkOutputKind::DynamicNoPicExe, &["crtend.o", "crtn.o"]),
--        (LinkOutputKind::DynamicPicExe, &["crtendS.o", "crtn.o"]),
--        (LinkOutputKind::StaticNoPicExe, &["crtend.o", "crtn.o"]),
--        (LinkOutputKind::StaticPicExe, &["crtendS.o", "crtn.o"]),
--        (LinkOutputKind::DynamicDylib, &["crtendS.o", "crtn.o"]),
--        (LinkOutputKind::StaticDylib, &["crtendS.o", "crtn.o"]),
--    ])
--}
--
- pub(super) fn pre_mingw_fallback() -> CrtObjects {
-     new(&[
-         (LinkOutputKind::DynamicNoPicExe, &["crt2.o", "rsbegin.o"]),
---- a/compiler/rustc_target/src/spec/linux_musl_base.rs	2020-12-31 19:07:19.216270236 +0100
-+++ b/compiler/rustc_target/src/spec/linux_musl_base.rs	2020-12-31 19:07:53.639438587 +0100
-@@ -1,13 +1,9 @@
--use crate::spec::crt_objects::{self, CrtObjectsFallback};
- use crate::spec::TargetOptions;
- 
- pub fn opts() -> TargetOptions {
-     let mut base = super::linux_base::opts();
- 
-     base.env = "musl".to_string();
--    base.pre_link_objects_fallback = crt_objects::pre_musl_fallback();
--    base.post_link_objects_fallback = crt_objects::post_musl_fallback();
--    base.crt_objects_fallback = Some(CrtObjectsFallback::Musl);
- 
-     // These targets statically link libc by default
-     base.crt_static_default = true;
