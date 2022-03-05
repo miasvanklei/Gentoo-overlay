@@ -21,7 +21,7 @@ NODE_PTY_V=0.11.0-beta11
 SPDLOG_V=0.13.5
 VSCODE_NSFW_V=2.1.8
 VSCODE_SQLITE3_V=4.0.12
-ARGON2_V=1.1.0
+ARGON2_V=0.28.2
 PARCEL_WATCHER_V=2.0.3
 
 SRC_URI="
@@ -36,7 +36,7 @@ SRC_URI="
         https://registry.npmjs.org/@vscode/sqlite3/-/sqlite3-${VSCODE_SQLITE3_V}.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
         https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
         https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
-        https://registry.npmjs.org/@node-rs/argon2/-/argon2-${ARGON2_V}.tgz -> node-rs-argon2-${ARGON2_V}.tar.gz
+	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
 "
 
 VSCODE_BINMODS=(
@@ -111,6 +111,13 @@ src_prepare() {
 			"${pkgdir}/node_modules/nan" || die
 	done
 
+	# argon2
+	pkgdir="${WORKDIR}/$(package_dir argon2)"
+	mkdir -p "${pkgdir}/node_modules" || die
+	ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
+		"${pkgdir}/node_modules/node-addon-api" || die
+	ln -s "${WORKDIR}/nodejs-nan-${NAN_V}" \
+		"${pkgdir}/node_modules/nan" || die
 	eapply "${FILESDIR}/${PN}-node.patch"
 
         eapply_user
@@ -126,6 +133,11 @@ src_prepare() {
 	for binmod in "${VSCODE_BINMODS[@]}"; do
 		rm -r "$(get_binmod_loc_build ${binmod})" || die
 	done
+
+	# remove argon2
+	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
+
+	rm -r "${S}/vendor/modules/code-oss-dev/node_modules/@parcel/watcher/Release/obj.target"
 
 	# not needed
 	rm ${S}/code-server || die
@@ -166,14 +178,16 @@ src_compile() {
 		einfo "Building ${binmod}..."
 		cd "${WORKDIR}/$(package_dir ${binmod})" || die
 		enodegyp --verbose --jobs="$(makeopts_jobs)" build
-		rm -r build/Release/obj.target || die
-		rm -r build/Release/.deps || die
-		rm -r node_modules/nan || die
-		rm -r node_modules/node-addon-api || die
-		cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" $(get_binmod_loc_release ${binmod}) || die
+		local install_path=$(get_binmod_loc_release ${binmod})
+		cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" ${install_path} || die
+		rm -r ${install_path}/Release/obj.target || die
+		rm -r ${install_path}/Release/.deps || die
 	done
 
-	$(fix_node-rs-argon2)
+	# argon2
+	einfo "rebuilding argon2..."
+	enodepregyp rebuild -C "${WORKDIR}/$(package_dir argon2)"
+	cp "${WORKDIR}/$(package_dir argon2)/lib/binding/napi-v3/argon2.node" "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node"
 }
 
 src_install() {
@@ -239,45 +253,5 @@ get_binmod_loc_build() {
 		echo "$(get_binmod_loc ${1})/prebuilds"
 	else
 		echo "$(get_binmod_loc ${1})/build"
-	fi
-}
-
-# argon2 is a rust library, custom logic is implemented in index.js of
-# argon2 to select the correct type based on libc and target.
-# Here we remove all non-supported variants and symlink the version available on the host
-fix_node_rs_argon2() {
-	local argon_arch=$(get_argon2_arch)
-	local argon_libc=$(get_argon2_libc)
-
-	pushd "${S}"/node_modules/@node-rs
-
-	mv argon2-linux-${argon_arch}-${argon_libc} argon2-to-install || die
-	rm -r argon2* || die
-	rm argon2-to-install/argon2.linux-${argon_arch}-${argon_libc}.node || die
-	ln -s /usr/lib/node-rs/argon2/lib/libnode_rs_argon2.so argon2-to-install/argon2.linux-${argon_arch}-${argon_libc}.node
-	mv argon2-to-install argon2-linux-${argon_arch}-${argon_libc}
-
-	popd
-}
-
-get_argon2_arch() {
-        case ${ARCH} in
-                amd64)
-                        echo x64
-                        ;;
-                arm64)
-                        echo arm64
-                        ;;
-                *)
-                        die "unsupported ARCH=${ARCH}"
-                        ;;
-        esac
-}
-
-get_argon2_libc() {
-	if use elibc_musl; then
-		echo "musl"
-	else
-		echo "gnu"
 	fi
 }
