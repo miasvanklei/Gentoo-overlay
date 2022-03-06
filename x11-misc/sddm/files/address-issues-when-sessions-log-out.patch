@@ -1,0 +1,76 @@
+diff --git a/src/common/VirtualTerminal.cpp b/src/common/VirtualTerminal.cpp
+index 386bfdc4..e9c8784c 100644
+--- a/src/common/VirtualTerminal.cpp
++++ b/src/common/VirtualTerminal.cpp
+@@ -127,17 +127,26 @@ namespace SDDM {
+                 close(fd);
+             });
+ 
+-            vt_stat vtState = { 0 };
+-            if (ioctl(fd, VT_GETSTATE, &vtState) < 0) {
+-                qCritical() << "Failed to get current VT:" << strerror(errno);
+-
++            auto requestNewVt = [] (int fd) {
+                 int vt = 0;
+-                // If there's no current tty, request the next to open
+                 if (ioctl(fd, VT_OPENQRY, &vt) < 0) {
+                     qCritical() << "Failed to open new VT:" << strerror(errno);
+                     return -1;
+                 }
+                 return vt;
++            };
++
++            vt_stat vtState = { 0 };
++            if (ioctl(fd, VT_GETSTATE, &vtState) < 0) {
++                qCritical() << "Failed to get current VT:" << strerror(errno);
++
++                // If there's no current tty, request the next to open
++                return requestNewVt(fd);
++            }
++
++            // If the active vt is already taken, find a new one
++            if (1 << vtState.v_active & vtState.v_state) {
++                return requestNewVt(fd);
+             }
+             return vtState.v_active;
+         }
+diff --git a/src/helper/HelperApp.cpp b/src/helper/HelperApp.cpp
+index a05d7ed1..3eac6178 100644
+--- a/src/helper/HelperApp.cpp
++++ b/src/helper/HelperApp.cpp
+@@ -53,8 +53,7 @@ namespace SDDM {
+             , m_socket(new QLocalSocket(this)) {
+         qInstallMessageHandler(HelperMessageHandler);
+         SignalHandler *s = new SignalHandler(this);
+-        QObject::connect(s, &SignalHandler::sigtermReceived, m_session, [this] {
+-            m_session->stop();
++        QObject::connect(s, &SignalHandler::sigtermReceived, m_session, [] {
+             QCoreApplication::instance()->exit(-1);
+         });
+ 
+diff --git a/src/helper/waylandhelper.cpp b/src/helper/waylandhelper.cpp
+index 64640d83..83dfbc42 100644
+--- a/src/helper/waylandhelper.cpp
++++ b/src/helper/waylandhelper.cpp
+@@ -57,7 +57,7 @@ bool WaylandHelper::startCompositor(const QString &cmd)
+ 
+ void stopProcess(QProcess *process)
+ {
+-    if (process) {
++    if (process && process->state() != QProcess::NotRunning) {
+         qInfo() << "Stopping..." << process->program();
+         process->terminate();
+         if (!process->waitForFinished(5000))
+@@ -124,7 +124,11 @@ void WaylandHelper::startGreeter(const QString &cmd)
+     connect(m_greeterProcess, &QProcess::readyReadStandardOutput, this, [this] {
+         qInfo() << m_greeterProcess->readAllStandardOutput();
+     });
+-
++    connect(m_greeterProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
++            m_greeterProcess, [](int exitCode, QProcess::ExitStatus exitStatus) {
++        qDebug() << "wayland greeter finished" << exitCode << exitStatus;
++        QCoreApplication::instance()->quit();
++    });
+     if (m_watcher->status() == WaylandSocketWatcher::Started) {
+         m_greeterProcess->start();
+     } else if (m_watcher->status() == WaylandSocketWatcher::Failed) {
