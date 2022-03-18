@@ -12,7 +12,16 @@ diff --git a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts b/arch/arm64/b
 index c2f021a1a18f..fc33e111bbee 100644
 --- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
 +++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-@@ -384,6 +384,20 @@ mains_charger: dc-charger {
+@@ -345,7 +345,7 @@
+ 
+ 	/* Regulators supplied by vcc5v0_usb */
+ 	/* Type C port power supply regulator */
+-	vbus_5vout: vbus_typec: vbus-5vout {
++	vbus_5vout: vbus-5vout {
+ 		compatible = "regulator-fixed";
+ 		enable-active-high;
+ 		gpio = <&gpio1 RK_PA3 GPIO_ACTIVE_HIGH>;
+@@ -384,6 +384,20 @@
  		pinctrl-names = "default";
  		pinctrl-0 = <&dc_det_pin>;
  	};
@@ -33,16 +42,27 @@ index c2f021a1a18f..fc33e111bbee 100644
  };
  
  &cpu_b0 {
-@@ -705,6 +719,8 @@ fusb0: fusb30x@22 {
+@@ -426,8 +426,6 @@
+ 
+ &edp {
+ 	force-hpd;
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&edp_hpd>;
+ 	status = "okay";
+ 
+ 	ports {
+@@ -704,7 +718,9 @@
+ 		interrupts = <RK_PA2 IRQ_TYPE_LEVEL_LOW>;
  		pinctrl-names = "default";
  		pinctrl-0 = <&fusb0_int_pin>;
- 		vbus-supply = <&vbus_typec>;
+-		vbus-supply = <&vbus_typec>;
++		vbus-supply = <&vbus_5vout>;
 +		extcon = <&typec_extcon_bridge>;
 +		usb-role-switch = <&typec_extcon_bridge>;
  
  		connector {
  			compatible = "usb-c-connector";
-@@ -713,10 +729,20 @@ connector {
+@@ -713,10 +729,20 @@
  			op-sink-microwatt = <1000000>;
  			power-role = "dual";
  			sink-pdos =
@@ -65,7 +85,7 @@ index c2f021a1a18f..fc33e111bbee 100644
  
  			ports {
  				#address-cells = <1>;
-@@ -984,6 +1010,7 @@ spiflash: flash@0 {
+@@ -984,6 +1010,7 @@
  };
  
  &tcphy0 {
@@ -73,6 +93,58 @@ index c2f021a1a18f..fc33e111bbee 100644
  	status = "okay";
  };
  
+@@ -1017,13 +1043,21 @@
+ 
+ &u2phy0 {
+ 	status = "okay";
++	extcon = <&typec_extcon_bridge>;
++	extcon,ignore-usb;
+ 
+ 	u2phy0_otg: otg-port {
++		/*
++		 * Type-C port on the left side of the chasis.
++		 */
+ 		status = "okay";
+ 	};
+ 
+ 	u2phy0_host: host-port {
+-		phy-supply = <&vcc5v0_otg>;
++		/*
++		 * USB 2.0 host port for the keyboard (internally connected).
++		 */
++		phy-supply = <&vcc5v0_usb>;
+ 		status = "okay";
+ 	};
+ 
+@@ -1038,11 +1071,18 @@
+ 	status = "okay";
+ 
+ 	u2phy1_otg: otg-port {
++		/*
++		 * USB 3.0 A port on the left side of the chasis.
++		 */
+ 		status = "okay";
+ 	};
+ 
+ 	u2phy1_host: host-port {
+-		phy-supply = <&vcc5v0_otg>;
++		/*
++		 * To the HUB that has USB camera and USB 2.0 port on the right
++		 * side of the chasis.
++		 */
++		phy-supply = <&vcc5v0_usb>;
+ 		status = "okay";
+ 	};
+ };
+@@ -1093,7 +1133,8 @@
+ };
+ 
+ &usbdrd_dwc3_0 {
+-	dr_mode = "host";
++	dr_mode = "otg";
++	extcon = <&typec_extcon_bridge>;
+ 	status = "okay";
+ };
+ 
 -- 
-2.34.1
-
+2.35.0

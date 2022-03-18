@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="13"
+K_GENPATCHES_VER="16"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -32,11 +32,11 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/0002-Add-megis-extcon-changes-to-fusb302.patch
 		eapply "${FILESDIR}"/pinebook-pro/0003-usb-typec-Add-megis-typex-to-extcon-bridge-driver.patch
 		eapply "${FILESDIR}"/pinebook-pro/0004-arm64-dts-rockchip-add-typec-extcon-hack.patch
-		eapply "${FILESDIR}"/pinebook-pro/0005-typec-displayport-some-devices-have-pin-assignments-reversed.patch
+		eapply "${FILESDIR}"/pinebook-pro/0005-more-robust-charger-detection.patch
 		eapply "${FILESDIR}"/pinebook-pro/0006-drm-panfrost-scheduler-fix.patch
 		eapply "${FILESDIR}"/pinebook-pro/0007-drm-rockchip-support-gamma-control-on-RK3399.patch
-		eapply "${FILESDIR}"/pinebook-pro/0008-generic-fixes.patch
-		eapply "${FILESDIR}"/pinebook-pro/0009-add-cdn_dp-audio.patch
+		eapply "${FILESDIR}"/pinebook-pro/0008-add-cdn_dp-audio.patch
+		eapply "${FILESDIR}"/pinebook-pro/0009-generic-fixes.patch
 	fi
 
 	use banana-pi && eapply "${FILESDIR}"/banana-pi/fix-wifi-bananapi.patch
