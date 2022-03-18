@@ -83,7 +83,7 @@ diff --git a/clang/include/clang/Driver/Options.td b/clang/include/clang/Driver/
 index a0cbcae0bdc3..2ba1ce0f3cb4 100644
 --- a/clang/include/clang/Driver/Options.td
 +++ b/clang/include/clang/Driver/Options.td
-@@ -506,7 +506,7 @@ class InternalDriverOpt : Group<internal_driver_Group>,
+@@ -525,7 +525,7 @@
    Flags<[NoXarchOption, HelpHidden]>;
  def driver_mode : Joined<["--"], "driver-mode=">, Group<internal_driver_Group>,
    Flags<[CoreOption, NoXarchOption, HelpHidden]>,
@@ -92,7 +92,7 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
  def rsp_quoting : Joined<["--"], "rsp-quoting=">, Group<internal_driver_Group>,
    Flags<[CoreOption, NoXarchOption, HelpHidden]>,
    HelpText<"Set the rsp quoting to either 'posix', or 'windows'">;
-@@ -2218,9 +2218,9 @@ def fno_experimental_isel : Flag<["-"], "fno-experimental-isel">, Group<f_clang_
+@@ -2287,9 +2287,9 @@
    Alias<fno_global_isel>;
  def fveclib : Joined<["-"], "fveclib=">, Group<f_Group>, Flags<[CC1Option]>,
      HelpText<"Use the given vector functions library">,
@@ -104,7 +104,7 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
                        "Darwin_libsystem_m", "NoLibrary"]>,
      MarshallingInfoEnum<CodeGenOpts<"VecLib">, "NoLibrary">;
  def fno_lax_vector_conversions : Flag<["-"], "fno-lax-vector-conversions">, Group<f_Group>,
-@@ -4382,6 +4382,12 @@ defm devirtualize : BooleanFFlag<"devirtualize">, Group<clang_ignored_gcc_optimi
+@@ -4562,6 +4562,12 @@
  defm devirtualize_speculatively : BooleanFFlag<"devirtualize-speculatively">,
      Group<clang_ignored_gcc_optimization_f_Group>;
  
@@ -117,7 +117,7 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
  // Generic gfortran options.
  def A_DASH : Joined<["-"], "A-">, Group<gfortran_Group>;
  def static_libgfortran : Flag<["-"], "static-libgfortran">, Group<gfortran_Group>;
-@@ -4403,6 +4409,8 @@ def fmax_stack_var_size_EQ : Joined<["-"], "fmax-stack-var-size=">, Group<gfortr
+@@ -4583,6 +4589,8 @@
  def fmax_subrecord_length_EQ : Joined<["-"], "fmax-subrecord-length=">, Group<gfortran_Group>;
  def frecord_marker_EQ : Joined<["-"], "frecord-marker=">, Group<gfortran_Group>;
  
@@ -126,7 +126,7 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
  // "f" flags for gfortran.
  defm aggressive_function_elimination : BooleanFFlag<"aggressive-function-elimination">, Group<gfortran_Group>;
  defm align_commons : BooleanFFlag<"align-commons">, Group<gfortran_Group>;
-@@ -4414,13 +4422,19 @@ defm check_array_temporaries : BooleanFFlag<"check-array-temporaries">, Group<gf
+@@ -4594,13 +4602,19 @@
  defm cray_pointer : BooleanFFlag<"cray-pointer">, Group<gfortran_Group>;
  defm d_lines_as_code : BooleanFFlag<"d-lines-as-code">, Group<gfortran_Group>;
  defm d_lines_as_comments : BooleanFFlag<"d-lines-as-comments">, Group<gfortran_Group>;
@@ -147,7 +147,7 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
  defm init_local_zero : BooleanFFlag<"init-local-zero">, Group<gfortran_Group>;
  defm integer_4_integer_8 : BooleanFFlag<"integer-4-integer-8">, Group<gfortran_Group>;
  defm max_identifier_length : BooleanFFlag<"max-identifier-length">, Group<gfortran_Group>;
-@@ -4463,9 +4477,9 @@ def Xflang : Separate<["-"], "Xflang">,
+@@ -4643,9 +4657,9 @@
  //===----------------------------------------------------------------------===//
  let Flags = [FC1Option, FlangOption, FlangOnlyOption] in {
  
@@ -159,7 +159,7 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
    HelpText<"Disable predefined and command line preprocessor macros">;
  def module_dir : Separate<["-"], "module-dir">, MetaVarName<"<dir>">,
    HelpText<"Put MODULE files in <dir>">,
-@@ -4473,39 +4487,40 @@ def module_dir : Separate<["-"], "module-dir">, MetaVarName<"<dir>">,
+@@ -4653,24 +4667,24 @@
  It is also added to the list of directories to be searched by an USE statement.
  The default is the current directory.}]>;
  
@@ -170,48 +170,48 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
 +def ffree_form : Flag<["-"], "ffree-form">, Group<fortran_format_Group>,
    HelpText<"Process source files in free form">;
 -def ffixed_line_length_EQ : Joined<["-"], "ffixed-line-length=">, Group<f_Group>,
-+def ffixed_line_length_EQ : Joined<["-"], "ffixed-line-length=">, Group<gfortran_Group>,
++def ffixed_line_length_EQ : Joined<["-"], "ffixed-line-length=">, Group<fortran_format_Group>,
    HelpText<"Use <value> as character line width in fixed mode">,
    DocBrief<[{Set column after which characters are ignored in typical fixed-form lines in the source
  file}]>;
 -def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<f_Group>, Alias<ffixed_line_length_EQ>;
-+def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<gfortran_Group>,
-+  HelpText<"Set line length in fixed-form format Fortran, current supporting only 72 and 132 characters">;
++def ffixed_line_length_VALUE : Joined<["-"], "ffixed-line-length-">, Group<fortran_format_Group>, Alias<ffixed_line_length_EQ>;
  def fopenacc : Flag<["-"], "fopenacc">, Group<f_Group>,
    HelpText<"Enable OpenACC">;
 -def fdefault_double_8 : Flag<["-"],"fdefault-double-8">, Group<f_Group>,
-+def fdefault_double_8 : Flag<["-"],"fdefault-double-8">, Group<gfortran_Group>,
++def fdefault_double_8 : Flag<["-"],"fdefault-double-8">, Group<fortran_format_Group>,
    HelpText<"Set the default double precision kind to an 8 byte wide type">;
 -def fdefault_integer_8 : Flag<["-"],"fdefault-integer-8">, Group<f_Group>,
-+def fdefault_integer_8 : Flag<["-"],"fdefault-integer-8">, Group<gfortran_Group>,
++def fdefault_integer_8 : Flag<["-"],"fdefault-integer-8">, Group<fortran_format_Group>,
    HelpText<"Set the default integer kind to an 8 byte wide type">;
 -def fdefault_real_8 : Flag<["-"],"fdefault-real-8">, Group<f_Group>,
-+def fdefault_real_8 : Flag<["-"],"fdefault-real-8">, Group<gfortran_Group>,
++def fdefault_real_8 : Flag<["-"],"fdefault-real-8">, Group<fortran_format_Group>,
    HelpText<"Set the default real kind to an 8 byte wide type">;
- def flarge_sizes : Flag<["-"],"flarge-sizes">, Group<f_Group>,
+-def flarge_sizes : Flag<["-"],"flarge-sizes">, Group<f_Group>,
++def flarge_sizes : Flag<["-"],"flarge-sizes">, Group<fortran_format_Group>,
    HelpText<"Use INTEGER(KIND=8) for the result type in size-related intrinsics">;
--def fbackslash : Flag<["-"], "fbackslash">, Group<f_Group>,
-+def fbackslash : Flag<["-"], "fbackslash">, Group<gfortran_Group>,
-   HelpText<"Specify that backslash in string introduces an escape character">,
-   DocBrief<[{Change the interpretation of backslashes in string literals from
- a single backslash character to "C-style" escape characters.}]>;
--def fno_backslash : Flag<["-"], "fno-backslash">, Group<f_Group>;
-+def fno_backslash : Flag<["-"], "fno-backslash">, Group<gfortran_Group>;
- def fxor_operator : Flag<["-"], "fxor-operator">, Group<f_Group>,
-   HelpText<"Enable .XOR. as a synonym of .NEQV.">;
- def fno_xor_operator : Flag<["-"], "fno-xor-operator">, Group<f_Group>;
- def flogical_abbreviations : Flag<["-"], "flogical-abbreviations">, Group<f_Group>,
-   HelpText<"Enable logical abbreviations">;
- def fno_logical_abbreviations : Flag<["-"], "fno-logical-abbreviations">, Group<f_Group>;
--def fimplicit_none : Flag<["-"], "fimplicit-none">, Group<f_Group>,
-+def fimplicit_none : Flag<["-"], "fimplicit-none">, Group<gfortran_Group>,
-   HelpText<"No implicit typing allowed unless overridden by IMPLICIT statements">;
--def fno_implicit_none : Flag<["-"], "fno-implicit-none">, Group<f_Group>;
-+def fno_implicit_none : Flag<["-"], "fno-implicit-none">, Group<gfortran_Group>;
+ 
  def falternative_parameter_statement : Flag<["-"], "falternative-parameter-statement">, Group<f_Group>,
-   HelpText<"Enable the old style PARAMETER statement">;
- def fintrinsic_modules_path : Separate<["-"], "fintrinsic-modules-path">,  Group<f_Group>, MetaVarName<"<dir>">,
-@@ -4515,9 +4530,8 @@ def fintrinsic_modules_path : Separate<["-"], "fintrinsic-modules-path">,  Group
+@@ -4680,19 +4694,25 @@
+   DocBrief<[{This option specifies the location of pre-compiled intrinsic modules,
+   if they are not in the default location expected by the compiler.}]>;
+ 
+-defm backslash : OptInFC1FFlag<"backslash", "Specify that backslash in string introduces an escape character">;
++def fbackslash : Flag<["-"], "fbackslash">, Group<gfortran_Group>,
++   HelpText<"Specify that backslash in string introduces an escape character">,
++   DocBrief<[{Change the interpretation of backslashes in string literals from
++ a single backslash character to "C-style" escape characters.}]>;
++def fno_backslash : Flag<["-"], "fno-backslash">, Group<gfortran_Group>;
++def fimplicit_none : Flag<["-"], "fimplicit-none">, Group<gfortran_Group>,
++   HelpText<"No implicit typing allowed unless overridden by IMPLICIT statements">;
++def fno_implicit_none : Flag<["-"], "fno-implicit-none">, Group<gfortran_Group>;
++
+ defm xor_operator : OptInFC1FFlag<"xor-operator", "Enable .XOR. as a synonym of .NEQV.">;
+ defm logical_abbreviations : OptInFC1FFlag<"logical-abbreviations", "Enable logical abbreviations">;
+-defm implicit_none : OptInFC1FFlag<"implicit-none", "No implicit typing allowed unless overridden by IMPLICIT statements">;
+ 
+ def fno_automatic : Flag<["-"], "fno-automatic">, Group<f_Group>,
+   HelpText<"Implies the SAVE attribute for non-automatic local objects in subprograms unless RECURSIVE">;
  }
  
  def J : JoinedOrSeparate<["-"], "J">,
@@ -223,7 +223,7 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
  
  //===----------------------------------------------------------------------===//
  // FC1 Options
-@@ -6339,3 +6353,136 @@ def _SLASH_Ze : CLFlag<"Ze">;
+@@ -6528,3 +6548,136 @@
  def _SLASH_Zg : CLFlag<"Zg">;
  def _SLASH_ZI : CLFlag<"ZI">;
  def _SLASH_ZW : CLJoined<"ZW">;
@@ -430,64 +430,6 @@ index 6a1f57416ae5..c656b9439add 100644
    /// isSrcFile - Is this a source file, i.e. something that still has to be
    /// preprocessed. The logic behind this is the same that decides if the first
    /// compilation phase is a preprocessing one.
-diff --git a/clang/include/clang/Frontend/Utils.h b/clang/include/clang/Frontend/Utils.h
-index da2d79af2eba..549226b0d368 100644
---- a/clang/include/clang/Frontend/Utils.h
-+++ b/clang/include/clang/Frontend/Utils.h
-@@ -17,6 +17,7 @@
- #include "clang/Basic/LLVM.h"
- #include "clang/Driver/OptionUtils.h"
- #include "clang/Frontend/DependencyOutputOptions.h"
-+#include "clang/Basic/TargetInfo.h"
- #include "llvm/ADT/ArrayRef.h"
- #include "llvm/ADT/IntrusiveRefCntPtr.h"
- #include "llvm/ADT/StringMap.h"
-@@ -35,6 +36,7 @@
- namespace llvm {
- 
- class Triple;
-+class StringRef;
- 
- } // namespace llvm
- 
-@@ -49,6 +51,7 @@ class FrontendOptions;
- class HeaderSearch;
- class HeaderSearchOptions;
- class LangOptions;
-+class MacroBuilder;
- class PCHContainerReader;
- class Preprocessor;
- class PreprocessorOptions;
-@@ -70,6 +73,29 @@ void InitializePreprocessor(Preprocessor &PP, const PreprocessorOptions &PPOpts,
- void DoPrintPreprocessedInput(Preprocessor &PP, raw_ostream *OS,
-                               const PreprocessorOutputOptions &Opts);
- 
-+/// DefineTypeSize - Emit a macro to the predefines buffer that declares a macro
-+/// named MacroName with the max value for a type with width 'TypeWidth' a
-+/// signedness of 'isSigned' and with a value suffix of 'ValSuffix' (e.g. LL).
-+template<typename T>
-+static void DefineTypeSize(const Twine &MacroName, unsigned TypeWidth,
-+                           StringRef ValSuffix, bool isSigned,
-+                           T &Builder) {
-+  static_assert(std::is_base_of<MacroBuilder, T>::value, "Illegal T value");
-+  llvm::APInt MaxVal = isSigned ? llvm::APInt::getSignedMaxValue(TypeWidth)
-+                                : llvm::APInt::getMaxValue(TypeWidth);
-+  Builder.defineMacro(MacroName, toString(MaxVal, 10, isSigned) + ValSuffix);
-+}
-+
-+/// DefineTypeSize - An overloaded helper that uses TargetInfo to determine
-+/// the width, suffix, and signedness of the given type
-+template<typename T>
-+static void DefineTypeSize(const Twine &MacroName, TargetInfo::IntType Ty,
-+                           const TargetInfo &TI, T &Builder) {
-+  static_assert(std::is_base_of<MacroBuilder, T>::value, "Illegal T value");
-+  DefineTypeSize(MacroName, TI.getTypeWidth(Ty), TI.getTypeConstantSuffix(Ty),
-+                 TI.isTypeSigned(Ty), Builder);
-+}
-+
- /// An interface for collecting the dependencies of a compilation. Users should
- /// use \c attachToPreprocessor and \c attachToASTReader to get all of the
- /// dependencies.
 diff --git a/clang/lib/CodeGen/BackendUtil.cpp b/clang/lib/CodeGen/BackendUtil.cpp
 index 481f5347d978..68703cf3d694 100644
 --- a/clang/lib/CodeGen/BackendUtil.cpp
@@ -504,48 +446,6 @@ index 481f5347d978..68703cf3d694 100644
    default:
      break;
    }
-diff --git a/clang/lib/CodeGen/CGDebugInfo.cpp b/clang/lib/CodeGen/CGDebugInfo.cpp
-index 81c910f40bf8..b4f1d19cf718 100644
---- a/clang/lib/CodeGen/CGDebugInfo.cpp
-+++ b/clang/lib/CodeGen/CGDebugInfo.cpp
-@@ -3680,7 +3680,8 @@ CGDebugInfo::getGlobalVariableForwardDeclaration(const VarDecl *VD) {
-   auto Align = getDeclAlignIfRequired(VD, CGM.getContext());
-   auto *GV = DBuilder.createTempGlobalVariableFwdDecl(
-       DContext, Name, LinkageName, Unit, Line, getOrCreateType(T, Unit),
--      !VD->isExternallyVisible(), nullptr, TemplateParameters, Align);
-+      !VD->isExternallyVisible(), nullptr, TemplateParameters,
-+      llvm::DINode::FlagZero, Align);
-   FwdDeclReplaceMap.emplace_back(
-       std::piecewise_construct,
-       std::make_tuple(cast<VarDecl>(VD->getCanonicalDecl())),
-@@ -4812,7 +4813,7 @@ void CGDebugInfo::EmitGlobalVariable(llvm::GlobalVariable *Var,
-         Var->hasLocalLinkage(), true,
-         Expr.empty() ? nullptr : DBuilder.createExpression(Expr),
-         getOrCreateStaticDataMemberDeclarationOrNull(D), TemplateParameters,
--        Align);
-+        llvm::DINode::FlagZero, Align);
-     Var->addDebugInfo(GVE);
-   }
-   DeclCache[D->getCanonicalDecl()].reset(GVE);
-@@ -4900,7 +4901,7 @@ void CGDebugInfo::EmitGlobalVariable(const ValueDecl *VD, const APValue &Init) {
-   GV.reset(DBuilder.createGlobalVariableExpression(
-       DContext, Name, StringRef(), Unit, getLineNumber(VD->getLocation()), Ty,
-       true, true, InitExpr, getOrCreateStaticDataMemberDeclarationOrNull(VarD),
--      TemplateParameters, Align));
-+      TemplateParameters, llvm::DINode::FlagZero, Align));
- }
- 
- void CGDebugInfo::EmitExternalVariable(llvm::GlobalVariable *Var,
-@@ -4918,7 +4919,8 @@ void CGDebugInfo::EmitExternalVariable(llvm::GlobalVariable *Var,
-   llvm::DIGlobalVariableExpression *GVE =
-       DBuilder.createGlobalVariableExpression(
-           DContext, Name, StringRef(), Unit, getLineNumber(D->getLocation()),
--          Ty, false, false, nullptr, nullptr, nullptr, Align);
-+          Ty, false, false, nullptr, nullptr, nullptr, llvm::DINode::FlagZero,
-+          Align);
-   Var->addDebugInfo(GVE);
- }
- 
 diff --git a/clang/lib/Driver/CMakeLists.txt b/clang/lib/Driver/CMakeLists.txt
 index 08be9f0115a1..0672c8c47b15 100644
 --- a/clang/lib/Driver/CMakeLists.txt
@@ -573,6 +473,24 @@ diff --git a/clang/lib/Driver/Driver.cpp b/clang/lib/Driver/Driver.cpp
 index 94a7553e273b..2e626f588028 100644
 --- a/clang/lib/Driver/Driver.cpp
 +++ b/clang/lib/Driver/Driver.cpp
+@@ -330,8 +330,16 @@
+       (PhaseArg = DAL.getLastArg(options::OPT__SLASH_EP)) ||
+       (PhaseArg = DAL.getLastArg(options::OPT_M, options::OPT_MM)) ||
+       (PhaseArg = DAL.getLastArg(options::OPT__SLASH_P)) ||
+-      CCGenDiagnostics) {
++      CCGenDiagnostics || DAL.getLastArg(options::OPT_test_io)) {
++#ifdef ENABLE_CLASSIC_FLANG
++    if (IsFlangMode())
++      FinalPhase = phases::Compile;
++    else
++      FinalPhase = phases::Preprocess;
++#else
+     FinalPhase = phases::Preprocess;
++#endif
++
+ 
+   // --precompile only runs up to precompilation.
+   } else if ((PhaseArg = DAL.getLastArg(options::OPT__precompile))) {
 @@ -2234,7 +2234,11 @@ void Driver::BuildInputs(const ToolChain &TC, DerivedArgList &Args,
          // stdin must be handled specially.
          if (memcmp(Value, "-", 2) == 0) {
@@ -601,9 +519,9 @@ index 94a7553e273b..2e626f588028 100644
        InputArg->claim();
  
 @@ -3977,6 +3989,10 @@ Action *Driver::ConstructPhaseAction(
-       return C.MakeAction<CompileJobAction>(Input, types::TY_ModuleFile);
-     if (Args.hasArg(options::OPT_verify_pch))
        return C.MakeAction<VerifyPCHJobAction>(Input, types::TY_Nothing);
+     if (Args.hasArg(options::OPT_extract_api))
+       return C.MakeAction<CompileJobAction>(Input, types::TY_API_INFO);
 +#ifdef ENABLE_CLASSIC_FLANG
 +    if (IsFlangMode())
 +      return C.MakeAction<CompileJobAction>(Input, types::TY_LLVM_IR);
@@ -644,8 +562,8 @@ index 6c1b88141c45..6a7f7acd9fbf 100644
  #include "ToolChains/Arch/ARM.h"
  #include "ToolChains/Clang.h"
 +#include "ToolChains/ClassicFlang.h"
- #include "ToolChains/InterfaceStubs.h"
  #include "ToolChains/Flang.h"
+ #include "ToolChains/InterfaceStubs.h"
  #include "clang/Basic/ObjCRuntime.h"
 @@ -154,6 +154,7 @@
        {"cl", "--driver-mode=cl"},
@@ -809,7 +727,7 @@ new file mode 100644
 index 000000000000..a40a363392cf
 --- /dev/null
 +++ b/clang/lib/Driver/ToolChains/ClassicFlang.cpp
-@@ -0,0 +1,1077 @@
+@@ -0,0 +1,1075 @@
 +//===-- ClassicFlang.cpp - Flang+LLVM ToolChain Implementations -*- C++ -*-===//
 +//
 +//                     The LLVM Compiler Infrastructure
@@ -1491,8 +1409,6 @@ index 000000000000..a40a363392cf
 +    Builder.defineMacro("_ILP32");
 +    Builder.defineMacro("__ILP32__");
 +  }
-+
-+  DefineTypeSize("__LONG_MAX__", TargetInfo::SignedLong, *TI, Builder);
 +
 +  // Add additional predefined macros
 +  switch (getToolChain().getEffectiveTriple().getArch()) {
@@ -2333,8 +2249,6 @@ index 169a37c44072..ae6932f0af90 100644
                              llvm::opt::ArgStringList &CC1Args) const override;
    void addLibStdCxxIncludePaths(
 diff --git a/clang/lib/Driver/Types.cpp b/clang/lib/Driver/Types.cpp
-old mode 100644
-new mode 100755
 index b7ccdf23cbaa..d3dee6190980
 --- a/clang/lib/Driver/Types.cpp
 +++ b/clang/lib/Driver/Types.cpp
@@ -2441,62 +2355,6 @@ index b7ccdf23cbaa..d3dee6190980
             .Case("gch", TY_PCH)
             .Case("hip", TY_HIP)
             .Case("hpp", TY_CXXHeader)
-@@ -326,13 +376,22 @@ types::getCompilationPhases(const clang::driver::Driver &Driver,
-   phases::ID LastPhase;
- 
-   // Filter to compiler mode. When the compiler is run as a preprocessor then
--  // compilation is not an option.
-+  // compilation is not an option, except when the input is Fortran, for which
-+  // preprocessing may be delegated to the classic Flang frontend.
-   // -S runs the compiler in Assembly listing mode.
-   if (Driver.CCCIsCPP() || DAL.getLastArg(options::OPT_E) ||
-       DAL.getLastArg(options::OPT__SLASH_EP) ||
-       DAL.getLastArg(options::OPT_M, options::OPT_MM) ||
--      DAL.getLastArg(options::OPT__SLASH_P))
-+      DAL.getLastArg(options::OPT__SLASH_P) ||
-+      DAL.getLastArg(options::OPT_test_io))
-+#ifdef ENABLE_CLASSIC_FLANG
-+    if (Driver.IsFlangMode())
-+      LastPhase = phases::Compile;
-+    else
-+      LastPhase = phases::Preprocess;
-+#else
-     LastPhase = phases::Preprocess;
-+#endif
- 
-   // --precompile only runs up to precompilation.
-   // This is a clang extension and is not compatible with GCC.
-diff --git a/clang/lib/Frontend/InitPreprocessor.cpp b/clang/lib/Frontend/InitPreprocessor.cpp
-index bca0bb4ada67..bf8eb04da325 100644
---- a/clang/lib/Frontend/InitPreprocessor.cpp
-+++ b/clang/lib/Frontend/InitPreprocessor.cpp
-@@ -159,26 +159,6 @@ static void DefineFloatMacros(MacroBuilder &Builder, StringRef Prefix,
-   Builder.defineMacro(DefPrefix + "MIN__", Twine(Min)+Ext);
- }
- 
--
--/// DefineTypeSize - Emit a macro to the predefines buffer that declares a macro
--/// named MacroName with the max value for a type with width 'TypeWidth' a
--/// signedness of 'isSigned' and with a value suffix of 'ValSuffix' (e.g. LL).
--static void DefineTypeSize(const Twine &MacroName, unsigned TypeWidth,
--                           StringRef ValSuffix, bool isSigned,
--                           MacroBuilder &Builder) {
--  llvm::APInt MaxVal = isSigned ? llvm::APInt::getSignedMaxValue(TypeWidth)
--                                : llvm::APInt::getMaxValue(TypeWidth);
--  Builder.defineMacro(MacroName, toString(MaxVal, 10, isSigned) + ValSuffix);
--}
--
--/// DefineTypeSize - An overloaded helper that uses TargetInfo to determine
--/// the width, suffix, and signedness of the given type
--static void DefineTypeSize(const Twine &MacroName, TargetInfo::IntType Ty,
--                           const TargetInfo &TI, MacroBuilder &Builder) {
--  DefineTypeSize(MacroName, TI.getTypeWidth(Ty), TI.getTypeConstantSuffix(Ty),
--                 TI.isTypeSigned(Ty), Builder);
--}
--
- static void DefineFmt(const Twine &Prefix, TargetInfo::IntType Ty,
-                       const TargetInfo &TI, MacroBuilder &Builder) {
-   bool IsSigned = TI.isTypeSigned(Ty);
 diff --git a/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp b/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp
 index 43f7091c97f3..51dcd8570445 100644
 --- a/clang/tools/clang-offload-bundler/ClangOffloadBundler.cpp
