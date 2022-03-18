@@ -1,0 +1,724 @@
+diff --color -ur a//driver/codegenerator.cpp b/driver/codegenerator.cpp
+--- a/driver/codegenerator.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/driver/codegenerator.cpp	2022-03-16 15:52:59.004723190 +0100
+@@ -24,6 +24,9 @@
+ #include "gen/modules.h"
+ #include "gen/runtime.h"
+ #include "ir/irdsymbol.h"
++#if LDC_LLVM_VER >= 1400
++#include "llvm/IR/DiagnosticInfo.h"
++#endif
+ #if LDC_LLVM_VER >= 1100
+ #include "llvm/IR/LLVMRemarkStreamer.h"
+ #elif LDC_LLVM_VER >= 900
+diff --color -ur a/driver/main.cpp b/driver/main.cpp
+--- a/driver/main.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/driver/main.cpp	2022-03-16 15:52:59.004723190 +0100
+@@ -61,7 +61,11 @@
+ #include "llvm/Support/ManagedStatic.h"
+ #include "llvm/Support/Path.h"
+ #include "llvm/Support/StringSaver.h"
++#if LDC_LLVM_VER >= 1400
++#include "llvm/MC/TargetRegistry.h"
++#else
+ #include "llvm/Support/TargetRegistry.h"
++#endif
+ #include "llvm/Support/TargetSelect.h"
+ #include "llvm/Target/TargetMachine.h"
+ #if LDC_MLIR_ENABLED
+diff --color -ur a/driver/targetmachine.cpp b/driver/targetmachine.cpp
+--- a/driver/targetmachine.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/driver/targetmachine.cpp	2022-03-16 15:52:59.004723190 +0100
+@@ -26,11 +26,18 @@
+ #include "llvm/MC/SubtargetFeature.h"
+ #include "llvm/Support/Host.h"
+ #include "llvm/Support/CommandLine.h"
+-#include "llvm/Support/TargetParser.h"
++#if LDC_LLVM_VER >= 1400
++#include "llvm/MC/TargetRegistry.h"
++#else
+ #include "llvm/Support/TargetRegistry.h"
++#endif
+ #include "llvm/Support/TargetSelect.h"
+ #include "llvm/Target/TargetMachine.h"
+ #include "llvm/Target/TargetOptions.h"
++#if LDC_LLVM_VER >= 1400
++#include "llvm/Support/AArch64TargetParser.h"
++#include "llvm/Support/ARMTargetParser.h"
++#endif
+ 
+ #if LDC_LLVM_VER >= 700
+ #include "gen/optimizer.h"
+diff --color -ur a/gen/arrays.cpp b/gen/arrays.cpp
+--- a/gen/arrays.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/arrays.cpp	2022-03-16 15:52:58.995723075 +0100
+@@ -874,9 +874,15 @@
+     arrs.push_back(DtoSlicePtr(ce));
+ 
+     // Create static array from slices
++#if LDC_LLVM_VER < 1400
+     LLPointerType *ptrarraytype = isaPointer(arrs[0]);
+     assert(ptrarraytype && "Expected pointer type");
+     LLStructType *arraytype = isaStruct(ptrarraytype->getElementType());
++#else
++    LLStructType *arraytype = isaStruct(DtoType(arrayType));
++    LLPointerType *ptrarraytype = isaPointer(arrs[0]);
++    assert(ptrarraytype && "Expected pointer type");
++#endif
+     assert(arraytype && "Expected struct type");
+     LLArrayType *type = LLArrayType::get(arraytype, arrs.size());
+     LLValue *array = DtoRawAlloca(type, 0, ".slicearray");
+diff --color -ur a/gen/asmstmt.cpp b/gen/asmstmt.cpp
+--- a/gen/asmstmt.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/asmstmt.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -722,6 +722,20 @@
+       ia, args, retty == LLType::getVoidTy(gIR->context()) ? "" : "asm");
+   p->addInlineAsmSrcLoc(stmt->loc, call);
+ 
++#if LDC_LLVM_VER >= 1400
++ {
++    int i = 0;
++    for (llvm::InlineAsm::ConstraintInfo& CI : ia->ParseConstraints()) {
++      if (CI.isIndirect) {
++        call->addParamAttr(i, llvm::Attribute::get(getGlobalContext(),
++                                                   llvm::Attribute::ElementType,
++                                                   types[i]->getPointerElementType()));
++        i++;
++      }
++    }
++  }
++#endif
++
+   IF_LOG Logger::cout() << "Complete asm statement: " << *call << '\n';
+ 
+   // capture abi return value
+@@ -745,8 +759,7 @@
+     // make new blocks
+     llvm::BasicBlock *bb = p->insertBB("afterasmgotoforwarder");
+ 
+-    llvm::LoadInst *val =
+-        p->ir->CreateLoad(jump_target, "__llvm_jump_target_value");
++    auto val = DtoLoad(jump_target, "__llvm_jump_target_value");
+     llvm::SwitchInst *sw = p->ir->CreateSwitch(val, bb, gotoToVal.size());
+ 
+     // add all cases
+diff --color -ur a/gen/classes.cpp b/gen/classes.cpp
+--- a/gen/classes.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/classes.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -278,10 +278,9 @@
+     LLValue *orig = DtoRVal(val);
+     LLValue *v = orig;
+     if (offset != 0) {
++      assert(offset > 0);
+       v = DtoBitCast(v, getVoidPtrType());
+-      LLValue *off =
+-          LLConstantInt::get(LLType::getInt32Ty(gIR->context()), offset);
+-      v = gIR->ir->CreateGEP(v, off);
++      v = DtoGEP1(v, DtoConstUint(offset));
+     }
+     IF_LOG {
+       Logger::cout() << "V = " << *v << std::endl;
+diff --color -ur a/gen/coverage.cpp b/gen/coverage.cpp
+--- a/gen/coverage.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/coverage.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -33,10 +33,10 @@
+ 
+   // Increment the line counter:
+   // Get GEP into _d_cover_data array...
++  LLType *i32Type = LLType::getInt32Ty(gIR->context());
+   LLConstant *idxs[] = {DtoConstUint(0), DtoConstUint(line)};
+   LLValue *ptr = llvm::ConstantExpr::getGetElementPtr(
+-      LLArrayType::get(LLType::getInt32Ty(gIR->context()), m->numlines),
+-      m->d_cover_data, idxs, true);
++      LLArrayType::get(i32Type, m->numlines), m->d_cover_data, idxs, true);
+   // ...and generate the "increment" instruction(s)
+   switch (opts::coverageIncrement) {
+   case opts::CoverageIncrement::_default: // fallthrough
+@@ -51,7 +51,11 @@
+   case opts::CoverageIncrement::nonatomic: {
+     // Do a non-atomic increment, user is responsible for correct results with
+     // multithreaded execution
+-    llvm::LoadInst *load = gIR->ir->CreateAlignedLoad(ptr, LLAlign(4));
++    llvm::LoadInst *load = gIR->ir->CreateAlignedLoad(
++#if LDC_LLVM_VER >= 800
++        i32Type,
++#endif
++        ptr, LLAlign(4));
+     llvm::StoreInst *store = gIR->ir->CreateAlignedStore(
+         gIR->ir->CreateAdd(load, DtoConstUint(1)), ptr, LLAlign(4));
+     // add !nontemporal attribute, to inform the optimizer that caching is not
+diff --color -ur a/gen/dibuilder.cpp b/gen/dibuilder.cpp
+--- a/gen/dibuilder.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/dibuilder.cpp	2022-03-16 15:52:58.995723075 +0100
+@@ -1167,7 +1167,7 @@
+ void DIBuilder::EmitLocalVariable(llvm::Value *ll, VarDeclaration *vd,
+                                   Type *type, bool isThisPtr, bool forceAsLocal,
+                                   bool isRefRVal,
+-                                  llvm::ArrayRef<int64_t> addr) {
++                                  llvm::ArrayRef<uint64_t> addr) {
+   if (!mustEmitFullDebugInfo())
+     return;
+ 
+diff --color -ur a/gen/dibuilder.h b/gen/dibuilder.h
+--- a/gen/dibuilder.h	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/dibuilder.h	2022-03-16 15:52:58.994723062 +0100
+@@ -140,7 +140,7 @@
+   EmitLocalVariable(llvm::Value *ll, VarDeclaration *vd, Type *type = nullptr,
+                     bool isThisPtr = false, bool forceAsLocal = false,
+                     bool isRefRVal = false,
+-                    llvm::ArrayRef<int64_t> addr = llvm::ArrayRef<int64_t>());
++                    llvm::ArrayRef<uint64_t> addr = llvm::ArrayRef<uint64_t>());
+ 
+   /// \brief Emits all things necessary for making debug info for a global
+   /// variable vd.
+diff --color -ur a/gen/functions.cpp b/gen/functions.cpp
+--- a/gen/functions.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/functions.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -96,11 +96,19 @@
+   } else {
+     Type *rt = f->next;
+     const bool byref = f->isref() && rt->toBasetype()->ty != TY::Tvoid;
+-    llvm::AttrBuilder attrs;
++#if LDC_LLVM_VER >= 1400
++     llvm::AttrBuilder attrs(getGlobalContext());
++#else
++     llvm::AttrBuilder attrs;
++#endif
+ 
+     if (abi->returnInArg(f, fd && fd->needThis())) {
+       // sret return
++#if LDC_LLVM_VER >= 1400
++      llvm::AttrBuilder sretAttrs(getGlobalContext());
++#else
+       llvm::AttrBuilder sretAttrs;
++#endif
+ #if LDC_LLVM_VER >= 1200
+       sretAttrs.addStructRetAttr(DtoType(rt));
+ #else
+@@ -109,32 +117,40 @@
+       sretAttrs.addAttribute(LLAttribute::NoAlias);
+       if (unsigned alignment = DtoAlignment(rt))
+         sretAttrs.addAlignmentAttr(alignment);
+-      newIrFty.arg_sret = new IrFuncTyArg(rt, true, sretAttrs);
++      newIrFty.arg_sret = new IrFuncTyArg(rt, true, std::move(sretAttrs));
+       rt = Type::tvoid;
+       ++nextLLArgIdx;
+     } else {
+       // sext/zext return
+       DtoAddExtendAttr(byref ? rt->pointerTo() : rt, attrs);
+     }
+-    newIrFty.ret = new IrFuncTyArg(rt, byref, attrs);
++    newIrFty.ret = new IrFuncTyArg(rt, byref, std::move(attrs));
+   }
+   ++nextLLArgIdx;
+ 
+   if (thistype) {
+     // Add the this pointer for member functions
++#if LDC_LLVM_VER >= 1400
++    llvm::AttrBuilder attrs(getGlobalContext());
++#else
+     llvm::AttrBuilder attrs;
++#endif
+     attrs.addAttribute(LLAttribute::NonNull);
+     if (fd && fd->isCtorDeclaration()) {
+       attrs.addAttribute(LLAttribute::Returned);
+     }
+     newIrFty.arg_this = new IrFuncTyArg(
+-        thistype, thistype->toBasetype()->ty == TY::Tstruct, attrs);
++        thistype, thistype->toBasetype()->ty == TY::Tstruct, std::move(attrs));
+     ++nextLLArgIdx;
+   } else if (nesttype) {
+     // Add the context pointer for nested functions
++#if LDC_LLVM_VER >= 1400
++    llvm::AttrBuilder attrs(getGlobalContext());
++#else
+     llvm::AttrBuilder attrs;
++#endif
+     attrs.addAttribute(LLAttribute::NonNull);
+-    newIrFty.arg_nest = new IrFuncTyArg(nesttype, false, attrs);
++    newIrFty.arg_nest = new IrFuncTyArg(nesttype, false, std::move(attrs));
+     ++nextLLArgIdx;
+   }
+ 
+@@ -179,7 +195,11 @@
+     bool passPointer = arg->storageClass & (STCref | STCout);
+ 
+     Type *loweredDType = arg->type;
++#if LDC_LLVM_VER >= 1400
++    llvm::AttrBuilder attrs(getGlobalContext());
++#else
+     llvm::AttrBuilder attrs;
++#endif
+     if (arg->storageClass & STClazy) {
+       // Lazy arguments are lowered to delegates.
+       Logger::println("lazy param");
+@@ -217,7 +237,7 @@
+       }
+     }
+ 
+-    newIrFty.args.push_back(new IrFuncTyArg(loweredDType, passPointer, attrs));
++    newIrFty.args.push_back(new IrFuncTyArg(loweredDType, passPointer, std::move(attrs)));
+     newIrFty.args.back()->parametersIdx = i;
+     ++nextLLArgIdx;
+   }
+diff --color -ur a/gen/inlineir.cpp b/gen/inlineir.cpp
+--- a/gen/inlineir.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/inlineir.cpp	2022-03-16 15:52:58.996723088 +0100
+@@ -39,6 +39,9 @@
+   auto attrSet = idol->getAttributes();
+ #if LDC_LLVM_VER >= 1400
+   auto fnAttrSet = attrSet.getFnAttrs();
++  wannabe->addFnAttrs(llvm::AttrBuilder(getGlobalContext(), fnAttrSet));
++#elif LDC_LLVM_VER >= 1300
++  auto fnAttrSet = attrSet.getFnAttrs();
+   wannabe->addFnAttrs(fnAttrSet);
+ #else
+   auto fnAttrSet = attrSet.getFnAttributes();
+diff --color -ur a/gen/llvmhelpers.cpp b/gen/llvmhelpers.cpp
+--- a/gen/llvmhelpers.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/llvmhelpers.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -1752,6 +1752,7 @@
+   llvm::GlobalVariable *existing =
+       module.getGlobalVariable(mangledName, /*AllowInternal=*/true);
+   if (existing) {
++#if LDC_LLVM_VER < 1400
+     const auto existingType = existing->getType()->getElementType();
+     if (existingType != type || existing->isConstant() != isConstant ||
+         existing->isThreadLocal() != isThreadLocal) {
+@@ -1771,6 +1772,7 @@
+       suppl("New IR type:     ", type, isConstant, isThreadLocal);
+       fatal();
+     }
++#endif
+     return existing;
+   }
+ 
+diff --color -ur a/gen/moduleinfo.cpp b/gen/moduleinfo.cpp
+--- a/gen/moduleinfo.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/moduleinfo.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -87,7 +87,11 @@
+   for (auto gate : gates) {
+     assert(getIrGlobal(gate));
+     const auto val = getIrGlobal(gate)->value;
+-    const auto rval = builder.CreateLoad(val, "vgate");
++    const auto rval = builder.CreateLoad(
++#if LDC_LLVM_VER >= 800
++        getPointeeType(val),
++#endif
++        val, "vgate");
+     const auto res = builder.CreateAdd(rval, DtoConstUint(1), "vgate");
+     builder.CreateStore(res, val);
+   }
+diff --color -ur a/gen/modules.cpp b/gen/modules.cpp
+--- a/gen/modules.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/modules.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -206,7 +206,11 @@
+   gIR->DBuilder.EmitModuleCTor(ctor, fname.c_str());
+ 
+   // get current beginning
+-  LLValue *curbeg = builder.CreateLoad(mref, "current");
++  LLValue *curbeg = builder.CreateLoad(
++#if LDC_LLVM_VER >= 800
++      modulerefPtrTy,
++#endif
++      mref, "current");
+ 
+   // put current beginning as the next of this one
+   LLValue *gep = builder.CreateStructGEP(
+diff --color -ur a/gen/naked.cpp b/gen/naked.cpp
+--- a/gen/naked.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/naked.cpp	2022-03-16 15:52:58.995723075 +0100
+@@ -481,6 +481,21 @@
+   llvm::InlineAsm *ia = llvm::InlineAsm::get(FT, code, constraints, sideeffect);
+ 
+   llvm::CallInst *call = gIR->ir->CreateCall(ia, operands, "");
++
++#if LDC_LLVM_VER >= 1400
++ {
++    int i = 0;
++    for (llvm::InlineAsm::ConstraintInfo& CI : ia->ParseConstraints()) {
++      if (CI.isIndirect) {
++        call->addParamAttr(i, llvm::Attribute::get(getGlobalContext(),
++                                                   llvm::Attribute::ElementType,
++                                                   operandTypes[i]->getPointerElementType()));
++        i++;
++      }
++    }
++  }
++#endif
++
+   gIR->addInlineAsmSrcLoc(loc, call);
+ 
+   return call;
+diff --color -ur a/gen/nested.cpp b/gen/nested.cpp
+--- a/gen/nested.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/nested.cpp	2022-03-16 15:52:58.994723062 +0100
+@@ -113,7 +113,7 @@
+   // Make the DWARF variable address relative to the context pointer (ctx);
+   // register all ops (offsetting, dereferencing) required to get there in the
+   // following list.
+-  LLSmallVector<int64_t, 4> dwarfAddrOps;
++  LLSmallVector<uint64_t, 4> dwarfAddrOps;
+ 
+   const auto offsetToNthField = [&val, &dwarfAddrOps](unsigned fieldIndex,
+                                                       const char *name = "") {
+@@ -515,7 +515,7 @@
+       }
+ 
+       if (global.params.symdebug) {
+-        LLSmallVector<int64_t, 1> dwarfAddrOps;
++        LLSmallVector<uint64_t, 1> dwarfAddrOps;
+         gIR->DBuilder.EmitLocalVariable(gep, vd, nullptr, false, false, false,
+                                         dwarfAddrOps);
+       }
+diff --color -ur a/gen/passes/DLLImportRelocation.cpp b/gen/passes/DLLImportRelocation.cpp
+--- a/gen/passes/DLLImportRelocation.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/passes/DLLImportRelocation.cpp	2022-03-16 15:52:58.994723062 +0100
+@@ -184,12 +184,16 @@
+ 
+     Value *address = currentGlobal;
+     for (auto i : currentGepPath) {
++      auto t = address->getType()->getPointerElementType();
+       if (i <= 0xFFFFFFFFu) {
+-        address = b.CreateConstInBoundsGEP2_32(
+-            address->getType()->getPointerElementType(), address, 0,
+-            static_cast<unsigned>(i));
++        address = b.CreateConstInBoundsGEP2_32(t, address, 0,
++                                               static_cast<unsigned>(i));
+       } else {
+-        address = b.CreateConstInBoundsGEP2_64(address, 0, i);
++        address = b.CreateConstInBoundsGEP2_64(
++#if LDC_LLVM_VER >= 800
++            t,
++#endif
++            address, 0, i);
+       }
+     }
+ 
+@@ -207,9 +211,13 @@
+     auto ifbb = BasicBlock::Create(m.getContext(), "if", ctor);
+     auto endbb = BasicBlock::Create(m.getContext(), "endif", ctor);
+ 
+-    auto isStillNull =
+-        b.CreateICmp(CmpInst::ICMP_EQ, b.CreateLoad(address, false),
+-                     Constant::getNullValue(t));
++    auto isStillNull = b.CreateICmp(CmpInst::ICMP_EQ,
++                                    b.CreateLoad(
++#if LDC_LLVM_VER >= 800
++                                        t,
++#endif
++                                        address, false),
++                                    Constant::getNullValue(t));
+     b.CreateCondBr(isStillNull, ifbb, endbb);
+ 
+     b.SetInsertPoint(ifbb);
+diff --color -ur a/gen/passes/GarbageCollect2Stack.cpp b/gen/passes/GarbageCollect2Stack.cpp
+--- a/gen/passes/GarbageCollect2Stack.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/passes/GarbageCollect2Stack.cpp	2022-03-16 15:52:58.995723075 +0100
+@@ -12,11 +12,6 @@
+ //
+ //===----------------------------------------------------------------------===//
+ 
+-#define DEBUG_TYPE "dgc2stack"
+-#if LDC_LLVM_VER < 700
+-#define LLVM_DEBUG DEBUG
+-#endif
+-
+ #include "gen/attributes.h"
+ #include "metadata.h"
+ #include "gen/passes/Passes.h"
+@@ -42,6 +37,11 @@
+ #include "llvm/Support/raw_ostream.h"
+ #include <algorithm>
+ 
++#define DEBUG_TYPE "dgc2stack"
++#if LDC_LLVM_VER < 700
++#define LLVM_DEBUG DEBUG
++#endif
++
+ using namespace llvm;
+ 
+ STATISTIC(NumGcToStack, "Number of calls promoted to constant-size allocas");
+diff --color -ur a/gen/statements.cpp b/gen/statements.cpp
+--- a/gen/statements.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/statements.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -1377,7 +1377,7 @@
+     PGO.emitCounterIncrement(stmt);
+ 
+     // get value for this iteration
+-    LLValue *loadedKey = irs->ir->CreateLoad(keyvar);
++    LLValue *loadedKey = DtoLoad(keyvar);
+     LLValue *gep = DtoGEP1(val, loadedKey);
+ 
+     if (!stmt->value->isRef() && !stmt->value->isOut()) {
+diff --color -ur a/gen/tocall.cpp b/gen/tocall.cpp
+--- a/gen/tocall.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/tocall.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -93,12 +93,12 @@
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+ 
+-LLFunctionType *DtoExtractFunctionType(LLType *type) {
++LLFunctionType *DtoExtractFunctionType(LLType *type, LLValue *val) {
+   if (LLFunctionType *fty = isaFunction(type)) {
+     return fty;
+   }
+   if (LLPointerType *pty = isaPointer(type)) {
+-    if (LLFunctionType *fty = isaFunction(pty->getElementType())) {
++    if (LLFunctionType *fty = isaFunction(getPointeeType(val))) {
+       return fty;
+     }
+   }
+@@ -131,7 +131,11 @@
+     Type *argType = argexps[i]->type;
+     bool passByVal = gABI->passByVal(irFty.type, argType);
+ 
+-    llvm::AttrBuilder initialAttrs;
++#if LDC_LLVM_VER >= 1400
++    llvm::AttrBuilder initialAttrs(getGlobalContext());
++#else
++     llvm::AttrBuilder initialAttrs;
++#endif
+     if (passByVal) {
+ #if LDC_LLVM_VER >= 1200
+       initialAttrs.addByValAttr(DtoType(argType));
+@@ -144,7 +148,7 @@
+       DtoAddExtendAttr(argType, initialAttrs);
+     }
+ 
+-    optionalIrArgs.push_back(new IrFuncTyArg(argType, passByVal, initialAttrs));
++    optionalIrArgs.push_back(new IrFuncTyArg(argType, passByVal, std::move(initialAttrs)));
+     optionalIrArgs.back()->parametersIdx = i;
+   }
+ 
+@@ -454,7 +458,7 @@
+     int atomicOrdering = (*e->arguments)[1]->toInteger();
+ 
+     LLValue *ptr = DtoRVal(exp);
+-    LLType *pointeeType = ptr->getType()->getContainedType(0);
++    LLType *pointeeType = getPointeeType(ptr);
+     Type *retType = exp->type->nextOf();
+ 
+     if (!pointeeType->isIntegerTy()) {
+@@ -468,13 +472,18 @@
+       }
+     }
+ 
+-    llvm::LoadInst *load = p->ir->CreateLoad(ptr);
+-    if (auto alignment = getTypeAllocSize(load->getType())) {
++    const auto loadedType = getPointeeType(ptr);
++    llvm::LoadInst *load = p->ir->CreateLoad(
++#if LDC_LLVM_VER >= 800
++        loadedType,
++#endif
++        ptr);
++    if (auto alignment = getTypeAllocSize(loadedType)) {
+       load->setAlignment(LLAlign(alignment));
+     }
+     load->setAtomic(llvm::AtomicOrdering(atomicOrdering));
+     llvm::Value *val = load;
+-    if (val->getType() != pointeeType) {
++    if (loadedType != pointeeType) {
+       val = DtoAllocaDump(val, retType);
+       result = new DLValue(retType, val);
+     } else {
+@@ -861,7 +870,7 @@
+   // get callee llvm value
+   LLValue *callable = DtoCallableValue(fnval);
+   LLFunctionType *const callableTy =
+-      DtoExtractFunctionType(callable->getType());
++      DtoExtractFunctionType(callable->getType(), callable);
+   assert(callableTy);
+ 
+   const auto callconv =
+@@ -1053,6 +1062,11 @@
+   }
+   // merge in function attributes set in callOrInvoke
+ #if LDC_LLVM_VER >= 1400
++    auto attrbuildattribs = call->getAttributes().getFnAttrs();
++    attrlist = attrlist.addFnAttributes(
++      gIR->context(),
++      llvm::AttrBuilder(gIR->context(), attrbuildattribs));
++#elif LDC_LLVM_VER >= 1300
+   attrlist = attrlist.addFnAttributes(
+     gIR->context(),
+     llvm::AttrBuilder(call->getAttributes(), LLAttributeList::FunctionIndex));
+diff --color -ur a/gen/toconstelem.cpp b/gen/toconstelem.cpp
+--- a/gen/toconstelem.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/toconstelem.cpp	2022-03-16 15:52:58.996723088 +0100
+@@ -354,7 +354,7 @@
+         // apply the byte offset.
+         auto voidPtrType = getVoidPtrType();
+         result = llvm::ConstantExpr::getGetElementPtr(
+-            voidPtrType->getElementType(), DtoBitCast(base, voidPtrType),
++            llvm::Type::getInt8Ty(gIR->context()), DtoBitCast(base, voidPtrType),
+             DtoConstSize_t(e->offset));
+       }
+     }
+diff --color -ur a/gen/tollvm.cpp b/gen/tollvm.cpp
+--- a/gen/tollvm.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/tollvm.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -502,14 +502,24 @@
+ 
+ ////////////////////////////////////////////////////////////////////////////////
+ 
++namespace {
++llvm::LoadInst *DtoLoadImpl(LLValue *src, const char *name) {
++  return gIR->ir->CreateLoad(
++#if LDC_LLVM_VER >= 800
++      getPointeeType(src),
++#endif
++      src, name);
++}
++}
++
+ LLValue *DtoLoad(LLValue *src, const char *name) {
+-  return gIR->ir->CreateLoad(src, name);
++  return DtoLoadImpl(src, name);
+ }
+ 
+ // Like DtoLoad, but the pointer is guaranteed to be aligned appropriately for
+ // the type.
+ LLValue *DtoAlignedLoad(LLValue *src, const char *name) {
+-  llvm::LoadInst *ld = gIR->ir->CreateLoad(src, name);
++  llvm::LoadInst *ld = DtoLoadImpl(src, name);
+   if (auto alignment = getABITypeAlign(ld->getType())) {
+     ld->setAlignment(LLAlign(alignment));
+   }
+@@ -517,7 +527,7 @@
+ }
+ 
+ LLValue *DtoVolatileLoad(LLValue *src, const char *name) {
+-  llvm::LoadInst *ld = gIR->ir->CreateLoad(src, name);
++  llvm::LoadInst *ld = DtoLoadImpl(src, name);
+   ld->setVolatile(true);
+   return ld;
+ }
+diff --color -ur a/gen/trycatchfinally.cpp b/gen/trycatchfinally.cpp
+--- a/gen/trycatchfinally.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/trycatchfinally.cpp	2022-03-16 15:52:58.993723049 +0100
+@@ -255,7 +255,11 @@
+ 
+   if (cpyObj) {
+     // assign the caught exception to the location in the closure
+-    auto val = irs.ir->CreateLoad(exnObj);
++    auto val = irs.ir->CreateLoad(
++#if LDC_LLVM_VER >= 800
++        getPointeeType(exnObj),
++#endif
++        exnObj);
+     irs.ir->CreateStore(val, cpyObj);
+     exnObj = cpyObj;
+   }
+@@ -698,8 +702,9 @@
+   irs.ir->CreateStore(ehPtr, getOrCreateEhPtrSlot());
+ 
+   llvm::Value *ehSelector = DtoExtractValue(landingPad, 1);
++  const auto ehSelectorType = ehSelector->getType();
+   if (!ehSelectorSlot)
+-    ehSelectorSlot = DtoRawAlloca(ehSelector->getType(), 0, "eh.selector");
++    ehSelectorSlot = DtoRawAlloca(ehSelectorType, 0, "eh.selector");
+   irs.ir->CreateStore(ehSelector, ehSelectorSlot);
+ 
+   // Add landingpad clauses, emit finallys and 'if' chain to catch the
+@@ -738,9 +743,13 @@
+ 
+       // Compare the selector value from the unwinder against the expected
+       // one and branch accordingly.
+-      irs.ir->CreateCondBr(
+-          irs.ir->CreateICmpEQ(irs.ir->CreateLoad(ehSelectorSlot), ehTypeId),
+-          cb.bodyBB, mismatchBB, cb.branchWeights);
++      irs.ir->CreateCondBr(irs.ir->CreateICmpEQ(irs.ir->CreateLoad(
++#if LDC_LLVM_VER >= 800
++                                                    ehSelectorType,
++#endif
++                                                    ehSelectorSlot),
++                                                ehTypeId),
++                           cb.bodyBB, mismatchBB, cb.branchWeights);
+       irs.ir->SetInsertPoint(mismatchBB);
+     }
+   }
+diff --color -ur a/gen/uda.cpp b/gen/uda.cpp
+--- a/gen/uda.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/gen/uda.cpp	2022-03-16 15:52:58.994723062 +0100
+@@ -215,7 +215,11 @@
+   llvmSizeIdx += offset;
+   llvmNumIdx += offset;
+ 
++#if LDC_LLVM_VER >= 1400
++  llvm::AttrBuilder builder(getGlobalContext());
++#else
+   llvm::AttrBuilder builder;
++#endif
+   if (numArgIdx >= 0) {
+     builder.addAllocSizeAttr(llvmSizeIdx, llvmNumIdx);
+   } else {
+@@ -446,7 +450,11 @@
+       if (ident == Id::udaAllocSize) {
+         applyAttrAllocSize(sle, irFunc);
+       } else if (ident == Id::udaLLVMAttr) {
++#if LDC_LLVM_VER >= 1400
++        llvm::AttrBuilder attrs(getGlobalContext());
++#else
+         llvm::AttrBuilder attrs;
++#endif
+         applyAttrLLVMAttr(sle, attrs);
+ #if LDC_LLVM_VER >= 1400
+         func->addFnAttrs(attrs);
+diff --color -ur a/ir/irclass.cpp b/ir/irclass.cpp
+--- a/ir/irclass.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/ir/irclass.cpp	2022-03-16 15:52:59.002723164 +0100
+@@ -109,6 +109,7 @@
+       // regular TypeInfo metadata
+       emitTypeInfoMetadata(typeInfo, aggrdecl->type);
+ 
++#if LDC_LLVM_VER < 1400
+       // Gather information
+       LLType *type = DtoType(aggrdecl->type);
+       LLType *bodyType = llvm::cast<LLPointerType>(type)->getElementType();
+@@ -124,6 +125,7 @@
+       llvm::NamedMDNode *node = gIR->module.getOrInsertNamedMetadata(metaname);
+       node->addOperand(llvm::MDNode::get(
+           gIR->context(), llvm::makeArrayRef(mdVals, CD_NumFields)));
++#endif
+     }
+ 
+     if (!define)
+diff --color -ur a/ir/irfuncty.cpp b/ir/irfuncty.cpp
+--- a/ir/irfuncty.cpp	2022-01-13 15:21:19.000000000 +0100
++++ b/ir/irfuncty.cpp	2022-03-16 15:52:59.002723164 +0100
+@@ -17,6 +17,21 @@
+ #include "gen/logger.h"
+ #include "gen/tollvm.h"
+ 
++IrFuncTyArg::IrFuncTyArg(Type *t, bool bref)
++    : type(t),
++      ltype(t != Type::tvoid && bref ? DtoType(t->pointerTo()) : DtoType(t)),
++      attrs(
++#if LDC_LLVM_VER < 1400
++        llvm::AttrBuilder {}
++#else
++        llvm::AttrBuilder(getGlobalContext())
++#endif
++      ),
++      byref(bref)
++{
++  mem.addRange(&type, sizeof(type));
++}
++
+ IrFuncTyArg::IrFuncTyArg(Type *t, bool bref, llvm::AttrBuilder a)
+     : type(t),
+       ltype(t != Type::tvoid && bref ? DtoType(t->pointerTo()) : DtoType(t)),
+diff --color -ur a/ir/irfuncty.h b/ir/irfuncty.h
+--- a/ir/irfuncty.h	2022-01-13 15:21:19.000000000 +0100
++++ b/ir/irfuncty.h	2022-03-16 15:52:59.002723164 +0100
+@@ -76,7 +76,8 @@
+    *  @param byref Initial value for the 'byref' field. If true the initial
+    *               LLVM Type will be of DtoType(type->pointerTo()), instead
+    *               of just DtoType(type) */
+-  IrFuncTyArg(Type *t, bool byref, llvm::AttrBuilder attrs = {});
++  IrFuncTyArg(Type *t, bool byref);
++  IrFuncTyArg(Type *t, bool byref, llvm::AttrBuilder attrs);
+   IrFuncTyArg(const IrFuncTyArg &) = delete;
+ 
+   ~IrFuncTyArg();
