@@ -11,6 +11,19 @@ index fb02517f617..f904329c961 100644
  		net-misc/radvd
  		sys-apps/iproute2[-minimal]
  	)
+diff --git a/app-emulation/virt-manager/virt-manager-4.0.0.ebuild b/app-emulation/virt-manager/virt-manager-4.0.0.ebuild
+index f0c76db800b..eb02d5518c6 100644
+--- a/app-emulation/virt-manager/virt-manager-4.0.0.ebuild
++++ b/app-emulation/virt-manager/virt-manager-4.0.0.ebuild
+@@ -42,7 +42,7 @@ RDEPEND="${PYTHON_DEPS}
+ 		>=net-libs/gtk-vnc-0.3.8[gtk3(+),introspection]
+ 		net-misc/spice-gtk[usbredir,gtk3,introspection,sasl?]
+ 		policykit? ( sys-auth/polkit[introspection] )
+-		sys-apps/dbus[X]
++		sys-apps/dbus
+ 		x11-libs/gtk+:3[introspection]
+ 		x11-libs/gtksourceview:4[introspection]
+ 		x11-libs/vte:2.91[introspection]
 diff --git a/app-misc/solaar/solaar-1.1.1.ebuild b/app-misc/solaar/solaar-1.1.1.ebuild
 index cad0500253b..8f4af711b8b 100644
 --- a/app-misc/solaar/solaar-1.1.1.ebuild
@@ -24,8 +37,35 @@ index cad0500253b..8f4af711b8b 100644
  
  inherit linux-info udev xdg distutils-r1
  
+diff --git a/app-mobilephone/scrcpy/scrcpy-1.23.ebuild b/app-mobilephone/scrcpy/scrcpy-1.23.ebuild
+index 7ca29eab260..bcb7a22cbb5 100644
+--- a/app-mobilephone/scrcpy/scrcpy-1.23.ebuild
++++ b/app-mobilephone/scrcpy/scrcpy-1.23.ebuild
+@@ -15,7 +15,7 @@ LICENSE="Apache-2.0"
+ SLOT="0"
+ KEYWORDS="~amd64 ~ppc64 ~x86"
+ 
+-RDEPEND="media-libs/libsdl2[X]
++RDEPEND="media-libs/libsdl2
+ 	media-video/ffmpeg
+ 	virtual/libusb:1"
+ DEPEND="${RDEPEND}"
+diff --git a/app-office/libreoffice/libreoffice-7.2.6.2.ebuild b/app-office/libreoffice/libreoffice-7.2.6.2.ebuild
+index 8250a1278b1..3a31483bb1c 100644
+--- a/app-office/libreoffice/libreoffice-7.2.6.2.ebuild
++++ b/app-office/libreoffice/libreoffice-7.2.6.2.ebuild
+@@ -265,6 +265,9 @@ BDEPEND="
+ 	virtual/pkgconfig
+ 	clang? (
+ 		|| (
++			(	sys-devel/clang:14
++				sys-devel/llvm:14
++				=sys-devel/lld-14*	)
+ 			(	sys-devel/clang:13
+ 				sys-devel/llvm:13
+ 				=sys-devel/lld-13*	)
 diff --git a/dev-java/openjdk/openjdk-17.0.2_p8.ebuild b/dev-java/openjdk/openjdk-17.0.2_p8.ebuild
-index 501c0e15b4d..94f4cd048a3 100644
+index 501c0e15b4d..4da4ad17538 100644
 --- a/dev-java/openjdk/openjdk-17.0.2_p8.ebuild
 +++ b/dev-java/openjdk/openjdk-17.0.2_p8.ebuild
 @@ -96,6 +96,8 @@ DEPEND="
@@ -46,6 +86,14 @@ index 501c0e15b4d..94f4cd048a3 100644
  	JAVA_PKG_WANT_SOURCE="${SLOT}"
  	JAVA_PKG_WANT_TARGET="${SLOT}"
  
+@@ -211,6 +213,7 @@ src_configure() {
+ 		--enable-dtrace=$(usex systemtap yes no)
+ 		--enable-headless-only=$(usex headless-awt yes no)
+ 		$(tc-is-clang && echo "--with-toolchain-type=clang")
++		--with-stdc++lib=dynamic
+ 	)
+ 
+ 	if use javafx; then
 diff --git a/dev-libs/jansson/jansson-2.14.ebuild b/dev-libs/jansson/jansson-2.14.ebuild
 index 42760f31153..ebf7683cee6 100644
 --- a/dev-libs/jansson/jansson-2.14.ebuild
@@ -97,19 +145,6 @@ index 7a79e6dbded..326003777fb 100644
  
  inherit cmake flag-o-matic python-any-r1
  
-diff --git a/dev-python/pypax/pypax-0.9.5-r1.ebuild b/dev-python/pypax/pypax-0.9.5-r1.ebuild
-index 1da867b776a..dfa1e123aa5 100644
---- a/dev-python/pypax/pypax-0.9.5-r1.ebuild
-+++ b/dev-python/pypax/pypax-0.9.5-r1.ebuild
-@@ -4,7 +4,7 @@
- EAPI=8
- 
- DISTUTILS_USE_PEP517=setuptools
--PYTHON_COMPAT=( python3_{8..9} )
-+PYTHON_COMPAT=( python3_{8..10} )
- 
- inherit distutils-r1
- 
 diff --git a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild b/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
 index a8017f003f1..27fdf168897 100644
 --- a/dev-util/flatpak-builder/flatpak-builder-1.0.11.ebuild
@@ -135,7 +170,7 @@ index e327be7ca13..5d4f1c3094e 100644
  						${BUILD_PARAMS} \
  						${BUILD_TARGETS} " \
 diff --git a/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild b/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild
-index 17f8768e560..e098cb1ccd1 100644
+index 7aeb9c59632..be8b43ca840 100644
 --- a/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild
 +++ b/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild
 @@ -58,7 +58,7 @@ src_configure() {
@@ -199,10 +234,10 @@ index 68c5fea49fd..e4912dbf5d3 100644
  	)
  
  	ecm_src_configure
-diff --git a/kde-frameworks/kinit/kinit-5.91.0.ebuild b/kde-frameworks/kinit/kinit-5.91.0.ebuild
+diff --git a/kde-frameworks/kinit/kinit-5.92.0.ebuild b/kde-frameworks/kinit/kinit-5.92.0.ebuild
 index 591d4a01dda..c29b68ac1ce 100644
---- a/kde-frameworks/kinit/kinit-5.91.0.ebuild
-+++ b/kde-frameworks/kinit/kinit-5.91.0.ebuild
+--- a/kde-frameworks/kinit/kinit-5.92.0.ebuild
++++ b/kde-frameworks/kinit/kinit-5.92.0.ebuild
 @@ -43,8 +43,8 @@ src_configure() {
  	local mycmakeargs=(
  		$(cmake_use_find_package caps Libcap)
@@ -213,10 +248,10 @@ index 591d4a01dda..c29b68ac1ce 100644
  	)
  
  	ecm_src_configure
-diff --git a/kde-frameworks/kio/kio-5.91.0.ebuild b/kde-frameworks/kio/kio-5.91.0.ebuild
+diff --git a/kde-frameworks/kio/kio-5.92.0.ebuild b/kde-frameworks/kio/kio-5.92.0.ebuild
 index 4c11583c2ae..5b8e6948d23 100644
---- a/kde-frameworks/kio/kio-5.91.0.ebuild
-+++ b/kde-frameworks/kio/kio-5.91.0.ebuild
+--- a/kde-frameworks/kio/kio-5.92.0.ebuild
++++ b/kde-frameworks/kio/kio-5.92.0.ebuild
 @@ -77,7 +77,7 @@ src_configure() {
  		$(cmake_use_find_package handbook KF5DocTools)
  		$(cmake_use_find_package kerberos GSSAPI)
@@ -226,10 +261,10 @@ index 4c11583c2ae..5b8e6948d23 100644
  	)
  
  	ecm_src_configure
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.2.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.2.ebuild
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.3.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.3.ebuild
 index 0292f04f026..5111ec4080d 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.2.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.2.ebuild
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.3.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.3.ebuild
 @@ -18,7 +18,6 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
  IUSE=""
  
@@ -238,10 +273,10 @@ index 0292f04f026..5111ec4080d 100644
  	dev-libs/glib:2
  	>=dev-qt/qtdbus-${QTMIN}:5
  	>=dev-qt/qtgui-${QTMIN}:5
-diff --git a/kde-plasma/libksysguard/libksysguard-5.24.2.ebuild b/kde-plasma/libksysguard/libksysguard-5.24.2.ebuild
+diff --git a/kde-plasma/libksysguard/libksysguard-5.24.3.ebuild b/kde-plasma/libksysguard/libksysguard-5.24.3.ebuild
 index 5b960e03fd2..2bd9288cc7c 100644
---- a/kde-plasma/libksysguard/libksysguard-5.24.2.ebuild
-+++ b/kde-plasma/libksysguard/libksysguard-5.24.2.ebuild
+--- a/kde-plasma/libksysguard/libksysguard-5.24.3.ebuild
++++ b/kde-plasma/libksysguard/libksysguard-5.24.3.ebuild
 @@ -65,7 +65,7 @@ src_configure() {
  	local mycmakeargs=(
  		$(cmake_use_find_package webengine Qt5WebChannel)
@@ -252,7 +287,7 @@ index 5b960e03fd2..2bd9288cc7c 100644
  
  	ecm_src_configure
 diff --git a/media-libs/graphene/graphene-1.10.6-r1.ebuild b/media-libs/graphene/graphene-1.10.6-r1.ebuild
-index 29dbe538437..8fc0b8a05d5 100644
+index b632a2b91b3..575e9af9d51 100644
 --- a/media-libs/graphene/graphene-1.10.6-r1.ebuild
 +++ b/media-libs/graphene/graphene-1.10.6-r1.ebuild
 @@ -3,7 +3,7 @@
@@ -264,6 +299,35 @@ index 29dbe538437..8fc0b8a05d5 100644
  inherit xdg-utils meson-multilib python-any-r1
  
  DESCRIPTION="A thin layer of types for graphic libraries"
+diff --git a/media-libs/mesa/mesa-22.0.0.ebuild b/media-libs/mesa/mesa-22.0.0.ebuild
+index 15b5138f55f..7d53d03ba86 100644
+--- a/media-libs/mesa/mesa-22.0.0.ebuild
++++ b/media-libs/mesa/mesa-22.0.0.ebuild
+@@ -111,9 +111,10 @@ RDEPEND="${RDEPEND}
+ # 1. List all the working slots (with min versions) in ||, newest first.
+ # 2. Update the := to specify *max* version, e.g. < 10.
+ # 3. Specify LLVM_MAX_SLOT, e.g. 9.
+-LLVM_MAX_SLOT="13"
++LLVM_MAX_SLOT="14"
+ LLVM_DEPSTR="
+ 	|| (
++		sys-devel/llvm:14[${MULTILIB_USEDEP}]
+ 		sys-devel/llvm:13[${MULTILIB_USEDEP}]
+ 		sys-devel/llvm:12[${MULTILIB_USEDEP}]
+ 		sys-devel/llvm:11[${MULTILIB_USEDEP}]
+diff --git a/media-libs/mlt/mlt-7.4.0.ebuild b/media-libs/mlt/mlt-7.4.0.ebuild
+index e0c70f26c65..6236078d561 100644
+--- a/media-libs/mlt/mlt-7.4.0.ebuild
++++ b/media-libs/mlt/mlt-7.4.0.ebuild
+@@ -59,7 +59,7 @@ DEPEND="
+ 	)
+ 	rubberband? ( media-libs/rubberband )
+ 	sdl? (
+-		media-libs/libsdl2[X,opengl,video]
++		media-libs/libsdl2[opengl,video]
+ 		media-libs/sdl2-image
+ 	)
+ 	vidstab? ( media-libs/vidstab )
 diff --git a/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild b/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild
 index cd70327db01..d2d56536d98 100644
 --- a/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild
@@ -294,11 +358,11 @@ index cd70327db01..d2d56536d98 100644
  		--disable-qt6
  		--enable-qt5
  		--with-qmake=$(qt5_get_bindir)/qmake
-diff --git a/media-video/obs-studio/obs-studio-27.1.3-r1.ebuild b/media-video/obs-studio/obs-studio-27.1.3-r1.ebuild
-index 34b19750856..80c0665498b 100644
---- a/media-video/obs-studio/obs-studio-27.1.3-r1.ebuild
-+++ b/media-video/obs-studio/obs-studio-27.1.3-r1.ebuild
-@@ -120,7 +120,6 @@ QA_PREBUILT="
+diff --git a/media-video/obs-studio/obs-studio-27.1.3-r2.ebuild b/media-video/obs-studio/obs-studio-27.1.3-r2.ebuild
+index a018ce0e796..a96a2fc5ad9 100644
+--- a/media-video/obs-studio/obs-studio-27.1.3-r2.ebuild
++++ b/media-video/obs-studio/obs-studio-27.1.3-r2.ebuild
+@@ -119,7 +119,6 @@ QA_PREBUILT="
  "
  
  PATCHES=(
@@ -306,21 +370,6 @@ index 34b19750856..80c0665498b 100644
  	"${FILESDIR}/${PN}-27.1.3-ffmpeg-5.0.patch"
  )
  
-diff --git a/media-video/vlc/vlc-3.0.16-r7.ebuild b/media-video/vlc/vlc-3.0.16-r7.ebuild
-index 6c0852eb7fb..d4aede2dbca 100644
---- a/media-video/vlc/vlc-3.0.16-r7.ebuild
-+++ b/media-video/vlc/vlc-3.0.16-r7.ebuild
-@@ -56,8 +56,8 @@ REQUIRED_USE="
- 	lua? ( ${LUA_REQUIRED_USE} )
- 	skins? ( qt5 truetype X xml )
- 	ssl? ( gcrypt )
--	vaapi? ( ffmpeg X )
--	vdpau? ( ffmpeg X )
-+	vaapi? ( ffmpeg )
-+	vdpau? ( ffmpeg )
- "
- BDEPEND="
- 	>=sys-devel/gettext-0.19.8
 diff --git a/net-libs/libpsl/libpsl-0.21.1.ebuild b/net-libs/libpsl/libpsl-0.21.1.ebuild
 index 3af43132fb4..a64f5cc0f2d 100644
 --- a/net-libs/libpsl/libpsl-0.21.1.ebuild
@@ -346,6 +395,18 @@ index 26009d625fe..b76c83918ab 100644
  		$(meson_feature gtk3 gtk)
  		$(meson_feature introspection)
  		$(meson_use mjpeg builtin-mjpeg)
+diff --git a/sys-apps/attr/attr-2.5.1.ebuild b/sys-apps/attr/attr-2.5.1.ebuild
+index 03afe6d30c1..28bad3ecf69 100644
+--- a/sys-apps/attr/attr-2.5.1.ebuild
++++ b/sys-apps/attr/attr-2.5.1.ebuild
+@@ -39,7 +39,6 @@ src_configure() {
+ 	# Remove -flto* from flags as this breaks binaries (bug #644048)
+ 	filter-flags -flto*
+ 	append-ldflags "-Wl,--no-gc-sections" #700116
+-	tc-ld-force-bfd #644048
+ 	append-lfs-flags #760857
+ 	multilib-minimal_src_configure
+ }
 diff --git a/sys-auth/polkit/files/polkit-0.118-make-netgroup-support-optional.patch b/sys-auth/polkit/files/polkit-0.118-make-netgroup-support-optional.patch
 index b11250fd399..5e0b76466bc 100644
 --- a/sys-auth/polkit/files/polkit-0.118-make-netgroup-support-optional.patch
@@ -381,10 +442,10 @@ index b11250fd399..5e0b76466bc 100644
 + 
 +   duk_push_boolean (cx, is_in_netgroup);
 +   return 1;
-diff --git a/sys-devel/clang/clang-13.0.1.ebuild b/sys-devel/clang/clang-13.0.1.ebuild
-index a80d9c574ab..60ee8e0c4cd 100644
---- a/sys-devel/clang/clang-13.0.1.ebuild
-+++ b/sys-devel/clang/clang-13.0.1.ebuild
+diff --git a/sys-devel/clang/clang-14.0.0_rc4.ebuild b/sys-devel/clang/clang-14.0.0_rc4.ebuild
+index 81598e69a80..8ee2fc8d1e2 100644
+--- a/sys-devel/clang/clang-14.0.0_rc4.ebuild
++++ b/sys-devel/clang/clang-14.0.0_rc4.ebuild
 @@ -21,8 +21,11 @@ IUSE="debug default-compiler-rt default-libcxx default-lld
  REQUIRED_USE="${PYTHON_REQUIRED_USE}"
  RESTRICT="!test? ( test )"
@@ -412,7 +473,7 @@ index a80d9c574ab..60ee8e0c4cd 100644
  	default-libcxx? ( >=sys-libs/libcxx-${PV} )
  	default-lld? ( sys-devel/lld )"
  
-@@ -220,8 +226,7 @@ get_distribution_components() {
+@@ -223,8 +229,7 @@ get_distribution_components() {
  }
  
  multilib_src_configure() {
@@ -422,7 +483,7 @@ index a80d9c574ab..60ee8e0c4cd 100644
  
  	local mycmakeargs=(
  		-DLLVM_CMAKE_PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)/cmake/llvm"
-@@ -236,6 +241,7 @@ multilib_src_configure() {
+@@ -239,6 +244,7 @@ multilib_src_configure() {
  
  		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
  		-DLLVM_BUILD_TESTS=$(usex test)
@@ -430,24 +491,18 @@ index a80d9c574ab..60ee8e0c4cd 100644
  
  		# these are not propagated reliably, so redefine them
  		-DLLVM_ENABLE_EH=ON
-@@ -249,12 +255,15 @@ multilib_src_configure() {
- 		# disable using CUDA to autodetect GPU, just build for all
- 		-DCMAKE_DISABLE_FIND_PACKAGE_CUDA=ON
- 
--		# override default stdlib and rtlib
-+		# override default stdlib and rtlib and libunwind
- 		-DCLANG_DEFAULT_CXX_STDLIB=$(usex default-libcxx libc++ "")
- 		-DCLANG_DEFAULT_RTLIB=$(usex default-compiler-rt compiler-rt "")
- 		-DCLANG_DEFAULT_LINKER=$(usex default-lld lld "")
+@@ -259,6 +265,10 @@ multilib_src_configure() {
+ 		-DCLANG_DEFAULT_PIE_ON_LINUX=$(usex pie)
  		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-compiler-rt libunwind "")
  
 +		# create gcc symlinks: gcc g++ cc cpp c++
 +		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
 +
++
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
  
-@@ -346,12 +355,15 @@ src_install() {
+@@ -351,12 +361,15 @@ src_install() {
  
  	# Apply CHOST and version suffix to clang tools
  	# note: we use two version components here (vs 3 in runtime path)
@@ -501,11 +556,11 @@ index 9bd470297df..fd481026e27 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-13.0.1.ebuild b/sys-devel/llvm/llvm-13.0.1.ebuild
-index e3d0a6379b9..04a1706ba68 100644
---- a/sys-devel/llvm/llvm-13.0.1.ebuild
-+++ b/sys-devel/llvm/llvm-13.0.1.ebuild
-@@ -22,6 +22,8 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~ppc-ma
+diff --git a/sys-devel/llvm/llvm-14.0.0_rc4.ebuild b/sys-devel/llvm/llvm-14.0.0_rc4.ebuild
+index 71fdfeea8b6..a02272e8202 100644
+--- a/sys-devel/llvm/llvm-14.0.0_rc4.ebuild
++++ b/sys-devel/llvm/llvm-14.0.0_rc4.ebuild
+@@ -22,6 +22,8 @@ KEYWORDS=""
  IUSE="+binutils-plugin debug doc exegesis libedit +libffi ncurses test xar xml z3"
  RESTRICT="!test? ( test )"
  
@@ -514,7 +569,7 @@ index e3d0a6379b9..04a1706ba68 100644
  RDEPEND="
  	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
  	binutils-plugin? ( >=sys-devel/binutils-2.31.1-r4:*[plugins] )
-@@ -303,6 +305,23 @@ get_distribution_components() {
+@@ -305,6 +307,23 @@ get_distribution_components() {
  				docs-llvm-man
  			)
  		fi
@@ -538,7 +593,7 @@ index e3d0a6379b9..04a1706ba68 100644
  		use doc && out+=(
  			docs-llvm-html
  		)
-@@ -334,6 +353,7 @@ multilib_src_configure() {
+@@ -336,6 +355,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -546,7 +601,7 @@ index e3d0a6379b9..04a1706ba68 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -350,6 +370,7 @@ multilib_src_configure() {
+@@ -352,6 +372,7 @@ multilib_src_configure() {
  		-DLLVM_ENABLE_EH=ON
  		-DLLVM_ENABLE_RTTI=ON
  		-DLLVM_ENABLE_Z3_SOLVER=$(usex z3)
@@ -567,19 +622,34 @@ index 199c5a6badd..33eb35625eb 100644
  inherit cmake flag-o-matic linux-info python-any-r1
  
  if [[ ${PV} == 9999 ]] ; then
-diff --git a/x11-libs/vte/vte-0.64.2.ebuild b/x11-libs/vte/vte-0.64.2.ebuild
-index 10cf451a638..093f5a71b59 100644
---- a/x11-libs/vte/vte-0.64.2.ebuild
-+++ b/x11-libs/vte/vte-0.64.2.ebuild
-@@ -2,7 +2,7 @@
- # Distributed under the terms of the GNU General Public License v2
+diff --git a/www-client/firefox/firefox-98.0.1.ebuild b/www-client/firefox/firefox-98.0.1.ebuild
+index 39d01591759..6c051924769 100644
+--- a/www-client/firefox/firefox-98.0.1.ebuild
++++ b/www-client/firefox/firefox-98.0.1.ebuild
+@@ -5,7 +5,7 @@ EAPI="7"
  
- EAPI=7
--PYTHON_COMPAT=( python3_{7..9} )
-+PYTHON_COMPAT=( python3_{7..10} )
- VALA_USE_DEPEND="vapigen"
- VALA_MIN_API_VERSION="0.48"
+ FIREFOX_PATCHSET="firefox-98-patches-03j.tar.xz"
  
+-LLVM_MAX_SLOT=13
++LLVM_MAX_SLOT=14
+ 
+ PYTHON_COMPAT=( python3_{8..10} )
+ PYTHON_REQ_USE="ncurses,sqlite,ssl"
+@@ -88,6 +88,14 @@ BDEPEND="${PYTHON_DEPS}
+ 	virtual/pkgconfig
+ 	>=virtual/rust-1.57.0
+ 	|| (
++		(
++			sys-devel/clang:14
++			sys-devel/llvm:14
++			clang? (
++				=sys-devel/lld-14*
++				pgo? ( =sys-libs/compiler-rt-sanitizers-14*[profile] )
++			)
++		)
+ 		(
+ 			sys-devel/clang:13
+ 			sys-devel/llvm:13
 diff --git a/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild b/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
 index a9248abf20d..629a3b10447 100644
 --- a/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
