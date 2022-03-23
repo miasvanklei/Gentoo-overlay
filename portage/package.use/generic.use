@@ -1,57 +1,30 @@
-# llvm
-sys-devel/llvm -gold
+# glib-networking
+net-libs/gnutls pkcs11
 
-# java
-dev-java/openjdk gentoo-vm
+# wayland
+media-libs/libsdl2 gles2
 
-# itstool, virt-manager
-dev-libs/libxml2 python
+sys-apps/flatpak gtk
 
 # pango
 media-libs/freetype harfbuzz
 
-# virt manager
-media-libs/harfbuzz introspection
+# pipewire
+media-video/pipewire aptx
+
+# canberra
+media-libs/libcanberra gtk3
 
 # firewalld
 net-firewall/nftables json python
 net-firewall/firewalld -iptables gui
 
-# pipewire
-media-video/pipewire aptx
-
-app-emulation/qemu -doc virgl
-
-# canberra
-media-libs/libcanberra gtk3
-
-# solaar
-x11-libs/libnotify introspection
-
-# logitech
-dev-python/pyudev -qt5
-
-# compiler-rt
-sys-libs/compiler-rt-sanitizers -gwp-asan
-
-# no spidermonkey
-sys-auth/polkit duktape
+# disable iptables
+sys-apps/iproute2 -iptables
 
 # cryptsetup
 sys-fs/cryptsetup -argon2
 sys-fs/lvm2 device-mapper-only -thin
-
-# hls
-dev-util/haskell-language-server -hls_plugins_tactic -hls_formatters_brittany -hls_formatters_fourmolu -hls_formatters_stylish-haskell
-
-# mkvtoolnix
-media-video/mkvtoolnix -qt5
-
-# obs
-media-video/obs-studio -alsa speex
-
-# krita
-dev-python/PyQt5 -bluetooth widgets gui declarative network
 
 # disable sysprof
 dev-libs/glib -sysprof
@@ -63,42 +36,35 @@ sys-apps/smartmontools -daemon
 # flatpak
 dev-util/ostree curl
 
-# cantata
->=dev-lang/perl-5.30.3-r1 ithreads
-
-# wayland
-media-libs/libsdl2 -wayland
-
 app-arch/p7zip -kde -rar
 
-# uses ifunc, not supported in musl
-net-misc/rsync -cpu_flags_x86_sse2
+# R
+sys-libs/zlib minizip
+dev-lang/R -png -jpeg -tiff
+
+# julia
+net-misc/curl ssh
+sci-libs/fftw threads
+
+# java
+dev-java/openjdk gentoo-vm
 
 # rust
 dev-lang/rust clippy rls rustfmt system-bootstrap system-llvm system-libunwind nightly miri
 net-misc/curl http2
 
-# elisa
-media-sound/elisa mpris
-
-# pympress
-media-libs/gstreamer introspection
-media-libs/gst-plugins-base introspection
-app-text/poppler cairo introspection
-x11-libs/gdk-pixbuf introspection
-dev-libs/atk introspection
-x11-libs/pango introspection
-x11-libs/gtk+:3 introspection
-
-# disable libssh
-kde-apps/kio-extras -sftp
-
-# R
-dev-lang/R cairo
+# go
+dev-lang/go system-bootstrap
 
 # dotnet-cli
 app-crypt/mit-krb5 -keyutils
 dev-libs/libverto -libev libevent
+
+# llvm
+sys-devel/llvm -binutils-plugin
+
+# compiler-rt
+sys-libs/compiler-rt-sanitizers -gwp-asan
 
 # clang-runtime
 sys-devel/clang-runtime libcxx
@@ -107,24 +73,32 @@ sys-devel/clang xml
 # fix lldb-mi
 dev-util/lldb libedit python
 
-# libreoffice
-app-office/libreoffice pdfimport custom-cflags
-dev-libs/xmlsec nss
-
-# lspclient
-kde-apps/kate lspclient
-
-# disable opencl on mesa
-media-libs/mesa -opencl
-
-# nfs
-net-nds/rpcbind warmstarts
+# use own-built ghc
+dev-lang/ghc ghcbootstrap
 
 # clang -O0, for jitter-base
 dev-libs/libgcrypt o-flag-munging
 
+# uses ifunc, not supported in musl
+net-misc/rsync -cpu_flags_x86_sse2
+
+# no dlvsym
+sys-apps/systemd -xkb
+
+# clang
+net-wireless/bluez -alsa
+
+# pam != static
+sys-apps/busybox -pam
+
+# libcxx
+sys-libs/gdbm berkdb
+
 dev-libs/boost nls
 media-libs/harfbuzz graphite
+
+# nfs
+net-nds/rpcbind warmstarts
 
 # cjk fonts
 media-fonts/noto cjk
@@ -132,56 +106,11 @@ media-fonts/noto cjk
 # cjk input
 app-i18n/fcitx5-gtk gtk3
 
-# don't depend on kdewebkit, webengine
-net-p2p/ktorrent -search -rss -zeroconf -webengine
-
-# kile disable png
-app-editors/kile -png
-
-# kdenlive
-media-libs/opencv contrib
-media-libs/mlt melt sdl frei0r xml kdenlive fftw opencv
-virtual/ffmpeg sdl
-media-video/ffmpeg sdl
-
-# go
-dev-lang/go system-bootstrap
-
-# ark
-kde-apps/ark zip lzma
-
 # unar, libobjc2 needed for clang
 gnustep-base/gnustep-make native-exceptions libobjc2
 
-# disable aac
-media-sound/pulseaudio-modules-bt -aac
-
-# arc
-x11-themes/arc-theme gtk3
-
-# firefox
-media-libs/libpng apng
-media-libs/libvpx postproc
-dev-db/sqlite secure-delete
-
-# plasma
-kde-frameworks/kwallet gpg
-kde-frameworks/ktexteditor git editorconfig
-kde-frameworks/kfilemetadata pdf office epub
-kde-apps/gwenview kipi raw
-kde-apps/spectacle kipi
-app-text/poppler nss
-kde-apps/okular epub markdown
-kde-apps/kdemultimedia-meta -cdrom
-
-# use own-built ghc
-dev-lang/ghc ghcbootstrap
-
-# homemd
+# homed
 sys-apps/systemd cryptsetup homed
-
-# no dlvsym
-sys-apps/systemd -xkb
 
 # custom cflags/optimizations
 www-client/firefox custom-cflags custom-optimization
@@ -195,43 +124,112 @@ app-crypt/gnupg -smartcard -usb
 # no libical
 net-wireless/bluez -obex experimental
 
-# no X
-www-client/links -X
-sys-apps/groff -X
-app-text/ghostscript-gpl -X
-media-libs/freetype -X
+# no spidermonkey
+sys-auth/polkit duktape
 
 # no mujs
 net-print/cups-filters -pdf
 
-# libcxx
-sys-libs/gdbm berkdb
+# xdg-utils
+app-text/xmlto text
 
-# clang
-net-wireless/bluez -alsa
+# subtitles
+media-video/ffmpeg truetype
 
-# pam != static
-sys-apps/busybox -pam
+# pympress
+media-libs/gstreamer introspection
+media-libs/gst-plugins-base introspection
+app-text/poppler cairo introspection
+x11-libs/gdk-pixbuf introspection
+dev-libs/atk introspection
+x11-libs/pango introspection
+x11-libs/gtk+:3 introspection
 
-# disable iptables
-sys-apps/iproute2 -iptables
+# libreoffice
+app-office/libreoffice pdfimport custom-cflags -dbus -bluetooth
+dev-libs/xmlsec nss
+
+# firefox
+dev-lang/python sqlite
+media-libs/libpng apng
+media-libs/libvpx postproc
+dev-db/sqlite secure-delete
+
+# hls
+dev-util/haskell-language-server -hls_formatters_brittany -hls_formatters_fourmolu -hls_formatters_stylish-haskell
+
+# mkvtoolnix
+media-video/mkvtoolnix -qt5
+
+# obs
+media-video/obs-studio -alsa speex
+
+# solaar
+x11-libs/libnotify introspection
+dev-python/pyudev -qt5
+
+# virt manager
+dev-libs/libxml2 python
+media-libs/harfbuzz introspection
+app-emulation/qemu -doc virgl
+
+# qtcore
+dev-libs/libpcre2 pcre16 jit
+
+# ark
+kde-apps/ark zip lzma
+
+# elisa
+media-sound/elisa mpris
+
+# disable libssh
+kde-apps/kio-extras -sftp
+
+# krita
+dev-python/PyQt5 -bluetooth widgets gui declarative network
+
+# discover
+kde-plasma/discover -firmware flatpak
+
+# kile disable png
+app-editors/kile -png
+
+# lspclient
+kde-apps/kate lspclient
+
+# kdenlive
+media-libs/opencv contrib contribdnn
+media-libs/mlt melt sdl frei0r xml kdenlive fftw opencv
+virtual/ffmpeg sdl
+media-video/ffmpeg sdl
+
+# plasma
+kde-frameworks/kwallet gpg
+kde-frameworks/ktexteditor git editorconfig
+kde-frameworks/kfilemetadata pdf office epub
+kde-apps/gwenview kipi raw
+kde-apps/spectacle kipi
+app-text/poppler nss
+kde-apps/okular epub markdown
+kde-apps/kdemultimedia-meta -cdrom
+kde-apps/kdeutils-meta rar
 
 # configure gtk theme
 kde-plasma/systemsettings gtk
-kde-plasma/ksystemstats lm-sensors
 kde-plasma/plasma-meta gtk kwallet -firewall
 
 # sane defaults: no legacy crap, no smart
-kde-plasma/plasma-meta -legacy-systray -smart
+kde-plasma/plasma-meta -legacy-systray -smart discover
 
 # disable qtwebengine and cron
 kde-apps/kdecore-meta -webengine
 kde-apps/kdeadmin-meta -cron
-kde-apps/kdeutils-meta rar
+net-p2p/ktorrent -search -rss -zeroconf -webengine
+
 
 # disable modemmanager, bluetooth, ppp, wpa_supplicant, dhclient, ncurses.
 # enable wifi iwd
-media-sound/pulseaudio -bluetooth
+media-sound/pulseaudio -daemon -alsa -alsa-plugin -bluetooth
 net-misc/networkmanager -wext -dhclient -ncurses -modemmanager -bluetooth -ppp -tools iwd wifi
 net-wireless/iwd -crda
 kde-misc/kdeconnect -bluetooth
@@ -239,19 +237,4 @@ kde-misc/kdeconnect -bluetooth
 # report graphics/cpu information
 media-libs/mesa lm-sensors
 kde-plasma/ksysguard lm-sensors
-
-# qtcore
-dev-libs/libpcre2 pcre16 jit
-
-# xdg-utils
-app-text/xmlto text
-
-# subtitles
-media-video/vlc truetype -dvbpsi opus
-media-video/ffmpeg truetype
-
-# vlc
-sys-libs/zlib minizip
-
-# spidermonkey
-dev-lang/python sqlite
+kde-plasma/ksystemstats lm-sensors
