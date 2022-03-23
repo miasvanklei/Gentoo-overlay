@@ -51,7 +51,6 @@ DEPEND="${RDEPEND}
 src_prepare() {
 	cmake_src_prepare
 
-	eapply "${FILESDIR}"/address-issues-when-sessions-log-out.patch
 	eapply "${FILESDIR}"/support-non-default-display-names.patch
 
 	disable_locale() {
