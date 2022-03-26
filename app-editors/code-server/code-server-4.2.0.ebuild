@@ -15,37 +15,28 @@ ASAR_V=0.14.3
 NAN_V=2.14.0
 
 NODE_ADDON_API_V=3.1.0
-NATIVE_IS_ELEVATED_V=0.4.3
 NATIVE_WATCHDOG_V=1.3.0
 NODE_PTY_V=0.11.0-beta11
 SPDLOG_V=0.13.5
-VSCODE_NSFW_V=2.1.8
-VSCODE_SQLITE3_V=4.0.12
 ARGON2_V=0.28.2
-PARCEL_WATCHER_V=2.0.3
+PARCEL_WATCHER_V=2.0.5
 
 SRC_URI="
 	${BASE_URI}-amd64.tar.gz
         https://github.com/elprans/asar/releases/download/v${ASAR_V}-gentoo/asar-build.tar.gz -> asar-${ASAR_V}.tar.gz
         https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
-        https://registry.npmjs.org/native-is-elevated/-/native-is-elevated-${NATIVE_IS_ELEVATED_V}.tgz -> vscodedep-native-is-elevated-${NATIVE_IS_ELEVATED_V}.tar.gz
         https://registry.npmjs.org/native-watchdog/-/native-watchdog-${NATIVE_WATCHDOG_V}.tgz -> vscodedep-native-watchdog-${NATIVE_WATCHDOG_V}.tar.gz
         https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
         https://registry.npmjs.org/spdlog/-/spdlog-${SPDLOG_V}.tgz -> vscodedep-spdlog-${SPDLOG_V}.tar.gz
-        https://registry.npmjs.org/@vscode/nsfw/-/nsfw-${VSCODE_NSFW_V}.tgz -> vscodedep-vscode-nsfw-${VSCODE_NSFW_V}.tar.gz
-        https://registry.npmjs.org/@vscode/sqlite3/-/sqlite3-${VSCODE_SQLITE3_V}.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
         https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
         https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
 	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
 "
 
 VSCODE_BINMODS=(
-        native-is-elevated
         native-watchdog
         node-pty
         spdlog
-        vscode-nsfw
-        vscode-sqlite3
 	parcel-watcher
 )
 
@@ -123,12 +114,12 @@ src_prepare() {
         eapply_user
 
 	# use system node
-	rm ./node ./lib/node \
+	rm ./node ./lib/node ./lib/vscode/node \
 		|| die "failed to remove bundled nodejs"
 	rm ./lib/coder-cloud-agent || die "failed to remove bundled coder-cloud-agent"
 
 	# remove bundled binaries
-	rm ./vendor/modules/code-oss-dev/node_modules/vscode-ripgrep/bin/rg \
+	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg \
 		|| die "failed to remove bundled ripgrep"
 	for binmod in "${VSCODE_BINMODS[@]}"; do
 		rm -r "$(get_binmod_loc_build ${binmod})" || die
@@ -137,15 +128,9 @@ src_prepare() {
 	# remove argon2
 	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
 
-	rm -r "${S}/vendor/modules/code-oss-dev/node_modules/@parcel/watcher/Release/obj.target"
-
 	# not needed
 	rm ${S}/code-server || die
 	rm ${S}/postinstall.sh || die
-
-	# remove electron, not used and is huge
-        rm -r "${S}/vendor/modules/code-oss-dev/node_modules/electron" || die
-        rm -r "${S}/vendor/modules/code-oss-dev/node_modules/.bin/electron" || die
 
 	# already in /usr/portage/licenses/MIT
 	rm ${S}/LICENSE.txt || die
@@ -153,19 +138,12 @@ src_prepare() {
 
 src_configure() {
 	local binmod
-	local config
 
 	for binmod in "${VSCODE_BINMODS[@]}"; do
 		einfo "Configuring ${binmod}..."
 		cd "${WORKDIR}/$(package_dir ${binmod})" || die
 
-		if [[ "${binmod}" == "vscode-sqlite3" ]]; then
-			config="--sqlite=/usr"
-		else
-			config=""
-		fi
-
-		enodegyp configure ${config}
+		enodegyp configure
 	done
 }
 
@@ -198,7 +176,7 @@ src_install() {
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
 	dosym "../../usr/lib/${PN}/bin/${PN}" "${EPREFIX}/usr/bin/${PN}"
 
-	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/vendor/modules/code-oss-dev/node_modules/vscode-ripgrep/bin/rg"
+	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
 	dosym "/usr/bin/coder-cloud-agent" "${EPREFIX}/usr/lib/${PN}/lib/coder-cloud-agent"
 
 	systemd_douserunit "${FILESDIR}/${PN}.service"
@@ -233,10 +211,10 @@ package_dir() {
 
 # Some binmods have path that is different than usual
 get_binmod_loc() {
-	if [ ${1} = "vscode-sqlite3" ] || [ ${1} = "parcel-watcher" ]; then
-		echo "${S}/vendor/modules/code-oss-dev/node_modules/@${1%-*}/${1#*-}"
+	if [ ${1} = "parcel-watcher" ]; then
+		echo "${S}/lib/vscode/node_modules/@${1%-*}/${1#*-}"
 	else
-		echo "${S}/vendor/modules/code-oss-dev/node_modules/${1}"
+		echo "${S}/lib/vscode/node_modules/${1}"
 	fi
 }
 
