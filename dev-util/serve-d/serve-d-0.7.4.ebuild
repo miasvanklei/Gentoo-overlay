@@ -11,6 +11,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~x86 ~arm"
 IUSE=""
 MY_PV="${PV/_rc1/-rc.1}"
+RESTRICT="network-sandbox"
 
 SRC_URI="https://github.com/Pure-D/serve-d/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 

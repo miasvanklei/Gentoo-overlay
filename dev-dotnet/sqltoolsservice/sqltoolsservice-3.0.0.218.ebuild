@@ -13,6 +13,7 @@ SRC_URI="https://github.com/microsoft/${PN}/archive/v${MY_PV}.tar.gz -> ${P}.tar
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
+RESTRICT="network-sandbox"
 
 RDEPEND="virtual/dotnet-core"
 DEPEND="${RDEPEND}"

@@ -15,6 +15,7 @@ SRC_URI="https://github.com/Samsung/netcoredbg/archive/${PV/_p/-}.tar.gz -> ${P}
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
+RESTRICT="network-sandbox"
 
 RDEPEND="dev-dotnet/dotnet-runtime"
 DEPEND="${RDEPEND}"
