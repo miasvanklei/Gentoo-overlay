@@ -2075,7 +2075,7 @@ IUSE="btrfs +device-mapper iptables +nftables selinux systemd"
 COMMON_DEPEND="
 	app-crypt/gpgme:=
 	app-containers/conmon
-	app-containers/runc
+	app-containers/crun
 	dev-libs/glib:=
 	dev-libs/libassuan:=
 	dev-libs/libgpg-error:=
