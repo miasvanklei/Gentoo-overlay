@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="1"
+K_GENPATCHES_VER="3"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -98,7 +98,7 @@ src_install() {
 		targets+=( install )
 	fi
 
-	if grep -q "CONFIG_MODULES"; then
+	if grep -q "CONFIG_MODULES" "${WORKDIR}"/build/.config; then
 		targets+=( modules_install )
 	fi
 
