@@ -20,7 +20,7 @@ HOMEPAGE="https://github.com/sddm/sddm"
 
 LICENSE="GPL-2+ MIT CC-BY-3.0 CC-BY-SA-3.0 public-domain"
 SLOT="0"
-IUSE="elogind +pam systemd test"
+IUSE="elogind +pam systemd test X"
 
 REQUIRED_USE="?? ( elogind systemd )"
 
@@ -43,6 +43,7 @@ RDEPEND="
 	pam? ( sys-libs/pam )
 	systemd? ( sys-apps/systemd:= )
 	!systemd? ( sys-power/upower )
+	X? ( x11-base/xorg-server )
 "
 DEPEND="${RDEPEND}
 	test? ( >=dev-qt/qttest-5.9.4:5 )
