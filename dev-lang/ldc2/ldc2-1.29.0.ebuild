@@ -39,8 +39,7 @@ DEPEND=">=dev-util/cmake-2.8
 S=${WORKDIR}/ldc-${MY_PV}-src
 
 PATCHES=(
-	"${FILESDIR}"/llvm-14.patch
-	"${FILESDIR}"/disable-setting-fuse-ld.patch
+	"${FILESDIR}"/cmsg_nxthdr_unavaible.patch
 )
 
 src_configure() {

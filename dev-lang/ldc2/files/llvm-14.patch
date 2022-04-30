@@ -1,20 +1,301 @@
-diff --color -ur a//driver/codegenerator.cpp b/driver/codegenerator.cpp
---- a/driver/codegenerator.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/driver/codegenerator.cpp	2022-03-16 15:52:59.004723190 +0100
-@@ -24,6 +24,9 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d03603e3a0..f2f9f8d52b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -46,7 +46,7 @@ foreach(LLVM_SUPPORTED_TARGET ${LLVM_TARGETS_TO_BUILD})
+ endforeach()
+ 
+ # Set MLIR support variables if it is found. Only try for LLVM >= 10.0.
+-if(NOT (LDC_LLVM_VER LESS 1000))
++if(NOT (LDC_LLVM_VER LESS 1000) AND NOT LDC_WITH_MLIR STREQUAL "OFF")
+     include(FindMLIR)
+     if(MLIR_FOUND)
+         message(STATUS "-- Building LDC with MLIR support (${MLIR_ROOT_DIR})")
+@@ -609,15 +609,23 @@ if(LDC_WITH_LLD)
+             set(LDC_LINKERFLAG_LIST -lLLVMSymbolize ${LDC_LINKERFLAG_LIST})
+         endif()
+     endif()
+-    if (LDC_LLVM_VER LESS 1200)
++    if (LDC_LLVM_VER LESS 1200 OR NOT LDC_LLVM_VER LESS 1400)
+         set(LLD_MACHO lldMachO)
+     else()
+         set(LLD_MACHO lldMachO2)
+     endif()
+     if(MSVC)
+-        list(APPEND LDC_LINKERFLAG_LIST lldDriver.lib lldMinGW.lib lldCOFF.lib lldELF.lib ${LLD_MACHO}.lib lldWasm.lib lldYAML.lib lldReaderWriter.lib lldCommon.lib lldCore.lib)
++        if(NOT (LDC_LLVM_VER LESS 1400))
++            list(APPEND LDC_LINKERFLAG_LIST lldMinGW.lib lldCOFF.lib lldELF.lib ${LLD_MACHO}.lib lldWasm.lib lldCommon.lib)
++        else()
++            list(APPEND LDC_LINKERFLAG_LIST lldDriver.lib lldMinGW.lib lldCOFF.lib lldELF.lib ${LLD_MACHO}.lib lldWasm.lib lldYAML.lib lldReaderWriter.lib lldCommon.lib lldCore.lib)
++        endif()
+     else()
+-        set(LDC_LINKERFLAG_LIST -llldDriver -llldMinGW -llldCOFF -llldELF -l${LLD_MACHO} -llldWasm -llldYAML -llldReaderWriter -llldCommon -llldCore ${LDC_LINKERFLAG_LIST})
++        if(NOT (LDC_LLVM_VER LESS 1400))
++            set(LDC_LINKERFLAG_LIST -llldMinGW -llldCOFF -llldELF -l${LLD_MACHO} -llldWasm -llldCommon ${LDC_LINKERFLAG_LIST})
++        else()
++            set(LDC_LINKERFLAG_LIST -llldDriver -llldMinGW -llldCOFF -llldELF -l${LLD_MACHO} -llldWasm -llldYAML -llldReaderWriter -llldCommon -llldCore ${LDC_LINKERFLAG_LIST})
++        endif()
+     endif()
+     if(APPLE)
+         if(LDC_LLVM_VER LESS 700) # LLVM 6.0.0 bug, should be fixed in 6.0.1
+@@ -799,18 +807,23 @@ if (LDC_INSTALL_LLVM_RUNTIME_LIBS)
+     elseif(UNIX)
+         set(LDC_INSTALL_LLVM_RUNTIME_LIBS_OS   "linux"  CACHE STRING "Non-Mac Posix: OS used as directory name for the compiler-rt source libraries, e.g., 'freebsd'.")
+         set(LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH "x86_64" CACHE STRING "Non-Mac Posix: architecture used as libname suffix for the compiler-rt source libraries, e.g., 'aarch64'.")
++        if(LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH STREQUAL "")
++            set(compilerrt_suffix "")
++        else()
++            set(compilerrt_suffix "-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}")
++        endif()
+ 
+-        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.asan-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"       "libldc_rt.asan.a"     FALSE)
+-        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.msan-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"       "libldc_rt.msan.a"     FALSE)
+-        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.tsan-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"       "libldc_rt.tsan.a"     FALSE)
+-        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.builtins-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"   "libldc_rt.builtins.a" FALSE)
+-        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.profile-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"    "libldc_rt.profile.a"  FALSE)
+-        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"       "libldc_rt.xray.a"     FALSE)
+-        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.fuzzer-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"     "libldc_rt.fuzzer.a"   FALSE)
++        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.asan${compilerrt_suffix}.a"       "libldc_rt.asan.a"     FALSE)
++        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.msan${compilerrt_suffix}.a"       "libldc_rt.msan.a"     FALSE)
++        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.tsan${compilerrt_suffix}.a"       "libldc_rt.tsan.a"     FALSE)
++        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.builtins${compilerrt_suffix}.a"   "libldc_rt.builtins.a" FALSE)
++        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.profile${compilerrt_suffix}.a"    "libldc_rt.profile.a"  FALSE)
++        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray${compilerrt_suffix}.a"       "libldc_rt.xray.a"     FALSE)
++        copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.fuzzer${compilerrt_suffix}.a"     "libldc_rt.fuzzer.a"   FALSE)
+         if(NOT (LDC_LLVM_VER LESS 700))
+-            copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray-basic-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"      "libldc_rt.xray-basic.a"     FALSE)
+-            copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray-fdr-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"        "libldc_rt.xray-fdr.a"       FALSE)
+-            copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray-profiling-${LDC_INSTALL_LLVM_RUNTIME_LIBS_ARCH}.a"  "libldc_rt.xray-profiling.a" FALSE)
++            copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray-basic${compilerrt_suffix}.a"      "libldc_rt.xray-basic.a"     FALSE)
++            copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray-fdr${compilerrt_suffix}.a"        "libldc_rt.xray-fdr.a"       FALSE)
++            copy_compilerrt_lib("${LDC_INSTALL_LLVM_RUNTIME_LIBS_OS}/libclang_rt.xray-profiling${compilerrt_suffix}.a"  "libldc_rt.xray-profiling.a" FALSE)
+         endif()
+     elseif(WIN32)
+         set(compilerrt_arch_suffix "x86_64")
+diff --git a/cmake/Modules/FindLLVM.cmake b/cmake/Modules/FindLLVM.cmake
+index 0ff6c04124..456db09d5a 100644
+--- a/cmake/Modules/FindLLVM.cmake
++++ b/cmake/Modules/FindLLVM.cmake
+@@ -32,7 +32,8 @@
+ # We also want an user-specified LLVM_ROOT_DIR to take precedence over the
+ # system default locations such as /usr/local/bin. Executing find_program()
+ # multiples times is the approach recommended in the docs.
+-set(llvm_config_names llvm-config-13.0 llvm-config130 llvm-config-13
++set(llvm_config_names llvm-config-14.0 llvm-config140 llvm-config-14
++                      llvm-config-13.0 llvm-config130 llvm-config-13
+                       llvm-config-12.0 llvm-config120 llvm-config-12
+                       llvm-config-11.0 llvm-config110 llvm-config-11
+                       llvm-config-10.0 llvm-config100 llvm-config-10
+@@ -50,11 +51,11 @@ if(APPLE)
+     # extra fallbacks for MacPorts & Homebrew
+     find_program(LLVM_CONFIG
+         NAMES ${llvm_config_names}
+-        PATHS /opt/local/libexec/llvm-13/bin  /opt/local/libexec/llvm-12/bin
++        PATHS /opt/local/libexec/llvm-14/bin  /opt/local/libexec/llvm-13/bin  /opt/local/libexec/llvm-12/bin
+               /opt/local/libexec/llvm-11/bin  /opt/local/libexec/llvm-10/bin  /opt/local/libexec/llvm-9.0/bin
+               /opt/local/libexec/llvm-8.0/bin /opt/local/libexec/llvm-7.0/bin /opt/local/libexec/llvm-6.0/bin
+               /opt/local/libexec/llvm/bin
+-              /usr/local/opt/llvm@13/bin /usr/local/opt/llvm@12/bin
++              /usr/local/opt/llvm@14/bin /usr/local/opt/llvm@13/bin /usr/local/opt/llvm@12/bin
+               /usr/local/opt/llvm@11/bin /usr/local/opt/llvm@10/bin /usr/local/opt/llvm@9/bin
+               /usr/local/opt/llvm@8/bin  /usr/local/opt/llvm@7/bin  /usr/local/opt/llvm@6/bin
+               /usr/local/opt/llvm/bin
+diff --git a/driver/cl_options.cpp b/driver/cl_options.cpp
+index 39acf0437b..4db1db7cec 100644
+--- a/driver/cl_options.cpp
++++ b/driver/cl_options.cpp
+@@ -737,7 +737,7 @@ void hideLLVMOptions() {
+   static const char *const hiddenOptions[] = {
+       "aarch64-neon-syntax", "aarch64-use-aa",
+       "abort-on-max-devirt-iterations-reached",
+-      "addrsig", "allow-ginsert-as-artifact",
++      "addrsig", "align-loops", "allow-ginsert-as-artifact",
+       "amdgpu-bypass-slow-div", "amdgpu-disable-loop-alignment",
+       "amdgpu-disable-power-sched", "amdgpu-dpp-combine",
+       "amdgpu-dump-hsa-metadata", "amdgpu-enable-flat-scratch",
+@@ -756,6 +756,7 @@ void hideLLVMOptions() {
+       "cvp-dont-add-nowrap-flags",
+       "cvp-dont-process-adds", "debug-counter", "debug-entry-values",
+       "debugger-tune", "debugify-level", "debugify-quiet",
++      "debug-info-correlate",
+       "denormal-fp-math", "denormal-fp-math-f32", "disable-debug-info-verifier",
+       "disable-i2p-p2i-opt",
+       "disable-objc-arc-checkforcfghazards", "disable-promote-alloca-to-lds",
+@@ -781,6 +782,8 @@ void hideLLVMOptions() {
+       "experimental-debug-variable-locations",
+       "fatal-assembler-warnings", "filter-print-funcs",
+       "force-dwarf-frame-section", "force-opaque-pointers",
++      "fs-profile-debug-bw-threshold", "fs-profile-debug-prob-diff-threshold",
++      "generate-merged-base-profiles",
+       "gpsize", "hash-based-counter-split",
+       "hot-cold-split", "ignore-xcoff-visibility",
+       "imp-null-check-page-size", "imp-null-max-insts-to-consider",
+@@ -794,7 +797,7 @@ void hideLLVMOptions() {
+       "join-liveintervals", "jump-table-type", "limit-float-precision",
+       "lto-embed-bitcode", "matrix-default-layout", "matrix-propagate-shape",
+       "max-counter-promotions", "max-counter-promotions-per-loop",
+-      "mc-relax-all", "mc-x86-disable-arith-relaxation", "meabi",
++      "mc-relax-all", "mc-x86-disable-arith-relaxation", "mcabac", "meabi",
+       "memop-size-large", "memop-size-range", "merror-missing-parenthesis",
+       "merror-noncontigious-register", "mfuture-regs", "mhvx",
+       "mips-compact-branches", "mips16-constant-islands", "mips16-hard-float",
+@@ -803,11 +806,12 @@ void hideLLVMOptions() {
+       "mwarn-noncontigious-register", "mwarn-sign-mismatch",
+       "no-discriminators", "no-type-check", "no-xray-index",
+       "nozero-initialized-in-bss", "nvptx-sched4reg",
+-      "objc-arc-annotation-target-identifier", "pie-copy-relocations",
+-      "poison-checking-function-local",
++      "objc-arc-annotation-target-identifier", "opaque-pointers",
++      "pie-copy-relocations", "poison-checking-function-local",
+       "polly-dump-after", "polly-dump-after-file", "polly-dump-before",
+       "polly-dump-before-file", "pre-RA-sched", "print-after-all",
+       "print-before-all", "print-machineinstrs", "print-module-scope",
++      "print-pipeline-passes",
+       "profile-estimator-loop-weight", "profile-estimator-loop-weight",
+       "profile-file", "profile-info-file", "profile-verifier-noassert",
+       "pseudo-probe-for-profiling",
+@@ -830,8 +834,8 @@ void hideLLVMOptions() {
+       "stack-size-section", "stack-symbol-ordering",
+       "stackmap-version", "static-func-full-module-prefix",
+       "static-func-strip-dirname-prefix", "stats", "stats-json", "strict-dwarf",
+-      "strip-debug", "struct-path-tbaa", "summary-file", "tail-predication",
+-      "tailcallopt", "thinlto-assume-merged",
++      "strip-debug", "struct-path-tbaa", "summary-file", "swift-async-fp",
++      "tail-predication", "tailcallopt", "thinlto-assume-merged",
+       "thread-model", "time-passes", "time-trace-granularity", "tls-size",
+       "unfold-element-atomic-memcpy-max-elements",
+       "unique-basic-block-section-names", "unique-bb-section-names",
+@@ -841,6 +845,7 @@ void hideLLVMOptions() {
+       "verify-loop-lcssa", "verify-machine-dom-info", "verify-regalloc",
+       "verify-region-info", "verify-scev", "verify-scev-maps",
+       "vp-counters-per-site", "vp-static-alloc",
++      "wasm-enable-eh", "wasm-enable-sjlj",
+       "x86-align-branch", "x86-align-branch-boundary",
+       "x86-branches-within-32B-boundaries", "x86-early-ifcvt",
+       "x86-pad-max-prefix-size",
+diff --git a/driver/codegenerator.cpp b/driver/codegenerator.cpp
+index 995f2a34bd..b6775a36c0 100644
+--- a/driver/codegenerator.cpp
++++ b/driver/codegenerator.cpp
+@@ -24,7 +24,7 @@
  #include "gen/modules.h"
  #include "gen/runtime.h"
  #include "ir/irdsymbol.h"
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+#include "llvm/IR/DiagnosticInfo.h"
-+#endif
+ #include "llvm/IR/DiagnosticInfo.h"
+ #endif
  #if LDC_LLVM_VER >= 1100
- #include "llvm/IR/LLVMRemarkStreamer.h"
- #elif LDC_LLVM_VER >= 900
-diff --color -ur a/driver/main.cpp b/driver/main.cpp
---- a/driver/main.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/driver/main.cpp	2022-03-16 15:52:59.004723190 +0100
-@@ -61,7 +61,11 @@
+diff --git a/driver/linker-gcc.cpp b/driver/linker-gcc.cpp
+index 3db72aaa87..858a95d058 100644
+--- a/driver/linker-gcc.cpp
++++ b/driver/linker-gcc.cpp
+@@ -750,10 +750,18 @@ int linkObjToBinaryGcc(llvm::StringRef outputPath,
+ 
+     bool success = false;
+     if (global.params.targetTriple->isOSBinFormatELF()) {
+-      success = lld::elf::link(fullArgs, CanExitEarly
++      success = lld::elf::link(fullArgs
++#if LDC_LLVM_VER < 1400
++                               ,
++                               CanExitEarly
++#endif
+ #if LDC_LLVM_VER >= 1000
+                                ,
+                                llvm::outs(), llvm::errs()
++#endif
++#if LDC_LLVM_VER >= 1400
++                                                 ,
++                               CanExitEarly, false
+ #endif
+       );
+     } else if (global.params.targetTriple->isOSBinFormatMachO()) {
+@@ -762,20 +770,32 @@ int linkObjToBinaryGcc(llvm::StringRef outputPath,
+ #else
+       success = lld::mach_o::link(fullArgs
+ #endif
+-#if LDC_LLVM_VER >= 700
++#if LDC_LLVM_VER >= 700 && LDC_LLVM_VER < 1400
+                                  ,
+                                  CanExitEarly
++#endif
+ #if LDC_LLVM_VER >= 1000
+                                  ,
+                                  llvm::outs(), llvm::errs()
+ #endif
++#if LDC_LLVM_VER >= 1400
++                                                   ,
++                                 CanExitEarly, false
+ #endif
+       );
+     } else if (global.params.targetTriple->isOSBinFormatCOFF()) {
+       success = lld::mingw::link(fullArgs
++#if LDC_LLVM_VER >= 1000 && LDC_LLVM_VER < 1400
++                                 ,
++                                 CanExitEarly
++#endif
+ #if LDC_LLVM_VER >= 1000
+                                  ,
+-                                 CanExitEarly, llvm::outs(), llvm::errs()
++                                 llvm::outs(), llvm::errs()
++#endif
++#if LDC_LLVM_VER >= 1400
++                                                   ,
++                                 CanExitEarly, false
+ #endif
+       );
+     } else if (global.params.targetTriple->isOSBinFormatWasm()) {
+@@ -784,10 +804,18 @@ int linkObjToBinaryGcc(llvm::StringRef outputPath,
+       //        but only on Linux?
+       CanExitEarly = true;
+ #endif
+-      success = lld::wasm::link(fullArgs, CanExitEarly
++      success = lld::wasm::link(fullArgs
++#if LDC_LLVM_VER < 1400
++                                ,
++                                CanExitEarly
++#endif
+ #if LDC_LLVM_VER >= 1000
+                                 ,
+                                 llvm::outs(), llvm::errs()
++#endif
++#if LDC_LLVM_VER >= 1400
++                                                  ,
++                                CanExitEarly, false
+ #endif
+       );
+     } else {
+diff --git a/driver/linker-msvc.cpp b/driver/linker-msvc.cpp
+index b9111347d6..347053cbc3 100644
+--- a/driver/linker-msvc.cpp
++++ b/driver/linker-msvc.cpp
+@@ -262,11 +262,19 @@ int linkObjToBinaryMSVC(llvm::StringRef outputPath,
+       (useInternalToolchain && opts::linker.empty())) {
+     const auto fullArgs = getFullArgs("lld-link", args, global.params.verbose);
+ 
+-    const bool success = lld::coff::link(fullArgs,
+-                                         /*CanExitEarly=*/false
++    const bool canExitEarly = false;
++    const bool success = lld::coff::link(fullArgs
++#if LDC_LLVM_VER < 1400
++                                         ,
++                                         canExitEarly
++#endif
+ #if LDC_LLVM_VER >= 1000
+                                          ,
+                                          llvm::outs(), llvm::errs()
++#endif
++#if LDC_LLVM_VER >= 1400
++                                                           ,
++                                         canExitEarly, false
+ #endif
+     );
+ 
+diff --git a/driver/main.cpp b/driver/main.cpp
+index b85fa2bee8..34b0cfbaec 100644
+--- a/driver/main.cpp
++++ b/driver/main.cpp
+@@ -60,7 +60,11 @@
  #include "llvm/Support/ManagedStatic.h"
  #include "llvm/Support/Path.h"
  #include "llvm/Support/StringSaver.h"
@@ -26,14 +307,14 @@ diff --color -ur a/driver/main.cpp b/driver/main.cpp
  #include "llvm/Support/TargetSelect.h"
  #include "llvm/Target/TargetMachine.h"
  #if LDC_MLIR_ENABLED
-diff --color -ur a/driver/targetmachine.cpp b/driver/targetmachine.cpp
---- a/driver/targetmachine.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/driver/targetmachine.cpp	2022-03-16 15:52:59.004723190 +0100
-@@ -26,11 +26,18 @@
- #include "llvm/MC/SubtargetFeature.h"
+diff --git a/driver/targetmachine.cpp b/driver/targetmachine.cpp
+index 2954eb25a7..3e9567bd5a 100644
+--- a/driver/targetmachine.cpp
++++ b/driver/targetmachine.cpp
+@@ -27,11 +27,15 @@
  #include "llvm/Support/Host.h"
  #include "llvm/Support/CommandLine.h"
--#include "llvm/Support/TargetParser.h"
+ #include "llvm/Support/TargetParser.h"
 +#if LDC_LLVM_VER >= 1400
 +#include "llvm/MC/TargetRegistry.h"
 +#else
@@ -42,683 +323,458 @@ diff --color -ur a/driver/targetmachine.cpp b/driver/targetmachine.cpp
  #include "llvm/Support/TargetSelect.h"
  #include "llvm/Target/TargetMachine.h"
  #include "llvm/Target/TargetOptions.h"
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+#include "llvm/Support/AArch64TargetParser.h"
-+#include "llvm/Support/ARMTargetParser.h"
-+#endif
- 
- #if LDC_LLVM_VER >= 700
- #include "gen/optimizer.h"
-diff --color -ur a/gen/arrays.cpp b/gen/arrays.cpp
---- a/gen/arrays.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/arrays.cpp	2022-03-16 15:52:58.995723075 +0100
-@@ -874,9 +874,15 @@
-     arrs.push_back(DtoSlicePtr(ce));
- 
+ #include "llvm/Support/AArch64TargetParser.h"
+ #include "llvm/Support/ARMTargetParser.h"
+ #endif
+diff --git a/gen/arrays.cpp b/gen/arrays.cpp
+index e410a50d2a..a3921e3160 100644
+--- a/gen/arrays.cpp
++++ b/gen/arrays.cpp
+@@ -876,7 +876,7 @@ DSliceValue *DtoCatArrays(const Loc &loc, Type *arrayType, Expression *exp1,
      // Create static array from slices
-+#if LDC_LLVM_VER < 1400
      LLPointerType *ptrarraytype = isaPointer(arrs[0]);
      assert(ptrarraytype && "Expected pointer type");
-     LLStructType *arraytype = isaStruct(ptrarraytype->getElementType());
-+#else
-+    LLStructType *arraytype = isaStruct(DtoType(arrayType));
-+    LLPointerType *ptrarraytype = isaPointer(arrs[0]);
-+    assert(ptrarraytype && "Expected pointer type");
-+#endif
+-    LLStructType *arraytype = isaStruct(ptrarraytype->getElementType());
++    LLStructType *arraytype = isaStruct(ptrarraytype->getPointerElementType());
      assert(arraytype && "Expected struct type");
      LLArrayType *type = LLArrayType::get(arraytype, arrs.size());
      LLValue *array = DtoRawAlloca(type, 0, ".slicearray");
-diff --color -ur a/gen/asmstmt.cpp b/gen/asmstmt.cpp
---- a/gen/asmstmt.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/asmstmt.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -722,6 +722,20 @@
-       ia, args, retty == LLType::getVoidTy(gIR->context()) ? "" : "asm");
-   p->addInlineAsmSrcLoc(stmt->loc, call);
+diff --git a/gen/asmstmt.cpp b/gen/asmstmt.cpp
+index aaea0730e9..eeb66456a6 100644
+--- a/gen/asmstmt.cpp
++++ b/gen/asmstmt.cpp
+@@ -719,9 +719,10 @@ void CompoundAsmStatement_toIR(CompoundAsmStatement *stmt, IRState *p) {
  
-+#if LDC_LLVM_VER >= 1400
-+ {
-+    int i = 0;
-+    for (llvm::InlineAsm::ConstraintInfo& CI : ia->ParseConstraints()) {
-+      if (CI.isIndirect) {
-+        call->addParamAttr(i, llvm::Attribute::get(getGlobalContext(),
-+                                                   llvm::Attribute::ElementType,
-+                                                   types[i]->getPointerElementType()));
-+        i++;
-+      }
-+    }
+   llvm::InlineAsm *ia = llvm::InlineAsm::get(fty, code, out_c, true);
+ 
+-  llvm::CallInst *call = p->ir->CreateCall(
+-      ia, args, retty == LLType::getVoidTy(gIR->context()) ? "" : "asm");
+-  p->addInlineAsmSrcLoc(stmt->loc, call);
++  auto call = p->createInlineAsmCall(stmt->loc, ia, args);
++  if (!retty->isVoidTy()) {
++    call->setName("asm");
 +  }
-+#endif
-+
+ 
    IF_LOG Logger::cout() << "Complete asm statement: " << *call << '\n';
  
-   // capture abi return value
-@@ -745,8 +759,7 @@
-     // make new blocks
-     llvm::BasicBlock *bb = p->insertBB("afterasmgotoforwarder");
- 
--    llvm::LoadInst *val =
--        p->ir->CreateLoad(jump_target, "__llvm_jump_target_value");
-+    auto val = DtoLoad(jump_target, "__llvm_jump_target_value");
-     llvm::SwitchInst *sw = p->ir->CreateSwitch(val, bb, gotoToVal.size());
- 
-     // add all cases
-diff --color -ur a/gen/classes.cpp b/gen/classes.cpp
---- a/gen/classes.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/classes.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -278,10 +278,9 @@
-     LLValue *orig = DtoRVal(val);
-     LLValue *v = orig;
-     if (offset != 0) {
-+      assert(offset > 0);
-       v = DtoBitCast(v, getVoidPtrType());
--      LLValue *off =
--          LLConstantInt::get(LLType::getInt32Ty(gIR->context()), offset);
--      v = gIR->ir->CreateGEP(v, off);
-+      v = DtoGEP1(v, DtoConstUint(offset));
-     }
-     IF_LOG {
-       Logger::cout() << "V = " << *v << std::endl;
-diff --color -ur a/gen/coverage.cpp b/gen/coverage.cpp
---- a/gen/coverage.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/coverage.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -33,10 +33,10 @@
- 
-   // Increment the line counter:
-   // Get GEP into _d_cover_data array...
-+  LLType *i32Type = LLType::getInt32Ty(gIR->context());
-   LLConstant *idxs[] = {DtoConstUint(0), DtoConstUint(line)};
-   LLValue *ptr = llvm::ConstantExpr::getGetElementPtr(
--      LLArrayType::get(LLType::getInt32Ty(gIR->context()), m->numlines),
--      m->d_cover_data, idxs, true);
-+      LLArrayType::get(i32Type, m->numlines), m->d_cover_data, idxs, true);
-   // ...and generate the "increment" instruction(s)
-   switch (opts::coverageIncrement) {
-   case opts::CoverageIncrement::_default: // fallthrough
-@@ -51,7 +51,11 @@
-   case opts::CoverageIncrement::nonatomic: {
-     // Do a non-atomic increment, user is responsible for correct results with
-     // multithreaded execution
--    llvm::LoadInst *load = gIR->ir->CreateAlignedLoad(ptr, LLAlign(4));
-+    llvm::LoadInst *load = gIR->ir->CreateAlignedLoad(
-+#if LDC_LLVM_VER >= 800
-+        i32Type,
-+#endif
-+        ptr, LLAlign(4));
-     llvm::StoreInst *store = gIR->ir->CreateAlignedStore(
-         gIR->ir->CreateAdd(load, DtoConstUint(1)), ptr, LLAlign(4));
-     // add !nontemporal attribute, to inform the optimizer that caching is not
-diff --color -ur a/gen/dibuilder.cpp b/gen/dibuilder.cpp
---- a/gen/dibuilder.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/dibuilder.cpp	2022-03-16 15:52:58.995723075 +0100
-@@ -1167,7 +1167,7 @@
+diff --git a/gen/dibuilder.cpp b/gen/dibuilder.cpp
+index fd44e8b04e..9c4189aac2 100644
+--- a/gen/dibuilder.cpp
++++ b/gen/dibuilder.cpp
+@@ -1153,7 +1153,7 @@ void DIBuilder::EmitValue(llvm::Value *val, VarDeclaration *vd) {
  void DIBuilder::EmitLocalVariable(llvm::Value *ll, VarDeclaration *vd,
                                    Type *type, bool isThisPtr, bool forceAsLocal,
                                    bool isRefRVal,
--                                  llvm::ArrayRef<int64_t> addr) {
-+                                  llvm::ArrayRef<uint64_t> addr) {
-   if (!mustEmitFullDebugInfo())
-     return;
- 
-diff --color -ur a/gen/dibuilder.h b/gen/dibuilder.h
---- a/gen/dibuilder.h	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/dibuilder.h	2022-03-16 15:52:58.994723062 +0100
-@@ -140,7 +140,7 @@
+-#if LDC_LLVM_VER >= 1500
++#if LDC_LLVM_VER >= 1400
+                                   llvm::ArrayRef<uint64_t> addr
+ #else
+                                   llvm::ArrayRef<int64_t> addr
+diff --git a/gen/dibuilder.h b/gen/dibuilder.h
+index fe0848cf8e..9888c21001 100644
+--- a/gen/dibuilder.h
++++ b/gen/dibuilder.h
+@@ -140,7 +140,7 @@ class DIBuilder {
    EmitLocalVariable(llvm::Value *ll, VarDeclaration *vd, Type *type = nullptr,
                      bool isThisPtr = false, bool forceAsLocal = false,
                      bool isRefRVal = false,
--                    llvm::ArrayRef<int64_t> addr = llvm::ArrayRef<int64_t>());
-+                    llvm::ArrayRef<uint64_t> addr = llvm::ArrayRef<uint64_t>());
- 
-   /// \brief Emits all things necessary for making debug info for a global
-   /// variable vd.
-diff --color -ur a/gen/functions.cpp b/gen/functions.cpp
---- a/gen/functions.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/functions.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -96,11 +96,19 @@
+-#if LDC_LLVM_VER >= 1500
++#if LDC_LLVM_VER >= 1400
+                     llvm::ArrayRef<uint64_t> addr = llvm::ArrayRef<uint64_t>()
+ #else
+                     llvm::ArrayRef<int64_t> addr = llvm::ArrayRef<int64_t>()
+diff --git a/gen/functions.cpp b/gen/functions.cpp
+index 565bd3e9dd..65d579c0e3 100644
+--- a/gen/functions.cpp
++++ b/gen/functions.cpp
+@@ -96,7 +96,7 @@ llvm::FunctionType *DtoFunctionType(Type *type, IrFuncTy &irFty, Type *thistype,
    } else {
      Type *rt = f->next;
      const bool byref = f->isref() && rt->toBasetype()->ty != TY::Tvoid;
--    llvm::AttrBuilder attrs;
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+     llvm::AttrBuilder attrs(getGlobalContext());
-+#else
-+     llvm::AttrBuilder attrs;
-+#endif
+       llvm::AttrBuilder attrs(getGlobalContext());
+ #else
+     llvm::AttrBuilder attrs;
+@@ -104,7 +104,7 @@ llvm::FunctionType *DtoFunctionType(Type *type, IrFuncTy &irFty, Type *thistype,
  
      if (abi->returnInArg(f, fd && fd->needThis())) {
        // sret return
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+      llvm::AttrBuilder sretAttrs(getGlobalContext());
-+#else
-       llvm::AttrBuilder sretAttrs;
-+#endif
- #if LDC_LLVM_VER >= 1200
-       sretAttrs.addStructRetAttr(DtoType(rt));
+       llvm::AttrBuilder sretAttrs(getGlobalContext());
  #else
-@@ -109,32 +117,40 @@
-       sretAttrs.addAttribute(LLAttribute::NoAlias);
-       if (unsigned alignment = DtoAlignment(rt))
-         sretAttrs.addAlignmentAttr(alignment);
--      newIrFty.arg_sret = new IrFuncTyArg(rt, true, sretAttrs);
-+      newIrFty.arg_sret = new IrFuncTyArg(rt, true, std::move(sretAttrs));
-       rt = Type::tvoid;
-       ++nextLLArgIdx;
-     } else {
-       // sext/zext return
-       DtoAddExtendAttr(byref ? rt->pointerTo() : rt, attrs);
-     }
--    newIrFty.ret = new IrFuncTyArg(rt, byref, attrs);
-+    newIrFty.ret = new IrFuncTyArg(rt, byref, std::move(attrs));
-   }
-   ++nextLLArgIdx;
+       llvm::AttrBuilder sretAttrs;
+@@ -130,7 +130,7 @@ llvm::FunctionType *DtoFunctionType(Type *type, IrFuncTy &irFty, Type *thistype,
  
    if (thistype) {
      // Add the this pointer for member functions
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+    llvm::AttrBuilder attrs(getGlobalContext());
-+#else
+     llvm::AttrBuilder attrs(getGlobalContext());
+ #else
      llvm::AttrBuilder attrs;
-+#endif
-     attrs.addAttribute(LLAttribute::NonNull);
-     if (fd && fd->isCtorDeclaration()) {
-       attrs.addAttribute(LLAttribute::Returned);
-     }
-     newIrFty.arg_this = new IrFuncTyArg(
--        thistype, thistype->toBasetype()->ty == TY::Tstruct, attrs);
-+        thistype, thistype->toBasetype()->ty == TY::Tstruct, std::move(attrs));
+@@ -144,7 +144,7 @@ llvm::FunctionType *DtoFunctionType(Type *type, IrFuncTy &irFty, Type *thistype,
      ++nextLLArgIdx;
    } else if (nesttype) {
      // Add the context pointer for nested functions
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+    llvm::AttrBuilder attrs(getGlobalContext());
-+#else
+     llvm::AttrBuilder attrs(getGlobalContext());
+ #else
      llvm::AttrBuilder attrs;
-+#endif
-     attrs.addAttribute(LLAttribute::NonNull);
--    newIrFty.arg_nest = new IrFuncTyArg(nesttype, false, attrs);
-+    newIrFty.arg_nest = new IrFuncTyArg(nesttype, false, std::move(attrs));
-     ++nextLLArgIdx;
-   }
- 
-@@ -179,7 +195,11 @@
+@@ -195,7 +195,7 @@ llvm::FunctionType *DtoFunctionType(Type *type, IrFuncTy &irFty, Type *thistype,
      bool passPointer = arg->storageClass & (STCref | STCout);
  
      Type *loweredDType = arg->type;
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+    llvm::AttrBuilder attrs(getGlobalContext());
-+#else
+     llvm::AttrBuilder attrs(getGlobalContext());
+ #else
      llvm::AttrBuilder attrs;
-+#endif
-     if (arg->storageClass & STClazy) {
-       // Lazy arguments are lowered to delegates.
-       Logger::println("lazy param");
-@@ -217,7 +237,7 @@
-       }
-     }
- 
--    newIrFty.args.push_back(new IrFuncTyArg(loweredDType, passPointer, attrs));
-+    newIrFty.args.push_back(new IrFuncTyArg(loweredDType, passPointer, std::move(attrs)));
-     newIrFty.args.back()->parametersIdx = i;
-     ++nextLLArgIdx;
-   }
-diff --color -ur a/gen/inlineir.cpp b/gen/inlineir.cpp
---- a/gen/inlineir.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/inlineir.cpp	2022-03-16 15:52:58.996723088 +0100
-@@ -39,6 +39,9 @@
+diff --git a/gen/inlineir.cpp b/gen/inlineir.cpp
+index 2a881c2704..2e4e743d5c 100644
+--- a/gen/inlineir.cpp
++++ b/gen/inlineir.cpp
+@@ -37,12 +37,9 @@ struct TempDisableDiscardValueNames {
+ /// Note: don't add function _parameter_ attributes
+ void copyFnAttributes(llvm::Function *wannabe, llvm::Function *idol) {
    auto attrSet = idol->getAttributes();
- #if LDC_LLVM_VER >= 1400
+-#if   LDC_LLVM_VER >= 1500
++#if LDC_LLVM_VER >= 1400
    auto fnAttrSet = attrSet.getFnAttrs();
-+  wannabe->addFnAttrs(llvm::AttrBuilder(getGlobalContext(), fnAttrSet));
-+#elif LDC_LLVM_VER >= 1300
-+  auto fnAttrSet = attrSet.getFnAttrs();
-   wannabe->addFnAttrs(fnAttrSet);
+   wannabe->addFnAttrs(llvm::AttrBuilder(getGlobalContext(), fnAttrSet));
+-#elif LDC_LLVM_VER >= 1400
+-  auto fnAttrSet = attrSet.getFnAttrs();
+-  wannabe->addFnAttrs(fnAttrSet);
  #else
    auto fnAttrSet = attrSet.getFnAttributes();
-diff --color -ur a/gen/llvmhelpers.cpp b/gen/llvmhelpers.cpp
---- a/gen/llvmhelpers.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/llvmhelpers.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -1752,6 +1752,7 @@
-   llvm::GlobalVariable *existing =
-       module.getGlobalVariable(mangledName, /*AllowInternal=*/true);
-   if (existing) {
-+#if LDC_LLVM_VER < 1400
-     const auto existingType = existing->getType()->getElementType();
-     if (existingType != type || existing->isConstant() != isConstant ||
-         existing->isThreadLocal() != isThreadLocal) {
-@@ -1771,6 +1772,7 @@
-       suppl("New IR type:     ", type, isConstant, isThreadLocal);
-       fatal();
-     }
-+#endif
-     return existing;
-   }
+   wannabe->addAttributes(LLAttributeList::FunctionIndex, fnAttrSet);
+diff --git a/gen/irstate.cpp b/gen/irstate.cpp
+index 22b3d3040f..ec49383467 100644
+--- a/gen/irstate.cpp
++++ b/gen/irstate.cpp
+@@ -19,6 +19,7 @@
+ #include "gen/llvmhelpers.h"
+ #include "gen/tollvm.h"
+ #include "ir/irfunction.h"
++#include "llvm/IR/InlineAsm.h"
+ #include <cstdarg>
  
-diff --color -ur a/gen/moduleinfo.cpp b/gen/moduleinfo.cpp
---- a/gen/moduleinfo.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/moduleinfo.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -87,7 +87,11 @@
-   for (auto gate : gates) {
-     assert(getIrGlobal(gate));
-     const auto val = getIrGlobal(gate)->value;
--    const auto rval = builder.CreateLoad(val, "vgate");
-+    const auto rval = builder.CreateLoad(
-+#if LDC_LLVM_VER >= 800
-+        getPointeeType(val),
-+#endif
-+        val, "vgate");
-     const auto res = builder.CreateAdd(rval, DtoConstUint(1), "vgate");
-     builder.CreateStore(res, val);
-   }
-diff --color -ur a/gen/modules.cpp b/gen/modules.cpp
---- a/gen/modules.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/modules.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -206,7 +206,11 @@
-   gIR->DBuilder.EmitModuleCTor(ctor, fname.c_str());
- 
-   // get current beginning
--  LLValue *curbeg = builder.CreateLoad(mref, "current");
-+  LLValue *curbeg = builder.CreateLoad(
-+#if LDC_LLVM_VER >= 800
-+      modulerefPtrTy,
-+#endif
-+      mref, "current");
- 
-   // put current beginning as the next of this one
-   LLValue *gep = builder.CreateStructGEP(
-diff --color -ur a/gen/naked.cpp b/gen/naked.cpp
---- a/gen/naked.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/naked.cpp	2022-03-16 15:52:58.995723075 +0100
-@@ -481,6 +481,21 @@
-   llvm::InlineAsm *ia = llvm::InlineAsm::get(FT, code, constraints, sideeffect);
- 
-   llvm::CallInst *call = gIR->ir->CreateCall(ia, operands, "");
-+
-+#if LDC_LLVM_VER >= 1400
-+ {
-+    int i = 0;
-+    for (llvm::InlineAsm::ConstraintInfo& CI : ia->ParseConstraints()) {
-+      if (CI.isIndirect) {
-+        call->addParamAttr(i, llvm::Attribute::get(getGlobalContext(),
-+                                                   llvm::Attribute::ElementType,
-+                                                   operandTypes[i]->getPointerElementType()));
-+        i++;
-+      }
-+    }
-+  }
-+#endif
-+
-   gIR->addInlineAsmSrcLoc(loc, call);
- 
-   return call;
-diff --color -ur a/gen/nested.cpp b/gen/nested.cpp
---- a/gen/nested.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/nested.cpp	2022-03-16 15:52:58.994723062 +0100
-@@ -113,7 +113,7 @@
-   // Make the DWARF variable address relative to the context pointer (ctx);
-   // register all ops (offsetting, dereferencing) required to get there in the
-   // following list.
--  LLSmallVector<int64_t, 4> dwarfAddrOps;
-+  LLSmallVector<uint64_t, 4> dwarfAddrOps;
- 
-   const auto offsetToNthField = [&val, &dwarfAddrOps](unsigned fieldIndex,
-                                                       const char *name = "") {
-@@ -515,7 +515,7 @@
-       }
- 
-       if (global.params.symdebug) {
--        LLSmallVector<int64_t, 1> dwarfAddrOps;
-+        LLSmallVector<uint64_t, 1> dwarfAddrOps;
-         gIR->DBuilder.EmitLocalVariable(gep, vd, nullptr, false, false, false,
-                                         dwarfAddrOps);
-       }
-diff --color -ur a/gen/passes/DLLImportRelocation.cpp b/gen/passes/DLLImportRelocation.cpp
---- a/gen/passes/DLLImportRelocation.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/passes/DLLImportRelocation.cpp	2022-03-16 15:52:58.994723062 +0100
-@@ -184,12 +184,16 @@
- 
-     Value *address = currentGlobal;
-     for (auto i : currentGepPath) {
-+      auto t = address->getType()->getPointerElementType();
-       if (i <= 0xFFFFFFFFu) {
--        address = b.CreateConstInBoundsGEP2_32(
--            address->getType()->getPointerElementType(), address, 0,
--            static_cast<unsigned>(i));
-+        address = b.CreateConstInBoundsGEP2_32(t, address, 0,
-+                                               static_cast<unsigned>(i));
-       } else {
--        address = b.CreateConstInBoundsGEP2_64(address, 0, i);
-+        address = b.CreateConstInBoundsGEP2_64(
-+#if LDC_LLVM_VER >= 800
-+            t,
-+#endif
-+            address, 0, i);
-       }
-     }
- 
-@@ -207,9 +211,13 @@
-     auto ifbb = BasicBlock::Create(m.getContext(), "if", ctor);
-     auto endbb = BasicBlock::Create(m.getContext(), "endif", ctor);
- 
--    auto isStillNull =
--        b.CreateICmp(CmpInst::ICMP_EQ, b.CreateLoad(address, false),
--                     Constant::getNullValue(t));
-+    auto isStillNull = b.CreateICmp(CmpInst::ICMP_EQ,
-+                                    b.CreateLoad(
-+#if LDC_LLVM_VER >= 800
-+                                        t,
-+#endif
-+                                        address, false),
-+                                    Constant::getNullValue(t));
-     b.CreateCondBr(isStillNull, ifbb, endbb);
- 
-     b.SetInsertPoint(ifbb);
-diff --color -ur a/gen/passes/GarbageCollect2Stack.cpp b/gen/passes/GarbageCollect2Stack.cpp
---- a/gen/passes/GarbageCollect2Stack.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/passes/GarbageCollect2Stack.cpp	2022-03-16 15:52:58.995723075 +0100
-@@ -12,11 +12,6 @@
- //
- //===----------------------------------------------------------------------===//
- 
--#define DEBUG_TYPE "dgc2stack"
--#if LDC_LLVM_VER < 700
--#define LLVM_DEBUG DEBUG
--#endif
--
- #include "gen/attributes.h"
- #include "metadata.h"
- #include "gen/passes/Passes.h"
-@@ -42,6 +37,11 @@
- #include "llvm/Support/raw_ostream.h"
- #include <algorithm>
- 
-+#define DEBUG_TYPE "dgc2stack"
-+#if LDC_LLVM_VER < 700
-+#define LLVM_DEBUG DEBUG
-+#endif
-+
- using namespace llvm;
- 
- STATISTIC(NumGcToStack, "Number of calls promoted to constant-size allocas");
-diff --color -ur a/gen/statements.cpp b/gen/statements.cpp
---- a/gen/statements.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/statements.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -1377,7 +1377,7 @@
-     PGO.emitCounterIncrement(stmt);
- 
-     // get value for this iteration
--    LLValue *loadedKey = irs->ir->CreateLoad(keyvar);
-+    LLValue *loadedKey = DtoLoad(keyvar);
-     LLValue *gep = DtoGEP1(val, loadedKey);
- 
-     if (!stmt->value->isRef() && !stmt->value->isOut()) {
-diff --color -ur a/gen/tocall.cpp b/gen/tocall.cpp
---- a/gen/tocall.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/tocall.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -93,12 +93,12 @@
+ IRState *gIR = nullptr;
+@@ -261,6 +262,29 @@ void IRState::addLinkerDependentLib(llvm::StringRef libraryName) {
  
  ////////////////////////////////////////////////////////////////////////////////
  
--LLFunctionType *DtoExtractFunctionType(LLType *type) {
-+LLFunctionType *DtoExtractFunctionType(LLType *type, LLValue *val) {
-   if (LLFunctionType *fty = isaFunction(type)) {
++llvm::CallInst *
++IRState::createInlineAsmCall(const Loc &loc, llvm::InlineAsm *ia,
++                             llvm::ArrayRef<llvm::Value *> args) {
++  llvm::CallInst *call = ir->CreateCall(ia, args);
++  addInlineAsmSrcLoc(loc, call);
++
++#if LDC_LLVM_VER >= 1400
++  // a non-indirect output constraint (=> return value of call) shifts the
++  // constraint/argument index mapping
++  ptrdiff_t i = call->getType()->isVoidTy() ? 0 : -1;
++  for (const auto &constraintInfo : ia->ParseConstraints()) {
++    if (constraintInfo.isIndirect) {
++      call->addParamAttr(i, llvm::Attribute::get(context(),
++                                                 llvm::Attribute::ElementType,
++                                                 getPointeeType(args[i])));
++    }
++    ++i;
++  }
++#endif
++
++  return call;
++}
++
+ void IRState::addInlineAsmSrcLoc(const Loc &loc,
+                                  llvm::CallInst *inlineAsmCall) {
+   // Simply use a stack of Loc* per IR module, and use index+1 as 32-bit
+diff --git a/gen/irstate.h b/gen/irstate.h
+index 85f53af6e2..a05e49f632 100644
+--- a/gen/irstate.h
++++ b/gen/irstate.h
+@@ -266,6 +266,8 @@ struct IRState {
+   void addLinkerOption(llvm::ArrayRef<llvm::StringRef> options);
+   void addLinkerDependentLib(llvm::StringRef libraryName);
+ 
++  llvm::CallInst *createInlineAsmCall(const Loc &loc, llvm::InlineAsm *ia,
++                                      llvm::ArrayRef<llvm::Value *> args);
+   void addInlineAsmSrcLoc(const Loc &loc, llvm::CallInst *inlineAsmCall);
+   const Loc &getInlineAsmSrcLoc(unsigned srcLocCookie) const;
+ 
+diff --git a/gen/llvmhelpers.cpp b/gen/llvmhelpers.cpp
+index 86d323f949..aba5369616 100644
+--- a/gen/llvmhelpers.cpp
++++ b/gen/llvmhelpers.cpp
+@@ -1783,7 +1783,7 @@ llvm::GlobalVariable *declareGlobal(const Loc &loc, llvm::Module &module,
+   llvm::GlobalVariable *existing =
+       module.getGlobalVariable(mangledName, /*AllowInternal=*/true);
+   if (existing) {
+-    const auto existingType = existing->getType()->getElementType();
++    const auto existingType = existing->getValueType();
+     if (existingType != type || existing->isConstant() != isConstant ||
+         existing->isThreadLocal() != isThreadLocal) {
+       error(loc,
+diff --git a/gen/naked.cpp b/gen/naked.cpp
+index cb4cdad458..cdb42fa868 100644
+--- a/gen/naked.cpp
++++ b/gen/naked.cpp
+@@ -480,8 +480,7 @@ llvm::CallInst *DtoInlineAsmExpr(const Loc &loc, llvm::StringRef code,
+   bool sideeffect = true;
+   llvm::InlineAsm *ia = llvm::InlineAsm::get(FT, code, constraints, sideeffect);
+ 
+-  llvm::CallInst *call = gIR->ir->CreateCall(ia, operands, "");
+-  gIR->addInlineAsmSrcLoc(loc, call);
++  auto call = gIR->createInlineAsmCall(loc, ia, operands);
+ 
+   return call;
+ }
+diff --git a/gen/nested.cpp b/gen/nested.cpp
+index a6c3b8ef2f..5d9f9eb92f 100644
+--- a/gen/nested.cpp
++++ b/gen/nested.cpp
+@@ -125,7 +125,7 @@ DValue *DtoNestedVariable(const Loc &loc, Type *astype, VarDeclaration *vd,
+   // Make the DWARF variable address relative to the context pointer (ctx);
+   // register all ops (offsetting, dereferencing) required to get there in the
+   // following list.
+-#if LDC_LLVM_VER >= 1500
++#if LDC_LLVM_VER >= 1400
+   LLSmallVector<uint64_t, 4> dwarfAddrOps;
+ #else
+   LLSmallVector<int64_t, 4> dwarfAddrOps;
+diff --git a/gen/passes/DLLImportRelocation.cpp b/gen/passes/DLLImportRelocation.cpp
+index bc9cfb3f15..c8eea2d6d9 100644
+--- a/gen/passes/DLLImportRelocation.cpp
++++ b/gen/passes/DLLImportRelocation.cpp
+@@ -203,7 +203,15 @@ struct Impl {
+     if (auto gep = isGEP(skipOverCast(originalInitializer))) {
+       Constant *newOperand =
+           createConstPointerCast(importedVar, gep->getOperand(0)->getType());
++#if LDC_LLVM_VER < 1400
+       value = gep->getWithOperandReplaced(0, newOperand);
++#else
++      SmallVector<Constant *, 8> newOperands;
++      newOperands.push_back(newOperand);
++      for (unsigned i = 1, e = gep->getNumOperands(); i != e; ++i)
++        newOperands.push_back(gep->getOperand(i));
++      value = gep->getWithOperands(newOperands);
++#endif
+     }
+     value = createConstPointerCast(value, t);
+ 
+diff --git a/gen/passes/GarbageCollect2Stack.cpp b/gen/passes/GarbageCollect2Stack.cpp
+index fadc232227..58335c3f25 100644
+--- a/gen/passes/GarbageCollect2Stack.cpp
++++ b/gen/passes/GarbageCollect2Stack.cpp
+@@ -199,7 +199,7 @@ class ArrayFI : public TypeInfoFI {
+     assert(ArrTy && "Dynamic array type not a struct?");
+     assert(isa<IntegerType>(ArrTy->getElementType(0)));
+     const PointerType *PtrTy = cast<PointerType>(ArrTy->getElementType(1));
+-    Ty = PtrTy->getElementType();
++    Ty = PtrTy->getPointerElementType();
+ 
+     // If the user explicitly disabled the limits, don't even check
+     // whether the element count fits in 32 bits. This could cause
+diff --git a/gen/rttibuilder.cpp b/gen/rttibuilder.cpp
+index 9e2fe64403..fcdde1bb72 100644
+--- a/gen/rttibuilder.cpp
++++ b/gen/rttibuilder.cpp
+@@ -144,7 +144,7 @@ void RTTIBuilder::push_funcptr(FuncDeclaration *fd, Type *castto) {
+ }
+ 
+ void RTTIBuilder::finalize(LLGlobalVariable *gvar) {
+-  LLStructType *st = isaStruct(gvar->getType()->getPointerElementType());
++  LLStructType *st = isaStruct(gvar->getValueType());
+   assert(st);
+ 
+   // finalize the type if opaque (e.g., for ModuleInfos)
+diff --git a/gen/tocall.cpp b/gen/tocall.cpp
+index c5aeb75609..b5041b8e3c 100644
+--- a/gen/tocall.cpp
++++ b/gen/tocall.cpp
+@@ -98,7 +98,7 @@ LLFunctionType *DtoExtractFunctionType(LLType *type) {
      return fty;
    }
    if (LLPointerType *pty = isaPointer(type)) {
 -    if (LLFunctionType *fty = isaFunction(pty->getElementType())) {
-+    if (LLFunctionType *fty = isaFunction(getPointeeType(val))) {
++    if (LLFunctionType *fty = isaFunction(pty->getPointerElementType())) {
        return fty;
      }
    }
-@@ -131,7 +131,11 @@
+@@ -131,7 +131,7 @@ static void addExplicitArguments(std::vector<LLValue *> &args, AttrSet &attrs,
      Type *argType = argexps[i]->type;
      bool passByVal = gABI->passByVal(irFty.type, argType);
  
--    llvm::AttrBuilder initialAttrs;
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+    llvm::AttrBuilder initialAttrs(getGlobalContext());
-+#else
-+     llvm::AttrBuilder initialAttrs;
-+#endif
-     if (passByVal) {
- #if LDC_LLVM_VER >= 1200
-       initialAttrs.addByValAttr(DtoType(argType));
-@@ -144,7 +148,7 @@
-       DtoAddExtendAttr(argType, initialAttrs);
-     }
- 
--    optionalIrArgs.push_back(new IrFuncTyArg(argType, passByVal, initialAttrs));
-+    optionalIrArgs.push_back(new IrFuncTyArg(argType, passByVal, std::move(initialAttrs)));
-     optionalIrArgs.back()->parametersIdx = i;
-   }
- 
-@@ -454,7 +458,7 @@
-     int atomicOrdering = (*e->arguments)[1]->toInteger();
- 
-     LLValue *ptr = DtoRVal(exp);
--    LLType *pointeeType = ptr->getType()->getContainedType(0);
-+    LLType *pointeeType = getPointeeType(ptr);
-     Type *retType = exp->type->nextOf();
- 
-     if (!pointeeType->isIntegerTy()) {
-@@ -468,13 +472,18 @@
-       }
-     }
- 
--    llvm::LoadInst *load = p->ir->CreateLoad(ptr);
--    if (auto alignment = getTypeAllocSize(load->getType())) {
-+    const auto loadedType = getPointeeType(ptr);
-+    llvm::LoadInst *load = p->ir->CreateLoad(
-+#if LDC_LLVM_VER >= 800
-+        loadedType,
-+#endif
-+        ptr);
-+    if (auto alignment = getTypeAllocSize(loadedType)) {
-       load->setAlignment(LLAlign(alignment));
-     }
-     load->setAtomic(llvm::AtomicOrdering(atomicOrdering));
-     llvm::Value *val = load;
--    if (val->getType() != pointeeType) {
-+    if (loadedType != pointeeType) {
-       val = DtoAllocaDump(val, retType);
-       result = new DLValue(retType, val);
-     } else {
-@@ -861,7 +870,7 @@
-   // get callee llvm value
-   LLValue *callable = DtoCallableValue(fnval);
-   LLFunctionType *const callableTy =
--      DtoExtractFunctionType(callable->getType());
-+      DtoExtractFunctionType(callable->getType(), callable);
-   assert(callableTy);
- 
-   const auto callconv =
-@@ -1053,6 +1062,11 @@
+     llvm::AttrBuilder initialAttrs(getGlobalContext());
+ #else
+     llvm::AttrBuilder initialAttrs;
+@@ -1052,15 +1052,10 @@ DValue *DtoCallFunction(const Loc &loc, Type *resulttype, DValue *fnval,
+     call->setCallingConv(gABI->callingConv(tf, iab.hasContext));
    }
    // merge in function attributes set in callOrInvoke
- #if LDC_LLVM_VER >= 1400
-+    auto attrbuildattribs = call->getAttributes().getFnAttrs();
-+    attrlist = attrlist.addFnAttributes(
-+      gIR->context(),
-+      llvm::AttrBuilder(gIR->context(), attrbuildattribs));
-+#elif LDC_LLVM_VER >= 1300
+-#if LDC_LLVM_VER >= 1500
+-    auto attrbuildattribs = call->getAttributes().getFnAttrs();
+-    attrlist = attrlist.addFnAttributes(
+-      gIR->context(),
+-      llvm::AttrBuilder(gIR->context(), attrbuildattribs));
+-#elif LDC_LLVM_VER >= 1400
++#if LDC_LLVM_VER >= 1400
++  auto attrbuildattribs = call->getAttributes().getFnAttrs();
    attrlist = attrlist.addFnAttributes(
-     gIR->context(),
-     llvm::AttrBuilder(call->getAttributes(), LLAttributeList::FunctionIndex));
-diff --color -ur a/gen/toconstelem.cpp b/gen/toconstelem.cpp
---- a/gen/toconstelem.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/toconstelem.cpp	2022-03-16 15:52:58.996723088 +0100
-@@ -354,7 +354,7 @@
+-      gIR->context(),
+-      llvm::AttrBuilder(call->getAttributes(), LLAttributeList::FunctionIndex));
++      gIR->context(), llvm::AttrBuilder(gIR->context(), attrbuildattribs));
+ #else
+   attrlist = attrlist.addAttributes(
+       gIR->context(), LLAttributeList::FunctionIndex,
+diff --git a/gen/toconstelem.cpp b/gen/toconstelem.cpp
+index 8fd6068df7..5388d26c51 100644
+--- a/gen/toconstelem.cpp
++++ b/gen/toconstelem.cpp
+@@ -352,9 +352,9 @@ class ToConstElemVisitor : public Visitor {
+       } else {
+         // Offset isn't a multiple of base type size, just cast to i8* and
          // apply the byte offset.
-         auto voidPtrType = getVoidPtrType();
+-        auto voidPtrType = getVoidPtrType();
++        auto i8 = LLType::getInt8Ty(gIR->context());
          result = llvm::ConstantExpr::getGetElementPtr(
 -            voidPtrType->getElementType(), DtoBitCast(base, voidPtrType),
-+            llvm::Type::getInt8Ty(gIR->context()), DtoBitCast(base, voidPtrType),
++            i8, DtoBitCast(base, i8->getPointerTo()),
              DtoConstSize_t(e->offset));
        }
      }
-diff --color -ur a/gen/tollvm.cpp b/gen/tollvm.cpp
---- a/gen/tollvm.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/tollvm.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -502,14 +502,24 @@
+diff --git a/gen/uda.cpp b/gen/uda.cpp
+index 2e7a963ea7..be2f10fb8f 100644
+--- a/gen/uda.cpp
++++ b/gen/uda.cpp
+@@ -194,7 +194,7 @@ void applyAttrAllocSize(StructLiteralExp *sle, IrFunction *irFunc) {
+   const auto llvmSizeIdx = sizeArgIdx + offset;
+   const auto llvmNumIdx = numArgIdx + offset;
  
- ////////////////////////////////////////////////////////////////////////////////
- 
-+namespace {
-+llvm::LoadInst *DtoLoadImpl(LLValue *src, const char *name) {
-+  return gIR->ir->CreateLoad(
-+#if LDC_LLVM_VER >= 800
-+      getPointeeType(src),
-+#endif
-+      src, name);
-+}
-+}
-+
- LLValue *DtoLoad(LLValue *src, const char *name) {
--  return gIR->ir->CreateLoad(src, name);
-+  return DtoLoadImpl(src, name);
- }
- 
- // Like DtoLoad, but the pointer is guaranteed to be aligned appropriately for
- // the type.
- LLValue *DtoAlignedLoad(LLValue *src, const char *name) {
--  llvm::LoadInst *ld = gIR->ir->CreateLoad(src, name);
-+  llvm::LoadInst *ld = DtoLoadImpl(src, name);
-   if (auto alignment = getABITypeAlign(ld->getType())) {
-     ld->setAlignment(LLAlign(alignment));
-   }
-@@ -517,7 +527,7 @@
- }
- 
- LLValue *DtoVolatileLoad(LLValue *src, const char *name) {
--  llvm::LoadInst *ld = gIR->ir->CreateLoad(src, name);
-+  llvm::LoadInst *ld = DtoLoadImpl(src, name);
-   ld->setVolatile(true);
-   return ld;
- }
-diff --color -ur a/gen/trycatchfinally.cpp b/gen/trycatchfinally.cpp
---- a/gen/trycatchfinally.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/trycatchfinally.cpp	2022-03-16 15:52:58.993723049 +0100
-@@ -255,7 +255,11 @@
- 
-   if (cpyObj) {
-     // assign the caught exception to the location in the closure
--    auto val = irs.ir->CreateLoad(exnObj);
-+    auto val = irs.ir->CreateLoad(
-+#if LDC_LLVM_VER >= 800
-+        getPointeeType(exnObj),
-+#endif
-+        exnObj);
-     irs.ir->CreateStore(val, cpyObj);
-     exnObj = cpyObj;
-   }
-@@ -698,8 +702,9 @@
-   irs.ir->CreateStore(ehPtr, getOrCreateEhPtrSlot());
- 
-   llvm::Value *ehSelector = DtoExtractValue(landingPad, 1);
-+  const auto ehSelectorType = ehSelector->getType();
-   if (!ehSelectorSlot)
--    ehSelectorSlot = DtoRawAlloca(ehSelector->getType(), 0, "eh.selector");
-+    ehSelectorSlot = DtoRawAlloca(ehSelectorType, 0, "eh.selector");
-   irs.ir->CreateStore(ehSelector, ehSelectorSlot);
- 
-   // Add landingpad clauses, emit finallys and 'if' chain to catch the
-@@ -738,9 +743,13 @@
- 
-       // Compare the selector value from the unwinder against the expected
-       // one and branch accordingly.
--      irs.ir->CreateCondBr(
--          irs.ir->CreateICmpEQ(irs.ir->CreateLoad(ehSelectorSlot), ehTypeId),
--          cb.bodyBB, mismatchBB, cb.branchWeights);
-+      irs.ir->CreateCondBr(irs.ir->CreateICmpEQ(irs.ir->CreateLoad(
-+#if LDC_LLVM_VER >= 800
-+                                                    ehSelectorType,
-+#endif
-+                                                    ehSelectorSlot),
-+                                                ehTypeId),
-+                           cb.bodyBB, mismatchBB, cb.branchWeights);
-       irs.ir->SetInsertPoint(mismatchBB);
-     }
-   }
-diff --color -ur a/gen/uda.cpp b/gen/uda.cpp
---- a/gen/uda.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/gen/uda.cpp	2022-03-16 15:52:58.994723062 +0100
-@@ -215,7 +215,11 @@
-   llvmSizeIdx += offset;
-   llvmNumIdx += offset;
- 
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+  llvm::AttrBuilder builder(getGlobalContext());
-+#else
+   llvm::AttrBuilder builder(getGlobalContext());
+ #else
    llvm::AttrBuilder builder;
-+#endif
-   if (numArgIdx >= 0) {
-     builder.addAllocSizeAttr(llvmSizeIdx, llvmNumIdx);
-   } else {
-@@ -446,7 +450,11 @@
+@@ -429,7 +429,7 @@ void applyFuncDeclUDAs(FuncDeclaration *decl, IrFunction *irFunc) {
        if (ident == Id::udaAllocSize) {
          applyAttrAllocSize(sle, irFunc);
        } else if (ident == Id::udaLLVMAttr) {
+-#if LDC_LLVM_VER >= 1500
 +#if LDC_LLVM_VER >= 1400
-+        llvm::AttrBuilder attrs(getGlobalContext());
-+#else
+         llvm::AttrBuilder attrs(getGlobalContext());
+ #else
          llvm::AttrBuilder attrs;
-+#endif
-         applyAttrLLVMAttr(sle, attrs);
- #if LDC_LLVM_VER >= 1400
-         func->addFnAttrs(attrs);
-diff --color -ur a/ir/irclass.cpp b/ir/irclass.cpp
---- a/ir/irclass.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/ir/irclass.cpp	2022-03-16 15:52:59.002723164 +0100
-@@ -109,6 +109,7 @@
-       // regular TypeInfo metadata
-       emitTypeInfoMetadata(typeInfo, aggrdecl->type);
+diff --git a/ir/iraggr.cpp b/ir/iraggr.cpp
+index 9d25fd4b5a..f32f21398d 100644
+--- a/ir/iraggr.cpp
++++ b/ir/iraggr.cpp
+@@ -76,8 +76,7 @@ LLConstant *IrAggr::getInitSymbol(bool define) {
+       assert(!initGlobal->hasInitializer() &&
+              "existing init symbol not expected to be defined");
+       assert((isBuiltinTypeInfo ||
+-              initGlobal->getType()->getPointerElementType() ==
+-                  getLLStructType()) &&
++              initGlobal->getValueType() == getLLStructType()) &&
+              "type of existing init symbol declaration doesn't match");
+     } else {
+       // Init symbols of built-in TypeInfos need to be kept mutable as the type
+diff --git a/ir/irclass.cpp b/ir/irclass.cpp
+index 5a86d45151..51c0ad7ce2 100644
+--- a/ir/irclass.cpp
++++ b/ir/irclass.cpp
+@@ -111,7 +111,7 @@ LLGlobalVariable *IrClass::getClassInfoSymbol(bool define) {
  
-+#if LDC_LLVM_VER < 1400
        // Gather information
        LLType *type = DtoType(aggrdecl->type);
-       LLType *bodyType = llvm::cast<LLPointerType>(type)->getElementType();
-@@ -124,6 +125,7 @@
-       llvm::NamedMDNode *node = gIR->module.getOrInsertNamedMetadata(metaname);
-       node->addOperand(llvm::MDNode::get(
-           gIR->context(), llvm::makeArrayRef(mdVals, CD_NumFields)));
-+#endif
-     }
- 
-     if (!define)
-diff --color -ur a/ir/irfuncty.cpp b/ir/irfuncty.cpp
---- a/ir/irfuncty.cpp	2022-01-13 15:21:19.000000000 +0100
-+++ b/ir/irfuncty.cpp	2022-03-16 15:52:59.002723164 +0100
-@@ -17,6 +17,21 @@
- #include "gen/logger.h"
- #include "gen/tollvm.h"
- 
-+IrFuncTyArg::IrFuncTyArg(Type *t, bool bref)
-+    : type(t),
-+      ltype(t != Type::tvoid && bref ? DtoType(t->pointerTo()) : DtoType(t)),
-+      attrs(
-+#if LDC_LLVM_VER < 1400
-+        llvm::AttrBuilder {}
-+#else
-+        llvm::AttrBuilder(getGlobalContext())
-+#endif
-+      ),
-+      byref(bref)
-+{
-+  mem.addRange(&type, sizeof(type));
-+}
-+
- IrFuncTyArg::IrFuncTyArg(Type *t, bool bref, llvm::AttrBuilder a)
+-      LLType *bodyType = llvm::cast<LLPointerType>(type)->getElementType();
++      LLType *bodyType = type->getPointerElementType();
+       bool hasDestructor = (aggrdecl->dtor != nullptr);
+       // Construct the fields
+       llvm::Metadata *mdVals[CD_NumFields];
+diff --git a/ir/irfuncty.cpp b/ir/irfuncty.cpp
+index 58ddcda11a..3c11f4b91d 100644
+--- a/ir/irfuncty.cpp
++++ b/ir/irfuncty.cpp
+@@ -20,15 +20,10 @@
+ IrFuncTyArg::IrFuncTyArg(Type *t, bool bref)
      : type(t),
        ltype(t != Type::tvoid && bref ? DtoType(t->pointerTo()) : DtoType(t)),
-diff --color -ur a/ir/irfuncty.h b/ir/irfuncty.h
---- a/ir/irfuncty.h	2022-01-13 15:21:19.000000000 +0100
-+++ b/ir/irfuncty.h	2022-03-16 15:52:59.002723164 +0100
-@@ -76,7 +76,8 @@
-    *  @param byref Initial value for the 'byref' field. If true the initial
-    *               LLVM Type will be of DtoType(type->pointerTo()), instead
-    *               of just DtoType(type) */
--  IrFuncTyArg(Type *t, bool byref, llvm::AttrBuilder attrs = {});
-+  IrFuncTyArg(Type *t, bool byref);
-+  IrFuncTyArg(Type *t, bool byref, llvm::AttrBuilder attrs);
-   IrFuncTyArg(const IrFuncTyArg &) = delete;
+-      attrs(
+-#if LDC_LLVM_VER < 1500
+-        llvm::AttrBuilder {}
+-#else
+-        llvm::AttrBuilder(getGlobalContext())
++#if LDC_LLVM_VER >= 1400
++      attrs(getGlobalContext()),
+ #endif
+-      ),
+-      byref(bref)
+-{
++      byref(bref) {
+   mem.addRange(&type, sizeof(type));
+ }
  
-   ~IrFuncTyArg();
+diff --git a/runtime/jit-rt/cpp-so/bind.cpp b/runtime/jit-rt/cpp-so/bind.cpp
+index e1a0bea3b0..05d2b260c0 100644
+--- a/runtime/jit-rt/cpp-so/bind.cpp
++++ b/runtime/jit-rt/cpp-so/bind.cpp
+@@ -81,7 +81,7 @@ allocParam(llvm::IRBuilder<> &builder, llvm::Type &srcType,
+            llvm::function_ref<void(const std::string &)> errHandler,
+            const BindOverride &override) {
+   if (param.type == ParamType::Aggregate && srcType.isPointerTy()) {
+-    auto elemType = llvm::cast<llvm::PointerType>(&srcType)->getElementType();
++    auto elemType = srcType.getPointerElementType();
+     auto stackArg = builder.CreateAlloca(elemType);
+     if (auto alignment = layout.getABITypeAlignment(elemType))
+       stackArg->setAlignment(LLAlign(alignment));
+diff --git a/runtime/jit-rt/cpp-so/compile.cpp b/runtime/jit-rt/cpp-so/compile.cpp
+index 1bcd221f6e..64badd1d51 100644
+--- a/runtime/jit-rt/cpp-so/compile.cpp
++++ b/runtime/jit-rt/cpp-so/compile.cpp
+@@ -203,8 +203,7 @@ void generateBind(const Context &context, DynamicCompilerContext &jitContext,
+                        : nullptr;
+           };
+ 
+-          auto ptype = llvm::cast<llvm::PointerType>(&type);
+-          auto elemType = ptype->getElementType();
++          auto elemType = type.getPointerElementType();
+           if (elemType->isFunctionTy()) {
+             (void)size;
+             assert(size == sizeof(void *));
+diff --git a/runtime/jit-rt/cpp-so/disassembler.cpp b/runtime/jit-rt/cpp-so/disassembler.cpp
+index eda0be2285..281e6f0028 100644
+--- a/runtime/jit-rt/cpp-so/disassembler.cpp
++++ b/runtime/jit-rt/cpp-so/disassembler.cpp
+@@ -28,7 +28,11 @@
+ #include "llvm/MC/MCSubtargetInfo.h"
+ #include "llvm/Object/ObjectFile.h"
+ #include "llvm/Support/Error.h"
++#if LDC_LLVM_VER >= 1400
++#include "llvm/MC/TargetRegistry.h"
++#else
+ #include "llvm/Support/TargetRegistry.h"
++#endif
+ #include "llvm/Target/TargetMachine.h"
+ 
+ #if LDC_LLVM_VER >= 1000
+diff --git a/runtime/jit-rt/cpp-so/optimizer.cpp b/runtime/jit-rt/cpp-so/optimizer.cpp
+index 839911de26..ae56723999 100644
+--- a/runtime/jit-rt/cpp-so/optimizer.cpp
++++ b/runtime/jit-rt/cpp-so/optimizer.cpp
+@@ -251,7 +251,7 @@ void setRtCompileVar(const Context &context, llvm::Module &module,
+   assert(nullptr != init);
+   auto var = module.getGlobalVariable(name);
+   if (nullptr != var) {
+-    auto type = var->getType()->getElementType();
++    auto type = var->getValueType();
+     auto initializer =
+         parseInitializer(module.getDataLayout(), *type, init,
+                          [&](const std::string &str) { fatal(context, str); });
