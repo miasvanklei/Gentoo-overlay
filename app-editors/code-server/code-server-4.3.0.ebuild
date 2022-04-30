@@ -102,19 +102,19 @@ src_prepare() {
 			"${pkgdir}/node_modules/nan" || die
 	done
 
-	# argon2
+	# argon2 prepare
 	pkgdir="${WORKDIR}/$(package_dir argon2)"
 	mkdir -p "${pkgdir}/node_modules" || die
 	ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
-		"${pkgdir}/node_modules/node-addon-api" || die
+			"${pkgdir}/node_modules/node-addon-api" || die
 	ln -s "${WORKDIR}/nodejs-nan-${NAN_V}" \
 		"${pkgdir}/node_modules/nan" || die
-	eapply "${FILESDIR}/${PN}-node.patch"
 
+	eapply "${FILESDIR}/${PN}-node.patch"
         eapply_user
 
 	# use system node
-	rm ./node ./lib/node ./lib/vscode/node \
+	rm ./node ./lib/node \
 		|| die "failed to remove bundled nodejs"
 	rm ./lib/coder-cloud-agent || die "failed to remove bundled coder-cloud-agent"
 
@@ -122,18 +122,20 @@ src_prepare() {
 	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg \
 		|| die "failed to remove bundled ripgrep"
 	for binmod in "${VSCODE_BINMODS[@]}"; do
-		rm -r "$(get_binmod_loc_build ${binmod})" || die
+		rm -r "$(get_binmod_loc ${binmod})/build" || die
 	done
 
-	# remove argon2
+	# remove argon2 & parcel-watcher
+	rm -r "$(get_binmod_loc parcel-watcher)/prebuilds" || die
 	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
+	rm -r "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node" || die
 
 	# not needed
 	rm ${S}/code-server || die
 	rm ${S}/postinstall.sh || die
 
 	# already in /usr/portage/licenses/MIT
-	rm ${S}/LICENSE.txt || die
+	rm ${S}/LICENSE || die
 }
 
 src_configure() {
@@ -157,9 +159,7 @@ src_compile() {
 		cd "${WORKDIR}/$(package_dir ${binmod})" || die
 		enodegyp --verbose --jobs="$(makeopts_jobs)" build
 		local install_path=$(get_binmod_loc_release ${binmod})
-		cp -r "${WORKDIR}/$(package_dir ${binmod})/build/Release" ${install_path} || die
-		rm -r ${install_path}/Release/obj.target || die
-		rm -r ${install_path}/Release/.deps || die
+		cp "${WORKDIR}/$(package_dir ${binmod})/build/Release/"*.node ${install_path} || die
 	done
 
 	# argon2
@@ -218,18 +218,9 @@ get_binmod_loc() {
 	fi
 }
 
-# return binmod release path
+# return and create binmod release path
 get_binmod_loc_release() {
-		local path="$(get_binmod_loc ${1})/build"
-		mkdir -p "$path"
-		echo "$path"
-}
-
-# return binmod build path
-get_binmod_loc_build() {
-	if [ ${1} = "parcel-watcher" ]; then
-		echo "$(get_binmod_loc ${1})/prebuilds"
-	else
-		echo "$(get_binmod_loc ${1})/build"
-	fi
+	local path="$(get_binmod_loc ${1})/build/Release"
+	mkdir -p "$path"
+	echo "$path"
 }
