@@ -15,10 +15,10 @@ ASAR_V=0.14.3
 NAN_V=2.14.0
 
 NODE_ADDON_API_V=3.1.0
-NATIVE_WATCHDOG_V=1.3.0
+NATIVE_WATCHDOG_V=1.4.0
 NODE_PTY_V=0.11.0-beta11
-SPDLOG_V=0.13.5
-ARGON2_V=0.28.2
+SPDLOG_V=0.13.6
+ARGON2_V=0.28.4
 PARCEL_WATCHER_V=2.0.5
 
 SRC_URI="
@@ -50,7 +50,7 @@ DEPEND=""
 RDEPEND="
 	${DEPEND}
 	app-crypt/node-rs_argon2
-	>=net-libs/nodejs-14.16.1:0/14[ssl]
+	>=net-libs/nodejs-16.14.2:0/16[ssl]
 	dev-go/cloud-agent
 	sys-apps/ripgrep
 	gnome-keyring? (
