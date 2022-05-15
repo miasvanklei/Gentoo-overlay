@@ -16,8 +16,8 @@
  BUILD_DIRS += utils/hsc2hs
  BUILD_DIRS += utils/ghc-pkg
  BUILD_DIRS += utils/testremove
---- a/libraries/Cabal/Cabal/Distribution/Simple/Setup.hs	2020-02-14 17:28:59.000000000 +0100
-+++ b/libraries/Cabal/Cabal/Distribution/Simple/Setup.hs	2020-02-21 15:45:10.681298512 +0100
+--- a/libraries/Cabal/Cabal/src/Distribution/Simple/Setup.hs	2020-02-14 17:28:59.000000000 +0100
++++ b/libraries/Cabal/Cabal/src/Distribution/Simple/Setup.hs	2020-02-21 15:45:10.681298512 +0100
 @@ -359,11 +359,11 @@
      configArgs         = [],
      configPrograms_    = Option' (Just (Last' progDb)),
@@ -34,14 +34,10 @@
      configProf         = NoFlag,
 --- a/mk/config.mk.in	2020-02-21 15:47:27.211053820 +0100
 +++ b/mk/config.mk.in	2020-02-21 15:47:37.312109670 +0100
-@@ -140,14 +140,6 @@
- DYNAMIC_BY_DEFAULT = YES
- endif
+@@ -140,10 +140,6 @@
+ PlatformSupportsSharedLibs = $(if $(filter $(TARGETPLATFORM),\
+     $(NoSharedLibsPlatformList)),NO,YES)
  
--# For now, we unconditionally disable dynamic-by-default, as the
--# cabal-install's that are in the wild don't handle it properly.
--DYNAMIC_BY_DEFAULT = NO
--
 -# If building both v and dyn ways, then use -dynamic-too to build them.
 -# This makes the build faster.
 -DYNAMIC_TOO = YES
