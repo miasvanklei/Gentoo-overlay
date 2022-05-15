@@ -27,7 +27,7 @@ RDEPEND=">=dev-haskell/aeson-1.1.2.0:=[profile?]
 	>=dev-haskell/extra-1.7.3:=[profile?]
 	dev-haskell/file-embed:=[profile?]
 	>=dev-haskell/filepattern-0.1.1:=[profile?]
-	>=dev-haskell/ghc-lib-parser-ex-9.0.0.4:=[profile?] <dev-haskell/ghc-lib-parser-ex-9.0.1:=[profile?]
+	>=dev-haskell/ghc-lib-parser-ex-9.2.0.3:=[profile?] <dev-haskell/ghc-lib-parser-ex-9.2.1:=[profile?]
 	>=dev-haskell/refact-0.3:=[profile?]
 	dev-haskell/text:=[profile?]
 	>=dev-haskell/uniplate-1.5:=[profile?]
@@ -40,7 +40,7 @@ RDEPEND=">=dev-haskell/aeson-1.1.2.0:=[profile?]
                 >=dev-haskell/ghc-lib-parser-8.10:=[profile?] <dev-haskell/ghc-lib-parser-8.11:=[profile?]
         )
         !ghc-lib? (
-                >=dev-lang/ghc-8.8:= <dev-lang/ghc-9.1:=
+                >=dev-lang/ghc-9.2:= <dev-lang/ghc-9.4:=
         )
 	hsyaml? ( >=dev-haskell/hsyaml-0.2:=[profile?]
 			>=dev-haskell/hsyaml-aeson-0.2:=[profile?] )
