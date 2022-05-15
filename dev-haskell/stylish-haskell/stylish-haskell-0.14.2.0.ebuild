@@ -17,14 +17,14 @@ SLOT="0/${PV}"
 KEYWORDS="~amd64 ~x86"
 IUSE=""
 
-RDEPEND=">=dev-haskell/aeson-0.6:=[profile?] <dev-haskell/aeson-1.6:=[profile?]
-	>=dev-haskell/cabal-2.4:=[profile?] <dev-haskell/cabal-3.5:=[profile?]
+RDEPEND=">=dev-haskell/aeson-0.6:=[profile?] <dev-haskell/aeson-2.1:=[profile?]
+	>=dev-haskell/cabal-3.4:=[profile?] <dev-haskell/cabal-3.7:=[profile?]
 	>=dev-haskell/file-embed-0.0.10:=[profile?] <dev-haskell/file-embed-0.1:=[profile?]
 	>=dev-haskell/hsyaml-0.2:=[profile?] <dev-haskell/hsyaml-0.3:=[profile?]
 	>=dev-haskell/hsyaml-aeson-0.2:=[profile?] <dev-haskell/hsyaml-aeson-0.3:=[profile?]
 	>=dev-haskell/mtl-2.0:=[profile?] <dev-haskell/mtl-2.3:=[profile?]
-	>=dev-haskell/optparse-applicative-0.12:=[profile?] <dev-haskell/optparse-applicative-0.16:=[profile?]
-	>=dev-haskell/semigroups-0.18:=[profile?] <dev-haskell/semigroups-0.20:=[profile?]
+	>=dev-haskell/optparse-applicative-0.12:=[profile?] <dev-haskell/optparse-applicative-0.17:=[profile?]
+	>=dev-haskell/semigroups-0.18:=[profile?] <dev-haskell/semigroups-0.21:=[profile?]
 	>=dev-haskell/strict-0.3:=[profile?] <dev-haskell/strict-0.5:=[profile?]
 	>=dev-haskell/syb-0.3:=[profile?] <dev-haskell/syb-0.8:=[profile?]
 	>=dev-lang/ghc-8.0.1:=
@@ -36,7 +36,3 @@ DEPEND="${RDEPEND}
 		>=dev-haskell/test-framework-0.4 <dev-haskell/test-framework-0.9
 		>=dev-haskell/test-framework-hunit-0.2 <dev-haskell/test-framework-hunit-0.4 )
 "
-
-PATCHES=(
-	"${FILESDIR}/use-system-ghc.patch"
-)
