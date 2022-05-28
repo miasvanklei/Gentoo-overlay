@@ -38,7 +38,7 @@
  pub fn opts() -> TargetOptions {
      let mut base = super::linux_base::opts();
  
-     base.env = "musl".to_string();
+     base.env = "musl".into();
 -    base.pre_link_objects_fallback = crt_objects::pre_musl_fallback();
 -    base.post_link_objects_fallback = crt_objects::post_musl_fallback();
 -    base.crt_objects_fallback = Some(CrtObjectsFallback::Musl);
@@ -199,22 +199,22 @@
      pub qemu_rootfs: Option<PathBuf>,
      pub no_std: bool,
 @@ -527,7 +527,6 @@
-         default_linker: Option<String>,
-         channel: Option<String>,
-         description: Option<String>,
--        musl_root: Option<String>,
-         rpath: Option<bool>,
-         verbose_tests: Option<bool>,
-         optimize_tests: Option<bool>,
+         default_linker: Option<String> = "default-linker",
+         channel: Option<String> = "channel",
+         description: Option<String> = "description",
+-        musl_root: Option<String> = "musl-root",
+         rpath: Option<bool> = "rpath",
+         verbose_tests: Option<bool> = "verbose-tests",
+         optimize_tests: Option<bool> = "optimize-tests",
 @@ -573,8 +572,6 @@
-         sanitizers: Option<bool>,
-         profiler: Option<bool>,
-         crt_static: Option<bool>,
--        musl_root: Option<String>,
--        musl_libdir: Option<String>,
-         wasi_root: Option<String>,
-         qemu_rootfs: Option<String>,
-         no_std: Option<bool>,
+         sanitizers: Option<bool> = "sanitizers",
+         profiler: Option<bool> = "profiler",
+         crt_static: Option<bool> = "crt-static",
+-        musl_root: Option<String> = "musl-root",
+-        musl_libdir: Option<String> = "musl-libdir",
+         wasi_root: Option<String> = "wasi-root",
+         qemu_rootfs: Option<String> = "qemu-rootfs",
+         no_std: Option<bool> = "no-std",
 @@ -592,7 +585,6 @@
              set(&mut config.llvm_tools_enabled, rust.llvm_tools);
              config.rustc_parallel = rust.parallel_compiler.unwrap_or(false);

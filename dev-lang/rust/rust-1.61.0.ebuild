@@ -249,6 +249,7 @@ src_configure() {
 		targets = "${LLVM_TARGETS// /;}"
 		experimental-targets = ""
 		link-shared = true
+		static-libstdcpp = false
 		[build]
 		build = "${rust_target}"
 		host = ["${rust_target}"]
