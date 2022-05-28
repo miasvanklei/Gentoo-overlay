@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="11"
+K_GENPATCHES_VER="1"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -42,7 +42,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/usb/3365-phy-rockchip-typec-Make-sure-the-plug-orientation-is.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/3372-phy-rockchip-inno-usb2-More-robust-charger-detection.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/3373-usb-typec-extcon-Don-t-touch-charger-proprties.patch
-		eapply "${FILESDIR}"/pinebook-pro/0006-drm-panfrost-scheduler-fix.patch
 		eapply "${FILESDIR}"/pinebook-pro/0007-drm-rockchip-support-gamma-control-on-RK3399.patch
 		eapply "${FILESDIR}"/pinebook-pro/0008-add-cdn_dp-audio.patch
 		eapply "${FILESDIR}"/pinebook-pro/0009-generic-fixes.patch
