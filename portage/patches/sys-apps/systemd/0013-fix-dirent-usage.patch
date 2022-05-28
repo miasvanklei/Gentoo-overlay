@@ -1,14 +1,3 @@
---- a/src/basic/stat-util.c	2021-12-24 13:56:14.237464700 +0100
-+++ b/src/basic/stat-util.c	2021-12-24 13:58:45.512198532 +0100
-@@ -99,7 +99,7 @@
-                         return fd;
-         }
- 
--        n = getdents64(fd, &buffer, sizeof(buffer));
-+        n = getdents64(fd, (struct dirent *)&buffer, sizeof(buffer));
-         if (n < 0)
-                 return -errno;
- 
 --- a/src/basic/recurse-dir.c	2021-12-24 13:56:59.624984881 +0100
 +++ b/src/basic/recurse-dir.c	2021-12-24 13:58:09.766788813 +0100
 @@ -54,7 +54,7 @@

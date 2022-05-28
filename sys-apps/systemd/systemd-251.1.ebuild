@@ -32,7 +32,7 @@ LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
 IUSE="
 	acl apparmor audit build cgroup-hybrid cryptsetup curl +dns-over-tls elfutils
-	fido2 +gcrypt gnuefi gnutls homed hostnamed-fallback http idn importd +kmod
+	fido2 +gcrypt gnuefi gnutls homed http idn importd +kmod
 	+lz4 lzma nat +openssl pam pcre pkcs11 policykit pwquality qrcode
 	+resolvconf +seccomp selinux split-usr +sysv-utils test tpm vanilla xkb +zstd
 "
@@ -40,12 +40,11 @@ REQUIRED_USE="
 	dns-over-tls? ( || ( gnutls openssl ) )
 	homed? ( cryptsetup pam openssl )
 	importd? ( curl lzma || ( gcrypt openssl ) )
-	policykit? ( !hostnamed-fallback )
 	pwquality? ( homed )
 "
 RESTRICT="!test? ( test )"
 
-MINKV="3.11"
+MINKV="4.15"
 
 COMMON_DEPEND="
 	>=sys-apps/util-linux-2.30:0=[${MULTILIB_USEDEP}]
@@ -118,10 +117,6 @@ RDEPEND="${COMMON_DEPEND}
 	>=acct-user/systemd-resolve-0-r1
 	>=acct-user/systemd-timesync-0-r1
 	>=sys-apps/baselayout-2.2
-	hostnamed-fallback? (
-		acct-group/systemd-hostname
-		sys-apps/dbus-broker
-	)
 	selinux? ( sec-policy/selinux-base-policy[systemd] )
 	sysv-utils? (
 		!sys-apps/openrc[sysv-utils(-)]
@@ -181,8 +176,8 @@ pkg_pretend() {
 			ewarn "See https://bugs.gentoo.org/674458."
 		fi
 
-		local CONFIG_CHECK="~AUTOFS4_FS ~BINFMT_MISC ~BLK_DEV_BSG ~CGROUPS
-			~DEVTMPFS ~EPOLL ~FANOTIFY ~FHANDLE
+		local CONFIG_CHECK=" ~BINFMT_MISC ~BLK_DEV_BSG ~CGROUPS
+			~CGROUP_BPF ~DEVTMPFS ~EPOLL ~FANOTIFY ~FHANDLE
 			~INOTIFY_USER ~IPV6 ~NET ~NET_NS ~PROC_FS ~SIGNALFD ~SYSFS
 			~TIMERFD ~TMPFS_XATTR ~UNIX ~USER_NS
 			~CRYPTO_HMAC ~CRYPTO_SHA256 ~CRYPTO_USER_API_HASH
@@ -191,14 +186,17 @@ pkg_pretend() {
 
 		use acl && CONFIG_CHECK+=" ~TMPFS_POSIX_ACL"
 		use seccomp && CONFIG_CHECK+=" ~SECCOMP ~SECCOMP_FILTER"
-		kernel_is -lt 3 7 && CONFIG_CHECK+=" ~HOTPLUG"
-		kernel_is -lt 4 7 && CONFIG_CHECK+=" ~DEVPTS_MULTIPLE_INSTANCES"
-		kernel_is -ge 4 10 && CONFIG_CHECK+=" ~CGROUP_BPF"
 
-		if kernel_is -lt 5 10 20; then
-			CONFIG_CHECK+=" ~CHECKPOINT_RESTORE"
-		else
+		if kernel_is -ge 5 10 20; then
 			CONFIG_CHECK+=" ~KCMP"
+		else
+			CONFIG_CHECK+=" ~CHECKPOINT_RESTORE"
+		fi
+
+		if kernel_is -ge 4 18; then
+			CONFIG_CHECK+=" ~AUTOFS_FS"
+		else
+			CONFIG_CHECK+=" ~AUTOFS4_FS"
 		fi
 
 		if linux_config_exists; then
@@ -237,7 +235,7 @@ src_prepare() {
 
 	# Add local patches here
 	PATCHES+=(
-		"${FILESDIR}/250.4-random-seed-hash.patch"
+		"${FILESDIR}/251-format-string.patch"
 	)
 
 	if ! use vanilla; then
@@ -247,6 +245,9 @@ src_prepare() {
 			"${FILESDIR}/gentoo-journald-audit.patch"
 		)
 	fi
+
+	# Fails with split-usr.
+	sed -i -e '2i exit 77' test/test-rpm-macros.sh || die
 
 	default
 }
@@ -411,16 +412,6 @@ multilib_src_install_all() {
 		# Avoid breaking boot/reboot
 		dosym ../../../lib/systemd/systemd /usr/lib/systemd/systemd
 		dosym ../../../lib/systemd/systemd-shutdown /usr/lib/systemd/systemd-shutdown
-	fi
-
-	# workaround for https://github.com/systemd/systemd/issues/13501
-	if use hostnamed-fallback; then
-		# this file requires dbus-broker
-		insinto /usr/share/dbus-1/system.d/
-		doins "${FILESDIR}/org.freedesktop.hostname1_no_polkit.conf"
-
-		insinto "${rootprefix}/lib/systemd/system/systemd-hostnamed.service.d/"
-		doins "${FILESDIR}/00-hostnamed-network-user.conf"
 	fi
 
 	gen_usr_ldscript -a systemd udev
