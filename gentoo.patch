@@ -1,8 +1,8 @@
-diff --git a/app-emulation/libvirt/libvirt-8.2.0.ebuild b/app-emulation/libvirt/libvirt-8.2.0.ebuild
-index e83eced9495..705dadd4aa7 100644
---- a/app-emulation/libvirt/libvirt-8.2.0.ebuild
-+++ b/app-emulation/libvirt/libvirt-8.2.0.ebuild
-@@ -108,8 +108,6 @@ RDEPEND="
+diff --git a/app-emulation/libvirt/libvirt-8.4.0.ebuild b/app-emulation/libvirt/libvirt-8.4.0.ebuild
+index 6128a61b974..45330476e05 100644
+--- a/app-emulation/libvirt/libvirt-8.4.0.ebuild
++++ b/app-emulation/libvirt/libvirt-8.4.0.ebuild
+@@ -113,8 +113,6 @@ RDEPEND="
  	selinux? ( >=sys-libs/libselinux-2.0.85 )
  	virt-network? (
  		net-dns/dnsmasq[dhcp,ipv6(+),script]
@@ -104,10 +104,10 @@ index 3d1f2530f8f..721d8c01f88 100644
  		$(use_enable static-libs static) \
  		$(use_enable pax-kernel pax_emutramp) \
 diff --git a/eclass/linux-mod.eclass b/eclass/linux-mod.eclass
-index 42e677d0670..145d0e4d448 100644
+index 6a820371b76..7bcc63d864a 100644
 --- a/eclass/linux-mod.eclass
 +++ b/eclass/linux-mod.eclass
-@@ -710,6 +710,7 @@ linux-mod_src_compile() {
+@@ -664,6 +664,7 @@ linux-mod_src_compile() {
  			# fails.
  			eval "emake HOSTCC=\"$(tc-getBUILD_CC)\" \
  						LDFLAGS=\"$(get_abi_LDFLAGS)\" \
@@ -146,23 +146,10 @@ index 20669c08b33..24c99fcf4eb 100644
  			-exec touch {} + 2>/dev/null
  	fi
  }
-diff --git a/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild b/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild
-index 7aeb9c59632..be8b43ca840 100644
---- a/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild
-+++ b/gnome-base/gnome-desktop/gnome-desktop-41.3.ebuild
-@@ -58,7 +58,7 @@ src_configure() {
- 	local emesonargs=(
- 		-Dgnome_distributor=Gentoo
- 		-Ddate_in_gnome_version=true
--		-Ddesktop_docs=true
-+		-Ddesktop_docs=false
- 		$(meson_use debug debug_tools)
- 		$(meson_use introspection)
- 		$(meson_feature udev)
-diff --git a/kde-apps/gwenview/gwenview-22.04.1.ebuild b/kde-apps/gwenview/gwenview-22.04.1.ebuild
+diff --git a/kde-apps/gwenview/gwenview-22.04.2.ebuild b/kde-apps/gwenview/gwenview-22.04.2.ebuild
 index bdba668fd70..ace5afe099f 100644
---- a/kde-apps/gwenview/gwenview-22.04.1.ebuild
-+++ b/kde-apps/gwenview/gwenview-22.04.1.ebuild
+--- a/kde-apps/gwenview/gwenview-22.04.2.ebuild
++++ b/kde-apps/gwenview/gwenview-22.04.2.ebuild
 @@ -87,7 +87,7 @@ src_configure() {
  		$(cmake_use_find_package raw KF5KDcraw)
  		-DGWENVIEW_SEMANTICINFO_BACKEND=$(usex semantic-desktop Baloo None)
@@ -172,10 +159,10 @@ index bdba668fd70..ace5afe099f 100644
  	)
  	ecm_src_configure
  }
-diff --git a/kde-apps/kdialog/kdialog-22.04.1.ebuild b/kde-apps/kdialog/kdialog-22.04.1.ebuild
+diff --git a/kde-apps/kdialog/kdialog-22.04.2.ebuild b/kde-apps/kdialog/kdialog-22.04.2.ebuild
 index 97582569439..4c568161b13 100644
---- a/kde-apps/kdialog/kdialog-22.04.1.ebuild
-+++ b/kde-apps/kdialog/kdialog-22.04.1.ebuild
+--- a/kde-apps/kdialog/kdialog-22.04.2.ebuild
++++ b/kde-apps/kdialog/kdialog-22.04.2.ebuild
 @@ -36,7 +36,7 @@ RDEPEND="${DEPEND}"
  
  src_configure() {
@@ -185,10 +172,10 @@ index 97582569439..4c568161b13 100644
  	)
  	ecm_src_configure
  }
-diff --git a/kde-apps/kio-extras/kio-extras-22.04.1.ebuild b/kde-apps/kio-extras/kio-extras-22.04.1.ebuild
+diff --git a/kde-apps/kio-extras/kio-extras-22.04.2.ebuild b/kde-apps/kio-extras/kio-extras-22.04.2.ebuild
 index 8a992573ee0..437cc2fdaea 100644
---- a/kde-apps/kio-extras/kio-extras-22.04.1.ebuild
-+++ b/kde-apps/kio-extras/kio-extras-22.04.1.ebuild
+--- a/kde-apps/kio-extras/kio-extras-22.04.2.ebuild
++++ b/kde-apps/kio-extras/kio-extras-22.04.2.ebuild
 @@ -83,7 +83,7 @@ src_configure() {
  		$(cmake_use_find_package samba Samba)
  		$(cmake_use_find_package sftp libssh)
@@ -198,10 +185,10 @@ index 8a992573ee0..437cc2fdaea 100644
  	)
  	use samba && mycmakeargs+=(
  		-DBUILD_KDSoapWSDiscoveryClient=OFF # disable bundled stuff
-diff --git a/kde-apps/konsole/konsole-22.04.1.ebuild b/kde-apps/konsole/konsole-22.04.1.ebuild
+diff --git a/kde-apps/konsole/konsole-22.04.2.ebuild b/kde-apps/konsole/konsole-22.04.2.ebuild
 index cd237a5abc5..725b73f6a71 100644
---- a/kde-apps/konsole/konsole-22.04.1.ebuild
-+++ b/kde-apps/konsole/konsole-22.04.1.ebuild
+--- a/kde-apps/konsole/konsole-22.04.2.ebuild
++++ b/kde-apps/konsole/konsole-22.04.2.ebuild
 @@ -52,7 +52,7 @@ RDEPEND="${DEPEND}"
  
  src_configure() {
@@ -239,10 +226,10 @@ index d279d7e8c4b..94a24486aff 100644
  
  	ecm_src_configure
 diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.5.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.5.ebuild
-index 0292f04f026..5111ec4080d 100644
+index 8bbe52c868c..2fe004cdfcf 100644
 --- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.5.ebuild
 +++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.24.5.ebuild
-@@ -18,7 +18,6 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv ~x86"
+@@ -18,7 +18,6 @@ KEYWORDS="amd64 ~arm arm64 ~ppc64 ~riscv x86"
  IUSE=""
  
  DEPEND="
@@ -250,11 +237,11 @@ index 0292f04f026..5111ec4080d 100644
  	dev-libs/glib:2
  	>=dev-qt/qtdbus-${QTMIN}:5
  	>=dev-qt/qtgui-${QTMIN}:5
-diff --git a/kde-plasma/libksysguard/libksysguard-5.24.5.ebuild b/kde-plasma/libksysguard/libksysguard-5.24.5.ebuild
-index 5b960e03fd2..2bd9288cc7c 100644
---- a/kde-plasma/libksysguard/libksysguard-5.24.5.ebuild
-+++ b/kde-plasma/libksysguard/libksysguard-5.24.5.ebuild
-@@ -65,7 +65,7 @@ src_configure() {
+diff --git a/kde-plasma/libksysguard/libksysguard-5.24.5-r1.ebuild b/kde-plasma/libksysguard/libksysguard-5.24.5-r1.ebuild
+index 664a0d85612..d1d3e7566d5 100644
+--- a/kde-plasma/libksysguard/libksysguard-5.24.5-r1.ebuild
++++ b/kde-plasma/libksysguard/libksysguard-5.24.5-r1.ebuild
+@@ -69,7 +69,7 @@ src_configure() {
  	local mycmakeargs=(
  		$(cmake_use_find_package webengine Qt5WebChannel)
  		$(cmake_use_find_package webengine Qt5WebEngineWidgets)
@@ -330,10 +317,10 @@ index 0d212005d51..343d88c82bb 100644
  	append-lfs-flags #760857
  	multilib-minimal_src_configure
  }
-diff --git a/sys-devel/clang/clang-14.0.3.ebuild b/sys-devel/clang/clang-14.0.3.ebuild
-index 19d50597423..84b93a973d8 100644
---- a/sys-devel/clang/clang-14.0.3.ebuild
-+++ b/sys-devel/clang/clang-14.0.3.ebuild
+diff --git a/sys-devel/clang/clang-14.0.4.ebuild b/sys-devel/clang/clang-14.0.4.ebuild
+index 9039d230288..e1da1d82225 100644
+--- a/sys-devel/clang/clang-14.0.4.ebuild
++++ b/sys-devel/clang/clang-14.0.4.ebuild
 @@ -23,8 +23,11 @@ IUSE="
  REQUIRED_USE="${PYTHON_REQUIRED_USE}"
  RESTRICT="!test? ( test )"
@@ -410,27 +397,18 @@ index 19d50597423..84b93a973d8 100644
  	# cmake gives us:
  	# - clang-X
  	# - clang -> clang-X
-diff --git a/sys-devel/distcc/distcc-3.4.ebuild b/sys-devel/distcc/distcc-3.4.ebuild
-index cb49de0fd3c..f8147fe3366 100644
---- a/sys-devel/distcc/distcc-3.4.ebuild
-+++ b/sys-devel/distcc/distcc-3.4.ebuild
-@@ -3,7 +3,7 @@
- 
- EAPI=7
- 
--PYTHON_COMPAT=( python3_{7..9} )
-+PYTHON_COMPAT=( python3_{7..10} )
- 
- inherit autotools flag-o-matic prefix python-single-r1 systemd \
- 	toolchain-funcs xdg-utils
-@@ -67,6 +67,7 @@ src_configure() {
- 	local myconf=(
- 		--disable-Werror
- 		--libdir="${EPREFIX}"/usr/lib
-+		--without-libiberty
+diff --git a/sys-devel/distcc/distcc-3.4-r1.ebuild b/sys-devel/distcc/distcc-3.4-r1.ebuild
+index 7495c3fff4f..0c5270b545e 100644
+--- a/sys-devel/distcc/distcc-3.4-r1.ebuild
++++ b/sys-devel/distcc/distcc-3.4-r1.ebuild
+@@ -73,6 +73,7 @@ src_configure() {
  		$(use_enable ipv6 rfc2553)
  		$(use_with gtk)
  		--without-gnome
++		--without-libiberty
+ 		$(use_with gssapi auth)
+ 		$(use_with zeroconf avahi)
+ 	)
 diff --git a/sys-devel/distcc/files/distccd.service-1 b/sys-devel/distcc/files/distccd.service-1
 index 9bd470297df..fd481026e27 100644
 --- a/sys-devel/distcc/files/distccd.service-1
@@ -444,11 +422,11 @@ index 9bd470297df..fd481026e27 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-14.0.3.ebuild b/sys-devel/llvm/llvm-14.0.3.ebuild
-index 360436b21ec..2a2bf322438 100644
---- a/sys-devel/llvm/llvm-14.0.3.ebuild
-+++ b/sys-devel/llvm/llvm-14.0.3.ebuild
-@@ -22,6 +22,8 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~ppc-ma
+diff --git a/sys-devel/llvm/llvm-14.0.4.ebuild b/sys-devel/llvm/llvm-14.0.4.ebuild
+index ee76f3f1b00..aba0c2222fa 100644
+--- a/sys-devel/llvm/llvm-14.0.4.ebuild
++++ b/sys-devel/llvm/llvm-14.0.4.ebuild
+@@ -22,6 +22,8 @@ KEYWORDS="amd64 ~arm arm64 ~ppc ppc64 ~riscv ~sparc x86 ~amd64-linux ~ppc-macos
  IUSE="+binutils-plugin debug doc exegesis libedit +libffi ncurses test xar xml z3"
  RESTRICT="!test? ( test )"
  
@@ -457,7 +435,7 @@ index 360436b21ec..2a2bf322438 100644
  RDEPEND="
  	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
  	binutils-plugin? ( >=sys-devel/binutils-2.31.1-r4:*[plugins] )
-@@ -313,6 +315,23 @@ get_distribution_components() {
+@@ -320,6 +322,23 @@ get_distribution_components() {
  				docs-llvm-man
  			)
  		fi
@@ -481,7 +459,7 @@ index 360436b21ec..2a2bf322438 100644
  		use doc && out+=(
  			docs-llvm-html
  		)
-@@ -344,6 +363,7 @@ multilib_src_configure() {
+@@ -351,6 +370,7 @@ multilib_src_configure() {
  		-DLLVM_BUILD_LLVM_DYLIB=ON
  		-DLLVM_LINK_LLVM_DYLIB=ON
  		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -489,7 +467,7 @@ index 360436b21ec..2a2bf322438 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -360,6 +380,7 @@ multilib_src_configure() {
+@@ -367,6 +387,7 @@ multilib_src_configure() {
  		-DLLVM_ENABLE_EH=ON
  		-DLLVM_ENABLE_RTTI=ON
  		-DLLVM_ENABLE_Z3_SOLVER=$(usex z3)
@@ -497,30 +475,30 @@ index 360436b21ec..2a2bf322438 100644
  
  		-DLLVM_HOST_TRIPLE="${CHOST}"
  
-diff --git a/sys-libs/libcxx/libcxx-14.0.3.ebuild b/sys-libs/libcxx/libcxx-14.0.3.ebuild
-index 4d6be5bcc7f..032d05d7ce5 100644
---- a/sys-libs/libcxx/libcxx-14.0.3.ebuild
-+++ b/sys-libs/libcxx/libcxx-14.0.3.ebuild
-@@ -130,6 +130,7 @@ multilib_src_configure() {
- 	local libdir=$(get_libdir)
- 	local mycmakeargs=(
- 		-DPython3_EXECUTABLE="${PYTHON}"
-+		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+diff --git a/sys-libs/libcxx/libcxx-14.0.4.ebuild b/sys-libs/libcxx/libcxx-14.0.4.ebuild
+index b9c4cd77b5b..039f2231044 100644
+--- a/sys-libs/libcxx/libcxx-14.0.4.ebuild
++++ b/sys-libs/libcxx/libcxx-14.0.4.ebuild
+@@ -133,6 +133,7 @@ multilib_src_configure() {
  		-DLLVM_ENABLE_RUNTIMES=libcxx
  		-DLLVM_INCLUDE_TESTS=OFF
  		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
-diff --git a/sys-libs/libcxxabi/libcxxabi-14.0.3.ebuild b/sys-libs/libcxxabi/libcxxabi-14.0.3.ebuild
-index 7d864cba362..a936617a644 100644
---- a/sys-libs/libcxxabi/libcxxabi-14.0.3.ebuild
-+++ b/sys-libs/libcxxabi/libcxxabi-14.0.3.ebuild
-@@ -71,6 +71,7 @@ multilib_src_configure() {
- 	local libdir=$(get_libdir)
- 	local mycmakeargs=(
- 		-DPython3_EXECUTABLE="${PYTHON}"
 +		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
- 		-DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx"
- 		-DLLVM_INCLUDE_TESTS=OFF
- 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
+ 
+ 		-DLIBCXX_ENABLE_SHARED=ON
+ 		-DLIBCXX_ENABLE_STATIC=$(usex static-libs)
+diff --git a/sys-libs/libcxxabi/libcxxabi-14.0.4.ebuild b/sys-libs/libcxxabi/libcxxabi-14.0.4.ebuild
+index d8cef90dd97..4f8fb84c8fe 100644
+--- a/sys-libs/libcxxabi/libcxxabi-14.0.4.ebuild
++++ b/sys-libs/libcxxabi/libcxxabi-14.0.4.ebuild
+@@ -79,6 +79,7 @@ multilib_src_configure() {
+ 		-DLIBCXXABI_INCLUDE_TESTS=$(usex test)
+ 		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
+ 		-DLIBCXXABI_USE_COMPILER_RT=${want_compiler_rt}
++		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+ 
+ 		# upstream is omitting standard search path for this
+ 		# probably because gcc & clang are bundling their own unwind.h
 diff --git a/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild b/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
 index a9248abf20d..629a3b10447 100644
 --- a/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
