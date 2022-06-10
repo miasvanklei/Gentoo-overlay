@@ -106,7 +106,7 @@ src_install() {
 		targets+=( install )
 	fi
 
-	if grep -q "CONFIG_MODULES" "${WORKDIR}"/build/.config; then
+	if grep -q "CONFIG_MODULES=y" "${WORKDIR}"/build/.config; then
 		targets+=( modules_install )
 	fi
 
