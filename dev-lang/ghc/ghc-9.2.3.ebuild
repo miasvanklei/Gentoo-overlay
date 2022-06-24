@@ -112,16 +112,16 @@ src_prepare() {
 	eapply "${FILESDIR}"/${PN}-8.10.1-allow-cross-bootstrap.patch
 
 	# build ghc and libraries only the dynamic way
-	dynamic.patch
+	eapply "${FILESDIR}"/dynamic.patch
 
 	# build libraries dynamic by default
-	dynamic-default.patch
+	eapply "${FILESDIR}"/dynamic-default.patch
 
 	# let portage strip libraries
-        hadrian-disable-stripping.patch
+	eapply "${FILESDIR}"/hadrian-disable-stripping.patch
 
 	# don't set --target, it is wrong anyhow
-	dont-set-target.patch
+	eapply "${FILESDIR}"/dont-set-target.patch
 
 	./boot
 
