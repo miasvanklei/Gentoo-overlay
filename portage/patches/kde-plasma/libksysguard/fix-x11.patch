@@ -1,6 +1,6 @@
 --- a/CMakeLists.txt	2022-02-08 15:07:48.035754728 +0100
 +++ b/CMakeLists.txt	2022-02-08 15:09:58.784410706 +0100
-@@ -64,20 +64,23 @@
+@@ -65,24 +65,27 @@
                    SOVERSION 9
  )
  
@@ -11,15 +11,23 @@
 -                        PURPOSE "Required for building the X11 based workspace"
 -                    )
 -if(X11_FOUND)
++
 +option(WITH_X11 "Build with X11 integration" ON)
 +if(WITH_X11)
-+    find_package(X11)
++    find_package(X11 REQUIRED)
 +    set_package_properties(X11 PROPERTIES DESCRIPTION "X11 libraries"
 +                            URL "https://www.x.org"
-+                            TYPE REQUIRED
++                            TYPE OPTIONAL
 +                            PURPOSE "Required for building the X11 based workspace"
 +                        )
-     find_package(Qt5X11Extras REQUIRED)
++
+     if (QT_MAJOR_VERSION STREQUAL "5")
+         find_package(Qt5X11Extras REQUIRED)
+     elseif (QT_MAJOR_VERSION STREQUAL "6")
+         find_package(Qt${QT_MAJOR_VERSION} ${REQUIRED_QT_VERSION} CONFIG REQUIRED Gui) # qtx11extras_p.h
+     endif()
+-    set(HAVE_X11 1)
++    set(HAVE_X11 TRUE)
      find_library(X11_XRes_LIB XRes ${X11_LIB_SEARCH_PATH})
      find_path(X11_XRes_INCLUDE_PATH X11/extensions/XRes.h ${X11_INC_SEARCH_PATH})
  
@@ -27,11 +35,8 @@
 -        set(X11_XRes_FOUND TRUE)
 +        set(HAVE_XRES TRUE)
      endif()
-+
-+    set(HAVE_X11 TRUE)
  endif()
  
- set(WEBENGINE_SCRIPTING_ENABLED FALSE)
 @@ -116,8 +119,6 @@
          PURPOSE "Used for reading hardware sensors")
  endif()
@@ -61,12 +66,12 @@
      target_link_libraries(processui PRIVATE ${X11_XRes_LIB} ${X11_LIBRARIES})
      include_directories(${X11_XRes_INCLUDE_PATH})
  endif()
-@@ -56,7 +56,7 @@
+@@ -59,7 +59,7 @@
+         "$<BUILD_INTERFACE:${libksysguard_SOURCE_DIR}>"
          "$<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}/ksysguard>"
  )
- 
 -if(X11_FOUND)
 +if(HAVE_X11)
-     target_link_libraries(processui PRIVATE Qt::X11Extras KF5::WindowSystem)
- endif()
- 
+     if (QT_MAJOR_VERSION STREQUAL "5")
+        target_link_libraries(processui PRIVATE Qt::X11Extras KF5::WindowSystem)
+     else() 
