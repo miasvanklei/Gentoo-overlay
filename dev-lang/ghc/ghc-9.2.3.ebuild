@@ -222,7 +222,7 @@ src_install() {
 	local target="${CTARGET:-${CHOST}}"
 
 	newenvd - "50${P}" <<-_EOF_
-		LDPATH="${EPREFIX}/usr/lib/ghc-${PV}/lib/${target%%*-}-linux-ghc-${PV}"
+		LDPATH="${EPREFIX}/usr/lib/ghc-${PV}/lib/${target%%-*}-linux-ghc-${PV}"
 	_EOF_
 }
 
