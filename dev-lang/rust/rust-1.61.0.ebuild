@@ -127,6 +127,7 @@ PATCHES=(
 	"${FILESDIR}"/004-libc-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
 	"${FILESDIR}"/008-do-not-install-libunwind-source.patch
+	"${FILESDIR}"/009-fix-miri.patch
 )
 
 S="${WORKDIR}/${MY_P}-src"
