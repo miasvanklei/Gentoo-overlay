@@ -1,0 +1,27 @@
+--- a/Distribution/Gentoo/GHC.hs	1970-01-01 01:00:00.000000000 +0100
++++ b/Distribution/Gentoo/GHC.hs	2022-06-22 17:46:50.704304960 +0200
+@@ -239,7 +241,7 @@
+     isInvalid fp = fp == thisGhc || BS.isPrefixOf (thisGhc `BS.snoc` pathSeparator) fp
+ 
+ -- A valid GHC library directory starting at libdir has a name of
+--- "ghc", then a hyphen and then a version number.
++-- "ghc", then a hyphen and then a version number, and finally a "lib" dir.
+ isGhcLibDir :: BSFilePath -> BSFilePath -> Bool
+ isGhcLibDir libdir dir = go ghcDirName
+   where
+@@ -247,12 +249,14 @@
+     libdir' = BS.snoc libdir pathSeparator
+     ghcDirName = BS.pack "ghc"
+ 
+-    go dn = BS.isPrefixOf ghcDir dir
++    go dn = adjustedDir
+             -- Any possible version starts with a digit
+             && isDigit (BS.index dir ghcDirLen)
+       where
+         ghcDir = flip BS.snoc '-' $ BS.append libdir' dn
+         ghcDirLen = BS.length ghcDir
++        -- dir must end with lib
++        adjustedDir = maybe False (BS.isPrefixOf ghcDir) (BS.stripSuffix (BS.pack "/lib") dir)
+ 
+ 
+ -- The possible places GHC could have installed lib directories
