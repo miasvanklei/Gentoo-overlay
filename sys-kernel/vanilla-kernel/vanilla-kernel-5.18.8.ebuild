@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="9"
+K_GENPATCHES_VER="11"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -29,19 +29,14 @@ src_prepare() {
 		eapply "${FILESDIR}"/rockchip-increase-framebuffer-size.patch
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 		eapply "${FILESDIR}"/pinebook-pro/0001-pinebook-pro-dts.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3170-arm64-dts-rk3399-pinebook-pro-Fix-USB-PD-charging.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3172-arm64-dts-rk3399-pinebook-pro-Improve-Type-C-support.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3178-arm64-dts-rk3399-pinebook-pro-Don-t-allow-usb2-phy-d.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3339-drm-rockchip-cdn-dp-Disable-CDN-DP-on-disconnect.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3355-usb-typec-fusb302-Set-the-current-before-enabling-pu.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3359-usb-typec-fusb302-Update-VBUS-state-even-if-VBUS-int.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3361-usb-typec-fusb302-Add-OF-extcon-support.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3362-usb-typec-fusb302-Fix-register-definitions.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3363-usb-typec-fusb302-Clear-interrupts-before-we-start-t.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3364-usb-typec-typec-extcon-Add-typec-extcon-bridge-drive.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3365-phy-rockchip-typec-Make-sure-the-plug-orientation-is.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3372-phy-rockchip-inno-usb2-More-robust-charger-detection.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/3373-usb-typec-extcon-Don-t-touch-charger-proprties.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/001-disable-cdn-dp-on-disconnect.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/002-respect-DP_CAP_RECEPTACLE-bit.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/003-inno-usb2-improvements.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/004-dwc3-improvements.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/005-fusb302-improvements.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/006-add-typec-extcon-bridge-driver.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/007-make-tcpm-logs-less-polluted.patch
+		eapply "${FILESDIR}"/pinebook-pro/usb/008-pinebook-pro-dts-improvements.patch
 		eapply "${FILESDIR}"/pinebook-pro/0007-drm-rockchip-support-gamma-control-on-RK3399.patch
 		eapply "${FILESDIR}"/pinebook-pro/0008-add-cdn_dp-audio.patch
 		eapply "${FILESDIR}"/pinebook-pro/0009-generic-fixes.patch

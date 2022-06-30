@@ -1,8 +1,7 @@
-From eb13dbd9abb43f304c4dac94ff4696fc5c6a340c Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Ond=C5=99ej=20Jirman?= <megi@xff.cz>
+From 169e94f01b66c4cca5b25516052c3b0ccb9f9358 Mon Sep 17 00:00:00 2001
+From: Ondřej Jirman
 Date: Sun, 7 Nov 2021 19:24:40 +0100
-Subject: [PATCH 364/437] usb: typec: typec-extcon: Add typec -> extcon bridge
- driver
+Subject: usb: typec: typec-extcon: Add typec -> extcon bridge driver
 
 This bridge connects standard Type C port interfaces for controling
 muxes, switches and usb roles to muxes, switches and usb role
@@ -12,17 +11,17 @@ Signed-off-by: Ondrej Jirman <megi@xff.cz>
 ---
  drivers/usb/typec/Kconfig        |   7 +
  drivers/usb/typec/Makefile       |   1 +
- drivers/usb/typec/typec-extcon.c | 337 +++++++++++++++++++++++++++++++
- 3 files changed, 345 insertions(+)
+ drivers/usb/typec/typec-extcon.c | 332 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 340 insertions(+)
  create mode 100644 drivers/usb/typec/typec-extcon.c
 
 diff --git a/drivers/usb/typec/Kconfig b/drivers/usb/typec/Kconfig
-index ab480f38523aa..01ecc5e590f1d 100644
+index ba24847fb245..4799cf488fe9 100644
 --- a/drivers/usb/typec/Kconfig
 +++ b/drivers/usb/typec/Kconfig
-@@ -88,6 +88,13 @@ config TYPEC_QCOM_PMIC
- 	  It will also enable the VBUS output to connected devices when a
- 	  DFP connection is made.
+@@ -111,6 +111,13 @@ config TYPEC_WUSB3801
+ 	  If you choose to build this driver as a dynamically linked module, the
+ 	  module will be called wusb3801.ko.
  
 +config TYPEC_EXTCON
 +	tristate "Type-C switch/mux -> extcon interface bridge driver"
@@ -35,21 +34,21 @@ index ab480f38523aa..01ecc5e590f1d 100644
  
  source "drivers/usb/typec/altmodes/Kconfig"
 diff --git a/drivers/usb/typec/Makefile b/drivers/usb/typec/Makefile
-index 57870a2bd7873..23c812e117d99 100644
+index 43626acc0aaf..cf1182ef5d55 100644
 --- a/drivers/usb/typec/Makefile
 +++ b/drivers/usb/typec/Makefile
-@@ -9,4 +9,5 @@ obj-$(CONFIG_TYPEC_TPS6598X)	+= tipd/
- obj-$(CONFIG_TYPEC_STUSB160X)	+= stusb160x.o
+@@ -11,4 +11,5 @@ obj-$(CONFIG_TYPEC_QCOM_PMIC)	+= qcom-pmic-typec.o
+ obj-$(CONFIG_TYPEC_STUSB160X) 	+= stusb160x.o
  obj-$(CONFIG_TYPEC_RT1719)	+= rt1719.o
  obj-$(CONFIG_TYPEC_WUSB3801)	+= wusb3801.o
 +obj-$(CONFIG_TYPEC_EXTCON)	+= typec-extcon.o
  obj-$(CONFIG_TYPEC)		+= mux/
 diff --git a/drivers/usb/typec/typec-extcon.c b/drivers/usb/typec/typec-extcon.c
 new file mode 100644
-index 0000000000000..f1fe5e57fdfc9
+index 000000000000..e460f35c8390
 --- /dev/null
 +++ b/drivers/usb/typec/typec-extcon.c
-@@ -0,0 +1,337 @@
+@@ -0,0 +1,332 @@
 +/*
 + * typec -> extcon bridge
 + * Copyright (c) 2021 Ondřej Jirman <megi@xff.cz>
@@ -75,8 +74,8 @@ index 0000000000000..f1fe5e57fdfc9
 +
 +	/* consumers */
 +	struct usb_role_switch *role_sw;
-+        struct typec_switch *sw;
-+        struct typec_mux *mux;
++        struct typec_switch_dev *sw;
++        struct typec_mux_dev *mux;
 +
 +	/* providers */
 +	struct extcon_dev *extcon;
@@ -148,11 +147,6 @@ index 0000000000000..f1fe5e57fdfc9
 +		typec_extcon_set_cable(tce, EXTCON_USB_HOST, false, prop_ss, prop_or);
 +		typec_extcon_set_cable(tce, EXTCON_DISP_DP, false, prop_ss, prop_or);
 +
-+		extcon_set_state_sync(tce->extcon, EXTCON_CHG_USB_SDP, false);
-+		extcon_set_state_sync(tce->extcon, EXTCON_CHG_USB_DCP, false);
-+		extcon_set_state_sync(tce->extcon, EXTCON_CHG_USB_CDP, false);
-+		extcon_set_state_sync(tce->extcon, EXTCON_CHG_USB_ACA, false);
-+
 +                goto out_unlock;
 +	}
 +
@@ -191,7 +185,7 @@ index 0000000000000..f1fe5e57fdfc9
 +	return 0;
 +}
 +
-+static int typec_extcon_sw_set(struct typec_switch *sw,
++static int typec_extcon_sw_set(struct typec_switch_dev *sw,
 +			       enum typec_orientation orientation)
 +{
 +        struct typec_extcon *tce = typec_switch_get_drvdata(sw);
@@ -207,7 +201,7 @@ index 0000000000000..f1fe5e57fdfc9
 +        return 0;
 +}
 +
-+static int typec_extcon_mux_set(struct typec_mux *mux,
++static int typec_extcon_mux_set(struct typec_mux_dev *mux,
 +				struct typec_mux_state *state)
 +{
 +        struct typec_extcon *tce = typec_mux_get_drvdata(mux);
@@ -388,5 +382,5 @@ index 0000000000000..f1fe5e57fdfc9
 +MODULE_AUTHOR("Ondrej Jirman <megi@xff.cz>");
 +MODULE_DESCRIPTION("typec -> extcon bridge driver");
 -- 
-2.35.1
+cgit v1.2.3
 

@@ -1,20 +1,5 @@
-From a7c0e582bb9df2320a458bbb70c7b3991df1682d Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Ond=C5=99ej=20Jirman?= <megi@xff.cz>
-Date: Sun, 14 Nov 2021 01:16:51 +0100
-Subject: [PATCH 172/437] arm64: dts: rk3399-pinebook-pro: Improve Type-C
- support on Pinebook Pro
-
-This is using the same extcon bridge developed by me for Pinephone Pro.
-
-Signed-off-by: Ondrej Jirman <megi@xff.cz>
----
- .../boot/dts/rockchip/rk3399-pinebook-pro.dts | 51 +++++++++++++++++--
- 1 file changed, 46 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-index d7fe1d99b546d..ae175ee3f4c37 100644
---- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
-+++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
+--- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2022-06-30 14:21:54.823871628 +0200
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts	2022-06-30 14:23:04.756582156 +0200
 @@ -345,7 +345,7 @@
  
  	/* Regulators supplied by vcc5v0_usb */
@@ -39,7 +24,7 @@ index d7fe1d99b546d..ae175ee3f4c37 100644
  };
  
  &cpu_b0 {
-@@ -410,6 +418,12 @@
+@@ -410,10 +418,14 @@
  	cpu-supply = <&vdd_cpu_l>;
  };
  
@@ -51,8 +36,23 @@ index d7fe1d99b546d..ae175ee3f4c37 100644
 +
  &edp {
  	force-hpd;
- 	pinctrl-names = "default";
-@@ -704,7 +718,9 @@
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&edp_hpd>;
+ 	status = "okay";
+ 
+ 	ports {
+@@ -439,10 +451,6 @@
+ 	status = "okay";
+ };
+ 
+-&hdmi_sound {
+-	status = "okay";
+-};
+-
+ &i2c0 {
+ 	clock-frequency = <400000>;
+ 	i2c-scl-falling-time-ns = <4>;
+@@ -702,7 +710,9 @@
  		interrupts = <RK_PA2 IRQ_TYPE_LEVEL_LOW>;
  		pinctrl-names = "default";
  		pinctrl-0 = <&fusb0_int_pin>;
@@ -63,9 +63,15 @@ index d7fe1d99b546d..ae175ee3f4c37 100644
  
  		connector {
  			compatible = "usb-c-connector";
-@@ -717,6 +733,15 @@
+@@ -711,10 +721,19 @@
+ 			op-sink-microwatt = <1000000>;
+ 			power-role = "dual";
+ 			sink-pdos =
+-				<PDO_FIXED(5000, 2500, PDO_FIXED_USB_COMM)>;
++				<PDO_FIXED(5000, 2500, PDO_FIXED_USB_COMM | PDO_FIXED_DUAL_ROLE | PDO_FIXED_DATA_SWAP)>;
  			source-pdos =
- 				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM | PDO_FIXED_DUAL_ROLE | PDO_FIXED_DATA_SWAP)>;
+-				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
++				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM | PDO_FIXED_DUAL_ROLE | PDO_FIXED_DATA_SWAP)>;
  			try-power-role = "sink";
 +			mode-switch = <&typec_extcon_bridge>;
 +			orientation-switch = <&typec_extcon_bridge>;
@@ -79,7 +85,25 @@ index d7fe1d99b546d..ae175ee3f4c37 100644
  
  			ports {
  				#address-cells = <1>;
-@@ -984,6 +1009,7 @@
+@@ -785,7 +804,7 @@
+ };
+ 
+ &pcie_phy {
+-	status = "okay";
++	//status = "okay";
+ };
+ 
+ &pcie0 {
+@@ -797,7 +816,7 @@
+ 	vpcie0v9-supply = <&vcca0v9_s3>;
+ 	vpcie1v8-supply = <&vcca1v8_s3>;
+ 	vpcie3v3-supply = <&vcc3v3_ssd>;
+-	status = "okay";
++	//status = "okay";
+ };
+ 
+ &pinctrl {
+@@ -982,6 +1001,7 @@
  };
  
  &tcphy0 {
@@ -87,11 +111,12 @@ index d7fe1d99b546d..ae175ee3f4c37 100644
  	status = "okay";
  };
  
-@@ -1017,13 +1043,20 @@
+@@ -1015,13 +1035,21 @@
  
  &u2phy0 {
  	status = "okay";
 +	extcon = <&typec_extcon_bridge>;
++	extcon,ignore-usb;
  
  	u2phy0_otg: otg-port {
 +		/*
@@ -109,7 +134,7 @@ index d7fe1d99b546d..ae175ee3f4c37 100644
  		status = "okay";
  	};
  
-@@ -1038,11 +1071,18 @@
+@@ -1036,11 +1064,18 @@
  	status = "okay";
  
  	u2phy1_otg: otg-port {
@@ -129,16 +154,14 @@ index d7fe1d99b546d..ae175ee3f4c37 100644
  		status = "okay";
  	};
  };
-@@ -1093,7 +1133,8 @@
+@@ -1091,7 +1126,9 @@
  };
  
  &usbdrd_dwc3_0 {
 -	dr_mode = "host";
 +	dr_mode = "otg";
 +	extcon = <&typec_extcon_bridge>;
++	snps,usb3-phy-reset-quirk;
  	status = "okay";
  };
  
--- 
-2.35.1
-
