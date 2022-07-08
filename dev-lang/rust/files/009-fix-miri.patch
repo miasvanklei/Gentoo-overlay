@@ -1,83 +1,151 @@
-diff --git a/src/tools/miri/src/helpers.rs b/src/tools/miri/src/helpers.rs
-index 3ffb983aa..7a63bb03d 100644
---- a/src/tools/miri/src/helpers.rs
-+++ b/src/tools/miri/src/helpers.rs
-@@ -510,7 +510,7 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
+diff --git a/src/tools/miri/src//helpers.rs b/src/tools/miri/src//helpers.rs
+index 5b820218a..30fb28436 100644
+--- a/src/tools/miri/src//helpers.rs
++++ b/src/tools/miri/src//helpers.rs
+@@ -13,7 +13,7 @@ use rustc_middle::ty::{
+     layout::{LayoutOf, TyAndLayout},
+     List, TyCtxt,
+ };
+-use rustc_span::{def_id::CrateNum, Symbol};
++use rustc_span::{def_id::CrateNum, sym, Symbol};
+ use rustc_target::abi::{Align, FieldsShape, Size, Variants};
+ use rustc_target::spec::abi::Abi;
+ 
+@@ -775,6 +775,14 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
+         this.alloc_mark_immutable(mplace.ptr.into_pointer_or_addr().unwrap().provenance.alloc_id)
+             .unwrap();
+     }
++
++    fn item_link_name(&self, def_id: DefId) -> Symbol {
++        let tcx = self.eval_context_ref().tcx;
++        match tcx.get_attrs(def_id, sym::link_name).filter_map(|a| a.value_str()).next() {
++            Some(name) => name,
++            None => tcx.item_name(def_id),
++        }
++    }
+ }
+ 
+ /// Check that the number of args is what we expect.
+diff --git a/src/tools/miri/src//machine.rs b/src/tools/miri/src//machine.rs
+index 2ecb583ab..5facc5327 100644
+--- a/src/tools/miri/src//machine.rs
++++ b/src/tools/miri/src//machine.rs
+@@ -24,7 +24,7 @@ use rustc_middle::{
+     },
+ };
+ use rustc_span::def_id::{CrateNum, DefId};
+-use rustc_span::symbol::{sym, Symbol};
++use rustc_span::Symbol;
+ use rustc_target::abi::Size;
+ use rustc_target::spec::abi::Abi;
+ 
+@@ -548,11 +548,7 @@ impl<'mir, 'tcx> Machine<'mir, 'tcx> for Evaluator<'mir, 'tcx> {
+         ecx: &MiriEvalContext<'mir, 'tcx>,
+         def_id: DefId,
+     ) -> InterpResult<'tcx, Pointer<Tag>> {
+-        let attrs = ecx.tcx.get_attrs(def_id);
+-        let link_name = match ecx.tcx.sess.first_attr_value_str_by_name(attrs, sym::link_name) {
+-            Some(name) => name,
+-            None => ecx.tcx.item_name(def_id),
+-        };
++        let link_name = ecx.item_link_name(def_id);
+         if let Some(&ptr) = ecx.machine.extern_statics.get(&link_name) {
+             Ok(ptr)
+         } else {
+diff --git a/src/tools/miri/src//shims/foreign_items.rs b/src/tools/miri/src//shims/foreign_items.rs
+index e9845c537..bebe77a02 100644
+--- a/src/tools/miri/src//shims/foreign_items.rs
++++ b/src/tools/miri/src//shims/foreign_items.rs
+@@ -15,7 +15,7 @@ use rustc_middle::middle::{
+ use rustc_middle::mir;
+ use rustc_middle::ty;
+ use rustc_session::config::CrateType;
+-use rustc_span::{symbol::sym, Symbol};
++use rustc_span::Symbol;
+ use rustc_target::{
+     abi::{Align, Size},
+     spec::abi::Abi,
+@@ -235,12 +235,7 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
+         unwind: StackPopUnwind,
+     ) -> InterpResult<'tcx, Option<(&'mir mir::Body<'tcx>, ty::Instance<'tcx>)>> {
          let this = self.eval_context_mut();
-         let target = &this.tcx.sess.target;
-         let target_os = &target.os;
--        let last_error = if target.families.contains(&"unix".to_owned()) {
-+        let last_error = if target.families.iter().any(|f| f == "unix") {
-             this.eval_libc(match err_kind {
-                 ConnectionRefused => "ECONNREFUSED",
-                 ConnectionReset => "ECONNRESET",
-@@ -534,7 +534,7 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
-                     )
-                 }
-             })?
--        } else if target.families.contains(&"windows".to_owned()) {
-+        } else if target.families.iter().any(|f| f == "windows") {
-             // FIXME: we have to finish implementing the Windows equivalent of this.
-             this.eval_windows(
-                 "c",
-diff --git a/src/tools/miri/src/machine.rs b/src/tools/miri/src/machine.rs
-index e9ed50724..b4b07a61a 100644
---- a/src/tools/miri/src/machine.rs
-+++ b/src/tools/miri/src/machine.rs
-@@ -227,7 +227,7 @@ impl MemoryExtra {
-     pub fn init_extern_statics<'tcx, 'mir>(
-         this: &mut MiriEvalContext<'mir, 'tcx>,
-     ) -> InterpResult<'tcx> {
--        match this.tcx.sess.target.os.as_str() {
-+        match this.tcx.sess.target.os.as_ref() {
-             "linux" => {
-                 // "environ"
-                 Self::add_extern_static(
-diff --git a/src/tools/miri/src/shims/env.rs b/src/tools/miri/src/shims/env.rs
-index c2050647a..822bef56c 100644
---- a/src/tools/miri/src/shims/env.rs
-+++ b/src/tools/miri/src/shims/env.rs
-@@ -41,7 +41,7 @@ impl<'tcx> EnvVars<'tcx> {
-         mut excluded_env_vars: Vec<String>,
-         forwarded_env_vars: Vec<String>,
-     ) -> InterpResult<'tcx> {
--        let target_os = ecx.tcx.sess.target.os.as_str();
-+        let target_os = ecx.tcx.sess.target.os.as_ref();
-         // HACK: Exclude `TERM` var to avoid terminfo trying to open the termcap file.
-         // This is (a) very slow and (b) does not work on Windows.
-         excluded_env_vars.push("TERM".to_owned());
-diff --git a/src/tools/miri/src/shims/foreign_items.rs b/src/tools/miri/src/shims/foreign_items.rs
-index ecffd310d..d9e4d9382 100644
---- a/src/tools/miri/src/shims/foreign_items.rs
-+++ b/src/tools/miri/src/shims/foreign_items.rs
-@@ -46,7 +46,7 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
-     fn min_align(&self, size: u64, kind: MiriMemoryKind) -> Align {
-         let this = self.eval_context_ref();
-         // List taken from `libstd/sys_common/alloc.rs`.
--        let min_align = match this.tcx.sess.target.arch.as_str() {
-+        let min_align = match this.tcx.sess.target.arch.as_ref() {
-             "x86" | "arm" | "mips" | "powerpc" | "powerpc64" | "asmjs" | "wasm32" => 8,
-             "x86_64" | "aarch64" | "mips64" | "s390x" | "sparc64" => 16,
-             arch => bug!("Unsupported target architecture: {}", arch),
-@@ -695,7 +695,7 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
-             }
+-        let attrs = this.tcx.get_attrs(def_id);
+-        let link_name = this
+-            .tcx
+-            .sess
+-            .first_attr_value_str_by_name(attrs, sym::link_name)
+-            .unwrap_or_else(|| this.tcx.item_name(def_id));
++        let link_name = this.item_link_name(def_id);
+         let tcx = this.tcx.tcx;
  
-             // Platform-specific shims
--            _ => match this.tcx.sess.target.os.as_str() {
-+            _ => match this.tcx.sess.target.os.as_ref() {
-                 "linux" | "macos" => return shims::posix::foreign_items::EvalContextExt::emulate_foreign_item_by_name(this, link_name, abi, args, dest, ret),
-                 "windows" => return shims::windows::foreign_items::EvalContextExt::emulate_foreign_item_by_name(this, link_name, abi, args, dest, ret),
-                 target => throw_unsup_format!("the target `{}` is not supported", target),
-diff --git a/src/tools/miri/src/shims/posix/foreign_items.rs b/src/tools/miri/src/shims/posix/foreign_items.rs
-index 02fb7089c..36bf53059 100644
---- a/src/tools/miri/src/shims/posix/foreign_items.rs
-+++ b/src/tools/miri/src/shims/posix/foreign_items.rs
-@@ -462,7 +462,7 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
+         // First: functions that diverge.
+diff --git a/src/tools/miri/src//shims/posix/sync.rs b/src/tools/miri/src//shims/posix/sync.rs
+index 56d496984..1b6112a33 100644
+--- a/src/tools/miri/src//shims/posix/sync.rs
++++ b/src/tools/miri/src//shims/posix/sync.rs
+@@ -876,8 +876,7 @@ pub trait EvalContextExt<'mir, 'tcx: 'mir>: crate::MiriEvalContextExt<'mir, 'tcx
  
-             // Platform-specific shims
-             _ => {
--                match this.tcx.sess.target.os.as_str() {
-+                match this.tcx.sess.target.os.as_ref() {
-                     "linux" => return shims::posix::linux::foreign_items::EvalContextExt::emulate_foreign_item_by_name(this, link_name, abi, args, dest, ret),
-                     "macos" => return shims::posix::macos::foreign_items::EvalContextExt::emulate_foreign_item_by_name(this, link_name, abi, args, dest, ret),
-                     _ => unreachable!(),
+ fn layout_of_maybe_uninit<'tcx>(tcx: TyCtxtAt<'tcx>, param: Ty<'tcx>) -> TyAndLayout<'tcx> {
+     let def_id = tcx.require_lang_item(LangItem::MaybeUninit, None);
+-    let def_ty = tcx.type_of(def_id);
+-    let ty = def_ty.subst(*tcx, &[param.into()]);
++    let ty = tcx.bound_type_of(def_id).subst(*tcx, &[param.into()]);
+ 
+     let param_env = tcx.param_env(def_id);
+     tcx.layout_of(param_env.and(ty)).unwrap()
+diff --git a/src/tools/miri/src//machine.rs b/src/tools/miri/src//machine.rs
+index a2317b229..3d97bed7a 100644
+--- a/src/tools/miri/src//machine.rs
++++ b/src/tools/miri/src//machine.rs
+@@ -159,8 +159,8 @@ impl Provenance for Tag {
+         write!(f, "{:?}", tag.sb)
+     }
+ 
+-    fn get_alloc_id(self) -> AllocId {
+-        self.alloc_id
++    fn get_alloc_id(self) -> Option<AllocId> {
++        Some(self.alloc_id)
+     }
+ }
+ 
+@@ -608,21 +608,37 @@ impl<'mir, 'tcx> Machine<'mir, 'tcx> for Evaluator<'mir, 'tcx> {
+     }
+ 
+     #[inline(always)]
+-    fn ptr_from_addr(
++    fn ptr_from_addr_cast(
+         ecx: &MiriEvalContext<'mir, 'tcx>,
+         addr: u64,
+     ) -> Pointer<Option<Self::PointerTag>> {
+         intptrcast::GlobalStateInner::ptr_from_addr(addr, ecx)
+     }
+ 
++    #[inline(always)]
++    fn ptr_from_addr_transmute(
++        ecx: &MiriEvalContext<'mir, 'tcx>,
++        addr: u64,
++    ) -> Pointer<Option<Self::PointerTag>> {
++        Self::ptr_from_addr_cast(ecx, addr)
++    }
++
++    #[inline(always)]
++    fn expose_ptr(
++        _ecx: &mut InterpCx<'mir, 'tcx, Self>,
++        _ptr: Pointer<Self::PointerTag>,
++    ) -> InterpResult<'tcx> {
++        Ok(())
++    }
++
+     /// Convert a pointer with provenance into an allocation-offset pair,
+     /// or a `None` with an absolute address if that conversion is not possible.
+     fn ptr_get_alloc(
+         ecx: &MiriEvalContext<'mir, 'tcx>,
+         ptr: Pointer<Self::PointerTag>,
+-    ) -> (AllocId, Size, Self::TagExtra) {
++    ) -> Option<(AllocId, Size, Self::TagExtra)> {
+         let rel = intptrcast::GlobalStateInner::abs_ptr_to_rel(ecx, ptr);
+-        (ptr.provenance.alloc_id, rel, ptr.provenance.sb)
++        Some((ptr.provenance.alloc_id, rel, ptr.provenance.sb))
+     }
+ 
+     #[inline(always)]
