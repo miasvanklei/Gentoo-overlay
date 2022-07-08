@@ -1,13 +1,13 @@
 --- a/src/CMakeLists.txt	2021-11-08 21:00:28.949045256 +0100
 +++ b/src/CMakeLists.txt	2021-11-08 21:03:28.528178648 +0100
-@@ -203,10 +203,12 @@
- 
-     find_program(DOTNETCLI dotnet PATHS "${DOTNET_DIR}" ENV PATH NO_DEFAULT_PATH)
- 
+@@ -209,10 +209,12 @@
+         set(MANAGEDPART_BUILD_TYPE "Release")
+     endif()
+
 +    file(GLOB MANAGED_SRC "${CMAKE_CURRENT_SOURCE_DIR}/managed/*.cs")
 +
      add_custom_command(OUTPUT ${DOTNET_BUILD_RESULT}
-       COMMAND ${DOTNETCLI} publish ${MANAGEDPART_PROJECT} -o ${CMAKE_CURRENT_BINARY_DIR} /p:BaseIntermediateOutputPath=${CMAKE_CURRENT_BINARY_DIR}/obj/ /p:BaseOutputPath=${CMAKE_CURRENT_BINARY_DIR}/bin/
+       COMMAND ${DOTNETCLI} publish ${MANAGEDPART_PROJECT} -c ${MANAGEDPART_BUILD_TYPE} -o ${CMAKE_CURRENT_BINARY_DIR} /p:BaseIntermediateOutputPath=${CMAKE_CURRENT_BINARY_DIR}/obj/ /p:BaseOutputPath=${CMAKE_CURRENT_BINARY_DIR}/bin/
        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 -      DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/managed/*.cs" "${MANAGEDPART_PROJECT}"
 +      DEPENDS "${MANAGED_SRC}" "${MANAGEDPART_PROJECT}"
