@@ -130,6 +130,9 @@ src_prepare() {
 	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
 	rm -r "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node" || die
 
+	# remove broken symlinks
+	rm -r lib/vscode/extensions/node_modules/.bin || die
+
 	# not needed
 	rm ${S}/code-server || die
 	rm ${S}/postinstall.sh || die
