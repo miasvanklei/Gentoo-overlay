@@ -18,20 +18,20 @@ IUSE="btrfs +device-mapper iptables +nftables selinux systemd"
 
 COMMON_DEPEND="
 	app-crypt/gpgme:=
+	app-containers/cni-plugins
 	app-containers/conmon
 	app-containers/crun
 	dev-libs/glib:=
 	dev-libs/libassuan:=
 	dev-libs/libgpg-error:=
 	net-firewall/conntrack-tools
-	net-misc/cni-plugins
 	net-misc/socat
 	sys-apps/iproute2
 	sys-libs/libseccomp:=
 	btrfs? ( sys-fs/btrfs-progs )
 	device-mapper? ( sys-fs/lvm2:= )
 	iptables? ( net-firewall/iptables )
-	nftables? ( net-misc/cni-plugins-nftables )
+	nftables? ( app-containers/cni-plugins-nftables )
 	selinux? ( sys-libs/libselinux:= )
 	systemd? ( sys-apps/systemd:= )"
 DEPEND="
