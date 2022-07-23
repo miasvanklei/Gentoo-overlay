@@ -61,8 +61,6 @@
  }
  
  /*
-diff --git a/tools/flang2/flang2exe/gbldefs.h b/tools/flang2/flang2exe/gbldefs.h
-index bc7b0edf..718d9a25 100644
 --- a/tools/flang2/flang2exe/gbldefs.h
 +++ b/tools/flang2/flang2exe/gbldefs.h
 @@ -25,6 +25,7 @@
@@ -73,21 +71,24 @@ index bc7b0edf..718d9a25 100644
  #include "universal.h"
  #include "platform.h"
  #include "pgifeat.h"
-diff --git a/runtime/flang/red_norm2.c b/runtime/flang/red_norm2.c
-index 434dbd92..97e0f836 100644
---- a/runtime/flang/red_norm2.c
-+++ b/runtime/flang/red_norm2.c
-@@ -20,11 +20,11 @@
- #include "norm2.h"
-
- void F90_I8(stride_1_norm2_real4) (__POINT_T *src_pointer, __INT_T *size, __REAL4_T *result) {
--    F90_I8(norm2_real4) (src_pointer, size, result);
-+    NORM2_REAL4 (src_pointer, size, result);
- }
-
- void F90_I8(stride_1_norm2_real8) (__POINT_T *src_pointer, __INT_T *size, __REAL8_T *result) {
--    F90_I8(norm2_real8) (src_pointer, size, result);
-+    NORM2_REAL8 (src_pointer, size, result);
- }
-
- void ENTFTN(NORM2_NODIM, norm2_nodim) (__POINT_T *result, __POINT_T *src, __INT4_T * pfr, _DIST_TYPE *result_kind, F90_Desc *src_desc) {
+--- a/runtime/flang/norm2.h
++++ b/runtime/flang/norm2.h
+@@ -11,16 +11,10 @@
+ #include "stdioInterf.h"
+ #include "fioMacros.h"
+ 
+-#if defined(__AVX2__) && defined(DESC_I8)
+-#define NORM2_REAL4 norm2_avx2_real4_i8_
+-#define NORM2_REAL8 norm2_avx2_real8_i8_
+-#elif defined(__AVX2__) // implies !defined(DESC_I8)
+-#define NORM2_REAL4 norm2_avx2_real4_
+-#define NORM2_REAL8 norm2_avx2_real8_
+-#elif defined(DESC_I8) // implies !defined(__AVX2__)
++#if defined(DESC_I8)
+ #define NORM2_REAL4 norm2_real4_i8_
+ #define NORM2_REAL8 norm2_real8_i8_
+-#else // implies !defined(__AVX2__) && !defined(DESC_I8)
++#else // !defined(DESC_I8)
+ #define NORM2_REAL4 norm2_real4_
+ #define NORM2_REAL8 norm2_real8_
+ #endif

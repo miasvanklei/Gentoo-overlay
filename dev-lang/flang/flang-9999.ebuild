@@ -27,7 +27,8 @@ DEPEND="${RDEPEND}
 CMAKE_BUILD_TYPE=Release
 
 PATCHES=(
-	"${FILESDIR}"/fix-build.patch
+	"${FILESDIR}"/define-wordsize-musl.patch
+	"${FILESDIR}"/fix-build-with-ninja.patch
 	"${FILESDIR}"/fix-compile.patch
 )
 
