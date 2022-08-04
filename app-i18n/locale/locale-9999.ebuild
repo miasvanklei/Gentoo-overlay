@@ -3,7 +3,7 @@
 
 EAPI=7
 
-inherit git-r3 cmake-utils
+inherit git-r3 cmake
 
 DESCRIPTION="Locale program for musl libc"
 HOMEPAGE="https://github.com/rilian-la-te/musl-locales"
