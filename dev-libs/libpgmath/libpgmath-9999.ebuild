@@ -5,7 +5,7 @@ EAPI=7
 
 PYTHON_COMPAT=( python3_{8,9,10} )
 
-inherit cmake-utils git-r3
+inherit cmake git-r3
 
 DESCRIPTION="flang runtime math library"
 HOMEPAGE="https://github.com/flang-compiler/flang"
@@ -45,5 +45,5 @@ src_configure() {
 		)
 	fi
 
-	cmake-utils_src_configure
+	cmake_src_configure
 }
