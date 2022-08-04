@@ -3,7 +3,7 @@
 
 EAPI="7"
 
-inherit cmake-utils xdg-utils
+inherit cmake xdg-utils
 
 DESCRIPTION="An implementation of xim protocol in xcb"
 HOMEPAGE="https://gitlab.com/fcitx/xcb-imdkit"
@@ -23,7 +23,7 @@ DEPEND="${RDEPEND}
 
 
 src_prepare() {
-	cmake-utils_src_prepare
+	cmake_src_prepare
 	xdg_environment_reset
 }
 
@@ -32,9 +32,9 @@ src_configure() {
 		-DCMAKE_INSTALL_LIBDIR="${EPREFIX}/usr/$(get_libdir)"
 	)
 
-	cmake-utils_src_configure
+	cmake_src_configure
 }
 
 src_install(){
-	cmake-utils_src_install
+	cmake_src_install
 }
