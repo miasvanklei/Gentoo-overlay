@@ -19,7 +19,8 @@ KEYWORDS="~amd64 ~x86"
 IUSE="emacs ghc-lib +gpl hsyaml"
 USE_RESTRICT="test? (-hsyaml)" # Test fails when HsYAML is used
 
-RDEPEND=">=dev-haskell/aeson-1.1.2.0:=[profile?]
+RDEPEND=">=dev-haskell/deriving-aeson-0.2:=[profile?]
+	>=dev-haskell/aeson-1.1.2.0:=[profile?]
 	>=dev-haskell/ansi-terminal-0.8.1:=[profile?]
 	>=dev-haskell/cmdargs-0.10:=[profile?]
 	>=dev-haskell/cpphs-1.20.1:=[profile?]
@@ -37,7 +38,7 @@ RDEPEND=">=dev-haskell/aeson-1.1.2.0:=[profile?]
 	>=dev-lang/ghc-8.4.3:=
 	gpl? ( >=dev-haskell/hscolour-1.21:=[profile?] )
         ghc-lib? (
-                >=dev-haskell/ghc-lib-parser-8.10:=[profile?] <dev-haskell/ghc-lib-parser-8.11:=[profile?]
+                >=dev-haskell/ghc-lib-parser-9.2:=[profile?] <dev-haskell/ghc-lib-parser-9.3:=[profile?]
         )
         !ghc-lib? (
                 >=dev-lang/ghc-9.2:= <dev-lang/ghc-9.4:=
