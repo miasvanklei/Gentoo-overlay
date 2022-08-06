@@ -142,7 +142,7 @@ src_install() {
 	cp "${artifacts_coresetup}/libhostfxr.so" "${dest_fxr}/libhostfxr.so"
 
 	# dotnet
-	dosym "${dest}/dotnet" "/usr/bin/dotnet"
+	dosym "${dest_core}/dotnet" "/usr/bin/dotnet"
 
 	# create dummy symlink, fix acces violation
 	dosym /dev/null /usr/share/dotnet/metadata
