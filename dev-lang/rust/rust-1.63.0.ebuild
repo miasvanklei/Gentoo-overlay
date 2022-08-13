@@ -36,7 +36,7 @@ LLVM_TARGET_USEDEPS=${ALL_LLVM_TARGETS[@]/%/?}
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD-1 BSD-2 BSD-4 UoI-NCSA"
 
-IUSE="clippy cpu_flags_x86_sse2 debug doc miri nightly parallel-compiler rls rustfmt test wasm ${ALL_LLVM_TARGETS[*]}"
+IUSE="clippy cpu_flags_x86_sse2 debug doc nightly parallel-compiler rls rustfmt test wasm ${ALL_LLVM_TARGETS[*]}"
 
 # Please keep the LLVM dependency block separate. Since LLVM is slotted,
 # we need to *really* make sure we're not pulling more than one slot
@@ -94,7 +94,6 @@ RDEPEND="${DEPEND}
 "
 
 REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )
-	miri? ( nightly )
 	parallel-compiler? ( nightly )
 	test? ( ${ALL_LLVM_TARGETS[*]} )
 	wasm? ( llvm_targets_WebAssembly )
@@ -127,7 +126,6 @@ PATCHES=(
 	"${FILESDIR}"/004-libc-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
 	"${FILESDIR}"/008-do-not-install-libunwind-source.patch
-	"${FILESDIR}"/009-fix-miri.patch
 )
 
 S="${WORKDIR}/${MY_P}-src"
@@ -163,7 +161,6 @@ boostrap_rust_version_check() {
 pre_build_checks() {
 	local M=6144
 	M=$(( $(usex clippy 128 0) + ${M} ))
-	M=$(( $(usex miri 128 0) + ${M} ))
 	M=$(( $(usex rls 512 0) + ${M} ))
 	M=$(( $(usex rustfmt 256 0) + ${M} ))
 	M=$(( $(usex wasm 256 0) + ${M} ))
@@ -202,8 +199,7 @@ clear_vendor_checksums() {
 
 src_prepare() {
 	clear_vendor_checksums libc
-	clear_vendor_checksums libc-0.2.112
-	clear_vendor_checksums libc-0.2.116
+	clear_vendor_checksums libc-0.2.119
 
 	default
 }
@@ -226,9 +222,6 @@ src_configure() {
 	local tools="\"cargo\","
 	if use clippy; then
 		tools="\"clippy\",$tools"
-	fi
-	if use miri; then
-		tools="\"miri\",$tools"
 	fi
 	if use rls; then
 		tools="\"rls\",\"analysis\",\"src\",$tools"
@@ -422,7 +415,6 @@ src_install() {
 	)
 
 	use clippy && symlinks+=( clippy-driver cargo-clippy )
-	use miri && symlinks+=( miri cargo-miri )
 	use rls && symlinks+=( rls )
 	use rustfmt && symlinks+=( rustfmt cargo-fmt )
 
@@ -477,10 +469,6 @@ src_install() {
 	if use clippy; then
 		echo /usr/bin/clippy-driver >> "${T}/provider-${P}"
 		echo /usr/bin/cargo-clippy >> "${T}/provider-${P}"
-	fi
-	if use miri; then
-		echo /usr/bin/miri >> "${T}/provider-${P}"
-		echo /usr/bin/cargo-miri >> "${T}/provider-${P}"
 	fi
 	if use rls; then
 		echo /usr/bin/rls >> "${T}/provider-${P}"
