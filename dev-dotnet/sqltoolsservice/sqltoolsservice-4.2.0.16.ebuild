@@ -7,18 +7,16 @@ DESCRIPTION="SQL Tools API service that provides SQL Server data management capa
 HOMEPAGE="https://github.com/microsoft/sqltoolsservice"
 LICENSE="MIT"
 
-MY_PV="$(ver_cut 0-3)-release.$(ver_cut 4-)"
-
-SRC_URI="https://github.com/microsoft/${PN}/archive/v${MY_PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="https://github.com/microsoft/${PN}/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 RESTRICT="network-sandbox"
 
-RDEPEND="virtual/dotnet-core"
+RDEPEND="
+	=dev-dotnet/dotnet-sdk-6.0.400
+	virtual/dotnet-core"
 DEPEND="${RDEPEND}"
-
-S="${WORKDIR}/${PN}-${MY_PV}"
 
 QA_PRESTRIPPED="
 	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsServiceLayer
