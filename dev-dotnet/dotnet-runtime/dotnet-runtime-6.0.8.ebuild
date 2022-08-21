@@ -84,7 +84,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
 	eapply "${FILESDIR}"/sane-buildflags.patch
-	eapply "${FILESDIR}"/clang-misoptimize.patch
 
 	default
 }
