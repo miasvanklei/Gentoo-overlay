@@ -111,11 +111,11 @@ index 20669c08b33..24c99fcf4eb 100644
  			-exec touch {} + 2>/dev/null
  	fi
  }
-diff --git a/kde-apps/gwenview/gwenview-22.04.3.ebuild b/kde-apps/gwenview/gwenview-22.04.3.ebuild
-index 26a328bdc54..36cfa2f5ddd 100644
---- a/kde-apps/gwenview/gwenview-22.04.3.ebuild
-+++ b/kde-apps/gwenview/gwenview-22.04.3.ebuild
-@@ -87,7 +87,7 @@ src_configure() {
+diff --git a/kde-apps/gwenview/gwenview-22.08.0.ebuild b/kde-apps/gwenview/gwenview-22.08.0.ebuild
+index bca7878f903..e28e41f7af9 100644
+--- a/kde-apps/gwenview/gwenview-22.08.0.ebuild
++++ b/kde-apps/gwenview/gwenview-22.08.0.ebuild
+@@ -89,7 +89,7 @@ src_configure() {
  		$(cmake_use_find_package raw KF5KDcraw)
  		-DGWENVIEW_SEMANTICINFO_BACKEND=$(usex semantic-desktop Baloo None)
  		$(cmake_use_find_package share KF5Purpose)
@@ -124,72 +124,6 @@ index 26a328bdc54..36cfa2f5ddd 100644
  	)
  	ecm_src_configure
  }
-diff --git a/kde-apps/kdialog/kdialog-22.04.3.ebuild b/kde-apps/kdialog/kdialog-22.04.3.ebuild
-index e2d42a868e7..e315c9ebc06 100644
---- a/kde-apps/kdialog/kdialog-22.04.3.ebuild
-+++ b/kde-apps/kdialog/kdialog-22.04.3.ebuild
-@@ -36,7 +36,7 @@ RDEPEND="${DEPEND}"
- 
- src_configure() {
- 	local mycmakeargs=(
--		$(cmake_use_find_package X X11)
-+		-DWITH_X11=$(usex X)
- 	)
- 	ecm_src_configure
- }
-diff --git a/kde-apps/kio-extras/kio-extras-22.04.3.ebuild b/kde-apps/kio-extras/kio-extras-22.04.3.ebuild
-index abf5c1450dc..b1ddefcedfd 100644
---- a/kde-apps/kio-extras/kio-extras-22.04.3.ebuild
-+++ b/kde-apps/kio-extras/kio-extras-22.04.3.ebuild
-@@ -83,7 +83,7 @@ src_configure() {
- 		$(cmake_use_find_package samba Samba)
- 		$(cmake_use_find_package sftp libssh)
- 		$(cmake_use_find_package taglib Taglib)
--		$(cmake_use_find_package X X11)
-+		-DWITH_X11=$(usex X)
- 	)
- 	use samba && mycmakeargs+=(
- 		-DBUILD_KDSoapWSDiscoveryClient=OFF # disable bundled stuff
-diff --git a/kde-apps/konsole/konsole-22.04.3.ebuild b/kde-apps/konsole/konsole-22.04.3.ebuild
-index cce03a53b3c..233098a2ec1 100644
---- a/kde-apps/konsole/konsole-22.04.3.ebuild
-+++ b/kde-apps/konsole/konsole-22.04.3.ebuild
-@@ -52,7 +52,7 @@ RDEPEND="${DEPEND}"
- 
- src_configure() {
- 	local mycmakeargs=(
--		$(cmake_use_find_package X X11)
-+		-DWITH_X11=$(usex X)
- 	)
- 
- 	ecm_src_configure
-diff --git a/kde-frameworks/kinit/kinit-5.96.0.ebuild b/kde-frameworks/kinit/kinit-5.96.0.ebuild
-index 98fa7a134a4..8daef1bd943 100644
---- a/kde-frameworks/kinit/kinit-5.96.0.ebuild
-+++ b/kde-frameworks/kinit/kinit-5.96.0.ebuild
-@@ -43,8 +43,8 @@ src_configure() {
- 	local mycmakeargs=(
- 		$(cmake_use_find_package caps Libcap)
- 		$(cmake_use_find_package man KF5DocTools)
--		$(cmake_use_find_package X X11)
- 		$(cmake_use_find_package X XCB)
-+		-DWITH_X11=$(usex X)
- 	)
- 
- 	ecm_src_configure
-diff --git a/kde-frameworks/kio/kio-5.96.0-r2.ebuild b/kde-frameworks/kio/kio-5.96.0-r2.ebuild
-index f0466907906..7263beec297 100644
---- a/kde-frameworks/kio/kio-5.96.0-r2.ebuild
-+++ b/kde-frameworks/kio/kio-5.96.0-r2.ebuild
-@@ -82,7 +82,7 @@ src_configure() {
- 		$(cmake_use_find_package handbook KF5DocTools)
- 		$(cmake_use_find_package kerberos GSSAPI)
- 		$(cmake_use_find_package kwallet KF5Wallet)
--		$(cmake_use_find_package X X11)
-+		-DWITH_X11=$(usex X)
- 	)
- 
- 	ecm_src_configure
 diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.4.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.4.ebuild
 index fb20e30ccfa..3ef7c990bee 100644
 --- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.4.ebuild
@@ -440,39 +374,3 @@ index 01b9bbfd4b9..b67c0a9ace2 100644
  
  		-DLLVM_HOST_TRIPLE="${CHOST}"
  
-diff --git a/sys-libs/libcxx/libcxx-14.0.6.ebuild b/sys-libs/libcxx/libcxx-14.0.6.ebuild
-index 09ef1beb4a2..0c6e9de6427 100644
---- a/sys-libs/libcxx/libcxx-14.0.6.ebuild
-+++ b/sys-libs/libcxx/libcxx-14.0.6.ebuild
-@@ -133,6 +133,7 @@ multilib_src_configure() {
- 		-DLLVM_ENABLE_RUNTIMES=libcxx
- 		-DLLVM_INCLUDE_TESTS=OFF
- 		-DLLVM_LIBDIR_SUFFIX=${libdir#lib}
-+		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
- 
- 		-DLIBCXX_ENABLE_SHARED=ON
- 		-DLIBCXX_ENABLE_STATIC=$(usex static-libs)
-diff --git a/sys-libs/libcxxabi/libcxxabi-14.0.6.ebuild b/sys-libs/libcxxabi/libcxxabi-14.0.6.ebuild
-index fa07ba2e8fb..026a16381de 100644
---- a/sys-libs/libcxxabi/libcxxabi-14.0.6.ebuild
-+++ b/sys-libs/libcxxabi/libcxxabi-14.0.6.ebuild
-@@ -79,6 +79,7 @@ multilib_src_configure() {
- 		-DLIBCXXABI_INCLUDE_TESTS=$(usex test)
- 		-DLIBCXXABI_USE_LLVM_UNWINDER=$(usex libunwind)
- 		-DLIBCXXABI_USE_COMPILER_RT=${want_compiler_rt}
-+		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
- 
- 		# upstream is omitting standard search path for this
- 		# probably because gcc & clang are bundling their own unwind.h
-diff --git a/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild b/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
-index 46a05319bac..24d0dfdc8cf 100644
---- a/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
-+++ b/x11-misc/appmenu-gtk-module/appmenu-gtk-module-0.7.3-r2.ebuild
-@@ -16,7 +16,6 @@ IUSE="wayland"
- 
- RDEPEND="
- 	dev-libs/glib[dbus]
--	>=x11-libs/gtk+-2.24.0:2
- 	>=x11-libs/gtk+-3.22.0:3[wayland=]
- "
- DEPEND="${RDEPEND}
