@@ -58,7 +58,7 @@ RDEPEND="
 	)
 "
 
-S="${WORKDIR}/${P}-linux-amd64"
+S="${WORKDIR}/${P%_*}-linux-amd64"
 
 DOCS=( "README.md" "ThirdPartyNotices.txt" )
 
