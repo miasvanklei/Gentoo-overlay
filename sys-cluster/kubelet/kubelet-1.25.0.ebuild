@@ -13,7 +13,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE="hardened"
 
-BDEPEND=">=dev-lang/go-1.18.1"
+BDEPEND=">=dev-lang/go-1.19"
 
 RESTRICT+=" test "
 S="${WORKDIR}/kubernetes-${PV}"
