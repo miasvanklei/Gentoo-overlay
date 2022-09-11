@@ -3,7 +3,7 @@
 
 EAPI=7
 
-EGIT_COMMIT=0ba47c9b3e52eee95d898be84500c38c9fe032c9
+EGIT_COMMIT=315a0cb5b0abd15619384d7da7f3941714afcb8e
 
 inherit go-module
 
@@ -41,8 +41,6 @@ RDEPEND="${COMMON_DEPEND}
 	!<app-containers/podman-1.3.2-r1"
 
 src_prepare() {
-	eapply "${FILESDIR}"/fix-compile.patch
-
 	default
 
 	sed -e '/^export GOPROXY=/d' \
