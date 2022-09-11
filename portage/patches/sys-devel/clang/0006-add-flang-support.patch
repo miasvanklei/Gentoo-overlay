@@ -42,9 +42,9 @@ index fc3704303a95..21f48a4fb73e 100644
    "unsupported runtime library '%0' for platform '%1'">;
  def err_drv_invalid_unwindlib_name : Error<
 @@ -282,6 +286,8 @@ def err_drv_negative_columns : Error<
-     "invalid value '%1' in '%0', value must be 'none' or a positive integer">;
+   "invalid value '%1' in '%0', value must be 'none' or a positive integer">;
  def err_drv_small_columns : Error<
-     "invalid value '%1' in '%0', value must be '%2' or greater">;
+   "invalid value '%1' in '%0', value must be '%2' or greater">;
 +def err_drv_clang_unsupported_minfo_arg : Error<
 +  "'%0' option does not support '%1' value">;
  
@@ -212,7 +212,8 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
  
  def fno_automatic : Flag<["-"], "fno-automatic">, Group<f_Group>,
    HelpText<"Implies the SAVE attribute for non-automatic local objects in subprograms unless RECURSIVE">;
- }
+ 
+ } // let Flags = [FC1Option, FlangOption, FlangOnlyOption]
  
  def J : JoinedOrSeparate<["-"], "J">,
 -  Flags<[RenderJoined, FlangOption, FC1Option, FlangOnlyOption]>,
@@ -223,10 +224,10 @@ index a0cbcae0bdc3..2ba1ce0f3cb4 100644
  
  //===----------------------------------------------------------------------===//
  // FC1 Options
-@@ -6528,3 +6548,136 @@
- def _SLASH_Zg : CLFlag<"Zg">;
- def _SLASH_ZI : CLFlag<"ZI">;
- def _SLASH_ZW : CLJoined<"ZW">;
+@ -6933,3 +6933,136 @@
+ def enable_16bit_types : DXCFlag<"enable-16bit-types">, Alias<fnative_half_type>,
+   HelpText<"Enable 16-bit types and disable min precision types."
+            "Available in HLSL 2018 and shader model 6.2.">;
 +
 +// Flang-specific options
 +multiclass BooleanKFlag<string name> {
@@ -405,7 +406,7 @@ index 997eea445c22..0f7cfb91a9a8 100644
 +TYPE("f95",                      PP_F_FreeForm, INVALID,        "f95",    phases::Compile, phases::Backend, phases::Assemble, phases::Link)
 +TYPE("f95-cpp-input",            F_FreeForm,   PP_F_FreeForm,   "F95",    phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
 +#else
- TYPE("f95",                      PP_Fortran,   INVALID,         nullptr,  phases::Compile, phases::Backend, phases::Assemble, phases::Link)
+ TYPE("f95",                      PP_Fortran,   INVALID,         "i",      phases::Compile, phases::Backend, phases::Assemble, phases::Link)
  TYPE("f95-cpp-input",            Fortran,      PP_Fortran,      nullptr,  phases::Preprocess, phases::Compile, phases::Backend, phases::Assemble, phases::Link)
 +#endif
  TYPE("java",                     Java,         INVALID,         nullptr,  phases::Compile, phases::Backend, phases::Assemble, phases::Link)
@@ -416,8 +417,8 @@ index 6a1f57416ae5..c656b9439add 100644
 --- a/clang/include/clang/Driver/Types.h
 +++ b/clang/include/clang/Driver/Types.h
 @@ -87,6 +87,14 @@ namespace types {
-   /// isFortran - Is this a Fortran input.
-   bool isFortran(ID Id);
+   /// isAcceptedByFlang - Can flang handle this input type.
+   bool isAcceptedByFlang(ID Id);
  
 +#ifdef ENABLE_CLASSIC_FLANG
 +  /// isFreeFormFortran -- is it a free form layout Fortran input
@@ -521,7 +522,7 @@ index 94a7553e273b..2e626f588028 100644
 @@ -3977,6 +3989,10 @@ Action *Driver::ConstructPhaseAction(
        return C.MakeAction<VerifyPCHJobAction>(Input, types::TY_Nothing);
      if (Args.hasArg(options::OPT_extract_api))
-       return C.MakeAction<CompileJobAction>(Input, types::TY_API_INFO);
+       return C.MakeAction<ExtractAPIJobAction>(Input, types::TY_API_INFO);
 +#ifdef ENABLE_CLASSIC_FLANG
 +    if (IsFlangMode())
 +      return C.MakeAction<CompileJobAction>(Input, types::TY_LLVM_IR);
@@ -541,11 +542,11 @@ index 94a7553e273b..2e626f588028 100644
        return nullptr;
  
 @@ -5437,7 +5457,11 @@ bool Driver::ShouldUseFlangCompiler(const JobAction &JA) const {
-     return false;
  
    // And say "no" if this is not a kind of action flang understands.
--  if (!isa<PreprocessJobAction>(JA) && !isa<CompileJobAction>(JA) && !isa<BackendJobAction>(JA))
-+  if (!isa<PreprocessJobAction>(JA) && !isa<CompileJobAction>(JA)
+   if (!isa<PreprocessJobAction>(JA) && !isa<CompileJobAction>(JA) &&
+-      !isa<BackendJobAction>(JA))
++      !isa<BackendJobAction>(JA)
 +#ifndef ENABLE_CLASSIC_FLANG
 +      && !isa<BackendJobAction>(JA)
 +#endif
@@ -565,14 +566,14 @@ index 6c1b88141c45..6a7f7acd9fbf 100644
  #include "ToolChains/Flang.h"
  #include "ToolChains/InterfaceStubs.h"
  #include "clang/Basic/ObjCRuntime.h"
-@@ -154,6 +154,7 @@
+@@ -183,6 +183,7 @@
        {"cl", "--driver-mode=cl"},
        {"++", "--driver-mode=g++"},
        {"flang", "--driver-mode=flang"},
 +      {"gfortran", "--driver-mode=flang"},
+       {"clang-dxc", "--driver-mode=dxc"},
    };
  
-   for (size_t i = 0; i < llvm::array_lengthof(DriverSuffixes); ++i) {
 @@ -268,7 +269,11 @@ Tool *ToolChain::getClang() const {
  
  Tool *ToolChain::getFlang() const {
@@ -805,7 +806,7 @@ index 000000000000..a40a363392cf
 +  const InputInfo &Input = Inputs[0];
 +  types::ID InputType = Input.getType();
 +  // Check file type sanity
-+  assert(types::isFortran(InputType) && "Can only accept Fortran");
++  assert(types::isAcceptedByFlang(InputType) && "Can only accept Fortran");
 +
 +  if (Args.hasArg(options::OPT_fsyntax_only)) {
 +    // For -fsyntax-only produce temp files only
@@ -2275,43 +2276,46 @@ index b7ccdf23cbaa..d3dee6190980
    case TY_CUDA: case TY_PP_CUDA:
    case TY_CUDA_DEVICE:
    case TY_HIP:
-@@ -222,11 +228,35 @@ bool types::isFortran(ID Id) {
+@@ -170,8 +170,15 @@
    default:
      return false;
  
--  case TY_Fortran: case TY_PP_Fortran:
 +#ifdef ENABLE_CLASSIC_FLANG
 +  case TY_F_FreeForm:
 +  case TY_PP_F_FreeForm:
 +  case TY_F_FixedForm:
 +  case TY_PP_F_FixedForm:
 +#else
-+  case TY_Fortran:
-+  case TY_PP_Fortran:
+   case TY_Fortran:
+   case TY_PP_Fortran:
 +#endif
      return true;
+   case TY_LLVM_IR:
+   case TY_LLVM_BC:
+@@ -179,6 +186,23 @@
    }
  }
  
 +#ifdef ENABLE_CLASSIC_FLANG
 +bool types::isFreeFormFortran(ID Id) {
-+  if (!isFortran(Id))
++  if (!isAcceptedByFlang(Id))
 +    return false;
 +
 +  return (Id == TY_F_FreeForm || Id == TY_PP_F_FreeForm);
 +}
 +
 +bool types::isFixedFormFortran(ID Id) {
-+  if (!isFortran(Id))
++  if (!isAcceptedByFlang(Id))
 +    return false;
 +
 +  return (Id == TY_F_FixedForm || Id == TY_PP_F_FixedForm);
 +}
 +#endif
 +
- bool types::isSrcFile(ID Id) {
-   return Id != TY_Object && getPreprocessedType(Id) != TY_INVALID;
- }
++
+ bool types::isDerivedFromC(ID Id) {
+   switch (Id) {
+   default:
 @@ -235,8 +265,13 @@ types::ID types::lookupTypeForExtension(llvm::StringRef Ext) {
    return llvm::StringSwitch<types::ID>(Ext)
             .Case("c", TY_C)
