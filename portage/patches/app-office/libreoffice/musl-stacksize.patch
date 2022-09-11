@@ -4,8 +4,8 @@
      short             nFlags)
  {
      Thread_Impl* pImpl;
--#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS)
-+#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
+-#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS)
++#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
      pthread_attr_t attr;
      size_t stacksize;
  #endif
@@ -14,8 +14,8 @@
 
      pthread_mutex_lock (&(pImpl->m_Lock));
 
--#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS)
-+#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
+-#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS)
++#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
      if (pthread_attr_init(&attr) != 0)
          return nullptr;
 
@@ -23,8 +23,8 @@
 
      if ((nRet = pthread_create (
          &(pImpl->m_hThread),
--#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS)
-+#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
+-#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS)
++#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
          &attr,
  #else
          PTHREAD_ATTR_DEFAULT,
@@ -33,8 +33,8 @@
          return nullptr;
      }
 
--#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS)
-+#if defined OPENBSD || ((defined MACOSX || defined LINUX) && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
+-#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS)
++#if defined OPENBSD || defined MACOSX || (defined LINUX && !ENABLE_RUNTIME_OPTIMIZATIONS) || (defined LINUX && !defined __GLIBC__)
      pthread_attr_destroy(&attr);
  #endif
 
