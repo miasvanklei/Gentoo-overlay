@@ -48,13 +48,14 @@ IUSE="clippy cpu_flags_x86_sse2 debug doc nightly parallel-compiler rls rustfmt 
 # 3. Specify LLVM_MAX_SLOT, e.g. 11.
 LLVM_DEPEND="
 	|| (
+		sys-devel/llvm:15[${LLVM_TARGET_USEDEPS// /,}]
 		sys-devel/llvm:14[${LLVM_TARGET_USEDEPS// /,}]
 		sys-devel/llvm:13[${LLVM_TARGET_USEDEPS// /,}]
 	)
 	<sys-devel/llvm-15:=
 	wasm? ( sys-devel/lld )
 "
-LLVM_MAX_SLOT=14
+LLVM_MAX_SLOT=15
 
 # to bootstrap we need at least exactly previous version, or same.
 # most of the time previous versions fail to bootstrap with newer
@@ -126,6 +127,7 @@ PATCHES=(
 	"${FILESDIR}"/004-libc-linkage.patch
 	"${FILESDIR}"/006-gentoo-musl-target-specs.patch
 	"${FILESDIR}"/008-do-not-install-libunwind-source.patch
+	"${FILESDIR}"/0010-llvm-15.patch
 )
 
 S="${WORKDIR}/${MY_P}-src"
