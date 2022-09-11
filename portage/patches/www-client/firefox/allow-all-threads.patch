@@ -1,0 +1,23 @@
+--- a/security/sandbox/linux/SandboxFilter.cpp	2022-08-28 11:44:34.731197358 +0200
++++ b/security/sandbox/linux/SandboxFilter.cpp	2022-08-28 11:58:39.034879930 +0200
+@@ -1885,10 +1885,6 @@
+       case __NR_eventfd2:
+         return Allow();
+ 
+-        // Allow the sched_* syscalls for the current thread only.
+-        // Mesa attempts to use them to optimize performance; often
+-        // this involves passing other threads' tids, which we can't
+-        // safely allow, but maybe a future Mesa version could fix that.
+       case __NR_sched_getaffinity:
+       case __NR_sched_setaffinity:
+       case __NR_sched_getparam:
+@@ -1897,8 +1893,7 @@
+       case __NR_sched_setscheduler:
+       case __NR_sched_getattr:
+       case __NR_sched_setattr: {
+-        Arg<pid_t> pid(0);
+-        return If(pid == 0, Allow()).Else(Trap(SchedTrap, nullptr));
++        return Allow();
+       }
+ 
+         // Mesa sometimes wants to know the OS version.
