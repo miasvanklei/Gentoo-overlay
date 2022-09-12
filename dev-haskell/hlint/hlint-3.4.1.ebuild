@@ -19,6 +19,10 @@ KEYWORDS="~amd64 ~x86"
 IUSE="emacs ghc-lib +gpl hsyaml"
 USE_RESTRICT="test? (-hsyaml)" # Test fails when HsYAML is used
 
+CABAL_CHDEPS=(
+        "ghc-lib-parser-ex >= 9.2.0.3 && < 9.2.1" "ghc-lib-parser-ex >= 9.2.0.3"
+)
+
 RDEPEND=">=dev-haskell/deriving-aeson-0.2:=[profile?]
 	>=dev-haskell/aeson-1.1.2.0:=[profile?]
 	>=dev-haskell/ansi-terminal-0.8.1:=[profile?]
@@ -28,7 +32,7 @@ RDEPEND=">=dev-haskell/deriving-aeson-0.2:=[profile?]
 	>=dev-haskell/extra-1.7.3:=[profile?]
 	dev-haskell/file-embed:=[profile?]
 	>=dev-haskell/filepattern-0.1.1:=[profile?]
-	>=dev-haskell/ghc-lib-parser-ex-9.2.0.3:=[profile?] <dev-haskell/ghc-lib-parser-ex-9.2.1:=[profile?]
+	>=dev-haskell/ghc-lib-parser-ex-9.2.0.3:=[profile?] <dev-haskell/ghc-lib-parser-ex-9.2.2:=[profile?]
 	>=dev-haskell/refact-0.3:=[profile?]
 	dev-haskell/text:=[profile?]
 	>=dev-haskell/uniplate-1.5:=[profile?]
