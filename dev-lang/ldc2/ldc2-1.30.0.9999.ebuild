@@ -3,11 +3,11 @@
 
 EAPI=7
 
-inherit cmake
+inherit cmake git-r3
 
 MY_PV=${PV/_/-}
 
-SRC_URI="https://github.com/ldc-developers/ldc/releases/download/v${MY_PV}/ldc-${MY_PV}-src.tar.gz"
+EGIT_REPO_URI="https://github.com/ldc-developers/ldc.git"
 DESCRIPTION="LLVM D Compiler"
 HOMEPAGE="https://ldc-developers.github.com/ldc"
 KEYWORDS="~x86 ~amd64 ~arm ~arm64 ~ppc ~ppc64"
@@ -36,10 +36,9 @@ DEPEND=">=dev-util/cmake-2.8
 	sys-devel/llvm:=
 	${RDEPEND}"
 
-S=${WORKDIR}/ldc-${MY_PV}-src
-
 PATCHES=(
 	"${FILESDIR}"/cmsg_nxthdr_unavaible.patch
+	"${FILESDIR}"/fix-null-crash.patch
 )
 
 src_configure() {
