@@ -36,7 +36,8 @@ S="${WORKDIR}/${PN}-VERSION_${PV}"
 
 PATCHES=(
 	"${FILESDIR}"/bugus-dependencies.patch
-	"${FILESDIR}/${P}-assert-failure.patch"
+        "${FILESDIR}/${PN}-1.25-assert-failure.patch"
+        "${FILESDIR}/${P}-project-version.patch"
 )
 
 src_prepare() {
