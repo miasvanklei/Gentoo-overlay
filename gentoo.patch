@@ -150,7 +150,7 @@ index 920ea7b3cac..65cc3c56008 100644
  
  	ecm_src_configure
 diff --git a/media-libs/mlt/mlt-7.8.0.ebuild b/media-libs/mlt/mlt-7.8.0.ebuild
-index 3ce81604dc9..92b5c4ad31f 100644
+index d25a3214c7c..62505be5f1d 100644
 --- a/media-libs/mlt/mlt-7.8.0.ebuild
 +++ b/media-libs/mlt/mlt-7.8.0.ebuild
 @@ -59,7 +59,7 @@ DEPEND="
@@ -216,15 +216,15 @@ index 0d212005d51..343d88c82bb 100644
  	append-lfs-flags #760857
  	multilib-minimal_src_configure
  }
-diff --git a/sys-devel/clang/clang-15.0.0.ebuild b/sys-devel/clang/clang-15.0.0.ebuild
-index aaa106808ae..2de7cd6300c 100644
---- a/sys-devel/clang/clang-15.0.0.ebuild
-+++ b/sys-devel/clang/clang-15.0.0.ebuild
+diff --git a/sys-devel/clang/clang-15.0.0-r1.ebuild b/sys-devel/clang/clang-15.0.0-r1.ebuild
+index 2962ee1732f..8a42bc460bf 100644
+--- a/sys-devel/clang/clang-15.0.0-r1.ebuild
++++ b/sys-devel/clang/clang-15.0.0-r1.ebuild
 @@ -23,8 +23,11 @@ IUSE="
  REQUIRED_USE="${PYTHON_REQUIRED_USE}"
  RESTRICT="!test? ( test )"
  
-+IUSE="${IUSE} +flang gcc-symlinks"
++IUSE="${IUSE} +gcc-symlinks"
 +
  DEPEND="
  	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${MULTILIB_USEDEP}]
@@ -232,7 +232,7 @@ index aaa106808ae..2de7cd6300c 100644
  	static-analyzer? ( dev-lang/perl:* )
  	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
  "
-@@ -46,10 +49,13 @@ PDEPEND="
+@@ -46,7 +49,6 @@ PDEPEND="
  	sys-devel/clang-common
  	~sys-devel/clang-runtime-${PV}
  	default-compiler-rt? (
@@ -240,14 +240,7 @@ index aaa106808ae..2de7cd6300c 100644
  		llvm-libunwind? ( sys-libs/llvm-libunwind )
  		!llvm-libunwind? ( sys-libs/libunwind )
  	)
-+	flang? (
-+		dev-libs/libpgmath
-+		dev-lang/flang
-+		sys-devel/llvm[flang] )
- 	default-libcxx? ( >=sys-libs/libcxx-${PV} )
- 	default-lld? ( sys-devel/lld )
- "
-@@ -253,8 +259,7 @@ get_distribution_components() {
+@@ -253,8 +255,7 @@ get_distribution_components() {
  }
  
  multilib_src_configure() {
@@ -257,15 +250,7 @@ index aaa106808ae..2de7cd6300c 100644
  
  	local mycmakeargs=(
  		-DLLVM_CMAKE_PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)/cmake/llvm"
-@@ -269,6 +274,7 @@ multilib_src_configure() {
- 
- 		-DLLVM_TARGETS_TO_BUILD="${LLVM_TARGETS// /;}"
- 		-DLLVM_BUILD_TESTS=$(usex test)
-+		-DLLVM_ENABLE_CLASSIC_FLANG=$(usex flang)
- 
- 		# these are not propagated reliably, so redefine them
- 		-DLLVM_ENABLE_EH=ON
-@@ -289,6 +295,10 @@ multilib_src_configure() {
+@@ -289,6 +290,10 @@ multilib_src_configure() {
  		-DCLANG_DEFAULT_PIE_ON_LINUX=$(usex pie)
  		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-compiler-rt libunwind "")
  
@@ -276,7 +261,7 @@ index aaa106808ae..2de7cd6300c 100644
  		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
  		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
  
-@@ -382,12 +392,15 @@ src_install() {
+@@ -382,12 +387,15 @@ src_install() {
  
  	# Apply CHOST and version suffix to clang tools
  	# note: we use two version components here (vs 3 in runtime path)
@@ -286,11 +271,11 @@ index aaa106808ae..2de7cd6300c 100644
 -	local clang_tools=( clang clang++ clang-cl clang-cpp )
 +	local clang_version=$(ver_cut 1)
 +	local clang_full_version=$(ver_cut 1-3)
-+	local clang_tools=( clang clang++ clang-cl clang-cpp gcc g++ cpp )
++	local clang_tools=( clang clang++ clang-cl clang-cpp cpp )
  	local abi i
  
-+	if use flang; then
-+		clang_tools+=( flang gfortran )
++	if use gcc-symlinks; then
++		clang_tools+=( g++ gcc )
 +	fi
 +
  	# cmake gives us:
@@ -322,14 +307,14 @@ index 9bd470297df..fd481026e27 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-devel/llvm/llvm-15.0.0.ebuild b/sys-devel/llvm/llvm-15.0.0.ebuild
-index ef31663b7c9..56d929045af 100644
+index ef31663b7c9..b24dd4bfa42 100644
 --- a/sys-devel/llvm/llvm-15.0.0.ebuild
 +++ b/sys-devel/llvm/llvm-15.0.0.ebuild
 @@ -22,6 +22,8 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~ppc-ma
  IUSE="+binutils-plugin debug doc exegesis libedit +libffi ncurses test xar xml z3"
  RESTRICT="!test? ( test )"
  
-+IUSE="${IUSE} +flang binutils-symlinks"
++IUSE="${IUSE} binutils-symlinks"
 +
  RDEPEND="
  	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
@@ -366,14 +351,30 @@ index ef31663b7c9..56d929045af 100644
  
  		# cheap hack: LLVM combines both anyway, and the only difference
  		# is that the former list is explicitly verified at cmake time
-@@ -364,6 +384,7 @@ multilib_src_configure() {
- 		-DLLVM_ENABLE_EH=ON
- 		-DLLVM_ENABLE_RTTI=ON
- 		-DLLVM_ENABLE_Z3_SOLVER=$(usex z3)
-+		-DLLVM_ENABLE_CLASSIC_FLANG=$(usex flang)
- 
- 		-DLLVM_HOST_TRIPLE="${CHOST}"
- 
+diff --git a/sys-libs/libcxx/libcxx-15.0.0.ebuild b/sys-libs/libcxx/libcxx-15.0.0.ebuild
+index 838aac06394..c35f8a3b6ec 100644
+--- a/sys-libs/libcxx/libcxx-15.0.0.ebuild
++++ b/sys-libs/libcxx/libcxx-15.0.0.ebuild
+@@ -121,6 +121,7 @@ multilib_src_configure() {
+ 	local libdir=$(get_libdir)
+ 	local mycmakeargs=(
+ 		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
++		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+ 		-DPython3_EXECUTABLE="${PYTHON}"
+ 		-DLLVM_ENABLE_RUNTIMES=libcxx
+ 		-DLLVM_INCLUDE_TESTS=OFF
+diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild
+index 2bfe48a125b..ef91d014be7 100644
+--- a/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild
++++ b/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild
+@@ -78,6 +78,7 @@ multilib_src_configure() {
+ 	local libdir=$(get_libdir)
+ 	local mycmakeargs=(
+ 		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
++		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+ 		-DPython3_EXECUTABLE="${PYTHON}"
+ 		-DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx"
+ 		-DLLVM_INCLUDE_TESTS=OFF
 diff --git a/www-client/firefox/firefox-104.0.2.ebuild b/www-client/firefox/firefox-104.0.2.ebuild
 index 24cea78da33..e9e887df5e4 100644
 --- a/www-client/firefox/firefox-104.0.2.ebuild
