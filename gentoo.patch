@@ -1,5 +1,5 @@
 diff --git a/app-emulation/libvirt/libvirt-8.7.0.ebuild b/app-emulation/libvirt/libvirt-8.7.0.ebuild
-index a10d45ea6c5..03a31973000 100644
+index 76e8da2aa40..5b72d732fd9 100644
 --- a/app-emulation/libvirt/libvirt-8.7.0.ebuild
 +++ b/app-emulation/libvirt/libvirt-8.7.0.ebuild
 @@ -113,8 +113,6 @@ RDEPEND="
@@ -37,6 +37,19 @@ index 7ca29eab260..bcb7a22cbb5 100644
  	media-video/ffmpeg
  	virtual/libusb:1"
  DEPEND="${RDEPEND}"
+diff --git a/dev-lang/rust/rust-1.64.0.ebuild b/dev-lang/rust/rust-1.64.0.ebuild
+index 69b586f8f35..1cf38917c09 100644
+--- a/dev-lang/rust/rust-1.64.0.ebuild
++++ b/dev-lang/rust/rust-1.64.0.ebuild
+@@ -49,7 +49,7 @@ IUSE="clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind miri nightly paral
+ 
+ # How to use it:
+ # List all the working slots in LLVM_VALID_SLOTS, newest first.
+-LLVM_VALID_SLOTS=( 14 )
++LLVM_VALID_SLOTS=( 15 )
+ LLVM_MAX_SLOT="${LLVM_VALID_SLOTS[0]}"
+ 
+ # splitting usedeps needed to avoid CI/pkgcheck's UncheckableDep limitation
 diff --git a/dev-libs/jansson/jansson-2.14.ebuild b/dev-libs/jansson/jansson-2.14.ebuild
 index 8c97fdd3912..f4ca9bf78bc 100644
 --- a/dev-libs/jansson/jansson-2.14.ebuild
@@ -80,6 +93,25 @@ index b7c13cbf7e7..59896741679 100644
  						${BUILD_FIXES} \
  						${BUILD_PARAMS} \
  						${BUILD_TARGETS} " \
+diff --git a/eclass/rust-toolchain.eclass b/eclass/rust-toolchain.eclass
+index 75b15a7088b..25f41202510 100644
+--- a/eclass/rust-toolchain.eclass
++++ b/eclass/rust-toolchain.eclass
+@@ -37,12 +37,12 @@ rust_abi() {
+ 	local CTARGET=${1:-${CHOST}}
+ 	case ${CTARGET%%*-} in
+ 		aarch64*gnu)  echo aarch64-unknown-linux-gnu;;
+-		aarch64*musl) echo aarch64-unknown-linux-musl;;
++		aarch64*musl) echo aarch64-gentoo-linux-musl;;
+ 		mips64*)	  echo mips64-unknown-linux-gnuabi64;;
+ 		powerpc64le*) echo powerpc64le-unknown-linux-gnu;;
+ 		powerpc64*)   echo powerpc64-unknown-linux-gnu;;
+ 		x86_64*gnu)	  echo x86_64-unknown-linux-gnu;;
+-		x86_64*musl)  echo x86_64-unknown-linux-musl;;
++		x86_64*musl)  echo x86_64-gentoo-linux-musl;;
+ 		armv6j*s*)	  echo arm-unknown-linux-gnueabi;;
+ 		armv6j*h*)	  echo arm-unknown-linux-gnueabihf;;
+ 		armv7a*h*)	  echo armv7-unknown-linux-gnueabihf;;
 diff --git a/eclass/savedconfig.eclass b/eclass/savedconfig.eclass
 index 4681fd25328..f85f40f1442 100644
 --- a/eclass/savedconfig.eclass
@@ -216,31 +248,27 @@ index 0d212005d51..343d88c82bb 100644
  	append-lfs-flags #760857
  	multilib-minimal_src_configure
  }
-diff --git a/sys-devel/clang/clang-15.0.0-r1.ebuild b/sys-devel/clang/clang-15.0.0-r1.ebuild
-index 2962ee1732f..8a42bc460bf 100644
---- a/sys-devel/clang/clang-15.0.0-r1.ebuild
-+++ b/sys-devel/clang/clang-15.0.0-r1.ebuild
-@@ -23,8 +23,11 @@ IUSE="
- REQUIRED_USE="${PYTHON_REQUIRED_USE}"
- RESTRICT="!test? ( test )"
+diff --git a/sys-devel/clang/clang-15.0.1.ebuild b/sys-devel/clang/clang-15.0.1.ebuild
+index 63702176d2d..23765b7e37b 100644
+--- a/sys-devel/clang/clang-15.0.1.ebuild
++++ b/sys-devel/clang/clang-15.0.1.ebuild
+@@ -25,6 +25,7 @@ RESTRICT="!test? ( test )"
  
-+IUSE="${IUSE} +gcc-symlinks"
-+
  DEPEND="
  	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${MULTILIB_USEDEP}]
 +	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
  	static-analyzer? ( dev-lang/perl:* )
  	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
  "
-@@ -46,7 +49,6 @@ PDEPEND="
- 	sys-devel/clang-common
+@@ -47,7 +48,6 @@ PDEPEND="
+ 	sys-devel/clang-toolchain-symlinks:${SLOT}
  	~sys-devel/clang-runtime-${PV}
  	default-compiler-rt? (
 -		=sys-libs/compiler-rt-${PV%_*}*
  		llvm-libunwind? ( sys-libs/llvm-libunwind )
  		!llvm-libunwind? ( sys-libs/libunwind )
  	)
-@@ -253,8 +255,7 @@ get_distribution_components() {
+@@ -254,8 +254,7 @@ get_distribution_components() {
  }
  
  multilib_src_configure() {
@@ -250,37 +278,18 @@ index 2962ee1732f..8a42bc460bf 100644
  
  	local mycmakeargs=(
  		-DLLVM_CMAKE_PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)/cmake/llvm"
-@@ -289,6 +290,10 @@ multilib_src_configure() {
- 		-DCLANG_DEFAULT_PIE_ON_LINUX=$(usex pie)
- 		-DCLANG_DEFAULT_UNWINDLIB=$(usex default-compiler-rt libunwind "")
- 
-+		# create gcc symlinks: gcc g++ cc cpp c++
-+		-DCLANG_INSTALL_GCC_SYMLINKS=$(usex gcc-symlinks)
-+
-+
- 		-DCLANG_ENABLE_ARCMT=$(usex static-analyzer)
- 		-DCLANG_ENABLE_STATIC_ANALYZER=$(usex static-analyzer)
- 
-@@ -382,12 +387,15 @@ src_install() {
+@@ -383,9 +382,8 @@ src_install() {
  
  	# Apply CHOST and version suffix to clang tools
  	# note: we use two version components here (vs 3 in runtime path)
 -	local llvm_version=$(llvm-config --version) || die
 -	local clang_version=$(ver_cut 1 "${llvm_version}")
 -	local clang_full_version=$(ver_cut 1-3 "${llvm_version}")
--	local clang_tools=( clang clang++ clang-cl clang-cpp )
 +	local clang_version=$(ver_cut 1)
 +	local clang_full_version=$(ver_cut 1-3)
-+	local clang_tools=( clang clang++ clang-cl clang-cpp cpp )
+ 	local clang_tools=( clang clang++ clang-cl clang-cpp )
  	local abi i
  
-+	if use gcc-symlinks; then
-+		clang_tools+=( g++ gcc )
-+	fi
-+
- 	# cmake gives us:
- 	# - clang-X
- 	# - clang -> clang-X
 diff --git a/sys-devel/distcc/distcc-3.4-r1.ebuild b/sys-devel/distcc/distcc-3.4-r1.ebuild
 index 1bee4f2f642..dfee68afeec 100644
 --- a/sys-devel/distcc/distcc-3.4-r1.ebuild
@@ -306,56 +315,11 @@ index 9bd470297df..fd481026e27 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-devel/llvm/llvm-15.0.0.ebuild b/sys-devel/llvm/llvm-15.0.0.ebuild
-index ef31663b7c9..b24dd4bfa42 100644
---- a/sys-devel/llvm/llvm-15.0.0.ebuild
-+++ b/sys-devel/llvm/llvm-15.0.0.ebuild
-@@ -22,6 +22,8 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc ~ppc64 ~riscv ~sparc ~x86 ~amd64-linux ~ppc-ma
- IUSE="+binutils-plugin debug doc exegesis libedit +libffi ncurses test xar xml z3"
- RESTRICT="!test? ( test )"
- 
-+IUSE="${IUSE} binutils-symlinks"
-+
- RDEPEND="
- 	sys-libs/zlib:0=[${MULTILIB_USEDEP}]
- 	binutils-plugin? ( >=sys-devel/binutils-2.31.1-r4:*[plugins] )
-@@ -317,6 +319,23 @@ get_distribution_components() {
- 				docs-llvm-man
- 			)
- 		fi
-+
-+		use binutils-symlinks && out+=(
-+			addr2line
-+			ar
-+			c++filt
-+			dlltool
-+			dwp
-+			nm
-+			objcopy
-+			objdump
-+			ranlib
-+			readelf
-+			size
-+			strings
-+			strip
-+                )
-+
- 		use doc && out+=(
- 			docs-llvm-html
- 		)
-@@ -348,6 +367,7 @@ multilib_src_configure() {
- 		-DLLVM_BUILD_LLVM_DYLIB=ON
- 		-DLLVM_LINK_LLVM_DYLIB=ON
- 		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
-+		-DLLVM_INSTALL_BINUTILS_SYMLINKS=$(usex binutils-symlinks)
- 
- 		# cheap hack: LLVM combines both anyway, and the only difference
- 		# is that the former list is explicitly verified at cmake time
-diff --git a/sys-libs/libcxx/libcxx-15.0.0.ebuild b/sys-libs/libcxx/libcxx-15.0.0.ebuild
-index 838aac06394..c35f8a3b6ec 100644
---- a/sys-libs/libcxx/libcxx-15.0.0.ebuild
-+++ b/sys-libs/libcxx/libcxx-15.0.0.ebuild
-@@ -121,6 +121,7 @@ multilib_src_configure() {
+diff --git a/sys-libs/libcxx/libcxx-15.0.1.ebuild b/sys-libs/libcxx/libcxx-15.0.1.ebuild
+index 79e6aec8859..70518d3ddfc 100644
+--- a/sys-libs/libcxx/libcxx-15.0.1.ebuild
++++ b/sys-libs/libcxx/libcxx-15.0.1.ebuild
+@@ -117,6 +117,7 @@ multilib_src_configure() {
  	local libdir=$(get_libdir)
  	local mycmakeargs=(
  		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
@@ -363,11 +327,11 @@ index 838aac06394..c35f8a3b6ec 100644
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES=libcxx
  		-DLLVM_INCLUDE_TESTS=OFF
-diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild
-index 2bfe48a125b..ef91d014be7 100644
---- a/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild
-+++ b/sys-libs/libcxxabi/libcxxabi-15.0.0.ebuild
-@@ -78,6 +78,7 @@ multilib_src_configure() {
+diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild
+index 5665bc0cb12..27c4e75a07c 100644
+--- a/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild
++++ b/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild
+@@ -76,6 +76,7 @@ multilib_src_configure() {
  	local libdir=$(get_libdir)
  	local mycmakeargs=(
  		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
@@ -375,13 +339,22 @@ index 2bfe48a125b..ef91d014be7 100644
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx"
  		-DLLVM_INCLUDE_TESTS=OFF
-diff --git a/www-client/firefox/firefox-104.0.2.ebuild b/www-client/firefox/firefox-104.0.2.ebuild
-index 24cea78da33..e9e887df5e4 100644
---- a/www-client/firefox/firefox-104.0.2.ebuild
-+++ b/www-client/firefox/firefox-104.0.2.ebuild
+diff --git a/www-client/firefox/firefox-105.0.1.ebuild b/www-client/firefox/firefox-105.0.1.ebuild
+index cda48c99705..8d36026d784 100644
+--- a/www-client/firefox/firefox-105.0.1.ebuild
++++ b/www-client/firefox/firefox-105.0.1.ebuild
+@@ -5,7 +5,7 @@ EAPI=8
+ 
+ FIREFOX_PATCHSET="firefox-105-patches-04j.tar.xz"
+ 
+-LLVM_MAX_SLOT=14
++LLVM_MAX_SLOT=15
+ 
+ PYTHON_COMPAT=( python3_{8..11} )
+ PYTHON_REQ_USE="ncurses,sqlite,ssl"
 @@ -91,6 +91,14 @@ BDEPEND="${PYTHON_DEPS}
  	virtual/pkgconfig
- 	virtual/rust
+ 	>=virtual/rust-1.61.0
  	|| (
 +		(
 +			sys-devel/clang:15
