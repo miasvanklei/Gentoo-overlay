@@ -37,10 +37,10 @@ index 7ca29eab260..bcb7a22cbb5 100644
  	media-video/ffmpeg
  	virtual/libusb:1"
  DEPEND="${RDEPEND}"
-diff --git a/dev-lang/rust/rust-1.64.0.ebuild b/dev-lang/rust/rust-1.64.0.ebuild
-index 69b586f8f35..1cf38917c09 100644
---- a/dev-lang/rust/rust-1.64.0.ebuild
-+++ b/dev-lang/rust/rust-1.64.0.ebuild
+diff --git a/dev-lang/rust/rust-1.64.0-r1.ebuild b/dev-lang/rust/rust-1.64.0-r1.ebuild
+index 92c592d49b2..3411e926b83 100644
+--- a/dev-lang/rust/rust-1.64.0-r1.ebuild
++++ b/dev-lang/rust/rust-1.64.0-r1.ebuild
 @@ -49,7 +49,7 @@ IUSE="clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind miri nightly paral
  
  # How to use it:
@@ -157,10 +157,10 @@ index d341db59c11..fbe9f16687a 100644
  	ecm_src_configure
  }
 diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild
-index fb20e30ccfa..3ef7c990bee 100644
+index 749111a6a5f..7065ed25bfc 100644
 --- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild
 +++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild
-@@ -18,7 +18,6 @@ KEYWORDS="~amd64 ~arm ~arm64 ~loong ~ppc64 ~riscv ~x86"
+@@ -18,7 +18,6 @@ KEYWORDS="amd64 ~arm arm64 ~loong ~ppc64 ~riscv x86"
  IUSE=""
  
  DEPEND="
@@ -169,7 +169,7 @@ index fb20e30ccfa..3ef7c990bee 100644
  	>=dev-qt/qtdbus-${QTMIN}:5
  	>=dev-qt/qtgui-${QTMIN}:5
 diff --git a/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild b/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild
-index 920ea7b3cac..65cc3c56008 100644
+index fc46c634503..d8c55b1d267 100644
 --- a/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild
 +++ b/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild
 @@ -64,7 +64,7 @@ src_configure() {
@@ -248,27 +248,27 @@ index 0d212005d51..343d88c82bb 100644
  	append-lfs-flags #760857
  	multilib-minimal_src_configure
  }
-diff --git a/sys-devel/clang/clang-15.0.1.ebuild b/sys-devel/clang/clang-15.0.1.ebuild
-index 63702176d2d..23765b7e37b 100644
---- a/sys-devel/clang/clang-15.0.1.ebuild
-+++ b/sys-devel/clang/clang-15.0.1.ebuild
-@@ -25,6 +25,7 @@ RESTRICT="!test? ( test )"
- 
- DEPEND="
- 	~sys-devel/llvm-${PV}:${SLOT}=[debug=,${MULTILIB_USEDEP}]
-+	default-compiler-rt? ( =sys-libs/compiler-rt-${PV%_*}* )
- 	static-analyzer? ( dev-lang/perl:* )
- 	xml? ( dev-libs/libxml2:2=[${MULTILIB_USEDEP}] )
+diff --git a/sys-devel/clang/clang-15.0.2.ebuild b/sys-devel/clang/clang-15.0.2.ebuild
+index e61ef574f12..9ff13aa54cf 100644
+--- a/sys-devel/clang/clang-15.0.2.ebuild
++++ b/sys-devel/clang/clang-15.0.2.ebuild
+@@ -30,6 +30,7 @@ RDEPEND="
+ 	${PYTHON_DEPS}
+ 	${DEPEND}
+ 	>=sys-devel/clang-common-${PV}
++	~sys-devel/clang-runtime-${PV}
  "
-@@ -47,7 +48,6 @@ PDEPEND="
+ BDEPEND="
+ 	${PYTHON_DEPS}
+@@ -42,7 +43,6 @@ BDEPEND="
+ "
+ PDEPEND="
  	sys-devel/clang-toolchain-symlinks:${SLOT}
- 	~sys-devel/clang-runtime-${PV}
- 	default-compiler-rt? (
--		=sys-libs/compiler-rt-${PV%_*}*
- 		llvm-libunwind? ( sys-libs/llvm-libunwind )
- 		!llvm-libunwind? ( sys-libs/libunwind )
- 	)
-@@ -254,8 +254,7 @@ get_distribution_components() {
+-	~sys-devel/clang-runtime-${PV}
+ "
+ 
+ LLVM_COMPONENTS=(
+@@ -244,8 +244,7 @@ get_distribution_components() {
  }
  
  multilib_src_configure() {
@@ -278,7 +278,7 @@ index 63702176d2d..23765b7e37b 100644
  
  	local mycmakeargs=(
  		-DLLVM_CMAKE_PATH="${EPREFIX}/usr/lib/llvm/${SLOT}/$(get_libdir)/cmake/llvm"
-@@ -383,9 +382,8 @@ src_install() {
+@@ -369,9 +368,8 @@ src_install() {
  
  	# Apply CHOST and version suffix to clang tools
  	# note: we use two version components here (vs 3 in runtime path)
@@ -315,44 +315,44 @@ index 9bd470297df..fd481026e27 100644
  
  [Install]
  WantedBy=multi-user.target
-diff --git a/sys-libs/libcxx/libcxx-15.0.1.ebuild b/sys-libs/libcxx/libcxx-15.0.1.ebuild
-index 79e6aec8859..70518d3ddfc 100644
---- a/sys-libs/libcxx/libcxx-15.0.1.ebuild
-+++ b/sys-libs/libcxx/libcxx-15.0.1.ebuild
-@@ -117,6 +117,7 @@ multilib_src_configure() {
+diff --git a/sys-libs/libcxx/libcxx-15.0.2.ebuild b/sys-libs/libcxx/libcxx-15.0.2.ebuild
+index 79e6aec8859..5fc5e24f034 100644
+--- a/sys-libs/libcxx/libcxx-15.0.2.ebuild
++++ b/sys-libs/libcxx/libcxx-15.0.2.ebuild
+@@ -116,6 +116,7 @@ multilib_src_configure() {
+ 
  	local libdir=$(get_libdir)
  	local mycmakeargs=(
- 		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
 +		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+ 		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES=libcxx
- 		-DLLVM_INCLUDE_TESTS=OFF
-diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild
-index 5665bc0cb12..27c4e75a07c 100644
---- a/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild
-+++ b/sys-libs/libcxxabi/libcxxabi-15.0.1.ebuild
-@@ -76,6 +76,7 @@ multilib_src_configure() {
+diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild
+index 5665bc0cb12..e26bb2cab24 100644
+--- a/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild
++++ b/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild
+@@ -75,6 +75,7 @@ multilib_src_configure() {
+ 
  	local libdir=$(get_libdir)
  	local mycmakeargs=(
- 		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
 +		-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+ 		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx"
- 		-DLLVM_INCLUDE_TESTS=OFF
-diff --git a/www-client/firefox/firefox-105.0.1.ebuild b/www-client/firefox/firefox-105.0.1.ebuild
-index cda48c99705..8d36026d784 100644
---- a/www-client/firefox/firefox-105.0.1.ebuild
-+++ b/www-client/firefox/firefox-105.0.1.ebuild
+diff --git a/www-client/firefox/firefox-105.0.2.ebuild b/www-client/firefox/firefox-105.0.2.ebuild
+index 6d40b62240c..a89d90f2e11 100644
+--- a/www-client/firefox/firefox-105.0.2.ebuild
++++ b/www-client/firefox/firefox-105.0.2.ebuild
 @@ -5,7 +5,7 @@ EAPI=8
  
- FIREFOX_PATCHSET="firefox-105-patches-04j.tar.xz"
+ FIREFOX_PATCHSET="firefox-105-patches-05j.tar.xz"
  
 -LLVM_MAX_SLOT=14
 +LLVM_MAX_SLOT=15
  
  PYTHON_COMPAT=( python3_{8..11} )
  PYTHON_REQ_USE="ncurses,sqlite,ssl"
-@@ -91,6 +91,14 @@ BDEPEND="${PYTHON_DEPS}
+@@ -90,6 +90,14 @@ BDEPEND="${PYTHON_DEPS}
  	virtual/pkgconfig
  	>=virtual/rust-1.61.0
  	|| (
