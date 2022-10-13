@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="13"
+K_GENPATCHES_VER="2"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -30,7 +30,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/panfrost-make-purging-debug.patch
 		eapply "${FILESDIR}"/pinebook-pro/0001-pinebook-pro-dts.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/001-disable-cdn-dp-on-disconnect.patch
-		eapply "${FILESDIR}"/pinebook-pro/usb/002-respect-DP_CAP_RECEPTACLE-bit.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/003-inno-usb2-improvements.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/004-dwc3-improvements.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/005-fusb302-improvements.patch
