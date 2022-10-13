@@ -1,7 +1,20 @@
-diff --git a/app-emulation/libvirt/libvirt-8.7.0.ebuild b/app-emulation/libvirt/libvirt-8.7.0.ebuild
-index 76e8da2aa40..5b72d732fd9 100644
---- a/app-emulation/libvirt/libvirt-8.7.0.ebuild
-+++ b/app-emulation/libvirt/libvirt-8.7.0.ebuild
+diff --git a/app-containers/cni-plugins/cni-plugins-1.1.1-r1.ebuild b/app-containers/cni-plugins/cni-plugins-1.1.1-r1.ebuild
+index 2cd642a24d3..8991cfc5b8b 100644
+--- a/app-containers/cni-plugins/cni-plugins-1.1.1-r1.ebuild
++++ b/app-containers/cni-plugins/cni-plugins-1.1.1-r1.ebuild
+@@ -13,7 +13,7 @@ SLOT="0"
+ KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv"
+ IUSE="hardened"
+ 
+-RDEPEND="net-firewall/iptables"
++#RDEPEND="net-firewall/iptables"
+ 
+ CONFIG_CHECK="~BRIDGE_VLAN_FILTERING ~NETFILTER_XT_MATCH_COMMENT
+ 	~NETFILTER_XT_MATCH_MULTIPORT"
+diff --git a/app-emulation/libvirt/libvirt-8.8.0.ebuild b/app-emulation/libvirt/libvirt-8.8.0.ebuild
+index 82daeb7a150..57d1efbd8e6 100644
+--- a/app-emulation/libvirt/libvirt-8.8.0.ebuild
++++ b/app-emulation/libvirt/libvirt-8.8.0.ebuild
 @@ -113,8 +113,6 @@ RDEPEND="
  	selinux? ( >=sys-libs/libselinux-2.0.85 )
  	virt-network? (
@@ -38,7 +51,7 @@ index 7ca29eab260..bcb7a22cbb5 100644
  	virtual/libusb:1"
  DEPEND="${RDEPEND}"
 diff --git a/dev-lang/rust/rust-1.64.0-r1.ebuild b/dev-lang/rust/rust-1.64.0-r1.ebuild
-index 92c592d49b2..3411e926b83 100644
+index 5ab3c8782e2..f6477b5c043 100644
 --- a/dev-lang/rust/rust-1.64.0-r1.ebuild
 +++ b/dev-lang/rust/rust-1.64.0-r1.ebuild
 @@ -49,7 +49,7 @@ IUSE="clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind miri nightly paral
@@ -93,25 +106,6 @@ index b7c13cbf7e7..59896741679 100644
  						${BUILD_FIXES} \
  						${BUILD_PARAMS} \
  						${BUILD_TARGETS} " \
-diff --git a/eclass/rust-toolchain.eclass b/eclass/rust-toolchain.eclass
-index 75b15a7088b..25f41202510 100644
---- a/eclass/rust-toolchain.eclass
-+++ b/eclass/rust-toolchain.eclass
-@@ -37,12 +37,12 @@ rust_abi() {
- 	local CTARGET=${1:-${CHOST}}
- 	case ${CTARGET%%*-} in
- 		aarch64*gnu)  echo aarch64-unknown-linux-gnu;;
--		aarch64*musl) echo aarch64-unknown-linux-musl;;
-+		aarch64*musl) echo aarch64-gentoo-linux-musl;;
- 		mips64*)	  echo mips64-unknown-linux-gnuabi64;;
- 		powerpc64le*) echo powerpc64le-unknown-linux-gnu;;
- 		powerpc64*)   echo powerpc64-unknown-linux-gnu;;
- 		x86_64*gnu)	  echo x86_64-unknown-linux-gnu;;
--		x86_64*musl)  echo x86_64-unknown-linux-musl;;
-+		x86_64*musl)  echo x86_64-gentoo-linux-musl;;
- 		armv6j*s*)	  echo arm-unknown-linux-gnueabi;;
- 		armv6j*h*)	  echo arm-unknown-linux-gnueabihf;;
- 		armv7a*h*)	  echo armv7-unknown-linux-gnueabihf;;
 diff --git a/eclass/savedconfig.eclass b/eclass/savedconfig.eclass
 index 4681fd25328..f85f40f1442 100644
 --- a/eclass/savedconfig.eclass
@@ -156,11 +150,11 @@ index d341db59c11..fbe9f16687a 100644
  	)
  	ecm_src_configure
  }
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild
-index 749111a6a5f..7065ed25bfc 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.25.5.ebuild
-@@ -18,7 +18,6 @@ KEYWORDS="amd64 ~arm arm64 ~loong ~ppc64 ~riscv x86"
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.0.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.0.ebuild
+index 378afc11af0..3e4e7b8417f 100644
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.0.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.0.ebuild
+@@ -18,7 +18,6 @@ KEYWORDS="~amd64"
  IUSE=""
  
  DEPEND="
@@ -168,19 +162,6 @@ index 749111a6a5f..7065ed25bfc 100644
  	dev-libs/glib:2
  	>=dev-qt/qtdbus-${QTMIN}:5
  	>=dev-qt/qtgui-${QTMIN}:5
-diff --git a/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild b/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild
-index fc46c634503..d8c55b1d267 100644
---- a/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild
-+++ b/kde-plasma/libksysguard/libksysguard-5.25.5.ebuild
-@@ -64,7 +64,7 @@ src_configure() {
- 	local mycmakeargs=(
- 		$(cmake_use_find_package webengine Qt5WebChannel)
- 		$(cmake_use_find_package webengine Qt5WebEngineWidgets)
--		$(cmake_use_find_package X X11)
-+		-DWITH_X11=$(usex X)
- 	)
- 
- 	ecm_src_configure
 diff --git a/media-libs/mlt/mlt-7.8.0.ebuild b/media-libs/mlt/mlt-7.8.0.ebuild
 index d25a3214c7c..62505be5f1d 100644
 --- a/media-libs/mlt/mlt-7.8.0.ebuild
@@ -316,10 +297,10 @@ index 9bd470297df..fd481026e27 100644
  [Install]
  WantedBy=multi-user.target
 diff --git a/sys-libs/libcxx/libcxx-15.0.2.ebuild b/sys-libs/libcxx/libcxx-15.0.2.ebuild
-index 79e6aec8859..5fc5e24f034 100644
+index 275d229a612..3963c1adcf1 100644
 --- a/sys-libs/libcxx/libcxx-15.0.2.ebuild
 +++ b/sys-libs/libcxx/libcxx-15.0.2.ebuild
-@@ -116,6 +116,7 @@ multilib_src_configure() {
+@@ -110,6 +110,7 @@ multilib_src_configure() {
  
  	local libdir=$(get_libdir)
  	local mycmakeargs=(
@@ -328,10 +309,10 @@ index 79e6aec8859..5fc5e24f034 100644
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES=libcxx
 diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild
-index 5665bc0cb12..e26bb2cab24 100644
+index d9a53ffa708..a1d08d427b4 100644
 --- a/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild
 +++ b/sys-libs/libcxxabi/libcxxabi-15.0.2.ebuild
-@@ -75,6 +75,7 @@ multilib_src_configure() {
+@@ -69,6 +69,7 @@ multilib_src_configure() {
  
  	local libdir=$(get_libdir)
  	local mycmakeargs=(
@@ -340,7 +321,7 @@ index 5665bc0cb12..e26bb2cab24 100644
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx"
 diff --git a/www-client/firefox/firefox-105.0.2.ebuild b/www-client/firefox/firefox-105.0.2.ebuild
-index 6d40b62240c..a89d90f2e11 100644
+index 1c4172c64be..8510cf00051 100644
 --- a/www-client/firefox/firefox-105.0.2.ebuild
 +++ b/www-client/firefox/firefox-105.0.2.ebuild
 @@ -5,7 +5,7 @@ EAPI=8
