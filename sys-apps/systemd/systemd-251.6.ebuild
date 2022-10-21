@@ -2,10 +2,11 @@
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
-PYTHON_COMPAT=( python3_{8..10} )
+PYTHON_COMPAT=( python3_{8..11} )
 
 # Avoid QA warnings
 TMPFILES_OPTIONAL=1
+UDEV_OPTIONAL=1
 
 QA_PKGCONFIG_VERSION=$(ver_cut 1)
 
@@ -25,7 +26,7 @@ else
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
-inherit bash-completion-r1 linux-info meson-multilib pam python-any-r1 systemd toolchain-funcs udev usr-ldscript
+inherit bash-completion-r1 flag-o-matic linux-info meson-multilib pam python-any-r1 systemd toolchain-funcs udev usr-ldscript
 
 DESCRIPTION="System and service manager for Linux"
 HOMEPAGE="http://systemd.io/"
@@ -34,8 +35,8 @@ LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
 IUSE="
 	acl apparmor audit build cgroup-hybrid cryptsetup curl +dns-over-tls elfutils
-	fido2 +gcrypt gnuefi gnutls homed http idn importd +kmod
-	+lz4 lzma nat +openssl pam pcre pkcs11 policykit pwquality qrcode
+	fido2 +gcrypt gnuefi gnutls homed http idn importd iptables +kmod
+	+lz4 lzma +openssl pam pcre pkcs11 policykit pwquality qrcode
 	+resolvconf +seccomp selinux split-usr +sysv-utils test tpm vanilla xkb +zstd
 "
 REQUIRED_USE="
@@ -70,7 +71,7 @@ COMMON_DEPEND="
 	kmod? ( >=sys-apps/kmod-15:0= )
 	lz4? ( >=app-arch/lz4-0_p131:0=[${MULTILIB_USEDEP}] )
 	lzma? ( >=app-arch/xz-utils-5.0.5-r1:0=[${MULTILIB_USEDEP}] )
-	nat? ( net-firewall/iptables:0= )
+	iptables? ( net-firewall/iptables:0= )
 	openssl? ( >=dev-libs/openssl-1.1.0:0= )
 	pam? ( sys-libs/pam:=[${MULTILIB_USEDEP}] )
 	pkcs11? ( app-crypt/p11-kit:0= )
@@ -119,7 +120,10 @@ RDEPEND="${COMMON_DEPEND}
 	>=acct-user/systemd-resolve-0-r1
 	>=acct-user/systemd-timesync-0-r1
 	>=sys-apps/baselayout-2.2
-	selinux? ( sec-policy/selinux-base-policy[systemd] )
+	selinux? (
+		sec-policy/selinux-base-policy[systemd]
+		sec-policy/selinux-ntp
+	)
 	sysv-utils? (
 		!sys-apps/openrc[sysv-utils(-)]
 		!sys-apps/sysvinit
@@ -164,8 +168,8 @@ BDEPEND="
 "
 
 python_check_deps() {
-	has_version -b "dev-python/jinja[${PYTHON_USEDEP}]" &&
-	has_version -b "dev-python/lxml[${PYTHON_USEDEP}]"
+	python_has_version "dev-python/jinja[${PYTHON_USEDEP}]" &&
+	python_has_version "dev-python/lxml[${PYTHON_USEDEP}]"
 }
 
 QA_FLAGS_IGNORED="usr/lib/systemd/boot/efi/.*"
@@ -230,14 +234,11 @@ src_unpack() {
 }
 
 src_prepare() {
-	# Do NOT add patches here
-	local PATCHES=()
-
-	[[ -d "${WORKDIR}"/patches ]] && PATCHES+=( "${WORKDIR}"/patches )
-
-	# Add local patches here
-	PATCHES+=(
-		"${FILESDIR}/251-format-string.patch"
+	local PATCHES=(
+		# Breaks Clang. Revert the commit for now and force off F_S=3.
+		# bug #841770.
+		"${FILESDIR}/251-revert-fortify-source-3-fix.patch"
+		"${FILESDIR}/251-gpt-auto-no-cryptsetup.patch"
 	)
 
 	if ! use vanilla; then
@@ -257,6 +258,21 @@ src_prepare() {
 src_configure() {
 	# Prevent conflicts with i686 cross toolchain, bug 559726
 	tc-export AR CC NM OBJCOPY RANLIB
+
+	# Broken with FORTIFY_SOURCE=3 without a patch. We have to revert
+	# the upstream patch for it because it breaks Clang: bug #841770.
+	#
+	# Our toolchain sets F_S=2 by default w/ >= -O2, so we need
+	# to unset F_S first, then explicitly set 2, to negate any default
+	# and anything set by the user if they're choosing 3 (or if they've
+	# modified GCC to set 3).
+	#
+	if is-flagq '-O[23]' || is-flagq '-Ofast' ; then
+		# We can't unconditionally do this b/c we fortify needs
+		# some level of optimisation.
+		filter-flags -D_FORTIFY_SOURCE=3
+		append-cppflags -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
+	fi
 
 	python_setup
 
@@ -304,7 +320,7 @@ multilib_src_configure() {
 		$(meson_use lz4)
 		$(meson_use lzma xz)
 		$(meson_use zstd)
-		$(meson_native_use_bool nat libiptc)
+		$(meson_native_use_bool iptables libiptc)
 		$(meson_native_use_bool openssl)
 		$(meson_use pam)
 		$(meson_native_use_bool pkcs11 p11kit)
