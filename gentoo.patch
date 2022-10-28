@@ -37,10 +37,10 @@ index 8ecff08e1f3..67d2fe8668f 100644
  inherit autotools python-any-r1 systemd toolchain-funcs multilib-minimal
  
  MY_P="${P/mit-}"
-diff --git a/app-emulation/libvirt/libvirt-8.8.0.ebuild b/app-emulation/libvirt/libvirt-8.8.0.ebuild
-index 92cd83c672f..5dc121512b5 100644
---- a/app-emulation/libvirt/libvirt-8.8.0.ebuild
-+++ b/app-emulation/libvirt/libvirt-8.8.0.ebuild
+diff --git a/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild b/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild
+index bc8725e909f..471671956c1 100644
+--- a/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild
++++ b/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild
 @@ -113,8 +113,6 @@ RDEPEND="
  	selinux? ( >=sys-libs/libselinux-2.0.85 )
  	virt-network? (
@@ -141,17 +141,17 @@ index 4ecd5bb436e..df774bbc192 100644
  LLVM_MAX_SLOT="${LLVM_VALID_SLOTS[0]}"
  
  # splitting usedeps needed to avoid CI/pkgcheck's UncheckableDep limitation
-diff --git a/dev-libs/jansson/jansson-2.14.ebuild b/dev-libs/jansson/jansson-2.14.ebuild
-index 8c97fdd3912..f4ca9bf78bc 100644
---- a/dev-libs/jansson/jansson-2.14.ebuild
-+++ b/dev-libs/jansson/jansson-2.14.ebuild
+diff --git a/dev-libs/jansson/jansson-2.14-r1.ebuild b/dev-libs/jansson/jansson-2.14-r1.ebuild
+index fb6ee3866f1..a4f2859a0e6 100644
+--- a/dev-libs/jansson/jansson-2.14-r1.ebuild
++++ b/dev-libs/jansson/jansson-2.14-r1.ebuild
 @@ -19,8 +19,6 @@ BDEPEND="doc? ( dev-python/sphinx )"
  PATCHES=( "${FILESDIR}/${P}-test-symbols.patch" )
  
- multilib_src_configure() {
+ src_configure() {
 -	tc-ld-force-bfd
 -
- 	ECONF_SOURCE="${S}" econf $(use_enable static-libs static)
+ 	econf $(use_enable static-libs static)
  }
  
 diff --git a/dev-libs/tre/tre-0.8.0_p20210321-r1.ebuild b/dev-libs/tre/tre-0.8.0_p20210321-r1.ebuild
@@ -435,36 +435,6 @@ index b415dee9a30..60b3b43bfa5 100644
  
  inherit gstreamer-meson python-any-r1
  
-diff --git a/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild b/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild
-index b4be2070e7c..4827f3c5081 100644
---- a/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild
-+++ b/media-video/mkvtoolnix/mkvtoolnix-60.0.0.ebuild
-@@ -19,7 +19,7 @@ HOMEPAGE="https://mkvtoolnix.download/ https://gitlab.com/mbunkus/mkvtoolnix"
- 
- LICENSE="GPL-2"
- SLOT="0"
--IUSE="dbus debug dvd nls pch test"
-+IUSE="dbus debug dvd gui nls pch test"
- RESTRICT="!test? ( test )"
- 
- # check NEWS.md for build system changes entries for boost/libebml/libmatroska
-@@ -44,7 +44,7 @@ RDEPEND="
- 	dev-qt/qtwidgets:5
- 	dev-qt/qtconcurrent:5
- 	dev-qt/qtmultimedia:5
--	app-text/cmark:0=
-+	gui? ( app-text/cmark:0= )
- 	dbus? ( dev-qt/qtdbus:5 )
- "
- DEPEND="${RDEPEND}
-@@ -88,6 +88,7 @@ src_configure() {
- 		$(use_enable debug)
- 		$(usex pch "" --disable-precompiled-headers)
- 		$(use_enable dbus)
-+		$(use_enable gui)
- 		--disable-qt6
- 		--enable-qt5
- 		--with-qmake=$(qt5_get_bindir)/qmake
 diff --git a/media-video/qmplay2/qmplay2-22.10.23.ebuild b/media-video/qmplay2/qmplay2-22.10.23.ebuild
 index 1ef2e8a5081..f7311835215 100644
 --- a/media-video/qmplay2/qmplay2-22.10.23.ebuild
