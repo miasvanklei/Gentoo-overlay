@@ -1,14 +1,15 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2022 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{8,9,10} )
+PYTHON_COMPAT=( python3_{9..11} )
 inherit meson python-r1
 
 DESCRIPTION="Accounts SSO (Single Sign-On) management library for GLib applications"
 HOMEPAGE="https://gitlab.com/accounts-sso/libaccounts-glib"
 SRC_URI="https://gitlab.com/accounts-sso/${PN}/-/archive/VERSION_${PV}/${PN}-VERSION_${PV}.tar.gz -> ${P}.tar.gz"
+S="${WORKDIR}/${PN}-VERSION_${PV}"
 
 LICENSE="LGPL-2.1"
 SLOT="0"
@@ -16,28 +17,29 @@ KEYWORDS="amd64 ~arm arm64 x86"
 IUSE="doc"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
+# fails
+RESTRICT="test"
 
 RDEPEND="${PYTHON_DEPS}
 	dev-db/sqlite:3
 	dev-libs/glib:2
+	dev-libs/gobject-introspection:=
 	dev-libs/libxml2
+	dev-python/pygobject:3[${PYTHON_USEDEP}]
 "
 DEPEND="${RDEPEND}"
 BDEPEND="
+	dev-libs/check
 	dev-util/gdbus-codegen
 	dev-util/glib-utils
 	doc? ( dev-util/gtk-doc )
 "
 
-# fails
-RESTRICT="test"
-
-S="${WORKDIR}/${PN}-VERSION_${PV}"
-
 PATCHES=(
-	"${FILESDIR}"/bugus-dependencies.patch
-        "${FILESDIR}/${PN}-1.25-assert-failure.patch"
-        "${FILESDIR}/${P}-project-version.patch"
+	"${FILESDIR}/bugus-dependencies.patch"
+	"${FILESDIR}/${PN}-1.25-assert-failure.patch"
+	"${FILESDIR}/${P}-project-version.patch"
+	"${FILESDIR}/${P}-fix-incorrect-cleanup-in-ag_account_finalize.patch"
 )
 
 src_prepare() {
