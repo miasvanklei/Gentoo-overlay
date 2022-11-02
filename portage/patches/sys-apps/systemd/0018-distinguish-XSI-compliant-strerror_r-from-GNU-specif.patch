@@ -28,3 +28,32 @@
                  if (errno == ERANGE || strlen(x) >= k - 1) {
                          free(m);
                          k *= 2;
+@@ -600,7 +600,12 @@
+         if (e && e->message)
+                 return e->message;
+ 
++#ifndef __GLIBC__
++        strerror_r(abs(error), buf, ERRNO_BUF_LEN);
++        return buf;
++#else
+         return strerror_r(abs(error), buf, ERRNO_BUF_LEN);
++#endif
+ }
+ 
+ static bool map_ok(const sd_bus_error_map *map) {
+--- a/src/basic/errno-util.h	2022-10-31 19:59:18.000000000 +0100
++++ b/src/basic/errno-util.h	2022-11-01 18:32:57.011536168 +0100
+@@ -13,8 +13,11 @@
+  * see C11 §6.5.2.5, and
+  * https://stackoverflow.com/questions/34880638/compound-literal-lifetime-and-if-blocks
+  *
+- * Note that we use the GNU variant of strerror_r() here. */
+-#define STRERROR(errnum) strerror_r(abs(errnum), (char[ERRNO_BUF_LEN]){}, ERRNO_BUF_LEN)
++ * Note that we use the XNU variant of strerror_r() here. */
++#define STRERROR(errnum) ({ \
++        char buf[ERRNO_BUF_LEN]; \
++        strerror_r(abs(errnum), buf, ERRNO_BUF_LEN); \
++        buf; })
+ 
+ /* A helper to print an error message or message for functions that return 0 on EOF.
+  * Note that we can't use ({ … }) to define a temporary variable, so errnum is
