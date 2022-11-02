@@ -1,0 +1,22 @@
+--- a/misc/e4defrag.c	2022-10-30 12:44:18.038357439 +0100
++++ b/misc/e4defrag.c	2022-10-30 12:44:47.324764025 +0100
+@@ -195,10 +195,6 @@
+ #error posix_fadvise not available!
+ #endif
+ 
+-#ifndef HAVE_FALLOCATE64
+-#error fallocate64 not available!
+-#endif /* ! HAVE_FALLOCATE64 */
+-
+ /*
+  * get_mount_point() -	Get device's mount point.
+  *
+@@ -1568,7 +1564,7 @@
+ 	/* Allocate space for donor inode */
+ 	orig_group_tmp = orig_group_head;
+ 	do {
+-		ret = fallocate64(donor_fd, 0,
++		ret = fallocate(donor_fd, 0,
+ 		  (ext2_loff_t)orig_group_tmp->start->data.logical * block_size,
+ 		  (ext2_loff_t)orig_group_tmp->len * block_size);
+ 		if (ret < 0) {
