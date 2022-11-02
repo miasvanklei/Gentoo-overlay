@@ -235,10 +235,6 @@ src_unpack() {
 
 src_prepare() {
 	local PATCHES=(
-		# Breaks Clang. Revert the commit for now and force off F_S=3.
-		# bug #841770.
-		"${FILESDIR}/251-revert-fortify-source-3-fix.patch"
-		"${FILESDIR}/251-gpt-auto-no-cryptsetup.patch"
 	)
 
 	if ! use vanilla; then
