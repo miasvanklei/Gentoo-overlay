@@ -110,11 +110,16 @@ src_prepare() {
 	ln -s "${WORKDIR}/nodejs-nan-${NAN_V}" \
 		"${pkgdir}/node_modules/nan" || die
 
+	# fix use of lfs64* symbol
+	pushd "${WORKDIR}/$(package_dir spdlog)" >/dev/null || die
+	eapply "${FILESDIR}/${PN}-spdlog-lfs64.patch"
+	popd
+
 	eapply "${FILESDIR}/${PN}-node.patch"
         eapply_user
 
 	# use system node
-	rm ./node ./lib/node \
+	rm ./lib/node \
 		|| die "failed to remove bundled nodejs"
 	rm ./lib/coder-cloud-agent || die "failed to remove bundled coder-cloud-agent"
 
@@ -134,7 +139,6 @@ src_prepare() {
 	rm -r lib/vscode/extensions/node_modules/.bin || die
 
 	# not needed
-	rm ${S}/code-server || die
 	rm ${S}/postinstall.sh || die
 
 	# already in /usr/portage/licenses/MIT
