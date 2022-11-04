@@ -37,7 +37,8 @@ DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
 
 PATCHES=(
-	"${FILESDIR}"/cmsg_nxthdr_unavaible.patch
+	"${FILESDIR}"/cmsg_nxthdr_unavailable.patch
+	"${FILESDIR}"/musl-lfs64.patch
 	"${FILESDIR}"/fix-null-crash.patch
 )
 
