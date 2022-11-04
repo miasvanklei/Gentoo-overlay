@@ -21,17 +21,6 @@
      if (callback != NULL)
      {
          callback(isExecutingOnAltStack);
---- a/src/coreclr/pal/src/init/pal.cpp	2022-02-15 10:47:35.789617140 +0100
-+++ b/src/coreclr/pal/src/init/pal.cpp	2022-02-15 10:47:46.033744416 +0100
-@@ -347,7 +347,7 @@
-             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
-             InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
- 
--            if(NULL != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, NULL))
-+            if(NULL != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, 0))
-             {
-                 // Another thread got in before us! shouldn't happen, if the PAL
-                 // isn't initialized there shouldn't be any other threads
 --- a/eng/native/configureplatform.cmake
 +++ b/eng/native/configureplatform.cmake
 @@ -72,6 +72,9 @@
@@ -81,3 +70,32 @@
  #else
  #define FALLBACK_HOST_RID _X("linux")
  #endif
+--- a/src/coreclr/vm/amd64/unixstubs.cpp	2022-11-02 18:12:28.424716885 +0100
++++ b/src/coreclr/vm/amd64/unixstubs.cpp	2022-11-02 18:16:10.451639248 +0100
+@@ -10,6 +10,7 @@
+         PORTABILITY_ASSERT("Implement for PAL");
+     }
+ 
++#if !__has_builtin(__cpuid)
+     void __cpuid(int cpuInfo[4], int function_id)
+     {
+         // Based on the Clang implementation provided in cpuid.h:
+@@ -31,6 +32,7 @@
+             : "0"(function_id), "2"(subFunction_id)
+         );
+     }
++#endif
+ 
+     DWORD xmmYmmStateSupport()
+     {
+--- a/src/coreclr/debug/createdump/crashinfounix.cpp	2022-11-02 18:13:46.762748373 +0100
++++ b/src/coreclr/debug/createdump/crashinfounix.cpp	2022-11-02 18:14:17.700155592 +0100
+@@ -395,7 +395,7 @@
+         // performance optimization.
+         m_canUseProcVmReadSyscall = false;
+         assert(m_fd != -1);
+-        *read = pread64(m_fd, buffer, size, (off64_t)address);
++        *read = pread(m_fd, buffer, size, (off_t)address);
+     }
+ 
+     if (*read == (size_t)-1)
