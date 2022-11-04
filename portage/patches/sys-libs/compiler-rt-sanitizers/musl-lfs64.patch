@@ -1,0 +1,110 @@
+--- a/compiler-rt/lib/interception/interception_type_test.cpp	2022-11-03 17:21:53.374249458 +0100
++++ b/compiler-rt/lib/interception/interception_type_test.cpp	2022-11-03 17:22:35.830798592 +0100
+@@ -24,7 +24,7 @@
+ COMPILER_CHECK(sizeof(::PTRDIFF_T) == sizeof(ptrdiff_t));
+ COMPILER_CHECK(sizeof(::INTMAX_T) == sizeof(intmax_t));
+ 
+-#if !SANITIZER_APPLE
++#if !SANITIZER_MUSL
+ COMPILER_CHECK(sizeof(::OFF64_T) == sizeof(off64_t));
+ #endif
+ 
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp	2022-11-02 04:11:40.000000000 +0100
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.cpp	2022-11-03 17:21:27.069909266 +0100
+@@ -279,8 +279,10 @@
+ #      error Unknown size of struct ustat
+ #    endif
+   unsigned struct_ustat_sz = SIZEOF_STRUCT_USTAT;
++#if !SANITIZER_MUSL
+   unsigned struct_rlimit64_sz = sizeof(struct rlimit64);
+   unsigned struct_statvfs64_sz = sizeof(struct statvfs64);
++#endif
+ #endif // SANITIZER_LINUX && !SANITIZER_ANDROID
+ 
+ #if SANITIZER_INTERCEPT_CRYPT_R
+@@ -1089,7 +1091,7 @@
+ #endif
+ CHECK_SIZE_AND_OFFSET(dirent, d_reclen);
+ 
+-#if SANITIZER_LINUX && !SANITIZER_ANDROID
++#if SANITIZER_LINUX && !SANITIZER_ANDROID && !SANITIZER_MUSL
+ COMPILER_CHECK(sizeof(__sanitizer_dirent64) <= sizeof(dirent64));
+ CHECK_SIZE_AND_OFFSET(dirent64, d_ino);
+ CHECK_SIZE_AND_OFFSET(dirent64, d_off);
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_common_syscalls.inc	2022-11-03 17:29:44.706577403 +0100
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_common_syscalls.inc	2022-11-03 17:30:39.973313132 +0100
+@@ -910,6 +910,7 @@
+   }
+ }
+ 
++#if !SANITIZER_MUSL
+ PRE_SYSCALL(statfs64)(const void *path, long sz, void *buf) {
+   if (path)
+     PRE_READ(path, __sanitizer::internal_strlen((const char *)path) + 1);
+@@ -921,6 +922,7 @@
+       POST_WRITE(buf, struct_statfs64_sz);
+   }
+ }
++#endif
+ 
+ PRE_SYSCALL(fstatfs)(long fd, void *buf) {}
+ 
+@@ -931,6 +933,7 @@
+   }
+ }
+ 
++#if !SANITIZER_MUSL
+ PRE_SYSCALL(fstatfs64)(long fd, long sz, void *buf) {}
+ 
+ POST_SYSCALL(fstatfs64)(long res, long fd, long sz, void *buf) {
+@@ -939,6 +942,7 @@
+       POST_WRITE(buf, struct_statfs64_sz);
+   }
+ }
++#endif
+ #  endif  // !SANITIZER_ANDROID
+ 
+ PRE_SYSCALL(lstat)(const void *filename, void *statbuf) {
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.h	2022-11-02 04:11:40.000000000 +0100
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform_limits_posix.h	2022-11-03 17:18:29.731616049 +0100
+@@ -29,10 +29,12 @@
+ #define SANITIZER_HAS_STATFS64 0
+ #endif
+ #else
+-// Must be SANITIZER_LINUX then
++// Must be SANITIZER_LINUX then, but exclude musl
++#if !SANITIZER_MUSL
+ #define SANITIZER_HAS_STAT64 1
+ #define SANITIZER_HAS_STATFS64 1
+ #endif
++#endif
+ 
+ #if defined(__sparc__)
+ // FIXME: This can't be included from tsan which does not support sparc yet.
+--- a/compiler-rt/lib/sanitizer_common/sanitizer_platform_interceptors.h	2022-11-03 17:24:01.385957738 +0100
++++ b/compiler-rt/lib/sanitizer_common/sanitizer_platform_interceptors.h	2022-11-03 17:28:45.402785971 +0100
+@@ -46,6 +46,12 @@
+ #define SI_LINUX_NOT_ANDROID 0
+ #endif
+ 
++#if SANITIZER_LINUX && !SANITIZER_MUSL
++#define SI_LINUX_NOT_MUSL 1
++#else
++#define SI_LINUX_NOT_MUSL 0
++#endif
++
+ #if SANITIZER_GLIBC
+ #define SI_GLIBC 1
+ #else
+@@ -471,9 +477,9 @@
+ #define SANITIZER_INTERCEPT_LSTAT (SI_NETBSD || SI_FREEBSD || SI_STAT_LINUX)
+ #define SANITIZER_INTERCEPT___XSTAT \
+   ((!SANITIZER_INTERCEPT_STAT && SI_POSIX) || SI_STAT_LINUX)
+-#define SANITIZER_INTERCEPT___XSTAT64 SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT___XSTAT64 SI_LINUX_NOT_MUSL
+ #define SANITIZER_INTERCEPT___LXSTAT SANITIZER_INTERCEPT___XSTAT
+-#define SANITIZER_INTERCEPT___LXSTAT64 SI_LINUX_NOT_ANDROID
++#define SANITIZER_INTERCEPT___LXSTAT64 SI_LINUX_NOT_MUSL
+ 
+ #define SANITIZER_INTERCEPT_UTMP \
+   (SI_POSIX && !SI_MAC && !SI_FREEBSD && !SI_NETBSD)
