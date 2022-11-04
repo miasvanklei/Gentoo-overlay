@@ -5,11 +5,11 @@ EAPI="7"
 
 inherit cmake
 
-RUNTIME_PV="6.0.6"
+RUNTIME_PV="6.0.10"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
-SRC_URI="https://github.com/Samsung/netcoredbg/archive/${PV/_p/-}.tar.gz -> ${P}.tar.gz
+SRC_URI="https://github.com/Samsung/netcoredbg/archive/refs/tags/${PV/_p/-}.tar.gz -> ${P}.tar.gz
 	https://github.com/dotnet/runtime/archive/v${RUNTIME_PV}.tar.gz -> dotnet-runtime-${RUNTIME_PV}.tar.gz"
 
 LICENSE="MIT"
