@@ -40,6 +40,7 @@ PATCHES=(
 	"${FILESDIR}"/cmsg_nxthdr_unavailable.patch
 	"${FILESDIR}"/musl-lfs64.patch
 	"${FILESDIR}"/fix-null-crash.patch
+	"${FILESDIR}"/fix-build.patch
 )
 
 src_configure() {
