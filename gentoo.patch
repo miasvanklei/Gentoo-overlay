@@ -162,7 +162,7 @@ index ae62f705a4d..75bd54d0bc3 100644
  }
  
 diff --git a/dev-lang/rust/rust-1.65.0.ebuild b/dev-lang/rust/rust-1.65.0.ebuild
-index eed4becde21..5a8d01fbecd 100644
+index eed4becde21..ab036e5eb1e 100644
 --- a/dev-lang/rust/rust-1.65.0.ebuild
 +++ b/dev-lang/rust/rust-1.65.0.ebuild
 @@ -282,6 +282,10 @@ esetup_unwind_hack() {
@@ -176,11 +176,14 @@ index eed4becde21..5a8d01fbecd 100644
  src_prepare() {
  	# this supidity is needed because patch is too large to be in filesdir
  	# and if we move it to devspace - it lacks checksum for sig verification
-@@ -302,6 +306,8 @@ src_prepare() {
+@@ -302,6 +306,11 @@ src_prepare() {
  			--without=rust-docs --destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
 +	clear_vendor_checksums libc
++	clear_vendor_checksums libc-0.2.126
++	clear_vendor_checksums libc-0.2.127
++	clear_vendor_checksums libc-0.2.131
 +
  	default
  }
