@@ -1,0 +1,20 @@
+--- a/diskio-unix.cc	2022-11-07 20:35:59.276706475 +0100
++++ b/diskio-unix.cc	2022-11-07 20:39:13.187208604 +0100
+@@ -37,10 +37,16 @@
+ 
+ using namespace std;
+ 
+-#ifdef __APPLE__
++#if defined( __APPLE__) || !defined(__GLIBC__) && defined(__linux__)
+ #define off64_t off_t
+ #endif
+ 
++#if !defined(__GLIBC__) && defined(__linux__)
++#define lseek64 lseek
++#define fstat64 fstat
++#define stat64 stat
++#endif
++
+ // Returns the official "real" name for a shortened version of same.
+ // Trivial here; more important in Windows
+ void DiskIO::MakeRealName(void) {
