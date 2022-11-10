@@ -7,7 +7,6 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
-MY_PV="6.0.100"
 SDK="${PN}-${PV}-linux-musl"
 
 SRC_URI="
