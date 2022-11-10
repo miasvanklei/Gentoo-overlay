@@ -14,7 +14,7 @@ KEYWORDS="~amd64 ~arm64"
 RESTRICT="network-sandbox"
 
 RDEPEND="
-	=dev-dotnet/dotnet-sdk-6.0.402
+	=dev-dotnet/dotnet-sdk-7.0.100
 	virtual/dotnet-core"
 DEPEND="${RDEPEND}"
 
