@@ -1,0 +1,14 @@
+--- adapter/src/debug_session/debugger_terminal.rs.bak	2022-11-04 22:45:45.391699280 +0100
++++ adapter/src/debug_session/debugger_terminal.rs	2022-11-04 22:42:21.963994575 +0100
+@@ -72,9 +72,9 @@
+             #[cfg(unix)]
+             unsafe {
+                 let write_only = File::create("/dev/null")?;
+-                libc::pthread_kill(dt.thread.as_pthread_t(), libc::SIGUSR1);
++                libc::pthread_kill(dt.thread.as_pthread_t() as _, libc::SIGUSR1);
+                 libc::dup2(write_only.as_raw_fd(), dt.input_fd);
+-                libc::pthread_kill(dt.thread.as_pthread_t(), libc::SIGUSR1);
++                libc::pthread_kill(dt.thread.as_pthread_t() as _, libc::SIGUSR1);
+             }
+             // On Windows, simply detaching from console does the job.
+             #[cfg(windows)]
