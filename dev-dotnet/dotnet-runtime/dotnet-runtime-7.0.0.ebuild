@@ -42,22 +42,20 @@ COREFX_FILES=(
 )
 
 CORECLR_FILES=(
+	'libclrgc.so'
 	'libclrjit.so'
 	'libcoreclr.so'
 	'libcoreclrtraceptprovider.so'
-	'libdbgshim.so'
 	'libmscordaccore.so'
 	'libmscordbi.so'
 	'createdump'
+	'corehost/singlefilehost'
 )
 
-CORESETUP_FILES=(
-	'libhostpolicy.so'
-)
+CORESETUP_FILE='libhostpolicy.so'
 
 PACK_FILES=(
 	'apphost'
-        'singlefilehost'
 	'libnethost.a'
 	'libnethost.so'
 )
@@ -73,25 +71,26 @@ pkg_setup() {
 
 	TARGET="linux-musl-${DARCH}"
 	export CORECLR_S="${S}/src/coreclr"
-	export COREFX_S="${S}/src/libraries/Native"
+	export COREFX_S="${S}/src/native/libs"
 	export CORESETUP_S="${S}/src/native/corehost"
 	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/current/runtimes/${TARGET}/native"
 	export ARTIFACTS_COREFX="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
 	export ARTIFACTS_CORECLR="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
+	export ARTIFACTS_CORESETUP="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
+
 }
 
 src_prepare() {
 	eapply "${FILESDIR}"/musl-build.patch
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
-	eapply "${FILESDIR}"/sane-buildflags.patch
 
 	default
 }
 
 src_compile() {
 	local dest_core="${SDK_S}/shared/Microsoft.NETCore.App"
-	export CLR_CC="$(tc-getCC)"
-	export CLR_CXX="$(tc-getCXX)"
+	export CLR_CC="$(which $(tc-getCC))"
+	export CLR_CXX="$(which $(tc-getCXX))"
 
 	einfo "building corefx"
 	cd "${COREFX_S}" || die
@@ -109,8 +108,6 @@ src_compile() {
 }
 
 src_install() {
-	local artifacts_coresetup="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
-
         local dest_core="/usr/share/dotnet"
 	local dest="${D}${dest_core}"
 	local dest_pack="${dest}/${RUNTIME_PACK}"
@@ -129,16 +126,14 @@ src_install() {
 		cp -pP "${ARTIFACTS_CORECLR}/${file}" "${dest_app}/" || die
 	done
 
-	for file in "${CORESETUP_FILES[@]}"; do
-		cp -pP "${artifacts_coresetup}/${file}" "${dest_app}/" || die
-	done
+	cp -pP "${ARTIFACTS_CORESETUP}/${CORESETUP_FILE}" "${dest_app}/" || die
 
 	for file in "${PACK_FILES[@]}"; do
-		cp -pP "${artifacts_coresetup}/${file}" "${dest_pack}/" || die
+		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_pack}/" || die
 	done
 
-	cp -pP "${artifacts_coresetup}/dotnet" "${dest}" || die
-	cp "${artifacts_coresetup}/libhostfxr.so" "${dest_fxr}/libhostfxr.so"
+	cp -pP "${ARTIFACTS_CORESETUP}/dotnet" "${dest}" || die
+	cp "${ARTIFACTS_CORESETUP}/libhostfxr.so" "${dest_fxr}/libhostfxr.so"
 
 	# dotnet
 	dosym "${dest_core}/dotnet" "/usr/bin/dotnet"
