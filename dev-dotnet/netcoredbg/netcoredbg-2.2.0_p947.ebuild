@@ -5,7 +5,7 @@ EAPI="7"
 
 inherit cmake
 
-RUNTIME_PV="6.0.10"
+RUNTIME_PV="7.0.0"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
@@ -17,7 +17,10 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 RESTRICT="network-sandbox"
 
-RDEPEND="dev-dotnet/dotnet-runtime"
+RDEPEND="
+	dev-dotnet/diagnostics
+	virtual/dotnet-core
+"
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}/${P/_p/-}"
@@ -49,7 +52,6 @@ src_install() {
 	mkdir -p ${install_path} || die
 	mv ${D}/usr/*.dll ${install_path} || die
 	mv ${D}/usr/netcoredbg ${install_path} || die
-	rm ${D}/usr/libdbgshim.so || die
 
 	dosym "${D}/usr/share/dotnet/shared/Microsoft.NETCore.App/current/netcoredbg" "/usr/bin/netcoredbg"
 }
