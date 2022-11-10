@@ -1,0 +1,186 @@
+--- a/src/hotspot/os/linux/attachListener_linux.cpp	2022-11-08 20:41:31.614481844 +0100
++++ b/src/hotspot/os/linux/attachListener_linux.cpp	2022-11-08 21:01:12.268534626 +0100
+@@ -445,14 +445,22 @@
+ 
+ void AttachListener::vm_start() {
+   char fn[UNIX_PATH_MAX];
++#ifdef MUSL_LIBC
++  struct stat st;
++#else
+   struct stat64 st;
++#endif
+   int ret;
+ 
+   int n = snprintf(fn, UNIX_PATH_MAX, "%s/.java_pid%d",
+            os::get_temp_directory(), os::current_process_id());
+   assert(n < (int)UNIX_PATH_MAX, "java_pid file name buffer overflow");
+ 
++#ifdef MUSL_LIBC
++  RESTARTABLE(::stat(fn, &st), ret);
++#else
+   RESTARTABLE(::stat64(fn, &st), ret);
++#endif
+   if (ret == 0) {
+     ret = ::unlink(fn);
+     if (ret == -1) {
+@@ -472,8 +480,13 @@
+ 
+ bool AttachListener::check_socket_file() {
+   int ret;
++#ifdef MUSL_LIBC
++  struct stat st;
++  ret = stat(LinuxAttachListener::path(), &st);
++#else
+   struct stat64 st;
+   ret = stat64(LinuxAttachListener::path(), &st);
++#endif
+   if (ret == -1) { // need to restart attach listener.
+     log_debug(attach)("Socket file %s does not exist - Restart Attach Listener",
+                       LinuxAttachListener::path());
+@@ -512,14 +525,23 @@
+   }
+   char fn[PATH_MAX + 1];
+   int ret;
+-  struct stat64 st;
+   sprintf(fn, ".attach_pid%d", os::current_process_id());
++#ifdef MUSL_LIBC
++  struct stat st;
++  RESTARTABLE(::stat(fn, &st), ret);
++#else
++  struct stat64 st;
+   RESTARTABLE(::stat64(fn, &st), ret);
++#endif
+   if (ret == -1) {
+     log_trace(attach)("Failed to find attach file: %s, trying alternate", fn);
+     snprintf(fn, sizeof(fn), "%s/.attach_pid%d",
+              os::get_temp_directory(), os::current_process_id());
++#ifdef MUSL_LIBC
++    RESTARTABLE(::stat(fn, &st), ret);
++#else
+     RESTARTABLE(::stat64(fn, &st), ret);
++#endif
+     if (ret == -1) {
+       log_debug(attach)("Failed to find attach file: %s", fn);
+     }
+--- a/src/hotspot/os/linux/os_linux.cpp	2022-11-08 20:43:20.512909208 +0100
++++ b/src/hotspot/os/linux/os_linux.cpp	2022-11-08 21:03:17.560147121 +0100
+@@ -4944,13 +4944,22 @@
+   oflag |= O_CLOEXEC;
+ #endif
+ 
++#ifdef MUSL_LIBC
++  int fd = ::open(path, oflag, mode);
++#else
+   int fd = ::open64(path, oflag, mode);
++#endif
+   if (fd == -1) return -1;
+ 
+   //If the open succeeded, the file might still be a directory
+   {
++#ifdef MUSL_LIBC
++    struct stat buf64;
++    int ret = ::fstat(fd, &buf64);
++#else
+     struct stat64 buf64;
+     int ret = ::fstat64(fd, &buf64);
++#endif
+     int st_mode = buf64.st_mode;
+ 
+     if (ret != -1) {
+@@ -4988,17 +4997,29 @@
+ int os::create_binary_file(const char* path, bool rewrite_existing) {
+   int oflags = O_WRONLY | O_CREAT;
+   oflags |= rewrite_existing ? O_TRUNC : O_EXCL;
++#ifdef MUSL_LIBC
++  return ::open(path, oflags, S_IREAD | S_IWRITE);
++#else
+   return ::open64(path, oflags, S_IREAD | S_IWRITE);
++#endif
+ }
+ 
+ // return current position of file pointer
+ jlong os::current_file_offset(int fd) {
++#ifdef MUSL_LIBC
++  return (jlong)::lseek(fd, (off_t)0, SEEK_CUR);
++#else
+   return (jlong)::lseek64(fd, (off64_t)0, SEEK_CUR);
++#endif
+ }
+ 
+ // move file pointer to the specified offset
+ jlong os::seek_to_file_offset(int fd, jlong offset) {
++#ifdef MUSL_LIBC
++  return (jlong)::lseek(fd, (off_t)offset, SEEK_SET);
++#else
+   return (jlong)::lseek64(fd, (off64_t)offset, SEEK_SET);
++#endif
+ }
+ 
+ // This code originates from JDK's sysAvailable
+@@ -5007,9 +5028,15 @@
+ int os::available(int fd, jlong *bytes) {
+   jlong cur, end;
+   int mode;
++#ifdef MUSL_LIBC
++  struct stat buf64;
++
++  if (::fstat(fd, &buf64) >= 0) {
++#else
+   struct stat64 buf64;
+ 
+   if (::fstat64(fd, &buf64) >= 0) {
++#endif
+     mode = buf64.st_mode;
+     if (S_ISCHR(mode) || S_ISFIFO(mode) || S_ISSOCK(mode)) {
+       int n;
+@@ -5019,6 +5046,16 @@
+       }
+     }
+   }
++
++#ifdef MUSL_LIBC
++  if ((cur = ::lseek(fd, 0L, SEEK_CUR)) == -1) {
++    return 0;
++  } else if ((end = ::lseek(fd, 0L, SEEK_END)) == -1) {
++    return 0;
++  } else if (::lseek(fd, cur, SEEK_SET) == -1) {
++    return 0;
++  }
++#else
+   if ((cur = ::lseek64(fd, 0L, SEEK_CUR)) == -1) {
+     return 0;
+   } else if ((end = ::lseek64(fd, 0L, SEEK_END)) == -1) {
+@@ -5026,6 +5063,7 @@
+   } else if (::lseek64(fd, cur, SEEK_SET) == -1) {
+     return 0;
+   }
++#endif
+   *bytes = end - cur;
+   return 1;
+ }
+--- a/src/hotspot/os/posix/os_posix.cpp	2022-11-08 20:45:42.415763077 +0100
++++ b/src/hotspot/os/posix/os_posix.cpp	2022-11-08 20:51:58.494462309 +0100
+@@ -692,7 +692,11 @@
+ }
+ 
+ jlong os::lseek(int fd, jlong offset, int whence) {
++#ifdef MUSL_LIBC
++  return (jlong)::lseek(fd, offset, whence);
++#else
+   return (jlong) BSD_ONLY(::lseek) NOT_BSD(::lseek64)(fd, offset, whence);
++#endif
+ }
+ 
+ int os::fsync(int fd) {
+@@ -700,7 +704,11 @@
+ }
+ 
+ int os::ftruncate(int fd, jlong length) {
++#ifdef MUSL_LIBC
++   return ::ftruncate(fd, length);
++#else
+    return BSD_ONLY(::ftruncate) NOT_BSD(::ftruncate64)(fd, length);
++#endif
+ }
+ 
+ const char* os::get_current_directory(char *buf, size_t buflen) {
