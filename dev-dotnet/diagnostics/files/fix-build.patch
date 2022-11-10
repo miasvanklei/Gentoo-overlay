@@ -1,0 +1,32 @@
+--- a/src/CMakeLists.txt	2022-11-09 17:40:24.272450793 +0100
++++ b/src/CMakeLists.txt	2022-11-09 17:42:32.889203866 +0100
+@@ -11,7 +11,6 @@
+ include_directories(${CLR_SHARED_DIR}/pal/prebuilt/inc)
+ 
+ add_subdirectory(shared)
+-add_subdirectory(SOS)
+ 
+ if (CLR_CMAKE_HOST_UNIX)
+   # This prevents inclusion of standard C compiler headers
+--- a/CMakeLists.txt	2022-11-09 17:40:07.380220540 +0100
++++ b/CMakeLists.txt	2022-11-09 17:43:12.988750408 +0100
+@@ -41,7 +41,7 @@
+   # Drop the static scope for SOS, so it's available outside the
+   # compilation unit for external linkage; see extern declaration
+   # in SOS sources.
+-  file(READ "${VERSION_FILE_PATH}" VERSION_FILE_CONTENTS)
++#  file(READ "${VERSION_FILE_PATH}" VERSION_FILE_CONTENTS)
+   string(REPLACE "static char" "char" VERSION_LINE_WITHOUT_STATIC "${VERSION_FILE_CONTENTS}")
+   file(WRITE "${VERSION_FILE_PATH}" "${VERSION_LINE_WITHOUT_STATIC}")
+ endif(CLR_CMAKE_HOST_UNIX)
+--- a/src/shared/pal/src/init/pal.cpp	2022-11-09 17:52:24.144218016 +0100
++++ b/src/shared/pal/src/init/pal.cpp	2022-11-09 17:52:36.774388316 +0100
+@@ -246,7 +246,7 @@
+             // Want this critical section to NOT be internal to avoid the use of unsafe region markers.
+             InternalInitializeCriticalSectionAndSpinCount(&temp_critsec, 0, false);
+ 
+-            if(NULL != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, NULL))
++            if(NULL != InterlockedCompareExchangePointer(&init_critsec, &temp_critsec, 0))
+             {
+                 // Another thread got in before us! shouldn't happen, if the PAL
+                 // isn't initialized there shouldn't be any other threads
