@@ -37,11 +37,11 @@ index 50d1e9d0693..8511e66a81b 100644
  inherit autotools python-any-r1 systemd toolchain-funcs multilib-minimal
  
  MY_P="${P/mit-}"
-diff --git a/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild b/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild
-index bc8725e909f..471671956c1 100644
---- a/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild
-+++ b/app-emulation/libvirt/libvirt-8.8.0-r1.ebuild
-@@ -113,8 +113,6 @@ RDEPEND="
+diff --git a/app-emulation/libvirt/libvirt-8.9.0.ebuild b/app-emulation/libvirt/libvirt-8.9.0.ebuild
+index b346d777488..aa6685e165c 100644
+--- a/app-emulation/libvirt/libvirt-8.9.0.ebuild
++++ b/app-emulation/libvirt/libvirt-8.9.0.ebuild
+@@ -116,8 +116,6 @@ RDEPEND="
  	selinux? ( >=sys-libs/libselinux-2.0.85 )
  	virt-network? (
  		net-dns/dnsmasq[dhcp,ipv6(+),script]
@@ -128,44 +128,11 @@ index bc0266c8e44..224bc1adb2b 100644
  DISTUTILS_USE_SETUPTOOLS=no
  
  inherit distutils-r1
-diff --git a/dev-lang/rust/rust-1.64.0-r1.ebuild b/dev-lang/rust/rust-1.64.0-r1.ebuild
-index ae62f705a4d..75bd54d0bc3 100644
---- a/dev-lang/rust/rust-1.64.0-r1.ebuild
-+++ b/dev-lang/rust/rust-1.64.0-r1.ebuild
-@@ -49,7 +49,7 @@ IUSE="clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind miri nightly paral
- 
- # How to use it:
- # List all the working slots in LLVM_VALID_SLOTS, newest first.
--LLVM_VALID_SLOTS=( 14 )
-+LLVM_VALID_SLOTS=( 15 )
- LLVM_MAX_SLOT="${LLVM_VALID_SLOTS[0]}"
- 
- # splitting usedeps needed to avoid CI/pkgcheck's UncheckableDep limitation
-@@ -282,6 +282,10 @@ esetup_unwind_hack() {
- 	export MAGIC_EXTRA_RUSTFLAGS+="${MAGIC_EXTRA_RUSTFLAGS:+ }-L${fakelib}"
- }
- 
-+clear_vendor_checksums() {
-+	sed -i 's/\("files":{\)[^}]*/\1/' vendor/$1/.cargo-checksum.json
-+}
-+
- src_prepare() {
- 	# this supidity is needed because patch is too large to be in filesdir
- 	# and if we move it to devspace - it lacks checksum for sig verification
-@@ -302,6 +306,8 @@ src_prepare() {
- 			--without=rust-docs --destdir="${rust_stage0_root}" --prefix=/ || die
- 	fi
- 
-+	clear_vendor_checksums libc
-+
- 	default
- }
- 
 diff --git a/dev-lang/rust/rust-1.65.0.ebuild b/dev-lang/rust/rust-1.65.0.ebuild
-index eed4becde21..ab036e5eb1e 100644
+index 5c1e5faade7..585ff4dee6d 100644
 --- a/dev-lang/rust/rust-1.65.0.ebuild
 +++ b/dev-lang/rust/rust-1.65.0.ebuild
-@@ -282,6 +282,10 @@ esetup_unwind_hack() {
+@@ -285,6 +285,10 @@ esetup_unwind_hack() {
  	export MAGIC_EXTRA_RUSTFLAGS+="${MAGIC_EXTRA_RUSTFLAGS:+ }-L${fakelib}"
  }
  
@@ -176,7 +143,7 @@ index eed4becde21..ab036e5eb1e 100644
  src_prepare() {
  	# this supidity is needed because patch is too large to be in filesdir
  	# and if we move it to devspace - it lacks checksum for sig verification
-@@ -302,6 +306,11 @@ src_prepare() {
+@@ -305,6 +309,11 @@ src_prepare() {
  			--without=rust-docs --destdir="${rust_stage0_root}" --prefix=/ || die
  	fi
  
@@ -340,10 +307,10 @@ index 4681fd25328..f85f40f1442 100644
  			-exec touch {} + 2>/dev/null
  	fi
  }
-diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.2.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.2.ebuild
+diff --git a/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.3.ebuild b/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.3.ebuild
 index 36800cd18cd..87f31486c79 100644
---- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.2.ebuild
-+++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.2.ebuild
+--- a/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.3.ebuild
++++ b/kde-plasma/kde-gtk-config/kde-gtk-config-5.26.3.ebuild
 @@ -18,7 +18,6 @@ KEYWORDS="~amd64 ~arm ~arm64 ~ppc64 ~riscv"
  IUSE=""
  
@@ -391,10 +358,10 @@ index 5d12462922c..27c0a5910fa 100644
  
  inherit python-any-r1 toolchain-funcs
  
-diff --git a/media-libs/libplacebo/libplacebo-4.192.1-r1.ebuild b/media-libs/libplacebo/libplacebo-4.192.1-r1.ebuild
-index c047cd32fdf..b2b2ea6e281 100644
---- a/media-libs/libplacebo/libplacebo-4.192.1-r1.ebuild
-+++ b/media-libs/libplacebo/libplacebo-4.192.1-r1.ebuild
+diff --git a/media-libs/libplacebo/libplacebo-4.192.1-r2.ebuild b/media-libs/libplacebo/libplacebo-4.192.1-r2.ebuild
+index 96e2470a8d3..3b178b34fd6 100644
+--- a/media-libs/libplacebo/libplacebo-4.192.1-r2.ebuild
++++ b/media-libs/libplacebo/libplacebo-4.192.1-r2.ebuild
 @@ -4,7 +4,7 @@
  EAPI=7
  
@@ -495,10 +462,10 @@ index 7c98113b4af..d91f5533049 100644
  inherit multilib-minimal python-any-r1
  
  DESCRIPTION="C library for the Public Suffix List"
-diff --git a/net-libs/nodejs/nodejs-16.18.0.ebuild b/net-libs/nodejs/nodejs-16.18.0.ebuild
-index 60ccb02f324..7346747f21d 100644
---- a/net-libs/nodejs/nodejs-16.18.0.ebuild
-+++ b/net-libs/nodejs/nodejs-16.18.0.ebuild
+diff --git a/net-libs/nodejs/nodejs-16.18.1.ebuild b/net-libs/nodejs/nodejs-16.18.1.ebuild
+index d0b94c50f13..d122c886ee0 100644
+--- a/net-libs/nodejs/nodejs-16.18.1.ebuild
++++ b/net-libs/nodejs/nodejs-16.18.1.ebuild
 @@ -4,7 +4,7 @@
  EAPI=8
  
@@ -508,10 +475,15 @@ index 60ccb02f324..7346747f21d 100644
  PYTHON_REQ_USE="threads(+)"
  
  inherit bash-completion-r1 flag-o-matic linux-info pax-utils python-any-r1 toolchain-funcs xdg-utils
-@@ -114,7 +114,6 @@ src_configure() {
- 	# is not yet implemented by sys-libs/compiler-rt (see
- 	# https://reviews.llvm.org/D85044?id=287068), therefore
- 	# we depend on gcc and force using libgcc as the support lib
+@@ -110,12 +110,6 @@ src_configure() {
+ 
+ 	# LTO compiler flags are handled by configure.py itself
+ 	filter-flags '-flto*'
+-	# nodejs unconditionally links to libatomic #869992
+-	# specifically it requires __atomic_is_lock_free which
+-	# is not yet implemented by sys-libs/compiler-rt (see
+-	# https://reviews.llvm.org/D85044?id=287068), therefore
+-	# we depend on gcc and force using libgcc as the support lib
 -	tc-is-clang && append-ldflags "--rtlib=libgcc --unwindlib=libgcc"
  
  	local myconf=(
@@ -534,7 +506,7 @@ index 2c36251c769..8693b3348e4 100644
  		$(use_enable ssl openssl) \
  		$(use_enable readline) \
 diff --git a/net-misc/spice-gtk/spice-gtk-0.41.ebuild b/net-misc/spice-gtk/spice-gtk-0.41.ebuild
-index 0c8cef23890..e535aefd365 100644
+index 6b1a290940f..af8349de3a7 100644
 --- a/net-misc/spice-gtk/spice-gtk-0.41.ebuild
 +++ b/net-misc/spice-gtk/spice-gtk-0.41.ebuild
 @@ -99,6 +99,7 @@ src_prepare() {
@@ -559,7 +531,7 @@ index 4a6c7e575ec..a54010b1200 100644
  
  DESCRIPTION="Download videos from YouTube.com (and more sites...)"
 diff --git a/sys-apps/flatpak/flatpak-1.14.0-r1.ebuild b/sys-apps/flatpak/flatpak-1.14.0-r1.ebuild
-index 7cf4ec168fb..4de2aacbf6a 100644
+index 8da6deeddf6..aed43f1895f 100644
 --- a/sys-apps/flatpak/flatpak-1.14.0-r1.ebuild
 +++ b/sys-apps/flatpak/flatpak-1.14.0-r1.ebuild
 @@ -2,7 +2,7 @@
@@ -584,10 +556,10 @@ index a79f809c9a8..5721b780a5d 100644
  
  inherit pam python-any-r1 readme.gentoo-r1
  
-diff --git a/sys-devel/clang/clang-15.0.4.ebuild b/sys-devel/clang/clang-15.0.4.ebuild
+diff --git a/sys-devel/clang/clang-15.0.5.ebuild b/sys-devel/clang/clang-15.0.5.ebuild
 index 45ec3a2786f..e84467e6da6 100644
---- a/sys-devel/clang/clang-15.0.4.ebuild
-+++ b/sys-devel/clang/clang-15.0.4.ebuild
+--- a/sys-devel/clang/clang-15.0.5.ebuild
++++ b/sys-devel/clang/clang-15.0.5.ebuild
 @@ -30,6 +30,7 @@ RDEPEND="
  	${PYTHON_DEPS}
  	${DEPEND}
@@ -638,6 +610,21 @@ index 9bd470297df..fd481026e27 100644
  
  [Install]
  WantedBy=multi-user.target
+diff --git a/sys-devel/llvm-toolchain-symlinks/llvm-toolchain-symlinks-15-r1.ebuild b/sys-devel/llvm-toolchain-symlinks/llvm-toolchain-symlinks-15-r1.ebuild
+index 33e827c9cc5..2e91c0161c4 100644
+--- a/sys-devel/llvm-toolchain-symlinks/llvm-toolchain-symlinks-15-r1.ebuild
++++ b/sys-devel/llvm-toolchain-symlinks/llvm-toolchain-symlinks-15-r1.ebuild
+@@ -45,4 +45,10 @@ src_install() {
+ 			dosym "llvm-${t}" "${dest}/${chost}-${t}"
+ 		done
+ 	done
++
++	## special case c++filt
++	dosym "llvm-cxxfilt" "${dest}/c++filt"
++	for chost in "${chosts[@]}"; do
++		dosym "llvm-cxxfilt" "${dest}/${chost}-c++filt"
++	done
+ }
 diff --git a/sys-fs/cryfs/cryfs-0.10.3-r1.ebuild b/sys-fs/cryfs/cryfs-0.10.3-r1.ebuild
 index 70df4e49f50..51ac2a4ceab 100644
 --- a/sys-fs/cryfs/cryfs-0.10.3-r1.ebuild
@@ -651,10 +638,10 @@ index 70df4e49f50..51ac2a4ceab 100644
  inherit cmake flag-o-matic linux-info python-any-r1
  
  if [[ ${PV} == 9999 ]] ; then
-diff --git a/sys-libs/libcxx/libcxx-15.0.4.ebuild b/sys-libs/libcxx/libcxx-15.0.4.ebuild
+diff --git a/sys-libs/libcxx/libcxx-15.0.5.ebuild b/sys-libs/libcxx/libcxx-15.0.5.ebuild
 index 8b5e382b888..07855283b57 100644
---- a/sys-libs/libcxx/libcxx-15.0.4.ebuild
-+++ b/sys-libs/libcxx/libcxx-15.0.4.ebuild
+--- a/sys-libs/libcxx/libcxx-15.0.5.ebuild
++++ b/sys-libs/libcxx/libcxx-15.0.5.ebuild
 @@ -109,6 +109,7 @@ multilib_src_configure() {
  
  	local libdir=$(get_libdir)
@@ -663,10 +650,10 @@ index 8b5e382b888..07855283b57 100644
  		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES=libcxx
-diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.4.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.4.ebuild
+diff --git a/sys-libs/libcxxabi/libcxxabi-15.0.5.ebuild b/sys-libs/libcxxabi/libcxxabi-15.0.5.ebuild
 index b97740de2fb..a3a0211601d 100644
---- a/sys-libs/libcxxabi/libcxxabi-15.0.4.ebuild
-+++ b/sys-libs/libcxxabi/libcxxabi-15.0.4.ebuild
+--- a/sys-libs/libcxxabi/libcxxabi-15.0.5.ebuild
++++ b/sys-libs/libcxxabi/libcxxabi-15.0.5.ebuild
 @@ -68,6 +68,7 @@ multilib_src_configure() {
  
  	local libdir=$(get_libdir)
@@ -675,58 +662,17 @@ index b97740de2fb..a3a0211601d 100644
  		-DCMAKE_CXX_COMPILER_TARGET="${CHOST}"
  		-DPython3_EXECUTABLE="${PYTHON}"
  		-DLLVM_ENABLE_RUNTIMES="libcxxabi;libcxx"
-diff --git a/www-client/firefox/firefox-106.0.5.ebuild b/www-client/firefox/firefox-106.0.5.ebuild
-index 0c86994fb35..7a51a6cf6d2 100644
---- a/www-client/firefox/firefox-106.0.5.ebuild
-+++ b/www-client/firefox/firefox-106.0.5.ebuild
-@@ -5,7 +5,7 @@ EAPI=8
+diff --git a/www-client/firefox/firefox-107.0.ebuild b/www-client/firefox/firefox-107.0.ebuild
+index 71eb99bd7b7..ae66201e057 100644
+--- a/www-client/firefox/firefox-107.0.ebuild
++++ b/www-client/firefox/firefox-107.0.ebuild
+@@ -646,6 +646,9 @@ src_prepare() {
+ 	einfo "Removing pre-built binaries ..."
+ 	find "${S}"/third_party -type f \( -name '*.so' -o -name '*.o' \) -print -delete || die
  
- FIREFOX_PATCHSET="firefox-106-patches-02j.tar.xz"
- 
--LLVM_MAX_SLOT=14
-+LLVM_MAX_SLOT=15
- 
- PYTHON_COMPAT=( python3_{8..11} )
- PYTHON_REQ_USE="ncurses,sqlite,ssl"
-@@ -38,7 +38,7 @@ MOZ_PV_DISTFILES="${MOZ_PV}${MOZ_PV_SUFFIX}"
- MOZ_P_DISTFILES="${MOZ_PN}-${MOZ_PV_DISTFILES}"
- 
- inherit autotools check-reqs desktop flag-o-matic gnome2-utils linux-info \
--	llvm multiprocessing pax-utils python-any-r1 toolchain-funcs \
-+	llvm multiprocessing pax-utils python-any-r1 rust-toolchain toolchain-funcs \
- 	virtualx xdg
- 
- MOZ_SRC_BASE_URI="https://archive.mozilla.org/pub/${MOZ_PN}/releases/${MOZ_PV}"
-@@ -90,6 +90,14 @@ BDEPEND="${PYTHON_DEPS}
- 	virtual/pkgconfig
- 	>=virtual/rust-1.61.0
- 	|| (
-+		(
-+			sys-devel/clang:15
-+			sys-devel/llvm:15
-+			clang? (
-+				sys-devel/lld:15
-+				pgo? ( =sys-libs/compiler-rt-sanitizers-15*[profile] )
-+			)
-+		)
- 		(
- 			sys-devel/clang:14
- 			sys-devel/llvm:14
-@@ -613,6 +621,9 @@ src_prepare() {
- 	# Make cargo respect MAKEOPTS
- 	export CARGO_BUILD_JOBS="$(makeopts_jobs)"
- 
-+	# Respect RUST_TARGET, #748849
-+	export RUST_TARGET=$(rust_abi)
++        # Clearing checksums where we have applied patches
++        moz_clear_vendor_checksums libc
 +
- 	# Make LTO respect MAKEOPTS
- 	sed -i \
- 		-e "s/multiprocessing.cpu_count()/$(makeopts_jobs)/" \
-@@ -641,6 +652,7 @@ src_prepare() {
- 
- 	# Clearing checksums where we have applied patches
- 	moz_clear_vendor_checksums bindgen
-+	moz_clear_vendor_checksums libc
- 
  	# Create build dir
  	BUILD_DIR="${WORKDIR}/${PN}_build"
+ 	mkdir -p "${BUILD_DIR}" || die
