@@ -39,8 +39,7 @@ DEPEND=">=dev-util/cmake-2.8
 PATCHES=(
 	"${FILESDIR}"/cmsg_nxthdr_unavailable.patch
 	"${FILESDIR}"/musl-lfs64.patch
-	"${FILESDIR}"/fix-null-crash.patch
-	"${FILESDIR}"/fix-build.patch
+	"${FILESDIR}"/llvmsymbolize-unavailable.patch
 )
 
 src_configure() {
