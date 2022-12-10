@@ -19,7 +19,7 @@ HOMEPAGE="https://github.com/sddm/sddm"
 
 LICENSE="GPL-2+ MIT CC-BY-3.0 CC-BY-SA-3.0 public-domain"
 SLOT="0"
-IUSE="+elogind +pam systemd test"
+IUSE="+elogind +pam systemd test X wayland"
 
 REQUIRED_USE="?? ( elogind systemd )"
 RESTRICT="!test? ( test )"
@@ -32,13 +32,14 @@ COMMON_DEPEND="
 	dev-qt/qtdeclarative:5
 	dev-qt/qtgui:5
 	dev-qt/qtnetwork:5
-	x11-base/xorg-server
 	x11-libs/libxcb:=
 	elogind? ( sys-auth/elogind )
 	pam? ( sys-libs/pam )
 	!pam? ( virtual/libcrypt:= )
 	systemd? ( sys-apps/systemd:= )
 	!systemd? ( sys-power/upower )
+	X? ( x11-base/xorg-server )
+	wayland? ( kde-plasma/kwin )
 "
 DEPEND="${COMMON_DEPEND}
 	test? ( dev-qt/qttest:5 )
