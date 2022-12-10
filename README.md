@@ -7,7 +7,7 @@ To compile all packages on my gentoo system with clang and llvm tools (lld, inte
  * kde plasma, snap, texlive, rust, ghc + haskell packages, R, firefox, libreoffice, dotnet core, mono
 
 # Systems
- * Banana pi, rock64, pine h64, pinebook pro, amd threadripper 2n generation, intel 8th generation mobile
+ * Banana pi, pinebook pro, amd threadripper 2n generation, intel 8th generation mobile
 
 # Status (packages on my system)
  * arm64: all packages including linux kernel.
@@ -29,4 +29,3 @@ To compile all packages on my gentoo system with clang and llvm tools (lld, inte
 # Organization
  * portage: contains package.* for my system, probably only applies to me.
  * portage/patches: contains patches for fixing compilation of ebuilds in gentoo repo
- * gentoo.patch: contains some trivial patches for gentoo ebuilds themselves (change of dependencies, extra configure arguments).
