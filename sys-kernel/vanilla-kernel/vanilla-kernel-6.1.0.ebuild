@@ -4,7 +4,7 @@
 EAPI="7"
 ETYPE="sources"
 K_WANT_GENPATCHES="base extras experimental"
-K_GENPATCHES_VER="$(ver_cut 3)"
+K_GENPATCHES_VER="$(($(ver_cut 3)+1))"
 
 inherit kernel-2 mount-boot savedconfig toolchain-funcs
 detect_version
@@ -12,7 +12,7 @@ detect_arch
 
 KEYWORDS="~amd64 ~arm ~arm64"
 HOMEPAGE="https://www.kernel.org/"
-IUSE="experimental banana-pi pine-h64 pinebook-pro"
+IUSE="experimental banana-pi pinebook-pro"
 
 DESCRIPTION="Linux kernel built from vanilla upstream sources"
 SRC_URI="${KERNEL_URI} ${GENPATCHES_URI} ${ARCH_URI}"
@@ -36,7 +36,6 @@ src_prepare() {
 		eapply "${FILESDIR}"/pinebook-pro/usb/006-add-typec-extcon-bridge-driver.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/007-make-tcpm-logs-less-polluted.patch
 		eapply "${FILESDIR}"/pinebook-pro/usb/008-pinebook-pro-dts-improvements.patch
-		eapply "${FILESDIR}"/pinebook-pro/0007-drm-rockchip-support-gamma-control-on-RK3399.patch
 		eapply "${FILESDIR}"/pinebook-pro/0008-add-cdn_dp-audio.patch
 		eapply "${FILESDIR}"/pinebook-pro/0009-generic-fixes.patch
 	fi
