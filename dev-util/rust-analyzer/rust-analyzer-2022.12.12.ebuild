@@ -23,10 +23,10 @@ CRATES="
 	cargo_metadata-0.15.0
 	cc-1.0.73
 	cfg-if-1.0.0
-	chalk-derive-0.86.0
-	chalk-ir-0.86.0
-	chalk-recursive-0.86.0
-	chalk-solve-0.86.0
+	chalk-derive-0.88.0
+	chalk-ir-0.88.0
+	chalk-recursive-0.88.0
+	chalk-solve-0.88.0
 	command-group-1.0.8
 	countme-3.0.1
 	cov-mark-2.0.0-pre.1
@@ -54,6 +54,8 @@ CRATES="
 	hashbrown-0.12.3
 	heck-0.3.3
 	hermit-abi-0.1.19
+	hkalbasi-rustc-ap-rustc_abi-0.0.20221125
+	hkalbasi-rustc-ap-rustc_index-0.0.20221125
 	home-0.5.4
 	idna-0.3.0
 	indexmap-1.9.1
