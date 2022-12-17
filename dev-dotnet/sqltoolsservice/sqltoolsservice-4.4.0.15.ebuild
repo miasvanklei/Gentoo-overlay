@@ -14,7 +14,7 @@ KEYWORDS="~amd64 ~arm64"
 RESTRICT="network-sandbox"
 
 RDEPEND="
-	=dev-dotnet/dotnet-sdk-7.0.100
+	=dev-dotnet/dotnet-sdk-7.0.101
 	virtual/dotnet-core"
 DEPEND="${RDEPEND}"
 
@@ -24,16 +24,31 @@ QA_PRESTRIPPED="
 	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsCredentials
 "
 
+BUILD_DIR="${WORKDIR}/${P}_build"
+
 PATCHES=(
-	"${FILESDIR}"/fix-resources.patch
-	"${FILESDIR}"/update-sdk.patch
+	"${FILESDIR}"/fix-build.patch
 )
 
 publish_sqltool()
 {
 	pushd src/Microsoft.SqlTools.$1 >/dev/null
-	dotnet publish -c release -o "${WORKDIR}/sqltoolsservice" || die
+	dotnet publish -c release -o "${BUILD_DIR}" || die
 	popd
+}
+
+src_prepare() {
+	rm global.json
+
+	# fix casing
+	mkdir -p ${BUILD_DIR}/pt-BR
+	mkdir -p ${BUILD_DIR}/zh-hans
+	mkdir -p ${BUILD_DIR}/zh-hant
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net6.0/zh-hans
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net6.0/zh-hant
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net6.0/pt-br
+
+	default
 }
 
 src_compile() {
@@ -41,22 +56,22 @@ src_compile() {
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	export DOTNET_NOLOGO=1
 
-	mkdir -p ${WORKDIR}/sqltoolsservice/zh-hans
-	mkdir -p ${WORKDIR}/sqltoolsservice/zh-hant
 
 	publish_sqltool ServiceLayer
 	publish_sqltool ResourceProvider
 }
 
 src_install() {
-	insinto /usr/share/dotnet
-	doins -r ${WORKDIR}/sqltoolsservice
+	local installdir="/usr/share/dotnet/${PN}"
+	insinto ${installdir}
+	doins -r ${BUILD_DIR}/*
 
 	# fix executable bit
-	pushd ${D}/usr/share/dotnet/sqltoolsservice >/dev/null || die
+	pushd ${D}/${installdir} >/dev/null || die
 	chmod +x MicrosoftSqlToolsCredentials || die
 	chmod +x SqlToolsResourceProviderService || die
 	chmod +x MicrosoftSqlToolsServiceLayer || die
 
+	# fix #1423,#1427 etc. on https://github.com/dotnet/SqlClient
 	cp runtimes/unix/lib/netcoreapp3.1/*.dll ./ || die
 }
