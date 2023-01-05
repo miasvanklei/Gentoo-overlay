@@ -7,10 +7,14 @@ PYTHON_COMPAT=( python3_{9..11} )
 
 inherit distutils-r1
 
-DESCRIPTION="Fortran Language Server for the Language Server Protocol"
+DESCRIPTION="Fortran Language Server (fortls)"
 HOMEPAGE="https://github.com/hansec/fortran-language-server"
 SRC_URI="mirror://pypi/${PN:0:1}/${PN}/${P}.tar.gz"
-LICENSE="MPL-2.0"
+
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
-IUSE=""
+
+RDEPEND="
+	dev-python/json5[${PYTHON_USEDEP}]
+"
