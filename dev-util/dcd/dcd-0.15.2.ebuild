@@ -13,26 +13,20 @@ IUSE="systemd"
 
 inherit bash-completion-r1
 
-CONTAINERS="fc1625a5a0c253272b80addfb4107928495fd647"
-DSYMBOL="f9a3d302527a9e50140991562648a147b6f5a78e"
-LIBDPARSE="1393ee4d0c8e50011e641e06d64c429841fb3c2b"
+CONTAINERS="116a02872039efbd0289828cd5eeff6f60bdf539"
+LIBDPARSE="592ef39a73a58439afc75a3e6c13a0d87d0b847d"
 MSGPACK="480f3bf9ee80ccf6695ed900cfcc1850ba8da991"
-ALLOCATOR="d6e6ce4a838e0dad43ef13f050f96627339cdccd"
 SRC_URI="
 	https://github.com/dlang-community/DCD/archive/v${PV}.tar.gz -> DCD-${PV}.tar.gz
 	https://github.com/economicmodeling/containers/archive/${CONTAINERS}.tar.gz -> containers-${CONTAINERS}.tar.gz
-	https://github.com/dlang-community/dsymbol/archive/${DSYMBOL}.tar.gz -> dsymbol-${DSYMBOL}.tar.gz
 	https://github.com/dlang-community/libdparse/archive/${LIBDPARSE}.tar.gz -> libdparse-${LIBDPARSE}.tar.gz
-	https://github.com/dlang-community/stdx-allocator/archive/${ALLOCATOR}.tar.gz -> stdx-allocator-${ALLOCATOR}.tar.gz
 	https://github.com/msgpack/msgpack-d/archive/${MSGPACK}.tar.gz -> msgpack-d-${MSGPACK}.tar.gz
 	"
 S="${WORKDIR}/DCD-${PV}"
 
 src_prepare() {
 	# Default ebuild unpack function places archives side-by-side ...
-	mv -T ../stdx-allocator-${ALLOCATOR} stdx-allocator/source || die
 	mv -T ../containers-${CONTAINERS}    containers            || die
-	mv -T ../dsymbol-${DSYMBOL}          dsymbol               || die
 	mv -T ../libdparse-${LIBDPARSE}      libdparse             || die
 	mv -T ../msgpack-d-${MSGPACK}        msgpack-d             || die
 
