@@ -54,8 +54,8 @@ CRATES="
 	hashbrown-0.12.3
 	heck-0.3.3
 	hermit-abi-0.1.19
-	hkalbasi-rustc-ap-rustc_abi-0.0.20221125
-	hkalbasi-rustc-ap-rustc_index-0.0.20221125
+	hkalbasi-rustc-ap-rustc_abi-0.0.20221221
+	hkalbasi-rustc-ap-rustc_index-0.0.20221221
 	home-0.5.4
 	idna-0.3.0
 	indexmap-1.9.1
