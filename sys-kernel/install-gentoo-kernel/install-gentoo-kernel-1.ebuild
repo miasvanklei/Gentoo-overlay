@@ -35,9 +35,9 @@ copy_kernel()
 	if use arm || use arm64; then
 		# install dtb file for board given in ${DTB_FILE}.
 		if [[ -n ${DTB_FILE} ]]; then
-			ebegin "Installing ${DTB_FILE} from kernel with version ${kernel_version} to /boot/$1"
+			ebegin "Installing ${DTB_FILE} from kernel with version ${kernel_version} to /boot/${DTB-FILE}"
 
-			cp "${EROOT}/boot/dtbs/${kernel_version}/${DTB_FILE}" "${EROOT}/boot/${DTB_FILE}" \; || die
+			cp "${EROOT}/boot/dtbs/${kernel_version}/${DTB_FILE}" "${EROOT}/boot/${DTB_FILE}" || die
 
 			eend ${?}
 		else
