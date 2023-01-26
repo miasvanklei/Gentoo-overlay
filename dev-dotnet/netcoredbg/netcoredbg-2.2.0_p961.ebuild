@@ -29,6 +29,8 @@ PATCHES=(
 	"${FILESDIR}"/fix-compile.patch
 )
 
+INSTALL_PATH="/usr/share/dotnet/shared/Microsoft.NETCore.App/current"
+
 pkg_setup() {
 	# no telemetry or first time experience
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
@@ -39,19 +41,15 @@ src_configure() {
 	local mycmakeargs=(
 		-DDOTNET_DIR=/usr/share/dotnet
 		-DCORECLR_DIR=${WORKDIR}/runtime-${RUNTIME_PV}/src/coreclr
+		-DDBGSHIM_DIR="${INSTALL_PATH}"
+		-DCMAKE_INSTALL_PREFIX="${INSTALL_PATH}"
 	)
 
 	cmake_src_configure
 }
 
 src_install() {
-	local install_path=${D}/usr/share/dotnet/shared/Microsoft.NETCore.App/current
-
 	cmake_src_install
 
-	mkdir -p ${install_path} || die
-	mv ${D}/usr/*.dll ${install_path} || die
-	mv ${D}/usr/netcoredbg ${install_path} || die
-
-	dosym "${D}/usr/share/dotnet/shared/Microsoft.NETCore.App/current/netcoredbg" "/usr/bin/netcoredbg"
+	dosym "${D}${INSTALL_PATH}/netcoredbg" "/usr/bin/netcoredbg"
 }
