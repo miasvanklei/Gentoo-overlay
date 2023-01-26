@@ -35,7 +35,7 @@ RDEPEND="dev-qt/qtconcurrent:5
 	kde-frameworks/kxmlgui:5
 	kde-frameworks/qqc2-desktop-style:5
 	media-video/mpv[libmpv]
-	net-misc/youtube-dl"
+	net-misc/yt-dlp"
 DEPEND="${RDEPEND}"
 BDEPEND="kde-frameworks/extra-cmake-modules:5
 	sys-devel/gettext"
