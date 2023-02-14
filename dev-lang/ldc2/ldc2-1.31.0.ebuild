@@ -3,16 +3,17 @@
 
 EAPI=7
 
-inherit cmake git-r3
+inherit cmake
 
 MY_PV=${PV/_/-}
 
-EGIT_REPO_URI="https://github.com/ldc-developers/ldc.git"
 DESCRIPTION="LLVM D Compiler"
 HOMEPAGE="https://ldc-developers.github.com/ldc"
 KEYWORDS="~x86 ~amd64 ~arm ~arm64 ~ppc ~ppc64"
 LICENSE="BSD"
 SLOT="$(ver_cut 1-2)/$(ver_cut 3)"
+SRC_URI="https://github.com/ldc-developers/ldc/releases/download/v${PV}/ldc-${PV}-src.tar.gz"
+
 IUSE=""
 
 BOOTSTRAP_DEPEND="||
@@ -37,10 +38,11 @@ DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
 
 PATCHES=(
-	"${FILESDIR}"/cmsg_nxthdr_unavailable.patch
 	"${FILESDIR}"/musl-lfs64.patch
 	"${FILESDIR}"/llvmsymbolize-unavailable.patch
 )
+
+S="${WORKDIR}/ldc-${PV}-src"
 
 src_configure() {
 	local mycmakeargs=(
