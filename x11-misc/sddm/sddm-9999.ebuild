@@ -58,8 +58,6 @@ PATCHES=(
 	"${FILESDIR}/respect-user-flags.patch"
 	"${FILESDIR}/Xsession.patch" # bug 611210
 	"${FILESDIR}/sddmconfdir.patch"
-	# fix wayland sessions
-	"${FILESDIR}/support-non-default-display-names.patch"
 )
 
 pkg_setup() {
