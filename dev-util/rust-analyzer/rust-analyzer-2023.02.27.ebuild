@@ -72,7 +72,7 @@ CRATES="
 	libmimalloc-sys-0.1.30
 	lock_api-0.4.9
 	log-0.4.17
-	lsp-types-0.93.2
+	lsp-types-0.94.0
 	matchers-0.1.0
 	memchr-2.5.0
 	memmap2-0.5.8
@@ -113,7 +113,7 @@ CRATES="
 	regex-automata-0.1.10
 	regex-syntax-0.6.28
 	rowan-0.15.10
-	rustc-ap-rustc_lexer-725.0.0
+	rustc-ap-rustc_lexer-727.0.0
 	rustc-demangle-0.1.21
 	rustc-hash-1.1.0
 	ryu-1.0.12
@@ -184,7 +184,7 @@ CRATES="
 	xflags-macros-0.3.1
 	xshell-0.2.3
 	xshell-macros-0.2.3
-	zip-0.6.3
+	zip-0.6.4
 "
 
 inherit cargo
