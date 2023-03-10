@@ -1,4 +1,4 @@
-# Copyright 2011-2022 Gentoo Authors
+# Copyright 2011-2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -26,7 +26,8 @@ else
 	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
 fi
 
-inherit bash-completion-r1 flag-o-matic linux-info meson-multilib pam python-any-r1 systemd toolchain-funcs udev usr-ldscript
+inherit bash-completion-r1 linux-info meson-multilib pam
+inherit python-any-r1 systemd toolchain-funcs udev usr-ldscript
 
 DESCRIPTION="System and service manager for Linux"
 HOMEPAGE="http://systemd.io/"
@@ -41,6 +42,7 @@ IUSE="
 "
 REQUIRED_USE="
 	dns-over-tls? ( || ( gnutls openssl ) )
+	fido2? ( openssl )
 	homed? ( cryptsetup pam openssl )
 	importd? ( curl lzma || ( gcrypt openssl ) )
 	pwquality? ( homed )
@@ -230,6 +232,7 @@ src_unpack() {
 
 src_prepare() {
 	local PATCHES=(
+		"${FILESDIR}/systemd-253-initrd-generators.patch"
 	)
 
 	if ! use vanilla; then
@@ -249,21 +252,6 @@ src_configure() {
 	# Prevent conflicts with i686 cross toolchain, bug 559726
 	tc-export AR CC NM OBJCOPY RANLIB
 
-	# Broken with FORTIFY_SOURCE=3 without a patch. We have to revert
-	# the upstream patch for it because it breaks Clang: bug #841770.
-	#
-	# Our toolchain sets F_S=2 by default w/ >= -O2, so we need
-	# to unset F_S first, then explicitly set 2, to negate any default
-	# and anything set by the user if they're choosing 3 (or if they've
-	# modified GCC to set 3).
-	#
-	if is-flagq '-O[23]' || is-flagq '-Ofast' ; then
-		# We can't unconditionally do this b/c we fortify needs
-		# some level of optimisation.
-		filter-flags -D_FORTIFY_SOURCE=3
-		append-cppflags -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2
-	fi
-
 	python_setup
 
 	multilib-minimal_src_configure
@@ -280,6 +268,9 @@ multilib_src_configure() {
 		$(meson_use split-usr split-bin)
 		-Drootprefix="$(usex split-usr "${EPREFIX:-/}" "${EPREFIX}/usr")"
 		-Drootlibdir="${EPREFIX}/usr/$(get_libdir)"
+		# Disable compatibility with sysvinit
+		-Dsysvinit-path=
+		-Dsysvrcnd-path=
 		# Avoid infinite exec recursion, bug 642724
 		-Dtelinit-path="${EPREFIX}/lib/sysvinit/telinit"
 		# no deps
@@ -365,6 +356,7 @@ multilib_src_configure() {
 
 multilib_src_test() {
 	unset DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR
+	local -x COLUMNS=80
 	meson_src_test
 }
 
@@ -382,13 +374,10 @@ multilib_src_install_all() {
 		rm -f "${ED}${rootprefix}/${sbin}"/resolvconf || die
 	fi
 
-	rm "${ED}"/etc/init.d/README || die
-	rm "${ED}${rootprefix}"/lib/systemd/system-generators/systemd-sysv-generator || die
-
 	if ! use sysv-utils; then
-		rm "${ED}${rootprefix}/${sbin}"/{halt,init,poweroff,reboot,runlevel,shutdown,telinit} || die
+		rm "${ED}${rootprefix}/${sbin}"/{halt,init,poweroff,reboot,shutdown} || die
 		rm "${ED}"/usr/share/man/man1/init.1 || die
-		rm "${ED}"/usr/share/man/man8/{halt,poweroff,reboot,runlevel,shutdown,telinit}.8 || die
+		rm "${ED}"/usr/share/man/man8/{halt,poweroff,reboot,shutdown}.8 || die
 	fi
 
 	if ! use resolvconf && ! use sysv-utils && use split-usr; then
@@ -472,16 +461,15 @@ migrate_locale() {
 pkg_preinst() {
 	if ! use split-usr; then
 		local dir
-		for dir in bin sbin lib; do
-			if [[ ! ${EROOT}/${dir} -ef ${EROOT}/usr/${dir} ]]; then
-				eerror "\"${EROOT}/${dir}\" and \"${EROOT}/usr/${dir}\" are not merged."
-				eerror "One of them should be a symbolic link to the other one."
+		for dir in bin sbin lib usr/sbin; do
+			if [[ ! -L ${EROOT}/${dir} ]]; then
+				eerror "'${EROOT}/${dir}' is not a symbolic link."
 				FAIL=1
 			fi
 		done
 		if [[ ${FAIL} ]]; then
 			eerror "Migration to system layout with merged directories must be performed before"
-			eerror "rebuilding ${CATEGORY}/${PN} with USE=\"-split-usr\" to avoid run-time breakage."
+			eerror "installing ${CATEGORY}/${PN} with USE=\"-split-usr\" to avoid run-time breakage."
 			die "System layout with split directories still used"
 		fi
 	fi
