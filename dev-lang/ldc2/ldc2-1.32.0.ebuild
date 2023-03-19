@@ -38,6 +38,7 @@ DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
 
 PATCHES=(
+	"${FILESDIR}"/llvm-16.patch
 	"${FILESDIR}"/musl-lfs64.patch
 	"${FILESDIR}"/llvmsymbolize-unavailable.patch
 )
