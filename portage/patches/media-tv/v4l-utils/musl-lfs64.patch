@@ -1,0 +1,20 @@
+--- a/utils/v4l2-tracer/retrace.cpp	2023-03-19 18:05:14.948508787 +0100
++++ b/utils/v4l2-tracer/retrace.cpp	2023-03-19 18:06:16.000484098 +0100
+@@ -48,7 +48,7 @@
+ 
+ 	void *buf_address_retrace_pointer = nullptr;
+ 	if (is_mmap64)
+-		buf_address_retrace_pointer = mmap64(0, len, prot, flags, fd_retrace, off);
++		buf_address_retrace_pointer = mmap(0, len, prot, flags, fd_retrace, off);
+ 	else
+ 		buf_address_retrace_pointer = mmap(0, len, prot, flags, fd_retrace, off);
+ 
+@@ -156,7 +156,7 @@
+ 
+ 	int fd_retrace = 0;
+ 	if (is_open64)
+-		fd_retrace = open64(path_retrace.c_str(), oflag, mode);
++		fd_retrace = open(path_retrace.c_str(), oflag, mode);
+ 	else
+ 		fd_retrace = open(path_retrace.c_str(), oflag, mode);
+ 
