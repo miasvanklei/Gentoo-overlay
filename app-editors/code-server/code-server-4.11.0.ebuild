@@ -19,6 +19,7 @@ NODE_PTY_V=0.11.0-beta29
 SPDLOG_V=0.13.6
 ARGON2_V=0.30.3
 PARCEL_WATCHER_V=2.1.0
+KEYTAR_V=7.9.0
 
 SRC_URI="
 	${BASE_URI}-amd64.tar.gz
@@ -29,6 +30,7 @@ SRC_URI="
         https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
         https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
 	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
+	https://registry.npmjs.org/keytar/-/keytar-${KEYTAR_V}.tgz -> vscodedep-keytar-${KEYTAR_V}.tar.gz
 "
 
 VSCODE_BINMODS=(
@@ -36,13 +38,14 @@ VSCODE_BINMODS=(
         node-pty
         spdlog
 	parcel-watcher
+	keytar
 )
 
 RESTRICT="test"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE="gnome-keyring"
+IUSE=""
 
 DEPEND=""
 RDEPEND="
@@ -50,9 +53,7 @@ RDEPEND="
 	app-crypt/node-rs_argon2
 	>=net-libs/nodejs-16.14.2:0/16[ssl]
 	sys-apps/ripgrep
-	gnome-keyring? (
-		app-crypt/libsecret
-	)
+	app-crypt/libsecret
 "
 
 S="${WORKDIR}/${P%_*}-linux-amd64"
