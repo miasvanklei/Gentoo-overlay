@@ -10,20 +10,18 @@ HOMEPAGE="https://coder.com/"
 
 BASE_URI="https://github.com/cdr/${PN}/releases/download/v${PV}/${P}-linux"
 
-ASAR_V=0.14.3
 # All binary packages depend on this
 NAN_V=2.14.0
 
 NODE_ADDON_API_V=3.1.0
 NATIVE_WATCHDOG_V=1.4.1
-NODE_PTY_V=0.11.0-beta27
+NODE_PTY_V=0.11.0-beta29
 SPDLOG_V=0.13.6
 ARGON2_V=0.30.3
 PARCEL_WATCHER_V=2.1.0
 
 SRC_URI="
 	${BASE_URI}-amd64.tar.gz
-        https://github.com/elprans/asar/releases/download/v${ASAR_V}-gentoo/asar-build.tar.gz -> asar-${ASAR_V}.tar.gz
         https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
         https://registry.npmjs.org/native-watchdog/-/native-watchdog-${NATIVE_WATCHDOG_V}.tgz -> vscodedep-native-watchdog-${NATIVE_WATCHDOG_V}.tar.gz
         https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
@@ -165,10 +163,9 @@ src_compile() {
 		cp "${WORKDIR}/$(package_dir ${binmod})/build/Release/"*.node ${install_path} || die
 	done
 
-	# node-pty spawn-helper
 	local install_path=$(get_binmod_loc_release node-pty)
+	# node-pty spawn-helper
 	cp "${WORKDIR}/$(package_dir node-pty)/build/Release/"spawn-helper ${install_path} || die
-	fperms +x ${install_path}/spawn-helper
 
 	# argon2
 	einfo "rebuilding argon2..."
@@ -182,7 +179,9 @@ src_install() {
 	insinto "/usr/lib/${PN}"
 	doins -r .
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
+	fperms +x "/usr/lib/${PN}/lib/vscode/node_modules/node-pty/build/Release/spawn-helper"
 	dosym "../../usr/lib/${PN}/bin/${PN}" "${EPREFIX}/usr/bin/${PN}"
+
 
 	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
 
