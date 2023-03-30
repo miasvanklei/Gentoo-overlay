@@ -16,13 +16,15 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 IUSE="gstreamer vlc"
 
+BDEPEND="
+	dev-python/Babel[${PYTHON_USEDEP}]"
+
 RDEPEND="
 	app-text/poppler[cairo,introspection]
 	dev-python/pygobject[${PYTHON_USEDEP}]
 	dev-python/watchdog[${PYTHON_USEDEP}]
 	vlc? ( dev-python/python-vlc[${PYTHON_USEDEP}] )
 	gstreamer? ( dev-python/gst-python[${PYTHON_USEDEP}] )
-	dev-python/Babel[${PYTHON_USEDEP}]
 	x11-libs/gtk+:3[introspection]"
 
 DEPEND="${RDEPEND}"
