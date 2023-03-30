@@ -1,4 +1,4 @@
-# Copyright 1999-2020 Gentoo Authors
+# Copyright 1999-2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -22,12 +22,10 @@ DEPEND="${RDEPEND}
 	dev-python/appdirs[${PYTHON_USEDEP}]
 	dev-python/bitarray[${PYTHON_USEDEP}]
 	dev-python/cssselect[${PYTHON_USEDEP}]
-	dev-python/fake-useragent[${PYTHON_USEDEP}]
 	dev-python/lxml[${PYTHON_USEDEP}]
 	dev-python/mutagen[${PYTHON_USEDEP}]
 	dev-python/pillow[${PYTHON_USEDEP}]
 	dev-python/setuptools[${PYTHON_USEDEP}]
 	dev-python/tqdm[${PYTHON_USEDEP}]
 	dev-python/unidecode[${PYTHON_USEDEP}]
-	dev-python/setuptools[${PYTHON_USEDEP}]
 	dev-python/web-cache[${PYTHON_USEDEP}]"
