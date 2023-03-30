@@ -26,7 +26,7 @@ QA_PRESTRIPPED="
 BUILD_DIR="${WORKDIR}/${P}_build"
 
 PATCHES=(
-	"${FILESDIR}"/fix-build.patch
+#	"${FILESDIR}"/fix-build.patch
 )
 
 publish_sqltool()
@@ -43,9 +43,9 @@ src_prepare() {
 	mkdir -p ${BUILD_DIR}/pt-BR
 	mkdir -p ${BUILD_DIR}/zh-hans
 	mkdir -p ${BUILD_DIR}/zh-hant
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net6.0/zh-hans
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net6.0/zh-hant
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net6.0/pt-br
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net7.0/zh-hans
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net7.0/zh-hant
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net7.0/pt-br
 
 	default
 }
@@ -70,7 +70,4 @@ src_install() {
 	chmod +x MicrosoftSqlToolsCredentials || die
 	chmod +x SqlToolsResourceProviderService || die
 	chmod +x MicrosoftSqlToolsServiceLayer || die
-
-	# fix #1423,#1427 etc. on https://github.com/dotnet/SqlClient
-	cp runtimes/unix/lib/netcoreapp3.1/*.dll ./ || die
 }
