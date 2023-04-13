@@ -3,36 +3,21 @@
 
 EAPI=8
 
-inherit autotools git-r3 patches
+inherit meson git-r3
 
-DESCRIPTION="IIO accelerometer sensor to input device proxy"
-HOMEPAGE="https://github.com/hadess/iio-sensor-proxy"
-EGIT_REPO_URI="https://github.com/hadess/iio-sensor-proxy"
+DESCRIPTION="Proxies sensor devices (accelerometers, light sensors, compass) to applications through D-Bus"
+HOMEPAGE="https://gitlab.freedesktop.org/hadess/iio-sensor-proxy"
+EGIT_REPO_URI="https://gitlab.freedesktop.org/hadess/iio-sensor-proxy.git"
 
-LICENSE="Unlicense"
-# Unknown. There is no info about the license ATM.
+LICENSE="GPL-3"
 SLOT="0"
 
 RDEPEND="
 	sys-apps/systemd
 	dev-libs/libgudev
-	app-misc/geoclue:*
 "
 DEPEND="
 	${RDEPEND}
 "
 
 DOCS=( README.md )
-
-src_prepare() {
-	patches_src_prepare
-	eautoreconf
-}
-
-src_configure() {
-	local econfargs=(
-		--disable-Werror
-		--disable-gtk-tests
-	)
-	econf "${econfargs[@]}"
-}
