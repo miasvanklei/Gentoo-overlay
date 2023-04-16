@@ -152,6 +152,7 @@ BDEPEND="
 	virtual/pkgconfig
 	bootloader? (
 		app-crypt/sbsigntools
+		dev-python/pyelftools
 	)
 	test? (
 		app-text/tree
