@@ -1,0 +1,155 @@
+--- a/src/core/dbus.c	2023-04-16 15:43:18.663166308 +0200
++++ b/src/core/dbus.c	2023-04-16 15:42:11.769273874 +0200
+@@ -737,10 +737,6 @@
+                 return 0;
+         }
+ 
+-        r = bus_register_malloc_status(bus, "org.freedesktop.systemd1");
+-        if (r < 0)
+-                log_warning_errno(r, "Failed to register MemoryAllocation1, ignoring: %m");
+-
+         r = set_ensure_put(&m->private_buses, NULL, bus);
+         if (r == -ENOMEM) {
+                 log_oom();
+@@ -802,10 +798,6 @@
+         if (r < 0)
+                 return log_error_errno(r, "Failed to request name: %m");
+ 
+-        r = bus_register_malloc_status(bus, "org.freedesktop.systemd1");
+-        if (r < 0)
+-                log_warning_errno(r, "Failed to register MemoryAllocation1, ignoring: %m");
+-
+         log_debug("Successfully connected to API bus.");
+ 
+         return 0;
+--- a/src/libsystemd/sd-event/sd-event.c	2023-04-16 15:43:18.732167222 +0200
++++ b/src/libsystemd/sd-event/sd-event.c	2023-04-16 15:42:11.797274250 +0200
+@@ -1855,7 +1855,7 @@
+ }
+ 
+ int sd_event_trim_memory(void) {
+-        int r;
++        int r = 0;
+ 
+         /* A default implementation of a memory pressure callback. Simply releases our own allocation caches
+          * and glibc's. This is automatically used when people call sd_event_add_memory_pressure() with a
+@@ -1869,7 +1869,6 @@
+ 
+         usec_t before_timestamp = now(CLOCK_MONOTONIC);
+         hashmap_trim_pools();
+-        r = malloc_trim(0);
+         usec_t after_timestamp = now(CLOCK_MONOTONIC);
+ 
+         if (r > 0)
+--- a/src/shared/bus-util.c	2023-04-16 15:43:18.817168349 +0200
++++ b/src/shared/bus-util.c	2023-04-16 15:42:11.836274774 +0200
+@@ -609,62 +609,12 @@
+         return sd_bus_send(NULL, reply, NULL);
+ }
+ 
+-static int method_dump_memory_state_by_fd(sd_bus_message *message, void *userdata, sd_bus_error *ret_error) {
+-        _cleanup_free_ char *dump = NULL; /* keep this above dump_file, so that it's freed after */
+-        _cleanup_fclose_ FILE *dump_file = NULL;
+-        _cleanup_close_ int fd = -EBADF;
+-        size_t dump_size;
+-        int r;
+-
+-        assert(message);
+-
+-        dump_file = open_memstream(&dump, &dump_size);
+-        if (!dump_file)
+-                return -ENOMEM;
+-
+-        r = RET_NERRNO(malloc_info(/* options= */ 0, dump_file));
+-        if (r < 0)
+-                return r;
+-
+-        dump_file = safe_fclose(dump_file);
+-
+-        fd = acquire_data_fd(dump, dump_size, 0);
+-        if (fd < 0)
+-                return fd;
+-
+-        r = sd_bus_reply_method_return(message, "h", fd);
+-        if (r < 0)
+-                return r;
+-
+-        return 1; /* Stop further processing */
+-}
+-
+ /* The default install callback will fail and disconnect the bus if it cannot register the match, but this
+  * is only a debug method, we definitely don't want to fail in case there's some permission issue. */
+ static int dummy_install_callback(sd_bus_message *message, void *userdata, sd_bus_error *ret_error) {
+         return 1;
+ }
+ 
+-int bus_register_malloc_status(sd_bus *bus, const char *destination) {
+-        const char *match;
+-        int r;
+-
+-        assert(bus);
+-        assert(!isempty(destination));
+-
+-        match = strjoina("type='method_call',"
+-                         "interface='org.freedesktop.MemoryAllocation1',"
+-                         "path='/org/freedesktop/MemoryAllocation1',"
+-                         "destination='", destination, "',",
+-                         "member='GetMallocInfo'");
+-
+-        r = sd_bus_add_match_async(bus, NULL, match, method_dump_memory_state_by_fd, dummy_install_callback, NULL);
+-        if (r < 0)
+-                return log_debug_errno(r, "Failed to subscribe to GetMallocInfo() calls on MemoryAllocation1 interface: %m");
+-
+-        return 0;
+-}
+-
+ static void bus_message_unref_wrapper(void *m) {
+         sd_bus_message_unref(m);
+ }
+--- a/src/shared/bus-util.h	2023-04-16 15:43:18.817168349 +0200
++++ b/src/shared/bus-util.h	2023-04-16 15:42:11.836274774 +0200
+@@ -64,7 +64,4 @@
+ 
+ int bus_reply_pair_array(sd_bus_message *m, char **l);
+ 
+-/* Listen to GetMallocInfo() calls to 'destination' and return malloc_info() via FD */
+-int bus_register_malloc_status(sd_bus *bus, const char *destination);
+-
+ extern const struct hash_ops bus_message_hash_ops;
+--- a/src/shared/common-signal.c	2023-04-16 15:43:18.819168375 +0200
++++ b/src/shared/common-signal.c	2023-04-16 15:42:11.838274801 +0200
+@@ -56,34 +56,6 @@
+                 sd_event_trim_memory();
+                 break;
+ 
+-        case COMMON_SIGNAL_COMMAND_MALLOC_INFO: {
+-                _cleanup_free_ char *data = NULL;
+-                _cleanup_fclose_ FILE *f = NULL;
+-                size_t sz;
+-
+-                f = open_memstream_unlocked(&data, &sz);
+-                if (!f) {
+-                        log_oom();
+-                        break;
+-                }
+-
+-                if (malloc_info(0, f) < 0) {
+-                        log_error_errno(errno, "Failed to invoke malloc_info(): %m");
+-                        break;
+-                }
+-
+-                fputc(0, f);
+-
+-                r = fflush_and_check(f);
+-                if (r < 0) {
+-                        log_error_errno(r, "Failed to flush malloc_info() buffer: %m");
+-                        break;
+-                }
+-
+-                log_dump(LOG_INFO, data);
+-                break;
+-        }
+-
+         default:
+                 log_notice("Received control signal %s with unknown command 0x%08x, ignoring.",
+                            signal_to_string(si->ssi_signo), (unsigned) si->ssi_int);
