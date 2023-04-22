@@ -14,7 +14,7 @@ S=${WORKDIR}
 
 src_install()
 {
-	insinto /etc/kernel/postinst.d
-	doins ${FILESDIR}/sign-kernel.sh
+	exeinto /etc/kernel/postinst.d
+	doexe ${FILESDIR}/sign-kernel.sh
 }
 
