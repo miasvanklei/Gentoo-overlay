@@ -47,7 +47,7 @@ create_systemd_boot_config()
 	local default_kernel_version=${kernels[0]#*-}
 
 	cat <<- _EOF_ > ${S}/loader.conf
-		default gentoo-${default_kernel_version%.*}.conf
+		default gentoo-${default_kernel_version%.old*}.conf
 	_EOF_
 
 	create_systemd_boot_entries
