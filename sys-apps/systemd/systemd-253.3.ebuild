@@ -23,7 +23,7 @@ else
 	MY_P=${MY_PN}-${MY_PV}
 	S=${WORKDIR}/${MY_P}
 	SRC_URI="https://github.com/systemd/${MY_PN}/archive/v${MY_PV}/${MY_P}.tar.gz"
-	KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	KEYWORDS="~alpha amd64 arm arm64 hppa ~ia64 ~loong ~m68k ~mips ppc ppc64 ~riscv ~s390 sparc x86"
 fi
 
 inherit bash-completion-r1 linux-info meson-multilib pam
@@ -35,8 +35,8 @@ HOMEPAGE="http://systemd.io/"
 LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
 IUSE="
-	acl apparmor audit +bootloader cgroup-hybrid cryptsetup curl +dns-over-tls elfutils
-	fido2 +gcrypt gnutls homed http idn importd iptables +kmod
+	acl apparmor audit cgroup-hybrid cryptsetup curl +dns-over-tls elfutils
+	fido2 +gcrypt gnuefi gnutls homed http idn importd iptables +kmod
 	+lz4 lzma +openssl pam pcre pkcs11 policykit pwquality qrcode
 	+resolvconf +seccomp selinux split-usr +sysv-utils test tpm vanilla xkb +zstd
 "
@@ -90,6 +90,7 @@ COMMON_DEPEND="
 # Newer linux-headers needed by ia64, bug #480218
 DEPEND="${COMMON_DEPEND}
 	>=sys-kernel/linux-headers-${MINKV}
+	gnuefi? ( >=sys-boot/gnu-efi-3.0.2 )
 "
 
 # baselayout-2.2 has /run
@@ -150,10 +151,6 @@ BDEPEND="
 	>=sys-apps/coreutils-8.16
 	sys-devel/gettext
 	virtual/pkgconfig
-	bootloader? (
-		app-crypt/sbsigntools
-		dev-python/pyelftools
-	)
 	test? (
 		app-text/tree
 		dev-lang/perl
@@ -235,13 +232,13 @@ src_unpack() {
 
 src_prepare() {
 	local PATCHES=(
+		"${FILESDIR}/systemd-253-initrd-generators.patch"
 	)
 
 	if ! use vanilla; then
 		PATCHES+=(
 			"${FILESDIR}/gentoo-generator-path-r2.patch"
 			"${FILESDIR}/gentoo-journald-audit-r1.patch"
-			"${FILESDIR}/systemd-254-revert-private-users-default.patch"
 		)
 	fi
 
@@ -283,15 +280,16 @@ multilib_src_configure() {
 		$(meson_native_use_bool acl)
 		$(meson_native_use_bool apparmor)
 		$(meson_native_use_bool audit)
-		$(meson_native_use_bool bootloader)
 		$(meson_native_use_bool cryptsetup libcryptsetup)
 		$(meson_native_use_bool curl libcurl)
 		$(meson_native_use_bool dns-over-tls dns-over-tls)
 		$(meson_native_use_bool elfutils)
 		$(meson_native_use_bool fido2 libfido2)
 		$(meson_use gcrypt)
-		$(meson_native_use_bool bootloader efi)
+		$(meson_native_use_bool gnuefi gnu-efi)
 		$(meson_native_use_bool gnutls)
+		-Defi-includedir="${ESYSROOT}/usr/include/efi"
+		-Defi-libdir="${ESYSROOT}/usr/$(get_libdir)"
 		$(meson_native_use_bool homed)
 		$(meson_native_use_bool http microhttpd)
 		$(meson_native_use_bool idn)
@@ -343,6 +341,7 @@ multilib_src_configure() {
 		-Dlibidn=false
 		-Dlibidn2=false
 		-Dgshadow=false
+		-Defi=false
 		-Dnss-myhostname=false
 		-Dnss-mymachines=false
 		-Dnss-resolve=false
@@ -414,11 +413,6 @@ multilib_src_install_all() {
 		# Avoid breaking boot/reboot
 		dosym ../../../lib/systemd/systemd /usr/lib/systemd/systemd
 		dosym ../../../lib/systemd/systemd-shutdown /usr/lib/systemd/systemd-shutdown
-	fi
-
-	if use bootloader; then
-		local efi_boot_file="${ED}/usr/lib/systemd/boot/efi/systemd-bootx64.efi"
-		sbsign --key /etc/keys/MOK.key --cert /etc/keys/MOK.crt --output ${efi_boot_file} ${efi_boot_file} || die
 	fi
 
 	gen_usr_ldscript -a systemd udev
