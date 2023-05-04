@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit cmake
+inherit cmake gnome2-utils
 
 DESCRIPTION="Qt library and IM module for fcitx5"
 HOMEPAGE="https://fcitx-im.org"
@@ -12,13 +12,14 @@ SRC_URI="https://download.fcitx-im.org/fcitx5/${PN}/${P}.tar.xz"
 LICENSE="BSD-1 GPL-2+ LGPL-2+ MIT"
 KEYWORDS="~amd64"
 SLOT="5"
-IUSE="gtk2 gtk3 introspection"
+IUSE="gtk2 gtk3 gtk4 introspection"
 
 RDEPEND="app-i18n/fcitx5
 	x11-libs/libxkbcommon
 	x11-libs/libX11
 	gtk2? ( x11-libs/gtk+:2 )
 	gtk3? ( x11-libs/gtk+:3 )
+	gtk4? ( gui-libs/gtk:4 )
 	introspection? ( dev-libs/gobject-introspection )
 "
 
@@ -38,7 +39,7 @@ src_configure() {
 		-DCMAKE_BUILD_TYPE=Release
 		-DENABLE_GTK2_IM_MODULE=$(usex gtk2)
 		-DENABLE_GTK3_IM_MODULE=$(usex gtk3)
-		-DENABLE_GTK4_IM_MODULE=OFF
+		-DENABLE_GTK4_IM_MODULE=$(usex gtk4)
 		-DENABLE_SNOOPER=OFF
 		-DENABLE_GIR=$(usex introspection)
 	)
