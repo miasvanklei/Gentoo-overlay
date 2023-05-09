@@ -5,7 +5,7 @@ EAPI="7"
 
 inherit cmake
 
-RUNTIME_PV="7.0.0"
+RUNTIME_PV="7.0.5"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
@@ -19,8 +19,8 @@ RESTRICT="network-sandbox"
 
 RDEPEND="
 	dev-dotnet/diagnostics
-	virtual/dotnet-core
-"
+	virtual/dotnet-core"
+
 DEPEND="${RDEPEND}"
 
 S="${WORKDIR}/${P/_p/-}"
@@ -51,5 +51,7 @@ src_configure() {
 src_install() {
 	cmake_src_install
 
-	dosym "${D}${INSTALL_PATH}/netcoredbg" "/usr/bin/netcoredbg"
+	dosym "${INSTALL_PATH}/netcoredbg" "/usr/bin/netcoredbg"
+	echo '/usr/bin/netcoredbg --interpreter=vscode "$@"' > "${D}"/usr/bin/vsdbg-ui
+	fperms +x /usr/bin/vsdbg-ui
 }
