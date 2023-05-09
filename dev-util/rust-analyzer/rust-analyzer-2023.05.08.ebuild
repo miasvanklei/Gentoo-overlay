@@ -8,7 +8,7 @@ EAPI=8
 CRATES="
 	addr2line-0.19.0
 	adler-1.0.2
-	always-assert-0.1.2
+	always-assert-0.1.3
 	anyhow-1.0.70
 	anymap-1.0.0-beta.2
 	arbitrary-1.3.0
@@ -17,10 +17,11 @@ CRATES="
 	autocfg-1.1.0
 	backtrace-0.3.67
 	bitflags-1.3.2
+	bitflags-2.1.0
 	byteorder-1.4.3
 	camino-1.1.4
 	cargo-platform-0.1.2
-	cargo_metadata-0.15.3
+	cargo_metadata-0.15.4
 	cc-1.0.79
 	cfg-if-1.0.0
 	chalk-derive-0.89.0
@@ -31,7 +32,7 @@ CRATES="
 	countme-3.0.1
 	cov-mark-2.0.0-pre.1
 	crc32fast-1.3.2
-	crossbeam-channel-0.5.7
+	crossbeam-channel-0.5.8
 	crossbeam-deque-0.8.3
 	crossbeam-epoch-0.9.14
 	crossbeam-utils-0.8.15
@@ -68,9 +69,9 @@ CRATES="
 	kqueue-1.0.7
 	kqueue-sys-1.0.3
 	lazy_static-1.4.0
-	libc-0.2.140
+	libc-0.2.141
 	libloading-0.7.4
-	libmimalloc-sys-0.1.30
+	libmimalloc-sys-0.1.32
 	lock_api-0.4.9
 	log-0.4.17
 	lsp-types-0.94.0
@@ -78,11 +79,12 @@ CRATES="
 	memchr-2.5.0
 	memmap2-0.5.10
 	memoffset-0.8.0
-	mimalloc-0.1.34
+	mimalloc-0.1.36
 	miniz_oxide-0.6.2
 	mio-0.8.5
 	miow-0.5.0
 	nix-0.26.2
+        nohash-hasher-0.2.0
 	notify-5.1.0
 	nu-ansi-term-0.46.0
 	num_cpus-1.15.0
@@ -100,7 +102,7 @@ CRATES="
 	perf-event-open-sys-1.0.1
 	petgraph-0.5.1
 	pin-project-lite-0.2.9
-	proc-macro2-1.0.53
+	proc-macro2-1.0.56
 	protobuf-3.1.0
 	protobuf-support-3.1.0
 	pulldown-cmark-0.9.2
@@ -126,11 +128,11 @@ CRATES="
 	semver-1.0.17
 	serde-1.0.156
 	serde_derive-1.0.156
-	serde_json-1.0.94
+	serde_json-1.0.96
 	serde_repr-0.1.11
 	sharded-slab-0.1.4
 	smallvec-1.10.0
-	smol_str-0.1.24
+	smol_str-0.2.0
 	snap-1.1.0
 	static_assertions-1.1.0
 	syn-1.0.109
@@ -153,6 +155,7 @@ CRATES="
 	tracing-log-0.1.3
 	tracing-subscriber-0.3.16
 	tracing-tree-0.2.2
+	triomphe-0.1.8
 	typed-arena-2.0.2
 	ungrammar-1.16.1
 	unicase-2.6.0
