@@ -18,6 +18,10 @@ IUSE=""
 DEPEND="sys-libs/musl"
 RDEPEND="${DEPEND}"
 
+PATCHES=(
+	"${FILESDIR}/update-m4-macros.patch"
+)
+
 src_compile() {
 	emake LIBINTL=MUSL prefix=/usr
 }
