@@ -1,9 +1,9 @@
 # Copyright 2021-2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="7"
+EAPI="8"
 
-DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
+DESCRIPTION="The .NET Core SDK"
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 
@@ -18,28 +18,27 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
 RDEPEND=""
-DEPEND="${RDEPEND}"
+DEPEND="${RDEPEND}
+	dev-dotnet/dotnet-runtime
+"
 
 S="${WORKDIR}"
 
-src_prepare() {
-        rm "${S}/sdk/${PV}/AppHostTemplate/apphost" || die
-
-        default
-}
-
-change_version() {
-        pushd $1 >/dev/null || die
-        mv $2 current || die
-        popd >/dev/null || die
-}
-
 src_install() {
-        local dest_core="usr/share/dotnet"
-        local dest="${D}/${dest_core}"
+	if use arm64; then
+		DARCH=arm64
+	elif use amd64; then
+		DARCH=x64
+	fi
 
-        mkdir -p "${dest}" || die
-        cp -rpP "${S}"/sdk ${dest} || die
-        cp -rpP "${S}"/sdk-manifests ${dest} || die
-        cp -rpP "${S}"/templates ${dest} || die
+	local dest="/usr/share/dotnet"
+	local target="linux-musl-${DARCH}"
+	local runtime_pack="packs/Microsoft.NETCore.App.Host.${target}/current/runtimes/${target}/native"
+
+	dodir "${dest}"
+	insinto "${dest}"
+	doins -r "${S}"/sdk "${S}"/sdk-manifests "${S}"/templates
+
+	# link apphost
+	dosym "${dest}/${runtime_pack}/apphost" "${dest}/sdk/${PV}/AppHostTemplate/apphost"
 }
