@@ -1,0 +1,60 @@
+--- a/src/portable/portable.c	2022-05-21 15:23:41.000000000 +0200
++++ b/src/portable/portable.c	2022-05-22 20:45:04.363500648 +0200
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
++#include <sys/file.h>
+ #include <linux/loop.h>
+ 
+ #include "bus-common-errors.h" 
+--- a/src/basic/user-util.c	2023-04-16 15:43:18.640166003 +0200
++++ b/src/basic/user-util.c	2023-04-16 15:42:11.756273699 +0200
+@@ -6,6 +6,7 @@
+ #include <stdint.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <sys/file.h>
+ #include <sys/stat.h>
+ #include <unistd.h>
+ #include <utmp.h>
+--- a/src/firstboot/firstboot.c	2023-04-16 15:43:18.687166626 +0200
++++ b/src/firstboot/firstboot.c	2023-04-16 15:42:11.778273995 +0200
+@@ -2,6 +2,7 @@
+ 
+ #include <fcntl.h>
+ #include <getopt.h>
++#include <sys/file.h>
+ #include <linux/loop.h>
+ #include <unistd.h>
+ 
+--- a/src/test/test-fs-util.c	2023-04-16 15:43:18.875169117 +0200
++++ b/src/test/test-fs-util.c	2023-04-16 15:42:11.884275419 +0200
+@@ -1,6 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <unistd.h>
++#include <sys/file.h>
+ 
+ #include "alloc-util.h"
+ #include "copy.h"
+--- a/src/test/test-lock-util.c	2023-04-16 15:43:18.879169170 +0200
++++ b/src/test/test-lock-util.c	2023-04-16 15:42:11.886275446 +0200
+@@ -1,6 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <unistd.h>
++#include <sys/file.h>
+ 
+ #include "fd-util.h"
+ #include "lock-util.h"
+--- a/src/basic/missing_fs.h	2023-05-03 23:13:50.104931727 +0200
++++ b/src/basic/missing_fs.h	2023-05-03 23:15:43.374638653 +0200
+@@ -1,6 +1,8 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ #pragma once
+ 
++#include <linux/types.h>
++
+ /* linux/fs.h */
+ #ifndef RENAME_NOREPLACE /* 0a7c3937a1f23f8cb5fc77ae01661e9968a51d0c (3.15) */
+ #define RENAME_NOREPLACE (1 << 0)
