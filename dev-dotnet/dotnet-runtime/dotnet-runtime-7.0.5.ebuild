@@ -81,7 +81,8 @@ pkg_setup() {
 }
 
 src_prepare() {
-	eapply "${FILESDIR}"/musl-build.patch
+	eapply "${FILESDIR}"/musl-lfs64.patch
+	eapply "${FILESDIR}"/fix-debugging.patch
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
 
 	default
