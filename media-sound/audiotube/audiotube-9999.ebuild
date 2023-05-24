@@ -9,8 +9,8 @@ KFMIN=5.101.0
 QTMIN=5.15.5
 inherit ecm gear.kde.org
 
-DESCRIPTION="Simple music player by KDE"
-#HOMEPAGE="https://elisa.kde.org/ https://apps.kde.org/elisa/"
+DESCRIPTION="Client for YouTube Music"
+HOMEPAGE="https://apps.kde.org/audiotube/"
 
 LICENSE="LGPL-3+"
 SLOT="5"
