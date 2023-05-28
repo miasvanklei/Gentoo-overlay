@@ -5,11 +5,10 @@ EAPI=8
 
 PYTHON_COMPAT=( python3_{11..12} )
 
-inherit distutils-r1
+inherit distutils-r1 pypi
 
 DESCRIPTION="Smart Automatic Cover Art Downloader"
 HOMEPAGE="https://github.com/desbma/sacad https://pypi.org/project/sacad/"
-SRC_URI="mirror://pypi/${P:0:1}/${PN}/${P}.tar.gz"
 
 LICENSE="Apache-2.0"
 SLOT="0"
