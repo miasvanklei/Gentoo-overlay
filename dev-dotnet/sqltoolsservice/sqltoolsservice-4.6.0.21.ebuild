@@ -1,7 +1,7 @@
 # Copyright 2021-2023 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-EAPI="7"
+EAPI=8
 
 DESCRIPTION="SQL Tools API service that provides SQL Server data management capabilities."
 HOMEPAGE="https://github.com/microsoft/sqltoolsservice"
