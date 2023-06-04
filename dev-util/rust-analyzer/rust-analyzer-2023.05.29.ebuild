@@ -84,7 +84,7 @@ CRATES="
 	mio-0.8.5
 	miow-0.5.0
 	nix-0.26.2
-        nohash-hasher-0.2.0
+	nohash-hasher-0.2.0
 	notify-5.1.0
 	nu-ansi-term-0.46.0
 	num_cpus-1.15.0
@@ -108,6 +108,7 @@ CRATES="
 	pulldown-cmark-0.9.2
 	pulldown-cmark-to-cmark-10.0.4
 	quote-1.0.26
+	ra-ap-rustc_lexer-0.1.0
 	rayon-1.7.0
 	rayon-core-1.11.0
 	redox_syscall-0.2.16
@@ -115,7 +116,6 @@ CRATES="
 	regex-automata-0.1.10
 	regex-syntax-0.6.29
 	rowan-0.15.11
-	rustc-ap-rustc_lexer-727.0.0
 	rustc-demangle-0.1.22
 	rustc-hash-1.1.0
 	ryu-1.0.13
@@ -158,6 +158,11 @@ CRATES="
 	triomphe-0.1.8
 	typed-arena-2.0.2
 	ungrammar-1.16.1
+	unic-char-property-0.9.0
+	unic-char-range-0.9.0
+	unic-common-0.9.0
+	unic-emoji-char-0.9.0
+	unic-ucd-version-0.9.0
 	unicase-2.6.0
 	unicode-bidi-0.3.13
 	unicode-ident-1.0.8
