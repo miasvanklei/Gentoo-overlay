@@ -43,28 +43,31 @@
          if (r > 0)
 --- a/src/shared/bus-util.c	2023-04-16 15:43:18.817168349 +0200
 +++ b/src/shared/bus-util.c	2023-04-16 15:42:11.836274774 +0200
-@@ -609,62 +609,12 @@
+@@ -610,65 +610,12 @@
          return sd_bus_send(NULL, reply, NULL);
  }
  
 -static int method_dump_memory_state_by_fd(sd_bus_message *message, void *userdata, sd_bus_error *ret_error) {
--        _cleanup_free_ char *dump = NULL; /* keep this above dump_file, so that it's freed after */
--        _cleanup_fclose_ FILE *dump_file = NULL;
+-        _cleanup_(memstream_done) MemStream m = {};
+-        _cleanup_free_ char *dump = NULL;
 -        _cleanup_close_ int fd = -EBADF;
 -        size_t dump_size;
+-        FILE *f;
 -        int r;
 -
 -        assert(message);
 -
--        dump_file = open_memstream(&dump, &dump_size);
--        if (!dump_file)
+-        f = memstream_init(&m);
+-        if (!f)
 -                return -ENOMEM;
 -
--        r = RET_NERRNO(malloc_info(/* options= */ 0, dump_file));
+-        r = RET_NERRNO(malloc_info(/* options= */ 0, f));
 -        if (r < 0)
 -                return r;
 -
--        dump_file = safe_fclose(dump_file);
+-        r = memstream_finalize(&m, &dump, &dump_size);
+-        if (r < 0)
+-                return r;
 -
 -        fd = acquire_data_fd(dump, dump_size, 0);
 -        if (fd < 0)
@@ -118,16 +121,15 @@
  extern const struct hash_ops bus_message_hash_ops;
 --- a/src/shared/common-signal.c	2023-04-16 15:43:18.819168375 +0200
 +++ b/src/shared/common-signal.c	2023-04-16 15:42:11.838274801 +0200
-@@ -56,34 +56,6 @@
+@@ -56,25 +56,6 @@
                  sd_event_trim_memory();
                  break;
  
 -        case COMMON_SIGNAL_COMMAND_MALLOC_INFO: {
--                _cleanup_free_ char *data = NULL;
--                _cleanup_fclose_ FILE *f = NULL;
--                size_t sz;
+-                _cleanup_(memstream_done) MemStream m = {};
+-                FILE *f;
 -
--                f = open_memstream_unlocked(&data, &sz);
+-                f = memstream_init(&m);
 -                if (!f) {
 -                        log_oom();
 -                        break;
@@ -138,15 +140,7 @@
 -                        break;
 -                }
 -
--                fputc(0, f);
--
--                r = fflush_and_check(f);
--                if (r < 0) {
--                        log_error_errno(r, "Failed to flush malloc_info() buffer: %m");
--                        break;
--                }
--
--                log_dump(LOG_INFO, data);
+-                (void) memstream_dump(LOG_INFO, &m);
 -                break;
 -        }
 -
