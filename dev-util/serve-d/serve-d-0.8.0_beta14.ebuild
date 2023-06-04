@@ -5,15 +5,16 @@ EAPI=8
 
 DESCRIPTION="Microsoft language server protocol implementation for D using workspace-d"
 HOMEPAGE="https://github.com/Pure-D/serve-d"
-LICENSE="MIT"
 
+MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
+SRC_URI="https://github.com/Pure-D/serve-d/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
+
+LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~x86 ~arm"
+KEYWORDS="~amd64"
 IUSE=""
-MY_PV="${PV/_rc1/-rc.1}"
 RESTRICT="network-sandbox"
 
-SRC_URI="https://github.com/Pure-D/serve-d/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 DEPEND="
 	dev-util/d-tools
