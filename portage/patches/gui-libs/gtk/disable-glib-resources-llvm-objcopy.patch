@@ -1,0 +1,17 @@
+--- a/gtk/meson.build	2023-06-05 17:27:22.000000000 +0200
++++ b/gtk/meson.build	2023-06-10 17:33:00.779722851 +0200
+@@ -787,12 +787,13 @@
+ objcopy_supports_add_symbol = false
+ objcopy = find_program('objcopy', required : false)
+ if objcopy.found()
++  objcopy_is_llvm_objcopy = run_command(objcopy, '--help', check: false).stdout().contains('llvm-objcopy')
+   objcopy_supports_add_symbol = run_command(objcopy, '--help', check: false).stdout().contains('--add-symbol')
+ endif
+ 
+ ld = find_program('ld', required : false)
+ 
+-if not meson.is_cross_build() and build_machine.cpu_family() == 'x86_64' and build_machine.system() == 'linux' and objcopy.found() and objcopy_supports_add_symbol and ld.found()
++if not meson.is_cross_build() and build_machine.cpu_family() == 'x86_64' and build_machine.system() == 'linux' and objcopy.found() and not objcopy_is_llvm_objcopy and objcopy_supports_add_symbol and ld.found()
+   glib_compile_resources = find_program('glib-compile-resources')
+ 
+   # Create the resource blob
