@@ -16,7 +16,7 @@ NAN_V=2.14.0
 NODE_ADDON_API_V=3.1.0
 NATIVE_WATCHDOG_V=1.4.1
 NODE_PTY_V=0.11.0-beta32
-VSCODE_SPDLOG_V=0.13.9
+VSCODE_SPDLOG_V=0.13.10
 ARGON2_V=0.30.3
 PARCEL_WATCHER_V=2.1.0
 KEYTAR_V=7.9.0
@@ -50,7 +50,6 @@ IUSE=""
 DEPEND=""
 RDEPEND="
 	${DEPEND}
-	app-crypt/node-rs_argon2
 	>=net-libs/nodejs-16.14.2:0/16[ssl]
 	sys-apps/ripgrep
 	app-crypt/libsecret
