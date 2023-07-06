@@ -9,14 +9,19 @@ HOMEPAGE="https://kde.org/applications/graphics/"
 LICENSE="metapackage"
 SLOT="5"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="scanner"
+IUSE="+color-management scanner"
 
 RDEPEND="
-	>=kde-apps/svgpart-${PV}:${SLOT}
 	>=kde-apps/gwenview-${PV}:${SLOT}
 	>=kde-apps/kolourpaint-${PV}:${SLOT}
 	>=kde-apps/okular-${PV}:${SLOT}
 	>=kde-apps/spectacle-${PV}:${SLOT}
+	>=kde-apps/svgpart-${PV}:${SLOT}
 	>=kde-apps/thumbnailers-${PV}:${SLOT}
-	scanner? ( >=kde-apps/libksane-${PV}:${SLOT} )
+        color-management? ( >=kde-misc/colord-kde-${PV}:${SLOT} )
+        scanner? (
+                >=kde-apps/libksane-${PV}:${SLOT}
+                >=kde-misc/skanlite-${PV}:${SLOT}
+                >=media-gfx/skanpage-${PV}:${SLOT}
+        )
 "
