@@ -1258,22 +1258,35 @@ index 267cd06b54a019..5de2c071fcf8de 100644
  			       (clk_gate_flags), (lock))
  /**
   * devm_clk_hw_register_gate - register a gate clock with the clock framework
-@@ -604,8 +626,14 @@ struct clk *clk_register_gate(struct device *dev, const char *name,
+@@ -628,8 +628,9 @@
  #define devm_clk_hw_register_gate(dev, name, parent_name, flags, reg, bit_idx,\
  				  clk_gate_flags, lock)			      \
  	__devm_clk_hw_register_gate((dev), NULL, (name), (parent_name), NULL, \
 -			       NULL, (flags), (reg), (bit_idx),		      \
 +			       NULL, (flags), NULL, 0, (reg), (bit_idx),      \
  			       (clk_gate_flags), (lock))
-+#define devm_clk_hw_register_regmap_gate(dev, name, parent_name, flags,	      \
-+					 regmap, regmap_offs, bit_idx,	      \
-+					 clk_gate_flags)		      \
-+	__devm_clk_hw_register_gate((dev), NULL, (name), (parent_name), NULL, \
-+			       NULL, (flags), (regmap), (regmap_offs), NULL,  \
-+			       (bit_idx), (clk_gate_flags), NULL)
++
+ /**
+  * devm_clk_hw_register_gate_parent_data - register a gate clock with the
+  * clock framework
+@@ -646,8 +647,15 @@
+ 					      reg, bit_idx, clk_gate_flags,   \
+ 					      lock)			      \
+ 	__devm_clk_hw_register_gate((dev), NULL, (name), NULL, NULL,	      \
+-				    (parent_data), (flags), (reg), (bit_idx), \
+-				    (clk_gate_flags), (lock))
++				    (parent_data), (flags), NULL, 0, (reg),   \
++				    (bit_idx), (clk_gate_flags), (lock))
++
++#define devm_clk_hw_register_regmap_gate(dev, name, parent_name, flags,      \
++					regmap, regmap_offs, bit_idx,        \
++					clk_gate_flags)			     \
++       __devm_clk_hw_register_gate((dev), NULL, (name), (parent_name), NULL, \
++				NULL, (flags), (regmap), (regmap_offs), NULL,\
++				(bit_idx), (clk_gate_flags), NULL)
+ 
  void clk_unregister_gate(struct clk *clk);
  void clk_hw_unregister_gate(struct clk_hw *hw);
- int clk_gate_is_enabled(struct clk_hw *hw);
 diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
 index 7022e6286e6cb8..49b90c83b4850c 100644
 --- a/sound/soc/codecs/Kconfig
