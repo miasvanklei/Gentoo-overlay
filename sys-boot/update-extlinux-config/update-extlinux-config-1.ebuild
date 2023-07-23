@@ -22,25 +22,25 @@ pkg_preinst() {
 }
 
 add_extlinux_entry() {
-	local kernel_version=$1
-
 	cat <<- _EOF_ >> ${S}/extlinux.conf
 
 		LABEL Gentoo (${kernel})
 		        MENU LABEL Gentoo (${kernel})
 		        LINUX /${kernel}
 		        FDTDIR /dtbs/${kernel/#vmlinuz-}
-		        APPEND root=/dev/mmcblk0p2 ro
+		        APPEND ${boot_args}
 	_EOF_
 }
 
 add_extlinux_entries() {
 	local kernels=(/boot/vmlinuz-*)
+	local root_partuuid=$(findmnt -fn -o PARTUUID /)
+	local boot_args="root=PARTUUID=${root_partuuid} rootwait quiet loglevel=0 vt.global_cursor_default=0 ${EXTRA_BOOT_ARGS}"
 
 	for ((i=${#kernels[@]}-1; i>=0; i--)); do
 		local kernel_path=${kernels[$i]}
 		local kernel=$(basename ${kernel_path})
-		add_extlinux_entry ${kernel}
+		add_extlinux_entry ${kernel} ${boot_args}
 	done
 }
 
