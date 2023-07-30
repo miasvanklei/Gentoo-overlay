@@ -38,9 +38,9 @@ DEPEND=">=dev-util/cmake-2.8
 	${RDEPEND}"
 
 PATCHES=(
-	"${FILESDIR}"/llvm-16.patch
 	"${FILESDIR}"/musl-lfs64.patch
 	"${FILESDIR}"/llvmsymbolize-unavailable.patch
+	"${FILESDIR}"/llvm-17.patch
 )
 
 S="${WORKDIR}/ldc-${PV}-src"
@@ -50,6 +50,7 @@ src_configure() {
 		-DD_VERSION=2
 		-DBUILD_SHARED_LIBS=BOTH
 		-DLDC_DYNAMIC_COMPILE=False
+		-DLDC_WITH_LLD=OFF
 		-DD_FLAGS="${LDCFLAGS// /;}"
 		-DCMAKE_INSTALL_PREFIX=/usr/lib/ldc2/$(ver_cut 1-2)
 	)
