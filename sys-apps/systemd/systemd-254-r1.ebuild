@@ -246,6 +246,8 @@ src_prepare() {
 		PATCHES+=(
 			"${FILESDIR}/gentoo-generator-path-r2.patch"
 			"${FILESDIR}/gentoo-journald-audit-r1.patch"
+			"${FILESDIR}/systemd-254-dt_relr.patch"
+			"${FILESDIR}/systemd-254-varlink-allocate-heap.patch"
 		)
 	fi
 
@@ -412,9 +414,6 @@ multilib_src_install_all() {
 	keepdir /var/lib/systemd
 	keepdir /var/log/journal
 
-	# Symlink /etc/sysctl.conf for easy migration.
-	dosym ../../../etc/sysctl.conf /usr/lib/sysctl.d/99-sysctl.conf
-
 	if use pam; then
 		newpamd "${FILESDIR}"/systemd-user.pam systemd-user
 	fi
@@ -478,6 +477,11 @@ migrate_locale() {
 }
 
 pkg_preinst() {
+	if [[ -e ${EROOT}/etc/sysctl.conf ]]; then
+		# Symlink /etc/sysctl.conf for easy migration.
+		dosym ../../../etc/sysctl.conf /usr/lib/sysctl.d/99-sysctl.conf
+	fi
+
 	if ! use split-usr; then
 		local dir
 		for dir in bin sbin lib usr/sbin; do
