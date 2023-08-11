@@ -246,8 +246,6 @@ src_prepare() {
 		PATCHES+=(
 			"${FILESDIR}/gentoo-generator-path-r2.patch"
 			"${FILESDIR}/gentoo-journald-audit-r1.patch"
-			"${FILESDIR}/systemd-254-dt_relr.patch"
-			"${FILESDIR}/systemd-254-varlink-allocate-heap.patch"
 		)
 	fi
 
@@ -389,10 +387,6 @@ multilib_src_install_all() {
 		rm "${ED}${rootprefix}/${sbin}"/{halt,init,poweroff,reboot,shutdown} || die
 		rm "${ED}"/usr/share/man/man1/init.1 || die
 		rm "${ED}"/usr/share/man/man8/{halt,poweroff,reboot,shutdown}.8 || die
-	fi
-
-	if ! use resolvconf && ! use sysv-utils && use split-usr; then
-		rmdir "${ED}${rootprefix}"/sbin || die
 	fi
 
 	# https://bugs.gentoo.org/761763
