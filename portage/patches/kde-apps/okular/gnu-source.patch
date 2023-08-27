@@ -1,10 +1,16 @@
---- a/core/synctex/synctex_parser.c	2023-04-22 23:31:07.665173730 +0200
-+++ b/core/synctex/synctex_parser.c	2023-04-22 23:31:32.274478751 +0200
-@@ -69,6 +69,7 @@
- 
- #include <errno.h>
- #include <limits.h>
+diff --git a/core/synctex/synctex_parser.c b/core/synctex/synctex_parser.c
+index cc97ecc52e959bd5c9fcc679031c25a0d4c3bedc..4aedcba1e5609a614483416dd0e76b7ed752f536 100644
+--- a/core/synctex/synctex_parser.c
++++ b/core/synctex/synctex_parser.c
+@@ -55,6 +55,11 @@
+  *  First level objects are sheets and forms, containing boxes, glues, kerns...
+  *  The third tree allows to browse leaves according to tag and line.
+  */
++/* Declare _GNU_SOURCE for accessing vasprintf. For MSC compiler, vasprintf is
++ * defined in this file
++ */
 +#define _GNU_SOURCE
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
++
+ #if defined(SYNCTEX_USE_LOCAL_HEADER)
+ #include "synctex_parser_local.h"
+ #else
