@@ -79,7 +79,7 @@ CRATES="
 	line-index@0.1.0-pre.1
 	lock_api@0.4.10
 	log@0.4.19
-	lsp-server@0.7.1
+	lsp-server@0.7.4
 	lsp-types@0.94.0
 	memchr@2.5.0
 	memmap2@0.5.10
@@ -96,7 +96,7 @@ CRATES="
 	nu-ansi-term@0.46.0
 	num_cpus@1.15.0
 	object@0.30.4
-	object@0.31.1
+	object@0.32.0
 	once_cell@1.18.0
 	oorandom@11.1.3
 	overload@0.1.1
