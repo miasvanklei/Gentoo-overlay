@@ -1,5 +1,237 @@
---- a/dmd/globals.h	2023-07-23 21:15:47.000000000 +0200
-+++ b/dmd/globals.h	2023-07-29 22:34:33.935334578 +0200
+diff --color -ur b/dmd/expression.h b/dmd/expression.h
+--- a/dmd/expression.h	2023-08-26 13:27:47.000000000 +0200
++++ b/dmd/expression.h	2023-09-01 20:36:45.487758184 +0200
+@@ -141,7 +141,7 @@
+     Expression *ctfeInterpret();
+     int isConst();
+     virtual bool isIdentical(const Expression *e) const;
+-    virtual Optional<bool> toBool();
++    virtual std::optional<bool> toBool();
+     virtual bool hasCode()
+     {
+         return true;
+@@ -274,7 +274,7 @@
+     real_t toReal() override;
+     real_t toImaginary() override;
+     complex_t toComplex() override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     Expression *toLvalue(Scope *sc, Expression *e) override;
+     void accept(Visitor *v) override { v->visit(this); }
+     dinteger_t getInteger() { return value; }
+@@ -306,7 +306,7 @@
+     real_t toReal() override;
+     real_t toImaginary() override;
+     complex_t toComplex() override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     void accept(Visitor *v) override { v->visit(this); }
+ };
+ 
+@@ -324,7 +324,7 @@
+     real_t toReal() override;
+     real_t toImaginary() override;
+     complex_t toComplex() override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     void accept(Visitor *v) override { v->visit(this); }
+ };
+ 
+@@ -363,7 +363,7 @@
+     VarDeclaration *var;
+ 
+     ThisExp *syntaxCopy() override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     bool isLvalue() override final;
+     Expression *toLvalue(Scope *sc, Expression *e) override final;
+ 
+@@ -380,7 +380,7 @@
+ {
+ public:
+     bool equals(const RootObject * const o) const override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     StringExp *toStringExp() override;
+     void accept(Visitor *v) override { v->visit(this); }
+ };
+@@ -403,7 +403,7 @@
+     void setCodeUnit(d_size_t i, char32_t c);
+     StringExp *toStringExp() override;
+     StringExp *toUTF8(Scope *sc);
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     bool isLvalue() override;
+     Expression *toLvalue(Scope *sc, Expression *e) override;
+     Expression *modifiableLvalue(Scope *sc, Expression *e) override;
+@@ -461,7 +461,7 @@
+     bool equals(const RootObject * const o) const override;
+     Expression *getElement(d_size_t i); // use opIndex instead
+     Expression *opIndex(d_size_t i);
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     StringExp *toStringExp() override;
+ 
+     void accept(Visitor *v) override { v->visit(this); }
+@@ -476,7 +476,7 @@
+ 
+     bool equals(const RootObject * const o) const override;
+     AssocArrayLiteralExp *syntaxCopy() override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+ 
+     void accept(Visitor *v) override { v->visit(this); }
+ };
+@@ -620,7 +620,7 @@
+ public:
+     dinteger_t offset;
+ 
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+ 
+     void accept(Visitor *v) override { v->visit(this); }
+ };
+@@ -993,7 +993,7 @@
+     bool isLvalue() override;
+     Expression *toLvalue(Scope *sc, Expression *e) override;
+     Expression *modifiableLvalue(Scope *sc, Expression *e) override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+ 
+     void accept(Visitor *v) override { v->visit(this); }
+ };
+@@ -1064,7 +1064,7 @@
+     bool isLvalue() override;
+     Expression *toLvalue(Scope *sc, Expression *e) override;
+     Expression *modifiableLvalue(Scope *sc, Expression *e) override;
+-    Optional<bool> toBool() override;
++    std::optional<bool> toBool() override;
+     Expression *addDtorHook(Scope *sc) override;
+     void accept(Visitor *v) override { v->visit(this); }
+ 
+diff --color -ur b/dmd/frontend.h b/dmd/frontend.h
+--- a/dmd/frontend.h	2023-08-26 13:27:47.000000000 +0200
++++ b/dmd/frontend.h	2023-09-01 20:36:45.487758184 +0200
+@@ -954,7 +954,7 @@
+     T value;
+     bool present;
+     Optional(T value);
+-    static Optional<T > create(T val);
++    static std::optional<T > create(T val);
+     bool isPresent() const;
+     bool isEmpty() const;
+     T get();
+@@ -1005,7 +1005,7 @@
+     Expression* ctfeInterpret();
+     int32_t isConst();
+     virtual bool isIdentical(const Expression* const e) const;
+-    virtual Optional<bool > toBool();
++    virtual std::optional<bool > toBool();
+     virtual bool hasCode();
+     IntegerExp* isIntegerExp();
+     ErrorExp* isErrorExp();
+@@ -7032,7 +7032,7 @@
+     _d_real toReal() override;
+     _d_real toImaginary() override;
+     complex_t toComplex() override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     Expression* toLvalue(Scope* sc, Expression* e) override;
+     void accept(Visitor* v) override;
+     dinteger_t getInteger();
+@@ -7071,7 +7071,7 @@
+     _d_real toReal() override;
+     _d_real toImaginary() override;
+     complex_t toComplex() override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     void accept(Visitor* v) override;
+ };
+ 
+@@ -7088,7 +7088,7 @@
+     _d_real toReal() override;
+     _d_real toImaginary() override;
+     complex_t toComplex() override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     void accept(Visitor* v) override;
+ };
+ 
+@@ -7124,7 +7124,7 @@
+     VarDeclaration* var;
+     ThisExp(const Loc& loc, const EXP tok);
+     ThisExp* syntaxCopy() override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     bool isLvalue() final override;
+     Expression* toLvalue(Scope* sc, Expression* e) final override;
+     void accept(Visitor* v) override;
+@@ -7140,7 +7140,7 @@
+ {
+ public:
+     bool equals(const RootObject* const o) const override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     StringExp* toStringExp() override;
+     void accept(Visitor* v) override;
+ };
+@@ -7172,7 +7172,7 @@
+     StringExp* toStringExp() override;
+     StringExp* toUTF8(Scope* sc);
+     int32_t compare(const StringExp* const se2) const;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     bool isLvalue() override;
+     Expression* toLvalue(Scope* sc, Expression* e) override;
+     Expression* modifiableLvalue(Scope* sc, Expression* e) override;
+@@ -7203,7 +7203,7 @@
+     bool equals(const RootObject* const o) const override;
+     Expression* getElement(size_t i);
+     Expression* opIndex(size_t i);
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     StringExp* toStringExp() override;
+     void accept(Visitor* v) override;
+ };
+@@ -7216,7 +7216,7 @@
+     Array<Expression* >* values;
+     bool equals(const RootObject* const o) const override;
+     AssocArrayLiteralExp* syntaxCopy() override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     void accept(Visitor* v) override;
+ };
+ 
+@@ -7324,7 +7324,7 @@
+ {
+ public:
+     dinteger_t offset;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     void accept(Visitor* v) override;
+ };
+ 
+@@ -7648,7 +7648,7 @@
+     bool isLvalue() override;
+     Expression* toLvalue(Scope* sc, Expression* e) override;
+     Expression* modifiableLvalue(Scope* sc, Expression* e) override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     void accept(Visitor* v) override;
+ };
+ 
+@@ -7684,7 +7684,7 @@
+     bool isLvalue() override;
+     Expression* toLvalue(Scope* sc, Expression* e) override;
+     Expression* modifiableLvalue(Scope* sc, Expression* e) override;
+-    Optional<bool > toBool() override;
++    std::optional<bool > toBool() override;
+     Expression* addDtorHook(Scope* sc) override;
+     void accept(Visitor* v) override;
+     static void allow(Expression* exp);
+diff --color -ur b/dmd/globals.h b/dmd/globals.h
+--- a/dmd/globals.h	2023-08-26 13:27:47.000000000 +0200
++++ b/dmd/globals.h	2023-09-01 20:36:45.487758184 +0200
 @@ -17,7 +17,7 @@
  #include "compiler.h"
  
@@ -9,8 +241,21 @@
  
  enum OUTPUTFLAG
  {
---- a/driver/archiver.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/archiver.cpp	2023-07-29 22:34:33.969335029 +0200
+diff --color -ur b/dmd/root/optional.h b/dmd/root/optional.h
+--- a/dmd/root/optional.h	2023-08-26 13:27:47.000000000 +0200
++++ b/dmd/root/optional.h	2023-09-01 20:36:45.458757763 +0200
+@@ -29,7 +29,7 @@
+     Optional(T);
+ 
+     /** Creates an `Optional` with the given value **/
+-    static Optional<T> create(T);
++    static std::optional<T> create(T);
+ 
+     /** Checks whether this `Optional` contains a value **/
+     bool isPresent() const;
+diff --color -ur b/driver/archiver.cpp b/driver/archiver.cpp
+--- a/driver/archiver.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/archiver.cpp	2023-09-01 20:36:45.496758314 +0200
 @@ -14,7 +14,7 @@
  #include "driver/timetrace.h"
  #include "driver/tool.h"
@@ -20,21 +265,9 @@
  #include "llvm/Object/Archive.h"
  #include "llvm/Object/ArchiveWriter.h"
  #include "llvm/Object/MachO.h"
---- a/driver/args.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/args.cpp	2023-07-29 22:34:33.970335042 +0200
-@@ -175,9 +175,8 @@
-   }
- 
-   const std::vector<llvm::StringRef> argv = toRefsVector(fullArgs);
--  auto envVars = llvm::None;
- 
--  return llvm::sys::ExecuteAndWait(argv[0], argv, envVars, {}, 0, 0, errorMsg);
-+  return llvm::sys::ExecuteAndWait(argv[0], argv, {}, {}, 0, 0, errorMsg);
- }
- } // namespace args
- 
---- a/driver/cl_options-llvm.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/cl_options-llvm.cpp	2023-07-29 22:34:33.970335042 +0200
+diff --color -ur b/driver/cl_options-llvm.cpp b/driver/cl_options-llvm.cpp
+--- a/driver/cl_options-llvm.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/cl_options-llvm.cpp	2023-09-01 20:36:45.496758314 +0200
 @@ -10,7 +10,7 @@
  #include "driver/cl_options-llvm.h"
  
@@ -44,44 +277,46 @@
  #endif
  
  // Pull in command-line options and helper functions from special LLVM header
-@@ -46,7 +46,7 @@
- #endif
+@@ -31,11 +31,11 @@
+   return codegen::getMArch();
  }
  
 -Optional<Reloc::Model> getRelocModel() {
 +std::optional<Reloc::Model> getRelocModel() {
- #if LDC_LLVM_VER >= 1100
    return codegen::getExplicitRelocModel();
- #else
-@@ -54,7 +54,7 @@
- #endif
  }
  
 -Optional<CodeModel::Model> getCodeModel() {
 +std::optional<CodeModel::Model> getCodeModel() {
- #if LDC_LLVM_VER >= 1100
    return codegen::getExplicitCodeModel();
- #else
-@@ -68,7 +68,7 @@
+ }
+ 
+@@ -45,7 +45,7 @@
  using FPK = llvm::FramePointer::FP;
  #endif
  
 -llvm::Optional<FPK> framePointerUsage() {
 +std::optional<FPK> framePointerUsage() {
- #if LDC_LLVM_VER >= 1100
    // Defaults to `FP::None`; no way to check if set explicitly by user except
    // indirectly via setFunctionAttributes()...
-@@ -78,7 +78,7 @@
-     return ::FramePointerUsage.getValue();
-   if (disableFPElim.getNumOccurrences() > 0)
-     return disableFPElim ? llvm::FramePointer::All : llvm::FramePointer::None;
--  return llvm::None;
-+  return {};
- #endif
+   return codegen::getFramePointerUsage();
+@@ -93,11 +93,11 @@
+   return ::opts::InitTargetOptionsFromCodeGenFlags(llvm::Triple());
  }
  
---- a/driver/cl_options-llvm.h	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/cl_options-llvm.h	2023-07-29 22:34:33.970335042 +0200
+-Optional<Reloc::Model> getRelocModelFromCMModel() {
++std::optional<Reloc::Model> getRelocModelFromCMModel() {
+   return ::opts::getRelocModel();
+ }
+ 
+-Optional<CodeModel::Model> getCodeModelFromCMModel() {
++std::optional<CodeModel::Model> getCodeModelFromCMModel() {
+   return ::opts::getCodeModel();
+ }
+ 
+diff --color -ur b/driver/cl_options-llvm.h b/driver/cl_options-llvm.h
+--- a/driver/cl_options-llvm.h	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/cl_options-llvm.h	2023-09-01 20:36:45.496758314 +0200
 @@ -9,7 +9,6 @@
  
  #pragma once
@@ -107,8 +342,9 @@
  #endif
  
  bool disableRedZone();
---- a/driver/cl_options_instrumentation.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/cl_options_instrumentation.cpp	2023-07-29 22:34:33.969335029 +0200
+diff --color -ur b/driver/cl_options_instrumentation.cpp b/driver/cl_options_instrumentation.cpp
+--- a/driver/cl_options_instrumentation.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/cl_options_instrumentation.cpp	2023-09-01 20:36:45.496758314 +0200
 @@ -18,7 +18,7 @@
  #include "dmd/errors.h"
  #include "dmd/globals.h"
@@ -118,9 +354,10 @@
  
  namespace {
  namespace cl = llvm::cl;
---- a/driver/linker.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/linker.cpp	2023-07-29 22:34:33.970335042 +0200
-@@ -192,10 +192,10 @@
+diff --color -ur b/driver/linker.cpp b/driver/linker.cpp
+--- a/driver/linker.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/linker.cpp	2023-09-01 20:36:45.496758314 +0200
+@@ -192,7 +192,7 @@
  
  //////////////////////////////////////////////////////////////////////////////
  
@@ -128,33 +365,23 @@
 +std::optional<std::vector<std::string>> getExplicitPlatformLibs() {
    if (platformLib.getNumOccurrences() > 0)
      return parseLibNames(platformLib);
--  return llvm::None;
-+  return {};
- }
- 
- //////////////////////////////////////////////////////////////////////////////
---- a/driver/linker.h	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/linker.h	2023-07-29 22:34:33.970335042 +0200
-@@ -42,7 +42,7 @@
- /**
+ #if LDC_LLVM_VER < 1600
+diff --color -ur b/driver/linker.h b/driver/linker.h
+--- a/driver/linker.h	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/linker.h	2023-09-01 20:36:45.496758314 +0200
+@@ -43,7 +43,7 @@
   * Returns the -platformlib library names, if specified.
   */
+ #if LDC_LLVM_VER < 1600
 -llvm::Optional<std::vector<std::string>> getExplicitPlatformLibs();
 +std::optional<std::vector<std::string>> getExplicitPlatformLibs();
- 
- /**
-  * Returns the value of -mscrtlib.
---- a/driver/main.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/main.cpp	2023-07-29 22:34:33.970335042 +0200
-@@ -580,7 +580,6 @@
+ #else
+ std::optional<std::vector<std::string>> getExplicitPlatformLibs();
  #endif
-   initializeVectorization(Registry);
-   initializeInstCombine(Registry);
--  initializeAggressiveInstCombine(Registry);
-   initializeIPO(Registry);
- #if LDC_LLVM_VER < 1600
-   initializeInstrumentation(Registry);
-@@ -591,7 +590,6 @@
+diff --color -ur b/driver/main.cpp b/driver/main.cpp
+--- a/driver/main.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/main.cpp	2023-09-01 20:36:45.496758314 +0200
+@@ -593,7 +593,6 @@
    initializeTarget(Registry);
  
  // Initialize passes not included above
@@ -162,8 +389,9 @@
    initializeSjLjEHPreparePass(Registry);
  }
  
---- a/driver/targetmachine.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/targetmachine.cpp	2023-07-29 22:34:33.970335042 +0200
+diff --color -ur b/driver/targetmachine.cpp b/driver/targetmachine.cpp
+--- a/driver/targetmachine.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/targetmachine.cpp	2023-09-01 20:36:45.496758314 +0200
 @@ -20,13 +20,12 @@
  #include "gen/logger.h"
  #include "llvm/ADT/StringExtras.h"
@@ -192,16 +420,7 @@
  #endif
  
  #include "gen/optimizer.h"
-@@ -203,7 +202,7 @@
- }
- 
- static std::string getAArch64TargetCPU(const llvm::Triple &triple) {
--  auto defaultCPU = llvm::AArch64::getDefaultCPU(triple.getArchName());
-+  auto defaultCPU = llvm::ARM::getDefaultCPU(triple.getArchName());
-   if (!defaultCPU.empty())
-     return std::string(defaultCPU);
- 
-@@ -364,8 +363,8 @@
+@@ -383,8 +382,8 @@
                      std::string cpu, const std::string featuresString,
                      const ExplicitBitness::Type bitness,
                      FloatABI::Type &floatABI,
@@ -212,7 +431,7 @@
                      const llvm::CodeGenOpt::Level codeGenOptLevel,
                      const bool noLinkerStripDead) {
    // Determine target triple. If the user didn't explicitly specify one, use
-@@ -521,7 +520,6 @@
+@@ -550,7 +549,6 @@
    // LLVM fork. LLVM 7+ enables regular emutls by default; prevent that.
    if (triple.getEnvironment() == llvm::Triple::Android) {
      targetOptions.EmulatedTLS = false;
@@ -220,17 +439,18 @@
    }
  
    const std::string finalFeaturesString =
---- a/driver/targetmachine.h	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/targetmachine.h	2023-07-29 22:34:33.970335042 +0200
+diff --color -ur b/driver/targetmachine.h b/driver/targetmachine.h
+--- a/driver/targetmachine.h	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/targetmachine.h	2023-09-01 20:36:45.496758314 +0200
 @@ -14,7 +14,6 @@
  
  #pragma once
  
 -#include "llvm/ADT/Optional.h"
+ #include "llvm/ADT/SmallVector.h"
+ #include "llvm/ADT/StringRef.h"
  #include "llvm/Support/CodeGen.h"
- #include <string>
- #include <vector>
-@@ -55,8 +54,8 @@
+@@ -57,8 +56,8 @@
  createTargetMachine(std::string targetTriple, std::string arch, std::string cpu,
                      std::string featuresString, ExplicitBitness::Type bitness,
                      FloatABI::Type &floatABI,
@@ -241,11 +461,12 @@
                      llvm::CodeGenOpt::Level codeGenOptLevel,
                      bool noLinkerStripDead);
  
---- a/driver/toobj.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/driver/toobj.cpp	2023-07-29 22:34:33.970335042 +0200
-@@ -53,11 +53,6 @@
+diff --color -ur b/driver/toobj.cpp b/driver/toobj.cpp
+--- a/driver/toobj.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/driver/toobj.cpp	2023-09-01 20:36:45.496758314 +0200
+@@ -47,11 +47,6 @@
+ 
  using CodeGenFileType = llvm::CodeGenFileType;
- #endif
  
 -static llvm::cl::opt<bool>
 -    NoIntegratedAssembler("no-integrated-as", llvm::cl::ZeroOrMore,
@@ -255,7 +476,7 @@
  namespace {
  
  // The dllimport relocation pass on Windows is *not* an optimization pass.
-@@ -293,8 +288,7 @@
+@@ -287,8 +282,7 @@
    // There is no integrated assembler on AIX because XCOFF is not supported.
    // Starting with LLVM 3.5 the integrated assembler can be used with MinGW.
    return global.params.output_o &&
@@ -265,8 +486,9 @@
  }
  
  bool shouldOutputObjectFile() {
---- a/gen/abi/nvptx.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/abi/nvptx.cpp	2023-07-29 22:34:33.842333345 +0200
+diff --color -ur b/gen/abi/nvptx.cpp b/gen/abi/nvptx.cpp
+--- a/gen/abi/nvptx.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/abi/nvptx.cpp	2023-09-01 20:36:45.490758227 +0200
 @@ -39,7 +39,7 @@
    }
    void rewriteArgument(IrFuncTy &fty, IrFuncTyArg &arg) override {
@@ -276,8 +498,9 @@
      if (ty->ty == TY::Tstruct &&
          (ptr = toDcomputePointer(static_cast<TypeStruct *>(ty)->sym))) {
        pointerRewite.applyTo(arg);
---- a/gen/abi/spirv.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/abi/spirv.cpp	2023-07-29 22:34:33.842333345 +0200
+diff --color -ur b/gen/abi/spirv.cpp b/gen/abi/spirv.cpp
+--- a/gen/abi/spirv.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/abi/spirv.cpp	2023-09-01 20:36:45.490758227 +0200
 @@ -49,7 +49,7 @@
    }
    void rewriteArgument(IrFuncTy &fty, IrFuncTyArg &arg) override {
@@ -287,26 +510,32 @@
      if (ty->ty == TY::Tstruct &&
          (ptr = toDcomputePointer(static_cast<TypeStruct *>(ty)->sym))) {
        pointerRewite.applyTo(arg);
---- a/gen/dcompute/druntime.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/dcompute/druntime.cpp	2023-07-29 22:34:33.841333332 +0200
-@@ -41,12 +41,12 @@
+diff --color -ur b/gen/dcompute/druntime.cpp b/gen/dcompute/druntime.cpp
+--- a/gen/dcompute/druntime.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/dcompute/druntime.cpp	2023-09-01 20:36:45.491758242 +0200
+@@ -41,10 +41,10 @@
    return isFromLDC_Mod(sym,Id::opencl);
  }
  
 -llvm::Optional<DcomputePointer> toDcomputePointer(StructDeclaration *sd) {
 +std::optional<DcomputePointer> toDcomputePointer(StructDeclaration *sd) {
-   if (sd->ident != Id::dcPointer || !isFromLDC_DCompute(sd))
+   if (sd->ident != Id::dcPointer || !isFromLDC_DCompute(sd)) {
+ #if LDC_LLVM_VER < 1600
 -    return llvm::Optional<DcomputePointer>(llvm::None);
-+    return {};
- 
++    return std::optional<DcomputePointer>(llvm::None);
+ #else
+     return std::optional<DcomputePointer>(std::nullopt);
+ #endif
+@@ -53,5 +53,5 @@
    TemplateInstance *ti = sd->isInstantiated();
    int addrspace = isExpression((*ti->tiargs)[0])->toInteger();
    Type *type = isType((*ti->tiargs)[1]);
 -  return llvm::Optional<DcomputePointer>(DcomputePointer(addrspace, type));
 +  return std::optional<DcomputePointer>(DcomputePointer(addrspace, type));
  }
---- a/gen/dcompute/druntime.h	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/dcompute/druntime.h	2023-07-29 22:34:33.841333332 +0200
+diff --color -ur b/gen/dcompute/druntime.h b/gen/dcompute/druntime.h
+--- a/gen/dcompute/druntime.h	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/dcompute/druntime.h	2023-09-01 20:36:45.491758242 +0200
 @@ -17,7 +17,6 @@
  #include "gen/irstate.h"
  #include "gen/llvm.h"
@@ -321,8 +550,9 @@
  };
 -llvm::Optional<DcomputePointer> toDcomputePointer(StructDeclaration *sd);
 +std::optional<DcomputePointer> toDcomputePointer(StructDeclaration *sd);
---- a/gen/dcompute/targetOCL.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/dcompute/targetOCL.cpp	2023-07-29 22:34:33.841333332 +0200
+diff --color -ur b/gen/dcompute/targetOCL.cpp b/gen/dcompute/targetOCL.cpp
+--- a/gen/dcompute/targetOCL.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/dcompute/targetOCL.cpp	2023-09-01 20:36:45.491758242 +0200
 @@ -174,7 +174,7 @@
    void decodeTypes(std::array<llvm::SmallVector<llvm::Metadata *, 8>,count_KernArgMD>& attrs,
                     VarDeclaration *v)
@@ -332,9 +562,10 @@
      std::string typeQuals;
      std::string baseTyName;
      std::string tyName;
---- a/gen/dibuilder.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/dibuilder.cpp	2023-07-29 22:34:33.843333358 +0200
-@@ -372,7 +372,7 @@
+diff --color -ur b/gen/dibuilder.cpp b/gen/dibuilder.cpp
+--- a/gen/dibuilder.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/dibuilder.cpp	2023-09-01 20:36:45.492758256 +0200
+@@ -379,7 +379,7 @@
  DIType DIBuilder::CreatePointerType(TypePointer *type) {
    // TODO: The addressspace is important for dcompute targets. See e.g.
    // https://www.mail-archive.com/dwarf-discuss@lists.dwarfstd.org/msg00326.html
@@ -343,7 +574,7 @@
  
    const auto name = processDIName(type->toPrettyChars(true));
  
-@@ -730,7 +730,7 @@
+@@ -729,7 +729,7 @@
  }
  
  DISubroutineType DIBuilder::CreateEmptyFunctionType() {
@@ -352,7 +583,7 @@
    return DBuilder.createSubroutineType(paramsArray);
  }
  
-@@ -776,7 +776,7 @@
+@@ -775,7 +775,7 @@
      // display null as void*
      return DBuilder.createPointerType(
          CreateTypeDescription(Type::tvoid), target.ptrsize * 8, 0,
@@ -361,7 +592,7 @@
    }
    if (auto te = t->isTypeEnum())
      return CreateEnumType(te);
-@@ -799,7 +799,7 @@
+@@ -798,7 +798,7 @@
      const auto name =
          (tc->sym->toPrettyChars(true) + llvm::StringRef("*")).str();
      return DBuilder.createPointerType(aggregateDIType, target.ptrsize * 8, 0,
@@ -370,8 +601,9 @@
    }
    if (auto tf = t->isTypeFunction())
      return CreateFunctionType(tf);
---- a/gen/modules.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/modules.cpp	2023-07-29 22:34:33.841333332 +0200
+diff --color -ur b/gen/modules.cpp b/gen/modules.cpp
+--- a/gen/modules.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/modules.cpp	2023-09-01 20:36:45.492758256 +0200
 @@ -48,6 +48,7 @@
  #include "llvm/ProfileData/InstrProfReader.h"
  #include "llvm/Support/CommandLine.h"
@@ -391,19 +623,9 @@
      if (auto E = readerOrErr.takeError()) {
        handleAllErrors(std::move(E), [&](const llvm::ErrorInfoBase &EI) {
          irs->dmodule->error("Could not read profile file '%s': %s",
---- a/gen/ms-cxx-helper.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/ms-cxx-helper.cpp	2023-07-29 22:34:33.843333358 +0200
-@@ -114,7 +114,7 @@
-       if (!newInst)
-         newInst = Inst->clone();
- 
--      nbb->getInstList().push_back(newInst);
-+      newInst->insertInto(nbb, nbb->end());
-       VMap[Inst] = newInst; // Add instruction map to value.
-       if (unwindTo)
-         if (auto dest = getUnwindDest(Inst))
---- a/gen/optimizer.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/optimizer.cpp	2023-07-29 22:34:33.843333358 +0200
+diff --color -ur b/gen/optimizer.cpp b/gen/optimizer.cpp
+--- a/gen/optimizer.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/optimizer.cpp	2023-09-01 20:36:45.492758256 +0200
 @@ -20,7 +20,7 @@
  #include "driver/cl_options_sanitizers.h"
  #include "driver/plugins.h"
@@ -425,7 +647,7 @@
  #include "llvm/Transforms/Instrumentation/MemorySanitizer.h"
  #include "llvm/Transforms/Instrumentation/ThreadSanitizer.h"
  #include "llvm/Transforms/Instrumentation/AddressSanitizer.h"
-@@ -559,22 +559,23 @@
+@@ -543,17 +543,18 @@
  }
  
  
@@ -447,26 +669,18 @@
                       PGOOptions::PGOAction::IRUse,
                       PGOOptions::CSPGOAction::NoCSAction,
                       debugInfoForProfiling, pseudoProbeForProfiling);
-   }
--  return None;
-+  return {};
- }
- static PipelineTuningOptions getPipelineTuningOptions(unsigned optLevelVal, unsigned sizeLevelVal) {
-   PipelineTuningOptions pto;
-@@ -637,9 +638,9 @@
-   bool debugLogging = false;
-   ppo.Indent = false;
-   ppo.SkipAnalyses = false;
--  StandardInstrumentations si(debugLogging, /*VerifyEach=*/false, ppo);
-+  StandardInstrumentations si(M->getContext(), debugLogging, /*VerifyEach=*/false, ppo);
+@@ -632,7 +633,7 @@
+   StandardInstrumentations si(M->getContext(), debugLogging, /*VerifyEach=*/false, ppo);
+ #endif
  
 -  si.registerCallbacks(pic, &fam);
 +  si.registerCallbacks(pic, &mam);
  
    PassBuilder pb(gTargetMachine, getPipelineTuningOptions(optLevelVal, sizeLevelVal),
                   getPGOOptions(), &pic);
---- a/gen/passes/DLLImportRelocation.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/passes/DLLImportRelocation.cpp	2023-07-29 22:34:33.843333358 +0200
+diff --color -ur b/gen/passes/DLLImportRelocation.cpp b/gen/passes/DLLImportRelocation.cpp
+--- a/gen/passes/DLLImportRelocation.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/passes/DLLImportRelocation.cpp	2023-09-01 20:36:45.488758198 +0200
 @@ -276,7 +276,7 @@
    Impl impl(m);
    bool hasChanged = false;
@@ -476,8 +690,9 @@
      // TODO: thread-local globals would need to be initialized in a separate TLS
      // ctor
      if (!global.hasInitializer() || global.isThreadLocal())
---- a/gen/pgo_ASTbased.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/pgo_ASTbased.cpp	2023-07-29 22:34:33.841333332 +0200
+diff --color -ur b/gen/pgo_ASTbased.cpp b/gen/pgo_ASTbased.cpp
+--- a/gen/pgo_ASTbased.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/pgo_ASTbased.cpp	2023-09-01 20:36:45.492758256 +0200
 @@ -920,7 +920,7 @@
    auto EC = RecordExpected.takeError();
  
@@ -487,71 +702,31 @@
      if (IPE == llvm::instrprof_error::unknown_function) {
        IF_LOG Logger::println("No profile data for function: %s",
                               FuncName.c_str());
---- a/gen/rttibuilder.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/rttibuilder.cpp	2023-07-29 22:34:33.842333345 +0200
-@@ -46,7 +46,7 @@
-   // We need to explicitly zero any padding bytes as per TDPL §7.1.1 (and
-   // also match the struct type lowering code here).
-   const uint64_t fieldStart = llvm::alignTo(
--      prevFieldEnd, gDataLayout->getABITypeAlignment(C->getType()));
-+      prevFieldEnd, gDataLayout->getABITypeAlign(C->getType()).value());
- 
-   const uint64_t paddingBytes = fieldStart - prevFieldEnd;
-   if (paddingBytes) {
---- a/gen/runtime.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/runtime.cpp	2023-07-29 22:34:33.843333358 +0200
-@@ -33,7 +33,7 @@
- #include "llvm/Bitcode/BitcodeWriter.h"
- #include "llvm/IR/Attributes.h"
- #if LDC_LLVM_VER >= 1600
--#include "llvm/IR/ModRef.h"
-+#include "llvm/Support/ModRef.h"
- #endif
- #include "llvm/IR/Module.h"
- #include "llvm/Support/CommandLine.h"
---- a/gen/target.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/target.cpp	2023-07-29 22:34:33.842333345 +0200
-@@ -102,7 +102,7 @@
-   realType = getRealType(triple);
-   realsize = gDataLayout->getTypeAllocSize(realType);
-   realpad = realsize - gDataLayout->getTypeStoreSize(realType);
--  realalignsize = gDataLayout->getABITypeAlignment(realType);
-+  realalignsize = gDataLayout->getABITypeAlign(realType).value();
-   classinfosize = 0; // unused
-   maxStaticDataSize = std::numeric_limits<unsigned long long>::max();
- 
+diff --color -ur b/gen/tollvm.cpp b/gen/tollvm.cpp
+--- a/gen/tollvm.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/tollvm.cpp	2023-09-01 20:36:45.488758198 +0200
+@@ -594,7 +594,7 @@
+ // deprecation for versions >= LLVM 16 above (8 lines up).
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+-      t = t->getPointerElementType();
++      t = t->getNonOpaquePointerElementType();
+ #pragma GCC diagnostic pop
+     }
+     while (indirections-- != 0)
+diff --color -ur b/gen/uda.cpp b/gen/uda.cpp
+--- a/gen/uda.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/gen/uda.cpp	2023-09-01 20:36:45.492758256 +0200
 @@ -211,7 +211,7 @@
-   if (type->ty == TY::Tvoid) {
-     return 1;
-   }
--  return gDataLayout->getABITypeAlignment(DtoType(type));
-+  return gDataLayout->getABITypeAlign(DtoType(type)).value();
- }
- 
- /******************************
---- a/gen/tollvm.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/tollvm.cpp	2023-07-29 22:34:33.842333345 +0200
-@@ -748,7 +748,7 @@
- size_t getTypeAllocSize(LLType *t) { return gDataLayout->getTypeAllocSize(t); }
- 
- unsigned int getABITypeAlign(LLType *t) {
--  return gDataLayout->getABITypeAlignment(t);
-+  return gDataLayout->getABITypeAlign(t).value();
- }
- 
- ////////////////////////////////////////////////////////////////////////////////
---- a/gen/uda.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/gen/uda.cpp	2023-07-29 22:34:33.843333358 +0200
-@@ -219,7 +219,7 @@
-   if (numArgIdx >= 0) {
      builder.addAllocSizeAttr(llvmSizeIdx, llvmNumIdx);
    } else {
+ #if LDC_LLVM_VER < 1600
 -    builder.addAllocSizeAttr(llvmSizeIdx, llvm::Optional<unsigned>());
 +    builder.addAllocSizeAttr(llvmSizeIdx, std::optional<unsigned>());
-   }
- 
-   llvm::Function *func = irFunc->getLLVMFunc();
-@@ -459,8 +459,6 @@
+ #else
+     builder.addAllocSizeAttr(llvmSizeIdx, std::optional<unsigned>());
+ #endif
+@@ -446,8 +446,6 @@
            .Case("swifttailcc", llvm::CallingConv::SwiftTail)
  #endif
            .Case("x86_intrcc", llvm::CallingConv::X86_INTR)
@@ -560,8 +735,9 @@
            .Case("cxx_fast_tlscc", llvm::CallingConv::CXX_FAST_TLS)
            .Case("amdgpu_vs", llvm::CallingConv::AMDGPU_VS)
  #if LDC_LLVM_VER >= 1200
---- a/ir/irtypestruct.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/ir/irtypestruct.cpp	2023-07-29 22:34:33.841333332 +0200
+diff --color -ur b/ir/irtypestruct.cpp b/ir/irtypestruct.cpp
+--- a/ir/irtypestruct.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/ir/irtypestruct.cpp	2023-09-01 20:36:45.455757720 +0200
 @@ -71,7 +71,7 @@
  
    // For ldc.dcomptetypes.Pointer!(uint n,T),
@@ -571,9 +747,10 @@
  
    if (gIR->dcomputetarget && (p = toDcomputePointer(sd))) {
      // Translate the virtual dcompute address space into the real one for
---- a/runtime/druntime/src/ldc/intrinsics.di	2023-07-23 21:15:47.000000000 +0200
-+++ b/runtime/druntime/src/ldc/intrinsics.di	2023-07-29 22:34:33.964334963 +0200
-@@ -28,6 +28,7 @@
+diff --color -ur b/runtime/druntime/src/ldc/intrinsics.di b/runtime/druntime/src/ldc/intrinsics.di
+--- a/runtime/druntime/src/ldc/intrinsics.di	2023-08-26 13:27:47.000000000 +0200
++++ b/runtime/druntime/src/ldc/intrinsics.di	2023-09-01 20:36:45.253754790 +0200
+@@ -26,6 +26,7 @@
  else version (LDC_LLVM_1400) enum LLVM_version = 1400;
  else version (LDC_LLVM_1500) enum LLVM_version = 1500;
  else version (LDC_LLVM_1600) enum LLVM_version = 1600;
@@ -581,8 +758,9 @@
  else static assert(false, "LDC LLVM version not supported");
  
  enum LLVM_atleast(int major) = (LLVM_version >= major * 100);
---- a/runtime/jit-rt/cpp-so/bind.h	2023-07-23 21:15:47.000000000 +0200
-+++ b/runtime/jit-rt/cpp-so/bind.h	2023-07-29 22:34:33.940334644 +0200
+diff --color -ur b/runtime/jit-rt/cpp-so/bind.h b/runtime/jit-rt/cpp-so/bind.h
+--- a/runtime/jit-rt/cpp-so/bind.h	2023-08-26 13:27:47.000000000 +0200
++++ b/runtime/jit-rt/cpp-so/bind.h	2023-09-01 20:36:45.259754877 +0200
 @@ -27,7 +27,7 @@
  class Function;
  }
@@ -592,8 +770,9 @@
      llvm::function_ref<llvm::Constant *(llvm::Type &, const void *, size_t)>>;
  
  llvm::Function *
---- a/runtime/jit-rt/cpp-so/disassembler.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/runtime/jit-rt/cpp-so/disassembler.cpp	2023-07-29 22:34:33.940334644 +0200
+diff --color -ur b/runtime/jit-rt/cpp-so/disassembler.cpp b/runtime/jit-rt/cpp-so/disassembler.cpp
+--- a/runtime/jit-rt/cpp-so/disassembler.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/runtime/jit-rt/cpp-so/disassembler.cpp	2023-09-01 20:36:45.259754877 +0200
 @@ -12,7 +12,7 @@
  #include <algorithm>
  #include <unordered_map>
@@ -603,8 +782,9 @@
  #include "llvm/MC/MCAsmBackend.h"
  #include "llvm/MC/MCAsmInfo.h"
  #include "llvm/MC/MCCodeEmitter.h"
---- a/runtime/jit-rt/cpp-so/jit_context.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/runtime/jit-rt/cpp-so/jit_context.cpp	2023-07-29 22:34:33.940334644 +0200
+diff --color -ur b/runtime/jit-rt/cpp-so/jit_context.cpp b/runtime/jit-rt/cpp-so/jit_context.cpp
+--- a/runtime/jit-rt/cpp-so/jit_context.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/runtime/jit-rt/cpp-so/jit_context.cpp	2023-09-01 20:36:45.259754877 +0200
 @@ -63,8 +63,8 @@
    assert(target != nullptr);
    std::unique_ptr<llvm::TargetMachine> ret(target->createTargetMachine(
@@ -616,8 +796,9 @@
        /*jit*/ true));
    assert(ret != nullptr);
    return ret;
---- a/runtime/jit-rt/cpp-so/optimizer.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/runtime/jit-rt/cpp-so/optimizer.cpp	2023-07-29 22:34:33.940334644 +0200
+diff --color -ur b/runtime/jit-rt/cpp-so/optimizer.cpp b/runtime/jit-rt/cpp-so/optimizer.cpp
+--- a/runtime/jit-rt/cpp-so/optimizer.cpp	2023-08-26 13:27:47.000000000 +0200
++++ b/runtime/jit-rt/cpp-so/optimizer.cpp	2023-09-01 20:36:45.259754877 +0200
 @@ -19,7 +19,7 @@
  #include "llvm/IR/Module.h"
  #include "llvm/IR/Verifier.h"
@@ -627,8 +808,9 @@
  
  #include "llvm/Analysis/TargetLibraryInfo.h"
  #include "llvm/Analysis/TargetTransformInfo.h"
---- a/runtime/jit-rt/cpp-so/valueparser.h	2023-07-23 21:15:47.000000000 +0200
-+++ b/runtime/jit-rt/cpp-so/valueparser.h	2023-07-29 22:34:33.940334644 +0200
+diff --color -ur b/runtime/jit-rt/cpp-so/valueparser.h b/runtime/jit-rt/cpp-so/valueparser.h
+--- a/runtime/jit-rt/cpp-so/valueparser.h	2023-08-26 13:27:47.000000000 +0200
++++ b/runtime/jit-rt/cpp-so/valueparser.h	2023-09-01 20:36:45.259754877 +0200
 @@ -24,7 +24,7 @@
  class DataLayout;
  }
@@ -638,14 +820,3 @@
      llvm::function_ref<llvm::Constant *(llvm::Type &, const void *, size_t)>>;
  
  llvm::Constant *parseInitializer(
---- a/utils/not.cpp	2023-07-23 21:15:47.000000000 +0200
-+++ b/utils/not.cpp	2023-07-29 22:34:33.969335029 +0200
-@@ -43,7 +43,7 @@
-   Argv.reserve(argc);
-   for (int i = 0; i < argc; ++i)
-     Argv.push_back(argv[i]);
--  auto Env = llvm::None;
-+  auto Env = {};
- 
-   std::string ErrMsg;
-   int Result = sys::ExecuteAndWait(*Program, Argv, Env, {}, 0, 0, &ErrMsg);
