@@ -33,13 +33,12 @@ add_extlinux_entry() {
 }
 
 add_extlinux_entries() {
-	local kernels=(/boot/vmlinuz-*)
+	local kernels=($(ls /boot/vmlinuz* | sort -Vr))
 	local root_partuuid=$(findmnt -fn -o PARTUUID /)
 	local boot_args="root=PARTUUID=${root_partuuid} rootwait quiet loglevel=0 vt.global_cursor_default=0 ${EXTRA_BOOT_ARGS}"
 
-	for ((i=${#kernels[@]}-1; i>=0; i--)); do
-		local kernel_path=${kernels[$i]}
-		local kernel=$(basename ${kernel_path})
+	for kernel in ${kernels[@]}; do
+		local kernel=$(basename ${kernel})
 		add_extlinux_entry ${kernel} ${boot_args}
 	done
 }
