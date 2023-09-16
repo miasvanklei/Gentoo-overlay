@@ -47,12 +47,12 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 PATCHES=(
-	"${FILESDIR}/remove_useradd.patch"
+	"${FILESDIR}/remove_useradd-3.3.9.patch"
 )
 
 src_prepare() {
+	default
 	eautoreconf
-	eapply_user
 }
 
 src_configure() {
