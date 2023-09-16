@@ -23,6 +23,10 @@ RDEPEND="${DEPEND}"
 
 S="${WORKDIR}/${PN}-${MY_PV}"
 
+PATCHES=(
+	"${FILESDIR}/backtrace.patch"
+)
+
 src_compile() {
 	dub build --build=release --parallel || die
 }
