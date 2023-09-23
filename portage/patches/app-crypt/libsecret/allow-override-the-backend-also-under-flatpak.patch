@@ -1,0 +1,53 @@
+From 472eac537cc455b16fa8702b605a827fe5efb708 Mon Sep 17 00:00:00 2001
+From: Milan Crha <mcrha@redhat.com>
+Date: Mon, 18 Sep 2023 13:28:12 +0200
+Subject: [PATCH] secret-backend: Allow override the backend also under
+ Flatpak/Snap
+
+This can help applications, which rely on certain behavior, like when
+multiple processes are accessing the secrets and expect that secrets
+saved by one process can be read by another process.
+
+It also adds consistency, to be able to change the backend with
+the host system libsecret and sandboxed libsecret.
+
+Related to https://gitlab.gnome.org/GNOME/libsecret/-/issues/62
+---
+ libsecret/secret-backend.c | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/libsecret/secret-backend.c b/libsecret/secret-backend.c
+index 9b3c22b..ba5c3bc 100644
+--- a/libsecret/secret-backend.c
++++ b/libsecret/secret-backend.c
+@@ -152,18 +152,17 @@ backend_get_impl_type (void)
+ 	g_type_ensure (secret_file_backend_get_type ());
+ #endif
+ 
++	envvar = g_getenv ("SECRET_BACKEND");
++	if (envvar != NULL && *envvar != '\0') {
++		extension_name = envvar;
++	} else {
++		extension_name = "service";
++
+ #ifdef WITH_GCRYPT
+-	if ((g_file_test ("/.flatpak-info", G_FILE_TEST_EXISTS) || g_getenv ("SNAP_NAME") != NULL) &&
+-	    _secret_file_backend_check_portal_version ())
+-		extension_name = "file";
+-	else
++		if ((g_file_test ("/.flatpak-info", G_FILE_TEST_EXISTS) || g_getenv ("SNAP_NAME") != NULL) &&
++		    _secret_file_backend_check_portal_version ())
++			extension_name = "file";
+ #endif
+-	{
+-		envvar = g_getenv ("SECRET_BACKEND");
+-		if (envvar == NULL || *envvar == '\0')
+-			extension_name = "service";
+-		else
+-			extension_name = envvar;
+ 	}
+ 
+ 	ep = g_io_extension_point_lookup (SECRET_BACKEND_EXTENSION_POINT_NAME);
+-- 
+GitLab
+
