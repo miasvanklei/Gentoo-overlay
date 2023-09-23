@@ -13,9 +13,9 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 
-IUSE="airplay2 +alsa convolution pulseaudio jack mbedtls +openssl pipewire pulseaudio soundio soxr"
+IUSE="airplay-2 +alsa convolution jack mbedtls +openssl pulseaudio soundio soxr"
 REQUIRED_USE="
-	|| ( alsa pulseaudio jack )
+	|| ( alsa jack pulseaudio soundio soxr )
 	^^ ( openssl mbedtls )"
 
 RDEPEND="
@@ -24,7 +24,7 @@ RDEPEND="
 	dev-libs/libconfig
 	dev-libs/popt
 	net-dns/avahi
-	airplay2? (
+	airplay-2? (
 		app-pda/libplist
 		dev-libs/libgcrypt
 		dev-libs/libsodium
@@ -38,7 +38,6 @@ RDEPEND="
 	jack? ( virtual/jack )
 	mbedtls? ( net-libs/mbedtls )
 	openssl? ( dev-libs/openssl )
-	pipewire? ( media-video/pipewire )
 	pulseaudio? ( media-sound/pulseaudio )
 	soundio? ( media-libs/libsoundio )
 	soxr? ( media-libs/soxr )
@@ -47,7 +46,7 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 PATCHES=(
-	"${FILESDIR}/remove_useradd-3.3.9.patch"
+	"${FILESDIR}/remove_useradd-4.2.patch"
 )
 
 src_prepare() {
@@ -63,6 +62,7 @@ src_configure() {
 		myconf="$myconf --with-ssl=mbedtls"
 	fi
 
+	# pipewire backend is buggy
 	econf \
 		--with-avahi \
 		--with-configfiles \
@@ -70,13 +70,13 @@ src_configure() {
 		--with-pipe \
 		--with-stdout \
 		--with-systemd \
-		$(use_with airplay2 airplay-2) \
+		--without-pw \
+		$(use_with airplay-2) \
 		$(use_with alsa) \
+		$(use_with convolution) \
 		$(use_with jack) \
 		$(use_with pulseaudio pa) \
-		$(use_with pipewire pw) \
 		$(use_with soundio) \
 		$(use_with soxr) \
-		$(use_with convolution) \
 		$myconf
 }
