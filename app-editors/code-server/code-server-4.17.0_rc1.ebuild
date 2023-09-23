@@ -8,16 +8,17 @@ inherit multiprocessing systemd
 DESCRIPTION="VS Code in the browser"
 HOMEPAGE="https://coder.com/"
 
-BASE_URI="https://github.com/cdr/${PN}/releases/download/v${PV}/${P}-linux"
+MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
+BASE_URI="https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux"
 
 # All binary packages depend on this
-NAN_V=2.14.0
+NAN_V=2.18.0
 
-NODE_ADDON_API_V=3.1.0
+NODE_ADDON_API_V=7.0.0
 NATIVE_WATCHDOG_V=1.4.1
 NODE_PTY_V=1.1.0-beta1
-VSCODE_SPDLOG_V=0.13.10
-ARGON2_V=0.30.3
+VSCODE_SPDLOG_V=0.13.11
+ARGON2_V=0.31.1
 PARCEL_WATCHER_V=2.1.0
 KEYTAR_V=7.9.0
 
@@ -33,13 +34,30 @@ SRC_URI="
 	https://registry.npmjs.org/keytar/-/keytar-${KEYTAR_V}.tgz -> vscodedep-keytar-${KEYTAR_V}.tar.gz
 "
 
-VSCODE_BINMODS=(
+REBUILD_VSCODE_BINMODS=(
         native-watchdog
         node-pty
         @vscode/spdlog
-	@parcel/watcher
 	keytar
 )
+
+COMPILE_VSCODE_BINMODS=(
+        "${REBUILD_VSCODE_BINMODS[@]}"
+	@parcel/watcher
+)
+
+PREPARE_VSCODE_BINMODS=(
+        "${COMPILE_VSCODE_BINMODS[@]}"
+	argon2
+)
+
+CLEANUP_VSCODE_BINMODS=(
+        "${REBUILD_VSCODE_BINMODS[@]}"
+	@vscode/windows-process-tree
+	@vscode/windows-registry
+	kerberos
+)
+
 
 RESTRICT="test"
 LICENSE="MIT"
@@ -50,12 +68,12 @@ IUSE=""
 DEPEND=""
 RDEPEND="
 	${DEPEND}
-	>=net-libs/nodejs-16.14.2:0/16[ssl]
+	>=net-libs/nodejs-18.17.1:0/18[ssl]
 	sys-apps/ripgrep
 	app-crypt/libsecret
 "
 
-S="${WORKDIR}/${P%_*}-linux-amd64"
+S="${WORKDIR}/${PN}-${MY_PV}-linux-amd64"
 
 DOCS=( "README.md" "ThirdPartyNotices.txt" )
 
@@ -90,7 +108,7 @@ src_unpack() {
 
 src_prepare() {
 	# prepare vscode modules for building
-	for binmod in "${VSCODE_BINMODS[@]}"; do
+	for binmod in "${PREPARE_VSCODE_BINMODS[@]}"; do
 		pkgdir="${WORKDIR}/$(package_dir ${binmod})"
 		mkdir -p "${pkgdir}/node_modules" || die
 		ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
@@ -99,35 +117,8 @@ src_prepare() {
 			"${pkgdir}/node_modules/nan" || die
 	done
 
-	# argon2 prepare
-	pkgdir="${WORKDIR}/$(package_dir argon2)"
-	mkdir -p "${pkgdir}/node_modules" || die
-	ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
-			"${pkgdir}/node_modules/node-addon-api" || die
-	ln -s "${WORKDIR}/nodejs-nan-${NAN_V}" \
-		"${pkgdir}/node_modules/nan" || die
-
-	# fix use of lfs64* symbol
-	pushd "${WORKDIR}/$(package_dir vscode-spdlog)" >/dev/null || die
-	eapply "${FILESDIR}/${PN}-spdlog-lfs64.patch"
-	popd
-
-	eapply "${FILESDIR}/${PN}-node.patch"
-        eapply_user
-
-	# use system node
-	rm ./lib/node || die "failed to remove bundled nodejs"
-
-	# remove bundled binaries
-	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg || die "failed to remove bundled ripgrep"
-	for binmod in "${VSCODE_BINMODS[@]}"; do
-		rm -r "$(get_binmod_loc ${binmod})/build" || die
-	done
-
-	# remove argon2 & parcel-watcher
-	rm -r "$(get_binmod_loc @parcel/watcher)/prebuilds" || die
-	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
-	rm -r "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node" || die
+	# remove binaries from modules
+	cleanup_binmods
 
 	# remove broken symlinks
 	rm -r lib/vscode/extensions/node_modules/.bin || die
@@ -137,12 +128,19 @@ src_prepare() {
 
 	# already in /usr/portage/licenses/MIT
 	rm ${S}/LICENSE || die
+
+	# fix use of lfs64* symbol
+	pushd "${WORKDIR}/$(package_dir vscode-spdlog)" >/dev/null || die
+	eapply "${FILESDIR}/${PN}-spdlog-lfs64.patch"
+	popd
+
+	eapply "${FILESDIR}/${PN}-node.patch"
+        eapply_user
 }
 
 src_configure() {
 	local binmod
-
-	for binmod in "${VSCODE_BINMODS[@]}"; do
+	for binmod in "${COMPILE_VSCODE_BINMODS[@]}"; do
 		einfo "Configuring ${binmod}..."
 		cd "${WORKDIR}/$(package_dir ${binmod})" || die
 
@@ -155,7 +153,7 @@ src_compile() {
 	local jobs=$(makeopts_jobs)
 	local unpacked_paths
 
-	for binmod in "${VSCODE_BINMODS[@]}"; do
+	for binmod in "${COMPILE_VSCODE_BINMODS[@]}"; do
 		einfo "Building ${binmod}..."
 		cd "${WORKDIR}/$(package_dir ${binmod})" || die
 		enodegyp --verbose --jobs="$(makeopts_jobs)" build
@@ -222,4 +220,21 @@ get_binmod_loc_release() {
 	local path="$(get_binmod_loc ${1})/build/Release"
 	mkdir -p "$path"
 	echo "$path"
+}
+
+# remove bundled binaries
+cleanup_binmods() {
+	# use system node
+	rm ./lib/node || die "failed to remove bundled nodejs"
+
+	for binmod in "${CLEANUP_VSCODE_BINMODS[@]}"; do
+		rm -r "$(get_binmod_loc ${binmod})/build" || die
+	done
+
+	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg || die "failed to remove bundled ripgrep"
+
+	# remove argon2 & parcel-watcher
+	rm -r "$(get_binmod_loc @parcel/watcher)/prebuilds" || die
+	rm -r "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node" || die
+
 }
