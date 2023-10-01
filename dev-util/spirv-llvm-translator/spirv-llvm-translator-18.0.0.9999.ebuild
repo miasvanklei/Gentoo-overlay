@@ -3,18 +3,18 @@
 
 EAPI=8
 
-LLVM_MAX_SLOT="17"
+LLVM_MAX_SLOT="18"
 
 inherit cmake flag-o-matic git-r3 llvm multiprocessing
 
 DESCRIPTION="Bi-directional translator between SPIR-V and LLVM IR"
 HOMEPAGE="https://github.com/KhronosGroup/SPIRV-LLVM-Translator"
 EGIT_REPO_URI="https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git"
-EGIT_BRANCH="llvm_release_170"
+EGIT_BRANCH="llvm_release_180"
 
 LICENSE="UoI-NCSA"
 SLOT="$(ver_cut 1)"
-KEYWORDS="amd64 ~x86"
+KEYWORDS=""
 IUSE="test"
 RESTRICT="!test? ( test )"
 
