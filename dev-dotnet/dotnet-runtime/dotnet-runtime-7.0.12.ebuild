@@ -52,7 +52,10 @@ CORECLR_FILES=(
 	'corehost/singlefilehost'
 )
 
-CORESETUP_FILE='libhostpolicy.so'
+CORESETUP_FILES=(
+	'libhostpolicy.so'
+        'libhostfxr.so'
+)
 
 PACK_FILES=(
 	'apphost'
@@ -127,16 +130,18 @@ src_install() {
 		cp -pP "${ARTIFACTS_CORECLR}/${file}" "${dest_app}/" || die
 	done
 
-	cp -pP "${ARTIFACTS_CORESETUP}/${CORESETUP_FILE}" "${dest_app}/" || die
+	for file in "${CORESETUP_FILES[@]}"; do
+		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_app}/" || die
+	done
 
 	for file in "${PACK_FILES[@]}"; do
 		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_pack}/" || die
 	done
 
-	cp -pP "${ARTIFACTS_CORESETUP}/dotnet" "${dest}" || die
-	cp "${ARTIFACTS_CORESETUP}/libhostfxr.so" "${dest_fxr}/libhostfxr.so"
+	dosym "${dest_fxr}/libhostfxr.so" "${dest_app}/libhostfxr.so"
 
 	# dotnet
+	cp -pP "${ARTIFACTS_CORESETUP}/dotnet" "${dest}" || die
 	dosym "${dest_core}/dotnet" "/usr/bin/dotnet"
 
 	# create dummy symlink, fix acces violation
