@@ -116,7 +116,8 @@ src_install() {
 	local dest="${D}${dest_core}"
 	local dest_pack="${dest}/${RUNTIME_PACK}"
 	local dest_app="${dest}/shared/Microsoft.NETCore.App/current"
-	local dest_fxr="${dest}/host/fxr/current"
+	local dest_app_rel="${dest_core}/shared/Microsoft.NETCore.App/current"
+	local dest_fxr="${dest_core}/host/fxr/current"
 
 	mkdir -p "${dest_app}" || die
 	mkdir -p "${dest_pack}" || die
@@ -138,7 +139,7 @@ src_install() {
 		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_pack}/" || die
 	done
 
-	dosym "${dest_fxr}/libhostfxr.so" "${dest_app}/libhostfxr.so"
+	dosym "${dest_app_rel}/libhostfxr.so" "${dest_fxr}/libhostfxr.so"
 
 	# dotnet
 	cp -pP "${ARTIFACTS_CORESETUP}/dotnet" "${dest}" || die
