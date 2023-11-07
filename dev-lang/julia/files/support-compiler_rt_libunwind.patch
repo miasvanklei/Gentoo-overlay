@@ -1,0 +1,191 @@
+--- a/Make.inc	2021-11-14 16:03:00.095635920 +0100
++++ b/Make.inc	2021-11-14 15:58:27.921347799 +0100
+@@ -1566,7 +1566,7 @@
+ endif
+ endif
+ ifneq ($(findstring $(OS),Linux FreeBSD),)
+-LIBGCC_NAME := libgcc_s.$(SHLIB_EXT).1
++LIBGCC_NAME := libunwind.$(SHLIB_EXT)
+ endif
+ 
+ # USE_SYSTEM_CSL causes it to get symlinked into build_private_shlibdir
+@@ -1529,7 +1529,7 @@
+ # We only bother to define this on Linux, as that's the only platform that does libstdc++ probing
+ # On all other platforms, the LIBSTDCXX_*_DEPLIB variables will be empty.
+ ifeq ($(OS),Linux)
+-LIBSTDCXX_NAME := libstdc++.so.6
++LIBSTDCXX_NAME := libc++.so
+ ifeq ($(USE_SYSTEM_CSL),1)
+ LIBSTDCXX_BUILD_DEPLIB := $(call dep_lib_path,$(build_libdir),$(build_private_shlibdir)/$(LIBSTDCXX_NAME))
+ else
+--- a/src/codegen.cpp	2021-11-14 16:03:00.092635879 +0100
++++ b/src/codegen.cpp	2021-11-14 15:58:27.911347679 +0100
+@@ -7648,6 +7648,13 @@
+     add_named_global(pointer_from_objref_func, (void*)NULL);
+     add_named_global(except_enter_func, (void*)NULL);
+ 
++    // intrinsics
++    add_named_global("__udivmodti4", &__udivmodti4);
++    add_named_global("__umodti3", &__umodti3);
++    add_named_global("__udivti3", &__udivti3);
++    add_named_global("__divti3", &__divti3);
++    add_named_global("__modti3", &__modti3);
++
+ #ifdef _OS_WINDOWS_
+ #if defined(_CPU_X86_64_)
+ #if defined(_COMPILER_GCC_)
+--- a/src/debuginfo.cpp	2021-03-24 21:02:52.000000000 +0100
++++ b/src/debuginfo.cpp	2021-11-14 15:58:27.908347643 +0100
+@@ -766,7 +766,7 @@
+     bool needs_name = name && (!*name || untrusted_dladdr);
+     // Try platform specific methods first since they are usually faster
+     if (needs_saddr) {
+-#if (defined(_OS_LINUX_) || defined(_OS_FREEBSD_)) && !defined(JL_DISABLE_LIBUNWIND)
++#if (defined(_OS_FREEBSD_)) && !defined(JL_DISABLE_LIBUNWIND)
+         unw_proc_info_t pip;
+         // Seems that libunwind may return NULL IP depending on what info it finds...
+         if (unw_get_proc_info_by_ip(unw_local_addr_space, pointer,
+--- a/src/intrinsics.cpp	2021-03-24 21:02:52.000000000 +0100
++++ b/src/intrinsics.cpp	2021-11-14 15:58:27.909347655 +0100
+@@ -1306,6 +1306,13 @@
+     assert(0 && "unreachable");
+ }
+ 
++// intrinsics
++extern "C" unsigned long long __udivmodti4 (unsigned long long a, unsigned long long b, unsigned long long *c);
++extern "C" unsigned long long __umodti3 (unsigned long long a, unsigned long long b);
++extern "C" unsigned long long __udivti3 (unsigned long long a, unsigned long long b);
++extern "C" long long __divti3 (long long a, long long b);
++extern "C" long long __modti3 (long long a, long long b);
++
+ 
+ // float16 intrinsics
+ // TODO: use LLVM's compiler-rt
+--- a/stdlib/CompilerSupportLibraries_jll/src/CompilerSupportLibraries_jll.jl	2021-03-24 21:02:52.000000000 +0100
++++ b/stdlib/CompilerSupportLibraries_jll/src/CompilerSupportLibraries_jll.jl	2021-11-14 15:58:27.848346923 +0100
+@@ -9,14 +9,12 @@
+ const PATH_list = String[]
+ const LIBPATH_list = String[]
+ 
+-export libgfortran, libstdcxx, libgomp
++export libstdcxx, libgomp
+ 
+ # These get calculated in __init__()
+ const PATH = Ref("")
+ const LIBPATH = Ref("")
+ artifact_dir::String = ""
+-libgfortran_handle::Ptr{Cvoid} = C_NULL
+-libgfortran_path::String = ""
+ libstdcxx_handle::Ptr{Cvoid} = C_NULL
+ libstdcxx_path::String = ""
+ libgomp_handle::Ptr{Cvoid} = C_NULL
+@@ -43,10 +41,9 @@
+     const libgomp = "@rpath/libgomp.1.dylib"
+     const libssp = "@rpath/libssp.0.dylib"
+ else
+-    const libgcc_s = "libgcc_s.so.1"
+-    const libgfortran = string("libgfortran.so.", libgfortran_version(HostPlatform()).major)
+-    const libstdcxx = "libstdc++.so.6"
+-    const libgomp = "libgomp.so.1"
++    const libgcc_s = "libunwind.so.1.0"
++    const libstdcxx = "libc++.so.1.0"
++    const libgomp = "libomp.so.1"
+     if libc(HostPlatform()) != "musl"
+         const libssp = "libssp.so.0"
+     end
+@@ -55,8 +52,6 @@
+ function __init__()
+     global libgcc_s_handle = dlopen(libgcc_s)
+     global libgcc_s_path = dlpath(libgcc_s_handle)
+-    global libgfortran_handle = dlopen(libgfortran)
+-    global libgfortran_path = dlpath(libgfortran_handle)
+     global libstdcxx_handle = dlopen(libstdcxx)
+     global libstdcxx_path = dlpath(libstdcxx_handle)
+     global libgomp_handle = dlopen(libgomp)
+@@ -76,7 +71,6 @@
+ find_artifact_dir() = artifact_dir
+ dev_jll() = error("stdlib JLLs cannot be dev'ed")
+ best_wrapper = nothing
+-get_libgfortran_path() = libgfortran_path
+ get_libstdcxx_path() = libstdcxx_path
+ get_libgomp_path() = libgomp_path
+ 
+--- a/base/Makefile	2023-02-05 19:03:19.576666944 +0100
++++ b/base/Makefile	2023-02-05 19:04:00.965147814 +0100
+@@ -173,8 +173,8 @@
+ 		$$(call resolve_path,REALPATH) && \
+ 		[ -e "$$$$REALPATH" ] && \
+ 		rm -f "$$@" && \
+-		echo ln -sf "$$$$REALPATH" "$$@" && \
+-		ln -sf "$$$$REALPATH" "$$@"; \
++		echo ln -sf "$$$$REALPATH" "$$(build_private_libdir)/$2.so" && \
++		ln -sf "$$$$REALPATH" "$$(build_private_libdir)/$2.so"; \
+ 	else \
+ 		if [ "$4" != "ALLOW_FAILURE" ]; then \
+ 			echo "System library symlink failure: Unable to locate $$(libname_$2) on your system!" >&2; \
+@@ -232,18 +232,14 @@
+ endif
+ endif
+ else
+-$(eval $(call symlink_system_library,CSL,libgcc_s,1))
++$(eval $(call symlink_system_library,CSL,libunwind,1))
+ endif
+-ifneq (,$(LIBGFORTRAN_VERSION))
+-$(eval $(call symlink_system_library,CSL,libgfortran,$(LIBGFORTRAN_VERSION)))
+-endif
+-$(eval $(call symlink_system_library,CSL,libquadmath,0))
+-$(eval $(call symlink_system_library,CSL,libstdc++,6))
++$(eval $(call symlink_system_library,CSL,libc++,1))
+ # We allow libssp, libatomic and libgomp to fail as they are not available on all systems
+ $(eval $(call symlink_system_library,CSL,libssp,0,ALLOW_FAILURE))
+ $(eval $(call symlink_system_library,CSL,libatomic,1,ALLOW_FAILURE))
+-$(eval $(call symlink_system_library,CSL,libgomp,1,ALLOW_FAILURE))
+-$(eval $(call symlink_system_library,PCRE,libpcre2-8))
++$(eval $(call symlink_system_library,CSL,libomp,1,ALLOW_FAILURE))
++$(eval $(call symlink_system_library,PCRE,libpcre2-8,0))
+ $(eval $(call symlink_system_library,DSFMT,libdSFMT))
+ $(eval $(call symlink_system_library,LIBBLASTRAMPOLINE,libblastrampoline))
+ $(eval $(call symlink_system_library,BLAS,$(LIBBLASNAME))) 
+--- a/cli/loader_lib.c	2023-02-15 22:08:35.587726405 +0100
++++ b/cli/loader_lib.c	2023-02-15 22:08:51.777909633 +0100
+@@ -257,7 +257,7 @@
+         // The star is there to prevent the compiler from merging constants
+         // with "\0*libstdc++.so.6", which we string replace inside the .so during
+         // make install.
+-        void *handle = dlopen("libstdc++.so.6\0*", RTLD_LAZY);
++        void *handle = dlopen("libc++.so.1\0*", RTLD_LAZY);
+         if (!handle) {
+             _exit(0);
+         }
+--- a/Makefile	2023-02-17 15:31:46.628667916 +0100
++++ b/Makefile	2023-02-17 15:32:40.746240004 +0100
+@@ -210,7 +210,7 @@
+ JL_PRIVATE_LIBS-$(USE_SYSTEM_LAPACK) += $(LIBLAPACKNAME)
+ endif
+ 
+-JL_PRIVATE_LIBS-$(USE_SYSTEM_CSL) += libgfortran libquadmath libstdc++ libgcc_s libgomp libssp libatomic
++JL_PRIVATE_LIBS-$(USE_SYSTEM_CSL) += libc++ libunwind libomp
+ ifeq ($(OS),Darwin)
+ JL_PRIVATE_LIBS-$(USE_SYSTEM_CSL) += libc++
+ endif
+--- a/stdlib/OpenBLAS_jll/src/OpenBLAS_jll.jl 2023-06-18 16:21:20.140569024 +0200
++++ b/stdlib/OpenBLAS_jll/src/OpenBLAS_jll.jl 2023-06-18 16:29:40.874794476 +0200
+@@ -41,7 +41,6 @@
+     const _libgfortran = string("@rpath/", "libgfortran.", libgfortran_version(HostPlatform()).major, ".dylib")
+ else
+     const libopenblas = "libopenblas$(libsuffix).so"
+-    const _libgfortran = string("libgfortran.so.", libgfortran_version(HostPlatform()).major)
+ end
+ 
+ function __init__()
+@@ -63,10 +62,6 @@
+         ENV["OPENBLAS_DEFAULT_NUM_THREADS"] = "1"
+     end
+ 
+-    # As mentioned above, we are sneaking this in here so that we don't have to
+-    # depend on CSL_jll and load _all_ of its libraries.
+-    dlopen(_libgfortran)
+-
+     global libopenblas_handle = dlopen(libopenblas)
+     global libopenblas_path = dlpath(libopenblas_handle)
+     global artifact_dir = dirname(Sys.BINDIR)
