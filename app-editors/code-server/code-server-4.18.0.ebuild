@@ -20,7 +20,6 @@ NODE_PTY_V=1.1.0-beta1
 VSCODE_SPDLOG_V=0.13.11
 ARGON2_V=0.31.1
 PARCEL_WATCHER_V=2.1.0
-KEYTAR_V=7.9.0
 
 SRC_URI="
 	${BASE_URI}-amd64.tar.gz
@@ -31,14 +30,12 @@ SRC_URI="
         https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
         https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
 	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
-	https://registry.npmjs.org/keytar/-/keytar-${KEYTAR_V}.tgz -> vscodedep-keytar-${KEYTAR_V}.tar.gz
 "
 
 REBUILD_VSCODE_BINMODS=(
         native-watchdog
         node-pty
         @vscode/spdlog
-	keytar
 )
 
 COMPILE_VSCODE_BINMODS=(

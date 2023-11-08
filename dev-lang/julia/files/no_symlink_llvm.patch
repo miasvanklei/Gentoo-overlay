@@ -1,0 +1,22 @@
+--- a/base/Makefile    2019-11-17 14:07:20.000000000 -0500
++++ b/base/Makefile    2020-03-28 20:38:40.041571679 -0400
+@@ -223,7 +223,7 @@
+        ln -sf "$$REALPATH" "$@"
+ ifneq ($(USE_SYSTEM_LLVM),0)
+ ifneq ($(USE_LLVM_SHLIB),0)
+-SYMLINK_SYSTEM_LIBRARIES += symlink_libLLVM
++#SYMLINK_SYSTEM_LIBRARIES += symlink_libLLVM
+ endif
+ endif
+ 
+--- a/Makefile	2023-02-15 21:25:35.360615337 +0100
++++ b/Makefile	2023-02-15 21:25:14.257331380 +0100
+@@ -232,7 +232,7 @@
+ # Note that we disable MSYS2's path munging here, as otherwise
+ # it replaces our `:`-separated list as a `;`-separated one.
+ define stringreplace
+-	MSYS2_ARG_CONV_EXCL='*' $(build_depsbindir)/stringreplace $$(strings -t x - '$1' | grep "$2" | awk '{print $$1;}') "$3" 255 "$(call cygpath_w,$1)"
++	MSYS2_ARG_CONV_EXCL='*' $(build_depsbindir)/stringreplace $$(strings -t x - $1 | grep "$2" | awk '{print $$1;}') "$3" 255 "$(call cygpath_w,$1)"
+ endef
+ 
+ 

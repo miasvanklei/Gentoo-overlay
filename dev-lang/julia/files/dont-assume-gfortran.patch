@@ -1,0 +1,11 @@
+--- a/Make.inc	2023-07-28 16:31:36.752492038 +0200
++++ b/Make.inc	2023-07-28 16:32:02.042742086 +0200
+@@ -1197,7 +1197,7 @@
+ endif
+ 
+ # Auto-detect triplet once, create different versions that we use as defaults below for each BB install target
+-FC_VERSION := $(shell $(FC) -dM -E - < /dev/null 2>/dev/null | grep __GNUC__ | cut -d' ' -f3)
++FC_VERSION := $(shell $(FC) -dumpfullversion -dumpversion 2>/dev/null | cut -d' ' -f1)
+ ifeq ($(USEGCC)$(FC_VERSION),1)
+ FC_OR_CC_VERSION := $(shell $(CC) -dumpfullversion -dumpversion 2>/dev/null | cut -d'.' -f1)
+ # n.b. clang's __GNUC__ macro pretends to be gcc 4.2.1, so leave it as the empty string here if the compiler is not certain to be GCC
