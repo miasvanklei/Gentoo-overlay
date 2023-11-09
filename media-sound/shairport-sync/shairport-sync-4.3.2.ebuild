@@ -13,9 +13,9 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm ~arm64"
 
-IUSE="airplay-2 +alsa convolution jack mbedtls +openssl pulseaudio soundio soxr"
+IUSE="airplay-2 +alsa convolution jack mbedtls +openssl +pipewire pulseaudio soundio soxr"
 REQUIRED_USE="
-	|| ( alsa jack pulseaudio soundio soxr )
+	|| ( alsa jack pipewire pulseaudio soundio soxr )
 	^^ ( openssl mbedtls )"
 
 RDEPEND="
@@ -38,6 +38,7 @@ RDEPEND="
 	jack? ( virtual/jack )
 	mbedtls? ( net-libs/mbedtls )
 	openssl? ( dev-libs/openssl )
+	pipewire? ( media-sound/pipewire )
 	pulseaudio? ( media-sound/pulseaudio )
 	soundio? ( media-libs/libsoundio )
 	soxr? ( media-libs/soxr )
@@ -70,12 +71,12 @@ src_configure() {
 		--with-pipe \
 		--with-stdout \
 		--with-systemd \
-		--without-pw \
 		$(use_with airplay-2) \
 		$(use_with alsa) \
 		$(use_with convolution) \
 		$(use_with jack) \
 		$(use_with pulseaudio pa) \
+		$(use_with pipewire pw) \
 		$(use_with soundio) \
 		$(use_with soxr) \
 		$myconf
