@@ -145,7 +145,7 @@ LICENSE=""
 # Dependent crate licenses
 LICENSE+=" Apache-2.0 BSD-2 MIT Unicode-DFS-2016"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 
 S="${WORKDIR}/${P}/adapter"
 

@@ -11,7 +11,7 @@ HOMEPAGE="https://mlir.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 IUSE="debug python test"
 REQUIRED_USE="
 	python? ( ${PYTHON_REQUIRED_USE} )"
