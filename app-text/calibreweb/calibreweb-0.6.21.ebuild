@@ -49,9 +49,8 @@ RDEPEND="
 )
 "
 
-src_install()
-{
-	default
+src_install() {
+	distutils-r1_src_install
 
 	systemd_dounit ${FILESDIR}/${PN}.service
 }
