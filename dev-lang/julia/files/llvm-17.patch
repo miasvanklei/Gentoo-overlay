@@ -1335,6 +1335,17 @@ diff --color -ur a/src/jitlayers.cpp b/src/jitlayers.cpp
  }
  
  StringRef JuliaOJIT::getFunctionAtAddress(uint64_t Addr, jl_code_instance_t *codeinst)
+@@ -1691,8 +1691,8 @@
+ void JuliaOJIT::enableJITDebuggingSupport()
+ {
+     orc::SymbolMap GDBFunctions;
+-    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBAllocAction")] = JITEvaluatedSymbol::fromPointer(&llvm_orc_registerJITLoaderGDBAllocAction, JITSymbolFlags::Exported | JITSymbolFlags::Callable);
+-    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBWrapper")] = JITEvaluatedSymbol::fromPointer(&llvm_orc_registerJITLoaderGDBWrapper, JITSymbolFlags::Exported | JITSymbolFlags::Callable);
++    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBAllocAction")] = ExecutorSymbolDef(ExecutorAddr::fromPtr(&llvm_orc_registerJITLoaderGDBAllocAction), JITSymbolFlags::Exported | JITSymbolFlags::Callable);
++    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBWrapper")] = ExecutorSymbolDef(ExecutorAddr::fromPtr(&llvm_orc_registerJITLoaderGDBWrapper), JITSymbolFlags::Exported | JITSymbolFlags::Callable);
+     cantFail(JD.define(orc::absoluteSymbols(GDBFunctions)));
+     if (TM->getTargetTriple().isOSBinFormatMachO())
+         ObjectLayer.addPlugin(cantFail(orc::GDBJITDebugInfoRegistrationPlugin::Create(ES, JD, TM->getTargetTriple())));
 @@ -1759,7 +1813,7 @@
                  }
                  // Reparent the global variable:
