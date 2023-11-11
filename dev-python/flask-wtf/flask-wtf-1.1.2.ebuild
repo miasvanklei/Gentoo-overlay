@@ -3,18 +3,19 @@
 
 EAPI=8
 
-DISTUTILS_USE_PEP517=setuptools
+DISTUTILS_USE_PEP517=hatchling
 PYTHON_COMPAT=( python3_{11..12} )
 PYPI_NO_NORMALIZE="True"
-PYPI_PN="Flask-WTF"
+PYPI_PN="flask-wtf"
 inherit distutils-r1 pypi
 
 DESCRIPTION="Simple integration of Flask and WTForms"
 HOMEPAGE="https://pythonhosted.org/Flask-WTF"
+SRC_URI="https://github.com/wtforms/flask-wtf/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 
 RDEPEND="
 	>=dev-python/Babel-1[${PYTHON_USEDEP}]
