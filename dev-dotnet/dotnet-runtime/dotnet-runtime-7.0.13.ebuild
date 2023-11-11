@@ -121,7 +121,6 @@ src_install() {
 
 	mkdir -p "${dest_app}" || die
 	mkdir -p "${dest_pack}" || die
-	mkdir -p "${dest_fxr}" || die
 
 	for file in "${COREFX_FILES[@]}"; do
 		cp -pP "${ARTIFACTS_COREFX}/${file}" "${dest_app}/" || die
