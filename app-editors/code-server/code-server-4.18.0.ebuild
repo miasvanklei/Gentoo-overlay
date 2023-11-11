@@ -59,7 +59,7 @@ CLEANUP_VSCODE_BINMODS=(
 RESTRICT="test"
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
 DEPEND=""
@@ -67,7 +67,6 @@ RDEPEND="
 	${DEPEND}
 	>=net-libs/nodejs-18.17.1:0/18[ssl]
 	sys-apps/ripgrep
-	app-crypt/libsecret
 "
 
 S="${WORKDIR}/${PN}-${MY_PV}-linux-amd64"
