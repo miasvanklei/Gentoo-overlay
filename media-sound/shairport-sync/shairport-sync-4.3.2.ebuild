@@ -38,7 +38,7 @@ RDEPEND="
 	jack? ( virtual/jack )
 	mbedtls? ( net-libs/mbedtls )
 	openssl? ( dev-libs/openssl )
-	pipewire? ( media-sound/pipewire )
+	pipewire? ( media-video/pipewire )
 	pulseaudio? ( media-sound/pulseaudio )
 	soundio? ( media-libs/libsoundio )
 	soxr? ( media-libs/soxr )
