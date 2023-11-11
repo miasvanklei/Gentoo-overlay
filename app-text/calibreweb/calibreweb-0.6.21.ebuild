@@ -5,7 +5,7 @@ EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
 PYTHON_COMPAT=( python3_{11..12} )
-inherit distutils-r1 pypi
+inherit distutils-r1 pypi systemd
 
 DESCRIPTION="Simple integration of Flask and WTForms"
 HOMEPAGE="https://pypi.org/project/calibreweb/"
@@ -49,3 +49,9 @@ RDEPEND="
 )
 "
 
+src_install()
+{
+	default
+
+	systemd_dounit ${FILESDIR}/${PN}.service
+}
