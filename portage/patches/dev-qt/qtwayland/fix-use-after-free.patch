@@ -1,0 +1,53 @@
+From 6cc9cdbfddae3b801876273763804bd02b785a49 Mon Sep 17 00:00:00 2001
+From: Paul Olav Tvete <paul.tvete@qt.io>
+Date: Mon, 18 Sep 2023 12:06:16 +0200
+Subject: Fix use-after-free with animated cursors
+
+In WlCallback::callback_done(), m_fn() can cause the callback object to
+be deleted, so it should not be referenced after that. Since
+m_autoDelete is never set to true, the rest of callback_done()
+is dead code and can be removed.
+
+Fixes: QTBUG-117067
+Pick-to: 6.6 6.5
+Change-Id: I0b1a1fcb8204cba789272f3861be4c2e2d0789b4
+Reviewed-by: Eskil Abrahamsen Blomfeldt <eskil.abrahamsen-blomfeldt@qt.io>
+Reviewed-by: Vlad Zahorodnii <vlad.zahorodnii@kde.org>
+---
+ src/client/qwaylandinputdevice.cpp | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+(limited to 'src/client/qwaylandinputdevice.cpp')
+
+diff --git a/src/client/qwaylandinputdevice.cpp b/src/client/qwaylandinputdevice.cpp
+index c4629905..c898fcf0 100644
+--- a/src/client/qwaylandinputdevice.cpp
++++ b/src/client/qwaylandinputdevice.cpp
+@@ -155,23 +155,16 @@ QWaylandWindow *QWaylandInputDevice::Pointer::focusWindow() const
+ 
+ class WlCallback : public QtWayland::wl_callback {
+ public:
+-    explicit WlCallback(::wl_callback *callback, std::function<void(uint32_t)> fn, bool autoDelete = false)
++    explicit WlCallback(::wl_callback *callback, std::function<void(uint32_t)> fn)
+         : QtWayland::wl_callback(callback)
+         , m_fn(fn)
+-        , m_autoDelete(autoDelete)
+     {}
+     ~WlCallback() override { wl_callback_destroy(object()); }
+-    bool done() const { return m_done; }
+     void callback_done(uint32_t callback_data) override {
+-        m_done = true;
+         m_fn(callback_data);
+-        if (m_autoDelete)
+-            delete this;
+     }
+ private:
+-    bool m_done = false;
+     std::function<void(uint32_t)> m_fn;
+-    bool m_autoDelete = false;
+ };
+ 
+ class CursorSurface : public QWaylandSurface
+-- 
+cgit v1.2.3
+
