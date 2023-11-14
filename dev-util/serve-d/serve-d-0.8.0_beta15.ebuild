@@ -11,7 +11,7 @@ SRC_URI="https://github.com/Pure-D/serve-d/archive/refs/tags/v${MY_PV}.tar.gz ->
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 IUSE=""
 RESTRICT="network-sandbox"
 
@@ -22,10 +22,6 @@ DEPEND="
 RDEPEND="${DEPEND}"
 
 S="${WORKDIR}/${PN}-${MY_PV}"
-
-PATCHES=(
-	"${FILESDIR}/backtrace.patch"
-)
 
 src_compile() {
 	dub build --build=release --parallel || die
