@@ -8,21 +8,22 @@ HOMEPAGE="https://github.com/dlang-community/DCD"
 LICENSE="GPL-3"
 
 SLOT="0"
-KEYWORDS="~amd64 ~x86"
+KEYWORDS="~amd64 ~arm64"
 IUSE="systemd"
 
 inherit bash-completion-r1
 
 CONTAINERS="116a02872039efbd0289828cd5eeff6f60bdf539"
-LIBDPARSE="592ef39a73a58439afc75a3e6c13a0d87d0b847d"
+LIBDPARSE="86c9bf44c96e1666eb175c749cc26f62c2008979"
 MSGPACK="480f3bf9ee80ccf6695ed900cfcc1850ba8da991"
+MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
 SRC_URI="
-	https://github.com/dlang-community/DCD/archive/v${PV}.tar.gz -> DCD-${PV}.tar.gz
+	https://github.com/dlang-community/DCD/archive/v${MY_PV}.tar.gz -> DCD-${PV}.tar.gz
 	https://github.com/economicmodeling/containers/archive/${CONTAINERS}.tar.gz -> containers-${CONTAINERS}.tar.gz
 	https://github.com/dlang-community/libdparse/archive/${LIBDPARSE}.tar.gz -> libdparse-${LIBDPARSE}.tar.gz
 	https://github.com/msgpack/msgpack-d/archive/${MSGPACK}.tar.gz -> msgpack-d-${MSGPACK}.tar.gz
 	"
-S="${WORKDIR}/DCD-${PV}"
+S="${WORKDIR}/DCD-${MY_PV}"
 
 src_prepare() {
 	# Default ebuild unpack function places archives side-by-side ...
