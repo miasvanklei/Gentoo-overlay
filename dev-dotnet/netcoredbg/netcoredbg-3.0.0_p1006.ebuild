@@ -5,7 +5,7 @@ EAPI=8
 
 inherit cmake
 
-RUNTIME_PV="7.0.9"
+RUNTIME_PV="8.0.0"
 
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
