@@ -5,7 +5,7 @@ EAPI=8
 
 DESCRIPTION="Virtual for dotnet core"
 
-SLOT="6"
+SLOT="8"
 KEYWORDS="amd64 arm64"
 IUSE=""
 
