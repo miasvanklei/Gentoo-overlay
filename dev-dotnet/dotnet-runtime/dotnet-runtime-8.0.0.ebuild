@@ -3,12 +3,11 @@
 
 EAPI=8
 
+inherit toolchain-funcs
+
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
-
-inherit toolchain-funcs
-
 SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 
 SLOT="0"
@@ -65,6 +64,11 @@ PACK_FILES=(
 
 S="${WORKDIR}/runtime-${PV}"
 
+PATCHES=(
+	"${FILESDIR}"/musl-lfs64.patch
+	"${FILESDIR}"/skipmanaged-corehost.patch
+)
+
 pkg_setup() {
 	if use arm64; then
 		DARCH=arm64
@@ -77,18 +81,10 @@ pkg_setup() {
 	export COREFX_S="${S}/src/native/libs"
 	export CORESETUP_S="${S}/src/native/corehost"
 	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/current/runtimes/${TARGET}/native"
-	export ARTIFACTS_COREFX="${S}/artifacts/bin/native/Linux-${DARCH}-Release"
-	export ARTIFACTS_CORECLR="${S}/artifacts/bin/coreclr/Linux.${DARCH}.Release"
+	export ARTIFACTS_COREFX="${S}/artifacts/bin/native/linux-${DARCH}-Release"
+	export ARTIFACTS_CORECLR="${S}/artifacts/bin/coreclr/linux.${DARCH}.Release"
 	export ARTIFACTS_CORESETUP="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
 
-}
-
-src_prepare() {
-	eapply "${FILESDIR}"/musl-lfs64.patch
-	eapply "${FILESDIR}"/fix-debugging.patch
-	eapply "${FILESDIR}"/skipmanaged-corehost.patch
-
-	default
 }
 
 src_compile() {
