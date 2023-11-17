@@ -14,7 +14,9 @@ KEYWORDS="~amd64 ~arm64"
 RESTRICT="network-sandbox"
 
 RDEPEND="
-	virtual/dotnet-core"
+	dev-dotnet/skia-sharp
+	virtual/dotnet-core:8
+"
 DEPEND="${RDEPEND}"
 
 QA_PRESTRIPPED="
@@ -24,10 +26,6 @@ QA_PRESTRIPPED="
 "
 
 BUILD_DIR="${WORKDIR}/${P}_build"
-
-PATCHES=(
-#	"${FILESDIR}"/fix-build.patch
-)
 
 publish_sqltool()
 {
@@ -39,13 +37,21 @@ publish_sqltool()
 src_prepare() {
 	rm global.json
 
+	# make CA errors, warnings
+	sed -i 's/error/warning/g' .editorconfig
+
+	# fix .net version
+	grep -rl "net7.0" --include \*.csproj . | xargs sed -i 's/net7.0/net8.0/g'
+
 	# fix casing
 	mkdir -p ${BUILD_DIR}/pt-BR
 	mkdir -p ${BUILD_DIR}/zh-hans
 	mkdir -p ${BUILD_DIR}/zh-hant
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net7.0/zh-hans
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net7.0/zh-hant
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net7.0/pt-br
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net8.0/zh-hans
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net8.0/zh-hant
+	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net8.0/pt-br
+
+	eapply "${FILESDIR}"/fix-net8.0.patch
 
 	default
 }
@@ -55,7 +61,6 @@ src_compile() {
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	export DOTNET_NOLOGO=1
 
-
 	publish_sqltool ServiceLayer
 	publish_sqltool ResourceProvider
 }
@@ -64,6 +69,8 @@ src_install() {
 	local installdir="/usr/share/dotnet/${PN}"
 	insinto ${installdir}
 	doins -r ${BUILD_DIR}/*
+
+	find "{D}/usr/share/dotnet/${PN}" -name "libSkiaSharp.so" -delete
 
 	# fix executable bit
 	pushd ${D}/${installdir} >/dev/null || die
