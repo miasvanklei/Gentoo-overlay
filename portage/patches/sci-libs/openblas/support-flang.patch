@@ -110,18 +110,15 @@
  	-Wl,--whole-archive $< -Wl,--no-whole-archive \
 --- a/test/Makefile	2023-04-01 22:18:01.000000000 +0200
 +++ b/test/Makefile	2023-07-30 18:02:31.300537848 +0200
-@@ -263,8 +263,11 @@
- 
- 
- ifeq ($(USE_OPENMP), 1)
--ifeq ($(F_COMPILER), GFORTRAN)
- ifeq ($(C_COMPILER), CLANG)
-+ifeq ($(F_COMPILER), GFORTRAN)
-+CEXTRALIB = -lomp
-+endif
-+ifeq ($(F_COMPILER), FLANG)
- CEXTRALIB = -lomp
+@@ -268,6 +268,9 @@
+ CEXTRALIB += -lomp
  endif
+ endif
++ifeq ($(F_COMPILER), FLANG)
++CEXTRALIB += -lomp
++endif
+ ifeq ($(F_COMPILER), NAG)
+ CEXTRALIB = -lgomp
  endif
 --- a/f_check	2023-04-01 22:18:01.000000000 +0200
 +++ b/f_check	2023-07-30 18:07:36.347730563 +0200
