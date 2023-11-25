@@ -10,7 +10,6 @@ CRATES="
 	adler@1.0.2
 	always-assert@0.1.3
 	anyhow@1.0.71
-	anymap@1.0.0-beta.2
 	arbitrary@1.3.0
 	arrayvec@0.7.4
 	atty@0.2.14
@@ -24,10 +23,10 @@ CRATES="
 	cargo_metadata@0.15.4
 	cc@1.0.79
 	cfg-if@1.0.0
-	chalk-derive@0.92.0
-	chalk-ir@0.92.0
-	chalk-recursive@0.92.0
-	chalk-solve@0.92.0
+	chalk-derive@0.93.0
+	chalk-ir@0.93.0
+	chalk-recursive@0.93.0
+	chalk-solve@0.93.0
 	command-group@2.1.0
 	countme@3.0.1
 	cov-mark@2.0.0-pre.1
@@ -45,7 +44,7 @@ CRATES="
 	ena@0.14.2
 	equivalent@1.0.0
 	expect-test@1.4.1
-	filetime@0.2.19
+	filetime@0.2.22
 	fixedbitset@0.2.0
 	flate2@1.0.26
 	form_urlencoded@1.2.0
@@ -57,8 +56,6 @@ CRATES="
 	heck@0.3.3
 	hermit-abi@0.1.19
 	hermit-abi@0.2.6
-	hkalbasi-rustc-ap-rustc_abi@0.0.20221221
-	hkalbasi-rustc-ap-rustc_index@0.0.20221221
 	home@0.5.5
 	idna@0.4.0
 	indexmap@1.9.3
@@ -73,7 +70,7 @@ CRATES="
 	kqueue@1.0.7
 	la-arena@0.3.1
 	lazy_static@1.4.0
-	libc@0.2.146
+	libc@0.2.148
 	libloading@0.8.0
 	libmimalloc-sys@0.1.33
 	line-index@0.1.0-pre.1
@@ -92,7 +89,7 @@ CRATES="
 	miow@0.5.0
 	nix@0.26.2
 	nohash-hasher@0.2.0
-	notify@5.1.0
+	notify@6.1.1
 	nu-ansi-term@0.46.0
 	num_cpus@1.15.0
 	object@0.30.4
@@ -111,15 +108,21 @@ CRATES="
 	petgraph@0.5.1
 	pin-project-lite@0.2.9
 	proc-macro2@1.0.60
-	protobuf-support@3.1.0
-	protobuf@3.1.0
+	protobuf-support@3.2.0
+	protobuf@3.2.0
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.3
 	quote@1.0.28
-	ra-ap-rustc_lexer@0.1.0
+	ra-ap-rustc_abi@0.18.0
+	ra-ap-rustc_index@0.14.0
+	ra-ap-rustc_index@0.18.0
+	ra-ap-rustc_lexer@0.14.0
+	ra-ap-rustc_lexer@0.18.0
+	ra-ap-rustc_parse_format@0.14.0
 	rayon-core@1.11.0
 	rayon@1.7.0
 	redox_syscall@0.2.16
+	redox_syscall@0.3.5
 	rowan@0.15.11
 	rustc-demangle@0.1.23
 	rustc-hash@1.1.0
@@ -127,7 +130,7 @@ CRATES="
 	salsa-macros@0.17.0-pre.2
 	salsa@0.17.0-pre.2
 	same-file@1.0.6
-	scip@0.1.1
+	scip@0.3.1
 	scoped-tls@1.0.1
 	scopeguard@1.1.0
 	semver@1.0.17
@@ -163,15 +166,11 @@ CRATES="
 	triomphe@0.1.8
 	typed-arena@2.0.2
 	ungrammar@1.16.1
-	unic-char-property@0.9.0
-	unic-char-range@0.9.0
-	unic-common@0.9.0
-	unic-emoji-char@0.9.0
-	unic-ucd-version@0.9.0
 	unicase@2.6.0
 	unicode-bidi@0.3.13
 	unicode-ident@1.0.9
 	unicode-normalization@0.1.22
+	unicode-properties@0.1.0
 	unicode-segmentation@1.10.1
 	unicode-xid@0.2.4
 	url@2.4.0
@@ -225,10 +224,7 @@ SRC_URI="$(cargo_crate_uris)
 
 LICENSE=""
 # Dependent crate licenses
-LICENSE+="
-	Apache-2.0 BSD ISC MIT Unicode-DFS-2016
-	|| ( Artistic-2 CC0-1.0 )
-"
+LICENSE+=" Apache-2.0 BSD CC0-1.0 ISC MIT Unicode-DFS-2016"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
