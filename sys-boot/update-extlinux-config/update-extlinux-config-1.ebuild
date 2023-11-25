@@ -21,6 +21,10 @@ pkg_preinst() {
 	:
 }
 
+pkg_setup() {
+	export kernels=($(ls -t /boot/vmlinuz*))
+}
+
 add_extlinux_entry() {
 	cat <<- _EOF_ >> ${S}/extlinux.conf
 
@@ -33,7 +37,6 @@ add_extlinux_entry() {
 }
 
 add_extlinux_entries() {
-	local kernels=($(ls /boot/vmlinuz* | sort -Vr))
 	local root_partuuid=$(findmnt -fn -o PARTUUID /)
 	local boot_args="root=PARTUUID=${root_partuuid} rootwait quiet loglevel=0 vt.global_cursor_default=0 ${EXTRA_BOOT_ARGS}"
 
