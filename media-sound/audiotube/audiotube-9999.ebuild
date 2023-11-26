@@ -3,8 +3,11 @@
 
 EAPI=8
 
+EGIT_COMMIT="67be43d7301ced3e6033ef42c7314752d4e75473"
+
 ECM_HANDBOOK="false"
 ECM_TEST="forceoptional"
+
 KFMIN=5.101.0
 QTMIN=5.15.5
 inherit ecm gear.kde.org
