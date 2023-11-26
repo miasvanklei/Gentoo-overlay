@@ -1,0 +1,37 @@
+--- a/configure.ac	2023-09-24 16:10:50.071708057 +0200
++++ b/configure.ac	2023-09-24 16:11:37.991946228 +0200
+@@ -961,14 +961,14 @@
+         fi
+ 
+         AC_MSG_CHECKING([neon support])
+-        CXXFLAGS="$save_cxxflags -mfpu=neon -mcpu=cortex-a53"
++        CXXFLAGS="$save_cxxflags"
+ 
+         TESS_NEON=""
+         AC_LINK_IFELSE(
+          [AC_LANG_PROGRAM([#include "arm_neon.h"],
+                           [int32x4_t round = vdupq_n_s32(10);
+                            return(0);])],
+-         [TESS_NEON="-mfpu=neon -mcpu=cortex-a53 -D__ARM_NEON__"],
++         [TESS_NEON="-D__ARM_NEON__"],
+          [TESS_NEON=""])
+ 
+         if test "x$TESS_NEON" != x; then
+@@ -2388,7 +2388,7 @@
+   fi
+ 
+   AC_MSG_CHECKING([neon support])
+-  CFLAGS="$save_cflags $OPT_CFLAGS -mfpu=neon -mcpu=cortex-a53"
++  CFLAGS="$save_cflags"
+   HAVE_NEON=""
+   AC_LINK_IFELSE(
+     [AC_LANG_PROGRAM([#include "arm_neon.h"], [
+@@ -2426,7 +2426,7 @@
+     CAL_CFLAGS="$CAL_CFLAGS $HAVE_AVX2"
+   fi
+   if test "x$HAVE_NEON" != x; then
+-    CAL_NEON_CFLAGS="-mfpu=neon -mcpu=cortex-a53"
++    CAL_NEON_CFLAGS=""
+     CAL_CFLAGS="$CAL_CFLAGS $HAVE_NEON"
+   fi
+ fi
