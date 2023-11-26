@@ -12,8 +12,9 @@ IUSE=""
 RDEPEND="
 	dev-dotnet/dotnet-sdk
 	dev-dotnet/dotnet-runtime
-        dev-dotnet/netcore-runtime
-        dev-dotnet/aspnet-runtime
+	dev-dotnet/netcore-runtime
+	dev-dotnet/aspnet-runtime
+        ~dev-dotnet/dotnet-runtime-nugets-${PV}
 "
 
 S=${WORKDIR}
