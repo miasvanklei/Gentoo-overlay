@@ -10,7 +10,6 @@ KEYWORDS="amd64 arm64"
 IUSE=""
 
 RDEPEND="
-	dev-dotnet/dotnet-sdk
 	dev-dotnet/dotnet-runtime
 	dev-dotnet/netcore-runtime
 	dev-dotnet/aspnet-runtime
