@@ -10,11 +10,13 @@ LICENSE="MIT"
 SDK="${PN}-${PV}-linux-musl"
 
 SRC_URI="
-        amd64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-x64.tar.gz )
-        arm64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-arm64.tar.gz )
+	amd64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-x64.tar.gz )
+	arm64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-arm64.tar.gz )
 "
 
-SLOT="0"
+SDK_SLOT="$(ver_cut 1-2)"
+RUNTIME_SLOT="${SDK_SLOT}.0"
+SLOT="${SDK_SLOT}/${RUNTIME_SLOT}"
 KEYWORDS="~amd64 ~arm64"
 
 RDEPEND=""
