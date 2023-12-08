@@ -1,0 +1,41 @@
+--- a/ldso/dynlink.c	2023-12-01 21:24:46.868103051 +0100
++++ b/ldso/dynlink.c	2023-12-01 22:23:11.444288142 +0100
+@@ -345,6 +345,30 @@
+ 	return find_sym2(dso, s, need_def, 0);
+ }
+ 
++static struct symdef get_glibc_compat(const char *name)
++{
++	const char *p;
++	static const char glibc_list[] =
++		"calloc\0free\0malloc\0"
++		"memalign\0realloc\0";
++	static const char *pre = "__libc_";
++	static const int len = 7;
++	size_t l;
++	char buf[16] = {0};
++	if(strncmp(pre, name, len) != 0) goto nomatch;
++	for (l=0; name[l]; l++) {
++		if (l >= sizeof buf) goto nomatch;
++		buf[l] = name[l];
++	}
++	char *sym = (&buf[0])+len;
++	for (p=glibc_list; *p; p++) {
++		if (!strcmp(sym, p)) return find_sym(&ldso, sym, 1);
++		while (*p) p++;
++	}
++nomatch:
++	return (struct symdef){ 0 };
++}
++
+ static struct symdef get_lfs64(const char *name)
+ {
+ 	const char *p;
+@@ -433,6 +457,7 @@
+ 				? (struct symdef){ .dso = dso, .sym = sym }
+ 				: find_sym(ctx, name, type==REL_PLT);
+ 			if (!def.sym) def = get_lfs64(name);
++			if (!def.sym) def = get_glibc_compat(name);
+ 			if (!def.sym && (sym->st_shndx != SHN_UNDEF
+ 			    || sym->st_info>>4 != STB_WEAK)) {
+ 				if (dso->lazy && (type==REL_PLT || type==REL_GOT)) {
