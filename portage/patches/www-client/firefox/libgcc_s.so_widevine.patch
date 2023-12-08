@@ -1,0 +1,15 @@
+--- a/security/sandbox/linux/Sandbox.cpp	2023-12-01 21:00:50.011853615 +0100
++++ b/security/sandbox/linux/Sandbox.cpp	2023-12-01 21:22:15.541085350 +0100
+@@ -688,7 +688,11 @@
+   files->Add("/proc/stat", SandboxOpenedFile::Error{});
+   files->Add("/proc/net/unix", SandboxOpenedFile::Error{});
+   files->Add("/proc/self/maps", SandboxOpenedFile::Error{});
+-  Unused << dlopen("libgcc_s.so.1", RTLD_GLOBAL|RTLD_LAZY);
++
++  // add libgcc_s.so.1 and ld-linux-x86-64.so.2: widevine
++  files->Add("/lib/libgcc_s.so.1");
++  files->Add("/lib/ld-linux-x86-64.so.2");
++
+   // Finally, start the sandbox.
+   SetCurrentProcessSandbox(GetMediaSandboxPolicy(files));
+ }
