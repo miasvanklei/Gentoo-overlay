@@ -8,14 +8,10 @@
          '-fno-strict-aliasing',
          '-fshort-wchar',
          '-include', 'efi_config.h',
-@@ -150,11 +151,6 @@
+@@ -150,7 +151,6 @@
  endif
  
  efi_c_ld_args = [
--        # We only support bfd. gold is going away, lld has issues with LTO on x86
--        # and mold does not support linker scripts.
--        '-fuse-ld=bfd',
--
 -        '-lgcc',
          '-nostdlib',
          '-static-pie',
@@ -35,7 +31,7 @@
  #include <stdbool.h>
  #include <stddef.h>
 @@ -386,3 +387,4 @@
-                 dummy_t __empty__ ## name;             \
-                 type name[];                           \
-         }
+ #else
+         #define DECLARE_SBAT(text)
+ #endif
 +#define INT_MAX  0x7fffffff

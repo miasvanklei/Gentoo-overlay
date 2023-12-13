@@ -291,13 +291,13 @@ diff --git a/src/shared/cgroup-setup.c b/src/shared/cgroup-setup.c
 index 2ea83f05d3..8626bb184c 100644
 --- a/src/shared/cgroup-setup.c
 +++ b/src/shared/cgroup-setup.c
-@@ -350,7 +350,7 @@ int cg_attach(const char *controller, const char *path, pid_t pid) {
+@@ -351,7 +351,7 @@
  
          xsprintf(c, PID_FMT "\n", pid);
  
 -        r = write_string_file(fs, c, WRITE_STRING_FILE_DISABLE_BUFFER);
 +        r = write_string_file(fs, c, 0);
-         if (r == -EOPNOTSUPP && cg_is_threaded(controller, path) > 0)
+         if (r == -EOPNOTSUPP && cg_is_threaded(path) > 0)
                  /* When the threaded mode is used, we cannot read/write the file. Let's return recognizable error. */
                  return -EUCLEAN;
 @@ -887,7 +887,7 @@ int cg_enable_everywhere(
@@ -322,6 +322,15 @@ index 3d2f179049..c1b6c170ac 100644
  }
  
  /* Turn off core dumps but only if we're running outside of a container. */
+@@ -173,7 +173,7 @@
+         if (detect_container() > 0)
+                 return;
+ 
+-        r = write_string_file("/proc/sys/kernel/core_pattern", "|/bin/false", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/sys/kernel/core_pattern", "|/bin/false", 0);
+         if (r < 0)
+                 log_debug_errno(r, "Failed to turn off coredumps, ignoring: %m");
+ }
 diff --git a/src/shared/smack-util.c b/src/shared/smack-util.c
 index b3b5c905ad..bbfa1973fd 100644
 --- a/src/shared/smack-util.c
@@ -335,48 +344,6 @@ index b3b5c905ad..bbfa1973fd 100644
          if (r < 0)
                  return r;
  
-diff --git a/src/sleep/sleep.c b/src/sleep/sleep.c
-index 765dd4974f..cd6afb001b 100644
---- a/src/sleep/sleep.c
-+++ b/src/sleep/sleep.c
-@@ -93,7 +93,7 @@ static int write_mode(char **modes) {
-         STRV_FOREACH(mode, modes) {
-                 int k;
- 
--                k = write_string_file("/sys/power/disk", *mode, WRITE_STRING_FILE_DISABLE_BUFFER);
-+                k = write_string_file("/sys/power/disk", *mode, 0);
-                 if (k >= 0)
-                         return 0;
- 
-@@ -114,7 +114,7 @@ static int write_state(FILE **f, char **states) {
-         STRV_FOREACH(state, states) {
-                 int k;
- 
--                k = write_string_stream(*f, *state, WRITE_STRING_FILE_DISABLE_BUFFER);
-+                k = write_string_stream(*f, *state, 0);
-                 if (k >= 0)
-                         return 0;
-                 log_debug_errno(k, "Failed to write '%s' to /sys/power/state: %m", *state);
---- a/src/shared/sleep-util.c 2023-07-05 22:14:32.426667686 +0200
-+++ b/src/shared/sleep-util.c 2023-07-05 22:15:19.428340792 +0200
-@@ -1048,7 +1048,7 @@
- 
-         /* We write the offset first since it's safer. Note that this file is only available in 4.17+, so
-          * fail gracefully if it doesn't exist and we're only overwriting it with 0. */
--        r = write_string_file("/sys/power/resume_offset", offset_str, WRITE_STRING_FILE_DISABLE_BUFFER);
-+        r = write_string_file("/sys/power/resume_offset", offset_str, 0);
-         if (r == -ENOENT) {
-                 if (offset != 0)
-                         return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP),
-@@ -1064,7 +1064,7 @@
-                 log_debug("Wrote resume_offset=%s for device '%s' to /sys/power/resume_offset.",
-                           offset_str, device);
- 
--        r = write_string_file("/sys/power/resume", devno_str, WRITE_STRING_FILE_DISABLE_BUFFER);
-+        r = write_string_file("/sys/power/resume", devno_str, 0);
-         if (r < 0)
-                 return log_error_errno(r,
-                                        "Failed to write device '%s' (%s) to /sys/power/resume: %m",
 diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
 index 0ce79f815c..28aab475d0 100644
 --- a/src/udev/udev-rules.c
@@ -402,17 +369,6 @@ index 7d3e9db73f..2d4a0c4c9d 100644
          if (r < 0)
                  return log_warning_errno(r, "Failed to %s sysfs UTF-8 flag: %m", enable_disable(utf8));
  
---- a/src/shared/coredump-util.c	2023-04-18 19:50:48.860511446 +0200
-+++ b/src/shared/coredump-util.c	2023-04-18 19:51:07.179740401 +0200
-@@ -173,7 +173,7 @@
-         if (detect_container() > 0)
-                 return;
- 
--        r = write_string_file("/proc/sys/kernel/core_pattern", "|/bin/false", WRITE_STRING_FILE_DISABLE_BUFFER);
-+        r = write_string_file("/proc/sys/kernel/core_pattern", "|/bin/false", 0);
-         if (r < 0)
-                 log_debug_errno(r, "Failed to turn off coredumps, ignoring: %m");
- }
 --- a/src/shared/watchdog.c	2023-04-18 19:51:23.524945264 +0200
 +++ b/src/shared/watchdog.c	2023-04-18 19:51:40.874167817 +0200
 @@ -93,7 +93,7 @@
@@ -423,4 +379,138 @@ index 7d3e9db73f..2d4a0c4c9d 100644
 +                              WRITE_STRING_FILE_VERIFY_ON_FAILURE | WRITE_STRING_FILE_VERIFY_IGNORE_NEWLINE);
          if (r < 0)
                  return log_error_errno(r, "Failed to set pretimeout_governor to '%s': %m", governor);
+ 
+--- a/src/shared/hibernate-util.c	2023-12-12 17:40:56.601773924 +0100
++++ b/src/shared/hibernate-util.c	2023-12-12 17:41:26.351705481 +0100
+@@ -481,7 +481,7 @@
+ 
+         /* We write the offset first since it's safer. Note that this file is only available in 4.17+, so
+          * fail gracefully if it doesn't exist and we're only overwriting it with 0. */
+-        r = write_string_file("/sys/power/resume_offset", offset_str, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/power/resume_offset", offset_str, 0);
+         if (r == -ENOENT) {
+                 if (offset != 0)
+                         return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP),
+@@ -497,7 +497,7 @@
+                 log_debug("Wrote resume_offset=%s for device '%s' to /sys/power/resume_offset.",
+                           offset_str, device);
+ 
+-        r = write_string_file("/sys/power/resume", devno_str, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/sys/power/resume", devno_str, 0);
+         if (r < 0)
+                 return log_error_errno(r,
+                                        "Failed to write device '%s' (%s) to /sys/power/resume: %m",
+--- a/src/sleep/sleep.c	2023-12-12 17:41:44.038331078 +0100
++++ b/src/sleep/sleep.c	2023-12-12 17:42:02.628287618 +0100
+@@ -137,7 +137,7 @@
+                 if (k < 0)
+                         return RET_GATHER(r, k);
+ 
+-                k = write_string_stream(f, *state, WRITE_STRING_FILE_DISABLE_BUFFER);
++                k = write_string_stream(f, *state, 0);
+                 if (k >= 0) {
+                         log_debug("Using sleep state '%s'.", *state);
+                         return 0;
+@@ -155,7 +155,7 @@
+         STRV_FOREACH(mode, modes) {
+                 int k;
+ 
+-                k = write_string_file("/sys/power/disk", *mode, WRITE_STRING_FILE_DISABLE_BUFFER);
++                k = write_string_file("/sys/power/disk", *mode, 0);
+                 if (k >= 0) {
+                         log_debug("Using sleep disk mode '%s'.", *mode);
+                         return 0;
+--- a/src/storagetm/storagetm.c	2023-12-12 17:42:19.388248191 +0100
++++ b/src/storagetm/storagetm.c	2023-12-12 17:42:32.721549994 +0100
+@@ -186,7 +186,7 @@
+                                         if (!enable_fn)
+                                                 return log_oom();
+ 
+-                                        r = write_string_file_at(namespaces_fd, enable_fn, "0", WRITE_STRING_FILE_DISABLE_BUFFER);
++                                        r = write_string_file_at(namespaces_fd, enable_fn, "0", 0);
+                                         if (r < 0)
+                                                 log_warning_errno(r, "Failed to disable namespace '%s' of NVME subsystem '%s', ignoring: %m", e->d_name, s->name);
+ 
+@@ -254,7 +254,7 @@
+                 _cleanup_free_ char *truncated = strndup(w, 40); /* kernel refuses more than 40 chars (as per nvme spec) */
+ 
+                 /* The default string stored in 'attr_model' is "Linux" btw. */
+-                r = write_string_file_at(subsystem_fd, "attr_model", truncated, WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file_at(subsystem_fd, "attr_model", truncated, 0);
+                 if (r < 0)
+                         log_warning_errno(r, "Failed to set model of subsystem to '%s', ignoring: %m", w);
+         }
+@@ -268,7 +268,7 @@
+                         return log_oom();
+ 
+                  /* The default string stored in 'attr_firmware' is `uname -r` btw, but truncated to 8 chars. */
+-                r = write_string_file_at(subsystem_fd, "attr_firmware", truncated, WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file_at(subsystem_fd, "attr_firmware", truncated, 0);
+                 if (r < 0)
+                         log_warning_errno(r, "Failed to set model of subsystem to '%s', ignoring: %m", truncated);
+         }
+@@ -295,7 +295,7 @@
+                 if (!truncated)
+                         return log_oom();
+ 
+-                r = write_string_file_at(subsystem_fd, "attr_serial", truncated, WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file_at(subsystem_fd, "attr_serial", truncated, 0);
+                 if (r < 0)
+                         log_warning_errno(r, "Failed to set serial of subsystem to '%s', ignoring: %m", truncated);
+         }
+@@ -345,7 +345,7 @@
+                 id = id128_digest(j, l);
+         }
+ 
+-        r = write_string_file_at(namespace_fd, "device_uuid", SD_ID128_TO_UUID_STRING(id), WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(namespace_fd, "device_uuid", SD_ID128_TO_UUID_STRING(id), 0);
+         if (r < 0)
+                 log_warning_errno(r, "Failed to set uuid of namespace to '%s', ignoring: %m", SD_ID128_TO_UUID_STRING(id));
+ 
+@@ -408,7 +408,7 @@
+         if (subsystem_fd < 0)
+                 return log_error_errno(subsystem_fd, "Failed to create NVME subsystem '%s': %m", j);
+ 
+-        r = write_string_file_at(subsystem_fd, "attr_allow_any_host", "1", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(subsystem_fd, "attr_allow_any_host", "1", 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to set 'attr_allow_any_host' flag: %m");
+ 
+@@ -423,11 +423,11 @@
+ 
+         /* We use /proc/$PID/fd/$FD rather than /proc/self/fd/$FD, because this string is visible to others
+          * via configfs, and by including the PID it's clear to who the stuff belongs. */
+-        r = write_string_file_at(namespace_fd, "device_path", FORMAT_PROC_PID_FD_PATH(0, fd), WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(namespace_fd, "device_path", FORMAT_PROC_PID_FD_PATH(0, fd), 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to write 'device_path' attribute: %m");
+ 
+-        r = write_string_file_at(namespace_fd, "enable", "1", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(namespace_fd, "enable", "1", 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to write 'enable' attribute: %m");
+ 
+@@ -557,19 +557,19 @@
+                 return 0;
+         }
+ 
+-        r = write_string_file_at(port_fd, "addr_adrfam", af_to_ipv4_ipv6(ip_family), WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(port_fd, "addr_adrfam", af_to_ipv4_ipv6(ip_family), 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to set address family on NVME port %" PRIu16 ": %m", portnr);
+ 
+-        r = write_string_file_at(port_fd, "addr_trtype", "tcp", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(port_fd, "addr_trtype", "tcp", 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to set transport type on NVME port %" PRIu16 ": %m", portnr);
+ 
+-        r = write_string_file_at(port_fd, "addr_trsvcid", fname, WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(port_fd, "addr_trsvcid", fname, 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to set IP port on NVME port %" PRIu16 ": %m", portnr);
+ 
+-        r = write_string_file_at(port_fd, "addr_traddr", ip_family == AF_INET6 ? "::" : "0.0.0.0", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file_at(port_fd, "addr_traddr", ip_family == AF_INET6 ? "::" : "0.0.0.0", 0);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to set IP address on NVME port %" PRIu16 ": %m", portnr);
  
