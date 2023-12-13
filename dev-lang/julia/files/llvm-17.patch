@@ -981,15 +981,15 @@ diff --color -ur a/src/intrinsics.cpp b/src/intrinsics.cpp
          return ctx.builder.CreateCall(fmaintr, {x, y, z});
      }
      case muladd_float: {
-@@ -1461,7 +1461,7 @@
+@@ -1513,7 +1513,7 @@
                  (f == checked_smul_int ?
                   Intrinsic::smul_with_overflow :
                   Intrinsic::umul_with_overflow)))));
 -        FunctionCallee intr = Intrinsic::getDeclaration(jl_Module, intr_id, makeArrayRef(t));
 +        FunctionCallee intr = Intrinsic::getDeclaration(jl_Module, intr_id, ArrayRef<Type*>(t));
-         Value *res = ctx.builder.CreateCall(intr, {x, y});
-         Value *val = ctx.builder.CreateExtractValue(res, ArrayRef<unsigned>(0));
-         setName(ctx.emission_context, val, "checked");
+         Value *tupval = ctx.builder.CreateCall(intr, {x, y});
+ 
+         jl_value_t *params[2];
 @@ -1581,30 +1581,30 @@
          }
      }
