@@ -3,23 +3,27 @@
 
 EAPI=8
 
-inherit cmake
+inherit cmake git-r3
 
 DESCRIPTION="Qt library and IM module for fcitx5"
 HOMEPAGE="https://fcitx-im.org"
-SRC_URI="https://download.fcitx-im.org/fcitx5/${PN}/${P}.tar.xz"
+EGIT_REPO_URI="https://github.com/fcitx/fcitx5-qt.git"
 
 LICENSE="BSD-1 GPL-2+ LGPL-2+ MIT"
 KEYWORDS="~amd64"
 SLOT="5"
-IUSE=""
+IUSE="qt5 qt6 X"
 
 RDEPEND="app-i18n/fcitx5
-	dev-qt/qtcore:5
-	dev-qt/qtdbus:5
-	dev-qt/qtgui:5
-	dev-qt/qtwidgets:5
-	dev-qt/qtconcurrent:5
+	qt5? (
+		dev-qt/qtcore:5
+		dev-qt/qtdbus:5
+		dev-qt/qtgui:5
+		dev-qt/qtwidgets:5
+		dev-qt/qtconcurrent:5 )
+	qt6? (
+		dev-qt/qtbase:6
+	)
 "
 
 BDEPEND="
@@ -27,10 +31,6 @@ BDEPEND="
 	virtual/pkgconfig"
 
 DEPEND="${RDEPEND}"
-
-PATCHES=(
-	"${FILESDIR}"/missing-include.patch
-)
 
 src_prepare() {
 	cmake_src_prepare
@@ -42,8 +42,10 @@ src_configure() {
 		-DCMAKE_INSTALL_SYSCONFDIR="${EPREFIX}/etc"
 		-DCMAKE_INSTALL_LIBDIR="${EPREFIX}/usr/$(get_libdir)"
 		-DCMAKE_BUILD_TYPE=Release
-		-DENABLE_QT4=no
-		-DENABLE_QT6=no
+		-DENABLE_QT4=Off
+		-DENABLE_QT5=$(usex qt5 On Off)
+		-DENABLE_QT6=$(usex qt6 On Off)
+		-DENABLE_X11=$(usex X On Off)
 	)
 
 	cmake_src_configure
