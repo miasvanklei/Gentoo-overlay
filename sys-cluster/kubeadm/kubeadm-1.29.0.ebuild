@@ -6,8 +6,8 @@ inherit bash-completion-r1 go-module
 
 DESCRIPTION="CLI to Easily bootstrap a secure Kubernetes cluster"
 HOMEPAGE="https://kubernetes.io"
-MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
-SRC_URI="https://github.com/kubernetes/kubernetes/archive/v${MY_PV}.tar.gz -> kubernetes-${PV}.tar.gz"
+#MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
+SRC_URI="https://github.com/kubernetes/kubernetes/archive/v${PV}.tar.gz -> kubernetes-${PV}.tar.gz"
 
 LICENSE="Apache-2.0"
 SLOT="0"
@@ -19,7 +19,7 @@ RDEPEND="app-containers/cri-tools
 	selinux? ( sec-policy/selinux-kubernetes )"
 
 RESTRICT+=" test"
-S="${WORKDIR}/kubernetes-${MY_PV}"
+S="${WORKDIR}/kubernetes-${PV}"
 
 src_compile() {
 	CGO_LDFLAGS="$(usex hardened '-fno-PIC ' '')" FORCE_HOST_GO=yes \
