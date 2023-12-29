@@ -23,7 +23,10 @@ else
 	MY_P=${MY_PN}-${MY_PV}
 	S=${WORKDIR}/${MY_P}
 	SRC_URI="https://github.com/systemd/${MY_PN}/archive/v${MY_PV}/${MY_P}.tar.gz"
-	KEYWORDS="~amd64 ~arm ~arm64 ~x86"
+
+	if [[ ${PV} != *rc* ]] ; then
+		KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~loong ~m68k ~mips ~ppc ~ppc64 ~riscv ~s390 ~sparc ~x86"
+	fi
 fi
 
 inherit bash-completion-r1 linux-info meson-multilib pam python-single-r1
@@ -240,7 +243,6 @@ src_unpack() {
 
 src_prepare() {
 	local PATCHES=(
-		"${FILESDIR}"/255-analyze-regression.patch
 	)
 
 	if ! use vanilla; then
@@ -342,6 +344,7 @@ multilib_src_configure() {
 		$(meson_native_true timesyncd)
 		$(meson_native_true tmpfiles)
 		$(meson_native_true vconsole)
+		$(meson_native_enabled vmspawn)
 
 		# not musl compatible
 		-Dlibidn=false
