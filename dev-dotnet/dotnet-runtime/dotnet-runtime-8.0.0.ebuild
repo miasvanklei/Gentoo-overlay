@@ -19,7 +19,8 @@ RDEPEND="
 	>=dev-libs/icu-57.1
 	>=dev-util/lttng-ust-2.8.1
 	>=net-misc/curl-7.49.0
-	>=sys-libs/zlib-1.2.8-r1 "
+	>=sys-libs/zlib-1.2.8-r1
+"
 DEPEND="${RDEPEND}
 	>=dev-util/cmake-3.3.1-r1
 	>=sys-devel/gettext-0.19.7
@@ -84,7 +85,30 @@ pkg_setup() {
 	export ARTIFACTS_COREFX="${S}/artifacts/bin/native/linux-${DARCH}-Release"
 	export ARTIFACTS_CORECLR="${S}/artifacts/bin/coreclr/linux.${DARCH}.Release"
 	export ARTIFACTS_CORESETUP="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
+}
 
+src_prepare() {
+	# create version manually (do not depend on dotnet)
+	cat <<- _EOF_ > "${S}"/eng/native/version/runtime_version.h
+		#define RuntimeAssemblyMajorVersion $(ver_cut 1)
+		#define RuntimeAssemblyMinorVersion $(ver_cut 2)
+
+		#define RuntimeFileMajorVersion 42
+		#define RuntimeFileMinorVersion 42
+		#define RuntimeFileBuildVersion 42
+		#define RuntimeFileRevisionVersion 42424
+
+		#define RuntimeProductMajorVersion $(ver_cut 1)
+		#define RuntimeProductMinorVersion $(ver_cut 2)
+		#define RuntimeProductPatchVersion $(ver_cut 3)
+
+		#define RuntimeProductVersion ${PV}
+	_EOF_
+
+	mkdir -p "${S}"/artifacts/obj || die
+	cp "${S}"/eng/native/version/runtime_version.h "${S}"/artifacts/obj/runtime_version.h
+
+	eapply_user
 }
 
 src_compile() {
