@@ -22,7 +22,6 @@ RDEPEND="
 	>=kde-misc/kweather-${PV}:${SLOT}
 	>=kde-misc/markdownpart-${PV}:${SLOT}
 	cups? ( >=kde-plasma/print-manager-${PV}:${SLOT} )
-	floppy? ( >=kde-apps/kfloppy-${PV}:${SLOT} )
 	gpg? ( >=kde-apps/kgpg-${PV}:${SLOT} )
 	plasma? ( >=kde-misc/kclock-${PV} )
 	webengine? (
