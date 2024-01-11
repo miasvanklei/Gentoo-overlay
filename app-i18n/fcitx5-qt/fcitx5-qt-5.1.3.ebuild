@@ -32,6 +32,10 @@ BDEPEND="
 
 DEPEND="${RDEPEND}"
 
+PATCHES=(
+	"${FILESDIR}/fix-use-x11.patch"
+)
+
 src_prepare() {
 	cmake_src_prepare
 	xdg_environment_reset
