@@ -34,3 +34,7 @@ DEPEND="
 RDEPEND="${DEPEND}
 	network? ( media-plugins/gst-plugins-soup:1.0 )
 "
+
+PATCHES=(
+	"${FILESDIR}"/qt6.patch
+)
