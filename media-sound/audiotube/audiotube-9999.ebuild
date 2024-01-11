@@ -3,20 +3,18 @@
 
 EAPI=8
 
-EGIT_COMMIT="67be43d7301ced3e6033ef42c7314752d4e75473"
-
 ECM_HANDBOOK="false"
 ECM_TEST="forceoptional"
 
-KFMIN=5.101.0
-QTMIN=5.15.5
+KFMIN=5.240.0
+QTMIN=6.5.1
 inherit ecm gear.kde.org
 
 DESCRIPTION="Client for YouTube Music"
 HOMEPAGE="https://apps.kde.org/audiotube/"
 
 LICENSE="LGPL-3+"
-SLOT="5"
+SLOT="6"
 KEYWORDS="amd64 arm64 ~ppc64 ~riscv x86"
 IUSE="mpris semantic-desktop +vlc"
 
@@ -24,29 +22,21 @@ RESTRICT="test"
 
 BDEPEND=""
 DEPEND="
-	dev-libs/futuresql
+	=dev-db/futuresql-9999
 	dev-libs/kirigami-addons
+	=dev-libs/qcoro-9999
 	dev-python/pybind11
 	dev-python/ytmusicapi
-	>=dev-qt/qtconcurrent-${QTMIN}:5
-	>=dev-qt/qtdbus-${QTMIN}:5
-	>=dev-qt/qtgui-${QTMIN}:5
-	>=dev-qt/qtmultimedia-${QTMIN}:5
-	>=dev-qt/qtsql-${QTMIN}:5
-	>=dev-qt/qtsvg-${QTMIN}:5
-	>=dev-qt/qtwidgets-${QTMIN}:5
-	>=kde-frameworks/kcoreaddons-${KFMIN}:5
-	>=kde-frameworks/kcrash-${KFMIN}:5
-	>=kde-frameworks/ki18n-${KFMIN}:5
-	>=kde-frameworks/kirigami-${KFMIN}:5
+	>=dev-qt/qtbase-${QTMIN}:6[concurrent,dbus,gui,sql,widgets]
+	>=dev-qt/qtdeclarative-${QTMIN}:6
+	>=dev-qt/qtmultimedia-${QTMIN}:6
+	>=dev-qt/qtsvg-${QTMIN}:6
+	>=kde-frameworks/kcoreaddons-${KFMIN}:6
+	>=kde-frameworks/kcrash-${KFMIN}:6
+	>=kde-frameworks/ki18n-${KFMIN}:6
+	>=kde-frameworks/kirigami-${KFMIN}:6
+	>=kde-frameworks/kwindowsystem-${KFMIN}:6
 	net-misc/yt-dlp
 "
 RDEPEND="${DEPEND}
-	>=dev-qt/qtgraphicaleffects-${QTMIN}:5
-	>=dev-qt/qtquickcontrols-${QTMIN}:5
-	>=dev-qt/qtquickcontrols2-${QTMIN}:5
 "
-
-src_configure() {
-	ecm_src_configure
-}
