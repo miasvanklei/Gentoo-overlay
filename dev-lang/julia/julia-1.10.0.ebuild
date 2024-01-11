@@ -5,49 +5,10 @@ EAPI=8
 
 inherit llvm pax-utils optfeature toolchain-funcs
 
-# correct versions for stdlibs are in deps/checksums
-# for everything else, run with network-sandbox and wait for the crash
-
-MY_LIBUV_V="2723e256e952be0b015b3c0086f717c3d365d97e"
-MY_BLASTRAMPOLINE_V="81316155d4838392e8462a92bcac3eebe9acd0c7"
-MY_LIBWHICH_V="81e9723c0273d78493dc8c8ed570f68d9ce7e89e"
-MY_ITTAPI_V="0014aec56fea2f30c1374f40861e1bccdd53d0cb"
-
-ARGTOOLS_V="08b11b2707593d4d7f92e5f1b9dba7668285ff82"
-DELIMITEDFILES_V="db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
-DOWNLOADS_V="f97c72fbd726e208a04c53791b35cc34c747569f"
-JULIASYNTAX_V="4f1731d6ce7c2465fc21ea245110b7a39f34658a"
-LIBCURL_V="a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
-NETWORKOPTIONS_V="f7bbeb66f05fc651adb12758b650e8630a998fbd"
-PKG_V="563a3387acddad6c427b2f675aa70531c4324cc2"
-SHA_V="2d1f84e6f8417a1a368de48318640d948b023e7a"
-SPARSEARRAYS_V="279b363ca8d3129d4742903d37c8b11545fa08a2"
-STATISTICS_V="d147f9253aa0f2f71be9c3fed8d51c2215410408"
-SUITEPARSE_V="e8285dd13a6d5b5cf52d8124793fc4d622d07554"
-TAR_V="ff55460f4d329949661a33e6c8168ce6d890676c"
-
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
 
-SRC_URI="
-	https://github.com/JuliaLang/julia/archive/refs/tags/v${PV/_/-}.tar.gz -> ${P}.tar.gz
-	https://api.github.com/repos/intel/ittapi/tarball/${MY_ITTAPI_V} -> ${PN}-ittapi-${MY_ITTAPI_V}.tar.gz
-	https://api.github.com/repos/vtjnash/libwhich/tarball/${MY_LIBWHICH_V} -> ${PN}-libwhich-${MY_LIBWHICH_V}.tar.gz
-	https://api.github.com/repos/JuliaCrypto/SHA.jl/tarball/${SHA_V} -> ${PN}-stdlib-SHA-${SHA_V}.tar.gz
-	https://api.github.com/repos/JuliaIO/ArgTools.jl/tarball/${ARGTOOLS_V} -> ${PN}-stdlib-ArgTools-${ARGTOOLS_V}.tar.gz
-	https://api.github.com/repos/JuliaLinearAlgebra/libblastrampoline/tarball/${MY_BLASTRAMPOLINE_V} -> ${PN}-blastrampoline-${MY_BLASTRAMPOLINE_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/DelimitedFiles.jl/tarball/${DELIMITEDFILES_V} -> ${PN}-stdlib-DelimitedFiles-${DELIMITEDFILES_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/Downloads.jl/tarball/${DOWNLOADS_V} -> ${PN}-stdlib-Downloads-${DOWNLOADS_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/JuliaSyntax.jl/tarball/${JULIASYNTAX_V} -> ${PN}-JuliaSyntax-${JULIASYNTAX_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/NetworkOptions.jl/tarball/${NETWORKOPTIONS_V} -> ${PN}-stdlib-NetworkOptions-${NETWORKOPTIONS_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/Pkg.jl/tarball/${PKG_V} -> ${PN}-stdlib-Pkg-${PKG_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/SparseArrays.jl/tarball/${SPARSEARRAYS_V} -> ${PN}-stdlib-SparseArrays-${SPARSEARRAYS_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/Tar.jl/tarball/${TAR_V} -> ${PN}-stdlib-Tar-${TAR_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/libuv/tarball/${MY_LIBUV_V} -> ${PN}-libuv-${MY_LIBUV_V}.tar.gz
-	https://api.github.com/repos/JuliaStats/Statistics.jl/tarball/${STATISTICS_V} -> ${PN}-stdlib-Statistics-${STATISTICS_V}.tar.gz
-	https://api.github.com/repos/JuliaSparse/SuiteSparse.jl/tarball/${SUITEPARSE_V} -> ${PN}-stdlib-SuiteSparse-${SUITEPARSE_V}.tar.gz
-	https://api.github.com/repos/JuliaWeb/LibCURL.jl/tarball/${LIBCURL_V} -> ${PN}-stdlib-LibCURL-${LIBCURL_V}.tar.gz
-"
+SRC_URI="https://github.com/JuliaLang/julia/releases/download/v${PV}/${P}-full.tar.gz"
 
 LICENSE="MIT"
 SLOT="0"
