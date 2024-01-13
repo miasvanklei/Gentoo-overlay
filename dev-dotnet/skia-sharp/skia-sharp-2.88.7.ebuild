@@ -8,7 +8,7 @@ inherit ninja-utils git-r3
 DESCRIPTION="The Skia 2D Graphics library from Google exposed to .NET languages and runtimes across the board"
 HOMEPAGE="https://github.com/mono/SkiaSharp"
 EGIT_REPO_URI="https://github.com/mono/SkiaSharp.git"
-EGIT_COMMIT="655cff084fa9365efde6e989004eb818294c9b0f"
+EGIT_COMMIT="v${PV}"
 
 LICENSE="MIT"
 SLOT="0/2"
