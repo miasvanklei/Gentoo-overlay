@@ -20,18 +20,21 @@ RDEPEND="
 DEPEND="${RDEPEND}"
 
 QA_PRESTRIPPED="
+	/usr/share/dotnet/sqltoolsservice/MicrosoftKustoServiceLayer
+	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsCredentials
+	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsMigration
 	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsServiceLayer
 	/usr/share/dotnet/sqltoolsservice/SqlToolsResourceProviderService
-	/usr/share/dotnet/sqltoolsservice/MicrosoftSqlToolsCredentials
 "
 
 BUILD_DIR="${WORKDIR}/${P}_build"
 
 publish_sqltool()
 {
-	pushd src/Microsoft.SqlTools.$1 >/dev/null
+	einfo "Building $1"
+	pushd src/$1 >/dev/null
 	dotnet publish -c release -o "${BUILD_DIR}" || die
-	popd
+	popd >/dev/null
 }
 
 src_prepare() {
@@ -40,16 +43,13 @@ src_prepare() {
 	# make CA errors, warnings
 	sed -i 's/error/warning/g' .editorconfig
 
-	# fix .net version
+	# update .net version
 	grep -rl "net7.0" --include \*.csproj . | xargs sed -i 's/net7.0/net8.0/g'
 
 	# fix casing
-	mkdir -p ${BUILD_DIR}/pt-BR
-	mkdir -p ${BUILD_DIR}/zh-hans
-	mkdir -p ${BUILD_DIR}/zh-hant
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net8.0/zh-hans
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net8.0/zh-hant
-	mkdir -p ${S}/src/Microsoft.SqlTools.ServiceLayer/bin/release/net8.0/pt-br
+	for i in $(find -name "*pt-br*"); do rename pt-br pt-BR $i; done
+	for i in $(find -name "*zh-hans*"); do rename zh-hans zh-Hans $i; done
+	for i in $(find -name "*zh-hant*"); do rename zh-hant zh-Hant $i; done
 
 	eapply "${FILESDIR}"/fix-net8.0.patch
 
@@ -61,8 +61,10 @@ src_compile() {
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
 	export DOTNET_NOLOGO=1
 
-	publish_sqltool ServiceLayer
-	publish_sqltool ResourceProvider
+	publish_sqltool Microsoft.SqlTools.ServiceLayer
+	publish_sqltool Microsoft.SqlTools.ResourceProvider
+	publish_sqltool Microsoft.SqlTools.Migration
+	publish_sqltool Microsoft.Kusto.ServiceLayer
 }
 
 src_install() {
@@ -74,7 +76,9 @@ src_install() {
 
 	# fix executable bit
 	pushd ${D}/${installdir} >/dev/null || die
+	chmod +x MicrosoftKustoServiceLayer || die
+	chmod +x MicrosoftSqlToolsServiceLayer || die
+	chmod +x MicrosoftSqlToolsMigration || die
 	chmod +x MicrosoftSqlToolsCredentials || die
 	chmod +x SqlToolsResourceProviderService || die
-	chmod +x MicrosoftSqlToolsServiceLayer || die
 }
