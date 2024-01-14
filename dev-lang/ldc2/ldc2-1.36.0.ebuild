@@ -14,7 +14,7 @@ LICENSE="BSD"
 SLOT="$(ver_cut 1-2)/$(ver_cut 3)"
 SRC_URI="https://github.com/ldc-developers/ldc/releases/download/v${PV}/ldc-${PV}-src.tar.gz"
 
-IUSE=""
+IUSE="debug"
 
 BOOTSTRAP_DEPEND="||
         (
@@ -32,14 +32,14 @@ BDEPEND="${PYTHON_DEPS}
 	${BOOTSTRAP_DEPEND}
 "
 
-RDEPEND=""
 DEPEND=">=dev-util/cmake-2.8
-	sys-devel/llvm:=
-	${RDEPEND}"
+	sys-devel/llvm:=[debug?]
+"
+RDEPEND="${DEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/musl-lfs64.patch
-	"${FILESDIR}"/llvm-17.patch
+	"${FILESDIR}"/missing-version_net.patch
 )
 
 S="${WORKDIR}/ldc-${PV}-src"
@@ -53,6 +53,9 @@ src_configure() {
 		-DD_FLAGS="${LDCFLAGS// /;}"
 		-DCMAKE_INSTALL_PREFIX=/usr/lib/ldc2/$(ver_cut 1-2)
 	)
+
+	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
+        use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
 
 	cmake_src_configure
 }
