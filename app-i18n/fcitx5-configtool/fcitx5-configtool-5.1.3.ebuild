@@ -3,24 +3,26 @@
 
 EAPI=8
 
-inherit cmake git-r3
+inherit cmake
 
 DESCRIPTION="Configuration module for Fcitx"
 HOMEPAGE="https://fcitx-im.org"
-KEYWORDS="~amd64"
-EGIT_REPO_URI="https://github.com/fcitx/fcitx5-configtool.git"
+SRC_URI="https://download.fcitx-im.org/fcitx5/${PN}/${P}.tar.xz"
 
 LICENSE="GPL-2+"
-SLOT="5"
-IUSE="+kcm +config-qt qt6 test"
+KEYWORDS="~amd64"
 
-RDEPEND="app-i18n/fcitx5
-	app-i18n/fcitx5-qt
+SLOT="5"
+IUSE="+kcm +config-qt qt5 qt6 test"
+REQUIRED_USE="|| ( qt5 qt6 )"
+
+RDEPEND="app-i18n/fcitx:5
+	app-i18n/fcitx-qt:5
 	app-text/iso-codes
 	virtual/libintl
 	x11-libs/libX11
 	x11-libs/libxkbfile
-	!qt6? (
+	qt5? (
 		dev-qt/qtcore:5
 		dev-qt/qtdbus:5
 		dev-qt/qtgui:5
@@ -33,7 +35,7 @@ RDEPEND="app-i18n/fcitx5
 		kde-frameworks/kwidgetsaddons:6
 	)
 	kcm? (
-		!qt6? (
+		qt5? (
 			kde-frameworks/kconfigwidgets:5
 			kde-frameworks/kcoreaddons:5
 			kde-frameworks/ki18n:5
@@ -49,7 +51,7 @@ RDEPEND="app-i18n/fcitx5
 		)
 	)
 	config-qt? (
-		!qt6? ( kde-frameworks/kitemviews:5 )
+		qt5? ( kde-frameworks/kitemviews:5 )
 		qt6? ( kde-frameworks/kitemviews:6 )
 	)
 "
