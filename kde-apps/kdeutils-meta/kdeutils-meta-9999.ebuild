@@ -9,7 +9,7 @@ HOMEPAGE="https://kde.org/applications/utilities https://utils.kde.org"
 LICENSE="metapackage"
 SLOT="6"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="7zip cups floppy gpg lrz plasma rar webengine"
+IUSE="7zip floppy gpg lrz plasma rar webengine"
 
 RDEPEND="
 	>=app-cdr/dolphin-plugins-mountiso-${PV}:${SLOT}
