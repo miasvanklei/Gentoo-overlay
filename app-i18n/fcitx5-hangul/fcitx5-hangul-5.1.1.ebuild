@@ -16,7 +16,7 @@ IUSE=""
 
 RDEPEND="
 	app-i18n/libhangul
-	app-i18n/fcitx5
+	app-i18n/fcitx:5
 	virtual/libiconv
         virtual/libintl
 "
