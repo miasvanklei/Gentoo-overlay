@@ -32,9 +32,7 @@ BDEPEND="${PYTHON_DEPS}
 	${BOOTSTRAP_DEPEND}
 "
 
-DEPEND=">=dev-util/cmake-2.8
-	sys-devel/llvm:=[debug?]
-"
+DEPEND="sys-devel/llvm:=[debug?]"
 RDEPEND="${DEPEND}"
 
 PATCHES=(
