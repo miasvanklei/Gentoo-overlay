@@ -411,6 +411,11 @@ multilib_src_install_all() {
 		newpamd "${FILESDIR}"/systemd-user.pam systemd-user
 	fi
 
+	if use kernel-install; then
+		# Dummy config, remove to make room for sys-kernel/installkernel
+		rm "${ED}/usr/lib/kernel/install.conf" || die
+	fi
+
 	use ukify && python_fix_shebang "${ED}"
 	use boot && secureboot_auto_sign
 }
