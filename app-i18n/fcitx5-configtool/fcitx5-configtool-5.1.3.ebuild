@@ -41,6 +41,7 @@ RDEPEND="app-i18n/fcitx:5
 			kde-frameworks/ki18n:5
 			kde-frameworks/kirigami:5
 			kde-frameworks/kdeclarative:5
+			kde-plasma/libplasma:5
 		)
 		qt6? (
 			kde-frameworks/kconfigwidgets:6
@@ -48,6 +49,7 @@ RDEPEND="app-i18n/fcitx:5
 			kde-frameworks/ki18n:6
 			kde-frameworks/kirigami:6
 			kde-frameworks/kdeclarative:6
+			kde-plasma/libplasma:6
 		)
 	)
 	config-qt? (

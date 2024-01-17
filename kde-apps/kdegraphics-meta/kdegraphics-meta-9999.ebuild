@@ -17,9 +17,9 @@ RDEPEND="
 	>=kde-apps/svgpart-${PV}:${SLOT}
 	>=kde-apps/thumbnailers-${PV}:${SLOT}
 	>=kde-apps/gwenview-${PV}:${SLOT}
+	>=kde-apps/kolourpaint-${PV}:${SLOT}
+	color-management? ( >=kde-misc/colord-kde-${PV}:${SLOT} )
 "
-#	>=kde-apps/kolourpaint-${PV}:${SLOT}
-#        color-management? ( >=kde-misc/colord-kde-${PV}:${SLOT} )
 #        scanner? (
 #                >=kde-apps/libksane-${PV}:${SLOT}
 #                >=kde-misc/skanlite-${PV}:${SLOT}
