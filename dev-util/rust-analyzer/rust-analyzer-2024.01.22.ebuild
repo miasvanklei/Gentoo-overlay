@@ -22,10 +22,10 @@ CRATES="
 	cargo_metadata@0.18.1
 	cc@1.0.79
 	cfg-if@1.0.0
-	chalk-derive@0.95.0
-	chalk-ir@0.95.0
-	chalk-recursive@0.95.0
-	chalk-solve@0.95.0
+	chalk-derive@0.96.0
+	chalk-ir@0.96.0
+	chalk-recursive@0.96.0
+	chalk-solve@0.96.0
 	command-group@2.1.0
 	countme@3.0.1
 	cov-mark@2.0.0-pre.1
@@ -35,7 +35,7 @@ CRATES="
 	crossbeam-epoch@0.9.15
 	crossbeam-utils@0.8.16
 	ctrlc@3.4.1
-	dashmap@5.4.0
+	dashmap@5.5.3
 	derive_arbitrary@1.3.2
 	dissimilar@1.0.7
 	dot@0.1.4
@@ -51,8 +51,7 @@ CRATES="
 	fsevent-sys@4.1.0
 	fst@0.4.7
 	gimli@0.27.3
-	hashbrown@0.12.3
-	hashbrown@0.14.2
+	hashbrown@0.14.3
 	heck@0.4.1
 	hermit-abi@0.2.6
 	home@0.5.5
@@ -70,20 +69,19 @@ CRATES="
 	libc@0.2.150
 	libloading@0.8.0
 	libmimalloc-sys@0.1.33
-	line-index@0.1.0-pre.1
+	line-index@0.1.1
 	lock_api@0.4.10
 	log@0.4.19
-	lsp-server@0.7.4
-	lsp-types@0.94.0
-	memchr@2.6.4
+	lsp-server@0.7.6
+	lsp-types@0.95.0
+	memchr@2.7.1
 	memmap2@0.5.10
-	memoffset@0.8.0
 	memoffset@0.9.0
 	mimalloc@0.1.37
 	miniz_oxide@0.6.2
 	miniz_oxide@0.7.1
 	mio@0.8.5
-	miow@0.5.0
+	miow@0.6.0
 	nix@0.26.2
 	nix@0.27.1
 	nohash-hasher@0.2.0
@@ -95,7 +93,7 @@ CRATES="
 	once_cell@1.18.0
 	oorandom@11.1.3
 	parking_lot@0.12.1
-	parking_lot_core@0.9.6
+	parking_lot_core@0.9.9
 	paste@1.0.12
 	percent-encoding@2.3.0
 	perf-event-open-sys@1.0.1
@@ -108,18 +106,18 @@ CRATES="
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.3
 	quote@1.0.28
-	ra-ap-rustc_abi@0.20.0
-	ra-ap-rustc_index@0.20.0
-	ra-ap-rustc_index_macros@0.20.0
-	ra-ap-rustc_lexer@0.20.0
-	ra-ap-rustc_parse_format@0.20.0
+	ra-ap-rustc_abi@0.21.0
+	ra-ap-rustc_index@0.21.0
+	ra-ap-rustc_index_macros@0.21.0
+	ra-ap-rustc_lexer@0.21.0
+	ra-ap-rustc_parse_format@0.21.0
 	rayon-core@1.12.0
 	rayon@1.8.0
-	redox_syscall@0.2.16
 	redox_syscall@0.3.5
-	rowan@0.15.11
-	rust-analyzer-salsa-macros@0.17.0-pre.3
-	rust-analyzer-salsa@0.17.0-pre.3
+	redox_syscall@0.4.1
+	rowan@0.15.15
+	rust-analyzer-salsa-macros@0.17.0-pre.5
+	rust-analyzer-salsa@0.17.0-pre.5
 	rustc-demangle@0.1.23
 	rustc-hash@1.1.0
 	ryu@1.0.13
@@ -134,8 +132,9 @@ CRATES="
 	serde_repr@0.1.12
 	sharded-slab@0.1.4
 	smallvec@1.10.0
-	smol_str@0.2.0
+	smol_str@0.2.1
 	snap@1.1.0
+	stable_deref_trait@1.2.0
 	static_assertions@1.1.0
 	syn@2.0.39
 	synstructure@0.13.0
@@ -156,7 +155,7 @@ CRATES="
 	tracing-subscriber@0.3.18
 	tracing-tree@0.3.0
 	tracing@0.1.40
-	triomphe@0.1.10
+	triomphe@0.1.11
 	typed-arena@2.0.2
 	ungrammar@1.16.1
 	unicase@2.6.0
