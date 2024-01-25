@@ -104,8 +104,8 @@ diff --color -urN ./arch/arm64/boot/dts/rockchip/rk3588.dtsi /root/linux/arch/ar
  	combphy1_ps: phy@fee10000 {
  		compatible = "rockchip,rk3588-naneng-combphy";
  		reg = <0x0 0xfee10000 0x0 0x100>;
---- a/arch/arm64/boot/dts/rockchip/rk3588s.dtsi	2023-10-30 03:31:08.000000000 +0100
-+++ b/arch/arm64/boot/dts/rockchip/rk3588s.dtsi	2023-11-08 23:51:06.978157622 +0100
+--- a/arch/arm64/boot/dts/rockchip/rk3588s.dtsi	2024-01-07 21:18:38.000000000 +0100
++++ b/arch/arm64/boot/dts/rockchip/rk3588s.dtsi	2024-01-23 19:43:32.552664865 +0100
 @@ -10,6 +10,7 @@
  #include <dt-bindings/reset/rockchip,rk3588-cru.h>
  #include <dt-bindings/phy/phy.h>
@@ -637,7 +637,7 @@ diff --color -urN ./arch/arm64/boot/dts/rockchip/rk3588.dtsi /root/linux/arch/ar
  	timer {
  		compatible = "arm,armv8-timer";
  		interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH 0>,
-@@ -399,6 +841,28 @@
+@@ -399,6 +853,28 @@
  		};
  	};
  
@@ -666,34 +666,8 @@ diff --color -urN ./arch/arm64/boot/dts/rockchip/rk3588.dtsi /root/linux/arch/ar
  	usb_host0_ehci: usb@fc800000 {
  		compatible = "rockchip,rk3588-ehci", "generic-ehci";
  		reg = <0x0 0xfc800000 0x0 0x40000>;
-@@ -443,11 +907,42 @@
+@@ -464,6 +940,16 @@
  		status = "disabled";
- 	};
- 
-+	usb_host2_xhci: usb@fcd00000 {
-+		compatible = "rockchip,rk3588-dwc3", "snps,dwc3";
-+		reg = <0x0 0xfcd00000 0x0 0x400000>;
-+		interrupts = <GIC_SPI 222 IRQ_TYPE_LEVEL_HIGH 0>;
-+		clocks = <&cru REF_CLK_USB3OTG2>, <&cru SUSPEND_CLK_USB3OTG2>,
-+			 <&cru ACLK_USB3OTG2>, <&cru CLK_UTMI_OTG2>,
-+			 <&cru CLK_PIPEPHY2_PIPE_U3_G>;
-+		clock-names = "ref_clk", "suspend_clk", "bus_clk", "utmi", "pipe";
-+		dr_mode = "host";
-+		phys = <&combphy2_psu PHY_TYPE_USB3>;
-+		phy-names = "usb3-phy";
-+		phy_type = "utmi_wide";
-+		resets = <&cru SRST_A_USB3OTG2>;
-+		snps,dis_enblslpm_quirk;
-+		snps,dis-u2-freeclk-exists-quirk;
-+		snps,dis-del-phy-power-chg-quirk;
-+		snps,dis-tx-ipgap-linecheck-quirk;
-+		snps,dis_rxdet_inp3_quirk;
-+		status = "disabled";
-+	};
-+
- 	sys_grf: syscon@fd58c000 {
- 		compatible = "rockchip,rk3588-sys-grf", "syscon";
- 		reg = <0x0 0xfd58c000 0x0 0x1000>;
  	};
  
 +	bigcore0_grf: syscon@fd590000 {
@@ -706,10 +680,10 @@ diff --color -urN ./arch/arm64/boot/dts/rockchip/rk3588.dtsi /root/linux/arch/ar
 +		reg = <0x0 0xfd592000 0x0 0x100>;
 +	};
 +
- 	php_grf: syscon@fd5b0000 {
- 		compatible = "rockchip,rk3588-php-grf", "syscon";
- 		reg = <0x0 0xfd5b0000 0x0 0x1000>;
-@@ -463,6 +958,37 @@
+ 	pmu1grf: syscon@fd58a000 {
+ 		compatible = "rockchip,rk3588-pmugrf", "syscon", "simple-mfd";
+ 		reg = <0x0 0xfd58a000 0x0 0x10000>;
+@@ -489,6 +975,37 @@
  		reg = <0x0 0xfd5c4000 0x0 0x100>;
  	};
  
@@ -747,7 +721,7 @@ diff --color -urN ./arch/arm64/boot/dts/rockchip/rk3588.dtsi /root/linux/arch/ar
  	usb2phy2_grf: syscon@fd5d8000 {
  		compatible = "rockchip,rk3588-usb2phy-grf", "syscon", "simple-mfd";
  		reg = <0x0 0xfd5d8000 0x0 0x4000>;
-@@ -488,6 +1014,17 @@
+@@ -514,6 +1031,17 @@
  		};
  	};
  
@@ -765,25 +739,7 @@ diff --color -urN ./arch/arm64/boot/dts/rockchip/rk3588.dtsi /root/linux/arch/ar
  	usb2phy3_grf: syscon@fd5dc000 {
  		compatible = "rockchip,rk3588-usb2phy-grf", "syscon", "simple-mfd";
  		reg = <0x0 0xfd5dc000 0x0 0x4000>;
-@@ -1424,6 +1961,17 @@
- 		};
- 	};
- 
-+	sfc: spi@fe2b0000 {
-+		compatible = "rockchip,sfc";
-+		reg = <0x0 0xfe2b0000 0x0 0x4000>;
-+		interrupts = <GIC_SPI 206 IRQ_TYPE_LEVEL_HIGH 0>;
-+		clocks = <&cru SCLK_SFC>, <&cru HCLK_SFC>;
-+		clock-names = "clk_sfc", "hclk_sfc";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		status = "disabled";
-+	};
-+
- 	sdmmc: mmc@fe2c0000 {
- 		compatible = "rockchip,rk3588-dw-mshc", "rockchip,rk3288-dw-mshc";
- 		reg = <0x0 0xfe2c0000 0x0 0x4000>;
-@@ -2062,7 +2610,6 @@
+@@ -2109,7 +2637,6 @@
  		pinctrl-1 = <&tsadc_shut>;
  		pinctrl-names = "gpio", "otpout";
  		#thermal-sensor-cells = <1>;
@@ -791,7 +747,7 @@ diff --color -urN ./arch/arm64/boot/dts/rockchip/rk3588.dtsi /root/linux/arch/ar
  	};
  
  	saradc: adc@fec10000 {
-@@ -2197,6 +2744,37 @@
+@@ -2244,6 +2771,37 @@
  		#dma-cells = <1>;
  	};
  
