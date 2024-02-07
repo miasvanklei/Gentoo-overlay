@@ -125,11 +125,6 @@ src_prepare() {
 	# already in /usr/portage/licenses/MIT
 	rm ${S}/LICENSE || die
 
-	# fix use of lfs64* symbol
-	pushd "${WORKDIR}/$(package_dir vscode-spdlog)" >/dev/null || die
-	eapply "${FILESDIR}/${PN}-spdlog-lfs64.patch"
-	popd
-
 	eapply "${FILESDIR}/${PN}-node.patch"
         eapply_user
 }
