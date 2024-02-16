@@ -1,0 +1,26 @@
+--- a/src/time/strftime.c	2024-02-12 17:57:59.668987366 +0100
++++ b/src/time/strftime.c	2024-02-12 17:57:23.965518346 +0100
+@@ -217,7 +217,7 @@
+ {
+ 	size_t l, k;
+ 	char buf[100];
+-	char *p;
++	char *p = NULL;
+ 	const char *t;
+ 	int pad, plus;
+ 	unsigned long width;
+@@ -235,12 +235,12 @@
+ 		if (*f == '-' || *f == '_' || *f == '0') pad = *f++;
+ 		if ((plus = (*f == '+'))) f++;
+ 		width = isdigit(*f) ? strtoul(f, &p, 10) : 0;
+-		if (*p == 'C' || *p == 'F' || *p == 'G' || *p == 'Y') {
++		if (p != NULL && (*p == 'C' || *p == 'F' || *p == 'G' || *p == 'Y')) {
+ 			if (!width && p!=f) width = 1;
++		        f = p;
+ 		} else {
+ 			width = 0;
+ 		}
+-		f = p;
+ 		if (*f == 'E' || *f == 'O') f++;
+ 		t = __strftime_fmt_1(&buf, &k, *f, tm, loc, pad);
+ 		if (!t) break;
