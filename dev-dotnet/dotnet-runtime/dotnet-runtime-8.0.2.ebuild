@@ -22,9 +22,9 @@ RDEPEND="
 	>=sys-libs/zlib-1.2.8-r1
 "
 DEPEND="${RDEPEND}
-	>=dev-util/cmake-3.3.1-r1
+	>=dev-build/cmake-3.3.1-r1
 	>=sys-devel/gettext-0.19.7
-	>=sys-devel/make-4.1-r1"
+	>=dev-build/make-4.1-r1"
 
 PDEPEND="=virtual/dotnet-core-${PV}"
 
