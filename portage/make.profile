@@ -1,1 +1,1 @@
-../../gentoo/profiles/default/linux/amd64/17.0/musl/clang
+../../gentoo/profiles/default/linux/amd64/23.0/musl/llvm
