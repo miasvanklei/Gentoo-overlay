@@ -1,0 +1,12 @@
+--- a/Distribution/Gentoo/GHC.hs	2024-02-28 22:16:28.152995174 +0100
++++ b/Distribution/Gentoo/GHC.hs	2024-02-28 22:45:24.577284501 +0100
+@@ -172,6 +172,9 @@
+         ( [name_key, bn] : [ver_key, bv] : _)
+             | name_key == BS.pack "name:" && ver_key == BS.pack "version:"
+             -> Just $ CPV $ BS.unpack bn ++ "-" ++ BS.unpack bv
++        ( [name_key] : [bn] : [] : [ver_key, bv] : _)
++            | name_key == BS.pack "name:" && ver_key == BS.pack "version:"
++            -> Just $ CPV $ BS.unpack bn ++ "-" ++ BS.unpack bv
+         _   -> Nothing
+ 
+ -- Add this .conf file to the Map
