@@ -1,2016 +1,1280 @@
-diff --color -ur a/Make.inc b/Make.inc
---- a/Make.inc	2023-11-07 20:28:38.345858540 +0100
-+++ b/Make.inc	2023-11-07 20:28:23.812686989 +0100
-@@ -497,7 +497,7 @@
- JCPPFLAGS_CLANG   := $(JCPPFLAGS_COMMON)
- JCPPFLAGS_GCC     := $(JCPPFLAGS_COMMON)
+diff --git a/src/APInt-C.cpp b/src/APInt-C.cpp
+index 22b3beef996db..e73399c2ecde4 100644
+--- a/src/APInt-C.cpp
++++ b/src/APInt-C.cpp
+@@ -475,6 +475,27 @@ void LLVMTrunc(jl_datatype_t *ty, integerPart *pa, jl_datatype_t *otys, integerP
+     memcpy(pr, pa, onumbytes);
+ }
  
--JCXXFLAGS_COMMON  := -pipe $(fPIC) -fno-rtti -std=c++14
-+JCXXFLAGS_COMMON  := -pipe $(fPIC) -fno-rtti -std=c++17
- JCXXFLAGS_CLANG   := $(JCXXFLAGS_COMMON) -pedantic
- JCXXFLAGS_GCC     := $(JCXXFLAGS_COMMON) -fno-gnu-unique
- 
-diff --color -ur a/src/APInt-C.cpp b/src/APInt-C.cpp
---- a/src/APInt-C.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/APInt-C.cpp	2023-11-07 20:28:23.699685653 +0100
-@@ -30,10 +30,10 @@
-         /* TODO: this memcpy assumes little-endian,
-          * for big-endian, need to align the copy to the other end */ \
-         memcpy(data_a64, p##s, RoundUpToAlignment(numbits, host_char_bit) / host_char_bit); \
--        s = APInt(numbits, makeArrayRef(data_a64, nbytes / sizeof(integerPart))); \
-+        s = APInt(numbits, ArrayRef<uint64_t>(data_a64, nbytes / sizeof(integerPart))); \
-     } \
-     else { \
--        s = APInt(numbits, makeArrayRef(p##s, numbits / integerPartWidth)); \
-+        s = APInt(numbits, ArrayRef<uint64_t>(p##s, numbits / integerPartWidth)); \
-     }
- 
- /* assign to "integerPart *pr" from "APInt a" */
-@@ -463,22 +463,22 @@
- 
++#if JL_LLVM_VERSION >= 170000
++extern "C" JL_DLLEXPORT
++unsigned countr_zero_8(uint8_t Val) {
++    return countr_zero(Val);
++}
++
++extern "C" JL_DLLEXPORT
++unsigned countr_zero_16(uint16_t Val) {
++    return countr_zero(Val);
++}
++
++extern "C" JL_DLLEXPORT
++unsigned countr_zero_32(uint32_t Val) {
++    return countr_zero(Val);
++}
++
++extern "C" JL_DLLEXPORT
++unsigned countr_zero_64(uint64_t Val) {
++    return countr_zero(Val);
++}
++#else
  extern "C" JL_DLLEXPORT
  unsigned countTrailingZeros_8(uint8_t Val) {
--    return countTrailingZeros(Val);
-+    return countr_zero(Val);
- }
- 
- extern "C" JL_DLLEXPORT
- unsigned countTrailingZeros_16(uint16_t Val) {
--    return countTrailingZeros(Val);
-+    return countr_zero(Val);
- }
- 
- extern "C" JL_DLLEXPORT
- unsigned countTrailingZeros_32(uint32_t Val) {
--    return countTrailingZeros(Val);
-+    return countr_zero(Val);
- }
- 
- extern "C" JL_DLLEXPORT
+     return countTrailingZeros(Val);
+@@ -494,6 +515,7 @@ extern "C" JL_DLLEXPORT
  unsigned countTrailingZeros_64(uint64_t Val) {
--    return countTrailingZeros(Val);
-+    return countr_zero(Val);
+     return countTrailingZeros(Val);
  }
++#endif
  
  extern "C" JL_DLLEXPORT
-@@ -512,7 +512,7 @@
+ void jl_LLVMSMod(unsigned numbits, integerPart *pa, integerPart *pb, integerPart *pr) {
+@@ -523,6 +545,37 @@ void jl_LLVMFlipSign(unsigned numbits, integerPart *pa, integerPart *pb, integer
+         memcpy(pr, pa, numbytes);
+ }
+ 
++#if JL_LLVM_VERSION >= 170000
++extern "C" JL_DLLEXPORT
++unsigned LLVMPopcount(unsigned numbits, integerPart *pa) {
++    CREATE(a)
++    return a.popcount();
++}
++
++extern "C" JL_DLLEXPORT
++unsigned LLVMCountr_one(unsigned numbits, integerPart *pa) {
++    CREATE(a)
++    return a.countr_one();
++}
++
++extern "C" JL_DLLEXPORT
++unsigned LLVMCountr_zero(unsigned numbits, integerPart *pa) {
++    CREATE(a)
++    return a.countr_zero();
++}
++
++extern "C" JL_DLLEXPORT
++unsigned LLVMCountl_one(unsigned numbits, integerPart *pa) {
++    CREATE(a)
++    return a.countl_one();
++}
++
++extern "C" JL_DLLEXPORT
++unsigned LLVMCountl_zero(unsigned numbits, integerPart *pa) {
++    CREATE(a)
++    return a.countl_zero();
++}
++#else
  extern "C" JL_DLLEXPORT
  unsigned LLVMCountPopulation(unsigned numbits, integerPart *pa) {
      CREATE(a)
--    return a.countPopulation();
-+    return a.popcount();
+@@ -552,3 +605,4 @@ unsigned LLVMCountLeadingZeros(unsigned numbits, integerPart *pa) {
+     CREATE(a)
+     return a.countLeadingZeros();
  }
++#endif
+diff --git a/src/APInt-C.h b/src/APInt-C.h
+index 816d40ccc6529..a44d922a40d24 100644
+--- a/src/APInt-C.h
++++ b/src/APInt-C.h
+@@ -5,12 +5,13 @@
  
- extern "C" JL_DLLEXPORT
-diff --color -ur a/src/Makefile b/src/Makefile
---- a/src/Makefile	2023-11-07 20:28:38.349858587 +0100
-+++ b/src/Makefile	2023-11-07 20:28:23.697685630 +0100
-@@ -79,6 +79,10 @@
+ #include "julia.h"
+ #include "dtypes.h"
++#include "llvm-version.h"
  
- RT_LLVM_LIBS := support
+ #ifdef __cplusplus
+ extern "C" {
+ #endif
  
-+ifeq ($(LLVM_VER_MAJ),16)
-+RT_LLVM_LIBS += targetparser
-+endif
-+
- ifeq ($(OS),WINNT)
- SRCS += win32_ucontext
+-#ifdef LLVM_VERSION_MAJOR
++#if defined(__cplusplus) && defined(LLVM_VERSION_MAJOR)
+ using integerPart = llvm::APInt::WordType;
+ #else
+ typedef void integerPart;
+@@ -53,11 +54,19 @@ JL_DLLEXPORT int LLVMDiv_uov(unsigned numbits, integerPart *pa, integerPart *pb,
+ JL_DLLEXPORT int LLVMRem_sov(unsigned numbits, integerPart *pa, integerPart *pb, integerPart *pr);
+ JL_DLLEXPORT int LLVMRem_uov(unsigned numbits, integerPart *pa, integerPart *pb, integerPart *pr);
+ 
++#if JL_LLVM_VERSION >= 170000
++JL_DLLEXPORT unsigned LLVMPopcount(unsigned numbits, integerPart *pa);
++JL_DLLEXPORT unsigned LLVMCountr_one(unsigned numbits, integerPart *pa);
++JL_DLLEXPORT unsigned LLVMCountr_zero(unsigned numbits, integerPart *pa);
++JL_DLLEXPORT unsigned LLVMCountl_one(unsigned numbits, integerPart *pa);
++JL_DLLEXPORT unsigned LLVMCountl_zero(unsigned numbits, integerPart *pa);
++#else
+ JL_DLLEXPORT unsigned LLVMCountPopulation(unsigned numbits, integerPart *pa);
+ JL_DLLEXPORT unsigned LLVMCountTrailingOnes(unsigned numbits, integerPart *pa);
+ JL_DLLEXPORT unsigned LLVMCountTrailingZeros(unsigned numbits, integerPart *pa);
+ JL_DLLEXPORT unsigned LLVMCountLeadingOnes(unsigned numbits, integerPart *pa);
+ JL_DLLEXPORT unsigned LLVMCountLeadingZeros(unsigned numbits, integerPart *pa);
++#endif
+ 
+ JL_DLLEXPORT void LLVMFPtoSI(jl_datatype_t *ty, integerPart *pa, jl_datatype_t *oty, integerPart *pr);
+ JL_DLLEXPORT void LLVMFPtoUI(jl_datatype_t *ty, integerPart *pa, jl_datatype_t *oty, integerPart *pr);
+@@ -73,10 +82,17 @@ JL_DLLEXPORT int LLVMFPtoUI_exact(jl_datatype_t *ty, integerPart *pa, jl_datatyp
+ JL_DLLEXPORT void jl_LLVMSMod(unsigned numbits, integerPart *pa, integerPart *pb, integerPart *pr);
+ JL_DLLEXPORT void jl_LLVMFlipSign(unsigned numbits, integerPart *pa, integerPart *pb, integerPart *pr);
+ 
++#if JL_LLVM_VERSION >= 170000
++JL_DLLEXPORT unsigned countr_zero_8(uint8_t Val);
++JL_DLLEXPORT unsigned countr_zero_16(uint16_t Val);
++JL_DLLEXPORT unsigned countr_zero_32(uint32_t Val);
++JL_DLLEXPORT unsigned countr_zero_64(uint64_t Val);
++#else
+ JL_DLLEXPORT unsigned countTrailingZeros_8(uint8_t Val);
+ JL_DLLEXPORT unsigned countTrailingZeros_16(uint16_t Val);
+ JL_DLLEXPORT unsigned countTrailingZeros_32(uint32_t Val);
+ JL_DLLEXPORT unsigned countTrailingZeros_64(uint64_t Val);
++#endif
+ 
+ //uint8_t getSwappedBytes_8(uint8_t Value); // no-op
+ //uint16_t getSwappedBytes_16(uint16_t Value);
+diff --git a/src/Makefile b/src/Makefile
+index ce81ff03cdd70..9fd61393e8892 100644
+--- a/src/Makefile
++++ b/src/Makefile
+@@ -77,9 +77,10 @@ else
+ # JULIACODEGEN != LLVM
  endif
-@@ -144,7 +148,7 @@
- endif # USE_LLVM_SHLIB == 1
- endif # JULIACODEGEN == LLVM
  
--RT_LLVM_LINK_ARGS := $(shell $(LLVM_CONFIG_HOST) --libs $(RT_LLVM_LIBS) --system-libs --link-static)
-+RT_LLVM_LINK_ARGS := $(shell $(LLVM_CONFIG_HOST) --libs $(RT_LLVM_LIBS) --system-libs --link-shared)
- RT_LLVMLINK += $(LLVM_LDFLAGS) $(RT_LLVM_LINK_ARGS)
- ifeq ($(OS), WINNT)
- RT_LLVMLINK += -luuid -lole32
-diff --color -ur a/src/aotcompile.cpp b/src/aotcompile.cpp
---- a/src/aotcompile.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/aotcompile.cpp	2023-11-07 20:28:23.699685653 +0100
-@@ -4,7 +4,6 @@
+-RT_LLVM_LIBS := support # for APMath and some other useful ADT
+-ifneq ($(LLVM_VER_MAJ),15)
+-RT_LLVM_LIBS += targetparser # for getHostCPUName on LLVM 16+
++RT_LLVM_LIBS := support
++
++ifeq ($(shell test $(LLVM_VER_MAJ) -ge 16 && echo true),true)
++RT_LLVM_LIBS += targetparser
+ endif
+ 
+ ifeq ($(OS),WINNT)
+diff --git a/src/aotcompile.cpp b/src/aotcompile.cpp
+index 54c92fb688d30..bf90156a57c4b 100644
+--- a/src/aotcompile.cpp
++++ b/src/aotcompile.cpp
+@@ -4,7 +4,11 @@
  #include "platform.h"
  
  // target support
--#include <llvm/ADT/Triple.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Triple.h>
++#else
+ #include <llvm/ADT/Triple.h>
++#endif
  #include <llvm/ADT/Statistic.h>
  #include <llvm/Analysis/TargetLibraryInfo.h>
  #include <llvm/Analysis/TargetTransformInfo.h>
-@@ -62,7 +61,6 @@
- #include "jitlayers.h"
- #include "serialize.h"
- #include "julia_assert.h"
--#include "llvm-codegen-shared.h"
- #include "processor.h"
- 
- #define DEBUG_TYPE "julia_aotcompile"
-@@ -639,7 +637,7 @@
+@@ -697,7 +701,11 @@ static FunctionInfo getFunctionWeight(const Function &F)
          auto val = F.getFnAttribute("julia.mv.clones").getValueAsString();
          // base16, so must be at most 4 * length bits long
          // popcount gives number of clones
--        info.clones = APInt(val.size() * 4, val, 16).countPopulation() + 1;
++        #if JL_LLVM_VERSION >= 170000
 +        info.clones = APInt(val.size() * 4, val, 16).popcount() + 1;
++        #else
+         info.clones = APInt(val.size() * 4, val, 16).countPopulation() + 1;
++        #endif
      }
      info.weight += info.insts;
      // more basic blocks = more complex than just sum of insts,
-@@ -1001,7 +999,7 @@
-             SourceTM.getRelocationModel(),
-             SourceTM.getCodeModel(),
-             SourceTM.getOptLevel()));
--
-+    fixupTM(*TM);
-     if (unopt) {
-         timers.unopt.startTimer();
-         raw_svector_ostream OS(out.unopt);
-@@ -1035,6 +1033,7 @@
-             SourceTM.getRelocationModel(),
-             SourceTM.getCodeModel(),
-             SourceTM.getOptLevel()));
-+    fixupTM(*PMTM);
-     NewPM optimizer{std::move(PMTM), getOptLevel(jl_options.opt_level), OptimizationOptions::defaults(true, true)};
- #endif
-     optimizer.run(M);
-@@ -1351,6 +1350,7 @@
+@@ -1440,7 +1448,9 @@ static SmallVector<AOTOutputs, 16> add_output(Module &M, TargetMachine &TM, Stri
          for (unsigned i = 0; i < threads; i++) {
-             workers[i] = std::thread([&, i]() {
+             std::function<void()> func = [&, i]() {
                  LLVMContext ctx;
-+                SetOpaquePointer(ctx);
++                #if JL_LLVM_VERSION < 170000
+                 SetOpaquePointer(ctx);
++                #endif
                  // Lazily deserialize the entire module
                  timers[i].deserialize.startTimer();
-                 auto M = cantFail(getLazyBitcodeModule(MemoryBufferRef(StringRef(serialized.data(), serialized.size()), "Optimized"), ctx), "Error loading module");
-@@ -1509,6 +1509,7 @@
-             CMModel,
-             CodeGenOpt::Aggressive // -O3 TODO: respect command -O0 flag?
-             ));
-+    fixupTM(*SourceTM);
-     auto DL = jl_create_datalayout(*SourceTM);
-     std::string StackProtectorGuard;
-     unsigned OverrideStackAlignment;
-@@ -1526,6 +1527,7 @@
-     SmallVector<AOTOutputs, 16> metadata_outputs;
+                 auto EM = getLazyBitcodeModule(MemoryBufferRef(StringRef(serialized.data(), serialized.size()), "Optimized"), ctx);
+@@ -1643,7 +1653,9 @@ void jl_dump_native_impl(void *native_code,
      if (z) {
+         JL_TIMING(NATIVE_AOT, NATIVE_Sysimg);
          LLVMContext Context;
-+        SetOpaquePointer(Context);
++        #if JL_LLVM_VERSION < 170000
+         SetOpaquePointer(Context);
++        #endif
          Module sysimgM("sysimg", Context);
          sysimgM.setTargetTriple(TheTriple.str());
          sysimgM.setDataLayout(DL);
-@@ -1644,6 +1646,7 @@
- 
+@@ -1780,7 +1792,9 @@ void jl_dump_native_impl(void *native_code,
      {
+         JL_TIMING(NATIVE_AOT, NATIVE_Metadata);
          LLVMContext Context;
-+        SetOpaquePointer(Context);
++        #if JL_LLVM_VERSION < 170000
+         SetOpaquePointer(Context);
++        #endif
          Module metadataM("metadata", Context);
          metadataM.setTargetTriple(TheTriple.str());
          metadataM.setDataLayout(DL);
-@@ -1801,7 +1804,6 @@
-     PM->add(createVerifierPass());
- #endif
- 
--    PM->add(createConstantMergePass());
-     if (opt_level < 2) {
-         if (!dump_native) {
-             // we won't be multiversioning, so lower CPU feature checks early on
-@@ -1818,7 +1820,6 @@
-             // maybe add GVN?
-             // also try GVNHoist and GVNSink
-         }
--        PM->add(createMemCpyOptPass());
-         PM->add(createAlwaysInlinerLegacyPass()); // Respect always_inline
-         PM->add(createLowerSimdLoopPass()); // Annotate loop marked with "loopinfo" as LLVM parallel loop
-         if (lower_intrinsics) {
-@@ -1867,7 +1868,6 @@
-     PM->add(createDeadCodeEliminationPass());
-     PM->add(createSROAPass());
- 
--    //PM->add(createMemCpyOptPass());
- 
-     PM->add(createAlwaysInlinerLegacyPass()); // Respect always_inline
- 
-@@ -1879,14 +1879,11 @@
-     PM->add(createInstructionCombiningPass());
-     PM->add(createCFGSimplificationPass(basicSimplifyCFGOptions));
-     if (dump_native) {
--        PM->add(createStripDeadPrototypesPass());
-         PM->add(createMultiVersioningPass(external_use));
-     }
-     PM->add(createCPUFeaturesPass());
-     PM->add(createSROAPass());
-     PM->add(createInstSimplifyLegacyPass());
--    PM->add(createJumpThreadingPass());
--    PM->add(createCorrelatedValuePropagationPass());
- 
-     PM->add(createReassociatePass());
- 
-@@ -1917,13 +1914,8 @@
- #endif
-     PM->add(createLICMPass());
-     PM->add(createJuliaLICMPass());
--    PM->add(createInductiveRangeCheckEliminationPass()); // Must come before indvars
-     // Subsequent passes not stripping metadata from terminator
-     PM->add(createInstSimplifyLegacyPass());
--    PM->add(createLoopIdiomPass());
--    PM->add(createIndVarSimplifyPass());
--    PM->add(createLoopDeletionPass());
--    PM->add(createSimpleLoopUnrollPass());
- 
-     // Run our own SROA on heap objects before LLVM's
-     PM->add(createAllocOptPass());
-@@ -1934,25 +1926,19 @@
-     PM->add(createInstSimplifyLegacyPass());
- 
-     PM->add(createGVNPass());
--    PM->add(createMemCpyOptPass());
--    PM->add(createSCCPPass());
- 
-     //These next two passes must come before IRCE to eliminate the bounds check in #43308
--    PM->add(createCorrelatedValuePropagationPass());
-     PM->add(createDeadCodeEliminationPass());
- 
--    PM->add(createInductiveRangeCheckEliminationPass()); // Must come between the two GVN passes
- 
-     // Run instcombine after redundancy elimination to exploit opportunities
-     // opened up by them.
-     // This needs to be InstCombine instead of InstSimplify to allow
-     // loops over Union-typed arrays to vectorize.
-     PM->add(createInstructionCombiningPass());
--    PM->add(createJumpThreadingPass());
-     if (opt_level >= 3) {
-         PM->add(createGVNPass()); // Must come after JumpThreading and before LoopVectorize
-     }
--    PM->add(createDeadStoreEliminationPass());
-     // see if all of the constant folding has exposed more loops
-     // to simplification and deletion
-     // this helps significantly with cleaning up iteration
-@@ -1962,21 +1948,15 @@
-     // consider removing this:
-     // Moving this after aggressive CFG simplification helps deallocate when allocations are hoisted
-     PM->add(createAllocOptPass());
--    PM->add(createLoopDeletionPass());
-     PM->add(createInstructionCombiningPass());
--    PM->add(createLoopVectorizePass());
--    PM->add(createLoopLoadEliminationPass());
-     // Cleanup after LV pass
-     PM->add(createInstructionCombiningPass());
-     PM->add(createCFGSimplificationPass( // Aggressive CFG simplification
-         aggressiveSimplifyCFGOptions
-     ));
--    PM->add(createSLPVectorizerPass());
-     // might need this after LLVM 11:
-     //PM->add(createVectorCombinePass());
- 
--    PM->add(createAggressiveDCEPass());
--
-     if (lower_intrinsics) {
-         // LowerPTLS removes an indirect call. As a result, it is likely to trigger
-         // LLVM's devirtualization heuristics, which would result in the entire
-@@ -1993,7 +1973,6 @@
-         // after GC lowering to let LLVM do some constant propagation on the tags.
-         // and remove some unnecessary write barrier checks.
-         PM->add(createGVNPass());
--        PM->add(createSCCPPass());
-         // Remove dead use of ptls
-         PM->add(createDeadCodeEliminationPass());
-         PM->add(createLowerPTLSPass(dump_native));
-@@ -2005,7 +1984,6 @@
-         PM->add(createRemoveNIPass());
-     }
-     PM->add(createCombineMulAddPass());
--    PM->add(createDivRemPairsPass());
- #if JL_LLVM_VERSION < 150000
- #if defined(_COMPILER_ASAN_ENABLED_)
-     PM->add(createAddressSanitizerFunctionPass());
-diff --color -ur a/src/ccall.cpp b/src/ccall.cpp
---- a/src/ccall.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/ccall.cpp	2023-11-07 20:28:23.731686032 +0100
-@@ -152,7 +152,7 @@
-             dlsym_lookup);
- 
-     assert(f->getParent() != NULL);
--    f->getBasicBlockList().push_back(dlsym_lookup);
-+    dlsym_lookup->insertInto(f);
-     irbuilder.SetInsertPoint(dlsym_lookup);
-     Instruction *llvmf;
-     Value *nameval = stringConstPtr(emission_context, irbuilder, f_name);
-@@ -178,7 +178,7 @@
-     store->setAtomic(AtomicOrdering::Release);
-     irbuilder.CreateBr(ccall_bb);
- 
--    f->getBasicBlockList().push_back(ccall_bb);
-+    ccall_bb->insertInto(f);
-     irbuilder.SetInsertPoint(ccall_bb);
-     PHINode *p = irbuilder.CreatePHI(T_pvoidfunc, 2);
-     p->addIncoming(llvmf_orig, enter_bb);
-@@ -445,21 +445,21 @@
-     Value *from;
-     Value *to;
-     const DataLayout &DL = ctx.builder.GetInsertBlock()->getModule()->getDataLayout();
--    unsigned align = std::max(DL.getPrefTypeAlignment(target_type), DL.getPrefTypeAlignment(from_type));
-+    Align align = std::max(DL.getPrefTypeAlign(target_type), DL.getPrefTypeAlign(from_type));
-     if (DL.getTypeAllocSize(target_type) >= DL.getTypeAllocSize(from_type)) {
-         to = emit_static_alloca(ctx, target_type);
-         setName(ctx.emission_context, to, "type_rewrite_buffer");
--        cast<AllocaInst>(to)->setAlignment(Align(align));
-+        cast<AllocaInst>(to)->setAlignment(align);
-         from = emit_bitcast(ctx, to, from_type->getPointerTo());
-     }
-     else {
-         from = emit_static_alloca(ctx, from_type);
-         setName(ctx.emission_context, from, "type_rewrite_buffer");
--        cast<AllocaInst>(from)->setAlignment(Align(align));
-+        cast<AllocaInst>(from)->setAlignment(align);
-         to = emit_bitcast(ctx, from, target_type->getPointerTo());
-     }
--    ctx.builder.CreateAlignedStore(v, from, Align(align));
--    auto pun = ctx.builder.CreateAlignedLoad(target_type, to, Align(align));
-+    ctx.builder.CreateAlignedStore(v, from, align);
-+    auto pun = ctx.builder.CreateAlignedLoad(target_type, to, align);
-     setName(ctx.emission_context, pun, "type_rewrite");
-     return pun;
- }
-@@ -478,7 +478,7 @@
-                 ctx.spvals_ptr,
-                 ConstantInt::get(ctx.types().T_size, sizeof(jl_svec_t) / sizeof(jl_value_t*)))
-     };
--    auto call = ctx.builder.CreateCall(prepare_call(jlapplytype_func), makeArrayRef(args));
-+    auto call = ctx.builder.CreateCall(prepare_call(jlapplytype_func), ArrayRef<Value*>(args));
-     addRetAttr(call, Attribute::getWithAlignment(ctx.builder.getContext(), Align(16)));
-     return call;
- }
-@@ -488,9 +488,10 @@
-     std::string _msg;
-     raw_string_ostream msg(_msg);
-     msg << fname;
--    if (n > 0)
--        msg << " argument " << n;
--    else
-+    if (n > 0) {
-+        msg << " argument ";
-+        msg << n;
-+    } else
-         msg << " return";
-     msg << err;
-     return msg.str();
-@@ -1073,7 +1074,7 @@
-     FunctionType *functype(LLVMContext &ctxt) const {
-         assert(err_msg.empty());
-         if (nreqargs > 0)
--            return FunctionType::get(sret ? getVoidTy(ctxt) : prt, makeArrayRef(fargt_sig).slice(0, nreqargs), true);
-+            return FunctionType::get(sret ? getVoidTy(ctxt) : prt, ArrayRef<Type*>(fargt_sig).slice(0, nreqargs), true);
-         else
-             return FunctionType::get(sret ? getVoidTy(ctxt) : prt, fargt_sig, false);
-     }
-@@ -1705,7 +1706,7 @@
-                 true);
-         setName(ctx.emission_context, signal_page_load, "signal_page_load");
-         ctx.builder.CreateBr(contBB);
--        ctx.f->getBasicBlockList().push_back(contBB);
-+        contBB->insertInto(ctx.f);
-         ctx.builder.SetInsertPoint(contBB);
-         return ghostValue(ctx, jl_nothing_type);
-     }
-@@ -1921,7 +1922,7 @@
-                         decay_derived(ctx, data_pointer(ctx, val)),
-                         T_pint8_derived)
-             };
--            Value *ret = ctx.builder.CreateCall(prepare_call(jl_object_id__func), makeArrayRef(args));
-+            Value *ret = ctx.builder.CreateCall(prepare_call(jl_object_id__func), ArrayRef<Value*>(args));
-             setName(ctx.emission_context, ret, "object_id");
-             JL_GC_POP();
-             return mark_or_box_ccall_result(ctx, ret, retboxed, rt, unionall, static_rt);
-diff --color -ur a/src/cgutils.cpp b/src/cgutils.cpp
---- a/src/cgutils.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/cgutils.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -843,7 +843,7 @@
-     //  unsigned remainder = fsz % al;
-     //  while (remainder--)
-     //      Elements.push_back(getInt8Ty(ctxt));
--    //  lty = StructType::get(lty->getContext(), makeArrayRef(Elements));
-+    //  lty = StructType::get(lty->getContext(),ArrayRef<Type*>(Elements));
-     // }
-     if (isboxed) *isboxed = true;
-     return JuliaType::get_prjlvalue_ty(ctxt);
-@@ -1342,7 +1342,7 @@
-     ctx.builder.SetInsertPoint(failBB);
-     just_emit_error(ctx, prepare_call(jlerror_func), msg);
-     ctx.builder.CreateUnreachable();
--    ctx.f->getBasicBlockList().push_back(passBB);
-+    passBB->insertInto(ctx.f);
-     ctx.builder.SetInsertPoint(passBB);
- }
- 
-@@ -1356,7 +1356,7 @@
-         contBB = BasicBlock::Create(ctx.builder.getContext(), "after_throw", ctx.f);
-     }
-     else {
--        ctx.f->getBasicBlockList().push_back(contBB);
-+        contBB->insertInto(ctx.f);
-     }
-     ctx.builder.SetInsertPoint(contBB);
- }
-@@ -1727,7 +1727,7 @@
-         just_emit_type_error(ctx, x, literal_pointer_val(ctx, type), msg);
-         ctx.builder.CreateUnreachable();
- 
--        ctx.f->getBasicBlockList().push_back(passBB);
-+        passBB->insertInto(ctx.f);
-         ctx.builder.SetInsertPoint(passBB);
-     }
- }
-@@ -1803,7 +1803,7 @@
-                     i });
-         }
-         ctx.builder.CreateUnreachable();
--        ctx.f->getBasicBlockList().push_back(passBB);
-+        passBB->insertInto(ctx.f);
-         ctx.builder.SetInsertPoint(passBB);
-     }
- #endif
-@@ -2412,11 +2412,11 @@
-             assert((cast<ArrayType>(strct.V->getType())->getElementType() == ctx.types().T_prjlvalue) == isboxed);
-             Value *idx = idx0();
-             unsigned i = 0;
--            Value *fld = ctx.builder.CreateExtractValue(strct.V, makeArrayRef(i));
-+            Value *fld = ctx.builder.CreateExtractValue(strct.V, ArrayRef<unsigned>(i));
-             for (i = 1; i < nfields; i++) {
-                 fld = ctx.builder.CreateSelect(
-                         ctx.builder.CreateICmpEQ(idx, ConstantInt::get(idx->getType(), i)),
--                        ctx.builder.CreateExtractValue(strct.V, makeArrayRef(i)),
-+                        ctx.builder.CreateExtractValue(strct.V, ArrayRef<unsigned>(i)),
-                         fld);
-             }
-             setName(ctx.emission_context, fld, "getfield");
-@@ -2649,7 +2649,7 @@
-                 unsigned i = 0;
-                 for (; i < fsz / align; i++) {
-                     unsigned fld = st_idx + i;
--                    Value *fldv = ctx.builder.CreateExtractValue(obj, makeArrayRef(fld));
-+                    Value *fldv = ctx.builder.CreateExtractValue(obj, ArrayRef<unsigned>(fld));
-                     Value *fldp = ctx.builder.CreateConstInBoundsGEP1_32(ET, lv, i);
-                     ctx.builder.CreateAlignedStore(fldv, fldp, Align(align));
-                 }
-@@ -2658,13 +2658,13 @@
-                     Value *staddr = ctx.builder.CreateConstInBoundsGEP1_32(ET, lv, i);
-                     staddr = ctx.builder.CreateBitCast(staddr, getInt8PtrTy(ctx.builder.getContext()));
-                     for (; i < ptindex - st_idx; i++) {
--                        Value *fldv = ctx.builder.CreateExtractValue(obj, makeArrayRef(st_idx + i));
-+                        Value *fldv = ctx.builder.CreateExtractValue(obj, ArrayRef(st_idx + i));
-                         Value *fldp = ctx.builder.CreateConstInBoundsGEP1_32(getInt8Ty(ctx.builder.getContext()), staddr, i);
-                         ctx.builder.CreateAlignedStore(fldv, fldp, Align(1));
+@@ -2027,12 +2041,16 @@ void jl_get_llvmf_defn_impl(jl_llvmf_dump_t* dump, jl_method_instance_t *mi, siz
+                     global.second->setLinkage(GlobalValue::ExternalLinkage);
+                 } else {
+                     auto p = literal_static_pointer_val(global.first, global.second->getValueType());
++                    #if JL_LLVM_VERSION >= 170000
++                    Type *elty = PointerType::get(output.getContext(), 0);
++                    #else
+                     Type *elty;
+                     if (p->getType()->isOpaquePointerTy()) {
+                         elty = PointerType::get(output.getContext(), 0);
+                     } else {
+                         elty = p->getType()->getNonOpaquePointerElementType();
                      }
++                    #endif
+                     // For pretty printing, when LLVM inlines the global initializer into its loads
+                     auto alias = GlobalAlias::create(elty, 0, GlobalValue::PrivateLinkage, global.second->getName() + ".jit", p, global.second->getParent());
+                     global.second->setInitializer(ConstantExpr::getBitCast(alias, global.second->getValueType()));
+diff --git a/src/ccall.cpp b/src/ccall.cpp
+index b71d86623065f..e198f64a5184d 100644
+--- a/src/ccall.cpp
++++ b/src/ccall.cpp
+@@ -260,7 +260,9 @@ static GlobalVariable *emit_plt_thunk(
+     SmallVector<Value*, 16> args;
+     for (auto &arg : plt->args())
+         args.push_back(&arg);
++    #if JL_LLVM_VERSION < 170000
+     assert(cast<PointerType>(ptr->getType())->isOpaqueOrPointeeTypeMatches(functype));
++    #endif
+     CallInst *ret = irbuilder.CreateCall(
+         functype,
+         ptr, ArrayRef<Value*>(args));
+diff --git a/src/cgutils.cpp b/src/cgutils.cpp
+index 55dc18b8cfa04..d1e923f90332e 100644
+--- a/src/cgutils.cpp
++++ b/src/cgutils.cpp
+@@ -60,7 +60,11 @@ static Value *decay_derived(jl_codectx_t &ctx, Value *V)
+     if (cast<PointerType>(T)->getAddressSpace() == AddressSpace::Derived)
+         return V;
+     // Once llvm deletes pointer element types, we won't need it here any more either.
++    #if JL_LLVM_VERSION >= 170000
++    Type *NewT = PointerType::get(T, AddressSpace::Derived);
++    #else
+     Type *NewT = PointerType::getWithSamePointeeType(cast<PointerType>(T), AddressSpace::Derived);
++    #endif
+     return ctx.builder.CreateAddrSpaceCast(V, NewT);
+ }
+ 
+@@ -70,7 +74,11 @@ static Value *maybe_decay_tracked(jl_codectx_t &ctx, Value *V)
+     Type *T = V->getType();
+     if (cast<PointerType>(T)->getAddressSpace() != AddressSpace::Tracked)
+         return V;
++    #if JL_LLVM_VERSION >= 170000
++    Type *NewT = PointerType::get(T, AddressSpace::Derived);
++    #else
+     Type *NewT = PointerType::getWithSamePointeeType(cast<PointerType>(T), AddressSpace::Derived);
++    #endif
+     return ctx.builder.CreateAddrSpaceCast(V, NewT);
+ }
+ 
+@@ -554,7 +562,11 @@ static Value *emit_bitcast(jl_codectx_t &ctx, Value *v, Type *jl_value)
+     if (isa<PointerType>(jl_value) &&
+         v->getType()->getPointerAddressSpace() != jl_value->getPointerAddressSpace()) {
+         // Cast to the proper address space
++        #if JL_LLVM_VERSION >= 170000
++        Type *jl_value_addr = PointerType::get(jl_value, v->getType()->getPointerAddressSpace());
++        #else
+         Type *jl_value_addr = PointerType::getWithSamePointeeType(cast<PointerType>(jl_value), v->getType()->getPointerAddressSpace());
++        #endif
+         ++EmittedPointerBitcast;
+         return ctx.builder.CreateBitCast(v, jl_value_addr);
+     }
+@@ -985,6 +997,7 @@ static void emit_memcpy_llvm(jl_codectx_t &ctx, Value *dst, jl_aliasinfo_t const
+     if (sz == 0)
+         return;
+     assert(align_dst && "align must be specified");
++    #if JL_LLVM_VERSION < 170000
+     // If the types are small and simple, use load and store directly.
+     // Going through memcpy can cause LLVM (e.g. SROA) to create bitcasts between float and int
+     // that interferes with other optimizations.
+@@ -1016,7 +1029,7 @@ static void emit_memcpy_llvm(jl_codectx_t &ctx, Value *dst, jl_aliasinfo_t const
+             dst = emit_bitcast(ctx, dst, srcty);
+         }
+         else if (dstel->isSized() && dstel->isSingleValueType() &&
+-                 DL.getTypeStoreSize(dstel) == sz) {
++                DL.getTypeStoreSize(dstel) == sz) {
+             directel = dstel;
+             src = emit_bitcast(ctx, src, dstty);
+         }
+@@ -1031,6 +1044,7 @@ static void emit_memcpy_llvm(jl_codectx_t &ctx, Value *dst, jl_aliasinfo_t const
+             return;
+         }
+     }
++    #endif
+     ++EmittedMemcpys;
+ 
+     // the memcpy intrinsic does not allow to specify different alias tags
+@@ -3342,7 +3356,11 @@ static void recursively_adjust_ptr_type(llvm::Value *Val, unsigned FromAS, unsig
+     for (auto *User : Val->users()) {
+         if (isa<GetElementPtrInst>(User)) {
+             GetElementPtrInst *Inst = cast<GetElementPtrInst>(User);
++            #if JL_LLVM_VERSION >= 170000
++            Inst->mutateType(PointerType::get(Inst->getType(), ToAS));
++            #else
+             Inst->mutateType(PointerType::getWithSamePointeeType(cast<PointerType>(Inst->getType()), ToAS));
++            #endif
+             recursively_adjust_ptr_type(Inst, FromAS, ToAS);
+         }
+         else if (isa<IntrinsicInst>(User)) {
+@@ -3351,7 +3369,11 @@ static void recursively_adjust_ptr_type(llvm::Value *Val, unsigned FromAS, unsig
+         }
+         else if (isa<BitCastInst>(User)) {
+             BitCastInst *Inst = cast<BitCastInst>(User);
++            #if JL_LLVM_VERSION >= 170000
++            Inst->mutateType(PointerType::get(Inst->getType(), ToAS));
++            #else
+             Inst->mutateType(PointerType::getWithSamePointeeType(cast<PointerType>(Inst->getType()), ToAS));
++            #endif
+             recursively_adjust_ptr_type(Inst, FromAS, ToAS);
+         }
+     }
+@@ -3398,7 +3420,11 @@ static Value *boxed(jl_codectx_t &ctx, const jl_cgval_t &vinfo, bool is_promotab
+                 Value *decayed = decay_derived(ctx, box);
+                 AllocaInst *originalAlloca = cast<AllocaInst>(vinfo.V);
+                 box->takeName(originalAlloca);
++                #if JL_LLVM_VERSION >= 170000
++                decayed = maybe_bitcast(ctx, decayed, PointerType::get(originalAlloca->getType(), AddressSpace::Derived));
++                #else
+                 decayed = maybe_bitcast(ctx, decayed, PointerType::getWithSamePointeeType(originalAlloca->getType(), AddressSpace::Derived));
++                #endif
+                 // Warning: Very illegal IR here temporarily
+                 originalAlloca->mutateType(decayed->getType());
+                 recursively_adjust_ptr_type(originalAlloca, 0, AddressSpace::Derived);
+diff --git a/src/codegen.cpp b/src/codegen.cpp
+index 93fc1b9a680e2..cf88074c2e9f1 100644
+--- a/src/codegen.cpp
++++ b/src/codegen.cpp
+@@ -22,7 +22,11 @@
+ #include <llvm/CodeGen/TargetSubtargetInfo.h>
+ #include <llvm/MC/TargetRegistry.h>
+ #include <llvm/Target/TargetOptions.h>
+-#include <llvm/Support/Host.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Host.h>
++#else
++#include <llvm/ADT/Host.h>
++#endif
+ #include <llvm/Support/TargetSelect.h>
+ #include <llvm/Object/SymbolSize.h>
+ 
+@@ -2172,7 +2176,11 @@ static Value *emit_inttoptr(jl_codectx_t &ctx, Value *v, Type *ty)
+         auto ptr = I->getOperand(0);
+         if (ty->getPointerAddressSpace() == ptr->getType()->getPointerAddressSpace())
+             return ctx.builder.CreateBitCast(ptr, ty);
++        #if JL_LLVM_VERSION >= 170000
++        else
++        #else
+         else if (cast<PointerType>(ty)->hasSameElementTypeAs(cast<PointerType>(ptr->getType())))
++        #endif
+             return ctx.builder.CreateAddrSpaceCast(ptr, ty);
+     }
+     ++EmittedIntToPtrs;
+@@ -4791,7 +4799,9 @@ static jl_cgval_t emit_call_specfun_other(jl_codectx_t &ctx, bool is_opaque_clos
+         break;
+     case jl_returninfo_t::SRet:
+         result = emit_static_alloca(ctx, getAttributeAtIndex(returninfo.attrs, 1, Attribute::StructRet).getValueAsType());
++        #if JL_LLVM_VERSION < 170000
+         assert(cast<PointerType>(result->getType())->hasSameElementTypeAs(cast<PointerType>(cft->getParamType(0))));
++        #endif
+         argvals[idx] = result;
+         idx++;
+         break;
+@@ -6651,7 +6661,9 @@ static void emit_cfunc_invalidate(
+     case jl_returninfo_t::SRet: {
+         if (return_roots) {
+             Value *root1 = gf_thunk->arg_begin() + 1; // root1 has type [n x {}*]*
++            #if JL_LLVM_VERSION < 170000
+             assert(cast<PointerType>(root1->getType())->isOpaqueOrPointeeTypeMatches(get_returnroots_type(ctx, return_roots)));
++            #endif
+             root1 = ctx.builder.CreateConstInBoundsGEP2_32(get_returnroots_type(ctx, return_roots), root1, 0, 0);
+             ctx.builder.CreateStore(gf_ret, root1);
+         }
+@@ -7074,11 +7086,15 @@ static Function* gen_cfun_wrapper(
+                 if (jlfunc_sret) {
+                     result = emit_static_alloca(ctx, getAttributeAtIndex(returninfo.attrs, 1, Attribute::StructRet).getValueAsType());
+                     setName(ctx.emission_context, result, "sret");
++                    #if JL_LLVM_VERSION < 170000
+                     assert(cast<PointerType>(result->getType())->hasSameElementTypeAs(cast<PointerType>(cft->getParamType(0))));
++                    #endif
+                 } else {
+                     result = emit_static_alloca(ctx, get_unionbytes_type(ctx.builder.getContext(), returninfo.union_bytes));
+                     setName(ctx.emission_context, result, "result_union");
++                    #if JL_LLVM_VERSION < 170000
+                     assert(cast<PointerType>(result->getType())->hasSameElementTypeAs(cast<PointerType>(cft->getParamType(0))));
++                    #endif
                  }
              }
--            Value *tindex0 = ctx.builder.CreateExtractValue(obj, makeArrayRef(ptindex));
-+            Value *tindex0 = ctx.builder.CreateExtractValue(obj, ArrayRef(ptindex));
-             Value *tindex = ctx.builder.CreateNUWAdd(ConstantInt::get(getInt8Ty(ctx.builder.getContext()), 1), tindex0);
-             return mark_julia_slot(lv, jfty, tindex, ctx.tbaa().tbaa_stack);
-         }
-@@ -2676,7 +2676,7 @@
-                 st_idx = convert_struct_offset(ctx, T, byte_offset);
-             else
-                 llvm_unreachable("encountered incompatible type for a struct");
--            fldv = ctx.builder.CreateExtractValue(obj, makeArrayRef(st_idx));
-+            fldv = ctx.builder.CreateExtractValue(obj, ArrayRef<unsigned>(st_idx));
-         }
-         if (maybe_null) {
-             Value *first_ptr = jl_field_isptr(jt, idx) ? fldv : extract_first_ptr(ctx, fldv);
-@@ -2999,7 +2999,7 @@
-                 auto bc = ctx.builder.CreateICmpULT(ii, d);
-                 setName(ctx.emission_context, bc, "inbounds");
-                 ctx.builder.CreateCondBr(bc, okBB, failBB);
--                ctx.f->getBasicBlockList().push_back(okBB);
-+                okBB->insertInto(ctx.f);
-                 ctx.builder.SetInsertPoint(okBB);
-             }
- #endif
-@@ -3034,7 +3034,7 @@
-             auto bc = ctx.builder.CreateICmpULT(last_index, last_dimension);
-             setName(ctx.emission_context, bc, "inbounds");
-             ctx.builder.CreateCondBr(bc, checktrailingdimsBB, failBB);
--            ctx.f->getBasicBlockList().push_back(checktrailingdimsBB);
-+            checktrailingdimsBB->insertInto(ctx.f);
-             ctx.builder.SetInsertPoint(checktrailingdimsBB);
-             // And then also make sure that all dimensions that weren't explicitly
-             // indexed into have size 1
-@@ -3044,7 +3044,7 @@
-                 auto bc = ctx.builder.CreateICmpEQ(dim, ConstantInt::get(ctx.types().T_size, 1));
-                 setName(ctx.emission_context, bc, "inbounds");
-                 ctx.builder.CreateCondBr(bc, dimsokBB, failBB);
--                ctx.f->getBasicBlockList().push_back(dimsokBB);
-+                dimsokBB->insertInto(ctx.f);
-                 ctx.builder.SetInsertPoint(dimsokBB);
-             }
-             Value *dim = emit_arraysize_for_unsafe_dim(ctx, ainfo, ex, nd, nd);
-@@ -3053,7 +3053,7 @@
-             ctx.builder.CreateCondBr(bc2, endBB, failBB);
+             args.push_back(result);
+@@ -7138,7 +7154,9 @@ static Function* gen_cfun_wrapper(
+             theFptr = ctx.builder.CreateSelect(age_ok, theFptr, gf_thunk);
          }
  
--        ctx.f->getBasicBlockList().push_back(failBB);
-+        failBB->insertInto(ctx.f);
-         ctx.builder.SetInsertPoint(failBB);
-         // CreateAlloca is OK here since we are on an error branch
-         Value *tmp = ctx.builder.CreateAlloca(ctx.types().T_size, ConstantInt::get(ctx.types().T_size, nidxs));
-@@ -3065,7 +3065,7 @@
-             { mark_callee_rooted(ctx, a), tmp, ConstantInt::get(ctx.types().T_size, nidxs) });
-         ctx.builder.CreateUnreachable();
++        #if JL_LLVM_VERSION < 170000
+         assert(cast<PointerType>(theFptr->getType())->isOpaqueOrPointeeTypeMatches(returninfo.decl.getFunctionType()));
++        #endif
+         CallInst *call = ctx.builder.CreateCall(
+             returninfo.decl.getFunctionType(),
+             theFptr, ArrayRef<Value*>(args));
+@@ -7510,7 +7528,9 @@ static Function *gen_invoke_wrapper(jl_method_instance_t *lam, jl_value_t *jlret
+     case jl_returninfo_t::Ghosts:
+         break;
+     case jl_returninfo_t::SRet:
++        #if JL_LLVM_VERSION < 170000
+         assert(cast<PointerType>(ftype->getParamType(0))->isOpaqueOrPointeeTypeMatches(getAttributeAtIndex(f.attrs, 1, Attribute::StructRet).getValueAsType()));
++        #endif
+         result = ctx.builder.CreateAlloca(getAttributeAtIndex(f.attrs, 1, Attribute::StructRet).getValueAsType());
+         setName(ctx.emission_context, result, "sret");
+         args[idx] = result;
+@@ -7805,8 +7825,6 @@ static jl_returninfo_t get_specsig_function(jl_codectx_t &ctx, Module *M, Value
  
--        ctx.f->getBasicBlockList().push_back(endBB);
-+        endBB->insertInto(ctx.f);
-         ctx.builder.SetInsertPoint(endBB);
-     }
- #endif
-@@ -3251,7 +3251,7 @@
-         unsigned zero = 0;
-         Value *v = as_value(ctx, t, vinfo);
-         assert(v->getType() == ctx.emission_context.llvmtypes[jl_ssavalue_type]);
--        v = ctx.builder.CreateExtractValue(v, makeArrayRef(&zero, 1));
-+        v = ctx.builder.CreateExtractValue(v, ArrayRef(&zero, 1));
-         box = call_with_attrs(ctx, box_ssavalue_func, v);
-     }
-     else if (!jb->name->abstract && jl_datatype_nbits(jb) == 0) {
-@@ -3427,7 +3427,7 @@
- 
-     auto newfType = FunctionType::get(
-             oldfType->getReturnType(),
--            makeArrayRef(argTys).slice(0, oldfType->getNumParams()),
-+            ArrayRef<Type*>(argTys).slice(0, oldfType->getNumParams()),
-             oldfType->isVarArg());
- 
-     // Accumulate an array of overloaded types for the given intrinsic
-@@ -3643,7 +3643,7 @@
-     just_emit_type_error(ctx, x, literal_pointer_val(ctx, (jl_value_t*)jl_pointer_type), msg);
-     ctx.builder.CreateUnreachable();
- 
--    ctx.f->getBasicBlockList().push_back(passBB);
-+    passBB->insertInto(ctx.f);
-     ctx.builder.SetInsertPoint(passBB);
- }
- 
-@@ -3679,7 +3679,7 @@
- // if ptr is NULL this emits a write barrier _back_
- static void emit_write_barrier(jl_codectx_t &ctx, Value *parent, Value *ptr)
+ static void emit_sret_roots(jl_codectx_t &ctx, bool isptr, Value *Src, Type *T, Value *Shadow, Type *ShadowT, unsigned count)
  {
--    emit_write_barrier(ctx, parent, makeArrayRef(ptr));
-+    emit_write_barrier(ctx, parent, ArrayRef<Value*>(ptr));
+-    if (isptr && !cast<PointerType>(Src->getType())->isOpaqueOrPointeeTypeMatches(T))
+-        Src = ctx.builder.CreateBitCast(Src, T->getPointerTo(Src->getType()->getPointerAddressSpace()));
+     unsigned emitted = TrackWithShadow(Src, T, isptr, Shadow, ShadowT, ctx.builder); //This comes from Late-GC-Lowering??
+     assert(emitted == count); (void)emitted; (void)count;
  }
- 
- static void emit_write_barrier(jl_codectx_t &ctx, Value *parent, ArrayRef<Value*> ptrs)
-@@ -3964,7 +3964,7 @@
-                                 Value *fldp = ctx.builder.CreateConstInBoundsGEP1_32(ET, lv, i);
-                                 jl_aliasinfo_t ai = jl_aliasinfo_t::fromTBAA(ctx, ctx.tbaa().tbaa_stack);
-                                 Value *fldv = ai.decorateInst(ctx.builder.CreateAlignedLoad(ET, fldp, Align(al)));
--                                strct = ctx.builder.CreateInsertValue(strct, fldv, makeArrayRef(llvm_idx + i));
-+                                strct = ctx.builder.CreateInsertValue(strct, fldv, ArrayRef<unsigned>(llvm_idx + i));
-                             }
-                             // emit remaining bytes up to tindex
-                             if (i < ptindex - llvm_idx) {
-@@ -3974,14 +3974,14 @@
-                                     Value *fldp = ctx.builder.CreateConstInBoundsGEP1_32(getInt8Ty(ctx.builder.getContext()), staddr, i);
-                                     jl_aliasinfo_t ai = jl_aliasinfo_t::fromTBAA(ctx, ctx.tbaa().tbaa_stack);
-                                     Value *fldv = ai.decorateInst(ctx.builder.CreateAlignedLoad(getInt8Ty(ctx.builder.getContext()), fldp, Align(1)));
--                                    strct = ctx.builder.CreateInsertValue(strct, fldv, makeArrayRef(llvm_idx + i));
-+                                    strct = ctx.builder.CreateInsertValue(strct, fldv, ArrayRef<unsigned>(llvm_idx + i));
-                                 }
-                             }
-                         }
-                         llvm_idx = ptindex;
-                         fval = tindex;
-                         if (jl_is_vecelement_type(ty))
--                            fval = ctx.builder.CreateInsertValue(strct, fval, makeArrayRef(llvm_idx));
-+                            fval = ctx.builder.CreateInsertValue(strct, fval, ArrayRef<unsigned>(llvm_idx));
-                     }
-                     else {
-                         Value *ptindex = emit_struct_gep(ctx, lt, strct, offs + fsz);
-@@ -4008,7 +4008,7 @@
-                     else if (lt->isVectorTy())
-                         strct = ctx.builder.CreateInsertElement(strct, fval, ConstantInt::get(getInt32Ty(ctx.builder.getContext()), llvm_idx));
-                     else if (lt->isAggregateType())
--                        strct = ctx.builder.CreateInsertValue(strct, fval, makeArrayRef(llvm_idx));
-+                        strct = ctx.builder.CreateInsertValue(strct, fval, ArrayRef<unsigned>(llvm_idx));
-                     else
-                         assert(false);
-                 }
-@@ -4022,7 +4022,7 @@
-                     int fsz = jl_field_size(sty, i) - 1;
-                     unsigned llvm_idx = convert_struct_offset(ctx, cast<StructType>(lt), offs + fsz);
-                     if (init_as_value)
--                        strct = ctx.builder.CreateInsertValue(strct, ConstantInt::get(getInt8Ty(ctx.builder.getContext()), 0), makeArrayRef(llvm_idx));
-+                        strct = ctx.builder.CreateInsertValue(strct, ConstantInt::get(getInt8Ty(ctx.builder.getContext()), 0), ArrayRef<unsigned>(llvm_idx));
-                     else {
-                         jl_aliasinfo_t ai = jl_aliasinfo_t::fromTBAA(ctx, ctx.tbaa().tbaa_unionselbyte);
-                         ai.decorateInst(ctx.builder.CreateAlignedStore(
-diff --color -ur a/src/codegen.cpp b/src/codegen.cpp
---- a/src/codegen.cpp	2023-11-07 20:28:38.335858422 +0100
-+++ b/src/codegen.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -43,7 +43,6 @@
- 
- // support
- #include <llvm/ADT/SmallBitVector.h>
--#include <llvm/ADT/Optional.h>
- #include <llvm/ADT/Statistic.h>
- #include <llvm/Support/raw_ostream.h>
- #include <llvm/Support/FormattedStream.h>
-@@ -160,7 +159,6 @@
- #endif
- 
- #include "jitlayers.h"
--#include "llvm-codegen-shared.h"
- #include "processor.h"
- #include "julia_assert.h"
- 
-@@ -294,7 +292,7 @@
-         };
-         static_assert(sizeof(jl_array_flags_t) == sizeof(int16_t),
-                     "Size of jl_array_flags_t is not the same as int16_t");
--        T_jlarray = StructType::get(context, makeArrayRef(vaelts));
-+        T_jlarray = StructType::get(context, ArrayRef(vaelts));
-         T_pjlarray = PointerType::get(T_jlarray, 0);
-     }
- };
-@@ -565,7 +563,7 @@
-     SmallVector<Attribute, 8> attrs(attrkinds.size());
-     for (size_t i = 0; i < attrkinds.size(); i++)
-         attrs[i] = Attribute::get(C, attrkinds.begin()[i]);
--    return AttributeSet::get(C, makeArrayRef(attrs));
-+    return AttributeSet::get(C, ArrayRef<Attribute>(attrs));
- }
- 
- static Type *get_pjlvalue(LLVMContext &C) { return JuliaType::get_pjlvalue_ty(C); }
-@@ -588,9 +586,16 @@
- 
- static AttributeList get_donotdelete_func_attrs(LLVMContext &C)
+@@ -7814,6 +7832,10 @@ static void emit_sret_roots(jl_codectx_t &ctx, bool isptr, Value *Src, Type *T,
+ static DISubroutineType *
+ get_specsig_di(jl_codectx_t &ctx, jl_debugcache_t &debuginfo, jl_value_t *rt, jl_value_t *sig, DIBuilder &dbuilder)
  {
--    AttributeSet FnAttrs = Attributes(C, {Attribute::InaccessibleMemOnly, Attribute::WillReturn, Attribute::NoUnwind});
-+    AttrBuilder FnAttrs(C);
-+#if JL_LLVM_VERSION >= 160000
-+    FnAttrs.addMemoryAttr(MemoryEffects::inaccessibleMemOnly());
-+#else
-+    FnAttrs.addAttribute(Attribute::InaccessibleMemOnly);
-+#endif
-+    FnAttrs.addAttribute(Attribute::WillReturn);
-+    FnAttrs.addAttribute(Attribute::NoUnwind);
-     return AttributeList::get(C,
--            FnAttrs,
-+            AttributeSet::get(C, FnAttrs),
-             Attributes(C, {}),
-             None);
- }
-@@ -925,10 +930,19 @@
-     [](LLVMContext &C, Type *T_size) {
-         Type *T = PointerType::get(JuliaType::get_jlvalue_ty(C), AddressSpace::Derived);
-         return FunctionType::get(getInt32Ty(C), {T, T, T_size}, false); },
--    [](LLVMContext &C) { return AttributeList::get(C,
--            Attributes(C, {Attribute::ReadOnly, Attribute::NoUnwind, Attribute::ArgMemOnly}),
--            AttributeSet(),
--            None); },
-+    [](LLVMContext &C) {
-+        AttrBuilder FnAttrs(C);
-+#if JL_LLVM_VERSION >= 160000
-+        FnAttrs.addMemoryAttr(MemoryEffects::inaccessibleOrArgMemOnly());
-+#else
-+        FnAttrs.addAttribute(Attribute::ReadOnly);
-+        FnAttrs.addAttribute(Attribute::ArgMemOnly);
-+#endif
-+        FnAttrs.addAttribute(Attribute::NoUnwind);
-+        return AttributeList::get(C,
-+                AttributeSet::get(C, FnAttrs),
-+                AttributeSet(),
-+                None); },
- };
- static const auto jl_alloc_obj_func = new JuliaFunction<TypeFnContextAndSizeT>{
-     "julia.gc_alloc_obj",
-@@ -976,8 +990,17 @@
-         return FunctionType::get(T_prjlvalue,
-                 {T_prjlvalue}, false);
-     },
--    [](LLVMContext &C) { return AttributeList::get(C,
--            Attributes(C, {Attribute::ReadNone, Attribute::NoUnwind, Attribute::NoRecurse}),
-+    [](LLVMContext &C) {
-+        AttrBuilder FnAttrs(C);
-+#if JL_LLVM_VERSION >= 160000
-+        FnAttrs.addMemoryAttr(MemoryEffects::none());
-+#else
-+        FnAttrs.addAttribute(Attribute::ReadNone);
-+#endif
-+        FnAttrs.addAttribute(Attribute::NoUnwind);
-+        FnAttrs.addAttribute(Attribute::NoRecurse);
-+        return AttributeList::get(C,
-+            AttributeSet::get(C, FnAttrs),
-             Attributes(C, {Attribute::NonNull}),
-             None); },
- };
-@@ -986,10 +1009,20 @@
-     "julia.write_barrier",
-     [](LLVMContext &C) { return FunctionType::get(getVoidTy(C),
-             {JuliaType::get_prjlvalue_ty(C)}, true); },
--    [](LLVMContext &C) { return AttributeList::get(C,
--            Attributes(C, {Attribute::NoUnwind, Attribute::NoRecurse, Attribute::InaccessibleMemOnly}),
-+    [](LLVMContext &C) {
-+        AttrBuilder FnAttrs(C);
-+#if JL_LLVM_VERSION >= 160000
-+        FnAttrs.addMemoryAttr(MemoryEffects::inaccessibleMemOnly());
-+#else
-+        FnAttrs.addAttribute(Attribute::InaccessibleMemOnly);
-+#endif
-+        FnAttrs.addAttribute(Attribute::NoUnwind);
-+        FnAttrs.addAttribute(Attribute::NoRecurse);
-+        return AttributeList::get(C,
-+            AttributeSet::get(C, FnAttrs),
-             AttributeSet(),
--            {Attributes(C, {Attribute::ReadOnly})}); },
-+            {Attributes(C, {Attribute::ReadOnly})});
-+    },
- };
++    #if JL_LLVM_VERSION < 170000
++    if (isptr && !cast<PointerType>(Src->getType())->isOpaqueOrPointeeTypeMatches(T))
++         Src = ctx.builder.CreateBitCast(Src, T->getPointerTo(Src->getType()->getPointerAddressSpace()));
++    #endif
+     size_t nargs = jl_nparams(sig); // TODO: if this is a Varargs function, our debug info for the `...` var may be misleading
+     SmallVector<Metadata*, 0> ditypes(nargs + 1);
+     ditypes[0] = julia_type_to_di(ctx, debuginfo, rt, &dbuilder, false);
+@@ -9890,7 +9912,9 @@ char jl_using_perf_jitevents = 0;
  
- static const auto jlisa_func = new JuliaFunction<>{
-@@ -1024,7 +1057,7 @@
-     [](LLVMContext &C) {
-         return AttributeList::get(C,
-             AttributeSet(),
--            AttributeSet::get(C, makeArrayRef({Attribute::get(C, Attribute::NonNull),
-+            AttributeSet::get(C, ArrayRef<Attribute>({Attribute::get(C, Attribute::NonNull),
-                                                Attribute::getWithAlignment(C, Align(16))})),
-             None);
-     },
-@@ -1053,8 +1086,17 @@
-     XSTR(memcmp),
-     [](LLVMContext &C, Type *T_size) { return FunctionType::get(getInt32Ty(C),
-             {getInt8PtrTy(C), getInt8PtrTy(C), T_size}, false); },
--    [](LLVMContext &C) { return AttributeList::get(C,
--            Attributes(C, {Attribute::ReadOnly, Attribute::NoUnwind, Attribute::ArgMemOnly}),
-+    [](LLVMContext &C) {
-+        AttrBuilder FnAttrs(C);
-+#if JL_LLVM_VERSION >= 160000
-+        FnAttrs.addMemoryAttr(MemoryEffects::argMemOnly(ModRefInfo::Ref));
-+#else
-+        FnAttrs.addAttribute(Attribute::ArgMemOnly);
-+        FnAttrs.addAttribute(Attribute::ReadOnly);
-+#endif
-+        FnAttrs.addAttribute(Attribute::NoUnwind);
-+        return AttributeList::get(C,
-+            AttributeSet::get(C, FnAttrs),
-             AttributeSet(),
-             None); },
-     // TODO: inferLibFuncAttributes(*memcmp_func, TLI);
-@@ -1099,8 +1141,17 @@
-         return FunctionType::get(getInt32Ty(C),
-             {T_prjlvalue, T_prjlvalue, getInt32Ty(C)}, false);
-     },
--    [](LLVMContext &C) { return AttributeList::get(C,
--            Attributes(C, {Attribute::NoUnwind, Attribute::ReadOnly, Attribute::WillReturn}),
-+    [](LLVMContext &C) {
-+        AttrBuilder FnAttrs(C);
-+#if JL_LLVM_VERSION >= 160000
-+        FnAttrs.addMemoryAttr(MemoryEffects::readOnly());
-+#else
-+        FnAttrs.addAttribute(Attribute::ReadOnly);
-+#endif
-+        FnAttrs.addAttribute(Attribute::NoUnwind);
-+        FnAttrs.addAttribute(Attribute::WillReturn);
-+        return AttributeList::get(C,
-+            AttributeSet::get(C, FnAttrs),
-             AttributeSet(),
-             None); }, // This function can error if the third argument is 1 so don't do that.
- };
-@@ -1212,7 +1263,7 @@
-     "julia.except_enter",
-     [](LLVMContext &C) { return FunctionType::get(getInt32Ty(C), false); },
-     [](LLVMContext &C) { return AttributeList::get(C,
--            AttributeSet::get(C, makeArrayRef({Attribute::get(C, Attribute::ReturnsTwice)})),
-+            AttributeSet::get(C, ArrayRef({Attribute::get(C, Attribute::ReturnsTwice)})),
-             AttributeSet(),
-             None); },
- };
-@@ -1220,8 +1271,16 @@
-     "julia.pointer_from_objref",
-     [](LLVMContext &C) { return FunctionType::get(JuliaType::get_pjlvalue_ty(C),
-             {PointerType::get(JuliaType::get_jlvalue_ty(C), AddressSpace::Derived)}, false); },
--    [](LLVMContext &C) { return AttributeList::get(C,
--            AttributeSet::get(C, makeArrayRef({Attribute::get(C, Attribute::ReadNone), Attribute::get(C, Attribute::NoUnwind)})),
-+    [](LLVMContext &C) {
-+        AttrBuilder FnAttrs(C);
-+#if JL_LLVM_VERSION >= 160000
-+        FnAttrs.addMemoryAttr(MemoryEffects::none());
-+#else
-+        FnAttrs.addAttribute(Attribute::ReadNone);
-+#endif
-+        FnAttrs.addAttribute(Attribute::NoUnwind);
-+        return AttributeList::get(C,
-+            AttributeSet::get(C, FnAttrs),
-             Attributes(C, {Attribute::NonNull}),
-             None); },
- };
-@@ -3029,7 +3088,7 @@
-                 nroots++;
-             if ((gc_uses[nroots] = get_gc_root_for(ctx, arg2)))
-                 nroots++;
--            OperandBundleDef OpBundle("jl_roots", makeArrayRef(gc_uses, nroots));
-+            OperandBundleDef OpBundle("jl_roots", ArrayRef<Value*>(gc_uses, nroots));
-             auto answer = ctx.builder.CreateCall(prepare_call(memcmp_func), {
-                         ctx.builder.CreateBitCast(varg1, getInt8PtrTy(ctx.builder.getContext())),
-                         ctx.builder.CreateBitCast(varg2, getInt8PtrTy(ctx.builder.getContext())),
-@@ -3473,12 +3532,12 @@
-                     ctx.builder.SetInsertPoint(outBB);
-                     Value *v_one = ConstantInt::get(ctx.types().T_size, 1);
-                     ctx.builder.CreateBr(ansBB);
--                    ctx.f->getBasicBlockList().push_back(inBB);
-+                    inBB->insertInto(ctx.f);
-                     ctx.builder.SetInsertPoint(inBB);
-                     Value *v_sz = emit_arraysize(ctx, ary, idx_dyn);
-                     ctx.builder.CreateBr(ansBB);
-                     inBB = ctx.builder.GetInsertBlock(); // could have changed
--                    ctx.f->getBasicBlockList().push_back(ansBB);
-+                    ansBB->insertInto(ctx.f);
-                     ctx.builder.SetInsertPoint(ansBB);
-                     PHINode *result = ctx.builder.CreatePHI(ctx.types().T_size, 2);
-                     result->addIncoming(v_one, outBB);
-@@ -4648,7 +4707,7 @@
-     ctx.builder.CreateCall(prepare_call(jlundefvarerror_func),
-         mark_callee_rooted(ctx, literal_pointer_val(ctx, (jl_value_t*)name)));
-     ctx.builder.CreateUnreachable();
--    ctx.f->getBasicBlockList().push_back(ifok);
-+    ifok->insertInto(ctx.f);
-     ctx.builder.SetInsertPoint(ifok);
- }
+ int jl_is_timing_passes = 0;
  
-@@ -4664,7 +4723,7 @@
-                           {mark_callee_rooted(ctx, literal_pointer_val(ctx, (jl_value_t*)type)),
-                            mark_callee_rooted(ctx, boxed(ctx, name))});
-     ctx.builder.CreateUnreachable();
--    ctx.f->getBasicBlockList().push_back(ifok);
-+    ifok->insertInto(ctx.f);
-     ctx.builder.SetInsertPoint(ifok);
- }
++#if JL_LLVM_VERSION < 170000
+ int jl_opaque_ptrs_set = 0;
++#endif
  
-@@ -4690,7 +4749,7 @@
-         // var not found. switch to delayed lookup.
-         Constant *initnul = Constant::getNullValue(ctx.types().T_pjlvalue);
-         GlobalVariable *bindinggv = new GlobalVariable(*ctx.f->getParent(), ctx.types().T_pjlvalue,
--                false, GlobalVariable::PrivateLinkage, initnul);
-+                false, GlobalVariable::PrivateLinkage, initnul, "jl_binding_ptr"); // LLVM has bugs with nameless globals
-         LoadInst *cachedval = ctx.builder.CreateAlignedLoad(ctx.types().T_pjlvalue, bindinggv, Align(sizeof(void*)));
-         setName(ctx.emission_context, cachedval, jl_symbol_name(m->name) + StringRef(".") + jl_symbol_name(s) + ".cached");
-         cachedval->setOrdering(AtomicOrdering::Unordered);
-@@ -4700,7 +4759,7 @@
-         auto iscached = ctx.builder.CreateICmpNE(cachedval, initnul);
-         setName(ctx.emission_context, iscached, "iscached");
-         ctx.builder.CreateCondBr(iscached, have_val, not_found);
--        ctx.f->getBasicBlockList().push_back(not_found);
-+        not_found->insertInto(ctx.f);
-         ctx.builder.SetInsertPoint(not_found);
-         Value *bval = ctx.builder.CreateCall(prepare_call(assign ? jlgetbindingwrorerror_func : jlgetbindingorerror_func),
-                 { literal_pointer_val(ctx, (jl_value_t*)m),
-@@ -4708,7 +4767,7 @@
-         setName(ctx.emission_context, bval, jl_symbol_name(m->name) + StringRef(".") + jl_symbol_name(s) + ".found");
-         ctx.builder.CreateAlignedStore(bval, bindinggv, Align(sizeof(void*)))->setOrdering(AtomicOrdering::Release);
-         ctx.builder.CreateBr(have_val);
--        ctx.f->getBasicBlockList().push_back(have_val);
-+        have_val->insertInto(ctx.f);
-         ctx.builder.SetInsertPoint(have_val);
-         PHINode *p = ctx.builder.CreatePHI(ctx.types().T_pjlvalue, 2);
-         p->addIncoming(cachedval, currentbb);
-@@ -5030,9 +5089,9 @@
-             Instruction *phi = dest->clone();
-             phi->insertAfter(dest);
-             PHINode *Tindex_phi = PHINode::Create(getInt8Ty(ctx.builder.getContext()), jl_array_len(edges), "tindex_phi");
--            BB->getInstList().insert(InsertPt, Tindex_phi);
-+            Tindex_phi->insertInto(BB, InsertPt);
-             PHINode *ptr_phi = PHINode::Create(ctx.types().T_prjlvalue, jl_array_len(edges), "ptr_phi");
--            BB->getInstList().insert(InsertPt, ptr_phi);
-+            ptr_phi->insertInto(BB, InsertPt);
-             Value *isboxed = ctx.builder.CreateICmpNE(
-                     ctx.builder.CreateAnd(Tindex_phi, ConstantInt::get(getInt8Ty(ctx.builder.getContext()), 0x80)),
-                     ConstantInt::get(getInt8Ty(ctx.builder.getContext()), 0));
-@@ -5050,7 +5109,7 @@
-         }
-         else if (allunbox) {
-             PHINode *Tindex_phi = PHINode::Create(getInt8Ty(ctx.builder.getContext()), jl_array_len(edges), "tindex_phi");
--            BB->getInstList().insert(InsertPt, Tindex_phi);
-+            Tindex_phi->insertInto(BB, InsertPt);
-             jl_cgval_t val = mark_julia_slot(NULL, phiType, Tindex_phi, ctx.tbaa().tbaa_stack);
-             ctx.PhiNodes.push_back(std::make_tuple(val, BB, dest, (PHINode*)NULL, r));
-             ctx.SAvalues.at(idx) = val;
-@@ -5084,7 +5143,7 @@
+ extern "C" void jl_init_llvm(void)
+ {
+@@ -9941,6 +9965,7 @@ extern "C" void jl_init_llvm(void)
+     if (clopt && clopt->getNumOccurrences() == 0)
+         cl::ProvidePositionalOption(clopt, "4", 1);
+ 
++    #if JL_LLVM_VERSION < 170000
+     // we want the opaque-pointers to be opt-in, per LLVMContext, for this release
+     // so change the default value back to pre-14.x, without changing the NumOccurrences flag for it
+     clopt = llvmopts.lookup("opaque-pointers");
+@@ -9949,6 +9974,7 @@ extern "C" void jl_init_llvm(void)
+     } else {
+         jl_opaque_ptrs_set = 1;
      }
-     else {
-         value_phi = PHINode::Create(vtype, jl_array_len(edges), "value_phi");
--        BB->getInstList().insert(InsertPt, value_phi);
-+        value_phi->insertInto(BB, InsertPt);
-         slot = mark_julia_type(ctx, value_phi, isboxed, phiType);
-     }
-     ctx.PhiNodes.push_back(std::make_tuple(slot, BB, dest, value_phi, r));
-@@ -5590,7 +5649,7 @@
-                 Value *mdargs[] = { name, literal_pointer_val(ctx, (jl_value_t*)mod), bp, literal_pointer_val(ctx, bnd) };
-                 jl_cgval_t gf = mark_julia_type(
-                         ctx,
--                        ctx.builder.CreateCall(prepare_call(jlgenericfunction_func), makeArrayRef(mdargs)),
-+                        ctx.builder.CreateCall(prepare_call(jlgenericfunction_func), ArrayRef<Value*>(mdargs)),
-                         true,
-                         jl_function_type);
-                 return gf;
-@@ -5609,7 +5668,7 @@
-         };
-         jl_cgval_t meth = mark_julia_type(
-             ctx,
--            ctx.builder.CreateCall(prepare_call(jlmethod_func), makeArrayRef(mdargs)),
-+            ctx.builder.CreateCall(prepare_call(jlmethod_func), ArrayRef<Value*>(mdargs)),
-             true,
-             jl_method_type);
-         return meth;
-@@ -6981,7 +7040,7 @@
-             Type *AT = ArrayType::get(getInt8Ty(ctx.builder.getContext()), props.union_bytes);
-             fsig.push_back(AT->getPointerTo());
-             Type *pair[] = { ctx.types().T_prjlvalue, getInt8Ty(ctx.builder.getContext()) };
--            rt = StructType::get(ctx.builder.getContext(), makeArrayRef(pair));
-+            rt = StructType::get(ctx.builder.getContext(), ArrayRef<Type*>(pair));
-         }
-         else if (allunbox) {
-             props.cc = jl_returninfo_t::Ghosts;
-@@ -8448,9 +8507,7 @@
-                 // Can't use `llvm::SplitCriticalEdge` here because
-                 // we may have invalid phi nodes in the destination.
-                 BasicBlock *NewBB = BasicBlock::Create(terminator->getContext(),
--                   FromBB->getName() + "." + PhiBB->getName() + "_crit_edge");
--                Function::iterator FBBI = FromBB->getIterator();
--                ctx.f->getBasicBlockList().insert(++FBBI, NewBB); // insert after existing block
-+                   FromBB->getName() + "." + PhiBB->getName() + "_crit_edge", FromBB->getParent(), FromBB->getNextNode()); // insert after existing block
-                 terminator->replaceSuccessorWith(PhiBB, NewBB);
-                 DebugLoc Loc = terminator->getDebugLoc();
-                 terminator = BranchInst::Create(PhiBB);
-@@ -9189,8 +9246,12 @@
-     initializeAnalysis(Registry);
-     initializeTransformUtils(Registry);
-     initializeInstCombine(Registry);
-+#if JL_LLVM_VERSION >= 160000
-+    // TODO
-+#else
-     initializeAggressiveInstCombine(Registry);
-     initializeInstrumentation(Registry);
-+#endif
-     initializeTarget(Registry);
- #ifdef USE_POLLY
-     polly::initializePollyPasses(Registry);
-diff --color -ur a/src/disasm.cpp b/src/disasm.cpp
---- a/src/disasm.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/disasm.cpp	2023-11-07 20:28:23.690685547 +0100
-@@ -58,7 +58,6 @@
++    #endif
+ 
+     clopt = llvmopts.lookup("time-passes");
+     if (clopt && clopt->getNumOccurrences() > 0)
+diff --git a/src/disasm.cpp b/src/disasm.cpp
+index c2a55f23d12f2..8df09fde02ae1 100644
+--- a/src/disasm.cpp
++++ b/src/disasm.cpp
+@@ -58,7 +58,11 @@
  #include "llvm-version.h"
  
  // for outputting disassembly
--#include <llvm/ADT/Triple.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Triple.h>
++#else
+ #include <llvm/ADT/Triple.h>
++#endif
  #include <llvm/AsmParser/Parser.h>
  #include <llvm/Analysis/TargetTransformInfo.h>
  #include <llvm/BinaryFormat/COFF.h>
-@@ -1105,7 +1104,7 @@
+@@ -1094,7 +1098,11 @@ static void jl_dump_asm_internal(
                              const MCOperand &OpI = Inst.getOperand(Op);
                              if (OpI.isImm()) {
                                  int64_t imm = OpI.getImm();
--                                if (opinfo.OpInfo[Op].OperandType == MCOI::OPERAND_PCREL)
++                                #if JL_LLVM_VERSION >= 170000
 +                                if (opinfo.operands()[Op].OperandType == MCOI::OPERAND_PCREL)
++                                #else
+                                 if (opinfo.OpInfo[Op].OperandType == MCOI::OPERAND_PCREL)
++                                #endif
                                      imm += Fptr + Index;
                                  const char *name = DisInfo.lookupSymbolName(imm);
                                  if (name)
-diff --color -ur a/src/intrinsics.cpp b/src/intrinsics.cpp
---- a/src/intrinsics.cpp	2023-11-07 20:28:38.337858446 +0100
-+++ b/src/intrinsics.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -1431,7 +1431,7 @@
-     case fma_float: {
-         assert(y->getType() == x->getType());
-         assert(z->getType() == y->getType());
--        FunctionCallee fmaintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::fma, makeArrayRef(t));
-+        FunctionCallee fmaintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::fma, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(fmaintr, {x, y, z});
-     }
-     case muladd_float: {
-@@ -1513,7 +1513,7 @@
-                 (f == checked_smul_int ?
-                  Intrinsic::smul_with_overflow :
-                  Intrinsic::umul_with_overflow)))));
--        FunctionCallee intr = Intrinsic::getDeclaration(jl_Module, intr_id, makeArrayRef(t));
-+        FunctionCallee intr = Intrinsic::getDeclaration(jl_Module, intr_id, ArrayRef<Type*>(t));
-         Value *tupval = ctx.builder.CreateCall(intr, {x, y});
- 
-         jl_value_t *params[2];
-@@ -1581,30 +1581,30 @@
-         }
-     }
-     case bswap_int: {
--        FunctionCallee bswapintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::bswap, makeArrayRef(t));
--        return ctx.builder.CreateCall(bswapintr, x);
-+        FunctionCallee bswapintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::bswap, ArrayRef<Type*>(t)); //TODO: Move to deduction guides
-+        return ctx.builder.CreateCall(bswapintr, x);                                                           // when we drop LLVM 15
-     }
-     case ctpop_int: {
--        FunctionCallee ctpopintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::ctpop, makeArrayRef(t));
-+        FunctionCallee ctpopintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::ctpop, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(ctpopintr, x);
-     }
-     case ctlz_int: {
--        FunctionCallee ctlz = Intrinsic::getDeclaration(jl_Module, Intrinsic::ctlz, makeArrayRef(t));
-+        FunctionCallee ctlz = Intrinsic::getDeclaration(jl_Module, Intrinsic::ctlz, ArrayRef<Type*>(t));
-         y = ConstantInt::get(getInt1Ty(ctx.builder.getContext()), 0);
-         return ctx.builder.CreateCall(ctlz, {x, y});
-     }
-     case cttz_int: {
--        FunctionCallee cttz = Intrinsic::getDeclaration(jl_Module, Intrinsic::cttz, makeArrayRef(t));
-+        FunctionCallee cttz = Intrinsic::getDeclaration(jl_Module, Intrinsic::cttz, ArrayRef<Type*>(t));
-         y = ConstantInt::get(getInt1Ty(ctx.builder.getContext()), 0);
-         return ctx.builder.CreateCall(cttz, {x, y});
-     }
- 
-     case abs_float: {
--        FunctionCallee absintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::fabs, makeArrayRef(t));
-+        FunctionCallee absintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::fabs, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(absintr, x);
-     }
-     case copysign_float: {
--        FunctionCallee copyintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::copysign, makeArrayRef(t));
-+        FunctionCallee copyintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::copysign, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(copyintr, {x, y});
-     }
-     case flipsign_int: {
-@@ -1623,27 +1623,27 @@
-         return ctx.builder.CreateXor(ctx.builder.CreateAdd(x, tmp), tmp);
-     }
-     case ceil_llvm: {
--        FunctionCallee ceilintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::ceil, makeArrayRef(t));
-+        FunctionCallee ceilintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::ceil, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(ceilintr, x);
-     }
-     case floor_llvm: {
--        FunctionCallee floorintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::floor, makeArrayRef(t));
-+        FunctionCallee floorintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::floor, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(floorintr, x);
-     }
-     case trunc_llvm: {
--        FunctionCallee truncintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::trunc, makeArrayRef(t));
-+        FunctionCallee truncintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::trunc, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(truncintr, x);
-     }
-     case rint_llvm: {
--        FunctionCallee rintintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::rint, makeArrayRef(t));
-+        FunctionCallee rintintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::rint, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(rintintr, x);
-     }
-     case sqrt_llvm: {
--        FunctionCallee sqrtintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::sqrt, makeArrayRef(t));
-+        FunctionCallee sqrtintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::sqrt, ArrayRef<Type*>(t));
-         return ctx.builder.CreateCall(sqrtintr, x);
-     }
-     case sqrt_llvm_fast: {
--        FunctionCallee sqrtintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::sqrt, makeArrayRef(t));
-+        FunctionCallee sqrtintr = Intrinsic::getDeclaration(jl_Module, Intrinsic::sqrt, ArrayRef<Type*>(t));
-         return math_builder(ctx, true)().CreateCall(sqrtintr, x);
-     }
- 
-diff --color -ur a/src/jitlayers.cpp b/src/jitlayers.cpp
---- a/src/jitlayers.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/jitlayers.cpp	2023-11-07 20:28:23.690685547 +0100
-@@ -34,7 +34,6 @@
- 
- using namespace llvm;
- 
--#include "llvm-codegen-shared.h"
- #include "jitlayers.h"
- #include "julia_assert.h"
- #include "processor.h"
-@@ -515,7 +514,7 @@
-             }
-         }
-         ++SpecFPtrCount;
--        _jl_compile_codeinst(codeinst, src, world, *jl_ExecutionEngine->getContext(), is_recompile);
-+        _jl_compile_codeinst(codeinst, src, world, *(jl_ExecutionEngine->getContext()), is_recompile);
-         if (jl_atomic_load_relaxed(&codeinst->invoke) == NULL)
-             codeinst = NULL;
-     }
-@@ -695,7 +694,7 @@
-             optlevel = std::max(static_cast<int>(jl_options.opt_level), 0);
-             size_t optlevel_min = std::max(static_cast<int>(jl_options.opt_level_min), 0);
-             for (auto &F : M.functions()) {
--                if (!F.getBasicBlockList().empty()) {
-+                if (!F.empty()) {
-                     Attribute attr = F.getFnAttribute("julia-optimization-level");
-                     StringRef val = attr.getValueAsString();
-                     if (val != "") {
-@@ -795,8 +794,11 @@
-         PendingObjs.erase(&MR);
-         return Error::success();
-     }
--
-+#if JL_LLVM_VERSION >= 160000
-+    Error notifyRemovingResources(JITDylib &JD, orc::ResourceKey K) override
-+#else
-     Error notifyRemovingResources(ResourceKey K) override
-+#endif
-     {
-         std::lock_guard<std::mutex> lock(PluginMutex);
-         RegisteredObjs.erase(K);
-@@ -804,7 +806,11 @@
-         return Error::success();
-     }
- 
-+#if JL_LLVM_VERSION >= 160000
-+    void notifyTransferringResources(JITDylib &JD, ResourceKey DstKey, ResourceKey SrcKey) override
-+#else
-     void notifyTransferringResources(ResourceKey DstKey, ResourceKey SrcKey) override
-+#endif
-     {
-         std::lock_guard<std::mutex> lock(PluginMutex);
-         auto SrcIt = RegisteredObjs.find(SrcKey);
-@@ -863,11 +869,21 @@
-     Error notifyFailed(orc::MaterializationResponsibility &MR) override {
-         return Error::success();
-     }
--    Error notifyRemovingResources(orc::ResourceKey K) override {
-+#if JL_LLVM_VERSION >= 160000
-+    Error notifyRemovingResources(JITDylib &JD, orc::ResourceKey K) override
-+#else
-+    Error notifyRemovingResources(orc::ResourceKey K) override
-+#endif
-+    {
-         return Error::success();
-     }
-+#if JL_LLVM_VERSION >= 160000
-+    void notifyTransferringResources(JITDylib &JD, orc::ResourceKey DstKey,
-+                                     orc::ResourceKey SrcKey) override {}
-+#else
-     void notifyTransferringResources(orc::ResourceKey DstKey,
-                                      orc::ResourceKey SrcKey) override {}
-+#endif
- 
-     void modifyPassConfig(orc::MaterializationResponsibility &,
-                           jitlink::LinkGraph &,
-@@ -884,7 +900,11 @@
-                 for (auto block : section.blocks()) {
-                     secsize += block->getSize();
-                 }
-+#if JL_LLVM_VERSION >= 160000
-+                if ((section.getMemProt() & orc::MemProt::Exec) == orc::MemProt::None) {
-+#else
-                 if ((section.getMemProt() & jitlink::MemProt::Exec) == jitlink::MemProt::None) {
-+#endif
-                     data_size += secsize;
-                 } else {
-                     code_size += secsize;
-@@ -918,8 +938,10 @@
- std::unique_ptr<jitlink::JITLinkMemoryManager> createJITLinkMemoryManager() {
- #if JL_LLVM_VERSION < 150000
-     return cantFail(jitlink::InProcessMemoryManager::Create());
--#else
-+#elif JL_LLVM_VERSION < 160000
-     return cantFail(orc::MapperJITLinkMemoryManager::CreateWithMapper<orc::InProcessMemoryMapper>());
-+#else
-+    return cantFail(orc::MapperJITLinkMemoryManager::CreateWithMapper<orc::InProcessMemoryMapper>(/*Reservation Granularity*/ 16 * 1024 * 1024));
- #endif
+diff --git a/src/intrinsics.cpp b/src/intrinsics.cpp
+index 3a98850ddca68..67d2ef30e0ed6 100644
+--- a/src/intrinsics.cpp
++++ b/src/intrinsics.cpp
+@@ -4,6 +4,10 @@ namespace JL_I {
+ #include "intrinsics.h"
  }
  
-@@ -966,6 +988,13 @@
-                                      bool IsReadOnly) override {
-         return MemMgr->allocateDataSection(Size, Alignment, SectionID, SectionName, IsReadOnly);
-     }
-+#if JL_LLVM_VERSION >= 160000
-+    virtual void reserveAllocationSpace(uintptr_t CodeSize, Align CodeAlign,
-+                                        uintptr_t RODataSize, Align RODataAlign,
-+                                        uintptr_t RWDataSize, Align RWDataAlign) override {
-+        return MemMgr->reserveAllocationSpace(CodeSize, CodeAlign, RODataSize, RODataAlign, RWDataSize, RWDataAlign);
-+    }
++#include <array>
++#include <bitset>
++#include <string>
++
+ #include "ccall.cpp"
+ 
+ //Mark our stats as being from intrinsics irgen
+diff --git a/src/jitlayers.cpp b/src/jitlayers.cpp
+index 3c2a6dd285af4..f48acf95dc2d5 100644
+--- a/src/jitlayers.cpp
++++ b/src/jitlayers.cpp
+@@ -28,7 +28,11 @@
+ #include <llvm/CodeGen/TargetSubtargetInfo.h>
+ #include <llvm/MC/TargetRegistry.h>
+ #include <llvm/Target/TargetOptions.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Host.h>
 +#else
-     virtual void reserveAllocationSpace(uintptr_t CodeSize, uint32_t CodeAlign,
-                                         uintptr_t RODataSize,
-                                         uint32_t RODataAlign,
-@@ -973,6 +1002,7 @@
-                                         uint32_t RWDataAlign) override {
-         return MemMgr->reserveAllocationSpace(CodeSize, CodeAlign, RODataSize, RODataAlign, RWDataSize, RWDataAlign);
-     }
+ #include <llvm/Support/Host.h>
 +#endif
-     virtual bool needsToReserveAllocationSpace() override {
-         return MemMgr->needsToReserveAllocationSpace();
+ #include <llvm/Support/TargetSelect.h>
+ #include <llvm/Object/SymbolSize.h>
+ 
+@@ -1472,9 +1476,11 @@ struct JuliaOJIT::DLSymOptimizer {
+                     if (named) {
+                         auto T = GV.getValueType();
+                         assert(T->isPointerTy());
++                        #if JL_LLVM_VERSION < 170000
+                         if (!T->isOpaquePointerTy()) {
+                             T = T->getNonOpaquePointerElementType();
+                         }
++                        #endif
+                         init = GlobalAlias::create(T, 0, GlobalValue::PrivateLinkage, GV.getName() + ".jit", init, &M);
+                     }
+                     GV.setInitializer(init);
+@@ -1525,9 +1531,11 @@ struct JuliaOJIT::DLSymOptimizer {
+                         if (named) {
+                             auto T = CI->getType();
+                             assert(T->isPointerTy());
++                            #if JL_LLVM_VERSION < 170000
+                             if (!T->isOpaquePointerTy()) {
+                                 T = T->getNonOpaquePointerElementType();
+                             }
++                            #endif
+                             init = GlobalAlias::create(T, 0, GlobalValue::PrivateLinkage, CI->getName() + ".jit", init, &M);
+                         }
+                         // DCE and SimplifyCFG will kill the branching structure around
+@@ -1571,6 +1579,7 @@ void fixupTM(TargetMachine &TM) {
      }
-@@ -1103,6 +1133,8 @@
- #else
-             None;
- #endif
-+        if (TheTriple.isAArch64())
-+            codemodel = CodeModel::Small;
-         auto optlevel = CodeGenOptLevelFor(jl_options.opt_level);
-         auto TM = TheTarget->createTargetMachine(
-                 TheTriple.getTriple(), TheCPU, FeaturesStr,
-@@ -1114,11 +1146,7 @@
-                 );
-         assert(TM && "Failed to select target machine -"
-                      " Is the LLVM backend for this CPU enabled?");
--        if (!TheTriple.isARM() && !TheTriple.isPPC64()) {
--            // FastISel seems to be buggy for ARM. Ref #13321
--            if (jl_options.opt_level < 2)
--                TM->setFastISel(true);
--        }
-+        fixupTM(*TM);
-         return std::unique_ptr<TargetMachine>(TM);
-     }
- } // namespace
-@@ -1148,7 +1176,9 @@
-             : JTMB(createJTMBFromTM(TM, optlevel)) {}
- 
-         std::unique_ptr<TargetMachine> operator()() JL_NOTSAFEPOINT {
--            return cantFail(JTMB.createTargetMachine());
-+            auto TM = cantFail(JTMB.createTargetMachine());
-+            fixupTM(*TM);
-+            return TM;
-         }
-     };
- 
-@@ -1191,7 +1221,9 @@
-             : JTMB(createJTMBFromTM(TM, optlevel)), O(getOptLevel(optlevel)), printers(printers) {}
- 
-         auto operator()() JL_NOTSAFEPOINT {
--            auto NPM = std::make_unique<NewPM>(cantFail(JTMB.createTargetMachine()), O);
-+            auto TM = cantFail(JTMB.createTargetMachine());
-+            fixupTM(*TM);
-+            auto NPM = std::make_unique<NewPM>(std::move(TM), O);
-             printers.push_back([NPM = NPM.get()]() JL_NOTSAFEPOINT {
-                 NPM->printTimers();
-             });
-@@ -1303,6 +1335,33 @@
-     };
  }
  
-+void fixupTM(TargetMachine &TM) {
-+    auto TheTriple = TM.getTargetTriple();
-+    if (jl_options.opt_level < 2) {
-+        if (!TheTriple.isARM() && !TheTriple.isPPC64() && !TheTriple.isAArch64())
-+            TM.setFastISel(true);
-+        else    // FastISel seems to be buggy Ref #13321
-+            TM.setFastISel(false);
-+    }
-+}
-+
-+void SetOpaquePointer(LLVMContext &ctx) {
-+#ifndef JL_LLVM_OPAQUE_POINTERS
-+    ctx.setOpaquePointers(false);
-+#else
-+    ctx.setOpaquePointers(true);
++#if JL_LLVM_VERSION < 170000
+ extern int jl_opaque_ptrs_set;
+ void SetOpaquePointer(LLVMContext &ctx) {
+     if (jl_opaque_ptrs_set)
+@@ -1581,6 +1590,7 @@ void SetOpaquePointer(LLVMContext &ctx) {
+     ctx.setOpaquePointers(true);
+ #endif
+ }
 +#endif
-+}
-+
-+extern "C" JL_DLLEXPORT_CODEGEN
-+int JuliaUsesOpaquePtrs() {
-+#ifndef JL_LLVM_OPAQUE_POINTERS
-+    return 0;
-+#else
-+    return 1;
-+#endif
-+}
-+
+ 
  llvm::DataLayout jl_create_datalayout(TargetMachine &TM) {
      // Mark our address spaces as non-integral
-     auto jl_data_layout = TM.createDataLayout();
-@@ -1329,12 +1388,7 @@
-     ExternalJD(ES.createBareJITDylib("JuliaExternal")),
+@@ -1603,7 +1613,9 @@ JuliaOJIT::JuliaOJIT()
+     DLSymOpt(std::make_unique<DLSymOptimizer>(false)),
      ContextPool([](){
          auto ctx = std::make_unique<LLVMContext>();
--        if (!ctx->hasSetOpaquePointersValue())
--#ifndef JL_LLVM_OPAQUE_POINTERS
--            ctx->setOpaquePointers(false);
--#else
--            ctx->setOpaquePointers(true);
--#endif
-+        SetOpaquePointer(*ctx);
++        #if JL_LLVM_VERSION < 170000
+         SetOpaquePointer(*ctx);
++        #endif
          return orc::ThreadSafeContext(std::move(ctx));
      }),
  #ifdef JL_USE_JITLINK
-@@ -1484,7 +1538,7 @@
+@@ -1728,6 +1740,25 @@ JuliaOJIT::JuliaOJIT()
+ 
+ #ifdef MSAN_EMUTLS_WORKAROUND
+     orc::SymbolMap msan_crt;
++    #if JL_LLVM_VERSION >= 170000
++    msan_crt[mangle("__emutls_get_address")] = {ExecutorAddr::fromPtr(msan_workaround::getTLSAddress), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_param_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::param))), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_param_origin_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::param_origin))), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_retval_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::retval))), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_retval_origin_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::retval_origin))), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_va_arg_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::va_arg))), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_va_arg_origin_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::va_arg_origin))), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_va_arg_overflow_size_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::va_arg_overflow_size))), JITSymbolFlags::Exported};
++    msan_crt[mangle("__emutls_v.__msan_origin_tls")] = {ExecutorAddr::fromPtr(
++        reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::origin))), JITSymbolFlags::Exported};
++    #else
+     msan_crt[mangle("__emutls_get_address")] = JITEvaluatedSymbol::fromPointer(msan_workaround::getTLSAddress, JITSymbolFlags::Exported);
+     msan_crt[mangle("__emutls_v.__msan_param_tls")] = JITEvaluatedSymbol::fromPointer(
+         reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::param)), JITSymbolFlags::Exported);
+@@ -1745,11 +1776,16 @@ JuliaOJIT::JuliaOJIT()
+         reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::va_arg_overflow_size)), JITSymbolFlags::Exported);
+     msan_crt[mangle("__emutls_v.__msan_origin_tls")] = JITEvaluatedSymbol::fromPointer(
+         reinterpret_cast<void *>(static_cast<uintptr_t>(msan_workaround::MSanTLS::origin)), JITSymbolFlags::Exported);
++    #endif
+     cantFail(GlobalJD.define(orc::absoluteSymbols(msan_crt)));
+ #endif
+ #ifdef _COMPILER_ASAN_ENABLED_
+     orc::SymbolMap asan_crt;
++    #if JL_LLVM_VERSION >= 170000
++    asan_crt[mangle("___asan_globals_registered")] = {ExecutorAddr::fromPtr(&___asan_globals_registered), JITSymbolFlags::Exported};
++    #else
+     asan_crt[mangle("___asan_globals_registered")] = JITEvaluatedSymbol::fromPointer(&___asan_globals_registered, JITSymbolFlags::Exported);
++    #endif
+     cantFail(JD.define(orc::absoluteSymbols(asan_crt)));
+ #endif
+ }
+@@ -1764,7 +1800,11 @@ orc::SymbolStringPtr JuliaOJIT::mangle(StringRef Name)
  
  void JuliaOJIT::addGlobalMapping(StringRef Name, uint64_t Addr)
  {
--    cantFail(JD.define(orc::absoluteSymbols({{mangle(Name), JITEvaluatedSymbol::fromPointer((void*)Addr)}})));
++    #if JL_LLVM_VERSION >= 170000
 +    cantFail(JD.define(orc::absoluteSymbols({{mangle(Name), {ExecutorAddr::fromPtr((void*)Addr), JITSymbolFlags::Exported}}})));
++    #else
+     cantFail(JD.define(orc::absoluteSymbols({{mangle(Name), JITEvaluatedSymbol::fromPointer((void*)Addr)}})));
++    #endif
  }
  
  void JuliaOJIT::addModule(orc::ThreadSafeModule TSM)
-@@ -1557,25 +1611,25 @@
+@@ -1810,7 +1850,11 @@ void JuliaOJIT::addModule(orc::ThreadSafeModule TSM)
+         }
+     }
+     for (auto &Sym : *Lookups) {
++        #if JL_LLVM_VERSION >= 170000
++        assert(Sym.second.getAddress());
++        #else
+         assert(Sym.second);
++        #endif
+         (void) Sym;
+     }
+ }
+@@ -1839,6 +1883,48 @@ Error JuliaOJIT::addObjectFile(orc::JITDylib &JD, std::unique_ptr<MemoryBuffer>
      return LockLayer.add(JD.getDefaultResourceTracker(), std::move(Obj));
  }
  
--JL_JITSymbol JuliaOJIT::findSymbol(StringRef Name, bool ExportedSymbolsOnly)
++#if JL_LLVM_VERSION >= 170000
 +Expected<ExecutorSymbolDef> JuliaOJIT::findSymbol(StringRef Name, bool ExportedSymbolsOnly)
++{
++    orc::JITDylib* SearchOrders[3] = {&JD, &GlobalJD, &ExternalJD};
++    ArrayRef<orc::JITDylib*> SearchOrder = ArrayRef<orc::JITDylib*>(&SearchOrders[0], ExportedSymbolsOnly ? 3 : 1);
++    auto Sym = ES.lookup(SearchOrder, Name);
++    return Sym;
++}
++
++Expected<ExecutorSymbolDef> JuliaOJIT::findUnmangledSymbol(StringRef Name)
++{
++    return findSymbol(getMangledName(Name), true);
++}
++
++Expected<ExecutorSymbolDef> JuliaOJIT::findExternalJDSymbol(StringRef Name, bool ExternalJDOnly)
++{
++    orc::JITDylib* SearchOrders[3] = {&ExternalJD, &GlobalJD, &JD};
++    ArrayRef<orc::JITDylib*> SearchOrder = ArrayRef<orc::JITDylib*>(&SearchOrders[0], ExternalJDOnly ? 1 : 3);
++    auto Sym = ES.lookup(SearchOrder, getMangledName(Name));
++    return Sym;
++}
++
++uint64_t JuliaOJIT::getGlobalValueAddress(StringRef Name)
++{
++    auto addr = findSymbol(getMangledName(Name), false);
++    if (!addr) {
++        consumeError(addr.takeError());
++        return 0;
++    }
++    return cantFail(std::move(addr)).getAddress().getValue();
++}
++
++uint64_t JuliaOJIT::getFunctionAddress(StringRef Name)
++{
++    auto addr = findSymbol(getMangledName(Name), false);
++    if (!addr) {
++        consumeError(addr.takeError());
++        return 0;
++    }
++    return cantFail(std::move(addr)).getAddress().getValue();
++}
++#else
+ JL_JITSymbol JuliaOJIT::findSymbol(StringRef Name, bool ExportedSymbolsOnly)
  {
      orc::JITDylib* SearchOrders[3] = {&JD, &GlobalJD, &ExternalJD};
--    ArrayRef<orc::JITDylib*> SearchOrder = makeArrayRef(&SearchOrders[0], ExportedSymbolsOnly ? 3 : 1);
-+    ArrayRef<orc::JITDylib*> SearchOrder = ArrayRef<orc::JITDylib*>(&SearchOrders[0], ExportedSymbolsOnly ? 3 : 1);
-     auto Sym = ES.lookup(SearchOrder, Name);
-     if (Sym)
-         return *Sym;
-     return Sym.takeError();
- }
- 
--JL_JITSymbol JuliaOJIT::findUnmangledSymbol(StringRef Name)
-+Expected<ExecutorSymbolDef> JuliaOJIT::findUnmangledSymbol(StringRef Name)
- {
+@@ -1854,7 +1940,7 @@ JL_JITSymbol JuliaOJIT::findUnmangledSymbol(StringRef Name)
      return findSymbol(getMangledName(Name), true);
  }
  
 -Expected<JITEvaluatedSymbol> JuliaOJIT::findExternalJDSymbol(StringRef Name, bool ExternalJDOnly)
-+Expected<ExecutorSymbolDef> JuliaOJIT::findExternalJDSymbol(StringRef Name, bool ExternalJDOnly)
++Expected<JL_JITSymbol> JuliaOJIT::findExternalJDSymbol(StringRef Name, bool ExternalJDOnly)
  {
      orc::JITDylib* SearchOrders[3] = {&ExternalJD, &GlobalJD, &JD};
--    ArrayRef<orc::JITDylib*> SearchOrder = makeArrayRef(&SearchOrders[0], ExternalJDOnly ? 1 : 3);
-+    ArrayRef<orc::JITDylib*> SearchOrder = ArrayRef<orc::JITDylib*>(&SearchOrders[0], ExternalJDOnly ? 1 : 3);
-     auto Sym = ES.lookup(SearchOrder, getMangledName(Name));
-     return Sym;
- }
-@@ -1587,7 +1641,7 @@
+     ArrayRef<orc::JITDylib*> SearchOrder = ArrayRef<orc::JITDylib*>(&SearchOrders[0], ExternalJDOnly ? 1 : 3);
+@@ -1869,7 +1955,7 @@ uint64_t JuliaOJIT::getGlobalValueAddress(StringRef Name)
          consumeError(addr.takeError());
          return 0;
      }
 -    return cantFail(addr.getAddress());
-+    return addr->getAddress().getValue();
++    return cantFail(addr).getAddress();
  }
  
  uint64_t JuliaOJIT::getFunctionAddress(StringRef Name)
-@@ -1597,7 +1651,7 @@
+@@ -1879,8 +1965,9 @@ uint64_t JuliaOJIT::getFunctionAddress(StringRef Name)
          consumeError(addr.takeError());
          return 0;
      }
 -    return cantFail(addr.getAddress());
-+    return addr->getAddress().getValue();
++    return cantFail(addr).getAddress();
  }
++#endif
  
  StringRef JuliaOJIT::getFunctionAtAddress(uint64_t Addr, jl_code_instance_t *codeinst)
-@@ -1691,8 +1691,8 @@
+ {
+@@ -1920,8 +2007,13 @@ llvm_orc_registerJITLoaderGDBAllocAction(const char *Data, size_t Size);
  void JuliaOJIT::enableJITDebuggingSupport()
  {
      orc::SymbolMap GDBFunctions;
--    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBAllocAction")] = JITEvaluatedSymbol::fromPointer(&llvm_orc_registerJITLoaderGDBAllocAction, JITSymbolFlags::Exported | JITSymbolFlags::Callable);
--    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBWrapper")] = JITEvaluatedSymbol::fromPointer(&llvm_orc_registerJITLoaderGDBWrapper, JITSymbolFlags::Exported | JITSymbolFlags::Callable);
-+    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBAllocAction")] = ExecutorSymbolDef(ExecutorAddr::fromPtr(&llvm_orc_registerJITLoaderGDBAllocAction), JITSymbolFlags::Exported | JITSymbolFlags::Callable);
-+    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBWrapper")] = ExecutorSymbolDef(ExecutorAddr::fromPtr(&llvm_orc_registerJITLoaderGDBWrapper), JITSymbolFlags::Exported | JITSymbolFlags::Callable);
++    #if JL_LLVM_VERSION >= 170000
++    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBAllocAction")] = {ExecutorAddr::fromPtr(&llvm_orc_registerJITLoaderGDBAllocAction), JITSymbolFlags::Exported | JITSymbolFlags::Callable};
++    GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBWrapper")] = {ExecutorAddr::fromPtr(&llvm_orc_registerJITLoaderGDBWrapper), JITSymbolFlags::Exported | JITSymbolFlags::Callable};
++    #else
+     GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBAllocAction")] = JITEvaluatedSymbol::fromPointer(&llvm_orc_registerJITLoaderGDBAllocAction, JITSymbolFlags::Exported | JITSymbolFlags::Callable);
+     GDBFunctions[mangle("llvm_orc_registerJITLoaderGDBWrapper")] = JITEvaluatedSymbol::fromPointer(&llvm_orc_registerJITLoaderGDBWrapper, JITSymbolFlags::Exported | JITSymbolFlags::Callable);
++    #endif
      cantFail(JD.define(orc::absoluteSymbols(GDBFunctions)));
      if (TM->getTargetTriple().isOSBinFormatMachO())
          ObjectLayer.addPlugin(cantFail(orc::GDBJITDebugInfoRegistrationPlugin::Create(ES, JD, TM->getTargetTriple())));
-@@ -1759,7 +1813,7 @@
+@@ -2047,7 +2139,11 @@ void jl_merge_module(orc::ThreadSafeModule &destTSM, orc::ThreadSafeModule srcTS
                  }
                  // Reparent the global variable:
-                 sG->removeFromParent();
--                dest.getGlobalList().push_back(sG);
-+                dest.insertGlobalVariable(sG);
+                 SG.removeFromParent();
++                #if JL_LLVM_VERSION >= 170000
++                dest.insertGlobalVariable(&SG);
++                #else
+                 dest.getGlobalList().push_back(&SG);
++                #endif
                  // Comdat is owned by the Module
-                 sG->setComdat(nullptr);
+                 SG.setComdat(nullptr);
              }
-@@ -1804,7 +1858,7 @@
+@@ -2094,7 +2190,11 @@ void jl_merge_module(orc::ThreadSafeModule &destTSM, orc::ThreadSafeModule srcTS
                      }
                  }
-                 sG->removeFromParent();
--                dest.getAliasList().push_back(sG);
-+                dest.insertAlias(sG);
+                 SG.removeFromParent();
++                #if JL_LLVM_VERSION >= 170000
++                dest.insertAlias(&SG);
++                #else
+                 dest.getAliasList().push_back(&SG);
++                #endif
              }
  
              // metadata nodes need to be explicitly merged not just copied
-@@ -1850,7 +1904,7 @@
+diff --git a/src/jitlayers.h b/src/jitlayers.h
+index 931f0070042ac..a849148653f07 100644
+--- a/src/jitlayers.h
++++ b/src/jitlayers.h
+@@ -342,11 +342,13 @@ class MaxAlignedAllocImpl
+ };
+ using MaxAlignedAlloc = MaxAlignedAllocImpl<>;
  
- std::unique_ptr<TargetMachine> JuliaOJIT::cloneTargetMachine() const
- {
--    return std::unique_ptr<TargetMachine>(getTarget()
-+    auto NewTM = std::unique_ptr<TargetMachine>(getTarget()
-         .createTargetMachine(
-             getTargetTriple().str(),
-             getTargetCPU(),
-@@ -1859,6 +1913,8 @@
-             TM->getRelocationModel(),
-             TM->getCodeModel(),
-             TM->getOptLevel()));
-+    fixupTM(*NewTM);
-+    return NewTM;
- }
- 
- const Triple& JuliaOJIT::getTargetTriple() const {
-diff --color -ur a/src/jitlayers.h b/src/jitlayers.h
---- a/src/jitlayers.h	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/jitlayers.h	2023-11-07 20:28:23.732686043 +0100
-@@ -22,10 +22,11 @@
- #include "julia.h"
- #include "julia_internal.h"
- #include "platform.h"
--
-+#include "llvm-codegen-shared.h"
- #include <stack>
- #include <queue>
- 
-+
- // As of LLVM 13, there are two runtime JIT linker implementations, the older
- // RuntimeDyld (used via orc::RTDyldObjectLinkingLayer) and the newer JITLink
- // (used via orc::ObjectLinkingLayer).
-@@ -106,7 +107,9 @@
- 
- struct NewPM {
-     std::unique_ptr<TargetMachine> TM;
-+#if JL_LLVM_VERSION < 160000
-     StandardInstrumentations SI;
++#if JL_LLVM_VERSION < 170000
+ typedef JITSymbol JL_JITSymbol;
+ // The type that is similar to SymbolInfo on LLVM 4.0 is actually
+ // `JITEvaluatedSymbol`. However, we only use this type when a JITSymbol
+ // is expected.
+ typedef JITSymbol JL_SymbolInfo;
 +#endif
-     std::unique_ptr<PassInstrumentationCallbacks> PIC;
-     PassBuilder PB;
-     ModulePassManager MPM;
-@@ -391,7 +394,7 @@
-             }
-             private:
-             ResourcePool &pool;
--            llvm::Optional<ResourceT> resource;
-+            Optional<ResourceT> resource;
-         };
  
-         OwningResource operator*() JL_NOTSAFEPOINT {
-@@ -493,13 +496,13 @@
+ using CompilerResultT = Expected<std::unique_ptr<llvm::MemoryBuffer>>;
+ using OptimizerResultT = Expected<orc::ThreadSafeModule>;
+@@ -520,13 +522,19 @@ class JuliaOJIT {
                              bool ShouldOptimize = false) JL_NOTSAFEPOINT;
      Error addObjectFile(orc::JITDylib &JD,
                          std::unique_ptr<MemoryBuffer> Obj) JL_NOTSAFEPOINT;
 -    Expected<JITEvaluatedSymbol> findExternalJDSymbol(StringRef Name, bool ExternalJDOnly) JL_NOTSAFEPOINT;
-+    Expected<orc::ExecutorSymbolDef> findExternalJDSymbol(StringRef Name, bool ExternalJDOnly) JL_NOTSAFEPOINT;
      orc::IRCompileLayer &getIRCompileLayer() JL_NOTSAFEPOINT { return ExternalCompileLayer; };
      orc::ExecutionSession &getExecutionSession() JL_NOTSAFEPOINT { return ES; }
      orc::JITDylib &getExternalJITDylib() JL_NOTSAFEPOINT { return ExternalJD; }
  
 -    JL_JITSymbol findSymbol(StringRef Name, bool ExportedSymbolsOnly) JL_NOTSAFEPOINT;
 -    JL_JITSymbol findUnmangledSymbol(StringRef Name) JL_NOTSAFEPOINT;
-+    Expected<orc::ExecutorSymbolDef> findSymbol(StringRef Name, bool ExportedSymbolsOnly) JL_NOTSAFEPOINT;
-+    Expected<orc::ExecutorSymbolDef> findUnmangledSymbol(StringRef Name) JL_NOTSAFEPOINT;
++    #if JL_LLVM_VERSION >= 170000
++    Expected<llvm::orc::ExecutorSymbolDef> findSymbol(StringRef Name, bool ExportedSymbolsOnly) JL_NOTSAFEPOINT;
++    Expected<llvm::orc::ExecutorSymbolDef> findUnmangledSymbol(StringRef Name) JL_NOTSAFEPOINT;
++    Expected<llvm::orc::ExecutorSymbolDef> findExternalJDSymbol(StringRef Name, bool ExternalJDOnly) JL_NOTSAFEPOINT;
++    #else
++    JITEvaluatedSymbol findSymbol(StringRef Name, bool ExportedSymbolsOnly) JL_NOTSAFEPOINT;
++    JITEvaluatedSymbol findUnmangledSymbol(StringRef Name) JL_NOTSAFEPOINT;
++    Expected<JITEvaluatedSymbol> findExternalJDSymbol(StringRef Name, bool ExternalJDOnly) JL_NOTSAFEPOINT;
++    #endif
      uint64_t getGlobalValueAddress(StringRef Name) JL_NOTSAFEPOINT;
      uint64_t getFunctionAddress(StringRef Name) JL_NOTSAFEPOINT;
      StringRef getFunctionAtAddress(uint64_t Addr, jl_code_instance_t *codeinst) JL_NOTSAFEPOINT;
-@@ -580,6 +583,8 @@
-     auto lock = ctx.getLock();
-     return orc::ThreadSafeModule(jl_create_llvm_module(name, *ctx.getContext(), imaging_mode, DL, triple), ctx);
+@@ -624,7 +632,10 @@ Module &jl_codegen_params_t::shared_module() JL_NOTSAFEPOINT {
+     return *_shared_module;
  }
-+void fixupTM(TargetMachine &TM) JL_NOTSAFEPOINT;
-+void SetOpaquePointer(LLVMContext &ctx) JL_NOTSAFEPOINT;
- 
- Module &jl_codegen_params_t::shared_module() JL_NOTSAFEPOINT {
-     if (!_shared_module) {
-diff --color -ur a/src/llvm-alloc-opt.cpp b/src/llvm-alloc-opt.cpp
---- a/src/llvm-alloc-opt.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-alloc-opt.cpp	2023-11-07 20:28:23.731686032 +0100
-@@ -567,7 +567,7 @@
-     auto oldfType = call->getFunctionType();
-     auto newfType = FunctionType::get(
-             oldfType->getReturnType(),
--            makeArrayRef(argTys).slice(0, oldfType->getNumParams()),
-+            ArrayRef<Type*>(argTys).slice(0, oldfType->getNumParams()),
-             oldfType->isVarArg());
- 
-     // Accumulate an array of overloaded types for the given intrinsic
-diff --color -ur a/src/llvm-codegen-shared.h b/src/llvm-codegen-shared.h
---- a/src/llvm-codegen-shared.h	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-codegen-shared.h	2023-11-07 20:28:23.732686043 +0100
-@@ -7,11 +7,30 @@
- #include <llvm/IR/DebugLoc.h>
- #include <llvm/IR/IRBuilder.h>
- #include <llvm/IR/MDBuilder.h>
+ void fixupTM(TargetMachine &TM) JL_NOTSAFEPOINT;
 +
-+#if JL_LLVM_VERSION >= 160000
-+#include <llvm/Support/ModRef.h>
++#if JL_LLVM_VERSION < 170000
+ void SetOpaquePointer(LLVMContext &ctx) JL_NOTSAFEPOINT;
 +#endif
-+
- #include "julia.h"
  
- #define STR(csym)           #csym
- #define XSTR(csym)          STR(csym)
+ void optimizeDLSyms(Module &M);
  
-+#if JL_LLVM_VERSION >= 160000
-+
-+#include <optional>
-+
-+template<typename T>
-+using Optional = std::optional<T>;
-+static constexpr std::nullopt_t None = std::nullopt;
-+
-+#else
-+
-+#include <llvm/ADT/Optional.h>
-+
-+#endif
-+
- enum AddressSpace {
-     Generic = 0,
-     Tracked = 10,
-@@ -148,9 +167,11 @@
- 
- static inline llvm::Instruction *tbaa_decorate(llvm::MDNode *md, llvm::Instruction *inst)
- {
-+    using namespace llvm;
-     inst->setMetadata(llvm::LLVMContext::MD_tbaa, md);
--    if (llvm::isa<llvm::LoadInst>(inst) && md && md == get_tbaa_const(md->getContext()))
--        inst->setMetadata(llvm::LLVMContext::MD_invariant_load, llvm::MDNode::get(md->getContext(), llvm::None));
-+    if (llvm::isa<llvm::LoadInst>(inst) && md && md == get_tbaa_const(md->getContext())) {
-+        inst->setMetadata(llvm::LLVMContext::MD_invariant_load, llvm::MDNode::get(md->getContext(), None));
-+    }
-     return inst;
- }
- 
-@@ -240,7 +261,11 @@
-             auto T_psize = T_size->getPointerTo();
-             FunctionType *FT = FunctionType::get(Type::getVoidTy(C), {T_psize}, false);
-             F = Function::Create(FT, Function::ExternalLinkage, "julia.safepoint", M);
-+#if JL_LLVM_VERSION >= 160000
-+            F->setMemoryEffects(MemoryEffects::inaccessibleOrArgMemOnly());
-+#else
-             F->addFnAttr(Attribute::InaccessibleMemOrArgMemOnly);
-+#endif
+diff --git a/src/llvm-alloc-opt.cpp b/src/llvm-alloc-opt.cpp
+index 5df4f52aca425..275de5cef354e 100644
+--- a/src/llvm-alloc-opt.cpp
++++ b/src/llvm-alloc-opt.cpp
+@@ -753,6 +753,14 @@ void Optimizer::moveToStack(CallInst *orig_inst, size_t sz, bool has_ref, AllocF
+             user->replaceUsesOfWith(orig_i, replace);
          }
-         builder.CreateCall(F, {signal_page});
-     }
-diff --color -ur a/src/llvm-cpufeatures.cpp b/src/llvm-cpufeatures.cpp
---- a/src/llvm-cpufeatures.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-cpufeatures.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -44,14 +44,14 @@
-         auto typ = intr_name.substr(strlen("julia.cpu.have_fma."));
-         return typ == "f32" || typ == "f64";
-     } else {
--        return {};
-+        return None;
-     }
- }
- 
- static bool have_fma(Function &intr, Function &caller, const Triple &TT) JL_NOTSAFEPOINT {
-     auto unconditional = always_have_fma(intr, TT);
--    if (unconditional.hasValue())
--        return unconditional.getValue();
-+    if (unconditional)
-+        return *unconditional;
- 
-     auto intr_name = intr.getName();
-     auto typ = intr_name.substr(strlen("julia.cpu.have_fma."));
-diff --color -ur a/src/llvm-julia-licm.cpp b/src/llvm-julia-licm.cpp
---- a/src/llvm-julia-licm.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-julia-licm.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -355,7 +355,11 @@
+         else if (isa<AddrSpaceCastInst>(user) || isa<BitCastInst>(user)) {
++            #if JL_LLVM_VERSION >= 170000
++            #ifndef JL_NDEBUG
++            auto cast_t = PointerType::get(user->getType(), new_i->getType()->getPointerAddressSpace());
++            Type *new_t = new_i->getType();
++            assert(cast_t == new_t);
++            #endif
++            auto replace_i = new_i;
++            #else
+             auto cast_t = PointerType::getWithSamePointeeType(cast<PointerType>(user->getType()), new_i->getType()->getPointerAddressSpace());
+             auto replace_i = new_i;
+             Type *new_t = new_i->getType();
+@@ -763,6 +771,7 @@ void Optimizer::moveToStack(CallInst *orig_inst, size_t sz, bool has_ref, AllocF
+                 replace_i->setDebugLoc(user->getDebugLoc());
+                 replace_i->takeName(user);
              }
++            #endif
+             push_frame(user, replace_i);
          }
-         if (changed && SE) {
-+#if JL_LLVM_VERSION >= 160000
-+            SE->forgetLoopDispositions();
-+#else
-             SE->forgetLoopDispositions(L);
-+#endif
-         }
- #ifdef JL_VERIFY_PASSES
-         assert(!verifyFunction(*L->getHeader()->getParent(), &errs()));
-diff --color -ur a/src/llvm-late-gc-lowering.cpp b/src/llvm-late-gc-lowering.cpp
---- a/src/llvm-late-gc-lowering.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-late-gc-lowering.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -593,7 +593,7 @@
+         else if (auto gep = dyn_cast<GetElementPtrInst>(user)) {
+@@ -1067,7 +1076,11 @@ void Optimizer::splitOnStack(CallInst *orig_inst)
+                     store_ty = T_pjlvalue;
+                 }
+                 else {
++                    #if JL_LLVM_VERSION >= 170000
++                    store_ty = PointerType::get(T_pjlvalue, cast<PointerType>(store_ty)->getAddressSpace());
++                    #else
+                     store_ty = PointerType::getWithSamePointeeType(T_pjlvalue, cast<PointerType>(store_ty)->getAddressSpace());
++                    #endif
+                     store_val = builder.CreateBitCast(store_val, store_ty);
+                 }
+                 if (cast<PointerType>(store_ty)->getAddressSpace() != AddressSpace::Tracked)
+diff --git a/src/llvm-codegen-shared.h b/src/llvm-codegen-shared.h
+index a4f77bc1b3b38..4c30615dda4f5 100644
+--- a/src/llvm-codegen-shared.h
++++ b/src/llvm-codegen-shared.h
+@@ -193,7 +193,11 @@ static inline llvm::Value *emit_bitcast_with_builder(llvm::IRBuilder<> &builder,
+     if (isa<PointerType>(jl_value) &&
+         v->getType()->getPointerAddressSpace() != jl_value->getPointerAddressSpace()) {
+         // Cast to the proper address space
++        #if JL_LLVM_VERSION >= 170000
++        Type *jl_value_addr = PointerType::get(jl_value, v->getType()->getPointerAddressSpace());
++        #else
+         Type *jl_value_addr = PointerType::getWithSamePointeeType(cast<PointerType>(jl_value), v->getType()->getPointerAddressSpace());
++        #endif
+         return builder.CreateBitCast(v, jl_value_addr);
      }
-     else if (ValExpr.second != -1) {
-         auto Tracked = TrackCompositeType(V->getType());
--        auto Idxs = makeArrayRef(Tracked.at(ValExpr.second));
-+        auto Idxs = ArrayRef<unsigned>(Tracked[ValExpr.second]);
-         auto IdxsNotVec = Idxs.slice(0, Idxs.size() - 1);
-         Type *FinalT = ExtractValueInst::getIndexedType(V->getType(), IdxsNotVec);
-         bool IsVector = isa<VectorType>(FinalT);
-@@ -907,7 +907,7 @@
-         auto Idxs = IVI->getIndices();
-         unsigned j = 0;
-         for (unsigned i = 0; i < Tracked.size(); ++i) {
--            auto Elem = makeArrayRef(Tracked[i]);
-+            auto Elem = ArrayRef<unsigned>(Tracked[i]);
-             if (Elem.size() < Idxs.size())
-                 continue;
-             if (Idxs.equals(Elem.slice(0, Idxs.size()))) // Tracked.startswith(Idxs)
-@@ -920,7 +920,7 @@
-         assert(Tracked.size() == BaseNumbers.size());
-         auto Idxs = EVI->getIndices();
-         for (unsigned i = 0; i < Tracked.size(); ++i) {
--            auto Elem = makeArrayRef(Tracked[i]);
-+            auto Elem = ArrayRef<unsigned>(Tracked[i]);
-             if (Elem.size() < Idxs.size())
-                 continue;
-             if (Idxs.equals(Elem.slice(0, Idxs.size()))) // Tracked.startswith(Idxs)
-@@ -1617,20 +1617,38 @@
-                         callee->getName() == "memcmp") {
-                         continue;
-                     }
-+#if JL_LLVM_VERSION >= 160000
-+                    if (callee->getMemoryEffects().onlyReadsMemory() ||
-+                        callee->getMemoryEffects().onlyAccessesArgPointees()) {
-+                        continue;
-+                    }
-+#else
-                     if (callee->hasFnAttribute(Attribute::ReadNone) ||
-                         callee->hasFnAttribute(Attribute::ReadOnly) ||
-                         callee->hasFnAttribute(Attribute::ArgMemOnly)) {
-                         continue;
-                     }
-+#endif
-                     if (MemTransferInst *MI = dyn_cast<MemTransferInst>(CI)) {
-                         MaybeTrackDst(S, MI);
-                     }
+     else {
+diff --git a/src/llvm-late-gc-lowering.cpp b/src/llvm-late-gc-lowering.cpp
+index e081c6f067245..d6f622ce02cd8 100644
+--- a/src/llvm-late-gc-lowering.cpp
++++ b/src/llvm-late-gc-lowering.cpp
+@@ -706,11 +706,15 @@ void LateLowerGCFrame::LiftSelect(State &S, SelectInst *SI) {
+                     ConstantInt::get(Type::getInt32Ty(Cond->getContext()), i),
+                     "", SI);
+         }
++        #if JL_LLVM_VERSION >= 170000
++        assert(FalseElem->getType() == TrueElem->getType());
++        #else
+         if (FalseElem->getType() != TrueElem->getType()) {
+             // Shouldn't get here when using opaque pointers, so the new BitCastInst is fine
+             assert(FalseElem->getContext().supportsTypedPointers());
+             FalseElem = new BitCastInst(FalseElem, TrueElem->getType(), "", SI);
+         }
++        #endif
+         SelectInst *SelectBase = SelectInst::Create(Cond, TrueElem, FalseElem, "gclift", SI);
+         int Number = ++S.MaxPtrNumber;
+         S.AllPtrNumbering[SelectBase] = Number;
+@@ -779,6 +783,9 @@ void LateLowerGCFrame::LiftPhi(State &S, PHINode *Phi) {
+                 BaseElem = Base;
+             else
+                 BaseElem = IncomingBases[i];
++            #if JL_LLVM_VERSION >= 170000
++            assert(BaseElem->getType() == T_prjlvalue);
++            #else
+             if (BaseElem->getType() != T_prjlvalue) {
+                 // Shouldn't get here when using opaque pointers, so the new BitCastInst is fine
+                 assert(BaseElem->getContext().supportsTypedPointers());
+@@ -802,6 +809,7 @@ void LateLowerGCFrame::LiftPhi(State &S, PHINode *Phi) {
                  }
--                if (isa<IntrinsicInst>(CI) || CI->hasFnAttr(Attribute::ArgMemOnly) ||
--                    CI->hasFnAttr(Attribute::ReadNone) || CI->hasFnAttr(Attribute::ReadOnly)) {
-+#if JL_LLVM_VERSION >= 160000
-+                if (isa<IntrinsicInst>(CI) ||
-+                    CI->getMemoryEffects().onlyAccessesArgPointees() ||
-+                    CI->getMemoryEffects().onlyReadsMemory()) {
-+                    // Intrinsics are never safepoints.
-+                    continue;
-+                }
-+#else
-+                if (isa<IntrinsicInst>(CI) ||
-+                    CI->hasFnAttr(Attribute::ArgMemOnly) ||
-+                    CI->hasFnAttr(Attribute::ReadNone)   ||
-+                    CI->hasFnAttr(Attribute::ReadOnly)) {
-                     // Intrinsics are never safepoints.
-                     continue;
+                 BaseElem = remap;
+             }
++            #endif
+             lift->addIncoming(BaseElem, IncomingBB);
+         }
+     }
+@@ -1538,7 +1546,9 @@ State LateLowerGCFrame::LocalScan(Function &F) {
                  }
-+#endif
-                 std::vector<int> CalleeRoots;
-                 for (Use &U : CI->args()) {
-                     // Find all callee rooted arguments.
-@@ -1837,7 +1855,7 @@
-         return false;
-     };
-     for (unsigned i = 0; i < Tracked.size(); ++i) {
--        auto Idxs = makeArrayRef(Tracked[i]);
-+        auto Idxs = ArrayRef<unsigned>(Tracked[i]);
-         if (ignore_field(Idxs))
-             continue;
-         Value *Elem = ExtractScalar(Src, STy, isptr, Idxs, irbuilder);
-@@ -2719,7 +2737,7 @@
+                 if (CI->hasStructRetAttr()) {
+                     Type *ElT = getAttributeAtIndex(CI->getAttributes(), 1, Attribute::StructRet).getValueAsType();
++                    #if JL_LLVM_VERSION < 170000
+                     assert(cast<PointerType>(CI->getArgOperand(0)->getType())->isOpaqueOrPointeeTypeMatches(getAttributeAtIndex(CI->getAttributes(), 1, Attribute::StructRet).getValueAsType()));
++                    #endif
+                     auto tracked = CountTrackedPointers(ElT, true);
+                     if (tracked.count) {
+                         AllocaInst *SRet = dyn_cast<AllocaInst>((CI->arg_begin()[0])->stripInBoundsOffsets());
+@@ -1877,7 +1887,9 @@ unsigned TrackWithShadow(Value *Src, Type *STy, bool isptr, Value *Dst, Type *DT
+     for (unsigned i = 0; i < Ptrs.size(); ++i) {
+         Value *Elem = Ptrs[i];// Dst has type `[n x {}*]*`
+         Value *Slot = irbuilder.CreateConstInBoundsGEP2_32(DTy, Dst, 0, i);
++        #if JL_LLVM_VERSION < 170000
+         assert(cast<PointerType>(Dst->getType())->isOpaqueOrPointeeTypeMatches(DTy));
++        #endif
+         StoreInst *shadowStore = irbuilder.CreateAlignedStore(Elem, Slot, Align(sizeof(void*)));
+         shadowStore->setOrdering(AtomicOrdering::NotAtomic);
+         // TODO: shadowStore->setMetadata(LLVMContext::MD_tbaa, tbaa_gcframe);
+@@ -2659,11 +2671,15 @@ void LateLowerGCFrame::PlaceGCFrameStore(State &S, unsigned R, unsigned MinColor
+     // Pointee types don't have semantics, so the optimizer is
+     // free to rewrite them if convenient. We need to change
+     // it back here for the store.
++    #if JL_LLVM_VERSION >= 170000
++    assert(Val->getType() == T_prjlvalue);
++    #else
+     if (Val->getType() != T_prjlvalue) {
+         // Shouldn't get here when using opaque pointers, so the new BitCastInst is fine
+         assert(Val->getContext().supportsTypedPointers());
+         Val = new BitCastInst(Val, T_prjlvalue, "", InsertBefore);
+     }
++    #endif
+     new StoreInst(Val, slotAddress, InsertBefore);
+ }
+ 
+@@ -2743,6 +2759,9 @@ void LateLowerGCFrame::PlaceRootsAndUpdateCalls(SmallVectorImpl<int> &Colors, St
+             for (CallInst *II : ToDelete) {
+                 II->eraseFromParent();
+             }
++            #if JL_LLVM_VERSION >= 170000
++            assert(slotAddress->getType() == AI->getType());
++            #else
+             if (slotAddress->getType() != AI->getType()) {
+                 // If we're replacing an ArrayAlloca, the pointer element type may need to be fixed up
+                 // Shouldn't get here when using opaque pointers, so the new BitCastInst is fine
+@@ -2751,6 +2770,7 @@ void LateLowerGCFrame::PlaceRootsAndUpdateCalls(SmallVectorImpl<int> &Colors, St
+                 BCI->insertAfter(slotAddress);
+                 slotAddress = BCI;
+             }
++            #endif
+             AI->replaceAllUsesWith(slotAddress);
+             AI->eraseFromParent();
+             AI = NULL;
+@@ -2775,11 +2795,15 @@ void LateLowerGCFrame::PlaceRootsAndUpdateCalls(SmallVectorImpl<int> &Colors, St
+                 slotAddress->insertAfter(gcframe);
+                 auto ValExpr = std::make_pair(Base, isa<PointerType>(Base->getType()) ? -1 : i);
+                 auto Elem = MaybeExtractScalar(S, ValExpr, SI);
++                #if JL_LLVM_VERSION >= 170000
++                assert(Elem->getType() == T_prjlvalue);
++                #else
+                 if (Elem->getType() != T_prjlvalue) {
+                     // Shouldn't get here when using opaque pointers, so the new BitCastInst is fine
                      assert(Elem->getContext().supportsTypedPointers());
                      Elem = new BitCastInst(Elem, T_prjlvalue, "", SI);
                  }
--                //auto Idxs = makeArrayRef(Tracked[i]);
-+                //auto Idxs = ArrayRef<unsigned>(Tracked[i]);
++                #endif
+                 //auto Idxs = ArrayRef<unsigned>(Tracked[i]);
                  //Value *Elem = ExtractScalar(Base, true, Idxs, SI);
                  Value *shadowStore = new StoreInst(Elem, slotAddress, SI);
-                 (void)shadowStore;
-diff --color -ur a/src/llvm-lower-handlers.cpp b/src/llvm-lower-handlers.cpp
---- a/src/llvm-lower-handlers.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-lower-handlers.cpp	2023-11-07 20:28:23.694685594 +0100
-@@ -8,7 +8,6 @@
+diff --git a/src/llvm-lower-handlers.cpp b/src/llvm-lower-handlers.cpp
+index 15866d0855fc1..68092c3cf310e 100644
+--- a/src/llvm-lower-handlers.cpp
++++ b/src/llvm-lower-handlers.cpp
+@@ -8,7 +8,11 @@
  
  #include <llvm/ADT/DepthFirstIterator.h>
  #include <llvm/ADT/Statistic.h>
--#include <llvm/ADT/Triple.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Triple.h>
++#else
+ #include <llvm/ADT/Triple.h>
++#endif
  #include <llvm/Analysis/CFG.h>
  #include <llvm/IR/BasicBlock.h>
  #include <llvm/IR/Constants.h>
-@@ -21,6 +20,7 @@
- #include <llvm/IR/Verifier.h>
- #include <llvm/Pass.h>
- #include <llvm/Support/Debug.h>
-+#include "llvm/TargetParser/Triple.h"
- #include <llvm/Transforms/Utils/BasicBlockUtils.h>
- 
- #include "julia.h"
-diff --color -ur a/src/llvm-multiversioning.cpp b/src/llvm-multiversioning.cpp
---- a/src/llvm-multiversioning.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-multiversioning.cpp	2023-11-07 20:28:23.699685653 +0100
-@@ -14,7 +14,6 @@
+diff --git a/src/llvm-multiversioning.cpp b/src/llvm-multiversioning.cpp
+index d1c3f9bc464eb..43d77ed82d091 100644
+--- a/src/llvm-multiversioning.cpp
++++ b/src/llvm-multiversioning.cpp
+@@ -14,7 +14,11 @@
  #include <llvm/Pass.h>
  #include <llvm/ADT/BitVector.h>
  #include <llvm/ADT/Statistic.h>
--#include <llvm/ADT/Triple.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Triple.h>
++#else
+ #include <llvm/ADT/Triple.h>
++#endif
  #include <llvm/IR/Module.h>
- #include <llvm/IR/LegacyPassManager.h>
  #include <llvm/IR/Function.h>
-@@ -28,6 +27,7 @@
- #include <llvm/IR/IRBuilder.h>
- #include <llvm/IR/DebugInfoMetadata.h>
- #include <llvm/IR/Verifier.h>
-+#include "llvm/TargetParser/Triple.h"
- #include <llvm/Transforms/Utils/Cloning.h>
+ #include <llvm/IR/Instructions.h>
+diff --git a/src/llvm-propagate-addrspaces.cpp b/src/llvm-propagate-addrspaces.cpp
+index cc7dace28b24e..902d4a3b03b6b 100644
+--- a/src/llvm-propagate-addrspaces.cpp
++++ b/src/llvm-propagate-addrspaces.cpp
+@@ -163,14 +163,22 @@ Value *PropagateJuliaAddrspacesVisitor::LiftPointer(Module *M, Value *V, Instruc
+             Instruction *InstV = cast<Instruction>(V);
+             Instruction *NewV = InstV->clone();
+             ToInsert.push_back(std::make_pair(NewV, InstV));
++            #if JL_LLVM_VERSION >= 170000
++            Type *NewRetTy = PointerType::get(InstV->getType(), allocaAddressSpace);
++            #else
+             Type *NewRetTy = PointerType::getWithSamePointeeType(cast<PointerType>(InstV->getType()), allocaAddressSpace);
++            #endif
+             NewV->mutateType(NewRetTy);
+             LiftingMap[InstV] = NewV;
+             ToRevisit.push_back(NewV);
+         }
+     }
+     auto CollapseCastsAndLift = [&](Value *CurrentV, Instruction *InsertPt) -> Value * {
++        #if JL_LLVM_VERSION >= 170000
++        PointerType *TargetType = PointerType::get(CurrentV->getType(), allocaAddressSpace);
++        #else
+         PointerType *TargetType = PointerType::getWithSamePointeeType(cast<PointerType>(CurrentV->getType()), allocaAddressSpace);
++        #endif
+         while (!LiftingMap.count(CurrentV)) {
+             if (isa<BitCastInst>(CurrentV))
+                 CurrentV = cast<BitCastInst>(CurrentV)->getOperand(0);
+@@ -184,6 +192,9 @@ Value *PropagateJuliaAddrspacesVisitor::LiftPointer(Module *M, Value *V, Instruc
+         }
+         if (LiftingMap.count(CurrentV))
+             CurrentV = LiftingMap[CurrentV];
++        #if JL_LLVM_VERSION >= 170000
++        assert(CurrentV->getType() == TargetType);
++        #else
+         if (CurrentV->getType() != TargetType) {
+             // Shouldn't get here when using opaque pointers, so the new BitCastInst is fine
+             assert(CurrentV->getContext().supportsTypedPointers());
+@@ -191,6 +202,7 @@ Value *PropagateJuliaAddrspacesVisitor::LiftPointer(Module *M, Value *V, Instruc
+             ToInsert.push_back(std::make_pair(BCI, InsertPt));
+             CurrentV = BCI;
+         }
++        #endif
+         return CurrentV;
+     };
  
- #include "julia.h"
-@@ -105,7 +105,8 @@
-                         if (name.startswith("julia.cpu.have_fma.")) {
-                             // for some platforms we know they always do (or don't) support
-                             // FMA. in those cases we don't need to clone the function.
--                            if (!always_have_fma(*callee, TT).hasValue())
-+                            // always_have_fma returns an optional<bool>
-+                            if (!always_have_fma(*callee, TT))
-                                 flag |= JL_TARGET_CLONE_CPU;
-                         } else {
-                             flag |= JL_TARGET_CLONE_CPU;
-@@ -690,7 +691,7 @@
-     std::vector<Value *> Args;
-     for (auto &arg : trampoline->args())
-         Args.push_back(&arg);
--    auto call = irbuilder.CreateCall(F->getFunctionType(), ptr, makeArrayRef(Args));
-+    auto call = irbuilder.CreateCall(F->getFunctionType(), ptr, ArrayRef<Value *>(Args));
-     if (F->isVarArg()) {
-         assert(!TT.isARM() && !TT.isPPC() && "musttail not supported on ARM/PPC!");
-         call->setTailCallKind(CallInst::TCK_MustTail);
-diff --color -ur a/src/llvm-pass-helpers.cpp b/src/llvm-pass-helpers.cpp
---- a/src/llvm-pass-helpers.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-pass-helpers.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -214,7 +214,11 @@
-                     false),
-                 Function::ExternalLinkage,
-                 QUEUE_GC_ROOT_NAME);
-+#if JL_LLVM_VERSION >= 160000
-+            intrinsic->setMemoryEffects(MemoryEffects::inaccessibleOrArgMemOnly());
-+#else
-             intrinsic->addFnAttr(Attribute::InaccessibleMemOrArgMemOnly);
-+#endif
-             return intrinsic;
-         });
- 
-@@ -230,7 +234,11 @@
-                     false),
-                 Function::ExternalLinkage,
-                 SAFEPOINT_NAME);
-+#if JL_LLVM_VERSION >= 160000
-+            intrinsic->setMemoryEffects(MemoryEffects::inaccessibleOrArgMemOnly());
-+#else
-             intrinsic->addFnAttr(Attribute::InaccessibleMemOrArgMemOnly);
-+#endif
-             return intrinsic;
-         });
- }
-@@ -287,7 +295,11 @@
-                     false),
-                 Function::ExternalLinkage,
-                 GC_QUEUE_ROOT_NAME);
-+#if JL_LLVM_VERSION >= 160000
-+            func->setMemoryEffects(MemoryEffects::inaccessibleOrArgMemOnly());
-+#else
-             func->addFnAttr(Attribute::InaccessibleMemOrArgMemOnly);
-+#endif
-             return func;
-         });
- 
-diff --color -ur a/src/llvm-ptls.cpp b/src/llvm-ptls.cpp
---- a/src/llvm-ptls.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-ptls.cpp	2023-11-07 20:28:23.694685594 +0100
-@@ -9,7 +9,6 @@
+diff --git a/src/llvm-ptls.cpp b/src/llvm-ptls.cpp
+index d2650d6875cd4..b2f58ca79f1c3 100644
+--- a/src/llvm-ptls.cpp
++++ b/src/llvm-ptls.cpp
+@@ -9,7 +9,11 @@
  #include <llvm-c/Types.h>
  
  #include <llvm/Pass.h>
--#include <llvm/ADT/Triple.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Triple.h>
++#else
+ #include <llvm/ADT/Triple.h>
++#endif
  #include <llvm/IR/Module.h>
- #include <llvm/IR/LegacyPassManager.h>
  #include <llvm/IR/Function.h>
-@@ -20,6 +19,7 @@
- #include <llvm/IR/Verifier.h>
+ #include <llvm/IR/Instructions.h>
+diff --git a/src/llvm-remove-addrspaces.cpp b/src/llvm-remove-addrspaces.cpp
+index e291e47b59b0e..1bac0c9d9c79b 100644
+--- a/src/llvm-remove-addrspaces.cpp
++++ b/src/llvm-remove-addrspaces.cpp
+@@ -44,6 +44,9 @@ class AddrspaceRemoveTypeRemapper : public ValueMapTypeRemapper {
  
- #include <llvm/IR/InlineAsm.h>
-+#include "llvm/TargetParser/Triple.h"
- #include <llvm/Transforms/Utils/BasicBlockUtils.h>
- 
- #include "julia.h"
-@@ -64,7 +64,11 @@
- 
- void LowerPTLS::set_pgcstack_attrs(CallInst *pgcstack) const
- {
-+#if JL_LLVM_VERSION >= 160000
-+    pgcstack->addFnAttr(Attribute::getWithMemoryEffects(pgcstack->getContext(), MemoryEffects::none()));
-+#else
-     addFnAttr(pgcstack, Attribute::ReadNone);
-+#endif
-     addFnAttr(pgcstack, Attribute::NoUnwind);
- }
- 
---- a/src/llvm-remove-addrspaces.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-remove-addrspaces.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -424,7 +424,7 @@
-     for (Module::iterator FI = M.begin(), FE = M.end(); FI != FE;) {
-         Function *F = &*FI++;
-         if (auto Remangled = Intrinsic::remangleIntrinsicFunction(F)) {
--            F->replaceAllUsesWith(Remangled.getValue());
-+            F->replaceAllUsesWith(*Remangled);
-             F->eraseFromParent();
+         DstTy = SrcTy;
+         if (auto Ty = dyn_cast<PointerType>(SrcTy)) {
++            #if JL_LLVM_VERSION >= 170000
++            DstTy = PointerType::get(Ty->getContext(), ASRemapper(Ty->getAddressSpace()));
++            #else
+             if (Ty->isOpaque()) {
+                 DstTy = PointerType::get(Ty->getContext(), ASRemapper(Ty->getAddressSpace()));
+             }
+@@ -53,6 +56,7 @@ class AddrspaceRemoveTypeRemapper : public ValueMapTypeRemapper {
+                         remapType(Ty->getNonOpaquePointerElementType()),
+                         ASRemapper(Ty->getAddressSpace()));
+             }
++            #endif
          }
-     }
-diff --color -ur a/src/llvm-simdloop.cpp b/src/llvm-simdloop.cpp
---- a/src/llvm-simdloop.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/llvm-simdloop.cpp	2023-11-07 20:28:23.732686043 +0100
-@@ -234,7 +234,11 @@
+         else if (auto Ty = dyn_cast<FunctionType>(SrcTy)) {
+             SmallVector<Type *, 4> Params;
+@@ -153,6 +157,10 @@ class AddrspaceRemoveValueMaterializer : public ValueMaterializer {
+                     Ops.push_back(NewOp ? cast<Constant>(NewOp) : Op);
+                 }
+ 
++                #if JL_LLVM_VERSION >= 170000
++                if (CE->getOpcode() != Instruction::GetElementPtr)
++                    DstV = CE->getWithOperands(Ops, Ty);
++                #else
+                 if (CE->getOpcode() == Instruction::GetElementPtr) {
+                     // GEP const exprs need to know the type of the source.
+                     // asserts remapType(typeof arg0) == typeof mapValue(arg0).
+@@ -166,6 +174,7 @@ class AddrspaceRemoveValueMaterializer : public ValueMaterializer {
+                 }
+                 else
+                     DstV = CE->getWithOperands(Ops, Ty);
++                #endif
+             }
          }
  
-         if (SE)
-+#if JL_LLVM_VERSION >= 160000
-+            SE->forgetLoopDispositions();
-+#else
-             SE->forgetLoopDispositions(&L);
-+#endif
-     }
- 
- #ifdef JL_VERIFY_PASSES
-diff --color -ur a/src/pipeline.cpp b/src/pipeline.cpp
---- a/src/pipeline.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/pipeline.cpp	2023-11-07 20:28:23.695685606 +0100
-@@ -77,7 +77,6 @@
- #include <llvm/Transforms/Vectorize/LoopVectorize.h>
- #include <llvm/Transforms/Vectorize/SLPVectorizer.h>
- #include <llvm/Transforms/Vectorize/VectorCombine.h>
--
- #ifdef _COMPILER_GCC_
- #pragma GCC diagnostic pop
+diff --git a/src/llvm-version.h b/src/llvm-version.h
+index f7da953a99562..2a38bb7c488b8 100644
+--- a/src/llvm-version.h
++++ b/src/llvm-version.h
+@@ -15,7 +15,7 @@
  #endif
-@@ -90,7 +89,6 @@
- #include "julia_assert.h"
- #include "passes.h"
  
--
- using namespace llvm;
- 
- namespace {
-@@ -334,7 +332,7 @@
+ #if JL_LLVM_VERSION >= 160000
+-#define JL_LLVM_OPAQUE_POINTERS 1
++    #define JL_LLVM_OPAQUE_POINTERS 1
  #endif
-     // Place after verification in case we want to force it anyways
-     MPM.addPass(ForceFunctionAttrsPass());
--    invokePipelineStartCallbacks(MPM, PB, O);
-+    invokePipelineStartCallbacks(&MPM, PB, O);
-     MPM.addPass(Annotation2MetadataPass());
-     MPM.addPass(ConstantMergePass());
-     {
-@@ -349,7 +347,12 @@
-         FPM.addPass(DCEPass());
-         FPM.addPass(SimplifyCFGPass(basicSimplifyCFGOptions()));
-         if (O.getSpeedupLevel() >= 1) {
-+#if JL_LLVM_VERSION >= 160000
-+            // TODO check the LLVM 15 default.
-+            FPM.addPass(SROAPass(SROAOptions::PreserveCFG));
-+#else
-             FPM.addPass(SROAPass());
-+#endif
-         }
-         MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
-     }
-@@ -380,7 +383,12 @@
-     if (O.getSpeedupLevel() >= 1) {
-         FunctionPassManager FPM;
-         if (O.getSpeedupLevel() >= 2) {
-+#if JL_LLVM_VERSION >= 160000
-+            // TODO check the LLVM 15 default.
-+            FPM.addPass(SROAPass(SROAOptions::PreserveCFG));
-+#else
-             FPM.addPass(SROAPass());
-+#endif
-             // SROA can duplicate PHI nodes which can block LowerSIMD
-             FPM.addPass(InstCombinePass());
-             FPM.addPass(JumpThreadingPass());
-@@ -392,7 +400,7 @@
-             FPM.addPass(InstCombinePass());
-             FPM.addPass(EarlyCSEPass());
-         }
--        invokePeepholeEPCallbacks(FPM, PB, O);
-+        invokePeepholeEPCallbacks(&FPM, PB, O);
-         MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
-     }
-     MPM.addPass(AfterEarlyOptimizationMarkerPass());
-@@ -406,7 +414,7 @@
-         if (O.getSpeedupLevel() >= 2) {
-             LPM.addPass(LoopRotatePass());
-         }
--        invokeLateLoopOptimizationCallbacks(LPM, PB, O);
-+        invokeLateLoopOptimizationCallbacks(&LPM, PB, O);
-         //We don't know if the loop callbacks support MSSA
-         FPM.addPass(createFunctionToLoopPassAdaptor(std::move(LPM), /*UseMemorySSA = */false));
-     }
-@@ -437,7 +445,7 @@
-             // so that no loop remains
-             LPM.addPass(LoopFullUnrollPass());
-         }
--        invokeLoopOptimizerEndCallbacks(LPM, PB, O);
-+        invokeLoopOptimizerEndCallbacks(&LPM, PB, O);
-         LPM.addPass(AfterLoopSimplificationMarkerPass());
-         //We don't know if the loop end callbacks support MSSA
-         FPM.addPass(createFunctionToLoopPassAdaptor(std::move(LPM), /*UseMemorySSA = */false));
-@@ -449,7 +457,12 @@
-     FPM.addPass(BeforeScalarOptimizationMarkerPass());
-     if (O.getSpeedupLevel() >= 2) {
-         JULIA_PASS(FPM.addPass(AllocOptPass()));
-+#if JL_LLVM_VERSION >= 160000
-+        // TODO check the LLVM 15 default.
-+        FPM.addPass(SROAPass(SROAOptions::PreserveCFG));
-+#else
-         FPM.addPass(SROAPass());
-+#endif
-         FPM.addPass(InstSimplifyPass());
-         FPM.addPass(GVNPass());
-         FPM.addPass(MemCpyOptPass());
-@@ -465,7 +478,7 @@
-     }
-     if (O.getSpeedupLevel() >= 2) {
-         FPM.addPass(DSEPass());
--        invokePeepholeEPCallbacks(FPM, PB, O);
-+        invokePeepholeEPCallbacks(&FPM, PB, O);
-         FPM.addPass(SimplifyCFGPass(aggressiveSimplifyCFGOptions()));
-         JULIA_PASS(FPM.addPass(AllocOptPass()));
-         {
-@@ -476,7 +489,7 @@
-         }
-         FPM.addPass(LoopDistributePass());
-     }
--    invokeScalarOptimizerCallbacks(FPM, PB, O);
-+    invokeScalarOptimizerCallbacks(&FPM, PB, O);
-     FPM.addPass(AfterScalarOptimizationMarkerPass());
- }
  
-@@ -489,7 +502,7 @@
-     FPM.addPass(InstCombinePass());
-     FPM.addPass(SimplifyCFGPass(aggressiveSimplifyCFGOptions()));
-     FPM.addPass(SLPVectorizerPass());
--    invokeVectorizerCallbacks(FPM, PB, O);
-+    invokeVectorizerCallbacks(&FPM, PB, O);
-     FPM.addPass(VectorCombinePass());
-     FPM.addPass(ADCEPass());
-     //TODO add BDCEPass here?
-@@ -522,6 +535,7 @@
-             MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
-         }
-         JULIA_PASS(MPM.addPass(LowerPTLSPass(options.dump_native)));
-+        MPM.addPass(RemoveJuliaAddrspacesPass()); //TODO: Make this conditional on arches (GlobalISel doesn't like our addrsspaces)
-         if (O.getSpeedupLevel() >= 1) {
-             FunctionPassManager FPM;
-             FPM.addPass(InstCombinePass());
-@@ -542,7 +556,7 @@
-         FPM.addPass(DivRemPairsPass());
-         MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM)));
-     }
--    invokeOptimizerLastCallbacks(MPM, PB, O);
-+    invokeOptimizerLastCallbacks(&MPM, PB, O);
-     MPM.addPass(createModuleToFunctionPassAdaptor(AnnotationRemarksPass()));
-     addSanitizerPasses(MPM, O);
-     {
-@@ -678,12 +692,20 @@
-         PIC.addClassToPassName("AfterOptimizationMarkerPass", "AfterOptimization");
-     }
- 
-+#if JL_LLVM_VERSION >= 160000
-+    auto createPIC() JL_NOTSAFEPOINT {
-+        auto PIC = std::make_unique<PassInstrumentationCallbacks>();
-+        adjustPIC(*PIC);
-+        return PIC;
-+    }
-+#else
-     auto createPIC(StandardInstrumentations &SI) JL_NOTSAFEPOINT {
-         auto PIC = std::make_unique<PassInstrumentationCallbacks>();
-         adjustPIC(*PIC);
-         SI.registerCallbacks(*PIC);
-         return PIC;
-     }
-+#endif
- 
-     FunctionAnalysisManager createFAM(OptimizationLevel O, TargetMachine &TM) JL_NOTSAFEPOINT {
- 
-@@ -713,7 +735,13 @@
- }
- 
- NewPM::NewPM(std::unique_ptr<TargetMachine> TM, OptimizationLevel O, OptimizationOptions options) :
--    TM(std::move(TM)), SI(false), PIC(createPIC(SI)),
-+    TM(std::move(TM)),
-+#if JL_LLVM_VERSION < 160000
-+    SI(false),
-+    PIC(createPIC(SI)),
-+#else
-+    PIC(createPIC()),
-+#endif
-     PB(this->TM.get(), PipelineTuningOptions(), None, PIC.get()),
-     MPM(createMPM(PB, O, options)), O(O) {}
- 
-@@ -742,13 +770,16 @@
-     //so that analyses from previous runs of the pass manager
-     //do not hang around for the next run
-     AnalysisManagers AM{*TM, PB, O};
-+
- #ifndef __clang_gcanalyzer__ /* the analyzer cannot prove we have not added instrumentation callbacks with safepoints */
-     MPM.run(M, AM.MAM);
+ #ifdef __cplusplus
+diff --git a/src/pipeline.cpp b/src/pipeline.cpp
+index aafce01856634..efefa1bf3c7f6 100644
+--- a/src/pipeline.cpp
++++ b/src/pipeline.cpp
+@@ -805,6 +805,17 @@ void NewPM::run(Module &M) {
+ #else
+     StandardInstrumentations SI(false);
  #endif
- }
- 
- void NewPM::printTimers() {
-+#if JL_LLVM_VERSION < 160000
-     SI.getTimePasses().print();
++#if JL_LLVM_VERSION >= 170000
++    PassInstrumentationCallbacks PIC;
++    adjustPIC(PIC);
++    TimePasses.registerCallbacks(PIC);
++    FunctionAnalysisManager FAM(createFAM(O, *TM.get()));
++    LoopAnalysisManager LAM;
++    CGSCCAnalysisManager CGAM;
++    ModuleAnalysisManager MAM;
++    SI.registerCallbacks(PIC, &MAM);
++    SI.getTimePasses().setOutStream(nulls()); //TODO: figure out a better way of doing this
++#else
+     FunctionAnalysisManager FAM(createFAM(O, *TM.get()));
+     PassInstrumentationCallbacks PIC;
+     adjustPIC(PIC);
+@@ -814,6 +825,7 @@ void NewPM::run(Module &M) {
+     LoopAnalysisManager LAM;
+     CGSCCAnalysisManager CGAM;
+     ModuleAnalysisManager MAM;
 +#endif
- }
+     PassBuilder PB(TM.get(), PipelineTuningOptions(), None, &PIC);
+     PB.registerLoopAnalyses(LAM);
+     PB.registerFunctionAnalyses(FAM);
+diff --git a/src/processor.cpp b/src/processor.cpp
+index fc56a93be9787..5051f7083a2b9 100644
+--- a/src/processor.cpp
++++ b/src/processor.cpp
+@@ -7,7 +7,11 @@
+ #include <llvm/ADT/ArrayRef.h>
+ #include <llvm/ADT/SmallVector.h>
+ #include <llvm/ADT/StringMap.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Host.h>
++#else
+ #include <llvm/Support/Host.h>
++#endif
+ #include <llvm/Support/MathExtras.h>
+ #include <llvm/Support/raw_ostream.h>
  
- OptimizationLevel getOptLevel(int optlevel) {
-@@ -766,7 +797,7 @@
- }
- 
- //This part is also basically stolen from LLVM's PassBuilder.cpp file
--static llvm::Optional<std::pair<OptimizationLevel, OptimizationOptions>> parseJuliaPipelineOptions(StringRef name) {
-+static Optional<std::pair<OptimizationLevel, OptimizationOptions>> parseJuliaPipelineOptions(StringRef name) {
-     if (name.consume_front("julia")) {
-         auto O = OptimizationLevel::O2;
-         auto options = OptimizationOptions::defaults();
-@@ -816,7 +847,7 @@
-         }
-         return {{O, options}};
-     }
--    return {};
-+    return None;
- }
- 
- // new pass manager plugin
-diff --color -ur a/src/processor.cpp b/src/processor.cpp
---- a/src/processor.cpp	2023-11-03 08:44:08.000000000 +0100
-+++ b/src/processor.cpp	2023-11-07 20:28:23.700685665 +0100
-@@ -154,7 +154,7 @@
+@@ -158,7 +162,11 @@ struct FeatureList {
      {
          int cnt = 0;
          for (size_t i = 0; i < n; i++)
--            cnt += llvm::countPopulation(eles[i]);
++            #if JL_LLVM_VERSION >= 170000
 +            cnt += llvm::popcount(eles[i]);
++            #else
+             cnt += llvm::countPopulation(eles[i]);
++            #endif
          return cnt;
      }
      inline bool empty() const
+diff --git a/src/runtime_ccall.cpp b/src/runtime_ccall.cpp
+index 25be49d6d2f3f..56f8487d8fb73 100644
+--- a/src/runtime_ccall.cpp
++++ b/src/runtime_ccall.cpp
+@@ -4,6 +4,11 @@
+ #include <map>
+ #include <string>
+ #include <llvm/ADT/StringMap.h>
++#if JL_LLVM_VERSION >= 170000
++#include <llvm/TargetParser/Host.h>
++#else
++#include <llvm/Support/Host.h>
++#endif
+ #include <llvm/Support/raw_ostream.h>
+ 
+ #include "julia.h"
+diff --git a/src/runtime_intrinsics.c b/src/runtime_intrinsics.c
+index ff479a4d30959..0ad5a87acf53c 100644
+--- a/src/runtime_intrinsics.c
++++ b/src/runtime_intrinsics.c
+@@ -9,6 +9,7 @@
+ #include "APInt-C.h"
+ #include "julia.h"
+ #include "julia_internal.h"
++#include "llvm-version.h"
+ 
+ const unsigned int host_char_bit = 8;
+ 
+@@ -1576,6 +1577,16 @@ bi_iintrinsic_cnvtb_fast(LLVMAShr, ashr_op, ashr_int, , 1)
+ //un_iintrinsic_fast(LLVMByteSwap, bswap_op, bswap_int, u)
+ un_iintrinsic_slow(LLVMByteSwap, bswap_int, u)
+ //#define ctpop_op(a) __builtin_ctpop(a)
++#if JL_LLVM_VERSION >= 170000
++//uu_iintrinsic_fast(LLVMPopcount, ctpop_op, ctpop_int, u)
++uu_iintrinsic_slow(LLVMPopcount, ctpop_int, u)
++//#define ctlz_op(a) __builtin_ctlz(a)
++//uu_iintrinsic_fast(LLVMCountl_zero, ctlz_op, ctlz_int, u)
++uu_iintrinsic_slow(LLVMCountl_zero, ctlz_int, u)
++//#define cttz_op(a) __builtin_cttz(a)
++//uu_iintrinsic_fast(LLVMCountr_zero, cttz_op, cttz_int, u)
++uu_iintrinsic_slow(LLVMCountr_zero, cttz_int, u)
++#else
+ //uu_iintrinsic_fast(LLVMCountPopulation, ctpop_op, ctpop_int, u)
+ uu_iintrinsic_slow(LLVMCountPopulation, ctpop_int, u)
+ //#define ctlz_op(a) __builtin_ctlz(a)
+@@ -1584,6 +1595,7 @@ uu_iintrinsic_slow(LLVMCountLeadingZeros, ctlz_int, u)
+ //#define cttz_op(a) __builtin_cttz(a)
+ //uu_iintrinsic_fast(LLVMCountTrailingZeros, cttz_op, cttz_int, u)
+ uu_iintrinsic_slow(LLVMCountTrailingZeros, cttz_int, u)
++#endif
+ #define not_op(a) ~a
+ un_iintrinsic_fast(LLVMFlipAllBits, not_op, not_int, u)
+ 
+diff --git a/src/support/win32-clang-ABI-bug/optional b/src/support/win32-clang-ABI-bug/optional
+index 135888d415f73..a2ecdad1e33ce 100644
+--- a/src/support/win32-clang-ABI-bug/optional
++++ b/src/support/win32-clang-ABI-bug/optional
+@@ -23,6 +23,7 @@
+ #include <new>
+ #include <utility>
+ #include <type_traits>
++#include "llvm-version.h"
+ 
+ namespace std {
+ 
+@@ -56,6 +57,15 @@ namespace optional_detail {
+ //
+ // The move constructible / assignable conditions emulate the remaining behavior
+ // of std::is_trivially_copyable.
++#if JL_LLVM_VERSION >= 170000
++template <typename T,
++          bool = (std::is_trivially_copy_constructible<T>::value &&
++                  std::is_trivially_copy_assignable<T>::value &&
++                  (std::is_trivially_move_constructible<T>::value ||
++                   !std::is_move_constructible<T>::value) &&
++                  (std::is_trivially_move_assignable<T>::value ||
++                   !std::is_move_assignable<T>::value))>
++#else
+ template <typename T,
+           bool = (llvm::is_trivially_copy_constructible<T>::value &&
+                   std::is_trivially_copy_assignable<T>::value &&
+@@ -63,6 +73,7 @@ template <typename T,
+                    !std::is_move_constructible<T>::value) &&
+                   (std::is_trivially_move_assignable<T>::value ||
+                    !std::is_move_assignable<T>::value))>
++#endif
+ class OptionalStorage {
+   union {
+     char empty;
