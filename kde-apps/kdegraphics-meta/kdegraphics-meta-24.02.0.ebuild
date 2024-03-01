@@ -7,18 +7,19 @@ DESCRIPTION="kdegraphics - merge this to pull in all kdegraphics-derived package
 HOMEPAGE="https://kde.org/applications/graphics/"
 
 LICENSE="metapackage"
-SLOT="6"
+SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~x86"
-IUSE="color-management scanner"
+IUSE="color-management scanner screencast"
 
 RDEPEND="
-	>=kde-apps/okular-${PV}:${SLOT}
-	>=kde-apps/spectacle-${PV}:${SLOT}
-	>=kde-apps/svgpart-${PV}:${SLOT}
-	>=kde-apps/thumbnailers-${PV}:${SLOT}
-	>=kde-apps/gwenview-${PV}:${SLOT}
-	>=kde-apps/kolourpaint-${PV}:${SLOT}
-	color-management? ( >=kde-misc/colord-kde-${PV}:${SLOT} )
+	>=kde-apps/okular-${PV}:*
+	>=kde-apps/spectacle-${PV}:*
+	>=kde-apps/svgpart-${PV}:*
+	>=kde-apps/thumbnailers-${PV}:*
+	>=kde-apps/gwenview-${PV}:*
+	>=kde-apps/kolourpaint-${PV}:*
+	color-management? ( >=kde-misc/colord-kde-${PV}:* )
+	screencast? ( >=kde-apps/spectacle-${PV}:* )
 "
 #        scanner? (
 #                >=kde-apps/libksane-${PV}:${SLOT}

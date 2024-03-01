@@ -7,29 +7,29 @@ DESCRIPTION="kdemultimedia - merge this to pull in all kdemultimedia-derived pac
 HOMEPAGE="https://apps.kde.org/categories/multimedia/"
 
 LICENSE="metapackage"
-SLOT="6"
+SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
 IUSE="+audio +cdrom +ffmpeg gstreamer video"
 
 RDEPEND="
-	>=kde-apps/dragon-${PV}:${SLOT}
+	>=kde-apps/dragon-${PV}:*
 	audio? (
-		>=media-sound/kasts-${PV}
+		>=media-sound/kasts-${PV}:*
+		>=media-sound/krecorder-${PV}:*
 	)
 	cdrom? (
-		>=kde-apps/audiocd-kio-${PV}:${SLOT}
-		>=kde-apps/libkcddb-${PV}:${SLOT}
-		>=kde-apps/libkcompactdisc-${PV}:${SLOT}
+		>=kde-apps/audiocd-kio-${PV}:*
+		>=kde-apps/libkcddb-${PV}:*
+		>=kde-apps/libkcompactdisc-${PV}:*
 	)
-	ffmpeg? ( >=kde-apps/ffmpegthumbs-${PV}:${SLOT} )
-	video? ( >=kde-apps/kdenlive-${PV}:${SLOT} )
+	ffmpeg? ( >=kde-apps/ffmpegthumbs-${PV}:* )
+	video? ( >=kde-apps/kdenlive-${PV}:* )
 "
 
 #	cdrom? (
-#		>=kde-apps/k3b-${PV}:${SLOT}
+#		>=kde-apps/k3b-${PV}:*
 #	)
 #	audio? (
-#		>=kde-apps/kwave-${PV}:${SLOT}
-#		>=media-sound/krecorder-${PV}
+#		>=kde-apps/kwave-${PV}:*
 #	)
-#	gstreamer? ( >=kde-apps/kamoso-${PV}:${SLOT} )
+#	gstreamer? ( >=kde-apps/kamoso-${PV}:* )
