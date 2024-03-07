@@ -6,22 +6,26 @@ EAPI=8
 PYTHON_COMPAT=( python3_{11..12} )
 inherit cmake llvm llvm.org multilib python-single-r1
 
-DESCRIPTION="Multi-Level IR Compiler Framework"
-HOMEPAGE="https://mlir.llvm.org/"
+DESCRIPTION="Flang is LLVM’s Fortran frontend"
+HOMEPAGE="https://flang.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
 KEYWORDS="~amd64 ~arm64"
-IUSE=""
+IUSE="default-compiler-rt"
 
 RDEPEND="
 	~sys-devel/llvm-${PV}
 	~sys-devel/clang-${PV}
 	~dev-util/mlir-${PV}"
 DEPEND="${RDEPEND}"
-BDEPEND="
-	dev-util/mlir:${LLVM_MAJOR}
-	>=dev-util/cmake-3.16"
+BDEPEND="dev-util/mlir:${LLVM_MAJOR}"
+
+RDEPEND="
+        ${PYTHON_DEPS}
+        ${DEPEND}
+        >=sys-devel/flang-common-${PV}
+"
 
 LLVM_COMPONENTS=( flang cmake )
 LLVM_USE_TARGETS=provide
@@ -53,10 +57,6 @@ src_configure() {
 	cmake_src_configure
 }
 
-src_compile() {
-	MAKEOPTS="-j12" cmake_src_compile
-}
-
 src_install() {
 	cmake_src_install
 
@@ -71,12 +71,4 @@ src_install() {
 			dosym "flang-new" "/usr/lib/llvm/${LLVM_MAJOR}/bin/${i}"
 		done
 	done
-
-	insinto /etc/clang
-	newins - "flang.cfg" <<-EOF
-		# This configuration file is used by flang driver.
-		@gentoo-runtimes.cfg
-		@gentoo-gcc-install.cfg
-		@gentoo-hardened.cfg
-	EOF
 }
