@@ -3,15 +3,14 @@
 Note: This is a personal repository. Ebuilds may break at any time without notice. However I do try to prevent this from happening.
 
 # Goal
-To compile all packages on my gentoo system with clang and llvm tools (lld, integrated-as) and gcc + binutils removed:
- * kde plasma, snap, texlive, rust, ghc + haskell packages, R, firefox, libreoffice, dotnet core, mono
+To compile all packages on my gentoo system with clang and llvm tools and gcc + binutils removed:
+ * kde plasma, texlive, rust, ghc + haskell packages, R, firefox, libreoffice, dotnet core
 
 # Systems
- * Banana pi, pinebook pro, amd threadripper 2n generation, intel 8th generation mobile
+ * Pine H64, OrangePi 5 plus, Tablet Qualcomm SQ3, AMD 2920x
 
 # Status (packages on my system)
  * arm64: all packages including linux kernel.
- * arm: all packages including linux kernel.
  * x86_64: all packages including linux kernel.
 
 # Toolchain
@@ -24,7 +23,7 @@ To compile all packages on my gentoo system with clang and llvm tools (lld, inte
    * llvm-libunwind is used as replacement for libgcc_eh (unwinder)
    * compiler-rt is used as replacement for libgcc (lowlevel builtins)
  * c library
-   * musl, glibc does not compile/work with clang and probably never will.
+   * musl
 
 # Organization
  * portage: contains package.* for my system, probably only applies to me.
