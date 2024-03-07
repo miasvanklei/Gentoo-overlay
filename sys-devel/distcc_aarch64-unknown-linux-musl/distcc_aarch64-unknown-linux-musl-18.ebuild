@@ -12,6 +12,6 @@ S=${WORKDIR}
 
 LICENSE="public-domain"
 SLOT="${PV}"
-KEYWORDS=""
+KEYWORDS="~amd64"
 PROPERTIES="live"
 
