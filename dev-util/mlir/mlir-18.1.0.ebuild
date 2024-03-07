@@ -22,7 +22,6 @@ RDEPEND="
 	python? ( ${PYTHON_DEPS} )"
 DEPEND="${RDEPEND}"
 BDEPEND="
-	>=dev-util/cmake-3.16
 	sys-devel/llvm:${LLVM_MAJOR}
 	python? ( ${PYTHON_DEPS} )
 	test? (
