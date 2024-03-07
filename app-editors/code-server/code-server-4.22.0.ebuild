@@ -12,12 +12,12 @@ MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4))$(ver_cut 5)"
 BASE_URI="https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux"
 
 # All binary packages depend on this
-NAN_V=2.18.0
+NAN_V=2.19.0
 
-NODE_ADDON_API_V=7.0.0
+NODE_ADDON_API_V=8.0.0
 NATIVE_WATCHDOG_V=1.4.1
-NODE_PTY_V=1.1.0-beta5
-VSCODE_SPDLOG_V=0.14.0
+NODE_PTY_V=1.1.0-beta6
+VSCODE_SPDLOG_V=0.15.0
 ARGON2_V=0.31.1
 PARCEL_WATCHER_V=2.1.0
 
