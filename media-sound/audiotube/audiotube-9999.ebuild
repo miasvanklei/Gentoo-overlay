@@ -22,9 +22,9 @@ RESTRICT="test"
 
 BDEPEND=""
 DEPEND="
-	=dev-db/futuresql-9999
+	>=dev-db/futuresql-0.1.1
 	dev-libs/kirigami-addons
-	=dev-libs/qcoro-9999
+	>=dev-libs/qcoro-0.10.0
 	dev-python/pybind11
 	dev-python/ytmusicapi
 	>=dev-qt/qtbase-${QTMIN}:6[concurrent,dbus,gui,sql,widgets]

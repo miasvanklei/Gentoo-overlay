@@ -15,11 +15,11 @@ MY_ITTAPI_V="0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 
 ARGTOOLS_V="997089b9cd56404b40ff766759662e16dc1aab4b"
 DELIMITEDFILES_V="db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
-DISTRIBUTED="41c01069533e22a6ce6b794746e4b3aa9f5a25cd"
+DISTRIBUTED_V="41c01069533e22a6ce6b794746e4b3aa9f5a25cd"
 DOWNLOADS_V="a9d274ff6588cc5dbfa90e908ee34c2408bab84a"
 JULIASYNTAX_V="4f1731d6ce7c2465fc21ea245110b7a39f34658a"
-JULIASYNTAXHIGHLIGHTING="4110caaf4fcdf0c614fd3ecd7c5bf589ca82ac63"
-LAZYARTIFACTS="e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
+JULIASYNTAXHIGHLIGHTING_V="4110caaf4fcdf0c614fd3ecd7c5bf589ca82ac63"
+LAZYARTIFACTS_V="e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
 NETWORKOPTIONS_V="aab83e5dd900c874826d430e25158dff43559d78"
 PKG_V="76070d295fc4a1f27f852e05400bbc956962e084"
 SHA_V="aaf2df61ff8c3898196587a375d3cf213bd40b41"
@@ -28,6 +28,7 @@ STATISTICS_V="68869af06e8cdeb7aba1d5259de602da7328057f"
 STYLEDSTRINGS_V="e0ca0f85412ea5cafabfeaaec4d62ca26c3959d2"
 SUITEPARSE_V="e8285dd13a6d5b5cf52d8124793fc4d622d07554"
 TAR_V="81888a33704b233a2ad6f82f84456a1dd82c87f0"
+LIBCURL_V="a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
 
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
@@ -42,9 +43,9 @@ SRC_URI="
 	https://api.github.com/repos/JuliaLang/DelimitedFiles.jl/tarball/${DELIMITEDFILES_V} -> ${PN}-stdlib-DelimitedFiles-${DELIMITEDFILES_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/Distributed.jl/tarball/${DISTRIBUTED_V} -> ${PN}-stdlib-Distributed-${DISTRIBUTED_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/Downloads.jl/tarball/${DOWNLOADS_V} -> ${PN}-stdlib-Downloads-${DOWNLOADS_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/JuliaSyntax.jl/tarball/${JULIASYNTAX_V} -> ${PN}-stdlib-JuliaSyntax-${JULIASYNTAX_V}.tar.gz
+	https://api.github.com/repos/JuliaLang/JuliaSyntax.jl/tarball/${JULIASYNTAX_V} -> ${PN}-JuliaSyntax-${JULIASYNTAX_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/JuliaSyntaxHighlighting.jl/tarball/${JULIASYNTAXHIGHLIGHTING_V} -> ${PN}-stdlib-JuliaSyntaxHighlighting-${JULIASYNTAXHIGHLIGHTING_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/LazyArtifacts.jl/tarball/${LAZYARTIFACTS_V} -> ${PN}-stdlib-LazyArtifacts-${LAZYARTIFACTS_V}.tar.gz
+	https://api.github.com/repos/JuliaPackaging/LazyArtifacts.jl/tarball/${LAZYARTIFACTS_V} -> ${PN}-stdlib-LazyArtifacts-${LAZYARTIFACTS_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/NetworkOptions.jl/tarball/${NETWORKOPTIONS_V} -> ${PN}-stdlib-NetworkOptions-${NETWORKOPTIONS_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/Pkg.jl/tarball/${PKG_V} -> ${PN}-stdlib-Pkg-${PKG_V}.tar.gz
 	https://api.github.com/repos/JuliaCrypto/SHA.jl/tarball/${SHA_V} -> ${PN}-stdlib-SHA-${SHA_V}.tar.gz
@@ -53,6 +54,7 @@ SRC_URI="
 	https://api.github.com/repos/JuliaLang/StyledStrings.jl/tarball/${STYLEDSTRINGS_V} -> ${PN}-stdlib-StyledStrings-${STYLEDSTRINGS_V}.tar.gz
 	https://api.github.com/repos/JuliaSparse/SuiteSparse.jl/tarball/${SUITEPARSE_V} -> ${PN}-stdlib-SuiteSparse-${SUITEPARSE_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/Tar.jl/tarball/${TAR_V} -> ${PN}-stdlib-Tar-${TAR_V}.tar.gz
+	https://api.github.com/repos/JuliaWeb/LibCURL.jl/tarball/${LIBCURL_V} -> ${PN}-stdlib-LibCURL-${LIBCURL_V}.tar.gz
 "
 
 LICENSE="MIT"
@@ -77,7 +79,7 @@ RDEPEND+="
 	sci-libs/btf:0/2
 	sci-libs/camd:0/3
 	sci-libs/ccolamd:0/3
-	sci-libs/cholmod:0/4
+	sci-libs/cholmod:0/5
 	sci-libs/colamd:0/3
 	sci-libs/cxsparse:0/4
 	sci-libs/fftw:3.0=[threads]
@@ -85,8 +87,8 @@ RDEPEND+="
 	sci-libs/ldl:0/3
 	sci-libs/openblas:0
 	sci-libs/openlibm:0
-	sci-libs/spqr:0/3
-	sci-libs/rbio:0/3
+	sci-libs/spqr:0/4
+	sci-libs/rbio:0/4
 	sci-libs/umfpack:0/6
 	>=sci-mathematics/dsfmt-2.2.4
 	sys-libs/llvm-libunwind:=
@@ -101,10 +103,10 @@ DEPEND="${RDEPEND}
 
 PATCHES=(
 	"${FILESDIR}"/no_symlink_llvm.patch
+	"${FILESDIR}"/link-llvm-shared.patch
 	"${FILESDIR}"/dont-assume-gfortran.patch
 	"${FILESDIR}"/dont-assume-binutils.patch
 	"${FILESDIR}"/fix-hardcoded-libs.patch
-	"${FILESDIR}"/downgrade-suitesparse-deps.patch
 	"${FILESDIR}"/disable-install-docs.patch
 	"${FILESDIR}"/support-compiler_rt_libunwind.patch
 	"${FILESDIR}"/llvm-17.patch

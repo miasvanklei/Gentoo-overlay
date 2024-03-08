@@ -18,10 +18,6 @@ RESTRICT="network-sandbox"
 RDEPEND="virtual/dotnet-core"
 DEPEND="${RDEPEND}"
 
-PATCHES=(
-	"${FILESDIR}"/improve-sleep-detection.patch
-)
-
 src_compile() {
 	# no telemetry or first time experience
 	export DOTNET_CLI_TELEMETRY_OPTOUT=1
