@@ -1,0 +1,402 @@
+diff --color -ur a/src/aotcompile.cpp b/src/aotcompile.cpp
+--- a/src/aotcompile.cpp	2024-03-07 18:09:30.829230192 +0100
++++ b/src/aotcompile.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -26,7 +26,6 @@
+ #include <llvm/IR/Verifier.h>
+ #include <llvm/Transforms/IPO.h>
+ #include <llvm/Transforms/Scalar.h>
+-#include <llvm/Transforms/Vectorize.h>
+ #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
+ #include <llvm/Transforms/Instrumentation/MemorySanitizer.h>
+ #include <llvm/Transforms/Instrumentation/ThreadSanitizer.h>
+@@ -1173,7 +1172,7 @@
+         raw_svector_ostream OS(out.obj);
+         legacy::PassManager emitter;
+         addTargetPasses(&emitter, TM->getTargetTriple(), TM->getTargetIRAnalysis());
+-        if (TM->addPassesToEmitFile(emitter, OS, nullptr, CGFT_ObjectFile, false))
++        if (TM->addPassesToEmitFile(emitter, OS, nullptr, CodeGenFileType::ObjectFile, false))
+             jl_safe_printf("ERROR: target does not support generation of object files\n");
+         emitter.run(M);
+         timers.obj.stopTimer();
+@@ -1184,7 +1183,7 @@
+         raw_svector_ostream OS(out.asm_);
+         legacy::PassManager emitter;
+         addTargetPasses(&emitter, TM->getTargetTriple(), TM->getTargetIRAnalysis());
+-        if (TM->addPassesToEmitFile(emitter, OS, nullptr, CGFT_AssemblyFile, false))
++        if (TM->addPassesToEmitFile(emitter, OS, nullptr, CodeGenFileType::AssemblyFile, false))
+             jl_safe_printf("ERROR: target does not support generation of assembly files\n");
+         emitter.run(M);
+         timers.asm_.stopTimer();
+@@ -1638,7 +1637,7 @@
+             jl_ExecutionEngine->getTargetOptions(),
+             RelocModel,
+             CMModel,
+-            CodeGenOpt::Aggressive // -O3 TODO: respect command -O0 flag?
++            CodeGenOptLevel::Aggressive // -O3 TODO: respect command -O0 flag?
+             ));
+     fixupTM(*SourceTM);
+     auto DL = jl_create_datalayout(*SourceTM);
+@@ -1906,7 +1905,7 @@
+             for (size_t i = 0; i < filenames.size(); i++) { \
+                 archive.push_back(NewArchiveMember(MemoryBufferRef(buffers[i], filenames[i]))); \
+             } \
+-            handleAllErrors(writeArchive(fname, archive, true, Kind, true, false), reportWriterError); \
++            handleAllErrors(writeArchive(fname, archive, SymtabWritingMode::NormalSymtab, Kind, true, false), reportWriterError); \
+         }
+ 
+         WRITE_ARCHIVE(unopt_bc_fname, unopt, "_unopt", ".bc");
+diff --color -ur a/src/codegen.cpp b/src/codegen.cpp
+--- a/src/codegen.cpp	2024-03-07 18:09:30.837230102 +0100
++++ b/src/codegen.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -142,22 +142,22 @@
+     return getInt32Ty(ctxt);
+ }
+ auto getInt8PtrTy(LLVMContext &ctxt) {
+-    return Type::getInt8PtrTy(ctxt);
++    return PointerType::getUnqual(ctxt);
+ }
+ auto getInt16PtrTy(LLVMContext &ctxt) {
+-    return Type::getInt16PtrTy(ctxt);
++    return PointerType::getUnqual(ctxt);
+ }
+ auto getInt32PtrTy(LLVMContext &ctxt) {
+-    return Type::getInt32PtrTy(ctxt);
++    return PointerType::getUnqual(ctxt);
+ }
+ auto getInt64PtrTy(LLVMContext &ctxt) {
+-    return Type::getInt64PtrTy(ctxt);
++    return PointerType::getUnqual(ctxt);
+ }
+ auto getFloatPtrTy(LLVMContext &ctxt) {
+-    return Type::getFloatPtrTy(ctxt);
++    return PointerType::getUnqual(ctxt);
+ }
+ auto getDoublePtrTy(LLVMContext &ctxt) {
+-    return Type::getDoublePtrTy(ctxt);
++    return PointerType::getUnqual(ctxt);
+ }
+ 
+ typedef Instruction TerminatorInst;
+diff --color -ur a/src/disasm.cpp b/src/disasm.cpp
+--- a/src/disasm.cpp	2024-03-07 18:09:30.837230102 +0100
++++ b/src/disasm.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -1224,7 +1224,7 @@
+         addTargetPasses(&PM, TM->getTargetTriple(), TM->getTargetIRAnalysis());
+         if (emit_mc) {
+             raw_svector_ostream obj_OS(ObjBufferSV);
+-            if (TM->addPassesToEmitFile(PM, obj_OS, nullptr, CGFT_ObjectFile, false, nullptr))
++            if (TM->addPassesToEmitFile(PM, obj_OS, nullptr, CodeGenFileType::ObjectFile, false, nullptr))
+                 return jl_an_empty_string;
+             TSM->withModuleDo([&](Module &m) { PM.run(m); });
+         }
+diff --color -ur a/src/jitlayers.cpp b/src/jitlayers.cpp
+--- a/src/jitlayers.cpp	2024-03-07 18:09:30.837230102 +0100
++++ b/src/jitlayers.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -42,7 +42,7 @@
+ #include "julia_assert.h"
+ #include "processor.h"
+ 
+-# include <llvm/ExecutionEngine/Orc/DebuggerSupportPlugin.h>
++# include <llvm/ExecutionEngine/Orc/Debugging/DebuggerSupportPlugin.h>
+ # include <llvm/ExecutionEngine/JITLink/EHFrameSupport.h>
+ # include <llvm/ExecutionEngine/JITLink/JITLinkMemoryManager.h>
+ # include <llvm/ExecutionEngine/Orc/MapperJITLinkMemoryManager.h>
+@@ -681,14 +681,14 @@
+     return jl_dump_function_asm(&llvmf_dump, emit_mc, asm_variant, debuginfo, binary, false);
+ }
+ 
+-CodeGenOpt::Level CodeGenOptLevelFor(int optlevel)
++CodeGenOptLevel CodeGenOptLevelFor(int optlevel)
+ {
+ #ifdef DISABLE_OPT
+     return CodeGenOpt::None;
+ #else
+-    return optlevel < 2 ? CodeGenOpt::None :
+-        optlevel == 2 ? CodeGenOpt::Default :
+-        CodeGenOpt::Aggressive;
++    return optlevel < 2 ? CodeGenOptLevel::None :
++        optlevel == 2 ? CodeGenOptLevel::Default :
++        CodeGenOptLevel::Aggressive;
+ #endif
+ }
+ 
+diff --color -ur a/src/jitlayers.h b/src/jitlayers.h
+--- a/src/jitlayers.h	2024-03-07 18:09:30.837230102 +0100
++++ b/src/jitlayers.h	2024-03-07 18:08:12.370105709 +0100
+@@ -642,4 +642,4 @@
+ // NewPM
+ #include "passes.h"
+ 
+-CodeGenOpt::Level CodeGenOptLevelFor(int optlevel) JL_NOTSAFEPOINT;
++CodeGenOptLevel CodeGenOptLevelFor(int optlevel) JL_NOTSAFEPOINT;
+diff --color -ur a/src/llvm-alloc-opt.cpp b/src/llvm-alloc-opt.cpp
+--- a/src/llvm-alloc-opt.cpp	2024-03-07 18:09:30.837230102 +0100
++++ b/src/llvm-alloc-opt.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -647,7 +647,7 @@
+         auto asize = ConstantInt::get(Type::getInt64Ty(prolog_builder.getContext()), sz / DL.getTypeAllocSize(pass.T_prjlvalue));
+         buff = prolog_builder.CreateAlloca(pass.T_prjlvalue, asize);
+         buff->setAlignment(Align(align));
+-        ptr = cast<Instruction>(prolog_builder.CreateBitCast(buff, Type::getInt8PtrTy(prolog_builder.getContext())));
++        ptr = cast<Instruction>(prolog_builder.CreateBitCast(buff, PointerType::getUnqual(prolog_builder.getContext())));
+     }
+     else {
+         Type *buffty;
+@@ -657,7 +657,7 @@
+             buffty = ArrayType::get(Type::getInt8Ty(pass.getLLVMContext()), sz);
+         buff = prolog_builder.CreateAlloca(buffty);
+         buff->setAlignment(Align(align));
+-        ptr = cast<Instruction>(prolog_builder.CreateBitCast(buff, Type::getInt8PtrTy(prolog_builder.getContext(), buff->getType()->getPointerAddressSpace())));
++        ptr = cast<Instruction>(prolog_builder.CreateBitCast(buff, PointerType::getUnqual(prolog_builder.getContext())));
+     }
+     insertLifetime(ptr, ConstantInt::get(Type::getInt64Ty(prolog_builder.getContext()), sz), orig_inst);
+     if (sz != 0 && !has_ref) { // TODO: fix has_ref case too
+@@ -958,7 +958,7 @@
+         }
+         slot.slot = prolog_builder.CreateAlloca(allocty);
+         IRBuilder<> builder(orig_inst);
+-        insertLifetime(prolog_builder.CreateBitCast(slot.slot, Type::getInt8PtrTy(prolog_builder.getContext())),
++        insertLifetime(prolog_builder.CreateBitCast(slot.slot, PointerType::getUnqual(prolog_builder.getContext())),
+                        ConstantInt::get(Type::getInt64Ty(prolog_builder.getContext()), field.size), orig_inst);
+         initializeAlloca(builder, slot.slot, use_info.allockind);
+         slots.push_back(std::move(slot));
+@@ -1018,7 +1018,7 @@
+             }
+         }
+         else {
+-            addr = builder.CreateBitCast(slot.slot, Type::getInt8PtrTy(builder.getContext()));
++            addr = builder.CreateBitCast(slot.slot, PointerType::getUnqual(builder.getContext()));
+             addr = builder.CreateConstInBoundsGEP1_32(Type::getInt8Ty(builder.getContext()), addr, offset);
+             addr = builder.CreateBitCast(addr, elty->getPointerTo());
+         }
+@@ -1146,7 +1146,7 @@
+                                 store->setOrdering(AtomicOrdering::NotAtomic);
+                                 continue;
+                             }
+-                            auto ptr8 = builder.CreateBitCast(slot.slot, Type::getInt8PtrTy(builder.getContext()));
++                            auto ptr8 = builder.CreateBitCast(slot.slot, PointerType::getUnqual(builder.getContext()));
+                             if (offset > slot.offset)
+                                 ptr8 = builder.CreateConstInBoundsGEP1_32(Type::getInt8Ty(builder.getContext()), ptr8,
+                                                                           offset - slot.offset);
+@@ -1270,8 +1270,8 @@
+ 
+     DL = &M.getDataLayout();
+ 
+-    lifetime_start = Intrinsic::getDeclaration(&M, Intrinsic::lifetime_start, { Type::getInt8PtrTy(M.getContext(), DL->getAllocaAddrSpace()) });
+-    lifetime_end = Intrinsic::getDeclaration(&M, Intrinsic::lifetime_end, { Type::getInt8PtrTy(M.getContext(), DL->getAllocaAddrSpace()) });
++    lifetime_start = Intrinsic::getDeclaration(&M, Intrinsic::lifetime_start, { PointerType::getUnqual(M.getContext()) });
++    lifetime_end = Intrinsic::getDeclaration(&M, Intrinsic::lifetime_end, { PointerType::getUnqual(M.getContext()) });
+ 
+     return true;
+ }
+diff --color -ur a/src/llvm-codegen-shared.h b/src/llvm-codegen-shared.h
+--- a/src/llvm-codegen-shared.h	2024-03-07 18:09:30.837230102 +0100
++++ b/src/llvm-codegen-shared.h	2024-03-07 18:08:12.370105709 +0100
+@@ -291,7 +291,7 @@
+ {
+     using namespace llvm;
+     Type *T_int8 = state->getType();
+-    llvm::Value *ptls_i8 = emit_bitcast_with_builder(builder, ptls, builder.getInt8PtrTy());
++    llvm::Value *ptls_i8 = emit_bitcast_with_builder(builder, ptls, builder.getPtrTy());
+     Constant *offset = ConstantInt::getSigned(builder.getInt32Ty(), offsetof(jl_tls_states_t, gc_state));
+     Value *gc_state = builder.CreateInBoundsGEP(T_int8, ptls_i8, ArrayRef<Value*>(offset), "gc_state");
+     if (old_state == nullptr) {
+diff --color -ur a/src/llvm-julia-licm.cpp b/src/llvm-julia-licm.cpp
+--- a/src/llvm-julia-licm.cpp	2024-03-01 09:30:50.000000000 +0100
++++ b/src/llvm-julia-licm.cpp	2024-03-07 18:08:12.366105754 +0100
+@@ -330,7 +330,7 @@
+                     moveInstructionBefore(*call, *preheader->getTerminator(), MSSAU, SE);
+                     IRBuilder<> builder(preheader->getTerminator());
+                     builder.SetCurrentDebugLocation(call->getDebugLoc());
+-                    auto obj_i8 = builder.CreateBitCast(call, Type::getInt8PtrTy(call->getContext(), call->getType()->getPointerAddressSpace()));
++                    auto obj_i8 = builder.CreateBitCast(call, PointerType::getUnqual(call->getContext()));
+                     // Note that this alignment is assuming the GC allocates at least pointer-aligned memory
+                     auto align = Align(DL.getPointerSize(0));
+                     auto clear_obj = builder.CreateMemSet(obj_i8, ConstantInt::get(Type::getInt8Ty(call->getContext()), 0), call->getArgOperand(1), align);
+diff --color -ur a/src/llvm-late-gc-lowering.cpp b/src/llvm-late-gc-lowering.cpp
+--- a/src/llvm-late-gc-lowering.cpp	2024-03-07 18:09:30.841230058 +0100
++++ b/src/llvm-late-gc-lowering.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -510,7 +510,7 @@
+                     // This could really be anything, but it's not loaded
+                     // from a tracked pointer, so it doesn't matter what
+                     // it is--just pick something simple.
+-                    CurrentV = ConstantPointerNull::get(Type::getInt8PtrTy(V->getContext()));
++                    CurrentV = ConstantPointerNull::get(PointerType::getUnqual(V->getContext()));
+                 }
+                 continue;
+             }
+@@ -545,12 +545,12 @@
+                         if (II->getIntrinsicID() == Intrinsic::masked_load) {
+                             fld_idx = -1;
+                             if (!isSpecialPtr(CurrentV->getType())) {
+-                                CurrentV = ConstantPointerNull::get(Type::getInt8PtrTy(V->getContext()));
++                                CurrentV = ConstantPointerNull::get(PointerType::getUnqual(V->getContext()));
+                             }
+                         } else {
+                             if (auto VTy2 = dyn_cast<VectorType>(CurrentV->getType())) {
+                                 if (!isSpecialPtr(VTy2->getElementType())) {
+-                                    CurrentV = ConstantPointerNull::get(Type::getInt8PtrTy(V->getContext()));
++                                    CurrentV = ConstantPointerNull::get(PointerType::getUnqual(V->getContext()));
+                                     fld_idx = -1;
+                                 }
+                             }
+@@ -2437,7 +2437,7 @@
+                 // gc_alloc_obj, and will redundantly set the tag.)
+                 auto allocBytesIntrinsic = getOrDeclare(jl_intrinsics::GCAllocBytes);
+                 auto ptlsLoad = get_current_ptls_from_task(builder, T_size, CI->getArgOperand(0), tbaa_gcframe);
+-                auto ptls = builder.CreateBitCast(ptlsLoad, Type::getInt8PtrTy(builder.getContext()));
++                auto ptls = builder.CreateBitCast(ptlsLoad, PointerType::getUnqual(builder.getContext()));
+                 auto newI = builder.CreateCall(
+                     allocBytesIntrinsic,
+                     {
+diff --color -ur a/src/llvm-lower-handlers.cpp b/src/llvm-lower-handlers.cpp
+--- a/src/llvm-lower-handlers.cpp	2024-03-07 18:09:30.841230058 +0100
++++ b/src/llvm-lower-handlers.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -120,7 +120,7 @@
+     Function *jlenter_func = M.getFunction(XSTR(jl_enter_handler));
+     Function *setjmp_func = M.getFunction(jl_setjmp_name);
+ 
+-    auto T_pint8 = Type::getInt8PtrTy(M.getContext(), 0);
++    auto T_pint8 = PointerType::getUnqual(M.getContext());
+     Function *lifetime_start = Intrinsic::getDeclaration(&M, Intrinsic::lifetime_start, { T_pint8 });
+     Function *lifetime_end = Intrinsic::getDeclaration(&M, Intrinsic::lifetime_end, { T_pint8 });
+ 
+@@ -183,7 +183,7 @@
+         auto *buff = new AllocaInst(Type::getInt8Ty(F.getContext()), allocaAddressSpace,
+                 handler_sz, Align(16), "", firstInst);
+         if (allocaAddressSpace) {
+-            AddrSpaceCastInst *buff_casted = new AddrSpaceCastInst(buff, Type::getInt8PtrTy(F.getContext(), AddressSpace::Generic));
++            AddrSpaceCastInst *buff_casted = new AddrSpaceCastInst(buff, PointerType::getUnqual(F.getContext()));
+             buff_casted->insertAfter(buff);
+             buffs.push_back(buff_casted);
+         } else {
+diff --color -ur a/src/llvm-pass-helpers.cpp b/src/llvm-pass-helpers.cpp
+--- a/src/llvm-pass-helpers.cpp	2024-03-01 09:30:50.000000000 +0100
++++ b/src/llvm-pass-helpers.cpp	2024-03-07 18:08:12.366105754 +0100
+@@ -161,7 +161,7 @@
+             auto intrinsic = Function::Create(
+                 FunctionType::get(
+                     T_prjlvalue,
+-                    { Type::getInt8PtrTy(ctx),
++                    { PointerType::getUnqual(ctx),
+                         T_size,
+                         T_size }, // type
+                     false),
+@@ -271,7 +271,7 @@
+             auto bigAllocFunc = Function::Create(
+                 FunctionType::get(
+                     T_prjlvalue,
+-                    { Type::getInt8PtrTy(ctx), T_size , T_size},
++                    { PointerType::getUnqual(ctx), T_size , T_size},
+                     false),
+                 Function::ExternalLinkage,
+                 GC_BIG_ALLOC_NAME);
+@@ -287,7 +287,7 @@
+             auto poolAllocFunc = Function::Create(
+                 FunctionType::get(
+                     T_prjlvalue,
+-                    { Type::getInt8PtrTy(ctx), Type::getInt32Ty(ctx), Type::getInt32Ty(ctx), T_size },
++                    { PointerType::getUnqual(ctx), Type::getInt32Ty(ctx), Type::getInt32Ty(ctx), T_size },
+                     false),
+                 Function::ExternalLinkage,
+                 GC_POOL_ALLOC_NAME);
+@@ -323,7 +323,7 @@
+             auto allocTypedFunc = Function::Create(
+                 FunctionType::get(
+                     T_prjlvalue,
+-                    { Type::getInt8PtrTy(ctx),
++                    { PointerType::getUnqual(ctx),
+                         T_size,
+                         T_size }, // type
+                     false),
+diff --color -ur a/src/llvm-ptls.cpp b/src/llvm-ptls.cpp
+--- a/src/llvm-ptls.cpp	2024-03-07 18:09:30.845230013 +0100
++++ b/src/llvm-ptls.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -95,12 +95,12 @@
+         if (offset) {
+             SmallVector<Type*, 0> args(0);
+             args.push_back(offset->getType());
+-            auto tp = InlineAsm::get(FunctionType::get(Type::getInt8PtrTy(builder.getContext()), args, false),
++            auto tp = InlineAsm::get(FunctionType::get(PointerType::getUnqual(builder.getContext()), args, false),
+                                      dyn_asm_str, "=&r,r,~{dirflag},~{fpsr},~{flags}", false);
+             tls = builder.CreateCall(tp, {offset}, "pgcstack");
+         }
+         else {
+-            auto tp = InlineAsm::get(FunctionType::get(Type::getInt8PtrTy(insertBefore->getContext()), false),
++            auto tp = InlineAsm::get(FunctionType::get(PointerType::getUnqual(insertBefore->getContext()), false),
+                                      const_asm_str.c_str(), "=r,~{dirflag},~{fpsr},~{flags}",
+                                      false);
+             tls = builder.CreateCall(tp, {}, "tls_pgcstack");
+@@ -126,7 +126,7 @@
+         }
+         if (!offset)
+             offset = ConstantInt::getSigned(T_size, jl_tls_offset);
+-        auto tp = InlineAsm::get(FunctionType::get(Type::getInt8PtrTy(builder.getContext()), false), asm_str, "=r", false);
++        auto tp = InlineAsm::get(FunctionType::get(PointerType::getUnqual(builder.getContext()), false), asm_str, "=r", false);
+         tls = builder.CreateCall(tp, {}, "thread_ptr");
+         tls = builder.CreateGEP(Type::getInt8Ty(builder.getContext()), tls, {offset}, "tls_ppgcstack");
+     }
+diff --color -ur a/src/llvm_api.cpp b/src/llvm_api.cpp
+--- a/src/llvm_api.cpp	2024-03-01 09:30:50.000000000 +0100
++++ b/src/llvm_api.cpp	2024-03-07 18:08:12.366105754 +0100
+@@ -21,33 +21,12 @@
+ #include <llvm/Support/CBindingWrapping.h>
+ #include <llvm/Support/MemoryBuffer.h>
+ 
+-namespace llvm {
+-namespace orc {
+-class OrcV2CAPIHelper {
+-public:
+-    using PoolEntry = orc::SymbolStringPtr::PoolEntry;
+-    using PoolEntryPtr = orc::SymbolStringPtr::PoolEntryPtr;
+-
+-    // Move from SymbolStringPtr to PoolEntryPtr (no change in ref count).
+-    static PoolEntryPtr moveFromSymbolStringPtr(SymbolStringPtr S)
+-    {
+-        PoolEntryPtr Result = nullptr;
+-        std::swap(Result, S.S);
+-        return Result;
+-    }
+-};
+-} // namespace orc
+-} // namespace llvm
+-
+-
+ typedef struct JLOpaqueJuliaOJIT *JuliaOJITRef;
+ typedef struct LLVMOrcOpaqueIRCompileLayer *LLVMOrcIRCompileLayerRef;
+ 
+ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(JuliaOJIT, JuliaOJITRef)
+ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(orc::JITDylib, LLVMOrcJITDylibRef)
+ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(orc::ExecutionSession, LLVMOrcExecutionSessionRef)
+-DEFINE_SIMPLE_CONVERSION_FUNCTIONS(orc::OrcV2CAPIHelper::PoolEntry,
+-                                   LLVMOrcSymbolStringPoolEntryRef)
+ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(orc::IRCompileLayer, LLVMOrcIRCompileLayerRef)
+ DEFINE_SIMPLE_CONVERSION_FUNCTIONS(orc::MaterializationResponsibility,
+                                    LLVMOrcMaterializationResponsibilityRef)
+@@ -109,11 +88,15 @@
+     }
+ }
+ 
++inline LLVMOrcSymbolStringPoolEntryRef wrap(llvm::orc::SymbolStringPoolEntryUnsafe E) {
++  return reinterpret_cast<LLVMOrcSymbolStringPoolEntryRef>(E.rawPtr());
++}
++
+ JL_DLLEXPORT_CODEGEN LLVMOrcSymbolStringPoolEntryRef
+ JLJITMangleAndIntern_impl(JuliaOJITRef JIT,
+                                             const char *Name)
+ {
+-    return wrap(orc::OrcV2CAPIHelper::moveFromSymbolStringPtr(unwrap(JIT)->mangle(Name)));
++    return wrap(llvm::orc::SymbolStringPoolEntryUnsafe::take(unwrap(JIT)->mangle(Name)));
+ }
+ 
+ JL_DLLEXPORT_CODEGEN const char *
+diff --color -ur a/src/pipeline.cpp b/src/pipeline.cpp
+--- a/src/pipeline.cpp	2024-03-07 18:09:30.845230013 +0100
++++ b/src/pipeline.cpp	2024-03-07 18:08:12.370105709 +0100
+@@ -21,7 +21,6 @@
+ #include <llvm/IR/Verifier.h>
+ #include <llvm/Transforms/IPO.h>
+ #include <llvm/Transforms/Scalar.h>
+-#include <llvm/Transforms/Vectorize.h>
+ #include <llvm/Transforms/Instrumentation/AddressSanitizer.h>
+ #include <llvm/Transforms/Instrumentation/ThreadSanitizer.h>
+ #include <llvm/Transforms/Scalar/GVN.h>
