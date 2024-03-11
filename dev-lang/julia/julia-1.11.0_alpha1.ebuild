@@ -62,7 +62,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
-LLVM_MAX_SLOT=17
+LLVM_MAX_SLOT=18
 
 RDEPEND+="
 	app-arch/p7zip
@@ -92,7 +92,7 @@ RDEPEND+="
 	sci-libs/umfpack:0/6
 	>=sci-mathematics/dsfmt-2.2.4
 	sys-libs/llvm-libunwind:=
-	sys-devel/llvm:17=
+	sys-devel/llvm:18=
 	sys-libs/zlib:0=
 	amd64? ( sci-libs/openblas[index-64bit] )
 "
@@ -110,6 +110,7 @@ PATCHES=(
 	"${FILESDIR}"/disable-install-docs.patch
 	"${FILESDIR}"/support-compiler_rt_libunwind.patch
 	"${FILESDIR}"/llvm-17.patch
+	"${FILESDIR}"/llvm-18.patch
 )
 
 S="${WORKDIR}/${P/_/-}"
