@@ -1,0 +1,23 @@
+--- a/build/moz.configure/toolchain.configure	2024-03-04 13:24:52.000000000 +0100
++++ b/build/moz.configure/toolchain.configure	2024-03-08 16:28:33.429216812 +0100
+@@ -2183,16 +2183,10 @@
+ set_define("_LIBCPP_HIDE_FROM_ABI", libcxx_override_visibility.hide_from_abi)
+ 
+ 
+-@depends(target, build_environment)
+-def visibility_flags(target, env):
+-    if target.os != "WINNT":
+-        if target.kernel == "Darwin":
+-            return ("-fvisibility=hidden", "-fvisibility-inlines-hidden")
+-        return (
+-            "-I%s/system_wrappers" % os.path.join(env.dist),
+-            "-include",
+-            "%s/config/gcc_hidden.h" % env.topsrcdir,
+-        )
++@depends(c_compiler)
++def visibility_flags(c_compiler):
++    if c_compiler.type == "clang":
++        return ("-fvisibility=hidden", "-fvisibility-inlines-hidden")
+ 
+ 
+ @depends(target, visibility_flags)
