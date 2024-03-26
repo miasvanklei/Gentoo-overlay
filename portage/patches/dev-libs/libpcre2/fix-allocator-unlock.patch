@@ -1,0 +1,16 @@
+--- a/src/sljit/allocator_src/sljitExecAllocatorCore.c	2024-03-26 19:20:35.856740020 +0100
++++ b/src/sljit/allocator_src/sljitExecAllocatorCore.c	2024-03-26 19:21:19.698276602 +0100
+@@ -237,12 +237,12 @@
+ 		header->size = chunk_size;
+ 		next_header = AS_BLOCK_HEADER(header, chunk_size);
+ 	}
+-	SLJIT_ALLOCATOR_UNLOCK();
+ 	next_header->size = 1;
+ 	next_header->prev_size = chunk_size;
+ #ifdef SLJIT_HAS_EXECUTABLE_OFFSET
+ 	next_header->executable_offset = executable_offset;
+ #endif /* SLJIT_HAS_EXECUTABLE_OFFSET */
++	SLJIT_ALLOCATOR_UNLOCK();
+ 	return MEM_START(header);
+ }
+ 
