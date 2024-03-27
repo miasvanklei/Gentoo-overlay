@@ -39,6 +39,10 @@ pkg_setup() {
 	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
 }
 
+src_compile() {
+	MAKEOPTS="-j12" cmake_src_compile
+}
+
 src_configure() {
 	local llvmdir="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}"
 	local mycmakeargs=(
