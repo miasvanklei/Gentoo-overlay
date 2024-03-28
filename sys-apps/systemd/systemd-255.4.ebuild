@@ -1,4 +1,4 @@
-# Copyright 2011-2023 Gentoo Authors
+# Copyright 2011-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=8
@@ -29,7 +29,7 @@ else
 	fi
 fi
 
-inherit bash-completion-r1 linux-info meson-multilib pam python-single-r1
+inherit bash-completion-r1 linux-info meson-multilib optfeature pam python-single-r1
 inherit secureboot systemd toolchain-funcs udev
 
 DESCRIPTION="System and service manager for Linux"
@@ -39,9 +39,9 @@ LICENSE="GPL-2 LGPL-2.1 MIT public-domain"
 SLOT="0/2"
 IUSE="
 	acl apparmor audit boot cgroup-hybrid cryptsetup curl +dns-over-tls elfutils
-	fido2 +gcrypt gnutls homed http idn importd iptables kernel-install +kmod
+	fido2 +gcrypt gnutls homed http idn importd iptables +kernel-install +kmod
 	+lz4 lzma +openssl pam pcre pkcs11 policykit pwquality qrcode
-	+resolvconf +seccomp selinux sysusers +sysv-utils test tpm ukify vanilla xkb +zstd
+	+resolvconf +seccomp selinux split-usr +sysv-utils test tpm ukify vanilla xkb +zstd
 "
 REQUIRED_USE="
 	${PYTHON_REQUIRED_USE}
@@ -184,6 +184,11 @@ QA_FLAGS_IGNORED="usr/lib/systemd/boot/efi/.*"
 QA_EXECSTACK="usr/lib/systemd/boot/efi/*"
 
 pkg_pretend() {
+	if use split-usr; then
+		eerror "Please complete the migration to merged-usr."
+		eerror "https://wiki.gentoo.org/wiki/Merge-usr"
+		die "systemd no longer supports split-usr"
+	fi
 	if [[ ${MERGE_TYPE} != buildonly ]]; then
 		if use test && has pid-sandbox ${FEATURES}; then
 			ewarn "Tests are known to fail with PID sandboxing enabled."
@@ -243,6 +248,8 @@ src_unpack() {
 
 src_prepare() {
 	local PATCHES=(
+		"${FILESDIR}"/255-install-format-overflow.patch
+		"${FILESDIR}"/255-fix-overlapping-sections.patch
 	)
 
 	if ! use vanilla; then
@@ -282,6 +289,9 @@ multilib_src_configure() {
 		# no deps
 		-Dima=true
 		-Ddefault-hierarchy=$(usex cgroup-hybrid hybrid unified)
+		# Match /etc/shells, bug 919749
+		-Ddebug-shell="${EPREFIX}/bin/sh"
+		-Ddefault-user-shell="${EPREFIX}/bin/bash"
 		# Optional components/dependencies
 		$(meson_native_use_bool acl)
 		$(meson_native_use_bool apparmor)
@@ -316,7 +326,6 @@ multilib_src_configure() {
 		$(meson_native_use_bool qrcode qrencode)
 		$(meson_native_use_bool seccomp)
 		$(meson_native_use_bool selinux)
-		$(meson_native_use_bool sysusers)
 		$(meson_native_use_bool tpm tpm2)
 		$(meson_native_use_bool test dbus)
 		$(meson_native_use_bool ukify)
@@ -340,6 +349,7 @@ multilib_src_configure() {
 		$(meson_native_true quotacheck)
 		$(meson_native_true randomseed)
 		$(meson_native_true rfkill)
+		$(meson_native_true sysusers)
 		$(meson_native_true timedated)
 		$(meson_native_true timesyncd)
 		$(meson_native_true tmpfiles)
@@ -389,9 +399,7 @@ multilib_src_install_all() {
 	fi
 
 	# https://bugs.gentoo.org/761763
-	if use sysusers; then
-		rm -r "${ED}"/usr/lib/sysusers.d || die
-	fi
+	rm -r "${ED}"/usr/lib/sysusers.d || die
 
 	# Preserve empty dirs in /etc & /var, bug #437008
 	keepdir /etc/{binfmt.d,modules-load.d,tmpfiles.d}
@@ -512,6 +520,15 @@ pkg_postinst() {
 		eerror "for errors. You may need to clean up your system and/or try installing"
 		eerror "systemd again."
 		eerror
+	fi
+
+	if use boot; then
+		optfeature "installing kernels in systemd-boot's native layout and update loader entries" \
+			"sys-kernel/installkernel[systemd-boot]"
+	fi
+	if use ukify; then
+		optfeature "generating unified kernel image on each kernel installation" \
+			"sys-kernel/installkernel[ukify]"
 	fi
 }
 
