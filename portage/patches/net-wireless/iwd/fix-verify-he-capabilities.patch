@@ -1,0 +1,32 @@
+--- a/src/ie.c	2024-03-29 00:27:27.000000000 +0100
++++ b/src/ie.c	2024-03-29 22:18:47.710538735 +0100
+@@ -2734,10 +2734,10 @@
+ 	bool width_160;
+ 	bool width_80p80;
+ 
+-	if (len < 22)
++	if (len < 21)
+ 		return false;
+ 
+-	width_set = bit_field((ptr + 7)[0], 1, 7);
++	width_set = bit_field((ptr + 6)[0], 1, 7);
+ 
+ 	/* B0 indicates support for 40MHz, but only in 2.4GHz band */
+ 	freq_2_4 = test_bit(&width_set, 0);
+@@ -2752,14 +2752,14 @@
+ 	width_160 = test_bit(&width_set, 2);
+ 
+ 	/* Ensure B1 is set, not B0, and the length includes this MCS table */
+-	if (width_160 && (!width_40_80 || freq_2_4 || len < 26))
++	if (width_160 && (!width_40_80 || freq_2_4 || len < 25))
+ 		return false;
+ 
+ 	/* B3 indicates support for 80+80Mhz MCS table */
+ 	width_80p80 = test_bit(&width_set, 3);
+ 
+ 	/* Ensure B2 is set, not B0, and the length includes this MCS table */
+-	if (width_80p80 && (!width_160 || freq_2_4 || len < 30))
++	if (width_80p80 && (!width_160 || freq_2_4 || len < 29))
+ 		return false;
+ 
+ 	return true;
