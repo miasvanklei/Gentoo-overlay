@@ -8,7 +8,7 @@ inherit llvm pax-utils optfeature toolchain-funcs
 # correct versions for stdlibs are in deps/checksums
 # for everything else, run with network-sandbox and wait for the crash
 
-MY_LIBUV_V="afa1c67fa496eb49ade1e520f76fd018a1409eaa"
+MY_LIBUV_V="ca3a5a431a1c37859b6508e6b2a288092337029a"
 MY_BLASTRAMPOLINE_V="81316155d4838392e8462a92bcac3eebe9acd0c7"
 MY_LIBWHICH_V="81e9723c0273d78493dc8c8ed570f68d9ce7e89e"
 MY_ITTAPI_V="0014aec56fea2f30c1374f40861e1bccdd53d0cb"
