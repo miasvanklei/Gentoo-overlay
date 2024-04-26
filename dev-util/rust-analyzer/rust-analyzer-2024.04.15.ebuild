@@ -22,10 +22,10 @@ CRATES="
 	cargo_metadata@0.18.1
 	cc@1.0.90
 	cfg-if@1.0.0
-	chalk-derive@0.96.0
-	chalk-ir@0.96.0
-	chalk-recursive@0.96.0
-	chalk-solve@0.96.0
+	chalk-derive@0.97.0
+	chalk-ir@0.97.0
+	chalk-recursive@0.97.0
+	chalk-solve@0.97.0
 	command-group@2.1.0
 	countme@3.0.1
 	cov-mark@2.0.0-pre.1
