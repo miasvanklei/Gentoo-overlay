@@ -38,6 +38,8 @@ CRATES="
 	dashmap@5.5.3
 	deranged@0.3.11
 	derive_arbitrary@1.3.2
+	directories@5.0.1
+	dirs-sys@0.4.1
 	dissimilar@1.0.7
 	dot@0.1.4
 	drop_bomb@0.1.5
@@ -71,6 +73,7 @@ CRATES="
 	libc@0.2.153
 	libloading@0.8.3
 	libmimalloc-sys@0.1.35
+	libredox@0.1.3
 	line-index@0.1.1
 	linked-hash-map@0.5.6
 	lock_api@0.4.11
@@ -96,6 +99,7 @@ CRATES="
 	object@0.33.0
 	once_cell@1.19.0
 	oorandom@11.1.3
+	option-ext@0.2.0
 	parking_lot@0.12.1
 	parking_lot_core@0.9.9
 	paste@1.0.14
@@ -124,6 +128,7 @@ CRATES="
 	rayon-core@1.12.1
 	rayon@1.9.0
 	redox_syscall@0.4.1
+	redox_users@0.4.5
 	rowan@0.15.15
 	rustc-demangle@0.1.23
 	rustc-hash@1.1.0
@@ -138,6 +143,7 @@ CRATES="
 	serde_derive@1.0.197
 	serde_json@1.0.114
 	serde_repr@0.1.18
+	serde_spanned@0.6.5
 	sharded-slab@0.1.7
 	smallvec@1.13.1
 	smol_str@0.2.1
@@ -156,6 +162,9 @@ CRATES="
 	time@0.3.34
 	tinyvec@1.6.0
 	tinyvec_macros@0.1.1
+	toml@0.8.8
+	toml_datetime@0.6.5
+	toml_edit@0.21.0
 	tracing-attributes@0.1.27
 	tracing-core@0.1.32
 	tracing-log@0.2.0
@@ -198,6 +207,7 @@ CRATES="
 	windows_x86_64_gnullvm@0.52.4
 	windows_x86_64_msvc@0.48.5
 	windows_x86_64_msvc@0.52.4
+	winnow@0.5.32
 	write-json@0.1.4
 	xflags-macros@0.3.2
 	xflags@0.3.2
@@ -225,7 +235,7 @@ LICENSE=""
 # Dependent crate licenses
 LICENSE+="
 	Apache-2.0 Apache-2.0-with-LLVM-exceptions BSD CC0-1.0 ISC MIT
-	Unicode-DFS-2016
+	MPL-2.0 Unicode-DFS-2016
 "
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
