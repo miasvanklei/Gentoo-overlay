@@ -11,7 +11,9 @@ IUSE=""
 
 DESCRIPTION="install linux kernel to /boot"
 
-BDEPEND="sys-kernel/gentoo-kernel:="
+RDEPEND="sys-kernel/gentoo-kernel:="
+
+S="${WORKDIR}"
 
 pkg_pretend() {
 	mount-boot_pkg_pretend
@@ -56,16 +58,8 @@ create_extlinux_config()
 	add_extlinux_entries
 }
 
-src_unpack() {
-	mkdir ${WORKDIR}/${P}
-}
-
-
-src_compile() {
-	create_extlinux_config
-}
-
 pkg_postinst() {
+	create_extlinux_config
 	cp ${S}/extlinux.conf /boot/extlinux/
 }
 
