@@ -41,10 +41,7 @@ src_prepare() {
 	rm global.json
 
 	# make CA errors, warnings
-	sed -i 's/error/warning/g' .editorconfig
-
-	# update .net version
-	grep -rl "net7.0" --include \*.csproj . | xargs sed -i 's/net7.0/net8.0/g'
+	sed -i 's/error/warning/g' .editorconfig || die
 
 	# fix casing
 	for i in $(find -name "*pt-br*"); do rename pt-br pt-BR $i; done
