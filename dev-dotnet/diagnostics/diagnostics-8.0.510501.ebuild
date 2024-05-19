@@ -17,6 +17,12 @@ PATCHES=(
 	"${FILESDIR}/fix-build.patch"
 )
 
+src_prepare() {
+	sed -i '/set(PRERELEASE 1)/d' eng/native/configureplatform.cmake || die
+
+	cmake_src_prepare
+}
+
 src_configure() {
 	local mycmakeargs=(
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=ON
