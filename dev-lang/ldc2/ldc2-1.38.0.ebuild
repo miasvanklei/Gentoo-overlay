@@ -35,12 +35,6 @@ BDEPEND="${PYTHON_DEPS}
 DEPEND="sys-devel/llvm:=[debug?]"
 RDEPEND="${DEPEND}"
 
-PATCHES=(
-	"${FILESDIR}"/musl-lfs64.patch
-	"${FILESDIR}"/missing-version_net.patch
-	"${FILESDIR}"/llvm-18.patch
-)
-
 S="${WORKDIR}/ldc-${PV}-src"
 
 src_configure() {
