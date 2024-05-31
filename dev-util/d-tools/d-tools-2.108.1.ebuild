@@ -3,8 +3,8 @@
 
 EAPI=8
 
-DESCRIPTION="Microsoft language server protocol implementation for D using workspace-d"
-HOMEPAGE="https://github.com/Pure-D/serve-d"
+DESCRIPTION="Ancillary tools for the D programming language compiler"
+HOMEPAGE="https://github.com/dlang/tools"
 LICENSE="BSL-1.1"
 SRC_URI="https://github.com/dlang/tools/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 
@@ -12,8 +12,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
-DEPEND="dev-util/dub"
-RDEPEND="${DEPEND}"
+BDEPEND="dev-util/dub"
 
 S="${WORKDIR}/tools-${PV}"
 
