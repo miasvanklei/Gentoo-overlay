@@ -27,6 +27,10 @@ microsoft.netcore.app.runtime.linux-musl-arm@${PV}
 microsoft.netcore.app.runtime.linux-musl-arm64@${PV}
 microsoft.netcore.app.runtime.linux-musl-x64@${PV}
 microsoft.netcore.app.runtime.linux-x64@${PV}
+runtime.linux-arm64.microsoft.dotnet.ilcompiler@${PV}
+runtime.linux-musl-arm64.microsoft.dotnet.ilcompiler@${PV}
+runtime.linux-musl-x64.microsoft.dotnet.ilcompiler@${PV}
+runtime.linux-x64.microsoft.dotnet.ilcompiler@${PV}
 "
 
 inherit dotnet-pkg-base
