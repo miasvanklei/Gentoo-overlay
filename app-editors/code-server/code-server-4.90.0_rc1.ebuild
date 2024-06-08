@@ -8,7 +8,7 @@ inherit multiprocessing systemd
 DESCRIPTION="VS Code in the browser"
 HOMEPAGE="https://coder.com/"
 
-MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4))$(ver_cut 5)"
+MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
 BASE_URI="https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux"
 
 # All binary packages depend on this
@@ -65,7 +65,7 @@ IUSE=""
 DEPEND=""
 RDEPEND="
 	${DEPEND}
-	>=net-libs/nodejs-18.17.1:0/18[ssl]
+	>=net-libs/nodejs-20.12.1:0/20[ssl]
 	sys-apps/ripgrep
 "
 
