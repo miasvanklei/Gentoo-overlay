@@ -1,0 +1,18 @@
+--- a/src/data/debuggers/internal/lldbrc	2024-05-24 14:30:32.000000000 +0200
++++ b/src/data/debuggers/internal/lldbrc	2024-06-15 10:13:24.643142107 +0200
+@@ -48,9 +48,14 @@
+ Name[zh_CN]=lldb
+ Name[zh_TW]=lldb
+ TryExec=lldb
+-Backends=KCrash
++Backends=KCrash|coredump-core
+ 
+ [KCrash]
+ Exec=lldb -p %pid
+ ExecInputFile=%tempfile
+ BatchCommands=settings set term-width 200\nthread info\nbt all
++
++[coredump-core]
++Exec=lldb --core %corefile %execpath
++ExecInputFile=%tempfile
++BatchCommands=settings set term-width 200\nthread info\nbt all
