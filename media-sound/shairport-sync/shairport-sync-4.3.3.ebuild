@@ -71,6 +71,7 @@ src_configure() {
 		--with-pipe \
 		--with-stdout \
 		--with-systemd \
+		--without-create-user-group \
 		$(use_with airplay-2) \
 		$(use_with alsa) \
 		$(use_with convolution) \
