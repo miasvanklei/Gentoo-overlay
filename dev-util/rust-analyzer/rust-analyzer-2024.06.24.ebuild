@@ -40,6 +40,7 @@ CRATES="
 	derive_arbitrary@1.3.2
 	directories@5.0.1
 	dirs-sys@0.4.1
+	dirs@5.0.1
 	dissimilar@1.0.9
 	dot@0.1.4
 	drop_bomb@0.1.5
@@ -70,7 +71,7 @@ CRATES="
 	kqueue@1.0.8
 	la-arena@0.3.1
 	lazy_static@1.4.0
-	libc@0.2.154
+	libc@0.2.155
 	libloading@0.8.3
 	libmimalloc-sys@0.1.37
 	libredox@0.1.3
