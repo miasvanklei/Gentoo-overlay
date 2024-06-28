@@ -251,4 +251,27 @@ DEPEND="dev-lang/rust
         !dev-lang/rust[rust-analyzer]
 "
 
-S="${WORKDIR}/${PN}-${MY_PV}/crates/rust-analyzer"
+S="${WORKDIR}/${PN}-${MY_PV}"
+
+src_configure() {
+	local myfeatures=(
+		sysroot-abi
+	)
+
+	cargo_src_configure
+}
+
+src_compile() {
+        cargo_gen_config
+        cargo_src_compile -p proc-macro-srv-cli
+        cargo_src_compile -p rust-analyzer
+}
+
+src_install() {
+	pushd crates/rust-analyzer
+        cargo_src_install
+	popd
+	pushd crates/proc-macro-srv-cli
+        cargo_src_install
+}
+
