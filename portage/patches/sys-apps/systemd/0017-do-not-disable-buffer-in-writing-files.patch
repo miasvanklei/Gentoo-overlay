@@ -67,13 +67,13 @@ index f5c0e04cec..272b920022 100644
 -        r = write_string_file(path, uid_map, WRITE_STRING_FILE_DISABLE_BUFFER);
 +        r = write_string_file(path, uid_map, 0);
          if (r < 0)
-                 return log_error_errno(r, "Failed to write UID map: %m");
+                 return log_debug_errno(r, "Failed to write UID map: %m");
  
          xsprintf(path, "/proc/" PID_FMT "/gid_map", pid);
 -        r = write_string_file(path, gid_map, WRITE_STRING_FILE_DISABLE_BUFFER);
 +        r = write_string_file(path, gid_map, 0);
          if (r < 0)
-                 return log_error_errno(r, "Failed to write GID map: %m");
+                 return log_debug_errno(r, "Failed to write GID map: %m");
  
 diff --git a/src/basic/process-util.c b/src/basic/process-util.c
 index 0747c14c1c..8d0c5aae92 100644
@@ -160,8 +160,8 @@ index 4cac3f6a89..bebe2cd120 100644
                          u->freezer_state = FREEZER_THAWING;
          }
  
--        r = write_string_file(path, one_zero(action == FREEZER_FREEZE), WRITE_STRING_FILE_DISABLE_BUFFER);
-+        r = write_string_file(path, one_zero(action == FREEZER_FREEZE), 0);
+-        r = write_string_file(path, one_zero(target == FREEZER_FROZEN), WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(path, one_zero(target == FREEZER_FROZEN), 0);
          if (r < 0)
                  return r;
  
@@ -209,11 +209,11 @@ index 28907386a4..f9e45349a7 100644
 --- a/src/home/homework.c
 +++ b/src/home/homework.c
 @@ -278,7 +278,7 @@ static void drop_caches_now(void) {
-          * for details. We write "2" into /proc/sys/vm/drop_caches to ensure dentries/inodes are flushed, but
+          * for details. We write "3" into /proc/sys/vm/drop_caches to ensure dentries/inodes are flushed, but
           * not more. */
  
--        r = write_string_file("/proc/sys/vm/drop_caches", "2\n", WRITE_STRING_FILE_DISABLE_BUFFER);
-+        r = write_string_file("/proc/sys/vm/drop_caches", "2\n", 0);
+-        r = write_string_file("/proc/sys/vm/drop_caches", "3\n", WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file("/proc/sys/vm/drop_caches", "3\n", 0);
          if (r < 0)
                  log_warning_errno(r, "Failed to drop caches, ignoring: %m");
          else
@@ -300,6 +300,15 @@ index 2ea83f05d3..8626bb184c 100644
          if (r == -EOPNOTSUPP && cg_is_threaded(path) > 0)
                  /* When the threaded mode is used, we cannot read/write the file. Let's return recognizable error. */
                  return -EUCLEAN;
+@@ -395,7 +395,7 @@
+ 
+         xsprintf(c, PID_FMT "\n", pid);
+ 
+-        return write_string_file_at(fd, "cgroup.procs", c, WRITE_STRING_FILE_DISABLE_BUFFER);
++        return write_string_file_at(fd, "cgroup.procs", c, 0);
+ }
+ 
+ int cg_attach_fallback(const char *controller, const char *path, pid_t pid) {
 @@ -887,7 +887,7 @@ int cg_enable_everywhere(
                                          return log_debug_errno(errno, "Failed to open cgroup.subtree_control file of %s: %m", p);
                          }
@@ -348,14 +357,14 @@ diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
 index 0ce79f815c..28aab475d0 100644
 --- a/src/udev/udev-rules.c
 +++ b/src/udev/udev-rules.c
-@@ -2357,7 +2357,6 @@ static int udev_rule_apply_token_to_event(
-                 log_rule_debug(dev, rules, "ATTR '%s' writing '%s'", buf, value);
-                 r = write_string_file(buf, value,
-                                       WRITE_STRING_FILE_VERIFY_ON_FAILURE |
--                                      WRITE_STRING_FILE_DISABLE_BUFFER |
-                                       WRITE_STRING_FILE_AVOID_NEWLINE |
-                                       WRITE_STRING_FILE_VERIFY_IGNORE_NEWLINE);
-                 if (r < 0)
+@@ -2706,7 +2706,6 @@
+                         log_event_debug(dev, token, "Writing ATTR{'%s'}=\"%s\".", buf, value);
+                         r = write_string_file(buf, value,
+                                               WRITE_STRING_FILE_VERIFY_ON_FAILURE |
+-                                              WRITE_STRING_FILE_DISABLE_BUFFER |
+                                               WRITE_STRING_FILE_AVOID_NEWLINE |
+                                               WRITE_STRING_FILE_VERIFY_IGNORE_NEWLINE);
+                         if (r < 0)
 diff --git a/src/vconsole/vconsole-setup.c b/src/vconsole/vconsole-setup.c
 index 7d3e9db73f..2d4a0c4c9d 100644
 --- a/src/vconsole/vconsole-setup.c
@@ -412,13 +421,13 @@ index 7d3e9db73f..2d4a0c4c9d 100644
                          log_debug("Using sleep state '%s'.", *state);
                          return 0;
 @@ -155,7 +155,7 @@
-         STRV_FOREACH(mode, modes) {
-                 int k;
+         assert(path);
  
--                k = write_string_file("/sys/power/disk", *mode, WRITE_STRING_FILE_DISABLE_BUFFER);
-+                k = write_string_file("/sys/power/disk", *mode, 0);
-                 if (k >= 0) {
-                         log_debug("Using sleep disk mode '%s'.", *mode);
+         STRV_FOREACH(mode, modes) {
+-                r = write_string_file(path, *mode, WRITE_STRING_FILE_DISABLE_BUFFER);
++                r = write_string_file(path, *mode, 0);
+                 if (r >= 0) {
+                         log_debug("Using sleep disk mode '%s' fir '%s'.", *mode, path);
                          return 0;
 --- a/src/storagetm/storagetm.c	2023-12-12 17:42:19.388248191 +0100
 +++ b/src/storagetm/storagetm.c	2023-12-12 17:42:32.721549994 +0100
