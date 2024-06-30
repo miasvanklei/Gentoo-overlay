@@ -46,10 +46,6 @@ RDEPEND="
 
 DEPEND="${RDEPEND}"
 
-PATCHES=(
-	"${FILESDIR}/remove_useradd-4.2.patch"
-)
-
 src_prepare() {
 	default
 	eautoreconf
