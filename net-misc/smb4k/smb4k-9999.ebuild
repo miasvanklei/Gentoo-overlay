@@ -22,6 +22,7 @@ SLOT="5"
 IUSE="+discovery plasma"
 
 DEPEND="
+	>=dev-libs/qtkeychain-0.14.2
 	>=dev-qt/qtbase-${QTMIN}:6[gui,network,widgets]
 	>=dev-qt/qtdeclarative-${QTMIN}:6
 	>=kde-frameworks/kauth-${KFMIN}:6
@@ -60,15 +61,10 @@ src_configure() {
 		-DSMB4K_WITH_WS_DISCOVERY=$(usex discovery)
 		-DSMB4K_INSTALL_PLASMOID=$(usex plasma)
 	)
+
 	ecm_src_configure
 }
 
 pkg_postinst() {
 	ecm_pkg_postinst
-	elog "Users of Samba 4.7 and above please note that for the time being,"
-	elog "the following setting has to be added to or changed in the [global]"
-	elog "section of the smb.conf file:"
-	elog
-	elog "[global]"
-	elog "client max protocol = NT1"
 }
