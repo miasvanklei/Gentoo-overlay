@@ -1,0 +1,345 @@
+diff --git a/docshell/base/nsDocShell.cpp b/docshell/base/nsDocShell.cpp
+--- a/docshell/base/nsDocShell.cpp
++++ b/docshell/base/nsDocShell.cpp
+@@ -1218,11 +1218,11 @@
+ 
+     if (mTiming) {
+       mTiming->NotifyUnloadEventStart();
+     }
+ 
+-    viewer->PageHide(aIsUnload);
++    viewer->PageHide(aIsUnload, false /* aIsEnteringBFCace */);
+ 
+     if (mTiming) {
+       mTiming->NotifyUnloadEventEnd();
+     }
+ 
+@@ -1357,11 +1357,12 @@
+       // calling SuspendRefreshURIs, which calls RefreshURIToQueue.
+       mBFCachedRefreshURIList = std::move(mSavedRefreshURIList);
+     }
+ 
+     mFiredUnloadEvent = true;
+-    viewer->PageHide(false);
++    MOZ_ASSERT(mozilla::BFCacheInParent());
++    viewer->PageHide(false, true /* aIsEnteringBFCache */);
+ 
+     RefPtr<PresShell> presShell = GetPresShell();
+     if (presShell) {
+       presShell->Freeze(false);
+     }
+diff --git a/docshell/base/nsIDocumentViewer.idl b/docshell/base/nsIDocumentViewer.idl
+--- a/docshell/base/nsIDocumentViewer.idl
++++ b/docshell/base/nsIDocumentViewer.idl
+@@ -117,11 +117,11 @@
+    * Exposes whether we're in the process of firing the beforeunload event.
+    * In this case, the corresponding docshell will not allow navigation.
+    */
+   readonly attribute boolean beforeUnloadFiring;
+ 
+-  [can_run_script] void pageHide(in boolean isUnload);
++  [can_run_script] void pageHide(in boolean isUnload, in boolean isEnteringBFCache);
+ 
+   /**
+    * All users of a content viewer are responsible for calling both
+    * close() and destroy(), in that order.
+    *
+diff --git a/dom/base/nsFocusManager.h b/dom/base/nsFocusManager.h
+--- a/dom/base/nsFocusManager.h
++++ b/dom/base/nsFocusManager.h
+@@ -257,11 +257,12 @@
+   /**
+    * Called when a document in a window has been hidden or otherwise can no
+    * longer accept focus.
+    */
+   MOZ_CAN_RUN_SCRIPT void WindowHidden(mozIDOMWindowProxy* aWindow,
+-                                       uint64_t aActionId);
++                                       uint64_t aActionId,
++                                       bool aIsEnteringBFCache);
+ 
+   /**
+    * Fire any events that have been delayed due to synchronized actions.
+    */
+   MOZ_CAN_RUN_SCRIPT void FireDelayedEvents(Document* aDocument);
+@@ -824,11 +825,12 @@
+  private:
+   // Content-only
+   // Sets the BrowsingContext corresponding to top-level Web content
+   // in the frontmost tab if focus is in Web content.
+   void SetActiveBrowsingContextInContent(
+-      mozilla::dom::BrowsingContext* aContext, uint64_t aActionId);
++      mozilla::dom::BrowsingContext* aContext, uint64_t aActionId,
++      bool aIsEnteringBFCache);
+ 
+   // Content-only
+   // Receives notification of another process setting the top-level Web
+   // content as being in the frontmost tab with focus in Web content.
+   void SetActiveBrowsingContextFromOtherProcess(
+diff --git a/dom/base/nsFocusManager.cpp b/dom/base/nsFocusManager.cpp
+--- a/dom/base/nsFocusManager.cpp
++++ b/dom/base/nsFocusManager.cpp
+@@ -393,10 +393,20 @@
+       "We only have use cases for this in the parent process");
+   NS_IF_ADDREF(*aBrowsingContext = GetFocusedBrowsingContextInChrome());
+   return NS_OK;
+ }
+ 
++NS_IMETHODIMP
++nsFocusManager::GetActiveContentBrowsingContext(
++    BrowsingContext** aBrowsingContext) {
++  MOZ_DIAGNOSTIC_ASSERT(
++      XRE_IsParentProcess(),
++      "We only have use cases for this in the parent process");
++  NS_IF_ADDREF(*aBrowsingContext = GetActiveBrowsingContextInChrome());
++  return NS_OK;
++}
++
+ nsresult nsFocusManager::SetFocusedWindowWithCallerType(
+     mozIDOMWindowProxy* aWindowToFocus, CallerType aCallerType) {
+   LOGFOCUS(("<<SetFocusedWindow begin>>"));
+ 
+   nsCOMPtr<nsPIDOMWindowOuter> windowToFocus =
+@@ -725,11 +735,12 @@
+ 
+   // set this as the active window
+   if (XRE_IsParentProcess()) {
+     mActiveWindow = window;
+   } else if (bc->IsTop()) {
+-    SetActiveBrowsingContextInContent(bc, aActionId);
++    SetActiveBrowsingContextInContent(bc, aActionId,
++                                      false /* aIsEnteringBFCache */);
+   }
+ 
+   // ensure that the window is enabled and visible
+   nsCOMPtr<nsIDocShellTreeOwner> treeOwner;
+   docShellAsItem->GetTreeOwner(getter_AddRefs(treeOwner));
+@@ -834,11 +845,12 @@
+   if (XRE_IsParentProcess()) {
+     mActiveWindow = nullptr;
+   } else {
+     BrowsingContext* bc = window->GetBrowsingContext();
+     if (bc == bc->Top()) {
+-      SetActiveBrowsingContextInContent(nullptr, aActionId);
++      SetActiveBrowsingContextInContent(nullptr, aActionId,
++                                        false /* aIsEnteringBFCache */);
+     }
+   }
+ 
+   if (mFocusedWindow) {
+     Blur(nullptr, nullptr, true, true, false, aActionId);
+@@ -1023,11 +1035,11 @@
+     EnsureCurrentWidgetFocused(CallerType::System);
+   }
+ }
+ 
+ void nsFocusManager::WindowHidden(mozIDOMWindowProxy* aWindow,
+-                                  uint64_t aActionId) {
++                                  uint64_t aActionId, bool aIsEnteringBFCache) {
+   // if there is no window or it is not the same or an ancestor of the
+   // currently focused window, just return, as the current focus will not
+   // be affected.
+ 
+   if (!aWindow) {
+@@ -1184,11 +1196,11 @@
+ 
+   if (!XRE_IsParentProcess() &&
+       mActiveBrowsingContextInContent ==
+           docShellBeingHidden->GetBrowsingContext() &&
+       mActiveBrowsingContextInContent->GetIsInBFCache()) {
+-    SetActiveBrowsingContextInContent(nullptr, aActionId);
++    SetActiveBrowsingContextInContent(nullptr, aActionId, aIsEnteringBFCache);
+   }
+ 
+   // if the window being hidden is an ancestor of the focused window, adjust
+   // the focused window so that it points to the one being hidden. This
+   // ensures that the focused window isn't in a chain of frames that doesn't
+@@ -5121,11 +5133,12 @@
+     // we don't want changes from the past to take effect.
+   }
+ }
+ 
+ void nsFocusManager::SetActiveBrowsingContextInContent(
+-    mozilla::dom::BrowsingContext* aContext, uint64_t aActionId) {
++    mozilla::dom::BrowsingContext* aContext, uint64_t aActionId,
++    bool aIsEnteringBFCache) {
+   MOZ_ASSERT(!XRE_IsParentProcess());
+   MOZ_ASSERT(!aContext || aContext->IsInProcess());
+   mozilla::dom::ContentChild* contentChild =
+       mozilla::dom::ContentChild::GetSingleton();
+   MOZ_ASSERT(contentChild);
+@@ -5137,14 +5150,19 @@
+          "the active browsing context due to a stale action id %" PRIu64 ".",
+          aContext, aActionId));
+     return;
+   }
+ 
++  MOZ_ASSERT_IF(aIsEnteringBFCache, mozilla::BFCacheInParent());
+   if (aContext != mActiveBrowsingContextInContent) {
+     if (aContext) {
+       contentChild->SendSetActiveBrowsingContext(aContext, aActionId);
+-    } else if (mActiveBrowsingContextInContent) {
++    } else if (mActiveBrowsingContextInContent && !aIsEnteringBFCache) {
++      // No need to tell the parent process to update the active browsing
++      // context to null if we are entering BFCache, because the browsing
++      // context that is about to show will update it.
++      //
+       // We want to sync this over only if this isn't happening
+       // due to the active BrowsingContext switching processes,
+       // in which case the BrowserChild has already marked itself
+       // as destroying.
+       nsPIDOMWindowOuter* outer =
+diff --git a/dom/base/nsGlobalWindowInner.h b/dom/base/nsGlobalWindowInner.h
+--- a/dom/base/nsGlobalWindowInner.h
++++ b/dom/base/nsGlobalWindowInner.h
+@@ -464,11 +464,12 @@
+   void RiskyUnlink();
+ #endif
+ 
+   virtual bool TakeFocus(bool aFocus, uint32_t aFocusMethod) override;
+   MOZ_CAN_RUN_SCRIPT_BOUNDARY virtual void SetReadyForFocus() override;
+-  MOZ_CAN_RUN_SCRIPT_BOUNDARY virtual void PageHidden() override;
++  MOZ_CAN_RUN_SCRIPT_BOUNDARY virtual void PageHidden(
++      bool aIsEnteringBFCache) override;
+   virtual nsresult DispatchAsyncHashchange(nsIURI* aOldURI,
+                                            nsIURI* aNewURI) override;
+   virtual nsresult DispatchSyncPopState() override;
+ 
+   // Inner windows only.
+diff --git a/dom/base/nsGlobalWindowInner.cpp b/dom/base/nsGlobalWindowInner.cpp
+--- a/dom/base/nsGlobalWindowInner.cpp
++++ b/dom/base/nsGlobalWindowInner.cpp
+@@ -4475,18 +4475,19 @@
+     nsCOMPtr<nsPIDOMWindowOuter> outerWindow = GetOuterWindow();
+     fm->WindowShown(outerWindow, oldNeedsFocus);
+   }
+ }
+ 
+-void nsGlobalWindowInner::PageHidden() {
++void nsGlobalWindowInner::PageHidden(bool aIsEnteringBFCache) {
+   // the window is being hidden, so tell the focus manager that the frame is
+   // no longer valid. Use the persisted field to determine if the document
+   // is being destroyed.
+ 
+   if (RefPtr<nsFocusManager> fm = nsFocusManager::GetFocusManager()) {
+     nsCOMPtr<nsPIDOMWindowOuter> outerWindow = GetOuterWindow();
+-    fm->WindowHidden(outerWindow, nsFocusManager::GenerateFocusActionId());
++    fm->WindowHidden(outerWindow, nsFocusManager::GenerateFocusActionId(),
++                     aIsEnteringBFCache);
+   }
+ 
+   mNeedsFocus = true;
+ }
+ 
+diff --git a/dom/base/nsGlobalWindowOuter.h b/dom/base/nsGlobalWindowOuter.h
+--- a/dom/base/nsGlobalWindowOuter.h
++++ b/dom/base/nsGlobalWindowOuter.h
+@@ -429,11 +429,11 @@
+   NS_DECL_CYCLE_COLLECTION_SKIPPABLE_SCRIPT_HOLDER_CLASS_AMBIGUOUS(
+       nsGlobalWindowOuter, mozilla::dom::EventTarget)
+ 
+   virtual bool TakeFocus(bool aFocus, uint32_t aFocusMethod) override;
+   virtual void SetReadyForFocus() override;
+-  virtual void PageHidden() override;
++  virtual void PageHidden(bool aIsEnteringBFCache) override;
+ 
+   /**
+    * Set a arguments for this window. This will be set on the window
+    * right away (if there's an existing document) and it will also be
+    * installed on the window when the next document is loaded.
+diff --git a/dom/base/nsGlobalWindowOuter.cpp b/dom/base/nsGlobalWindowOuter.cpp
+--- a/dom/base/nsGlobalWindowOuter.cpp
++++ b/dom/base/nsGlobalWindowOuter.cpp
+@@ -6609,12 +6609,12 @@
+ 
+ void nsGlobalWindowOuter::SetReadyForFocus() {
+   FORWARD_TO_INNER_VOID(SetReadyForFocus, ());
+ }
+ 
+-void nsGlobalWindowOuter::PageHidden() {
+-  FORWARD_TO_INNER_VOID(PageHidden, ());
++void nsGlobalWindowOuter::PageHidden(bool aIsEnteringBFCache) {
++  FORWARD_TO_INNER_VOID(PageHidden, (aIsEnteringBFCache));
+ }
+ 
+ already_AddRefed<nsICSSDeclaration>
+ nsGlobalWindowOuter::GetComputedStyleHelperOuter(Element& aElt,
+                                                  const nsAString& aPseudoElt,
+diff --git a/dom/base/nsPIDOMWindow.h b/dom/base/nsPIDOMWindow.h
+--- a/dom/base/nsPIDOMWindow.h
++++ b/dom/base/nsPIDOMWindow.h
+@@ -572,11 +572,11 @@
+ 
+   /**
+    * Indicates that the page in the window has been hidden. This is used to
+    * reset the focus state.
+    */
+-  virtual void PageHidden() = 0;
++  virtual void PageHidden(bool aIsEnteringBFCache) = 0;
+ 
+   /**
+    * Instructs this window to asynchronously dispatch a hashchange event.  This
+    * method must be called on an inner window.
+    */
+@@ -1060,11 +1060,11 @@
+ 
+   /**
+    * Indicates that the page in the window has been hidden. This is used to
+    * reset the focus state.
+    */
+-  virtual void PageHidden() = 0;
++  virtual void PageHidden(bool aIsEnteringBFCache) = 0;
+ 
+   /**
+    * Return the window id of this window
+    */
+   uint64_t WindowID() const { return mWindowID; }
+diff --git a/dom/interfaces/base/nsIFocusManager.idl b/dom/interfaces/base/nsIFocusManager.idl
+--- a/dom/interfaces/base/nsIFocusManager.idl
++++ b/dom/interfaces/base/nsIFocusManager.idl
+@@ -55,10 +55,16 @@
+    * In content processes: The top-level Web content browsing context that
+    * focus is in if the application is active and focus is in Web content.
+    */
+   readonly attribute BrowsingContext activeBrowsingContext;
+ 
++  /**
++   * Parent-process only: The chrome process notion of content's active
++   * browsing context.
++   */
++  readonly attribute BrowsingContext activeContentBrowsingContext;
++
+   /**
+    * The child window within the activeWindow that is focused. This will
+    * always be activeWindow, a child window of activeWindow or null if no
+    * child window is focused. Setting the focusedWindow changes the focused
+    * window and raises the toplevel window it is in. If the current focus
+diff --git a/layout/base/nsDocumentViewer.cpp b/layout/base/nsDocumentViewer.cpp
+--- a/layout/base/nsDocumentViewer.cpp
++++ b/layout/base/nsDocumentViewer.cpp
+@@ -1328,11 +1328,11 @@
+   *aInEvent = mInPermitUnloadPrompt;
+   return NS_OK;
+ }
+ 
+ NS_IMETHODIMP
+-nsDocumentViewer::PageHide(bool aIsUnload) {
++nsDocumentViewer::PageHide(bool aIsUnload, bool aIsEnteringBFCache) {
+   AutoDontWarnAboutSyncXHR disableSyncXHRWarning;
+ 
+   mHidden = true;
+ 
+   if (!mDocument) {
+@@ -1350,11 +1350,11 @@
+   mDocument->OnPageHide(!aIsUnload, nullptr);
+ 
+   // inform the window so that the focus state is reset.
+   NS_ENSURE_STATE(mDocument);
+   nsPIDOMWindowOuter* window = mDocument->GetWindow();
+-  if (window) window->PageHidden();
++  if (window) window->PageHidden(aIsEnteringBFCache);
+ 
+   if (aIsUnload) {
+     // if Destroy() was called during OnPageHide(), mDocument is nullptr.
+     NS_ENSURE_STATE(mDocument);
+ 
+
