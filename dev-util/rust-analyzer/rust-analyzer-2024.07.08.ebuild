@@ -118,13 +118,11 @@ CRATES="
 	pulldown-cmark@0.9.6
 	quote@1.0.36
 	ra-ap-rustc_abi@0.53.0
-	ra-ap-rustc_index@0.44.0
 	ra-ap-rustc_index@0.53.0
-	ra-ap-rustc_index_macros@0.44.0
 	ra-ap-rustc_index_macros@0.53.0
 	ra-ap-rustc_lexer@0.53.0
 	ra-ap-rustc_parse_format@0.53.0
-	ra-ap-rustc_pattern_analysis@0.44.0
+	ra-ap-rustc_pattern_analysis@0.53.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
