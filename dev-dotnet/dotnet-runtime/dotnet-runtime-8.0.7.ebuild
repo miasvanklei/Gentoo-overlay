@@ -103,7 +103,6 @@ src_prepare() {
 	mkdir -p "${S}"/artifacts/obj || die
 	cp "${S}"/eng/native/version/runtime_version.h "${S}"/artifacts/obj/runtime_version.h
 
-	eapply "${FILESDIR}"/musl-lfs64.patch
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
 
 	eapply_user
