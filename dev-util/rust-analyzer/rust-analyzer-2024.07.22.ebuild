@@ -6,34 +6,34 @@
 EAPI=8
 
 CRATES="
-	addr2line@0.21.0
+	addr2line@0.22.0
 	adler@1.0.2
 	always-assert@0.2.0
-	anyhow@1.0.83
+	anyhow@1.0.86
 	arbitrary@1.3.2
 	arrayvec@0.7.4
 	autocfg@1.3.0
-	backtrace@0.3.71
+	backtrace@0.3.72
 	bitflags@1.3.2
 	bitflags@2.5.0
 	byteorder@1.5.0
-	camino@1.1.6
+	camino@1.1.7
 	cargo-platform@0.1.8
 	cargo_metadata@0.18.1
-	cc@1.0.97
+	cc@1.0.98
 	cfg-if@1.0.0
 	cfg_aliases@0.1.1
-	chalk-derive@0.97.0
-	chalk-ir@0.97.0
-	chalk-recursive@0.97.0
-	chalk-solve@0.97.0
+	chalk-derive@0.98.0
+	chalk-ir@0.98.0
+	chalk-recursive@0.98.0
+	chalk-solve@0.98.0
 	countme@3.0.1
 	cov-mark@2.0.0-pre.1
-	crc32fast@1.4.0
-	crossbeam-channel@0.5.12
+	crc32fast@1.4.2
+	crossbeam-channel@0.5.13
 	crossbeam-deque@0.8.5
 	crossbeam-epoch@0.9.18
-	crossbeam-utils@0.8.19
+	crossbeam-utils@0.8.20
 	ctrlc@3.4.4
 	dashmap@5.5.3
 	deranged@0.3.11
@@ -44,7 +44,7 @@ CRATES="
 	dissimilar@1.0.9
 	dot@0.1.4
 	drop_bomb@0.1.5
-	either@1.11.0
+	either@1.12.0
 	ena@0.14.3
 	equivalent@1.0.1
 	expect-test@1.5.0
@@ -55,7 +55,7 @@ CRATES="
 	fsevent-sys@4.1.0
 	fst@0.4.7
 	getrandom@0.2.15
-	gimli@0.28.1
+	gimli@0.29.0
 	hashbrown@0.14.5
 	heck@0.4.1
 	hermit-abi@0.3.9
@@ -73,7 +73,7 @@ CRATES="
 	lazy_static@1.4.0
 	libc@0.2.155
 	libloading@0.8.3
-	libmimalloc-sys@0.1.37
+	libmimalloc-sys@0.1.38
 	libredox@0.1.3
 	line-index@0.1.1
 	linked-hash-map@0.5.6
@@ -85,22 +85,22 @@ CRATES="
 	memchr@2.7.2
 	memmap2@0.5.10
 	memoffset@0.9.1
-	mimalloc@0.1.41
-	miniz_oxide@0.7.2
+	mimalloc@0.1.42
+	miniz_oxide@0.7.3
 	mio@0.8.11
 	miow@0.6.0
 	nix@0.28.0
 	nohash-hasher@0.2.0
 	notify@6.1.1
-	nu-ansi-term@0.49.0
+	nu-ansi-term@0.50.0
 	num-conv@0.1.0
 	num_cpus@1.16.0
-	object@0.32.2
 	object@0.33.0
+	object@0.35.0
 	once_cell@1.19.0
 	oorandom@11.1.3
 	option-ext@0.2.0
-	parking_lot@0.12.2
+	parking_lot@0.12.3
 	parking_lot_core@0.9.10
 	paste@1.0.15
 	percent-encoding@2.3.1
@@ -110,7 +110,7 @@ CRATES="
 	pin-project-lite@0.2.14
 	powerfmt@0.2.0
 	ppv-lite86@0.2.17
-	proc-macro2@1.0.82
+	proc-macro2@1.0.85
 	process-wrap@8.0.2
 	protobuf-support@3.2.0
 	protobuf@3.2.0
@@ -141,21 +141,22 @@ CRATES="
 	scoped-tls@1.0.1
 	scopeguard@1.2.0
 	semver@1.0.23
-	serde@1.0.201
-	serde_derive@1.0.201
+	serde@1.0.203
+	serde_derive@1.0.203
 	serde_json@1.0.117
 	serde_repr@0.1.19
-	serde_spanned@0.6.5
+	serde_spanned@0.6.6
 	sharded-slab@0.1.7
 	smallvec@1.13.2
-	smol_str@0.2.1
+	smol_str@0.2.2
 	snap@1.1.1
+	sptr@0.3.2
 	stable_deref_trait@1.2.0
-	syn@2.0.63
+	syn@2.0.66
 	synstructure@0.13.1
 	text-size@1.1.1
-	thiserror-impl@1.0.60
-	thiserror@1.0.60
+	thiserror-impl@1.0.61
+	thiserror@1.0.61
 	thread_local@1.1.8
 	tikv-jemalloc-ctl@0.5.4
 	tikv-jemalloc-sys@0.5.4+5.3.0-patched
@@ -164,16 +165,16 @@ CRATES="
 	time@0.3.36
 	tinyvec@1.6.0
 	tinyvec_macros@0.1.1
-	toml@0.8.12
-	toml_datetime@0.6.5
-	toml_edit@0.22.12
+	toml@0.8.14
+	toml_datetime@0.6.6
+	toml_edit@0.22.14
 	tracing-attributes@0.1.27
 	tracing-core@0.1.32
 	tracing-log@0.2.0
 	tracing-subscriber@0.3.18
-	tracing-tree@0.3.0
+	tracing-tree@0.3.1
 	tracing@0.1.40
-	triomphe@0.1.11
+	triomphe@0.1.12
 	typed-arena@2.0.2
 	ungrammar@1.16.1
 	unicase@2.7.0
@@ -212,7 +213,7 @@ CRATES="
 	windows_x86_64_gnullvm@0.52.5
 	windows_x86_64_msvc@0.48.5
 	windows_x86_64_msvc@0.52.5
-	winnow@0.6.8
+	winnow@0.6.11
 	write-json@0.1.4
 	xflags-macros@0.3.2
 	xflags@0.3.2
