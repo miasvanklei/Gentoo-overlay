@@ -9,7 +9,7 @@ inherit llvm pax-utils optfeature toolchain-funcs
 # for everything else, run with network-sandbox and wait for the crash
 
 MY_LIBUV_V="ca3a5a431a1c37859b6508e6b2a288092337029a"
-MY_BLASTRAMPOLINE_V="81316155d4838392e8462a92bcac3eebe9acd0c7"
+MY_BLASTRAMPOLINE_V="ff05ebb4e450deda0aebe8dce4d4f054e23fecfc"
 MY_LIBWHICH_V="81e9723c0273d78493dc8c8ed570f68d9ce7e89e"
 MY_ITTAPI_V="0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 
@@ -18,10 +18,9 @@ DELIMITEDFILES_V="db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
 DISTRIBUTED_V="6c7cdb5860fa5cb9ca191ce9c52a3d25a9ab3781"
 DOWNLOADS_V="a9d274ff6588cc5dbfa90e908ee34c2408bab84a"
 JULIASYNTAX_V="4f1731d6ce7c2465fc21ea245110b7a39f34658a"
-JULIASYNTAXHIGHLIGHTING_V="4110caaf4fcdf0c614fd3ecd7c5bf589ca82ac63"
 LAZYARTIFACTS_V="e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
 NETWORKOPTIONS_V="aab83e5dd900c874826d430e25158dff43559d78"
-PKG_V="280f702c1ace34b51cd4551ed448b19516c36849"
+PKG_V="8457d3eff518f75bbff2d8b183e66e44ae5c47f1"
 SHA_V="aaf2df61ff8c3898196587a375d3cf213bd40b41"
 SPARSEARRAYS_V="cb602d7b7cf46057ddc87d23cda2bdd168a548ac"
 STATISTICS_V="68869af06e8cdeb7aba1d5259de602da7328057f"
@@ -44,7 +43,6 @@ SRC_URI="
 	https://api.github.com/repos/JuliaLang/Distributed.jl/tarball/${DISTRIBUTED_V} -> ${PN}-stdlib-Distributed-${DISTRIBUTED_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/Downloads.jl/tarball/${DOWNLOADS_V} -> ${PN}-stdlib-Downloads-${DOWNLOADS_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/JuliaSyntax.jl/tarball/${JULIASYNTAX_V} -> ${PN}-JuliaSyntax-${JULIASYNTAX_V}.tar.gz
-	https://api.github.com/repos/JuliaLang/JuliaSyntaxHighlighting.jl/tarball/${JULIASYNTAXHIGHLIGHTING_V} -> ${PN}-stdlib-JuliaSyntaxHighlighting-${JULIASYNTAXHIGHLIGHTING_V}.tar.gz
 	https://api.github.com/repos/JuliaPackaging/LazyArtifacts.jl/tarball/${LAZYARTIFACTS_V} -> ${PN}-stdlib-LazyArtifacts-${LAZYARTIFACTS_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/NetworkOptions.jl/tarball/${NETWORKOPTIONS_V} -> ${PN}-stdlib-NetworkOptions-${NETWORKOPTIONS_V}.tar.gz
 	https://api.github.com/repos/JuliaLang/Pkg.jl/tarball/${PKG_V} -> ${PN}-stdlib-Pkg-${PKG_V}.tar.gz
