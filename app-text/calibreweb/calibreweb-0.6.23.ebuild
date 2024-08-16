@@ -49,8 +49,10 @@ RDEPEND="
 	)
 	kobi? (
 		dev-python/jsonschema[${PYTHON_USEDEP}]
-)
+	)
 "
+
+PATCHES="${FILESDIR}/remove-required-optional-deps.patch"
 
 src_install() {
 	distutils-r1_src_install
