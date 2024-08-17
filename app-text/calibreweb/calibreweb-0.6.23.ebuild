@@ -24,8 +24,8 @@ RDEPEND="
 	dev-python/chardet[${PYTHON_USEDEP}]
 	dev-python/flask[${PYTHON_USEDEP}]
 	dev-python/flask-babel[${PYTHON_USEDEP}]
+	dev-python/flask-httpauth[${PYTHON_USEDEP}]
 	dev-python/flask-limiter[${PYTHON_USEDEP}]
-	dev-python/flask-login[${PYTHON_USEDEP}]
 	dev-python/flask-principal[${PYTHON_USEDEP}]
 	dev-python/flask-wtf[${PYTHON_USEDEP}]
 	dev-python/pycountry[${PYTHON_USEDEP}]
@@ -39,7 +39,6 @@ RDEPEND="
 	>=dev-python/tornado-6.3[${PYTHON_USEDEP}] <dev-python/tornado-6.5[${PYTHON_USEDEP}]
 	dev-python/unidecode[${PYTHON_USEDEP}]
 	dev-python/wand[${PYTHON_USEDEP}]
-	dev-python/werkzeug[${PYTHON_USEDEP}]
 	metadata? (
 		dev-python/beautifulsoup4[${PYTHON_USEDEP}]
 		dev-python/faust-cchardet[${PYTHON_USEDEP}]
