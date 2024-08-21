@@ -8,7 +8,12 @@ inherit multiprocessing systemd
 DESCRIPTION="VS Code in the browser"
 HOMEPAGE="https://coder.com/"
 
-MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4))$(ver_cut 5)"
+if [[ ${PV} == *rc* ]] ; then
+	MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
+else
+	MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4))"
+fi
+
 BASE_URI="https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux"
 
 # All binary packages depend on this
@@ -50,6 +55,7 @@ PREPARE_VSCODE_BINMODS=(
 
 CLEANUP_VSCODE_BINMODS=(
         "${REBUILD_VSCODE_BINMODS[@]}"
+	@vscode/deviceid
 	@vscode/windows-process-tree
 	@vscode/windows-registry
 	kerberos
@@ -115,9 +121,6 @@ src_prepare() {
 
 	# remove binaries from modules
 	cleanup_binmods
-
-	# remove broken symlinks
-	rm -r lib/vscode/extensions/node_modules/.bin || die
 
 	# not needed
 	rm ${S}/postinstall.sh || die
