@@ -1,0 +1,19 @@
+--- a/src/server.cpp	2024-05-24 19:11:26.000000000 +0200
++++ b/src/server.cpp	2024-08-09 23:12:13.958357765 +0200
+@@ -115,8 +115,14 @@
+ 
+ void Server::updateDefaultDevices()
+ {
+-    Sink *sink = findByName<Sink>(Context::instance()->d->m_sinks.data(), d->m_defaultSinkName);
+-    Source *source = findByName<Source>(Context::instance()->d->m_sources.data(), d->m_defaultSourceName);
++    Context *context = Context::instance();
++
++    if (context == nullptr) {
++        return;
++    }
++
++    Sink *sink = findByName<Sink>(context->d->m_sinks.data(), d->m_defaultSinkName);
++    Source *source = findByName<Source>(context->d->m_sources.data(), d->m_defaultSourceName);
+ 
+     if (d->m_defaultSink != sink) {
+         qCDebug(PULSEAUDIOQT) << "Default sink changed" << sink;
