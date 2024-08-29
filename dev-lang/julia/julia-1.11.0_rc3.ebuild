@@ -9,7 +9,7 @@ inherit llvm pax-utils optfeature toolchain-funcs
 # for everything else, run with network-sandbox and wait for the crash
 
 MY_LIBUV_V="ca3a5a431a1c37859b6508e6b2a288092337029a"
-MY_BLASTRAMPOLINE_V="ff05ebb4e450deda0aebe8dce4d4f054e23fecfc"
+MY_BLASTRAMPOLINE_V="05083d50611b5538df69706f0a952d8e642b0b4b"
 MY_LIBWHICH_V="81e9723c0273d78493dc8c8ed570f68d9ce7e89e"
 MY_ITTAPI_V="0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 
@@ -20,11 +20,11 @@ DOWNLOADS_V="a9d274ff6588cc5dbfa90e908ee34c2408bab84a"
 JULIASYNTAX_V="4f1731d6ce7c2465fc21ea245110b7a39f34658a"
 LAZYARTIFACTS_V="e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
 NETWORKOPTIONS_V="aab83e5dd900c874826d430e25158dff43559d78"
-PKG_V="8457d3eff518f75bbff2d8b183e66e44ae5c47f1"
+PKG_V="2ff691035e9b2780cbd2fcb8dd30b640d85edde2"
 SHA_V="aaf2df61ff8c3898196587a375d3cf213bd40b41"
 SPARSEARRAYS_V="cb602d7b7cf46057ddc87d23cda2bdd168a548ac"
 STATISTICS_V="68869af06e8cdeb7aba1d5259de602da7328057f"
-STYLEDSTRINGS_V="ac472083359dde956aed8c61d43b8158ac84d9ce"
+STYLEDSTRINGS_V="f6035eb97b516862b16e36cab2ecc6ea8adc3d7c"
 SUITEPARSE_V="e8285dd13a6d5b5cf52d8124793fc4d622d07554"
 TAR_V="81888a33704b233a2ad6f82f84456a1dd82c87f0"
 LIBCURL_V="a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
@@ -90,7 +90,7 @@ RDEPEND+="
 	sci-libs/umfpack:0/6
 	>=sci-mathematics/dsfmt-2.2.4
 	sys-libs/llvm-libunwind:=
-	sys-devel/llvm:18=
+	sys-devel/llvm:=
 	sys-libs/zlib:0=
 	amd64? ( sci-libs/openblas[index-64bit] )
 "
@@ -193,6 +193,7 @@ src_configure() {
 		USE_SYSTEM_PATCHELF:=1
 		USE_SYSTEM_ZLIB:=1
 		USE_SYSTEM_P7ZIP:=1
+		WITH_TERMINFO=0
 		VERBOSE:=1
 	EOF
 }
