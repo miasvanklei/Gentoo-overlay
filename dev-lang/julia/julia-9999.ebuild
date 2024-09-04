@@ -1,0 +1,230 @@
+# Copyright 1999-2024 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+
+EAPI=8
+
+inherit git-r3 llvm pax-utils optfeature toolchain-funcs
+
+# correct versions for stdlibs are in deps/checksums
+# for everything else, run with network-sandbox and wait for the crash
+
+DESCRIPTION="High-performance programming language for technical computing"
+HOMEPAGE="https://julialang.org/"
+
+EGIT_REPO_URI="https://github.com/JuliaLang/julia.git"
+
+STDLIBS=(
+	# repo    package name    hash
+	"JuliaIO ArgTools.jl 997089b9cd56404b40ff766759662e16dc1aab4b"
+	"JuliaLang DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
+	"JuliaLang Distributed.jl 6c7cdb5860fa5cb9ca191ce9c52a3d25a9ab3781"
+	"JuliaLang Downloads.jl 1061ecc377a053fce0df94e1a19e5260f7c030f5"
+	"JuliaLang JuliaSyntaxHighlighting.jl b89dd99db56700c47434df6106b6c6afd1c9ed01"
+	"JuliaPackaging LazyArtifacts.jl e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
+	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
+	"JuliaLang Pkg.jl 299a356100f54215388502148979189aff760822"
+	"JuliaCrypto SHA.jl aaf2df61ff8c3898196587a375d3cf213bd40b41"
+	"JuliaLang SparseArrays.jl 0dd8d45d55b305458d0d3d3451057589b684f72f"
+	"JuliaStats Statistics.jl 68869af06e8cdeb7aba1d5259de602da7328057f"
+	"JuliaLang StyledStrings.jl f6035eb97b516862b16e36cab2ecc6ea8adc3d7c"
+	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
+	"JuliaLang Tar.jl 1114260f5c7a7b59441acadca2411fa227bb8a3b"
+	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
+)
+
+BUNDLED_DEPS=(
+	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
+	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
+	"JuliaLang libuv c57e7f06cbe697ca8ea9215ce054a608c451b193"
+	"JuliaLinearAlgebra libblastrampoline 05083d50611b5538df69706f0a952d8e642b0b4b"
+	"JuliaLang JuliaSyntax.jl 4f1731d6ce7c2465fc21ea245110b7a39f34658a"
+)
+
+update_SRC_URI() {
+	local src_uris=( "${STDLIBS[@]}" "${BUNDLED_DEPS[@]}" )
+
+        local repo pn pv
+        for p in "${src_uris[@]}"; do
+                set -- $p
+                repo=$1 pn=$2 pv=$3
+
+                SRC_URI+=" https://api.github.com/repos/${repo}/${pn}/tarball/${pv} -> ${PN}-${pn}-${pv}.tar.gz"
+        done
+}
+
+update_SRC_URI
+
+LICENSE="MIT"
+SLOT="0"
+KEYWORDS="~amd64 ~arm64"
+IUSE=""
+
+LLVM_MAX_SLOT=18
+
+RDEPEND+="
+	app-arch/p7zip
+	dev-libs/gmp:0=
+	>=dev-libs/libpcre2-10.23:0=[jit,unicode]
+	dev-libs/mpfr:0=
+	dev-libs/libutf8proc:0=[-cjk]
+	dev-libs/libgit2:=
+	dev-util/patchelf
+	>=net-libs/mbedtls-2.2
+	net-misc/curl[http2,ssh]
+	sci-libs/amd:0/3
+	sci-libs/arpack:0
+	sci-libs/btf:0/2
+	sci-libs/camd:0/3
+	sci-libs/ccolamd:0/3
+	sci-libs/cholmod:0/5
+	sci-libs/colamd:0/3
+	sci-libs/cxsparse:0/4
+	sci-libs/fftw:3.0=[threads]
+	sci-libs/klu:0/2
+	sci-libs/ldl:0/3
+	sci-libs/openblas:0
+	sci-libs/openlibm:0
+	sci-libs/spqr:0/4
+	sci-libs/rbio:0/4
+	sci-libs/umfpack:0/6
+	>=sci-mathematics/dsfmt-2.2.4
+	sys-libs/llvm-libunwind:=
+	sys-devel/llvm:=
+	sys-libs/zlib:0=
+	amd64? ( sci-libs/openblas[index-64bit] )
+"
+
+DEPEND="${RDEPEND}
+	dev-util/patchelf
+	virtual/pkgconfig"
+
+PATCHES=(
+	"${FILESDIR}"/no_symlink_llvm.patch
+	"${FILESDIR}"/link-llvm-shared.patch
+	"${FILESDIR}"/dont-assume-gfortran.patch
+	"${FILESDIR}"/fix-hardcoded-libs.patch
+	"${FILESDIR}"/disable-install-docs.patch
+	"${FILESDIR}"/support-compiler_rt_libunwind.patch
+	"${FILESDIR}"/fix-textrel.patch
+)
+
+S="${WORKDIR}/${P/_/-}"
+
+pkg_setup() {
+	llvm_pkg_setup
+}
+
+copy_bundled_deps() {
+	local dest="$1"
+	shift
+	local filenames=("$@")
+
+	mkdir -p "${S}/${dest}/srccache/"
+	for p in "${filenames[@]}"; do
+                set -- $p
+                repo=$1 pn=$2 pv=$3
+		filename="${pn}-${pv}.tar.gz"
+
+		cp "${DISTDIR}/${PN}-${filename}" "${S}/${dest}/srccache/${filename/.jl/}" || die
+	done
+
+}
+
+src_unpack() {
+	git-r3_fetch
+	git-r3_checkout
+
+	copy_bundled_deps stdlib "${STDLIBS[@]}"
+	copy_bundled_deps deps "${BUNDLED_DEPS[@]}"
+
+	rename "lib" "" "${S}"/deps/srccache/libblastrampoline-* || die
+}
+
+src_prepare() {
+	default
+
+	# Sledgehammer:
+	# - prevent fetching of bundled stuff in compile and install phase
+	# - respect CFLAGS
+	# - respect EPREFIX and Gentoo specific paths
+
+	sed -i \
+		-e "\|SHIPFLAGS :=|c\\SHIPFLAGS := ${CFLAGS}" \
+		Make.inc || die
+
+	sed -i \
+		-e "s|ar -rcs|$(tc-getAR) -rcs|g" \
+		src/Makefile || die
+
+	# disable doc install starting	git fetching
+	sed -i -e 's~install: $(build_depsbindir)/stringreplace docs~install: $(build_depsbindir)/stringreplace~' Makefile || die
+
+	# disable binary wrappers download
+	sed -i -e 's|get-$$($(1)_JLL_NAME)_jll||g' stdlib/Makefile || die
+}
+
+src_configure() {
+	# julia does not play well with the system versions of libuv
+	# USE_SYSTEM_LIBM=0 implies using external openlibm
+	cat <<-EOF > Make.user
+		LOCALBASE:=${EPREFIX}/usr
+		override prefix:=${EPREFIX}/usr
+		override libdir:=\$(prefix)/$(get_libdir)
+		override CC:=$(tc-getCC)
+		override CXX:=$(tc-getCXX)
+		override AR:=$(tc-getAR)
+
+		BUNDLE_DEBUG_LIBS:=0
+		USE_BINARYBUILDER:=0
+		USE_SYSTEM_CSL:=1
+		USE_SYSTEM_LLVM:=1
+		USE_SYSTEM_LLD:=1
+		USE_SYSTEM_LIBUNWIND:=1
+		USE_SYSTEM_PCRE:=1
+		USE_SYSTEM_LIBM:=0
+		USE_SYSTEM_OPENLIBM:=1
+		USE_SYSTEM_DSFMT:=1
+		USE_SYSTEM_BLAS:=1
+		USE_SYSTEM_LAPACK:=1
+		USE_SYSTEM_GMP:=1
+		USE_SYSTEM_MPFR:=1
+		USE_SYSTEM_LIBSUITESPARSE:=1
+		USE_SYSTEM_LIBUV:=0
+		USE_SYSTEM_UTF8PROC:=1
+		USE_SYSTEM_MBEDTLS:=1
+		USE_SYSTEM_LIBSSH2:=1
+		USE_SYSTEM_NGHTTP2:=1
+		USE_SYSTEM_CURL:=1
+		USE_SYSTEM_LIBGIT2:=1
+		USE_SYSTEM_PATCHELF:=1
+		USE_SYSTEM_ZLIB:=1
+		USE_SYSTEM_P7ZIP:=1
+		WITH_TERMINFO=0
+		VERBOSE:=1
+	EOF
+}
+
+src_compile() {
+	# Julia accesses /proc/self/mem on Linux.
+	addpredict /proc/self/mem
+
+	default
+	pax-mark m "$(file usr/bin/julia-* | awk -F : '/ELF/ {print $1}')"
+}
+
+src_install() {
+	emake install DESTDIR="${D}"
+
+	dodoc README.md
+
+	mv "${ED}"/usr/etc/julia "${ED}"/etc || die
+	rmdir "${ED}"/usr/etc || die
+	rmdir "${ED}"/usr/share/doc/julia || die
+
+	# Link ca-certificates.crt, bug: https://bugs.gentoo.org/888978
+	dosym -r /etc/ssl/certs/ca-certificates.crt /usr/share/julia/cert.pem
+}
+
+pkg_postinst() {
+	optfeature "Julia Plots" sci-visualization/gr
+}
