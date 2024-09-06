@@ -11,7 +11,6 @@ HOMEPAGE="https://mlir.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
-KEYWORDS="~amd64 ~arm64"
 IUSE="debug python test"
 REQUIRED_USE="
 	python? ( ${PYTHON_REQUIRED_USE} )"
@@ -37,11 +36,12 @@ LLVM_USE_TARGETS=provide
 llvm.org_set_globals
 
 pkg_setup() {
-	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
 	use python && python-single-r1_pkg_setup
 }
 
 src_configure() {
+	llvm_prepend_path "${LLVM_MAJOR}"
+
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}"
 
