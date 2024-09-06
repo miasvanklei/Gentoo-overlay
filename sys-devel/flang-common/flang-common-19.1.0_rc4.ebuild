@@ -8,7 +8,6 @@ HOMEPAGE="https://llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64"
 IUSE="default-compiler-rt default-libcxx llvm-libunwind"
 
 PDEPEND="
