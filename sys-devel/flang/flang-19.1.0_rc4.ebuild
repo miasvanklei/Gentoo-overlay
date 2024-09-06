@@ -11,7 +11,6 @@ HOMEPAGE="https://flang.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
-KEYWORDS="~amd64 ~arm64"
 IUSE="default-compiler-rt"
 
 RDEPEND="
@@ -26,6 +25,9 @@ RDEPEND="
         ${DEPEND}
         >=sys-devel/flang-common-${PV}
 "
+PDEPEND="
+        >=sys-devel/flang-toolchain-symlinks-19:${LLVM_MAJOR}
+"
 
 LLVM_COMPONENTS=( flang cmake )
 LLVM_USE_TARGETS=provide
@@ -35,11 +37,9 @@ PATCHES=(
 	"${FILESDIR}/fix-finding-mlir-tblgen.patch"
 )
 
-pkg_setup() {
-	LLVM_MAX_SLOT=${PV%%.*} llvm_pkg_setup
-}
-
 src_configure() {
+	llvm_prepend_path "${LLVM_MAJOR}"
+
 	local llvmdir="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}"
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_PREFIX=${llvmdir}
@@ -55,20 +55,4 @@ src_configure() {
 	)
 
 	cmake_src_configure
-}
-
-src_install() {
-	cmake_src_install
-
-	# Apply CHOST to flang tools
-	local flang_tools=( gfortran flang )
-        local abi i
-
-	for abi in $(get_all_abis); do
-		local abi_chost=$(get_abi_CHOST "${abi}")
-		for i in "${flang_tools[@]}"; do
-			dosym "flang-new" "/usr/lib/llvm/${LLVM_MAJOR}/bin/${abi_chost}-${i}"
-			dosym "flang-new" "/usr/lib/llvm/${LLVM_MAJOR}/bin/${i}"
-		done
-	done
 }
