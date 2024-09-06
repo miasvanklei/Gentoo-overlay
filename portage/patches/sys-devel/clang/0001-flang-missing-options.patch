@@ -1,24 +1,5 @@
 --- a/clang/include/clang/Driver/Options.td	2024-05-03 14:55:42.186405492 +0200
 +++ b/clang/include/clang/Driver/Options.td	2024-05-03 14:57:49.925010290 +0200
-@@ -5201,7 +5201,8 @@
-   Visibility<[ClangOption, CC1Option]>, Group<Action_Group>,
-   HelpText<"Provide information about a particular module file">;
- def mthumb : Flag<["-"], "mthumb">, Group<m_Group>;
--def mtune_EQ : Joined<["-"], "mtune=">, Group<m_Group>,
-+def mtune_EQ : Joined<["-"], "mtune=">,
-+  Visibility<[ClangOption, CLOption, FlangOption]>, Group<m_Group>,
-   HelpText<"Only supported on AArch64, PowerPC, RISC-V, SPARC, SystemZ, and X86">;
- def multi__module : Flag<["-"], "multi_module">;
- def multiply__defined__unused : Separate<["-"], "multiply_defined_unused">;
-@@ -5361,7 +5362,7 @@
-   Alias<resource_dir>;
- def rpath : Separate<["-"], "rpath">, Flags<[LinkerInput]>, Group<Link_Group>,
-   Visibility<[ClangOption, CLOption, DXCOption, FlangOption]>;
--def rtlib_EQ : Joined<["-", "--"], "rtlib=">, Visibility<[ClangOption, CLOption]>,
-+def rtlib_EQ : Joined<["-", "--"], "rtlib=">, Visibility<[ClangOption, CLOption, FlangOption]>,
-   HelpText<"Compiler runtime library to use">;
- def frtlib_add_rpath: Flag<["-"], "frtlib-add-rpath">, Flags<[NoArgumentUnused]>,
-   HelpText<"Add -rpath with architecture-specific resource directory to the linker flags. "
 @@ -5443,7 +5444,7 @@
    HelpText<"Use directory as the C++ standard library include path">,
    Flags<[NoXarchOption]>, MetaVarName<"<directory>">;
