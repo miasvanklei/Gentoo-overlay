@@ -24,7 +24,7 @@ RDEPEND="
 "
 DEPEND="${RDEPEND}"
 
-BDEPEND="dev-util/gn"
+BDEPEND="dev-build/gn"
 
 DOCS=( README.md )
 
