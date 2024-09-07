@@ -1,0 +1,129 @@
+--- a/src/disasm.cpp	2024-09-06 17:09:36.931821494 +0200
++++ b/src/disasm.cpp	2024-09-06 17:09:18.776014152 +0200
+@@ -101,6 +101,7 @@
+ #include <llvm/Support/raw_ostream.h>
+ 
+ // for outputting assembly
++#include <llvm/CodeGen/DebugHandlerBase.h>
+ #include <llvm/CodeGen/AsmPrinter.h>
+ #include <llvm/CodeGen/AsmPrinterHandler.h>
+ #include <llvm/CodeGen/MachineModuleInfo.h>
+@@ -920,11 +921,9 @@
+     // LLVM will destroy the formatted stream, and we keep the raw stream.
+     std::unique_ptr<formatted_raw_ostream> ustream(new formatted_raw_ostream(rstream));
+     std::unique_ptr<MCStreamer> Streamer(
+-            TheTarget->createAsmStreamer(Ctx, std::move(ustream), /*asmverbose*/true,
+-                                         /*useDwarfDirectory*/ true,
++            TheTarget->createAsmStreamer(Ctx, std::move(ustream),
+                                          IP.release(),
+-                                         std::move(CE), std::move(MAB),
+-                                         /*ShowInst*/ false));
++                                         std::move(CE), std::move(MAB)));
+     Streamer->initSections(true, *STI);
+ 
+     // Make the MemoryObject wrapper
+@@ -1148,7 +1147,7 @@
+     return &MMIWP->getMMI().getContext();
+ }
+ 
+-class LineNumberPrinterHandler : public AsmPrinterHandler {
++class LineNumberPrinterHandler : public DebugHandlerBase {
+     MCStreamer &S;
+     LineNumberAnnotatedWriter LinePrinter;
+     std::string Buffer;
+@@ -1157,10 +1156,12 @@
+ 
+ public:
+     LineNumberPrinterHandler(AsmPrinter &Printer, const char *debuginfo)
+-        : S(*Printer.OutStreamer),
++        : DebugHandlerBase(&Printer),
++          S(*Printer.OutStreamer),
+           LinePrinter("; ", true, debuginfo),
+           RawStream(Buffer),
+           Stream(RawStream) {}
++
+     ~LineNumberPrinterHandler() JL_NOTSAFEPOINT = default;
+ 
+     void emitAndReset() {
+@@ -1176,12 +1177,12 @@
+     //virtual void beginModule(Module *M) override {}
+     virtual void endModule() override {}
+     /// note that some AsmPrinter implementations may not call beginFunction at all
+-    virtual void beginFunction(const MachineFunction *MF) override {
++    virtual void beginFunctionImpl(const MachineFunction *MF) override {
+         LinePrinter.emitFunctionAnnot(&MF->getFunction(), Stream);
+         emitAndReset();
+     }
+     //virtual void markFunctionEnd() override {}
+-    virtual void endFunction(const MachineFunction *MF) override {
++    virtual void endFunctionImpl(const MachineFunction *MF) override {
+         LinePrinter.emitEnd(Stream);
+         emitAndReset();
+     }
+@@ -1257,15 +1258,11 @@
+             }
+             auto FOut = std::make_unique<formatted_raw_ostream>(asmfile);
+             std::unique_ptr<MCStreamer> S(TM->getTarget().createAsmStreamer(
+-                *Context, std::move(FOut), true,
+-                true, InstPrinter,
+-                std::move(MCE), std::move(MAB),
+-                false));
++                *Context, std::move(FOut), InstPrinter,
++                std::move(MCE), std::move(MAB)));
+             std::unique_ptr<AsmPrinter> Printer(
+                 TM->getTarget().createAsmPrinter(*TM, std::move(S)));
+-            Printer->addAsmPrinterHandler(AsmPrinter::HandlerInfo(
+-                        std::unique_ptr<AsmPrinterHandler>(new LineNumberPrinterHandler(*Printer, debuginfo)),
+-                        "emit", "Debug Info Emission", "Julia", "Julia::LineNumberPrinterHandler Markup"));
++            Printer->addDebugHandler(std::make_unique<LineNumberPrinterHandler>(*Printer, debuginfo));
+             if (!Printer)
+                 return jl_an_empty_string;
+             PM.add(Printer.release());
+--- a/src/llvm-codegen-shared.h	2024-09-06 17:09:36.955821240 +0200
++++ b/src/llvm-codegen-shared.h	2024-09-06 17:09:18.784014067 +0200
+@@ -13,6 +13,8 @@
+ #include <llvm/Support/ModRef.h>
+ #endif
+ 
++#include <llvm/IR/Module.h>
++
+ #include "julia.h"
+ 
+ #define STR(csym)           #csym
+--- a/src/llvm-multiversioning.cpp	2024-09-06 17:09:36.959821197 +0200
++++ b/src/llvm-multiversioning.cpp	2024-09-06 17:09:18.784014067 +0200
+@@ -12,6 +12,7 @@
+ #include <llvm-c/Types.h>
+ 
+ #include <llvm/Pass.h>
++#include <llvm/ADT/SmallString.h>
+ #include <llvm/ADT/BitVector.h>
+ #include <llvm/ADT/Statistic.h>
+ #if JL_LLVM_VERSION >= 170000
+--- a/src/llvm-simdloop.cpp	2024-09-06 17:09:36.959821197 +0200
++++ b/src/llvm-simdloop.cpp	2024-09-06 17:09:18.784014067 +0200
+@@ -178,9 +178,9 @@
+         if (S) {
+             LLVM_DEBUG(dbgs() << "LSL: found " << S->getString() << "\n");
+             if (S->getString().starts_with("julia")) {
+-                if (S->getString().equals("julia.simdloop"))
++                if (S->getString() == "julia.simdloop")
+                     simd = true;
+-                if (S->getString().equals("julia.ivdep"))
++                if (S->getString() == "julia.ivdep")
+                     ivdep = true;
+                 continue;
+             }
+diff --color -u src/processor.cpp /src/processor.cpp
+--- a/src/processor.cpp	2024-09-06 17:09:36.963821155 +0200
++++ b/src/processor.cpp	2024-09-06 17:09:18.784014067 +0200
+@@ -978,8 +978,7 @@
+ 
+ static std::string jl_get_cpu_features_llvm(void)
+ {
+-    llvm::StringMap<bool> HostFeatures;
+-    llvm::sys::getHostCPUFeatures(HostFeatures);
++    auto HostFeatures = llvm::sys::getHostCPUFeatures();
+     std::string attr;
+     for (auto &ele: HostFeatures) {
+         if (ele.getValue()) {

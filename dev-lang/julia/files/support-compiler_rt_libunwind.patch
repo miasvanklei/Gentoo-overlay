@@ -9,6 +9,17 @@
  endif
  
  # USE_SYSTEM_CSL causes it to get symlinked into build_private_shlibdir
+@@ -1096,9 +1096,8 @@
+ LIBUNWIND:=
+ else
+ LIBUNWIND:=-lunwind
+-ifneq ($(findstring $(OS),Darwin OpenBSD),)
+ JCPPFLAGS+=-DLLVMLIBUNWIND
+-else ifeq ($(USE_SYSTEM_LIBUNWIND), 1)
++ifeq ($(USE_SYSTEM_LIBUNWIND), 1)
+ # Only for linux and freebsd since we want to use not yet released gnu libunwind features
+ JCFLAGS+=-DSYSTEM_LIBUNWIND
+ JCPPFLAGS+=-DSYSTEM_LIBUNWIND
 @@ -1529,7 +1529,7 @@
  # We only bother to define this on Linux, as that's the only platform that does libstdc++ probing
  # On all other platforms, the LIBSTDCXX_*_DEPLIB variables will be empty.
@@ -41,7 +52,7 @@
      // Try platform specific methods first since they are usually faster
      if (needs_saddr) {
 -#if (defined(_OS_LINUX_) || defined(_OS_FREEBSD_)) && !defined(JL_DISABLE_LIBUNWIND)
-+#if (defined(_OS_FREEBSD_)) && !defined(JL_DISABLE_LIBUNWIND)
++#if (defined(_OS_LINUX_) || defined(_OS_FREEBSD_)) && !defined(JL_DISABLE_LIBUNWIND) && !defined(LLVMLIBUNWIND)
          unw_proc_info_t pip;
          // Seems that libunwind may return NULL IP depending on what info it finds...
          if (unw_get_proc_info_by_ip(unw_local_addr_space, pointer,

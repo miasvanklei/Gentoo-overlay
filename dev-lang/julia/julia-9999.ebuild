@@ -35,7 +35,7 @@ STDLIBS=(
 BUNDLED_DEPS=(
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
-	"JuliaLang libuv c57e7f06cbe697ca8ea9215ce054a608c451b193"
+	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
 	"JuliaLinearAlgebra libblastrampoline 05083d50611b5538df69706f0a952d8e642b0b4b"
 	"JuliaLang JuliaSyntax.jl 4f1731d6ce7c2465fc21ea245110b7a39f34658a"
 )
@@ -59,7 +59,7 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
-LLVM_MAX_SLOT=18
+LLVM_MAX_SLOT=19
 
 RDEPEND+="
 	app-arch/p7zip
@@ -106,6 +106,7 @@ PATCHES=(
 	"${FILESDIR}"/disable-install-docs.patch
 	"${FILESDIR}"/support-compiler_rt_libunwind.patch
 	"${FILESDIR}"/fix-textrel.patch
+	"${FILESDIR}"/llvm-19.patch
 )
 
 S="${WORKDIR}/${P/_/-}"
