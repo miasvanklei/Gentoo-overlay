@@ -3,7 +3,7 @@
 
 EAPI=8
 
-LLVM_MAX_SLOT="18"
+LLVM_MAX_SLOT="19"
 
 inherit cmake flag-o-matic git-r3 llvm multiprocessing
 
