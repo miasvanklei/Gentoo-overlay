@@ -5,8 +5,6 @@ EAPI=8
 
 inherit cmake
 
-MY_PV=${PV/_/-}
-
 DESCRIPTION="LLVM D Compiler"
 HOMEPAGE="https://ldc-developers.github.com/ldc"
 KEYWORDS="~x86 ~amd64 ~arm ~arm64 ~ppc ~ppc64"
@@ -36,6 +34,10 @@ DEPEND="sys-devel/llvm:=[debug?]"
 RDEPEND="${DEPEND}"
 
 S="${WORKDIR}/ldc-${PV}-src"
+
+PATCHES=(
+	"${FILESDIR}/llvm-19.patch"
+)
 
 src_configure() {
 	local mycmakeargs=(
