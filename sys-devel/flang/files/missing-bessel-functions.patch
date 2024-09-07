@@ -1,0 +1,59 @@
+diff --git a/flang/runtime/Float128Math/CMakeLists.txt b/flang/runtime/Float128Math/CMakeLists.txt
+index a5f5bec1e7e4b8..b7d890df1f4aad 100644
+--- a/flang/runtime/Float128Math/CMakeLists.txt
++++ b/flang/runtime/Float128Math/CMakeLists.txt
+@@ -108,6 +108,26 @@ elseif (HAVE_LDBL_MANT_DIG_113)
+   # We can use 'long double' versions from libc.
+   check_library_exists(m sinl "" FOUND_LIBM)
+   if (FOUND_LIBM)
++    check_cxx_source_compiles(
++      "#include <cmath>
++       int main() {
++         int n = 0;
++         long double x = 1;
++         long double Y0 = y0l(x);
++         long double Y1 = y1l(x);
++         long double Yn = ynl(n,x);
++         long double J0 = j0l(x);
++         long double J1 = j1l(x);
++         long double Jn = jnl(n,x);
++         return 0;
++       }
++      "
++    FOUND_LIBM_BESSEL)
++    if (FOUND_LIBM_BESSEL)
++     target_compile_definitions(FortranFloat128MathILib INTERFACE
++       HAS_LIBM_BESSEL
++       )
++    endif()
+     target_compile_definitions(FortranFloat128MathILib INTERFACE
+       HAS_LIBM
+       )
+diff --git a/flang/runtime/Float128Math/math-entries.h b/flang/runtime/Float128Math/math-entries.h
+index 13fdab26470038..45ae40fdafa0e5 100644
+--- a/flang/runtime/Float128Math/math-entries.h
++++ b/flang/runtime/Float128Math/math-entries.h
+@@ -185,9 +185,11 @@ DEFINE_SIMPLE_ALIAS(Hypot, std::hypot)
+ DEFINE_SIMPLE_ALIAS(Ilogb, std::ilogb)
+ DEFINE_SIMPLE_ALIAS(Isinf, std::isinf)
+ DEFINE_SIMPLE_ALIAS(Isnan, std::isnan)
++#ifdef HAS_LIBM_BESSEL
+ DEFINE_SIMPLE_ALIAS(J0, j0l)
+ DEFINE_SIMPLE_ALIAS(J1, j1l)
+ DEFINE_SIMPLE_ALIAS(Jn, jnl)
++#endif
+ DEFINE_SIMPLE_ALIAS(Ldexp, std::ldexp)
+ DEFINE_SIMPLE_ALIAS(Lgamma, std::lgamma)
+ DEFINE_SIMPLE_ALIAS(Llround, std::llround)
+@@ -204,9 +206,11 @@ DEFINE_SIMPLE_ALIAS(Tan, std::tan)
+ DEFINE_SIMPLE_ALIAS(Tanh, std::tanh)
+ DEFINE_SIMPLE_ALIAS(Tgamma, std::tgamma)
+ DEFINE_SIMPLE_ALIAS(Trunc, std::trunc)
++#ifdef HAS_LIBM_BESSEL
+ DEFINE_SIMPLE_ALIAS(Y0, y0l)
+ DEFINE_SIMPLE_ALIAS(Y1, y1l)
+ DEFINE_SIMPLE_ALIAS(Yn, ynl)
++#endif
+ 
+ // Use numeric_limits to produce infinity of the right type.
+ #define F128_RT_INFINITY \

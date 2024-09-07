@@ -35,6 +35,7 @@ llvm.org_set_globals
 
 PATCHES=(
 	"${FILESDIR}/fix-finding-mlir-tblgen.patch"
+	"${FILESDIR}/missing-bessel-functions.patch"
 )
 
 src_configure() {
