@@ -1,6 +1,6 @@
 # build/install/boot kernel
 sys-kernel/installkernel -dracut systemd systemd-boot
-sys-kernel/gentoo-kernel -initramfs secureboot modules-sign
+sys-kernel/vanilla-kernel -initramfs secureboot modules-sign
 sys-kernel/linux-firmware -initramfs
 sys-apps/systemd secureboot boot kernel-install
 
@@ -64,9 +64,15 @@ app-crypt/mit-krb5 -keyutils
 dev-libs/libverto -libev libevent
 
 # compile/debug
-sys-devel/llvm -binutils-plugin
+sys-devel/llvm -binutils-plugin -debug
 sys-libs/compiler-rt-sanitizers -gwp-asan
-dev-debug/lldb libedit python
+sys-devel/clang-runtime libcxx
+sys-devel/clang xml -debug
+sys-devel/lld -debug
+sys-libs/libomp -debug
+sys-libs/compiler-rt -debug
+sys-libs/llvm-libunwind -debug
+dev-debug/lldb libedit python lzma -debug
 
 # ??
 sys-libs/gdbm berkdb
