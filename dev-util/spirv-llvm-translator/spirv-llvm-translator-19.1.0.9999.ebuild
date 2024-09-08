@@ -3,9 +3,9 @@
 
 EAPI=8
 
-LLVM_MAX_SLOT="19"
+LLVM_COMPAT=( 19 )
 
-inherit cmake flag-o-matic git-r3 llvm multiprocessing
+inherit cmake flag-o-matic git-r3 llvm-r1 multiprocessing
 
 DESCRIPTION="Bi-directional translator between SPIR-V and LLVM IR"
 HOMEPAGE="https://github.com/KhronosGroup/SPIRV-LLVM-Translator"
@@ -23,7 +23,7 @@ RDEPEND="
 	sys-devel/llvm:${SLOT}=
 "
 DEPEND="${RDEPEND}
-	dev-util/spirv-headers
+	>=dev-util/spirv-headers-1.3.280
 "
 BDEPEND="
 	virtual/pkgconfig
@@ -41,7 +41,7 @@ src_prepare() {
 src_configure() {
 	local mycmakeargs=(
 		-DCCACHE_ALLOWED="OFF"
-		-DCMAKE_INSTALL_PREFIX="$(get_llvm_prefix ${LLVM_MAX_SLOT})"
+		-DCMAKE_INSTALL_PREFIX="$(get_llvm_prefix)"
 		-DLLVM_EXTERNAL_SPIRV_HEADERS_SOURCE_DIR="${ESYSROOT}/usr/include/spirv"
 		-DLLVM_SPIRV_INCLUDE_TESTS=$(usex test "ON" "OFF")
 		-Wno-dev
