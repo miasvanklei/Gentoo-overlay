@@ -1,0 +1,23 @@
+--- a/mlir/cmake/modules/AddMLIR.cmake	2024-09-11 18:27:25.463970629 +0200
++++ b/mlir/cmake/modules/AddMLIR.cmake	2024-09-11 18:27:39.459822301 +0200
+@@ -717,3 +717,20 @@
+     endforeach()
+   endif()
+ endfunction(mlir_check_all_link_libraries)
++
++function(mlir_target_link_libraries target type)
++  if (TARGET obj.${target})
++    target_link_libraries(obj.${target} ${ARGN})
++  endif()
++
++  get_property(LLVM_DRIVER_TOOLS GLOBAL PROPERTY LLVM_DRIVER_TOOLS)
++  if(LLVM_TOOL_LLVM_DRIVER_BUILD AND ${target} IN_LIST LLVM_DRIVER_TOOLS)
++    set(target llvm-driver)
++  endif()
++
++  if (MLIR_LINK_MLIR_DYLIB)
++    target_link_libraries(${target} ${type} MLIR)
++  else()
++    target_link_libraries(${target} ${type} ${ARGN})
++  endif()
++endfunction()
