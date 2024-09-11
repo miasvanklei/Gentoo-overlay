@@ -1,0 +1,454 @@
+diff --color -ur flang/cmake/modules/AddFlang.cmake /flang/cmake/modules/AddFlang.cmake
+--- a/flang/cmake/modules/AddFlang.cmake	2024-09-03 16:09:11.000000000 +0200
++++ b/flang/cmake/modules/AddFlang.cmake	2024-09-11 18:24:10.646034612 +0200
+@@ -18,7 +18,7 @@
+ 
+ function(add_flang_library name)
+   set(options SHARED STATIC INSTALL_WITH_TOOLCHAIN)
+-  set(multiValueArgs ADDITIONAL_HEADERS CLANG_LIBS)
++  set(multiValueArgs ADDITIONAL_HEADERS CLANG_LIBS MLIR_LIBS)
+   cmake_parse_arguments(ARG
+     "${options}"
+     ""
+@@ -67,6 +67,8 @@
+ 
+   clang_target_link_libraries(${name} PRIVATE ${ARG_CLANG_LIBS})
+ 
++  mlir_target_link_libraries(${name} PRIVATE ${ARG_MLIR_LIBS})
++
+   if (TARGET ${name})
+ 
+     if (NOT LLVM_INSTALL_TOOLCHAIN_ONLY OR ${name} STREQUAL "libflang"
+diff --color -ur flang/lib/Frontend/CMakeLists.txt /flang/lib/Frontend/CMakeLists.txt
+--- a/flang/lib/Frontend/CMakeLists.txt	2024-09-11 18:39:22.588106975 +0200
++++ b/flang/lib/Frontend/CMakeLists.txt	2024-09-11 18:24:10.682034231 +0200
+@@ -19,9 +19,6 @@
+   FIROptCodeGenPassIncGen
+   FIROptTransformsPassIncGen
+   HLFIRDialect
+-  MLIRIR
+-  ${dialect_libs}
+-  ${extension_libs}
+ 
+   LINK_LIBS
+   CUFDialect
+@@ -38,13 +35,6 @@
+   FIRTransforms
+   HLFIRDialect
+   HLFIRTransforms
+-  MLIRTransforms
+-  MLIRBuiltinToLLVMIRTranslation
+-  MLIRLLVMToLLVMIRTranslation
+-  MLIRSCFToControlFlow
+-  MLIRTargetLLVMIRImport
+-  ${dialect_libs}
+-  ${extension_libs}
+ 
+   LINK_COMPONENTS
+   Passes
+@@ -60,6 +50,16 @@
+   FrontendOpenACC
+   FrontendOpenMP
+ 
++  MLIR_LIBS
++  MLIRIR
++  MLIRTransforms
++  MLIRBuiltinToLLVMIRTranslation
++  MLIRLLVMToLLVMIRTranslation
++  MLIRSCFToControlFlow
++  MLIRTargetLLVMIRImport
++  ${dialect_libs}
++  ${extension_libs}
++
+   CLANG_LIBS
+   clangBasic
+   clangDriver
+diff --color -ur flang/lib/FrontendTool/CMakeLists.txt /flang/lib/FrontendTool/CMakeLists.txt
+--- a/flang/lib/FrontendTool/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/FrontendTool/CMakeLists.txt	2024-09-11 18:24:10.678034273 +0200
+@@ -8,12 +8,14 @@
+ 
+   LINK_LIBS
+   flangFrontend
+-  MLIRPass
+ 
+   LINK_COMPONENTS
+   Option
+   Support
+ 
++  MLIR_LIBS
++  MLIRPass
++
+   CLANG_LIBS
+   clangBasic
+   clangDriver
+diff --color -ur flang/lib/Lower/CMakeLists.txt /flang/lib/Lower/CMakeLists.txt
+--- a/flang/lib/Lower/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/Lower/CMakeLists.txt	2024-09-11 18:24:10.682034231 +0200
+@@ -42,8 +42,6 @@
+   FIRDialect
+   FIRTransforms
+   HLFIRDialect
+-  ${dialect_libs}
+-  ${extension_libs}
+ 
+   LINK_LIBS
+   CUFAttrs
+@@ -54,17 +52,19 @@
+   FIRSupport
+   FIRTransforms
+   HLFIRDialect
+-  ${dialect_libs}
+-  ${extension_libs}
+   FortranCommon
+   FortranParser
+   FortranEvaluate
+   FortranSemantics
++
++  LINK_COMPONENTS
++  Support
++
++  MLIR_LIBS
++  ${dialect_libs}
++  ${extension_libs}
+   MLIRAffineToStandard
+   MLIRFuncDialect
+   MLIRLLVMDialect
+   MLIRSCFToControlFlow
+-
+-  LINK_COMPONENTS
+-  Support
+ )
+diff --color -ur flang/lib/Optimizer/Analysis/CMakeLists.txt /flang/lib/Optimizer/Analysis/CMakeLists.txt
+--- a/flang/lib/Optimizer/Analysis/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/Optimizer/Analysis/CMakeLists.txt	2024-09-11 18:24:10.682034231 +0200
+@@ -5,12 +5,14 @@
+   DEPENDS
+   FIRDialect
+   HLFIRDialect
+-  MLIRIR
+ 
+   LINK_LIBS
+   FIRBuilder
+   FIRDialect
+   HLFIRDialect
++
++  MLIR_LIBS
++  MLIRIR
+   MLIRFuncDialect
+   MLIRLLVMDialect
+   MLIRMathTransforms
+diff --color -ur flang/lib/Optimizer/Builder/CMakeLists.txt /flang/lib/Optimizer/Builder/CMakeLists.txt
+--- a/flang/lib/Optimizer/Builder/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/Optimizer/Builder/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -37,14 +37,14 @@
+   DEPENDS
+   FIRDialect
+   HLFIRDialect
+-  ${dialect_libs}
+-  ${extension_libs}
+ 
+   LINK_LIBS
+   FIRDialect
+   FIRDialectSupport
+   FIRSupport
+   HLFIRDialect
++
++  MLIR_LIBS
+   ${dialect_libs}
+   ${extension_libs}
+ )
+diff --color -ur flang/lib/Optimizer/CodeGen/CMakeLists.txt /flang/lib/Optimizer/CodeGen/CMakeLists.txt
+--- a/flang/lib/Optimizer/CodeGen/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/Optimizer/CodeGen/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -21,6 +21,14 @@
+   FIRDialect
+   FIRDialectSupport
+   FIRSupport
++
++  LINK_COMPONENTS
++  AsmParser
++  AsmPrinter
++  Remarks
++  TargetParser
++
++  MLIR_LIBS
+   MLIRComplexToLLVM
+   MLIRComplexToStandard
+   MLIRMathToFuncs
+@@ -32,10 +40,4 @@
+   MLIRLLVMToLLVMIRTranslation
+   MLIRTargetLLVMIRExport
+   MLIRVectorToLLVM
+-
+-  LINK_COMPONENTS
+-  AsmParser
+-  AsmPrinter
+-  Remarks
+-  TargetParser
+ )
+diff --color -ur flang/lib/Optimizer/Dialect/CMakeLists.txt /flang/lib/Optimizer/Dialect/CMakeLists.txt
+--- a/flang/lib/Optimizer/Dialect/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/Optimizer/Dialect/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -12,7 +12,6 @@
+ 
+   DEPENDS
+   CanonicalizationPatternsIncGen
+-  MLIRIR
+   FIROpsIncGen
+   CUFAttrsIncGen
+   intrinsics_gen
+@@ -20,14 +19,17 @@
+   LINK_LIBS
+   CUFAttrs
+   FIRDialectSupport
+-  MLIRArithDialect
+-  MLIRBuiltinToLLVMIRTranslation
+-  MLIROpenMPToLLVM
+-  MLIRLLVMToLLVMIRTranslation
+-  MLIRTargetLLVMIRExport
+ 
+   LINK_COMPONENTS
+   AsmParser
+   AsmPrinter
+   Remarks
++
++  MLIR_LIBS
++  MLIRIR
++  MLIRArithDialect
++  MLIRBuiltinToLLVMIRTranslation
++  MLIROpenMPToLLVM
++  MLIRLLVMToLLVMIRTranslation
++  MLIRTargetLLVMIRExport
+ )
+diff --color -ur flang/lib/Optimizer/Dialect/CUF/Attributes/CMakeLists.txt /flang/lib/Optimizer/Dialect/CUF/Attributes/CMakeLists.txt
+--- a/flang/lib/Optimizer/Dialect/CUF/Attributes/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/Optimizer/Dialect/CUF/Attributes/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -3,15 +3,15 @@
+   CUFAttr.cpp
+ 
+   DEPENDS
+-  MLIRIR
+   CUFAttrsIncGen
+   CUFOpsIncGen
+ 
+-  LINK_LIBS
+-  MLIRTargetLLVMIRExport
+-
+   LINK_COMPONENTS
+   AsmParser
+   AsmPrinter
+   Remarks
++
++  MLIR_LIBS
++  MLIRIR
++  MLIRTargetLLVMIRExport
+ )
+diff --color -ur flang/lib/Optimizer/Dialect/CUF/CMakeLists.txt /flang/lib/Optimizer/Dialect/CUF/CMakeLists.txt
+--- a/flang/lib/Optimizer/Dialect/CUF/CMakeLists.txt	2024-09-11 18:39:22.592106930 +0200
++++ b/flang/lib/Optimizer/Dialect/CUF/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -5,7 +5,6 @@
+   CUFOps.cpp
+ 
+   DEPENDS
+-  MLIRIR
+   CUFAttrsIncGen
+   CUFOpsIncGen
+ 
+@@ -13,11 +12,13 @@
+   CUFAttrs
+   FIRDialect
+   FIRDialectSupport
+-  MLIRIR
+-  MLIRTargetLLVMIRExport
+ 
+   LINK_COMPONENTS
+   AsmParser
+   AsmPrinter
+   Remarks
++
++  MLIR_LIBS
++  MLIRIR
++  MLIRTargetLLVMIRExport
+ )
+diff --color -ur flang/lib/Optimizer/Dialect/Support/CMakeLists.txt /flang/lib/Optimizer/Dialect/Support/CMakeLists.txt
+--- a/flang/lib/Optimizer/Dialect/Support/CMakeLists.txt	2024-09-11 18:39:22.596106885 +0200
++++ b/flang/lib/Optimizer/Dialect/Support/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -5,9 +5,9 @@
+   FIRContext.cpp
+ 
+   DEPENDS
+-  MLIRIR
+   intrinsics_gen
+ 
+-  LINK_LIBS
++  MLIR_LIBS
++  MLIRIR
+   ${dialect_libs}
+ )
+diff --color -ur flang/lib/Optimizer/HLFIR/IR/CMakeLists.txt /flang/lib/Optimizer/HLFIR/IR/CMakeLists.txt
+--- a/flang/lib/Optimizer/HLFIR/IR/CMakeLists.txt	2024-09-11 18:39:22.596106885 +0200
++++ b/flang/lib/Optimizer/HLFIR/IR/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -8,16 +8,17 @@
+   CUFAttrsIncGen
+   FIRDialect
+   HLFIROpsIncGen
+-  ${dialect_libs}
+ 
+   LINK_LIBS
+   CUFAttrs
+   FIRDialect
+-  MLIRIR
+-  ${dialect_libs}
+ 
+   LINK_COMPONENTS
+   AsmParser
+   AsmPrinter
+   Remarks
++
++  MLIR_LIBS
++  MLIRIR
++  ${dialect_libs}
+ )
+diff --color -ur flang/lib/Optimizer/HLFIR/Transforms/CMakeLists.txt /flang/lib/Optimizer/HLFIR/Transforms/CMakeLists.txt
+--- a/flang/lib/Optimizer/HLFIR/Transforms/CMakeLists.txt	2024-09-11 18:39:22.596106885 +0200
++++ b/flang/lib/Optimizer/HLFIR/Transforms/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -14,7 +14,6 @@
+   CUFAttrsIncGen
+   FIRDialect
+   HLFIROpsIncGen
+-  ${dialect_libs}
+ 
+   LINK_LIBS
+   CUFAttrs
+@@ -25,11 +24,13 @@
+   FIRSupport
+   FIRTransforms
+   HLFIRDialect
+-  MLIRIR
+-  ${dialect_libs}
+ 
+   LINK_COMPONENTS
+   AsmParser
+   AsmPrinter
+   Remarks
++
++  MLIR_LIBS
++  MLIRIR
++  ${dialect_libs}
+ )
+diff --color -ur flang/lib/Optimizer/Support/CMakeLists.txt /flang/lib/Optimizer/Support/CMakeLists.txt
+--- a/flang/lib/Optimizer/Support/CMakeLists.txt	2024-09-11 18:39:22.596106885 +0200
++++ b/flang/lib/Optimizer/Support/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -10,21 +10,21 @@
+   DEPENDS
+   FIROpsIncGen
+   HLFIROpsIncGen
+-  MLIRIR
+-  ${dialect_libs}
+-  ${extension_libs}
+ 
+   LINK_LIBS
+   FIRDialect
+-  ${dialect_libs}
+-  ${extension_libs}
++
++  LINK_COMPONENTS
++  TargetParser
++
++  MLIR_LIBS
++  MLIRIR
+   MLIRBuiltinToLLVMIRTranslation
+   MLIROpenACCToLLVMIRTranslation
+   MLIROpenMPToLLVMIRTranslation
+   MLIRLLVMToLLVMIRTranslation
+   MLIRTargetLLVMIRExport
+   MLIRTargetLLVMIRImport
+-
+-  LINK_COMPONENTS
+-  TargetParser
++  ${dialect_libs}
++  ${extension_libs}
+ )
+diff --color -ur flang/lib/Optimizer/Transforms/CMakeLists.txt /flang/lib/Optimizer/Transforms/CMakeLists.txt
+--- a/flang/lib/Optimizer/Transforms/CMakeLists.txt	2024-09-11 18:39:22.596106885 +0200
++++ b/flang/lib/Optimizer/Transforms/CMakeLists.txt	2024-09-11 18:24:10.686034189 +0200
+@@ -42,6 +42,8 @@
+   FIRSupport
+   FortranCommon
+   HLFIRDialect
++
++  MLIR_LIBS
+   MLIRAffineUtils
+   MLIRFuncDialect
+   MLIRLLVMDialect
+diff --color -ur flang/tools/bbc/CMakeLists.txt /flang/tools/bbc/CMakeLists.txt
+--- a/flang/tools/bbc/CMakeLists.txt	2024-09-11 18:39:22.600106839 +0200
++++ b/flang/tools/bbc/CMakeLists.txt	2024-09-11 18:24:10.846032494 +0200
+@@ -25,13 +25,18 @@
+ FIRBuilder
+ HLFIRDialect
+ HLFIRTransforms
+-${dialect_libs}
+-${extension_libs}
+-MLIRAffineToStandard
+-MLIRSCFToControlFlow
++
+ FortranCommon
+ FortranParser
+ FortranEvaluate
+ FortranSemantics
+ FortranLower
++
++)
++
++mlir_target_link_libraries(bbc PRIVATE
++MLIRAffineToStandard
++MLIRSCFToControlFlow
++${dialect_libs}
++${extension_libs}
+ )
+diff --color -ur flang/tools/fir-opt/CMakeLists.txt /flang/tools/fir-opt/CMakeLists.txt
+--- a/flang/tools/fir-opt/CMakeLists.txt	2024-09-11 18:39:22.600106839 +0200
++++ b/flang/tools/fir-opt/CMakeLists.txt	2024-09-11 18:24:10.846032494 +0200
+@@ -21,9 +21,9 @@
+   HLFIRTransforms
+   FIRAnalysis
+   ${test_libs}
+-  ${dialect_libs}
+-  ${extension_libs}
++)
+ 
++mlir_target_link_libraries(fir-opt PRIVATE
+   # TODO: these should be transitive dependencies from a target providing
+   # "registerFIRPasses()"
+   MLIRIR
+@@ -38,4 +38,6 @@
+   MLIRSupport
+   MLIRVectorToLLVM
+   MLIROptLib
++  ${dialect_libs}
++  ${extension_libs}
+ )
+diff --color -ur flang/tools/tco/CMakeLists.txt /flang/tools/tco/CMakeLists.txt
+--- a/flang/tools/tco/CMakeLists.txt	2024-09-11 18:39:22.600106839 +0200
++++ b/flang/tools/tco/CMakeLists.txt	2024-09-11 18:24:10.846032494 +0200
+@@ -17,8 +17,9 @@
+   FIRBuilder
+   HLFIRDialect
+   HLFIRTransforms
+-  ${dialect_libs}
+-  ${extension_libs}
++)
++
++mlir_target_link_libraries(tco PRIVATE
+   MLIRIR
+   MLIRLLVMDialect
+   MLIRBuiltinToLLVMIRTranslation
+@@ -32,4 +33,6 @@
+   MLIRParser
+   MLIRSupport
+   MLIRVectorToLLVM
++  ${dialect_libs}
++  ${extension_libs}
+ )

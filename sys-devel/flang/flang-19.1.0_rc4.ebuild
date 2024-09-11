@@ -37,6 +37,7 @@ PATCHES=(
 	"${FILESDIR}/fix-finding-mlir-tblgen.patch"
 	"${FILESDIR}/missing-bessel-functions.patch"
 )
+#	"${FILESDIR}/support-linking-libmlir.patch"
 
 src_configure() {
 	llvm_prepend_path "${LLVM_MAJOR}"
@@ -51,6 +52,8 @@ src_configure() {
                 -DBUILD_SHARED_LIBS=OFF
                 -DLLVM_LINK_LLVM_DYLIB=ON
 		-DCLANG_LINK_CLANG_DYLIB=ON
+		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DMLIR_LINK_MLIR_DYLIB=ON
 		-DLLVM_BUILD_TOOLS=ON
 		-DFLANG_INCLUDE_TESTS=OFF
 	)
