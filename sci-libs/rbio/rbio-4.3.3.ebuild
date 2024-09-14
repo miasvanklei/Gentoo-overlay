@@ -5,7 +5,7 @@ EAPI=8
 
 inherit cmake
 
-Sparse_PV="7.6.1"
+Sparse_PV="7.8.0"
 Sparse_P="SuiteSparse-${Sparse_PV}"
 DESCRIPTION="Sparse matrices Rutherford/Boeing format tools"
 HOMEPAGE="https://people.engr.tamu.edu/davis/suitesparse.html"
@@ -24,9 +24,10 @@ S="${WORKDIR}/${Sparse_P}/RBio"
 
 src_configure() {
 	local mycmakeargs=(
-		-DNSTATIC=ON
-		-DDEMO=$(usex test)
+		-DBUILD_SHARED_LIBS=ON
+		-DSUITESPARSE_DEMOS=$(usex test)
 	)
+
 	cmake_src_configure
 }
 
@@ -34,6 +35,7 @@ src_test() {
 	# Because we are not using cmake_src_test,
 	# we have to manually go to BUILD_DIR
 	cd "${BUILD_DIR}"
+
 	# Run demo files
 	./RBdemo < "${S}"/RBio/private/west0479.rua || die "failed testing"
 }
