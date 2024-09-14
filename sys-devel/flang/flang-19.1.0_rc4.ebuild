@@ -36,8 +36,8 @@ llvm.org_set_globals
 PATCHES=(
 	"${FILESDIR}/fix-finding-mlir-tblgen.patch"
 	"${FILESDIR}/missing-bessel-functions.patch"
+	"${FILESDIR}/support-linking-libmlir.patch"
 )
-#	"${FILESDIR}/support-linking-libmlir.patch"
 
 src_configure() {
 	llvm_prepend_path "${LLVM_MAJOR}"
