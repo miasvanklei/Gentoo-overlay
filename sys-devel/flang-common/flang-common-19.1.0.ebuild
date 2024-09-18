@@ -7,6 +7,7 @@ DESCRIPTION="Common files shared between multiple slots of flang"
 HOMEPAGE="https://llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
+KEYWORDS="~amd64 ~arm64"
 SLOT="0"
 IUSE="default-compiler-rt default-libcxx llvm-libunwind"
 
