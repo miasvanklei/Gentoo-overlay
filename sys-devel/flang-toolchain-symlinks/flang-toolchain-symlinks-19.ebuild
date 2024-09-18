@@ -7,15 +7,17 @@ inherit multilib
 
 DESCRIPTION="Symlinks to use Flang on gfortran-free system"
 HOMEPAGE="https://wiki.gentoo.org/wiki/Project:LLVM"
-S=${WORKDIR}
 
 LICENSE="public-domain"
 SLOT="${PV}"
+KEYWORDS="~amd64 ~arm64"
 IUSE="multilib-symlinks +native-symlinks"
 
 RDEPEND="
 	sys-devel/lld:${SLOT}
 "
+
+S=${WORKDIR}
 
 src_install() {
 	use native-symlinks || return
