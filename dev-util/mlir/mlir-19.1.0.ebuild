@@ -10,7 +10,9 @@ DESCRIPTION="Multi-Level IR Compiler Framework"
 HOMEPAGE="https://mlir.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
+KEYWORDS="~amd64 ~arm64"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
+
 IUSE="debug python test"
 REQUIRED_USE="
 	python? ( ${PYTHON_REQUIRED_USE} )"
