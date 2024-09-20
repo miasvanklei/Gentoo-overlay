@@ -3,24 +3,24 @@
 
 EAPI=8
 
-LLVM_COMPAT=( 19 )
+LLVM_COMPAT=( 20 )
 
-inherit cmake flag-o-matic git-r3 llvm-r1 multiprocessing
+inherit cmake-multilib git-r3 flag-o-matic llvm-r1 multiprocessing
 
 DESCRIPTION="Bi-directional translator between SPIR-V and LLVM IR"
 HOMEPAGE="https://github.com/KhronosGroup/SPIRV-LLVM-Translator"
 EGIT_REPO_URI="https://github.com/KhronosGroup/SPIRV-LLVM-Translator.git"
-EGIT_BRANCH="llvm_release_190"
+EGIT_BRANCH="llvm_release_200"
 
 LICENSE="UoI-NCSA"
 SLOT="$(ver_cut 1)"
-KEYWORDS=""
+KEYWORDS="~amd64 ~arm64 ~riscv ~x86"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
 RDEPEND="
-	dev-util/spirv-tools
-	sys-devel/llvm:${SLOT}=
+	dev-util/spirv-tools[${MULTILIB_USEDEP}]
+	sys-devel/llvm:${SLOT}=[${MULTILIB_USEDEP}]
 "
 DEPEND="${RDEPEND}
 	>=dev-util/spirv-headers-1.3.280
@@ -33,12 +33,18 @@ BDEPEND="
 	)
 "
 
+PATCHES=(
+)
+
 src_prepare() {
 	append-flags -fPIC
 	cmake_src_prepare
+
+	# https://github.com/KhronosGroup/SPIRV-LLVM-Translator/pull/2555
+	sed -i -e 's/%triple/x86_64-unknown-linux-gnu/' test/DebugInfo/X86/*.ll || die
 }
 
-src_configure() {
+multilib_src_configure() {
 	local mycmakeargs=(
 		-DCCACHE_ALLOWED="OFF"
 		-DCMAKE_INSTALL_PREFIX="$(get_llvm_prefix)"
@@ -50,6 +56,6 @@ src_configure() {
 	cmake_src_configure
 }
 
-src_test() {
+multilib_src_test() {
 	lit -vv "-j${LIT_JOBS:-$(makeopts_jobs)}" "${BUILD_DIR}/test" || die
 }
