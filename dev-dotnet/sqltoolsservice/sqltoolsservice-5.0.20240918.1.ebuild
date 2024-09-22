@@ -506,10 +506,7 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
-RDEPEND="
-	dev-dotnet/skia-sharp
-	virtual/dotnet-core:8
-"
+RDEPEND="dev-dotnet/skia-sharp"
 DEPEND="${RDEPEND}"
 
 PATCHES=(
