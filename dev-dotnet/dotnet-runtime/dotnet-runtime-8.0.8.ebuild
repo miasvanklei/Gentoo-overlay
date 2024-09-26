@@ -8,7 +8,11 @@ inherit toolchain-funcs
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
-SRC_URI="https://github.com/dotnet/runtime/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="
+        amd64? ( "https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/${PV}/${P/dotnet/aspnetcore}-linux-musl-x64.tar.gz" )
+        arm64? ( "https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/${PV}/${P/dotnet/aspnetcore}-linux-musl-arm64.tar.gz" )
+	https://github.com/dotnet/runtime/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
+"
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -29,16 +33,12 @@ DEPEND="${RDEPEND}
 PDEPEND="=virtual/dotnet-core-${PV}"
 
 COREFX_FILES=(
-	'libSystem.IO.Compression.Native.a'
-	'libSystem.IO.Compression.Native.so'
-	'libSystem.Native.a'
-	'libSystem.Native.so'
-	'libSystem.Net.Security.Native.a'
-	'libSystem.Net.Security.Native.so'
-	'libSystem.Security.Cryptography.Native.OpenSsl.a'
-	'libSystem.Security.Cryptography.Native.OpenSsl.so'
-	'libSystem.Globalization.Native.a'
 	'libSystem.Globalization.Native.so'
+	'libSystem.IO.Compression.Native.so'
+	'libSystem.IO.Ports.Native.so'
+	'libSystem.Native.so'
+	'libSystem.Net.Security.Native.so'
+	'libSystem.Security.Cryptography.Native.OpenSsl.so'
 )
 
 CORECLR_FILES=(
@@ -49,18 +49,15 @@ CORECLR_FILES=(
 	'libmscordaccore.so'
 	'libmscordbi.so'
 	'createdump'
-	'corehost/singlefilehost'
-)
-
-CORESETUP_FILES=(
-	'libhostpolicy.so'
-        'libhostfxr.so'
 )
 
 PACK_FILES=(
 	'apphost'
+	'coreclr_delegates.h'
+	'hostfxr.h'
 	'libnethost.a'
 	'libnethost.so'
+	'nethost.h'
 )
 
 S="${WORKDIR}/runtime-${PV}"
@@ -76,7 +73,7 @@ pkg_setup() {
 	export CORECLR_S="${S}/src/coreclr"
 	export COREFX_S="${S}/src/native/libs"
 	export CORESETUP_S="${S}/src/native/corehost"
-	export RUNTIME_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/current/runtimes/${TARGET}/native"
+	export APPHOST_PACK="packs/Microsoft.NETCore.App.Host.${TARGET}/current/runtimes/${TARGET}/native"
 	export ARTIFACTS_COREFX="${S}/artifacts/bin/native/linux-${DARCH}-Release"
 	export ARTIFACTS_CORECLR="${S}/artifacts/bin/coreclr/linux.${DARCH}.Release"
 	export ARTIFACTS_CORESETUP="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
@@ -104,6 +101,8 @@ src_prepare() {
 	cp "${S}"/eng/native/version/runtime_version.h "${S}"/artifacts/obj/runtime_version.h
 
 	eapply "${FILESDIR}"/skipmanaged-corehost.patch
+	eapply "${FILESDIR}"/fix-missing-definition.patch
+	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize.patch
 
 	eapply_user
 }
@@ -129,38 +128,39 @@ src_compile() {
 }
 
 src_install() {
-        local dest_core="/usr/share/dotnet"
-	local dest="${D}${dest_core}"
-	local dest_pack="${dest}/${RUNTIME_PACK}"
-	local dest_app="${dest}/shared/Microsoft.NETCore.App/current"
-	local dest_app_rel="${dest_core}/shared/Microsoft.NETCore.App/current"
-	local dest_fxr="${dest_core}/host/fxr/current"
+        local dest="${D}/usr/lib/dotnet-sdk"
+	local dest_apphost_pack="${dest}/${APPHOST_PACK}"
+	local dest_netcore_app="${dest}/shared/Microsoft.NETCore.App/current"
+	local dest_aspnetcore_app="${dest}/shared/Microsoft.AspNetCore.App/current"
+	local dest_fxr="${dest}/host/fxr/current"
 
-	mkdir -p "${dest_app}" || die
-	mkdir -p "${dest_pack}" || die
+	mkdir -p "${dest_netcore_app}" || die
+	mkdir -p "${dest_aspnetcore_app}" || die
+	mkdir -p "${dest_apphost_pack}" || die
+	mkdir -p "${dest_fxr}" || die
 
 	for file in "${COREFX_FILES[@]}"; do
-		cp -pP "${ARTIFACTS_COREFX}/${file}" "${dest_app}/" || die
+		cp -pP "${ARTIFACTS_COREFX}/${file}" "${dest_netcore_app}/" || die
 	done
 
 	for file in "${CORECLR_FILES[@]}"; do
-		cp -pP "${ARTIFACTS_CORECLR}/${file}" "${dest_app}/" || die
-	done
-
-	for file in "${CORESETUP_FILES[@]}"; do
-		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_app}/" || die
+		cp -pP "${ARTIFACTS_CORECLR}/${file}" "${dest_netcore_app}/" || die
 	done
 
 	for file in "${PACK_FILES[@]}"; do
-		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_pack}/" || die
+		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_apphost_pack}/" || die
 	done
 
-	dosym "${dest_app_rel}/libhostfxr.so" "${dest_fxr}/libhostfxr.so"
+        cp -pP "${WORKDIR}/shared/Microsoft.NETCore.App/${PV}/"*.dll "${dest_netcore_app}" || die
+        cp -pP "${WORKDIR}/shared/Microsoft.NETCore.App/${PV}/"*.json "${dest_netcore_app}" || die
 
-	# dotnet
+        cp -pP "${WORKDIR}/shared/Microsoft.AspNetCore.App/${PV}/"*.dll "${dest_aspnetcore_app}" || die
+        cp -pP "${WORKDIR}/shared/Microsoft.AspNetCore.App/${PV}/"*.json "${dest_aspnetcore_app}" || die
+
+	cp -pP "${ARTIFACTS_CORECLR}/corehost/singlefilehost" "${dest_apphost_pack}" || die
+	cp -pP "${ARTIFACTS_CORESETUP}/libhostpolicy.so" "${dest_netcore_app}/" || die
+	cp -pP "${ARTIFACTS_CORESETUP}/libhostfxr.so" "${dest_fxr}/" || die
 	cp -pP "${ARTIFACTS_CORESETUP}/dotnet" "${dest}" || die
-	dosym "${dest_core}/dotnet" "/usr/bin/dotnet"
 
-	# create dummy symlink, fix acces violation
-	dosym /dev/null /usr/share/dotnet/metadata
+	dosym ../lib/dotnet-sdk/dotnet /usr/bin/dotnet
 }

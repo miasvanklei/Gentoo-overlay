@@ -1,0 +1,185 @@
+diff --color -ur a/src/coreclr/nativeaot/Bootstrap/main.cpp b/src/coreclr/nativeaot/Bootstrap/main.cpp
+--- a/src/coreclr/nativeaot/Bootstrap/main.cpp	2024-07-16 19:44:51.000000000 +0200
++++ b/src/coreclr/nativeaot/Bootstrap/main.cpp	2024-09-24 22:00:12.399232480 +0200
+@@ -197,26 +197,12 @@
+ 
+ #ifndef NATIVEAOT_DLL
+ 
+-#ifdef ENSURE_PRIMARY_STACK_SIZE
+-__attribute__((noinline, optnone))
+-static void EnsureStackSize(int stackSize)
+-{
+-    volatile char* s = (char*)_alloca(stackSize);
+-    *s = 0;
+-}
+-#endif // ENSURE_PRIMARY_STACK_SIZE
+-
+ #if defined(_WIN32)
+ int __cdecl wmain(int argc, wchar_t* argv[])
+ #else
+ int main(int argc, char* argv[])
+ #endif
+ {
+-#ifdef ENSURE_PRIMARY_STACK_SIZE
+-    // TODO: https://github.com/dotnet/runtimelab/issues/791
+-    EnsureStackSize(1536 * 1024);
+-#endif
+-
+     int initval = InitializeRuntime();
+     if (initval != 0)
+         return initval;
+diff --color -ur a/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets b/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
+--- a/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets	2024-07-16 19:44:51.000000000 +0200
++++ b/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets	2024-09-24 22:00:12.399232480 +0200
+@@ -23,6 +23,7 @@
+     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
+     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
+     <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'linux'">bfd</LinkerFlavor>
++    <IlcDefaultStackSize Condition="'$(_linuxLibcFlavor)' == 'musl'">1572864</IlcDefaultStackSize>
+   </PropertyGroup>
+ 
+   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
+@@ -153,6 +154,7 @@
+       <LinkerArg Include="-Wl,-z,relro" Condition="'$(_IsApplePlatform)' != 'true'" />
+       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
+       <LinkerArg Include="-Wl,-z,now" Condition="'$(_IsApplePlatform)' != 'true'" />
++      <LinkerArg Include="-Wl,-z,stack-size=$(IlcDefaultStackSize)" Condition="'$(IlcDefaultStackSize)' != ''" />
+       <!-- this workaround can be deleted once the minimum supported glibc version
+            (runtime's official build machine's glibc version) is at least 2.33
+            see https://github.com/bminor/glibc/commit/99468ed45f5a58f584bab60364af937eb6f8afda -->
+diff --color -ur a/src/coreclr/nativeaot/CMakeLists.txt b/src/coreclr/nativeaot/CMakeLists.txt
+--- a/src/coreclr/nativeaot/CMakeLists.txt	2024-07-16 19:44:51.000000000 +0200
++++ b/src/coreclr/nativeaot/CMakeLists.txt	2024-09-24 22:00:12.479231539 +0200
+@@ -37,12 +37,6 @@
+   endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
+ endif (CLR_CMAKE_HOST_UNIX)
+ 
+-if(CLR_CMAKE_TARGET_LINUX_MUSL)
+-    # Fix up the main thread stack size for MUSL to more reasonable size.
+-    # TODO: https://github.com/dotnet/runtimelab/issues/791
+-    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
+-endif()
+-
+ if(CLR_CMAKE_TARGET_ANDROID)
+     add_definitions(-DFEATURE_EMULATED_TLS)
+ endif()
+diff --color -ur a/src/coreclr/pal/src/init/pal.cpp b/src/coreclr/pal/src/init/pal.cpp
+--- a/src/coreclr/pal/src/init/pal.cpp	2024-07-16 19:44:51.000000000 +0200
++++ b/src/coreclr/pal/src/init/pal.cpp	2024-09-24 22:00:12.491231398 +0200
+@@ -242,31 +242,6 @@
+     g_initializeDLLFlags = flags;
+ }
+ 
+-#ifdef ENSURE_PRIMARY_STACK_SIZE
+-/*++
+-Function:
+-  EnsureStackSize
+-
+-Abstract:
+-  This fixes a problem on MUSL where the initial stack size reported by the
+-  pthread_attr_getstack is about 128kB, but this limit is not fixed and
+-  the stack can grow dynamically. The problem is that it makes the
+-  functions ReflectionInvocation::[Try]EnsureSufficientExecutionStack
+-  to fail for real life scenarios like e.g. compilation of corefx.
+-  Since there is no real fixed limit for the stack, the code below
+-  ensures moving the stack limit to a value that makes reasonable
+-  real life scenarios work.
+-
+---*/
+-__attribute__((noinline,NOOPT_ATTRIBUTE))
+-void
+-EnsureStackSize(SIZE_T stackSize)
+-{
+-    volatile uint8_t *s = (uint8_t *)_alloca(stackSize);
+-    *s = 0;
+-}
+-#endif // ENSURE_PRIMARY_STACK_SIZE
+-
+ /*++
+ Function:
+   InitializeDefaultStackSize
+@@ -404,13 +370,6 @@
+ 
+         InitializeDefaultStackSize();
+ 
+-#ifdef ENSURE_PRIMARY_STACK_SIZE
+-        if (flags & PAL_INITIALIZE_ENSURE_STACK_SIZE)
+-        {
+-            EnsureStackSize(g_defaultStackSize);
+-        }
+-#endif // ENSURE_PRIMARY_STACK_SIZE
+-
+ #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+         CLRConfigNoCache useDefaultBaseAddr = CLRConfigNoCache::Get("UseDefaultBaseAddr", /*noprefix*/ false, &getenv);
+         if (useDefaultBaseAddr.IsSet())
+diff --color -ur a/src/coreclr/pal/src/thread/thread.cpp b/src/coreclr/pal/src/thread/thread.cpp
+--- a/src/coreclr/pal/src/thread/thread.cpp	2024-07-16 19:44:51.000000000 +0200
++++ b/src/coreclr/pal/src/thread/thread.cpp	2024-09-24 22:06:44.086652882 +0200
+@@ -73,6 +73,7 @@
+ #endif  // HAVE_POLL
+ #include <limits.h>
+ #include <algorithm>
++#include <sys/resource.h>
+ 
+ #if HAVE_SYS_LWP_H
+ #include <sys/lwp.h>
+@@ -2664,6 +2665,25 @@
+ 
+     status = pthread_attr_destroy(&attr);
+     _ASSERT_MSG(status == 0, "pthread_attr_destroy call failed");
++
++#if TARGET_LINUX
++    // on glibc, pthread_attr_getstack will generally return the limit size (minus a guard page)
++    // for the main thread; this is however not necessarily always true on every libc - for example
++    // on musl, it will return the currently reserved size - since the stack bounds are expected to
++    // be constant (and they are for every thread except main, which is allowed to grow), check
++    // resource limits and use that as the boundary instead
++    void* stackBase = (void*)((size_t)stackLimit + stackSize);
++    if (getpid() == PlatformGetCurrentThreadId()) {
++        rlimit limit;
++        getrlimit(RLIMIT_STACK, &limit);
++        rlim_t size = limit.rlim_cur;
++        if (size == RLIM_INFINITY)
++            size = 8 * 1024 * 1024;
++        // account for a guard page
++        size -= static_cast<rlim_t>(sysconf(_SC_PAGESIZE));
++        stackLimit = (void*)((size_t)(stackBase) - size);
++    }
++#endif
+ #endif
+ 
+     return stackLimit;
+diff --color -ur a/src/native/libs/System.Native/CMakeLists.txt b/src/native/libs/System.Native/CMakeLists.txt
+--- a/src/native/libs/System.Native/CMakeLists.txt	2024-07-16 19:44:51.000000000 +0200
++++ b/src/native/libs/System.Native/CMakeLists.txt	2024-09-24 22:00:14.139212022 +0200
+@@ -4,12 +4,6 @@
+     add_definitions(-DHAS_CONSOLE_SIGNALS)
+ endif ()
+ 
+-if (CLR_CMAKE_TARGET_LINUX_MUSL)
+-    # Fix up the thread stack size for MUSL to more reasonable size.
+-    # TODO: https://github.com/dotnet/runtimelab/issues/791
+-    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
+-endif ()
+-
+ if (CLR_CMAKE_TARGET_OSX)
+     add_definitions(-D_DARWIN_C_SOURCE)
+ endif ()
+diff --color -ur a/src/native/libs/System.Native/pal_threading.c b/src/native/libs/System.Native/pal_threading.c
+--- a/src/native/libs/System.Native/pal_threading.c	2024-07-16 19:44:51.000000000 +0200
++++ b/src/native/libs/System.Native/pal_threading.c	2024-09-24 22:00:14.139212022 +0200
+@@ -233,14 +233,6 @@
+     error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+     assert(error == 0);
+ 
+-#ifdef ENSURE_PRIMARY_STACK_SIZE
+-    // TODO: https://github.com/dotnet/runtimelab/issues/791
+-    if (stackSize == 0)
+-    {
+-        stackSize = 1536 * 1024;
+-    }
+-#endif
+-
+     if (stackSize > 0)
+     {
+         if (stackSize < (uintptr_t)PTHREAD_STACK_MIN)
