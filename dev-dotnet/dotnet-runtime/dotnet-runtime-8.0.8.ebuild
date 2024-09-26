@@ -9,10 +9,29 @@ DESCRIPTION=".NET Core cli utility for building, testing, packaging and running 
 HOMEPAGE="https://www.microsoft.com/net/core"
 LICENSE="MIT"
 SRC_URI="
-        amd64? ( "https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/${PV}/${P/dotnet/aspnetcore}-linux-musl-x64.tar.gz" )
-        arm64? ( "https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/${PV}/${P/dotnet/aspnetcore}-linux-musl-arm64.tar.gz" )
+        amd64? ( "https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/${PV}/aspnetcore-runtime-${PV}-linux-musl-x64.tar.gz" )
+        arm64? ( "https://dotnetcli.azureedge.net/dotnet/aspnetcore/Runtime/${PV}/aspnetcore-runtime-${PV}-linux-musl-arm64.tar.gz" )
 	https://github.com/dotnet/runtime/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
 "
+
+NUGETS=(
+	"microsoft.aspnetcore.app.runtime.linux-musl-arm64 arm64 ${PV}"
+	"microsoft.aspnetcore.app.runtime.linux-musl-x64 amd64 ${PV}"
+	"microsoft.netcore.app.runtime.linux-musl-arm64 arm64 ${PV}"
+	"microsoft.netcore.app.runtime.linux-musl-x64 amd64 ${PV}"
+)
+
+update_SRC_URI() {
+        local name arch version
+        for p in "${NUGETS[@]}"; do
+                set -- $p
+                name=$1 arch=$2 version=$3
+
+                SRC_URI+=" ${arch}? ( https://api.nuget.org/v3-flatcontainer/${name}/${version}/${name}.${version}.nupkg )"
+        done
+}
+
+update_SRC_URI
 
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
@@ -64,9 +83,9 @@ S="${WORKDIR}/runtime-${PV}"
 
 pkg_setup() {
 	if use arm64; then
-		DARCH=arm64
+		export DARCH=arm64
 	elif use amd64; then
-		DARCH=x64
+		export DARCH=x64
 	fi
 
 	TARGET="linux-musl-${DARCH}"
@@ -77,6 +96,34 @@ pkg_setup() {
 	export ARTIFACTS_COREFX="${S}/artifacts/bin/native/linux-${DARCH}-Release"
 	export ARTIFACTS_CORECLR="${S}/artifacts/bin/coreclr/linux.${DARCH}.Release"
 	export ARTIFACTS_CORESETUP="${S}/artifacts/bin/linux-musl-${DARCH}.Release/corehost"
+}
+
+src_unpack() {
+        local a
+
+        for a in ${A} ; do
+                case "${a}" in
+                        *.nupkg)
+                                local basename=${a%.nupkg*}
+                                local destdir=${WORKDIR}/${basename}
+                                mkdir "${destdir}" || die
+				unzip -qq -d "${destdir}" "${DISTDIR}/${a}" || die
+                        ;;
+
+			*aspnet*)
+				local basename=${a%.tar.*}
+                                local destdir=${WORKDIR}/${basename}
+                                mkdir "${destdir}" || die
+				tar -C "${destdir}" -x -o --strip-components 1 \
+					-f "${DISTDIR}/${a}" || die
+			;;
+
+                        *)
+                                # Fallback to the default unpacker.
+                                unpack "${a}"
+                                ;;
+                esac
+        done
 }
 
 src_prepare() {
@@ -127,12 +174,37 @@ src_compile() {
 		commithash 770d630b apphostver ${PV} coreclrartifacts ${ARTIFACTS_CORECLR} nativelibsartifacts ${ARTIFACTS_COREFX} || die
 }
 
+install_runtime_pack() {
+        local packname="$1"
+	local packdir="${D}/usr/lib/dotnet-sdk/packs/${packname}.Runtime.linux-musl-${DARCH}"
+	local runtimepackdir="${PV}/runtimes/linux-musl-${DARCH}"
+	local libdir="${packdir}/${runtimepackdir}/lib/net$(ver_cut 1-2)"
+	local nativedir="${packdir}/${runtimepackdir}/native"
+
+	mkdir -p "${libdir}" || die
+	pushd "${libdir}" >/dev/null
+	ln -s "../../../../../../../shared/${packname}/current/"*.dll ./ || die
+	ln -s "../../../../../../../shared/${packname}/current/"*.json ./ || die
+	popd >/dev/null
+
+	if [[ "${packname}" == "Microsoft.NETCore.App" ]]; then
+		mkdir -p "${nativedir}" || die
+		pushd "${nativedir}" >/dev/null
+		ln -s "../../../../../../shared/${packname}/current/"*.so ./ || die
+		ln -s "../../../../../../shared/${packname}/current/createdump" ./ || die
+		popd >/dev/null
+	fi
+
+	cp -r "${WORKDIR}/${packname,,}.runtime.linux-musl-${DARCH}.${PV}/data" "${packdir}" || die
+}
+
 src_install() {
         local dest="${D}/usr/lib/dotnet-sdk"
 	local dest_apphost_pack="${dest}/${APPHOST_PACK}"
 	local dest_netcore_app="${dest}/shared/Microsoft.NETCore.App/current"
 	local dest_aspnetcore_app="${dest}/shared/Microsoft.AspNetCore.App/current"
 	local dest_fxr="${dest}/host/fxr/current"
+	local pack_src_dir="${WORKDIR}/aspnetcore-runtime-${PV}-linux-musl-${DARCH}"
 
 	mkdir -p "${dest_netcore_app}" || die
 	mkdir -p "${dest_aspnetcore_app}" || die
@@ -151,16 +223,19 @@ src_install() {
 		cp -pP "${ARTIFACTS_CORESETUP}/${file}" "${dest_apphost_pack}/" || die
 	done
 
-        cp -pP "${WORKDIR}/shared/Microsoft.NETCore.App/${PV}/"*.dll "${dest_netcore_app}" || die
-        cp -pP "${WORKDIR}/shared/Microsoft.NETCore.App/${PV}/"*.json "${dest_netcore_app}" || die
+        cp -pP "${pack_src_dir}/shared/Microsoft.NETCore.App/${PV}/"*.dll "${dest_netcore_app}" || die
+        cp -pP "${pack_src_dir}/shared/Microsoft.NETCore.App/${PV}/"*.json "${dest_netcore_app}" || die
 
-        cp -pP "${WORKDIR}/shared/Microsoft.AspNetCore.App/${PV}/"*.dll "${dest_aspnetcore_app}" || die
-        cp -pP "${WORKDIR}/shared/Microsoft.AspNetCore.App/${PV}/"*.json "${dest_aspnetcore_app}" || die
+        cp -pP "${pack_src_dir}/shared/Microsoft.AspNetCore.App/${PV}/"*.dll "${dest_aspnetcore_app}" || die
+        cp -pP "${pack_src_dir}/shared/Microsoft.AspNetCore.App/${PV}/"*.json "${dest_aspnetcore_app}" || die
 
 	cp -pP "${ARTIFACTS_CORECLR}/corehost/singlefilehost" "${dest_apphost_pack}" || die
 	cp -pP "${ARTIFACTS_CORESETUP}/libhostpolicy.so" "${dest_netcore_app}/" || die
 	cp -pP "${ARTIFACTS_CORESETUP}/libhostfxr.so" "${dest_fxr}/" || die
 	cp -pP "${ARTIFACTS_CORESETUP}/dotnet" "${dest}" || die
+
+	install_runtime_pack Microsoft.NETCore.App
+	install_runtime_pack Microsoft.AspNetCore.App
 
 	dosym ../lib/dotnet-sdk/dotnet /usr/bin/dotnet
 }
