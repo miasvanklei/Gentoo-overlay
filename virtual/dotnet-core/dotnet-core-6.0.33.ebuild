@@ -5,24 +5,19 @@ EAPI=8
 
 DESCRIPTION="Virtual for dotnet core"
 
-SLOT="6"
+SLOT="8"
 KEYWORDS="amd64 arm64"
 IUSE=""
 
 RDEPEND="
 	dev-dotnet/dotnet-runtime
-	dev-dotnet/netcore-runtime
-	dev-dotnet/aspnet-runtime
-        ~dev-dotnet/dotnet-runtime-nugets-${PV}
+	~dev-dotnet/dotnet-runtime-nugets-${PV}
 "
 
 S=${WORKDIR}
 
 create_symlink() {
-	mkdir -p $1
-	pushd $1 >/dev/null
-	ln -s current $2
-	popd >/dev/null
+	dosym current /usr/lib/dotnet-sdk/$1/${PV}
 }
 
 src_install() {
@@ -32,11 +27,12 @@ src_install() {
 		DARCH=x64
 	fi
 
-	mkdir -p ${D}/usr/share/dotnet
-	cd ${D}/usr/share/dotnet
+	mkdir -p ${D}/usr/lib/dotnet-sdk
 
-	create_symlink host/fxr ${PV}
-	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH} ${PV}
-	create_symlink shared/Microsoft.NETCore.App ${PV}
-	create_symlink shared/Microsoft.AspNetCore.App ${PV}
+	create_symlink host/fxr
+	create_symlink packs/Microsoft.NETCore.App.Host.linux-musl-${DARCH}
+	create_symlink shared/Microsoft.NETCore.App
+	create_symlink shared/Microsoft.AspNetCore.App
+
+	dosym dotnet-sdk /usr/lib/dotnet-sdk-$(ver_cut 1-2)
 }
