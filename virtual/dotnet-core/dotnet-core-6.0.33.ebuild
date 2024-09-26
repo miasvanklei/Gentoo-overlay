@@ -5,13 +5,19 @@ EAPI=8
 
 DESCRIPTION="Virtual for dotnet core"
 
-SLOT="8"
+SLOT="$(ver_cut 1)"
 KEYWORDS="amd64 arm64"
 IUSE=""
 
 RDEPEND="
 	dev-dotnet/dotnet-runtime
-	~dev-dotnet/dotnet-runtime-nugets-${PV}
+	|| (
+		~dev-dotnet/dotnet-runtime-nugets-${PV}
+		(
+			>=dev-dotnet/dotnet-runtime-${PV}
+			<dev-dotnet/dotnet-runtime-$(ver_cut 1).$(($(ver_cut 2) + 1))
+		)
+	)
 "
 
 S=${WORKDIR}
