@@ -14,14 +14,13 @@ SRC_URI="
 	arm64? ( https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-arm64.tar.gz )
 "
 
-SDK_SLOT="$(ver_cut 1-2)"
-RUNTIME_SLOT="${SDK_SLOT}.0"
-SLOT="${SDK_SLOT}/${RUNTIME_SLOT}"
+SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
 RDEPEND=""
 DEPEND="${RDEPEND}
-	dev-dotnet/dotnet-runtime
+	>=dev-dotnet/dotnet-runtime-$(ver_cut 1-2)
+	<dev-dotnet/dotnet-runtime-$(ver_cut 1).$(($(ver_cut 2) + 1))
 "
 
 S="${WORKDIR}"
@@ -33,13 +32,19 @@ src_install() {
 		DARCH=x64
 	fi
 
-	local dest="/usr/share/dotnet"
+	local dest="/usr/lib/${PN}"
 	local target="linux-musl-${DARCH}"
 	local runtime_pack="packs/Microsoft.NETCore.App.Host.${target}/current/runtimes/${target}/native"
 
 	dodir "${dest}"
 	insinto "${dest}"
 	doins -r "${S}"/sdk "${S}"/sdk-manifests "${S}"/templates
+	dodir "${dest}/packs"
+	insinto "${dest}/packs"
+	doins -r "${S}"/packs/Microsoft.AspNetCore.App.Ref "${S}"/packs/Microsoft.NETCore.App.Ref "${S}"/packs/NETStandard.Library.Ref
+
+	mkdir -p "${D}/${dest}/metadata/workloads/${PV}"
+	touch "${D}/${dest}/metadata/workloads/${PV}/userlocal"
 
 	# link apphost
 	dosym "${dest}/${runtime_pack}/apphost" "${dest}/sdk/${PV}/AppHostTemplate/apphost"
