@@ -21,7 +21,7 @@ NAN_V=2.19.0
 
 NODE_ADDON_API_V=8.0.0
 NATIVE_WATCHDOG_V=1.4.1
-NODE_PTY_V=1.1.0-beta11
+NODE_PTY_V=1.1.0-beta21
 VSCODE_SPDLOG_V=0.15.0
 ARGON2_V=0.31.1
 PARCEL_WATCHER_V=2.1.0
@@ -68,10 +68,13 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
+BDEPEND="
+	>=net-libs/nodejs-20.12.1:0/20[npm]
+"
 DEPEND=""
 RDEPEND="
 	${DEPEND}
-	>=net-libs/nodejs-20.12.1:0/20[ssl]
+	>=net-libs/nodejs-20.12.1:0/20[npm,ssl]
 	sys-apps/ripgrep
 "
 
