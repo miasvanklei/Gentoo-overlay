@@ -544,18 +544,25 @@ src_compile() {
 }
 
 src_install() {
-	local dest_root="/usr/share/dotnet/${PN}"
+	local dest_root="/usr/lib/${PN}"
 
 	dotnet-pkg-base_install "${dest_root}"
+
+	echo "MSSQL_SQLTOOLSSERVICE=\"${dest_root}\"" > "${T}"/50${PN} || die
+	doenvd "${T}"/50${PN}
 
 	# Remove "libSkiaSharp.so" provided by "skia-sharp"
 	rm "${ED}/${dest_root}/libSkiaSharp.so"
 
-	# fix executable bit
-#	pushd ${D}/${installdir} >/dev/null || die
-#	chmod +x MicrosoftKustoServiceLayer || die
-#	chmod +x MicrosoftSqlToolsServiceLayer || die
-#	chmod +x MicrosoftSqlToolsMigration || die
-#	chmod +x MicrosoftSqlToolsCredentials || die
-#	chmod +x SqlToolsResourceProviderService || die
+	# remove executable bits
+	find "${ED}/${dest_root}" -type f -exec chmod -x {} \;
+
+	# restore executabe bit for executables
+	pushd "${ED}/${dest_root}" >/dev/null || die
+	chmod +x MicrosoftKustoServiceLayer || die
+	chmod +x MicrosoftSqlToolsServiceLayer || die
+	chmod +x MicrosoftSqlToolsMigration || die
+	chmod +x MicrosoftSqlToolsCredentials || die
+	chmod +x SqlToolsResourceProviderService || die
+	popd >/dev/null
 }
