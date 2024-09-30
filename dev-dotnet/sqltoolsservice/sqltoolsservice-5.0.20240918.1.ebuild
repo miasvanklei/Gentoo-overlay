@@ -5,8 +5,8 @@ EAPI=8
 
 DOTNET_PKG_COMPAT=8.0
 NUGET_APIS=(
-        "https://api.nuget.org/v3-flatcontainer"
-        "https://www.powershellgallery.com/api/v2"
+	"https://api.nuget.org/v3-flatcontainer"
+	"https://www.powershellgallery.com/api/v2"
 )
 NUGETS="
 azure.core@1.24.0
@@ -492,7 +492,7 @@ xunit.extensibility.execution@2.5.1
 xunit@2.5.1
 "
 
-inherit desktop dotnet-pkg xdg-utils
+inherit dotnet-pkg
 
 DESCRIPTION="SQL Tools API service that provides SQL Server data management capabilities."
 HOMEPAGE="https://github.com/microsoft/sqltoolsservice"
