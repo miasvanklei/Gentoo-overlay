@@ -12,7 +12,7 @@ EGIT_COMMIT="v${PV}"
 
 LICENSE="MIT"
 SLOT="0/2"
-KEYWORDS="~arm64"
+KEYWORDS="~amd64 ~arm64"
 
 RDEPEND="
 	dev-libs/expat
