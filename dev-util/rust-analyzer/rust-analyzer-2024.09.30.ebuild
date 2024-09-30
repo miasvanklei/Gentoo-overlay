@@ -1,3 +1,4 @@
+
 # Copyright 2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
@@ -239,8 +240,8 @@ DESCRIPTION="A language server for the Rust programming language"
 # Double check the homepage as the cargo_metadata crate
 # does not provide this value so instead repository is used
 HOMEPAGE="https://rust-analyzer.github.io"
-SRC_URI="$(cargo_crate_uris)
-        https://github.com/rust-lang/rust-analyzer/archive/refs/tags/${MY_PV}.tar.gz -> ${P}.tar.gz"
+SRC_URI="${CARGO_CRATE_URIS}
+	https://github.com/rust-lang/rust-analyzer/archive/refs/tags/${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE=""
 # Dependent crate licenses
@@ -249,13 +250,12 @@ LICENSE+="
 	MPL-2.0 Unicode-DFS-2016
 "
 SLOT="0"
+S="${WORKDIR}/${PN}-${MY_PV}"
+
 KEYWORDS="~amd64 ~arm64"
 
-DEPEND="dev-lang/rust
-        !dev-lang/rust[rust-analyzer]
-"
-
-S="${WORKDIR}/${PN}-${MY_PV}"
+BDEPEND="dev-lang/rust"
+RDEPEND="!dev-lang/rust[rust-analyzer]"
 
 src_configure() {
 	local myfeatures=(
@@ -267,15 +267,16 @@ src_configure() {
 
 src_compile() {
 	export CFG_RELEASE=nightly
-        cargo_src_compile -p proc-macro-srv-cli
-        cargo_src_compile -p rust-analyzer
+	cargo_src_compile -p proc-macro-srv-cli
+	cargo_src_compile -p rust-analyzer
 }
 
 src_install() {
-	pushd crates/rust-analyzer
-        cargo_src_install
-	popd
-	pushd crates/proc-macro-srv-cli
-        cargo_src_install
-}
+	pushd crates/rust-analyzer >/dev/null
+	cargo_src_install
+	popd >/dev/null
 
+	pushd crates/proc-macro-srv-cli >/dev/null
+	cargo_src_install
+	popd >/dev/null
+}
