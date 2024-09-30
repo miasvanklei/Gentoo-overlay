@@ -16,13 +16,15 @@ CRATES="
 	backtrace@0.3.73
 	bitflags@1.3.2
 	bitflags@2.6.0
+	borsh@1.5.1
 	byteorder@1.5.0
 	camino@1.1.7
 	cargo-platform@0.1.8
 	cargo_metadata@0.18.1
-	cc@1.1.10
+	cc@1.1.22
 	cfg-if@1.0.0
 	cfg_aliases@0.1.1
+	cfg_aliases@0.2.1
 	chalk-derive@0.98.0
 	chalk-ir@0.98.0
 	chalk-recursive@0.98.0
@@ -79,7 +81,7 @@ CRATES="
 	linked-hash-map@0.5.6
 	lock_api@0.4.12
 	log@0.4.22
-	lsp-server@0.7.6
+	lsp-server@0.7.7
 	lsp-types@0.95.0
 	lz4_flex@0.11.3
 	memchr@2.7.4
@@ -117,12 +119,12 @@ CRATES="
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.36
-	ra-ap-rustc_abi@0.63.0
-	ra-ap-rustc_index@0.63.0
-	ra-ap-rustc_index_macros@0.63.0
-	ra-ap-rustc_lexer@0.63.0
-	ra-ap-rustc_parse_format@0.63.0
-	ra-ap-rustc_pattern_analysis@0.63.0
+	ra-ap-rustc_abi@0.68.0
+	ra-ap-rustc_index@0.68.0
+	ra-ap-rustc_index_macros@0.68.0
+	ra-ap-rustc_lexer@0.68.0
+	ra-ap-rustc_parse_format@0.68.0
+	ra-ap-rustc_pattern_analysis@0.68.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
@@ -146,8 +148,9 @@ CRATES="
 	serde_repr@0.1.19
 	serde_spanned@0.6.7
 	sharded-slab@0.1.7
+	shlex@1.3.0
 	smallvec@1.13.2
-	smol_str@0.2.2
+	smol_str@0.3.1
 	snap@1.1.1
 	sptr@0.3.2
 	stable_deref_trait@1.2.0
