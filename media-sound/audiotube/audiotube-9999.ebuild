@@ -15,12 +15,11 @@ HOMEPAGE="https://apps.kde.org/audiotube/"
 
 LICENSE="LGPL-3+"
 SLOT="6"
-KEYWORDS="amd64 arm64 ~ppc64 ~riscv x86"
+KEYWORDS="~amd64"
 IUSE="mpris semantic-desktop +vlc"
 
 RESTRICT="test"
 
-BDEPEND=""
 DEPEND="
 	>=dev-db/futuresql-0.1.1
 	dev-libs/kirigami-addons
@@ -38,5 +37,6 @@ DEPEND="
 	>=kde-frameworks/kwindowsystem-${KFMIN}:6
 	net-misc/yt-dlp
 "
+
 RDEPEND="${DEPEND}
 "
