@@ -3,15 +3,15 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..12} )
-inherit cmake llvm llvm.org python-single-r1
+PYTHON_COMPAT=( python3_{11..13} )
+inherit cmake llvm.org llvm-utils python-single-r1
 
 DESCRIPTION="Multi-Level IR Compiler Framework"
 HOMEPAGE="https://mlir.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
-KEYWORDS="~amd64 ~arm64"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
+KEYWORDS="~amd64 ~arm64"
 
 IUSE="debug python test"
 REQUIRED_USE="
@@ -35,7 +35,7 @@ PATCHES=(
 )
 
 LLVM_COMPONENTS=( mlir cmake )
-LLVM_USE_TARGETS=provide
+LLVM_USE_TARGETS=llvm
 llvm.org_set_globals
 
 pkg_setup() {
@@ -130,11 +130,11 @@ src_configure() {
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}"
 
-                -DBUILD_SHARED_LIBS=OFF
+		-DBUILD_SHARED_LIBS=OFF
 		-DMLIR_BUILD_MLIR_C_DYLIB=ON
 		-DLLVM_BUILD_LLVM_DYLIB=ON
-                -DLLVM_LINK_LLVM_DYLIB=ON
-                -DMLIR_LINK_MLIR_DYLIB=ON
+		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DMLIR_LINK_MLIR_DYLIB=ON
 		-DLLVM_BUILD_UTILS=ON
 
 		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
@@ -161,8 +161,8 @@ src_configure() {
 		-DLLVM_LIT_ARGS="$(get_lit_flags)"
 	)
 
-        # LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
-        use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
+	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
+	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
 
 	cmake_src_configure
 }
