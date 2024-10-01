@@ -3,9 +3,10 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{11..13} )
 DISTUTILS_USE_PEP517=setuptools
 PYPI_NO_NORMALIZE=true
+
 inherit distutils-r1 pypi
 
 DESCRIPTION="cChardet is high speed universal character encoding detector."
@@ -13,7 +14,7 @@ HOMEPAGE="https://github.com/faust-streaming/cChardet"
 
 LICENSE="LGPL-3"
 SLOT="0"
-KEYWORDS="amd64 arm arm64 x86"
+KEYWORDS="amd64 arm64"
 IUSE="test"
 RESTRICT="!test? ( test )"
 
