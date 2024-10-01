@@ -3,21 +3,22 @@
 
 EAPI=8
 
+inherit cmake
+
 DESCRIPTION=".NET Core cli utility for building, testing, packaging and running projects"
 HOMEPAGE="https://www.microsoft.com/net/core"
-LICENSE="MIT"
-
-inherit toolchain-funcs cmake
 
 SRC_URI="https://github.com/dotnet/diagnostics/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
+
+S="${WORKDIR}/diagnostics-${PV}"
+
+LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
 PATCHES=(
 	"${FILESDIR}/fix-build.patch"
 )
-
-S="${WORKDIR}/diagnostics-${PV}"
 
 src_prepare() {
 	# disable prerelease (Werror etc)
