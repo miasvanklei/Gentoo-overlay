@@ -28,57 +28,54 @@ PARCEL_WATCHER_V=2.1.0
 
 SRC_URI="
 	${BASE_URI}-amd64.tar.gz
-        https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
-        https://registry.npmjs.org/native-watchdog/-/native-watchdog-${NATIVE_WATCHDOG_V}.tgz -> vscodedep-native-watchdog-${NATIVE_WATCHDOG_V}.tar.gz
-        https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
-        https://registry.npmjs.org/@vscode/spdlog/-/spdlog-${VSCODE_SPDLOG_V}.tgz -> vscodedep-vscode-spdlog-${VSCODE_SPDLOG_V}.tar.gz
-        https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
-        https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
+	https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
+	https://registry.npmjs.org/native-watchdog/-/native-watchdog-${NATIVE_WATCHDOG_V}.tgz -> vscodedep-native-watchdog-${NATIVE_WATCHDOG_V}.tar.gz
+	https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
+	https://registry.npmjs.org/@vscode/spdlog/-/spdlog-${VSCODE_SPDLOG_V}.tgz -> vscodedep-vscode-spdlog-${VSCODE_SPDLOG_V}.tar.gz
+	https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
+	https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
 	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
 "
 
 REBUILD_VSCODE_BINMODS=(
-        native-watchdog
-        node-pty
-        @vscode/spdlog
+	native-watchdog
+	node-pty
+	@vscode/spdlog
 )
 
 COMPILE_VSCODE_BINMODS=(
-        "${REBUILD_VSCODE_BINMODS[@]}"
+	"${REBUILD_VSCODE_BINMODS[@]}"
 	@parcel/watcher
 )
 
-PREPARE_VSCODE_BINMODS=(
-        "${COMPILE_VSCODE_BINMODS[@]}"
+ASSEMBLE_VSCODE_BINMODS=(
+	"${COMPILE_VSCODE_BINMODS[@]}"
 	argon2
 )
 
 CLEANUP_VSCODE_BINMODS=(
-        "${REBUILD_VSCODE_BINMODS[@]}"
+	"${REBUILD_VSCODE_BINMODS[@]}"
 	@vscode/deviceid
 	@vscode/windows-process-tree
 	@vscode/windows-registry
 	kerberos
 )
 
+S="${WORKDIR}/${PN}-${MY_PV}-linux-amd64"
 
-RESTRICT="test"
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
-IUSE=""
+RESTRICT="test"
 
 BDEPEND="
 	>=net-libs/nodejs-20.12.1:0/20[npm]
 "
-DEPEND=""
 RDEPEND="
 	${DEPEND}
 	>=net-libs/nodejs-20.12.1:0/20[npm,ssl]
 	sys-apps/ripgrep
 "
-
-S="${WORKDIR}/${PN}-${MY_PV}-linux-amd64"
 
 DOCS=( "README.md" "ThirdPartyNotices.txt" )
 
@@ -113,7 +110,7 @@ src_unpack() {
 
 src_prepare() {
 	# prepare vscode modules for building
-	for binmod in "${PREPARE_VSCODE_BINMODS[@]}"; do
+	for binmod in "${ASSEMBLE_VSCODE_BINMODS[@]}"; do
 		pkgdir="${WORKDIR}/$(package_dir ${binmod})"
 		mkdir -p "${pkgdir}/node_modules" || die
 		ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
@@ -126,13 +123,13 @@ src_prepare() {
 	cleanup_binmods
 
 	# not needed
-	rm ${S}/postinstall.sh || die
+	rm "${S}"/postinstall.sh || die
 
 	# already in /usr/portage/licenses/MIT
-	rm ${S}/LICENSE || die
+	rm "${S}"/LICENSE || die
 
 	eapply "${FILESDIR}/${PN}-node.patch"
-        eapply_user
+	eapply_user
 }
 
 src_configure() {
@@ -161,7 +158,8 @@ src_compile() {
 	# argon2
 	einfo "rebuilding argon2..."
 	enodepregyp rebuild -C "${WORKDIR}/$(package_dir argon2)"
-	cp "${WORKDIR}/$(package_dir argon2)/lib/binding/napi-v3/argon2.node" "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node"
+	cp "${WORKDIR}/$(package_dir argon2)/lib/binding/napi-v3/argon2.node" \
+	"${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node"
 }
 
 src_install() {
@@ -172,10 +170,9 @@ src_install() {
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
 	dosym "../../usr/lib/${PN}/bin/${PN}" "${EPREFIX}/usr/bin/${PN}"
 
-
 	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
 
-	systemd_dounit "${FILESDIR}/${PN}@.service"
+	systemd_newunit "${FILESDIR}/${PN}.service" "${PN}@.service"
 }
 
 pkg_postinst() {
