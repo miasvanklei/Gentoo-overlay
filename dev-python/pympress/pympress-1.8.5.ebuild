@@ -3,8 +3,8 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..12} )
-DISTUTILS_USE_SETUPTOOLS=bdepend
+PYTHON_COMPAT=( python3_{11..13} )
+DISTUTILS_USE_PEP517=setuptools
 
 inherit distutils-r1 pypi
 
@@ -13,8 +13,8 @@ HOMEPAGE="https://bidict.readthedocs.io"
 
 LICENSE="MPL-2.0"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64"
-IUSE="gstreamer vlc"
+KEYWORDS="~amd64 ~arm64"
+IUSE="gstreamer"
 
 BDEPEND="
 	dev-python/Babel[${PYTHON_USEDEP}]"
@@ -23,7 +23,6 @@ RDEPEND="
 	app-text/poppler[cairo,introspection]
 	dev-python/pygobject[${PYTHON_USEDEP}]
 	dev-python/watchdog[${PYTHON_USEDEP}]
-	vlc? ( dev-python/python-vlc[${PYTHON_USEDEP}] )
 	gstreamer? ( dev-python/gst-python[${PYTHON_USEDEP}] )
 	x11-libs/gtk+:3[introspection]"
 
@@ -33,5 +32,5 @@ src_install() {
 	distutils-r1_src_install
 
 	insinto /usr/share/icons/hicolor/128x128/apps
-	doins ${FILESDIR}/pympress.png
+	doins "${FILESDIR}"/pympress.png
 }
