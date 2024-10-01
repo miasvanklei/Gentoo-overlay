@@ -243,6 +243,8 @@ HOMEPAGE="https://rust-analyzer.github.io"
 SRC_URI="${CARGO_CRATE_URIS}
 	https://github.com/rust-lang/rust-analyzer/archive/refs/tags/${MY_PV}.tar.gz -> ${P}.tar.gz"
 
+S="${WORKDIR}/${PN}-${MY_PV}"
+
 LICENSE=""
 # Dependent crate licenses
 LICENSE+="
@@ -250,7 +252,6 @@ LICENSE+="
 	MPL-2.0 Unicode-DFS-2016
 "
 SLOT="0"
-S="${WORKDIR}/${PN}-${MY_PV}"
 
 KEYWORDS="~amd64 ~arm64"
 
