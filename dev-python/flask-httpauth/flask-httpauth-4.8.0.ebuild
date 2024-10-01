@@ -4,9 +4,10 @@
 EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{11..13} )
 PYPI_NO_NORMALIZE="True"
 PYPI_PN="Flask-HTTPAuth"
+
 inherit distutils-r1 pypi
 
 DESCRIPTION="HTTP authentication for Flask routes"
