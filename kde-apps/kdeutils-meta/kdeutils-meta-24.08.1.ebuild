@@ -12,22 +12,22 @@ KEYWORDS="~amd64 ~arm64 ~x86"
 IUSE="7zip gpg lrz plasma rar webengine"
 
 RDEPEND="
-        >=app-cdr/dolphin-plugins-mountiso-${PV}:*
-        >=app-cdr/isoimagewriter-${PV}:*
-        >=app-crypt/keysmith-${PV}
-        >=kde-apps/ark-${PV}:*
-        >=kde-apps/filelight-${PV}:*
-        >=kde-apps/kate-${PV}:*
-        >=kde-apps/kbackup-${PV}:*
-        >=kde-apps/kcalc-${PV}:*
-        >=kde-apps/kcharselect-${PV}:*
-        >=kde-apps/kdebugsettings-${PV}:*
-        >=kde-apps/kdf-${PV}:*
-        >=kde-apps/kwalletmanager-${PV}:*
-        >=kde-misc/kweather-${PV}:*
-        >=kde-misc/markdownpart-${PV}:*
-        >=sys-block/partitionmanager-${PV}:*
-        >=sys-libs/kpmcore-${PV}:*
+	>=app-cdr/dolphin-plugins-mountiso-${PV}:*
+	>=app-cdr/isoimagewriter-${PV}:*
+	>=app-crypt/keysmith-${PV}
+	>=kde-apps/ark-${PV}:*
+	>=kde-apps/filelight-${PV}:*
+	>=kde-apps/kate-${PV}:*
+	>=kde-apps/kbackup-${PV}:*
+	>=kde-apps/kcalc-${PV}:*
+	>=kde-apps/kcharselect-${PV}:*
+	>=kde-apps/kdebugsettings-${PV}:*
+	>=kde-apps/kdf-${PV}:*
+	>=kde-apps/kwalletmanager-${PV}:*
+	>=kde-misc/kweather-${PV}:*
+	>=kde-misc/markdownpart-${PV}:*
+	>=sys-block/partitionmanager-${PV}:*
+	>=sys-libs/kpmcore-${PV}:*
 	gpg? ( >=kde-apps/kgpg-${PV} )
 	plasma? ( >=kde-misc/kclock-${PV} )
 "
@@ -35,7 +35,6 @@ RDEPEND="
 #		>=app-editors/ghostwriter-${PV}:*
 #		>=kde-apps/kimagemapeditor-${PV}:*
 #	)
-
 
 # Optional runtime deps: kde-apps/ark
 RDEPEND="${RDEPEND}
