@@ -5,24 +5,22 @@ EAPI=8
 
 DESCRIPTION="Ancillary tools for the D programming language compiler"
 HOMEPAGE="https://github.com/dlang/tools"
-LICENSE="BSL-1.1"
 SRC_URI="https://github.com/dlang/tools/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
-
-SLOT="0"
-KEYWORDS="~amd64 ~arm64"
-IUSE=""
-
-BDEPEND="dev-util/dub"
 
 S="${WORKDIR}/tools-${PV}"
 
+LICENSE="BSL-1.1"
+SLOT="0"
+KEYWORDS="~amd64 ~arm64"
+
+BDEPEND="dev-util/dub"
+
 src_compile() {
-        dub build --build=release --parallel :ddemangle || die
-        dub build --build=release --parallel :rdmd || die
+	dub build --build=release --parallel :ddemangle || die
+	dub build --build=release --parallel :rdmd || die
 }
 
 src_install() {
-        newbin dtools_ddemangle ddemangle
-        newbin dtools_rdmd rdmd
+	newbin dtools_ddemangle ddemangle
+	newbin dtools_rdmd rdmd
 }
-
