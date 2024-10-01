@@ -10,6 +10,8 @@ HOMEPAGE="https://github.com/mono/SkiaSharp"
 EGIT_REPO_URI="https://github.com/mono/SkiaSharp.git"
 EGIT_COMMIT="v${PV}"
 
+S="${WORKDIR}/${P}/externals/skia"
+
 LICENSE="MIT"
 SLOT="0/2"
 KEYWORDS="~amd64 ~arm64"
@@ -31,8 +33,6 @@ DOCS=( README.md )
 PATCHES=(
 	"${FILESDIR}/dont-strip.patch"
 )
-
-S="${WORKDIR}/${P}/externals/skia"
 
 src_unpack() {
 	git-r3_src_unpack
