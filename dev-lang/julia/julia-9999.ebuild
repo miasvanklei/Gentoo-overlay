@@ -3,7 +3,9 @@
 
 EAPI=8
 
-inherit git-r3 llvm pax-utils optfeature toolchain-funcs
+LLVM_COMPAT=( 19 )
+
+inherit git-r3 llvm-r1 pax-utils optfeature toolchain-funcs
 
 # correct versions for stdlibs are in deps/checksums
 # for everything else, run with network-sandbox and wait for the crash
@@ -43,23 +45,21 @@ BUNDLED_DEPS=(
 update_SRC_URI() {
 	local src_uris=( "${STDLIBS[@]}" "${BUNDLED_DEPS[@]}" )
 
-        local repo pn pv
-        for p in "${src_uris[@]}"; do
-                set -- $p
-                repo=$1 pn=$2 pv=$3
+	local repo pn pv
+	for p in "${src_uris[@]}"; do
+		set -- $p
+		repo=$1 pn=$2 pv=$3
 
-                SRC_URI+=" https://api.github.com/repos/${repo}/${pn}/tarball/${pv} -> ${PN}-${pn}-${pv}.tar.gz"
-        done
+		SRC_URI+=" https://api.github.com/repos/${repo}/${pn}/tarball/${pv} -> ${PN}-${pn}-${pv}.tar.gz"
+	done
 }
 
 update_SRC_URI
 
+S="${WORKDIR}/${P/_/-}"
+
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64"
-IUSE=""
-
-LLVM_MAX_SLOT=19
 
 RDEPEND+="
 	app-arch/p7zip
@@ -109,10 +109,8 @@ PATCHES=(
 	"${FILESDIR}"/llvm-19.patch
 )
 
-S="${WORKDIR}/${P/_/-}"
-
 pkg_setup() {
-	llvm_pkg_setup
+	llvm-r1_pkg_setup
 }
 
 copy_bundled_deps() {
@@ -122,8 +120,8 @@ copy_bundled_deps() {
 
 	mkdir -p "${S}/${dest}/srccache/"
 	for p in "${filenames[@]}"; do
-                set -- $p
-                repo=$1 pn=$2 pv=$3
+		set -- $p
+		repo=$1 pn=$2 pv=$3
 		filename="${pn}-${pv}.tar.gz"
 
 		cp "${DISTDIR}/${PN}-${filename}" "${S}/${dest}/srccache/${filename/.jl/}" || die
@@ -158,7 +156,8 @@ src_prepare() {
 		src/Makefile || die
 
 	# disable doc install starting	git fetching
-	sed -i -e 's~install: $(build_depsbindir)/stringreplace docs~install: $(build_depsbindir)/stringreplace~' Makefile || die
+	sed -i -e "s~install: $(build_depsbindir)/stringreplace\
+		docs~install: $(build_depsbindir)/stringreplace~" Makefile || die
 
 	# disable binary wrappers download
 	sed -i -e 's|get-$$($(1)_JLL_NAME)_jll||g' stdlib/Makefile || die
