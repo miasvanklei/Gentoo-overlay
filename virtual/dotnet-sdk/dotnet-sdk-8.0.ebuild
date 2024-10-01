@@ -6,7 +6,7 @@ EAPI=8
 DESCRIPTION="Virtual for .NET SDK"
 
 SLOT="${PV}"
-KEYWORDS="~amd64 ~arm ~arm64"
+KEYWORDS="amd64 ~arm64"
 
 RDEPEND="
 	>=dev-dotnet/dotnet-sdk-${PV}
