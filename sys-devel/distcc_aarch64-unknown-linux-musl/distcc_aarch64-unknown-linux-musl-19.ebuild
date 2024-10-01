@@ -7,11 +7,8 @@ inherit distcc
 
 DESCRIPTION="Symlinks to a Clang crosscompiler"
 HOMEPAGE="https://wiki.gentoo.org/wiki/Project:LLVM"
-SRC_URI=""
-S=${WORKDIR}
+S="${WORKDIR}"
 
 LICENSE="public-domain"
 SLOT="${PV}"
 KEYWORDS="~amd64 ~arm64"
-PROPERTIES="live"
-
