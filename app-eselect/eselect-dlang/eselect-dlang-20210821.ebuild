@@ -6,15 +6,13 @@ EAPI=8
 DESCRIPTION="Eselect module for management of multiple D versions"
 HOMEPAGE="https://github.com/gentoo-dlang"
 
+S="${FILESDIR}"
+
 LICENSE="GPL-2"
 SLOT="0"
-KEYWORDS="amd64 ~arm ~arm64 ~ppc ~ppc64 x86"
-IUSE=""
+KEYWORDS="amd64 ~arm64"
 
 RDEPEND="app-admin/eselect"
-DEPEND=""
-
-S="${FILESDIR}"
 
 src_install() {
 	insinto /usr/share/eselect/modules
