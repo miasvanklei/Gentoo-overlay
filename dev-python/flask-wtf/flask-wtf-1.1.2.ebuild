@@ -4,9 +4,10 @@
 EAPI=8
 
 DISTUTILS_USE_PEP517=hatchling
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{11..13} )
 PYPI_NO_NORMALIZE="True"
 PYPI_PN="flask-wtf"
+
 inherit distutils-r1 pypi
 
 DESCRIPTION="Simple integration of Flask and WTForms"
@@ -29,7 +30,7 @@ RDEPEND="
 
 distutils_enable_sphinx docs \
 	dev-python/pallets-sphinx-themes \
-	dev-python/sphinxcontrib-log_cabinet \
+	dev-python/sphinxcontrib-log-cabinet \
 	dev-python/sphinx-issues
 distutils_enable_tests pytest
 
