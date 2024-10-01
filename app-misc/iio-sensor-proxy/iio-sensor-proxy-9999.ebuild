@@ -11,7 +11,7 @@ EGIT_REPO_URI="https://gitlab.freedesktop.org/hadess/iio-sensor-proxy.git"
 
 LICENSE="GPL-3"
 SLOT="0"
-KEYWORDS="~amd64"
+KEYWORDS=""
 
 RDEPEND="
 	sys-apps/systemd
