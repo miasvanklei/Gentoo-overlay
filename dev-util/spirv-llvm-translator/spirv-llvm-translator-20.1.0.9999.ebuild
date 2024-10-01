@@ -14,7 +14,7 @@ EGIT_BRANCH="llvm_release_200"
 
 LICENSE="UoI-NCSA"
 SLOT="$(ver_cut 1)"
-KEYWORDS="~amd64 ~arm64 ~riscv ~x86"
+KEYWORDS=""
 IUSE="test"
 RESTRICT="!test? ( test )"
 
