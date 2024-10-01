@@ -4,7 +4,8 @@
 EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{11..12} )
+PYTHON_COMPAT=( python3_{11..13} )
+
 inherit distutils-r1 pypi systemd
 
 DESCRIPTION="Simple integration of Flask and WTForms"
@@ -56,5 +57,5 @@ PATCHES="${FILESDIR}/remove-required-optional-deps.patch"
 src_install() {
 	distutils-r1_src_install
 
-	systemd_dounit ${FILESDIR}/${PN}.service
+	systemd_dounit "${FILESDIR}/${PN}.service"
 }
