@@ -3,15 +3,10 @@
 
 EAPI=8
 
+inherit bash-completion-r1
+
 DESCRIPTION="Auto-complete program for the D programming language"
 HOMEPAGE="https://github.com/dlang-community/DCD"
-LICENSE="GPL-3"
-
-SLOT="0"
-KEYWORDS="~amd64 ~arm64"
-IUSE="systemd"
-
-inherit bash-completion-r1
 
 CONTAINERS="116a02872039efbd0289828cd5eeff6f60bdf539"
 LIBDPARSE="86c9bf44c96e1666eb175c749cc26f62c2008979"
@@ -24,6 +19,11 @@ SRC_URI="
 	https://github.com/msgpack/msgpack-d/archive/${MSGPACK}.tar.gz -> msgpack-d-${MSGPACK}.tar.gz
 	"
 S="${WORKDIR}/DCD-${MY_PV}"
+
+LICENSE="GPL-3"
+SLOT="0"
+KEYWORDS="~amd64 ~arm64"
+IUSE="systemd"
 
 src_prepare() {
 	# Default ebuild unpack function places archives side-by-side ...
