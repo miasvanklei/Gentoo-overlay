@@ -136,18 +136,19 @@ CRATES="
 
 inherit cargo
 
-DESCRIPTION="codelldb"
+DESCRIPTION="A native debugger extension for VSCode based on LLDB"
 HOMEPAGE="https://github.com/vadimcn/codelldb"
 SRC_URI="https://github.com/vadimcn/codelldb/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
-        $(cargo_crate_uris)"
+	${CARGO_CRATE_URIS}"
+
+S="${WORKDIR}/${P}/adapter"
 
 LICENSE=""
 # Dependent crate licenses
 LICENSE+=" Apache-2.0 BSD-2 MIT Unicode-DFS-2016"
 SLOT="0"
-KEYWORDS="~amd64 ~arm64"
 
-S="${WORKDIR}/${P}/adapter"
+KEYWORDS="~amd64 ~arm64"
 
 PATCHES=(
 	"${FILESDIR}/fix-compile-on-musl.patch"
