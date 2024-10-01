@@ -10,8 +10,8 @@ HOMEPAGE="https://gitlab.gnome.org/World/Shortwave"
 
 SRC_URI="https://gitlab.gnome.org/World/Shortwave/uploads/823870933d66693170571fdf09f2e355/${P}.tar.xz"
 
-KEYWORDS="~amd64"
 LICENSE="GPL-3"
+KEYWORDS="~amd64"
 SLOT="0"
 
 RDEPEND="
@@ -31,7 +31,6 @@ RDEPEND="
 "
 
 DEPEND="${RDEPEND}"
-BDEPEND=""
 
 BUILD_DIR="${WORKDIR}/${P}_build"
 
@@ -41,7 +40,7 @@ src_prepare () {
 	sed -i 's/\("files":{\)[^}]*/\1/' vendor/getrandom/.cargo-checksum.json
 
 	# fix vendor until cargo supports -C
-	mkdir -p ${BUILD_DIR}
+	mkdir -p "${BUILD_DIR}"
 	mv vendor "${BUILD_DIR}/vendor" || die
 	mv .cargo "${BUILD_DIR}/.cargo" || die
 
