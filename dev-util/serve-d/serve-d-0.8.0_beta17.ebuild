@@ -9,19 +9,18 @@ HOMEPAGE="https://github.com/Pure-D/serve-d"
 MY_PV="$(ver_rs 3 '-' $(ver_cut 1-4)).$(ver_cut 5)"
 SRC_URI="https://github.com/Pure-D/serve-d/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
+S="${WORKDIR}/${PN}-${MY_PV}"
+
 LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
-IUSE=""
-RESTRICT="network-sandbox"
 
+RESTRICT="network-sandbox"
 
 DEPEND="
 	dev-util/d-tools
 	dev-util/dub"
 RDEPEND="${DEPEND}"
-
-S="${WORKDIR}/${PN}-${MY_PV}"
 
 src_compile() {
 	dub build --build=release --parallel || die
