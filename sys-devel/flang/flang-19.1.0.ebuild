@@ -3,8 +3,8 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..12} )
-inherit cmake llvm llvm.org multilib python-single-r1
+PYTHON_COMPAT=( python3_{11..13} )
+inherit cmake llvm.org llvm-utils python-single-r1
 
 DESCRIPTION="Flang is LLVM’s Fortran frontend"
 HOMEPAGE="https://flang.llvm.org/"
@@ -13,25 +13,28 @@ LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
 KEYWORDS="~amd64 ~arm64"
 IUSE="default-compiler-rt"
+REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
-RDEPEND="
+DEPEND="
 	~sys-devel/llvm-${PV}
 	~sys-devel/clang-${PV}
-	~dev-util/mlir-${PV}"
-DEPEND="${RDEPEND}"
-BDEPEND="dev-util/mlir:${LLVM_MAJOR}"
+	~dev-util/mlir-${PV}
+"
 
 RDEPEND="
-        ${PYTHON_DEPS}
-        ${DEPEND}
-        >=sys-devel/flang-common-${PV}
+	${PYTHON_DEPS}
+	${DEPEND}
+	>=sys-devel/flang-common-${PV}
+"
+BDEPEND="
+	${PYTHON_DEPS}
 "
 PDEPEND="
-        >=sys-devel/flang-toolchain-symlinks-19:${LLVM_MAJOR}
+	sys-devel/flang-toolchain-symlinks:${LLVM_MAJOR}
 "
 
 LLVM_COMPONENTS=( flang cmake )
-LLVM_USE_TARGETS=provide
+LLVM_USE_TARGETS=llvm
 llvm.org_set_globals
 
 PATCHES=(
@@ -50,8 +53,8 @@ src_configure() {
 		-DCLANG_DIR=${llvmdir}/lib/cmake/clang
 		-DMLIR_DIR=${llvmdir}/lib/cmake/mlir
 
-                -DBUILD_SHARED_LIBS=OFF
-                -DLLVM_LINK_LLVM_DYLIB=ON
+		-DBUILD_SHARED_LIBS=OFF
+		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DCLANG_LINK_CLANG_DYLIB=ON
 		-DLLVM_LINK_LLVM_DYLIB=ON
 		-DMLIR_LINK_MLIR_DYLIB=ON
