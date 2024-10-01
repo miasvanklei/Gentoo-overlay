@@ -147,10 +147,10 @@ LICENSE="MIT"
 SLOT="0/${MY_PV}"
 
 RDEPEND="
-        dev-dotnet/dotnet-diagnostics:=
+	dev-dotnet/dotnet-diagnostics:=
 "
 DEPEND="
-        ${RDEPEND}
+	${RDEPEND}
 "
 
 CHECKREQS_DISK_BUILD="1400M"
