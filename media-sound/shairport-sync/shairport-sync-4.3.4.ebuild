@@ -11,11 +11,11 @@ SRC_URI="https://github.com/mikebrady/shairport-sync/archive/${PV}.tar.gz -> ${P
 
 LICENSE="MIT"
 SLOT="0"
-KEYWORDS="~amd64 ~arm ~arm64"
+KEYWORDS="~amd64 ~arm64"
 
 IUSE="airplay-2 +alsa convolution jack mbedtls +openssl +pipewire pulseaudio soundio soxr"
 REQUIRED_USE="
-	|| ( alsa jack pipewire pulseaudio soundio soxr )
+	|| ( alsa jack pipewire soxr )
 	^^ ( openssl mbedtls )"
 
 RDEPEND="
@@ -39,8 +39,6 @@ RDEPEND="
 	mbedtls? ( net-libs/mbedtls )
 	openssl? ( dev-libs/openssl )
 	pipewire? ( media-video/pipewire )
-	pulseaudio? ( media-sound/pulseaudio )
-	soundio? ( media-libs/libsoundio )
 	soxr? ( media-libs/soxr )
 "
 
@@ -74,7 +72,6 @@ src_configure() {
 		$(use_with jack) \
 		$(use_with pulseaudio pa) \
 		$(use_with pipewire pw) \
-		$(use_with soundio) \
 		$(use_with soxr) \
 		$myconf
 }
