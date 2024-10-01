@@ -6,9 +6,11 @@ EAPI=8
 DESCRIPTION="Common files shared between multiple slots of flang"
 HOMEPAGE="https://llvm.org/"
 
+S="${WORKDIR}"
+
 LICENSE="Apache-2.0-with-LLVM-exceptions"
-KEYWORDS="~amd64 ~arm64"
 SLOT="0"
+KEYWORDS="~amd64 ~arm64"
 IUSE="default-compiler-rt default-libcxx llvm-libunwind"
 
 PDEPEND="
@@ -21,8 +23,6 @@ PDEPEND="
 	!default-compiler-rt? ( sys-devel/gcc )
 	default-libcxx? ( >=sys-libs/libcxx-${PV}[static-libs] )
 "
-
-S="${WORKDIR}"
 
 pkg_pretend() {
 	[[ ${CLANG_IGNORE_DEFAULT_RUNTIMES} ]] && return
