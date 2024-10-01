@@ -1,7 +1,7 @@
 # Copyright 1999-2024 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# @ECLASS: crossdev.eclass
+# @ECLASS: distcc.eclass
 # @MAINTAINER:
 # mias van klei
 # @AUTHOR:
@@ -10,7 +10,7 @@
 # @BLURB: Convenience wrappers for usage by distcc
 
 case ${EAPI} in
-	7|8) ;;
+	8) ;;
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
@@ -21,7 +21,10 @@ RDEPEND="
         sys-devel/clang:${PV}
 "
 
-src_install() {
+# @FUNCTION: distcc_src_install
+# @DESCRIPTION:
+# Install distcc symlinks for given llvm in ${SLOT}
+distcc_src_install() {
 	local distcc_pn_prefix="distcc_"
 	local distcc_target=${PN#${distcc_pn_prefix}}
 
@@ -46,3 +49,5 @@ src_install() {
 }
 
 fi
+
+EXPORT_FUNCTIONS src_install
