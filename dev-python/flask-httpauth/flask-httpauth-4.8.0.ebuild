@@ -20,3 +20,5 @@ KEYWORDS="~amd64 ~arm64"
 RDEPEND="
 	dev-python/flask[${PYTHON_USEDEP}]
 "
+
+distutils_enable_tests pytest
