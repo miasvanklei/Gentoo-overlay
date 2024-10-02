@@ -1,26 +1,37 @@
 --- a/Make.inc	2021-11-14 16:03:00.095635920 +0100
 +++ b/Make.inc	2021-11-14 15:58:27.921347799 +0100
-@@ -1566,7 +1566,7 @@
+@@ -42,6 +42,7 @@
+ # Issues resulting from use of SYSTEM versions will generally not be accepted.
+ USE_SYSTEM_CSL:=0
+ USE_SYSTEM_LLVM:=0
++USE_LLVM_LUBUNWIND:=0
+ USE_SYSTEM_LIBUNWIND:=0
+ DISABLE_LIBUNWIND:=0
+ USE_SYSTEM_PCRE:=0
+@@ -1096,10 +1097,10 @@
+ LIBUNWIND:=
+ else
+ LIBUNWIND:=-lunwind
+-ifneq ($(findstring $(OS),Darwin OpenBSD),)
++ifeq ($(USE_LLVM_LIBUNWIND), 1)
+ JCPPFLAGS+=-DLLVMLIBUNWIND
+-else ifeq ($(USE_SYSTEM_LIBUNWIND), 1)
+-# Only for linux and freebsd since we want to use not yet released gnu libunwind features
++endif
++ifeq ($(USE_SYSTEM_LIBUNWIND), 1)
+ JCFLAGS+=-DSYSTEM_LIBUNWIND
+ JCPPFLAGS+=-DSYSTEM_LIBUNWIND
+ endif
+@@ -1658,7 +1652,7 @@
  endif
  endif
  ifneq ($(findstring $(OS),Linux FreeBSD),)
 -LIBGCC_NAME := libgcc_s.$(SHLIB_EXT).1
 +LIBGCC_NAME := libunwind.$(SHLIB_EXT)
  endif
- 
+
  # USE_SYSTEM_CSL causes it to get symlinked into build_private_shlibdir
-@@ -1096,9 +1096,8 @@
- LIBUNWIND:=
- else
- LIBUNWIND:=-lunwind
--ifneq ($(findstring $(OS),Darwin OpenBSD),)
- JCPPFLAGS+=-DLLVMLIBUNWIND
--else ifeq ($(USE_SYSTEM_LIBUNWIND), 1)
-+ifeq ($(USE_SYSTEM_LIBUNWIND), 1)
- # Only for linux and freebsd since we want to use not yet released gnu libunwind features
- JCFLAGS+=-DSYSTEM_LIBUNWIND
- JCPPFLAGS+=-DSYSTEM_LIBUNWIND
-@@ -1529,7 +1529,7 @@
+@@ -1672,7 +1666,7 @@
  # We only bother to define this on Linux, as that's the only platform that does libstdc++ probing
  # On all other platforms, the LIBSTDCXX_*_DEPLIB variables will be empty.
  ifeq ($(OS),Linux)
@@ -52,10 +63,61 @@
      // Try platform specific methods first since they are usually faster
      if (needs_saddr) {
 -#if (defined(_OS_LINUX_) || defined(_OS_FREEBSD_)) && !defined(JL_DISABLE_LIBUNWIND)
-+#if (defined(_OS_LINUX_) || defined(_OS_FREEBSD_)) && !defined(JL_DISABLE_LIBUNWIND) && !defined(LLVMLIBUNWIND)
++#if !defined(JL_DISABLE_LIBUNWIND) && !defined(LLVMLIBUNWIND)
          unw_proc_info_t pip;
          // Seems that libunwind may return NULL IP depending on what info it finds...
          if (unw_get_proc_info_by_ip(unw_local_addr_space, pointer,
+@@ -1279,8 +1265,8 @@
+     return getJITDebugRegistry().lookupLinfo((size_t)p);
+ }
+
+-#if defined(_OS_DARWIN_) && defined(LLVM_SHLIB)
+-
++#if defined(LLVMLIBUNWIND)
++#if (!defined(SYSTEM_LIBUNWIND) && defined(LLVM_SHLIB)) || (defined(SYSTEM_LIBUNWIND) && !defined(LLVM_SHLIB))
+ /*
+  * We use a custom unwinder, so we need to make sure that when registering dynamic
+  * frames, we do so with our unwinder rather than with the system one. If LLVM is
+@@ -1292,7 +1278,7 @@
+ // This implementation handles frame registration for local targets.
+ void register_eh_frames(uint8_t *Addr, size_t Size)
+ {
+-  // On OS X OS X __register_frame takes a single FDE as an argument.
++  // llvm libunwind __register_frame takes a single FDE as an argument.
+   // See http://lists.cs.uiuc.edu/pipermail/llvmdev/2013-April/061768.html
+   processFDEs((char*)Addr, Size, [](const char *Entry) {
+       getJITDebugRegistry().libc_frames.libc_register_frame(Entry);
+@@ -1306,7 +1292,29 @@
+     });
+ }
+
+-#elif (defined(_OS_LINUX_) || defined(_OS_FREEBSD_)) && \
++#else
++
++void register_eh_frames(uint8_t *Addr, size_t Size)
++{
++  processFDEs((char*)Addr, Size, [](const char *Entry) {
++    jl_profile_atomic([&]() JL_NOTSAFEPOINT {
++      __register_frame(const_cast<char *>(Entry));
++    });
++  });
++}
++
++void deregister_eh_frames(uint8_t *Addr, size_t Size)
++{
++  processFDEs((char*)Addr, Size, [](const char *Entry) {
++    jl_profile_atomic([&]() JL_NOTSAFEPOINT {
++      __deregister_frame(const_cast<char *>(Entry));
++    });
++  });
++}
++
++#endif
++
++#elif !defined(LLVMLIBUNWIND) && \
+     defined(JL_UNW_HAS_FORMAT_IP) && \
+     !defined(_CPU_ARM_) // ARM does not have/use .eh_frame, so we handle this elsewhere
+ #include <type_traits>
 --- a/src/intrinsics.cpp	2021-03-24 21:02:52.000000000 +0100
 +++ b/src/intrinsics.cpp	2021-11-14 15:58:27.909347655 +0100
 @@ -1306,6 +1306,13 @@
@@ -72,6 +134,44 @@
  
  // float16 intrinsics
  // TODO: use LLVM's compiler-rt
+--- a/src/stackwalk.c 2024-10-02 15:32:12.042875832 +0200
++++ b/src/stackwalk.c 2024-10-02 16:11:46.355734736 +0200
+@@ -556,7 +556,7 @@
+     return unw_step(cursor) > 0;
+ }
+
+-#ifdef LLVMLIBUNWIND
++#if defined(LLVMLIBUNWIND) && defined(_OS_DARWIN_)
+ NOINLINE size_t rec_backtrace_ctx_dwarf(jl_bt_element_t *bt_data, size_t maxsize,
+                                         bt_context_t *context, jl_gcframe_t *pgcstack)
+ {
+--- a/src/julia_internal.h    2024-10-02 15:32:12.026876007 +0200
++++ b/src/julia_internal.h    2024-10-02 16:11:24.111985603 +0200
+@@ -1317,11 +1317,12 @@
+ #pragma GCC visibility pop
+ typedef unw_context_t bt_context_t;
+ typedef unw_cursor_t bt_cursor_t;
+-#  if (!defined(SYSTEM_LIBUNWIND) || UNW_VERSION_MAJOR > 1 ||   \
+-       (UNW_VERSION_MAJOR == 1 && UNW_VERSION_MINOR != 0 && UNW_VERSION_MINOR != 1))
++#  if !defined(SYSTEM_LIBUNWIND) && defined(UNW_VERSION_MAJOR)
++#    if UNW_VERSION_MAJOR > 1 || (UNW_VERSION_MAJOR == 1 && UNW_VERSION_MINOR != 0 && UNW_VERSION_MINOR != 1))
+ // Enable our memory manager only for libunwind with our patch or
+ // on a newer release
+-#    define JL_UNW_HAS_FORMAT_IP 1
++#      define JL_UNW_HAS_FORMAT_IP 1
++#    endif
+ #  endif
+ #else
+ // Unwinding is disabled
+@@ -1333,7 +1333,7 @@
+ // which was asynchronously interrupted.
+ size_t rec_backtrace_ctx(jl_bt_element_t *bt_data, size_t maxsize, bt_context_t *ctx,
+                          jl_gcframe_t *pgcstack) JL_NOTSAFEPOINT;
+-#ifdef LLVMLIBUNWIND
++#if defined(LLVMLIBUNWIND) && defined(_OS_DARWIN_)
+ size_t rec_backtrace_ctx_dwarf(jl_bt_element_t *bt_data, size_t maxsize, bt_context_t *ctx, jl_gcframe_t *pgcstack) JL_NOTSAFEPOINT;
+ #endif
+ JL_DLLEXPORT jl_value_t *jl_get_backtrace(void);
 --- a/stdlib/CompilerSupportLibraries_jll/src/CompilerSupportLibraries_jll.jl	2021-03-24 21:02:52.000000000 +0100
 +++ b/stdlib/CompilerSupportLibraries_jll/src/CompilerSupportLibraries_jll.jl	2021-11-14 15:58:27.848346923 +0100
 @@ -9,14 +9,12 @@

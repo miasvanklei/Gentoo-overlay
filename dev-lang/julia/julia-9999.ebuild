@@ -20,11 +20,11 @@ STDLIBS=(
 	"JuliaIO ArgTools.jl 997089b9cd56404b40ff766759662e16dc1aab4b"
 	"JuliaLang DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
 	"JuliaLang Distributed.jl 6c7cdb5860fa5cb9ca191ce9c52a3d25a9ab3781"
-	"JuliaLang Downloads.jl 1061ecc377a053fce0df94e1a19e5260f7c030f5"
+	"JuliaLang Downloads.jl 89d3c7dded535a77551e763a437a6d31e4d9bf84"
 	"JuliaLang JuliaSyntaxHighlighting.jl b89dd99db56700c47434df6106b6c6afd1c9ed01"
 	"JuliaPackaging LazyArtifacts.jl e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
 	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
-	"JuliaLang Pkg.jl 299a356100f54215388502148979189aff760822"
+	"JuliaLang Pkg.jl 51d4910c114a863d888659cb8962c1e161b2a421"
 	"JuliaCrypto SHA.jl aaf2df61ff8c3898196587a375d3cf213bd40b41"
 	"JuliaLang SparseArrays.jl 0dd8d45d55b305458d0d3d3451057589b684f72f"
 	"JuliaStats Statistics.jl 68869af06e8cdeb7aba1d5259de602da7328057f"
@@ -155,10 +155,6 @@ src_prepare() {
 		-e "s|ar -rcs|$(tc-getAR) -rcs|g" \
 		src/Makefile || die
 
-	# disable doc install starting	git fetching
-	sed -i -e "s~install: $(build_depsbindir)/stringreplace\
-		docs~install: $(build_depsbindir)/stringreplace~" Makefile || die
-
 	# disable binary wrappers download
 	sed -i -e 's|get-$$($(1)_JLL_NAME)_jll||g' stdlib/Makefile || die
 }
@@ -171,11 +167,13 @@ src_configure() {
 		override prefix:=${EPREFIX}/usr
 		override libdir:=\$(prefix)/$(get_libdir)
 		override CC:=$(tc-getCC)
+		override FC:=$(tc-getFC)
 		override CXX:=$(tc-getCXX)
 		override AR:=$(tc-getAR)
 
 		BUNDLE_DEBUG_LIBS:=0
 		USE_BINARYBUILDER:=0
+		USE_LLVM_LIBUNWIND:=1
 		USE_SYSTEM_CSL:=1
 		USE_SYSTEM_LLVM:=1
 		USE_SYSTEM_LLD:=1
