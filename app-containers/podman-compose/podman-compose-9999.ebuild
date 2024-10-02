@@ -21,3 +21,5 @@ RDEPEND=">=dev-python/pyyaml-3.10[${PYTHON_USEDEP}]"
 DEPEND="${RDEPEND}"
 
 DOCS=( README.md )
+
+distutils_enable_tests pytest
