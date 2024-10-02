@@ -30,6 +30,7 @@ BDEPEND="
 	)"
 
 PATCHES=(
+	"${FILESDIR}/dont-link-codegentypes.patch"
 	"${FILESDIR}/fix-include-order.patch"
 	"${FILESDIR}/support-linking-libmlir.patch"
 )
