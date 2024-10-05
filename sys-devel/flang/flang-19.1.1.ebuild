@@ -33,7 +33,7 @@ PDEPEND="
 	sys-devel/flang-toolchain-symlinks:${LLVM_MAJOR}
 "
 
-LLVM_COMPONENTS=( flang cmake )
+LLVM_COMPONENTS=( flang cmake openmp )
 LLVM_USE_TARGETS=llvm
 llvm.org_set_globals
 
@@ -41,6 +41,8 @@ PATCHES=(
 	"${FILESDIR}/fix-finding-mlir-tblgen.patch"
 	"${FILESDIR}/missing-bessel-functions.patch"
 	"${FILESDIR}/support-linking-libmlir.patch"
+	"${FILESDIR}/export-libomp-version.patch"
+	"${FILESDIR}/fix-standalone-openmp-module-build.patch"
 )
 
 src_configure() {
@@ -48,10 +50,11 @@ src_configure() {
 
 	local llvmdir="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}"
 	local mycmakeargs=(
-		-DCMAKE_INSTALL_PREFIX=${llvmdir}
-		-DLLVM_DIR=${llvmdir}/lib/cmake/llvm
-		-DCLANG_DIR=${llvmdir}/lib/cmake/clang
-		-DMLIR_DIR=${llvmdir}/lib/cmake/mlir
+		-DCMAKE_INSTALL_PREFIX="${llvmdir}"
+		-DLLVM_DIR="${llvmdir}/lib/cmake/llvm"
+		-DCLANG_DIR="${llvmdir}/lib/cmake/clang"
+		-DMLIR_DIR="${llvmdir}/lib/cmake/mlir"
+		-DOPENMP_RUNTIME_DIR="${WORKDIR}/openmp/runtime"
 
 		-DBUILD_SHARED_LIBS=OFF
 		-DLLVM_LINK_LLVM_DYLIB=ON

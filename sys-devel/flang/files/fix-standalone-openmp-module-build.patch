@@ -1,0 +1,65 @@
+--- a/flang/tools/f18/CMakeLists.txt	2024-10-01 14:08:12.000000000 +0200
++++ b/flang/tools/f18/CMakeLists.txt	2024-10-05 13:18:43.442449318 +0200
+@@ -35,6 +35,22 @@
+ # these module files will be contributed from the CMakeLists in flang/tools/f18.
+ set(module_objects "")
+ 
++# TODO Move this to a more suitable location
++# Copy the generated omp_lib.h/omp_lib.F90 files, if OpenMP support has been configured.
++if (DEFINED OPENMP_RUNTIME_DIR)
++  message(STATUS "OPENMP_RUNTIME_DIR defined, generating omp_lib.h and omp_lib.F90")
++
++  include(${OPENMP_RUNTIME_DIR}/cmake/LibompVersion.cmake)
++  set_openmp_version("${OPENMP_RUNTIME_DIR}")
++
++  configure_file(${OPENMP_RUNTIME_DIR}/src/include/omp_lib.h.var omp_lib.h @ONLY)
++  configure_file(${OPENMP_RUNTIME_DIR}/src/include/omp_lib.F90.var omp_lib.F90 @ONLY)
++  file(COPY ${CMAKE_BINARY_DIR}/tools/f18/omp_lib.h DESTINATION "${CMAKE_BINARY_DIR}/include/flang/OpenMP/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE)
++  install(FILES ${CMAKE_BINARY_DIR}/include/flang/OpenMP/omp_lib.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/flang/OpenMP")
++else()
++  message(STATUS "Not generating omp_lib.h and omp_lib.F90, OPENMP_RUNTIME_DIR not defined")
++endif()
++
+ # Create module files directly from the top-level module source directory.
+ # If CMAKE_CROSSCOMPILING, then the newly built flang-new executable was
+ # cross compiled, and thus can't be executed on the build system and thus
+@@ -114,14 +130,14 @@
+   # Special case for omp_lib.mod, because its source comes from openmp/runtime/src/include.
+   # It also produces two module files: omp_lib.mod and omp_lib_kinds.mod.  Compile these
+   # files only if OpenMP support has been configured.
+-  if (LLVM_TOOL_OPENMP_BUILD)
+-    message(STATUS "OpenMP runtime support enabled via LLVM_ENABLED_PROJECTS, building omp_lib.mod")
++  if (DEFINED OPENMP_RUNTIME_DIR)
++    message(STATUS "OPENMP_RUNTIME_DIR defined, building omp_lib.mod")
+     set(base ${FLANG_INTRINSIC_MODULES_DIR}/omp_lib)
+     add_custom_command(OUTPUT ${base}.mod ${base}_kinds.mod
+       COMMAND ${CMAKE_COMMAND} -E make_directory ${FLANG_INTRINSIC_MODULES_DIR}
+       COMMAND flang-new -cpp -fsyntax-only ${opts} -module-dir ${FLANG_INTRINSIC_MODULES_DIR}
+-        ${CMAKE_BINARY_DIR}/projects/openmp/runtime/src/omp_lib.F90
+-      DEPENDS flang-new ${FLANG_INTRINSIC_MODULES_DIR}/iso_c_binding.mod ${CMAKE_BINARY_DIR}/projects/openmp/runtime/src/omp_lib.F90 ${depends}
++        ${CMAKE_BINARY_DIR}/tools/f18/omp_lib.F90
++      DEPENDS flang-new ${FLANG_INTRINSIC_MODULES_DIR}/iso_c_binding.mod ${CMAKE_BINARY_DIR}/tools/f18/omp_lib.F90 ${depends}
+     )
+     add_custom_command(OUTPUT ${base}.f18.mod
+       DEPENDS ${base}.mod
+@@ -132,19 +148,9 @@
+     list(APPEND MODULE_FILES ${base}.mod ${base}.f18.mod ${base}_kinds.mod ${base}_kinds.f18.mod)
+     install(FILES ${base}.mod ${base}.f18.mod ${base}_kinds.mod ${base}_kinds.f18.mod DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/flang")
+   else()
+-    message(STATUS "Not building omp_lib.mod, no OpenMP runtime in LLVM_ENABLED_PROJECTS")
++    message(STATUS "Not building omp_lib.mod, OPENMP_RUNTIME_DIR not defined")
+   endif()
+ endif()
+ 
+ add_custom_target(module_files ALL DEPENDS ${MODULE_FILES})
+ set_target_properties(module_files PROPERTIES FOLDER "Flang/Resources")
+-
+-# TODO Move this to a more suitable location
+-# Copy the generated omp_lib.h header file, if OpenMP support has been configured.
+-if (LLVM_TOOL_OPENMP_BUILD)
+-  message(STATUS "OpenMP runtime support enabled via LLVM_ENABLED_PROJECTS, building omp_lib.h")
+-  file(COPY ${CMAKE_BINARY_DIR}/projects/openmp/runtime/src/omp_lib.h DESTINATION "${CMAKE_BINARY_DIR}/include/flang/OpenMP/" FILE_PERMISSIONS OWNER_READ OWNER_WRITE)
+-  install(FILES ${CMAKE_BINARY_DIR}/include/flang/OpenMP/omp_lib.h DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/flang/OpenMP")
+-else()
+-  message(STATUS "Not copying omp_lib.h, no OpenMP runtime in LLVM_ENABLED_PROJECTS")
+-endif()

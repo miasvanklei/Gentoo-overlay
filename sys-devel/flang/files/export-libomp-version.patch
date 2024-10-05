@@ -1,0 +1,114 @@
+--- a/openmp/runtime/CMakeLists.txt	2024-10-01 14:08:12.000000000 +0200
++++ b/openmp/runtime/CMakeLists.txt	2024-10-05 13:04:10.576889360 +0200
+@@ -15,15 +15,14 @@
+ # Add cmake directory to search for custom cmake functions
+ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
+ 
+-# Set libomp version
+-set(LIBOMP_VERSION_MAJOR 5)
+-set(LIBOMP_VERSION_MINOR 0)
+-
+ # These include files are in the cmake/ subdirectory
+ include(LibompUtils)
+ include(LibompGetArchitecture)
+ include(LibompHandleFlags)
+ include(LibompDefinitions)
++include(LibompVersion)
++
++set_openmp_version("${CMAKE_CURRENT_SOURCE_DIR}")
+ 
+ # Determine the target architecture
+ if(${OPENMP_STANDALONE_BUILD})
+@@ -98,8 +97,6 @@
+ set(LIBOMP_LIB_TYPE normal CACHE STRING
+   "Performance,Profiling,Stubs library (normal/profile/stubs)")
+ libomp_check_variable(LIBOMP_LIB_TYPE normal profile stubs)
+-# Set the OpenMP Year and Month associated with version
+-set(LIBOMP_OMP_YEAR_MONTH 201611)
+ set(LIBOMP_MIC_ARCH knc CACHE STRING
+   "Intel(R) Many Integrated Core Architecture (Intel(R) MIC Architecture) (knf/knc).  Ignored if not Intel(R) MIC Architecture build.")
+ if("${LIBOMP_ARCH}" STREQUAL "mic")
+@@ -159,11 +156,6 @@
+ set(LIBOMP_HWLOC_INSTALL_DIR /usr/local CACHE PATH
+   "Install path for hwloc library")
+ 
+-# Get the build number from kmp_version.cpp
+-libomp_get_build_number("${CMAKE_CURRENT_SOURCE_DIR}" LIBOMP_VERSION_BUILD)
+-math(EXPR LIBOMP_VERSION_BUILD_YEAR "${LIBOMP_VERSION_BUILD}/10000")
+-math(EXPR LIBOMP_VERSION_BUILD_MONTH_DAY "${LIBOMP_VERSION_BUILD}%10000")
+-
+ # Currently don't record any timestamps
+ set(LIBOMP_BUILD_DATE "No_Timestamp")
+ 
+--- /dev/null	2024-09-21 18:00:44.424000002 +0200
++++ b/openmp/runtime/cmake/LibompVersion.cmake	2024-10-05 13:02:46.297892481 +0200
+@@ -0,0 +1,41 @@
++##===----------------------------------------------------------------------===##
++#
++# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++# See https://llvm.org/LICENSE.txt for license information.
++# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++#
++##===----------------------------------------------------------------------===##
++#
++# Retrieve version information for libomp
++#
++##===----------------------------------------------------------------------===##
++
++# void libomp_get_build_number(string src_dir, string* return_build_number);
++# - grab the eight digit build number (or 00000000) from kmp_version.cpp
++function(libomp_get_build_number src_dir return_build_number)
++  # sets file_lines_list to a list of all lines in kmp_version.cpp
++  file(STRINGS "${src_dir}/src/kmp_version.cpp" file_lines_list)
++
++  # runs through each line in kmp_version.cpp
++  foreach(line IN LISTS file_lines_list)
++    # if the line begins with "#define KMP_VERSION_BUILD" then we take not of the build number
++    string(REGEX MATCH "^[ \t]*#define[ \t]+KMP_VERSION_BUILD" valid "${line}")
++    if(NOT "${valid}" STREQUAL "") # if we matched "#define KMP_VERSION_BUILD", then grab the build number
++      string(REGEX REPLACE "^[ \t]*#define[ \t]+KMP_VERSION_BUILD[ \t]+([0-9]+)" "\\1"
++           build_number "${line}"
++      )
++    endif()
++  endforeach()
++  set(${return_build_number} "${build_number}" PARENT_SCOPE) # return build number
++endfunction()
++
++macro(set_openmp_version openmp_dir)
++  set(LIBOMP_VERSION_MAJOR 5)
++  set(LIBOMP_VERSION_MINOR 0)
++  set(LIBOMP_OMP_YEAR_MONTH 201611)
++
++  # Get the build number from kmp_version.cpp
++  libomp_get_build_number("${openmp_dir}" LIBOMP_VERSION_BUILD)
++  math(EXPR LIBOMP_VERSION_BUILD_YEAR "${LIBOMP_VERSION_BUILD}/10000")
++  math(EXPR LIBOMP_VERSION_BUILD_MONTH_DAY "${LIBOMP_VERSION_BUILD}%10000")
++endmacro()
+--- a/openmp/runtime/cmake/LibompUtils.cmake	2024-10-01 14:08:12.000000000 +0200
++++ b/openmp/runtime/cmake/LibompUtils.cmake	2024-10-05 13:23:58.930673674 +0200
+@@ -143,25 +143,6 @@
+   endif()
+ endfunction()
+ 
+-# void libomp_get_build_number(string src_dir, string* return_build_number);
+-# - grab the eight digit build number (or 00000000) from kmp_version.cpp
+-function(libomp_get_build_number src_dir return_build_number)
+-  # sets file_lines_list to a list of all lines in kmp_version.cpp
+-  file(STRINGS "${src_dir}/src/kmp_version.cpp" file_lines_list)
+-
+-  # runs through each line in kmp_version.cpp
+-  foreach(line IN LISTS file_lines_list)
+-    # if the line begins with "#define KMP_VERSION_BUILD" then we take not of the build number
+-    string(REGEX MATCH "^[ \t]*#define[ \t]+KMP_VERSION_BUILD" valid "${line}")
+-    if(NOT "${valid}" STREQUAL "") # if we matched "#define KMP_VERSION_BUILD", then grab the build number
+-      string(REGEX REPLACE "^[ \t]*#define[ \t]+KMP_VERSION_BUILD[ \t]+([0-9]+)" "\\1"
+-           build_number "${line}"
+-      )
+-    endif()
+-  endforeach()
+-  set(${return_build_number} "${build_number}" PARENT_SCOPE) # return build number
+-endfunction()
+-
+ # void libomp_get_legal_type(string* return_legal_type);
+ # - set the legal type name Performance/Profiling/Stub
+ function(libomp_get_legal_type return_legal_type)
