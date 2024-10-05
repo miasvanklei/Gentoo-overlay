@@ -1,235 +1,538 @@
-From 5afd4f9dc31e1cc4685c7b1a7e4a8cb85e99bf45 Mon Sep 17 00:00:00 2001
-From: Dan Winship <danwinship@redhat.com>
-Date: Sun, 22 Oct 2023 10:48:36 -0400
-Subject: [PATCH 1/5] Update go-iptables
-
-Signed-off-by: Dan Winship <danwinship@redhat.com>
----
- go.mod                                        |  6 ++-
- go.sum                                        |  5 ++-
- .../coreos/go-iptables/iptables/iptables.go   | 44 +++++++++++++++----
- vendor/modules.txt                            |  2 +-
- 4 files changed, 43 insertions(+), 14 deletions(-)
-
 diff --git a/go.mod b/go.mod
-index a80b43f20..7ecdf341a 100644
+index a767be27e..0f734459d 100644
 --- a/go.mod
 +++ b/go.mod
-@@ -1,13 +1,15 @@
- module github.com/containernetworking/plugins
- 
--go 1.20
-+go 1.21
-+
-+toolchain go1.22.0
- 
- require (
- 	github.com/Microsoft/hcsshim v0.12.3
- 	github.com/alexflint/go-filemutex v1.3.0
- 	github.com/buger/jsonparser v1.1.1
- 	github.com/containernetworking/cni v1.1.2
--	github.com/coreos/go-iptables v0.7.0
-+	github.com/coreos/go-iptables v0.7.1-0.20240112124308-65c67c9f46e6
- 	github.com/coreos/go-systemd/v22 v22.5.0
- 	github.com/d2g/dhcp4 v0.0.0-20170904100407-a1d1b6c41b1c
- 	github.com/d2g/dhcp4client v1.0.0
-diff --git a/go.sum b/go.sum
-index 4cc06fa4c..eda60b105 100644
---- a/go.sum
-+++ b/go.sum
-@@ -20,8 +20,8 @@ github.com/containerd/errdefs v0.1.0 h1:m0wCRBiu1WJT/Fr+iOoQHMQS/eP5myQ8lCv4Dz5Z
- github.com/containerd/errdefs v0.1.0/go.mod h1:YgWiiHtLmSeBrvpw+UfPijzbLaB77mEG1WwJTDETIV0=
- github.com/containernetworking/cni v1.1.2 h1:wtRGZVv7olUHMOqouPpn3cXJWpJgM6+EUl31EQbXALQ=
- github.com/containernetworking/cni v1.1.2/go.mod h1:sDpYKmGVENF3s6uvMvGgldDWeG8dMxakj/u+i9ht9vw=
--github.com/coreos/go-iptables v0.7.0 h1:XWM3V+MPRr5/q51NuWSgU0fqMad64Zyxs8ZUoMsamr8=
--github.com/coreos/go-iptables v0.7.0/go.mod h1:Qe8Bv2Xik5FyTXwgIbLAnv2sWSBmvWdFETJConOQ//Q=
-+github.com/coreos/go-iptables v0.7.1-0.20240112124308-65c67c9f46e6 h1:8h5+bWd7R6AYUslN6c6iuZWTKsKxUFDlpnmilO6R2n0=
-+github.com/coreos/go-iptables v0.7.1-0.20240112124308-65c67c9f46e6/go.mod h1:Qe8Bv2Xik5FyTXwgIbLAnv2sWSBmvWdFETJConOQ//Q=
- github.com/coreos/go-systemd/v22 v22.5.0 h1:RrqgGjYQKalulkV8NGVIfkXQf6YYmOyiJKk8iXXhfZs=
- github.com/coreos/go-systemd/v22 v22.5.0/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSVTIJ3seZv2GcEnc=
- github.com/d2g/dhcp4 v0.0.0-20170904100407-a1d1b6c41b1c h1:Xo2rK1pzOm0jO6abTPIQwbAmqBIOj132otexc1mmzFc=
-@@ -121,6 +121,7 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
- github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
- github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
- github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
-+github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
- github.com/vishvananda/netlink v1.2.1-beta.2 h1:Llsql0lnQEbHj0I1OuKyp8otXp0r3q0mPkuhwHfStVs=
- github.com/vishvananda/netlink v1.2.1-beta.2/go.mod h1:twkDnbuQxJYemMlGd4JFIcuhgX83tXhKS2B/PRMpOho=
- github.com/vishvananda/netns v0.0.0-20200728191858-db3c7e526aae/go.mod h1:DD4vA1DwXk04H54A1oHXtwZmA0grkVMdPxx/VGLCah0=
-diff --git a/vendor/github.com/coreos/go-iptables/iptables/iptables.go b/vendor/github.com/coreos/go-iptables/iptables/iptables.go
-index e95929c92..6c5bbd707 100644
---- a/vendor/github.com/coreos/go-iptables/iptables/iptables.go
-+++ b/vendor/github.com/coreos/go-iptables/iptables/iptables.go
-@@ -45,15 +45,21 @@ func (e *Error) Error() string {
- 	return fmt.Sprintf("running %v: exit status %v: %v", e.cmd.Args, e.ExitStatus(), e.msg)
- }
- 
-+var isNotExistPatterns = []string{
-+	"Bad rule (does a matching rule exist in that chain?).\n",
-+	"No chain/target/match by that name.\n",
-+	"No such file or directory",
-+	"does not exist",
-+}
-+
- // IsNotExist returns true if the error is due to the chain or rule not existing
- func (e *Error) IsNotExist() bool {
--	if e.ExitStatus() != 1 {
--		return false
-+	for _, str := range isNotExistPatterns {
-+		if strings.Contains(e.msg, str) {
-+			return true
-+		}
- 	}
--	msgNoRuleExist := "Bad rule (does a matching rule exist in that chain?).\n"
--	msgNoChainExist := "No chain/target/match by that name.\n"
--	msgENOENT := "No such file or directory"
--	return strings.Contains(e.msg, msgNoRuleExist) || strings.Contains(e.msg, msgNoChainExist) || strings.Contains(e.msg, msgENOENT)
-+	return false
- }
- 
- // Protocol to differentiate between IPv4 and IPv6
-@@ -106,8 +112,20 @@ func Timeout(timeout int) option {
- 	}
- }
- 
--// New creates a new IPTables configured with the options passed as parameter.
--// For backwards compatibility, by default always uses IPv4 and timeout 0.
-+func Path(path string) option {
-+	return func(ipt *IPTables) {
-+		ipt.path = path
-+	}
-+}
-+
-+// New creates a new IPTables configured with the options passed as parameters.
-+// Supported parameters are:
-+//
-+//	IPFamily(Protocol)
-+//	Timeout(int)
-+//	Path(string)
-+//
-+// For backwards compatibility, by default New uses IPv4 and timeout 0.
- // i.e. you can create an IPv6 IPTables using a timeout of 5 seconds passing
- // the IPFamily and Timeout options as follow:
- //
-@@ -117,13 +135,21 @@ func New(opts ...option) (*IPTables, error) {
- 	ipt := &IPTables{
- 		proto:   ProtocolIPv4,
- 		timeout: 0,
-+		path:    "",
- 	}
- 
- 	for _, opt := range opts {
- 		opt(ipt)
- 	}
- 
--	path, err := exec.LookPath(getIptablesCommand(ipt.proto))
-+	// if path wasn't preset through New(Path()), autodiscover it
-+	cmd := ""
-+	if ipt.path == "" {
-+		cmd = getIptablesCommand(ipt.proto)
-+	} else {
-+		cmd = ipt.path
-+	}
-+	path, err := exec.LookPath(cmd)
- 	if err != nil {
- 		return nil, err
- 	}
-diff --git a/vendor/modules.txt b/vendor/modules.txt
-index a2394e67b..f29d210af 100644
---- a/vendor/modules.txt
-+++ b/vendor/modules.txt
-@@ -62,7 +62,7 @@ github.com/containernetworking/cni/pkg/types/create
- github.com/containernetworking/cni/pkg/types/internal
- github.com/containernetworking/cni/pkg/utils
- github.com/containernetworking/cni/pkg/version
--# github.com/coreos/go-iptables v0.7.0
-+# github.com/coreos/go-iptables v0.7.1-0.20240112124308-65c67c9f46e6
- ## explicit; go 1.16
- github.com/coreos/go-iptables/iptables
- # github.com/coreos/go-systemd/v22 v22.5.0
-
-From 35118e93753448547a83bc9f50942b1bafacace5 Mon Sep 17 00:00:00 2001
-From: Dan Winship <danwinship@redhat.com>
-Date: Mon, 31 Jul 2023 09:37:51 -0400
-Subject: [PATCH 2/5] Vendor nftables library, add utils.SupportsIPTables and
- utils.SupportsNFTables
-
-Signed-off-by: Dan Winship <danwinship@redhat.com>
----
- go.mod                                        |   1 +
- go.sum                                        |   4 +
- pkg/utils/netfilter.go                        |  46 ++
- pkg/utils/netfilter_test.go                   |  52 ++
- vendor/modules.txt                            |   3 +
- vendor/sigs.k8s.io/knftables/.gitignore       |   2 +
- vendor/sigs.k8s.io/knftables/CHANGELOG.md     | 147 ++++
- vendor/sigs.k8s.io/knftables/CONTRIBUTING.md  |  28 +
- vendor/sigs.k8s.io/knftables/LICENSE          | 201 ++++++
- vendor/sigs.k8s.io/knftables/Makefile         |  32 +
- vendor/sigs.k8s.io/knftables/OWNERS           |   7 +
- vendor/sigs.k8s.io/knftables/README.md        | 276 ++++++++
- .../sigs.k8s.io/knftables/SECURITY_CONTACTS   |  13 +
- .../sigs.k8s.io/knftables/code-of-conduct.md  |   3 +
- vendor/sigs.k8s.io/knftables/error.go         |  94 +++
- vendor/sigs.k8s.io/knftables/exec.go          |  48 ++
- vendor/sigs.k8s.io/knftables/fake.go          | 656 ++++++++++++++++++
- vendor/sigs.k8s.io/knftables/nftables.go      | 471 +++++++++++++
- vendor/sigs.k8s.io/knftables/objects.go       | 581 ++++++++++++++++
- vendor/sigs.k8s.io/knftables/transaction.go   | 138 ++++
- vendor/sigs.k8s.io/knftables/types.go         | 384 ++++++++++
- vendor/sigs.k8s.io/knftables/util.go          | 117 ++++
- 22 files changed, 3304 insertions(+)
- create mode 100644 pkg/utils/netfilter.go
- create mode 100644 pkg/utils/netfilter_test.go
- create mode 100644 vendor/sigs.k8s.io/knftables/.gitignore
- create mode 100644 vendor/sigs.k8s.io/knftables/CHANGELOG.md
- create mode 100644 vendor/sigs.k8s.io/knftables/CONTRIBUTING.md
- create mode 100644 vendor/sigs.k8s.io/knftables/LICENSE
- create mode 100644 vendor/sigs.k8s.io/knftables/Makefile
- create mode 100644 vendor/sigs.k8s.io/knftables/OWNERS
- create mode 100644 vendor/sigs.k8s.io/knftables/README.md
- create mode 100644 vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS
- create mode 100644 vendor/sigs.k8s.io/knftables/code-of-conduct.md
- create mode 100644 vendor/sigs.k8s.io/knftables/error.go
- create mode 100644 vendor/sigs.k8s.io/knftables/exec.go
- create mode 100644 vendor/sigs.k8s.io/knftables/fake.go
- create mode 100644 vendor/sigs.k8s.io/knftables/nftables.go
- create mode 100644 vendor/sigs.k8s.io/knftables/objects.go
- create mode 100644 vendor/sigs.k8s.io/knftables/transaction.go
- create mode 100644 vendor/sigs.k8s.io/knftables/types.go
- create mode 100644 vendor/sigs.k8s.io/knftables/util.go
-
-diff --git a/go.mod b/go.mod
-index 7ecdf341a..a776fbb74 100644
---- a/go.mod
-+++ b/go.mod
-@@ -23,6 +23,7 @@ require (
+@@ -21,6 +21,7 @@ require (
  	github.com/safchain/ethtool v0.4.0
  	github.com/vishvananda/netlink v1.2.1-beta.2
  	golang.org/x/sys v0.21.0
-+	sigs.k8s.io/knftables v0.0.16
++	sigs.k8s.io/knftables v0.0.17
  )
-
+ 
  require (
 diff --git a/go.sum b/go.sum
-index eda60b105..349ec1c58 100644
+index 2d62938a8..ab1b696dc 100644
 --- a/go.sum
 +++ b/go.sum
-@@ -83,6 +83,8 @@ github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6/go.mod h1:kf6iHlnVGwg
+@@ -68,6 +68,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
+ github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8 h1:FKHo8hFI3A+7w0aUQuYXQ+6EN5stWmeY/AZqtM8xk9k=
+ github.com/google/pprof v0.0.0-20240727154555-813a5fbdbec8/go.mod h1:K1liHPHnj73Fdn/EKuT8nrFqBihUSKXoLYU0BuatOYo=
  github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
- github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
- github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 +github.com/lithammer/dedent v1.1.0 h1:VNzHMVCBNG1j0fh3OrsFRkVUwStdDArbgBWoPAffktY=
 +github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
+ github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
+ github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
  github.com/mattn/go-shellwords v1.0.12 h1:M2zGm7EW6UQJvDeQxo4T51eKPurbeFbe8WtebGE2xrk=
- github.com/mattn/go-shellwords v1.0.12/go.mod h1:EZzvwXDESEeg03EKmM+RmDnNOPKG4lLtQsUlTZDWQ8Y=
- github.com/networkplumbing/go-nft v0.4.0 h1:kExVMwXW48DOAukkBwyI16h4uhE5lN9iMvQd52lpTyU=
-@@ -242,3 +244,5 @@ gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+@@ -194,3 +196,5 @@ gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
  gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
  honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
  honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
-+sigs.k8s.io/knftables v0.0.16 h1:ZpTfNsjnidgoXdxxzcZLdSctqkpSO3QB3jo3zQ4PXqM=
-+sigs.k8s.io/knftables v0.0.16/go.mod h1:f/5ZLKYEUPUhVjUCg6l80ACdL7CIIyeL0DxfgojGRTk=
++sigs.k8s.io/knftables v0.0.17 h1:wGchTyRF/iGTIjd+vRaR1m676HM7jB8soFtyr/148ic=
++sigs.k8s.io/knftables v0.0.17/go.mod h1:f/5ZLKYEUPUhVjUCg6l80ACdL7CIIyeL0DxfgojGRTk=
+diff --git a/pkg/ip/ipmasq_iptables_linux.go b/pkg/ip/ipmasq_iptables_linux.go
+new file mode 100644
+index 000000000..5c1fcfa80
+--- /dev/null
++++ b/pkg/ip/ipmasq_iptables_linux.go
+@@ -0,0 +1,147 @@
++// Copyright 2015 CNI authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package ip
++
++import (
++	"fmt"
++	"net"
++
++	"github.com/coreos/go-iptables/iptables"
++
++	"github.com/containernetworking/plugins/pkg/utils"
++)
++
++// setupIPMasqIPTables is the iptables-based implementation of SetupIPMasqForNetwork
++func setupIPMasqIPTables(ipn *net.IPNet, network, _, containerID string) error {
++	// Note: for historical reasons, the iptables implementation ignores ifname.
++	chain := utils.FormatChainName(network, containerID)
++	comment := utils.FormatComment(network, containerID)
++	return SetupIPMasq(ipn, chain, comment)
++}
++
++// SetupIPMasq installs iptables rules to masquerade traffic
++// coming from ip of ipn and going outside of ipn.
++// Deprecated: This function only supports iptables. Use SetupIPMasqForNetwork, which
++// supports both iptables and nftables.
++func SetupIPMasq(ipn *net.IPNet, chain string, comment string) error {
++	isV6 := ipn.IP.To4() == nil
++
++	var ipt *iptables.IPTables
++	var err error
++	var multicastNet string
++
++	if isV6 {
++		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
++		multicastNet = "ff00::/8"
++	} else {
++		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
++		multicastNet = "224.0.0.0/4"
++	}
++	if err != nil {
++		return fmt.Errorf("failed to locate iptables: %v", err)
++	}
++
++	// Create chain if doesn't exist
++	exists := false
++	chains, err := ipt.ListChains("nat")
++	if err != nil {
++		return fmt.Errorf("failed to list chains: %v", err)
++	}
++	for _, ch := range chains {
++		if ch == chain {
++			exists = true
++			break
++		}
++	}
++	if !exists {
++		if err = ipt.NewChain("nat", chain); err != nil {
++			return err
++		}
++	}
++
++	// Packets to this network should not be touched
++	if err := ipt.AppendUnique("nat", chain, "-d", ipn.String(), "-j", "ACCEPT", "-m", "comment", "--comment", comment); err != nil {
++		return err
++	}
++
++	// Don't masquerade multicast - pods should be able to talk to other pods
++	// on the local network via multicast.
++	if err := ipt.AppendUnique("nat", chain, "!", "-d", multicastNet, "-j", "MASQUERADE", "-m", "comment", "--comment", comment); err != nil {
++		return err
++	}
++
++	// Packets from the specific IP of this network will hit the chain
++	return ipt.AppendUnique("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
++}
++
++// teardownIPMasqIPTables is the iptables-based implementation of TeardownIPMasqForNetwork
++func teardownIPMasqIPTables(ipn *net.IPNet, network, _, containerID string) error {
++	// Note: for historical reasons, the iptables implementation ignores ifname.
++	chain := utils.FormatChainName(network, containerID)
++	comment := utils.FormatComment(network, containerID)
++	return TeardownIPMasq(ipn, chain, comment)
++}
++
++// TeardownIPMasq undoes the effects of SetupIPMasq.
++// Deprecated: This function only supports iptables. Use TeardownIPMasqForNetwork, which
++// supports both iptables and nftables.
++func TeardownIPMasq(ipn *net.IPNet, chain string, comment string) error {
++	isV6 := ipn.IP.To4() == nil
++
++	var ipt *iptables.IPTables
++	var err error
++
++	if isV6 {
++		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
++	} else {
++		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
++	}
++	if err != nil {
++		return fmt.Errorf("failed to locate iptables: %v", err)
++	}
++
++	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
++	if err != nil && !isNotExist(err) {
++		return err
++	}
++
++	// for downward compatibility
++	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.String(), "-j", chain, "-m", "comment", "--comment", comment)
++	if err != nil && !isNotExist(err) {
++		return err
++	}
++
++	err = ipt.ClearChain("nat", chain)
++	if err != nil && !isNotExist(err) {
++		return err
++	}
++
++	err = ipt.DeleteChain("nat", chain)
++	if err != nil && !isNotExist(err) {
++		return err
++	}
++
++	return nil
++}
++
++// isNotExist returnst true if the error is from iptables indicating
++// that the target does not exist.
++func isNotExist(err error) bool {
++	e, ok := err.(*iptables.Error)
++	if !ok {
++		return false
++	}
++	return e.IsNotExist()
++}
+diff --git a/pkg/ip/ipmasq_linux.go b/pkg/ip/ipmasq_linux.go
+index aa59a8db5..bad83541d 100644
+--- a/pkg/ip/ipmasq_linux.go
++++ b/pkg/ip/ipmasq_linux.go
+@@ -15,111 +15,57 @@
+ package ip
+ 
+ import (
++	"errors"
+ 	"fmt"
+ 	"net"
++	"strings"
+ 
+-	"github.com/coreos/go-iptables/iptables"
++	"github.com/containernetworking/plugins/pkg/utils"
+ )
+ 
+-// SetupIPMasq installs iptables rules to masquerade traffic
+-// coming from ip of ipn and going outside of ipn
+-func SetupIPMasq(ipn *net.IPNet, chain string, comment string) error {
+-	isV6 := ipn.IP.To4() == nil
+-
+-	var ipt *iptables.IPTables
+-	var err error
+-	var multicastNet string
+-
+-	if isV6 {
+-		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
+-		multicastNet = "ff00::/8"
+-	} else {
+-		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
+-		multicastNet = "224.0.0.0/4"
+-	}
+-	if err != nil {
+-		return fmt.Errorf("failed to locate iptables: %v", err)
+-	}
+-
+-	// Create chain if doesn't exist
+-	exists := false
+-	chains, err := ipt.ListChains("nat")
+-	if err != nil {
+-		return fmt.Errorf("failed to list chains: %v", err)
+-	}
+-	for _, ch := range chains {
+-		if ch == chain {
+-			exists = true
+-			break
++// SetupIPMasqForNetwork installs rules to masquerade traffic coming from ip of ipn and
++// going outside of ipn, using a chain name based on network, ifname, and containerID. The
++// backend can be either "iptables" or "nftables"; if it is nil, then a suitable default
++// implementation will be used.
++func SetupIPMasqForNetwork(backend *string, ipn *net.IPNet, network, ifname, containerID string) error {
++	if backend == nil {
++		// Prefer iptables, unless only nftables is available
++		defaultBackend := "iptables"
++		if !utils.SupportsIPTables() && utils.SupportsNFTables() {
++			defaultBackend = "nftables"
+ 		}
+-	}
+-	if !exists {
+-		if err = ipt.NewChain("nat", chain); err != nil {
+-			return err
+-		}
+-	}
+-
+-	// Packets to this network should not be touched
+-	if err := ipt.AppendUnique("nat", chain, "-d", ipn.String(), "-j", "ACCEPT", "-m", "comment", "--comment", comment); err != nil {
+-		return err
++		backend = &defaultBackend
+ 	}
+ 
+-	// Don't masquerade multicast - pods should be able to talk to other pods
+-	// on the local network via multicast.
+-	if err := ipt.AppendUnique("nat", chain, "!", "-d", multicastNet, "-j", "MASQUERADE", "-m", "comment", "--comment", comment); err != nil {
+-		return err
++	switch *backend {
++	case "iptables":
++		return setupIPMasqIPTables(ipn, network, ifname, containerID)
++	case "nftables":
++		return setupIPMasqNFTables(ipn, network, ifname, containerID)
++	default:
++		return fmt.Errorf("unknown ipmasq backend %q", *backend)
+ 	}
+-
+-	// Packets from the specific IP of this network will hit the chain
+-	return ipt.AppendUnique("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
+ }
+ 
+-// TeardownIPMasq undoes the effects of SetupIPMasq
+-func TeardownIPMasq(ipn *net.IPNet, chain string, comment string) error {
+-	isV6 := ipn.IP.To4() == nil
+-
+-	var ipt *iptables.IPTables
+-	var err error
+-
+-	if isV6 {
+-		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
+-	} else {
+-		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
+-	}
+-	if err != nil {
+-		return fmt.Errorf("failed to locate iptables: %v", err)
+-	}
+-
+-	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
+-	if err != nil && !isNotExist(err) {
+-		return err
+-	}
++// TeardownIPMasqForNetwork undoes the effects of SetupIPMasqForNetwork
++func TeardownIPMasqForNetwork(ipn *net.IPNet, network, ifname, containerID string) error {
++	var errs []string
+ 
+-	// for downward compatibility
+-	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.String(), "-j", chain, "-m", "comment", "--comment", comment)
+-	if err != nil && !isNotExist(err) {
+-		return err
+-	}
++	// Do both the iptables and the nftables cleanup, since the pod may have been
++	// created with a different version of this plugin or a different configuration.
+ 
+-	err = ipt.ClearChain("nat", chain)
+-	if err != nil && !isNotExist(err) {
+-		return err
++	err := teardownIPMasqIPTables(ipn, network, ifname, containerID)
++	if err != nil && utils.SupportsIPTables() {
++		errs = append(errs, err.Error())
+ 	}
+ 
+-	err = ipt.DeleteChain("nat", chain)
+-	if err != nil && !isNotExist(err) {
+-		return err
++	err = teardownIPMasqNFTables(ipn, network, ifname, containerID)
++	if err != nil && utils.SupportsNFTables() {
++		errs = append(errs, err.Error())
+ 	}
+ 
+-	return nil
+-}
+-
+-// isNotExist returnst true if the error is from iptables indicating
+-// that the target does not exist.
+-func isNotExist(err error) bool {
+-	e, ok := err.(*iptables.Error)
+-	if !ok {
+-		return false
++	if errs == nil {
++		return nil
+ 	}
+-	return e.IsNotExist()
++	return errors.New(strings.Join(errs, "\n"))
+ }
+diff --git a/pkg/ip/ipmasq_nftables_linux.go b/pkg/ip/ipmasq_nftables_linux.go
+new file mode 100644
+index 000000000..5c7458c99
+--- /dev/null
++++ b/pkg/ip/ipmasq_nftables_linux.go
+@@ -0,0 +1,194 @@
++// Copyright 2023 CNI authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package ip
++
++import (
++	"context"
++	"fmt"
++	"net"
++	"strings"
++
++	"sigs.k8s.io/knftables"
++
++	"github.com/containernetworking/plugins/pkg/utils"
++)
++
++const (
++	ipMasqTableName = "cni_plugins_masquerade"
++	ipMasqChainName = "masq_checks"
++)
++
++// The nftables ipmasq implementation is mostly like the iptables implementation, with
++// minor updates to fix a bug (adding `ifname`) and to allow future GC support.
++//
++// We add a rule for each mapping, with a comment containing a hash of its identifiers,
++// so that we can later reliably delete the rules we want. (This is important because in
++// edge cases, it's possible the plugin might see "ADD container A with IP 192.168.1.3",
++// followed by "ADD container B with IP 192.168.1.3" followed by "DEL container A with IP
++// 192.168.1.3", and we need to make sure that the DEL causes us to delete the rule for
++// container A, and not the rule for container B.)
++//
++// It would be more nftables-y to have a chain with a single rule doing a lookup against a
++// set with an element per mapping, rather than having a chain with a rule per mapping.
++// But there's no easy, non-racy way to say "delete the element 192.168.1.3 from the set,
++// but only if it was added for container A, not if it was added for container B".
++
++// hashForNetwork returns a unique hash for this network
++func hashForNetwork(network string) string {
++	return utils.MustFormatHashWithPrefix(16, "", network)
++}
++
++// hashForInstance returns a unique hash identifying the rules for this
++// network/ifname/containerID
++func hashForInstance(network, ifname, containerID string) string {
++	return hashForNetwork(network) + "-" + utils.MustFormatHashWithPrefix(16, "", ifname+":"+containerID)
++}
++
++// commentForInstance returns a comment string that begins with a unique hash and
++// ends with a (possibly-truncated) human-readable description.
++func commentForInstance(network, ifname, containerID string) string {
++	comment := fmt.Sprintf("%s, net: %s, if: %s, id: %s",
++		hashForInstance(network, ifname, containerID),
++		strings.ReplaceAll(network, `"`, ``),
++		strings.ReplaceAll(ifname, `"`, ``),
++		strings.ReplaceAll(containerID, `"`, ``),
++	)
++	if len(comment) > knftables.CommentLengthMax {
++		comment = comment[:knftables.CommentLengthMax]
++	}
++	return comment
++}
++
++// setupIPMasqNFTables is the nftables-based implementation of SetupIPMasqForNetwork
++func setupIPMasqNFTables(ipn *net.IPNet, network, ifname, containerID string) error {
++	nft, err := knftables.New(knftables.InetFamily, ipMasqTableName)
++	if err != nil {
++		return err
++	}
++	return setupIPMasqNFTablesWithInterface(nft, ipn, network, ifname, containerID)
++}
++
++func setupIPMasqNFTablesWithInterface(nft knftables.Interface, ipn *net.IPNet, network, ifname, containerID string) error {
++	staleRules, err := findRules(nft, hashForInstance(network, ifname, containerID))
++	if err != nil {
++		return err
++	}
++
++	tx := nft.NewTransaction()
++
++	// Ensure that our table and chains exist.
++	tx.Add(&knftables.Table{
++		Comment: knftables.PtrTo("Masquerading for plugins from github.com/containernetworking/plugins"),
++	})
++	tx.Add(&knftables.Chain{
++		Name:    ipMasqChainName,
++		Comment: knftables.PtrTo("Masquerade traffic from certain IPs to any (non-multicast) IP outside their subnet"),
++	})
++
++	// Ensure that the postrouting chain exists and has the correct rules. (Has to be
++	// done after creating ipMasqChainName, so we can jump to it.)
++	tx.Add(&knftables.Chain{
++		Name:     "postrouting",
++		Type:     knftables.PtrTo(knftables.NATType),
++		Hook:     knftables.PtrTo(knftables.PostroutingHook),
++		Priority: knftables.PtrTo(knftables.SNATPriority),
++	})
++	tx.Flush(&knftables.Chain{
++		Name: "postrouting",
++	})
++	tx.Add(&knftables.Rule{
++		Chain: "postrouting",
++		Rule:  "ip daddr == 224.0.0.0/4  return",
++	})
++	tx.Add(&knftables.Rule{
++		Chain: "postrouting",
++		Rule:  "ip6 daddr == ff00::/8  return",
++	})
++	tx.Add(&knftables.Rule{
++		Chain: "postrouting",
++		Rule: knftables.Concat(
++			"goto", ipMasqChainName,
++		),
++	})
++
++	// Delete stale rules, add new rules to masquerade chain
++	for _, rule := range staleRules {
++		tx.Delete(rule)
++	}
++	ip := "ip"
++	if ipn.IP.To4() == nil {
++		ip = "ip6"
++	}
++
++	// e.g. if ipn is "192.168.1.4/24", then dstNet is "192.168.1.0/24"
++	dstNet := &net.IPNet{IP: ipn.IP.Mask(ipn.Mask), Mask: ipn.Mask}
++
++	tx.Add(&knftables.Rule{
++		Chain: ipMasqChainName,
++		Rule: knftables.Concat(
++			ip, "saddr", "==", ipn.IP,
++			ip, "daddr", "!=", dstNet,
++			"masquerade",
++		),
++		Comment: knftables.PtrTo(commentForInstance(network, ifname, containerID)),
++	})
++
++	return nft.Run(context.TODO(), tx)
++}
++
++// teardownIPMasqNFTables is the nftables-based implementation of TeardownIPMasqForNetwork
++func teardownIPMasqNFTables(ipn *net.IPNet, network, ifname, containerID string) error {
++	nft, err := knftables.New(knftables.InetFamily, ipMasqTableName)
++	if err != nil {
++		return err
++	}
++	return teardownIPMasqNFTablesWithInterface(nft, ipn, network, ifname, containerID)
++}
++
++func teardownIPMasqNFTablesWithInterface(nft knftables.Interface, _ *net.IPNet, network, ifname, containerID string) error {
++	rules, err := findRules(nft, hashForInstance(network, ifname, containerID))
++	if err != nil {
++		return err
++	} else if len(rules) == 0 {
++		return nil
++	}
++
++	tx := nft.NewTransaction()
++	for _, rule := range rules {
++		tx.Delete(rule)
++	}
++	return nft.Run(context.TODO(), tx)
++}
++
++// findRules finds rules with comments that start with commentPrefix.
++func findRules(nft knftables.Interface, commentPrefix string) ([]*knftables.Rule, error) {
++	rules, err := nft.ListRules(context.TODO(), ipMasqChainName)
++	if err != nil {
++		if knftables.IsNotFound(err) {
++			// If ipMasqChainName doesn't exist yet, that's fine
++			return nil, nil
++		}
++		return nil, err
++	}
++
++	matchingRules := make([]*knftables.Rule, 0, 1)
++	for _, rule := range rules {
++		if rule.Comment != nil && strings.HasPrefix(*rule.Comment, commentPrefix) {
++			matchingRules = append(matchingRules, rule)
++		}
++	}
++
++	return matchingRules, nil
++}
 diff --git a/pkg/utils/netfilter.go b/pkg/utils/netfilter.go
 new file mode 100644
 index 000000000..1fa391404
@@ -282,12 +585,388 @@ index 000000000..1fa391404
 +	_, err := knftables.New(knftables.IPv4Family, "supports_nftables_test")
 +	return err == nil
 +}
-diff --git a/pkg/utils/netfilter_test.go b/pkg/utils/netfilter_test.go
+diff --git a/plugins/main/bridge/bridge.go b/plugins/main/bridge/bridge.go
+index 49d7b04db..1c4fa59a6 100644
+--- a/plugins/main/bridge/bridge.go
++++ b/plugins/main/bridge/bridge.go
+@@ -35,7 +35,6 @@ import (
+ 	"github.com/containernetworking/plugins/pkg/ipam"
+ 	"github.com/containernetworking/plugins/pkg/link"
+ 	"github.com/containernetworking/plugins/pkg/ns"
+-	"github.com/containernetworking/plugins/pkg/utils"
+ 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
+ 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
+ )
+@@ -52,6 +51,7 @@ type NetConf struct {
+ 	IsDefaultGW               bool         `json:"isDefaultGateway"`
+ 	ForceAddress              bool         `json:"forceAddress"`
+ 	IPMasq                    bool         `json:"ipMasq"`
++	IPMasqBackend             *string      `json:"ipMasqBackend,omitempty"`
+ 	MTU                       int          `json:"mtu"`
+ 	HairpinMode               bool         `json:"hairpinMode"`
+ 	PromiscMode               bool         `json:"promiscMode"`
+@@ -673,10 +673,8 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 		}
+ 
+ 		if n.IPMasq {
+-			chain := utils.FormatChainName(n.Name, args.ContainerID)
+-			comment := utils.FormatComment(n.Name, args.ContainerID)
+ 			for _, ipc := range result.IPs {
+-				if err = ip.SetupIPMasq(&ipc.Address, chain, comment); err != nil {
++				if err = ip.SetupIPMasqForNetwork(n.IPMasqBackend, &ipc.Address, n.Name, args.IfName, args.ContainerID); err != nil {
+ 					return err
+ 				}
+ 			}
+@@ -814,10 +812,8 @@ func cmdDel(args *skel.CmdArgs) error {
+ 	}
+ 
+ 	if isLayer3 && n.IPMasq {
+-		chain := utils.FormatChainName(n.Name, args.ContainerID)
+-		comment := utils.FormatComment(n.Name, args.ContainerID)
+ 		for _, ipn := range ipnets {
+-			if err := ip.TeardownIPMasq(ipn, chain, comment); err != nil {
++			if err := ip.TeardownIPMasqForNetwork(ipn, n.Name, args.IfName, args.ContainerID); err != nil {
+ 				return err
+ 			}
+ 		}
+diff --git a/plugins/main/ptp/ptp.go b/plugins/main/ptp/ptp.go
+index 7213b9c6b..0ac5e6093 100644
+--- a/plugins/main/ptp/ptp.go
++++ b/plugins/main/ptp/ptp.go
+@@ -31,7 +31,6 @@ import (
+ 	"github.com/containernetworking/plugins/pkg/ip"
+ 	"github.com/containernetworking/plugins/pkg/ipam"
+ 	"github.com/containernetworking/plugins/pkg/ns"
+-	"github.com/containernetworking/plugins/pkg/utils"
+ 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
+ )
+ 
+@@ -44,8 +43,9 @@ func init() {
+ 
+ type NetConf struct {
+ 	types.NetConf
+-	IPMasq bool `json:"ipMasq"`
+-	MTU    int  `json:"mtu"`
++	IPMasq        bool    `json:"ipMasq"`
++	IPMasqBackend *string `json:"ipMasqBackend,omitempty"`
++	MTU           int     `json:"mtu"`
+ }
+ 
+ func setupContainerVeth(netns ns.NetNS, ifName string, mtu int, pr *current.Result) (*current.Interface, *current.Interface, error) {
+@@ -229,10 +229,8 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 	}
+ 
+ 	if conf.IPMasq {
+-		chain := utils.FormatChainName(conf.Name, args.ContainerID)
+-		comment := utils.FormatComment(conf.Name, args.ContainerID)
+ 		for _, ipc := range result.IPs {
+-			if err = ip.SetupIPMasq(&ipc.Address, chain, comment); err != nil {
++			if err = ip.SetupIPMasqForNetwork(conf.IPMasqBackend, &ipc.Address, conf.Name, args.IfName, args.ContainerID); err != nil {
+ 				return err
+ 			}
+ 		}
+@@ -293,10 +291,8 @@ func cmdDel(args *skel.CmdArgs) error {
+ 	}
+ 
+ 	if len(ipnets) != 0 && conf.IPMasq {
+-		chain := utils.FormatChainName(conf.Name, args.ContainerID)
+-		comment := utils.FormatComment(conf.Name, args.ContainerID)
+ 		for _, ipn := range ipnets {
+-			err = ip.TeardownIPMasq(ipn, chain, comment)
++			err = ip.TeardownIPMasqForNetwork(ipn, conf.Name, args.IfName, args.ContainerID)
+ 		}
+ 	}
+ 
+diff --git a/plugins/meta/portmap/main.go b/plugins/meta/portmap/main.go
+index 108c1f592..02df34f9b 100644
+--- a/plugins/meta/portmap/main.go
++++ b/plugins/meta/portmap/main.go
+@@ -37,9 +37,22 @@ import (
+ 	"github.com/containernetworking/cni/pkg/types"
+ 	current "github.com/containernetworking/cni/pkg/types/100"
+ 	"github.com/containernetworking/cni/pkg/version"
++	"github.com/containernetworking/plugins/pkg/utils"
+ 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
+ )
+ 
++type PortMapper interface {
++	forwardPorts(config *PortMapConf, containerNet net.IPNet) error
++	checkPorts(config *PortMapConf, containerNet net.IPNet) error
++	unforwardPorts(config *PortMapConf) error
++}
++
++// These are vars rather than consts so we can "&" them
++var (
++	iptablesBackend = "iptables"
++	nftablesBackend = "nftables"
++)
++
+ // PortMapEntry corresponds to a single entry in the port_mappings argument,
+ // see CONVENTIONS.md
+ type PortMapEntry struct {
+@@ -51,16 +64,23 @@ type PortMapEntry struct {
+ 
+ type PortMapConf struct {
+ 	types.NetConf
+-	SNAT                 *bool     `json:"snat,omitempty"`
+-	ConditionsV4         *[]string `json:"conditionsV4"`
+-	ConditionsV6         *[]string `json:"conditionsV6"`
+-	MasqAll              bool      `json:"masqAll,omitempty"`
+-	MarkMasqBit          *int      `json:"markMasqBit"`
+-	ExternalSetMarkChain *string   `json:"externalSetMarkChain"`
+-	RuntimeConfig        struct {
++
++	mapper PortMapper
++
++	// Generic config
++	Backend       *string   `json:"backend,omitempty"`
++	SNAT          *bool     `json:"snat,omitempty"`
++	ConditionsV4  *[]string `json:"conditionsV4"`
++	ConditionsV6  *[]string `json:"conditionsV6"`
++	MasqAll       bool      `json:"masqAll,omitempty"`
++	MarkMasqBit   *int      `json:"markMasqBit"`
++	RuntimeConfig struct {
+ 		PortMaps []PortMapEntry `json:"portMappings,omitempty"`
+ 	} `json:"runtimeConfig,omitempty"`
+ 
++	// iptables-backend-specific config
++	ExternalSetMarkChain *string `json:"externalSetMarkChain"`
++
+ 	// These are fields parsed out of the config or the environment;
+ 	// included here for convenience
+ 	ContainerID string    `json:"-"`
+@@ -89,7 +109,7 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 	netConf.ContainerID = args.ContainerID
+ 
+ 	if netConf.ContIPv4.IP != nil {
+-		if err := forwardPorts(netConf, netConf.ContIPv4); err != nil {
++		if err := netConf.mapper.forwardPorts(netConf, netConf.ContIPv4); err != nil {
+ 			return err
+ 		}
+ 		// Delete conntrack entries for UDP to avoid conntrack blackholing traffic
+@@ -98,10 +118,21 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 		if err := deletePortmapStaleConnections(netConf.RuntimeConfig.PortMaps, unix.AF_INET); err != nil {
+ 			log.Printf("failed to delete stale UDP conntrack entries for %s: %v", netConf.ContIPv4.IP, err)
+ 		}
++
++		if *netConf.SNAT {
++			// Set the route_localnet bit on the host interface, so that
++			// 127/8 can cross a routing boundary.
++			hostIfName := getRoutableHostIF(netConf.ContIPv4.IP)
++			if hostIfName != "" {
++				if err := enableLocalnetRouting(hostIfName); err != nil {
++					return fmt.Errorf("unable to enable route_localnet: %v", err)
++				}
++			}
++		}
+ 	}
+ 
+ 	if netConf.ContIPv6.IP != nil {
+-		if err := forwardPorts(netConf, netConf.ContIPv6); err != nil {
++		if err := netConf.mapper.forwardPorts(netConf, netConf.ContIPv6); err != nil {
+ 			return err
+ 		}
+ 		// Delete conntrack entries for UDP to avoid conntrack blackholing traffic
+@@ -130,7 +161,7 @@ func cmdDel(args *skel.CmdArgs) error {
+ 
+ 	// We don't need to parse out whether or not we're using v6 or snat,
+ 	// deletion is idempotent
+-	return unforwardPorts(netConf)
++	return netConf.mapper.unforwardPorts(netConf)
+ }
+ 
+ func main() {
+@@ -161,13 +192,13 @@ func cmdCheck(args *skel.CmdArgs) error {
+ 	conf.ContainerID = args.ContainerID
+ 
+ 	if conf.ContIPv4.IP != nil {
+-		if err := checkPorts(conf, conf.ContIPv4); err != nil {
++		if err := conf.mapper.checkPorts(conf, conf.ContIPv4); err != nil {
+ 			return err
+ 		}
+ 	}
+ 
+ 	if conf.ContIPv6.IP != nil {
+-		if err := checkPorts(conf, conf.ContIPv6); err != nil {
++		if err := conf.mapper.checkPorts(conf, conf.ContIPv6); err != nil {
+ 			return err
+ 		}
+ 	}
+@@ -197,6 +228,8 @@ func parseConfig(stdin []byte, ifName string) (*PortMapConf, *current.Result, er
+ 		}
+ 	}
+ 
++	conf.mapper = &portMapperIPTables{}
++
+ 	if conf.SNAT == nil {
+ 		tvar := true
+ 		conf.SNAT = &tvar
+@@ -215,6 +248,21 @@ func parseConfig(stdin []byte, ifName string) (*PortMapConf, *current.Result, er
+ 		return nil, nil, fmt.Errorf("MasqMarkBit must be between 0 and 31")
+ 	}
+ 
++	err := ensureBackend(&conf)
++	if err != nil {
++		return nil, nil, err
++	}
++	switch *conf.Backend {
++	case iptablesBackend:
++		conf.mapper = &portMapperIPTables{}
++
++	case nftablesBackend:
++		conf.mapper = &portMapperNFTables{}
++
++	default:
++		return nil, nil, fmt.Errorf("unrecognized backend %q", *conf.Backend)
++	}
++
+ 	// Reject invalid port numbers
+ 	for _, pm := range conf.RuntimeConfig.PortMaps {
+ 		if pm.ContainerPort <= 0 {
+@@ -254,3 +302,58 @@ func parseConfig(stdin []byte, ifName string) (*PortMapConf, *current.Result, er
+ 
+ 	return &conf, result, nil
+ }
++
++// ensureBackend validates and/or sets conf.Backend
++func ensureBackend(conf *PortMapConf) error {
++	backendConfig := make(map[string][]string)
++
++	if conf.ExternalSetMarkChain != nil {
++		backendConfig[iptablesBackend] = append(backendConfig[iptablesBackend], "externalSetMarkChain")
++	}
++	if conditionsBackend := detectBackendOfConditions(conf.ConditionsV4); conditionsBackend != "" {
++		backendConfig[conditionsBackend] = append(backendConfig[conditionsBackend], "conditionsV4")
++	}
++	if conditionsBackend := detectBackendOfConditions(conf.ConditionsV6); conditionsBackend != "" {
++		backendConfig[conditionsBackend] = append(backendConfig[conditionsBackend], "conditionsV6")
++	}
++
++	// If backend wasn't requested explicitly, default to iptables, unless it is not
++	// available (and nftables is). FIXME: flip this default at some point.
++	if conf.Backend == nil {
++		if !utils.SupportsIPTables() && utils.SupportsNFTables() {
++			conf.Backend = &nftablesBackend
++		} else {
++			conf.Backend = &iptablesBackend
++		}
++	}
++
++	// Make sure we dont have config for the wrong backend
++	var wrongBackend string
++	if *conf.Backend == iptablesBackend {
++		wrongBackend = nftablesBackend
++	} else {
++		wrongBackend = iptablesBackend
++	}
++	if len(backendConfig[wrongBackend]) > 0 {
++		return fmt.Errorf("%s backend was requested but configuration contains %s-specific options %v", *conf.Backend, wrongBackend, backendConfig[wrongBackend])
++	}
++
++	// OK
++	return nil
++}
++
++// detectBackendOfConditions returns "iptables" if conditions contains iptables
++// conditions, "nftables" if it contains nftables conditions, and "" if it is empty.
++func detectBackendOfConditions(conditions *[]string) string {
++	if conditions == nil || len(*conditions) == 0 || (*conditions)[0] == "" {
++		return ""
++	}
++
++	// The first token of any iptables condition would start with a hyphen (e.g. "-d",
++	// "--sport", "-m"). No nftables condition would start that way. (An nftables
++	// condition might include a negative number, but not as the first token.)
++	if (*conditions)[0][0] == '-' {
++		return iptablesBackend
++	}
++	return nftablesBackend
++}
+diff --git a/plugins/meta/portmap/portmap.go b/plugins/meta/portmap/portmap_iptables.go
+similarity index 93%
+rename from plugins/meta/portmap/portmap.go
+rename to plugins/meta/portmap/portmap_iptables.go
+index e380da932..07d6c4209 100644
+--- a/plugins/meta/portmap/portmap.go
++++ b/plugins/meta/portmap/portmap_iptables.go
+@@ -25,7 +25,6 @@ import (
+ 	"github.com/vishvananda/netlink"
+ 
+ 	"github.com/containernetworking/plugins/pkg/utils"
+-	"github.com/containernetworking/plugins/pkg/utils/sysctl"
+ )
+ 
+ // This creates the chains to be added to iptables. The basic structure is
+@@ -52,9 +51,11 @@ const (
+ 	OldTopLevelSNATChainName = "CNI-HOSTPORT-SNAT"
+ )
+ 
++type portMapperIPTables struct{}
++
+ // forwardPorts establishes port forwarding to a given container IP.
+ // containerNet.IP can be either v4 or v6.
+-func forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
++func (*portMapperIPTables) forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
+ 	isV6 := (containerNet.IP.To4() == nil)
+ 
+ 	var ipt *iptables.IPTables
+@@ -87,17 +88,6 @@ func forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
+ 				return fmt.Errorf("unable to create chain %s: %v", setMarkChain.name, err)
+ 			}
+ 		}
+-
+-		if !isV6 {
+-			// Set the route_localnet bit on the host interface, so that
+-			// 127/8 can cross a routing boundary.
+-			hostIfName := getRoutableHostIF(containerNet.IP)
+-			if hostIfName != "" {
+-				if err := enableLocalnetRouting(hostIfName); err != nil {
+-					return fmt.Errorf("unable to enable route_localnet: %v", err)
+-				}
+-			}
+-		}
+ 	}
+ 
+ 	// Generate the DNAT (actual port forwarding) rules
+@@ -117,7 +107,7 @@ func forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
+ 	return nil
+ }
+ 
+-func checkPorts(config *PortMapConf, containerNet net.IPNet) error {
++func (*portMapperIPTables) checkPorts(config *PortMapConf, containerNet net.IPNet) error {
+ 	isV6 := (containerNet.IP.To4() == nil)
+ 	dnatChain := genDnatChain(config.Name, config.ContainerID)
+ 	fillDnatRules(&dnatChain, config, containerNet)
+@@ -344,14 +334,6 @@ func genMarkMasqChain(markBit int) chain {
+ 	return ch
+ }
+ 
+-// enableLocalnetRouting tells the kernel not to treat 127/8 as a martian,
+-// so that connections with a source ip of 127/8 can cross a routing boundary.
+-func enableLocalnetRouting(ifName string) error {
+-	routeLocalnetPath := "net/ipv4/conf/" + ifName + "/route_localnet"
+-	_, err := sysctl.Sysctl(routeLocalnetPath, "1")
+-	return err
+-}
+-
+ // genOldSnatChain is no longer used, but used to be created. We'll try and
+ // tear it down in case the plugin version changed between ADD and DEL
+ func genOldSnatChain(netName, containerID string) chain {
+@@ -372,7 +354,7 @@ func genOldSnatChain(netName, containerID string) chain {
+ // don't know which protocols were used.
+ // So, we first check that iptables is "generally OK" by doing a check. If
+ // not, we ignore the error, unless neither v4 nor v6 are OK.
+-func unforwardPorts(config *PortMapConf) error {
++func (*portMapperIPTables) unforwardPorts(config *PortMapConf) error {
+ 	dnatChain := genDnatChain(config.Name, config.ContainerID)
+ 
+ 	// Might be lying around from old versions
+diff --git a/plugins/meta/portmap/portmap_nftables.go b/plugins/meta/portmap/portmap_nftables.go
 new file mode 100644
-index 000000000..d035ad387
+index 000000000..fca2fdf82
 --- /dev/null
-+++ b/pkg/utils/netfilter_test.go
-@@ -0,0 +1,52 @@
++++ b/plugins/meta/portmap/portmap_nftables.go
+@@ -0,0 +1,341 @@
 +// Copyright 2023 CNI authors
 +//
 +// Licensed under the Apache License, Version 2.0 (the "License");
@@ -302,53 +981,370 @@ index 000000000..d035ad387
 +// See the License for the specific language governing permissions and
 +// limitations under the License.
 +
-+package utils
++package main
 +
 +import (
-+	"os"
++	"context"
++	"fmt"
++	"net"
 +
-+	. "github.com/onsi/ginkgo/v2"
-+	. "github.com/onsi/gomega"
++	"sigs.k8s.io/knftables"
 +)
 +
-+var _ = Describe("netfilter support", func() {
-+	When("it is available", func() {
-+		It("reports that iptables is supported", func() {
-+			Expect(SupportsIPTables()).To(BeTrue(), "This test should only fail if iptables is not available, but the test suite as a whole requires it to be available.")
-+		})
-+		It("reports that nftables is supported", func() {
-+			Expect(SupportsNFTables()).To(BeTrue(), "This test should only fail if nftables is not available, but the test suite as a whole requires it to be available.")
-+		})
++const (
++	tableName = "cni_hostport"
++
++	hostIPHostPortsChain = "hostip_hostports"
++	hostPortsChain       = "hostports"
++	masqueradingChain    = "masquerading"
++)
++
++// The nftables portmap implementation is fairly similar to the iptables implementation:
++// we add a rule for each mapping, with a comment containing a hash of the container ID,
++// so that we can later reliably delete the rules we want. (This is important because in
++// edge cases, it's possible the plugin might see "ADD container A with IP 192.168.1.3",
++// followed by "ADD container B with IP 192.168.1.3" followed by "DEL container A with IP
++// 192.168.1.3", and we need to make sure that the DEL causes us to delete the rule for
++// container A, and not the rule for container B.) This iptables implementation actually
++// uses a separate chain per container but there's not really any need for that...
++//
++// As with pkg/ip/ipmasq_nftables_linux.go, it would be more nftables-y to have a chain
++// with a single rule doing a lookup against a map with an element per mapping, rather
++// than having a chain with a rule per mapping. But there's no easy, non-racy way to say
++// "delete the element 192.168.1.3 from the map, but only if it was added for container A,
++// not if it was added for container B".
++
++type portMapperNFTables struct {
++	ipv4 knftables.Interface
++	ipv6 knftables.Interface
++}
++
++// getPortMapNFT creates an nftables.Interface for port mapping for the IP family of ipn
++func (pmNFT *portMapperNFTables) getPortMapNFT(ipv6 bool) (knftables.Interface, error) {
++	var err error
++	if ipv6 {
++		if pmNFT.ipv6 == nil {
++			pmNFT.ipv6, err = knftables.New(knftables.IPv6Family, tableName)
++			if err != nil {
++				return nil, err
++			}
++		}
++		return pmNFT.ipv6, nil
++	}
++
++	if pmNFT.ipv4 == nil {
++		pmNFT.ipv4, err = knftables.New(knftables.IPv4Family, tableName)
++		if err != nil {
++			return nil, err
++		}
++	}
++	return pmNFT.ipv4, err
++}
++
++// forwardPorts establishes port forwarding to a given container IP.
++// containerNet.IP can be either v4 or v6.
++func (pmNFT *portMapperNFTables) forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
++	isV6 := (containerNet.IP.To4() == nil)
++	nft, err := pmNFT.getPortMapNFT(isV6)
++	if err != nil {
++		return err
++	}
++
++	var ipX string
++	var conditions []string
++	if isV6 {
++		ipX = "ip6"
++		if config.ConditionsV6 != nil {
++			conditions = *config.ConditionsV6
++		}
++	} else if !isV6 {
++		ipX = "ip"
++		if config.ConditionsV4 != nil {
++			conditions = *config.ConditionsV4
++		}
++	}
++
++	tx := nft.NewTransaction()
++
++	// Ensure basic rule structure
++	tx.Add(&knftables.Table{
++		Comment: knftables.PtrTo("CNI portmap plugin"),
 +	})
 +
-+	// These are Serial because os.Setenv has process-wide effect
-+	When("it is not available", Serial, func() {
-+		var origPath string
-+		BeforeEach(func() {
-+			origPath = os.Getenv("PATH")
-+			os.Setenv("PATH", "/does-not-exist")
-+		})
-+		AfterEach(func() {
-+			os.Setenv("PATH", origPath)
-+		})
-+
-+		It("reports that iptables is not supported", func() {
-+			Expect(SupportsIPTables()).To(BeFalse(), "found iptables outside of PATH??")
-+		})
-+		It("reports that nftables is not supported", func() {
-+			Expect(SupportsNFTables()).To(BeFalse(), "found nftables outside of PATH??")
-+		})
++	tx.Add(&knftables.Chain{
++		Name: "hostports",
 +	})
-+})
++	tx.Add(&knftables.Chain{
++		Name: "hostip_hostports",
++	})
++
++	tx.Add(&knftables.Chain{
++		Name:     "input",
++		Type:     knftables.PtrTo(knftables.NATType),
++		Hook:     knftables.PtrTo(knftables.InputHook),
++		Priority: knftables.PtrTo(knftables.DNATPriority),
++	})
++	tx.Flush(&knftables.Chain{
++		Name: "input",
++	})
++	tx.Add(&knftables.Rule{
++		Chain: "input",
++		Rule: knftables.Concat(
++			conditions,
++			"jump", hostIPHostPortsChain,
++		),
++	})
++	tx.Add(&knftables.Rule{
++		Chain: "input",
++		Rule: knftables.Concat(
++			conditions,
++			"jump", hostPortsChain,
++		),
++	})
++
++	tx.Add(&knftables.Chain{
++		Name:     "output",
++		Type:     knftables.PtrTo(knftables.NATType),
++		Hook:     knftables.PtrTo(knftables.OutputHook),
++		Priority: knftables.PtrTo(knftables.DNATPriority),
++	})
++	tx.Flush(&knftables.Chain{
++		Name: "output",
++	})
++	tx.Add(&knftables.Rule{
++		Chain: "output",
++		Rule: knftables.Concat(
++			conditions,
++			"jump", hostIPHostPortsChain,
++		),
++	})
++	tx.Add(&knftables.Rule{
++		Chain: "output",
++		Rule: knftables.Concat(
++			conditions,
++			"fib daddr type local",
++			"jump", hostPortsChain,
++		),
++	})
++
++	if *config.SNAT {
++		tx.Add(&knftables.Chain{
++			Name:     masqueradingChain,
++			Type:     knftables.PtrTo(knftables.NATType),
++			Hook:     knftables.PtrTo(knftables.PostroutingHook),
++			Priority: knftables.PtrTo(knftables.SNATPriority),
++		})
++	}
++
++	// Set up this container
++	for _, e := range config.RuntimeConfig.PortMaps {
++		useHostIP := false
++		if e.HostIP != "" {
++			hostIP := net.ParseIP(e.HostIP)
++			isHostV6 := (hostIP.To4() == nil)
++			// Ignore wrong-IP-family HostIPs
++			if isV6 != isHostV6 {
++				continue
++			}
++
++			// Unspecified addresses cannot be used as destination
++			useHostIP = !hostIP.IsUnspecified()
++		}
++
++		if useHostIP {
++			tx.Add(&knftables.Rule{
++				Chain: hostIPHostPortsChain,
++				Rule: knftables.Concat(
++					ipX, "daddr", e.HostIP,
++					ipX, "protocol", e.Protocol,
++					"th dport", e.HostPort,
++					"dnat", ipX, "addr . port", "to", containerNet.IP, ".", e.ContainerPort,
++				),
++				Comment: &config.ContainerID,
++			})
++		} else {
++			tx.Add(&knftables.Rule{
++				Chain: hostPortsChain,
++				Rule: knftables.Concat(
++					ipX, "protocol", e.Protocol,
++					"th dport", e.HostPort,
++					"dnat", ipX, "addr . port", "to", containerNet.IP, ".", e.ContainerPort,
++				),
++				Comment: &config.ContainerID,
++			})
++		}
++	}
++
++	if *config.SNAT {
++		// Add mark-to-masquerade rules for hairpin and localhost
++		// In theory we should validate that the original dst IP and port are as
++		// expected, but *any* traffic matching one of these patterns would need
++		// to be masqueraded to be able to work correctly anyway.
++		tx.Add(&knftables.Rule{
++			Chain: masqueradingChain,
++			Rule: knftables.Concat(
++				ipX, "saddr", containerNet.IP,
++				ipX, "daddr", containerNet.IP,
++				"masquerade",
++			),
++			Comment: &config.ContainerID,
++		})
++		if !isV6 {
++			tx.Add(&knftables.Rule{
++				Chain: masqueradingChain,
++				Rule: knftables.Concat(
++					ipX, "saddr 127.0.0.1",
++					ipX, "daddr", containerNet.IP,
++					"masquerade",
++				),
++				Comment: &config.ContainerID,
++			})
++		}
++	}
++
++	err = nft.Run(context.TODO(), tx)
++	if err != nil {
++		return fmt.Errorf("unable to set up nftables rules for port mappings: %v", err)
++	}
++
++	return nil
++}
++
++func (pmNFT *portMapperNFTables) checkPorts(config *PortMapConf, containerNet net.IPNet) error {
++	isV6 := (containerNet.IP.To4() == nil)
++
++	var hostPorts, hostIPHostPorts, masqueradings int
++	for _, e := range config.RuntimeConfig.PortMaps {
++		if e.HostIP != "" {
++			hostIPHostPorts++
++		} else {
++			hostPorts++
++		}
++	}
++	if *config.SNAT {
++		masqueradings = len(config.RuntimeConfig.PortMaps)
++		if isV6 {
++			masqueradings *= 2
++		}
++	}
++
++	nft, err := pmNFT.getPortMapNFT(isV6)
++	if err != nil {
++		return err
++	}
++	if hostPorts > 0 {
++		err := checkPortsAgainstRules(nft, hostPortsChain, config.ContainerID, hostPorts)
++		if err != nil {
++			return err
++		}
++	}
++	if hostIPHostPorts > 0 {
++		err := checkPortsAgainstRules(nft, hostIPHostPortsChain, config.ContainerID, hostIPHostPorts)
++		if err != nil {
++			return err
++		}
++	}
++	if masqueradings > 0 {
++		err := checkPortsAgainstRules(nft, masqueradingChain, config.ContainerID, masqueradings)
++		if err != nil {
++			return err
++		}
++	}
++
++	return nil
++}
++
++func checkPortsAgainstRules(nft knftables.Interface, chain, comment string, nPorts int) error {
++	rules, err := nft.ListRules(context.TODO(), chain)
++	if err != nil {
++		return err
++	}
++
++	found := 0
++	for _, r := range rules {
++		if r.Comment != nil && *r.Comment == comment {
++			found++
++		}
++	}
++	if found < nPorts {
++		return fmt.Errorf("missing hostport rules in %q chain", chain)
++	}
++
++	return nil
++}
++
++// unforwardPorts deletes any nftables rules created by this plugin.
++// It should be idempotent - it will not error if the chain does not exist.
++func (pmNFT *portMapperNFTables) unforwardPorts(config *PortMapConf) error {
++	// Always clear both IPv4 and IPv6, just to be sure
++	for _, family := range []knftables.Family{knftables.IPv4Family, knftables.IPv6Family} {
++		nft, err := pmNFT.getPortMapNFT(family == knftables.IPv6Family)
++		if err != nil {
++			continue
++		}
++
++		tx := nft.NewTransaction()
++		for _, chain := range []string{hostPortsChain, hostIPHostPortsChain, masqueradingChain} {
++			rules, err := nft.ListRules(context.TODO(), chain)
++			if err != nil {
++				if knftables.IsNotFound(err) {
++					continue
++				}
++				return fmt.Errorf("could not list rules in table %s: %w", tableName, err)
++			}
++
++			for _, r := range rules {
++				if r.Comment != nil && *r.Comment == config.ContainerID {
++					tx.Delete(r)
++				}
++			}
++		}
++
++		err = nft.Run(context.TODO(), tx)
++		if err != nil {
++			return fmt.Errorf("error deleting nftables rules: %w", err)
++		}
++	}
++
++	return nil
++}
+diff --git a/plugins/meta/portmap/utils.go b/plugins/meta/portmap/utils.go
+index e6709089d..922705579 100644
+--- a/plugins/meta/portmap/utils.go
++++ b/plugins/meta/portmap/utils.go
+@@ -21,6 +21,8 @@ import (
+ 	"strings"
+ 
+ 	"github.com/vishvananda/netlink"
++
++	"github.com/containernetworking/plugins/pkg/utils/sysctl"
+ )
+ 
+ // fmtIpPort correctly formats ip:port literals for iptables and ip6tables -
+@@ -52,6 +54,14 @@ func getRoutableHostIF(containerIP net.IP) string {
+ 	return ""
+ }
+ 
++// enableLocalnetRouting tells the kernel not to treat 127/8 as a martian,
++// so that connections with a source ip of 127/8 can cross a routing boundary.
++func enableLocalnetRouting(ifName string) error {
++	routeLocalnetPath := "net/ipv4/conf/" + ifName + "/route_localnet"
++	_, err := sysctl.Sysctl(routeLocalnetPath, "1")
++	return err
++}
++
+ // groupByProto groups port numbers by protocol
+ func groupByProto(entries []PortMapEntry) map[string][]int {
+ 	if len(entries) == 0 {
 diff --git a/vendor/modules.txt b/vendor/modules.txt
-index f29d210af..07a954b7e 100644
+index 76928f717..04d65189d 100644
 --- a/vendor/modules.txt
 +++ b/vendor/modules.txt
-@@ -272,3 +272,6 @@ google.golang.org/protobuf/types/known/anypb
+@@ -267,3 +267,6 @@ google.golang.org/protobuf/types/known/anypb
  # gopkg.in/yaml.v3 v3.0.1
  ## explicit
  gopkg.in/yaml.v3
-+# sigs.k8s.io/knftables v0.0.16
++# sigs.k8s.io/knftables v0.0.17
 +## explicit; go 1.20
 +sigs.k8s.io/knftables
 diff --git a/vendor/sigs.k8s.io/knftables/.gitignore b/vendor/sigs.k8s.io/knftables/.gitignore
@@ -361,11 +1357,34 @@ index 000000000..896d5783b
 +hack/bin/golangci-lint
 diff --git a/vendor/sigs.k8s.io/knftables/CHANGELOG.md b/vendor/sigs.k8s.io/knftables/CHANGELOG.md
 new file mode 100644
-index 000000000..33bb8ef17
+index 000000000..4f1dc3a35
 --- /dev/null
 +++ b/vendor/sigs.k8s.io/knftables/CHANGELOG.md
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,170 @@
 +# ChangeLog
++
++## v0.0.17
++
++- `ListRules()` now accepts `""` for the chain name, meaning to list
++  all rules in the table. (`@caseydavenport`)
++
++- `ListElements()` now handles elements with prefix/CIDR values (e.g.,
++  `"192.168.0.0/16"`; these are represented specially in the JSON
++  format and the old code didn't handle them). (`@caseydavenport`)
++
++- Added `NumOperations()` to `Transaction` (which lets you figure out
++  belatedly whether you added anything to the transaction or not, and
++  could also be used for metrics). (`@fasaxc`)
++
++- `knftables.Interface` now reuses the same `bytes.Buffer` for each
++  call to `nft` rather than constructing a new one each time, saving
++  time and memory. (`@aroradaman`)
++
++- Fixed map element deletion in `knftables.Fake` to not mistakenly
++  require that you fill in the `.Value` of the element. (`@npinaeva`)
++
++- Added `Fake.LastTransaction`, to retrieve the most-recently-executed
++  transaction. (`@npinaeva`)
 +
 +## v0.0.16
 +
@@ -806,10 +1825,10 @@ index 000000000..01baa6237
 +  - danwinship
 diff --git a/vendor/sigs.k8s.io/knftables/README.md b/vendor/sigs.k8s.io/knftables/README.md
 new file mode 100644
-index 000000000..c2139b04e
+index 000000000..794b15bb7
 --- /dev/null
 +++ b/vendor/sigs.k8s.io/knftables/README.md
-@@ -0,0 +1,276 @@
+@@ -0,0 +1,278 @@
 +# knftables: a golang nftables library
 +
 +This is a library for using nftables from Go.
@@ -819,9 +1838,11 @@ index 000000000..c2139b04e
 +using nftables in the way that nftables is supposed to be used (as
 +opposed to using nftables in a naively-translated-from-iptables way,
 +or using nftables to do totally valid things that aren't the sorts of
-+things Kubernetes components are likely to need to do).
++things Kubernetes components are likely to need to do; see the
++"[iptables porting](./docs/iptables-porting.md)" doc for more thoughts
++on porting old iptables-based components to nftables.)
 +
-+It is still under development and is not yet API stable. (See the
++knftables is still under development and is not yet API stable. (See the
 +section on "Possible future changes" below.)
 +
 +The library is implemented as a wrapper around the `nft` CLI, because
@@ -1270,10 +2291,10 @@ index 000000000..154b5bc45
 +}
 diff --git a/vendor/sigs.k8s.io/knftables/fake.go b/vendor/sigs.k8s.io/knftables/fake.go
 new file mode 100644
-index 000000000..694c9709c
+index 000000000..584c27a54
 --- /dev/null
 +++ b/vendor/sigs.k8s.io/knftables/fake.go
-@@ -0,0 +1,656 @@
+@@ -0,0 +1,671 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
 +
@@ -1310,6 +2331,10 @@ index 000000000..694c9709c
 +	// Table contains the Interface's table. This will be `nil` until you `tx.Add()`
 +	// the table.
 +	Table *FakeTable
++
++	// LastTransaction is the last transaction passed to Run(). It will remain set until the
++	// next time Run() is called. (It is not affected by Check().)
++	LastTransaction *Transaction
 +}
 +
 +// FakeTable wraps Table for the Fake implementation
@@ -1396,13 +2421,23 @@ index 000000000..694c9709c
 +// ListRules is part of Interface
 +func (fake *Fake) ListRules(_ context.Context, chain string) ([]*Rule, error) {
 +	if fake.Table == nil {
-+		return nil, notFoundError("no such chain %q", chain)
++		return nil, notFoundError("no such table %q", fake.table)
 +	}
-+	ch := fake.Table.Chains[chain]
-+	if ch == nil {
-+		return nil, notFoundError("no such chain %q", chain)
++
++	rules := []*Rule{}
++	if chain == "" {
++		// Include all rules across all chains.
++		for _, ch := range fake.Table.Chains {
++			rules = append(rules, ch.Rules...)
++		}
++	} else {
++		ch := fake.Table.Chains[chain]
++		if ch == nil {
++			return nil, notFoundError("no such chain %q", chain)
++		}
++		rules = append(rules, ch.Rules...)
 +	}
-+	return ch.Rules, nil
++	return rules, nil
 +}
 +
 +// ListElements is part of Interface
@@ -1431,6 +2466,7 @@ index 000000000..694c9709c
 +
 +// Run is part of Interface
 +func (fake *Fake) Run(_ context.Context, tx *Transaction) error {
++	fake.LastTransaction = tx
 +	updatedTable, err := fake.run(tx)
 +	if err == nil {
 +		fake.Table = updatedTable
@@ -1617,7 +2653,7 @@ index 000000000..694c9709c
 +				return nil, fmt.Errorf("unhandled operation %q", op.verb)
 +			}
 +		case *Element:
-+			if len(obj.Value) == 0 {
++			if obj.Set != "" {
 +				existingSet := updatedTable.Sets[obj.Set]
 +				if existingSet == nil {
 +					return nil, notFoundError("no such set %q", obj.Set)
@@ -1932,10 +2968,10 @@ index 000000000..694c9709c
 +}
 diff --git a/vendor/sigs.k8s.io/knftables/nftables.go b/vendor/sigs.k8s.io/knftables/nftables.go
 new file mode 100644
-index 000000000..7063d2927
+index 000000000..8cb343806
 --- /dev/null
 +++ b/vendor/sigs.k8s.io/knftables/nftables.go
-@@ -0,0 +1,471 @@
+@@ -0,0 +1,514 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
 +
@@ -1955,11 +2991,13 @@ index 000000000..7063d2927
 +package knftables
 +
 +import (
++	"bytes"
 +	"context"
 +	"encoding/json"
 +	"fmt"
 +	"os/exec"
 +	"strings"
++	"sync"
 +)
 +
 +// Interface is an interface for running nftables commands against a given family and table.
@@ -1981,7 +3019,8 @@ index 000000000..7063d2927
 +	// list and no error.
 +	List(ctx context.Context, objectType string) ([]string, error)
 +
-+	// ListRules returns a list of the rules in a chain, in order. Note that at the
++	// ListRules returns a list of the rules in a chain, in order. If no chain name is
++	// specified, then all rules within the table will be returned. Note that at the
 +	// present time, the Rule objects will have their `Comment` and `Handle` fields
 +	// filled in, but *not* the actual `Rule` field. So this can only be used to find
 +	// the handles of rules if they have unique comments to recognize them by, or if
@@ -2008,6 +3047,9 @@ index 000000000..7063d2927
 +type realNFTables struct {
 +	nftContext
 +
++	bufferMutex sync.Mutex
++	buffer      *bytes.Buffer
++
 +	exec execer
 +	path string
 +}
@@ -2022,8 +3064,8 @@ index 000000000..7063d2927
 +			family: family,
 +			table:  table,
 +		},
-+
-+		exec: execer,
++		buffer: &bytes.Buffer{},
++		exec:   execer,
 +	}
 +
 +	nft.path, err = nft.exec.LookPath("nft")
@@ -2073,34 +3115,42 @@ index 000000000..7063d2927
 +
 +// Run is part of Interface
 +func (nft *realNFTables) Run(ctx context.Context, tx *Transaction) error {
++	nft.bufferMutex.Lock()
++	defer nft.bufferMutex.Unlock()
++
 +	if tx.err != nil {
 +		return tx.err
 +	}
 +
-+	buf, err := tx.asCommandBuf()
++	nft.buffer.Reset()
++	err := tx.populateCommandBuf(nft.buffer)
 +	if err != nil {
 +		return err
 +	}
 +
 +	cmd := exec.CommandContext(ctx, nft.path, "-f", "-")
-+	cmd.Stdin = buf
++	cmd.Stdin = nft.buffer
 +	_, err = nft.exec.Run(cmd)
 +	return err
 +}
 +
 +// Check is part of Interface
 +func (nft *realNFTables) Check(ctx context.Context, tx *Transaction) error {
++	nft.bufferMutex.Lock()
++	defer nft.bufferMutex.Unlock()
++
 +	if tx.err != nil {
 +		return tx.err
 +	}
 +
-+	buf, err := tx.asCommandBuf()
++	nft.buffer.Reset()
++	err := tx.populateCommandBuf(nft.buffer)
 +	if err != nil {
 +		return err
 +	}
 +
 +	cmd := exec.CommandContext(ctx, nft.path, "--check", "-f", "-")
-+	cmd.Stdin = buf
++	cmd.Stdin = nft.buffer
 +	_, err = nft.exec.Run(cmd)
 +	return err
 +}
@@ -2236,7 +3286,13 @@ index 000000000..7063d2927
 +
 +// ListRules is part of Interface
 +func (nft *realNFTables) ListRules(ctx context.Context, chain string) ([]*Rule, error) {
-+	cmd := exec.CommandContext(ctx, nft.path, "--json", "list", "chain", string(nft.family), nft.table, chain)
++	// If no chain is given, return all rules from within the table.
++	var cmd *exec.Cmd
++	if chain == "" {
++		cmd = exec.CommandContext(ctx, nft.path, "--json", "list", "table", string(nft.family), nft.table)
++	} else {
++		cmd = exec.CommandContext(ctx, nft.path, "--json", "list", "chain", string(nft.family), nft.table, chain)
++	}
 +	out, err := nft.exec.Run(cmd)
 +	if err != nil {
 +		return nil, fmt.Errorf("failed to run nft: %w", err)
@@ -2249,8 +3305,12 @@ index 000000000..7063d2927
 +
 +	rules := make([]*Rule, 0, len(jsonRules))
 +	for _, jsonRule := range jsonRules {
++		parentChain, ok := jsonVal[string](jsonRule, "chain")
++		if !ok {
++			return nil, fmt.Errorf("unexpected JSON output from nft (rule with no chain)")
++		}
 +		rule := &Rule{
-+			Chain: chain,
++			Chain: parentChain,
 +		}
 +
 +		// handle is written as an integer in nft's output, but json.Unmarshal
@@ -2342,7 +3402,7 @@ index 000000000..7063d2927
 +	return elements, nil
 +}
 +
-+// parseElementValue parses a JSON element key/value, handling concatenations, and
++// parseElementValue parses a JSON element key/value, handling concatenations, prefixes, and
 +// converting numeric or "verdict" values to strings.
 +func parseElementValue(json interface{}) ([]string, error) {
 +	// json can be:
@@ -2350,6 +3410,14 @@ index 000000000..7063d2927
 +	//   - a single string, e.g. "192.168.1.3"
 +	//
 +	//   - a single number, e.g. 80
++	//
++	//   - a prefix, expressed as an object:
++	//     {
++	//       "prefix": {
++	//         "addr": "192.168.0.0",
++	//         "len": 16,
++	//       }
++	//     }
 +	//
 +	//   - a concatenation, expressed as an object containing an array of simple
 +	//     values:
@@ -2390,6 +3458,17 @@ index 000000000..7063d2927
 +				}
 +			}
 +			return vals, nil
++		} else if prefix, _ := jsonVal[map[string]interface{}](val, "prefix"); prefix != nil {
++			// For prefix-type elements, return the element in CIDR representation.
++			addr, ok := jsonVal[string](prefix, "addr")
++			if !ok {
++				return nil, fmt.Errorf("could not parse 'addr' value as string: %q", prefix)
++			}
++			length, ok := jsonVal[float64](prefix, "len")
++			if !ok {
++				return nil, fmt.Errorf("could not parse 'len' value as number: %q", prefix)
++			}
++			return []string{fmt.Sprintf("%s/%d", addr, int(length))}, nil
 +		} else if len(val) == 1 {
 +			var verdict string
 +			// We just checked that len(val) == 1, so this loop body will only
@@ -2996,10 +4075,10 @@ index 000000000..6a6287939
 +}
 diff --git a/vendor/sigs.k8s.io/knftables/transaction.go b/vendor/sigs.k8s.io/knftables/transaction.go
 new file mode 100644
-index 000000000..75ea2be53
+index 000000000..3063637ad
 --- /dev/null
 +++ b/vendor/sigs.k8s.io/knftables/transaction.go
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,141 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
 +
@@ -3021,7 +4100,6 @@ index 000000000..75ea2be53
 +import (
 +	"bytes"
 +	"fmt"
-+	"io"
 +)
 +
 +// Transaction represents an nftables transaction
@@ -3050,17 +4128,16 @@ index 000000000..75ea2be53
 +	flushVerb   verb = "flush"
 +)
 +
-+// asCommandBuf returns the transaction as an io.Reader that outputs a series of nft commands
-+func (tx *Transaction) asCommandBuf() (io.Reader, error) {
++// populateCommandBuf populates the transaction as series of nft commands to the given bytes.Buffer.
++func (tx *Transaction) populateCommandBuf(buf *bytes.Buffer) error {
 +	if tx.err != nil {
-+		return nil, tx.err
++		return tx.err
 +	}
 +
-+	buf := &bytes.Buffer{}
 +	for _, op := range tx.operations {
 +		op.obj.writeOperation(op.verb, tx.nftContext, buf)
 +	}
-+	return buf, nil
++	return nil
 +}
 +
 +// String returns the transaction as a string containing the nft commands; if there is
@@ -3076,6 +4153,11 @@ index 000000000..75ea2be53
 +	}
 +
 +	return buf.String()
++}
++
++// NumOperations returns the number of operations queued in the transaction.
++func (tx *Transaction) NumOperations() int {
++	return len(tx.operations)
 +}
 +
 +func (tx *Transaction) operation(verb verb, obj Object) {
@@ -3651,2461 +4733,3 @@ index 000000000..4ff14af24
 +	}
 +	return b.String()
 +}
-
-From 97cf405f183cd087de288d202c0624d6baa0bb59 Mon Sep 17 00:00:00 2001
-From: Dan Winship <danwinship@redhat.com>
-Date: Tue, 4 Apr 2023 08:49:14 -0400
-Subject: [PATCH 3/5] Add nftables implementation of ipmasq
-
-Signed-off-by: Dan Winship <danwinship@redhat.com>
----
- pkg/ip/ipmasq_iptables_linux.go    | 129 ++++++++++++++++++++++
- pkg/ip/ipmasq_linux.go             | 128 +++++++--------------
- pkg/ip/ipmasq_linux_test.go        | 110 +++++++++++++++++++
- pkg/ip/ipmasq_nftables_linux.go    | 171 +++++++++++++++++++++++++++++
- plugins/main/bridge/bridge.go      |  10 +-
- plugins/main/bridge/bridge_test.go | 117 ++++++++++++++------
- plugins/main/ptp/ptp.go            |  14 +--
- plugins/main/ptp/ptp_test.go       |  57 ++++++++++
- 8 files changed, 600 insertions(+), 136 deletions(-)
- create mode 100644 pkg/ip/ipmasq_iptables_linux.go
- create mode 100644 pkg/ip/ipmasq_linux_test.go
- create mode 100644 pkg/ip/ipmasq_nftables_linux.go
-
-diff --git a/pkg/ip/ipmasq_iptables_linux.go b/pkg/ip/ipmasq_iptables_linux.go
-new file mode 100644
-index 000000000..8bd301d30
---- /dev/null
-+++ b/pkg/ip/ipmasq_iptables_linux.go
-@@ -0,0 +1,129 @@
-+// Copyright 2015 CNI authors
-+//
-+// Licensed under the Apache License, Version 2.0 (the "License");
-+// you may not use this file except in compliance with the License.
-+// You may obtain a copy of the License at
-+//
-+//     http://www.apache.org/licenses/LICENSE-2.0
-+//
-+// Unless required by applicable law or agreed to in writing, software
-+// distributed under the License is distributed on an "AS IS" BASIS,
-+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+// See the License for the specific language governing permissions and
-+// limitations under the License.
-+
-+package ip
-+
-+import (
-+	"fmt"
-+	"net"
-+
-+	"github.com/coreos/go-iptables/iptables"
-+)
-+
-+// SetupIPMasq installs iptables rules to masquerade traffic
-+// coming from ip of ipn and going outside of ipn.
-+// Deprecated: This function only supports iptables. Use SetupIPMasqForPlugin, which
-+// supports both iptables and nftables.
-+func SetupIPMasq(ipn *net.IPNet, chain string, comment string) error {
-+	isV6 := ipn.IP.To4() == nil
-+
-+	var ipt *iptables.IPTables
-+	var err error
-+	var multicastNet string
-+
-+	if isV6 {
-+		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
-+		multicastNet = "ff00::/8"
-+	} else {
-+		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
-+		multicastNet = "224.0.0.0/4"
-+	}
-+	if err != nil {
-+		return fmt.Errorf("failed to locate iptables: %v", err)
-+	}
-+
-+	// Create chain if doesn't exist
-+	exists := false
-+	chains, err := ipt.ListChains("nat")
-+	if err != nil {
-+		return fmt.Errorf("failed to list chains: %v", err)
-+	}
-+	for _, ch := range chains {
-+		if ch == chain {
-+			exists = true
-+			break
-+		}
-+	}
-+	if !exists {
-+		if err = ipt.NewChain("nat", chain); err != nil {
-+			return err
-+		}
-+	}
-+
-+	// Packets to this network should not be touched
-+	if err := ipt.AppendUnique("nat", chain, "-d", ipn.String(), "-j", "ACCEPT", "-m", "comment", "--comment", comment); err != nil {
-+		return err
-+	}
-+
-+	// Don't masquerade multicast - pods should be able to talk to other pods
-+	// on the local network via multicast.
-+	if err := ipt.AppendUnique("nat", chain, "!", "-d", multicastNet, "-j", "MASQUERADE", "-m", "comment", "--comment", comment); err != nil {
-+		return err
-+	}
-+
-+	// Packets from the specific IP of this network will hit the chain
-+	return ipt.AppendUnique("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
-+}
-+
-+// TeardownIPMasq undoes the effects of SetupIPMasq.
-+// Deprecated: This function only supports iptables. Use TeardownIPMasqForPlugin, which
-+// supports both iptables and nftables.
-+func TeardownIPMasq(ipn *net.IPNet, chain string, comment string) error {
-+	isV6 := ipn.IP.To4() == nil
-+
-+	var ipt *iptables.IPTables
-+	var err error
-+
-+	if isV6 {
-+		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
-+	} else {
-+		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
-+	}
-+	if err != nil {
-+		return fmt.Errorf("failed to locate iptables: %v", err)
-+	}
-+
-+	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
-+	if err != nil && !isNotExist(err) {
-+		return err
-+	}
-+
-+	// for downward compatibility
-+	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.String(), "-j", chain, "-m", "comment", "--comment", comment)
-+	if err != nil && !isNotExist(err) {
-+		return err
-+	}
-+
-+	err = ipt.ClearChain("nat", chain)
-+	if err != nil && !isNotExist(err) {
-+		return err
-+	}
-+
-+	err = ipt.DeleteChain("nat", chain)
-+	if err != nil && !isNotExist(err) {
-+		return err
-+	}
-+
-+	return nil
-+}
-+
-+// isNotExist returnst true if the error is from iptables indicating
-+// that the target does not exist.
-+func isNotExist(err error) bool {
-+	e, ok := err.(*iptables.Error)
-+	if !ok {
-+		return false
-+	}
-+	return e.IsNotExist()
-+}
-diff --git a/pkg/ip/ipmasq_linux.go b/pkg/ip/ipmasq_linux.go
-index aa59a8db5..a77de6b53 100644
---- a/pkg/ip/ipmasq_linux.go
-+++ b/pkg/ip/ipmasq_linux.go
-@@ -15,111 +15,61 @@
- package ip
- 
- import (
-+	"errors"
- 	"fmt"
- 	"net"
-+	"strings"
- 
--	"github.com/coreos/go-iptables/iptables"
-+	"github.com/containernetworking/plugins/pkg/utils"
- )
- 
--// SetupIPMasq installs iptables rules to masquerade traffic
--// coming from ip of ipn and going outside of ipn
--func SetupIPMasq(ipn *net.IPNet, chain string, comment string) error {
--	isV6 := ipn.IP.To4() == nil
--
--	var ipt *iptables.IPTables
--	var err error
--	var multicastNet string
--
--	if isV6 {
--		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
--		multicastNet = "ff00::/8"
--	} else {
--		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
--		multicastNet = "224.0.0.0/4"
--	}
--	if err != nil {
--		return fmt.Errorf("failed to locate iptables: %v", err)
--	}
--
--	// Create chain if doesn't exist
--	exists := false
--	chains, err := ipt.ListChains("nat")
--	if err != nil {
--		return fmt.Errorf("failed to list chains: %v", err)
--	}
--	for _, ch := range chains {
--		if ch == chain {
--			exists = true
--			break
--		}
--	}
--	if !exists {
--		if err = ipt.NewChain("nat", chain); err != nil {
--			return err
-+// SetupIPMasqForPlugin installs rules to masquerade traffic coming from ip of ipn and
-+// going outside of ipn, using a chain name based on pluginName and containerID. The
-+// backend can be either "iptables" or "nftables"; if it is nil, then a suitable default
-+// implementation will be used.
-+func SetupIPMasqForPlugin(backend *string, ipn *net.IPNet, pluginName, containerID string) error {
-+	if backend == nil {
-+		// Prefer iptables, unless only nftables is available
-+		defaultBackend := "iptables"
-+		if !utils.SupportsIPTables() && utils.SupportsNFTables() {
-+			defaultBackend = "nftables"
- 		}
-+		backend = &defaultBackend
- 	}
- 
--	// Packets to this network should not be touched
--	if err := ipt.AppendUnique("nat", chain, "-d", ipn.String(), "-j", "ACCEPT", "-m", "comment", "--comment", comment); err != nil {
--		return err
--	}
--
--	// Don't masquerade multicast - pods should be able to talk to other pods
--	// on the local network via multicast.
--	if err := ipt.AppendUnique("nat", chain, "!", "-d", multicastNet, "-j", "MASQUERADE", "-m", "comment", "--comment", comment); err != nil {
--		return err
-+	switch *backend {
-+	case "iptables":
-+		chain := utils.FormatChainName(pluginName, containerID)
-+		comment := utils.FormatComment(pluginName, containerID)
-+		return SetupIPMasq(ipn, chain, comment)
-+	case "nftables":
-+		return setupIPMasqNFTables(ipn, pluginName, containerID)
-+	default:
-+		return fmt.Errorf("unknown ipmasq backend %q", *backend)
- 	}
--
--	// Packets from the specific IP of this network will hit the chain
--	return ipt.AppendUnique("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
- }
- 
--// TeardownIPMasq undoes the effects of SetupIPMasq
--func TeardownIPMasq(ipn *net.IPNet, chain string, comment string) error {
--	isV6 := ipn.IP.To4() == nil
--
--	var ipt *iptables.IPTables
--	var err error
--
--	if isV6 {
--		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv6)
--	} else {
--		ipt, err = iptables.NewWithProtocol(iptables.ProtocolIPv4)
--	}
--	if err != nil {
--		return fmt.Errorf("failed to locate iptables: %v", err)
--	}
--
--	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
--	if err != nil && !isNotExist(err) {
--		return err
--	}
-+// TeardownIPMasqForPlugin undoes the effects of SetupIPMasqForPlugin
-+func TeardownIPMasqForPlugin(ipn *net.IPNet, pluginName, containerID string) error {
-+	var errs []string
- 
--	// for downward compatibility
--	err = ipt.Delete("nat", "POSTROUTING", "-s", ipn.String(), "-j", chain, "-m", "comment", "--comment", comment)
--	if err != nil && !isNotExist(err) {
--		return err
--	}
-+	// Do both the iptables and the nftables cleanup, since the pod may have been
-+	// created with a different version of this plugin or a different configuration.
- 
--	err = ipt.ClearChain("nat", chain)
--	if err != nil && !isNotExist(err) {
--		return err
-+	chain := utils.FormatChainName(pluginName, containerID)
-+	comment := utils.FormatComment(pluginName, containerID)
-+	err := TeardownIPMasq(ipn, chain, comment)
-+	if err != nil && utils.SupportsIPTables() {
-+		errs = append(errs, err.Error())
- 	}
- 
--	err = ipt.DeleteChain("nat", chain)
--	if err != nil && !isNotExist(err) {
--		return err
-+	err = teardownIPMasqNFTables(ipn, pluginName, containerID)
-+	if err != nil && utils.SupportsNFTables() {
-+		errs = append(errs, err.Error())
- 	}
- 
--	return nil
--}
--
--// isNotExist returnst true if the error is from iptables indicating
--// that the target does not exist.
--func isNotExist(err error) bool {
--	e, ok := err.(*iptables.Error)
--	if !ok {
--		return false
-+	if errs == nil {
-+		return nil
- 	}
--	return e.IsNotExist()
-+	return errors.New(strings.Join(errs, "\n"))
- }
-diff --git a/pkg/ip/ipmasq_linux_test.go b/pkg/ip/ipmasq_linux_test.go
-new file mode 100644
-index 000000000..65e58bcc8
---- /dev/null
-+++ b/pkg/ip/ipmasq_linux_test.go
-@@ -0,0 +1,110 @@
-+// Copyright 2023 CNI authors
-+//
-+// Licensed under the Apache License, Version 2.0 (the "License");
-+// you may not use this file except in compliance with the License.
-+// You may obtain a copy of the License at
-+//
-+//     http://www.apache.org/licenses/LICENSE-2.0
-+//
-+// Unless required by applicable law or agreed to in writing, software
-+// distributed under the License is distributed on an "AS IS" BASIS,
-+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+// See the License for the specific language governing permissions and
-+// limitations under the License.
-+
-+package ip
-+
-+import (
-+	"strings"
-+	"testing"
-+
-+	"github.com/vishvananda/netlink"
-+	"sigs.k8s.io/knftables"
-+)
-+
-+func Test_setupIPMasqNFTables(t *testing.T) {
-+	nft := knftables.NewFake(knftables.InetFamily, ipMasqTableName)
-+
-+	containers := []struct {
-+		id   string
-+		addr string
-+	}{
-+		{
-+			id:   "one",
-+			addr: "192.168.1.1/24",
-+		},
-+		{
-+			id:   "two",
-+			addr: "192.168.1.2/24",
-+		},
-+		{
-+			id:   "three",
-+			addr: "192.168.99.5/24",
-+		},
-+	}
-+
-+	for _, c := range containers {
-+		addr, err := netlink.ParseAddr(c.addr)
-+		if err != nil {
-+			t.Fatalf("failed to parse test addr: %v", err)
-+		}
-+		err = setupIPMasqNFTablesWithInterface(nft, addr.IPNet, "unit-test", c.id)
-+		if err != nil {
-+			t.Fatalf("error from setupIPMasqNFTables: %v", err)
-+		}
-+	}
-+
-+	expected := strings.TrimSpace(`
-+add table inet cni_plugins_masquerade { comment "Masquerading for plugins from github.com/containernetworking/plugins" ; }
-+add chain inet cni_plugins_masquerade masq_checks { comment "Masquerade traffic from certain IPs to any (non-multicast) IP outside their subnet" ; }
-+add chain inet cni_plugins_masquerade postrouting { type nat hook postrouting priority 100 ; }
-+add rule inet cni_plugins_masquerade masq_checks ip saddr == 192.168.1.1 ip daddr != 192.168.1.0/24 masquerade comment "8c062ad391bb8ebf"
-+add rule inet cni_plugins_masquerade masq_checks ip saddr == 192.168.1.2 ip daddr != 192.168.1.0/24 masquerade comment "a777505f2d11fd66"
-+add rule inet cni_plugins_masquerade masq_checks ip saddr == 192.168.99.5 ip daddr != 192.168.99.0/24 masquerade comment "dab3c041fbc51d09"
-+add rule inet cni_plugins_masquerade postrouting ip daddr == 224.0.0.0/4  return
-+add rule inet cni_plugins_masquerade postrouting ip6 daddr == ff00::/8  return
-+add rule inet cni_plugins_masquerade postrouting goto masq_checks
-+`)
-+	dump := strings.TrimSpace(nft.Dump())
-+	if dump != expected {
-+		t.Errorf("expected nftables state:\n%s\n\nactual:\n%s\n\n", expected, dump)
-+	}
-+
-+	// Add a new container reusing "one"'s address, before deleting "one"
-+	addr, err := netlink.ParseAddr(containers[0].addr)
-+	if err != nil {
-+		t.Fatalf("failed to parse test addr: %v", err)
-+	}
-+	err = setupIPMasqNFTablesWithInterface(nft, addr.IPNet, "unit-test", "four")
-+	if err != nil {
-+		t.Fatalf("error from setupIPMasqNFTables: %v", err)
-+	}
-+
-+	// Now remove the original containers
-+	for _, c := range containers {
-+		addr, err := netlink.ParseAddr(c.addr)
-+		if err != nil {
-+			t.Fatalf("failed to parse test addr: %v", err)
-+		}
-+		err = teardownIPMasqNFTablesWithInterface(nft, addr.IPNet, "unit-test", c.id)
-+		if err != nil {
-+			t.Fatalf("error from teardownIPMasqNFTables: %v", err)
-+		}
-+	}
-+
-+	// We should be left with just the rule for "four"
-+
-+	expected = strings.TrimSpace(`
-+add table inet cni_plugins_masquerade { comment "Masquerading for plugins from github.com/containernetworking/plugins" ; }
-+add chain inet cni_plugins_masquerade masq_checks { comment "Masquerade traffic from certain IPs to any (non-multicast) IP outside their subnet" ; }
-+add chain inet cni_plugins_masquerade postrouting { type nat hook postrouting priority 100 ; }
-+add rule inet cni_plugins_masquerade masq_checks ip saddr == 192.168.1.1 ip daddr != 192.168.1.0/24 masquerade comment "a154bc98ffb3110e"
-+add rule inet cni_plugins_masquerade postrouting ip daddr == 224.0.0.0/4  return
-+add rule inet cni_plugins_masquerade postrouting ip6 daddr == ff00::/8  return
-+add rule inet cni_plugins_masquerade postrouting goto masq_checks
-+`)
-+	dump = strings.TrimSpace(nft.Dump())
-+	if dump != expected {
-+		t.Errorf("expected nftables state:\n%s\n\nactual:\n%s\n\n", expected, dump)
-+	}
-+}
-diff --git a/pkg/ip/ipmasq_nftables_linux.go b/pkg/ip/ipmasq_nftables_linux.go
-new file mode 100644
-index 000000000..3e01a5f78
---- /dev/null
-+++ b/pkg/ip/ipmasq_nftables_linux.go
-@@ -0,0 +1,171 @@
-+// Copyright 2023 CNI authors
-+//
-+// Licensed under the Apache License, Version 2.0 (the "License");
-+// you may not use this file except in compliance with the License.
-+// You may obtain a copy of the License at
-+//
-+//     http://www.apache.org/licenses/LICENSE-2.0
-+//
-+// Unless required by applicable law or agreed to in writing, software
-+// distributed under the License is distributed on an "AS IS" BASIS,
-+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+// See the License for the specific language governing permissions and
-+// limitations under the License.
-+
-+package ip
-+
-+import (
-+	"context"
-+	"net"
-+
-+	"sigs.k8s.io/knftables"
-+
-+	"github.com/containernetworking/plugins/pkg/utils"
-+)
-+
-+const (
-+	ipMasqTableName = "cni_plugins_masquerade"
-+	ipMasqChainName = "masq_checks"
-+)
-+
-+// The nftables ipmasq implementation is basically a straight port of the iptables
-+// implementation: we add a rule for each mapping, with a comment containing a hash of the
-+// container ID, so that we can later reliably delete the rules we want. (This is
-+// important because in edge cases, it's possible the plugin might see "ADD container A
-+// with IP 192.168.1.3", followed by "ADD container B with IP 192.168.1.3" followed by
-+// "DEL container A with IP 192.168.1.3", and we need to make sure that the DEL causes us
-+// to delete the rule for container A, and not the rule for container B.)
-+//
-+// It would be more nftables-y to have a chain with a single rule doing a lookup against a
-+// set with an element per mapping, rather than having a chain with a rule per mapping.
-+// But there's no easy, non-racy way to say "delete the element 192.168.1.3 from the set,
-+// but only if it was added for container A, not if it was added for container B".
-+
-+// hashForContainer returns a unique hash identifying the rules for this container with
-+// this plugin
-+func hashForContainer(pluginName, containerID string) string {
-+	return utils.MustFormatHashWithPrefix(16, "", pluginName+":"+containerID)
-+}
-+
-+// setupIPMasqNFTables is the nftables-based implementation of SetupIPMasq
-+func setupIPMasqNFTables(ipn *net.IPNet, pluginName, containerID string) error {
-+	nft, err := knftables.New(knftables.InetFamily, ipMasqTableName)
-+	if err != nil {
-+		return err
-+	}
-+	return setupIPMasqNFTablesWithInterface(nft, ipn, pluginName, containerID)
-+}
-+
-+func setupIPMasqNFTablesWithInterface(nft knftables.Interface, ipn *net.IPNet, pluginName, containerID string) error {
-+	comment := hashForContainer(pluginName, containerID)
-+	staleRules, err := findRules(nft, comment)
-+	if err != nil {
-+		return err
-+	}
-+
-+	tx := nft.NewTransaction()
-+
-+	// Ensure that our table and chains exist.
-+	tx.Add(&knftables.Table{
-+		Comment: knftables.PtrTo("Masquerading for plugins from github.com/containernetworking/plugins"),
-+	})
-+	tx.Add(&knftables.Chain{
-+		Name:    ipMasqChainName,
-+		Comment: knftables.PtrTo("Masquerade traffic from certain IPs to any (non-multicast) IP outside their subnet"),
-+	})
-+
-+	// Ensure that the postrouting chain exists and has the correct rules. (Has to be
-+	// done after creating ipMasqChainName, so we can jump to it.)
-+	tx.Add(&knftables.Chain{
-+		Name:     "postrouting",
-+		Type:     knftables.PtrTo(knftables.NATType),
-+		Hook:     knftables.PtrTo(knftables.PostroutingHook),
-+		Priority: knftables.PtrTo(knftables.SNATPriority),
-+	})
-+	tx.Flush(&knftables.Chain{
-+		Name: "postrouting",
-+	})
-+	tx.Add(&knftables.Rule{
-+		Chain: "postrouting",
-+		Rule:  "ip daddr == 224.0.0.0/4  return",
-+	})
-+	tx.Add(&knftables.Rule{
-+		Chain: "postrouting",
-+		Rule:  "ip6 daddr == ff00::/8  return",
-+	})
-+	tx.Add(&knftables.Rule{
-+		Chain: "postrouting",
-+		Rule: knftables.Concat(
-+			"goto", ipMasqChainName,
-+		),
-+	})
-+
-+	// Delete stale rules, add new rules to masquerade chain
-+	for _, rule := range staleRules {
-+		tx.Delete(rule)
-+	}
-+	ip := "ip"
-+	if ipn.IP.To4() == nil {
-+		ip = "ip6"
-+	}
-+
-+	// e.g. if ipn is "192.168.1.4/24", then dstNet is "192.168.1.0/24"
-+	dstNet := &net.IPNet{IP: ipn.IP.Mask(ipn.Mask), Mask: ipn.Mask}
-+
-+	tx.Add(&knftables.Rule{
-+		Chain: ipMasqChainName,
-+		Rule: knftables.Concat(
-+			ip, "saddr", "==", ipn.IP,
-+			ip, "daddr", "!=", dstNet,
-+			"masquerade",
-+		),
-+		Comment: knftables.PtrTo(comment),
-+	})
-+
-+	return nft.Run(context.TODO(), tx)
-+}
-+
-+// teardownIPMasqNFTables is the nftables-based implementation of TeardownIPMasq
-+func teardownIPMasqNFTables(ipn *net.IPNet, pluginName, containerID string) error {
-+	nft, err := knftables.New(knftables.InetFamily, ipMasqTableName)
-+	if err != nil {
-+		return err
-+	}
-+	return teardownIPMasqNFTablesWithInterface(nft, ipn, pluginName, containerID)
-+}
-+
-+func teardownIPMasqNFTablesWithInterface(nft knftables.Interface, _ *net.IPNet, pluginName, containerID string) error {
-+	rules, err := findRules(nft, hashForContainer(pluginName, containerID))
-+	if err != nil {
-+		return err
-+	} else if len(rules) == 0 {
-+		return nil
-+	}
-+
-+	tx := nft.NewTransaction()
-+	for _, rule := range rules {
-+		tx.Delete(rule)
-+	}
-+	return nft.Run(context.TODO(), tx)
-+}
-+
-+// findRules finds rules with the given comment; it is used by both setup and teardown.
-+func findRules(nft knftables.Interface, comment string) ([]*knftables.Rule, error) {
-+	rules, err := nft.ListRules(context.TODO(), ipMasqChainName)
-+	if err != nil {
-+		if knftables.IsNotFound(err) {
-+			// If ipMasqChainName doesn't exist yet, that's fine
-+			return nil, nil
-+		}
-+		return nil, err
-+	}
-+
-+	matchingRules := make([]*knftables.Rule, 0, 1)
-+	for _, rule := range rules {
-+		if rule.Comment != nil && *rule.Comment == comment {
-+			matchingRules = append(matchingRules, rule)
-+		}
-+	}
-+
-+	return matchingRules, nil
-+}
-diff --git a/plugins/main/bridge/bridge.go b/plugins/main/bridge/bridge.go
-index 4054f6176..f224e6e2e 100644
---- a/plugins/main/bridge/bridge.go
-+++ b/plugins/main/bridge/bridge.go
-@@ -35,7 +35,6 @@ import (
- 	"github.com/containernetworking/plugins/pkg/ipam"
- 	"github.com/containernetworking/plugins/pkg/link"
- 	"github.com/containernetworking/plugins/pkg/ns"
--	"github.com/containernetworking/plugins/pkg/utils"
- 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
- 	"github.com/containernetworking/plugins/pkg/utils/sysctl"
- )
-@@ -52,6 +51,7 @@ type NetConf struct {
- 	IsDefaultGW               bool         `json:"isDefaultGateway"`
- 	ForceAddress              bool         `json:"forceAddress"`
- 	IPMasq                    bool         `json:"ipMasq"`
-+	IPMasqBackend             *string      `json:"ipMasqBackend,omitempty"`
- 	MTU                       int          `json:"mtu"`
- 	HairpinMode               bool         `json:"hairpinMode"`
- 	PromiscMode               bool         `json:"promiscMode"`
-@@ -673,10 +673,8 @@ func cmdAdd(args *skel.CmdArgs) error {
- 		}
- 
- 		if n.IPMasq {
--			chain := utils.FormatChainName(n.Name, args.ContainerID)
--			comment := utils.FormatComment(n.Name, args.ContainerID)
- 			for _, ipc := range result.IPs {
--				if err = ip.SetupIPMasq(&ipc.Address, chain, comment); err != nil {
-+				if err = ip.SetupIPMasqForPlugin(n.IPMasqBackend, &ipc.Address, n.Name, args.ContainerID); err != nil {
- 					return err
- 				}
- 			}
-@@ -814,10 +812,8 @@ func cmdDel(args *skel.CmdArgs) error {
- 	}
- 
- 	if isLayer3 && n.IPMasq {
--		chain := utils.FormatChainName(n.Name, args.ContainerID)
--		comment := utils.FormatComment(n.Name, args.ContainerID)
- 		for _, ipn := range ipnets {
--			if err := ip.TeardownIPMasq(ipn, chain, comment); err != nil {
-+			if err := ip.TeardownIPMasqForPlugin(ipn, n.Name, args.ContainerID); err != nil {
- 				return err
- 			}
- 		}
-diff --git a/plugins/main/bridge/bridge_test.go b/plugins/main/bridge/bridge_test.go
-index 42c70ae29..63e204432 100644
---- a/plugins/main/bridge/bridge_test.go
-+++ b/plugins/main/bridge/bridge_test.go
-@@ -15,6 +15,7 @@
- package main
- 
- import (
-+	"context"
- 	"encoding/json"
- 	"fmt"
- 	"net"
-@@ -27,6 +28,7 @@ import (
- 	. "github.com/onsi/gomega"
- 	"github.com/vishvananda/netlink"
- 	"github.com/vishvananda/netlink/nl"
-+	"sigs.k8s.io/knftables"
- 
- 	"github.com/containernetworking/cni/pkg/skel"
- 	"github.com/containernetworking/cni/pkg/types"
-@@ -77,6 +79,7 @@ type testCase struct {
- 	vlanTrunk         []*VlanTrunk
- 	removeDefaultVlan bool
- 	ipMasq            bool
-+	ipMasqBackend     string
- 	macspoofchk       bool
- 	disableContIface  bool
- 
-@@ -172,6 +175,9 @@ const (
- 	ipMasqConfStr = `,
- 	"ipMasq": %t`
- 
-+	ipMasqBackendConfStr = `,
-+	"ipMasqBackend": "%s"`
-+
- 	// Single subnet configuration (legacy)
- 	subnetConfStr = `,
-         "subnet":  "%s"`
-@@ -243,6 +249,9 @@ func (tc testCase) netConfJSON(dataDir string) string {
- 	if tc.ipMasq {
- 		conf += tc.ipMasqConfig()
- 	}
-+	if tc.ipMasqBackend != "" {
-+		conf += tc.ipMasqBackendConfig()
-+	}
- 	if tc.args.cni.mac != "" {
- 		conf += fmt.Sprintf(argsFormat, tc.args.cni.mac)
- 	}
-@@ -295,6 +304,11 @@ func (tc testCase) ipMasqConfig() string {
- 	return conf
- }
- 
-+func (tc testCase) ipMasqBackendConfig() string {
-+	conf := fmt.Sprintf(ipMasqBackendConfStr, tc.ipMasqBackend)
-+	return conf
-+}
-+
- func (tc testCase) rangesConfig() string {
- 	conf := rangesStartStr
- 	for i, tcRange := range tc.ranges {
-@@ -2390,41 +2404,82 @@ var _ = Describe("bridge Operations", func() {
- 		})
- 
- 		if testutils.SpecVersionHasChaining(ver) {
--			It(fmt.Sprintf("[%s] configures a bridge and ipMasq rules", ver), func() {
--				err := originalNS.Do(func(ns.NetNS) error {
--					defer GinkgoRecover()
--					tc := testCase{
--						ranges: []rangeInfo{{
--							subnet: "10.1.2.0/24",
--						}},
--						ipMasq:     true,
--						cniVersion: ver,
--					}
--
--					args := tc.createCmdArgs(originalNS, dataDir)
--					r, _, err := testutils.CmdAddWithArgs(args, func() error {
--						return cmdAdd(args)
--					})
--					Expect(err).NotTo(HaveOccurred())
--					result, err := types100.GetResult(r)
--					Expect(err).NotTo(HaveOccurred())
--					Expect(result.IPs).Should(HaveLen(1))
--
--					ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
--					Expect(err).NotTo(HaveOccurred())
--
--					rules, err := ipt.List("nat", "POSTROUTING")
--					Expect(err).NotTo(HaveOccurred())
--					Expect(rules).Should(ContainElement(ContainSubstring(result.IPs[0].Address.IP.String())))
-+			for _, tc := range []testCase{
-+				{
-+					ranges: []rangeInfo{{
-+						subnet: "10.1.2.0/24",
-+					}},
-+					ipMasq:     true,
-+					cniVersion: ver,
-+				},
-+				{
-+					ranges: []rangeInfo{{
-+						subnet: "10.1.2.0/24",
-+					}},
-+					ipMasq:        true,
-+					ipMasqBackend: "iptables",
-+					cniVersion:    ver,
-+				},
-+				{
-+					ranges: []rangeInfo{{
-+						subnet: "10.1.2.0/24",
-+					}},
-+					ipMasq:        true,
-+					ipMasqBackend: "nftables",
-+					cniVersion:    ver,
-+				},
-+			} {
-+				tc := tc
-+				It(fmt.Sprintf("[%s] configures a bridge and ipMasq rules with ipMasqBackend %q", ver, tc.ipMasqBackend), func() {
-+					err := originalNS.Do(func(ns.NetNS) error {
-+						defer GinkgoRecover()
-+
-+						args := tc.createCmdArgs(originalNS, dataDir)
-+						r, _, err := testutils.CmdAddWithArgs(args, func() error {
-+							return cmdAdd(args)
-+						})
-+						Expect(err).NotTo(HaveOccurred())
-+						result, err := types100.GetResult(r)
-+						Expect(err).NotTo(HaveOccurred())
-+						Expect(result.IPs).Should(HaveLen(1))
-+
-+						ip := result.IPs[0].Address.IP.String()
-+
-+						// Update this if the default ipmasq backend changes
-+						switch tc.ipMasqBackend {
-+						case "iptables", "":
-+							ipt, err := iptables.NewWithProtocol(iptables.ProtocolIPv4)
-+							Expect(err).NotTo(HaveOccurred())
-+
-+							rules, err := ipt.List("nat", "POSTROUTING")
-+							Expect(err).NotTo(HaveOccurred())
-+							Expect(rules).Should(ContainElement(ContainSubstring(ip)))
-+						case "nftables":
-+							nft, err := knftables.New(knftables.InetFamily, "cni_plugins_masquerade")
-+							Expect(err).NotTo(HaveOccurred())
-+							rules, err := nft.ListRules(context.TODO(), "masq_checks")
-+							Expect(err).NotTo(HaveOccurred())
-+							// FIXME: ListRules() doesn't return the actual rule strings,
-+							// and we can't easily compute the ipmasq plugin's comment.
-+							comments := 0
-+							for _, r := range rules {
-+								if r.Comment != nil {
-+									comments++
-+									break
-+								}
-+							}
-+							Expect(comments).To(Equal(1), "expected to find exactly one Rule with a comment")
-+						}
- 
--					err = testutils.CmdDelWithArgs(args, func() error {
--						return cmdDel(args)
-+						err = testutils.CmdDelWithArgs(args, func() error {
-+							return cmdDel(args)
-+						})
-+						Expect(err).NotTo(HaveOccurred())
-+						return nil
- 					})
- 					Expect(err).NotTo(HaveOccurred())
--					return nil
- 				})
--				Expect(err).NotTo(HaveOccurred())
--			})
-+			}
- 
- 			for i, tc := range []testCase{
- 				{
-diff --git a/plugins/main/ptp/ptp.go b/plugins/main/ptp/ptp.go
-index 841e57d12..a18421fc4 100644
---- a/plugins/main/ptp/ptp.go
-+++ b/plugins/main/ptp/ptp.go
-@@ -31,7 +31,6 @@ import (
- 	"github.com/containernetworking/plugins/pkg/ip"
- 	"github.com/containernetworking/plugins/pkg/ipam"
- 	"github.com/containernetworking/plugins/pkg/ns"
--	"github.com/containernetworking/plugins/pkg/utils"
- 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
- )
- 
-@@ -44,8 +43,9 @@ func init() {
- 
- type NetConf struct {
- 	types.NetConf
--	IPMasq bool `json:"ipMasq"`
--	MTU    int  `json:"mtu"`
-+	IPMasq        bool    `json:"ipMasq"`
-+	IPMasqBackend *string `json:"ipMasqBackend,omitempty"`
-+	MTU           int     `json:"mtu"`
- }
- 
- func setupContainerVeth(netns ns.NetNS, ifName string, mtu int, pr *current.Result) (*current.Interface, *current.Interface, error) {
-@@ -229,10 +229,8 @@ func cmdAdd(args *skel.CmdArgs) error {
- 	}
- 
- 	if conf.IPMasq {
--		chain := utils.FormatChainName(conf.Name, args.ContainerID)
--		comment := utils.FormatComment(conf.Name, args.ContainerID)
- 		for _, ipc := range result.IPs {
--			if err = ip.SetupIPMasq(&ipc.Address, chain, comment); err != nil {
-+			if err = ip.SetupIPMasqForPlugin(conf.IPMasqBackend, &ipc.Address, conf.Name, args.ContainerID); err != nil {
- 				return err
- 			}
- 		}
-@@ -293,10 +291,8 @@ func cmdDel(args *skel.CmdArgs) error {
- 	}
- 
- 	if len(ipnets) != 0 && conf.IPMasq {
--		chain := utils.FormatChainName(conf.Name, args.ContainerID)
--		comment := utils.FormatComment(conf.Name, args.ContainerID)
- 		for _, ipn := range ipnets {
--			err = ip.TeardownIPMasq(ipn, chain, comment)
-+			err = ip.TeardownIPMasqForPlugin(ipn, conf.Name, args.ContainerID)
- 		}
- 	}
- 
-diff --git a/plugins/main/ptp/ptp_test.go b/plugins/main/ptp/ptp_test.go
-index 0ede4409e..bdc78b13e 100644
---- a/plugins/main/ptp/ptp_test.go
-+++ b/plugins/main/ptp/ptp_test.go
-@@ -39,6 +39,7 @@ type Net struct {
- 	CNIVersion    string                 `json:"cniVersion"`
- 	Type          string                 `json:"type,omitempty"`
- 	IPMasq        bool                   `json:"ipMasq"`
-+	IPMasqBackend *string                `json:"ipMasqBackend,omitempty"`
- 	MTU           int                    `json:"mtu"`
- 	IPAM          *allocator.IPAMConfig  `json:"ipam"`
- 	DNS           types.DNS              `json:"dns"`
-@@ -368,6 +369,62 @@ var _ = Describe("ptp Operations", func() {
- 			doTest(conf, ver, 1, dnsConf, targetNS)
- 		})
- 
-+		It(fmt.Sprintf("[%s] configures and deconfigures a ptp link when specifying ipMasqBackend: iptables", ver), func() {
-+			dnsConf := types.DNS{
-+				Nameservers: []string{"10.1.2.123"},
-+				Domain:      "some.domain.test",
-+				Search:      []string{"search.test"},
-+				Options:     []string{"option1:foo"},
-+			}
-+			dnsConfBytes, err := json.Marshal(dnsConf)
-+			Expect(err).NotTo(HaveOccurred())
-+
-+			conf := fmt.Sprintf(`{
-+			    "cniVersion": "%s",
-+			    "name": "mynet",
-+			    "type": "ptp",
-+			    "ipMasq": true,
-+			    "ipMasqBackend": "iptables",
-+			    "mtu": 5000,
-+			    "ipam": {
-+				"type": "host-local",
-+				"subnet": "10.1.2.0/24",
-+				"dataDir": "%s"
-+			    },
-+			    "dns": %s
-+			}`, ver, dataDir, string(dnsConfBytes))
-+
-+			doTest(conf, ver, 1, dnsConf, targetNS)
-+		})
-+
-+		It(fmt.Sprintf("[%s] configures and deconfigures a ptp link when specifying ipMasqBackend: nftables", ver), func() {
-+			dnsConf := types.DNS{
-+				Nameservers: []string{"10.1.2.123"},
-+				Domain:      "some.domain.test",
-+				Search:      []string{"search.test"},
-+				Options:     []string{"option1:foo"},
-+			}
-+			dnsConfBytes, err := json.Marshal(dnsConf)
-+			Expect(err).NotTo(HaveOccurred())
-+
-+			conf := fmt.Sprintf(`{
-+			    "cniVersion": "%s",
-+			    "name": "mynet",
-+			    "type": "ptp",
-+			    "ipMasq": true,
-+			    "ipMasqBackend": "nftables",
-+			    "mtu": 5000,
-+			    "ipam": {
-+				"type": "host-local",
-+				"subnet": "10.1.2.0/24",
-+				"dataDir": "%s"
-+			    },
-+			    "dns": %s
-+			}`, ver, dataDir, string(dnsConfBytes))
-+
-+			doTest(conf, ver, 1, dnsConf, targetNS)
-+		})
-+
- 		It(fmt.Sprintf("[%s] configures and deconfigures a dual-stack ptp link + routes with ADD/DEL", ver), func() {
- 			conf := fmt.Sprintf(`{
- 			    "cniVersion": "%s",
-
-From fcefe1e6c895060f87bb8a25a3e1bcec6586fe84 Mon Sep 17 00:00:00 2001
-From: Dan Winship <danwinship@redhat.com>
-Date: Sat, 22 Jul 2023 11:12:40 -0400
-Subject: [PATCH 4/5] Add a backend abstraction to the portmap plugin
-
-Signed-off-by: Dan Winship <danwinship@redhat.com>
----
- plugins/meta/portmap/main.go                  |  49 +++-
- .../{portmap.go => portmap_iptables.go}       |  28 +-
- plugins/meta/portmap/portmap_iptables_test.go | 252 ++++++++++++++++++
- plugins/meta/portmap/portmap_test.go          | 220 ---------------
- plugins/meta/portmap/utils.go                 |  10 +
- 5 files changed, 304 insertions(+), 255 deletions(-)
- rename plugins/meta/portmap/{portmap.go => portmap_iptables.go} (93%)
- create mode 100644 plugins/meta/portmap/portmap_iptables_test.go
-
-diff --git a/plugins/meta/portmap/main.go b/plugins/meta/portmap/main.go
-index 09af586a5..ea6ba1ea1 100644
---- a/plugins/meta/portmap/main.go
-+++ b/plugins/meta/portmap/main.go
-@@ -40,6 +40,12 @@ import (
- 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
- )
- 
-+type PortMapper interface {
-+	forwardPorts(config *PortMapConf, containerNet net.IPNet) error
-+	checkPorts(config *PortMapConf, containerNet net.IPNet) error
-+	unforwardPorts(config *PortMapConf) error
-+}
-+
- // PortMapEntry corresponds to a single entry in the port_mappings argument,
- // see CONVENTIONS.md
- type PortMapEntry struct {
-@@ -51,16 +57,22 @@ type PortMapEntry struct {
- 
- type PortMapConf struct {
- 	types.NetConf
--	SNAT                 *bool     `json:"snat,omitempty"`
--	ConditionsV4         *[]string `json:"conditionsV4"`
--	ConditionsV6         *[]string `json:"conditionsV6"`
--	MasqAll              bool      `json:"masqAll,omitempty"`
--	MarkMasqBit          *int      `json:"markMasqBit"`
--	ExternalSetMarkChain *string   `json:"externalSetMarkChain"`
--	RuntimeConfig        struct {
-+
-+	mapper PortMapper
-+
-+	// Generic config
-+	SNAT          *bool     `json:"snat,omitempty"`
-+	ConditionsV4  *[]string `json:"conditionsV4"`
-+	ConditionsV6  *[]string `json:"conditionsV6"`
-+	MasqAll       bool      `json:"masqAll,omitempty"`
-+	MarkMasqBit   *int      `json:"markMasqBit"`
-+	RuntimeConfig struct {
- 		PortMaps []PortMapEntry `json:"portMappings,omitempty"`
- 	} `json:"runtimeConfig,omitempty"`
- 
-+	// iptables-backend-specific config
-+	ExternalSetMarkChain *string `json:"externalSetMarkChain"`
-+
- 	// These are fields parsed out of the config or the environment;
- 	// included here for convenience
- 	ContainerID string    `json:"-"`
-@@ -89,7 +101,7 @@ func cmdAdd(args *skel.CmdArgs) error {
- 	netConf.ContainerID = args.ContainerID
- 
- 	if netConf.ContIPv4.IP != nil {
--		if err := forwardPorts(netConf, netConf.ContIPv4); err != nil {
-+		if err := netConf.mapper.forwardPorts(netConf, netConf.ContIPv4); err != nil {
- 			return err
- 		}
- 		// Delete conntrack entries for UDP to avoid conntrack blackholing traffic
-@@ -98,10 +110,21 @@ func cmdAdd(args *skel.CmdArgs) error {
- 		if err := deletePortmapStaleConnections(netConf.RuntimeConfig.PortMaps, unix.AF_INET); err != nil {
- 			log.Printf("failed to delete stale UDP conntrack entries for %s: %v", netConf.ContIPv4.IP, err)
- 		}
-+
-+		if *netConf.SNAT {
-+			// Set the route_localnet bit on the host interface, so that
-+			// 127/8 can cross a routing boundary.
-+			hostIfName := getRoutableHostIF(netConf.ContIPv4.IP)
-+			if hostIfName != "" {
-+				if err := enableLocalnetRouting(hostIfName); err != nil {
-+					return fmt.Errorf("unable to enable route_localnet: %v", err)
-+				}
-+			}
-+		}
- 	}
- 
- 	if netConf.ContIPv6.IP != nil {
--		if err := forwardPorts(netConf, netConf.ContIPv6); err != nil {
-+		if err := netConf.mapper.forwardPorts(netConf, netConf.ContIPv6); err != nil {
- 			return err
- 		}
- 		// Delete conntrack entries for UDP to avoid conntrack blackholing traffic
-@@ -130,7 +153,7 @@ func cmdDel(args *skel.CmdArgs) error {
- 
- 	// We don't need to parse out whether or not we're using v6 or snat,
- 	// deletion is idempotent
--	return unforwardPorts(netConf)
-+	return netConf.mapper.unforwardPorts(netConf)
- }
- 
- func main() {
-@@ -155,13 +178,13 @@ func cmdCheck(args *skel.CmdArgs) error {
- 	conf.ContainerID = args.ContainerID
- 
- 	if conf.ContIPv4.IP != nil {
--		if err := checkPorts(conf, conf.ContIPv4); err != nil {
-+		if err := conf.mapper.checkPorts(conf, conf.ContIPv4); err != nil {
- 			return err
- 		}
- 	}
- 
- 	if conf.ContIPv6.IP != nil {
--		if err := checkPorts(conf, conf.ContIPv6); err != nil {
-+		if err := conf.mapper.checkPorts(conf, conf.ContIPv6); err != nil {
- 			return err
- 		}
- 	}
-@@ -191,6 +214,8 @@ func parseConfig(stdin []byte, ifName string) (*PortMapConf, *current.Result, er
- 		}
- 	}
- 
-+	conf.mapper = &portMapperIPTables{}
-+
- 	if conf.SNAT == nil {
- 		tvar := true
- 		conf.SNAT = &tvar
-diff --git a/plugins/meta/portmap/portmap.go b/plugins/meta/portmap/portmap_iptables.go
-similarity index 93%
-rename from plugins/meta/portmap/portmap.go
-rename to plugins/meta/portmap/portmap_iptables.go
-index e380da932..07d6c4209 100644
---- a/plugins/meta/portmap/portmap.go
-+++ b/plugins/meta/portmap/portmap_iptables.go
-@@ -25,7 +25,6 @@ import (
- 	"github.com/vishvananda/netlink"
- 
- 	"github.com/containernetworking/plugins/pkg/utils"
--	"github.com/containernetworking/plugins/pkg/utils/sysctl"
- )
- 
- // This creates the chains to be added to iptables. The basic structure is
-@@ -52,9 +51,11 @@ const (
- 	OldTopLevelSNATChainName = "CNI-HOSTPORT-SNAT"
- )
- 
-+type portMapperIPTables struct{}
-+
- // forwardPorts establishes port forwarding to a given container IP.
- // containerNet.IP can be either v4 or v6.
--func forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
-+func (*portMapperIPTables) forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
- 	isV6 := (containerNet.IP.To4() == nil)
- 
- 	var ipt *iptables.IPTables
-@@ -87,17 +88,6 @@ func forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
- 				return fmt.Errorf("unable to create chain %s: %v", setMarkChain.name, err)
- 			}
- 		}
--
--		if !isV6 {
--			// Set the route_localnet bit on the host interface, so that
--			// 127/8 can cross a routing boundary.
--			hostIfName := getRoutableHostIF(containerNet.IP)
--			if hostIfName != "" {
--				if err := enableLocalnetRouting(hostIfName); err != nil {
--					return fmt.Errorf("unable to enable route_localnet: %v", err)
--				}
--			}
--		}
- 	}
- 
- 	// Generate the DNAT (actual port forwarding) rules
-@@ -117,7 +107,7 @@ func forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
- 	return nil
- }
- 
--func checkPorts(config *PortMapConf, containerNet net.IPNet) error {
-+func (*portMapperIPTables) checkPorts(config *PortMapConf, containerNet net.IPNet) error {
- 	isV6 := (containerNet.IP.To4() == nil)
- 	dnatChain := genDnatChain(config.Name, config.ContainerID)
- 	fillDnatRules(&dnatChain, config, containerNet)
-@@ -344,14 +334,6 @@ func genMarkMasqChain(markBit int) chain {
- 	return ch
- }
- 
--// enableLocalnetRouting tells the kernel not to treat 127/8 as a martian,
--// so that connections with a source ip of 127/8 can cross a routing boundary.
--func enableLocalnetRouting(ifName string) error {
--	routeLocalnetPath := "net/ipv4/conf/" + ifName + "/route_localnet"
--	_, err := sysctl.Sysctl(routeLocalnetPath, "1")
--	return err
--}
--
- // genOldSnatChain is no longer used, but used to be created. We'll try and
- // tear it down in case the plugin version changed between ADD and DEL
- func genOldSnatChain(netName, containerID string) chain {
-@@ -372,7 +354,7 @@ func genOldSnatChain(netName, containerID string) chain {
- // don't know which protocols were used.
- // So, we first check that iptables is "generally OK" by doing a check. If
- // not, we ignore the error, unless neither v4 nor v6 are OK.
--func unforwardPorts(config *PortMapConf) error {
-+func (*portMapperIPTables) unforwardPorts(config *PortMapConf) error {
- 	dnatChain := genDnatChain(config.Name, config.ContainerID)
- 
- 	// Might be lying around from old versions
-diff --git a/plugins/meta/portmap/portmap_iptables_test.go b/plugins/meta/portmap/portmap_iptables_test.go
-new file mode 100644
-index 000000000..bc9bbf223
---- /dev/null
-+++ b/plugins/meta/portmap/portmap_iptables_test.go
-@@ -0,0 +1,252 @@
-+// Copyright 2017 CNI authors
-+//
-+// Licensed under the Apache License, Version 2.0 (the "License");
-+// you may not use this file except in compliance with the License.
-+// You may obtain a copy of the License at
-+//
-+//     http://www.apache.org/licenses/LICENSE-2.0
-+//
-+// Unless required by applicable law or agreed to in writing, software
-+// distributed under the License is distributed on an "AS IS" BASIS,
-+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+// See the License for the specific language governing permissions and
-+// limitations under the License.
-+
-+package main
-+
-+import (
-+	"fmt"
-+
-+	. "github.com/onsi/ginkgo/v2"
-+	. "github.com/onsi/gomega"
-+
-+	"github.com/containernetworking/cni/pkg/types"
-+)
-+
-+var _ = Describe("portmapping configuration (iptables)", func() {
-+	netName := "testNetName"
-+	containerID := "icee6giejonei6sohng6ahngee7laquohquee9shiGo7fohferakah3Feiyoolu2pei7ciPhoh7shaoX6vai3vuf0ahfaeng8yohb9ceu0daez5hashee8ooYai5wa3y"
-+
-+	for _, ver := range []string{"0.3.0", "0.3.1", "0.4.0", "1.0.0"} {
-+		// Redefine ver inside for scope so real value is picked up by each dynamically defined It()
-+		// See Gingkgo's "Patterns for dynamically generating tests" documentation.
-+		ver := ver
-+
-+		Describe("Generating iptables chains", func() {
-+			Context("for DNAT", func() {
-+				It(fmt.Sprintf("[%s] generates a correct standard container chain", ver), func() {
-+					ch := genDnatChain(netName, containerID)
-+
-+					Expect(ch).To(Equal(chain{
-+						table:       "nat",
-+						name:        "CNI-DN-bfd599665540dd91d5d28",
-+						entryChains: []string{TopLevelDNATChainName},
-+					}))
-+					configBytes := []byte(fmt.Sprintf(`{
-+						"name": "test",
-+						"type": "portmap",
-+						"cniVersion": "%s",
-+						"runtimeConfig": {
-+							"portMappings": [
-+								{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"},
-+								{ "hostPort": 8081, "containerPort": 80, "protocol": "tcp"},
-+								{ "hostPort": 8080, "containerPort": 81, "protocol": "udp"},
-+								{ "hostPort": 8082, "containerPort": 82, "protocol": "udp"},
-+								{ "hostPort": 8083, "containerPort": 83, "protocol": "tcp", "hostIP": "192.168.0.2"},
-+								{ "hostPort": 8084, "containerPort": 84, "protocol": "tcp", "hostIP": "0.0.0.0"},
-+								{ "hostPort": 8085, "containerPort": 85, "protocol": "tcp", "hostIP": "2001:db8:a::1"},
-+								{ "hostPort": 8086, "containerPort": 86, "protocol": "tcp", "hostIP": "::"}
-+							]
-+						},
-+						"snat": true,
-+						"conditionsV4": ["-a", "b"],
-+						"conditionsV6": ["-c", "d"]
-+					}`, ver))
-+
-+					conf, _, err := parseConfig(configBytes, "foo")
-+					Expect(err).NotTo(HaveOccurred())
-+					conf.ContainerID = containerID
-+
-+					ch = genDnatChain(conf.Name, containerID)
-+					Expect(ch).To(Equal(chain{
-+						table:       "nat",
-+						name:        "CNI-DN-67e92b96e692a494b6b85",
-+						entryChains: []string{"CNI-HOSTPORT-DNAT"},
-+					}))
-+
-+					n, err := types.ParseCIDR("10.0.0.2/24")
-+					Expect(err).NotTo(HaveOccurred())
-+					fillDnatRules(&ch, conf, *n)
-+
-+					Expect(ch.entryRules).To(Equal([][]string{
-+						{
-+							"-m", "comment", "--comment",
-+							fmt.Sprintf("dnat name: \"test\" id: \"%s\"", containerID),
-+							"-m", "multiport",
-+							"-p", "tcp",
-+							"--destination-ports", "8080,8081,8083,8084,8085,8086",
-+							"-a", "b",
-+						},
-+						{
-+							"-m", "comment", "--comment",
-+							fmt.Sprintf("dnat name: \"test\" id: \"%s\"", containerID),
-+							"-m", "multiport",
-+							"-p", "udp",
-+							"--destination-ports", "8080,8082",
-+							"-a", "b",
-+						},
-+					}))
-+
-+					Expect(ch.rules).To(Equal([][]string{
-+						// tcp rules and not hostIP
-+						{"-p", "tcp", "--dport", "8080", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8080", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
-+						{"-p", "tcp", "--dport", "8081", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8081", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8081", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
-+						// udp rules and not hostIP
-+						{"-p", "udp", "--dport", "8080", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "udp", "--dport", "8080", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "udp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:81"},
-+						{"-p", "udp", "--dport", "8082", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "udp", "--dport", "8082", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "udp", "--dport", "8082", "-j", "DNAT", "--to-destination", "10.0.0.2:82"},
-+						// tcp rules and hostIP
-+						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-j", "DNAT", "--to-destination", "10.0.0.2:83"},
-+						// tcp rules and hostIP = "0.0.0.0"
-+						{"-p", "tcp", "--dport", "8084", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8084", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8084", "-j", "DNAT", "--to-destination", "10.0.0.2:84"},
-+					}))
-+
-+					ch.rules = nil
-+					ch.entryRules = nil
-+
-+					n, err = types.ParseCIDR("2001:db8::2/64")
-+					Expect(err).NotTo(HaveOccurred())
-+					fillDnatRules(&ch, conf, *n)
-+
-+					Expect(ch.rules).To(Equal([][]string{
-+						// tcp rules and not hostIP
-+						{"-p", "tcp", "--dport", "8080", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "[2001:db8::2]:80"},
-+						{"-p", "tcp", "--dport", "8081", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8081", "-j", "DNAT", "--to-destination", "[2001:db8::2]:80"},
-+						// udp rules and not hostIP
-+						{"-p", "udp", "--dport", "8080", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "udp", "--dport", "8080", "-j", "DNAT", "--to-destination", "[2001:db8::2]:81"},
-+						{"-p", "udp", "--dport", "8082", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "udp", "--dport", "8082", "-j", "DNAT", "--to-destination", "[2001:db8::2]:82"},
-+						// tcp rules and hostIP
-+						{"-p", "tcp", "--dport", "8085", "-d", "2001:db8:a::1", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8085", "-d", "2001:db8:a::1", "-j", "DNAT", "--to-destination", "[2001:db8::2]:85"},
-+						// tcp rules and hostIP = "::"
-+						{"-p", "tcp", "--dport", "8086", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
-+						{"-p", "tcp", "--dport", "8086", "-j", "DNAT", "--to-destination", "[2001:db8::2]:86"},
-+					}))
-+
-+					// Disable snat, generate rules
-+					ch.rules = nil
-+					ch.entryRules = nil
-+					fvar := false
-+					conf.SNAT = &fvar
-+
-+					n, err = types.ParseCIDR("10.0.0.2/24")
-+					Expect(err).NotTo(HaveOccurred())
-+					fillDnatRules(&ch, conf, *n)
-+					Expect(ch.rules).To(Equal([][]string{
-+						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
-+						{"-p", "tcp", "--dport", "8081", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
-+						{"-p", "udp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:81"},
-+						{"-p", "udp", "--dport", "8082", "-j", "DNAT", "--to-destination", "10.0.0.2:82"},
-+						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-j", "DNAT", "--to-destination", "10.0.0.2:83"},
-+						{"-p", "tcp", "--dport", "8084", "-j", "DNAT", "--to-destination", "10.0.0.2:84"},
-+					}))
-+				})
-+
-+				It(fmt.Sprintf("[%s] generates a correct chain with external mark", ver), func() {
-+					ch := genDnatChain(netName, containerID)
-+
-+					Expect(ch).To(Equal(chain{
-+						table:       "nat",
-+						name:        "CNI-DN-bfd599665540dd91d5d28",
-+						entryChains: []string{TopLevelDNATChainName},
-+					}))
-+					configBytes := []byte(fmt.Sprintf(`{
-+						"name": "test",
-+						"type": "portmap",
-+						"cniVersion": "%s",
-+						"runtimeConfig": {
-+							"portMappings": [
-+								{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"}
-+							]
-+						},
-+						"externalSetMarkChain": "PLZ-SET-MARK",
-+						"conditionsV4": ["-a", "b"],
-+						"conditionsV6": ["-c", "d"]
-+					}`, ver))
-+
-+					conf, _, err := parseConfig(configBytes, "foo")
-+					Expect(err).NotTo(HaveOccurred())
-+					conf.ContainerID = containerID
-+
-+					ch = genDnatChain(conf.Name, containerID)
-+					n, err := types.ParseCIDR("10.0.0.2/24")
-+					Expect(err).NotTo(HaveOccurred())
-+					fillDnatRules(&ch, conf, *n)
-+					Expect(ch.rules).To(Equal([][]string{
-+						{"-p", "tcp", "--dport", "8080", "-s", "10.0.0.2/24", "-j", "PLZ-SET-MARK"},
-+						{"-p", "tcp", "--dport", "8080", "-s", "127.0.0.1", "-j", "PLZ-SET-MARK"},
-+						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
-+					}))
-+				})
-+
-+				It(fmt.Sprintf("[%s] generates a correct top-level chain", ver), func() {
-+					ch := genToplevelDnatChain()
-+
-+					Expect(ch).To(Equal(chain{
-+						table:       "nat",
-+						name:        "CNI-HOSTPORT-DNAT",
-+						entryChains: []string{"PREROUTING", "OUTPUT"},
-+						entryRules:  [][]string{{"-m", "addrtype", "--dst-type", "LOCAL"}},
-+					}))
-+				})
-+
-+				It(fmt.Sprintf("[%s] generates the correct mark chains", ver), func() {
-+					masqBit := 5
-+					ch := genSetMarkChain(masqBit)
-+					Expect(ch).To(Equal(chain{
-+						table: "nat",
-+						name:  "CNI-HOSTPORT-SETMARK",
-+						rules: [][]string{{
-+							"-m", "comment",
-+							"--comment", "CNI portfwd masquerade mark",
-+							"-j", "MARK",
-+							"--set-xmark", "0x20/0x20",
-+						}},
-+					}))
-+
-+					ch = genMarkMasqChain(masqBit)
-+					Expect(ch).To(Equal(chain{
-+						table:       "nat",
-+						name:        "CNI-HOSTPORT-MASQ",
-+						entryChains: []string{"POSTROUTING"},
-+						entryRules: [][]string{{
-+							"-m", "comment",
-+							"--comment", "CNI portfwd requiring masquerade",
-+						}},
-+						rules: [][]string{{
-+							"-m", "mark",
-+							"--mark", "0x20/0x20",
-+							"-j", "MASQUERADE",
-+						}},
-+						prependEntry: true,
-+					}))
-+				})
-+			})
-+		})
-+	}
-+})
-diff --git a/plugins/meta/portmap/portmap_test.go b/plugins/meta/portmap/portmap_test.go
-index 4897fe632..fbb69b394 100644
---- a/plugins/meta/portmap/portmap_test.go
-+++ b/plugins/meta/portmap/portmap_test.go
-@@ -24,9 +24,6 @@ import (
- )
- 
- var _ = Describe("portmapping configuration", func() {
--	netName := "testNetName"
--	containerID := "icee6giejonei6sohng6ahngee7laquohquee9shiGo7fohferakah3Feiyoolu2pei7ciPhoh7shaoX6vai3vuf0ahfaeng8yohb9ceu0daez5hashee8ooYai5wa3y"
--
- 	for _, ver := range []string{"0.3.0", "0.3.1", "0.4.0", "1.0.0"} {
- 		// Redefine ver inside for scope so real value is picked up by each dynamically defined It()
- 		// See Gingkgo's "Patterns for dynamically generating tests" documentation.
-@@ -157,222 +154,5 @@ var _ = Describe("portmapping configuration", func() {
- 				Expect(err).NotTo(HaveOccurred())
- 			})
- 		})
--
--		Describe("Generating chains", func() {
--			Context("for DNAT", func() {
--				It(fmt.Sprintf("[%s] generates a correct standard container chain", ver), func() {
--					ch := genDnatChain(netName, containerID)
--
--					Expect(ch).To(Equal(chain{
--						table:       "nat",
--						name:        "CNI-DN-bfd599665540dd91d5d28",
--						entryChains: []string{TopLevelDNATChainName},
--					}))
--					configBytes := []byte(fmt.Sprintf(`{
--						"name": "test",
--						"type": "portmap",
--						"cniVersion": "%s",
--						"runtimeConfig": {
--							"portMappings": [
--								{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"},
--								{ "hostPort": 8081, "containerPort": 80, "protocol": "tcp"},
--								{ "hostPort": 8080, "containerPort": 81, "protocol": "udp"},
--								{ "hostPort": 8082, "containerPort": 82, "protocol": "udp"},
--								{ "hostPort": 8083, "containerPort": 83, "protocol": "tcp", "hostIP": "192.168.0.2"},
--								{ "hostPort": 8084, "containerPort": 84, "protocol": "tcp", "hostIP": "0.0.0.0"},
--								{ "hostPort": 8085, "containerPort": 85, "protocol": "tcp", "hostIP": "2001:db8:a::1"},
--								{ "hostPort": 8086, "containerPort": 86, "protocol": "tcp", "hostIP": "::"}
--							]
--						},
--						"snat": true,
--						"conditionsV4": ["a", "b"],
--						"conditionsV6": ["c", "d"]
--					}`, ver))
--
--					conf, _, err := parseConfig(configBytes, "foo")
--					Expect(err).NotTo(HaveOccurred())
--					conf.ContainerID = containerID
--
--					ch = genDnatChain(conf.Name, containerID)
--					Expect(ch).To(Equal(chain{
--						table:       "nat",
--						name:        "CNI-DN-67e92b96e692a494b6b85",
--						entryChains: []string{"CNI-HOSTPORT-DNAT"},
--					}))
--
--					n, err := types.ParseCIDR("10.0.0.2/24")
--					Expect(err).NotTo(HaveOccurred())
--					fillDnatRules(&ch, conf, *n)
--
--					Expect(ch.entryRules).To(Equal([][]string{
--						{
--							"-m", "comment", "--comment",
--							fmt.Sprintf("dnat name: \"test\" id: \"%s\"", containerID),
--							"-m", "multiport",
--							"-p", "tcp",
--							"--destination-ports", "8080,8081,8083,8084,8085,8086",
--							"a", "b",
--						},
--						{
--							"-m", "comment", "--comment",
--							fmt.Sprintf("dnat name: \"test\" id: \"%s\"", containerID),
--							"-m", "multiport",
--							"-p", "udp",
--							"--destination-ports", "8080,8082",
--							"a", "b",
--						},
--					}))
--
--					Expect(ch.rules).To(Equal([][]string{
--						// tcp rules and not hostIP
--						{"-p", "tcp", "--dport", "8080", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8080", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
--						{"-p", "tcp", "--dport", "8081", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8081", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8081", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
--						// udp rules and not hostIP
--						{"-p", "udp", "--dport", "8080", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "udp", "--dport", "8080", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "udp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:81"},
--						{"-p", "udp", "--dport", "8082", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "udp", "--dport", "8082", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "udp", "--dport", "8082", "-j", "DNAT", "--to-destination", "10.0.0.2:82"},
--						// tcp rules and hostIP
--						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-j", "DNAT", "--to-destination", "10.0.0.2:83"},
--						// tcp rules and hostIP = "0.0.0.0"
--						{"-p", "tcp", "--dport", "8084", "-s", "10.0.0.2/24", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8084", "-s", "127.0.0.1", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8084", "-j", "DNAT", "--to-destination", "10.0.0.2:84"},
--					}))
--
--					ch.rules = nil
--					ch.entryRules = nil
--
--					n, err = types.ParseCIDR("2001:db8::2/64")
--					Expect(err).NotTo(HaveOccurred())
--					fillDnatRules(&ch, conf, *n)
--
--					Expect(ch.rules).To(Equal([][]string{
--						// tcp rules and not hostIP
--						{"-p", "tcp", "--dport", "8080", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "[2001:db8::2]:80"},
--						{"-p", "tcp", "--dport", "8081", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8081", "-j", "DNAT", "--to-destination", "[2001:db8::2]:80"},
--						// udp rules and not hostIP
--						{"-p", "udp", "--dport", "8080", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "udp", "--dport", "8080", "-j", "DNAT", "--to-destination", "[2001:db8::2]:81"},
--						{"-p", "udp", "--dport", "8082", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "udp", "--dport", "8082", "-j", "DNAT", "--to-destination", "[2001:db8::2]:82"},
--						// tcp rules and hostIP
--						{"-p", "tcp", "--dport", "8085", "-d", "2001:db8:a::1", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8085", "-d", "2001:db8:a::1", "-j", "DNAT", "--to-destination", "[2001:db8::2]:85"},
--						// tcp rules and hostIP = "::"
--						{"-p", "tcp", "--dport", "8086", "-s", "2001:db8::2/64", "-j", "CNI-HOSTPORT-SETMARK"},
--						{"-p", "tcp", "--dport", "8086", "-j", "DNAT", "--to-destination", "[2001:db8::2]:86"},
--					}))
--
--					// Disable snat, generate rules
--					ch.rules = nil
--					ch.entryRules = nil
--					fvar := false
--					conf.SNAT = &fvar
--
--					n, err = types.ParseCIDR("10.0.0.2/24")
--					Expect(err).NotTo(HaveOccurred())
--					fillDnatRules(&ch, conf, *n)
--					Expect(ch.rules).To(Equal([][]string{
--						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
--						{"-p", "tcp", "--dport", "8081", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
--						{"-p", "udp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:81"},
--						{"-p", "udp", "--dport", "8082", "-j", "DNAT", "--to-destination", "10.0.0.2:82"},
--						{"-p", "tcp", "--dport", "8083", "-d", "192.168.0.2", "-j", "DNAT", "--to-destination", "10.0.0.2:83"},
--						{"-p", "tcp", "--dport", "8084", "-j", "DNAT", "--to-destination", "10.0.0.2:84"},
--					}))
--				})
--
--				It(fmt.Sprintf("[%s] generates a correct chain with external mark", ver), func() {
--					ch := genDnatChain(netName, containerID)
--
--					Expect(ch).To(Equal(chain{
--						table:       "nat",
--						name:        "CNI-DN-bfd599665540dd91d5d28",
--						entryChains: []string{TopLevelDNATChainName},
--					}))
--					configBytes := []byte(fmt.Sprintf(`{
--						"name": "test",
--						"type": "portmap",
--						"cniVersion": "%s",
--						"runtimeConfig": {
--							"portMappings": [
--								{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"}
--							]
--						},
--						"externalSetMarkChain": "PLZ-SET-MARK",
--						"conditionsV4": ["a", "b"],
--						"conditionsV6": ["c", "d"]
--					}`, ver))
--
--					conf, _, err := parseConfig(configBytes, "foo")
--					Expect(err).NotTo(HaveOccurred())
--					conf.ContainerID = containerID
--
--					ch = genDnatChain(conf.Name, containerID)
--					n, err := types.ParseCIDR("10.0.0.2/24")
--					Expect(err).NotTo(HaveOccurred())
--					fillDnatRules(&ch, conf, *n)
--					Expect(ch.rules).To(Equal([][]string{
--						{"-p", "tcp", "--dport", "8080", "-s", "10.0.0.2/24", "-j", "PLZ-SET-MARK"},
--						{"-p", "tcp", "--dport", "8080", "-s", "127.0.0.1", "-j", "PLZ-SET-MARK"},
--						{"-p", "tcp", "--dport", "8080", "-j", "DNAT", "--to-destination", "10.0.0.2:80"},
--					}))
--				})
--
--				It(fmt.Sprintf("[%s] generates a correct top-level chain", ver), func() {
--					ch := genToplevelDnatChain()
--
--					Expect(ch).To(Equal(chain{
--						table:       "nat",
--						name:        "CNI-HOSTPORT-DNAT",
--						entryChains: []string{"PREROUTING", "OUTPUT"},
--						entryRules:  [][]string{{"-m", "addrtype", "--dst-type", "LOCAL"}},
--					}))
--				})
--
--				It(fmt.Sprintf("[%s] generates the correct mark chains", ver), func() {
--					masqBit := 5
--					ch := genSetMarkChain(masqBit)
--					Expect(ch).To(Equal(chain{
--						table: "nat",
--						name:  "CNI-HOSTPORT-SETMARK",
--						rules: [][]string{{
--							"-m", "comment",
--							"--comment", "CNI portfwd masquerade mark",
--							"-j", "MARK",
--							"--set-xmark", "0x20/0x20",
--						}},
--					}))
--
--					ch = genMarkMasqChain(masqBit)
--					Expect(ch).To(Equal(chain{
--						table:       "nat",
--						name:        "CNI-HOSTPORT-MASQ",
--						entryChains: []string{"POSTROUTING"},
--						entryRules: [][]string{{
--							"-m", "comment",
--							"--comment", "CNI portfwd requiring masquerade",
--						}},
--						rules: [][]string{{
--							"-m", "mark",
--							"--mark", "0x20/0x20",
--							"-j", "MASQUERADE",
--						}},
--						prependEntry: true,
--					}))
--				})
--			})
--		})
- 	}
- })
-diff --git a/plugins/meta/portmap/utils.go b/plugins/meta/portmap/utils.go
-index e6709089d..922705579 100644
---- a/plugins/meta/portmap/utils.go
-+++ b/plugins/meta/portmap/utils.go
-@@ -21,6 +21,8 @@ import (
- 	"strings"
- 
- 	"github.com/vishvananda/netlink"
-+
-+	"github.com/containernetworking/plugins/pkg/utils/sysctl"
- )
- 
- // fmtIpPort correctly formats ip:port literals for iptables and ip6tables -
-@@ -52,6 +54,14 @@ func getRoutableHostIF(containerIP net.IP) string {
- 	return ""
- }
- 
-+// enableLocalnetRouting tells the kernel not to treat 127/8 as a martian,
-+// so that connections with a source ip of 127/8 can cross a routing boundary.
-+func enableLocalnetRouting(ifName string) error {
-+	routeLocalnetPath := "net/ipv4/conf/" + ifName + "/route_localnet"
-+	_, err := sysctl.Sysctl(routeLocalnetPath, "1")
-+	return err
-+}
-+
- // groupByProto groups port numbers by protocol
- func groupByProto(entries []PortMapEntry) map[string][]int {
- 	if len(entries) == 0 {
-
-From e48682c362717828c979b43b82de5cf2e0efe52a Mon Sep 17 00:00:00 2001
-From: Dan Winship <danwinship@redhat.com>
-Date: Sat, 22 Jul 2023 16:54:40 -0400
-Subject: [PATCH 5/5] Add nftables backend to portmap
-
-Signed-off-by: Dan Winship <danwinship@redhat.com>
----
- plugins/meta/portmap/main.go                  |  78 ++++
- plugins/meta/portmap/portmap_nftables.go      | 344 ++++++++++++++++++
- plugins/meta/portmap/portmap_nftables_test.go | 135 +++++++
- plugins/meta/portmap/portmap_test.go          | 101 ++++-
- 4 files changed, 647 insertions(+), 11 deletions(-)
- create mode 100644 plugins/meta/portmap/portmap_nftables.go
- create mode 100644 plugins/meta/portmap/portmap_nftables_test.go
-
-diff --git a/plugins/meta/portmap/main.go b/plugins/meta/portmap/main.go
-index ea6ba1ea1..48bf8a5f6 100644
---- a/plugins/meta/portmap/main.go
-+++ b/plugins/meta/portmap/main.go
-@@ -37,6 +37,7 @@ import (
- 	"github.com/containernetworking/cni/pkg/types"
- 	current "github.com/containernetworking/cni/pkg/types/100"
- 	"github.com/containernetworking/cni/pkg/version"
-+	"github.com/containernetworking/plugins/pkg/utils"
- 	bv "github.com/containernetworking/plugins/pkg/utils/buildversion"
- )
- 
-@@ -46,6 +47,12 @@ type PortMapper interface {
- 	unforwardPorts(config *PortMapConf) error
- }
- 
-+// These are vars rather than consts so we can "&" them
-+var (
-+	iptablesBackend = "iptables"
-+	nftablesBackend = "nftables"
-+)
-+
- // PortMapEntry corresponds to a single entry in the port_mappings argument,
- // see CONVENTIONS.md
- type PortMapEntry struct {
-@@ -61,6 +68,7 @@ type PortMapConf struct {
- 	mapper PortMapper
- 
- 	// Generic config
-+	Backend       *string   `json:"backend,omitempty"`
- 	SNAT          *bool     `json:"snat,omitempty"`
- 	ConditionsV4  *[]string `json:"conditionsV4"`
- 	ConditionsV6  *[]string `json:"conditionsV6"`
-@@ -234,6 +242,21 @@ func parseConfig(stdin []byte, ifName string) (*PortMapConf, *current.Result, er
- 		return nil, nil, fmt.Errorf("MasqMarkBit must be between 0 and 31")
- 	}
- 
-+	err := validateBackend(&conf)
-+	if err != nil {
-+		return nil, nil, err
-+	}
-+	switch *conf.Backend {
-+	case iptablesBackend:
-+		conf.mapper = &portMapperIPTables{}
-+
-+	case nftablesBackend:
-+		conf.mapper = &portMapperNFTables{}
-+
-+	default:
-+		return nil, nil, fmt.Errorf("unrecognized backend %q", *conf.Backend)
-+	}
-+
- 	// Reject invalid port numbers
- 	for _, pm := range conf.RuntimeConfig.PortMaps {
- 		if pm.ContainerPort <= 0 {
-@@ -273,3 +296,58 @@ func parseConfig(stdin []byte, ifName string) (*PortMapConf, *current.Result, er
- 
- 	return &conf, result, nil
- }
-+
-+// validateBackend validates and/or sets conf.Backend
-+func validateBackend(conf *PortMapConf) error {
-+	backendConfig := make(map[string][]string)
-+
-+	if conf.ExternalSetMarkChain != nil {
-+		backendConfig[iptablesBackend] = append(backendConfig[iptablesBackend], "externalSetMarkChain")
-+	}
-+	if conditionsBackend := detectBackendOfConditions(conf.ConditionsV4); conditionsBackend != "" {
-+		backendConfig[conditionsBackend] = append(backendConfig[conditionsBackend], "conditionsV4")
-+	}
-+	if conditionsBackend := detectBackendOfConditions(conf.ConditionsV6); conditionsBackend != "" {
-+		backendConfig[conditionsBackend] = append(backendConfig[conditionsBackend], "conditionsV6")
-+	}
-+
-+	// If backend wasn't requested explicitly, default to iptables, unless it is not
-+	// available (and nftables is). FIXME: flip this default at some point.
-+	if conf.Backend == nil {
-+		if !utils.SupportsIPTables() && utils.SupportsNFTables() {
-+			conf.Backend = &nftablesBackend
-+		} else {
-+			conf.Backend = &iptablesBackend
-+		}
-+	}
-+
-+	// Make sure we dont have config for the wrong backend
-+	var wrongBackend string
-+	if *conf.Backend == iptablesBackend {
-+		wrongBackend = nftablesBackend
-+	} else {
-+		wrongBackend = iptablesBackend
-+	}
-+	if len(backendConfig[wrongBackend]) > 0 {
-+		return fmt.Errorf("%s backend was requested but configuration contains %s-specific options %v", *conf.Backend, wrongBackend, backendConfig[wrongBackend])
-+	}
-+
-+	// OK
-+	return nil
-+}
-+
-+// detectBackendOfConditions returns "iptables" if conditions contains iptables
-+// conditions, "nftables" if it contains nftables conditions, and "" if it is empty.
-+func detectBackendOfConditions(conditions *[]string) string {
-+	if conditions == nil || len(*conditions) == 0 || (*conditions)[0] == "" {
-+		return ""
-+	}
-+
-+	// The first token of any iptables condition would start with a hyphen (e.g. "-d",
-+	// "--sport", "-m"). No nftables condition would start that way. (An nftables
-+	// condition might include a negative number, but not as the first token.)
-+	if (*conditions)[0][0] == '-' {
-+		return iptablesBackend
-+	}
-+	return nftablesBackend
-+}
-diff --git a/plugins/meta/portmap/portmap_nftables.go b/plugins/meta/portmap/portmap_nftables.go
-new file mode 100644
-index 000000000..f0f209efc
---- /dev/null
-+++ b/plugins/meta/portmap/portmap_nftables.go
-@@ -0,0 +1,344 @@
-+// Copyright 2023 CNI authors
-+//
-+// Licensed under the Apache License, Version 2.0 (the "License");
-+// you may not use this file except in compliance with the License.
-+// You may obtain a copy of the License at
-+//
-+//     http://www.apache.org/licenses/LICENSE-2.0
-+//
-+// Unless required by applicable law or agreed to in writing, software
-+// distributed under the License is distributed on an "AS IS" BASIS,
-+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+// See the License for the specific language governing permissions and
-+// limitations under the License.
-+
-+package main
-+
-+import (
-+	"context"
-+	"fmt"
-+	"net"
-+
-+	"sigs.k8s.io/knftables"
-+)
-+
-+const (
-+	tableName = "cni_hostport"
-+
-+	hostIPHostPortsChain = "hostip_hostports"
-+	hostPortsChain       = "hostports"
-+	masqueradingChain    = "masquerading"
-+)
-+
-+// The nftables portmap implementation is fairly similar to the iptables implementation:
-+// we add a rule for each mapping, with a comment containing a hash of the container ID,
-+// so that we can later reliably delete the rules we want. (This is important because in
-+// edge cases, it's possible the plugin might see "ADD container A with IP 192.168.1.3",
-+// followed by "ADD container B with IP 192.168.1.3" followed by "DEL container A with IP
-+// 192.168.1.3", and we need to make sure that the DEL causes us to delete the rule for
-+// container A, and not the rule for container B.) This iptables implementation actually
-+// uses a separate chain per container but there's not really any need for that...
-+//
-+// As with pkg/ip/ipmasq_nftables_linux.go, it would be more nftables-y to have a chain
-+// with a single rule doing a lookup against a map with an element per mapping, rather
-+// than having a chain with a rule per mapping. But there's no easy, non-racy way to say
-+// "delete the element 192.168.1.3 from the map, but only if it was added for container A,
-+// not if it was added for container B".
-+
-+type portMapperNFTables struct {
-+	ipv4 knftables.Interface
-+	ipv6 knftables.Interface
-+}
-+
-+// getPortMapNFT creates an nftables.Interface for port mapping for the IP family of ipn
-+func (pmNFT *portMapperNFTables) getPortMapNFT(ipv6 bool) (knftables.Interface, error) {
-+	var err error
-+	if ipv6 {
-+		if pmNFT.ipv6 == nil {
-+			pmNFT.ipv6, err = knftables.New(knftables.IPv6Family, tableName)
-+			if err != nil {
-+				return nil, err
-+			}
-+		}
-+		return pmNFT.ipv6, nil
-+	}
-+
-+	if pmNFT.ipv4 == nil {
-+		pmNFT.ipv4, err = knftables.New(knftables.IPv4Family, tableName)
-+		if err != nil {
-+			return nil, err
-+		}
-+	}
-+	return pmNFT.ipv4, err
-+}
-+
-+// forwardPorts establishes port forwarding to a given container IP.
-+// containerNet.IP can be either v4 or v6.
-+func (pmNFT *portMapperNFTables) forwardPorts(config *PortMapConf, containerNet net.IPNet) error {
-+	isV6 := (containerNet.IP.To4() == nil)
-+	nft, err := pmNFT.getPortMapNFT(isV6)
-+	if err != nil {
-+		return err
-+	}
-+
-+	var ipX string
-+	var conditions []string
-+	if isV6 {
-+		ipX = "ip6"
-+		if config.ConditionsV6 != nil {
-+			conditions = *config.ConditionsV6
-+		}
-+	} else if !isV6 {
-+		ipX = "ip"
-+		if config.ConditionsV4 != nil {
-+			conditions = *config.ConditionsV4
-+		}
-+	}
-+
-+	tx := nft.NewTransaction()
-+
-+	// Ensure basic rule structure
-+	tx.Add(&knftables.Table{
-+		Comment: knftables.PtrTo("CNI portmap plugin"),
-+	})
-+
-+	tx.Add(&knftables.Chain{
-+		Name: "hostports",
-+	})
-+	tx.Add(&knftables.Chain{
-+		Name: "hostip_hostports",
-+	})
-+
-+	tx.Add(&knftables.Chain{
-+		Name:     "prerouting",
-+		Type:     knftables.PtrTo(knftables.NATType),
-+		Hook:     knftables.PtrTo(knftables.PreroutingHook),
-+		Priority: knftables.PtrTo(knftables.DNATPriority),
-+	})
-+	tx.Flush(&knftables.Chain{
-+		Name: "prerouting",
-+	})
-+	tx.Add(&knftables.Rule{
-+		Chain: "prerouting",
-+		Rule: knftables.Concat(
-+			conditions,
-+			"jump", hostIPHostPortsChain,
-+		),
-+	})
-+	tx.Add(&knftables.Rule{
-+		Chain: "prerouting",
-+		Rule: knftables.Concat(
-+			conditions,
-+			"jump", hostPortsChain,
-+		),
-+	})
-+
-+	tx.Add(&knftables.Chain{
-+		Name: "output",
-+		Type: knftables.PtrTo(knftables.NATType),
-+		Hook: knftables.PtrTo(knftables.OutputHook),
-+
-+		// DNATPriority is not allowed on OutputHook, even though the "dnat"
-+		// command is. Specify the numeric value instead...
-+		Priority: knftables.PtrTo(knftables.BaseChainPriority("-100")),
-+	})
-+	tx.Flush(&knftables.Chain{
-+		Name: "output",
-+	})
-+	tx.Add(&knftables.Rule{
-+		Chain: "output",
-+		Rule: knftables.Concat(
-+			conditions,
-+			"jump", hostIPHostPortsChain,
-+		),
-+	})
-+	tx.Add(&knftables.Rule{
-+		Chain: "output",
-+		Rule: knftables.Concat(
-+			conditions,
-+			"fib daddr type local",
-+			"jump", hostPortsChain,
-+		),
-+	})
-+
-+	if *config.SNAT {
-+		tx.Add(&knftables.Chain{
-+			Name:     masqueradingChain,
-+			Type:     knftables.PtrTo(knftables.NATType),
-+			Hook:     knftables.PtrTo(knftables.PostroutingHook),
-+			Priority: knftables.PtrTo(knftables.SNATPriority),
-+		})
-+	}
-+
-+	// Set up this container
-+	for _, e := range config.RuntimeConfig.PortMaps {
-+		useHostIP := false
-+		if e.HostIP != "" {
-+			hostIP := net.ParseIP(e.HostIP)
-+			isHostV6 := (hostIP.To4() == nil)
-+			// Ignore wrong-IP-family HostIPs
-+			if isV6 != isHostV6 {
-+				continue
-+			}
-+
-+			// Unspecified addresses cannot be used as destination
-+			useHostIP = !hostIP.IsUnspecified()
-+		}
-+
-+		if useHostIP {
-+			tx.Add(&knftables.Rule{
-+				Chain: hostIPHostPortsChain,
-+				Rule: knftables.Concat(
-+					ipX, "daddr", e.HostIP,
-+					ipX, "protocol", e.Protocol,
-+					"th dport", e.HostPort,
-+					"dnat", ipX, "addr . port", "to", containerNet.IP, ".", e.ContainerPort,
-+				),
-+				Comment: &config.ContainerID,
-+			})
-+		} else {
-+			tx.Add(&knftables.Rule{
-+				Chain: hostPortsChain,
-+				Rule: knftables.Concat(
-+					ipX, "protocol", e.Protocol,
-+					"th dport", e.HostPort,
-+					"dnat", ipX, "addr . port", "to", containerNet.IP, ".", e.ContainerPort,
-+				),
-+				Comment: &config.ContainerID,
-+			})
-+		}
-+	}
-+
-+	if *config.SNAT {
-+		// Add mark-to-masquerade rules for hairpin and localhost
-+		// In theory we should validate that the original dst IP and port are as
-+		// expected, but *any* traffic matching one of these patterns would need
-+		// to be masqueraded to be able to work correctly anyway.
-+		tx.Add(&knftables.Rule{
-+			Chain: masqueradingChain,
-+			Rule: knftables.Concat(
-+				ipX, "saddr", containerNet.IP,
-+				ipX, "daddr", containerNet.IP,
-+				"masquerade",
-+			),
-+			Comment: &config.ContainerID,
-+		})
-+		if !isV6 {
-+			tx.Add(&knftables.Rule{
-+				Chain: masqueradingChain,
-+				Rule: knftables.Concat(
-+					ipX, "saddr 127.0.0.1",
-+					ipX, "daddr", containerNet.IP,
-+					"masquerade",
-+				),
-+				Comment: &config.ContainerID,
-+			})
-+		}
-+	}
-+
-+	err = nft.Run(context.TODO(), tx)
-+	if err != nil {
-+		return fmt.Errorf("unable to set up nftables rules for port mappings: %v", err)
-+	}
-+
-+	return nil
-+}
-+
-+func (pmNFT *portMapperNFTables) checkPorts(config *PortMapConf, containerNet net.IPNet) error {
-+	isV6 := (containerNet.IP.To4() == nil)
-+
-+	var hostPorts, hostIPHostPorts, masqueradings int
-+	for _, e := range config.RuntimeConfig.PortMaps {
-+		if e.HostIP != "" {
-+			hostIPHostPorts++
-+		} else {
-+			hostPorts++
-+		}
-+	}
-+	if *config.SNAT {
-+		masqueradings = len(config.RuntimeConfig.PortMaps)
-+		if isV6 {
-+			masqueradings *= 2
-+		}
-+	}
-+
-+	nft, err := pmNFT.getPortMapNFT(isV6)
-+	if err != nil {
-+		return err
-+	}
-+	if hostPorts > 0 {
-+		err := checkPortsAgainstRules(nft, hostPortsChain, config.ContainerID, hostPorts)
-+		if err != nil {
-+			return err
-+		}
-+	}
-+	if hostIPHostPorts > 0 {
-+		err := checkPortsAgainstRules(nft, hostIPHostPortsChain, config.ContainerID, hostIPHostPorts)
-+		if err != nil {
-+			return err
-+		}
-+	}
-+	if masqueradings > 0 {
-+		err := checkPortsAgainstRules(nft, masqueradingChain, config.ContainerID, masqueradings)
-+		if err != nil {
-+			return err
-+		}
-+	}
-+
-+	return nil
-+}
-+
-+func checkPortsAgainstRules(nft knftables.Interface, chain, comment string, nPorts int) error {
-+	rules, err := nft.ListRules(context.TODO(), chain)
-+	if err != nil {
-+		return err
-+	}
-+
-+	found := 0
-+	for _, r := range rules {
-+		if r.Comment != nil && *r.Comment == comment {
-+			found++
-+		}
-+	}
-+	if found < nPorts {
-+		return fmt.Errorf("missing hostport rules in %q chain", chain)
-+	}
-+
-+	return nil
-+}
-+
-+// unforwardPorts deletes any nftables rules created by this plugin.
-+// It should be idempotent - it will not error if the chain does not exist.
-+func (pmNFT *portMapperNFTables) unforwardPorts(config *PortMapConf) error {
-+	// Always clear both IPv4 and IPv6, just to be sure
-+	for _, family := range []knftables.Family{knftables.IPv4Family, knftables.IPv6Family} {
-+		nft, err := pmNFT.getPortMapNFT(family == knftables.IPv6Family)
-+		if err != nil {
-+			continue
-+		}
-+
-+		tx := nft.NewTransaction()
-+		for _, chain := range []string{hostPortsChain, hostIPHostPortsChain, masqueradingChain} {
-+			rules, err := nft.ListRules(context.TODO(), chain)
-+			if err != nil {
-+				if knftables.IsNotFound(err) {
-+					continue
-+				}
-+				return fmt.Errorf("could not list rules in table %s: %w", tableName, err)
-+			}
-+
-+			for _, r := range rules {
-+				if r.Comment != nil && *r.Comment == config.ContainerID {
-+					tx.Delete(r)
-+				}
-+			}
-+		}
-+
-+		err = nft.Run(context.TODO(), tx)
-+		if err != nil {
-+			return fmt.Errorf("error deleting nftables rules: %w", err)
-+		}
-+	}
-+
-+	return nil
-+}
-diff --git a/plugins/meta/portmap/portmap_nftables_test.go b/plugins/meta/portmap/portmap_nftables_test.go
-new file mode 100644
-index 000000000..04a49dd1f
---- /dev/null
-+++ b/plugins/meta/portmap/portmap_nftables_test.go
-@@ -0,0 +1,135 @@
-+// Copyright 2023 CNI authors
-+//
-+// Licensed under the Apache License, Version 2.0 (the "License");
-+// you may not use this file except in compliance with the License.
-+// You may obtain a copy of the License at
-+//
-+//     http://www.apache.org/licenses/LICENSE-2.0
-+//
-+// Unless required by applicable law or agreed to in writing, software
-+// distributed under the License is distributed on an "AS IS" BASIS,
-+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-+// See the License for the specific language governing permissions and
-+// limitations under the License.
-+
-+package main
-+
-+import (
-+	"fmt"
-+	"strings"
-+
-+	. "github.com/onsi/ginkgo/v2"
-+	. "github.com/onsi/gomega"
-+
-+	"sigs.k8s.io/knftables"
-+
-+	"github.com/containernetworking/cni/pkg/types"
-+)
-+
-+var _ = Describe("portmapping configuration (nftables)", func() {
-+	containerID := "icee6giejonei6so"
-+
-+	for _, ver := range []string{"0.3.0", "0.3.1", "0.4.0", "1.0.0"} {
-+		// Redefine ver inside for scope so real value is picked up by each dynamically defined It()
-+		// See Gingkgo's "Patterns for dynamically generating tests" documentation.
-+		ver := ver
-+
-+		Describe("nftables rules", func() {
-+			var pmNFT *portMapperNFTables
-+			var ipv4Fake, ipv6Fake *knftables.Fake
-+			BeforeEach(func() {
-+				ipv4Fake = knftables.NewFake(knftables.IPv4Family, tableName)
-+				ipv6Fake = knftables.NewFake(knftables.IPv6Family, tableName)
-+				pmNFT = &portMapperNFTables{
-+					ipv4: ipv4Fake,
-+					ipv6: ipv6Fake,
-+				}
-+			})
-+
-+			It(fmt.Sprintf("[%s] generates correct rules on ADD", ver), func() {
-+				configBytes := []byte(fmt.Sprintf(`{
-+					"name": "test",
-+					"type": "portmap",
-+					"cniVersion": "%s",
-+					"backend": "nftables",
-+					"runtimeConfig": {
-+						"portMappings": [
-+							{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"},
-+							{ "hostPort": 8081, "containerPort": 80, "protocol": "tcp"},
-+							{ "hostPort": 8080, "containerPort": 81, "protocol": "udp"},
-+							{ "hostPort": 8082, "containerPort": 82, "protocol": "udp"},
-+							{ "hostPort": 8083, "containerPort": 83, "protocol": "tcp", "hostIP": "192.168.0.2"},
-+							{ "hostPort": 8084, "containerPort": 84, "protocol": "tcp", "hostIP": "0.0.0.0"},
-+							{ "hostPort": 8085, "containerPort": 85, "protocol": "tcp", "hostIP": "2001:db8:a::1"},
-+							{ "hostPort": 8086, "containerPort": 86, "protocol": "tcp", "hostIP": "::"}
-+						]
-+					},
-+					"snat": true,
-+					"conditionsV4": ["a", "b"],
-+					"conditionsV6": ["c", "d"]
-+				}`, ver))
-+
-+				conf, _, err := parseConfig(configBytes, "foo")
-+				Expect(err).NotTo(HaveOccurred())
-+				conf.ContainerID = containerID
-+
-+				containerNet, err := types.ParseCIDR("10.0.0.2/24")
-+				Expect(err).NotTo(HaveOccurred())
-+
-+				err = pmNFT.forwardPorts(conf, *containerNet)
-+				Expect(err).NotTo(HaveOccurred())
-+
-+				expectedRules := strings.TrimSpace(`
-+add table ip cni_hostport { comment "CNI portmap plugin" ; }
-+add chain ip cni_hostport hostip_hostports
-+add chain ip cni_hostport hostports
-+add chain ip cni_hostport masquerading { type nat hook postrouting priority 100 ; }
-+add chain ip cni_hostport output { type nat hook output priority -100 ; }
-+add chain ip cni_hostport prerouting { type nat hook prerouting priority -100 ; }
-+add rule ip cni_hostport hostip_hostports ip daddr 192.168.0.2 ip protocol tcp th dport 8083 dnat ip addr . port to 10.0.0.2 . 83 comment "icee6giejonei6so"
-+add rule ip cni_hostport hostports ip protocol tcp th dport 8080 dnat ip addr . port to 10.0.0.2 . 80 comment "icee6giejonei6so"
-+add rule ip cni_hostport hostports ip protocol tcp th dport 8081 dnat ip addr . port to 10.0.0.2 . 80 comment "icee6giejonei6so"
-+add rule ip cni_hostport hostports ip protocol udp th dport 8080 dnat ip addr . port to 10.0.0.2 . 81 comment "icee6giejonei6so"
-+add rule ip cni_hostport hostports ip protocol udp th dport 8082 dnat ip addr . port to 10.0.0.2 . 82 comment "icee6giejonei6so"
-+add rule ip cni_hostport hostports ip protocol tcp th dport 8084 dnat ip addr . port to 10.0.0.2 . 84 comment "icee6giejonei6so"
-+add rule ip cni_hostport masquerading ip saddr 10.0.0.2 ip daddr 10.0.0.2 masquerade comment "icee6giejonei6so"
-+add rule ip cni_hostport masquerading ip saddr 127.0.0.1 ip daddr 10.0.0.2 masquerade comment "icee6giejonei6so"
-+add rule ip cni_hostport output a b jump hostip_hostports
-+add rule ip cni_hostport output a b fib daddr type local jump hostports
-+add rule ip cni_hostport prerouting a b jump hostip_hostports
-+add rule ip cni_hostport prerouting a b jump hostports
-+`)
-+				actualRules := strings.TrimSpace(ipv4Fake.Dump())
-+				Expect(actualRules).To(Equal(expectedRules))
-+
-+				// Disable snat, generate IPv6 rules
-+				*conf.SNAT = false
-+				containerNet, err = types.ParseCIDR("2001:db8::2/64")
-+				Expect(err).NotTo(HaveOccurred())
-+
-+				err = pmNFT.forwardPorts(conf, *containerNet)
-+				Expect(err).NotTo(HaveOccurred())
-+
-+				expectedRules = strings.TrimSpace(`
-+add table ip6 cni_hostport { comment "CNI portmap plugin" ; }
-+add chain ip6 cni_hostport hostip_hostports
-+add chain ip6 cni_hostport hostports
-+add chain ip6 cni_hostport output { type nat hook output priority -100 ; }
-+add chain ip6 cni_hostport prerouting { type nat hook prerouting priority -100 ; }
-+add rule ip6 cni_hostport hostip_hostports ip6 daddr 2001:db8:a::1 ip6 protocol tcp th dport 8085 dnat ip6 addr . port to 2001:db8::2 . 85 comment "icee6giejonei6so"
-+add rule ip6 cni_hostport hostports ip6 protocol tcp th dport 8080 dnat ip6 addr . port to 2001:db8::2 . 80 comment "icee6giejonei6so"
-+add rule ip6 cni_hostport hostports ip6 protocol tcp th dport 8081 dnat ip6 addr . port to 2001:db8::2 . 80 comment "icee6giejonei6so"
-+add rule ip6 cni_hostport hostports ip6 protocol udp th dport 8080 dnat ip6 addr . port to 2001:db8::2 . 81 comment "icee6giejonei6so"
-+add rule ip6 cni_hostport hostports ip6 protocol udp th dport 8082 dnat ip6 addr . port to 2001:db8::2 . 82 comment "icee6giejonei6so"
-+add rule ip6 cni_hostport hostports ip6 protocol tcp th dport 8086 dnat ip6 addr . port to 2001:db8::2 . 86 comment "icee6giejonei6so"
-+add rule ip6 cni_hostport output c d jump hostip_hostports
-+add rule ip6 cni_hostport output c d fib daddr type local jump hostports
-+add rule ip6 cni_hostport prerouting c d jump hostip_hostports
-+add rule ip6 cni_hostport prerouting c d jump hostports
-+`)
-+				actualRules = strings.TrimSpace(ipv6Fake.Dump())
-+				Expect(actualRules).To(Equal(expectedRules))
-+			})
-+		})
-+	}
-+})
-diff --git a/plugins/meta/portmap/portmap_test.go b/plugins/meta/portmap/portmap_test.go
-index fbb69b394..d09e238e4 100644
---- a/plugins/meta/portmap/portmap_test.go
-+++ b/plugins/meta/portmap/portmap_test.go
-@@ -35,6 +35,7 @@ var _ = Describe("portmapping configuration", func() {
- 					"name": "test",
- 					"type": "portmap",
- 					"cniVersion": "%s",
-+					"backend": "iptables",
- 					"runtimeConfig": {
- 						"portMappings": [
- 							{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"},
-@@ -42,8 +43,8 @@ var _ = Describe("portmapping configuration", func() {
- 						]
- 					},
- 					"snat": false,
--					"conditionsV4": ["a", "b"],
--					"conditionsV6": ["c", "d"],
-+					"conditionsV4": ["-a", "b"],
-+					"conditionsV6": ["-c", "d"],
- 					"prevResult": {
- 						"interfaces": [
- 							{"name": "host"},
-@@ -74,8 +75,8 @@ var _ = Describe("portmapping configuration", func() {
- 				c, _, err := parseConfig(configBytes, "container")
- 				Expect(err).NotTo(HaveOccurred())
- 				Expect(c.CNIVersion).To(Equal(ver))
--				Expect(c.ConditionsV4).To(Equal(&[]string{"a", "b"}))
--				Expect(c.ConditionsV6).To(Equal(&[]string{"c", "d"}))
-+				Expect(c.ConditionsV4).To(Equal(&[]string{"-a", "b"}))
-+				Expect(c.ConditionsV6).To(Equal(&[]string{"-c", "d"}))
- 				fvar := false
- 				Expect(c.SNAT).To(Equal(&fvar))
- 				Expect(c.Name).To(Equal("test"))
-@@ -94,15 +95,16 @@ var _ = Describe("portmapping configuration", func() {
- 					"name": "test",
- 					"type": "portmap",
- 					"cniVersion": "%s",
-+					"backend": "iptables",
- 					"snat": false,
--					"conditionsV4": ["a", "b"],
--					"conditionsV6": ["c", "d"]
-+					"conditionsV4": ["-a", "b"],
-+					"conditionsV6": ["-c", "d"]
- 				}`, ver))
- 				c, _, err := parseConfig(configBytes, "container")
- 				Expect(err).NotTo(HaveOccurred())
- 				Expect(c.CNIVersion).To(Equal(ver))
--				Expect(c.ConditionsV4).To(Equal(&[]string{"a", "b"}))
--				Expect(c.ConditionsV6).To(Equal(&[]string{"c", "d"}))
-+				Expect(c.ConditionsV4).To(Equal(&[]string{"-a", "b"}))
-+				Expect(c.ConditionsV6).To(Equal(&[]string{"-c", "d"}))
- 				fvar := false
- 				Expect(c.SNAT).To(Equal(&fvar))
- 				Expect(c.Name).To(Equal("test"))
-@@ -113,9 +115,10 @@ var _ = Describe("portmapping configuration", func() {
- 					"name": "test",
- 					"type": "portmap",
- 					"cniVersion": "%s",
-+					"backend": "iptables",
- 					"snat": false,
--					"conditionsV4": ["a", "b"],
--					"conditionsV6": ["c", "d"],
-+					"conditionsV4": ["-a", "b"],
-+					"conditionsV6": ["-c", "d"],
- 					"runtimeConfig": {
- 						"portMappings": [
- 							{ "hostPort": 0, "containerPort": 80, "protocol": "tcp"}
-@@ -126,6 +129,82 @@ var _ = Describe("portmapping configuration", func() {
- 				Expect(err).To(MatchError("Invalid host port number: 0"))
- 			})
- 
-+			It(fmt.Sprintf("[%s] defaults to iptables when backend is not specified", ver), func() {
-+				// "defaults to iptables" is only true if iptables is installed
-+				// (or if neither iptables nor nftables is installed), but the
-+				// other unit tests would fail if iptables wasn't installed, so
-+				// we know it must be.
-+				configBytes := []byte(fmt.Sprintf(`{
-+					"name": "test",
-+					"type": "portmap",
-+					"cniVersion": "%s"
-+				}`, ver))
-+				c, _, err := parseConfig(configBytes, "container")
-+				Expect(err).NotTo(HaveOccurred())
-+				Expect(c.CNIVersion).To(Equal(ver))
-+				Expect(c.Backend).To(Equal(&iptablesBackend))
-+				Expect(c.Name).To(Equal("test"))
-+			})
-+
-+			It(fmt.Sprintf("[%s] uses nftables if requested", ver), func() {
-+				configBytes := []byte(fmt.Sprintf(`{
-+					"name": "test",
-+					"type": "portmap",
-+					"cniVersion": "%s",
-+					"backend": "nftables"
-+				}`, ver))
-+				c, _, err := parseConfig(configBytes, "container")
-+				Expect(err).NotTo(HaveOccurred())
-+				Expect(c.CNIVersion).To(Equal(ver))
-+				Expect(c.Backend).To(Equal(&nftablesBackend))
-+				Expect(c.Name).To(Equal("test"))
-+			})
-+
-+			It(fmt.Sprintf("[%s] allows nftables conditions if nftables is requested", ver), func() {
-+				configBytes := []byte(fmt.Sprintf(`{
-+					"name": "test",
-+					"type": "portmap",
-+					"cniVersion": "%s",
-+					"backend": "nftables",
-+					"conditionsV4": ["aaa", "bbbb"],
-+					"conditionsV6": ["ccc"]
-+				}`, ver))
-+				c, _, err := parseConfig(configBytes, "container")
-+				Expect(err).NotTo(HaveOccurred())
-+				Expect(c.CNIVersion).To(Equal(ver))
-+				Expect(c.Backend).To(Equal(&nftablesBackend))
-+				Expect(c.ConditionsV4).To(Equal(&[]string{"aaa", "bbbb"}))
-+				Expect(c.ConditionsV6).To(Equal(&[]string{"ccc"}))
-+				Expect(c.Name).To(Equal("test"))
-+			})
-+
-+			It(fmt.Sprintf("[%s] rejects nftables options with 'backend: iptables'", ver), func() {
-+				configBytes := []byte(fmt.Sprintf(`{
-+					"name": "test",
-+					"type": "portmap",
-+					"cniVersion": "%s",
-+					"backend": "iptables",
-+					"conditionsV4": ["aaa", "bbbb"],
-+					"conditionsV6": ["ccc"]
-+				}`, ver))
-+				_, _, err := parseConfig(configBytes, "container")
-+				Expect(err).To(MatchError("iptables backend was requested but configuration contains nftables-specific options [conditionsV4 conditionsV6]"))
-+			})
-+
-+			It(fmt.Sprintf("[%s] rejects iptables options with 'backend: nftables'", ver), func() {
-+				configBytes := []byte(fmt.Sprintf(`{
-+					"name": "test",
-+					"type": "portmap",
-+					"cniVersion": "%s",
-+					"backend": "nftables",
-+					"externalSetMarkChain": "KUBE-MARK-MASQ",
-+					"conditionsV4": ["-a", "b"],
-+					"conditionsV6": ["-c", "d"]
-+				}`, ver))
-+				_, _, err := parseConfig(configBytes, "container")
-+				Expect(err).To(MatchError("nftables backend was requested but configuration contains iptables-specific options [externalSetMarkChain conditionsV4 conditionsV6]"))
-+			})
-+
- 			It(fmt.Sprintf("[%s] does not fail on missing prevResult interface index", ver), func() {
- 				configBytes := []byte(fmt.Sprintf(`{
- 					"name": "test",
-@@ -136,7 +215,7 @@ var _ = Describe("portmapping configuration", func() {
- 							{ "hostPort": 8080, "containerPort": 80, "protocol": "tcp"}
- 						]
- 					},
--					"conditionsV4": ["a", "b"],
-+					"conditionsV4": ["-a", "b"],
- 					"prevResult": {
- 						"interfaces": [
- 							{"name": "host"}
