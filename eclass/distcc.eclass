@@ -6,7 +6,7 @@
 # mias van klei
 # @AUTHOR:
 # Mias van Klei (15 Sep 2023)
-# @SUPPORTED_EAPIS: 7 8
+# @SUPPORTED_EAPIS: 8
 # @BLURB: Convenience wrappers for usage by distcc
 
 case ${EAPI} in
