@@ -1,18 +1,21 @@
---- a/src/data/debuggers/internal/lldbrc	2024-05-24 14:30:32.000000000 +0200
-+++ b/src/data/debuggers/internal/lldbrc	2024-06-15 10:13:24.643142107 +0200
-@@ -48,9 +48,14 @@
- Name[zh_CN]=lldb
- Name[zh_TW]=lldb
- TryExec=lldb
--Backends=KCrash
-+Backends=KCrash|coredump-core
- 
- [KCrash]
- Exec=lldb -p %pid
- ExecInputFile=%tempfile
- BatchCommands=settings set term-width 200\nthread info\nbt all
+--- a/src/debugger.cpp	2024-10-08 20:35:58.207085159 +0200
++++ b/src/debugger.cpp	2024-10-08 20:39:06.826568794 +0200
+@@ -74,6 +74,18 @@
+                         u"gdb"_s,
+                         u"set width 200\nset backtrace limit 128\nsource %drkonqi_datadir/python/gdb_preamble/preamble.py\npy print_preamble()"_s),
+                     .execInputFile = {}}}));
 +
-+[coredump-core]
-+Exec=lldb --core %corefile %execpath
-+ExecInputFile=%tempfile
-+BatchCommands=settings set term-width 200\nthread info\nbt all
++        result.push_back(std::make_shared<Data>( //
++            Data{.displayName = i18nc("@label the debugger called LLDB", "LLDB"),
++                 .codeName = u"lldb"_s,
++                 .tryExec = u"lldb"_s,
++                 .backendData = BackendData{
++                     .command = u"lldb --core %corefile %execpath"_s,
++                     .supportsCommandWithSymbolResolution = false,
++                     .commandWithSymbolResolution = {},
++                     .backtraceBatchCommands = u"settings set term-width 200\nthread info\nbt all"_s,
++                     .preambleCommands = {},
++                     .execInputFile = {}}}));
+     }
+ 
+     return result;
