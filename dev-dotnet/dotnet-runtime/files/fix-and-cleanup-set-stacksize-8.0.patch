@@ -1,6 +1,6 @@
-diff --color -ur a/src/coreclr/nativeaot/Bootstrap/main.cpp b/src/coreclr/nativeaot/Bootstrap/main.cpp
---- a/src/coreclr/nativeaot/Bootstrap/main.cpp	2024-07-16 19:44:51.000000000 +0200
-+++ b/src/coreclr/nativeaot/Bootstrap/main.cpp	2024-09-24 22:00:12.399232480 +0200
+diff --color -ur a/nativeaot/Bootstrap/main.cpp b/nativeaot/Bootstrap/main.cpp
+--- a/nativeaot/Bootstrap/main.cpp	2024-07-16 19:44:51.000000000 +0200
++++ b/nativeaot/Bootstrap/main.cpp	2024-09-24 22:00:12.399232480 +0200
 @@ -197,26 +197,12 @@
  
  #ifndef NATIVEAOT_DLL
@@ -28,9 +28,9 @@ diff --color -ur a/src/coreclr/nativeaot/Bootstrap/main.cpp b/src/coreclr/native
      int initval = InitializeRuntime();
      if (initval != 0)
          return initval;
-diff --color -ur a/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets b/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
---- a/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets	2024-07-16 19:44:51.000000000 +0200
-+++ b/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets	2024-09-24 22:00:12.399232480 +0200
+diff --color -ur a/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets b/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
+--- a/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets	2024-07-16 19:44:51.000000000 +0200
++++ b/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets	2024-09-24 22:00:12.399232480 +0200
 @@ -23,6 +23,7 @@
      <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_targetOS)' == 'freebsd'">lld</LinkerFlavor>
      <LinkerFlavor Condition="'$(LinkerFlavor)' == '' and '$(_linuxLibcFlavor)' == 'bionic'">lld</LinkerFlavor>
@@ -47,9 +47,9 @@ diff --color -ur a/src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Nati
        <!-- this workaround can be deleted once the minimum supported glibc version
             (runtime's official build machine's glibc version) is at least 2.33
             see https://github.com/bminor/glibc/commit/99468ed45f5a58f584bab60364af937eb6f8afda -->
-diff --color -ur a/src/coreclr/nativeaot/CMakeLists.txt b/src/coreclr/nativeaot/CMakeLists.txt
---- a/src/coreclr/nativeaot/CMakeLists.txt	2024-07-16 19:44:51.000000000 +0200
-+++ b/src/coreclr/nativeaot/CMakeLists.txt	2024-09-24 22:00:12.479231539 +0200
+diff --color -ur a/nativeaot/CMakeLists.txt b/nativeaot/CMakeLists.txt
+--- a/nativeaot/CMakeLists.txt	2024-07-16 19:44:51.000000000 +0200
++++ b/nativeaot/CMakeLists.txt	2024-09-24 22:00:12.479231539 +0200
 @@ -37,12 +37,6 @@
    endif(CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_I386)
  endif (CLR_CMAKE_HOST_UNIX)
@@ -63,9 +63,9 @@ diff --color -ur a/src/coreclr/nativeaot/CMakeLists.txt b/src/coreclr/nativeaot/
  if(CLR_CMAKE_TARGET_ANDROID)
      add_definitions(-DFEATURE_EMULATED_TLS)
  endif()
-diff --color -ur a/src/coreclr/pal/src/init/pal.cpp b/src/coreclr/pal/src/init/pal.cpp
---- a/src/coreclr/pal/src/init/pal.cpp	2024-07-16 19:44:51.000000000 +0200
-+++ b/src/coreclr/pal/src/init/pal.cpp	2024-09-24 22:00:12.491231398 +0200
+diff --color -ur a/pal/src/init/pal.cpp b/pal/src/init/pal.cpp
+--- a/pal/src/init/pal.cpp	2024-07-16 19:44:51.000000000 +0200
++++ b/pal/src/init/pal.cpp	2024-09-24 22:00:12.491231398 +0200
 @@ -242,31 +242,6 @@
      g_initializeDLLFlags = flags;
  }
@@ -112,9 +112,9 @@ diff --color -ur a/src/coreclr/pal/src/init/pal.cpp b/src/coreclr/pal/src/init/p
  #ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
          CLRConfigNoCache useDefaultBaseAddr = CLRConfigNoCache::Get("UseDefaultBaseAddr", /*noprefix*/ false, &getenv);
          if (useDefaultBaseAddr.IsSet())
-diff --color -ur a/src/coreclr/pal/src/thread/thread.cpp b/src/coreclr/pal/src/thread/thread.cpp
---- a/src/coreclr/pal/src/thread/thread.cpp	2024-07-16 19:44:51.000000000 +0200
-+++ b/src/coreclr/pal/src/thread/thread.cpp	2024-09-24 22:06:44.086652882 +0200
+diff --color -ur a/pal/src/thread/thread.cpp b/pal/src/thread/thread.cpp
+--- a/pal/src/thread/thread.cpp	2024-07-16 19:44:51.000000000 +0200
++++ b/pal/src/thread/thread.cpp	2024-09-24 22:06:44.086652882 +0200
 @@ -73,6 +73,7 @@
  #endif  // HAVE_POLL
  #include <limits.h>
@@ -149,37 +149,3 @@ diff --color -ur a/src/coreclr/pal/src/thread/thread.cpp b/src/coreclr/pal/src/t
  #endif
  
      return stackLimit;
-diff --color -ur a/src/native/libs/System.Native/CMakeLists.txt b/src/native/libs/System.Native/CMakeLists.txt
---- a/src/native/libs/System.Native/CMakeLists.txt	2024-07-16 19:44:51.000000000 +0200
-+++ b/src/native/libs/System.Native/CMakeLists.txt	2024-09-24 22:00:14.139212022 +0200
-@@ -4,12 +4,6 @@
-     add_definitions(-DHAS_CONSOLE_SIGNALS)
- endif ()
- 
--if (CLR_CMAKE_TARGET_LINUX_MUSL)
--    # Fix up the thread stack size for MUSL to more reasonable size.
--    # TODO: https://github.com/dotnet/runtimelab/issues/791
--    add_definitions(-DENSURE_PRIMARY_STACK_SIZE)
--endif ()
--
- if (CLR_CMAKE_TARGET_OSX)
-     add_definitions(-D_DARWIN_C_SOURCE)
- endif ()
-diff --color -ur a/src/native/libs/System.Native/pal_threading.c b/src/native/libs/System.Native/pal_threading.c
---- a/src/native/libs/System.Native/pal_threading.c	2024-07-16 19:44:51.000000000 +0200
-+++ b/src/native/libs/System.Native/pal_threading.c	2024-09-24 22:00:14.139212022 +0200
-@@ -233,14 +233,6 @@
-     error = pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
-     assert(error == 0);
- 
--#ifdef ENSURE_PRIMARY_STACK_SIZE
--    // TODO: https://github.com/dotnet/runtimelab/issues/791
--    if (stackSize == 0)
--    {
--        stackSize = 1536 * 1024;
--    }
--#endif
--
-     if (stackSize > 0)
-     {
-         if (stackSize < (uintptr_t)PTHREAD_STACK_MIN)
