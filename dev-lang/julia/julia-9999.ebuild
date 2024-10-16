@@ -21,14 +21,14 @@ STDLIBS=(
 	"JuliaLang DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
 	"JuliaLang Distributed.jl 6c7cdb5860fa5cb9ca191ce9c52a3d25a9ab3781"
 	"JuliaLang Downloads.jl 89d3c7dded535a77551e763a437a6d31e4d9bf84"
-	"JuliaLang JuliaSyntaxHighlighting.jl b89dd99db56700c47434df6106b6c6afd1c9ed01"
+	"JuliaLang JuliaSyntaxHighlighting.jl 19bd57b89c648592155156049addf67e0638eab1"
 	"JuliaPackaging LazyArtifacts.jl e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
 	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
-	"JuliaLang Pkg.jl 51d4910c114a863d888659cb8962c1e161b2a421"
+	"JuliaLang Pkg.jl 27c1b1ee5cf15571eb5e54707e812d646ac1dde3"
 	"JuliaCrypto SHA.jl aaf2df61ff8c3898196587a375d3cf213bd40b41"
 	"JuliaLang SparseArrays.jl 0dd8d45d55b305458d0d3d3451057589b684f72f"
 	"JuliaStats Statistics.jl 68869af06e8cdeb7aba1d5259de602da7328057f"
-	"JuliaLang StyledStrings.jl f6035eb97b516862b16e36cab2ecc6ea8adc3d7c"
+	"JuliaLang StyledStrings.jl 056e843b2d428bb9735b03af0cff97e738ac7e14"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
 	"JuliaLang Tar.jl 1114260f5c7a7b59441acadca2411fa227bb8a3b"
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
@@ -38,7 +38,7 @@ BUNDLED_DEPS=(
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
-	"JuliaLinearAlgebra libblastrampoline 05083d50611b5538df69706f0a952d8e642b0b4b"
+	"JuliaLinearAlgebra libblastrampoline b09277feafd342520b8476ce443d35327b5e55b4"
 	"JuliaLang JuliaSyntax.jl 4f1731d6ce7c2465fc21ea245110b7a39f34658a"
 )
 
@@ -106,7 +106,6 @@ PATCHES=(
 	"${FILESDIR}"/disable-install-docs.patch
 	"${FILESDIR}"/support-compiler_rt_libunwind.patch
 	"${FILESDIR}"/fix-textrel.patch
-	"${FILESDIR}"/llvm-19.patch
 )
 
 pkg_setup() {
