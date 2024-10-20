@@ -11,4 +11,5 @@ KEYWORDS="amd64 ~arm64"
 RDEPEND="
 	dev-dotnet/dotnet-targeting-pack:"${SLOT}"
 	dev-dotnet/aspnetcore-targeting-pack:"${SLOT}"
-	dev-dotnet/dotnet-sdk"
+	dev-dotnet/dotnet-sdk
+	dev-dotnet/dotnet"
