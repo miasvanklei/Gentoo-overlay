@@ -14,7 +14,7 @@ KEYWORDS="~amd64 ~arm64"
 src_compile() {
 	# widevine links uncessary to ld-linux-x86-64.so.2, reuse library to provide missing
 	# symbols which aren't available in musl libc
-	"${CC}" -shared "${FILESDIR}"/widevine-compat.c -o ld-linux-x86-64.so.2
+	"${CC}" -shared "${FILESDIR}"/widevine-compat.c -o ld-linux-x86-64.so.2 || die
 }
 
 src_install() {

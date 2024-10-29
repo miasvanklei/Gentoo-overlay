@@ -34,3 +34,10 @@ int __vsnprintf_chk(char * s, size_t maxlen, int flag, size_t slen, const char *
 {
     return vsnprintf(s, maxlen, format, args);
 }
+
+char * __strncat_chk(char * s1, const char * s2, size_t n, size_t s1len)
+{
+    return strncat(s1, s2, n);
+}
+
+void *__libc_stack_end;
