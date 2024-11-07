@@ -78,7 +78,7 @@ CRATES="
 	libloading@0.8.5
 	libmimalloc-sys@0.1.39
 	libredox@0.1.3
-	line-index@0.1.1
+	line-index@0.1.2
 	linked-hash-map@0.5.6
 	lock_api@0.4.12
 	log@0.4.22
@@ -98,6 +98,7 @@ CRATES="
 	nu-ansi-term@0.50.1
 	num-conv@0.1.0
 	num_cpus@1.16.0
+	num_threads@0.1.7
 	object@0.33.0
 	object@0.36.3
 	once_cell@1.19.0
@@ -115,17 +116,17 @@ CRATES="
 	ppv-lite86@0.2.20
 	proc-macro2@1.0.86
 	process-wrap@8.0.2
-	protobuf-support@3.2.0
-	protobuf@3.2.0
+	protobuf-support@3.7.1
+	protobuf@3.7.1
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.36
-	ra-ap-rustc_abi@0.68.0
-	ra-ap-rustc_index@0.68.0
-	ra-ap-rustc_index_macros@0.68.0
-	ra-ap-rustc_lexer@0.68.0
-	ra-ap-rustc_parse_format@0.68.0
-	ra-ap-rustc_pattern_analysis@0.68.0
+	ra-ap-rustc_abi@0.76.0
+	ra-ap-rustc_index@0.76.0
+	ra-ap-rustc_index_macros@0.76.0
+	ra-ap-rustc_lexer@0.76.0
+	ra-ap-rustc_parse_format@0.76.0
+	ra-ap-rustc_pattern_analysis@0.76.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
@@ -136,10 +137,11 @@ CRATES="
 	rowan@0.15.15
 	rustc-demangle@0.1.24
 	rustc-hash@1.1.0
+	rustc-hash@2.0.0
 	rustc_apfloat@0.2.1+llvm-462a31f5a5ab
 	ryu@1.0.18
 	same-file@1.0.6
-	scip@0.3.3
+	scip@0.5.1
 	scoped-tls@1.0.1
 	scopeguard@1.2.0
 	semver@1.0.23
@@ -151,8 +153,7 @@ CRATES="
 	sharded-slab@0.1.7
 	shlex@1.3.0
 	smallvec@1.13.2
-	smol_str@0.3.1
-	snap@1.1.1
+	smol_str@0.3.2
 	sptr@0.3.2
 	stable_deref_trait@1.2.0
 	syn@2.0.74
@@ -165,6 +166,7 @@ CRATES="
 	tikv-jemalloc-sys@0.5.4+5.3.0-patched
 	tikv-jemallocator@0.5.4
 	time-core@0.1.2
+	time-macros@0.2.18
 	time@0.3.36
 	tinyvec@1.8.0
 	tinyvec_macros@0.1.1
@@ -248,8 +250,8 @@ S="${WORKDIR}/${PN}-${MY_PV}"
 LICENSE=""
 # Dependent crate licenses
 LICENSE+="
-	Apache-2.0 Apache-2.0-with-LLVM-exceptions BSD CC0-1.0 ISC MIT
-	MPL-2.0 Unicode-DFS-2016
+	Apache-2.0 Apache-2.0-with-LLVM-exceptions CC0-1.0 ISC MIT MPL-2.0
+	Unicode-DFS-2016
 "
 SLOT="0"
 
