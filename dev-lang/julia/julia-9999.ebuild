@@ -24,7 +24,7 @@ STDLIBS=(
 	"JuliaLang JuliaSyntaxHighlighting.jl 19bd57b89c648592155156049addf67e0638eab1"
 	"JuliaPackaging LazyArtifacts.jl e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
 	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
-	"JuliaLang Pkg.jl 27c1b1ee5cf15571eb5e54707e812d646ac1dde3"
+	"JuliaLang Pkg.jl 9f8e11a4c0efb3b68a1e25a33f372f398c89cd66"
 	"JuliaCrypto SHA.jl aaf2df61ff8c3898196587a375d3cf213bd40b41"
 	"JuliaLang SparseArrays.jl 0dd8d45d55b305458d0d3d3451057589b684f72f"
 	"JuliaStats Statistics.jl 68869af06e8cdeb7aba1d5259de602da7328057f"
