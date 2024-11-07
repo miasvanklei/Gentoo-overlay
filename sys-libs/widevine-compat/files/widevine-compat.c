@@ -40,4 +40,11 @@ char * __strncat_chk(char * s1, const char * s2, size_t n, size_t s1len)
     return strncat(s1, s2, n);
 }
 
+extern unsigned long long __udivmodti4(unsigned long long a, unsigned long long b, unsigned long long rem);
+
+unsigned long long __udivti3(unsigned long long a, unsigned long long b)
+{
+    return __udivmodti4(a, b, 0);
+}
+
 void *__libc_stack_end;
