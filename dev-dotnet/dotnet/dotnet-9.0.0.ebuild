@@ -3,7 +3,7 @@
 
 EAPI=8
 
-DOTNET_RUNTIME_PV="${PV/_rc/-rc.}.24473.5"
+DOTNET_RUNTIME_PV="${PV}"
 DOTNET_SRC_DIR="src/native/corehost"
 DOTNET_TARGETS=(
 	'dotnet'
@@ -24,8 +24,8 @@ RDEPEND="
 
 src_configure() {
 	local mycmakeargs=(
-		-DCLI_CMAKE_PKG_RID=$(get_pkg_rid 1)
-		-DCLI_CMAKE_FALLBACK_OS=$(get_pkg_rid 0)
+		-DCLI_CMAKE_PKG_RID=$(dotnet-utils_get_pkg_rid 1)
+		-DCLI_CMAKE_FALLBACK_OS=$(dotnet-utils_get_pkg_rid 0)
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true
 	)
 
