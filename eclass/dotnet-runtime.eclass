@@ -30,6 +30,17 @@ SRC_URI+=" https://github.com/dotnet/runtime/archive/refs/tags/v${DOTNET_RUNTIME
 
 CMAKE_BUILD_TYPE=RELEASE
 
+# @FUNCTION: dotnet-pkg_src_unpack
+# @DESCRIPTION:
+# Default "src_unpack" for the "dotnet-runtime" eclass.
+# Unpack the package sources.
+#
+# Includes a case for nugets (".nupkg" files) - they are instead
+# unpacked with in in the "WORKDIR" directory
+dotnet-runtime_src_unpack() {
+        dotnet-utils_src_unpack
+}
+
 # @FUNCTION: dotnet-runtime_src_prepare
 # @DESCRIPTION:
 # Default "src_prepare" for the "dotnet-runtime" eclass.
@@ -64,4 +75,4 @@ dotnet-runtime_src_install() {
 
 fi
 
-EXPORT_FUNCTIONS src_prepare src_compile src_install
+EXPORT_FUNCTIONS src_unpack src_prepare src_compile src_install
