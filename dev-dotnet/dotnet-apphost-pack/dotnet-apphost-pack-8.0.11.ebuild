@@ -12,7 +12,7 @@ DOTNET_TARGETS=(
 	'libhostfxr.so'
 )
 
-inherit dotnet-runtime
+inherit dotnet-utils dotnet-runtime
 
 DESCRIPTION="The .NET Core apphost pack"
 HOMEPAGE="https://www.microsoft.com/net/core"
@@ -23,10 +23,10 @@ KEYWORDS="~amd64 ~arm64"
 
 src_configure() {
 	local mycmakeargs=(
-		-DCLI_CMAKE_PKG_RID=$(get_pkg_rid 1)
-		-DCLI_CMAKE_FALLBACK_OS=$(get_pkg_rid 0)
+		-DCLI_CMAKE_PKG_RID=$(dotnet-utils_get_pkg_rid 1)
+		-DCLI_CMAKE_FALLBACK_OS=$(dotnet-utils_get_pkg_rid 0)
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true
-		-DCLI_CMAKE_COMMIT_HASH="990ebf5"
+		-DCLI_CMAKE_COMMIT_HASH="9cb3b72"
 	)
 
 	cmake_src_configure
@@ -34,7 +34,7 @@ src_configure() {
 
 src_install() {
 	local dest="usr/lib/dotnet-sdk"
-	local target=$(get_pkg_rid 1)
+	local target=$(dotnet-utils_get_pkg_rid 1)
 	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${DOTNET_RUNTIME_PV}/runtimes/${target}/native"
         local dest_netcore_app="${dest}/shared/Microsoft.NETCore.App/${DOTNET_RUNTIME_PV}"
 	local dest_fxr="${dest}/host/fxr/${DOTNET_RUNTIME_PV}"
