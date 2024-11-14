@@ -132,7 +132,7 @@ dotnet-utils_install_dotnet_runtime_pack() {
 	[[ $# -eq 1 ]] || die "${FUNCNAME}: bad number of arguments"
 
 	local packname="$1"
-	local pkgrid="$(get_pkg_rid 1)"
+	local pkgrid="$(dotnet-utils_get_pkg_rid 1)"
 	local nugetpkgname="${packname,,}.runtime.${pkgrid}.${DOTNET_RUNTIME_PV}"
 
 	local packdir="packs/${packname}.Runtime.${pkgrid}/${DOTNET_RUNTIME_PV}"
@@ -150,7 +150,7 @@ dotnet-utils_install_dotnet_runtime_pack() {
 	for i in "${WORKDIR}/${nugetpkgname}/${libdir}"/*{.dll,.json}; do
 		local filename="$(basename $i)"
 		doins "$i"
-		dosym -r "${basedir}/${shareddir}/filename" "${basedir}/${packdir}/${libdir}/${filename}"
+		dosym -r "${basedir}/${shareddir}/${filename}" "${basedir}/${packdir}/${libdir}/${filename}"
 	done
 
 	insinto "${basedir}/${packdir}"
