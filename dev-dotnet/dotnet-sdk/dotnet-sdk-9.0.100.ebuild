@@ -5,7 +5,7 @@ EAPI=8
 
 # keep in sync with dotnet-runtime
 DOTNET_RUNTIME_PV="${PV/100/0}"
-REAL_PV="${PV/_rc/-rc.}.24474.11"
+REAL_PV="${PV}"
 SDK="${PN}-${REAL_PV}-linux-musl"
 
 DESCRIPTION="The .NET Core SDK"
