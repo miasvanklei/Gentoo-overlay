@@ -3,7 +3,7 @@
 
 EAPI=8
 
-DOTNET_RUNTIME_PV="${PV/_rc/-rc.}.24473.5"
+DOTNET_RUNTIME_PV="${PV}"
 DOTNET_SRC_DIR="src/coreclr"
 DOTNET_TARGETS=(
 	'debug/createdump/createdump'
@@ -48,7 +48,7 @@ src_configure() {
 	local mycmakeargs=(
 		-DCLR_CMAKE_PGO_INSTRUMENT=0
 		-DCLR_CMAKE_PGO_OPTIMIZE=0
-		-DCLI_CMAKE_FALLBACK_OS="$(get_pkg_rid 0)"
+		-DCLI_CMAKE_FALLBACK_OS="$(dotnet-utils_get_pkg_rid 0)"
 		-DFEATURE_DISTRO_AGNOSTIC_SSL=1
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true
 		-DCMAKE_DISABLE_PRECOMPILE_HEADERS=OFF # coreclr assumes precompiled headers
