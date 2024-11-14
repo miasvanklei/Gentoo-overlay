@@ -3,7 +3,7 @@
 
 EAPI=8
 
-DOTNET_RUNTIME_PV="${PV/_rc/-rc.}.24473.5"
+DOTNET_RUNTIME_PV="${PV}"
 DOTNET_SRC_DIR="src/native/libs"
 
 inherit dotnet-runtime
