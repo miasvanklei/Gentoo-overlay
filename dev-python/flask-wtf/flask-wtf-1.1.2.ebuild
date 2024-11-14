@@ -23,7 +23,7 @@ RDEPEND="
 	dev-python/flask[${PYTHON_USEDEP}]
 	dev-python/flask-babel[${PYTHON_USEDEP}]
 	dev-python/itsdangerous[${PYTHON_USEDEP}]
-	dev-python/jinja[${PYTHON_USEDEP}]
+	dev-python/jinja2[${PYTHON_USEDEP}]
 	dev-python/werkzeug[${PYTHON_USEDEP}]
 	>=dev-python/wtforms-1.0.5[${PYTHON_USEDEP}]
 "
