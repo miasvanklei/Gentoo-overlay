@@ -23,6 +23,7 @@ RDEPEND="
 	dev-python/Babel[${PYTHON_USEDEP}]
 	dev-python/bleach[${PYTHON_USEDEP}]
 	dev-python/chardet[${PYTHON_USEDEP}]
+	dev-python/cryptography[${PYTHON_USEDEP}]
 	dev-python/flask[${PYTHON_USEDEP}]
 	dev-python/flask-babel[${PYTHON_USEDEP}]
 	dev-python/flask-httpauth[${PYTHON_USEDEP}]
@@ -39,6 +40,7 @@ RDEPEND="
 	<dev-python/sqlalchemy-2.1.0[${PYTHON_USEDEP}]
 	>=dev-python/tornado-6.3[${PYTHON_USEDEP}] <dev-python/tornado-6.5[${PYTHON_USEDEP}]
 	dev-python/unidecode[${PYTHON_USEDEP}]
+	dev-python/urllib3[${PYTHON_USEDEP}]
 	dev-python/wand[${PYTHON_USEDEP}]
 	metadata? (
 		dev-python/beautifulsoup4[${PYTHON_USEDEP}]
