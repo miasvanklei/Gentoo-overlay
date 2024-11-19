@@ -223,8 +223,8 @@ CRATES="
 	write-json@0.1.4
 	xflags-macros@0.3.2
 	xflags@0.3.2
-	xshell-macros@0.2.6
-	xshell@0.2.6
+	xshell-macros@0.2.7
+	xshell@0.2.7
 	zerocopy-derive@0.7.35
 	zerocopy@0.7.35
 	zip@0.6.6
