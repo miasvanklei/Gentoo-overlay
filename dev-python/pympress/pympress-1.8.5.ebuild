@@ -17,7 +17,7 @@ KEYWORDS="~amd64 ~arm64"
 IUSE="gstreamer"
 
 BDEPEND="
-	dev-python/Babel[${PYTHON_USEDEP}]"
+	dev-python/babel[${PYTHON_USEDEP}]"
 
 RDEPEND="
 	app-text/poppler[cairo,introspection]

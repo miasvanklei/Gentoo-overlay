@@ -19,8 +19,8 @@ IUSE="+metadata +kobi"
 RDEPEND="
 	acct-user/calibreweb
 	acct-group/calibreweb
-	dev-python/APScheduler[${PYTHON_USEDEP}]
-	dev-python/Babel[${PYTHON_USEDEP}]
+	dev-python/apscheduler[${PYTHON_USEDEP}]
+	dev-python/babel[${PYTHON_USEDEP}]
 	dev-python/bleach[${PYTHON_USEDEP}]
 	dev-python/chardet[${PYTHON_USEDEP}]
 	dev-python/cryptography[${PYTHON_USEDEP}]
