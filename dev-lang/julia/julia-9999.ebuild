@@ -7,14 +7,13 @@ LLVM_COMPAT=( 19 )
 
 inherit git-r3 llvm-r1 pax-utils optfeature toolchain-funcs
 
-# correct versions for stdlibs are in deps/checksums
-# for everything else, run with network-sandbox and wait for the crash
-
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
 
 EGIT_REPO_URI="https://github.com/JuliaLang/julia.git"
 
+# correct versions for stdlibs are in deps/checksums
+# for everything else, run with network-sandbox and wait for the crash
 STDLIBS=(
 	# repo    package name    hash
 	"JuliaIO ArgTools.jl 997089b9cd56404b40ff766759662e16dc1aab4b"
@@ -23,10 +22,11 @@ STDLIBS=(
 	"JuliaLang Downloads.jl 89d3c7dded535a77551e763a437a6d31e4d9bf84"
 	"JuliaLang JuliaSyntaxHighlighting.jl 19bd57b89c648592155156049addf67e0638eab1"
 	"JuliaPackaging LazyArtifacts.jl e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
+	"JuliaLang LinearAlgebra.jl 56d561c22e1ab8e0421160edbdd42f3f194ecfa8"
 	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
-	"JuliaLang Pkg.jl 9f8e11a4c0efb3b68a1e25a33f372f398c89cd66"
+	"JuliaLang Pkg.jl 7b759d7f0af56c5ad01f2289bbad71284a556970"
 	"JuliaCrypto SHA.jl aaf2df61ff8c3898196587a375d3cf213bd40b41"
-	"JuliaLang SparseArrays.jl 0dd8d45d55b305458d0d3d3451057589b684f72f"
+	"JuliaLang SparseArrays.jl 1b4933ccc7b1f97427ff88bd7ba58950021f2c60"
 	"JuliaStats Statistics.jl 68869af06e8cdeb7aba1d5259de602da7328057f"
 	"JuliaLang StyledStrings.jl 056e843b2d428bb9735b03af0cff97e738ac7e14"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
@@ -38,7 +38,7 @@ BUNDLED_DEPS=(
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
-	"JuliaLinearAlgebra libblastrampoline b09277feafd342520b8476ce443d35327b5e55b4"
+	"JuliaLinearAlgebra libblastrampoline c48da8a1225c2537ff311c28ef395152fb879eae"
 	"JuliaLang JuliaSyntax.jl 4f1731d6ce7c2465fc21ea245110b7a39f34658a"
 )
 
