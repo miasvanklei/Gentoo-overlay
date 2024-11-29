@@ -26,6 +26,11 @@ CONFIG_CHECK="~BRIDGE_VLAN_FILTERING ~NETFILTER_XT_MATCH_COMMENT
 
 S="${WORKDIR}/plugins-${PV}"
 
+PATCHES=(
+	"${FILESDIR}/ipmasq-fix-nftables.patch"
+	"${FILESDIR}/portmap-fix-ntables.patch"
+)
+
 src_compile() {
 	for plugin in plugins/meta/* plugins/main/* plugins/ipam/*; do
 		if [[ -d "$plugin"  && "$plugin" != *windows ]]; then

@@ -1,0 +1,277 @@
+diff --git a/pkg/ip/ipmasq_iptables_linux.go b/pkg/ip/ipmasq_iptables_linux.go
+index 5c1fcfa80..080d4fda6 100644
+--- a/pkg/ip/ipmasq_iptables_linux.go
++++ b/pkg/ip/ipmasq_iptables_linux.go
+@@ -15,8 +15,10 @@
+ package ip
+ 
+ import (
++	"errors"
+ 	"fmt"
+ 	"net"
++	"strings"
+ 
+ 	"github.com/coreos/go-iptables/iptables"
+ 
+@@ -24,17 +26,22 @@ import (
+ 	"github.com/containernetworking/plugins/pkg/utils"
+ )
+ 
+-// setupIPMasqIPTables is the iptables-based implementation of SetupIPMasqForNetwork
+-func setupIPMasqIPTables(ipn *net.IPNet, network, _, containerID string) error {
++// setupIPMasqIPTables is the iptables-based implementation of SetupIPMasqForNetworks
++func setupIPMasqIPTables(ipns []*net.IPNet, network, _, containerID string) error {
+ 	// Note: for historical reasons, the iptables implementation ignores ifname.
+ 	chain := utils.FormatChainName(network, containerID)
+ 	comment := utils.FormatComment(network, containerID)
+-	return SetupIPMasq(ipn, chain, comment)
++	for _, ip := range ipns {
++		if err := SetupIPMasq(ip, chain, comment); err != nil {
++			return err
++		}
++	}
++	return nil
+ }
+ 
+ // SetupIPMasq installs iptables rules to masquerade traffic
+ // coming from ip of ipn and going outside of ipn.
+-// Deprecated: This function only supports iptables. Use SetupIPMasqForNetwork, which
++// Deprecated: This function only supports iptables. Use SetupIPMasqForNetworks, which
+ // supports both iptables and nftables.
+ func SetupIPMasq(ipn *net.IPNet, chain string, comment string) error {
+ 	isV6 := ipn.IP.To4() == nil
+@@ -87,16 +94,28 @@ func SetupIPMasq(ipn *net.IPNet, chain string, comment string) error {
+ 	return ipt.AppendUnique("nat", "POSTROUTING", "-s", ipn.IP.String(), "-j", chain, "-m", "comment", "--comment", comment)
+ }
+ 
+-// teardownIPMasqIPTables is the iptables-based implementation of TeardownIPMasqForNetwork
+-func teardownIPMasqIPTables(ipn *net.IPNet, network, _, containerID string) error {
++// teardownIPMasqIPTables is the iptables-based implementation of TeardownIPMasqForNetworks
++func teardownIPMasqIPTables(ipns []*net.IPNet, network, _, containerID string) error {
+ 	// Note: for historical reasons, the iptables implementation ignores ifname.
+ 	chain := utils.FormatChainName(network, containerID)
+ 	comment := utils.FormatComment(network, containerID)
+-	return TeardownIPMasq(ipn, chain, comment)
++
++	var errs []string
++	for _, ipn := range ipns {
++		err := TeardownIPMasq(ipn, chain, comment)
++		if err != nil {
++			errs = append(errs, err.Error())
++		}
++	}
++
++	if errs == nil {
++		return nil
++	}
++	return errors.New(strings.Join(errs, "\n"))
+ }
+ 
+ // TeardownIPMasq undoes the effects of SetupIPMasq.
+-// Deprecated: This function only supports iptables. Use TeardownIPMasqForNetwork, which
++// Deprecated: This function only supports iptables. Use TeardownIPMasqForNetworks, which
+ // supports both iptables and nftables.
+ func TeardownIPMasq(ipn *net.IPNet, chain string, comment string) error {
+ 	isV6 := ipn.IP.To4() == nil
+diff --git a/pkg/ip/ipmasq_linux.go b/pkg/ip/ipmasq_linux.go
+index bad83541d..0063e0a78 100644
+--- a/pkg/ip/ipmasq_linux.go
++++ b/pkg/ip/ipmasq_linux.go
+@@ -24,11 +24,11 @@ import (
+ 	"github.com/containernetworking/plugins/pkg/utils"
+ )
+ 
+-// SetupIPMasqForNetwork installs rules to masquerade traffic coming from ip of ipn and
+-// going outside of ipn, using a chain name based on network, ifname, and containerID. The
++// SetupIPMasqForNetworks installs rules to masquerade traffic coming from ips of ipns and
++// going outside of ipns, using a chain name based on network, ifname, and containerID. The
+ // backend can be either "iptables" or "nftables"; if it is nil, then a suitable default
+ // implementation will be used.
+-func SetupIPMasqForNetwork(backend *string, ipn *net.IPNet, network, ifname, containerID string) error {
++func SetupIPMasqForNetworks(backend *string, ipns []*net.IPNet, network, ifname, containerID string) error {
+ 	if backend == nil {
+ 		// Prefer iptables, unless only nftables is available
+ 		defaultBackend := "iptables"
+@@ -40,27 +40,27 @@ func SetupIPMasqForNetwork(backend *string, ipn *net.IPNet, network, ifname, con
+ 
+ 	switch *backend {
+ 	case "iptables":
+-		return setupIPMasqIPTables(ipn, network, ifname, containerID)
++		return setupIPMasqIPTables(ipns, network, ifname, containerID)
+ 	case "nftables":
+-		return setupIPMasqNFTables(ipn, network, ifname, containerID)
++		return setupIPMasqNFTables(ipns, network, ifname, containerID)
+ 	default:
+ 		return fmt.Errorf("unknown ipmasq backend %q", *backend)
+ 	}
+ }
+ 
+-// TeardownIPMasqForNetwork undoes the effects of SetupIPMasqForNetwork
+-func TeardownIPMasqForNetwork(ipn *net.IPNet, network, ifname, containerID string) error {
++// TeardownIPMasqForNetworks undoes the effects of SetupIPMasqForNetworks
++func TeardownIPMasqForNetworks(ipns []*net.IPNet, network, ifname, containerID string) error {
+ 	var errs []string
+ 
+ 	// Do both the iptables and the nftables cleanup, since the pod may have been
+ 	// created with a different version of this plugin or a different configuration.
+ 
+-	err := teardownIPMasqIPTables(ipn, network, ifname, containerID)
++	err := teardownIPMasqIPTables(ipns, network, ifname, containerID)
+ 	if err != nil && utils.SupportsIPTables() {
+ 		errs = append(errs, err.Error())
+ 	}
+ 
+-	err = teardownIPMasqNFTables(ipn, network, ifname, containerID)
++	err = teardownIPMasqNFTables(ipns, network, ifname, containerID)
+ 	if err != nil && utils.SupportsNFTables() {
+ 		errs = append(errs, err.Error())
+ 	}
+diff --git a/pkg/ip/ipmasq_nftables_linux.go b/pkg/ip/ipmasq_nftables_linux.go
+index 5c7458c99..fd0545eeb 100644
+--- a/pkg/ip/ipmasq_nftables_linux.go
++++ b/pkg/ip/ipmasq_nftables_linux.go
+@@ -72,16 +72,16 @@ func commentForInstance(network, ifname, containerID string) string {
+ 	return comment
+ }
+ 
+-// setupIPMasqNFTables is the nftables-based implementation of SetupIPMasqForNetwork
+-func setupIPMasqNFTables(ipn *net.IPNet, network, ifname, containerID string) error {
++// setupIPMasqNFTables is the nftables-based implementation of SetupIPMasqForNetworks
++func setupIPMasqNFTables(ipns []*net.IPNet, network, ifname, containerID string) error {
+ 	nft, err := knftables.New(knftables.InetFamily, ipMasqTableName)
+ 	if err != nil {
+ 		return err
+ 	}
+-	return setupIPMasqNFTablesWithInterface(nft, ipn, network, ifname, containerID)
++	return setupIPMasqNFTablesWithInterface(nft, ipns, network, ifname, containerID)
+ }
+ 
+-func setupIPMasqNFTablesWithInterface(nft knftables.Interface, ipn *net.IPNet, network, ifname, containerID string) error {
++func setupIPMasqNFTablesWithInterface(nft knftables.Interface, ipns []*net.IPNet, network, ifname, containerID string) error {
+ 	staleRules, err := findRules(nft, hashForInstance(network, ifname, containerID))
+ 	if err != nil {
+ 		return err
+@@ -128,37 +128,39 @@ func setupIPMasqNFTablesWithInterface(nft knftables.Interface, ipn *net.IPNet, n
+ 	for _, rule := range staleRules {
+ 		tx.Delete(rule)
+ 	}
+-	ip := "ip"
+-	if ipn.IP.To4() == nil {
+-		ip = "ip6"
+-	}
+-
+-	// e.g. if ipn is "192.168.1.4/24", then dstNet is "192.168.1.0/24"
+-	dstNet := &net.IPNet{IP: ipn.IP.Mask(ipn.Mask), Mask: ipn.Mask}
++	for _, ipn := range ipns {
++		ip := "ip"
++		if ipn.IP.To4() == nil {
++			ip = "ip6"
++		}
+ 
+-	tx.Add(&knftables.Rule{
+-		Chain: ipMasqChainName,
+-		Rule: knftables.Concat(
+-			ip, "saddr", "==", ipn.IP,
+-			ip, "daddr", "!=", dstNet,
+-			"masquerade",
+-		),
+-		Comment: knftables.PtrTo(commentForInstance(network, ifname, containerID)),
+-	})
++		// e.g. if ipn is "192.168.1.4/24", then dstNet is "192.168.1.0/24"
++		dstNet := &net.IPNet{IP: ipn.IP.Mask(ipn.Mask), Mask: ipn.Mask}
++
++		tx.Add(&knftables.Rule{
++			Chain: ipMasqChainName,
++			Rule: knftables.Concat(
++				ip, "saddr", "==", ipn.IP,
++				ip, "daddr", "!=", dstNet,
++				"masquerade",
++			),
++			Comment: knftables.PtrTo(commentForInstance(network, ifname, containerID)),
++		})
++	}
+ 
+ 	return nft.Run(context.TODO(), tx)
+ }
+ 
+-// teardownIPMasqNFTables is the nftables-based implementation of TeardownIPMasqForNetwork
+-func teardownIPMasqNFTables(ipn *net.IPNet, network, ifname, containerID string) error {
++// teardownIPMasqNFTables is the nftables-based implementation of TeardownIPMasqForNetworks
++func teardownIPMasqNFTables(ipns []*net.IPNet, network, ifname, containerID string) error {
+ 	nft, err := knftables.New(knftables.InetFamily, ipMasqTableName)
+ 	if err != nil {
+ 		return err
+ 	}
+-	return teardownIPMasqNFTablesWithInterface(nft, ipn, network, ifname, containerID)
++	return teardownIPMasqNFTablesWithInterface(nft, ipns, network, ifname, containerID)
+ }
+ 
+-func teardownIPMasqNFTablesWithInterface(nft knftables.Interface, _ *net.IPNet, network, ifname, containerID string) error {
++func teardownIPMasqNFTablesWithInterface(nft knftables.Interface, _ []*net.IPNet, network, ifname, containerID string) error {
+ 	rules, err := findRules(nft, hashForInstance(network, ifname, containerID))
+ 	if err != nil {
+ 		return err
+diff --git a/plugins/main/bridge/bridge.go b/plugins/main/bridge/bridge.go
+index 78df4c716..2ee6e0edc 100644
+--- a/plugins/main/bridge/bridge.go
++++ b/plugins/main/bridge/bridge.go
+@@ -668,10 +668,12 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 		}
+ 
+ 		if n.IPMasq {
++			ipns := []*net.IPNet{}
+ 			for _, ipc := range result.IPs {
+-				if err = ip.SetupIPMasqForNetwork(n.IPMasqBackend, &ipc.Address, n.Name, args.IfName, args.ContainerID); err != nil {
+-					return err
+-				}
++				ipns = append(ipns, &ipc.Address)
++			}
++			if err = ip.SetupIPMasqForNetworks(n.IPMasqBackend, ipns, n.Name, args.IfName, args.ContainerID); err != nil {
++				return err
+ 			}
+ 		}
+ 	} else if !n.DisableContainerInterface {
+@@ -807,10 +809,8 @@ func cmdDel(args *skel.CmdArgs) error {
+ 	}
+ 
+ 	if isLayer3 && n.IPMasq {
+-		for _, ipn := range ipnets {
+-			if err := ip.TeardownIPMasqForNetwork(ipn, n.Name, args.IfName, args.ContainerID); err != nil {
+-				return err
+-			}
++		if err := ip.TeardownIPMasqForNetworks(ipnets, n.Name, args.IfName, args.ContainerID); err != nil {
++			return err
+ 		}
+ 	}
+ 
+diff --git a/plugins/main/ptp/ptp.go b/plugins/main/ptp/ptp.go
+index 52f755e1d..129146f21 100644
+--- a/plugins/main/ptp/ptp.go
++++ b/plugins/main/ptp/ptp.go
+@@ -229,10 +229,12 @@ func cmdAdd(args *skel.CmdArgs) error {
+ 	}
+ 
+ 	if conf.IPMasq {
++		ipns := []*net.IPNet{}
+ 		for _, ipc := range result.IPs {
+-			if err = ip.SetupIPMasqForNetwork(conf.IPMasqBackend, &ipc.Address, conf.Name, args.IfName, args.ContainerID); err != nil {
+-				return err
+-			}
++			ipns = append(ipns, &ipc.Address)
++		}
++		if err = ip.SetupIPMasqForNetworks(conf.IPMasqBackend, ipns, conf.Name, args.IfName, args.ContainerID); err != nil {
++			return err
+ 		}
+ 	}
+ 
+@@ -291,8 +293,8 @@ func cmdDel(args *skel.CmdArgs) error {
+ 	}
+ 
+ 	if len(ipnets) != 0 && conf.IPMasq {
+-		for _, ipn := range ipnets {
+-			err = ip.TeardownIPMasqForNetwork(ipn, conf.Name, args.IfName, args.ContainerID)
++		if err := ip.TeardownIPMasqForNetworks(ipnets, conf.Name, args.IfName, args.ContainerID); err != nil {
++			return err
+ 		}
+ 	}
+ 
