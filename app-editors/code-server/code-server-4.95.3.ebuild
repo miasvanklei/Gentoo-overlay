@@ -160,6 +160,8 @@ src_compile() {
 	enodepregyp rebuild -C "${WORKDIR}/$(package_dir argon2)"
 	cp "${WORKDIR}/$(package_dir argon2)/lib/binding/napi-v3/argon2.node" \
 	"${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node"
+
+	increase_reconnection_grace_time
 }
 
 src_install() {
@@ -178,6 +180,20 @@ src_install() {
 pkg_postinst() {
 	elog "When using code-server systemd service run it as a user"
 	elog "For example: 'systemctl --user enable --now code-server'"
+}
+
+# Increase ReconnectionGraceTime from 3h to 24h
+increase_reconnection_grace_time() {
+	local vscode_out_dir="/lib/vscode/out"
+	local files=(
+		"/vs/workbench/api/node/extensionHostProcess.js"
+		"/vs/code/browser/workbench/workbench.js"
+		"/server-main.js"
+	)
+
+	for file in "${files[@]}"; do
+		sed -i -e "s|ReconnectionGraceTime=108e5|ReconnectionGraceTime=864e5|g" "${S}${vscode_out_dir}${file}" || die
+	done
 }
 
 enodepregyp() {
