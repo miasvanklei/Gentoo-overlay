@@ -56,6 +56,12 @@ RDEPEND="
 
 PATCHES="${FILESDIR}/remove-required-optional-deps.patch"
 
+src_prepare() {
+	sed -i -e "s|APScheduler>=3.6.3,<3.11.0|APScheduler>=3.6.3,<3.12.0|g" "${S}/src/calibreweb/requirements.txt" || die
+
+	distutils-r1_src_prepare
+}
+
 src_install() {
 	distutils-r1_src_install
 
