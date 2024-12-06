@@ -1,29 +1,3 @@
-From 7282c336fb446159b2ea5736fde824f581673776 Mon Sep 17 00:00:00 2001
-From: Maximilian Luz <luzmaximilian@gmail.com>
-Date: Sat, 18 Feb 2023 01:02:49 +0100
-Subject: [PATCH] USB: quirks: Add USB_QUIRK_DELAY_INIT for Surface Go 3
- Type-Cover
-
-The touchpad on the Type-Cover of the Surface Go 3 is sometimes not
-being initialized properly. Apply USB_QUIRK_DELAY_INIT to fix this
-issue.
-
-More specifically, the device in question is a fairly standard modern
-touchpad with pointer and touchpad input modes. During setup, the device
-needs to be switched from pointer- to touchpad-mode (which is done in
-hid-multitouch) to fully utilize it as intended. Unfortunately, however,
-this seems to occasionally fail silently, leaving the device in
-pointer-mode. Applying USB_QUIRK_DELAY_INIT seems to fix this.
-
-Link: https://github.com/linux-surface/linux-surface/issues/1059
-Signed-off-by: Maximilian Luz <luzmaximilian@gmail.com>
-Patchset: surface-typecover
----
- drivers/usb/core/quirks.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
-index 934b3d997702..2c6604c6e8e1 100644
 --- a/drivers/usb/core/quirks.c
 +++ b/drivers/usb/core/quirks.c
 @@ -220,6 +220,9 @@ static const struct usb_device_id usb_quirk_list[] = {
@@ -36,48 +10,8 @@ index 934b3d997702..2c6604c6e8e1 100644
  	/* Cherry Stream G230 2.0 (G85-231) and 3.0 (G85-232) */
  	{ USB_DEVICE(0x046a, 0x0023), .driver_info = USB_QUIRK_RESET_RESUME },
  
--- 
-2.41.0
-
-From 1d58249a4afc864ac83e5d2f03311ee262383a5f Mon Sep 17 00:00:00 2001
-From: =?UTF-8?q?Jonas=20Dre=C3=9Fler?= <verdre@v0yd.nl>
-Date: Thu, 5 Nov 2020 13:09:45 +0100
-Subject: [PATCH] hid/multitouch: Turn off Type Cover keyboard backlight when
- suspending
-
-The Type Cover for Microsoft Surface devices supports a special usb
-control request to disable or enable the built-in keyboard backlight.
-On Windows, this request happens when putting the device into suspend or
-resuming it, without it the backlight of the Type Cover will remain
-enabled for some time even though the computer is suspended, which looks
-weird to the user.
-
-So add support for this special usb control request to hid-multitouch,
-which is the driver that's handling the Type Cover.
-
-The reason we have to use a pm_notifier for this instead of the usual
-suspend/resume methods is that those won't get called in case the usb
-device is already autosuspended.
-
-Also, if the device is autosuspended, we have to briefly autoresume it
-in order to send the request. Doing that should be fine, the usb-core
-driver does something similar during suspend inside choose_wakeup().
-
-To make sure we don't send that request to every device but only to
-devices which support it, add a new quirk
-MT_CLS_WIN_8_MS_SURFACE_TYPE_COVER to hid-multitouch. For now this quirk
-is only enabled for the usb id of the Surface Pro 2017 Type Cover, which
-is where I confirmed that it's working.
-
-Patchset: surface-typecover
----
- drivers/hid/hid-multitouch.c | 100 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 98 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/hid/hid-multitouch.c b/drivers/hid/hid-multitouch.c
-index e31be0cb8b85..63fd042aba6b 100644
---- a/drivers/hid/hid-multitouch.c
-+++ b/drivers/hid/hid-multitouch.c
+--- a/drivers/hid/hid-multitouch.c	2024-11-22 15:30:26.000000000 +0100
++++ b/drivers/hid/hid-multitouch.c	2024-12-06 18:29:39.965417780 +0100
 @@ -34,7 +34,10 @@
  #include <linux/device.h>
  #include <linux/hid.h>
@@ -89,7 +23,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  #include <linux/input/mt.h>
  #include <linux/jiffies.h>
  #include <linux/string.h>
-@@ -47,6 +50,7 @@ MODULE_DESCRIPTION("HID multitouch panels");
+@@ -47,6 +50,7 @@
  MODULE_LICENSE("GPL");
  
  #include "hid-ids.h"
@@ -97,7 +31,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  
  /* quirks to control the device */
  #define MT_QUIRK_NOT_SEEN_MEANS_UP	BIT(0)
-@@ -72,12 +76,15 @@ MODULE_LICENSE("GPL");
+@@ -72,12 +76,15 @@
  #define MT_QUIRK_FORCE_MULTI_INPUT	BIT(20)
  #define MT_QUIRK_DISABLE_WAKEUP		BIT(21)
  #define MT_QUIRK_ORIENTATION_INVERT	BIT(22)
@@ -113,7 +47,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  enum latency_mode {
  	HID_LATENCY_NORMAL = 0,
  	HID_LATENCY_HIGH = 1,
-@@ -169,6 +176,8 @@ struct mt_device {
+@@ -168,6 +175,8 @@
  
  	struct list_head applications;
  	struct list_head reports;
@@ -122,17 +56,17 @@ index e31be0cb8b85..63fd042aba6b 100644
  };
  
  static void mt_post_parse_default_settings(struct mt_device *td,
-@@ -213,6 +222,7 @@ static void mt_post_parse(struct mt_device *td, struct mt_application *app);
+@@ -212,6 +221,7 @@
  #define MT_CLS_GOOGLE				0x0111
  #define MT_CLS_RAZER_BLADE_STEALTH		0x0112
  #define MT_CLS_SMART_TECH			0x0113
 +#define MT_CLS_WIN_8_MS_SURFACE_TYPE_COVER	0x0114
+ #define MT_CLS_SIS				0x0457
  
  #define MT_DEFAULT_MAXCONTACT	10
- #define MT_MAX_MAXCONTACT	250
-@@ -397,6 +407,16 @@ static const struct mt_class mt_classes[] = {
- 			MT_QUIRK_CONTACT_CNT_ACCURATE |
- 			MT_QUIRK_SEPARATE_APP_REPORT,
+@@ -402,6 +412,16 @@
+ 			MT_QUIRK_ALWAYS_VALID |
+ 			MT_QUIRK_CONTACT_CNT_ACCURATE,
  	},
 +	{ .name = MT_CLS_WIN_8_MS_SURFACE_TYPE_COVER,
 +		.quirks = MT_QUIRK_HAS_TYPE_COVER_BACKLIGHT |
@@ -147,7 +81,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  	{ }
  };
  
-@@ -1728,6 +1748,69 @@ static void mt_expired_timeout(struct timer_list *t)
+@@ -1751,6 +1771,69 @@
  	clear_bit_unlock(MT_IO_FLAGS_RUNNING, &td->mt_io_flags);
  }
  
@@ -217,7 +151,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
  {
  	int ret, i;
-@@ -1751,6 +1834,9 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -1774,6 +1857,9 @@
  	td->inputmode_value = MT_INPUTMODE_TOUCHSCREEN;
  	hid_set_drvdata(hdev, td);
  
@@ -227,7 +161,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  	INIT_LIST_HEAD(&td->applications);
  	INIT_LIST_HEAD(&td->reports);
  
-@@ -1789,15 +1875,19 @@ static int mt_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -1812,8 +1898,10 @@
  	timer_setup(&td->release_timer, mt_expired_timeout, 0);
  
  	ret = hid_parse(hdev);
@@ -239,6 +173,8 @@ index e31be0cb8b85..63fd042aba6b 100644
  
  	if (mtclass->quirks & MT_QUIRK_FIX_CONST_CONTACT_ID)
  		mt_fix_const_fields(hdev, HID_DG_CONTACTID);
+@@ -1822,8 +1910,10 @@
+ 		hdev->quirks |= HID_QUIRK_NOGET;
  
  	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT);
 -	if (ret)
@@ -249,7 +185,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  
  	ret = sysfs_create_group(&hdev->dev.kobj, &mt_attribute_group);
  	if (ret)
-@@ -1849,6 +1939,7 @@ static void mt_remove(struct hid_device *hdev)
+@@ -1873,6 +1963,7 @@
  {
  	struct mt_device *td = hid_get_drvdata(hdev);
  
@@ -257,7 +193,7 @@ index e31be0cb8b85..63fd042aba6b 100644
  	del_timer_sync(&td->release_timer);
  
  	sysfs_remove_group(&hdev->dev.kobj, &mt_attribute_group);
-@@ -2226,6 +2317,11 @@ static const struct hid_device_id mt_devices[] = {
+@@ -2299,6 +2390,11 @@
  		MT_USB_DEVICE(USB_VENDOR_ID_XIROKU,
  			USB_DEVICE_ID_XIROKU_CSR2) },
  
@@ -269,5 +205,3 @@ index e31be0cb8b85..63fd042aba6b 100644
  	/* Google MT devices */
  	{ .driver_data = MT_CLS_GOOGLE,
  		HID_DEVICE(HID_BUS_ANY, HID_GROUP_ANY, USB_VENDOR_ID_GOOGLE,
--- 
-2.41.0
