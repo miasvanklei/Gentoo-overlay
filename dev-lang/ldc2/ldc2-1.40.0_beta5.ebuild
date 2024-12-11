@@ -33,7 +33,7 @@ BDEPEND="${PYTHON_DEPS}
 DEPEND="
         ${PYTHON_DEPS}
         $(llvm_gen_dep '
-                sys-devel/clang:${LLVM_SLOT}
+                llvm-core/clang:${LLVM_SLOT}
         ')
 	sys-libs/zlib
 "
