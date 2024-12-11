@@ -16,7 +16,7 @@ KEYWORDS="~amd64 ~arm64"
 IUSE="multilib-symlinks +native-symlinks"
 
 RDEPEND="
-	sys-devel/lld:${SLOT}
+	llvm-core/lld:${SLOT}
 "
 
 src_install() {
