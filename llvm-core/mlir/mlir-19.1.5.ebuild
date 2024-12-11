@@ -19,11 +19,11 @@ REQUIRED_USE="
 RESTRICT="!test? ( test )"
 
 RDEPEND="
-	~sys-devel/llvm-${PV}
+	~llvm-core/llvm-${PV}
 	python? ( ${PYTHON_DEPS} )"
 DEPEND="${RDEPEND}"
 BDEPEND="
-	sys-devel/llvm:${LLVM_MAJOR}
+	llvm-core/llvm:${LLVM_MAJOR}
 	python? ( ${PYTHON_DEPS} )
 	test? (
 		~dev-python/lit-${PV}
