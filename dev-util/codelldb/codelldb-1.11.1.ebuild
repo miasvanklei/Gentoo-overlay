@@ -156,7 +156,7 @@ SLOT="0"
 
 KEYWORDS="~amd64 ~arm64"
 
-RDEPEND="dev-debug/lldb"
+RDEPEND="llvm-core/lldb"
 
 PATCHES=(
 	"${FILESDIR}/fix-compile-on-musl.patch"
