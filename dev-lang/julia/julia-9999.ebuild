@@ -88,8 +88,8 @@ RDEPEND+="
 	sci-libs/rbio:0/4
 	sci-libs/umfpack:0/6
 	>=sci-mathematics/dsfmt-2.2.4
-	sys-libs/llvm-libunwind:=
-	sys-devel/llvm:=
+	llvm-runtimes/libunwind:=
+	llvm-core/llvm:=
 	sys-libs/zlib:0=
 	amd64? ( sci-libs/openblas[index-64bit] )
 "
