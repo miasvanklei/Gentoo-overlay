@@ -9,4 +9,4 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE="openmp"
 
-RDEPEND="sys-devel/flang"
+RDEPEND="llvm-core/flang"
