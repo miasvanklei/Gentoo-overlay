@@ -16,21 +16,21 @@ IUSE="default-compiler-rt"
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 
 DEPEND="
-	~sys-devel/llvm-${PV}
-	~sys-devel/clang-${PV}
-	~dev-util/mlir-${PV}
+	~llvm-core/llvm-${PV}
+	~llvm-core/clang-${PV}
+	~llvm-core/mlir-${PV}
 "
 
 RDEPEND="
 	${PYTHON_DEPS}
 	${DEPEND}
-	>=sys-devel/flang-common-${PV}
+	>=llvm-core/flang-common-${PV}
 "
 BDEPEND="
 	${PYTHON_DEPS}
 "
 PDEPEND="
-	sys-devel/flang-toolchain-symlinks:${LLVM_MAJOR}
+	llvm-core/flang-toolchain-symlinks:${LLVM_MAJOR}
 "
 
 LLVM_COMPONENTS=( flang cmake openmp )
