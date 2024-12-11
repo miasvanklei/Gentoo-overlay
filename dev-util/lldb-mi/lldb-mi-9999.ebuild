@@ -16,7 +16,7 @@ KEYWORDS=""
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 RESTRICT="test"
 
-RDEPEND="dev-debug/lldb:=
-	sys-libs/zlib
-	sys-devel/llvm:="
+RDEPEND="llvm-core/lldb:=
+	llvm-core/llvm:=
+	sys-libs/zlib"
 DEPEND="${RDEPEND}"
