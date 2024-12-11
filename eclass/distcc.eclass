@@ -18,7 +18,7 @@ if [[ -z ${_DISTCC_ECLASS} ]]; then
 _DISTCC_ECLASS=1
 
 RDEPEND="
-        sys-devel/clang:${PV}
+        llvm-core/clang:${PV}
 "
 
 # @FUNCTION: distcc_src_install
