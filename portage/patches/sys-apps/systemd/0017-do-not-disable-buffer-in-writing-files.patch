@@ -9,8 +9,21 @@ index 11b4375ed5..7d81a6007f 100644
 -        r = write_string_file(killfile, "1", WRITE_STRING_FILE_DISABLE_BUFFER);
 +        r = write_string_file(killfile, "1", 0);
          if (r < 0)
+                 return log_debug_errno(r, "Failed to write to cgroup.kill for cgroup '%s': %m", path);
+ 
+@@ -1752,7 +1752,7 @@ int cg_set_attribute(const char *controller, const char *path, const char *attri
+         if (r < 0)
                  return r;
  
+-        return write_string_file(p, value, WRITE_STRING_FILE_DISABLE_BUFFER);
++        return write_string_file(p, value, 0);
+ }
+ 
+ int cg_get_attribute(const char *controller, const char *path, const char *attribute, char **ret) {
+diff --git a/src/shared/cgroup-setup.c b/src/shared/cgroup-setup.c
+index 11b4375ed5..7d81a6007f 100644
+--- a/src/shared/cgroup-setup.c
++++ b/src/shared/cgroup-setup.c
 @@ -805,7 +805,7 @@ int cg_install_release_agent(const char *controller, const char *agent) {
  
          sc = strstrip(contents);
@@ -47,15 +60,6 @@ index 11b4375ed5..7d81a6007f 100644
          if (r < 0)
                  return r;
  
-@@ -1752,7 +1752,7 @@ int cg_set_attribute(const char *controller, const char *path, const char *attri
-         if (r < 0)
-                 return r;
- 
--        return write_string_file(p, value, WRITE_STRING_FILE_DISABLE_BUFFER);
-+        return write_string_file(p, value, 0);
- }
- 
- int cg_get_attribute(const char *controller, const char *path, const char *attribute, char **ret) {
 diff --git a/src/basic/namespace-util.c b/src/basic/namespace-util.c
 index f5c0e04cec..272b920022 100644
 --- a/src/basic/namespace-util.c
@@ -157,11 +161,11 @@ index 4cac3f6a89..bebe2cd120 100644
 --- a/src/core/cgroup.c
 +++ b/src/core/cgroup.c
 @@ -4267,7 +4267,7 @@ int unit_cgroup_freezer_action(Unit *u, FreezerAction action) {
-                         u->freezer_state = FREEZER_THAWING;
-         }
+         if (r < 0)
+                 return r;
  
--        r = write_string_file(path, one_zero(target == FREEZER_FROZEN), WRITE_STRING_FILE_DISABLE_BUFFER);
-+        r = write_string_file(path, one_zero(target == FREEZER_FROZEN), 0);
+-        r = write_string_file(path, one_zero(objective == FREEZER_FROZEN), WRITE_STRING_FILE_DISABLE_BUFFER);
++        r = write_string_file(path, one_zero(objective == FREEZER_FROZEN), 0);
          if (r < 0)
                  return r;
  

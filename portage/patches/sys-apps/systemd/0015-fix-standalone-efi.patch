@@ -1,5 +1,5 @@
---- a/src/boot/efi/meson.build	2023-04-16 15:43:18.647166096 +0200
-+++ b/src/boot/efi/meson.build	2023-04-16 15:42:11.762273780 +0200
+--- a/src/boot/meson.build	2023-04-16 15:43:18.647166096 +0200
++++ b/src/boot/meson.build	2023-04-16 15:42:11.762273780 +0200
 @@ -130,6 +130,7 @@
  efi_c_args = [
          '-DSD_BOOT=1',
@@ -16,22 +16,3 @@
          '-nostdlib',
          '-static-pie',
          '-Wl,--entry=efi_main',
---- a/src/fundamental/macro-fundamental.h	2023-04-16 15:43:18.688166639 +0200
-+++ b/src/fundamental/macro-fundamental.h	2023-04-16 15:42:11.779274008 +0200
-@@ -3,9 +3,10 @@
- 
- #if !SD_BOOT
- #  include <assert.h>
-+#  include <limits.h>
- #endif
- 
--#include <limits.h>
-+#include <stdarg.h>
- #include <stdalign.h>
- #include <stdbool.h>
- #include <stddef.h>
-@@ -386,3 +387,4 @@
- #else
-         #define DECLARE_SBAT(text)
- #endif
-+#define INT_MAX  0x7fffffff
