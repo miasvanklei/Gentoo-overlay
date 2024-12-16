@@ -24,7 +24,7 @@ STDLIBS=(
 	"JuliaPackaging LazyArtifacts.jl e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
 	"JuliaLang LinearAlgebra.jl 56d561c22e1ab8e0421160edbdd42f3f194ecfa8"
 	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
-	"JuliaLang Pkg.jl 7b759d7f0af56c5ad01f2289bbad71284a556970"
+	"JuliaLang Pkg.jl e7c37f34293ab12051258828884755ea116b77df"
 	"JuliaCrypto SHA.jl aaf2df61ff8c3898196587a375d3cf213bd40b41"
 	"JuliaLang SparseArrays.jl 1b4933ccc7b1f97427ff88bd7ba58950021f2c60"
 	"JuliaStats Statistics.jl 68869af06e8cdeb7aba1d5259de602da7328057f"
@@ -39,7 +39,7 @@ BUNDLED_DEPS=(
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
 	"JuliaLinearAlgebra libblastrampoline c48da8a1225c2537ff311c28ef395152fb879eae"
-	"JuliaLang JuliaSyntax.jl 4f1731d6ce7c2465fc21ea245110b7a39f34658a"
+	"JuliaLang JuliaSyntax.jl dfd1d69b153eb119873035e62993a109b27192f0"
 )
 
 update_SRC_URI() {
