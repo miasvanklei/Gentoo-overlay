@@ -15,6 +15,7 @@ CRATES="
 	arrayvec@0.7.4
 	autocfg@1.3.0
 	backtrace@0.3.73
+	base64@0.22.1
 	bitflags@1.3.2
 	bitflags@2.6.0
 	borsh@1.5.1
@@ -121,12 +122,12 @@ CRATES="
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.36
-	ra-ap-rustc_abi@0.80.0
-	ra-ap-rustc_index@0.80.0
-	ra-ap-rustc_index_macros@0.80.0
-	ra-ap-rustc_lexer@0.80.0
-	ra-ap-rustc_parse_format@0.80.0
-	ra-ap-rustc_pattern_analysis@0.80.0
+	ra-ap-rustc_abi@0.85.0
+	ra-ap-rustc_index@0.85.0
+	ra-ap-rustc_index_macros@0.85.0
+	ra-ap-rustc_lexer@0.85.0
+	ra-ap-rustc_parse_format@0.85.0
+	ra-ap-rustc_pattern_analysis@0.85.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
@@ -158,6 +159,7 @@ CRATES="
 	stable_deref_trait@1.2.0
 	syn@2.0.74
 	synstructure@0.13.1
+	tenthash@0.4.0
 	text-size@1.1.1
 	thiserror-impl@1.0.63
 	thiserror@1.0.63
