@@ -178,3 +178,18 @@ src_prepare() {
 	default
 }
 
+src_install() {
+	cargo_src_install
+
+	insinto /usr/lib/codelldb/scripts
+	for file in ../scripts/*.py; do
+		doins $file
+	done
+
+	insinto /usr/lib/codelldb/scripts/codelldb
+	for file in ../scripts/codelldb/*.py; do
+		doins $file
+	done
+
+	mv ${D}/usr/bin/codelldb ${D}/usr/lib/codelldb
+}
