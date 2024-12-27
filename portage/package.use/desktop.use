@@ -1,8 +1,6 @@
 # build/install/boot kernel
-sys-kernel/installkernel -dracut systemd systemd-boot
-sys-kernel/vanilla-kernel -initramfs secureboot modules-sign
-sys-kernel/linux-firmware -initramfs
-sys-apps/systemd secureboot boot kernel-install
+sys-kernel/vanilla-kernel secureboot modules-sign
+sys-apps/systemd secureboot
 
 # glib-networking
 net-libs/gnutls pkcs11
@@ -16,16 +14,9 @@ media-video/pipewire aptx sound-server extra pipewire-alsa
 # canberra
 media-libs/libcanberra gtk3 -udev
 
-# cryptsetup
-sys-fs/cryptsetup -argon2
-sys-fs/lvm2 -thin -lvm
-
 # disable sysprof
 dev-libs/glib -sysprof
 x11-libs/gtk+ -sysprof
-
-# no mail
-sys-apps/smartmontools -daemon
 
 # flatpak
 kde-plasma/plasma-meta flatpak sdk
@@ -36,78 +27,23 @@ sys-apps/xdg-desktop-portal flatpak
 
 app-arch/p7zip -kde -rar
 
-# R
-sys-libs/zlib minizip
-dev-lang/R -png -jpeg -tiff
-
-# julia
-net-misc/curl ssh
-sci-libs/fftw threads
-sci-libs/openblas index-64bit
-
-# java
-dev-java/openjdk gentoo-vm
-
-# rust
-dev-lang/rust clippy rustfmt system-bootstrap system-llvm llvm-libunwind nightly -rust-analyzer rust-src
-virtual/rust rustfmt
-net-misc/curl http2
-
-# go
-dev-lang/go system-bootstrap
-
-# ghc
-dev-lang/ghc ghcbootstrap
-
-# dotnet-cli
-app-crypt/mit-krb5 -keyutils
-dev-libs/libverto -libev libevent
-
-# compile/debug
-llvm-core/llvm -binutils-plugin -debug
-llvm-core/clang-runtime libcxx
-llvm-core/clang xml -debug
-llvm-core/lld -debug
-llvm-core/lldb libedit python lzma -debug
-llvm-runtimes/compiler-rt-sanitizers -gwp-asan
-llvm-runtimes/libomp -debug
-llvm-runtimes/compiler-rt -debug
-llvm-runtimes/libunwind -debug
-
 # ??
-sys-libs/gdbm berkdb
 dev-libs/boost nls
 media-libs/harfbuzz graphite
-
-# nfs
-net-nds/rpcbind warmstarts
 
 # cjk fonts
 media-fonts/noto cjk
 
-# unar, libobjc2 needed for clang
-gnustep-base/gnustep-make native-exceptions libobjc2
-gnustep-base/gnustep-base -iconv
-
 # homed
-sys-apps/systemd cryptsetup homed
+sys-apps/systemd homed
 
 # custom cflags/optimizations
 www-client/firefox custom-cflags custom-optimization system-png hwaccel openh264
 sys-fs/cryfs custom-optimization
 dev-lang/spidermonkey custom-cflags custom-optimization
 
-# no smartcard
-app-crypt/gnupg -smartcard -usb
-
 # no libical
 net-wireless/bluez -obex experimental
-
-# no spidermonkey
-sys-auth/polkit duktape
-
-# xdg-utils
-app-text/xmlto text
 
 # subtitles
 media-video/ffmpeg truetype
@@ -239,6 +175,3 @@ net-misc/networkmanager -gtk-doc -wext -dhclient -ncurses -modemmanager -bluetoo
 net-wireless/iwd -crda
 kde-misc/kdeconnect -bluetooth
 net-p2p/ktorrent -search -rss -webengine
-
-# cups
-net-print/cups-meta -browsed

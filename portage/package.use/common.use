@@ -1,0 +1,61 @@
+# clang -O0, for jitter-base
+dev-libs/libgcrypt o-flag-munging
+
+# libcxx
+sys-libs/gdbm berkdb
+
+# no smartcard
+app-crypt/gnupg -smartcard -usb
+
+# no spidermonkey
+sys-auth/polkit duktape
+
+# xdg-utils
+app-text/xmlto text
+
+# itstool
+dev-libs/libxml2 python
+
+# compile/debug
+llvm-core/llvm -binutils-plugin  -debug
+llvm-core/clang-runtime libcxx
+llvm-core/clang xml -debug
+llvm-core/lld -debug
+llvm-core/lldb libedit python lzma -debug
+llvm-core/mlir -debug
+llvm-runtimes/libunwind -debug
+llvm-runtimes/compiler-rt-sanitizers -gwp-asan
+llvm-runtimes/libomp -debug
+llvm-runtimes/compiler-rt -debug
+
+# build/install/boot kernel
+sys-kernel/installkernel -dracut systemd systemd-boot
+sys-kernel/vanilla-kernel -initramfs -debug
+sys-kernel/linux-firmware -initramfs
+
+# systemd use flags
+sys-apps/systemd cryptsetup elfutils boot kernel-install http curl -seccomp -xkb
+
+# cryptsetup
+sys-fs/cryptsetup -argon2
+sys-fs/lvm2 -lvm -thin
+
+dev-libs/glib introspection
+
+# no lvm
+sys-libs/libblockdev -tools
+
+# cups
+net-print/cups-meta -browsed
+
+dev-libs/glib introspection
+
+# nfs
+net-nds/rpcbind warmstarts
+
+# gpu
+media-libs/mesa -X opencl vulkan vulkan-overlay lm-sensors
+dev-libs/uriparser -doc
+
+# no mail
+sys-apps/smartmontools -daemon
