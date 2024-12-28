@@ -3,31 +3,33 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
-inherit cmake llvm.org llvm-utils python-single-r1
+PYTHON_COMPAT=( python3_{10..13} )
+inherit cmake llvm.org multilib-minimal python-any-r1
 
-DESCRIPTION="Multi-Level IR Compiler Framework"
+DESCRIPTION="Multi-Level Intermediate Representation (library only)"
 HOMEPAGE="https://mlir.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
+IUSE="+debug test"
 KEYWORDS="~amd64 ~arm64"
-
-IUSE="debug python test"
-REQUIRED_USE="
-	python? ( ${PYTHON_REQUIRED_USE} )"
 RESTRICT="!test? ( test )"
 
+DEPEND="
+	~llvm-core/llvm-${PV}[debug=,${MULTILIB_USEDEP}]
+"
 RDEPEND="
-	~llvm-core/llvm-${PV}
-	python? ( ${PYTHON_DEPS} )"
-DEPEND="${RDEPEND}"
+	${DEPEND}
+"
 BDEPEND="
+	${PYTHON_DEPS}
 	llvm-core/llvm:${LLVM_MAJOR}
-	python? ( ${PYTHON_DEPS} )
-	test? (
-		~dev-python/lit-${PV}
-	)"
+"
+
+LLVM_COMPONENTS=( mlir cmake )
+# tablegen tests use *.td files there
+LLVM_TEST_COMPONENTS=( llvm/include )
+llvm.org_set_globals
 
 PATCHES=(
 	"${FILESDIR}/dont-link-codegentypes.patch"
@@ -35,12 +37,12 @@ PATCHES=(
 	"${FILESDIR}/support-linking-libmlir.patch"
 )
 
-LLVM_COMPONENTS=( mlir cmake )
-LLVM_USE_TARGETS=llvm
-llvm.org_set_globals
+src_prepare() {
+	llvm.org_src_prepare
 
-pkg_setup() {
-	use python && python-single-r1_pkg_setup
+	# https://github.com/llvm/llvm-project/issues/120902
+	sed -i -e '/LINK_LIBS/s:PUBLIC:PRIVATE:' \
+		lib/ExecutionEngine/CMakeLists.txt || die
 }
 
 check_distribution_components() {
@@ -57,6 +59,9 @@ check_distribution_components() {
 					# meta-targets
 					mlir-libraries|distribution)
 						continue
+						;;
+					# dylib
+					MLIR)
 						;;
 					# static libraries
 					MLIR*)
@@ -100,63 +105,67 @@ get_distribution_components() {
 		mlir-cmake-exports
 		mlir-headers
 
-		# shared libs
-		MLIR-C
+		# the dylib
 		MLIR
-		#mlir_async_runtime
-		#mlir_c_runner_utils
-		#mlir_float16_utils
-		#mlir_runner_utils
 
-		# tools
-		#mlir-cpu-runner
-		#mlir-linalg-ods-yaml-gen
-		#mlir-lsp-server
-		#mlir-opt
-		#mlir-pdll-lsp-server
-		#mlir-reduce mlir-translate
-		#tblgen-lsp-server
-
-		# utilities
-		#mlir-pdll
-		mlir-tblgen
+		# shared libraries
+		mlir_arm_runner_utils
+		mlir_arm_sme_abi_stubs
+		mlir_async_runtime
+		mlir_c_runner_utils
+		mlir_float16_utils
+		mlir_runner_utils
 	)
+
+	if multilib_is_native_abi; then
+		out+=(
+			# tools
+			mlir-cpu-runner
+			mlir-linalg-ods-yaml-gen
+			mlir-lsp-server
+			mlir-opt
+			mlir-pdll
+			mlir-pdll-lsp-server
+			mlir-query
+			mlir-reduce
+			mlir-tblgen
+			mlir-translate
+			tblgen-lsp-server
+			tblgen-to-irdl
+		)
+	fi
 
 	printf "%s${sep}" "${out[@]}"
 }
 
-src_configure() {
-	llvm_prepend_path "${LLVM_MAJOR}"
-
+multilib_src_configure() {
 	local mycmakeargs=(
 		-DCMAKE_INSTALL_PREFIX="${EPREFIX}/usr/lib/llvm/${LLVM_MAJOR}"
+		-DLLVM_ROOT="${ESYSROOT}/usr/lib/llvm/${LLVM_MAJOR}"
 
 		-DBUILD_SHARED_LIBS=OFF
-		-DMLIR_BUILD_MLIR_C_DYLIB=ON
+		# this controls building libMLIR.so
 		-DLLVM_BUILD_LLVM_DYLIB=ON
-		-DLLVM_LINK_LLVM_DYLIB=ON
+		-DMLIR_BUILD_MLIR_C_DYLIB=OFF
 		-DMLIR_LINK_MLIR_DYLIB=ON
+		-DMLIR_INCLUDE_TESTS=$(usex test)
+		-DMLIR_INCLUDE_INTEGRATION_TESTS=OFF
+		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
+		# this enables installing mlir-tblgen and mlir-pdll
 		-DLLVM_BUILD_UTILS=ON
 
-		-DLLVM_DISTRIBUTION_COMPONENTS=$(get_distribution_components)
-		-DLLVM_ENABLE_ASSERTIONS=$(usex debug)
-		-DMLIR_INCLUDE_TESTS=$(usex test)
-		-DMLIR_ENABLE_BINDINGS_PYTHON=$(usex python)
+		-DPython3_EXECUTABLE="${PYTHON}"
 
-		# disabled for now
-		-DLLVM_BUILD_TOOLS=OFF
-		-DMLIR_ENABLE_CUDA_RUNNER=OFF
-		-DMLIR_ENABLE_ROCM_RUNNER=OFF
-		-DMLIR_ENABLE_SPIRV_CPU_RUNNER=OFF
-		-DMLIR_ENABLE_VULKAN_RUNNER=OFF
-		-DMLIR_ENABLE_BINDINGS_PYTHON=OFF
+		-DLLVM_BUILD_TOOLS=ON
+		# TODO
+		-DMLIR_ENABLE_CUDA_RUNNER=0
+		-DMLIR_ENABLE_ROCM_RUNNER=0
+		-DMLIR_ENABLE_SYCL_RUNNER=0
+		-DMLIR_ENABLE_SPIRV_CPU_RUNNER=0
+		-DMLIR_ENABLE_VULKAN_RUNNER=0
+		-DMLIR_ENABLE_BINDINGS_PYTHON=0
 		-DMLIR_INSTALL_AGGREGATE_OBJECTS=OFF
 	)
-
-	use python && mycmakeargs+=(
-		-DPython3_EXECUTABLE="${PYTHON}"
-	)
-
 	use test && mycmakeargs+=(
 		-DLLVM_EXTERNAL_LIT="${EPREFIX}/usr/bin/lit"
 		-DLLVM_LIT_ARGS="$(get_lit_flags)"
@@ -164,19 +173,21 @@ src_configure() {
 
 	# LLVM_ENABLE_ASSERTIONS=NO does not guarantee this for us, #614844
 	use debug || local -x CPPFLAGS="${CPPFLAGS} -DNDEBUG"
-
 	cmake_src_configure
+
+	multilib_is_native_abi && check_distribution_components
 }
 
-src_compile() {
+multilib_src_compile() {
 	cmake_build distribution
 }
 
-src_test() {
+multilib_src_test() {
+	# respect TMPDIR!
 	local -x LIT_PRESERVES_TMP=1
 	cmake_build check-mlir
 }
 
-src_install() {
+multilib_src_install() {
 	DESTDIR=${D} cmake_build install-distribution
 }
