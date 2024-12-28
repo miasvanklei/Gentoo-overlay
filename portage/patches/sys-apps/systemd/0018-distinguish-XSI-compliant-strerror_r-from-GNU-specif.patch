@@ -51,9 +51,9 @@
 -#define STRERROR(errnum) strerror_r(abs(errnum), (char[ERRNO_BUF_LEN]){}, ERRNO_BUF_LEN)
 + * Note that we use the XNU variant of strerror_r() here. */
 +#define STRERROR(errnum) ({ \
-+        char buf[ERRNO_BUF_LEN]; \
-+        strerror_r(abs(errnum), buf, ERRNO_BUF_LEN); \
-+        buf; })
++        char temp_buf[ERRNO_BUF_LEN]; \
++        strerror_r(abs(errnum), temp_buf, ERRNO_BUF_LEN); \
++        temp_buf; })
  
  /* A helper to print an error message or message for functions that return 0 on EOF.
   * Note that we can't use ({ … }) to define a temporary variable, so errnum is
