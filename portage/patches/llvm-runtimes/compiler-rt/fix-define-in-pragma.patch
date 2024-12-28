@@ -1,0 +1,24 @@
+--- a/compiler-rt/lib/builtins/atomic.c	2024-12-17 12:04:04.000000000 +0100
++++ b/compiler-rt/lib/builtins/atomic.c	2024-12-28 21:33:18.846804474 +0100
+@@ -35,13 +35,14 @@
+ 
+ // Clang objects if you redefine a builtin.  This little hack allows us to
+ // define a function with the same name as an intrinsic.
+-#pragma redefine_extname __atomic_load_c SYMBOL_NAME(__atomic_load)
+-#pragma redefine_extname __atomic_store_c SYMBOL_NAME(__atomic_store)
+-#pragma redefine_extname __atomic_exchange_c SYMBOL_NAME(__atomic_exchange)
+-#pragma redefine_extname __atomic_compare_exchange_c SYMBOL_NAME(              \
+-    __atomic_compare_exchange)
+-#pragma redefine_extname __atomic_is_lock_free_c SYMBOL_NAME(                  \
+-    __atomic_is_lock_free)
++#define PRAGMA(X) _Pragma(#X)
++#define REDEFINE_EXTNAME(X, Y) PRAGMA(redefine_extname X Y)
++
++REDEFINE_EXTNAME(__atomic_load_c, SYMBOL_NAME(__atomic_load))
++REDEFINE_EXTNAME(__atomic_store_c, SYMBOL_NAME(__atomic_store))
++REDEFINE_EXTNAME(__atomic_exchange_c, SYMBOL_NAME(__atomic_exchange))
++REDEFINE_EXTNAME(__atomic_compare_exchange_c, SYMBOL_NAME(__atomic_compare_exchange))
++REDEFINE_EXTNAME(__atomic_is_lock_free_c, SYMBOL_NAME(__atomic_is_lock_free))
+ 
+ /// Number of locks.  This allocates one page on 32-bit platforms, two on
+ /// 64-bit.  This can be specified externally if a different trade between
