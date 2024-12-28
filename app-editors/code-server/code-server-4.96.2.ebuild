@@ -192,7 +192,7 @@ increase_reconnection_grace_time() {
 	)
 
 	for file in "${files[@]}"; do
-		sed -i -e "s|ReconnectionGraceTime=108e5|ReconnectionGraceTime=864e5|g" "${S}${vscode_out_dir}${file}" || die
+		sed -i -e "s|108e5|864e5|g" "${S}${vscode_out_dir}${file}" || die
 	done
 }
 
