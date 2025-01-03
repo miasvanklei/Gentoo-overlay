@@ -16,19 +16,19 @@ EGIT_REPO_URI="https://github.com/JuliaLang/julia.git"
 # for everything else, run with network-sandbox and wait for the crash
 STDLIBS=(
 	# repo    package name    hash
-	"JuliaIO ArgTools.jl 997089b9cd56404b40ff766759662e16dc1aab4b"
+	"JuliaIO ArgTools.jl 1314758ad02ff5e9e5ca718920c6c633b467a84a"
 	"JuliaLang DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
-	"JuliaLang Distributed.jl 6c7cdb5860fa5cb9ca191ce9c52a3d25a9ab3781"
-	"JuliaLang Downloads.jl 89d3c7dded535a77551e763a437a6d31e4d9bf84"
+	"JuliaLang Distributed.jl c6136853451677f1957bec20ecce13419cde3a12"
+	"JuliaLang Downloads.jl afd04be8aa94204c075c8aec83fca040ebb4ff98"
 	"JuliaLang JuliaSyntaxHighlighting.jl 19bd57b89c648592155156049addf67e0638eab1"
-	"JuliaPackaging LazyArtifacts.jl e9a36338d5d0dfa4b222f4e11b446cbb7ea5836c"
-	"JuliaLang LinearAlgebra.jl 56d561c22e1ab8e0421160edbdd42f3f194ecfa8"
+	"JuliaPackaging LazyArtifacts.jl a719c0e3d68a95c6f3dc9571459428ca8761fa2c"
+	"JuliaLang LinearAlgebra.jl 1137b4c7fa8297cef17c4ae0982d7d89d4ab7dd8"
 	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
-	"JuliaLang Pkg.jl e7c37f34293ab12051258828884755ea116b77df"
-	"JuliaCrypto SHA.jl aaf2df61ff8c3898196587a375d3cf213bd40b41"
-	"JuliaLang SparseArrays.jl 1b4933ccc7b1f97427ff88bd7ba58950021f2c60"
-	"JuliaStats Statistics.jl 68869af06e8cdeb7aba1d5259de602da7328057f"
-	"JuliaLang StyledStrings.jl 056e843b2d428bb9735b03af0cff97e738ac7e14"
+	"JuliaLang Pkg.jl c7e611bc89826bc462c4b2a308f1a71dbb617145"
+	"JuliaCrypto SHA.jl 8fa221ddc8f3b418d9929084f1644f4c32c9a27e"
+	"JuliaLang SparseArrays.jl 4fd3aad5735e3b80eefe7b068f3407d7dd0c0924"
+	"JuliaStats Statistics.jl d49c2bf4f81e1efb4980a35fe39c815ef8396297"
+	"JuliaLang StyledStrings.jl 8985a37ac054c37d084a03ad2837208244824877"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
 	"JuliaLang Tar.jl 1114260f5c7a7b59441acadca2411fa227bb8a3b"
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
@@ -67,7 +67,7 @@ RDEPEND+="
 	>=dev-libs/libpcre2-10.23:0=[jit,unicode]
 	dev-libs/mpfr:0=
 	dev-libs/libutf8proc:0=[-cjk]
-	dev-libs/libgit2:=
+	dev-libs/libgit2:0/1.8
 	dev-util/patchelf
 	>=net-libs/mbedtls-2.2
 	net-misc/curl[http2,ssh]
