@@ -122,12 +122,12 @@ CRATES="
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.36
-	ra-ap-rustc_abi@0.85.0
-	ra-ap-rustc_index@0.85.0
-	ra-ap-rustc_index_macros@0.85.0
-	ra-ap-rustc_lexer@0.85.0
-	ra-ap-rustc_parse_format@0.85.0
-	ra-ap-rustc_pattern_analysis@0.85.0
+	ra-ap-rustc_abi@0.87.0
+	ra-ap-rustc_index@0.87.0
+	ra-ap-rustc_index_macros@0.87.0
+	ra-ap-rustc_lexer@0.87.0
+	ra-ap-rustc_parse_format@0.87.0
+	ra-ap-rustc_pattern_analysis@0.87.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
@@ -146,8 +146,8 @@ CRATES="
 	scoped-tls@1.0.1
 	scopeguard@1.2.0
 	semver@1.0.23
-	serde@1.0.206
-	serde_derive@1.0.206
+	serde@1.0.216
+	serde_derive@1.0.216
 	serde_json@1.0.124
 	serde_repr@0.1.19
 	serde_spanned@0.6.7
@@ -156,8 +156,7 @@ CRATES="
 	smallvec@1.13.2
 	smol_str@0.3.2
 	sptr@0.3.2
-	stable_deref_trait@1.2.0
-	syn@2.0.74
+	syn@2.0.87
 	synstructure@0.13.1
 	tenthash@0.4.0
 	text-size@1.1.1
@@ -181,7 +180,7 @@ CRATES="
 	tracing-subscriber@0.3.18
 	tracing-tree@0.3.1
 	tracing@0.1.40
-	triomphe@0.1.13
+	triomphe@0.1.14
 	typed-arena@2.0.2
 	ungrammar@1.16.1
 	unicase@2.7.0
