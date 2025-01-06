@@ -19,12 +19,12 @@ STDLIBS=(
 	"JuliaIO ArgTools.jl 1314758ad02ff5e9e5ca718920c6c633b467a84a"
 	"JuliaLang DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
 	"JuliaLang Distributed.jl c6136853451677f1957bec20ecce13419cde3a12"
-	"JuliaLang Downloads.jl afd04be8aa94204c075c8aec83fca040ebb4ff98"
+	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
 	"JuliaLang JuliaSyntaxHighlighting.jl 19bd57b89c648592155156049addf67e0638eab1"
 	"JuliaPackaging LazyArtifacts.jl a719c0e3d68a95c6f3dc9571459428ca8761fa2c"
 	"JuliaLang LinearAlgebra.jl 1137b4c7fa8297cef17c4ae0982d7d89d4ab7dd8"
-	"JuliaLang NetworkOptions.jl 8eec5cb0acec4591e6db3c017f7499426cd8e352"
-	"JuliaLang Pkg.jl c7e611bc89826bc462c4b2a308f1a71dbb617145"
+	"JuliaLang NetworkOptions.jl c090626d3feee6d6a5c476346d22d6147c9c6d2d"
+	"JuliaLang Pkg.jl 8d3cf02e5e35913c89440c3b5c6678c1a806e975"
 	"JuliaCrypto SHA.jl 8fa221ddc8f3b418d9929084f1644f4c32c9a27e"
 	"JuliaLang SparseArrays.jl 4fd3aad5735e3b80eefe7b068f3407d7dd0c0924"
 	"JuliaStats Statistics.jl d49c2bf4f81e1efb4980a35fe39c815ef8396297"
@@ -38,7 +38,7 @@ BUNDLED_DEPS=(
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
-	"JuliaLinearAlgebra libblastrampoline c48da8a1225c2537ff311c28ef395152fb879eae"
+	"JuliaLinearAlgebra libblastrampoline b127bc8dd4758ffc064340fff2aef4ead552f386"
 	"JuliaLang JuliaSyntax.jl dfd1d69b153eb119873035e62993a109b27192f0"
 )
 
@@ -67,9 +67,9 @@ RDEPEND+="
 	>=dev-libs/libpcre2-10.23:0=[jit,unicode]
 	dev-libs/mpfr:0=
 	dev-libs/libutf8proc:0=[-cjk]
-	dev-libs/libgit2:0/1.8
+	dev-libs/libgit2:0/1.9
+	dev-libs/openssl
 	dev-util/patchelf
-	>=net-libs/mbedtls-2.2
 	net-misc/curl[http2,ssh]
 	sci-libs/amd:0/3
 	sci-libs/arpack:0
@@ -106,6 +106,8 @@ PATCHES=(
 	"${FILESDIR}"/disable-install-docs.patch
 	"${FILESDIR}"/support-compiler_rt_libunwind.patch
 	"${FILESDIR}"/fix-textrel.patch
+	"${FILESDIR}"/dont-build-twice.patch
+	"${FILESDIR}"/dont-link-atomic.patch
 )
 
 pkg_setup() {
@@ -188,7 +190,7 @@ src_configure() {
 		USE_SYSTEM_LIBSUITESPARSE:=1
 		USE_SYSTEM_LIBUV:=0
 		USE_SYSTEM_UTF8PROC:=1
-		USE_SYSTEM_MBEDTLS:=1
+		USE_SYSTEM_OPENSSL:=1
 		USE_SYSTEM_LIBSSH2:=1
 		USE_SYSTEM_NGHTTP2:=1
 		USE_SYSTEM_CURL:=1
@@ -205,7 +207,7 @@ src_compile() {
 	# Julia accesses /proc/self/mem on Linux.
 	addpredict /proc/self/mem
 
-	default
+	emake release
 	pax-mark m "$(file usr/bin/julia-* | awk -F : '/ELF/ {print $1}')"
 }
 
@@ -217,6 +219,10 @@ src_install() {
 	mv "${ED}"/usr/etc/julia "${ED}"/etc || die
 	rmdir "${ED}"/usr/etc || die
 	rmdir "${ED}"/usr/share/doc/julia || die
+
+	# Prevent compiled modules from being stripped,
+	# as it changes their checksum so Julia refuses to load them
+	dostrip -x /usr/share/${PN}/compiled/*/*/*.so
 
 	# Link ca-certificates.crt, bug: https://bugs.gentoo.org/888978
 	dosym -r /etc/ssl/certs/ca-certificates.crt /usr/share/julia/cert.pem
