@@ -1,0 +1,37 @@
+--- a/drivers/net/wireless/ath/ath11k/mac.c	2025-01-15 10:53:02.099323702 +0100
++++ b/drivers/net/wireless/ath/ath11k/mac.c	2025-01-15 10:56:28.265096845 +0100
+@@ -9944,25 +9944,25 @@
+ 	combinations[0].beacon_int_min_gcd = 100;
+ 
+ 	if (ab->hw_params.support_dual_stations) {
+-		limits[0].max = 2;
+-		limits[1].max = 1;
++		limits[0].max = 1;
++		limits[1].max = 2;
+ 
+ 		combinations[0].max_interfaces = ab->hw_params.num_vdevs;
+-		combinations[0].num_different_channels = 2;
++		combinations[0].num_different_channels = 1;
+ 	} else {
+ 		limits[0].max = 1;
+ 		limits[1].max = 16;
+ 
+ 		combinations[0].max_interfaces = 16;
+ 		combinations[0].num_different_channels = 1;
+-		combinations[0].radar_detect_widths = BIT(NL80211_CHAN_WIDTH_20_NOHT) |
+-							BIT(NL80211_CHAN_WIDTH_20) |
+-							BIT(NL80211_CHAN_WIDTH_40) |
+-							BIT(NL80211_CHAN_WIDTH_80) |
+-							BIT(NL80211_CHAN_WIDTH_80P80) |
+-							BIT(NL80211_CHAN_WIDTH_160);
+ 	}
+ 
++	combinations[0].radar_detect_widths = BIT(NL80211_CHAN_WIDTH_20_NOHT) |
++						BIT(NL80211_CHAN_WIDTH_20) |
++						BIT(NL80211_CHAN_WIDTH_40) |
++						BIT(NL80211_CHAN_WIDTH_80) |
++						BIT(NL80211_CHAN_WIDTH_80P80) |
++						BIT(NL80211_CHAN_WIDTH_160);
+ 	if (p2p) {
+ 		limits[1].types |= BIT(NL80211_IFTYPE_P2P_CLIENT) |
+ 			BIT(NL80211_IFTYPE_P2P_GO);
