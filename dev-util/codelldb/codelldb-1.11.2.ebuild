@@ -7,18 +7,19 @@ EAPI=8
 
 CRATES="
 	Inflector@0.11.4
-	addr2line@0.21.0
-	adler@1.0.2
-	aho-corasick@1.1.2
+	addr2line@0.24.2
+	adler2@2.0.0
+	aho-corasick@1.1.3
 	ansi_term@0.12.1
 	atty@0.2.14
-	autocfg@1.1.0
-	backtrace@0.3.69
+	autocfg@1.4.0
+	backtrace@0.3.74
 	base64@0.12.3
 	bitflags@1.3.2
+	bitflags@2.6.0
 	byteorder@1.5.0
-	bytes@1.5.0
-	cc@1.0.83
+	bytes@1.8.0
+	cc@1.1.31
 	cfg-if@1.0.0
 	clap@2.34.0
 	cpp@0.5.9
@@ -36,108 +37,112 @@ CRATES="
 	dotenvy@0.15.7
 	env_logger@0.8.4
 	equivalent@1.0.1
-	futures-channel@0.3.29
-	futures-core@0.3.29
-	futures-executor@0.3.29
-	futures-io@0.3.29
-	futures-macro@0.3.29
-	futures-sink@0.3.29
-	futures-task@0.3.29
-	futures-util@0.3.29
-	futures@0.3.29
+	futures-channel@0.3.31
+	futures-core@0.3.31
+	futures-executor@0.3.31
+	futures-io@0.3.31
+	futures-macro@0.3.31
+	futures-sink@0.3.31
+	futures-task@0.3.31
+	futures-util@0.3.31
+	futures@0.3.31
 	fuzzy-matcher@0.3.7
-	getrandom@0.2.11
-	gimli@0.28.1
-	hashbrown@0.14.3
+	getrandom@0.2.15
+	gimli@0.31.1
+	goblin@0.8.2
+	hashbrown@0.15.0
 	hermit-abi@0.1.19
-	hermit-abi@0.3.3
-	indexmap@2.1.0
-	itoa@1.0.9
-	lazy_static@1.4.0
-	libc@0.2.150
-	lock_api@0.4.11
-	log@0.4.20
-	memchr@2.6.4
+	hermit-abi@0.3.9
+	indexmap@2.6.0
+	itoa@1.0.11
+	lazy_static@1.5.0
+	libc@0.2.161
+	lock_api@0.4.12
+	log@0.4.22
+	memchr@2.7.4
 	minimal-lexical@0.2.1
-	miniz_oxide@0.7.1
-	mio@0.8.9
+	miniz_oxide@0.8.0
+	mio@1.0.2
 	nom@7.1.3
-	num-traits@0.2.17
-	num_cpus@1.16.0
+	num-traits@0.2.19
 	num_enum@0.5.11
 	num_enum_derive@0.5.11
-	object@0.32.1
-	once_cell@1.18.0
-	parking_lot@0.12.1
-	parking_lot_core@0.9.9
+	object@0.36.5
+	once_cell@1.20.2
+	parking_lot@0.12.3
+	parking_lot_core@0.9.10
 	parse_int@0.5.0
-	pin-project-lite@0.2.13
+	pin-project-lite@0.2.15
 	pin-utils@0.1.0
 	plain@0.2.3
-	ppv-lite86@0.2.17
+	ppv-lite86@0.2.20
 	proc-macro-crate@1.3.1
-	proc-macro2@1.0.70
-	quote@1.0.33
+	proc-macro2@1.0.89
+	quote@1.0.37
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
-	redox_syscall@0.4.1
-	regex-automata@0.4.3
-	regex-syntax@0.8.2
-	regex@1.10.2
-	rustc-demangle@0.1.23
-	ryu@1.0.15
+	redox_syscall@0.5.7
+	regex-automata@0.4.8
+	regex-lite@0.1.6
+	regex-syntax@0.8.5
+	regex@1.11.1
+	rustc-demangle@0.1.24
+	ryu@1.0.18
 	schemafy@0.5.2
 	schemafy_core@0.5.2
 	schemafy_lib@0.5.2
 	scopeguard@1.2.0
-	scroll@0.11.0
-	scroll_derive@0.11.1
-	serde@1.0.193
-	serde_derive@1.0.193
-	serde_json@1.0.108
-	serde_repr@0.1.17
-	signal-hook-registry@1.4.1
+	scroll@0.12.0
+	scroll_derive@0.12.0
+	serde@1.0.214
+	serde_derive@1.0.214
+	serde_json@1.0.132
+	serde_repr@0.1.19
+	shlex@1.3.0
+	signal-hook-registry@1.4.2
 	slab@0.4.9
-	smallvec@1.11.2
-	socket2@0.5.5
+	smallvec@1.13.2
+	socket2@0.5.7
 	strsim@0.8.0
 	superslice@1.0.0
 	syn@1.0.109
-	syn@2.0.39
+	syn@2.0.85
 	termios@0.3.3
 	textwrap@0.11.0
-	thread_local@1.1.7
-	tokio-macros@2.2.0
+	thread_local@1.1.8
+	tokio-macros@2.4.0
 	tokio-util@0.6.10
-	tokio@1.34.0
-	toml_datetime@0.6.5
+	tokio@1.41.0
+	toml_datetime@0.6.8
 	toml_edit@0.19.15
-	unicode-ident@1.0.12
-	unicode-width@0.1.11
-	unicode-xid@0.2.4
+	unicode-ident@1.0.13
+	unicode-width@0.1.14
+	unicode-xid@0.2.6
 	vec_map@0.8.2
 	wasi@0.11.0+wasi-snapshot-preview1
 	winapi-i686-pc-windows-gnu@0.4.0
 	winapi-x86_64-pc-windows-gnu@0.4.0
 	winapi@0.3.9
-	windows-sys@0.48.0
-	windows-targets@0.48.5
-	windows_aarch64_gnullvm@0.48.5
-	windows_aarch64_msvc@0.48.5
-	windows_i686_gnu@0.48.5
-	windows_i686_msvc@0.48.5
-	windows_x86_64_gnu@0.48.5
-	windows_x86_64_gnullvm@0.48.5
-	windows_x86_64_msvc@0.48.5
-	winnow@0.5.25
+	windows-sys@0.52.0
+	windows-targets@0.52.6
+	windows_aarch64_gnullvm@0.52.6
+	windows_aarch64_msvc@0.52.6
+	windows_i686_gnu@0.52.6
+	windows_i686_gnullvm@0.52.6
+	windows_i686_msvc@0.52.6
+	windows_x86_64_gnu@0.52.6
+	windows_x86_64_gnullvm@0.52.6
+	windows_x86_64_msvc@0.52.6
+	winnow@0.5.40
 	winreg@0.6.2
+	zerocopy-derive@0.7.35
+	zerocopy@0.7.35
 "
 
 declare -A GIT_CRATES=(
-	[goblin]='https://github.com/vadimcn/goblin;a22d2d778a25ed86f8539bf66f6ac7fcf3216815;goblin-%commit%'
-	[weaklink]='https://github.com/vadimcn/weaklink;0b2873feeb402b34f2fc404507f8dc2aac15e507;weaklink-%commit%/weaklink'
-	[weaklink_build]='https://github.com/vadimcn/weaklink;0b2873feeb402b34f2fc404507f8dc2aac15e507;weaklink-%commit%/weaklink_build'
+	[weaklink]='https://github.com/vadimcn/weaklink;37f3ffaa904dd57308e745ce0950a427971c0c22;weaklink-%commit%/weaklink'
+	[weaklink_build]='https://github.com/vadimcn/weaklink;37f3ffaa904dd57308e745ce0950a427971c0c22;weaklink-%commit%/weaklink_build'
 )
 
 inherit cargo
