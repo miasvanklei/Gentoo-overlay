@@ -8,7 +8,7 @@ inherit ninja-utils
 DESCRIPTION="The Skia 2D Graphics library from Google exposed to .NET languages and runtimes across the board"
 HOMEPAGE="https://github.com/mono/SkiaSharp"
 
-SKIA_COMMIT="30b08b827c7c8ab154818f4dbe26a984a9a371da"
+SKIA_COMMIT="4bed689c9c9eb77a120c6a9d54af6a572c85d1c2"
 
 THIRD_PARTY_DEPS=(
 	"zlib https://chromium.googlesource.com/chromium/src/third_party 3ca9f16f02950edffa391ec19cea856090158e9e"
