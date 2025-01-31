@@ -22,40 +22,15 @@
  JCFLAGS+=-DSYSTEM_LIBUNWIND
  JCPPFLAGS+=-DSYSTEM_LIBUNWIND
  endif
-@@ -1658,7 +1652,7 @@
- endif
- endif
- ifneq ($(findstring $(OS),Linux FreeBSD),)
--LIBGCC_NAME := libgcc_s.$(SHLIB_EXT).1
-+LIBGCC_NAME := libunwind.$(SHLIB_EXT)
- endif
-
- # USE_SYSTEM_CSL causes it to get symlinked into build_private_shlibdir
 @@ -1672,7 +1666,7 @@
  # We only bother to define this on Linux, as that's the only platform that does libstdc++ probing
  # On all other platforms, the LIBSTDCXX_*_DEPLIB variables will be empty.
  ifeq ($(OS),Linux)
 -LIBSTDCXX_NAME := libstdc++.so.6
-+LIBSTDCXX_NAME := libc++.so
++LIBSTDCXX_NAME := libc++.so.1
  ifeq ($(USE_SYSTEM_CSL),1)
  LIBSTDCXX_BUILD_DEPLIB := $(call dep_lib_path,$(build_libdir),$(build_private_shlibdir)/$(LIBSTDCXX_NAME))
  else
---- a/src/codegen.cpp	2021-11-14 16:03:00.092635879 +0100
-+++ b/src/codegen.cpp	2021-11-14 15:58:27.911347679 +0100
-@@ -7648,6 +7648,13 @@
-     add_named_global(pointer_from_objref_func, (void*)NULL);
-     add_named_global(except_enter_func, (void*)NULL);
- 
-+    // intrinsics
-+    add_named_global("__udivmodti4", &__udivmodti4);
-+    add_named_global("__umodti3", &__umodti3);
-+    add_named_global("__udivti3", &__udivti3);
-+    add_named_global("__divti3", &__divti3);
-+    add_named_global("__modti3", &__modti3);
-+
- #ifdef _OS_WINDOWS_
- #if defined(_CPU_X86_64_)
- #if defined(_COMPILER_GCC_)
 --- a/src/debuginfo.cpp	2021-03-24 21:02:52.000000000 +0100
 +++ b/src/debuginfo.cpp	2021-11-14 15:58:27.908347643 +0100
 @@ -766,7 +766,7 @@
@@ -118,22 +93,6 @@
      defined(JL_UNW_HAS_FORMAT_IP) && \
      !defined(_CPU_ARM_) // ARM does not have/use .eh_frame, so we handle this elsewhere
  #include <type_traits>
---- a/src/intrinsics.cpp	2021-03-24 21:02:52.000000000 +0100
-+++ b/src/intrinsics.cpp	2021-11-14 15:58:27.909347655 +0100
-@@ -1306,6 +1306,13 @@
-     assert(0 && "unreachable");
- }
- 
-+// intrinsics
-+extern "C" unsigned long long __udivmodti4 (unsigned long long a, unsigned long long b, unsigned long long *c);
-+extern "C" unsigned long long __umodti3 (unsigned long long a, unsigned long long b);
-+extern "C" unsigned long long __udivti3 (unsigned long long a, unsigned long long b);
-+extern "C" long long __divti3 (long long a, long long b);
-+extern "C" long long __modti3 (long long a, long long b);
-+
- 
- // float16 intrinsics
- // TODO: use LLVM's compiler-rt
 --- a/src/stackwalk.c 2024-10-02 15:32:12.042875832 +0200
 +++ b/src/stackwalk.c 2024-10-02 16:11:46.355734736 +0200
 @@ -556,7 +556,7 @@
@@ -225,23 +184,12 @@
  
 --- a/base/Makefile	2023-02-05 19:03:19.576666944 +0100
 +++ b/base/Makefile	2023-02-05 19:04:00.965147814 +0100
-@@ -173,8 +173,8 @@
- 		$$(call resolve_path,REALPATH) && \
- 		[ -e "$$$$REALPATH" ] && \
- 		rm -f "$$@" && \
--		echo ln -sf "$$$$REALPATH" "$$@" && \
--		ln -sf "$$$$REALPATH" "$$@"; \
-+		echo ln -sf "$$$$REALPATH" "$$(build_private_libdir)/$2.so" && \
-+		ln -sf "$$$$REALPATH" "$$(build_private_libdir)/$2.so"; \
- 	else \
- 		if [ "$4" != "ALLOW_FAILURE" ]; then \
- 			echo "System library symlink failure: Unable to locate $$(libname_$2) on your system!" >&2; \
 @@ -232,18 +232,14 @@
  endif
  endif
  else
 -$(eval $(call symlink_system_library,CSL,libgcc_s,1))
-+$(eval $(call symlink_system_library,CSL,libunwind,1))
++$(eval $(call symlink_system_library,CSL,libgcc_s,1))
  endif
 -ifneq (,$(LIBGFORTRAN_VERSION))
 -$(eval $(call symlink_system_library,CSL,libgfortran,$(LIBGFORTRAN_VERSION)))

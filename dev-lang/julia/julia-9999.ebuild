@@ -22,10 +22,10 @@ STDLIBS=(
 	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
 	"JuliaLang JuliaSyntaxHighlighting.jl 19bd57b89c648592155156049addf67e0638eab1"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
-	"JuliaLang LinearAlgebra.jl 1137b4c7fa8297cef17c4ae0982d7d89d4ab7dd8"
+	"JuliaLang LinearAlgebra.jl da6d0521347daf5e42b3d09cdb757d4488528c7b"
 	"JuliaLang NetworkOptions.jl c090626d3feee6d6a5c476346d22d6147c9c6d2d"
 	"JuliaLang Pkg.jl bc9fb21b1f2d72038491eff938673fc5fbc99445"
-	"JuliaCrypto SHA.jl 8fa221ddc8f3b418d9929084f1644f4c32c9a27e"
+	"JuliaCrypto SHA.jl 4451e1362e425bcbc1652ecf55fc0e525b18fb63"
 	"JuliaLang SparseArrays.jl 212981bf29b03ba460d3251ee9aa4399931b3f2d"
 	"JuliaStats Statistics.jl d49c2bf4f81e1efb4980a35fe39c815ef8396297"
 	"JuliaLang StyledStrings.jl 8985a37ac054c37d084a03ad2837208244824877"
@@ -88,9 +88,12 @@ RDEPEND+="
 	sci-libs/rbio:0/4
 	sci-libs/umfpack:0/6
 	>=sci-mathematics/dsfmt-2.2.4
-	llvm-runtimes/libunwind:=
 	llvm-core/llvm:=
 	sys-libs/zlib:0=
+	|| (
+		llvm-runtimes/libgcc
+		sys-devel/gcc
+	)
 	amd64? ( sci-libs/openblas[index-64bit] )
 "
 
@@ -104,7 +107,7 @@ PATCHES=(
 	"${FILESDIR}"/dont-assume-gfortran.patch
 	"${FILESDIR}"/fix-hardcoded-libs.patch
 	"${FILESDIR}"/disable-install-docs.patch
-	"${FILESDIR}"/support-compiler_rt_libunwind.patch
+	"${FILESDIR}"/support-libcxx-libunwind.patch
 	"${FILESDIR}"/fix-textrel.patch
 	"${FILESDIR}"/dont-build-twice.patch
 	"${FILESDIR}"/dont-link-atomic.patch
