@@ -122,13 +122,13 @@ microsoft.sqlserver.assessment.authoring@1.1.0
 microsoft.sqlserver.assessment@1.0.280
 microsoft.sqlserver.assessment@1.1.17
 microsoft.sqlserver.assessment@1.1.9
-microsoft.sqlserver.dacfx.projects@0.3.33-preview
+microsoft.sqlserver.dacfx.projects@0.3.53-preview
 microsoft.sqlserver.dacfx@162.3.563
-microsoft.sqlserver.dacfx@162.3.566
-microsoft.sqlserver.dacfx@162.4.92
+microsoft.sqlserver.dacfx@162.5.57
 microsoft.sqlserver.management.smometadataprovider@170.18.0
 microsoft.sqlserver.management.sqlparser@160.22523.0
 microsoft.sqlserver.management.sqlparser@170.9.0
+microsoft.sqlserver.migration.sqltargetprovisioning@1.0.20241022.2
 microsoft.sqlserver.migration.tde@1.0.0-preview.1.0.20230914.107
 microsoft.sqlserver.server@1.0.0
 microsoft.sqlserver.sqlmanagementobjects@170.18.0
@@ -244,7 +244,6 @@ system.collections@4.0.11
 system.collections@4.3.0
 system.componentmodel.annotations@5.0.0
 system.componentmodel.composition@4.7.0
-system.componentmodel.composition@6.0.0
 system.componentmodel.composition@8.0.0
 system.componentmodel.primitives@4.3.0
 system.componentmodel.typeconverter@4.3.0
@@ -266,6 +265,7 @@ system.configuration.configurationmanager@5.0.0
 system.configuration.configurationmanager@6.0.0
 system.configuration.configurationmanager@6.0.1
 system.configuration.configurationmanager@8.0.0
+system.configuration.configurationmanager@8.0.1
 system.configuration.configurationmanager@9.0.0-rc.2.24473.5
 system.console@4.3.0
 system.data.odbc@4.7.0
@@ -308,8 +308,8 @@ system.io.filesystem.accesscontrol@5.0.0
 system.io.filesystem.primitives@4.3.0
 system.io.filesystem@4.3.0
 system.io.hashing@6.0.0
-system.io.packaging@6.0.0
 system.io.packaging@8.0.0
+system.io.packaging@8.0.1
 system.io.packaging@9.0.0-rc.2.24473.5
 system.io.pipelines@7.0.0
 system.io@4.1.0
@@ -362,6 +362,7 @@ system.resources.resourcemanager@4.0.1
 system.resources.resourcemanager@4.3.0
 system.runtime.caching@6.0.0
 system.runtime.caching@8.0.0
+system.runtime.caching@8.0.1
 system.runtime.caching@9.0.0-rc.2.24473.5
 system.runtime.compilerservices.unsafe@4.5.3
 system.runtime.compilerservices.unsafe@4.7.1
