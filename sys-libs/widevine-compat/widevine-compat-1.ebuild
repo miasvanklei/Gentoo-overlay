@@ -11,6 +11,13 @@ LICENSE="public-domain"
 SLOT=0
 KEYWORDS="~amd64 ~arm64"
 
+RDEPEND="
+	|| (
+		llvm-runtimes/libgcc
+		sys-devel/gcc
+	)
+"
+
 src_compile() {
 	# widevine links uncessary to ld-linux-x86-64.so.2, reuse library to provide missing
 	# symbols which aren't available in musl libc
@@ -18,6 +25,5 @@ src_compile() {
 }
 
 src_install() {
-	dosym libunwind.so.1 /lib/libgcc_so.1
 	dolib.so ld-linux-x86-64.so.2
 }
