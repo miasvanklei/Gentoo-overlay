@@ -17,7 +17,7 @@ CRATES="
 	backtrace@0.3.73
 	base64@0.22.1
 	bitflags@1.3.2
-	bitflags@2.6.0
+	bitflags@2.7.0
 	borsh@1.5.1
 	byteorder@1.5.0
 	camino@1.1.7
@@ -27,10 +27,10 @@ CRATES="
 	cfg-if@1.0.0
 	cfg_aliases@0.1.1
 	cfg_aliases@0.2.1
-	chalk-derive@0.98.0
-	chalk-ir@0.98.0
-	chalk-recursive@0.98.0
-	chalk-solve@0.98.0
+	chalk-derive@0.99.0
+	chalk-ir@0.99.0
+	chalk-recursive@0.99.0
+	chalk-solve@0.99.0
 	countme@3.0.1
 	cov-mark@2.0.0
 	crc32fast@1.4.2
@@ -67,7 +67,7 @@ CRATES="
 	idna@0.5.0
 	indexmap@2.3.0
 	inotify-sys@0.1.5
-	inotify@0.9.6
+	inotify@0.11.0
 	itertools@0.12.1
 	itoa@1.0.11
 	jod-thread@0.1.2
@@ -75,7 +75,7 @@ CRATES="
 	kqueue@1.0.8
 	la-arena@0.3.1
 	lazy_static@1.5.0
-	libc@0.2.155
+	libc@0.2.169
 	libloading@0.8.5
 	libmimalloc-sys@0.1.39
 	libredox@0.1.3
@@ -91,11 +91,12 @@ CRATES="
 	memoffset@0.9.1
 	mimalloc@0.1.43
 	miniz_oxide@0.7.4
-	mio@0.8.11
+	mio@1.0.3
 	miow@0.6.0
 	nix@0.28.0
 	nohash-hasher@0.2.0
-	notify@6.1.1
+	notify-types@2.0.0
+	notify@8.0.0
 	nu-ansi-term@0.50.1
 	num-conv@0.1.0
 	num_cpus@1.16.0
@@ -122,12 +123,12 @@ CRATES="
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.36
-	ra-ap-rustc_abi@0.87.0
-	ra-ap-rustc_index@0.87.0
-	ra-ap-rustc_index_macros@0.87.0
-	ra-ap-rustc_lexer@0.87.0
-	ra-ap-rustc_parse_format@0.87.0
-	ra-ap-rustc_pattern_analysis@0.87.0
+	ra-ap-rustc_abi@0.91.0
+	ra-ap-rustc_index@0.91.0
+	ra-ap-rustc_index_macros@0.91.0
+	ra-ap-rustc_lexer@0.91.0
+	ra-ap-rustc_parse_format@0.91.0
+	ra-ap-rustc_pattern_analysis@0.91.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
@@ -155,10 +156,9 @@ CRATES="
 	shlex@1.3.0
 	smallvec@1.13.2
 	smol_str@0.3.2
-	sptr@0.3.2
 	syn@2.0.87
 	synstructure@0.13.1
-	tenthash@0.4.0
+	tenthash@1.0.0
 	text-size@1.1.1
 	thiserror-impl@1.0.63
 	thiserror@1.0.63
