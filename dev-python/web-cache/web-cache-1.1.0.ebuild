@@ -9,7 +9,7 @@ DISTUTILS_USE_PEP517=setuptools
 inherit distutils-r1 pypi
 
 DESCRIPTION="Simple persistent cache storage, with different cache eviction strategies, and optional compression"
-HOMEPAGE="https://github.com/hellysmile/fake-useragent https://pypi.org/project/fake-useragent/"
+HOMEPAGE="https://coveralls.io/github/desbma/web_cache?branch=master"
 
 S="${WORKDIR}/${PN/-/_}-${PV}"
 
