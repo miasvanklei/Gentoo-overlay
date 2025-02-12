@@ -41,7 +41,6 @@ RDEPEND="
 	=dev-dotnet/dotnet-apphost-pack-${PV}"
 
 PATCHES=(
-	"${FILESDIR}"/fix-missing-definition.patch
 	"${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
 )
 
