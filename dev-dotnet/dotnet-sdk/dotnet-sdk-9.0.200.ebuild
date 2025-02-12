@@ -4,7 +4,7 @@
 EAPI=8
 
 # keep in sync with dotnet-runtime
-DOTNET_RUNTIME_PV="${PV/102/1}"
+DOTNET_RUNTIME_PV="${PV/200/2}"
 REAL_PV="${PV}"
 SDK="${PN}-${REAL_PV}-linux-musl"
 
