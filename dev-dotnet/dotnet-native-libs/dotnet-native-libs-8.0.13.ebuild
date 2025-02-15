@@ -26,6 +26,10 @@ RDEPEND="
 BDEPEND="
 	>=sys-devel/gettext-0.19.7"
 
+PATCHES=(
+	"${FILESDIR}/remove-build-type-logic.patch"
+)
+
 src_configure() {
 	local dest="/usr/lib/dotnet-sdk/shared/Microsoft.NETCore.App/${DOTNET_RUNTIME_PV}"
 
