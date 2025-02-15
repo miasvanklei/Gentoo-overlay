@@ -8,6 +8,8 @@ DOTNET_RUNTIME_PV="9.0.2"
 REAL_PV="${PV}"
 SDK="${PN}-${REAL_PV}-linux-musl"
 
+inherit dotnet-utils
+
 DESCRIPTION="The .NET Core SDK"
 HOMEPAGE="https://www.microsoft.com/net/core"
 SRC_URI="
