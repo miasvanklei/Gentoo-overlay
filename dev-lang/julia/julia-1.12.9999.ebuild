@@ -4,6 +4,7 @@
 EAPI=8
 
 LLVM_COMPAT=( 19 )
+MY_PV="$(ver_cut 1-2)"
 
 inherit git-r3 llvm-r1 pax-utils optfeature toolchain-funcs
 
@@ -11,35 +12,37 @@ DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
 
 EGIT_REPO_URI="https://github.com/JuliaLang/julia.git"
+EGIT_BRANCH="release-${MY_PV}"
 
-# correct versions for stdlibs are in deps/checksums
+# correct versions for stdlibs are in stdlib/{package_name}.version
 # for everything else, run with network-sandbox and wait for the crash
 STDLIBS=(
 	# repo    package name    hash
 	"JuliaIO ArgTools.jl 1314758ad02ff5e9e5ca718920c6c633b467a84a"
 	"JuliaLang DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
-	"JuliaLang Distributed.jl c6136853451677f1957bec20ecce13419cde3a12"
+	"JuliaLang Distributed.jl 51e52978481835413d15b589919aba80dd85f890"
 	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
-	"JuliaLang JuliaSyntaxHighlighting.jl 19bd57b89c648592155156049addf67e0638eab1"
+	"JuliaLang JuliaSyntaxHighlighting.jl 2680c8bde1aa274f25d7a434c645f16b3a1ee731"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
-	"JuliaLang LinearAlgebra.jl da6d0521347daf5e42b3d09cdb757d4488528c7b"
+	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
+	"JuliaLang LinearAlgebra.jl e7da19f2764ba36bd0a9eb8ec67dddce19d87114"
 	"JuliaLang NetworkOptions.jl c090626d3feee6d6a5c476346d22d6147c9c6d2d"
-	"JuliaLang Pkg.jl bc9fb21b1f2d72038491eff938673fc5fbc99445"
+	"JuliaLang Pkg.jl 7aeec766cf637e2bc2af161eba8abd3a4b68d025"
 	"JuliaCrypto SHA.jl 4451e1362e425bcbc1652ecf55fc0e525b18fb63"
-	"JuliaLang SparseArrays.jl 212981bf29b03ba460d3251ee9aa4399931b3f2d"
+	"JuliaLang SparseArrays.jl 72c7cac6bbf21367a3c2fbc5c50e908aea5984bb"
 	"JuliaStats Statistics.jl d49c2bf4f81e1efb4980a35fe39c815ef8396297"
 	"JuliaLang StyledStrings.jl 8985a37ac054c37d084a03ad2837208244824877"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
 	"JuliaLang Tar.jl 1114260f5c7a7b59441acadca2411fa227bb8a3b"
-	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
 )
 
+# correct versions for deps are in deps/{package_name}.version
 BUNDLED_DEPS=(
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
 	"JuliaLinearAlgebra libblastrampoline b127bc8dd4758ffc064340fff2aef4ead552f386"
-	"JuliaLang JuliaSyntax.jl dfd1d69b153eb119873035e62993a109b27192f0"
+	"JuliaLang JuliaSyntax.jl 86bc4331eaa08e08bf2af1ba7b50bbbf4af70cdb"
 )
 
 update_SRC_URI() {
@@ -102,6 +105,7 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
 PATCHES=(
+	"${FILESDIR}"/llvm-19-fixes.patch
 	"${FILESDIR}"/no_symlink_llvm.patch
 	"${FILESDIR}"/link-llvm-shared.patch
 	"${FILESDIR}"/dont-assume-gfortran.patch
@@ -225,7 +229,7 @@ src_install() {
 
 	# Prevent compiled modules from being stripped,
 	# as it changes their checksum so Julia refuses to load them
-	dostrip -x /usr/share/${PN}/compiled/*/*/*.so
+	dostrip -x /usr/share/${PN}/compiled/v${MY_PV}/*/*.so
 
 	# Link ca-certificates.crt, bug: https://bugs.gentoo.org/888978
 	dosym -r /etc/ssl/certs/ca-certificates.crt /usr/share/julia/cert.pem
