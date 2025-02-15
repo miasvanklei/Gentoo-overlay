@@ -102,7 +102,8 @@ dotnet-utils_src_unpack() {
 #
 # Used by "dotnet-runtime".
 dotnet-utils_create_version_files() {
-	cat <<- _EOF_ > "${DOTNET_ROOT_DIR}"/eng/native/version/runtime_version.h
+	local versionfolder="${DOTNET_ROOT_DIR}/eng/native/version/"
+	cat <<- _EOF_ > "${versionfolder}"/runtime_version.h
 		#define RuntimeAssemblyMajorVersion $(ver_cut 1)
 		#define RuntimeAssemblyMinorVersion $(ver_cut 2)
 
@@ -118,9 +119,15 @@ dotnet-utils_create_version_files() {
 		#define RuntimeProductVersion ${DOTNET_RUNTIME_PV}
 	_EOF_
 
+	cat <<- _EOF_ > "${versionfolder}"/_version.c
+		static char sccsid[] __attribute__((used)) = "@(#)Version ${DOTNET_RUNTIME_PV} @Commit: ${DOTNET_COMMIT}";
+	_EOF_
+
 	mkdir -p "${DOTNET_ROOT_DIR}"/artifacts/obj || die
 
-	"${DOTNET_ROOT_DIR}"/eng/native/version/copy_version_files.sh
+	for path in "${versionfolder}/"*{.h,.c}; do
+		cp ${path} "${DOTNET_ROOT_DIR}"/artifacts/obj || die
+	done
 }
 
 # @FUNCTION: dotnet-utils_install_dotnet_runtime_pack
