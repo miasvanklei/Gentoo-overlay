@@ -3,6 +3,7 @@
 
 EAPI=8
 
+DOTNET_COMMIT="eba546b0f0d448e0176a2222548fd7a2fbf464c0"
 DOTNET_RUNTIME_PV="${PV}"
 DOTNET_SRC_DIR="src/native/corehost"
 DOTNET_TARGETS=(
@@ -24,9 +25,9 @@ KEYWORDS="~amd64 ~arm64"
 src_configure() {
 	local mycmakeargs=(
 		-DCLI_CMAKE_PKG_RID=$(dotnet-utils_get_pkg_rid 1)
-		-DCLI_CMAKE_FALLBACK_OS=$(dotnet-utils_get_pkg_rid 0)
+		-DCLI_CMAKE_FALLBACK_OS=$(dotnet-utils_get_pkg_rid)
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true
-		-DCLI_CMAKE_COMMIT_HASH="9cb3b72"
+		-DCLI_CMAKE_COMMIT_HASH="${DOTNET_COMMIT:0:10}"
 	)
 
 	cmake_src_configure
