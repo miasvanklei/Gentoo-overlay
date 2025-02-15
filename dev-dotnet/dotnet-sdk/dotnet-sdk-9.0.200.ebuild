@@ -4,7 +4,7 @@
 EAPI=8
 
 # keep in sync with dotnet-runtime
-DOTNET_RUNTIME_PV="${PV/200/2}"
+DOTNET_RUNTIME_PV="9.0.2"
 REAL_PV="${PV}"
 SDK="${PN}-${REAL_PV}-linux-musl"
 
@@ -34,6 +34,8 @@ PDEPEND="virtual/dotnet-sdk:$(ver_cut 1-2)"
 
 src_install() {
 	local dest="/usr/lib/${PN}"
+	local target=$(dotnet-utils_get_pkg_rid 1)
+	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${DOTNET_RUNTIME_PV}/runtimes/${target}/native"
 
 	insinto "${dest}"
 	doins -r "${S}"/sdk "${S}"/sdk-manifests "${S}"/templates
@@ -45,5 +47,5 @@ src_install() {
 	mkdir -p "${D}/${dest}/${workloads}" || die
 	touch "${D}/${dest}/${workloads}/userlocal" || die
 
-	rm "${D}/${dest}/sdk/${REAL_PV}/AppHostTemplate/apphost" || die
+	cp "${dest_apphost_pack}/apphost"  "${D}/${dest}/sdk/${REAL_PV}/AppHostTemplate/apphost" || die
 }
