@@ -40,9 +40,15 @@ RDEPEND="
 	=dev-dotnet/dotnet-native-libs-${PV}
 	=dev-dotnet/dotnet-apphost-pack-${PV}"
 
-PATCHES=(
-	"${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
-)
+src_prepare() {
+	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
+
+	pushd "${S}/../native/libs" >/dev/null
+	eapply "${FILESDIR}"/remove-build-type-logic.patch
+	popd >/dev/null
+
+	dotnet-runtime_src_prepare
+}
 
 src_configure() {
 	local mycmakeargs=(
