@@ -28,8 +28,6 @@ DOTNET_ROOT_DIR="${WORKDIR}/runtime-${DOTNET_RUNTIME_PV}"
 S="${DOTNET_ROOT_DIR}/${DOTNET_SRC_DIR}"
 SRC_URI+=" https://github.com/dotnet/runtime/archive/refs/tags/v${DOTNET_RUNTIME_PV}.tar.gz -> dotnet-runtime-${PV}.tar.gz"
 
-CMAKE_BUILD_TYPE=RELEASE
-
 # @FUNCTION: dotnet-pkg_src_unpack
 # @DESCRIPTION:
 # Default "src_unpack" for the "dotnet-runtime" eclass.
