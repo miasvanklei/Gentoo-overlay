@@ -48,25 +48,33 @@ dotnet-utils_add_src_uris_nupkg() {
 dotnet-utils_add_src_uris_nupkg
 
 # @FUNCTION: dotnet-utils_get_pkg_rid
-# @Usage: <include arch in rid>
 # @DESCRIPTION:
 # Return the .NET rid used.
 #
 # Used by "dotnet-utils/dotnet-pack/dotnet-runtime".
 dotnet-utils_get_pkg_rid() {
-	local withArch="$1"
-	local libc="$(usex elibc_musl "-musl" "")"
+	local fallbackrid="$(dotnet-utils_get_pkg_fallback_rid)"
 
 	local arch
-	if [[ -z "$withArch" ]]; then
-		arch=""
-	elif use amd64 ; then
+	if use amd64; then
 		arch="-x64"
 	else
 		arch="-${ARCH}"
 	fi
 
-	echo "linux${libc}${arch}"
+	echo "${fallbackrid}${arch}"
+}
+
+# @FUNCTION: dotnet-utils_get_pkg_fallback_rid
+# @DESCRIPTION:
+# Return the .NET rid used.
+#
+# Used by "dotnet-utils/dotnet-pack/dotnet-runtime".
+dotnet-utils_get_pkg_fallback_rid() {
+	local withArch="$1"
+	local libc="$(usex elibc_musl "-musl" "")"
+
+	echo "linux${libc}"
 }
 
 # @FUNCTION: dotnet-utils_src_unpack
@@ -78,7 +86,7 @@ dotnet-utils_get_pkg_rid() {
 dotnet-utils_src_unpack() {
 	local a
 
-	for a in ${A} ; do
+	for a in ${A}; do
 		case "${a}" in
 			*.nupkg)
 				local basename=${a%.nupkg*}
@@ -139,7 +147,7 @@ dotnet-utils_install_dotnet_runtime_pack() {
 	[[ $# -eq 1 ]] || die "${FUNCNAME}: bad number of arguments"
 
 	local packname="$1"
-	local pkgrid="$(dotnet-utils_get_pkg_rid 1)"
+	local pkgrid="$(dotnet-utils_get_pkg_rid)"
 	local nugetpkgname="${packname,,}.runtime.${pkgrid}.${DOTNET_RUNTIME_PV}"
 
 	local packdir="packs/${packname}.Runtime.${pkgrid}/${DOTNET_RUNTIME_PV}"

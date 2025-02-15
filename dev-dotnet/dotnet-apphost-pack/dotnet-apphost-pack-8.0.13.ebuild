@@ -24,8 +24,8 @@ KEYWORDS="~amd64 ~arm64"
 
 src_configure() {
 	local mycmakeargs=(
-		-DCLI_CMAKE_PKG_RID=$(dotnet-utils_get_pkg_rid 1)
-		-DCLI_CMAKE_FALLBACK_OS=$(dotnet-utils_get_pkg_rid)
+		-DCLI_CMAKE_PKG_RID=$(dotnet-utils_get_pkg_rid)
+		-DCLI_CMAKE_FALLBACK_OS=$(dotnet-utils_get_pkg_fallback_rid)
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true
 		-DCLI_CMAKE_COMMIT_HASH="${DOTNET_COMMIT:0:10}"
 	)
