@@ -116,19 +116,19 @@ CRATES="
 	pin-project-lite@0.2.14
 	powerfmt@0.2.0
 	ppv-lite86@0.2.20
-	proc-macro2@1.0.86
+	proc-macro2@1.0.93
 	process-wrap@8.0.2
 	protobuf-support@3.7.1
 	protobuf@3.7.1
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.36
-	ra-ap-rustc_abi@0.91.0
-	ra-ap-rustc_index@0.91.0
-	ra-ap-rustc_index_macros@0.91.0
-	ra-ap-rustc_lexer@0.91.0
-	ra-ap-rustc_parse_format@0.91.0
-	ra-ap-rustc_pattern_analysis@0.91.0
+	ra-ap-rustc_abi@0.94.0
+	ra-ap-rustc_index@0.94.0
+	ra-ap-rustc_index_macros@0.94.0
+	ra-ap-rustc_lexer@0.94.0
+	ra-ap-rustc_parse_format@0.94.0
+	ra-ap-rustc_pattern_analysis@0.94.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
