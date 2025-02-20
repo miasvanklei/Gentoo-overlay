@@ -15,25 +15,26 @@ EGIT_REPO_URI="https://github.com/JuliaLang/julia.git"
 EGIT_BRANCH="release-${MY_PV}"
 
 # correct versions for stdlibs are in stdlib/{package_name}.version
+# updated versions can be found by running find_dependencies.sh in ${FILES}
 # for everything else, run with network-sandbox and wait for the crash
 STDLIBS=(
 	# repo    package name    hash
 	"JuliaIO ArgTools.jl 1314758ad02ff5e9e5ca718920c6c633b467a84a"
-	"JuliaLang DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
+	"JuliaData DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
 	"JuliaLang Distributed.jl 51e52978481835413d15b589919aba80dd85f890"
 	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
-	"JuliaLang JuliaSyntaxHighlighting.jl 2680c8bde1aa274f25d7a434c645f16b3a1ee731"
+	"Julialang JuliaSyntaxHighlighting.jl 2680c8bde1aa274f25d7a434c645f16b3a1ee731"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
 	"JuliaLang LinearAlgebra.jl e7da19f2764ba36bd0a9eb8ec67dddce19d87114"
 	"JuliaLang NetworkOptions.jl c090626d3feee6d6a5c476346d22d6147c9c6d2d"
 	"JuliaLang Pkg.jl 7aeec766cf637e2bc2af161eba8abd3a4b68d025"
 	"JuliaCrypto SHA.jl 4451e1362e425bcbc1652ecf55fc0e525b18fb63"
-	"JuliaLang SparseArrays.jl 72c7cac6bbf21367a3c2fbc5c50e908aea5984bb"
-	"JuliaStats Statistics.jl d49c2bf4f81e1efb4980a35fe39c815ef8396297"
+	"JuliaSparse SparseArrays.jl 72c7cac6bbf21367a3c2fbc5c50e908aea5984bb"
+	"JuliaStats Statistics.jl 77bd5707f143eb624721a7df28ddef470e70ecef"
 	"JuliaLang StyledStrings.jl 8985a37ac054c37d084a03ad2837208244824877"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
-	"JuliaLang Tar.jl 1114260f5c7a7b59441acadca2411fa227bb8a3b"
+	"JuliaIO Tar.jl 1114260f5c7a7b59441acadca2411fa227bb8a3b"
 )
 
 # correct versions for deps are in deps/{package_name}.version
