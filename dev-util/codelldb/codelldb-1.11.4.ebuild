@@ -16,16 +16,16 @@ CRATES="
 	backtrace@0.3.74
 	base64@0.12.3
 	bitflags@1.3.2
-	bitflags@2.6.0
+	bitflags@2.8.0
 	byteorder@1.5.0
-	bytes@1.8.0
-	cc@1.1.31
+	bytes@1.9.0
+	cc@1.2.10
 	cfg-if@1.0.0
 	clap@2.34.0
-	cpp@0.5.9
-	cpp_build@0.5.9
-	cpp_common@0.5.9
-	cpp_macros@0.5.9
+	cpp@0.5.10
+	cpp_build@0.5.10
+	cpp_common@0.5.10
+	cpp_macros@0.5.10
 	crossterm@0.9.6
 	crossterm_cursor@0.2.6
 	crossterm_input@0.3.9
@@ -50,73 +50,72 @@ CRATES="
 	getrandom@0.2.15
 	gimli@0.31.1
 	goblin@0.8.2
-	hashbrown@0.15.0
+	hashbrown@0.15.2
 	hermit-abi@0.1.19
-	hermit-abi@0.3.9
-	indexmap@2.6.0
-	itoa@1.0.11
+	indexmap@2.7.1
+	itoa@1.0.14
 	lazy_static@1.5.0
-	libc@0.2.161
+	libc@0.2.169
 	lock_api@0.4.12
-	log@0.4.22
+	log@0.4.25
 	memchr@2.7.4
 	minimal-lexical@0.2.1
-	miniz_oxide@0.8.0
-	mio@1.0.2
+	miniz_oxide@0.8.3
+	mio@1.0.3
 	nom@7.1.3
 	num-traits@0.2.19
 	num_enum@0.5.11
 	num_enum_derive@0.5.11
-	object@0.36.5
+	object@0.36.7
 	once_cell@1.20.2
 	parking_lot@0.12.3
 	parking_lot_core@0.9.10
 	parse_int@0.5.0
-	pin-project-lite@0.2.15
+	pin-project-lite@0.2.16
 	pin-utils@0.1.0
 	plain@0.2.3
 	ppv-lite86@0.2.20
 	proc-macro-crate@1.3.1
-	proc-macro2@1.0.89
-	quote@1.0.37
+	proc-macro2@1.0.93
+	quote@1.0.38
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
-	redox_syscall@0.5.7
-	regex-automata@0.4.8
+	redox_syscall@0.5.8
+	regex-automata@0.4.9
 	regex-lite@0.1.6
 	regex-syntax@0.8.5
 	regex@1.11.1
 	rustc-demangle@0.1.24
-	ryu@1.0.18
+	ryu@1.0.19
 	schemafy@0.5.2
 	schemafy_core@0.5.2
 	schemafy_lib@0.5.2
 	scopeguard@1.2.0
 	scroll@0.12.0
 	scroll_derive@0.12.0
-	serde@1.0.214
-	serde_derive@1.0.214
-	serde_json@1.0.132
+	serde@1.0.217
+	serde_derive@1.0.217
+	serde_json@1.0.137
 	serde_repr@0.1.19
 	shlex@1.3.0
 	signal-hook-registry@1.4.2
 	slab@0.4.9
 	smallvec@1.13.2
-	socket2@0.5.7
+	socket2@0.5.8
 	strsim@0.8.0
 	superslice@1.0.0
 	syn@1.0.109
-	syn@2.0.85
+	syn@2.0.96
 	termios@0.3.3
 	textwrap@0.11.0
 	thread_local@1.1.8
-	tokio-macros@2.4.0
+	tokio-macros@2.5.0
 	tokio-util@0.6.10
-	tokio@1.41.0
+	tokio@1.43.0
 	toml_datetime@0.6.8
 	toml_edit@0.19.15
-	unicode-ident@1.0.13
+	unicode-ident@1.0.16
 	unicode-width@0.1.14
 	unicode-xid@0.2.6
 	vec_map@0.8.2
@@ -156,7 +155,7 @@ S="${WORKDIR}/${P}/adapter/codelldb"
 
 LICENSE=""
 # Dependent crate licenses
-LICENSE+=" Apache-2.0 BSD-2 MIT Unicode-DFS-2016"
+LICENSE+=" Apache-2.0 BSD-2 MIT Unicode-3.0"
 SLOT="0"
 
 KEYWORDS="~amd64 ~arm64"
