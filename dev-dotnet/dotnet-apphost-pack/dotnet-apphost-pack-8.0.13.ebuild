@@ -42,6 +42,7 @@ src_install() {
 
 	insinto "${dest_netcore_app}"
 	doins "${BUILD_DIR}/hostpolicy/standalone/libhostpolicy.so"
+	doins "${BUILD_DIR}/fxr/standalone/libhostfxr.so"
 
 	insinto "${dest_apphost_pack}"
 	doins "${BUILD_DIR}/apphost/standalone/apphost"
