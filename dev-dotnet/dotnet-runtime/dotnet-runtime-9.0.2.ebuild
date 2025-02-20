@@ -11,6 +11,7 @@ DOTNET_TARGETS=(
 	'dlls/mscordbi/libmscordbi.so'
 	'dlls/mscoree/coreclr/libcoreclr.so'
 	'gc/libclrgc.so'
+	'gc/libclrgcexp.so'
 	'jit/libclrjit.so'
 	'pal/src/eventprovider/lttngprovider/libcoreclrtraceptprovider.so'
 )
