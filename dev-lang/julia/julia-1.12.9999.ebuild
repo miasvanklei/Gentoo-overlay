@@ -3,7 +3,7 @@
 
 EAPI=8
 
-LLVM_COMPAT=( 19 )
+LLVM_COMPAT=( 19 20 )
 MY_PV="$(ver_cut 1-2)"
 
 inherit git-r3 llvm-r1 pax-utils optfeature toolchain-funcs
@@ -23,7 +23,7 @@ STDLIBS=(
 	"JuliaData DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
 	"JuliaLang Distributed.jl 51e52978481835413d15b589919aba80dd85f890"
 	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
-	"Julialang JuliaSyntaxHighlighting.jl 2680c8bde1aa274f25d7a434c645f16b3a1ee731"
+	"julialang JuliaSyntaxHighlighting.jl 2680c8bde1aa274f25d7a434c645f16b3a1ee731"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
 	"JuliaLang LinearAlgebra.jl e7da19f2764ba36bd0a9eb8ec67dddce19d87114"
@@ -39,11 +39,11 @@ STDLIBS=(
 
 # correct versions for deps are in deps/{package_name}.version
 BUNDLED_DEPS=(
+	"JuliaLang JuliaSyntax.jl 46723f071d5b2efcb21ca6757788028afb91cc13"
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
 	"JuliaLinearAlgebra libblastrampoline b127bc8dd4758ffc064340fff2aef4ead552f386"
-	"JuliaLang JuliaSyntax.jl 86bc4331eaa08e08bf2af1ba7b50bbbf4af70cdb"
 )
 
 update_SRC_URI() {
@@ -116,6 +116,8 @@ PATCHES=(
 	"${FILESDIR}"/fix-textrel.patch
 	"${FILESDIR}"/dont-build-twice.patch
 	"${FILESDIR}"/dont-link-atomic.patch
+	# llvm 20: https://github.com/JuliaLang/julia/pull/57352
+	"${FILESDIR}"/llvm-20.patch
 )
 
 pkg_setup() {
