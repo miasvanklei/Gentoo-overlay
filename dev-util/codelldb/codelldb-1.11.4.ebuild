@@ -151,8 +151,6 @@ HOMEPAGE="https://github.com/vadimcn/codelldb"
 SRC_URI="https://github.com/vadimcn/codelldb/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
 	${CARGO_CRATE_URIS}"
 
-S="${WORKDIR}/${P}/adapter/codelldb"
-
 LICENSE=""
 # Dependent crate licenses
 LICENSE+=" Apache-2.0 BSD-2 MIT Unicode-3.0"
@@ -160,10 +158,11 @@ SLOT="0"
 
 KEYWORDS="~amd64 ~arm64"
 
-RDEPEND="llvm-core/lldb"
+RDEPEND="llvm-core/lldb:="
 
 PATCHES=(
 	"${FILESDIR}/fix-compile-on-musl.patch"
+	"${FILESDIR}/fix-libcxx-20.patch"
 )
 
 # rust does not use *FLAGS from make.conf, silence portage warning
@@ -182,16 +181,22 @@ src_prepare() {
 	default
 }
 
+src_compile() {
+        cargo_src_compile -p codelldb
+}
+
 src_install() {
-	cargo_src_install
+        pushd adapter/codelldb >/dev/null
+        cargo_src_install
+        popd >/dev/null
 
 	insinto /usr/lib/codelldb/scripts
-	for file in ../scripts/*.py; do
+	for file in adapter/scripts/*.py; do
 		doins $file
 	done
 
 	insinto /usr/lib/codelldb/scripts/codelldb
-	for file in ../scripts/codelldb/*.py; do
+	for file in adapter/scripts/codelldb/*.py; do
 		doins $file
 	done
 
