@@ -271,6 +271,7 @@ src_configure() {
 
 src_compile() {
 	export CFG_RELEASE=nightly
+	export RUSTC_BOOTSTRAP=1
 	cargo_src_compile -p proc-macro-srv-cli
 	cargo_src_compile -p rust-analyzer
 }
