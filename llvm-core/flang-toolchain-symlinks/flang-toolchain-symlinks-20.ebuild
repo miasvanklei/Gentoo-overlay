@@ -7,7 +7,6 @@ inherit multilib
 
 DESCRIPTION="Symlinks to use Flang on gfortran-free system"
 HOMEPAGE="https://wiki.gentoo.org/wiki/Project:LLVM"
-
 S="${WORKDIR}"
 
 LICENSE="public-domain"
@@ -16,7 +15,7 @@ KEYWORDS="~amd64 ~arm64"
 IUSE="multilib-symlinks +native-symlinks"
 
 RDEPEND="
-	llvm-core/lld:${SLOT}
+	llvm-core/flang:${SLOT}
 "
 
 src_install() {
@@ -32,10 +31,9 @@ src_install() {
 
 	local dest=/usr/lib/llvm/${SLOT}/bin
 	dodir "${dest}"
-	dosym flang-new "${dest}/flang"
-	dosym flang-new "${dest}/flang"
+	dosym flang "${dest}/gfortran"
 	for chost in "${chosts[@]}"; do
-		dosym flang-new "${dest}/${chost}-flang"
-		dosym flang-new "${dest}/${chost}-gfortran"
+		dosym flang "${dest}/${chost}-flang"
+		dosym flang "${dest}/${chost}-gfortran"
 	done
 }
