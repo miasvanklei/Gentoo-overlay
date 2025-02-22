@@ -69,6 +69,7 @@ KEYWORDS="~amd64 ~arm64"
 RESTRICT="test"
 
 BDEPEND="
+	app-misc/jq
 	>=net-libs/nodejs-20.12.1:0/20[npm]
 "
 RDEPEND="
@@ -127,6 +128,9 @@ src_prepare() {
 
 	# already in /usr/portage/licenses/MIT
 	rm "${S}"/LICENSE || die
+
+	jq -s add "${S}"/lib/vscode/product.json ${FILESDIR}/extensionGallery.json > "${S}"/lib/vscode/product.json.tmp || die
+	mv "${S}"/lib/vscode/product.json.tmp "${S}"/lib/vscode/product.json
 
 	eapply "${FILESDIR}/${PN}-node.patch"
 	eapply_user
