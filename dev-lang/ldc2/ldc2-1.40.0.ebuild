@@ -3,7 +3,7 @@
 
 EAPI=8
 
-LLVM_COMPAT=( {17..19} )
+LLVM_COMPAT=( {17..20} )
 inherit cmake llvm-r1
 
 DESCRIPTION="LLVM D Compiler"
@@ -41,6 +41,11 @@ DEPEND="
 RDEPEND="${DEPEND}"
 
 S="${WORKDIR}/${MY_PN}-src"
+
+PATCHES=(
+	# https://github.com/ldc-developers/ldc/pull/4843
+	"${FILESDIR}/llvm-20.patch"
+)
 
 pkg_setup() {
 	llvm-r1_pkg_setup
