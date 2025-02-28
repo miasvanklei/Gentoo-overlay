@@ -40,7 +40,6 @@ PATCHES=(
         "${FILESDIR}/fix-linking-libmlir.patch"
         "${FILESDIR}/export-libomp-version.patch"
         "${FILESDIR}/fix-standalone-openmp-module-build.patch"
-	"${FILESDIR}/fix-build-libcxx.patch"
 )
 
 src_configure() {
