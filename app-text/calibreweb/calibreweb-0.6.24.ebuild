@@ -32,6 +32,7 @@ RDEPEND="
 	dev-python/flask-wtf[${PYTHON_USEDEP}]
 	dev-python/pycountry[${PYTHON_USEDEP}]
 	dev-python/lxml[${PYTHON_USEDEP}]
+	dev-python/netifaces[${PYTHON_USEDEP}]
 	dev-python/pypdf[${PYTHON_USEDEP}]
 	dev-python/python-magic[${PYTHON_USEDEP}]
 	dev-python/pytz[${PYTHON_USEDEP}]
