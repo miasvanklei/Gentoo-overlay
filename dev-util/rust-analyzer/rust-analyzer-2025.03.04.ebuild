@@ -123,12 +123,13 @@ CRATES="
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.36
-	ra-ap-rustc_abi@0.94.0
-	ra-ap-rustc_index@0.94.0
-	ra-ap-rustc_index_macros@0.94.0
-	ra-ap-rustc_lexer@0.94.0
-	ra-ap-rustc_parse_format@0.94.0
-	ra-ap-rustc_pattern_analysis@0.94.0
+	ra-ap-rustc_abi@0.98.0
+	ra-ap-rustc_hashes@0.98.0
+	ra-ap-rustc_index@0.98.0
+	ra-ap-rustc_index_macros@0.98.0
+	ra-ap-rustc_lexer@0.98.0
+	ra-ap-rustc_parse_format@0.98.0
+	ra-ap-rustc_pattern_analysis@0.98.0
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
@@ -140,6 +141,7 @@ CRATES="
 	rustc-demangle@0.1.24
 	rustc-hash@1.1.0
 	rustc-hash@2.0.0
+	rustc-stable-hash@0.1.1
 	rustc_apfloat@0.2.1+llvm-462a31f5a5ab
 	ryu@1.0.18
 	same-file@1.0.6
