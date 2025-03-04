@@ -20,6 +20,7 @@ DEPEND="
 "
 RDEPEND="
 	${DEPEND}
+	>=llvm-core/flang-common-${PV}
 "
 BDEPEND="
 	test? (
