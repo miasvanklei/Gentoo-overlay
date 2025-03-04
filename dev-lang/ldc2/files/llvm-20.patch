@@ -1,5 +1,3 @@
-diff --git a/driver/cl_options_sanitizers.h b/driver/cl_options_sanitizers.h
-index 16b38f70c8..e1eaa3c934 100644
 --- a/driver/cl_options_sanitizers.h
 +++ b/driver/cl_options_sanitizers.h
 @@ -14,7 +14,11 @@
@@ -14,8 +12,6 @@ index 16b38f70c8..e1eaa3c934 100644
  
  class FuncDeclaration;
  namespace llvm {
-diff --git a/gen/abi/aarch64.cpp b/gen/abi/aarch64.cpp
-index af93a8f432..7284c05cf0 100644
 --- a/gen/abi/aarch64.cpp
 +++ b/gen/abi/aarch64.cpp
 @@ -121,7 +121,7 @@ struct AArch64TargetABI : TargetABI {
@@ -27,8 +23,6 @@ index af93a8f432..7284c05cf0 100644
        return;
      }
  
-diff --git a/gen/classes.cpp b/gen/classes.cpp
-index 51a7a554f3..732a6e5c36 100644
 --- a/gen/classes.cpp
 +++ b/gen/classes.cpp
 @@ -379,7 +379,7 @@ DValue *DtoDynamicCastObject(const Loc &loc, DValue *val, Type *_to) {
@@ -49,8 +43,6 @@ index 51a7a554f3..732a6e5c36 100644
    // index vtbl
    const std::string name = fdecl->toChars();
    const auto vtblname = name + "@vtbl";
-diff --git a/gen/dcompute/druntime.h b/gen/dcompute/druntime.h
-index 2b1a2a6a85..1008c3cb39 100644
 --- a/gen/dcompute/druntime.h
 +++ b/gen/dcompute/druntime.h
 @@ -41,7 +41,7 @@ struct DcomputePointer {
@@ -62,8 +54,6 @@ index 2b1a2a6a85..1008c3cb39 100644
    }
  };
  llvm::Optional<DcomputePointer> toDcomputePointer(StructDeclaration *sd);
-diff --git a/gen/dynamiccompile.cpp b/gen/dynamiccompile.cpp
-index 817e3c009e..d2cf0858c5 100644
 --- a/gen/dynamiccompile.cpp
 +++ b/gen/dynamiccompile.cpp
 @@ -686,8 +686,9 @@
@@ -86,8 +76,6 @@ index 817e3c009e..d2cf0858c5 100644
      auto thunkVar = new llvm::GlobalVariable(
          irs->module, thunkVarType, false, llvm::GlobalValue::PrivateLinkage,
          llvm::ConstantPointerNull::get(thunkVarType),
-diff --git a/gen/llvm.h b/gen/llvm.h
-index 5dfe68e9e9..45f051aa93 100644
 --- a/gen/llvm.h
 +++ b/gen/llvm.h
 @@ -35,7 +35,10 @@ using llvm::APFloat;
@@ -102,8 +90,6 @@ index 5dfe68e9e9..45f051aa93 100644
  #define GET_INTRINSIC_DECL(_X, _TY)                                              \
    (llvm::Intrinsic::getDeclaration(&gIR->module, llvm::Intrinsic::_X, _TY))
  #else
-diff --git a/gen/nested.cpp b/gen/nested.cpp
-index 0d22b5c071..66ea4e313b 100644
 --- a/gen/nested.cpp
 +++ b/gen/nested.cpp
 @@ -170,7 +170,7 @@ DValue *DtoNestedVariable(const Loc &loc, Type *astype, VarDeclaration *vd,
@@ -124,8 +110,6 @@ index 0d22b5c071..66ea4e313b 100644
        }
      } else {
        frame = DtoRawAlloca(frameType, frameAlignment, ".frame");
-diff --git a/gen/optimizer.cpp b/gen/optimizer.cpp
-index 27d4026e2d..2159a7464e 100644
 --- a/gen/optimizer.cpp
 +++ b/gen/optimizer.cpp
 @@ -52,7 +52,11 @@
@@ -277,8 +261,6 @@ index 27d4026e2d..2159a7464e 100644
  #if LDC_LLVM_VER >= 1700
    } else if (opts::ltoFatObjects && opts::isUsingLTO()) {
      mpm = pb.buildFatLTODefaultPipeline(level,
-diff --git a/gen/toir.cpp b/gen/toir.cpp
-index c1dc6d5362..92d9535af1 100644
 --- a/gen/toir.cpp
 +++ b/gen/toir.cpp
 @@ -2814,7 +2814,7 @@ class ToElemVisitor : public Visitor {
@@ -290,8 +272,6 @@ index c1dc6d5362..92d9535af1 100644
                                    DtoGEP(irtc->getMemoryLLType(), val, 0u, 0));
  
        // TypeInfo ptr is first vtbl entry.
-diff --git a/gen/variable_lifetime.cpp b/gen/variable_lifetime.cpp
-index 488739cd83..e479238fa4 100644
 --- a/gen/variable_lifetime.cpp
 +++ b/gen/variable_lifetime.cpp
 @@ -16,6 +16,7 @@
@@ -313,8 +293,6 @@ index 488739cd83..e479238fa4 100644
  }
  
  void LocalVariableLifetimeAnnotator::pushScope() { scopes.emplace_back(); }
-diff --git a/ir/irtypefunction.cpp b/ir/irtypefunction.cpp
-index 93629b2acf..85eaed2e4f 100644
 --- a/ir/irtypefunction.cpp
 +++ b/ir/irtypefunction.cpp
 @@ -55,7 +55,7 @@ IrTypeDelegate *IrTypeDelegate::get(Type *t) {
@@ -326,8 +304,6 @@ index 93629b2acf..85eaed2e4f 100644
    llvm::Type *types[] = {getOpaquePtrType(), fptr};
    LLStructType *lt = LLStructType::get(gIR->context(), types, false);
  
-diff --git a/ir/irtypestruct.cpp b/ir/irtypestruct.cpp
-index fba984498a..4ce3041224 100644
 --- a/ir/irtypestruct.cpp
 +++ b/ir/irtypestruct.cpp
 @@ -80,7 +80,7 @@ IrTypeStruct *IrTypeStruct::get(StructDeclaration *sd) {
@@ -339,8 +315,17 @@ index fba984498a..4ce3041224 100644
  
      isaStruct(t->type)->setBody(body, false);
      VarGEPIndices v;
-diff --git a/utils/gen_gccbuiltins.cpp b/utils/gen_gccbuiltins.cpp
-index e483abbe26..01a86ee8b3 100644
+--- a/runtime/druntime/src/ldc/intrinsics.di
++++ b/runtime/druntime/src/ldc/intrinsics.di
+@@ -25,7 +25,7 @@
+ else version (LDC_LLVM_1800) enum LLVM_version = 1800;
+ else version (LDC_LLVM_1801) enum LLVM_version = 1801;
+ else version (LDC_LLVM_1901) enum LLVM_version = 1901;
+-else version (LDC_LLVM_2000) enum LLVM_version = 2000;
++else version (LDC_LLVM_2001) enum LLVM_version = 2001;
+ else static assert(false, "LDC LLVM version not supported");
+
+ enum LLVM_atleast(int major) = (LLVM_version >= major * 100);
 --- a/utils/gen_gccbuiltins.cpp
 +++ b/utils/gen_gccbuiltins.cpp
 @@ -31,9 +31,15 @@ using namespace llvm;
