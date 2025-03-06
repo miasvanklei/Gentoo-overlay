@@ -26,7 +26,7 @@ STDLIBS=(
 	"julialang JuliaSyntaxHighlighting.jl 2680c8bde1aa274f25d7a434c645f16b3a1ee731"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
-	"JuliaLang LinearAlgebra.jl e7da19f2764ba36bd0a9eb8ec67dddce19d87114"
+	"JuliaLang LinearAlgebra.jl f0f7a46063ae60a794e3ae6aa2910cfc90b41760"
 	"JuliaLang NetworkOptions.jl c090626d3feee6d6a5c476346d22d6147c9c6d2d"
 	"JuliaLang Pkg.jl 7aeec766cf637e2bc2af161eba8abd3a4b68d025"
 	"JuliaCrypto SHA.jl 4451e1362e425bcbc1652ecf55fc0e525b18fb63"

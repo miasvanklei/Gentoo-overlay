@@ -133,16 +133,16 @@
  JL_DLLEXPORT jl_value_t *jl_get_backtrace(void);
 --- a/stdlib/CompilerSupportLibraries_jll/src/CompilerSupportLibraries_jll.jl	2021-03-24 21:02:52.000000000 +0100
 +++ b/stdlib/CompilerSupportLibraries_jll/src/CompilerSupportLibraries_jll.jl	2021-11-14 15:58:27.848346923 +0100
-@@ -9,14 +9,12 @@
+@@ -8,7 +8,7 @@
  const PATH_list = String[]
  const LIBPATH_list = String[]
- 
+
 -export libgfortran, libstdcxx, libgomp
 +export libstdcxx, libgomp
- 
+
  # These get calculated in __init__()
  const PATH = Ref("")
- const LIBPATH = Ref("")
+@@ -16,8 +16,6 @@
  artifact_dir::String = ""
  libgcc_s_handle::Ptr{Cvoid} = C_NULL
  libgcc_s_path::String = ""
@@ -151,21 +151,19 @@
  libstdcxx_handle::Ptr{Cvoid} = C_NULL
  libstdcxx_path::String = ""
  libgomp_handle::Ptr{Cvoid} = C_NULL
-@@ -43,10 +41,9 @@
-     const libgomp = "@rpath/libgomp.1.dylib"
+@@ -45,9 +43,8 @@
      const libssp = "@rpath/libssp.0.dylib"
  else
--    const libgcc_s = "libgcc_s.so.1"
+     const libgcc_s = "libgcc_s.so.1"
 -    const libgfortran = string("libgfortran.so.", libgfortran_version(HostPlatform()).major)
 -    const libstdcxx = "libstdc++.so.6"
 -    const libgomp = "libgomp.so.1"
-+    const libgcc_s = "libunwind.so.1.0"
-+    const libstdcxx = "libc++.so.1.0"
-+    const libgomp = "libomp.so.1"
++    const libstdcxx = "libc++.so.1"
++    const libgomp = "libomp.so"
      if libc(HostPlatform()) != "musl"
          const libssp = "libssp.so.0"
      end
-@@ -55,8 +52,6 @@
+@@ -56,8 +53,6 @@
  function __init__()
      global libgcc_s_handle = dlopen(libgcc_s)
      global libgcc_s_path = dlpath(libgcc_s_handle)
@@ -174,7 +172,7 @@
      global libstdcxx_handle = dlopen(libstdcxx)
      global libstdcxx_path = dlpath(libstdcxx_handle)
      global libgomp_handle = dlopen(libgomp)
-@@ -76,7 +71,6 @@
+@@ -77,7 +72,6 @@
  find_artifact_dir() = artifact_dir
  dev_jll() = error("stdlib JLLs cannot be dev'ed")
  best_wrapper = nothing
