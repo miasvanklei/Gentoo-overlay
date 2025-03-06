@@ -1,68 +1,76 @@
-diff --git a/contrib/test/ci/system-packages.yml b/contrib/test/ci/system-packages.yml
-index 370a9b10606..384f48dc2c1 100644
---- a/contrib/test/ci/system-packages.yml
-+++ b/contrib/test/ci/system-packages.yml
-@@ -39,6 +39,7 @@
-       - make
-       - mlocate
-       - nfs-utils
-+      - nftables
-       - nmap-ncat
-       - openssl
-       - openssl-devel
-diff --git a/go.mod b/go.mod
-index 451276a1476..2efc2e88686 100644
---- a/go.mod
-+++ b/go.mod
-@@ -81,6 +81,7 @@ require (
+--- a/go.mod	2025-03-02 19:05:31.000000000 +0100
++++ b/go.mod	2025-03-06 20:47:00.265396529 +0100
+@@ -79,6 +79,7 @@
  	k8s.io/klog/v2 v2.130.1
- 	k8s.io/kubelet v0.31.0
+ 	k8s.io/kubelet v0.31.4
  	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
-+	sigs.k8s.io/knftables v0.0.17
++	sigs.k8s.io/knftables v0.0.18
  	sigs.k8s.io/release-sdk v0.12.1
- 	sigs.k8s.io/release-utils v0.8.4
+ 	sigs.k8s.io/release-utils v0.8.5
  	sigs.k8s.io/yaml v1.4.0
-diff --git a/go.sum b/go.sum
-index faf0a907927..edc91cc1450 100644
---- a/go.sum
-+++ b/go.sum
-@@ -1069,6 +1069,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
+--- a/go.sum	2025-03-02 19:05:31.000000000 +0100
++++ b/go.sum	2025-03-06 20:47:00.265396529 +0100
+@@ -1069,6 +1069,8 @@
  github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
- github.com/letsencrypt/boulder v0.0.0-20240418210053-89b07f4543e0 h1:aiPrFdHDCCvigNBCkOWj2lv9Bx5xDp210OANZEoiP0I=
- github.com/letsencrypt/boulder v0.0.0-20240418210053-89b07f4543e0/go.mod h1:srVwm2N3DC/tWqQ+igZXDrmKlNRN8X/dmJ1wEZrv760=
+ github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec h1:2tTW6cDth2TSgRbAhD7yjZzTQmcN25sDRPEeinR51yQ=
+ github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec/go.mod h1:TmwEoGCwIti7BCeJ9hescZgRtatxRE+A72pCoPfmcfk=
 +github.com/lithammer/dedent v1.1.0 h1:VNzHMVCBNG1j0fh3OrsFRkVUwStdDArbgBWoPAffktY=
 +github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z9BP0jIOc=
  github.com/lyft/protoc-gen-star v0.6.0/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
  github.com/lyft/protoc-gen-star v0.6.1/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
  github.com/lyft/protoc-gen-star/v2 v2.0.1/go.mod h1:RcCdONR2ScXaYnQC5tUzxzlpA3WVYF7/opLeUgcQs/o=
-@@ -2108,6 +2110,8 @@ rsc.io/quote/v3 v3.1.0/go.mod h1:yEA65RcK8LyAZtP9Kv3t0HmxON59tX3rD+tICJqUlj0=
+@@ -2116,6 +2118,8 @@
  rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
  sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
  sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
-+sigs.k8s.io/knftables v0.0.17 h1:wGchTyRF/iGTIjd+vRaR1m676HM7jB8soFtyr/148ic=
-+sigs.k8s.io/knftables v0.0.17/go.mod h1:f/5ZLKYEUPUhVjUCg6l80ACdL7CIIyeL0DxfgojGRTk=
++sigs.k8s.io/knftables v0.0.18 h1:6Duvmu0s/HwGifKrtl6G3AyAPYlWiZqTgS8bkVMiyaE=
++sigs.k8s.io/knftables v0.0.18/go.mod h1:f/5ZLKYEUPUhVjUCg6l80ACdL7CIIyeL0DxfgojGRTk=
  sigs.k8s.io/release-sdk v0.12.1 h1:/Q+yWpl33EnFx1b7xh6FnbioWSRUTrVkigL4KZVTrkU=
  sigs.k8s.io/release-sdk v0.12.1/go.mod h1:nnB4tt1g0VXMUCIYzDzPVqNI896OQrWipE6WbyZ6FSk=
- sigs.k8s.io/release-utils v0.8.4 h1:4QVr3UgbyY/d9p74LBhg0njSVQofUsAZqYOzVZBhdBw=
-diff --git a/install.md b/install.md
-index 63cdd64e8d1..b70d8097f86 100644
---- a/install.md
-+++ b/install.md
-@@ -162,7 +162,7 @@ chmod +x create_crio_sysext.sh
+ sigs.k8s.io/release-utils v0.8.5 h1:FUtFqEAN621gSXv0L7kHyWruBeS7TUU9aWf76olX7uQ=
+--- a/install.md	2025-03-02 19:05:31.000000000 +0100
++++ b/install.md	2025-03-06 20:47:00.265396529 +0100
+@@ -162,11 +162,16 @@
  
  - runc, crun or any other OCI compatible runtime
  - iproute
 -- iptables
-+- nftables (or iptables on older systems)
++- nftables (on newer distros)
++- iptables (on distros that don't support nftables, or for backward-compatibility)
  
  Latest version of `runc` is expected to be installed on the system. It is picked
  up as the default runtime by CRI-O.
-diff --git a/internal/hostport/hostport.go b/internal/hostport/hostport.go
-deleted file mode 100644
-index 313f3995268..00000000000
---- a/internal/hostport/hostport.go
-+++ /dev/null
-@@ -1,111 +0,0 @@
+ 
++CRI-O will prefer nftables (if it is available) for new pod HostPort
++mappings, but will also attempt to clean up old iptables-based
++mappings when deleting a pod, if iptables is installed.
++
+ ### Build and Run Dependencies
+ 
+ #### Fedora - RHEL 7 - CentOS
+--- a/internal/hostport/fake_iptables.go	2025-03-02 19:05:31.000000000 +0100
++++ b/internal/hostport/fake_iptables.go	2025-03-06 20:47:00.293396244 +0100
+@@ -47,7 +47,16 @@
+ 
+ func newFakeIPTables() *fakeIPTables {
+ 	return &fakeIPTables{
+-		tables: make(map[string]*fakeTable),
++		tables: map[string]*fakeTable{
++			"filter": {
++				name:   utiliptables.TableFilter,
++				chains: make(map[string]*fakeChain),
++			},
++			"nat": {
++				name:   utiliptables.TableNAT,
++				chains: make(map[string]*fakeChain),
++			},
++		},
+ 		builtinChains: map[string]sets.Set[string]{
+ 			string(utiliptables.TableFilter): sets.New("INPUT", "FORWARD", "OUTPUT"),
+ 			string(utiliptables.TableNAT):    sets.New("PREROUTING", "INPUT", "OUTPUT", "POSTROUTING"),
+--- a/internal/hostport/hostport.go	2025-03-02 19:05:31.000000000 +0100
++++ b/internal/hostport/hostport.go	1970-01-01 01:00:00.000000000 +0100
+@@ -1,98 +0,0 @@
 -/*
 -Copyright 2017 The Kubernetes Authors.
 -
@@ -116,12 +124,11 @@ index 313f3995268..00000000000
 -	Namespace    string
 -	Name         string
 -	PortMappings []*PortMapping
--	HostNetwork  bool
 -	IP           net.IP
 -}
 -
 -// ensureKubeHostportChains ensures the KUBE-HOSTPORTS chain is setup correctly.
--func ensureKubeHostportChains(iptables utiliptables.Interface, natInterfaceName string) error {
+-func ensureKubeHostportChains(iptables utiliptables.Interface) error {
 -	logrus.Info("Ensuring kubelet hostport chains")
 -	// Ensure kubeHostportChain
 -	if _, err := iptables.EnsureChain(utiliptables.TableNAT, kubeHostportsChain); err != nil {
@@ -160,26 +167,11 @@ index 313f3995268..00000000000
 -	if _, err := iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting, args...); err != nil {
 -		return fmt.Errorf("failed to ensure that %s chain %s jumps to %s: %w", utiliptables.TableNAT, utiliptables.ChainPostrouting, crioMasqueradeChain, err)
 -	}
--
--	if natInterfaceName != "" && natInterfaceName != "lo" {
--		// Need to SNAT traffic from localhost
--		localhost := "127.0.0.0/8"
--		if iptables.IsIPv6() {
--			localhost = "::1/128"
--		}
--		args = []string{"-m", "comment", "--comment", "SNAT for localhost access to hostports", "-o", natInterfaceName, "-s", localhost, "-j", "MASQUERADE"}
--		if _, err := iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, crioMasqueradeChain, args...); err != nil {
--			return fmt.Errorf("failed to ensure that %s chain %s jumps to MASQUERADE: %w", utiliptables.TableNAT, utiliptables.ChainPostrouting, err)
--		}
--	}
 -	return nil
 -}
-diff --git a/internal/hostport/hostport_iptables.go b/internal/hostport/hostport_iptables.go
-new file mode 100644
-index 00000000000..bcfe9096b93
---- /dev/null
-+++ b/internal/hostport/hostport_iptables.go
-@@ -0,0 +1,503 @@
+--- a/internal/hostport/hostport_iptables.go	1970-01-01 01:00:00.000000000 +0100
++++ b/internal/hostport/hostport_iptables.go	2025-03-06 20:47:00.293396244 +0100
+@@ -0,0 +1,462 @@
 +/*
 +Copyright 2017 The Kubernetes Authors.
 +
@@ -202,6 +194,7 @@ index 00000000000..bcfe9096b93
 +	"bytes"
 +	"crypto/sha256"
 +	"encoding/base32"
++	"errors"
 +	"fmt"
 +	"net"
 +	"strconv"
@@ -209,10 +202,7 @@ index 00000000000..bcfe9096b93
 +	"sync"
 +
 +	"github.com/sirupsen/logrus"
-+	v1 "k8s.io/api/core/v1"
-+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 +	utilexec "k8s.io/utils/exec"
-+	utilnet "k8s.io/utils/net"
 +
 +	utiliptables "github.com/cri-o/cri-o/internal/iptables"
 +)
@@ -230,43 +220,24 @@ index 00000000000..bcfe9096b93
 +)
 +
 +type hostportManagerIPTables struct {
-+	ip4tables utiliptables.Interface
-+	ip6tables utiliptables.Interface
-+	mu        sync.Mutex
++	iptables utiliptables.Interface
++	mu       sync.Mutex
 +}
 +
 +// newHostportManagerIPTables creates a new iptables HostPortManager.
-+func newHostportManagerIPTables() HostPortManager {
-+	exec := utilexec.New()
-+	return &hostportManagerIPTables{
-+		ip4tables: utiliptables.New(exec, utiliptables.ProtocolIPv4),
-+		ip6tables: utiliptables.New(exec, utiliptables.ProtocolIPv6),
++func newHostportManagerIPTables(protocol utiliptables.Protocol) (*hostportManagerIPTables, error) {
++	h := &hostportManagerIPTables{
++		iptables: utiliptables.New(utilexec.New(), protocol),
 +	}
++	if !h.iptables.Present() {
++		return nil, errors.New("iptables not available")
++	}
++
++	return h, nil
 +}
 +
-+func (hm *hostportManagerIPTables) Add(id string, podPortMapping *PodPortMapping, natInterfaceName string) (err error) {
-+	podFullName := getPodFullName(podPortMapping)
-+	// IP.To16() returns nil if IP is not a valid IPv4 or IPv6 address
-+	if podPortMapping.IP.To16() == nil {
-+		return fmt.Errorf("invalid or missing IP of pod %s", podFullName)
-+	}
-+	podIP := podPortMapping.IP.String()
-+	isIPv6 := utilnet.IsIPv6(podPortMapping.IP)
-+
-+	// skip if there is no hostport needed
-+	hostportMappings := gatherHostportMappings(podPortMapping, isIPv6)
-+	if len(hostportMappings) == 0 {
-+		return nil
-+	}
-+
-+	var ipt utiliptables.Interface
-+	if isIPv6 {
-+		ipt = hm.ip6tables
-+	} else {
-+		ipt = hm.ip4tables
-+	}
-+
-+	if err := ensureKubeHostportChains(ipt, natInterfaceName); err != nil {
++func (hm *hostportManagerIPTables) Add(id, name, podIP string, hostportMappings []*PortMapping) (err error) {
++	if err := ensureKubeHostportChains(hm.iptables); err != nil {
 +		return err
 +	}
 +
@@ -276,23 +247,21 @@ index 00000000000..bcfe9096b93
 +
 +	natChains := bytes.NewBuffer(nil)
 +	natRules := bytes.NewBuffer(nil)
++
 +	writeLine(natChains, "*nat")
 +
-+	existingChains, existingRules, err := getExistingHostportIPTablesRules(ipt)
++	existingChains, existingRules, err := getExistingHostportIPTablesRules(hm.iptables)
 +	if err != nil {
 +		return err
 +	}
 +
 +	newChains := []utiliptables.Chain{}
-+	conntrackPortsToRemove := []int{}
++
 +	for _, pm := range hostportMappings {
 +		protocol := strings.ToLower(string(pm.Protocol))
 +		hpChain := getHostportChain(kubeHostportChainPrefix, id, pm)
 +		masqChain := getHostportChain(crioMasqueradeChainPrefix, id, pm)
 +		newChains = append(newChains, hpChain, masqChain)
-+		if pm.Protocol == v1.ProtocolUDP {
-+			conntrackPortsToRemove = append(conntrackPortsToRemove, int(pm.HostPort))
-+		}
 +
 +		// Add new hostport chain
 +		writeLine(natChains, utiliptables.MakeChainLine(hpChain))
@@ -301,12 +270,12 @@ index 00000000000..bcfe9096b93
 +		// Prepend the new chains to KUBE-HOSTPORTS and CRIO-HOSTPORTS-MASQ
 +		// This avoids any leaking iptables rules that take up the same port
 +		writeLine(natRules, "-I", string(kubeHostportsChain),
-+			"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, podFullName, pm.HostPort),
++			"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, name, pm.HostPort),
 +			"-m", protocol, "-p", protocol, "--dport", strconv.Itoa(int(pm.HostPort)),
 +			"-j", string(hpChain),
 +		)
 +		writeLine(natRules, "-I", string(crioMasqueradeChain),
-+			"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, podFullName, pm.HostPort),
++			"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, name, pm.HostPort),
 +			"-j", string(masqChain),
 +		)
 +
@@ -314,12 +283,12 @@ index 00000000000..bcfe9096b93
 +		hostPortBinding := net.JoinHostPort(podIP, strconv.Itoa(int(pm.ContainerPort)))
 +		if pm.HostIP == "" || pm.HostIP == "0.0.0.0" || pm.HostIP == "::" {
 +			writeLine(natRules, "-A", string(hpChain),
-+				"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, podFullName, pm.HostPort),
++				"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, name, pm.HostPort),
 +				"-m", protocol, "-p", protocol,
 +				"-j", "DNAT", "--to-destination="+hostPortBinding)
 +		} else {
 +			writeLine(natRules, "-A", string(hpChain),
-+				"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, podFullName, pm.HostPort),
++				"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, name, pm.HostPort),
 +				"-m", protocol, "-p", protocol, "-d", pm.HostIP,
 +				"-j", "DNAT", "--to-destination="+hostPortBinding)
 +		}
@@ -330,7 +299,7 @@ index 00000000000..bcfe9096b93
 +		// and has src=dst=podIP then _someone_ needs to masquerade it, and the
 +		// worst case here is just that "-j MASQUERADE" gets called twice.
 +		writeLine(natRules, "-A", string(masqChain),
-+			"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, podFullName, pm.HostPort),
++			"-m", "comment", "--comment", fmt.Sprintf(`"%s hostport %d"`, name, pm.HostPort),
 +			"-m", "conntrack", "--ctorigdstport", strconv.Itoa(int(pm.HostPort)),
 +			"-m", protocol, "-p", protocol, "--dport", strconv.Itoa(int(pm.ContainerPort)),
 +			"-s", podIP, "-d", podIP,
@@ -346,60 +315,26 @@ index 00000000000..bcfe9096b93
 +	for _, chain := range existingChains {
 +		writeLine(natChains, chain)
 +	}
++
 +	for _, rule := range existingRules {
 +		writeLine(natRules, rule)
 +	}
++
 +	writeLine(natRules, "COMMIT")
 +
-+	if err := syncIPTables(ipt, append(natChains.Bytes(), natRules.Bytes()...)); err != nil {
-+		return err
-+	}
-+
-+	// Remove conntrack entries just after adding the new iptables rules. If the conntrack entry is removed along with
-+	// the IP tables rule, it can be the case that the packets received by the node after iptables rule removal will
-+	// create a new conntrack entry without any DNAT. That will result in blackhole of the traffic even after correct
-+	// iptables rules have been added back.
-+	logrus.Infof("Starting to delete udp conntrack entries: %v, isIPv6 - %v", conntrackPortsToRemove, isIPv6)
-+	// https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
-+	const protocolUDPNumber = 17
-+	for _, port := range conntrackPortsToRemove {
-+		err = deleteConntrackEntriesForDstPort(uint16(port), protocolUDPNumber, getNetlinkFamily(isIPv6))
-+		if err != nil {
-+			logrus.Errorf("Failed to clear udp conntrack for port %d, error: %v", port, err)
-+		}
-+	}
-+	return nil
++	return hm.syncIPTables(append(natChains.Bytes(), natRules.Bytes()...))
 +}
 +
-+func (hm *hostportManagerIPTables) Remove(id string, podPortMapping *PodPortMapping) (err error) {
-+	var errors []error
-+	// Remove may not have the IP information, so we try to clean us much as possible
-+	// and warn about the possible errors
-+	err = hm.removeForFamily(id, podPortMapping, hm.ip4tables)
-+	if err != nil {
-+		errors = append(errors, err)
-+	}
-+	err = hm.removeForFamily(id, podPortMapping, hm.ip6tables)
-+	if err != nil {
-+		errors = append(errors, err)
-+	}
-+
-+	return utilerrors.NewAggregate(errors)
-+}
-+
-+func (hm *hostportManagerIPTables) removeForFamily(id string, podPortMapping *PodPortMapping, ipt utiliptables.Interface) (err error) {
-+	hostportMappings := gatherHostportMappings(podPortMapping, ipt.IsIPv6())
-+	if len(hostportMappings) == 0 {
-+		return nil
-+	}
-+
++func (hm *hostportManagerIPTables) Remove(id string, hostportMappings []*PortMapping) (err error) {
 +	// Ensure atomicity for iptables operations
 +	hm.mu.Lock()
 +	defer hm.mu.Unlock()
 +
 +	var existingChains map[utiliptables.Chain]string
++
 +	var existingRules []string
-+	existingChains, existingRules, err = getExistingHostportIPTablesRules(ipt)
++
++	existingChains, existingRules, err = getExistingHostportIPTablesRules(hm.iptables)
 +	if err != nil {
 +		return err
 +	}
@@ -418,6 +353,7 @@ index 00000000000..bcfe9096b93
 +
 +	// gather target hostport chains that exists in iptables-save result
 +	existingChainsToRemove := []utiliptables.Chain{}
++
 +	for _, chain := range chainsToRemove {
 +		if _, ok := existingChains[chain]; ok {
 +			existingChainsToRemove = append(existingChainsToRemove, chain)
@@ -431,28 +367,82 @@ index 00000000000..bcfe9096b93
 +
 +	natChains := bytes.NewBuffer(nil)
 +	natRules := bytes.NewBuffer(nil)
++
 +	writeLine(natChains, "*nat")
++
 +	for _, chain := range existingChains {
 +		writeLine(natChains, chain)
 +	}
++
 +	for _, rule := range remainingRules {
 +		writeLine(natRules, rule)
 +	}
++
 +	for _, chain := range existingChainsToRemove {
 +		writeLine(natRules, "-X", string(chain))
 +	}
++
 +	writeLine(natRules, "COMMIT")
 +
-+	return syncIPTables(ipt, append(natChains.Bytes(), natRules.Bytes()...))
++	return hm.syncIPTables(append(natChains.Bytes(), natRules.Bytes()...))
 +}
 +
 +// syncIPTables executes iptables-restore with given lines.
-+func syncIPTables(ipt utiliptables.Interface, lines []byte) error {
++func (hm *hostportManagerIPTables) syncIPTables(lines []byte) error {
 +	logrus.Infof("Restoring iptables rules: %s", lines)
-+	err := ipt.RestoreAll(lines, utiliptables.NoFlushTables, utiliptables.RestoreCounters)
++
++	err := hm.iptables.RestoreAll(lines, utiliptables.NoFlushTables, utiliptables.RestoreCounters)
 +	if err != nil {
 +		return fmt.Errorf("failed to execute iptables-restore: %w", err)
 +	}
++
++	return nil
++}
++
++// ensureKubeHostportChains ensures the KUBE-HOSTPORTS chain is setup correctly.
++func ensureKubeHostportChains(iptables utiliptables.Interface) error {
++	logrus.Info("Ensuring kubelet hostport chains")
++	// Ensure kubeHostportChain
++	if _, err := iptables.EnsureChain(utiliptables.TableNAT, kubeHostportsChain); err != nil {
++		return fmt.Errorf("failed to ensure that %s chain %s exists: %w", utiliptables.TableNAT, kubeHostportsChain, err)
++	}
++
++	tableChainsNeedJumpServices := []struct {
++		table utiliptables.Table
++		chain utiliptables.Chain
++	}{
++		{utiliptables.TableNAT, utiliptables.ChainOutput},
++		{utiliptables.TableNAT, utiliptables.ChainPrerouting},
++	}
++	args := []string{
++		"-m", "comment", "--comment", "kube hostport portals",
++		"-m", "addrtype", "--dst-type", "LOCAL",
++		"-j", string(kubeHostportsChain),
++	}
++
++	for _, tc := range tableChainsNeedJumpServices {
++		// KUBE-HOSTPORTS chain needs to be appended to the system chains.
++		// This ensures KUBE-SERVICES chain gets processed first.
++		// Since rules in KUBE-HOSTPORTS chain matches broader cases, allow the more specific rules to be processed first.
++		if _, err := iptables.EnsureRule(utiliptables.Append, tc.table, tc.chain, args...); err != nil {
++			return fmt.Errorf("failed to ensure that %s chain %s jumps to %s: %w", tc.table, tc.chain, kubeHostportsChain, err)
++		}
++	}
++
++	// Ensure crioMasqueradeChain
++	if _, err := iptables.EnsureChain(utiliptables.TableNAT, crioMasqueradeChain); err != nil {
++		return fmt.Errorf("failed to ensure that %s chain %s exists: %w", utiliptables.TableNAT, crioMasqueradeChain, err)
++	}
++
++	args = []string{
++		"-m", "comment", "--comment", "kube hostport masquerading",
++		"-m", "conntrack", "--ctstate", "DNAT",
++		"-j", string(crioMasqueradeChain),
++	}
++	if _, err := iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting, args...); err != nil {
++		return fmt.Errorf("failed to ensure that %s chain %s jumps to %s: %w", utiliptables.TableNAT, utiliptables.ChainPostrouting, crioMasqueradeChain, err)
++	}
++
 +	return nil
 +}
 +
@@ -465,6 +455,7 @@ index 00000000000..bcfe9096b93
 +func getHostportChain(prefix, id string, pm *PortMapping) utiliptables.Chain {
 +	hash := sha256.Sum256([]byte(id + strconv.Itoa(int(pm.HostPort)) + string(pm.Protocol) + pm.HostIP))
 +	encoded := base32.StdEncoding.EncodeToString(hash[:])
++
 +	return utiliptables.Chain(prefix + encoded[:16])
 +}
 +
@@ -474,10 +465,12 @@ index 00000000000..bcfe9096b93
 +//nolint:gocritic // unnamedResult: consider giving a name to these results
 +func getExistingHostportIPTablesRules(iptables utiliptables.Interface) (map[utiliptables.Chain]string, []string, error) {
 +	iptablesData := bytes.NewBuffer(nil)
++
 +	err := iptables.SaveInto(utiliptables.TableNAT, iptablesData)
 +	if err != nil { // if we failed to get any rules
 +		return nil, nil, fmt.Errorf("failed to execute iptables-save: %w", err)
 +	}
++
 +	existingNATChains := getChainLines(utiliptables.TableNAT, iptablesData.Bytes())
 +
 +	existingHostportChains := make(map[utiliptables.Chain]string)
@@ -499,6 +492,7 @@ index 00000000000..bcfe9096b93
 +			existingHostportRules = append(existingHostportRules, line)
 +		}
 +	}
++
 +	return existingHostportChains, existingHostportRules, nil
 +}
 +
@@ -514,10 +508,12 @@ index 00000000000..bcfe9096b93
 +	for readIndex < len(save) {
 +		line, n := readLine(readIndex, save)
 +		readIndex = n
++
 +		if bytes.HasPrefix(line, tablePrefix) {
 +			break
 +		}
 +	}
++
 +	var (
 +		commitBytes = []byte("COMMIT")
 +		spaceBytes  = []byte(" ")
@@ -526,9 +522,11 @@ index 00000000000..bcfe9096b93
 +	for readIndex < len(save) {
 +		line, n := readLine(readIndex, save)
 +		readIndex = n
++
 +		if len(line) == 0 {
 +			continue
 +		}
++
 +		if bytes.HasPrefix(line, commitBytes) || line[0] == '*' { //nolint:gocritic
 +			break
 +		} else if line[0] == '#' {
@@ -540,10 +538,12 @@ index 00000000000..bcfe9096b93
 +			if spaceIndex == -1 {
 +				panic(fmt.Sprintf("Unexpected chain line in iptables-save output: %v", string(line)))
 +			}
++
 +			chain := utiliptables.Chain(line[1:spaceIndex])
 +			chainsMap[chain] = line
 +		}
 +	}
++
 +	return chainsMap
 +}
 +
@@ -593,6 +593,7 @@ index 00000000000..bcfe9096b93
 +			rightTrimIndex = -1
 +		}
 +	}
++
 +	return nil, currentReadIndex
 +}
 +
@@ -600,18 +601,23 @@ index 00000000000..bcfe9096b93
 +// The order of the input rules is important and is preserved.
 +func filterRules(rules []string, filters []utiliptables.Chain) []string {
 +	filtered := []string{}
++
 +	for _, rule := range rules {
 +		skip := false
++
 +		for _, filter := range filters {
 +			if strings.Contains(rule, string(filter)) {
 +				skip = true
++
 +				break
 +			}
 +		}
++
 +		if !skip {
 +			filtered = append(filtered, rule)
 +		}
 +	}
++
 +	return filtered
 +}
 +
@@ -628,101 +634,125 @@ index 00000000000..bcfe9096b93
 +func writeLine(buf *bytes.Buffer, words ...string) {
 +	buf.WriteString(strings.Join(words, " ") + "\n")
 +}
+--- a/internal/hostport/hostport_iptables_test.go	1970-01-01 01:00:00.000000000 +0100
++++ b/internal/hostport/hostport_iptables_test.go	2025-03-06 20:47:00.293396244 +0100
+@@ -0,0 +1,207 @@
++/*
++Copyright 2017 The Kubernetes Authors.
 +
-+// ensureKubeHostportChains ensures the KUBE-HOSTPORTS chain is setup correctly.
-+func ensureKubeHostportChains(iptables utiliptables.Interface, natInterfaceName string) error {
-+	logrus.Info("Ensuring kubelet hostport chains")
-+	// Ensure kubeHostportChain
-+	if _, err := iptables.EnsureChain(utiliptables.TableNAT, kubeHostportsChain); err != nil {
-+		return fmt.Errorf("failed to ensure that %s chain %s exists: %w", utiliptables.TableNAT, kubeHostportsChain, err)
-+	}
-+	tableChainsNeedJumpServices := []struct {
-+		table utiliptables.Table
-+		chain utiliptables.Chain
-+	}{
-+		{utiliptables.TableNAT, utiliptables.ChainOutput},
-+		{utiliptables.TableNAT, utiliptables.ChainPrerouting},
-+	}
-+	args := []string{
-+		"-m", "comment", "--comment", "kube hostport portals",
-+		"-m", "addrtype", "--dst-type", "LOCAL",
-+		"-j", string(kubeHostportsChain),
-+	}
-+	for _, tc := range tableChainsNeedJumpServices {
-+		// KUBE-HOSTPORTS chain needs to be appended to the system chains.
-+		// This ensures KUBE-SERVICES chain gets processed first.
-+		// Since rules in KUBE-HOSTPORTS chain matches broader cases, allow the more specific rules to be processed first.
-+		if _, err := iptables.EnsureRule(utiliptables.Append, tc.table, tc.chain, args...); err != nil {
-+			return fmt.Errorf("failed to ensure that %s chain %s jumps to %s: %w", tc.table, tc.chain, kubeHostportsChain, err)
-+		}
-+	}
++Licensed under the Apache License, Version 2.0 (the "License");
++you may not use this file except in compliance with the License.
++You may obtain a copy of the License at
 +
-+	// Ensure crioMasqueradeChain
-+	if _, err := iptables.EnsureChain(utiliptables.TableNAT, crioMasqueradeChain); err != nil {
-+		return fmt.Errorf("failed to ensure that %s chain %s exists: %w", utiliptables.TableNAT, crioMasqueradeChain, err)
-+	}
-+	args = []string{
-+		"-m", "comment", "--comment", "kube hostport masquerading",
-+		"-m", "conntrack", "--ctstate", "DNAT",
-+		"-j", string(crioMasqueradeChain),
-+	}
-+	if _, err := iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting, args...); err != nil {
-+		return fmt.Errorf("failed to ensure that %s chain %s jumps to %s: %w", utiliptables.TableNAT, utiliptables.ChainPostrouting, crioMasqueradeChain, err)
-+	}
++    http://www.apache.org/licenses/LICENSE-2.0
 +
-+	if natInterfaceName != "" && natInterfaceName != "lo" {
-+		// Need to SNAT traffic from localhost
-+		localhost := "127.0.0.0/8"
-+		if iptables.IsIPv6() {
-+			localhost = "::1/128"
-+		}
-+		args = []string{"-m", "comment", "--comment", "SNAT for localhost access to hostports", "-o", natInterfaceName, "-s", localhost, "-j", "MASQUERADE"}
-+		if _, err := iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, crioMasqueradeChain, args...); err != nil {
-+			return fmt.Errorf("failed to ensure that %s chain %s jumps to MASQUERADE: %w", utiliptables.TableNAT, utiliptables.ChainPostrouting, err)
-+		}
-+	}
-+	return nil
++Unless required by applicable law or agreed to in writing, software
++distributed under the License is distributed on an "AS IS" BASIS,
++WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++See the License for the specific language governing permissions and
++limitations under the License.
++*/
++
++package hostport
++
++import (
++	"bytes"
++	"strings"
++
++	. "github.com/onsi/ginkgo/v2"
++	. "github.com/onsi/gomega"
++	"k8s.io/apimachinery/pkg/util/sets"
++
++	utiliptables "github.com/cri-o/cri-o/internal/iptables"
++)
++
++var expectedIPTablesRulesV4 = []string{
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp --dport 8443 -j KUBE-HP-WLTFZLTJ4QV7FRX3",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod3_ns1 hostport 8443\" -j CRIO-MASQ-WLTFZLTJ4QV7FRX3",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp --dport 8081 -j KUBE-HP-3MG73OVK5S7GSUBC",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8081\" -j CRIO-MASQ-3MG73OVK5S7GSUBC",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp --dport 8080 -j KUBE-HP-7BDNOFFT2YWI552I",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8080\" -j CRIO-MASQ-7BDNOFFT2YWI552I",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp --dport 8083 -j KUBE-HP-KYJTJFIY2JGKKVYU",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8083\" -j CRIO-MASQ-KYJTJFIY2JGKKVYU",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp --dport 8888 -j KUBE-HP-WTCIRE6PNE4I56DF",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8084\" -j CRIO-MASQ-IELLLSCZHX7UUOQQ",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp --dport 8084 -j KUBE-HP-IELLLSCZHX7UUOQQ",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod5_ns5 hostport 8888\" -j CRIO-MASQ-WTCIRE6PNE4I56DF",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp --dport 8888 -j KUBE-HP-DQ5WDJN45DRPOYFE",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod5_ns5 hostport 8888\" -j CRIO-MASQ-DQ5WDJN45DRPOYFE",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod6_ns1 hostport 9999\" -m tcp -p tcp --dport 9999 -j KUBE-HP-AL32N6L3TM3M4FHI",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod6_ns1 hostport 9999\" -j CRIO-MASQ-AL32N6L3TM3M4FHI",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod6_ns1 hostport 9999\" -m udp -p udp --dport 9999 -j KUBE-HP-EOVTPYGVQGYVG7R5",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod6_ns1 hostport 9999\" -j CRIO-MASQ-EOVTPYGVQGYVG7R5",
++	"-A CRIO-MASQ-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m conntrack --ctorigdstport 8080 -m tcp -p tcp --dport 80 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
++	"-A KUBE-HP-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp -j DNAT --to-destination 10.1.1.2:80",
++	"-A CRIO-MASQ-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m conntrack --ctorigdstport 8081 -m udp -p udp --dport 81 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
++	"-A KUBE-HP-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp -j DNAT --to-destination 10.1.1.2:81",
++	"-A CRIO-MASQ-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m conntrack --ctorigdstport 8083 -m sctp -p sctp --dport 83 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
++	"-A KUBE-HP-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp -j DNAT --to-destination 10.1.1.2:83",
++	"-A CRIO-MASQ-IELLLSCZHX7UUOQQ -m comment --comment \"pod1_ns1 hostport 8084\" -m conntrack --ctorigdstport 8084 -m tcp -p tcp --dport 84 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
++	"-A KUBE-HP-IELLLSCZHX7UUOQQ -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp -d 127.0.0.1/32 -j DNAT --to-destination 10.1.1.2:84",
++	"-A CRIO-MASQ-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m conntrack --ctorigdstport 8443 -m tcp -p tcp --dport 443 -s 10.1.1.4/32 -d 10.1.1.4/32 -j MASQUERADE",
++	"-A KUBE-HP-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp -j DNAT --to-destination 10.1.1.4:443",
++	"-A CRIO-MASQ-WTCIRE6PNE4I56DF -m comment --comment \"pod5_ns5 hostport 8888\" -m conntrack --ctorigdstport 8888 -m tcp -p tcp --dport 443 -s 10.1.1.5/32 -d 10.1.1.5/32 -j MASQUERADE",
++	"-A KUBE-HP-WTCIRE6PNE4I56DF -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp -d 127.0.0.1/32 -j DNAT --to-destination 10.1.1.5:443",
++	"-A CRIO-MASQ-DQ5WDJN45DRPOYFE -m comment --comment \"pod5_ns5 hostport 8888\" -m conntrack --ctorigdstport 8888 -m tcp -p tcp --dport 443 -s 10.1.1.5/32 -d 10.1.1.5/32 -j MASQUERADE",
++	"-A KUBE-HP-DQ5WDJN45DRPOYFE -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp -d 127.0.0.2/32 -j DNAT --to-destination 10.1.1.5:443",
++	"-A CRIO-MASQ-EOVTPYGVQGYVG7R5 -m comment --comment \"pod6_ns1 hostport 9999\" -m conntrack --ctorigdstport 9999 -m udp -p udp --dport 443 -s 10.1.1.6/32 -d 10.1.1.6/32 -j MASQUERADE",
++	"-A KUBE-HP-AL32N6L3TM3M4FHI -m comment --comment \"pod6_ns1 hostport 9999\" -m tcp -p tcp -j DNAT --to-destination 10.1.1.6:443",
++	"-A CRIO-MASQ-AL32N6L3TM3M4FHI -m comment --comment \"pod6_ns1 hostport 9999\" -m conntrack --ctorigdstport 9999 -m tcp -p tcp --dport 443 -s 10.1.1.6/32 -d 10.1.1.6/32 -j MASQUERADE",
++	"-A KUBE-HP-EOVTPYGVQGYVG7R5 -m comment --comment \"pod6_ns1 hostport 9999\" -m udp -p udp -j DNAT --to-destination 10.1.1.6:443",
 +}
-diff --git a/internal/hostport/hostport_manager_test.go b/internal/hostport/hostport_iptables_test.go
-similarity index 92%
-rename from internal/hostport/hostport_manager_test.go
-rename to internal/hostport/hostport_iptables_test.go
-index 2f20922d6d4..a80b39f6aa0 100644
---- a/internal/hostport/hostport_manager_test.go
-+++ b/internal/hostport/hostport_iptables_test.go
-@@ -28,10 +28,10 @@ import (
- 	utiliptables "github.com/cri-o/cri-o/internal/iptables"
- )
- 
--// newFakeManager creates a new Manager with fake iptables. Note that we need to create
-+// newFakeManagerIPTables creates a new Manager with fake iptables. Note that we need to create
- // (and semi-initialize) both ip4tables and ip6tables even for the single-stack tests,
- // because Remove() will try to use both.
--func newFakeManager() *hostportManager {
-+func newFakeManagerIPTables() *hostportManagerIPTables {
- 	ip4tables := newFakeIPTables()
- 	ip4tables.protocol = utiliptables.ProtocolIPv4
- 	//nolint:errcheck // can't fail with fake iptables
-@@ -42,15 +42,48 @@ func newFakeManager() *hostportManager {
- 	//nolint:errcheck // can't fail with fake iptables
- 	_, _ = ip6tables.EnsureChain(utiliptables.TableNAT, utiliptables.ChainOutput)
- 
--	return &hostportManager{
-+	return &hostportManagerIPTables{
- 		ip4tables: ip4tables,
- 		ip6tables: ip6tables,
- 	}
- }
- 
--var _ = t.Describe("HostPortManager", func() {
--	It("HostportManagerIPv4", func() {
--		manager := newFakeManager()
-+var _ = t.Describe("HostPortManagerIPTables", func() {
-+	It("should ensure kube hostport chains", func() {
-+		interfaceName := "cbr0"
 +
++var expectedIPTablesRulesV6 = []string{
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp --dport 8443 -j KUBE-HP-WLTFZLTJ4QV7FRX3",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod3_ns1 hostport 8443\" -j CRIO-MASQ-WLTFZLTJ4QV7FRX3",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp --dport 8081 -j KUBE-HP-3MG73OVK5S7GSUBC",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8081\" -j CRIO-MASQ-3MG73OVK5S7GSUBC",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp --dport 8080 -j KUBE-HP-7BDNOFFT2YWI552I",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8080\" -j CRIO-MASQ-7BDNOFFT2YWI552I",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp --dport 8083 -j KUBE-HP-KYJTJFIY2JGKKVYU",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8083\" -j CRIO-MASQ-KYJTJFIY2JGKKVYU",
++	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp --dport 8084 -j KUBE-HP-MGT4WGWISEW3X3JW",
++	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8084\" -j CRIO-MASQ-MGT4WGWISEW3X3JW",
++	"-A CRIO-MASQ-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m conntrack --ctorigdstport 8080 -m tcp -p tcp --dport 80 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
++	"-A KUBE-HP-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp -j DNAT --to-destination [2001:beef::2]:80",
++	"-A CRIO-MASQ-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m conntrack --ctorigdstport 8081 -m udp -p udp --dport 81 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
++	"-A KUBE-HP-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp -j DNAT --to-destination [2001:beef::2]:81",
++	"-A CRIO-MASQ-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m conntrack --ctorigdstport 8083 -m sctp -p sctp --dport 83 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
++	"-A KUBE-HP-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp -j DNAT --to-destination [2001:beef::2]:83",
++	"-A CRIO-MASQ-MGT4WGWISEW3X3JW -m comment --comment \"pod1_ns1 hostport 8084\" -m conntrack --ctorigdstport 8084 -m tcp -p tcp --dport 84 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
++	"-A KUBE-HP-MGT4WGWISEW3X3JW -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp -d ::1/128 -j DNAT --to-destination [2001:beef::2]:84",
++	"-A CRIO-MASQ-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m conntrack --ctorigdstport 8443 -m tcp -p tcp --dport 443 -s 2001:beef::4/128 -d 2001:beef::4/128 -j MASQUERADE",
++	"-A KUBE-HP-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp -j DNAT --to-destination [2001:beef::4]:443",
++}
++
++func checkIPTablesRules(ipt utiliptables.Interface, expectedRules []string) {
++	raw := bytes.NewBuffer(nil)
++	err := ipt.SaveInto(utiliptables.TableNAT, raw)
++	ExpectWithOffset(1, err).NotTo(HaveOccurred())
++
++	expected := sets.New(expectedRules...)
++
++	matched := sets.New[string]()
++
++	for _, line := range strings.Split(raw.String(), "\n") {
++		if strings.HasPrefix(line, "-A KUBE-HOSTPORTS ") || strings.HasPrefix(line, "-A CRIO-HOSTPORTS-MASQ ") || strings.HasPrefix(line, "-A KUBE-HP-") || strings.HasPrefix(line, "-A CRIO-MASQ-") {
++			matched.Insert(line)
++		}
++	}
++
++	unexpectedRules := matched.Difference(expected).UnsortedList()
++	missingRules := expected.Difference(matched).UnsortedList()
++
++	ExpectWithOffset(1, len(unexpectedRules)+len(missingRules)).To(Equal(0), "unexpected rules in iptables-save: %#v, expected rules missing from iptables-save: %#v", unexpectedRules, missingRules)
++}
++
++var _ = t.Describe("hostPortManagerIPTables", func() {
++	It("should ensure kube hostport chains", func() {
 +		fakeIPTables := newFakeIPTables()
-+		Expect(ensureKubeHostportChains(fakeIPTables, interfaceName)).To(Succeed())
++		Expect(ensureKubeHostportChains(fakeIPTables)).To(Succeed())
 +
 +		_, _, err := fakeIPTables.getChain(utiliptables.TableNAT, utiliptables.Chain("KUBE-HOSTPORTS"))
 +		Expect(err).ToNot(HaveOccurred())
@@ -738,7 +768,6 @@ index 2f20922d6d4..a80b39f6aa0 100644
 +		}
 +
 +		masqJumpRule := "-m comment --comment \"kube hostport masquerading\" -m conntrack --ctstate DNAT -j CRIO-HOSTPORTS-MASQ"
-+		localhostMasqRule := "-m comment --comment \"SNAT for localhost access to hostports\" -o cbr0 -s 127.0.0.0/8 -j MASQUERADE"
 +
 +		_, chain, err := fakeIPTables.getChain(utiliptables.TableNAT, utiliptables.ChainPostrouting)
 +		Expect(err).ToNot(HaveOccurred())
@@ -747,180 +776,77 @@ index 2f20922d6d4..a80b39f6aa0 100644
 +
 +		_, chain, err = fakeIPTables.getChain(utiliptables.TableNAT, crioMasqueradeChain)
 +		Expect(err).ToNot(HaveOccurred())
-+		Expect(len(chain.rules)).To(BeEquivalentTo(1))
-+		Expect(chain.rules).To(ContainElement(localhostMasqRule))
++		Expect(len(chain.rules)).To(BeEquivalentTo(0))
 +	})
 +
-+	It("should support IPv4", func() {
-+		manager := newFakeManagerIPTables()
- 		testCases := []struct {
- 			mapping     *PodPortMapping
- 			expectError bool
-@@ -58,10 +91,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			// open HostPorts 8080/TCP, 8081/UDP and 8083/SCTP
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod1",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("10.1.1.2"),
--					HostNetwork: false,
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("10.1.1.2"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8080,
-@@ -85,10 +117,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			// open port 443
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod3",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("10.1.1.4"),
--					HostNetwork: false,
-+					Name:      "pod3",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("10.1.1.4"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8443,
-@@ -102,10 +133,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			// open same HostPort on different IP
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod5",
--					Namespace:   "ns5",
--					IP:          net.ParseIP("10.1.1.5"),
--					HostNetwork: false,
-+					Name:      "pod5",
-+					Namespace: "ns5",
-+					IP:        net.ParseIP("10.1.1.5"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8888,
-@@ -126,10 +156,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			// open same HostPort on different
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod6",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("10.1.1.2"),
--					HostNetwork: false,
-+					Name:      "pod6",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("10.1.1.2"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      9999,
-@@ -274,18 +303,17 @@ var _ = t.Describe("HostPortManager", func() {
- 		Expect(m).To(HaveLen(4))
- 	})
- 
--	It("HostportManagerIPv6", func() {
--		manager := newFakeManager()
-+	It("should support IPv6", func() {
-+		manager := newFakeManagerIPTables()
- 		testCases := []struct {
- 			mapping     *PodPortMapping
- 			expectError bool
- 		}{
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod1",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("2001:beef::2"),
--					HostNetwork: false,
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::2"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8080,
-@@ -308,10 +336,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			},
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod3",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("2001:beef::4"),
--					HostNetwork: false,
-+					Name:      "pod3",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::4"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8443,
-@@ -411,18 +438,17 @@ var _ = t.Describe("HostPortManager", func() {
- 		}
- 	})
- 
--	It("HostportManagerDualStack", func() {
--		manager := newFakeManager()
-+	It("should support dual stack", func() {
-+		manager := newFakeManagerIPTables()
- 		testCases := []struct {
- 			mapping     *PodPortMapping
- 			expectError bool
- 		}{
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod1",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("192.168.2.7"),
--					HostNetwork: false,
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("192.168.2.7"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8080,
-@@ -453,10 +479,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			// but different IP must work
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod1",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("2001:beef::3"),
--					HostNetwork: false,
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::3"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8080,
-@@ -485,10 +510,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			},
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod3",
--					Namespace:   "ns1",
--					IP:          net.ParseIP("2001:beef::4"),
--					HostNetwork: false,
-+					Name:      "pod3",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::4"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8443,
-@@ -503,10 +527,9 @@ var _ = t.Describe("HostPortManager", func() {
- 			// but using another IP family
- 			{
- 				mapping: &PodPortMapping{
--					Name:        "pod4",
--					Namespace:   "ns2",
--					IP:          net.ParseIP("192.168.2.2"),
--					HostNetwork: false,
-+					Name:      "pod4",
-+					Namespace: "ns2",
-+					IP:        net.ParseIP("192.168.2.2"),
- 					PortMappings: []*PortMapping{
- 						{
- 							HostPort:      8443,
-diff --git a/internal/hostport/hostport_manager.go b/internal/hostport/hostport_manager.go
-index d835f0a17ab..acc8e20988c 100644
---- a/internal/hostport/hostport_manager.go
-+++ b/internal/hostport/hostport_manager.go
-@@ -17,24 +17,13 @@ limitations under the License.
++	It("should create hostport chains with distinct names", func() {
++		m := make(map[string]int)
++		chain := getHostportChain("prefix", "testrdma-2", &PortMapping{HostPort: 57119, Protocol: "TCP", ContainerPort: 57119})
++		m[string(chain)] = 1
++		chain = getHostportChain("prefix", "testrdma-2", &PortMapping{HostPort: 55429, Protocol: "TCP", ContainerPort: 55429})
++		m[string(chain)] = 1
++		chain = getHostportChain("prefix", "testrdma-2", &PortMapping{HostPort: 56833, Protocol: "TCP", ContainerPort: 56833})
++		m[string(chain)] = 1
++		chain = getHostportChain("different-prefix", "testrdma-2", &PortMapping{HostPort: 56833, Protocol: "TCP", ContainerPort: 56833})
++		m[string(chain)] = 1
++		Expect(m).To(HaveLen(4))
++	})
++
++	It("should work for IPv4", func() {
++		iptables := newFakeIPTables()
++		iptables.protocol = utiliptables.ProtocolIPv4
++		manager := &hostportManagerIPTables{
++			iptables: iptables,
++		}
++
++		// Add Hostports
++		for _, tc := range testCasesV4 {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// Check Iptables-save result after adding hostports
++		checkIPTablesRules(manager.iptables, expectedIPTablesRulesV4)
++
++		// Remove all added hostports
++		for _, tc := range testCasesV4 {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// Check Iptables-save result after deleting hostports
++		checkIPTablesRules(manager.iptables, nil)
++	})
++
++	It("should work for IPv6", func() {
++		iptables := newFakeIPTables()
++		iptables.protocol = utiliptables.ProtocolIPv6
++		manager := &hostportManagerIPTables{
++			iptables: iptables,
++		}
++
++		// Add Hostports
++		for _, tc := range testCasesV6 {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// Check Iptables-save result after adding hostports
++		checkIPTablesRules(manager.iptables, expectedIPTablesRulesV6)
++
++		// Remove all added hostports
++		for _, tc := range testCasesV6 {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// Check Iptables-save result after deleting hostports
++		checkIPTablesRules(manager.iptables, nil)
++	})
++})
+--- a/internal/hostport/hostport_manager.go	2025-03-02 19:05:31.000000000 +0100
++++ b/internal/hostport/hostport_manager.go	2025-03-06 20:47:00.293396244 +0100
+@@ -17,24 +17,7 @@
  package hostport
  
  import (
@@ -928,27 +854,38 @@ index d835f0a17ab..acc8e20988c 100644
 -	"crypto/sha256"
 -	"encoding/base32"
 -	"fmt"
- 	"net"
+-	"net"
 -	"strconv"
 -	"strings"
 -	"sync"
- 
- 	"github.com/sirupsen/logrus"
- 	"github.com/vishvananda/netlink"
- 	"golang.org/x/sys/unix"
+-
+-	"github.com/sirupsen/logrus"
+-	"github.com/vishvananda/netlink"
+-	"golang.org/x/sys/unix"
  	v1 "k8s.io/api/core/v1"
 -	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 -	utilexec "k8s.io/utils/exec"
- 	utilnet "k8s.io/utils/net"
+-	utilnet "k8s.io/utils/net"
 -
 -	utiliptables "github.com/cri-o/cri-o/internal/iptables"
  )
  
  // HostPortManager is an interface for adding and removing hostport for a given pod sandbox.
-@@ -51,250 +40,30 @@ type HostPortManager interface {
- 	Remove(id string, podPortMapping *PodPortMapping) error
- }
- 
+@@ -43,438 +26,19 @@
+ type HostPortManager interface {
+ 	// Add implements port mappings.
+ 	// id should be a unique identifier for a pod, e.g. podSandboxID.
+-	// podPortMapping is the associated port mapping information for the pod.
+-	Add(id string, podPortMapping *PodPortMapping) error
++	// name is the human-readable name of the pod.
++	// podIP is the IP to add mappings for.
++	// hostportMappings are the associated port mappings for the pod.
++	Add(id, name, podIP string, hostportMappings []*PortMapping) error
+ 	// Remove cleans up matching port mappings
+ 	// Remove must be able to clean up port mappings without pod IP
+-	Remove(id string, podPortMapping *PodPortMapping) error
+-}
+-
 -type hostportManager struct {
 -	ip4tables utiliptables.Interface
 -	ip6tables utiliptables.Interface
@@ -956,8 +893,7 @@ index d835f0a17ab..acc8e20988c 100644
 -}
 -
 -// NewHostportManager creates a new HostPortManager.
-+// NewHostportManager creates a new HostPortManager for this system
- func NewHostportManager() HostPortManager {
+-func NewHostportManager() HostPortManager {
 -	exec := utilexec.New()
 -	return &hostportManager{
 -		ip4tables: utiliptables.New(exec, utiliptables.ProtocolIPv4),
@@ -965,10 +901,7 @@ index d835f0a17ab..acc8e20988c 100644
 -	}
 -}
 -
--func (hm *hostportManager) Add(id string, podPortMapping *PodPortMapping, natInterfaceName string) (err error) {
--	if podPortMapping == nil || podPortMapping.HostNetwork {
--		return nil
--	}
+-func (hm *hostportManager) Add(id string, podPortMapping *PodPortMapping) (err error) {
 -	podFullName := getPodFullName(podPortMapping)
 -	// IP.To16() returns nil if IP is not a valid IPv4 or IPv6 address
 -	if podPortMapping.IP.To16() == nil {
@@ -990,7 +923,7 @@ index d835f0a17ab..acc8e20988c 100644
 -		ipt = hm.ip4tables
 -	}
 -
--	if err := ensureKubeHostportChains(ipt, natInterfaceName); err != nil {
+-	if err := ensureKubeHostportChains(ipt); err != nil {
 -		return err
 -	}
 -
@@ -1003,8 +936,7 @@ index d835f0a17ab..acc8e20988c 100644
 -	writeLine(natChains, "*nat")
 -
 -	existingChains, existingRules, err := getExistingHostportIPTablesRules(ipt)
-+	hm, err := newHostportManagerNFTables()
- 	if err != nil {
+-	if err != nil {
 -		return err
 -	}
 -
@@ -1092,18 +1024,11 @@ index d835f0a17ab..acc8e20988c 100644
 -		if err != nil {
 -			logrus.Errorf("Failed to clear udp conntrack for port %d, error: %v", port, err)
 -		}
-+		logrus.Infof("Could not create nftables-based HostPortManager (%v); falling back to iptables", err)
-+		hm = newHostportManagerIPTables()
- 	}
--	return nil
-+	return hm
- }
- 
--func (hm *hostportManager) Remove(id string, podPortMapping *PodPortMapping) (err error) {
--	if podPortMapping == nil || podPortMapping.HostNetwork {
--		return nil
 -	}
+-	return nil
+-}
 -
+-func (hm *hostportManager) Remove(id string, podPortMapping *PodPortMapping) (err error) {
 -	var errors []error
 -	// Remove may not have the IP information, so we try to clean us much as possible
 -	// and warn about the possible errors
@@ -1117,14 +1042,8 @@ index d835f0a17ab..acc8e20988c 100644
 -	}
 -
 -	return utilerrors.NewAggregate(errors)
-+// PortMapping represents a network port in a container.
-+type PortMapping struct {
-+	HostPort      int32
-+	ContainerPort int32
-+	Protocol      v1.Protocol
-+	HostIP        string
- }
- 
+-}
+-
 -func (hm *hostportManager) removeForFamily(id string, podPortMapping *PodPortMapping, ipt utiliptables.Interface) (err error) {
 -	hostportMappings := gatherHostportMappings(podPortMapping, ipt.IsIPv6())
 -	if len(hostportMappings) == 0 {
@@ -1204,19 +1123,24 @@ index d835f0a17ab..acc8e20988c 100644
 -	hash := sha256.Sum256([]byte(id + strconv.Itoa(int(pm.HostPort)) + string(pm.Protocol) + pm.HostIP))
 -	encoded := base32.StdEncoding.EncodeToString(hash[:])
 -	return utiliptables.Chain(prefix + encoded[:16])
-+// PodPortMapping represents a pod's network state and associated container port mappings.
-+type PodPortMapping struct {
-+	Namespace    string
-+	Name         string
-+	PortMappings []*PortMapping
-+	IP           net.IP
- }
- 
- // gatherHostportMappings returns all the PortMappings which has hostport for a pod
-@@ -313,173 +82,12 @@ func gatherHostportMappings(podPortMapping *PodPortMapping, isIPv6 bool) []*Port
- 	return mappings
- }
- 
+-}
+-
+-// gatherHostportMappings returns all the PortMappings which has hostport for a pod
+-// it filters the PortMappings that use HostIP and doesn't match the IP family specified.
+-func gatherHostportMappings(podPortMapping *PodPortMapping, isIPv6 bool) []*PortMapping {
+-	mappings := []*PortMapping{}
+-	for _, pm := range podPortMapping.PortMappings {
+-		if pm.HostPort <= 0 {
+-			continue
+-		}
+-		if pm.HostIP != "" && utilnet.IsIPv6String(pm.HostIP) != isIPv6 {
+-			continue
+-		}
+-		mappings = append(mappings, pm)
+-	}
+-	return mappings
+-}
+-
 -// getExistingHostportIPTablesRules retrieves raw data from iptables-save, parse it,
 -// return all the hostport related chains and rules
 -//
@@ -1371,28 +1295,490 @@ index d835f0a17ab..acc8e20988c 100644
 -	}
 -}
 -
- func getPodFullName(pod *PodPortMapping) string {
- 	// Use underscore as the delimiter because it is not allowed in pod name
- 	// (DNS subdomain format), while allowed in the container name format.
- 	return pod.Name + "_" + pod.Namespace
- }
- 
+-func getPodFullName(pod *PodPortMapping) string {
+-	// Use underscore as the delimiter because it is not allowed in pod name
+-	// (DNS subdomain format), while allowed in the container name format.
+-	return pod.Name + "_" + pod.Namespace
+-}
+-
 -// Join all words with spaces, terminate with newline and write to buf.
 -//
 -//nolint:interfacer
 -func writeLine(buf *bytes.Buffer, words ...string) {
 -	buf.WriteString(strings.Join(words, " ") + "\n")
++	Remove(id string, hostportMappings []*PortMapping) error
+ }
+ 
+-func getNetlinkFamily(isIPv6 bool) netlink.InetFamily {
+-	if isIPv6 {
+-		return unix.AF_INET6
+-	}
+-	return unix.AF_INET
++// PortMapping represents a network port in a container.
++type PortMapping struct {
++	HostPort      int32
++	ContainerPort int32
++	Protocol      v1.Protocol
++	HostIP        string
+ }
+--- a/internal/hostport/hostport_manager_test.go	2025-03-02 19:05:31.000000000 +0100
++++ b/internal/hostport/hostport_manager_test.go	2025-03-06 20:47:00.293396244 +0100
+@@ -17,131 +17,92 @@
+ package hostport
+ 
+ import (
+-	"bytes"
+-	"net"
+-	"strings"
+-
+-	. "github.com/onsi/ginkgo/v2"
+-	. "github.com/onsi/gomega"
+ 	v1 "k8s.io/api/core/v1"
+-	"k8s.io/apimachinery/pkg/util/sets"
+-
+-	utiliptables "github.com/cri-o/cri-o/internal/iptables"
+ )
+ 
+-// newFakeManager creates a new Manager with fake iptables. Note that we need to create
+-// (and semi-initialize) both ip4tables and ip6tables even for the single-stack tests,
+-// because Remove() will try to use both.
+-func newFakeManager() *hostportManager {
+-	ip4tables := newFakeIPTables()
+-	ip4tables.protocol = utiliptables.ProtocolIPv4
+-	//nolint:errcheck // can't fail with fake iptables
+-	_, _ = ip4tables.EnsureChain(utiliptables.TableNAT, utiliptables.ChainOutput)
+-
+-	ip6tables := newFakeIPTables()
+-	ip6tables.protocol = utiliptables.ProtocolIPv6
+-	//nolint:errcheck // can't fail with fake iptables
+-	_, _ = ip6tables.EnsureChain(utiliptables.TableNAT, utiliptables.ChainOutput)
+-
+-	return &hostportManager{
+-		ip4tables: ip4tables,
+-		ip6tables: ip6tables,
+-	}
 -}
 -
- func getNetlinkFamily(isIPv6 bool) netlink.InetFamily {
- 	if isIPv6 {
- 		return unix.AF_INET6
-diff --git a/internal/hostport/hostport_nftables.go b/internal/hostport/hostport_nftables.go
-new file mode 100644
-index 00000000000..5c5484f9641
---- /dev/null
-+++ b/internal/hostport/hostport_nftables.go
-@@ -0,0 +1,389 @@
+ type testCase struct {
+-	id      string
+-	mapping *PodPortMapping
++	id           string
++	name         string
++	podIP        string
++	portMappings []*PortMapping
+ }
+ 
+ var testCasesV4 = []testCase{
+ 	{
+-		id: "0855d5396cdc673af13203c9cc5c95367cad0133306ba4d74d1da6e2876ebe51",
+-		mapping: &PodPortMapping{
+-			Name:      "pod1",
+-			Namespace: "ns1",
+-			IP:        net.ParseIP("10.1.1.2"),
+-			PortMappings: []*PortMapping{
+-				{
+-					HostPort:      8080,
+-					ContainerPort: 80,
+-					Protocol:      v1.ProtocolTCP,
+-				},
+-				{
+-					HostPort:      8081,
+-					ContainerPort: 81,
+-					Protocol:      v1.ProtocolUDP,
+-				},
+-				{
+-					HostPort:      8083,
+-					ContainerPort: 83,
+-					Protocol:      v1.ProtocolSCTP,
+-				},
+-				{
+-					HostPort:      8084,
+-					ContainerPort: 84,
+-					Protocol:      v1.ProtocolTCP,
+-					HostIP:        "127.0.0.1",
+-				},
++		id:    "0855d5396cdc673af13203c9cc5c95367cad0133306ba4d74d1da6e2876ebe51",
++		name:  "pod1_ns1",
++		podIP: "10.1.1.2",
++		portMappings: []*PortMapping{
++			{
++				HostPort:      8080,
++				ContainerPort: 80,
++				Protocol:      v1.ProtocolTCP,
++			},
++			{
++				HostPort:      8081,
++				ContainerPort: 81,
++				Protocol:      v1.ProtocolUDP,
++			},
++			{
++				HostPort:      8083,
++				ContainerPort: 83,
++				Protocol:      v1.ProtocolSCTP,
++			},
++			{
++				HostPort:      8084,
++				ContainerPort: 84,
++				Protocol:      v1.ProtocolTCP,
++				HostIP:        "127.0.0.1",
+ 			},
+ 		},
+ 	},
+ 	{
+-		id: "2da827da280ff31f6b257138f625d94b90472f614dee4d5f415d99b3e49a2c72",
+-		mapping: &PodPortMapping{
+-			Name:      "pod3",
+-			Namespace: "ns1",
+-			IP:        net.ParseIP("10.1.1.4"),
+-			PortMappings: []*PortMapping{
+-				{
+-					HostPort:      8443,
+-					ContainerPort: 443,
+-					Protocol:      v1.ProtocolTCP,
+-				},
++		id:    "2da827da280ff31f6b257138f625d94b90472f614dee4d5f415d99b3e49a2c72",
++		name:  "pod3_ns1",
++		podIP: "10.1.1.4",
++		portMappings: []*PortMapping{
++			{
++				HostPort:      8443,
++				ContainerPort: 443,
++				Protocol:      v1.ProtocolTCP,
+ 			},
+ 		},
+ 	},
+ 	{
+ 		// open same HostPort on different HostIPs
+-		id: "f51d8a623d1d3d31d6552da3bc080a33ae57ef47daf34c7c5f7d4159d19849b7",
+-		mapping: &PodPortMapping{
+-			Name:      "pod5",
+-			Namespace: "ns5",
+-			IP:        net.ParseIP("10.1.1.5"),
+-			PortMappings: []*PortMapping{
+-				{
+-					HostPort:      8888,
+-					ContainerPort: 443,
+-					Protocol:      v1.ProtocolTCP,
+-					HostIP:        "127.0.0.2",
+-				},
+-				{
+-					HostPort:      8888,
+-					ContainerPort: 443,
+-					Protocol:      v1.ProtocolTCP,
+-					HostIP:        "127.0.0.1",
+-				},
++		id:    "f51d8a623d1d3d31d6552da3bc080a33ae57ef47daf34c7c5f7d4159d19849b7",
++		name:  "pod5_ns5",
++		podIP: "10.1.1.5",
++		portMappings: []*PortMapping{
++			{
++				HostPort:      8888,
++				ContainerPort: 443,
++				Protocol:      v1.ProtocolTCP,
++				HostIP:        "127.0.0.2",
++			},
++			{
++				HostPort:      8888,
++				ContainerPort: 443,
++				Protocol:      v1.ProtocolTCP,
++				HostIP:        "127.0.0.1",
+ 			},
+ 		},
+ 	},
+ 	{
+ 		// open same HostPort with different protocols
+-		id: "aa6b20dc29d075700fa53f623a00fe4ec8e9042d48f5964e601a1f3257ddc518",
+-		mapping: &PodPortMapping{
+-			Name:      "pod6",
+-			Namespace: "ns1",
+-			IP:        net.ParseIP("10.1.1.6"),
+-			PortMappings: []*PortMapping{
+-				{
+-					HostPort:      9999,
+-					ContainerPort: 443,
+-					Protocol:      v1.ProtocolTCP,
+-				},
+-				{
+-					HostPort:      9999,
+-					ContainerPort: 443,
+-					Protocol:      v1.ProtocolUDP,
+-				},
++		id:    "aa6b20dc29d075700fa53f623a00fe4ec8e9042d48f5964e601a1f3257ddc518",
++		name:  "pod6_ns1",
++		podIP: "10.1.1.6",
++		portMappings: []*PortMapping{
++			{
++				HostPort:      9999,
++				ContainerPort: 443,
++				Protocol:      v1.ProtocolTCP,
++			},
++			{
++				HostPort:      9999,
++				ContainerPort: 443,
++				Protocol:      v1.ProtocolUDP,
+ 			},
+ 		},
+ 	},
+@@ -150,224 +111,44 @@
+ var testCasesV6 = []testCase{
+ 	{
+ 		// Same id and mappings as testCasesV4[0] (but with an IPv6 HostIP)
+-		id: "0855d5396cdc673af13203c9cc5c95367cad0133306ba4d74d1da6e2876ebe51",
+-		mapping: &PodPortMapping{
+-			Name:      "pod1",
+-			Namespace: "ns1",
+-			IP:        net.ParseIP("2001:beef::2"),
+-			PortMappings: []*PortMapping{
+-				{
+-					HostPort:      8080,
+-					ContainerPort: 80,
+-					Protocol:      v1.ProtocolTCP,
+-				},
+-				{
+-					HostPort:      8081,
+-					ContainerPort: 81,
+-					Protocol:      v1.ProtocolUDP,
+-				},
+-				{
+-					HostPort:      8083,
+-					ContainerPort: 83,
+-					Protocol:      v1.ProtocolSCTP,
+-				},
+-				{
+-					HostPort:      8084,
+-					ContainerPort: 84,
+-					Protocol:      v1.ProtocolTCP,
+-					HostIP:        "::1",
+-				},
++		id:    "0855d5396cdc673af13203c9cc5c95367cad0133306ba4d74d1da6e2876ebe51",
++		name:  "pod1_ns1",
++		podIP: "10.1.1.2",
++		portMappings: []*PortMapping{
++			{
++				HostPort:      8080,
++				ContainerPort: 80,
++				Protocol:      v1.ProtocolTCP,
++			},
++			{
++				HostPort:      8081,
++				ContainerPort: 81,
++				Protocol:      v1.ProtocolUDP,
++			},
++			{
++				HostPort:      8083,
++				ContainerPort: 83,
++				Protocol:      v1.ProtocolSCTP,
++			},
++			{
++				HostPort:      8084,
++				ContainerPort: 84,
++				Protocol:      v1.ProtocolTCP,
++				HostIP:        "127.0.0.1",
+ 			},
+ 		},
+ 	},
+ 	{
+ 		// Same id and mappings as testCasesV4[1]
+-		id: "2da827da280ff31f6b257138f625d94b90472f614dee4d5f415d99b3e49a2c72",
+-		mapping: &PodPortMapping{
+-			Name:      "pod3",
+-			Namespace: "ns1",
+-			IP:        net.ParseIP("2001:beef::4"),
+-			PortMappings: []*PortMapping{
+-				{
+-					HostPort:      8443,
+-					ContainerPort: 443,
+-					Protocol:      v1.ProtocolTCP,
+-				},
++		id:    "2da827da280ff31f6b257138f625d94b90472f614dee4d5f415d99b3e49a2c72",
++		name:  "pod3_ns1",
++		podIP: "2001:beef::4",
++		portMappings: []*PortMapping{
++			{
++				HostPort:      8443,
++				ContainerPort: 443,
++				Protocol:      v1.ProtocolTCP,
+ 			},
+ 		},
+ 	},
+ }
+-
+-var expectedRulesV4 = []string{
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp --dport 8443 -j KUBE-HP-WLTFZLTJ4QV7FRX3",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod3_ns1 hostport 8443\" -j CRIO-MASQ-WLTFZLTJ4QV7FRX3",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp --dport 8081 -j KUBE-HP-3MG73OVK5S7GSUBC",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8081\" -j CRIO-MASQ-3MG73OVK5S7GSUBC",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp --dport 8080 -j KUBE-HP-7BDNOFFT2YWI552I",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8080\" -j CRIO-MASQ-7BDNOFFT2YWI552I",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp --dport 8083 -j KUBE-HP-KYJTJFIY2JGKKVYU",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8083\" -j CRIO-MASQ-KYJTJFIY2JGKKVYU",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp --dport 8888 -j KUBE-HP-WTCIRE6PNE4I56DF",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8084\" -j CRIO-MASQ-IELLLSCZHX7UUOQQ",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp --dport 8084 -j KUBE-HP-IELLLSCZHX7UUOQQ",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod5_ns5 hostport 8888\" -j CRIO-MASQ-WTCIRE6PNE4I56DF",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp --dport 8888 -j KUBE-HP-DQ5WDJN45DRPOYFE",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod5_ns5 hostport 8888\" -j CRIO-MASQ-DQ5WDJN45DRPOYFE",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod6_ns1 hostport 9999\" -m tcp -p tcp --dport 9999 -j KUBE-HP-AL32N6L3TM3M4FHI",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod6_ns1 hostport 9999\" -j CRIO-MASQ-AL32N6L3TM3M4FHI",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod6_ns1 hostport 9999\" -m udp -p udp --dport 9999 -j KUBE-HP-EOVTPYGVQGYVG7R5",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod6_ns1 hostport 9999\" -j CRIO-MASQ-EOVTPYGVQGYVG7R5",
+-	"-A CRIO-MASQ-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m conntrack --ctorigdstport 8080 -m tcp -p tcp --dport 80 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
+-	"-A KUBE-HP-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp -j DNAT --to-destination 10.1.1.2:80",
+-	"-A CRIO-MASQ-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m conntrack --ctorigdstport 8081 -m udp -p udp --dport 81 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
+-	"-A KUBE-HP-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp -j DNAT --to-destination 10.1.1.2:81",
+-	"-A CRIO-MASQ-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m conntrack --ctorigdstport 8083 -m sctp -p sctp --dport 83 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
+-	"-A KUBE-HP-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp -j DNAT --to-destination 10.1.1.2:83",
+-	"-A CRIO-MASQ-IELLLSCZHX7UUOQQ -m comment --comment \"pod1_ns1 hostport 8084\" -m conntrack --ctorigdstport 8084 -m tcp -p tcp --dport 84 -s 10.1.1.2/32 -d 10.1.1.2/32 -j MASQUERADE",
+-	"-A KUBE-HP-IELLLSCZHX7UUOQQ -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp -d 127.0.0.1/32 -j DNAT --to-destination 10.1.1.2:84",
+-	"-A CRIO-MASQ-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m conntrack --ctorigdstport 8443 -m tcp -p tcp --dport 443 -s 10.1.1.4/32 -d 10.1.1.4/32 -j MASQUERADE",
+-	"-A KUBE-HP-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp -j DNAT --to-destination 10.1.1.4:443",
+-	"-A CRIO-MASQ-WTCIRE6PNE4I56DF -m comment --comment \"pod5_ns5 hostport 8888\" -m conntrack --ctorigdstport 8888 -m tcp -p tcp --dport 443 -s 10.1.1.5/32 -d 10.1.1.5/32 -j MASQUERADE",
+-	"-A KUBE-HP-WTCIRE6PNE4I56DF -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp -d 127.0.0.1/32 -j DNAT --to-destination 10.1.1.5:443",
+-	"-A CRIO-MASQ-DQ5WDJN45DRPOYFE -m comment --comment \"pod5_ns5 hostport 8888\" -m conntrack --ctorigdstport 8888 -m tcp -p tcp --dport 443 -s 10.1.1.5/32 -d 10.1.1.5/32 -j MASQUERADE",
+-	"-A KUBE-HP-DQ5WDJN45DRPOYFE -m comment --comment \"pod5_ns5 hostport 8888\" -m tcp -p tcp -d 127.0.0.2/32 -j DNAT --to-destination 10.1.1.5:443",
+-	"-A CRIO-MASQ-EOVTPYGVQGYVG7R5 -m comment --comment \"pod6_ns1 hostport 9999\" -m conntrack --ctorigdstport 9999 -m udp -p udp --dport 443 -s 10.1.1.6/32 -d 10.1.1.6/32 -j MASQUERADE",
+-	"-A KUBE-HP-AL32N6L3TM3M4FHI -m comment --comment \"pod6_ns1 hostport 9999\" -m tcp -p tcp -j DNAT --to-destination 10.1.1.6:443",
+-	"-A CRIO-MASQ-AL32N6L3TM3M4FHI -m comment --comment \"pod6_ns1 hostport 9999\" -m conntrack --ctorigdstport 9999 -m tcp -p tcp --dport 443 -s 10.1.1.6/32 -d 10.1.1.6/32 -j MASQUERADE",
+-	"-A KUBE-HP-EOVTPYGVQGYVG7R5 -m comment --comment \"pod6_ns1 hostport 9999\" -m udp -p udp -j DNAT --to-destination 10.1.1.6:443",
+-}
+-
+-var expectedRulesV6 = []string{
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp --dport 8443 -j KUBE-HP-WLTFZLTJ4QV7FRX3",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod3_ns1 hostport 8443\" -j CRIO-MASQ-WLTFZLTJ4QV7FRX3",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp --dport 8081 -j KUBE-HP-3MG73OVK5S7GSUBC",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8081\" -j CRIO-MASQ-3MG73OVK5S7GSUBC",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp --dport 8080 -j KUBE-HP-7BDNOFFT2YWI552I",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8080\" -j CRIO-MASQ-7BDNOFFT2YWI552I",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp --dport 8083 -j KUBE-HP-KYJTJFIY2JGKKVYU",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8083\" -j CRIO-MASQ-KYJTJFIY2JGKKVYU",
+-	"-A KUBE-HOSTPORTS -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp --dport 8084 -j KUBE-HP-MGT4WGWISEW3X3JW",
+-	"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod1_ns1 hostport 8084\" -j CRIO-MASQ-MGT4WGWISEW3X3JW",
+-	"-A CRIO-MASQ-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m conntrack --ctorigdstport 8080 -m tcp -p tcp --dport 80 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
+-	"-A KUBE-HP-7BDNOFFT2YWI552I -m comment --comment \"pod1_ns1 hostport 8080\" -m tcp -p tcp -j DNAT --to-destination [2001:beef::2]:80",
+-	"-A CRIO-MASQ-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m conntrack --ctorigdstport 8081 -m udp -p udp --dport 81 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
+-	"-A KUBE-HP-3MG73OVK5S7GSUBC -m comment --comment \"pod1_ns1 hostport 8081\" -m udp -p udp -j DNAT --to-destination [2001:beef::2]:81",
+-	"-A CRIO-MASQ-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m conntrack --ctorigdstport 8083 -m sctp -p sctp --dport 83 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
+-	"-A KUBE-HP-KYJTJFIY2JGKKVYU -m comment --comment \"pod1_ns1 hostport 8083\" -m sctp -p sctp -j DNAT --to-destination [2001:beef::2]:83",
+-	"-A CRIO-MASQ-MGT4WGWISEW3X3JW -m comment --comment \"pod1_ns1 hostport 8084\" -m conntrack --ctorigdstport 8084 -m tcp -p tcp --dport 84 -s 2001:beef::2/128 -d 2001:beef::2/128 -j MASQUERADE",
+-	"-A KUBE-HP-MGT4WGWISEW3X3JW -m comment --comment \"pod1_ns1 hostport 8084\" -m tcp -p tcp -d ::1/128 -j DNAT --to-destination [2001:beef::2]:84",
+-	"-A CRIO-MASQ-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m conntrack --ctorigdstport 8443 -m tcp -p tcp --dport 443 -s 2001:beef::4/128 -d 2001:beef::4/128 -j MASQUERADE",
+-	"-A KUBE-HP-WLTFZLTJ4QV7FRX3 -m comment --comment \"pod3_ns1 hostport 8443\" -m tcp -p tcp -j DNAT --to-destination [2001:beef::4]:443",
+-}
+-
+-func checkIPTablesRules(ipt utiliptables.Interface, expectedRules []string) {
+-	raw := bytes.NewBuffer(nil)
+-	err := ipt.SaveInto(utiliptables.TableNAT, raw)
+-	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+-
+-	expected := sets.New(expectedRules...)
+-
+-	matched := sets.New[string]()
+-	for _, line := range strings.Split(raw.String(), "\n") {
+-		if strings.HasPrefix(line, "-A KUBE-HOSTPORTS ") || strings.HasPrefix(line, "-A CRIO-HOSTPORTS-MASQ ") || strings.HasPrefix(line, "-A KUBE-HP-") || strings.HasPrefix(line, "-A CRIO-MASQ-") {
+-			matched.Insert(line)
+-		}
+-	}
+-
+-	unexpectedRules := matched.Difference(expected).UnsortedList()
+-	missingRules := expected.Difference(matched).UnsortedList()
+-
+-	ExpectWithOffset(1, len(unexpectedRules)+len(missingRules)).To(Equal(0), "unexpected rules in iptables-save: %#v, expected rules missing from iptables-save: %#v", unexpectedRules, missingRules)
+-}
+-
+-var _ = t.Describe("HostPortManager", func() {
+-	It("should create hostport chains with distinct names", func() {
+-		m := make(map[string]int)
+-		chain := getHostportChain("prefix", "testrdma-2", &PortMapping{HostPort: 57119, Protocol: "TCP", ContainerPort: 57119})
+-		m[string(chain)] = 1
+-		chain = getHostportChain("prefix", "testrdma-2", &PortMapping{HostPort: 55429, Protocol: "TCP", ContainerPort: 55429})
+-		m[string(chain)] = 1
+-		chain = getHostportChain("prefix", "testrdma-2", &PortMapping{HostPort: 56833, Protocol: "TCP", ContainerPort: 56833})
+-		m[string(chain)] = 1
+-		chain = getHostportChain("different-prefix", "testrdma-2", &PortMapping{HostPort: 56833, Protocol: "TCP", ContainerPort: 56833})
+-		m[string(chain)] = 1
+-		Expect(m).To(HaveLen(4))
+-	})
+-
+-	It("should work for IPv4", func() {
+-		manager := newFakeManager()
+-
+-		// Add Hostports
+-		for _, tc := range testCasesV4 {
+-			err := manager.Add(tc.id, tc.mapping)
+-			Expect(err).NotTo(HaveOccurred())
+-		}
+-
+-		// Check Iptables-save result after adding hostports
+-		checkIPTablesRules(manager.ip4tables, expectedRulesV4)
+-
+-		// Remove all added hostports
+-		for _, tc := range testCasesV4 {
+-			err := manager.Remove(tc.id, tc.mapping)
+-			Expect(err).NotTo(HaveOccurred())
+-		}
+-
+-		// Check Iptables-save result after deleting hostports
+-		checkIPTablesRules(manager.ip4tables, nil)
+-	})
+-
+-	It("should work for IPv6", func() {
+-		manager := newFakeManager()
+-
+-		// Add Hostports
+-		for _, tc := range testCasesV6 {
+-			err := manager.Add(tc.id, tc.mapping)
+-			Expect(err).NotTo(HaveOccurred())
+-		}
+-
+-		// Check Iptables-save result after adding hostports
+-		checkIPTablesRules(manager.ip6tables, expectedRulesV6)
+-
+-		// Remove all added hostports
+-		for _, tc := range testCasesV6 {
+-			err := manager.Remove(tc.id, tc.mapping)
+-			Expect(err).NotTo(HaveOccurred())
+-		}
+-
+-		// Check Iptables-save result after deleting hostports
+-		checkIPTablesRules(manager.ip6tables, nil)
+-	})
+-
+-	It("should work for dual stack", func() {
+-		manager := newFakeManager()
+-
+-		var testCases []testCase
+-		if len(testCasesV4) < len(testCasesV6) {
+-			panic("internal error; expected more IPv4 than IPv6 test cases")
+-		}
+-		for i := range testCasesV4 {
+-			testCases = append(testCases, testCasesV4[i])
+-			if i < len(testCasesV6) {
+-				testCases = append(testCases, testCasesV6[i])
+-			}
+-		}
+-
+-		// Add Hostports
+-		for _, tc := range testCases {
+-			err := manager.Add(tc.id, tc.mapping)
+-			Expect(err).NotTo(HaveOccurred())
+-		}
+-
+-		checkIPTablesRules(manager.ip4tables, expectedRulesV4)
+-		checkIPTablesRules(manager.ip6tables, expectedRulesV6)
+-
+-		// Remove all added hostports
+-		for _, tc := range testCases {
+-			err := manager.Remove(tc.id, tc.mapping)
+-			Expect(err).NotTo(HaveOccurred())
+-		}
+-
+-		checkIPTablesRules(manager.ip4tables, nil)
+-		checkIPTablesRules(manager.ip6tables, nil)
+-	})
+-})
+--- a/internal/hostport/hostport_nftables.go	1970-01-01 01:00:00.000000000 +0100
++++ b/internal/hostport/hostport_nftables.go	2025-03-06 20:47:00.293396244 +0100
+@@ -0,0 +1,308 @@
 +/*
 +Copyright 2017 The Kubernetes Authors.
 +
@@ -1420,10 +1806,6 @@ index 00000000000..5c5484f9641
 +	"strings"
 +	"sync"
 +
-+	"github.com/sirupsen/logrus"
-+	v1 "k8s.io/api/core/v1"
-+	utilerrors "k8s.io/apimachinery/pkg/util/errors"
-+	utilnet "k8s.io/utils/net"
 +	"sigs.k8s.io/knftables"
 +)
 +
@@ -1438,74 +1820,41 @@ index 00000000000..5c5484f9641
 +)
 +
 +type hostportManagerNFTables struct {
-+	nft4 knftables.Interface
-+	nft6 knftables.Interface
-+	err  error
-+	mu   sync.Mutex
++	nft    knftables.Interface
++	family knftables.Family
++	mu     sync.Mutex
 +}
 +
 +// newHostportManagerNFTables creates a new nftables HostPortManager.
-+func newHostportManagerNFTables() (HostPortManager, error) {
-+	nft4, err := knftables.New(knftables.IPv4Family, hostPortsTable)
-+	if err != nil {
-+		return nil, err
-+	}
-+	nft6, err := knftables.New(knftables.IPv6Family, hostPortsTable)
++func newHostportManagerNFTables(family knftables.Family) (*hostportManagerNFTables, error) {
++	nft, err := knftables.New(family, hostPortsTable)
 +	if err != nil {
 +		return nil, err
 +	}
 +
 +	return &hostportManagerNFTables{
-+		nft4: nft4,
-+		nft6: nft6,
++		nft:    nft,
++		family: family,
 +	}, nil
 +}
 +
-+func (hm *hostportManagerNFTables) Add(id string, podPortMapping *PodPortMapping, natInterfaceName string) (err error) {
-+	podFullName := getPodFullName(podPortMapping)
-+	// IP.To16() returns nil if IP is not a valid IPv4 or IPv6 address
-+	if podPortMapping.IP.To16() == nil {
-+		return fmt.Errorf("invalid or missing IP of pod %s", podFullName)
-+	}
-+	podIP := podPortMapping.IP.String()
-+	isIPv6 := utilnet.IsIPv6(podPortMapping.IP)
-+
-+	// skip if there is no hostport needed
-+	hostportMappings := gatherHostportMappings(podPortMapping, isIPv6)
-+	if len(hostportMappings) == 0 {
-+		return nil
-+	}
-+
-+	if hm.err != nil {
-+		return hm.err
-+	}
-+
-+	var nft knftables.Interface
-+	if isIPv6 {
-+		nft = hm.nft6
-+	} else {
-+		nft = hm.nft4
-+	}
-+
++func (hm *hostportManagerNFTables) Add(id, name, podIP string, hostportMappings []*PortMapping) (err error) {
 +	// Ensure atomicity for nftables operations
 +	hm.mu.Lock()
 +	defer hm.mu.Unlock()
 +
-+	tx := nft.NewTransaction()
-+	ensureHostPortsTable(tx, natInterfaceName, isIPv6)
++	tx := hm.nft.NewTransaction()
++	ensureHostPortsTable(tx, hm.family)
 +
 +	// Add map/set elements to tx for all mappings in hostportMappings. We add a
 +	// comment to each element based on the sandbox ID, so we can match them up to
 +	// this pod in Remove().
 +	comment := hashSandboxID(id)
-+	conntrackPortsToRemove := []int{}
++
 +	for _, pm := range hostportMappings {
 +		protocol := strings.ToLower(string(pm.Protocol))
 +		hostPort := strconv.Itoa(int(pm.HostPort))
 +		containerPort := strconv.Itoa(int(pm.ContainerPort))
-+		if pm.Protocol == v1.ProtocolUDP {
-+			conntrackPortsToRemove = append(conntrackPortsToRemove, int(pm.HostPort))
-+		}
 +
 +		if pm.HostIP == "" || pm.HostIP == "0.0.0.0" || pm.HostIP == "::" {
 +			tx.Add(&knftables.Element{
@@ -1543,99 +1892,67 @@ index 00000000000..5c5484f9641
 +		})
 +	}
 +
-+	err = nft.Run(context.TODO(), tx)
++	err = hm.nft.Run(context.TODO(), tx)
 +	if err != nil {
 +		return fmt.Errorf("failed to ensure nftables chains: %w", err)
 +	}
 +
-+	// Remove conntrack entries just after updating the nftables sets. If the
-+	// conntrack entry is removed before the nftables update, it can be the case that
-+	// the packets received by the node after nftables update will create a new
-+	// conntrack entry without any DNAT. That will result in blackhole of the traffic
-+	// even after correct nftables rules have been added back.
-+	logrus.Infof("Starting to delete udp conntrack entries: %v, isIPv6 - %v", conntrackPortsToRemove, isIPv6)
-+	// https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
-+	const protocolUDPNumber = 17
-+	for _, port := range conntrackPortsToRemove {
-+		err = deleteConntrackEntriesForDstPort(uint16(port), protocolUDPNumber, getNetlinkFamily(isIPv6))
-+		if err != nil {
-+			logrus.Errorf("Failed to clear udp conntrack for port %d, error: %v", port, err)
-+		}
-+	}
 +	return nil
 +}
 +
-+func (hm *hostportManagerNFTables) Remove(id string, podPortMapping *PodPortMapping) (err error) {
-+	if hm.err != nil {
-+		return hm.err
-+	}
-+
-+	var errors []error
-+	// Remove may not have the IP information, so we try to clean us much as possible
-+	// and warn about the possible errors
-+	err = hm.removeForFamily(id, podPortMapping, hm.nft4)
-+	if err != nil {
-+		errors = append(errors, err)
-+	}
-+	err = hm.removeForFamily(id, podPortMapping, hm.nft6)
-+	if err != nil {
-+		errors = append(errors, err)
-+	}
-+
-+	return utilerrors.NewAggregate(errors)
-+}
-+
-+func (hm *hostportManagerNFTables) removeForFamily(id string, podPortMapping *PodPortMapping, nft knftables.Interface) (err error) {
-+	isIPv6 := nft == hm.nft6
-+	hostportMappings := gatherHostportMappings(podPortMapping, isIPv6)
-+	if len(hostportMappings) == 0 {
-+		return nil
-+	}
-+	comment := hashSandboxID(id)
-+
++func (hm *hostportManagerNFTables) Remove(id string, hostportMappings []*PortMapping) (err error) {
 +	// Ensure atomicity for nftables operations
 +	hm.mu.Lock()
 +	defer hm.mu.Unlock()
 +
++	comment := hashSandboxID(id)
++
 +	// Fetch the existing map/set elements.
-+	existingHostPorts, err := nft.ListElements(context.TODO(), "map", hostPortsMap)
++	existingHostPorts, err := hm.nft.ListElements(context.TODO(), "map", hostPortsMap)
 +	if err != nil && !knftables.IsNotFound(err) {
 +		return fmt.Errorf("could not list existing hostports: %w", err)
 +	}
-+	existingHostIPPorts, err := nft.ListElements(context.TODO(), "map", hostIPPortsMap)
++
++	existingHostIPPorts, err := hm.nft.ListElements(context.TODO(), "map", hostIPPortsMap)
 +	if err != nil && !knftables.IsNotFound(err) {
 +		return fmt.Errorf("could not list existing hostports: %w", err)
 +	}
-+	existingHairpins, err := nft.ListElements(context.TODO(), "set", hairpinSet)
++
++	existingHairpins, err := hm.nft.ListElements(context.TODO(), "set", hairpinSet)
 +	if err != nil && !knftables.IsNotFound(err) {
 +		return fmt.Errorf("could not list existing hostports: %w", err)
 +	}
 +
 +	// Delete each one that refers to this pod in its Comment.
-+	tx := nft.NewTransaction()
++	tx := hm.nft.NewTransaction()
++
 +	for _, elem := range existingHostPorts {
 +		if elem.Comment != nil && *elem.Comment == comment {
 +			tx.Delete(elem)
 +		}
 +	}
++
 +	for _, elem := range existingHostIPPorts {
 +		if elem.Comment != nil && *elem.Comment == comment {
 +			tx.Delete(elem)
 +		}
 +	}
++
 +	for _, elem := range existingHairpins {
 +		if elem.Comment != nil && *elem.Comment == comment {
 +			tx.Delete(elem)
 +		}
 +	}
++
 +	if tx.NumOperations() == 0 {
 +		return nil
 +	}
 +
-+	err = nft.Run(context.TODO(), tx)
++	err = hm.nft.Run(context.TODO(), tx)
 +	if err != nil {
 +		return fmt.Errorf("failed to clean up nftables hostport maps: %w", err)
 +	}
++
 +	return nil
 +}
 +
@@ -1644,6 +1961,7 @@ index 00000000000..5c5484f9641
 +func hashSandboxID(id string) string {
 +	hash := sha256.Sum256([]byte(id))
 +	encoded := base32.StdEncoding.EncodeToString(hash[:])
++
 +	return encoded[:16]
 +}
 +
@@ -1653,10 +1971,11 @@ index 00000000000..5c5484f9641
 +// static set of rules), we Add+Flush the chain and then Add the desired rules, thus
 +// ensuring that the chain has exactly the rules we want, while for the maps and set
 +// (which have per-hostport elements), we Add them but don't modify their contents.)
-+func ensureHostPortsTable(tx *knftables.Transaction, natInterfaceName string, isIPv6 bool) {
++func ensureHostPortsTable(tx *knftables.Transaction, family knftables.Family) {
 +	ip := "ip"
 +	ipaddr := "ipv4_addr"
-+	if isIPv6 {
++
++	if family == knftables.IPv6Family {
 +		ip = "ip6"
 +		ipaddr = "ipv6_addr"
 +	}
@@ -1767,27 +2086,10 @@ index 00000000000..5c5484f9641
 +			"masquerade",
 +		),
 +	})
-+	if natInterfaceName != "" && natInterfaceName != "lo" {
-+		// Need to SNAT traffic from localhost
-+		if isIPv6 {
-+			tx.Add(&knftables.Rule{
-+				Chain: "masquerading",
-+				Rule:  fmt.Sprintf("ip6 saddr ::1 oifname %q masquerade", natInterfaceName),
-+			})
-+		} else {
-+			tx.Add(&knftables.Rule{
-+				Chain: "masquerading",
-+				Rule:  fmt.Sprintf("ip saddr 127.0.0.0/8 oifname %q masquerade", natInterfaceName),
-+			})
-+		}
-+	}
 +}
-diff --git a/internal/hostport/hostport_nftables_test.go b/internal/hostport/hostport_nftables_test.go
-new file mode 100644
-index 00000000000..58d9a1003e6
---- /dev/null
-+++ b/internal/hostport/hostport_nftables_test.go
-@@ -0,0 +1,453 @@
+--- a/internal/hostport/hostport_nftables_test.go	1970-01-01 01:00:00.000000000 +0100
++++ b/internal/hostport/hostport_nftables_test.go	2025-03-06 20:47:00.293396244 +0100
+@@ -0,0 +1,155 @@
 +/*
 +Copyright 2017 The Kubernetes Authors.
 +
@@ -1808,29 +2110,68 @@ index 00000000000..58d9a1003e6
 +
 +import (
 +	"context"
-+	"net"
 +	"strings"
 +
 +	. "github.com/onsi/ginkgo/v2"
 +	. "github.com/onsi/gomega"
-+	v1 "k8s.io/api/core/v1"
++	"k8s.io/apimachinery/pkg/util/sets"
 +	"sigs.k8s.io/knftables"
 +)
 +
-+// newFakeManagerNFTables creates a new Manager with fake knftables. Note that we need to
-+// create both ipv4 and ipv6 even for the single-stack tests, because Remove() will try to
-+// use both.
-+func newFakeManagerNFTables() (manager *hostportManagerNFTables, nft4, nft6 *knftables.Fake) {
-+	nft4 = knftables.NewFake(knftables.IPv4Family, hostPortsTable)
-+	nft6 = knftables.NewFake(knftables.IPv6Family, hostPortsTable)
-+	return &hostportManagerNFTables{nft4: nft4, nft6: nft6}, nft4, nft6
++var expectedNFTablesElementsV4 = []string{
++	`add element ip crio-hostports hostports { tcp . 8080 comment "VEBO64P7B2WCUAON" : 10.1.1.2 . 80 }`,
++	`add element ip crio-hostports hostports { udp . 8081 comment "VEBO64P7B2WCUAON" : 10.1.1.2 . 81 }`,
++	`add element ip crio-hostports hostports { sctp . 8083 comment "VEBO64P7B2WCUAON" : 10.1.1.2 . 83 }`,
++	`add element ip crio-hostports hostipports { 127.0.0.1 . tcp . 8084 comment "VEBO64P7B2WCUAON" : 10.1.1.2 . 84 }`,
++	`add element ip crio-hostports hairpins { 10.1.1.2 . 10.1.1.2 comment "VEBO64P7B2WCUAON" }`,
++
++	`add element ip crio-hostports hostports { tcp . 8443 comment "XDYUBNL7AIWQOXRB" : 10.1.1.4 . 443 }`,
++	`add element ip crio-hostports hairpins { 10.1.1.4 . 10.1.1.4 comment "XDYUBNL7AIWQOXRB" }`,
++
++	`add element ip crio-hostports hostipports { 127.0.0.1 . tcp . 8888 comment "7HJJ4B4NBF4ZM5U2" : 10.1.1.5 . 443 }`,
++	`add element ip crio-hostports hostipports { 127.0.0.2 . tcp . 8888 comment "7HJJ4B4NBF4ZM5U2" : 10.1.1.5 . 443 }`,
++	`add element ip crio-hostports hairpins { 10.1.1.5 . 10.1.1.5 comment "7HJJ4B4NBF4ZM5U2" }`,
++
++	`add element ip crio-hostports hostports { tcp . 9999 comment "4QZEO3QNGY7ECK5Q" : 10.1.1.6 . 443 }`,
++	`add element ip crio-hostports hostports { udp . 9999 comment "4QZEO3QNGY7ECK5Q" : 10.1.1.6 . 443 }`,
++	`add element ip crio-hostports hairpins { 10.1.1.6 . 10.1.1.6 comment "4QZEO3QNGY7ECK5Q" }`,
 +}
 +
-+var _ = t.Describe("HostPortManagerNFTables", func() {
++var expectedNFTablesElementsV6 = []string{
++	`add element ip6 crio-hostports hostports { tcp . 8080 comment "VEBO64P7B2WCUAON" : 2001:beef::2 . 80 }`,
++	`add element ip6 crio-hostports hostports { udp . 8081 comment "VEBO64P7B2WCUAON" : 2001:beef::2 . 81 }`,
++	`add element ip6 crio-hostports hostports { sctp . 8083 comment "VEBO64P7B2WCUAON" : 2001:beef::2 . 83 }`,
++	`add element ip6 crio-hostports hostipports { ::1 . tcp . 8084 comment "VEBO64P7B2WCUAON" : 2001:beef::2 . 84 }`,
++	`add element ip6 crio-hostports hairpins { 2001:beef::2 . 2001:beef::2 comment "VEBO64P7B2WCUAON" }`,
++
++	`add element ip6 crio-hostports hostports { tcp . 8443 comment "XDYUBNL7AIWQOXRB" : 2001:beef::4 . 443 }`,
++	`add element ip6 crio-hostports hairpins { 2001:beef::4 . 2001:beef::4 comment "XDYUBNL7AIWQOXRB" }`,
++}
++
++func checkNFTablesElements(nft *knftables.Fake, expectedElements []string) {
++	dump := nft.Dump()
++
++	expected := sets.New(expectedElements...)
++
++	matched := sets.New[string]()
++
++	for _, line := range strings.Split(dump, "\n") {
++		if strings.HasPrefix(line, "add element") {
++			matched.Insert(line)
++		}
++	}
++
++	unexpectedElements := matched.Difference(expected).UnsortedList()
++	missingElements := expected.Difference(matched).UnsortedList()
++
++	ExpectWithOffset(1, len(unexpectedElements)+len(missingElements)).To(Equal(0), "unexpected elements in nftables dump: %#v, expected elements missing from nftables dump: %#v", unexpectedElements, missingElements)
++}
++
++var _ = t.Describe("hostPortManagerNFTables", func() {
 +	It("should ensure hostports table", func() {
 +		fakeNFT := knftables.NewFake(knftables.IPv4Family, hostPortsTable)
 +		tx := fakeNFT.NewTransaction()
-+		ensureHostPortsTable(tx, "cbr0", false)
++		ensureHostPortsTable(tx, knftables.IPv4Family)
 +		Expect(fakeNFT.Run(context.Background(), tx)).To(Succeed())
 +
 +		dump := fakeNFT.Dump()
@@ -1846,7 +2187,6 @@ index 00000000000..58d9a1003e6
 +add rule ip crio-hostports hostports dnat ip addr . port to ip daddr . meta l4proto . th dport map @hostipports
 +add rule ip crio-hostports hostports dnat ip addr . port to meta l4proto . th dport map @hostports
 +add rule ip crio-hostports masquerading ct status & dnat|snat == dnat ip saddr . ip daddr @hairpins masquerade
-+add rule ip crio-hostports masquerading ip saddr 127.0.0.0/8 oifname "cbr0" masquerade
 +add rule ip crio-hostports output fib daddr type local  goto hostports
 +add rule ip crio-hostports prerouting fib daddr type local  goto hostports
 +`
@@ -1854,399 +2194,60 @@ index 00000000000..58d9a1003e6
 +	})
 +
 +	It("should support IPv4", func() {
-+		manager, nft4, _ := newFakeManagerNFTables()
-+		testCases := []struct {
-+			mapping     *PodPortMapping
-+			expectError bool
-+		}{
-+			// open HostPorts 8080/TCP, 8081/UDP and 8083/SCTP
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("10.1.1.2"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8080,
-+							ContainerPort: 80,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+						{
-+							HostPort:      8081,
-+							ContainerPort: 81,
-+							Protocol:      v1.ProtocolUDP,
-+						},
-+						{
-+							HostPort:      8083,
-+							ContainerPort: 83,
-+							Protocol:      v1.ProtocolSCTP,
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+			// open port 443
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod3",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("10.1.1.4"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8443,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+			// open same HostPort on different IP
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod5",
-+					Namespace: "ns5",
-+					IP:        net.ParseIP("10.1.1.5"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8888,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolTCP,
-+							HostIP:        "127.0.0.2",
-+						},
-+						{
-+							HostPort:      8888,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolTCP,
-+							HostIP:        "127.0.0.1",
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+			// open same HostPort on different
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod6",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("10.1.1.6"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      9999,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+						{
-+							HostPort:      9999,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolUDP,
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
++		fakeNFT := knftables.NewFake(knftables.IPv4Family, hostPortsTable)
++		manager := &hostportManagerNFTables{
++			nft:    fakeNFT,
++			family: knftables.IPv4Family,
 +		}
 +
 +		// Add Hostports
-+		for _, tc := range testCases {
-+			sandboxID := getPodFullName(tc.mapping)
-+			err := manager.Add(sandboxID, tc.mapping, "cbr0")
-+			if tc.expectError {
-+				Expect(err).To(HaveOccurred())
-+				continue
-+			}
++		for _, tc := range testCasesV4 {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
 +			Expect(err).NotTo(HaveOccurred())
 +		}
 +
 +		// Check nftables after adding hostports
-+		checkElements(nft4, []string{
-+			`add element ip crio-hostports hostports { tcp . 8080 comment "BBK5KOLM3RTTV4JS" : 10.1.1.2 . 80 }`,
-+			`add element ip crio-hostports hostports { udp . 8081 comment "BBK5KOLM3RTTV4JS" : 10.1.1.2 . 81 }`,
-+			`add element ip crio-hostports hostports { sctp . 8083 comment "BBK5KOLM3RTTV4JS" : 10.1.1.2 . 83 }`,
-+			`add element ip crio-hostports hairpins { 10.1.1.2 . 10.1.1.2 comment "BBK5KOLM3RTTV4JS" }`,
-+
-+			`add element ip crio-hostports hostports { tcp . 8443 comment "FWUCPWRIB7ZR62ZF" : 10.1.1.4 . 443 }`,
-+			`add element ip crio-hostports hairpins { 10.1.1.4 . 10.1.1.4 comment "FWUCPWRIB7ZR62ZF" }`,
-+
-+			`add element ip crio-hostports hostipports { 127.0.0.2 . tcp . 8888 comment "6UOYUYR5DU6TDVSV" : 10.1.1.5 . 443 }`,
-+			`add element ip crio-hostports hostipports { 127.0.0.1 . tcp . 8888 comment "6UOYUYR5DU6TDVSV" : 10.1.1.5 . 443 }`,
-+			`add element ip crio-hostports hairpins { 10.1.1.5 . 10.1.1.5 comment "6UOYUYR5DU6TDVSV" }`,
-+
-+			`add element ip crio-hostports hostports { tcp . 9999 comment "VJVSBXBJ2B2XAD5F" : 10.1.1.6 . 443 }`,
-+			`add element ip crio-hostports hostports { udp . 9999 comment "VJVSBXBJ2B2XAD5F" : 10.1.1.6 . 443 }`,
-+			`add element ip crio-hostports hairpins { 10.1.1.6 . 10.1.1.6 comment "VJVSBXBJ2B2XAD5F" }`,
-+		})
++		checkNFTablesElements(fakeNFT, expectedNFTablesElementsV4)
 +
 +		// Remove all added hostports
-+		for _, tc := range testCases {
-+			if !tc.expectError {
-+				sandboxID := getPodFullName(tc.mapping)
-+				err := manager.Remove(sandboxID, tc.mapping)
-+				Expect(err).NotTo(HaveOccurred())
-+			}
++		for _, tc := range testCasesV4 {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
 +		}
 +
 +		// Check nftables after deleting hostports
-+		checkElements(nft4, []string{})
++		checkNFTablesElements(fakeNFT, nil)
 +	})
 +
 +	It("should support IPv6", func() {
-+		manager, _, nft6 := newFakeManagerNFTables()
-+		testCases := []struct {
-+			mapping     *PodPortMapping
-+			expectError bool
-+		}{
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::2"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8080,
-+							ContainerPort: 80,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+						{
-+							HostPort:      8081,
-+							ContainerPort: 81,
-+							Protocol:      v1.ProtocolUDP,
-+						},
-+						{
-+							HostPort:      8083,
-+							ContainerPort: 83,
-+							Protocol:      v1.ProtocolSCTP,
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod3",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::4"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8443,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
++		fakeNFT := knftables.NewFake(knftables.IPv6Family, hostPortsTable)
++		manager := &hostportManagerNFTables{
++			nft:    fakeNFT,
++			family: knftables.IPv6Family,
 +		}
 +
 +		// Add Hostports
-+		for _, tc := range testCases {
-+			sandboxID := getPodFullName(tc.mapping)
-+			err := manager.Add(sandboxID, tc.mapping, "cbr0")
-+			if tc.expectError {
-+				Expect(err).To(HaveOccurred())
-+				continue
-+			}
++		for _, tc := range testCasesV6 {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
 +			Expect(err).NotTo(HaveOccurred())
 +		}
 +
 +		// Check nftables after adding hostports
-+		checkElements(nft6, []string{
-+			`add element ip6 crio-hostports hostports { tcp . 8080 comment "BBK5KOLM3RTTV4JS" : 2001:beef::2 . 80 }`,
-+			`add element ip6 crio-hostports hostports { udp . 8081 comment "BBK5KOLM3RTTV4JS" : 2001:beef::2 . 81 }`,
-+			`add element ip6 crio-hostports hostports { sctp . 8083 comment "BBK5KOLM3RTTV4JS" : 2001:beef::2 . 83 }`,
-+			`add element ip6 crio-hostports hairpins { 2001:beef::2 . 2001:beef::2 comment "BBK5KOLM3RTTV4JS" }`,
-+
-+			`add element ip6 crio-hostports hostports { tcp . 8443 comment "FWUCPWRIB7ZR62ZF" : 2001:beef::4 . 443 }`,
-+			`add element ip6 crio-hostports hairpins { 2001:beef::4 . 2001:beef::4 comment "FWUCPWRIB7ZR62ZF" }`,
-+		})
++		checkNFTablesElements(fakeNFT, expectedNFTablesElementsV6)
 +
 +		// Remove all added hostports
-+		for _, tc := range testCases {
-+			if !tc.expectError {
-+				sandboxID := getPodFullName(tc.mapping)
-+				err := manager.Remove(sandboxID, tc.mapping)
-+				Expect(err).NotTo(HaveOccurred())
-+			}
-+		}
-+
-+		// Check nftables after deleting hostports
-+		checkElements(nft6, []string{})
-+	})
-+
-+	It("should support dual stack", func() {
-+		manager, nft4, nft6 := newFakeManagerNFTables()
-+		testCases := []struct {
-+			mapping     *PodPortMapping
-+			expectError bool
-+		}{
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("192.168.2.7"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8080,
-+							ContainerPort: 80,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+						{
-+							HostPort:      8081,
-+							ContainerPort: 81,
-+							Protocol:      v1.ProtocolUDP,
-+						},
-+						{
-+							HostPort:      8083,
-+							ContainerPort: 83,
-+							Protocol:      v1.ProtocolSCTP,
-+						},
-+						{
-+							HostPort:      8084,
-+							ContainerPort: 84,
-+							Protocol:      v1.ProtocolTCP,
-+							HostIP:        "127.0.0.1",
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+			// same pod and portmappings,
-+			// but different IP must work
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod1",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::3"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8080,
-+							ContainerPort: 80,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+						{
-+							HostPort:      8081,
-+							ContainerPort: 81,
-+							Protocol:      v1.ProtocolUDP,
-+						},
-+						{
-+							HostPort:      8083,
-+							ContainerPort: 83,
-+							Protocol:      v1.ProtocolSCTP,
-+						},
-+						{
-+							HostPort:      8084,
-+							ContainerPort: 84,
-+							Protocol:      v1.ProtocolTCP,
-+							HostIP:        "::1",
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod3",
-+					Namespace: "ns1",
-+					IP:        net.ParseIP("2001:beef::4"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8443,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+			// port already taken by other pod
-+			// but using another IP family
-+			{
-+				mapping: &PodPortMapping{
-+					Name:      "pod4",
-+					Namespace: "ns2",
-+					IP:        net.ParseIP("192.168.2.2"),
-+					PortMappings: []*PortMapping{
-+						{
-+							HostPort:      8443,
-+							ContainerPort: 443,
-+							Protocol:      v1.ProtocolTCP,
-+						},
-+					},
-+				},
-+				expectError: false,
-+			},
-+		}
-+
-+		// Add Hostports
-+		for _, tc := range testCases {
-+			sandboxID := getPodFullName(tc.mapping)
-+			err := manager.Add(sandboxID, tc.mapping, "")
-+			if tc.expectError {
-+				Expect(err).To(HaveOccurred())
-+				continue
-+			}
++		for _, tc := range testCasesV6 {
++			err := manager.Remove(tc.id, tc.portMappings)
 +			Expect(err).NotTo(HaveOccurred())
 +		}
 +
-+		checkElements(nft4, []string{
-+			`add element ip crio-hostports hostports { tcp . 8080 comment "BBK5KOLM3RTTV4JS" : 192.168.2.7 . 80 }`,
-+			`add element ip crio-hostports hostports { udp . 8081 comment "BBK5KOLM3RTTV4JS" : 192.168.2.7 . 81 }`,
-+			`add element ip crio-hostports hostports { sctp . 8083 comment "BBK5KOLM3RTTV4JS" : 192.168.2.7 . 83 }`,
-+			`add element ip crio-hostports hostipports { 127.0.0.1 . tcp . 8084 comment "BBK5KOLM3RTTV4JS" : 192.168.2.7 . 84 }`,
-+			`add element ip crio-hostports hairpins { 192.168.2.7 . 192.168.2.7 comment "BBK5KOLM3RTTV4JS" }`,
-+
-+			`add element ip crio-hostports hostports { tcp . 8443 comment "4TAICGIFOZBYBIFS" : 192.168.2.2 . 443 }`,
-+			`add element ip crio-hostports hairpins { 192.168.2.2 . 192.168.2.2 comment "4TAICGIFOZBYBIFS" }`,
-+		})
-+
-+		// Check nftables after adding hostports
-+		checkElements(nft6, []string{
-+			`add element ip6 crio-hostports hostports { tcp . 8080 comment "BBK5KOLM3RTTV4JS" : 2001:beef::3 . 80 }`,
-+			`add element ip6 crio-hostports hostports { udp . 8081 comment "BBK5KOLM3RTTV4JS" : 2001:beef::3 . 81 }`,
-+			`add element ip6 crio-hostports hostports { sctp . 8083 comment "BBK5KOLM3RTTV4JS" : 2001:beef::3 . 83 }`,
-+			`add element ip6 crio-hostports hostipports { ::1 . tcp . 8084 comment "BBK5KOLM3RTTV4JS" : 2001:beef::3 . 84 }`,
-+			`add element ip6 crio-hostports hairpins { 2001:beef::3 . 2001:beef::3 comment "BBK5KOLM3RTTV4JS" }`,
-+
-+			`add element ip6 crio-hostports hostports { tcp . 8443 comment "FWUCPWRIB7ZR62ZF" : 2001:beef::4 . 443 }`,
-+			`add element ip6 crio-hostports hairpins { 2001:beef::4 . 2001:beef::4 comment "FWUCPWRIB7ZR62ZF" }`,
-+		})
-+
-+		// Remove all added hostports
-+		for _, tc := range testCases {
-+			if !tc.expectError {
-+				sandboxID := getPodFullName(tc.mapping)
-+				err := manager.Remove(sandboxID, tc.mapping)
-+				Expect(err).NotTo(HaveOccurred())
-+			}
-+		}
-+
 +		// Check nftables after deleting hostports
-+		checkElements(nft4, []string{})
-+		checkElements(nft6, []string{})
++		checkNFTablesElements(fakeNFT, nil)
 +	})
 +})
-+
-+func checkElements(nft *knftables.Fake, expectedElements []string) {
-+	dump := nft.Dump()
-+	actualElements := make(map[string]bool)
-+	for _, line := range strings.Split(dump, "\n") {
-+		if strings.HasPrefix(line, "add element") {
-+			actualElements[line] = true
-+		}
-+	}
-+	for _, elem := range expectedElements {
-+		GinkgoWriter.Printf("Element: %s\n", elem)
-+		_, ok := actualElements[elem]
-+		ExpectWithOffset(1, ok).To(BeTrue(), "did not find %q in\n%s", elem, dump)
-+	}
-+	ExpectWithOffset(1, actualElements).To(HaveLen(len(expectedElements)), "wrong number of elements")
-+}
-diff --git a/internal/hostport/hostport_test.go b/internal/hostport/hostport_test.go
-deleted file mode 100644
-index a72f7db945e..00000000000
---- a/internal/hostport/hostport_test.go
-+++ /dev/null
-@@ -1,59 +0,0 @@
+--- a/internal/hostport/hostport_test.go	2025-03-02 19:05:31.000000000 +0100
++++ b/internal/hostport/hostport_test.go	1970-01-01 01:00:00.000000000 +0100
+@@ -1,55 +0,0 @@
 -/*
 -Copyright 2017 The Kubernetes Authors.
 -
@@ -2274,10 +2275,8 @@ index a72f7db945e..00000000000
 -
 -var _ = t.Describe("HostPort", func() {
 -	It("should ensure kube hostport chains", func() {
--		interfaceName := "cbr0"
--
 -		fakeIPTables := newFakeIPTables()
--		Expect(ensureKubeHostportChains(fakeIPTables, interfaceName)).To(Succeed())
+-		Expect(ensureKubeHostportChains(fakeIPTables)).To(Succeed())
 -
 -		_, _, err := fakeIPTables.getChain(utiliptables.TableNAT, utiliptables.Chain("KUBE-HOSTPORTS"))
 -		Expect(err).ToNot(HaveOccurred())
@@ -2293,7 +2292,6 @@ index a72f7db945e..00000000000
 -		}
 -
 -		masqJumpRule := "-m comment --comment \"kube hostport masquerading\" -m conntrack --ctstate DNAT -j CRIO-HOSTPORTS-MASQ"
--		localhostMasqRule := "-m comment --comment \"SNAT for localhost access to hostports\" -o cbr0 -s 127.0.0.0/8 -j MASQUERADE"
 -
 -		_, chain, err := fakeIPTables.getChain(utiliptables.TableNAT, utiliptables.ChainPostrouting)
 -		Expect(err).ToNot(HaveOccurred())
@@ -2302,59 +2300,664 @@ index a72f7db945e..00000000000
 -
 -		_, chain, err = fakeIPTables.getChain(utiliptables.TableNAT, crioMasqueradeChain)
 -		Expect(err).ToNot(HaveOccurred())
--		Expect(len(chain.rules)).To(BeEquivalentTo(1))
--		Expect(chain.rules).To(ContainElement(localhostMasqRule))
+-		Expect(len(chain.rules)).To(BeEquivalentTo(0))
 -	})
 -})
-diff --git a/server/sandbox_network.go b/server/sandbox_network.go
-index 2c997af7067..8b46d7ac7f1 100644
---- a/server/sandbox_network.go
-+++ b/server/sandbox_network.go
-@@ -98,7 +98,6 @@ func (s *Server) networkStart(ctx context.Context, sb *sandbox.Sandbox) (podIPs
- 				Name:         sbName,
- 				PortMappings: sbPortMappings,
- 				IP:           ip,
--				HostNetwork:  false,
- 			}
+--- a/internal/hostport/meta_hostport_manager.go	1970-01-01 01:00:00.000000000 +0100
++++ b/internal/hostport/meta_hostport_manager.go	2025-03-06 20:47:00.293396244 +0100
+@@ -0,0 +1,175 @@
++package hostport
++
++import (
++	"errors"
++	"fmt"
++	"strings"
++
++	"github.com/sirupsen/logrus"
++	"github.com/vishvananda/netlink"
++	"golang.org/x/sys/unix"
++	v1 "k8s.io/api/core/v1"
++	utilnet "k8s.io/utils/net"
++	"sigs.k8s.io/knftables"
++
++	utiliptables "github.com/cri-o/cri-o/internal/iptables"
++)
++
++// metaHostportManager is a HostPortManager that manages other HostPort managers internally.
++type metaHostportManager struct {
++	managers map[utilnet.IPFamily]*hostportManagers
++}
++
++type hostportManagers struct {
++	iptables HostPortManager
++	nftables HostPortManager
++}
++
++// NewMetaHostportManager creates a new HostPortManager.
++func NewMetaHostportManager() (HostPortManager, error) {
++	mh := &metaHostportManager{
++		managers: make(map[utilnet.IPFamily]*hostportManagers),
++	}
++
++	iptv4, iptErr := newHostportManagerIPTables(utiliptables.ProtocolIPv4)
++	nftv4, nftErr := newHostportManagerNFTables(knftables.IPv4Family)
++
++	if iptv4 == nil && nftv4 == nil {
++		return nil, fmt.Errorf("can't create HostPortManager: no support for iptables (%w) or nftables (%w)", iptErr, nftErr)
++	}
++
++	mh.managers[utilnet.IPv4] = &hostportManagers{
++		iptables: iptv4,
++		nftables: nftv4,
++	}
++
++	// IPv6 may fail if there's no kernel support, or no ip6tables binaries. We leave
++	// mh.managers[utilnet.IPv6] nil if there's no IPv6 support.
++	iptv6, iptErr := newHostportManagerIPTables(utiliptables.ProtocolIPv6)
++
++	nftv6, nftErr := newHostportManagerNFTables(knftables.IPv6Family)
++
++	switch {
++	case nftv6 == nil:
++		logrus.Infof("No kernel support for IPv6: %v", nftErr)
++	case iptv6 == nil:
++		logrus.Infof("No iptables support for IPv6: %v", iptErr)
++	default:
++		mh.managers[utilnet.IPv6] = &hostportManagers{
++			iptables: iptv6,
++			nftables: nftv6,
++		}
++	}
++
++	return mh, nil
++}
++
++var netlinkFamily = map[utilnet.IPFamily]netlink.InetFamily{
++	utilnet.IPv4: unix.AF_INET,
++	utilnet.IPv6: unix.AF_INET6,
++}
++
++func (mh *metaHostportManager) Add(id, name, podIP string, hostportMappings []*PortMapping) error {
++	family := utilnet.IPFamilyOfString(podIP)
++
++	hostportMappings = filterHostportMappings(hostportMappings, family)
++	if len(hostportMappings) == 0 {
++		return nil
++	}
++
++	managers := mh.managers[family]
++	if managers == nil {
++		// No support for IPv6 but we got an IPv6 pod. This shouldn't happen.
++		return fmt.Errorf("no HostPort support for IPv%s on this host", family)
++	}
++
++	// Use nftables if available, fall back to iptables. (We know at least one must be
++	// non-nil.)
++	hm := managers.nftables
++	if hm == nil {
++		hm = managers.iptables
++	}
++
++	err := hm.Add(id, name, podIP, hostportMappings)
++	if err != nil {
++		return err
++	}
++
++	// Remove conntrack entries just after adding the new iptables rules. If the
++	// conntrack entry is removed along with the IP tables rule, it can be the case
++	// that the packets received by the node after iptables rule removal will create a
++	// new conntrack entry without any DNAT. That will result in blackhole of the
++	// traffic even after correct iptables rules have been added back.
++	conntrackPortsToRemove := []int{}
++
++	for _, pm := range hostportMappings {
++		if pm.Protocol == v1.ProtocolUDP {
++			conntrackPortsToRemove = append(conntrackPortsToRemove, int(pm.HostPort))
++		}
++	}
++
++	logrus.Infof("Deleting UDP conntrack entries for IPv%s: %v", family, conntrackPortsToRemove)
++
++	for _, port := range conntrackPortsToRemove {
++		err = deleteConntrackEntriesForDstPort(uint16(port), unix.IPPROTO_UDP, netlinkFamily[family])
++		if err != nil {
++			logrus.Errorf("Failed to clear udp conntrack for port %d, error: %v", port, err)
++		}
++	}
++
++	return nil
++}
++
++func (mh *metaHostportManager) Remove(id string, hostportMappings []*PortMapping) error {
++	var errstrings []string
++	// Remove may not have the IP information, so we try to clean us much as possible
++	// and warn about the possible errors. We also use both managers, if available,
++	// to handle switching between iptables and nftables on upgrade/downgrade.
++
++	for family, managers := range mh.managers {
++		mappingsForFamily := filterHostportMappings(hostportMappings, family)
++		if len(mappingsForFamily) == 0 {
++			continue
++		}
++
++		if managers.nftables != nil {
++			err := managers.nftables.Remove(id, mappingsForFamily)
++			if err != nil {
++				errstrings = append(errstrings, err.Error())
++			}
++		}
++
++		if managers.iptables != nil {
++			err := managers.iptables.Remove(id, mappingsForFamily)
++			// Ignore iptables errors if we're primarily using nftables
++			if err != nil && managers.nftables == nil {
++				errstrings = append(errstrings, err.Error())
++			}
++		}
++	}
++
++	if len(errstrings) > 0 {
++		return errors.New(strings.Join(errstrings, "\n"))
++	}
++
++	return nil
++}
++
++// filterHostportMappings returns only the PortMappings that apply to family.
++func filterHostportMappings(hostportMappings []*PortMapping, family utilnet.IPFamily) []*PortMapping {
++	mappings := []*PortMapping{}
++
++	for _, pm := range hostportMappings {
++		if pm.HostPort <= 0 {
++			continue
++		}
++
++		if pm.HostIP != "" && utilnet.IPFamilyOfString(pm.HostIP) != family {
++			continue
++		}
++
++		mappings = append(mappings, pm)
++	}
++
++	return mappings
++}
+--- a/internal/hostport/meta_hostport_manager_test.go	1970-01-01 01:00:00.000000000 +0100
++++ b/internal/hostport/meta_hostport_manager_test.go	2025-03-06 20:47:00.293396244 +0100
+@@ -0,0 +1,332 @@
++package hostport
++
++import (
++	. "github.com/onsi/ginkgo/v2"
++	. "github.com/onsi/gomega"
++	v1 "k8s.io/api/core/v1"
++	utilnet "k8s.io/utils/net"
++	"sigs.k8s.io/knftables"
++
++	utiliptables "github.com/cri-o/cri-o/internal/iptables"
++)
++
++var _ = t.Describe("MetaHostportManager", func() {
++	if len(testCasesV4) < len(testCasesV6) {
++		panic("internal error; expected more IPv4 than IPv6 test cases")
++	}
++	var metaTestCases []testCase
++	for i := range testCasesV4 {
++		metaTestCases = append(metaTestCases, testCasesV4[i])
++		if i < len(testCasesV6) {
++			metaTestCases = append(metaTestCases, testCasesV6[i])
++		}
++	}
++
++	It("should work when only iptables is available", func() {
++		iptables := newFakeIPTables()
++		iptables.protocol = utiliptables.ProtocolIPv4
++		ip6tables := newFakeIPTables()
++		ip6tables.protocol = utiliptables.ProtocolIPv6
++
++		manager := metaHostportManager{
++			managers: map[utilnet.IPFamily]*hostportManagers{
++				utilnet.IPv4: {
++					iptables: &hostportManagerIPTables{
++						iptables: iptables,
++					},
++				},
++				utilnet.IPv6: {
++					iptables: &hostportManagerIPTables{
++						iptables: ip6tables,
++					},
++				},
++			},
++		}
++
++		// Add Hostports
++		for _, tc := range metaTestCases {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// Check Iptables-save result after adding hostports
++		checkIPTablesRules(iptables, expectedIPTablesRulesV4)
++		checkIPTablesRules(ip6tables, expectedIPTablesRulesV6)
++
++		// Remove all added hostports
++		for _, tc := range metaTestCases {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// Check Iptables-save result after deleting hostports
++		checkIPTablesRules(iptables, nil)
++		checkIPTablesRules(ip6tables, nil)
++	})
++
++	It("should work when only nftables is available", func() {
++		nft4 := knftables.NewFake(knftables.IPv4Family, hostPortsTable)
++		nft6 := knftables.NewFake(knftables.IPv6Family, hostPortsTable)
++		manager := metaHostportManager{
++			managers: map[utilnet.IPFamily]*hostportManagers{
++				utilnet.IPv4: {
++					nftables: &hostportManagerNFTables{
++						nft:    nft4,
++						family: knftables.IPv4Family,
++					},
++				},
++				utilnet.IPv6: {
++					nftables: &hostportManagerNFTables{
++						nft:    nft6,
++						family: knftables.IPv6Family,
++					},
++				},
++			},
++		}
++
++		// Add Hostports
++		for _, tc := range metaTestCases {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		checkNFTablesElements(nft4, expectedNFTablesElementsV4)
++		checkNFTablesElements(nft6, expectedNFTablesElementsV6)
++
++		// Remove all added hostports
++		for _, tc := range metaTestCases {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		checkNFTablesElements(nft4, nil)
++		checkNFTablesElements(nft6, nil)
++	})
++
++	It("should work when both iptables and nftables are available", func() {
++		iptables := newFakeIPTables()
++		iptables.protocol = utiliptables.ProtocolIPv4
++		ip6tables := newFakeIPTables()
++		ip6tables.protocol = utiliptables.ProtocolIPv6
++		nft4 := knftables.NewFake(knftables.IPv4Family, hostPortsTable)
++		nft6 := knftables.NewFake(knftables.IPv6Family, hostPortsTable)
++		manager := metaHostportManager{
++			managers: map[utilnet.IPFamily]*hostportManagers{
++				utilnet.IPv4: {
++					iptables: &hostportManagerIPTables{
++						iptables: iptables,
++					},
++					nftables: &hostportManagerNFTables{
++						nft:    nft4,
++						family: knftables.IPv4Family,
++					},
++				},
++				utilnet.IPv6: {
++					iptables: &hostportManagerIPTables{
++						iptables: ip6tables,
++					},
++					nftables: &hostportManagerNFTables{
++						nft:    nft6,
++						family: knftables.IPv6Family,
++					},
++				},
++			},
++		}
++
++		// Add Hostports
++		for _, tc := range metaTestCases {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// Should not have used iptables since nftables is present
++		checkIPTablesRules(iptables, nil)
++		checkIPTablesRules(ip6tables, nil)
++
++		checkNFTablesElements(nft4, expectedNFTablesElementsV4)
++		checkNFTablesElements(nft6, expectedNFTablesElementsV6)
++
++		// Remove all added hostports
++		for _, tc := range metaTestCases {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		checkIPTablesRules(iptables, nil)
++		checkIPTablesRules(ip6tables, nil)
++		checkNFTablesElements(nft4, nil)
++		checkNFTablesElements(nft6, nil)
++	})
++
++	It("should clean up iptables when using nftables", func() {
++		legacyIPTablesTestCases := []testCase{
++			{
++				id:    "8062968aa5c4d61f8963c53918e1edce3c86e9e7f63eddf941db339630ea985a",
++				name:  "pod0_ns0",
++				podIP: "10.1.1.1",
++				portMappings: []*PortMapping{
++					{
++						HostPort:      9090,
++						ContainerPort: 80,
++						Protocol:      v1.ProtocolTCP,
++					},
++				},
++			},
++			{
++				id:    "8062968aa5c4d61f8963c53918e1edce3c86e9e7f63eddf941db339630ea985a",
++				name:  "pod0_ns0",
++				podIP: "2001:beef::1",
++				portMappings: []*PortMapping{
++					{
++						HostPort:      9090,
++						ContainerPort: 80,
++						Protocol:      v1.ProtocolTCP,
++					},
++				},
++			},
++		}
++		legacyIPTablesExpectedRulesV4 := []string{
++			"-A KUBE-HP-YJ3XFQDZHZ3NAUN2 -m comment --comment \"pod0_ns0 hostport 9090\" -m tcp -p tcp -j DNAT --to-destination 10.1.1.1:80",
++			"-A CRIO-MASQ-YJ3XFQDZHZ3NAUN2 -m comment --comment \"pod0_ns0 hostport 9090\" -m conntrack --ctorigdstport 9090 -m tcp -p tcp --dport 80 -s 10.1.1.1/32 -d 10.1.1.1/32 -j MASQUERADE",
++			"-A KUBE-HOSTPORTS -m comment --comment \"pod0_ns0 hostport 9090\" -m tcp -p tcp --dport 9090 -j KUBE-HP-YJ3XFQDZHZ3NAUN2",
++			"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod0_ns0 hostport 9090\" -j CRIO-MASQ-YJ3XFQDZHZ3NAUN2",
++		}
++		legacyIPTablesExpectedRulesV6 := []string{
++			"-A KUBE-HP-YJ3XFQDZHZ3NAUN2 -m comment --comment \"pod0_ns0 hostport 9090\" -m tcp -p tcp -j DNAT --to-destination [2001:beef::1]:80",
++			"-A CRIO-MASQ-YJ3XFQDZHZ3NAUN2 -m comment --comment \"pod0_ns0 hostport 9090\" -m conntrack --ctorigdstport 9090 -m tcp -p tcp --dport 80 -s 2001:beef::1/128 -d 2001:beef::1/128 -j MASQUERADE",
++			"-A KUBE-HOSTPORTS -m comment --comment \"pod0_ns0 hostport 9090\" -m tcp -p tcp --dport 9090 -j KUBE-HP-YJ3XFQDZHZ3NAUN2",
++			"-A CRIO-HOSTPORTS-MASQ -m comment --comment \"pod0_ns0 hostport 9090\" -j CRIO-MASQ-YJ3XFQDZHZ3NAUN2",
++		}
++
++		// Construct a metaHostportManager with only iptables support.
++		iptables := newFakeIPTables()
++		iptables.protocol = utiliptables.ProtocolIPv4
++		ip6tables := newFakeIPTables()
++		ip6tables.protocol = utiliptables.ProtocolIPv6
++		manager := metaHostportManager{
++			managers: map[utilnet.IPFamily]*hostportManagers{
++				utilnet.IPv4: {
++					iptables: &hostportManagerIPTables{
++						iptables: iptables,
++					},
++				},
++				utilnet.IPv6: {
++					iptables: &hostportManagerIPTables{
++						iptables: ip6tables,
++					},
++				},
++			},
++		}
++
++		// Add the legacy mappings.
++		for _, tc := range legacyIPTablesTestCases {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		checkIPTablesRules(iptables, legacyIPTablesExpectedRulesV4)
++		checkIPTablesRules(ip6tables, legacyIPTablesExpectedRulesV6)
++
++		// "Quit and restart cri-o", and create a new metaHostportManager with the
++		// existing fakeIPTables state, but now with nftables support as well.
++		nft4 := knftables.NewFake(knftables.IPv4Family, hostPortsTable)
++		nft6 := knftables.NewFake(knftables.IPv6Family, hostPortsTable)
++		manager = metaHostportManager{
++			managers: map[utilnet.IPFamily]*hostportManagers{
++				utilnet.IPv4: {
++					iptables: &hostportManagerIPTables{
++						iptables: iptables,
++					},
++					nftables: &hostportManagerNFTables{
++						nft:    nft4,
++						family: knftables.IPv4Family,
++					},
++				},
++				utilnet.IPv6: {
++					iptables: &hostportManagerIPTables{
++						iptables: ip6tables,
++					},
++					nftables: &hostportManagerNFTables{
++						nft:    nft6,
++						family: knftables.IPv6Family,
++					},
++				},
++			},
++		}
++
++		// Add the remaining hostports.
++		for _, tc := range metaTestCases {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// iptables mappings should not have changed; we should have added the new
++		// mappings to nftables.
++		checkIPTablesRules(iptables, legacyIPTablesExpectedRulesV4)
++		checkIPTablesRules(ip6tables, legacyIPTablesExpectedRulesV6)
++
++		checkNFTablesElements(nft4, expectedNFTablesElementsV4)
++		checkNFTablesElements(nft6, expectedNFTablesElementsV6)
++
++		// Remove all added hostports
++		for _, tc := range legacyIPTablesTestCases {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++		for _, tc := range metaTestCases {
++			err := manager.Remove(tc.id, tc.portMappings)
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		// iptables and nftables should both have been removed.
++		checkIPTablesRules(iptables, nil)
++		checkIPTablesRules(ip6tables, nil)
++		checkNFTablesElements(nft4, nil)
++		checkNFTablesElements(nft6, nil)
++	})
++
++	It("should work with just IPv4", func() {
++		iptables := newFakeIPTables()
++		iptables.protocol = utiliptables.ProtocolIPv4
++		nft4 := knftables.NewFake(knftables.IPv4Family, hostPortsTable)
++		manager := metaHostportManager{
++			managers: map[utilnet.IPFamily]*hostportManagers{
++				utilnet.IPv4: {
++					iptables: &hostportManagerIPTables{
++						iptables: iptables,
++					},
++					nftables: &hostportManagerNFTables{
++						nft:    nft4,
++						family: knftables.IPv4Family,
++					},
++				},
++			},
++		}
++
++		// Add Hostports
++		for _, tc := range metaTestCases {
++			err := manager.Add(tc.id, tc.name, tc.podIP, tc.portMappings)
++			// IPv6 mappings should fail because we don't have any IPv6
++			// HostPortManagers.
++			if utilnet.IsIPv6String(tc.podIP) {
++				Expect(err).To(HaveOccurred())
++			} else {
++				Expect(err).NotTo(HaveOccurred())
++			}
++		}
++
++		checkIPTablesRules(iptables, nil)
++		checkNFTablesElements(nft4, expectedNFTablesElementsV4)
++
++		// Remove all added hostports
++		for _, tc := range metaTestCases {
++			err := manager.Remove(tc.id, tc.portMappings)
++			// Remove is IP-family agnostic and should just ignore the missing
++			// IPv6 HostPortManagers.
++			Expect(err).NotTo(HaveOccurred())
++		}
++
++		checkIPTablesRules(iptables, nil)
++		checkNFTablesElements(nft4, nil)
++	})
++})
+--- a/internal/hostport/noop_hostport_manager.go	2025-03-02 19:05:31.000000000 +0100
++++ b/internal/hostport/noop_hostport_manager.go	2025-03-06 20:47:00.293396244 +0100
+@@ -1,6 +1,8 @@
+ package hostport
+ 
+-import "github.com/sirupsen/logrus"
++import (
++	"github.com/sirupsen/logrus"
++)
+ 
+ // This interface implements, when hostport mapping is disabled in CRI-O.
+ type noopHostportManager struct{}
+@@ -11,12 +13,12 @@
+ 	return &noopHostportManager{}
+ }
+ 
+-func (mh *noopHostportManager) Add(id string, podPortMapping *PodPortMapping) error {
++func (mh *noopHostportManager) Add(id, name, podIP string, hostportMappings []*PortMapping) error {
+ 	logrus.Debug("HostPort Mapping is Disabled in CRI-O")
+ 	return nil
+ }
+ 
+-func (mh *noopHostportManager) Remove(id string, podPortMapping *PodPortMapping) error {
++func (mh *noopHostportManager) Remove(id string, hostportMappings []*PortMapping) error {
+ 	logrus.Debug("HostPort Mapping is Disabled in CRI-O")
+ 	return nil
+ }
+--- a/internal/hostport/noop_hostport_manager_test.go	2025-03-02 19:05:31.000000000 +0100
++++ b/internal/hostport/noop_hostport_manager_test.go	2025-03-06 20:47:00.293396244 +0100
+@@ -10,7 +10,7 @@
+ 		manager := NewNoopHostportManager()
+ 		Expect(manager).NotTo(BeNil())
+ 
+-		err := manager.Add("id", nil)
++		err := manager.Add("id", "pod1", "1.2.3.4", nil)
+ 		Expect(err).NotTo(HaveOccurred())
+ 
+ 		err = manager.Remove("id", nil)
+--- a/server/sandbox_network.go	2025-03-02 19:05:31.000000000 +0100
++++ b/server/sandbox_network.go	2025-03-06 20:47:00.297396203 +0100
+@@ -13,7 +13,6 @@
+ 	"k8s.io/apimachinery/pkg/api/resource"
+ 	utilnet "k8s.io/utils/net"
+ 
+-	"github.com/cri-o/cri-o/internal/hostport"
+ 	"github.com/cri-o/cri-o/internal/lib/sandbox"
+ 	"github.com/cri-o/cri-o/internal/log"
+ 	"github.com/cri-o/cri-o/server/metrics"
+@@ -95,11 +94,6 @@
+ 
+ 		// the pod has host-ports defined
+ 		if len(sbPortMappings) > 0 {
+-			mapping := &hostport.PodPortMapping{
+-				Name:         sbName,
+-				PortMappings: sbPortMappings,
+-				IP:           ip,
+-			}
  			//nolint:gocritic // using a switch statement is not much different
  			if utilnet.IsIPv6(ip) {
-@@ -174,7 +173,6 @@ func (s *Server) networkStop(ctx context.Context, sb *sandbox.Sandbox) error {
- 	mapping := &hostport.PodPortMapping{
- 		Name:         sb.Name(),
- 		PortMappings: sb.PortMappings(),
--		HostNetwork:  false,
- 	}
+ 				if foundIPv6 {
+@@ -115,7 +109,7 @@
+ 				// found a new IPv4 address, do the portmap
+ 				foundIPv4 = true
+ 			}
+-			err = s.hostportManager.Add(sbID, mapping)
++			err = s.hostportManager.Add(sbID, sbName, ip.String(), sbPortMappings)
+ 			if err != nil {
+ 				return nil, nil, fmt.Errorf("failed to add hostport mapping for sandbox %s(%s): %w", sb.Name(), sb.ID(), err)
+ 			}
+@@ -171,12 +165,8 @@
+ 	stopCtx, stopCancel := context.WithTimeout(ctx, 1*time.Minute)
+ 	defer stopCancel()
+ 
+-	mapping := &hostport.PodPortMapping{
+-		Name:         sb.Name(),
+-		PortMappings: sb.PortMappings(),
+-	}
  	// portMapping removal does not need the IP address
- 	if err := s.hostportManager.Remove(sb.ID(), mapping); err != nil {
-diff --git a/vendor/modules.txt b/vendor/modules.txt
-index b64a4608e27..957e1bf00b8 100644
---- a/vendor/modules.txt
-+++ b/vendor/modules.txt
-@@ -1611,6 +1611,9 @@ k8s.io/utils/trace
+-	if err := s.hostportManager.Remove(sb.ID(), mapping); err != nil {
++	if err := s.hostportManager.Remove(sb.ID(), sb.PortMappings()); err != nil {
+ 		log.Warnf(ctx, "Failed to remove hostport for pod sandbox %s(%s): %v",
+ 			sb.Name(), sb.ID(), err)
+ 	}
+--- a/server/server.go	2025-03-02 19:05:31.000000000 +0100
++++ b/server/server.go	2025-03-06 20:47:00.297396203 +0100
+@@ -397,7 +397,10 @@
+ 	if config.RuntimeConfig.DisableHostPortMapping {
+ 		hostportManager = hostport.NewNoopHostportManager()
+ 	} else {
+-		hostportManager = hostport.NewHostportManager()
++		hostportManager, err = hostport.NewMetaHostportManager()
++		if err != nil {
++			return nil, fmt.Errorf("%w (use --disable-hostport-mapping to disable HostPort handling)", err)
++		}
+ 	}
+ 
+ 	idMappings, err := getIDMappings(config)
+--- a/server/suite_test.go	2025-03-02 19:05:31.000000000 +0100
++++ b/server/suite_test.go	2025-03-06 20:47:00.297396203 +0100
+@@ -149,6 +149,10 @@
+ 	serverConfig.Seccomp().SetNotifierPath(t.MustTempDir("seccomp-notifier"))
+ 	serverConfig.NRI.SocketPath = t.MustTempDir("nri")
+ 
++	// Nothing here tests hostport mapping, and hostport.NewMetaHostPortManager
++	// will fail if non-root
++	serverConfig.RuntimeConfig.DisableHostPortMapping = true
++
+ 	// We want a directory that is guaranteed to exist, but it must
+ 	// be empty so we don't erroneously load anything and make tests
+ 	// unreproducible.
+--- a/vendor/modules.txt	2025-03-02 19:05:31.000000000 +0100
++++ b/vendor/modules.txt	2025-03-06 20:47:00.521393927 +0100
+@@ -1667,6 +1667,9 @@
  ## explicit; go 1.18
  sigs.k8s.io/json
  sigs.k8s.io/json/internal/golang/encoding/json
-+# sigs.k8s.io/knftables v0.0.17
++# sigs.k8s.io/knftables v0.0.18
 +## explicit; go 1.20
 +sigs.k8s.io/knftables
  # sigs.k8s.io/release-sdk v0.12.1
  ## explicit; go 1.21
  sigs.k8s.io/release-sdk/git
-diff --git a/vendor/sigs.k8s.io/knftables/.gitignore b/vendor/sigs.k8s.io/knftables/.gitignore
-new file mode 100644
-index 00000000000..896d5783bce
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/.gitignore
+--- a/vendor/sigs.k8s.io/knftables/.gitignore	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/.gitignore	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,2 @@
 +*~
 +hack/bin/golangci-lint
-diff --git a/vendor/sigs.k8s.io/knftables/CHANGELOG.md b/vendor/sigs.k8s.io/knftables/CHANGELOG.md
-new file mode 100644
-index 00000000000..4f1dc3a3542
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/CHANGELOG.md
-@@ -0,0 +1,170 @@
+--- a/vendor/sigs.k8s.io/knftables/CHANGELOG.md	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/CHANGELOG.md	2025-03-06 20:47:00.521393927 +0100
+@@ -0,0 +1,181 @@
 +# ChangeLog
++
++## v0.0.18
++
++- Added locking to `Fake` to allow it to be safely used concurrently.
++  (`@npinaeva`)
++
++- Added a `Flowtable` object, and `Fake` support for correctly parsing
++  flowtable references. (`@aojea`)
++
++- Fixed a bug in `Fake.ParseDump`, which accidentally required the
++  table to have a comment. (`@danwinship`)
 +
 +## v0.0.17
 +
@@ -2524,11 +3127,8 @@ index 00000000000..4f1dc3a3542
 +## v0.0.1
 +
 +- Initial "release"
-diff --git a/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md b/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md
-new file mode 100644
-index 00000000000..50a4c6a370f
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md
+--- a/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,28 @@
 +# Contributing Guidelines
 +
@@ -2558,11 +3158,8 @@ index 00000000000..50a4c6a370f
 +
 +- [sig-network slack channel](https://kubernetes.slack.com/messages/sig-network)
 +- [kubernetes-sig-network mailing list](https://groups.google.com/forum/#!forum/kubernetes-sig-network)
-diff --git a/vendor/sigs.k8s.io/knftables/LICENSE b/vendor/sigs.k8s.io/knftables/LICENSE
-new file mode 100644
-index 00000000000..261eeb9e9f8
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/LICENSE
+--- a/vendor/sigs.k8s.io/knftables/LICENSE	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/LICENSE	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,201 @@
 +                                 Apache License
 +                           Version 2.0, January 2004
@@ -2765,11 +3362,8 @@ index 00000000000..261eeb9e9f8
 +   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 +   See the License for the specific language governing permissions and
 +   limitations under the License.
-diff --git a/vendor/sigs.k8s.io/knftables/Makefile b/vendor/sigs.k8s.io/knftables/Makefile
-new file mode 100644
-index 00000000000..981e6256a41
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/Makefile
+--- a/vendor/sigs.k8s.io/knftables/Makefile	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/Makefile	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,32 @@
 +# Copyright 2023 The Kubernetes Authors.
 +#
@@ -2803,11 +3397,8 @@ index 00000000000..981e6256a41
 +	./hack/verify.sh
 +
 +.PHONY: all build clean test update verify
-diff --git a/vendor/sigs.k8s.io/knftables/OWNERS b/vendor/sigs.k8s.io/knftables/OWNERS
-new file mode 100644
-index 00000000000..01baa623701
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/OWNERS
+--- a/vendor/sigs.k8s.io/knftables/OWNERS	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/OWNERS	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,7 @@
 +# See the OWNERS docs at https://go.k8s.io/owners
 +
@@ -2816,12 +3407,9 @@ index 00000000000..01baa623701
 +  - danwinship
 +approvers:
 +  - danwinship
-diff --git a/vendor/sigs.k8s.io/knftables/README.md b/vendor/sigs.k8s.io/knftables/README.md
-new file mode 100644
-index 00000000000..794b15bb71d
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/README.md
-@@ -0,0 +1,278 @@
+--- a/vendor/sigs.k8s.io/knftables/README.md	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/README.md	2025-03-06 20:47:00.521393927 +0100
+@@ -0,0 +1,279 @@
 +# knftables: a golang nftables library
 +
 +This is a library for using nftables from Go.
@@ -2958,6 +3546,7 @@ index 00000000000..794b15bb71d
 +The currently-supported objects are:
 +
 +- `Table`
++- `Flowtable`
 +- `Chain`
 +- `Rule`
 +- `Set`
@@ -3100,11 +3689,8 @@ index 00000000000..794b15bb71d
 +See [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information about
 +contributing. Participation in the Kubernetes community is governed by
 +the [Kubernetes Code of Conduct](code-of-conduct.md).
-diff --git a/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS b/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS
-new file mode 100644
-index 00000000000..eb4390a2e19
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS
+--- a/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,13 @@
 +# Defined below are the security contacts for this repo.
 +#
@@ -3119,20 +3705,14 @@ index 00000000000..eb4390a2e19
 +# INSTRUCTIONS AT https://kubernetes.io/security/
 +
 +danwinship
-diff --git a/vendor/sigs.k8s.io/knftables/code-of-conduct.md b/vendor/sigs.k8s.io/knftables/code-of-conduct.md
-new file mode 100644
-index 00000000000..0d15c00cf32
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/code-of-conduct.md
+--- a/vendor/sigs.k8s.io/knftables/code-of-conduct.md	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/code-of-conduct.md	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,3 @@
 +# Kubernetes Community Code of Conduct
 +
 +Please refer to our [Kubernetes Community Code of Conduct](https://git.k8s.io/community/code-of-conduct.md)
-diff --git a/vendor/sigs.k8s.io/knftables/error.go b/vendor/sigs.k8s.io/knftables/error.go
-new file mode 100644
-index 00000000000..fe57da03b85
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/error.go
+--- a/vendor/sigs.k8s.io/knftables/error.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/error.go	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,94 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -3228,11 +3808,8 @@ index 00000000000..fe57da03b85
 +	}
 +	return false
 +}
-diff --git a/vendor/sigs.k8s.io/knftables/exec.go b/vendor/sigs.k8s.io/knftables/exec.go
-new file mode 100644
-index 00000000000..154b5bc45c9
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/exec.go
+--- a/vendor/sigs.k8s.io/knftables/exec.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/exec.go	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,48 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -3282,12 +3859,9 @@ index 00000000000..154b5bc45c9
 +	}
 +	return string(out), err
 +}
-diff --git a/vendor/sigs.k8s.io/knftables/fake.go b/vendor/sigs.k8s.io/knftables/fake.go
-new file mode 100644
-index 00000000000..584c27a540a
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/fake.go
-@@ -0,0 +1,671 @@
+--- a/vendor/sigs.k8s.io/knftables/fake.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/fake.go	2025-03-06 20:47:00.521393927 +0100
+@@ -0,0 +1,744 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
 +
@@ -3313,26 +3887,36 @@ index 00000000000..584c27a540a
 +	"regexp"
 +	"sort"
 +	"strings"
++	"sync"
 +)
 +
 +// Fake is a fake implementation of Interface
 +type Fake struct {
 +	nftContext
++	// mutex is used to protect Table and LastTransaction.
++	// When Table and LastTransaction are accessed directly, the caller must acquire Fake.RLock
++	// and release when finished.
++	sync.RWMutex
 +
 +	nextHandle int
 +
 +	// Table contains the Interface's table. This will be `nil` until you `tx.Add()`
 +	// the table.
++	// Make sure to acquire Fake.RLock before accessing Table in a concurrent environment.
 +	Table *FakeTable
 +
 +	// LastTransaction is the last transaction passed to Run(). It will remain set until the
 +	// next time Run() is called. (It is not affected by Check().)
++	// Make sure to acquire Fake.RLock before accessing LastTransaction in a concurrent environment.
 +	LastTransaction *Transaction
 +}
 +
 +// FakeTable wraps Table for the Fake implementation
 +type FakeTable struct {
 +	Table
++
++	// Flowtables contains the table's flowtables, keyed by name
++	Flowtables map[string]*FakeFlowtable
 +
 +	// Chains contains the table's chains, keyed by name
 +	Chains map[string]*FakeChain
@@ -3342,6 +3926,11 @@ index 00000000000..584c27a540a
 +
 +	// Maps contains the table's maps, keyed by name
 +	Maps map[string]*FakeMap
++}
++
++// FakeFlowtable wraps Flowtable for the Fake implementation
++type FakeFlowtable struct {
++	Flowtable
 +}
 +
 +// FakeChain wraps Chain for the Fake implementation
@@ -3384,6 +3973,8 @@ index 00000000000..584c27a540a
 +
 +// List is part of Interface.
 +func (fake *Fake) List(_ context.Context, objectType string) ([]string, error) {
++	fake.RLock()
++	defer fake.RUnlock()
 +	if fake.Table == nil {
 +		return nil, notFoundError("no such table %q", fake.table)
 +	}
@@ -3391,6 +3982,10 @@ index 00000000000..584c27a540a
 +	var result []string
 +
 +	switch objectType {
++	case "flowtable", "flowtables":
++		for name := range fake.Table.Flowtables {
++			result = append(result, name)
++		}
 +	case "chain", "chains":
 +		for name := range fake.Table.Chains {
 +			result = append(result, name)
@@ -3413,6 +4008,8 @@ index 00000000000..584c27a540a
 +
 +// ListRules is part of Interface
 +func (fake *Fake) ListRules(_ context.Context, chain string) ([]*Rule, error) {
++	fake.RLock()
++	defer fake.RUnlock()
 +	if fake.Table == nil {
 +		return nil, notFoundError("no such table %q", fake.table)
 +	}
@@ -3435,6 +4032,8 @@ index 00000000000..584c27a540a
 +
 +// ListElements is part of Interface
 +func (fake *Fake) ListElements(_ context.Context, objectType, name string) ([]*Element, error) {
++	fake.RLock()
++	defer fake.RUnlock()
 +	if fake.Table == nil {
 +		return nil, notFoundError("no such %s %q", objectType, name)
 +	}
@@ -3459,6 +4058,8 @@ index 00000000000..584c27a540a
 +
 +// Run is part of Interface
 +func (fake *Fake) Run(_ context.Context, tx *Transaction) error {
++	fake.Lock()
++	defer fake.Unlock()
 +	fake.LastTransaction = tx
 +	updatedTable, err := fake.run(tx)
 +	if err == nil {
@@ -3469,10 +4070,13 @@ index 00000000000..584c27a540a
 +
 +// Check is part of Interface
 +func (fake *Fake) Check(_ context.Context, tx *Transaction) error {
++	fake.RLock()
++	defer fake.RUnlock()
 +	_, err := fake.run(tx)
 +	return err
 +}
 +
++// must be called with fake.lock held
 +func (fake *Fake) run(tx *Transaction) (*FakeTable, error) {
 +	if tx.err != nil {
 +		return nil, tx.err
@@ -3508,13 +4112,37 @@ index 00000000000..584c27a540a
 +				table := *obj
 +				table.Handle = PtrTo(fake.nextHandle)
 +				updatedTable = &FakeTable{
-+					Table:  table,
-+					Chains: make(map[string]*FakeChain),
-+					Sets:   make(map[string]*FakeSet),
-+					Maps:   make(map[string]*FakeMap),
++					Table:      table,
++					Flowtables: make(map[string]*FakeFlowtable),
++					Chains:     make(map[string]*FakeChain),
++					Sets:       make(map[string]*FakeSet),
++					Maps:       make(map[string]*FakeMap),
 +				}
 +			case deleteVerb:
 +				updatedTable = nil
++			default:
++				return nil, fmt.Errorf("unhandled operation %q", op.verb)
++			}
++
++		case *Flowtable:
++			existingFlowtable := updatedTable.Flowtables[obj.Name]
++			err := checkExists(op.verb, "flowtable", obj.Name, existingFlowtable != nil)
++			if err != nil {
++				return nil, err
++			}
++			switch op.verb {
++			case addVerb, createVerb:
++				if existingFlowtable != nil {
++					continue
++				}
++				flowtable := *obj
++				flowtable.Handle = PtrTo(fake.nextHandle)
++				updatedTable.Flowtables[obj.Name] = &FakeFlowtable{
++					Flowtable: flowtable,
++				}
++			case deleteVerb:
++				// FIXME delete-by-handle
++				delete(updatedTable.Flowtables, obj.Name)
 +			default:
 +				return nil, fmt.Errorf("unhandled operation %q", op.verb)
 +			}
@@ -3733,9 +4361,13 @@ index 00000000000..584c27a540a
 +	for i, word := range words {
 +		if strings.HasPrefix(word, "@") {
 +			name := word[1:]
-+			if i > 0 && (words[i] == "map" || words[i] == "vmap") {
++			if i > 0 && (words[i-1] == "map" || words[i-1] == "vmap") {
 +				if table.Maps[name] == nil {
 +					return notFoundError("no such map %q", name)
++				}
++			} else if i > 0 && words[i-1] == "offload" {
++				if table.Flowtables[name] == nil {
++					return notFoundError("no such flowtable %q", name)
 +				}
 +			} else {
 +				// recent nft lets you use a map in a set lookup
@@ -3770,6 +4402,8 @@ index 00000000000..584c27a540a
 +
 +// Dump dumps the current contents of fake, in a way that looks like an nft transaction.
 +func (fake *Fake) Dump() string {
++	fake.RLock()
++	defer fake.RUnlock()
 +	if fake.Table == nil {
 +		return ""
 +	}
@@ -3777,6 +4411,7 @@ index 00000000000..584c27a540a
 +	buf := &strings.Builder{}
 +
 +	table := fake.Table
++	flowtables := sortKeys(table.Flowtables)
 +	chains := sortKeys(table.Chains)
 +	sets := sortKeys(table.Sets)
 +	maps := sortKeys(table.Maps)
@@ -3784,6 +4419,10 @@ index 00000000000..584c27a540a
 +	// Write out all of the object adds first.
 +
 +	table.writeOperation(addVerb, &fake.nftContext, buf)
++	for _, fname := range flowtables {
++		ft := table.Flowtables[fname]
++		ft.writeOperation(addVerb, &fake.nftContext, buf)
++	}
 +	for _, cname := range chains {
 +		ch := table.Chains[cname]
 +		ch.writeOperation(addVerb, &fake.nftContext, buf)
@@ -3840,7 +4479,7 @@ index 00000000000..584c27a540a
 +		}
 +	}()
 +	tx := fake.NewTransaction()
-+	commonRegexp := regexp.MustCompile(fmt.Sprintf(`add %s %s %s (.*)`, noSpaceGroup, fake.family, fake.table))
++	commonRegexp := regexp.MustCompile(fmt.Sprintf(`add ([^ ]*) %s %s( (.*))?`, fake.family, fake.table))
 +
 +	for i, line = range lines {
 +		line = strings.TrimSpace(line)
@@ -3855,6 +4494,8 @@ index 00000000000..584c27a540a
 +		switch match[1] {
 +		case "table":
 +			obj = &Table{}
++		case "flowtable":
++			obj = &Flowtable{}
 +		case "chain":
 +			obj = &Chain{}
 +		case "rule":
@@ -3868,7 +4509,7 @@ index 00000000000..584c27a540a
 +		default:
 +			return fmt.Errorf("unknown object %s", match[1])
 +		}
-+		err = obj.parse(match[2])
++		err = obj.parse(match[3])
 +		if err != nil {
 +			return err
 +		}
@@ -3913,10 +4554,16 @@ index 00000000000..584c27a540a
 +	}
 +
 +	tcopy := &FakeTable{
-+		Table:  table.Table,
-+		Chains: make(map[string]*FakeChain),
-+		Sets:   make(map[string]*FakeSet),
-+		Maps:   make(map[string]*FakeMap),
++		Table:      table.Table,
++		Flowtables: make(map[string]*FakeFlowtable),
++		Chains:     make(map[string]*FakeChain),
++		Sets:       make(map[string]*FakeSet),
++		Maps:       make(map[string]*FakeMap),
++	}
++	for name, flowtable := range table.Flowtables {
++		tcopy.Flowtables[name] = &FakeFlowtable{
++			Flowtable: flowtable.Flowtable,
++		}
 +	}
 +	for name, chain := range table.Chains {
 +		tcopy.Chains[name] = &FakeChain{
@@ -3959,11 +4606,8 @@ index 00000000000..584c27a540a
 +	}
 +	return m.Elements[index]
 +}
-diff --git a/vendor/sigs.k8s.io/knftables/nftables.go b/vendor/sigs.k8s.io/knftables/nftables.go
-new file mode 100644
-index 00000000000..8cb343806a3
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/nftables.go
+--- a/vendor/sigs.k8s.io/knftables/nftables.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/nftables.go	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,514 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -4479,12 +5123,9 @@ index 00000000000..8cb343806a3
 +
 +	return nil, fmt.Errorf("could not parse element value %q", json)
 +}
-diff --git a/vendor/sigs.k8s.io/knftables/objects.go b/vendor/sigs.k8s.io/knftables/objects.go
-new file mode 100644
-index 00000000000..6a6287939c5
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/objects.go
-@@ -0,0 +1,581 @@
+--- a/vendor/sigs.k8s.io/knftables/objects.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/objects.go	2025-03-06 20:47:00.521393927 +0100
+@@ -0,0 +1,658 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
 +
@@ -5066,11 +5707,85 @@ index 00000000000..6a6287939c5
 +	}
 +	return nil
 +}
-diff --git a/vendor/sigs.k8s.io/knftables/transaction.go b/vendor/sigs.k8s.io/knftables/transaction.go
-new file mode 100644
-index 00000000000..3063637ada9
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/transaction.go
++
++// Object implementation for Flowtable
++func (flowtable *Flowtable) validate(verb verb) error {
++	switch verb {
++	case addVerb, createVerb:
++		if flowtable.Name == "" {
++			return fmt.Errorf("no name specified for flowtable")
++		}
++		if flowtable.Handle != nil {
++			return fmt.Errorf("cannot specify Handle in %s operation", verb)
++		}
++	case deleteVerb:
++		if flowtable.Name == "" && flowtable.Handle == nil {
++			return fmt.Errorf("must specify either name or handle")
++		}
++	default:
++		return fmt.Errorf("%s is not implemented for flowtables", verb)
++	}
++
++	return nil
++}
++
++func (flowtable *Flowtable) writeOperation(verb verb, ctx *nftContext, writer io.Writer) {
++	// Special case for delete-by-handle
++	if verb == deleteVerb && flowtable.Handle != nil {
++		fmt.Fprintf(writer, "delete flowtable %s %s handle %d", ctx.family, ctx.table, *flowtable.Handle)
++		return
++	}
++
++	fmt.Fprintf(writer, "%s flowtable %s %s %s", verb, ctx.family, ctx.table, flowtable.Name)
++	if verb == addVerb || verb == createVerb {
++		fmt.Fprintf(writer, " {")
++
++		if flowtable.Priority != nil {
++			// since there is only one priority value allowed "filter" just use the value
++			// provided and not try to parse it.
++			fmt.Fprintf(writer, " hook ingress priority %s ;", *flowtable.Priority)
++		}
++
++		if len(flowtable.Devices) > 0 {
++			fmt.Fprintf(writer, " devices = { %s } ;", strings.Join(flowtable.Devices, ", "))
++		}
++
++		fmt.Fprintf(writer, " }")
++	}
++
++	fmt.Fprintf(writer, "\n")
++}
++
++// nft add flowtable inet example_table example_flowtable { hook ingress priority filter ; devices = { eth0 };  }
++var flowtableRegexp = regexp.MustCompile(fmt.Sprintf(
++	`%s(?: {(?: hook ingress priority %s ;)(?: devices = {(.*)} ;) })?`,
++	noSpaceGroup, noSpaceGroup))
++
++func (flowtable *Flowtable) parse(line string) error {
++	match := flowtableRegexp.FindStringSubmatch(line)
++	if match == nil {
++		return fmt.Errorf("failed parsing flowtableRegexp add command")
++	}
++	flowtable.Name = match[1]
++	if match[2] != "" {
++		flowtable.Priority = (*FlowtableIngressPriority)(&match[2])
++	}
++	// to avoid complex regular expressions the regex match everything between the brackets
++	// to match a single interface or a comma separated list of interfaces, and it is postprocessed
++	// here to remove the whitespaces.
++	if match[3] != "" {
++		devices := strings.Split(strings.TrimSpace(match[3]), ",")
++		for i := range devices {
++			devices[i] = strings.TrimSpace(devices[i])
++		}
++		if len(devices) > 0 {
++			flowtable.Devices = devices
++		}
++	}
++	return nil
++}
+--- a/vendor/sigs.k8s.io/knftables/transaction.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/transaction.go	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,141 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -5213,12 +5928,9 @@ index 00000000000..3063637ada9
 +func (tx *Transaction) Delete(obj Object) {
 +	tx.operation(deleteVerb, obj)
 +}
-diff --git a/vendor/sigs.k8s.io/knftables/types.go b/vendor/sigs.k8s.io/knftables/types.go
-new file mode 100644
-index 00000000000..d8202bc011b
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/types.go
-@@ -0,0 +1,384 @@
+--- a/vendor/sigs.k8s.io/knftables/types.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/types.go	2025-03-06 20:47:00.521393927 +0100
+@@ -0,0 +1,411 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
 +
@@ -5603,11 +6315,35 @@ index 00000000000..d8202bc011b
 +	// Comment is an optional comment for the element
 +	Comment *string
 +}
-diff --git a/vendor/sigs.k8s.io/knftables/util.go b/vendor/sigs.k8s.io/knftables/util.go
-new file mode 100644
-index 00000000000..4ff14af2465
---- /dev/null
-+++ b/vendor/sigs.k8s.io/knftables/util.go
++
++type FlowtableIngressPriority string
++
++const (
++	// FilterIngressPriority is the priority for the filter value in the Ingress hook
++	// that stands for 0.
++	FilterIngressPriority FlowtableIngressPriority = "filter"
++)
++
++// Flowtable represents an nftables flowtable.
++// https://wiki.nftables.org/wiki-nftables/index.php/Flowtables
++type Flowtable struct {
++	// Name is the name of the flowtable.
++	Name string
++
++	// The Priority can be a signed integer or FlowtableIngressPriority which stands for 0.
++	// Addition and subtraction can be used to set relative priority, e.g. filter + 5 equals to 5.
++	Priority *FlowtableIngressPriority
++
++	// The Devices are specified as iifname(s) of the input interface(s) of the traffic
++	// that should be offloaded.
++	Devices []string
++
++	// Handle is an identifier that can be used to uniquely identify an object when
++	// deleting it. When adding a new object, this must be nil
++	Handle *int
++}
+--- a/vendor/sigs.k8s.io/knftables/util.go	1970-01-01 01:00:00.000000000 +0100
++++ b/vendor/sigs.k8s.io/knftables/util.go	2025-03-06 20:47:00.521393927 +0100
 @@ -0,0 +1,117 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
