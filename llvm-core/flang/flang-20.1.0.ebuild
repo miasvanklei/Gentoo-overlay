@@ -20,7 +20,7 @@ DEPEND="
 "
 RDEPEND="
 	${DEPEND}
-	>=llvm-core/flang-common-${PV}
+	>=llvm-core/flang-runtime-${PV}
 "
 BDEPEND="
 	test? (
@@ -41,6 +41,7 @@ PATCHES=(
         "${FILESDIR}/fix-linking-libmlir.patch"
         "${FILESDIR}/export-libomp-version.patch"
         "${FILESDIR}/fix-standalone-openmp-module-build.patch"
+        "${FILESDIR}/runtime-fix-dependency-on-libcxx.patch"
 )
 
 src_configure() {
@@ -49,6 +50,7 @@ src_configure() {
 
 		-DLLVM_ROOT="${ESYSROOT}/usr/lib/llvm/${LLVM_MAJOR}"
 		-DCLANG_RESOURCE_DIR="../../../clang/${LLVM_MAJOR}"
+		-DOPENMP_RUNTIME_DIR="${WORKDIR}/openmp/runtime"
 
 		-DBUILD_SHARED_LIBS=OFF
 		-DMLIR_LINK_MLIR_DYLIB=ON
