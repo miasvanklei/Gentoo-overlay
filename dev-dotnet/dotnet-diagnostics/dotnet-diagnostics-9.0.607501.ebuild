@@ -16,10 +16,6 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
-PATCHES=(
-	"${FILESDIR}/fix-build.patch"
-)
-
 src_prepare() {
 	# disable prerelease (Werror etc)
 	sed -i '/set(PRERELEASE 1)/d' eng/native/configureplatform.cmake || die
