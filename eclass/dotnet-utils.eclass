@@ -1,13 +1,13 @@
-# Copyright 1999-2024 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
-# @ECLASS: dotnet-build-base.eclass
+# @ECLASS: dotnet-utils.eclass
 # @MAINTAINER:
-# mias van klei
+# Mias van Klei
 # @AUTHOR:
-# Mias van Klei (15 Sep 2023)
+# Mias van Klei (12 Oct 2024)
 # @SUPPORTED_EAPIS: 8
-# @BLURB: Convenience wrappers for usage by distcc
+# @BLURB: Utils for building the dotnet-runtime
 
 case ${EAPI} in
 	8) ;;
