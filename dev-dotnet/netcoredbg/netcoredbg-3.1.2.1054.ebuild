@@ -4,10 +4,10 @@
 EAPI=8
 
 MY_PV="$(ver_cut 1-3)-$(ver_cut 4)"
-DOTNET_RUNTIME_V="8.0.12"
+DOTNET_RUNTIME_V="9.0.3"
 
 CMAKE_IN_SOURCE_BUILD="ON"
-DOTNET_PKG_COMPAT="8.0"
+DOTNET_PKG_COMPAT="9.0"
 NUGETS="
 microsoft.codeanalysis.analyzers@1.1.0
 microsoft.codeanalysis.common@2.3.0
