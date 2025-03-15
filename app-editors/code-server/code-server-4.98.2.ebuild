@@ -251,4 +251,5 @@ cleanup_binmods() {
 	rm -r "$(get_binmod_loc @parcel/watcher-linux-x64-glibc)" || die
 	rm -r "$(get_binmod_loc @parcel/watcher-linux-x64-musl)" || die
 	rm -r "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node" || die
+	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
 }
