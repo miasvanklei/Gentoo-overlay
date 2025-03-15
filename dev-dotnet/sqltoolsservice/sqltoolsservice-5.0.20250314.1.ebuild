@@ -9,6 +9,7 @@ NUGET_APIS=(
 	"https://www.powershellgallery.com/api/v2"
 )
 NUGETS="
+azure.core@1.24.0
 azure.core@1.25.0
 azure.core@1.35.0
 azure.core@1.38.0
@@ -18,6 +19,7 @@ azure.identity@1.10.3
 azure.identity@1.11.1
 azure.identity@1.11.4
 azure.identity@1.12.0
+azure.identity@1.3.0
 azure.identity@1.6.0
 azure.identity@1.7.0
 azure.resourcemanager.sql@1.0.0
@@ -60,6 +62,7 @@ microsoft.csharp@4.3.0
 microsoft.csharp@4.5.0
 microsoft.csharp@4.7.0
 microsoft.data.sqlclient.alwaysencrypted.azurekeyvaultprovider@1.1.1
+microsoft.data.sqlclient.sni.runtime@3.0.1
 microsoft.data.sqlclient.sni.runtime@5.1.0
 microsoft.data.sqlclient.sni.runtime@5.1.1
 microsoft.data.sqlclient.sni@5.1.1
@@ -77,6 +80,7 @@ microsoft.extensions.filesystemglobbing@8.0.0
 microsoft.identity.client.extensions.msal@2.19.3
 microsoft.identity.client.extensions.msal@4.60.3
 microsoft.identity.client.extensions.msal@4.61.3
+microsoft.identity.client@4.22.0
 microsoft.identity.client@4.39.0
 microsoft.identity.client@4.47.1
 microsoft.identity.client@4.47.2
@@ -88,11 +92,13 @@ microsoft.identitymodel.abstractions@6.35.0
 microsoft.identitymodel.abstractions@7.5.1
 microsoft.identitymodel.jsonwebtokens@6.24.0
 microsoft.identitymodel.jsonwebtokens@6.35.0
+microsoft.identitymodel.jsonwebtokens@6.8.0
 microsoft.identitymodel.jsonwebtokens@7.5.1
 microsoft.identitymodel.logging@6.35.0
 microsoft.identitymodel.logging@7.5.1
 microsoft.identitymodel.protocols.openidconnect@6.24.0
 microsoft.identitymodel.protocols.openidconnect@6.35.0
+microsoft.identitymodel.protocols.openidconnect@6.8.0
 microsoft.identitymodel.protocols@6.35.0
 microsoft.identitymodel.tokens@6.35.0
 microsoft.identitymodel.tokens@7.5.1
@@ -127,7 +133,7 @@ microsoft.sqlserver.dacfx@162.3.563
 microsoft.sqlserver.dacfx@162.5.57
 microsoft.sqlserver.management.smometadataprovider@170.18.0
 microsoft.sqlserver.management.sqlparser@160.22523.0
-microsoft.sqlserver.management.sqlparser@170.9.0
+microsoft.sqlserver.management.sqlparser@172.14.1
 microsoft.sqlserver.migration.sqltargetprovisioning@1.0.20241022.2
 microsoft.sqlserver.migration.tde@1.0.0-preview.1.0.20230914.107
 microsoft.sqlserver.server@1.0.0
@@ -145,6 +151,7 @@ microsoft.win32.registry@4.7.0
 microsoft.win32.registry@5.0.0
 microsoft.win32.systemevents@5.0.0
 microsoft.win32.systemevents@6.0.0
+microsoft.win32.systemevents@7.0.0
 moq@4.8.2
 netstandard.library@1.6.0
 netstandard.library@1.6.1
@@ -244,6 +251,7 @@ system.collections@4.0.11
 system.collections@4.3.0
 system.componentmodel.annotations@5.0.0
 system.componentmodel.composition@4.7.0
+system.componentmodel.composition@6.0.0
 system.componentmodel.composition@8.0.0
 system.componentmodel.primitives@4.3.0
 system.componentmodel.typeconverter@4.3.0
@@ -265,7 +273,6 @@ system.configuration.configurationmanager@5.0.0
 system.configuration.configurationmanager@6.0.0
 system.configuration.configurationmanager@6.0.1
 system.configuration.configurationmanager@8.0.0
-system.configuration.configurationmanager@8.0.1
 system.configuration.configurationmanager@9.0.0-rc.2.24473.5
 system.console@4.3.0
 system.data.odbc@4.7.0
@@ -276,6 +283,7 @@ system.diagnostics.debug@4.0.11
 system.diagnostics.debug@4.3.0
 system.diagnostics.diagnosticsource@4.3.0
 system.diagnostics.diagnosticsource@4.6.0
+system.diagnostics.diagnosticsource@4.7.0
 system.diagnostics.diagnosticsource@5.0.0
 system.diagnostics.diagnosticsource@5.0.1
 system.diagnostics.diagnosticsource@6.0.0
@@ -290,9 +298,9 @@ system.diagnostics.tracesource@4.0.0
 system.diagnostics.tracesource@4.3.0
 system.diagnostics.tracing@4.1.0
 system.diagnostics.tracing@4.3.0
-system.drawing.common@5.0.0
 system.drawing.common@5.0.3
 system.drawing.common@6.0.0
+system.drawing.common@7.0.0
 system.dynamic.runtime@4.0.11
 system.dynamic.runtime@4.3.0
 system.formats.asn1@5.0.0
@@ -360,6 +368,7 @@ system.reflection@4.3.0
 system.resources.extensions@4.7.1
 system.resources.resourcemanager@4.0.1
 system.resources.resourcemanager@4.3.0
+system.runtime.caching@4.7.0
 system.runtime.caching@6.0.0
 system.runtime.caching@8.0.0
 system.runtime.caching@8.0.1
@@ -406,6 +415,7 @@ system.security.cryptography.x509certificates@4.3.0
 system.security.cryptography.x509certificates@4.3.2
 system.security.permissions@5.0.0
 system.security.permissions@6.0.0
+system.security.permissions@7.0.0
 system.security.permissions@8.0.0
 system.security.principal.windows@4.3.0
 system.security.principal.windows@4.7.0
@@ -413,6 +423,7 @@ system.security.principal.windows@5.0.0
 system.security.principal@4.3.0
 system.text.encoding.codepages@4.0.1
 system.text.encoding.codepages@4.4.0
+system.text.encoding.codepages@4.7.0
 system.text.encoding.codepages@6.0.0
 system.text.encoding.codepages@8.0.0
 system.text.encoding.extensions@4.3.0
@@ -427,6 +438,7 @@ system.text.json@4.6.0
 system.text.json@4.7.2
 system.text.json@5.0.0
 system.text.json@6.0.0
+system.text.json@6.0.10
 system.text.json@8.0.0
 system.text.json@8.0.1
 system.text.json@8.0.5
@@ -448,6 +460,7 @@ system.valuetuple@4.4.0
 system.valuetuple@4.5.0
 system.windows.extensions@5.0.0
 system.windows.extensions@6.0.0
+system.windows.extensions@7.0.0
 system.windows.extensions@8.0.0
 system.xml.readerwriter@4.3.0
 system.xml.xdocument@4.3.0
