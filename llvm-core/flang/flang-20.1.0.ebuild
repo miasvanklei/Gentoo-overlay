@@ -10,6 +10,7 @@ HOMEPAGE="https://flang.llvm.org/"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
 SLOT="${LLVM_MAJOR}/${LLVM_SOABI}"
+KEYWORDS="~arm64 ~amd64"
 IUSE="+debug test"
 RESTRICT="!test? ( test )"
 
