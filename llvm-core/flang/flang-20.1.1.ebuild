@@ -43,6 +43,7 @@ PATCHES=(
         "${FILESDIR}/export-libomp-version.patch"
         "${FILESDIR}/fix-standalone-openmp-module-build.patch"
         "${FILESDIR}/runtime-fix-dependency-on-libcxx.patch"
+        "${FILESDIR}/precompiled-headers.patch"
 )
 
 src_configure() {
@@ -58,6 +59,9 @@ src_configure() {
 		# flang does not feature a dylib, so do not install libraries
 		# or headers
 		-DLLVM_INSTALL_TOOLCHAIN_ONLY=ON
+
+		# Use precompiled headers
+		-DCMAKE_DISABLE_PRECOMPILE_HEADERS=OFF
 
 		# TODO: always enable to obtain reproducible tools
 		-DFLANG_INCLUDE_TESTS=$(usex test)
