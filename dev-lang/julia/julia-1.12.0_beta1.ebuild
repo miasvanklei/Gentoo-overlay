@@ -4,15 +4,13 @@
 EAPI=8
 
 LLVM_COMPAT=( 19 20 )
-MY_PV="$(ver_cut 1-2)"
+MY_PV="${PV/_/-}"
 
-inherit git-r3 llvm-r1 pax-utils optfeature toolchain-funcs
+inherit llvm-r1 pax-utils optfeature toolchain-funcs
 
 DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
-
-EGIT_REPO_URI="https://github.com/JuliaLang/julia.git"
-EGIT_BRANCH="release-${MY_PV}"
+SRC_URI="https://github.com/JuliaLang/julia/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
 # correct versions for stdlibs are in stdlib/{package_name}.version
 # updated versions can be found by running find_dependencies.sh in ${FILES}
@@ -23,7 +21,7 @@ STDLIBS=(
 	"JuliaData DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
 	"JuliaLang Distributed.jl 51e52978481835413d15b589919aba80dd85f890"
 	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
-	"julialang JuliaSyntaxHighlighting.jl 2680c8bde1aa274f25d7a434c645f16b3a1ee731"
+	"julialang JuliaSyntaxHighlighting.jl b7a1c636d3e9690bfbbfe917bb20f6cb112a3e6f"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
 	"JuliaLang LinearAlgebra.jl f0f7a46063ae60a794e3ae6aa2910cfc90b41760"
@@ -130,8 +128,7 @@ copy_bundled_deps() {
 }
 
 src_unpack() {
-	git-r3_fetch
-	git-r3_checkout
+	default
 
 	copy_bundled_deps stdlib "${STDLIBS[@]}"
 	copy_bundled_deps deps "${BUNDLED_DEPS[@]}"
