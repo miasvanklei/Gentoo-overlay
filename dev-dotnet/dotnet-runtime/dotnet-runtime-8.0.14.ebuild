@@ -42,6 +42,7 @@ RDEPEND="
 
 src_prepare() {
 	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
+	eapply "${FILESDIR}"/cmake-no-absolute-paths-8.0.patch
 
 	pushd "${S}/../native/libs" >/dev/null
 	eapply "${FILESDIR}"/remove-build-type-logic.patch
