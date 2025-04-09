@@ -57,10 +57,10 @@ SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
-BDEPEND=(
+BDEPEND="
 	dev-go/protobuf-go
 	dev-go/protobuf-go-grpc
-)
+"
 
 src_unpack() {
 	git-r3_src_unpack
