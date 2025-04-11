@@ -62,6 +62,10 @@ BDEPEND="
 	dev-go/protobuf-go-grpc
 "
 
+RDEPEND="
+	sys-apps/proot
+"
+
 src_unpack() {
 	git-r3_src_unpack
 
