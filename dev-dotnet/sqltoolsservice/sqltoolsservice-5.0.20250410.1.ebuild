@@ -62,8 +62,6 @@ microsoft.csharp@4.3.0
 microsoft.csharp@4.5.0
 microsoft.csharp@4.7.0
 microsoft.data.sqlclient.alwaysencrypted.azurekeyvaultprovider@1.1.1
-microsoft.data.sqlclient.sni.runtime@3.0.1
-microsoft.data.sqlclient.sni.runtime@5.1.0
 microsoft.data.sqlclient.sni.runtime@5.1.1
 microsoft.data.sqlclient.sni@5.1.1
 microsoft.data.sqlclient@1.0.19269.1
@@ -80,7 +78,6 @@ microsoft.extensions.filesystemglobbing@8.0.0
 microsoft.identity.client.extensions.msal@2.19.3
 microsoft.identity.client.extensions.msal@4.60.3
 microsoft.identity.client.extensions.msal@4.61.3
-microsoft.identity.client@4.22.0
 microsoft.identity.client@4.39.0
 microsoft.identity.client@4.47.1
 microsoft.identity.client@4.47.2
@@ -90,15 +87,11 @@ microsoft.identity.client@4.61.3
 microsoft.identitymodel.abstractions@6.22.0
 microsoft.identitymodel.abstractions@6.35.0
 microsoft.identitymodel.abstractions@7.5.1
-microsoft.identitymodel.jsonwebtokens@6.24.0
 microsoft.identitymodel.jsonwebtokens@6.35.0
-microsoft.identitymodel.jsonwebtokens@6.8.0
 microsoft.identitymodel.jsonwebtokens@7.5.1
 microsoft.identitymodel.logging@6.35.0
 microsoft.identitymodel.logging@7.5.1
-microsoft.identitymodel.protocols.openidconnect@6.24.0
 microsoft.identitymodel.protocols.openidconnect@6.35.0
-microsoft.identitymodel.protocols.openidconnect@6.8.0
 microsoft.identitymodel.protocols@6.35.0
 microsoft.identitymodel.tokens@6.35.0
 microsoft.identitymodel.tokens@7.5.1
@@ -111,7 +104,6 @@ microsoft.netcore.platforms@1.1.1
 microsoft.netcore.platforms@2.0.0
 microsoft.netcore.platforms@3.1.0
 microsoft.netcore.platforms@5.0.0
-microsoft.netcore.targets@1.0.1
 microsoft.netcore.targets@1.1.0
 microsoft.netcore.targets@1.1.3
 microsoft.netframework.referenceassemblies.net472@1.0.3
@@ -128,18 +120,20 @@ microsoft.sqlserver.assessment.authoring@1.1.0
 microsoft.sqlserver.assessment@1.0.280
 microsoft.sqlserver.assessment@1.1.17
 microsoft.sqlserver.assessment@1.1.9
-microsoft.sqlserver.dacfx.projects@0.3.53-preview
+microsoft.sqlserver.dacfx.projects@0.4.0-preview
 microsoft.sqlserver.dacfx@162.3.563
-microsoft.sqlserver.dacfx@162.5.57
+microsoft.sqlserver.dacfx@170.0.64-preview
+microsoft.sqlserver.dacfx@170.0.82-preview
 microsoft.sqlserver.management.smometadataprovider@170.18.0
 microsoft.sqlserver.management.sqlparser@160.22523.0
-microsoft.sqlserver.management.sqlparser@172.14.1
+microsoft.sqlserver.management.sqlparser@172.18.0
 microsoft.sqlserver.migration.sqltargetprovisioning@1.0.20241022.2
 microsoft.sqlserver.migration.tde@1.0.0-preview.1.0.20230914.107
 microsoft.sqlserver.server@1.0.0
 microsoft.sqlserver.sqlmanagementobjects@170.18.0
+microsoft.sqlserver.sqlmanagementobjects@172.64.0
 microsoft.sqlserver.transactsql.scriptdom@161.9118.2
-microsoft.sqlserver.transactsql.scriptdom@161.9142.1
+microsoft.sqlserver.transactsql.scriptdom@170.18.0
 microsoft.sqlserver.types@160.1000.6
 microsoft.sqlserver.xevent.xelite@2023.1.30.3
 microsoft.testplatform.objectmodel@17.7.2
@@ -151,7 +145,6 @@ microsoft.win32.registry@4.7.0
 microsoft.win32.registry@5.0.0
 microsoft.win32.systemevents@5.0.0
 microsoft.win32.systemevents@6.0.0
-microsoft.win32.systemevents@7.0.0
 moq@4.8.2
 netstandard.library@1.6.0
 netstandard.library@1.6.1
@@ -300,7 +293,6 @@ system.diagnostics.tracing@4.1.0
 system.diagnostics.tracing@4.3.0
 system.drawing.common@5.0.3
 system.drawing.common@6.0.0
-system.drawing.common@7.0.0
 system.dynamic.runtime@4.0.11
 system.dynamic.runtime@4.3.0
 system.formats.asn1@5.0.0
@@ -353,7 +345,6 @@ system.reflection.emit.lightweight@4.0.1
 system.reflection.emit.lightweight@4.3.0
 system.reflection.emit@4.0.1
 system.reflection.emit@4.3.0
-system.reflection.extensions@4.0.1
 system.reflection.extensions@4.3.0
 system.reflection.metadata@1.6.0
 system.reflection.metadata@6.0.0
@@ -368,7 +359,6 @@ system.reflection@4.3.0
 system.resources.extensions@4.7.1
 system.resources.resourcemanager@4.0.1
 system.resources.resourcemanager@4.3.0
-system.runtime.caching@4.7.0
 system.runtime.caching@6.0.0
 system.runtime.caching@8.0.0
 system.runtime.caching@8.0.1
@@ -379,10 +369,8 @@ system.runtime.compilerservices.unsafe@5.0.0
 system.runtime.compilerservices.unsafe@6.0.0
 system.runtime.extensions@4.1.0
 system.runtime.extensions@4.3.0
-system.runtime.handles@4.0.1
 system.runtime.handles@4.3.0
 system.runtime.interopservices.runtimeinformation@4.3.0
-system.runtime.interopservices@4.1.0
 system.runtime.interopservices@4.3.0
 system.runtime.loader@4.0.0
 system.runtime.loader@4.3.0
@@ -415,7 +403,6 @@ system.security.cryptography.x509certificates@4.3.0
 system.security.cryptography.x509certificates@4.3.2
 system.security.permissions@5.0.0
 system.security.permissions@6.0.0
-system.security.permissions@7.0.0
 system.security.permissions@8.0.0
 system.security.principal.windows@4.3.0
 system.security.principal.windows@4.7.0
@@ -424,10 +411,8 @@ system.security.principal@4.3.0
 system.text.encoding.codepages@4.0.1
 system.text.encoding.codepages@4.4.0
 system.text.encoding.codepages@4.7.0
-system.text.encoding.codepages@6.0.0
 system.text.encoding.codepages@8.0.0
 system.text.encoding.extensions@4.3.0
-system.text.encoding@4.0.11
 system.text.encoding@4.3.0
 system.text.encodings.web@4.7.1
 system.text.encodings.web@4.7.2
