@@ -1,0 +1,43 @@
+--- a/tests/test_setup.py	2025-04-11 21:45:04.189357923 +0200
++++ b/tests/test_setup.py	2025-04-11 21:45:25.161143192 +0200
+@@ -29,8 +29,6 @@
+ import zipfile
+ from distutils import dir_util
+ 
+-from invoke import task
+-
+ from utils.constants import EXTENSIONS_CSPROJ_TEMPLATE, NUGET_CONFIG
+ 
+ ROOT_DIR = pathlib.Path(__file__).parent.parent
+@@ -246,7 +244,6 @@
+         sys.exit(1)
+ 
+ 
+-@task
+ def extensions(c, clean=False, extensions_dir=None):
+     """Build extensions."""
+     extensions_dir = extensions_dir or BUILD_DIR / "extensions"
+@@ -261,7 +258,6 @@
+     print("Extensions installed successfully.")
+ 
+ 
+-@task
+ def build_protos(c, clean=False):
+     """Build gRPC bindings."""
+ 
+@@ -273,7 +269,6 @@
+     print("gRPC bindings generated successfully.")
+ 
+ 
+-@task
+ def webhost(c, clean=False, webhost_version=None, webhost_dir=None,
+             branch_name=None):
+     """Builds the webhost"""
+@@ -300,7 +295,6 @@
+     compile_webhost(webhost_dir)
+ 
+ 
+-@task
+ def clean(c):
+     """Clean build directory."""
+ 

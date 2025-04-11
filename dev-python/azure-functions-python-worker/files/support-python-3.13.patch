@@ -1,6 +1,6 @@
 --- a/python/prodV4/worker.config.json	2025-02-18 12:52:46.552793197 +0100
 +++ b/python/prodV4/worker.config.json	2025-02-18 12:54:52.323457954 +0100
-@@ -3,15 +3,15 @@
+@@ -3,11 +3,11 @@
          "language":"python",
          "defaultRuntimeVersion":"3.11",
          "supportedOperatingSystems":["LINUX", "OSX", "WINDOWS"],
@@ -12,15 +12,9 @@
 -        "defaultWorkerPath":"%FUNCTIONS_WORKER_RUNTIME_VERSION%/{os}/{architecture}/worker.py",
 +        "defaultExecutablePath":"python%FUNCTIONS_WORKER_RUNTIME_VERSION%",
 +        "defaultWorkerPath":"/usr/lib/python%FUNCTIONS_WORKER_RUNTIME_VERSION%/site-packages/python/prodV4/worker.py",
-         "workerIndexing": "true"
+         "workerIndexing": "true",
+         "arguments": ["-X no_debug_ranges"]
      },
-      "processOptions": {
-         "initializationTimeout": "00:02:00",
-         "environmentReloadTimeout": "00:02:00"
-     }
--}
-\ No newline at end of file
-+}
 --- a/python/prodV4/worker.py	2025-02-18 12:53:43.108193438 +0100
 +++ b/python/prodV4/worker.py	2025-02-18 12:53:52.360095217 +0100
 @@ -35,7 +35,7 @@

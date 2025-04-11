@@ -13,7 +13,7 @@ inherit distutils-r1 pypi
 DESCRIPTION="Python worker for Azure Functions"
 HOMEPAGE="https://github.com/Azure/azure-functions-python-worker"
 SRC_URI="
-	https://github.com/Azure/azure-functions-python-worker/archive/refs/tags/4.35.0.tar.gz -> ${P}.tar.gz
+	https://github.com/Azure/azure-functions-python-worker/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz
 "
 
 LICENSE="MIT"
@@ -33,7 +33,8 @@ RDEPEND="
 
 PATCHES=(
 	"${FILESDIR}/fix-install-sources.patch"
-	"${FILESDIR}/support-all-python-versions.patch"
+	"${FILESDIR}/support-python-3.13.patch"
+	"${FILESDIR}/remove-invoke.patch"
 )
 
 python_prepare_all() {
