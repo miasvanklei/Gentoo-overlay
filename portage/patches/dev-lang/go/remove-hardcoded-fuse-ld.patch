@@ -1,27 +1,21 @@
---- a/src/cmd/link/internal/ld/lib.go	2023-11-09 14:12:34.356781672 +0100
-+++ b/src/cmd/link/internal/ld/lib.go	2023-11-09 14:13:43.767638494 +0100
-@@ -1605,27 +1605,6 @@
+--- a/src/cmd/link/internal/ld/lib.go	2025-04-11 14:52:08.325736104 +0200
++++ b/src/cmd/link/internal/ld/lib.go	2025-04-11 14:53:16.201020628 +0200
+@@ -1670,21 +1670,6 @@
  			// Use lld to avoid errors from default linker (issue #38838)
  			altLinker = "lld"
  		}
 -
 -		if ctxt.Arch.InFamily(sys.ARM64) && buildcfg.GOOS == "linux" {
--			// On ARM64, the GNU linker will fail with
--			// -znocopyreloc if it thinks a COPY relocation is
--			// required. Switch to gold.
--			// https://sourceware.org/bugzilla/show_bug.cgi?id=19962
--			// https://go.dev/issue/22040
--			altLinker = "gold"
+-			// Use ld.bfd as the default linker
+-			altLinker = "bfd"
 -
--			// If gold is not installed, gcc will silently switch
--			// back to ld.bfd. So we parse the version information
--			// and provide a useful error if gold is missing.
+-			// Provide a useful error if ld.bfd is missing
 -			name, args := flagExtld[0], flagExtld[1:]
--			args = append(args, "-fuse-ld=gold", "-Wl,--version")
+-			args = append(args, "-fuse-ld=bfd", "-Wl,--version")
 -			cmd := exec.Command(name, args...)
 -			if out, err := cmd.CombinedOutput(); err == nil {
--				if !bytes.Contains(out, []byte("GNU gold")) {
--					log.Fatalf("ARM64 external linker must be gold (issue #15696, 22040), but is not: %s", out)
+-				if !bytes.Contains(out, []byte("GNU ld")) {
+-					log.Fatalf("ARM64 external linker must be ld.bfd, but is not: %s", out)
 -				}
 -			}
 -		}
