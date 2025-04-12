@@ -6,6 +6,8 @@ EAPI=8
 inherit go-module git-r3 systemd
 
 EGO_SUM=(
+	"github.com/BurntSushi/toml v1.5.0"
+	"github.com/BurntSushi/toml v1.5.0/go.mod"
 	"github.com/coreos/go-systemd/v22 v22.5.0"
 	"github.com/coreos/go-systemd/v22 v22.5.0/go.mod"
 	"github.com/go-logr/logr v1.4.2"
