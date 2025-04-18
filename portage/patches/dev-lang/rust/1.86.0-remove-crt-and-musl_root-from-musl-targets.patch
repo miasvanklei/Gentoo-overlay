@@ -45,50 +45,19 @@
 
      // These targets statically link libc by default
      base.crt_static_default = false;
+--- a/src/bootstrap/src/core/config/config.rs	2025-03-31 23:37:24.000000000 +0200
++++ b/src/bootstrap/src/core/config/config.rs	2025-04-14 19:10:47.295277885 +0200
+@@ -576,7 +576,7 @@
+     }
+
+     pub fn needs_crt_begin_end(&self) -> bool {
+-        self.contains("musl") && !self.contains("unikraft")
++        false
+     }
+
+     /// Path to the file defining the custom target, if any.
 --- a/src/bootstrap/src/core/build_steps/compile.rs	2020-08-27 22:57:42.818176881 +0200
 +++ b/src/bootstrap/src/core/build_steps/compile.rs	2020-08-27 23:00:19.487625539 +0200
-@@ -360,40 +360,7 @@
-     t!(fs::create_dir_all(&libdir_self_contained));
-     let mut target_deps = vec![];
- 
--    // Copies the libc and CRT objects.
--    //
--    // rustc historically provides a more self-contained installation for musl targets
--    // not requiring the presence of a native musl toolchain. For example, it can fall back
--    // to using gcc from a glibc-targeting toolchain for linking.
--    // To do that we have to distribute musl startup objects as a part of Rust toolchain
--    // and link with them manually in the self-contained mode.
--    if target.contains("musl") && !target.contains("unikraft") {
--        let srcdir = builder.musl_libdir(target).unwrap_or_else(|| {
--            panic!("Target {:?} does not have a \"musl-libdir\" key", target.triple)
--        });
--        for &obj in &["libc.a", "crt1.o", "Scrt1.o", "rcrt1.o", "crti.o", "crtn.o"] {
--            copy_and_stamp(
--                builder,
--                &libdir_self_contained,
--                &srcdir,
--                obj,
--                &mut target_deps,
--                DependencyType::TargetSelfContained,
--            );
--        }
--        let crt_path = builder.ensure(llvm::CrtBeginEnd { target });
--        for &obj in &["crtbegin.o", "crtbeginS.o", "crtend.o", "crtendS.o"] {
--            let src = crt_path.join(obj);
--            let target = libdir_self_contained.join(obj);
--            builder.copy_link(&src, &target);
--            target_deps.push((target, DependencyType::TargetSelfContained));
--        }
--
--        if !target.starts_with("s390x") {
--            let libunwind_path = copy_llvm_libunwind(builder, target, &libdir_self_contained);
--            target_deps.push((libunwind_path, DependencyType::TargetSelfContained));
--        }
--    } else if target.contains("-wasi") {
-+    if target.contains("-wasi") {
-         let srcdir = builder.wasi_libdir(target).unwrap_or_else(|| {
-             panic!(
-                 "Target {:?} does not have a \"wasi-root\" key in Config.toml \
 @@ -390,15 +357,6 @@
              .arg("--manifest-path")
              .arg(builder.src.join("library/sysroot/Cargo.toml"));
