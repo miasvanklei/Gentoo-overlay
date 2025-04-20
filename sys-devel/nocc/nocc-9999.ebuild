@@ -65,7 +65,8 @@ BDEPEND="
 "
 
 RDEPEND="
-	sys-apps/proot
+	sys-apps/coreutils
+	sys-apps/util-linux
 "
 
 src_unpack() {
