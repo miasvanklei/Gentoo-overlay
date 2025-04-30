@@ -64,7 +64,7 @@ LICENSE="MIT"
 SLOT="0"
 
 RDEPEND+="
-	app-arch/p7zip
+	app-arch/7zip
 	dev-libs/gmp:0=
 	>=dev-libs/libpcre2-10.23:0=[jit,unicode]
 	dev-libs/mpfr:0=
