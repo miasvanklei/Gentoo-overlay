@@ -19,27 +19,26 @@ CRATES="
 	bitflags@1.3.2
 	bitflags@2.9.0
 	borsh@1.5.5
-	boxcar@0.2.10
+	boxcar@0.2.11
 	camino@1.1.9
 	cargo-platform@0.1.9
 	cargo_metadata@0.19.2
 	cc@1.2.16
 	cfg-if@1.0.0
 	cfg_aliases@0.2.1
-	chalk-derive@0.100.0
-	chalk-ir@0.100.0
-	chalk-recursive@0.100.0
-	chalk-solve@0.100.0
+	chalk-derive@0.102.0
+	chalk-ir@0.102.0
+	chalk-recursive@0.102.0
+	chalk-solve@0.102.0
 	countme@3.0.1
 	cov-mark@2.0.0
 	crc32fast@1.4.2
-	crossbeam-channel@0.5.14
+	crossbeam-channel@0.5.15
 	crossbeam-deque@0.8.6
 	crossbeam-epoch@0.9.18
 	crossbeam-queue@0.3.12
 	crossbeam-utils@0.8.21
 	ctrlc@3.4.5
-	dashmap@5.5.3
 	dashmap@6.1.0
 	deranged@0.4.0
 	derive_arbitrary@1.4.1
@@ -88,7 +87,7 @@ CRATES="
 	itertools@0.12.1
 	itertools@0.14.0
 	itoa@1.0.15
-	jod-thread@0.1.2
+	jod-thread@1.0.0
 	kqueue-sys@1.0.4
 	kqueue@1.0.8
 	la-arena@0.3.1
@@ -167,9 +166,9 @@ CRATES="
 	rustc_apfloat@0.2.2+llvm-462a31f5a5ab
 	rustversion@1.0.20
 	ryu@1.0.20
-	salsa-macro-rules@0.19.0
-	salsa-macros@0.19.0
-	salsa@0.19.0
+	salsa-macro-rules@0.20.0
+	salsa-macros@0.20.0
+	salsa@0.20.0
 	same-file@1.0.6
 	scip@0.5.2
 	scoped-tls@1.0.1
@@ -287,6 +286,8 @@ CRATES="
 	zip@2.4.2
 "
 
+RUST_MIN_VER="1.85.0"
+
 inherit cargo
 
 MY_PV="${PV//./-}"
@@ -331,6 +332,6 @@ src_install() {
 	popd >/dev/null
 
 	pushd crates/proc-macro-srv-cli >/dev/null
-	cargo_src_install
+	cargo_src_install --features sysroot-abi
 	popd >/dev/null
 }
