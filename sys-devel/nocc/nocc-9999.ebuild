@@ -65,6 +65,7 @@ BDEPEND="
 "
 
 RDEPEND="
+	dev-util/shadowman
 	sys-apps/coreutils
 	sys-apps/util-linux
 "
@@ -81,4 +82,19 @@ src_compile() {
 
 src_install() {
 	emake install DESTDIR="${D}" PREFIX="${D}${EPREFIX}/usr"
+
+	insinto /usr/share/shadowman/tools
+	newins - nocc <<<"${EPREFIX}/usr/lib/nocc"
+}
+
+pkg_postinst() {
+	if [[ -z ${ROOT} ]]; then
+		eselect compiler-shadow update nocc
+	fi
+}
+
+pkg_prerm() {
+	if [[ -z ${REPLACED_BY_VERSION} && -z ${ROOT} ]]; then
+		eselect compiler-shadow remove nocc
+	fi
 }
