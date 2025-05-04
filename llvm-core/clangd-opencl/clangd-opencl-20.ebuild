@@ -9,7 +9,7 @@ HOMEPAGE="https://llvm.org/"
 S="${WORKDIR}"
 
 LICENSE="Apache-2.0-with-LLVM-exceptions"
-SLOT="${PV%%.*}"
+SLOT="${PV}"
 KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
