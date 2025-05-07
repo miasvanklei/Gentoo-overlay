@@ -6,8 +6,8 @@ EAPI=8
 ECM_HANDBOOK="false"
 ECM_TEST="forceoptional"
 
-KFMIN=5.240.0
-QTMIN=6.5.1
+KFMIN=6.5.0
+QTMIN=6.4.0
 inherit ecm gear.kde.org
 
 DESCRIPTION="Client for YouTube Music"
