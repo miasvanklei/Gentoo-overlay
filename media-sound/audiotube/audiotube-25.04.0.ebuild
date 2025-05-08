@@ -16,7 +16,7 @@ HOMEPAGE="https://apps.kde.org/audiotube/"
 LICENSE="LGPL-3+"
 SLOT="6"
 KEYWORDS="~amd64"
-IUSE="mpris semantic-desktop +vlc"
+IUSE=""
 
 RESTRICT="test"
 
@@ -28,7 +28,7 @@ DEPEND="
 	dev-python/ytmusicapi
 	>=dev-qt/qtbase-${QTMIN}:6[concurrent,dbus,gui,sql,widgets]
 	>=dev-qt/qtdeclarative-${QTMIN}:6
-	>=dev-qt/qtmultimedia-${QTMIN}:6
+	>=dev-qt/qtmultimedia-${QTMIN}:6[gstreamer]
 	>=dev-qt/qtsvg-${QTMIN}:6
 	>=kde-frameworks/kcoreaddons-${KFMIN}:6
 	>=kde-frameworks/kcrash-${KFMIN}:6
