@@ -1,16 +1,20 @@
---- a/go.mod	2025-03-02 19:05:31.000000000 +0100
-+++ b/go.mod	2025-03-06 20:47:00.265396529 +0100
-@@ -79,6 +79,7 @@
+diff --git a/go.mod b/go.mod
+index fe79cfb05ce..5616d07b116 100644
+--- a/go.mod
++++ b/go.mod
+@@ -82,6 +82,7 @@ require (
  	k8s.io/klog/v2 v2.130.1
- 	k8s.io/kubelet v0.31.4
+ 	k8s.io/kubelet v0.32.3
  	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
 +	sigs.k8s.io/knftables v0.0.18
  	sigs.k8s.io/release-sdk v0.12.1
  	sigs.k8s.io/release-utils v0.8.5
  	sigs.k8s.io/yaml v1.4.0
---- a/go.sum	2025-03-02 19:05:31.000000000 +0100
-+++ b/go.sum	2025-03-06 20:47:00.265396529 +0100
-@@ -1069,6 +1069,8 @@
+diff --git a/go.sum b/go.sum
+index 65bcd695c12..231f578635f 100644
+--- a/go.sum
++++ b/go.sum
+@@ -330,6 +330,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
  github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
  github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec h1:2tTW6cDth2TSgRbAhD7yjZzTQmcN25sDRPEeinR51yQ=
  github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec/go.mod h1:TmwEoGCwIti7BCeJ9hescZgRtatxRE+A72pCoPfmcfk=
@@ -19,7 +23,7 @@
  github.com/lyft/protoc-gen-star v0.6.0/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
  github.com/lyft/protoc-gen-star v0.6.1/go.mod h1:TGAoBVkt8w7MPG72TrKIu85MIdXwDuzJYeZuUPFPNwA=
  github.com/lyft/protoc-gen-star/v2 v2.0.1/go.mod h1:RcCdONR2ScXaYnQC5tUzxzlpA3WVYF7/opLeUgcQs/o=
-@@ -2116,6 +2118,8 @@
+@@ -793,6 +795,8 @@ k8s.io/utils v0.0.0-20241210054802-24370beab758 h1:sdbE21q2nlQtFh65saZY+rRM6x6aJ
  rsc.io/sampler v1.3.0/go.mod h1:T1hPZKmBbMNahiBKFy5HrXp6adAjACjK9JXDnKaTXpA=
  sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd h1:EDPBXCAspyGV4jQlpZSudPeMmr1bNJefnuqLsRAsHZo=
  sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd/go.mod h1:B8JuhiUyNFVKdsE8h686QcCxMaH6HrOAZj4vswFpcB0=
@@ -28,29 +32,11 @@
  sigs.k8s.io/release-sdk v0.12.1 h1:/Q+yWpl33EnFx1b7xh6FnbioWSRUTrVkigL4KZVTrkU=
  sigs.k8s.io/release-sdk v0.12.1/go.mod h1:nnB4tt1g0VXMUCIYzDzPVqNI896OQrWipE6WbyZ6FSk=
  sigs.k8s.io/release-utils v0.8.5 h1:FUtFqEAN621gSXv0L7kHyWruBeS7TUU9aWf76olX7uQ=
---- a/install.md	2025-03-02 19:05:31.000000000 +0100
-+++ b/install.md	2025-03-06 20:47:00.265396529 +0100
-@@ -162,11 +162,16 @@
- 
- - runc, crun or any other OCI compatible runtime
- - iproute
--- iptables
-+- nftables (on newer distros)
-+- iptables (on distros that don't support nftables, or for backward-compatibility)
- 
- Latest version of `runc` is expected to be installed on the system. It is picked
- up as the default runtime by CRI-O.
- 
-+CRI-O will prefer nftables (if it is available) for new pod HostPort
-+mappings, but will also attempt to clean up old iptables-based
-+mappings when deleting a pod, if iptables is installed.
-+
- ### Build and Run Dependencies
- 
- #### Fedora - RHEL 7 - CentOS
---- a/internal/hostport/fake_iptables.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/internal/hostport/fake_iptables.go	2025-03-06 20:47:00.293396244 +0100
-@@ -47,7 +47,16 @@
+diff --git a/internal/hostport/fake_iptables.go b/internal/hostport/fake_iptables.go
+index b213f2b58ac..b4e0e70960a 100644
+--- a/internal/hostport/fake_iptables.go
++++ b/internal/hostport/fake_iptables.go
+@@ -47,7 +47,16 @@ type fakeIPTables struct {
  
  func newFakeIPTables() *fakeIPTables {
  	return &fakeIPTables{
@@ -68,9 +54,12 @@
  		builtinChains: map[string]sets.Set[string]{
  			string(utiliptables.TableFilter): sets.New("INPUT", "FORWARD", "OUTPUT"),
  			string(utiliptables.TableNAT):    sets.New("PREROUTING", "INPUT", "OUTPUT", "POSTROUTING"),
---- a/internal/hostport/hostport.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/internal/hostport/hostport.go	1970-01-01 01:00:00.000000000 +0100
-@@ -1,98 +0,0 @@
+diff --git a/internal/hostport/hostport.go b/internal/hostport/hostport.go
+deleted file mode 100644
+index 4e590ae4482..00000000000
+--- a/internal/hostport/hostport.go
++++ /dev/null
+@@ -1,102 +0,0 @@
 -/*
 -Copyright 2017 The Kubernetes Authors.
 -
@@ -134,6 +123,7 @@
 -	if _, err := iptables.EnsureChain(utiliptables.TableNAT, kubeHostportsChain); err != nil {
 -		return fmt.Errorf("failed to ensure that %s chain %s exists: %w", utiliptables.TableNAT, kubeHostportsChain, err)
 -	}
+-
 -	tableChainsNeedJumpServices := []struct {
 -		table utiliptables.Table
 -		chain utiliptables.Chain
@@ -146,6 +136,7 @@
 -		"-m", "addrtype", "--dst-type", "LOCAL",
 -		"-j", string(kubeHostportsChain),
 -	}
+-
 -	for _, tc := range tableChainsNeedJumpServices {
 -		// KUBE-HOSTPORTS chain needs to be appended to the system chains.
 -		// This ensures KUBE-SERVICES chain gets processed first.
@@ -159,6 +150,7 @@
 -	if _, err := iptables.EnsureChain(utiliptables.TableNAT, crioMasqueradeChain); err != nil {
 -		return fmt.Errorf("failed to ensure that %s chain %s exists: %w", utiliptables.TableNAT, crioMasqueradeChain, err)
 -	}
+-
 -	args = []string{
 -		"-m", "comment", "--comment", "kube hostport masquerading",
 -		"-m", "conntrack", "--ctstate", "DNAT",
@@ -167,11 +159,15 @@
 -	if _, err := iptables.EnsureRule(utiliptables.Append, utiliptables.TableNAT, utiliptables.ChainPostrouting, args...); err != nil {
 -		return fmt.Errorf("failed to ensure that %s chain %s jumps to %s: %w", utiliptables.TableNAT, utiliptables.ChainPostrouting, crioMasqueradeChain, err)
 -	}
+-
 -	return nil
 -}
---- a/internal/hostport/hostport_iptables.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/internal/hostport/hostport_iptables.go	2025-03-06 20:47:00.293396244 +0100
-@@ -0,0 +1,462 @@
+diff --git a/internal/hostport/hostport_iptables.go b/internal/hostport/hostport_iptables.go
+new file mode 100644
+index 00000000000..fd836d5c138
+--- /dev/null
++++ b/internal/hostport/hostport_iptables.go
+@@ -0,0 +1,463 @@
 +/*
 +Copyright 2017 The Kubernetes Authors.
 +
@@ -192,6 +188,7 @@
 +
 +import (
 +	"bytes"
++	"context"
 +	"crypto/sha256"
 +	"encoding/base32"
 +	"errors"
@@ -225,9 +222,9 @@
 +}
 +
 +// newHostportManagerIPTables creates a new iptables HostPortManager.
-+func newHostportManagerIPTables(protocol utiliptables.Protocol) (*hostportManagerIPTables, error) {
++func newHostportManagerIPTables(ctx context.Context, protocol utiliptables.Protocol) (*hostportManagerIPTables, error) {
 +	h := &hostportManagerIPTables{
-+		iptables: utiliptables.New(utilexec.New(), protocol),
++		iptables: utiliptables.New(ctx, utilexec.New(), protocol),
 +	}
 +	if !h.iptables.Present() {
 +		return nil, errors.New("iptables not available")
@@ -634,8 +631,11 @@
 +func writeLine(buf *bytes.Buffer, words ...string) {
 +	buf.WriteString(strings.Join(words, " ") + "\n")
 +}
---- a/internal/hostport/hostport_iptables_test.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/internal/hostport/hostport_iptables_test.go	2025-03-06 20:47:00.293396244 +0100
+diff --git a/internal/hostport/hostport_iptables_test.go b/internal/hostport/hostport_iptables_test.go
+new file mode 100644
+index 00000000000..4b6a63c0ea3
+--- /dev/null
++++ b/internal/hostport/hostport_iptables_test.go
 @@ -0,0 +1,207 @@
 +/*
 +Copyright 2017 The Kubernetes Authors.
@@ -844,15 +844,19 @@
 +		checkIPTablesRules(manager.iptables, nil)
 +	})
 +})
---- a/internal/hostport/hostport_manager.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/internal/hostport/hostport_manager.go	2025-03-06 20:47:00.293396244 +0100
-@@ -17,24 +17,7 @@
+diff --git a/internal/hostport/hostport_manager.go b/internal/hostport/hostport_manager.go
+index 6aeb387561b..92c2c788984 100644
+--- a/internal/hostport/hostport_manager.go
++++ b/internal/hostport/hostport_manager.go
+@@ -17,493 +17,28 @@ limitations under the License.
  package hostport
  
  import (
 -	"bytes"
+-	"context"
 -	"crypto/sha256"
 -	"encoding/base32"
+-	"errors"
 -	"fmt"
 -	"net"
 -	"strconv"
@@ -863,7 +867,6 @@
 -	"github.com/vishvananda/netlink"
 -	"golang.org/x/sys/unix"
  	v1 "k8s.io/api/core/v1"
--	utilerrors "k8s.io/apimachinery/pkg/util/errors"
 -	utilexec "k8s.io/utils/exec"
 -	utilnet "k8s.io/utils/net"
 -
@@ -871,7 +874,8 @@
  )
  
  // HostPortManager is an interface for adding and removing hostport for a given pod sandbox.
-@@ -43,438 +26,19 @@
++//
++//nolint:golint // no reason to change the type name now "type name will be used as hostport.HostPortManager by other packages"
  type HostPortManager interface {
  	// Add implements port mappings.
  	// id should be a unique identifier for a pod, e.g. podSandboxID.
@@ -893,11 +897,12 @@
 -}
 -
 -// NewHostportManager creates a new HostPortManager.
--func NewHostportManager() HostPortManager {
+-func NewHostportManager(ctx context.Context) HostPortManager {
 -	exec := utilexec.New()
+-
 -	return &hostportManager{
--		ip4tables: utiliptables.New(exec, utiliptables.ProtocolIPv4),
--		ip6tables: utiliptables.New(exec, utiliptables.ProtocolIPv6),
+-		ip4tables: utiliptables.New(ctx, exec, utiliptables.ProtocolIPv4),
+-		ip6tables: utiliptables.New(ctx, exec, utiliptables.ProtocolIPv6),
 -	}
 -}
 -
@@ -907,6 +912,7 @@
 -	if podPortMapping.IP.To16() == nil {
 -		return fmt.Errorf("invalid or missing IP of pod %s", podFullName)
 -	}
+-
 -	podIP := podPortMapping.IP.String()
 -	isIPv6 := utilnet.IsIPv6(podPortMapping.IP)
 -
@@ -933,6 +939,7 @@
 -
 -	natChains := bytes.NewBuffer(nil)
 -	natRules := bytes.NewBuffer(nil)
+-
 -	writeLine(natChains, "*nat")
 -
 -	existingChains, existingRules, err := getExistingHostportIPTablesRules(ipt)
@@ -942,11 +949,13 @@
 -
 -	newChains := []utiliptables.Chain{}
 -	conntrackPortsToRemove := []int{}
+-
 -	for _, pm := range hostportMappings {
 -		protocol := strings.ToLower(string(pm.Protocol))
 -		hpChain := getHostportChain(kubeHostportChainPrefix, id, pm)
 -		masqChain := getHostportChain(crioMasqueradeChainPrefix, id, pm)
 -		newChains = append(newChains, hpChain, masqChain)
+-
 -		if pm.Protocol == v1.ProtocolUDP {
 -			conntrackPortsToRemove = append(conntrackPortsToRemove, int(pm.HostPort))
 -		}
@@ -1003,9 +1012,11 @@
 -	for _, chain := range existingChains {
 -		writeLine(natChains, chain)
 -	}
+-
 -	for _, rule := range existingRules {
 -		writeLine(natRules, rule)
 -	}
+-
 -	writeLine(natRules, "COMMIT")
 -
 -	if err := syncIPTables(ipt, append(natChains.Bytes(), natRules.Bytes()...)); err != nil {
@@ -1025,23 +1036,17 @@
 -			logrus.Errorf("Failed to clear udp conntrack for port %d, error: %v", port, err)
 -		}
 -	}
+-
 -	return nil
 -}
 -
 -func (hm *hostportManager) Remove(id string, podPortMapping *PodPortMapping) (err error) {
--	var errors []error
 -	// Remove may not have the IP information, so we try to clean us much as possible
 -	// and warn about the possible errors
--	err = hm.removeForFamily(id, podPortMapping, hm.ip4tables)
--	if err != nil {
--		errors = append(errors, err)
--	}
--	err = hm.removeForFamily(id, podPortMapping, hm.ip6tables)
--	if err != nil {
--		errors = append(errors, err)
--	}
--
--	return utilerrors.NewAggregate(errors)
+-	return errors.Join(
+-		hm.removeForFamily(id, podPortMapping, hm.ip4tables),
+-		hm.removeForFamily(id, podPortMapping, hm.ip6tables),
+-	)
 -}
 -
 -func (hm *hostportManager) removeForFamily(id string, podPortMapping *PodPortMapping, ipt utiliptables.Interface) (err error) {
@@ -1055,7 +1060,9 @@
 -	defer hm.mu.Unlock()
 -
 -	var existingChains map[utiliptables.Chain]string
+-
 -	var existingRules []string
+-
 -	existingChains, existingRules, err = getExistingHostportIPTablesRules(ipt)
 -	if err != nil {
 -		return err
@@ -1075,6 +1082,7 @@
 -
 -	// gather target hostport chains that exists in iptables-save result
 -	existingChainsToRemove := []utiliptables.Chain{}
+-
 -	for _, chain := range chainsToRemove {
 -		if _, ok := existingChains[chain]; ok {
 -			existingChainsToRemove = append(existingChainsToRemove, chain)
@@ -1088,28 +1096,36 @@
 -
 -	natChains := bytes.NewBuffer(nil)
 -	natRules := bytes.NewBuffer(nil)
+-
 -	writeLine(natChains, "*nat")
+-
 -	for _, chain := range existingChains {
 -		writeLine(natChains, chain)
 -	}
+-
 -	for _, rule := range remainingRules {
 -		writeLine(natRules, rule)
 -	}
+-
 -	for _, chain := range existingChainsToRemove {
 -		writeLine(natRules, "-X", string(chain))
 -	}
+-
 -	writeLine(natRules, "COMMIT")
 -
 -	return syncIPTables(ipt, append(natChains.Bytes(), natRules.Bytes()...))
--}
--
++	Remove(id string, hostportMappings []*PortMapping) error
+ }
+ 
 -// syncIPTables executes iptables-restore with given lines.
 -func syncIPTables(ipt utiliptables.Interface, lines []byte) error {
 -	logrus.Infof("Restoring iptables rules: %s", lines)
+-
 -	err := ipt.RestoreAll(lines, utiliptables.NoFlushTables, utiliptables.RestoreCounters)
 -	if err != nil {
 -		return fmt.Errorf("failed to execute iptables-restore: %w", err)
 -	}
+-
 -	return nil
 -}
 -
@@ -1122,6 +1138,7 @@
 -func getHostportChain(prefix, id string, pm *PortMapping) utiliptables.Chain {
 -	hash := sha256.Sum256([]byte(id + strconv.Itoa(int(pm.HostPort)) + string(pm.Protocol) + pm.HostIP))
 -	encoded := base32.StdEncoding.EncodeToString(hash[:])
+-
 -	return utiliptables.Chain(prefix + encoded[:16])
 -}
 -
@@ -1129,15 +1146,19 @@
 -// it filters the PortMappings that use HostIP and doesn't match the IP family specified.
 -func gatherHostportMappings(podPortMapping *PodPortMapping, isIPv6 bool) []*PortMapping {
 -	mappings := []*PortMapping{}
+-
 -	for _, pm := range podPortMapping.PortMappings {
 -		if pm.HostPort <= 0 {
 -			continue
 -		}
+-
 -		if pm.HostIP != "" && utilnet.IsIPv6String(pm.HostIP) != isIPv6 {
 -			continue
 -		}
+-
 -		mappings = append(mappings, pm)
 -	}
+-
 -	return mappings
 -}
 -
@@ -1147,10 +1168,12 @@
 -//nolint:gocritic // unnamedResult: consider giving a name to these results
 -func getExistingHostportIPTablesRules(iptables utiliptables.Interface) (map[utiliptables.Chain]string, []string, error) {
 -	iptablesData := bytes.NewBuffer(nil)
+-
 -	err := iptables.SaveInto(utiliptables.TableNAT, iptablesData)
 -	if err != nil { // if we failed to get any rules
 -		return nil, nil, fmt.Errorf("failed to execute iptables-save: %w", err)
 -	}
+-
 -	existingNATChains := getChainLines(utiliptables.TableNAT, iptablesData.Bytes())
 -
 -	existingHostportChains := make(map[utiliptables.Chain]string)
@@ -1172,6 +1195,7 @@
 -			existingHostportRules = append(existingHostportRules, line)
 -		}
 -	}
+-
 -	return existingHostportChains, existingHostportRules, nil
 -}
 -
@@ -1187,10 +1211,12 @@
 -	for readIndex < len(save) {
 -		line, n := readLine(readIndex, save)
 -		readIndex = n
+-
 -		if bytes.HasPrefix(line, tablePrefix) {
 -			break
 -		}
 -	}
+-
 -	var (
 -		commitBytes = []byte("COMMIT")
 -		spaceBytes  = []byte(" ")
@@ -1199,9 +1225,11 @@
 -	for readIndex < len(save) {
 -		line, n := readLine(readIndex, save)
 -		readIndex = n
+-
 -		if len(line) == 0 {
 -			continue
 -		}
+-
 -		if bytes.HasPrefix(line, commitBytes) || line[0] == '*' { //nolint:gocritic
 -			break
 -		} else if line[0] == '#' {
@@ -1213,10 +1241,12 @@
 -			if spaceIndex == -1 {
 -				panic(fmt.Sprintf("Unexpected chain line in iptables-save output: %v", string(line)))
 -			}
+-
 -			chain := utiliptables.Chain(line[1:spaceIndex])
 -			chainsMap[chain] = line
 -		}
 -	}
+-
 -	return chainsMap
 -}
 -
@@ -1266,6 +1296,7 @@
 -			rightTrimIndex = -1
 -		}
 -	}
+-
 -	return nil, currentReadIndex
 -}
 -
@@ -1273,18 +1304,23 @@
 -// The order of the input rules is important and is preserved.
 -func filterRules(rules []string, filters []utiliptables.Chain) []string {
 -	filtered := []string{}
+-
 -	for _, rule := range rules {
 -		skip := false
+-
 -		for _, filter := range filters {
 -			if strings.Contains(rule, string(filter)) {
 -				skip = true
+-
 -				break
 -			}
 -		}
+-
 -		if !skip {
 -			filtered = append(filtered, rule)
 -		}
 -	}
+-
 -	return filtered
 -}
 -
@@ -1302,17 +1338,15 @@
 -}
 -
 -// Join all words with spaces, terminate with newline and write to buf.
--//
--//nolint:interfacer
 -func writeLine(buf *bytes.Buffer, words ...string) {
 -	buf.WriteString(strings.Join(words, " ") + "\n")
-+	Remove(id string, hostportMappings []*PortMapping) error
- }
- 
+-}
+-
 -func getNetlinkFamily(isIPv6 bool) netlink.InetFamily {
 -	if isIPv6 {
 -		return unix.AF_INET6
 -	}
+-
 -	return unix.AF_INET
 +// PortMapping represents a network port in a container.
 +type PortMapping struct {
@@ -1321,9 +1355,11 @@
 +	Protocol      v1.Protocol
 +	HostIP        string
  }
---- a/internal/hostport/hostport_manager_test.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/internal/hostport/hostport_manager_test.go	2025-03-06 20:47:00.293396244 +0100
-@@ -17,131 +17,92 @@
+diff --git a/internal/hostport/hostport_manager_test.go b/internal/hostport/hostport_manager_test.go
+index 539d620490c..ff1da6a390f 100644
+--- a/internal/hostport/hostport_manager_test.go
++++ b/internal/hostport/hostport_manager_test.go
+@@ -17,131 +17,92 @@ limitations under the License.
  package hostport
  
  import (
@@ -1519,7 +1555,7 @@
  			},
  		},
  	},
-@@ -150,224 +111,44 @@
+@@ -150,225 +111,44 @@ var testCasesV4 = []testCase{
  var testCasesV6 = []testCase{
  	{
  		// Same id and mappings as testCasesV4[0] (but with an IPv6 HostIP)
@@ -1552,7 +1588,7 @@
 -				},
 +		id:    "0855d5396cdc673af13203c9cc5c95367cad0133306ba4d74d1da6e2876ebe51",
 +		name:  "pod1_ns1",
-+		podIP: "10.1.1.2",
++		podIP: "2001:beef::2",
 +		portMappings: []*PortMapping{
 +			{
 +				HostPort:      8080,
@@ -1573,7 +1609,7 @@
 +				HostPort:      8084,
 +				ContainerPort: 84,
 +				Protocol:      v1.ProtocolTCP,
-+				HostIP:        "127.0.0.1",
++				HostIP:        "::1",
  			},
  		},
  	},
@@ -1673,6 +1709,7 @@
 -	expected := sets.New(expectedRules...)
 -
 -	matched := sets.New[string]()
+-
 -	for _, line := range strings.Split(raw.String(), "\n") {
 -		if strings.HasPrefix(line, "-A KUBE-HOSTPORTS ") || strings.HasPrefix(line, "-A CRIO-HOSTPORTS-MASQ ") || strings.HasPrefix(line, "-A KUBE-HP-") || strings.HasPrefix(line, "-A CRIO-MASQ-") {
 -			matched.Insert(line)
@@ -1776,9 +1813,12 @@
 -		checkIPTablesRules(manager.ip6tables, nil)
 -	})
 -})
---- a/internal/hostport/hostport_nftables.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/internal/hostport/hostport_nftables.go	2025-03-06 20:47:00.293396244 +0100
-@@ -0,0 +1,308 @@
+diff --git a/internal/hostport/hostport_nftables.go b/internal/hostport/hostport_nftables.go
+new file mode 100644
+index 00000000000..7fe5790009e
+--- /dev/null
++++ b/internal/hostport/hostport_nftables.go
+@@ -0,0 +1,306 @@
 +/*
 +Copyright 2017 The Kubernetes Authors.
 +
@@ -1881,16 +1921,14 @@
 +		}
 +	}
 +
-+	// If we added any hostport mappings, add a hairpinning mapping.
-+	if tx.NumOperations() != 0 {
-+		tx.Add(&knftables.Element{
-+			Set: hairpinSet,
-+			Key: []string{
-+				podIP, podIP,
-+			},
-+			Comment: &comment,
-+		})
-+	}
++	// Add a hairpinning mapping.
++	tx.Add(&knftables.Element{
++		Set: hairpinSet,
++		Key: []string{
++			podIP, podIP,
++		},
++		Comment: &comment,
++	})
 +
 +	err = hm.nft.Run(context.TODO(), tx)
 +	if err != nil {
@@ -2087,8 +2125,11 @@
 +		),
 +	})
 +}
---- a/internal/hostport/hostport_nftables_test.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/internal/hostport/hostport_nftables_test.go	2025-03-06 20:47:00.293396244 +0100
+diff --git a/internal/hostport/hostport_nftables_test.go b/internal/hostport/hostport_nftables_test.go
+new file mode 100644
+index 00000000000..268f0769816
+--- /dev/null
++++ b/internal/hostport/hostport_nftables_test.go
 @@ -0,0 +1,155 @@
 +/*
 +Copyright 2017 The Kubernetes Authors.
@@ -2245,8 +2286,11 @@
 +		checkNFTablesElements(fakeNFT, nil)
 +	})
 +})
---- a/internal/hostport/hostport_test.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/internal/hostport/hostport_test.go	1970-01-01 01:00:00.000000000 +0100
+diff --git a/internal/hostport/hostport_test.go b/internal/hostport/hostport_test.go
+deleted file mode 100644
+index 367ffcee185..00000000000
+--- a/internal/hostport/hostport_test.go
++++ /dev/null
 @@ -1,55 +0,0 @@
 -/*
 -Copyright 2017 The Kubernetes Authors.
@@ -2303,12 +2347,16 @@
 -		Expect(len(chain.rules)).To(BeEquivalentTo(0))
 -	})
 -})
---- a/internal/hostport/meta_hostport_manager.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/internal/hostport/meta_hostport_manager.go	2025-03-06 20:47:00.293396244 +0100
-@@ -0,0 +1,152 @@
+diff --git a/internal/hostport/meta_hostport_manager.go b/internal/hostport/meta_hostport_manager.go
+new file mode 100644
+index 00000000000..c7fdffcc033
+--- /dev/null
++++ b/internal/hostport/meta_hostport_manager.go
+@@ -0,0 +1,176 @@
 +package hostport
 +
 +import (
++	"context"
 +	"errors"
 +	"fmt"
 +	"strings"
@@ -2329,36 +2377,44 @@
 +}
 +
 +type hostportManagers struct {
-+	hostportManager HostPortManager
++	iptables HostPortManager
++	nftables HostPortManager
 +}
 +
 +// NewMetaHostportManager creates a new HostPortManager.
-+func NewMetaHostportManager() (HostPortManager, error) {
++func NewMetaHostportManager(ctx context.Context) (HostPortManager, error) {
 +	mh := &metaHostportManager{
 +		managers: make(map[utilnet.IPFamily]*hostportManagers),
 +	}
 +
-+	ipv4HostportManager := hostportManagers{}
-+	if iptv4, _ := newHostportManagerIPTables(utiliptables.ProtocolIPv4); iptv4 != nil {
-+		ipv4HostportManager.hostportManager = iptv4
-+	} else if nftv4, _ := newHostportManagerNFTables(knftables.IPv4Family); nftv4 != nil {
-+		ipv4HostportManager.hostportManager = nftv4
-+	} else {
-+		return nil, fmt.Errorf("can't create HostPortManager: no support for iptables or nftables")
-+	}
-+	mh.managers[utilnet.IPv4] = &ipv4HostportManager
++	iptv4, iptErr := newHostportManagerIPTables(ctx, utiliptables.ProtocolIPv4)
++	nftv4, nftErr := newHostportManagerNFTables(knftables.IPv4Family)
 +
-+	// IPv6 may fail if there's no nftables or iptables support.
-+	// Leave mh.managers[utilnet.IPv6] nil if there's no IPv6 support.
-+	ipv6HostportManager := hostportManagers{}
-+	if iptv6, _ := newHostportManagerIPTables(utiliptables.ProtocolIPv6); iptv6 != nil {
-+		ipv6HostportManager.hostportManager = iptv6
-+	} else if nftv6, _ := newHostportManagerNFTables(knftables.IPv6Family); nftv6 != nil {
-+		ipv6HostportManager.hostportManager = nftv6
++	if iptv4 == nil && nftv4 == nil {
++		return nil, fmt.Errorf("can't create HostPortManager: no support for iptables (%w) or nftables (%w)", iptErr, nftErr)
 +	}
 +
-+	if ipv6HostportManager.hostportManager != nil {
-+		mh.managers[utilnet.IPv6] = &ipv6HostportManager
++	mh.managers[utilnet.IPv4] = &hostportManagers{
++		iptables: iptv4,
++		nftables: nftv4,
++	}
++
++	// IPv6 may fail if there's no kernel support, or no ip6tables binaries. We leave
++	// mh.managers[utilnet.IPv6] nil if there's no IPv6 support.
++	iptv6, iptErr := newHostportManagerIPTables(ctx, utiliptables.ProtocolIPv6)
++
++	nftv6, nftErr := newHostportManagerNFTables(knftables.IPv6Family)
++
++	switch {
++	case nftv6 == nil:
++		logrus.Infof("No kernel support for IPv6: %v", nftErr)
++	case iptv6 == nil:
++		logrus.Infof("No iptables support for IPv6: %v", iptErr)
++	default:
++		mh.managers[utilnet.IPv6] = &hostportManagers{
++			iptables: iptv6,
++			nftables: nftv6,
++		}
 +	}
 +
 +	return mh, nil
@@ -2383,7 +2439,14 @@
 +		return fmt.Errorf("no HostPort support for IPv%s on this host", family)
 +	}
 +
-+	err := managers.hostportManager.Add(id, name, podIP, hostportMappings)
++	// Use nftables if available, fall back to iptables. (We know at least one must be
++	// non-nil.)
++	hm := managers.nftables
++	if hm == nil {
++		hm = managers.iptables
++	}
++
++	err := hm.Add(id, name, podIP, hostportMappings)
 +	if err != nil {
 +		return err
 +	}
@@ -2425,9 +2488,17 @@
 +			continue
 +		}
 +
-+		if managers.hostportManager != nil {
-+			err := managers.hostportManager.Remove(id, mappingsForFamily)
++		if managers.nftables != nil {
++			err := managers.nftables.Remove(id, mappingsForFamily)
 +			if err != nil {
++				errstrings = append(errstrings, err.Error())
++			}
++		}
++
++		if managers.iptables != nil {
++			err := managers.iptables.Remove(id, mappingsForFamily)
++			// Ignore iptables errors if we're primarily using nftables
++			if err != nil && managers.nftables == nil {
 +				errstrings = append(errstrings, err.Error())
 +			}
 +		}
@@ -2458,8 +2529,11 @@
 +
 +	return mappings
 +}
---- a/internal/hostport/meta_hostport_manager_test.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/internal/hostport/meta_hostport_manager_test.go	2025-03-06 20:47:00.293396244 +0100
+diff --git a/internal/hostport/meta_hostport_manager_test.go b/internal/hostport/meta_hostport_manager_test.go
+new file mode 100644
+index 00000000000..3eb59c0d319
+--- /dev/null
++++ b/internal/hostport/meta_hostport_manager_test.go
 @@ -0,0 +1,332 @@
 +package hostport
 +
@@ -2793,8 +2867,10 @@
 +		checkNFTablesElements(nft4, nil)
 +	})
 +})
---- a/internal/hostport/noop_hostport_manager.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/internal/hostport/noop_hostport_manager.go	2025-03-06 20:47:00.293396244 +0100
+diff --git a/internal/hostport/noop_hostport_manager.go b/internal/hostport/noop_hostport_manager.go
+index 729e80c2ebf..8dad7f51789 100644
+--- a/internal/hostport/noop_hostport_manager.go
++++ b/internal/hostport/noop_hostport_manager.go
 @@ -1,6 +1,8 @@
  package hostport
  
@@ -2805,24 +2881,27 @@
  
  // This interface implements, when hostport mapping is disabled in CRI-O.
  type noopHostportManager struct{}
-@@ -11,12 +13,12 @@
+@@ -12,13 +14,13 @@ func NewNoopHostportManager() HostPortManager {
  	return &noopHostportManager{}
  }
  
 -func (mh *noopHostportManager) Add(id string, podPortMapping *PodPortMapping) error {
 +func (mh *noopHostportManager) Add(id, name, podIP string, hostportMappings []*PortMapping) error {
  	logrus.Debug("HostPort Mapping is Disabled in CRI-O")
+ 
  	return nil
  }
  
 -func (mh *noopHostportManager) Remove(id string, podPortMapping *PodPortMapping) error {
 +func (mh *noopHostportManager) Remove(id string, hostportMappings []*PortMapping) error {
  	logrus.Debug("HostPort Mapping is Disabled in CRI-O")
+ 
  	return nil
- }
---- a/internal/hostport/noop_hostport_manager_test.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/internal/hostport/noop_hostport_manager_test.go	2025-03-06 20:47:00.293396244 +0100
-@@ -10,7 +10,7 @@
+diff --git a/internal/hostport/noop_hostport_manager_test.go b/internal/hostport/noop_hostport_manager_test.go
+index 0c03990ef6c..ae94c559e12 100644
+--- a/internal/hostport/noop_hostport_manager_test.go
++++ b/internal/hostport/noop_hostport_manager_test.go
+@@ -10,7 +10,7 @@ var _ = t.Describe("NoopHostportManager", func() {
  		manager := NewNoopHostportManager()
  		Expect(manager).NotTo(BeNil())
  
@@ -2831,9 +2910,11 @@
  		Expect(err).NotTo(HaveOccurred())
  
  		err = manager.Remove("id", nil)
---- a/server/sandbox_network.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/server/sandbox_network.go	2025-03-06 20:47:00.297396203 +0100
-@@ -13,7 +13,6 @@
+diff --git a/server/sandbox_network.go b/server/sandbox_network.go
+index 92b3cfa458c..dd4e431f343 100644
+--- a/server/sandbox_network.go
++++ b/server/sandbox_network.go
+@@ -13,7 +13,6 @@ import (
  	"k8s.io/apimachinery/pkg/api/resource"
  	utilnet "k8s.io/utils/net"
  
@@ -2841,7 +2922,7 @@
  	"github.com/cri-o/cri-o/internal/lib/sandbox"
  	"github.com/cri-o/cri-o/internal/log"
  	"github.com/cri-o/cri-o/server/metrics"
-@@ -95,11 +94,6 @@
+@@ -98,11 +97,6 @@ func (s *Server) networkStart(ctx context.Context, sb *sandbox.Sandbox) (podIPs
  
  		// the pod has host-ports defined
  		if len(sbPortMappings) > 0 {
@@ -2853,16 +2934,16 @@
  			//nolint:gocritic // using a switch statement is not much different
  			if utilnet.IsIPv6(ip) {
  				if foundIPv6 {
-@@ -115,7 +109,7 @@
- 				// found a new IPv4 address, do the portmap
+@@ -119,7 +113,7 @@ func (s *Server) networkStart(ctx context.Context, sb *sandbox.Sandbox) (podIPs
  				foundIPv4 = true
  			}
+ 
 -			err = s.hostportManager.Add(sbID, mapping)
 +			err = s.hostportManager.Add(sbID, sbName, ip.String(), sbPortMappings)
  			if err != nil {
  				return nil, nil, fmt.Errorf("failed to add hostport mapping for sandbox %s(%s): %w", sb.Name(), sb.ID(), err)
  			}
-@@ -171,12 +165,8 @@
+@@ -179,12 +173,8 @@ func (s *Server) networkStop(ctx context.Context, sb *sandbox.Sandbox) error {
  	stopCtx, stopCancel := context.WithTimeout(ctx, 1*time.Minute)
  	defer stopCancel()
  
@@ -2876,52 +2957,64 @@
  		log.Warnf(ctx, "Failed to remove hostport for pod sandbox %s(%s): %v",
  			sb.Name(), sb.ID(), err)
  	}
---- a/server/server.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/server/server.go	2025-03-06 20:47:00.297396203 +0100
-@@ -397,7 +397,10 @@
- 	if config.RuntimeConfig.DisableHostPortMapping {
+diff --git a/server/server.go b/server/server.go
+index e195873c9e5..246dccc9dba 100644
+--- a/server/server.go
++++ b/server/server.go
+@@ -429,7 +429,10 @@ func New(
+ 	if config.DisableHostPortMapping {
  		hostportManager = hostport.NewNoopHostportManager()
  	} else {
--		hostportManager = hostport.NewHostportManager()
-+		hostportManager, err = hostport.NewMetaHostportManager()
+-		hostportManager = hostport.NewHostportManager(ctx)
++		hostportManager, err = hostport.NewMetaHostportManager(ctx)
 +		if err != nil {
 +			return nil, fmt.Errorf("%w (use --disable-hostport-mapping to disable HostPort handling)", err)
 +		}
  	}
  
  	idMappings, err := getIDMappings(config)
---- a/server/suite_test.go	2025-03-02 19:05:31.000000000 +0100
-+++ b/server/suite_test.go	2025-03-06 20:47:00.297396203 +0100
-@@ -149,6 +149,10 @@
+diff --git a/server/suite_test.go b/server/suite_test.go
+index 28eebfcbb25..c463013e0e8 100644
+--- a/server/suite_test.go
++++ b/server/suite_test.go
+@@ -149,6 +149,10 @@ var beforeEach = func() {
  	serverConfig.Seccomp().SetNotifierPath(t.MustTempDir("seccomp-notifier"))
  	serverConfig.NRI.SocketPath = t.MustTempDir("nri")
  
 +	// Nothing here tests hostport mapping, and hostport.NewMetaHostPortManager
 +	// will fail if non-root
-+	serverConfig.RuntimeConfig.DisableHostPortMapping = true
++	serverConfig.DisableHostPortMapping = true
 +
  	// We want a directory that is guaranteed to exist, but it must
  	// be empty so we don't erroneously load anything and make tests
  	// unreproducible.
---- a/vendor/modules.txt	2025-03-02 19:05:31.000000000 +0100
-+++ b/vendor/modules.txt	2025-03-06 20:47:00.521393927 +0100
-@@ -1667,6 +1667,9 @@
- ## explicit; go 1.18
+diff --git a/vendor/modules.txt b/vendor/modules.txt
+index 1e818d19674..1012b1dffb8 100644
+--- a/vendor/modules.txt
++++ b/vendor/modules.txt
+@@ -1740,6 +1740,9 @@ k8s.io/utils/trace
+ ## explicit; go 1.21
  sigs.k8s.io/json
  sigs.k8s.io/json/internal/golang/encoding/json
 +# sigs.k8s.io/knftables v0.0.18
 +## explicit; go 1.20
 +sigs.k8s.io/knftables
- # sigs.k8s.io/release-sdk v0.12.1
- ## explicit; go 1.21
- sigs.k8s.io/release-sdk/git
---- a/vendor/sigs.k8s.io/knftables/.gitignore	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/.gitignore	2025-03-06 20:47:00.521393927 +0100
+ # sigs.k8s.io/randfill v1.0.0
+ ## explicit; go 1.18
+ sigs.k8s.io/randfill
+diff --git a/vendor/sigs.k8s.io/knftables/.gitignore b/vendor/sigs.k8s.io/knftables/.gitignore
+new file mode 100644
+index 00000000000..896d5783bce
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/.gitignore
 @@ -0,0 +1,2 @@
 +*~
 +hack/bin/golangci-lint
---- a/vendor/sigs.k8s.io/knftables/CHANGELOG.md	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/CHANGELOG.md	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/CHANGELOG.md b/vendor/sigs.k8s.io/knftables/CHANGELOG.md
+new file mode 100644
+index 00000000000..e16d197d7ee
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/CHANGELOG.md
 @@ -0,0 +1,181 @@
 +# ChangeLog
 +
@@ -3104,8 +3197,11 @@
 +## v0.0.1
 +
 +- Initial "release"
---- a/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md b/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md
+new file mode 100644
+index 00000000000..50a4c6a370f
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/CONTRIBUTING.md
 @@ -0,0 +1,28 @@
 +# Contributing Guidelines
 +
@@ -3135,8 +3231,11 @@
 +
 +- [sig-network slack channel](https://kubernetes.slack.com/messages/sig-network)
 +- [kubernetes-sig-network mailing list](https://groups.google.com/forum/#!forum/kubernetes-sig-network)
---- a/vendor/sigs.k8s.io/knftables/LICENSE	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/LICENSE	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/LICENSE b/vendor/sigs.k8s.io/knftables/LICENSE
+new file mode 100644
+index 00000000000..261eeb9e9f8
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/LICENSE
 @@ -0,0 +1,201 @@
 +                                 Apache License
 +                           Version 2.0, January 2004
@@ -3339,8 +3438,11 @@
 +   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 +   See the License for the specific language governing permissions and
 +   limitations under the License.
---- a/vendor/sigs.k8s.io/knftables/Makefile	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/Makefile	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/Makefile b/vendor/sigs.k8s.io/knftables/Makefile
+new file mode 100644
+index 00000000000..981e6256a41
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/Makefile
 @@ -0,0 +1,32 @@
 +# Copyright 2023 The Kubernetes Authors.
 +#
@@ -3374,8 +3476,11 @@
 +	./hack/verify.sh
 +
 +.PHONY: all build clean test update verify
---- a/vendor/sigs.k8s.io/knftables/OWNERS	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/OWNERS	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/OWNERS b/vendor/sigs.k8s.io/knftables/OWNERS
+new file mode 100644
+index 00000000000..01baa623701
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/OWNERS
 @@ -0,0 +1,7 @@
 +# See the OWNERS docs at https://go.k8s.io/owners
 +
@@ -3384,8 +3489,11 @@
 +  - danwinship
 +approvers:
 +  - danwinship
---- a/vendor/sigs.k8s.io/knftables/README.md	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/README.md	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/README.md b/vendor/sigs.k8s.io/knftables/README.md
+new file mode 100644
+index 00000000000..0cb6313bc7d
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/README.md
 @@ -0,0 +1,279 @@
 +# knftables: a golang nftables library
 +
@@ -3666,8 +3774,11 @@
 +See [`CONTRIBUTING.md`](CONTRIBUTING.md) for more information about
 +contributing. Participation in the Kubernetes community is governed by
 +the [Kubernetes Code of Conduct](code-of-conduct.md).
---- a/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS b/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS
+new file mode 100644
+index 00000000000..eb4390a2e19
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/SECURITY_CONTACTS
 @@ -0,0 +1,13 @@
 +# Defined below are the security contacts for this repo.
 +#
@@ -3682,14 +3793,20 @@
 +# INSTRUCTIONS AT https://kubernetes.io/security/
 +
 +danwinship
---- a/vendor/sigs.k8s.io/knftables/code-of-conduct.md	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/code-of-conduct.md	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/code-of-conduct.md b/vendor/sigs.k8s.io/knftables/code-of-conduct.md
+new file mode 100644
+index 00000000000..0d15c00cf32
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/code-of-conduct.md
 @@ -0,0 +1,3 @@
 +# Kubernetes Community Code of Conduct
 +
 +Please refer to our [Kubernetes Community Code of Conduct](https://git.k8s.io/community/code-of-conduct.md)
---- a/vendor/sigs.k8s.io/knftables/error.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/error.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/error.go b/vendor/sigs.k8s.io/knftables/error.go
+new file mode 100644
+index 00000000000..fe57da03b85
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/error.go
 @@ -0,0 +1,94 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -3785,8 +3902,11 @@
 +	}
 +	return false
 +}
---- a/vendor/sigs.k8s.io/knftables/exec.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/exec.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/exec.go b/vendor/sigs.k8s.io/knftables/exec.go
+new file mode 100644
+index 00000000000..154b5bc45c9
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/exec.go
 @@ -0,0 +1,48 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -3836,8 +3956,11 @@
 +	}
 +	return string(out), err
 +}
---- a/vendor/sigs.k8s.io/knftables/fake.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/fake.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/fake.go b/vendor/sigs.k8s.io/knftables/fake.go
+new file mode 100644
+index 00000000000..6f209f936ac
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/fake.go
 @@ -0,0 +1,744 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -4583,8 +4706,11 @@
 +	}
 +	return m.Elements[index]
 +}
---- a/vendor/sigs.k8s.io/knftables/nftables.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/nftables.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/nftables.go b/vendor/sigs.k8s.io/knftables/nftables.go
+new file mode 100644
+index 00000000000..8cb343806a3
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/nftables.go
 @@ -0,0 +1,514 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -5100,8 +5226,11 @@
 +
 +	return nil, fmt.Errorf("could not parse element value %q", json)
 +}
---- a/vendor/sigs.k8s.io/knftables/objects.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/objects.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/objects.go b/vendor/sigs.k8s.io/knftables/objects.go
+new file mode 100644
+index 00000000000..ed11db29f48
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/objects.go
 @@ -0,0 +1,658 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -5761,8 +5890,11 @@
 +	}
 +	return nil
 +}
---- a/vendor/sigs.k8s.io/knftables/transaction.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/transaction.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/transaction.go b/vendor/sigs.k8s.io/knftables/transaction.go
+new file mode 100644
+index 00000000000..3063637ada9
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/transaction.go
 @@ -0,0 +1,141 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -5905,8 +6037,11 @@
 +func (tx *Transaction) Delete(obj Object) {
 +	tx.operation(deleteVerb, obj)
 +}
---- a/vendor/sigs.k8s.io/knftables/types.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/types.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/types.go b/vendor/sigs.k8s.io/knftables/types.go
+new file mode 100644
+index 00000000000..1d0da2cbdc6
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/types.go
 @@ -0,0 +1,411 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
@@ -6319,8 +6454,11 @@
 +	// deleting it. When adding a new object, this must be nil
 +	Handle *int
 +}
---- a/vendor/sigs.k8s.io/knftables/util.go	1970-01-01 01:00:00.000000000 +0100
-+++ b/vendor/sigs.k8s.io/knftables/util.go	2025-03-06 20:47:00.521393927 +0100
+diff --git a/vendor/sigs.k8s.io/knftables/util.go b/vendor/sigs.k8s.io/knftables/util.go
+new file mode 100644
+index 00000000000..4ff14af2465
+--- /dev/null
++++ b/vendor/sigs.k8s.io/knftables/util.go
 @@ -0,0 +1,117 @@
 +/*
 +Copyright 2023 The Kubernetes Authors.
