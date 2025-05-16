@@ -4,17 +4,16 @@
 EAPI=8
 
 # keep in sync with dotnet-runtime
-DOTNET_RUNTIME_PV="9.0.4"
-REAL_PV="${PV}"
-SDK="${PN}-${REAL_PV}-linux-musl"
+DOTNET_RUNTIME_PV="9.0.5"
+SDK="${PN}-${PV}-linux-musl"
 
 inherit dotnet-utils
 
 DESCRIPTION="The .NET Core SDK"
 HOMEPAGE="https://www.microsoft.com/net/core"
 SRC_URI="
-	amd64? ( "https://dotnetcli.azureedge.net/dotnet/Sdk/${REAL_PV}/${SDK}-x64.tar.gz" )
-	arm64? ( "https://dotnetcli.azureedge.net/dotnet/Sdk/${REAL_PV}/${SDK}-arm64.tar.gz" )
+	amd64? ( "https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-x64.tar.gz" )
+	arm64? ( "https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-arm64.tar.gz" )
 "
 
 S="${WORKDIR}"
@@ -49,5 +48,5 @@ src_install() {
 	mkdir -p "${D}/${dest}/${workloads}" || die
 	touch "${D}/${dest}/${workloads}/userlocal" || die
 
-	cp "${dest_apphost_pack}/apphost"  "${D}/${dest}/sdk/${REAL_PV}/AppHostTemplate/apphost" || die
+	cp "${dest_apphost_pack}/apphost"  "${D}/${dest}/sdk/${PV}/AppHostTemplate/apphost" || die
 }
