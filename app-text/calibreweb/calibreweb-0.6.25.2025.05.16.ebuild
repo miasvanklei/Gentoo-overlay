@@ -5,11 +5,13 @@ EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
 PYTHON_COMPAT=( python3_{11..13} )
+GIT_COMMIT="0af52f205358b0147ee3430f9e6c8fe007c0ea77"
 
 inherit distutils-r1 pypi systemd
 
 DESCRIPTION="Simple integration of Flask and WTForms"
 HOMEPAGE="https://pypi.org/project/calibreweb/"
+SRC_URI="https://github.com/janeczku/calibre-web/archive/${GIT_COMMIT}.tar.gz -> ${PN}-${GIT_COMMIT}.tar.gz"
 
 LICENSE="GPL-3+"
 SLOT="0"
@@ -39,7 +41,7 @@ RDEPEND="
 	dev-python/regex[${PYTHON_USEDEP}]
 	dev-python/requests[${PYTHON_USEDEP}]
 	<dev-python/sqlalchemy-2.1.0[${PYTHON_USEDEP}]
-	>=dev-python/tornado-6.3[${PYTHON_USEDEP}] <dev-python/tornado-6.5[${PYTHON_USEDEP}]
+	>=dev-python/tornado-6.4.2[${PYTHON_USEDEP}] <dev-python/tornado-6.6[${PYTHON_USEDEP}]
 	dev-python/unidecode[${PYTHON_USEDEP}]
 	dev-python/urllib3[${PYTHON_USEDEP}]
 	dev-python/wand[${PYTHON_USEDEP}]
@@ -57,14 +59,21 @@ RDEPEND="
 
 PATCHES="${FILESDIR}/remove-required-optional-deps.patch"
 
-src_prepare() {
-	sed -i -e "s|APScheduler>=3.6.3,<3.11.0|APScheduler>=3.6.3,<3.12.0|g" "${S}/src/calibreweb/requirements.txt" || die
+S="${WORKDIR}/calibre-web-${GIT_COMMIT}"
 
-	distutils-r1_src_prepare
+src_prepare() {
+	# Fix distribution
+	mkdir -p "${S}"/src/calibreweb || die
+	mv cps "${S}"/src/calibreweb/ || die
+	cp cps.py "${S}"/src/calibreweb/__main__.py || die
+	mv cps.py "${S}"/src/calibreweb/__init__.py || die
+	mv *requirements.txt "${S}"/src/calibreweb/ || die
+
+        distutils-r1_src_prepare
 }
 
 src_install() {
-	distutils-r1_src_install
+        distutils-r1_src_install
 
-	systemd_dounit "${FILESDIR}/${PN}.service"
+        systemd_dounit "${FILESDIR}/${PN}.service"
 }
