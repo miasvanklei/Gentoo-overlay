@@ -1,0 +1,105 @@
+--- a/internal/hostport/meta_hostport_manager.go	2025-05-19 19:38:33.707944029 +0200
++++ b/internal/hostport/meta_hostport_manager.go	2025-05-19 19:38:46.079807667 +0200
+@@ -22,8 +22,7 @@
+ }
+ 
+ type hostportManagers struct {
+-	iptables HostPortManager
+-	nftables HostPortManager
++	hostportManager HostPortManager
+ }
+ 
+ // NewMetaHostportManager creates a new HostPortManager.
+@@ -32,34 +31,27 @@
+ 		managers: make(map[utilnet.IPFamily]*hostportManagers),
+ 	}
+ 
+-	iptv4, iptErr := newHostportManagerIPTables(ctx, utiliptables.ProtocolIPv4)
+-	nftv4, nftErr := newHostportManagerNFTables(knftables.IPv4Family)
+-
+-	if iptv4 == nil && nftv4 == nil {
+-		return nil, fmt.Errorf("can't create HostPortManager: no support for iptables (%w) or nftables (%w)", iptErr, nftErr)
+-	}
+-
+-	mh.managers[utilnet.IPv4] = &hostportManagers{
+-		iptables: iptv4,
+-		nftables: nftv4,
++	ipv4HostportManager := hostportManagers{}
++	if iptv4, _ := newHostportManagerIPTables(ctx, utiliptables.ProtocolIPv4); iptv4 != nil {
++		ipv4HostportManager.hostportManager = iptv4
++	} else if nftv4, _ := newHostportManagerNFTables(knftables.IPv4Family); nftv4 != nil {
++		ipv4HostportManager.hostportManager = nftv4
++	} else {
++		return nil, fmt.Errorf("can't create HostPortManager: no support for iptables or nftables")
++	}
++	mh.managers[utilnet.IPv4] = &ipv4HostportManager
++
++	// IPv6 may fail if there's no nftables or iptables support.
++	// Leave mh.managers[utilnet.IPv6] nil if there's no IPv6 support.
++	ipv6HostportManager := hostportManagers{}
++	if iptv6, _ := newHostportManagerIPTables(ctx, utiliptables.ProtocolIPv6); iptv6 != nil {
++		ipv6HostportManager.hostportManager = iptv6
++	} else if nftv6, _ := newHostportManagerNFTables(knftables.IPv6Family); nftv6 != nil {
++		ipv6HostportManager.hostportManager = nftv6
+ 	}
+ 
+-	// IPv6 may fail if there's no kernel support, or no ip6tables binaries. We leave
+-	// mh.managers[utilnet.IPv6] nil if there's no IPv6 support.
+-	iptv6, iptErr := newHostportManagerIPTables(ctx, utiliptables.ProtocolIPv6)
+-
+-	nftv6, nftErr := newHostportManagerNFTables(knftables.IPv6Family)
+-
+-	switch {
+-	case nftv6 == nil:
+-		logrus.Infof("No kernel support for IPv6: %v", nftErr)
+-	case iptv6 == nil:
+-		logrus.Infof("No iptables support for IPv6: %v", iptErr)
+-	default:
+-		mh.managers[utilnet.IPv6] = &hostportManagers{
+-			iptables: iptv6,
+-			nftables: nftv6,
+-		}
++	if ipv6HostportManager.hostportManager != nil {
++		mh.managers[utilnet.IPv6] = &ipv6HostportManager
+ 	}
+ 
+ 	return mh, nil
+@@ -84,14 +76,7 @@
+ 		return fmt.Errorf("no HostPort support for IPv%s on this host", family)
+ 	}
+ 
+-	// Use nftables if available, fall back to iptables. (We know at least one must be
+-	// non-nil.)
+-	hm := managers.nftables
+-	if hm == nil {
+-		hm = managers.iptables
+-	}
+-
+-	err := hm.Add(id, name, podIP, hostportMappings)
++	err := managers.hostportManager.Add(id, name, podIP, hostportMappings)
+ 	if err != nil {
+ 		return err
+ 	}
+@@ -133,20 +118,12 @@
+ 			continue
+ 		}
+ 
+-		if managers.nftables != nil {
+-			err := managers.nftables.Remove(id, mappingsForFamily)
++		if managers.hostportManager != nil {
++			err := managers.hostportManager.Remove(id, mappingsForFamily)
+ 			if err != nil {
+ 				errstrings = append(errstrings, err.Error())
+ 			}
+ 		}
+-
+-		if managers.iptables != nil {
+-			err := managers.iptables.Remove(id, mappingsForFamily)
+-			// Ignore iptables errors if we're primarily using nftables
+-			if err != nil && managers.nftables == nil {
+-				errstrings = append(errstrings, err.Error())
+-			}
+-		}
+ 	}
+ 
+ 	if len(errstrings) > 0 {

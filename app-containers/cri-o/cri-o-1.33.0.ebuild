@@ -14,7 +14,8 @@ SRC_URI="https://github.com/cri-o/${PN}/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 LICENSE="Apache-2.0 BSD BSD-2 CC-BY-SA-4.0 ISC MIT MPL-2.0"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
-IUSE="btrfs +device-mapper selinux systemd"
+IUSE="btrfs +nftables iptables selinux systemd"
+REQUIRED_USE="|| ( nftables iptables )"
 
 COMMON_DEPEND="
 	app-crypt/gpgme:=
@@ -24,13 +25,13 @@ COMMON_DEPEND="
 	dev-libs/libassuan:=
 	dev-libs/libgpg-error:=
 	net-firewall/conntrack-tools
-	net-firewall/nftables
 	app-containers/cni-plugins
 	net-misc/socat
 	sys-apps/iproute2
 	sys-libs/libseccomp:=
 	btrfs? ( sys-fs/btrfs-progs )
-	device-mapper? ( sys-fs/lvm2:= )
+	iptables? ( net-firewall/iptables )
+	nftables? ( net-firewall/nftables )
 	selinux? ( sys-libs/libselinux:= )
 	systemd? ( sys-apps/systemd:= )"
 DEPEND="
@@ -41,7 +42,9 @@ RDEPEND="${COMMON_DEPEND}
 	selinux? ( sec-policy/selinux-crio )"
 BDEPEND="sys-apps/which"
 
-PATCHES="${FILESDIR}/support-nftables.patch"
+PATCHES=(
+	"${FILESDIR}"/fix-determining-iptables-nftables.patch
+)
 
 src_prepare() {
 	default
@@ -65,10 +68,6 @@ src_compile() {
 	[[ -f hack/btrfs_installed_tag.sh ]] || die
 	use btrfs || { echo -e "#!/bin/sh\necho exclude_graphdriver_btrfs" > \
 		hack/btrfs_installed_tag.sh || die; }
-
-	[[ -f hack/libdm_installed.sh ]] || die
-	use device-mapper || { echo -e "#!/bin/sh\necho exclude_graphdriver_devicemapper" > \
-		hack/libdm_installed.sh || die; }
 
 	[[ -f hack/selinux_tag.sh ]] || die
 	use selinux || { echo -e "#!/bin/sh\ntrue" > \
