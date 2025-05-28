@@ -16,10 +16,10 @@ CRATES="
 	backtrace@0.3.74
 	base64@0.12.3
 	bitflags@1.3.2
-	bitflags@2.8.0
+	bitflags@2.9.1
 	byteorder@1.5.0
-	bytes@1.9.0
-	cc@1.2.10
+	bytes@1.10.1
+	cc@1.2.23
 	cfg-if@1.0.0
 	clap@2.34.0
 	cpp@0.5.10
@@ -34,9 +34,13 @@ CRATES="
 	crossterm_terminal@0.2.6
 	crossterm_utils@0.2.4
 	crossterm_winapi@0.1.5
+	ctor-proc-macro@0.0.5
+	ctor@0.4.2
 	dotenvy@0.15.7
+	dtor-proc-macro@0.0.5
+	dtor@0.0.6
 	env_logger@0.8.4
-	equivalent@1.0.1
+	equivalent@1.0.2
 	futures-channel@0.3.31
 	futures-core@0.3.31
 	futures-executor@0.3.31
@@ -47,75 +51,78 @@ CRATES="
 	futures-util@0.3.31
 	futures@0.3.31
 	fuzzy-matcher@0.3.7
-	getrandom@0.2.15
+	getrandom@0.2.16
 	gimli@0.31.1
 	goblin@0.8.2
-	hashbrown@0.15.2
+	hashbrown@0.15.3
 	hermit-abi@0.1.19
-	indexmap@2.7.1
-	itoa@1.0.14
+	indexmap@2.9.0
+	itoa@1.0.15
 	lazy_static@1.5.0
-	libc@0.2.169
+	libc@0.2.172
 	lock_api@0.4.12
-	log@0.4.25
+	log@0.4.27
 	memchr@2.7.4
 	minimal-lexical@0.2.1
-	miniz_oxide@0.8.3
+	miniz_oxide@0.8.8
 	mio@1.0.3
 	nom@7.1.3
 	num-traits@0.2.19
 	num_enum@0.5.11
 	num_enum_derive@0.5.11
 	object@0.36.7
-	once_cell@1.20.2
+	once_cell@1.21.3
 	parking_lot@0.12.3
 	parking_lot_core@0.9.10
 	parse_int@0.5.0
 	pin-project-lite@0.2.16
 	pin-utils@0.1.0
 	plain@0.2.3
-	ppv-lite86@0.2.20
+	ppv-lite86@0.2.21
 	proc-macro-crate@1.3.1
-	proc-macro2@1.0.93
-	quote@1.0.38
+	proc-macro2@1.0.95
+	quote@1.0.40
 	rand@0.8.5
 	rand_chacha@0.3.1
 	rand_core@0.6.4
-	redox_syscall@0.5.8
+	redox_syscall@0.5.12
 	regex-automata@0.4.9
 	regex-lite@0.1.6
 	regex-syntax@0.8.5
 	regex@1.11.1
 	rustc-demangle@0.1.24
-	ryu@1.0.19
+	ryu@1.0.20
 	schemafy@0.5.2
 	schemafy_core@0.5.2
 	schemafy_lib@0.5.2
 	scopeguard@1.2.0
 	scroll@0.12.0
-	scroll_derive@0.12.0
-	serde@1.0.217
-	serde_derive@1.0.217
-	serde_json@1.0.137
-	serde_repr@0.1.19
+	scroll_derive@0.12.1
+	serde@1.0.219
+	serde_derive@1.0.219
+	serde_json@1.0.140
+	serde_repr@0.1.20
+	serde_spanned@0.6.8
 	shlex@1.3.0
-	signal-hook-registry@1.4.2
+	signal-hook-registry@1.4.5
 	slab@0.4.9
-	smallvec@1.13.2
-	socket2@0.5.8
+	smallvec@1.15.0
+	socket2@0.5.9
 	strsim@0.8.0
-	superslice@1.0.0
 	syn@1.0.109
-	syn@2.0.96
+	syn@2.0.101
 	termios@0.3.3
 	textwrap@0.11.0
 	thread_local@1.1.8
 	tokio-macros@2.5.0
 	tokio-util@0.6.10
-	tokio@1.43.0
-	toml_datetime@0.6.8
+	tokio@1.45.0
+	toml@0.8.22
+	toml_datetime@0.6.9
 	toml_edit@0.19.15
-	unicode-ident@1.0.16
+	toml_edit@0.22.26
+	toml_write@0.1.1
+	unicode-ident@1.0.18
 	unicode-width@0.1.14
 	unicode-xid@0.2.6
 	vec_map@0.8.2
@@ -134,14 +141,14 @@ CRATES="
 	windows_x86_64_gnullvm@0.52.6
 	windows_x86_64_msvc@0.52.6
 	winnow@0.5.40
-	winreg@0.6.2
-	zerocopy-derive@0.7.35
-	zerocopy@0.7.35
+	winnow@0.7.10
+	zerocopy-derive@0.8.25
+	zerocopy@0.8.25
 "
 
 declare -A GIT_CRATES=(
-	[weaklink]='https://github.com/vadimcn/weaklink;37f3ffaa904dd57308e745ce0950a427971c0c22;weaklink-%commit%/weaklink'
-	[weaklink_build]='https://github.com/vadimcn/weaklink;37f3ffaa904dd57308e745ce0950a427971c0c22;weaklink-%commit%/weaklink_build'
+	[weaklink]='https://github.com/vadimcn/weaklink;e11a77c73534b18c354ee98765dd20354ec45258;weaklink-%commit%/weaklink'
+	[weaklink_build]='https://github.com/vadimcn/weaklink;e11a77c73534b18c354ee98765dd20354ec45258;weaklink-%commit%/weaklink_build'
 )
 
 inherit cargo
@@ -153,7 +160,10 @@ SRC_URI="https://github.com/vadimcn/codelldb/archive/refs/tags/v${PV}.tar.gz -> 
 
 LICENSE=""
 # Dependent crate licenses
-LICENSE+=" Apache-2.0 BSD-2 MIT Unicode-3.0"
+LICENSE+="
+	BSD-2 MIT Unicode-3.0
+	|| ( Apache-2.0 Boost-1.0 )
+"
 SLOT="0"
 
 KEYWORDS="~amd64 ~arm64"
@@ -174,8 +184,7 @@ src_prepare() {
 	cat <<- _EOF_ > "${S}"/.cargo/config.toml
 		[env]
 		LLDB_INCLUDE = "/usr/include/lldb"
-		LLDB_LINK_LIB = "lldb"
-		LLDB_LINK_SEARCH = "/usr/lib"
+		LLDB_DYLIB = "/usr/lib/liblldb.so"
 	_EOF_
 
 	default
