@@ -8,18 +8,17 @@ EAPI=8
 CRATES="
 	addr2line@0.24.2
 	adler2@2.0.0
-	aho-corasick@1.1.3
 	allocator-api2@0.2.21
 	anyhow@1.0.97
 	arbitrary@1.4.1
 	arrayvec@0.7.6
 	autocfg@1.4.0
-	backtrace@0.3.74
+	backtrace@0.3.75
 	base64@0.22.1
 	bitflags@1.3.2
 	bitflags@2.9.0
 	borsh@1.5.5
-	boxcar@0.2.11
+	boxcar@0.2.12
 	camino@1.1.9
 	cargo-platform@0.1.9
 	cargo_metadata@0.19.2
@@ -38,7 +37,7 @@ CRATES="
 	crossbeam-epoch@0.9.18
 	crossbeam-queue@0.3.12
 	crossbeam-utils@0.8.21
-	ctrlc@3.4.5
+	ctrlc@3.4.7
 	dashmap@6.1.0
 	deranged@0.4.0
 	derive_arbitrary@1.4.1
@@ -55,12 +54,11 @@ CRATES="
 	expect-test@1.5.1
 	filetime@0.2.25
 	fixedbitset@0.4.2
-	flate2@1.1.0
+	flate2@1.1.1
 	foldhash@0.1.4
 	form_urlencoded@1.2.1
 	fsevent-sys@4.1.0
 	fst@0.4.7
-	generator@0.8.4
 	getrandom@0.2.15
 	gimli@0.31.1
 	hashbrown@0.14.5
@@ -81,7 +79,7 @@ CRATES="
 	icu_provider_macros@1.5.0
 	idna@1.0.3
 	idna_adapter@1.2.0
-	indexmap@2.8.0
+	indexmap@2.9.0
 	inotify-sys@0.1.5
 	inotify@0.11.0
 	itertools@0.12.1
@@ -93,17 +91,15 @@ CRATES="
 	la-arena@0.3.1
 	lazy_static@1.5.0
 	libc@0.2.172
-	libloading@0.8.6
+	libloading@0.8.7
 	libmimalloc-sys@0.1.40
 	libredox@0.1.3
 	line-index@0.1.2
 	litemap@0.7.5
 	lock_api@0.4.12
 	log@0.4.26
-	loom@0.7.2
 	lsp-server@0.7.8
 	lsp-types@0.95.0
-	matchers@0.1.0
 	memchr@2.7.4
 	memmap2@0.9.5
 	memoffset@0.9.1
@@ -111,11 +107,10 @@ CRATES="
 	miniz_oxide@0.8.5
 	mio@1.0.3
 	miow@0.6.0
-	nix@0.29.0
+	nix@0.30.1
 	nohash-hasher@0.2.0
 	notify-types@2.0.0
 	notify@8.0.0
-	nu-ansi-term@0.46.0
 	nu-ansi-term@0.50.1
 	num-conv@0.1.0
 	num_cpus@1.16.0
@@ -124,7 +119,6 @@ CRATES="
 	once_cell@1.21.1
 	oorandom@11.1.5
 	option-ext@0.2.0
-	overload@0.1.1
 	parking_lot@0.12.3
 	parking_lot_core@0.9.10
 	paste@1.0.15
@@ -136,28 +130,23 @@ CRATES="
 	portable-atomic@1.11.0
 	powerfmt@0.2.0
 	proc-macro2@1.0.94
-	process-wrap@8.2.0
+	process-wrap@8.2.1
 	protobuf-support@3.7.1
 	protobuf@3.7.1
 	pulldown-cmark-to-cmark@10.0.4
 	pulldown-cmark@0.9.6
 	quote@1.0.40
-	ra-ap-rustc_abi@0.110.0
-	ra-ap-rustc_hashes@0.110.0
-	ra-ap-rustc_index@0.110.0
-	ra-ap-rustc_index_macros@0.110.0
-	ra-ap-rustc_lexer@0.110.0
-	ra-ap-rustc_parse_format@0.110.0
-	ra-ap-rustc_pattern_analysis@0.110.0
+	ra-ap-rustc_abi@0.113.0
+	ra-ap-rustc_hashes@0.113.0
+	ra-ap-rustc_index@0.113.0
+	ra-ap-rustc_index_macros@0.113.0
+	ra-ap-rustc_lexer@0.113.0
+	ra-ap-rustc_parse_format@0.113.0
+	ra-ap-rustc_pattern_analysis@0.113.0
 	rayon-core@1.12.1
 	rayon@1.10.0
 	redox_syscall@0.5.10
 	redox_users@0.5.0
-	regex-automata@0.1.10
-	regex-automata@0.4.9
-	regex-syntax@0.6.29
-	regex-syntax@0.8.5
-	regex@1.11.1
 	rowan@0.15.15
 	rustc-demangle@0.1.24
 	rustc-hash@1.1.0
@@ -165,11 +154,10 @@ CRATES="
 	rustc-literal-escaper@0.0.2
 	rustc-stable-hash@0.1.2
 	rustc_apfloat@0.2.2+llvm-462a31f5a5ab
-	rustversion@1.0.20
 	ryu@1.0.20
-	salsa-macro-rules@0.21.1
-	salsa-macros@0.21.1
-	salsa@0.21.1
+	salsa-macro-rules@0.22.0
+	salsa-macros@0.22.0
+	salsa@0.22.0
 	same-file@1.0.6
 	scip@0.5.2
 	scoped-tls@1.0.1
@@ -224,29 +212,23 @@ CRATES="
 	valuable@0.1.1
 	walkdir@2.5.0
 	wasi@0.11.0+wasi-snapshot-preview1
-	winapi-i686-pc-windows-gnu@0.4.0
 	winapi-util@0.1.9
-	winapi-x86_64-pc-windows-gnu@0.4.0
-	winapi@0.3.9
-	windows-core@0.58.0
-	windows-core@0.59.0
-	windows-implement@0.58.0
-	windows-implement@0.59.0
-	windows-interface@0.58.0
-	windows-interface@0.59.0
-	windows-link@0.1.0
-	windows-result@0.2.0
-	windows-result@0.3.1
-	windows-strings@0.1.0
-	windows-strings@0.3.1
+	windows-collections@0.2.0
+	windows-core@0.61.0
+	windows-future@0.2.0
+	windows-implement@0.60.0
+	windows-interface@0.59.1
+	windows-link@0.1.1
+	windows-numerics@0.2.0
+	windows-result@0.3.2
+	windows-strings@0.4.0
 	windows-sys@0.48.0
 	windows-sys@0.52.0
 	windows-sys@0.59.0
 	windows-targets@0.48.5
 	windows-targets@0.52.6
 	windows-targets@0.53.0
-	windows@0.58.0
-	windows@0.59.0
+	windows@0.61.1
 	windows_aarch64_gnullvm@0.48.5
 	windows_aarch64_gnullvm@0.52.6
 	windows_aarch64_gnullvm@0.53.0
@@ -284,7 +266,7 @@ CRATES="
 	zerofrom@0.1.6
 	zerovec-derive@0.10.3
 	zerovec@0.10.4
-	zip@2.4.2
+	zip@3.0.0
 "
 
 RUST_MIN_VER="1.85.0"
