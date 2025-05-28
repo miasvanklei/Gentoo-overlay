@@ -6,7 +6,6 @@ EAPI=8
 PYTHON_COMPAT=( python3_{11..13} )
 DISTUTILS_USE_PEP517=setuptools
 PYPI_NO_NORMALIZE=true
-PROTOBUF_PV="1.10.0"
 
 inherit distutils-r1 pypi
 
@@ -38,6 +37,7 @@ PATCHES=(
 )
 
 python_prepare_all() {
+	dos2unix tests/test_setup.py
 	distutils-r1_python_prepare_all
 
 	# generate protos
