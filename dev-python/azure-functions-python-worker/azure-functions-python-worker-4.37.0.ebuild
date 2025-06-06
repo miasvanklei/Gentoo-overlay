@@ -24,7 +24,7 @@ BDEPEND="
 "
 
 RDEPEND="
-	dev-python/azurefunctions-extensions-base[${PYTHON_USEDEP}]
+	dev-python/azure-functions-extensions-base[${PYTHON_USEDEP}]
 	dev-python/azure-functions[${PYTHON_USEDEP}]
 	dev-python/protobuf[${PYTHON_USEDEP}]
 	dev-python/grpcio[${PYTHON_USEDEP}]
