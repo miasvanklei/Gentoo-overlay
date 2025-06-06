@@ -42,10 +42,6 @@ RDEPEND="${COMMON_DEPEND}
 	selinux? ( sec-policy/selinux-crio )"
 BDEPEND="sys-apps/which"
 
-PATCHES=(
-	"${FILESDIR}"/fix-determining-iptables-nftables.patch
-)
-
 src_prepare() {
 	default
 
