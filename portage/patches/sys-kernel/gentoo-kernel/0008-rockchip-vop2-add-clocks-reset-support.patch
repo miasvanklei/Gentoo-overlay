@@ -1,0 +1,91 @@
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.h
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.h
+@@ -239,6 +239,7 @@
+ 	struct vop2 *vop2;
+ 	struct clk *dclk;
+ 	struct clk *dclk_src;
++	struct reset_control *dclk_rst;
+ 	unsigned int id;
+ 	const struct vop2_video_port_data *data;
+ 
+--- a/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
++++ b/drivers/gpu/drm/rockchip/rockchip_drm_vop2.c
+@@ -17,6 +17,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
++#include <linux/reset.h>
+ #include <linux/swab.h>
+ 
+ #include <drm/drm.h>
+@@ -2060,6 +2062,26 @@ static int us_to_vertical_line(struct drm_display_mode *mode, int us)
+ 	return us * mode->clock / mode->htotal / 1000;
+ }
+ 
++static int vop2_clk_reset(struct vop2_video_port *vp)
++{
++	struct reset_control *rstc = vp->dclk_rst;
++	struct vop2 *vop2 = vp->vop2;
++	int ret;
++
++	if (!rstc)
++		return 0;
++
++	ret = reset_control_assert(rstc);
++	if (ret < 0)
++		drm_warn(vop2->drm, "failed to assert reset\n");
++	udelay(10);
++	ret = reset_control_deassert(rstc);
++	if (ret < 0)
++		drm_warn(vop2->drm, "failed to deassert reset\n");
++
++	return ret;
++}
++
+ static void vop2_crtc_atomic_enable(struct drm_crtc *crtc,
+ 				    struct drm_atomic_state *state)
+ {
+@@ -2202,6 +2224,8 @@ static void vop2_crtc_atomic_enable(struct drm_crtc *crtc,
+ 
+ 	vop2_crtc_atomic_try_set_gamma(vop2, vp, crtc, crtc_state);
+ 
++	vop2_clk_reset(vp);
++
+ 	drm_crtc_vblank_on(crtc);
+ 
+ 	vop2_unlock(vop2);
+@@ -2891,6 +2915,12 @@ static int vop2_create_crtcs(struct vop2 *vop2)
+ 		vp->data = vp_data;
+ 
+ 		snprintf(dclk_name, sizeof(dclk_name), "dclk_vp%d", vp->id);
++		vp->dclk_rst = devm_reset_control_get_optional(vop2->dev, dclk_name);
++		if (IS_ERR(vp->dclk_rst)) {
++		        drm_err(vop2->drm, "failed to get %s reset\n", dclk_name);
++		        return PTR_ERR(vp->dclk_rst);
++		}
++
+ 		vp->dclk = devm_clk_get(vop2->dev, dclk_name);
+ 		if (IS_ERR(vp->dclk)) {
+ 			drm_err(vop2->drm, "failed to get %s\n", dclk_name);
+
+--- a/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3588-base.dtsi
+@@ -1268,6 +1268,18 @@ vop: vop@fdd90000 {
+ 			      "pclk_vop";
+ 		iommus = <&vop_mmu>;
+ 		power-domains = <&power RK3588_PD_VOP>;
++		resets = <&cru SRST_A_VOP>,
++			 <&cru SRST_H_VOP>,
++			 <&cru SRST_D_VOP0>,
++			 <&cru SRST_D_VOP1>,
++			 <&cru SRST_D_VOP2>,
++			 <&cru SRST_D_VOP3>;
++		reset-names = "aclk",
++			      "hclk",
++			      "dclk_vp0",
++			      "dclk_vp1",
++			      "dclk_vp2",
++			      "dclk_vp3";
+ 		rockchip,grf = <&sys_grf>;
+ 		rockchip,vop-grf = <&vop_grf>;
+ 		rockchip,vo1-grf = <&vo1_grf>;

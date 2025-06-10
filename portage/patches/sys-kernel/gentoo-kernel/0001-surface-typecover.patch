@@ -190,7 +190,7 @@
  	struct mt_device *td = hid_get_drvdata(hdev);
  
 +	unregister_pm_notifier(&td->pm_notifier);
- 	del_timer_sync(&td->release_timer);
+ 	timer_delete_sync(&td->release_timer);
  
  	sysfs_remove_group(&hdev->dev.kobj, &mt_attribute_group);
 @@ -2299,6 +2390,11 @@
