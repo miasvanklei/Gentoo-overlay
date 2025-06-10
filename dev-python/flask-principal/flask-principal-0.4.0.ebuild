@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 PYPI_NO_NORMALIZE="True"
 PYPI_PN="Flask-Principal"
 DISTUTILS_USE_PEP517=setuptools
