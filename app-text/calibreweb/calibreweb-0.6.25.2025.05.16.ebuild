@@ -4,7 +4,7 @@
 EAPI=8
 
 DISTUTILS_USE_PEP517=setuptools
-PYTHON_COMPAT=( python3_{11..13} )
+PYTHON_COMPAT=( python3_{11..14} )
 GIT_COMMIT="0af52f205358b0147ee3430f9e6c8fe007c0ea77"
 
 inherit distutils-r1 pypi systemd
