@@ -40,8 +40,8 @@ EGO_SUM=(
 "google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f/go.mod"
 "google.golang.org/grpc v1.70.0"
 "google.golang.org/grpc v1.70.0/go.mod"
-"google.golang.org/protobuf v1.36.4"
-"google.golang.org/protobuf v1.36.4/go.mod"
+"google.golang.org/protobuf v1.36.6"
+"google.golang.org/protobuf v1.36.6/go.mod"
 )
 
 go-module_set_globals
@@ -49,7 +49,7 @@ go-module_set_globals
 DESCRIPTION="OCI-based implementation of Kubernetes Container Runtime Interface"
 HOMEPAGE="https://cri-o.io/"
 SRC_URI="
-	https://github.com/grpc/grpc-go/archive/refs/tags/v1.71.0.tar.gz -> grpc-go-${PV}.tar.gz
+	https://github.com/grpc/grpc-go/archive/refs/tags/v${PV}.tar.gz -> grpc-go-${PV}.tar.gz
 	${EGO_SUM_SRC_URI}
 "
 
