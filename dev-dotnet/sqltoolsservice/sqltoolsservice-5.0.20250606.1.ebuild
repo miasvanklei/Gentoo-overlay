@@ -9,17 +9,18 @@ NUGET_APIS=(
 	"https://www.powershellgallery.com/api/v2"
 )
 NUGETS="
+azure.ai.openai@2.2.0-beta.1
 azure.core@1.24.0
 azure.core@1.25.0
 azure.core@1.35.0
 azure.core@1.38.0
 azure.core@1.40.0
 azure.core@1.41.0
+azure.core@1.44.1
 azure.identity@1.10.3
 azure.identity@1.11.1
 azure.identity@1.11.4
 azure.identity@1.12.0
-azure.identity@1.3.0
 azure.identity@1.6.0
 azure.identity@1.7.0
 azure.resourcemanager.sql@1.0.0
@@ -32,6 +33,7 @@ coverlet.msbuild@6.0.0
 enterpriselibrary.transientfaulthandling.core@2.0.0
 humanizer.core@2.14.1
 microsoft.applicationinsights@2.21.0
+microsoft.applicationinsights@2.23.0
 microsoft.azure.keyvault.webkey@3.0.4
 microsoft.azure.keyvault@3.0.4
 microsoft.azure.kusto.cloud.platform.msal@12.2.3
@@ -43,8 +45,10 @@ microsoft.azure.management.sql@1.41.0-preview
 microsoft.azure.operationalinsights@1.0.0
 microsoft.bcl.asyncinterfaces@1.1.0
 microsoft.bcl.asyncinterfaces@1.1.1
+microsoft.bcl.asyncinterfaces@6.0.0
 microsoft.bcl.asyncinterfaces@7.0.0
 microsoft.bcl.asyncinterfaces@8.0.0
+microsoft.bcl.hashcode@1.1.1
 microsoft.build.centralpackageversions@2.0.52
 microsoft.build.framework@15.9.20
 microsoft.build.framework@17.3.2
@@ -72,9 +76,14 @@ microsoft.data.sqlclient@5.1.1
 microsoft.data.sqlclient@5.1.5
 microsoft.data.sqlclient@5.1.6
 microsoft.data.sqlclient@5.2.0
+microsoft.extensions.ai.abstractions@9.3.0-preview.1.25114.11
 microsoft.extensions.dependencyinjection.abstractions@7.0.0
+microsoft.extensions.dependencyinjection.abstractions@8.0.2
+microsoft.extensions.dependencyinjection@8.0.1
 microsoft.extensions.dependencymodel@8.0.0
 microsoft.extensions.filesystemglobbing@8.0.0
+microsoft.extensions.logging.abstractions@8.0.2
+microsoft.extensions.vectordata.abstractions@9.0.0-preview.1.25078.1
 microsoft.identity.client.extensions.msal@2.19.3
 microsoft.identity.client.extensions.msal@4.60.3
 microsoft.identity.client.extensions.msal@4.61.3
@@ -101,7 +110,6 @@ microsoft.net.test.sdk@17.7.2
 microsoft.netcore.platforms@1.0.1
 microsoft.netcore.platforms@1.1.0
 microsoft.netcore.platforms@1.1.1
-microsoft.netcore.platforms@2.0.0
 microsoft.netcore.platforms@3.1.0
 microsoft.netcore.platforms@5.0.0
 microsoft.netcore.targets@1.1.0
@@ -114,6 +122,11 @@ microsoft.rest.clientruntime@2.3.17
 microsoft.rest.clientruntime@2.3.19
 microsoft.rest.clientruntime@2.3.20
 microsoft.rest.clientruntime@2.3.21
+microsoft.semantickernel.abstractions@1.38.0
+microsoft.semantickernel.connectors.azureopenai@1.38.0
+microsoft.semantickernel.connectors.openai@1.38.0
+microsoft.semantickernel.core@1.38.0
+microsoft.semantickernel@1.38.0
 microsoft.sourcelink.common@1.1.1
 microsoft.sourcelink.github@1.1.1
 microsoft.sqlserver.assessment.authoring@1.1.0
@@ -123,7 +136,7 @@ microsoft.sqlserver.assessment@1.1.9
 microsoft.sqlserver.dacfx.projects@0.4.0-preview
 microsoft.sqlserver.dacfx@162.3.563
 microsoft.sqlserver.dacfx@170.0.64-preview
-microsoft.sqlserver.dacfx@170.0.82-preview
+microsoft.sqlserver.dacfx@170.1.31-preview
 microsoft.sqlserver.management.smometadataprovider@170.18.0
 microsoft.sqlserver.management.sqlparser@160.22523.0
 microsoft.sqlserver.management.sqlparser@172.18.0
@@ -133,7 +146,7 @@ microsoft.sqlserver.server@1.0.0
 microsoft.sqlserver.sqlmanagementobjects@170.18.0
 microsoft.sqlserver.sqlmanagementobjects@172.64.0
 microsoft.sqlserver.transactsql.scriptdom@161.9118.2
-microsoft.sqlserver.transactsql.scriptdom@170.18.0
+microsoft.sqlserver.transactsql.scriptdom@170.44.0
 microsoft.sqlserver.types@160.1000.6
 microsoft.sqlserver.xevent.xelite@2023.1.30.3
 microsoft.testplatform.objectmodel@17.7.2
@@ -163,6 +176,7 @@ nunit.extension.teamcityeventlistener@1.0.7
 nunit.extension.vsprojectloader@3.8.0
 nunit3testadapter@4.5.0
 nunit@3.13.3
+openai@2.2.0-beta.1
 runtime.any.system.collections@4.3.0
 runtime.any.system.diagnostics.tools@4.3.0
 runtime.any.system.diagnostics.tracing@4.3.0
@@ -230,6 +244,8 @@ system.appcontext@4.3.0
 system.buffers@4.3.0
 system.buffers@4.5.1
 system.clientmodel@1.0.0
+system.clientmodel@1.1.0
+system.clientmodel@1.2.1
 system.codedom@4.7.0
 system.codedom@6.0.0
 system.collections.concurrent@4.0.12
@@ -244,7 +260,6 @@ system.collections@4.0.11
 system.collections@4.3.0
 system.componentmodel.annotations@5.0.0
 system.componentmodel.composition@4.7.0
-system.componentmodel.composition@6.0.0
 system.componentmodel.composition@8.0.0
 system.componentmodel.primitives@4.3.0
 system.componentmodel.typeconverter@4.3.0
@@ -276,12 +291,12 @@ system.diagnostics.debug@4.0.11
 system.diagnostics.debug@4.3.0
 system.diagnostics.diagnosticsource@4.3.0
 system.diagnostics.diagnosticsource@4.6.0
-system.diagnostics.diagnosticsource@4.7.0
 system.diagnostics.diagnosticsource@5.0.0
 system.diagnostics.diagnosticsource@5.0.1
 system.diagnostics.diagnosticsource@6.0.0
 system.diagnostics.diagnosticsource@6.0.1
 system.diagnostics.diagnosticsource@8.0.0
+system.diagnostics.diagnosticsource@8.0.1
 system.diagnostics.eventlog@8.0.0
 system.diagnostics.eventlog@9.0.0-rc.2.24473.5
 system.diagnostics.performancecounter@5.0.0
@@ -321,6 +336,7 @@ system.linq@4.1.0
 system.linq@4.3.0
 system.management@6.0.0
 system.memory.data@1.0.2
+system.memory.data@6.0.0
 system.memory@4.5.3
 system.memory@4.5.4
 system.memory@4.5.5
@@ -329,6 +345,7 @@ system.net.http@4.3.4
 system.net.nameresolution@4.3.0
 system.net.primitives@4.3.0
 system.net.sockets@4.3.0
+system.numerics.tensors@8.0.0
 system.numerics.vectors@4.4.0
 system.numerics.vectors@4.5.0
 system.objectmodel@4.0.12
@@ -339,9 +356,7 @@ system.reactive.core@3.1.1
 system.reactive.core@6.0.0
 system.reactive.interfaces@3.1.1
 system.reactive@6.0.0
-system.reflection.emit.ilgeneration@4.0.1
 system.reflection.emit.ilgeneration@4.3.0
-system.reflection.emit.lightweight@4.0.1
 system.reflection.emit.lightweight@4.3.0
 system.reflection.emit@4.0.1
 system.reflection.emit@4.3.0
@@ -410,7 +425,7 @@ system.security.principal.windows@5.0.0
 system.security.principal@4.3.0
 system.text.encoding.codepages@4.0.1
 system.text.encoding.codepages@4.4.0
-system.text.encoding.codepages@4.7.0
+system.text.encoding.codepages@6.0.0
 system.text.encoding.codepages@8.0.0
 system.text.encoding.extensions@4.3.0
 system.text.encoding@4.3.0
@@ -445,7 +460,6 @@ system.valuetuple@4.4.0
 system.valuetuple@4.5.0
 system.windows.extensions@5.0.0
 system.windows.extensions@6.0.0
-system.windows.extensions@7.0.0
 system.windows.extensions@8.0.0
 system.xml.readerwriter@4.3.0
 system.xml.xdocument@4.3.0
