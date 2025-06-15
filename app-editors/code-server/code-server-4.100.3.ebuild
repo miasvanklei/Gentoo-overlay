@@ -70,11 +70,11 @@ RESTRICT="test"
 
 BDEPEND="
 	app-misc/jq
-	net-libs/nodejs:0/20[npm]
+	net-libs/nodejs:0/22[npm]
 "
 RDEPEND="
 	${DEPEND}
-	net-libs/nodejs:0/20[npm,ssl]
+	net-libs/nodejs:0/22[npm,ssl]
 	sys-apps/ripgrep
 "
 
