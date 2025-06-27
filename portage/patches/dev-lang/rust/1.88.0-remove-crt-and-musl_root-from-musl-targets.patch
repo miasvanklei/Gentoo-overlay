@@ -31,20 +31,19 @@
          (LinkOutputKind::DynamicNoPicExe, &["crt2.o", "rsbegin.o"]),
 --- a/compiler/rustc_target/src/spec/base/linux_musl.rs	2020-12-31 19:07:19.216270236 +0100
 +++ b/compiler/rustc_target/src/spec/base/linux_musl.rs	2020-12-31 19:07:53.639438587 +0100
-@@ -1,12 +1,9 @@
+@@ -1,11 +1,8 @@
 -use crate::spec::{LinkSelfContainedDefault, TargetOptions, base, crt_objects};
 +use crate::spec::{TargetOptions, base};
 
  pub(crate) fn opts() -> TargetOptions {
-     let mut base = base::linux::opts();
-
-     base.env = "musl".into();
--    base.pre_link_objects_self_contained = crt_objects::pre_musl_self_contained();
--    base.post_link_objects_self_contained = crt_objects::post_musl_self_contained();
--    base.link_self_contained = LinkSelfContainedDefault::InferredForMusl;
-
-     // These targets statically link libc by default
-     base.crt_static_default = false;
+     TargetOptions {
+         env: "musl".into(),
+-        pre_link_objects_self_contained: crt_objects::pre_musl_self_contained(),
+-        post_link_objects_self_contained: crt_objects::post_musl_self_contained(),
+-        link_self_contained: LinkSelfContainedDefault::InferredForMusl,
+         ..base::linux::opts()
+     }
+ }
 --- a/src/bootstrap/src/core/config/config.rs	2025-03-31 23:37:24.000000000 +0200
 +++ b/src/bootstrap/src/core/config/config.rs	2025-04-14 19:10:47.295277885 +0200
 @@ -576,7 +576,7 @@
