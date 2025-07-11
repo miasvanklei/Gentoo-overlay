@@ -4,7 +4,7 @@
 EAPI=8
 
 # keep in sync with dotnet-runtime
-DOTNET_RUNTIME_PV="9.0.6"
+DOTNET_RUNTIME_PV="9.0.7"
 SDK="${PN}-${PV}-linux-musl"
 
 inherit dotnet-utils
