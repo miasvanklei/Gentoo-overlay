@@ -1,0 +1,23 @@
+--- a/vendor/github.com/containers/storage/pkg/idtools/idtools_supported.go	2025-07-10 17:11:53.683865661 +0200
++++ b/vendor/github.com/containers/storage/pkg/idtools/idtools_supported.go	2025-07-10 17:11:00.576472203 +0200
+@@ -20,6 +18,11 @@
+     return ranges[i];
+ }
+ 
++bool subid_init_stderr(const char *progname)
++{
++    return subid_init(progname, stderr);
++}
++
+ #if !defined(SUBID_ABI_MAJOR) || (SUBID_ABI_MAJOR < 4)
+ # define subid_init libsubid_init
+ # define subid_get_uid_ranges get_subuid_ranges
+@@ -44,7 +47,7 @@
+ 	}
+ 
+ 	onceInit.Do(func() {
+-		C.subid_init(C.CString("storage"), C.stderr)
++		C.subid_init_stderr(C.CString("storage"))
+ 	})
+ 
+ 	cUsername := C.CString(username)
