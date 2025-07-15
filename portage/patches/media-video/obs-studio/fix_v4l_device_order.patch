@@ -55,7 +55,7 @@ diff --git a/plugins/linux-v4l2/v4l2-input.c b/plugins/linux-v4l2/v4l2-input.c
 index f8175737a0e73b..c8e6367057c289 100644
 --- a/plugins/linux-v4l2/v4l2-input.c
 +++ b/plugins/linux-v4l2/v4l2-input.c
-@@ -70,7 +70,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+@@ -68,7 +64,8 @@
   */
  struct v4l2_data {
  	/* settings */
@@ -65,7 +65,7 @@ index f8175737a0e73b..c8e6367057c289 100644
  	int input;
  	int pixfmt;
  	int standard;
-@@ -97,6 +98,16 @@ struct v4l2_data {
+@@ -95,6 +92,16 @@
  	int timeout_frames;
  };
  
@@ -82,7 +82,7 @@ index f8175737a0e73b..c8e6367057c289 100644
  /* forward declarations */
  static void v4l2_init(struct v4l2_data *data);
  static void v4l2_terminate(struct v4l2_data *data);
-@@ -322,23 +333,22 @@ static void v4l2_defaults(obs_data_t *settings)
+@@ -306,21 +313,21 @@
  }
  
  /**
@@ -95,8 +95,7 @@ index f8175737a0e73b..c8e6367057c289 100644
 - * @param ignore ignore this property
   * @param enable enable/disable all properties
   */
--static void v4l2_props_set_enabled(obs_properties_t *props,
--				   obs_property_t *ignore, bool enable)
+-static void v4l2_props_set_enabled(obs_properties_t *props, obs_property_t *ignore, bool enable)
 +static void cam_settings_props_set_enabled(obs_properties_t *props, bool enable)
  {
  	if (!props)
@@ -105,14 +104,13 @@ index f8175737a0e73b..c8e6367057c289 100644
 +	obs_property_t *type_prop = obs_properties_get(props, "selection_type");
 +	obs_property_t *id_prop = obs_properties_get(props, "device_id");
 +
- 	for (obs_property_t *prop = obs_properties_first(props); prop != NULL;
- 	     obs_property_next(&prop)) {
+ 	for (obs_property_t *prop = obs_properties_first(props); prop != NULL; obs_property_next(&prop)) {
 -		if (prop == ignore)
 +		if (prop == type_prop || prop == id_prop)
  			continue;
  
  		obs_property_set_enabled(prop, enable);
-@@ -346,107 +356,235 @@ static void v4l2_props_set_enabled(obs_properties_t *props,
+@@ -328,98 +335,211 @@
  }
  
  /*
@@ -120,8 +118,7 @@ index f8175737a0e73b..c8e6367057c289 100644
 + * Get capabilities of device
   */
 -static void v4l2_device_list(obs_property_t *prop, obs_data_t *settings)
-+static bool get_device_capabilities(char *dev_name,
-+				    struct v4l2_capability *video_cap)
++static bool get_device_capabilities(char *dev_name, struct v4l2_capability *video_cap)
  {
 -	DIR *dirp;
 +	int fd;
@@ -133,8 +130,7 @@ index f8175737a0e73b..c8e6367057c289 100644
 +	}
 +
 +	if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, video_cap) == -1) {
-+		blog(LOG_WARNING, "Failed to query capabilities for %s",
-+		     dev_name);
++		blog(LOG_WARNING, "Failed to query capabilities for %s", dev_name);
 +		v4l2_close(fd);
 +		return false;
 +	}
@@ -144,14 +140,11 @@ index f8175737a0e73b..c8e6367057c289 100644
 +	caps = video_cap->capabilities;
 +#else
 +	/* ... since Linux 3.3 */
-+	caps = (video_cap->capabilities & V4L2_CAP_DEVICE_CAPS)
-+		       ? video_cap->device_caps
-+		       : video_cap->capabilities;
++	caps = (video_cap->capabilities & V4L2_CAP_DEVICE_CAPS) ? video_cap->device_caps : video_cap->capabilities;
 +#endif
 +
 +	if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
-+		blog(LOG_WARNING, "%s seems to not support video capture",
-+		     dev_name);
++		blog(LOG_WARNING, "%s seems to not support video capture", dev_name);
 +		return false;
 +	}
 +
@@ -161,9 +154,7 @@ index f8175737a0e73b..c8e6367057c289 100644
 +/*
 + * Build UI list of video devices available at path
 + */
-+static void v4l2_device_add_devices_from(const char *basedir,
-+					 enum v4l2_device_entry_type type,
-+					 obs_property_t *prop)
++static void v4l2_device_add_devices_from(const char *basedir, enum v4l2_device_entry_type type, obs_property_t *prop)
 +{
 +	struct v4l2_device_entry *current_device = NULL;
 +
@@ -226,8 +217,7 @@ index f8175737a0e73b..c8e6367057c289 100644
 -		dstr_resize(&device, 5);
 -		dstr_cat(&device, dp->d_name);
 +			struct v4l2_capability video_cap;
-+			if (!get_device_capabilities(full_path.array,
-+						     &video_cap)) {
++			if (!get_device_capabilities(full_path.array, &video_cap)) {
 +				goto next_entry;
 +			}
  
@@ -237,13 +227,15 @@ index f8175737a0e73b..c8e6367057c289 100644
 -		}
 +			if (type == DEVICE_OTHER && current_device != NULL) {
 +				bool device_already_added = false;
-+
-+				struct v4l2_device_entry *iter_device =
-+					current_device;
+ 
+-		if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, &video_cap) == -1) {
+-			blog(LOG_INFO, "Failed to query capabilities for %s", device.array);
+-			v4l2_close(fd);
+-			continue;
+-		}
++				struct v4l2_device_entry *iter_device = current_device;
 +				while (iter_device->next != NULL) {
-+					if (strncmp(real_path,
-+						    iter_device->real_path.array,
-+						    PATH_MAX) == 0) {
++					if (strncmp(real_path, iter_device->real_path.array, PATH_MAX) == 0) {
 +						device_already_added = true;
 +						break;
 +					}
@@ -255,39 +247,39 @@ index f8175737a0e73b..c8e6367057c289 100644
 +				}
 +			}
  
--		if (v4l2_ioctl(fd, VIDIOC_QUERYCAP, &video_cap) == -1) {
--			blog(LOG_INFO, "Failed to query capabilities for %s",
--			     device.array);
+-#ifndef V4L2_CAP_DEVICE_CAPS
+-		caps = video_cap.capabilities;
+-#else
+-		/* ... since Linux 3.3 */
+-		caps = (video_cap.capabilities & V4L2_CAP_DEVICE_CAPS) ? video_cap.device_caps : video_cap.capabilities;
+-#endif
++			char label[PATH_MAX];
++			snprintf(label, PATH_MAX, "%s (%s)", video_cap.card, dp->d_name);
+ 
+-		if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
+-			blog(LOG_INFO, "%s seems to not support video capture", device.array);
 -			v4l2_close(fd);
 -			continue;
-+			char label[PATH_MAX];
-+			snprintf(label, PATH_MAX, "%s (%s)", video_cap.card,
-+				 dp->d_name);
-+
 +			struct v4l2_device_entry *last_device;
 +			if (current_device == NULL) {
-+				current_device = bzalloc(
-+					sizeof(struct v4l2_device_entry));
++				current_device = bzalloc(sizeof(struct v4l2_device_entry));
 +				last_device = current_device;
 +			} else {
 +				last_device = current_device;
 +				while (last_device->next != NULL) {
 +					last_device = last_device->next;
 +				}
-+				last_device->next = bzalloc(
-+					sizeof(struct v4l2_device_entry));
++				last_device->next = bzalloc(sizeof(struct v4l2_device_entry));
 +				last_device = last_device->next;
 +			}
 +
 +			last_device->next = NULL;
 +			last_device->type = type;
 +			dstr_init_copy(&last_device->label, label);
-+			dstr_init_copy(&last_device->device_id,
-+				       full_path.array);
++			dstr_init_copy(&last_device->device_id, full_path.array);
 +			dstr_init_copy(&last_device->real_path, real_path);
 +
-+			blog(LOG_INFO, "Found device '%s' at %s",
-+			     video_cap.card, full_path.array);
++			blog(LOG_INFO, "Found device '%s' at %s", video_cap.card, full_path.array);
 +		next_entry:
 +			free(dp);
 +			bfree(real_path);
@@ -295,15 +287,24 @@ index f8175737a0e73b..c8e6367057c289 100644
 +		free(namelist);
 +	}
  
--#ifndef V4L2_CAP_DEVICE_CAPS
--		caps = video_cap.capabilities;
+-		/* make sure device names are unique */
+-		char unique_device_name[68];
+-		int ret = snprintf(unique_device_name, sizeof(unique_device_name), "%s (%s)", video_cap.card,
+-				   video_cap.bus_info);
+-		if (ret >= (int)sizeof(unique_device_name))
+-			blog(LOG_DEBUG, "linux-v4l2: A format truncation may have occurred."
+-					" This can be ignored since it is quite improbable.");
 +	dstr_free(&full_path);
-+
+ 
+-		obs_property_list_add_string(prop, unique_device_name, device.array);
+-		blog(LOG_INFO, "Found device '%s' at %s", video_cap.card, device.array);
 +	/* Populate the UI list with the found devices and free the created device data list */
 +	while (current_device != NULL) {
-+		obs_property_list_add_string(prop, current_device->label.array,
-+					     current_device->device_id.array);
-+
++		obs_property_list_add_string(prop, current_device->label.array, current_device->device_id.array);
+ 
+-		/* check if this is the currently used device */
+-		if (cur_device_name && !strcmp(cur_device_name, device.array))
+-			cur_device_found = true;
 +		dstr_free(&current_device->label);
 +		dstr_free(&current_device->device_id);
 +		dstr_free(&current_device->real_path);
@@ -312,9 +313,9 @@ index f8175737a0e73b..c8e6367057c289 100644
 +		current_device = next_device;
 +	}
 +}
-+
-+static enum v4l2_device_entry_type
-+get_device_type_from_id(const char *device_id)
+ 
+-		v4l2_close(fd);
++static enum v4l2_device_entry_type get_device_type_from_id(const char *device_id)
 +{
 +	enum v4l2_device_entry_type type = DEVICE_OTHER;
 +	if (strstr(device_id, "/by-id/")) {
@@ -331,28 +332,20 @@ index f8175737a0e73b..c8e6367057c289 100644
 + */
 +static void v4l2_device_list(obs_property_t *prop, obs_data_t *settings)
 +{
-+	const char *cur_device_name =
-+		obs_data_get_string(settings, "device_id");
++	const char *cur_device_name = obs_data_get_string(settings, "device_id");
 +	obs_property_list_clear(prop);
 +
 +#ifdef __FreeBSD__
 +	v4l2_device_add_devices_from("/dev/", DEVICE_OTHER, prop);
- #else
--		/* ... since Linux 3.3 */
--		caps = (video_cap.capabilities & V4L2_CAP_DEVICE_CAPS)
--			       ? video_cap.device_caps
--			       : video_cap.capabilities;
-+	enum v4l2_device_entry_type sel_type =
-+		obs_data_get_int(settings, "selection_type");
++#else
++	enum v4l2_device_entry_type sel_type = obs_data_get_int(settings, "selection_type");
 +
 +	switch (sel_type) {
 +	case DEVICE_BY_ID:
-+		v4l2_device_add_devices_from("/dev/v4l/by-id/", DEVICE_BY_ID,
-+					     prop);
++		v4l2_device_add_devices_from("/dev/v4l/by-id/", DEVICE_BY_ID, prop);
 +		break;
 +	case DEVICE_BY_PATH:
-+		v4l2_device_add_devices_from("/dev/v4l/by-path/",
-+					     DEVICE_BY_PATH, prop);
++		v4l2_device_add_devices_from("/dev/v4l/by-path/", DEVICE_BY_PATH, prop);
 +		break;
 +	case DEVICE_OTHER:
 +		v4l2_device_add_devices_from("/dev/", DEVICE_OTHER, prop);
@@ -363,53 +356,26 @@ index f8175737a0e73b..c8e6367057c289 100644
 +		/* Exit early as we don't want to the current device if its type doesn't match. */
 +		return;
 +	}
- #endif
- 
--		if (!(caps & V4L2_CAP_VIDEO_CAPTURE)) {
--			blog(LOG_INFO, "%s seems to not support video capture",
--			     device.array);
--			v4l2_close(fd);
--			continue;
--		}
++#endif
++
 +	/* Check if we should add the currently selected device to the list.
 +	 * This is so that we don't remove or clear an unplugged device that has previously been selected.
 +	 */
- 
--		/* make sure device names are unique */
--		char unique_device_name[68];
--		int ret = snprintf(unique_device_name,
--				   sizeof(unique_device_name), "%s (%s)",
--				   video_cap.card, video_cap.bus_info);
--		if (ret >= (int)sizeof(unique_device_name))
--			blog(LOG_DEBUG,
--			     "linux-v4l2: A format truncation may have occurred."
--			     " This can be ignored since it is quite improbable.");
--
--		obs_property_list_add_string(prop, unique_device_name,
--					     device.array);
--		blog(LOG_INFO, "Found device '%s' at %s", video_cap.card,
--		     device.array);
--
--		/* check if this is the currently used device */
--		if (cur_device_name && !strcmp(cur_device_name, device.array))
++
 +	bool cur_device_found = false;
 +	size_t listidx = 0;
 +	const char *item_name;
-+	while (NULL !=
-+	       (item_name = obs_property_list_item_string(prop, listidx++))) {
++	while (NULL != (item_name = obs_property_list_item_string(prop, listidx++))) {
 +		if (0 == strcmp(item_name, cur_device_name)) {
- 			cur_device_found = true;
--
--		v4l2_close(fd);
++			cur_device_found = true;
 +			break;
 +		}
  	}
  
  	/* add currently selected device if not present, but disable it ... */
  	if (!cur_device_found && cur_device_name && strlen(cur_device_name)) {
--		cur_device_index = obs_property_list_add_string(
-+		size_t cur_device_index = obs_property_list_add_string(
- 			prop, cur_device_name, cur_device_name);
+-		cur_device_index = obs_property_list_add_string(prop, cur_device_name, cur_device_name);
++		size_t cur_device_index = obs_property_list_add_string(prop, cur_device_name, cur_device_name);
  		obs_property_list_item_disable(prop, cur_device_index, true);
  	}
 -
@@ -418,31 +384,28 @@ index f8175737a0e73b..c8e6367057c289 100644
  }
  
  /*
-@@ -663,10 +801,11 @@ static void v4l2_framerate_list(int dev, uint_fast32_t pixelformat,
- static bool device_selected(obs_properties_t *props, obs_property_t *p,
- 			    obs_data_t *settings)
+@@ -616,9 +736,10 @@
+  */
+ static bool device_selected(obs_properties_t *props, obs_property_t *p, obs_data_t *settings)
  {
 +	UNUSED_PARAMETER(p);
- 	int dev = v4l2_open(obs_data_get_string(settings, "device_id"),
- 			    O_RDWR | O_NONBLOCK);
+ 	int dev = v4l2_open(obs_data_get_string(settings, "device_id"), O_RDWR | O_NONBLOCK);
  
 -	v4l2_props_set_enabled(props, p, (dev == -1) ? false : true);
 +	cam_settings_props_set_enabled(props, (dev == -1) ? false : true);
  
  	if (dev == -1)
  		return false;
-@@ -788,6 +927,62 @@ static bool resolution_selected(obs_properties_t *props, obs_property_t *p,
- }
+@@ -727,6 +848,61 @@
  
  #if HAVE_UDEV
-+/**
+ /**
 + * Converts /dev/video0 to /dev/v4l/by-id/usb-046d_Logitech_BRIO_0D26FE7B-video-index0
 + *
 + * If not found returns NULL
 + * Use bfree to deallocate
 + */
-+static char *find_device_id_by_real_path(const char *device_added_real_path,
-+					 enum v4l2_device_entry_type type)
++static char *find_device_id_by_real_path(const char *device_added_real_path, enum v4l2_device_entry_type type)
 +{
 +	DIR *dirp;
 +	struct dirent *dp;
@@ -491,10 +454,11 @@ index f8175737a0e73b..c8e6367057c289 100644
 +	return ret_val;
 +}
 +
- /**
++/**
   * Device added callback
   *
-@@ -800,15 +995,29 @@ static void device_added(void *vptr, calldata_t *calldata)
+  * If everything went fine we can start capturing again when the device is
+@@ -738,15 +914,26 @@
  
  	obs_source_update_properties(data->source);
  
@@ -505,12 +469,9 @@ index f8175737a0e73b..c8e6367057c289 100644
  
 -	if (strcmp(data->device_id, dev))
 -		return;
-+	enum v4l2_device_entry_type type =
-+		get_device_type_from_id(data->device_id);
- 
--	blog(LOG_INFO, "Device %s reconnected", dev);
-+	char *device_added_device_id =
-+		find_device_id_by_real_path(device_added_real_path, type);
++	enum v4l2_device_entry_type type = get_device_type_from_id(data->device_id);
++
++	char *device_added_device_id = find_device_id_by_real_path(device_added_real_path, type);
 +
 +	if (NULL == device_added_device_id) {
 +		goto fail;
@@ -518,9 +479,9 @@ index f8175737a0e73b..c8e6367057c289 100644
 +
 +	if (strcmp(device_added_device_id, data->device_id))
 +		goto fail;
-+
-+	blog(LOG_INFO, "Device %s reconnected, is opened as %s",
-+	     device_added_device_id, data->device_id);
+ 
+-	blog(LOG_INFO, "Device %s reconnected", dev);
++	blog(LOG_INFO, "Device %s reconnected, is opened as %s", device_added_device_id, data->device_id);
  
  	v4l2_init(data);
 +fail:
@@ -529,7 +490,7 @@ index f8175737a0e73b..c8e6367057c289 100644
  }
  /**
   * Device removed callback
-@@ -824,22 +1033,50 @@ static void device_removed(void *vptr, calldata_t *calldata)
+@@ -762,22 +949,43 @@
  	const char *dev;
  	calldata_get_string(calldata, "device", &dev);
  
@@ -538,8 +499,7 @@ index f8175737a0e73b..c8e6367057c289 100644
  		return;
  
 -	blog(LOG_INFO, "Device %s disconnected", dev);
-+	blog(LOG_INFO, "Device %s disconnected, was opened as %s", dev,
-+	     data->device_id);
++	blog(LOG_INFO, "Device %s disconnected, was opened as %s", dev, data->device_id);
  
  	v4l2_terminate(data);
  }
@@ -547,8 +507,7 @@ index f8175737a0e73b..c8e6367057c289 100644
  #endif
  
 +#ifndef __FreeBSD__
-+static bool type_selected(obs_properties_t *props, obs_property_t *p,
-+			  obs_data_t *settings)
++static bool type_selected(obs_properties_t *props, obs_property_t *p, obs_data_t *settings)
 +{
 +	UNUSED_PARAMETER(p);
 +	obs_property_t *device_list = obs_properties_get(props, "device_id");
@@ -563,26 +522,21 @@ index f8175737a0e73b..c8e6367057c289 100644
  
  	obs_properties_t *props = obs_properties_create();
  
-+	obs_property_t *device_selection_type_list = obs_properties_add_list(
-+		props, "selection_type", obs_module_text("V4L.SelectionType"),
-+		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
++	obs_property_t *device_selection_type_list = obs_properties_add_list(props, "selection_type",
++									     obs_module_text("V4L.SelectionType"),
++									     OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_INT);
 +#ifndef __FreeBSD__
-+	obs_property_set_modified_callback(device_selection_type_list,
-+					   type_selected);
++	obs_property_set_modified_callback(device_selection_type_list, type_selected);
 +
-+	obs_property_list_add_int(device_selection_type_list,
-+				  obs_module_text("V4L.ById"), DEVICE_BY_ID);
-+	obs_property_list_add_int(device_selection_type_list,
-+				  obs_module_text("V4L.ByPath"),
-+				  DEVICE_BY_PATH);
++	obs_property_list_add_int(device_selection_type_list, obs_module_text("V4L.ById"), DEVICE_BY_ID);
++	obs_property_list_add_int(device_selection_type_list, obs_module_text("V4L.ByPath"), DEVICE_BY_PATH);
 +#endif
-+	obs_property_list_add_int(device_selection_type_list,
-+				  obs_module_text("V4L.Other"), DEVICE_OTHER);
++	obs_property_list_add_int(device_selection_type_list, obs_module_text("V4L.Other"), DEVICE_OTHER);
 +
- 	obs_property_t *device_list = obs_properties_add_list(
- 		props, "device_id", obs_module_text("Device"),
- 		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
-@@ -945,6 +1182,9 @@ static void v4l2_destroy(void *vptr)
+ 	obs_property_t *device_list = obs_properties_add_list(props, "device_id", obs_module_text("Device"),
+ 							      OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
+ 
+@@ -861,6 +1069,9 @@
  	if (data->device_id)
  		bfree(data->device_id);
  
@@ -592,7 +546,7 @@ index f8175737a0e73b..c8e6367057c289 100644
  #if HAVE_UDEV
  	signal_handler_t *sh = v4l2_get_udev_signalhandler();
  
-@@ -1148,6 +1388,9 @@ static void v4l2_update(void *vptr, obs_data_t *settings)
+@@ -1047,6 +1258,9 @@
  	if (data->device_id)
  		bfree(data->device_id);
  
@@ -602,7 +556,7 @@ index f8175737a0e73b..c8e6367057c289 100644
  	data->device_id = bstrdup(obs_data_get_string(settings, "device_id"));
  	data->input = obs_data_get_int(settings, "input");
  	data->pixfmt = obs_data_get_int(settings, "pixelformat");
-@@ -1159,6 +1402,8 @@ static void v4l2_update(void *vptr, obs_data_t *settings)
+@@ -1058,6 +1272,8 @@
  	data->auto_reset = obs_data_get_bool(settings, "auto_reset");
  	data->timeout_frames = obs_data_get_int(settings, "timeout_frames");
  
