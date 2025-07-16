@@ -19,16 +19,16 @@ STDLIBS=(
 	# repo    package name    hash
 	"JuliaIO ArgTools.jl 1314758ad02ff5e9e5ca718920c6c633b467a84a"
 	"JuliaData DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
-	"JuliaLang Distributed.jl 51e52978481835413d15b589919aba80dd85f890"
+	"JuliaLang Distributed.jl 3679026d7b510befdedfa8c6497e3cb032f9cea1"
 	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
-	"julialang JuliaSyntaxHighlighting.jl b7a1c636d3e9690bfbbfe917bb20f6cb112a3e6f"
+	"julialang JuliaSyntaxHighlighting.jl b666d3c98cca30d20d1e6f98c0e12c9350ffbc4c"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
-	"JuliaLang LinearAlgebra.jl 7264a497869f2232eaa3d740ba3b145ade3fc9f4"
-	"JuliaLang NetworkOptions.jl c090626d3feee6d6a5c476346d22d6147c9c6d2d"
-	"JuliaLang Pkg.jl 7aeec766cf637e2bc2af161eba8abd3a4b68d025"
+	"JuliaLang LinearAlgebra.jl 6cc040592fd509ee048658e9afb8a99a2dc20e1b"
+	"JuliaLang NetworkOptions.jl 532992fcc0f1d02df48374969cbae37e34c01360"
+	"JuliaLang Pkg.jl e7a2dfecbfe43cf1c32f1ccd1e98a4dca52726ee"
 	"JuliaCrypto SHA.jl 4451e1362e425bcbc1652ecf55fc0e525b18fb63"
-	"JuliaSparse SparseArrays.jl 72c7cac6bbf21367a3c2fbc5c50e908aea5984bb"
+	"JuliaSparse SparseArrays.jl cdbad55530fba0c7aa27d4bcc64dde2204ff133f"
 	"JuliaStats Statistics.jl 77bd5707f143eb624721a7df28ddef470e70ecef"
 	"JuliaLang StyledStrings.jl 3fe829fcf611b5fefaefb64df7e61f2ae82db117"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
@@ -41,7 +41,7 @@ BUNDLED_DEPS=(
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
-	"JuliaLinearAlgebra libblastrampoline b127bc8dd4758ffc064340fff2aef4ead552f386"
+	"JuliaLinearAlgebra libblastrampoline f26278e83ddc9035ae7695da597f1a5b26a4c62b"
 )
 
 update_SRC_URI() {

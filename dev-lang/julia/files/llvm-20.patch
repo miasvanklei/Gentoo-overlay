@@ -275,15 +275,6 @@ index fe2bd4fc3d097..fdc7552e733c8 100644
                  T_pjlvalue, // env
                  T_derived, // vals
              }, false);
-@@ -1443,7 +1443,7 @@ static const auto box_ssavalue_func = new JuliaFunction<TypeFnContextAndSizeT>{
- };
- static const auto jlgetbuiltinfptr_func = new JuliaFunction<>{
-     XSTR(jl_get_builtin_fptr),
--    [](LLVMContext &C) { return FunctionType::get(get_func_sig(C)->getPointerTo(),
-+    [](LLVMContext &C) { return FunctionType::get(getPointerTy(C),
-             {JuliaType::get_prjlvalue_ty(C)}, false); },
-     nullptr,
- };
 @@ -1523,7 +1523,7 @@ static const auto julia_call = new JuliaFunction<>{
      [](LLVMContext &C) {
          auto T_prjlvalue = JuliaType::get_prjlvalue_ty(C);
