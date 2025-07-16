@@ -18,7 +18,9 @@ RDEPEND="
 		>=media-sound/krecorder-${PV}:*
 	)
 	cdrom? (
+		>=media-sound/audex-${PV}
 		>=kde-apps/audiocd-kio-${PV}:*
+		>=kde-apps/k3b-${PV}:*
 		>=kde-apps/libkcddb-${PV}:*
 		>=kde-apps/libkcompactdisc-${PV}:*
 	)
@@ -26,9 +28,6 @@ RDEPEND="
 	video? ( >=kde-apps/kdenlive-${PV}:* )
 "
 
-#	cdrom? (
-#		>=kde-apps/k3b-${PV}:*
-#	)
 #	audio? (
 #		>=kde-apps/kwave-${PV}:*
 #	)
