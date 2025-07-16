@@ -22,7 +22,9 @@ CRATES="
 	camino@1.1.10
 	cargo-platform@0.2.0
 	cargo-util-schemas@0.2.0
+	cargo-util-schemas@0.8.2
 	cargo_metadata@0.20.0
+	cargo_metadata@0.21.0
 	cc@1.2.26
 	cfg-if@1.0.1
 	cfg_aliases@0.2.1
@@ -66,7 +68,6 @@ CRATES="
 	hashbrown@0.14.5
 	hashbrown@0.15.4
 	hashlink@0.10.0
-	heck@0.5.0
 	hermit-abi@0.5.2
 	home@0.5.11
 	icu_collections@2.0.0
@@ -81,6 +82,7 @@ CRATES="
 	indexmap@2.9.0
 	inotify-sys@0.1.5
 	inotify@0.11.0
+	intrusive-collections@0.9.7
 	itertools@0.12.1
 	itertools@0.14.0
 	itoa@1.0.15
@@ -120,6 +122,7 @@ CRATES="
 	oorandom@11.1.5
 	option-ext@0.2.0
 	ordered-float@2.10.1
+	papaya@0.2.3
 	parking_lot@0.12.4
 	parking_lot_core@0.9.11
 	paste@1.0.15
@@ -158,13 +161,14 @@ CRATES="
 	rustc-stable-hash@0.1.2
 	rustc_apfloat@0.2.3+llvm-462a31f5a5ab
 	ryu@1.0.20
-	salsa-macro-rules@0.22.0
-	salsa-macros@0.22.0
-	salsa@0.22.0
+	salsa-macro-rules@0.23.0
+	salsa-macros@0.23.0
+	salsa@0.23.0
 	same-file@1.0.6
 	scip@0.5.2
 	scoped-tls@1.0.1
 	scopeguard@1.2.0
+	seize@0.5.0
 	semver@1.0.26
 	serde-untagged@0.1.7
 	serde-value@0.7.0
