@@ -1,0 +1,737 @@
+--- a/src/aotcompile.cpp	2025-07-20 16:55:36.595871198 +0200
++++ b/src/aotcompile.cpp	2025-07-20 16:53:20.537730658 +0200
+@@ -509,7 +509,9 @@
+   auto *F = Function::Create(SF->getFunctionType(), SF->getLinkage(),
+                              SF->getAddressSpace(), SF->getName(), DstM);
+   F->copyAttributesFrom(SF);
++#if JL_LLVM_VERSION < 210000
+   F->IsNewDbgInfoFormat = SF->IsNewDbgInfoFormat;
++#endif
+ 
+   // Remove these copied constants since they point to the source module.
+   F->setPersonalityFn(nullptr);
+@@ -754,8 +756,11 @@
+     });
+     egal_set method_roots;
+     jl_codegen_params_t params(ctxt, std::move(target_info.first), std::move(target_info.second));
+-    if (!llvmmod)
+-        params.getContext().setDiscardValueNames(true);
++    if (!llvmmod) {
++        withJLContextDo(params.tsctx, [&](llvm::LLVMContext *ctx) {
++            ctx->setDiscardValueNames(true);
++        });
++    }
+     params.params = cgparams;
+     assert(params.imaging_mode); // `_imaging_mode` controls if broken features like code-coverage are disabled
+     params.external_linkage = external_linkage;
+@@ -1784,7 +1789,7 @@
+         }
+         output_timer.stopTimer();
+         // Don't need M anymore
+-        module_released(M);
++        module_released();
+ 
+         if (!report_timings) {
+             timer_group.clear();
+@@ -1814,7 +1819,7 @@
+     serialize_timer.stopTimer();
+ 
+     // Don't need M anymore, since we'll only read from serialized from now on
+-    module_released(M);
++    module_released();
+ 
+     output_timer.startTimer();
+ 
+@@ -2064,7 +2069,7 @@
+         // Note that we don't set z to null, this allows the check in WRITE_ARCHIVE
+         // to function as expected
+         // no need to free the module/context, destructor handles that
+-        sysimg_outputs = compile(sysimgM, "sysimg", 1, [](Module &) {});
++        sysimg_outputs = compile(sysimgM, "sysimg", 1, []() {});
+     }
+ 
+     const bool imaging_mode = true;
+@@ -2078,7 +2083,11 @@
+ 
+     data->M.withModuleDo([&](Module &dataM) {
+         JL_TIMING(NATIVE_AOT, NATIVE_Setup);
++#if JL_LLVM_VERSION >= 210000
++        dataM.setTargetTriple(TheTriple);
++#else
+         dataM.setTargetTriple(TheTriple.str());
++#endif
+         dataM.setDataLayout(DL);
+         dataM.setPICLevel(PICLevel::BigPIC);
+         auto &Context = dataM.getContext();
+@@ -2163,16 +2172,10 @@
+         has_veccall = !!dataM.getModuleFlag("julia.mv.veccall");
+     });
+ 
+-    {
+-        // Don't use withModuleDo here since we delete the TSM midway through
+-        auto TSCtx = data->M.getContext();
+-        auto lock = TSCtx.getLock();
+-        auto dataM = data->M.getModuleUnlocked();
+-
+-        // Delete data when add_output thinks it's done with it
+-        // Saves memory for use when multithreading
+-        data_outputs = compile(*dataM, "text", threads, [data](Module &) { delete data; });
+-    }
++    data_outputs = data->M.consumingModuleDo([&](std::unique_ptr<Module> M) {
++        Module *dataM = M.release();
++        return compile(*dataM, "text", threads, [dataM]() { delete dataM; });
++    });
+ 
+     if (params->emit_metadata) {
+         JL_TIMING(NATIVE_AOT, NATIVE_Metadata);
+@@ -2261,7 +2264,7 @@
+         }
+ 
+         // no need to free module/context, destructor handles that
+-        metadata_outputs = compile(metadataM, "data", 1, [](Module &) {});
++        metadata_outputs = compile(metadataM, "data", 1, []() {});
+     }
+ 
+     {
+@@ -2413,7 +2416,9 @@
+                     }
+                     else {
+                         auto p = literal_static_pointer_val(global.first, global.second->getValueType());
+-                        Type *elty = PointerType::get(output.getContext(), 0);
++                        Type *elty = withJLContextDo(output.tsctx, [&](llvm::LLVMContext *ctx) {
++                            return PointerType::get(*ctx, 0);
++                        });
+                         // For pretty printing, when LLVM inlines the global initializer into its loads
+                         auto alias = GlobalAlias::create(elty, 0, GlobalValue::PrivateLinkage, global.second->getName() + ".jit", p, global.second->getParent());
+                         global.second->setInitializer(ConstantExpr::getBitCast(alias, global.second->getValueType()));
+--- a/src/cgutils.cpp	2025-07-20 16:55:36.599871145 +0200
++++ b/src/cgutils.cpp	2025-07-20 16:53:20.537730658 +0200
+@@ -1010,7 +1010,11 @@
+ 
+     auto merged_ai = dst_ai.merge(src_ai);
+     ctx.builder.CreateMemCpy(dst, align_dst, src, align_src, sz, is_volatile,
++#if JL_LLVM_VERSION >= 210000
++                             merged_ai.toAAMDNodes());
++#else
+                              merged_ai.tbaa, merged_ai.tbaa_struct, merged_ai.scope, merged_ai.noalias);
++#endif
+ }
+ 
+ static void emit_memcpy_llvm(jl_codectx_t &ctx, Value *dst, jl_aliasinfo_t const &dst_ai, Value *src,
+@@ -1024,7 +1028,11 @@
+ 
+     auto merged_ai = dst_ai.merge(src_ai);
+     ctx.builder.CreateMemCpy(dst, align_dst, src, align_src, sz, is_volatile,
++#if JL_LLVM_VERSION >= 210000
++                             merged_ai.toAAMDNodes());
++#else
+                              merged_ai.tbaa, merged_ai.tbaa_struct, merged_ai.scope, merged_ai.noalias);
++#endif
+ }
+ 
+ template<typename T1>
+--- a/src/codegen.cpp	2025-07-20 16:55:36.603871091 +0200
++++ b/src/codegen.cpp	2025-07-20 16:53:20.537730658 +0200
+@@ -183,14 +183,20 @@
+ void setName(jl_codegen_params_t &params, Value *V, std::function<std::string()> GetName)
+ {
+     assert((isa<Constant>(V) || isa<Instruction>(V)) && "Should only set names on instructions!");
+-    if (!params.getContext().shouldDiscardValueNames() && !isa<Constant>(V))
+-        V->setName(Twine(GetName()));
++    bool shouldDiscardValueNames = withJLContextDo(params.tsctx, [&](llvm::LLVMContext *ctx) {
++        return ctx->shouldDiscardValueNames();
++    });
++    if (!shouldDiscardValueNames && !isa<Constant>(V))
++            V->setName(Twine(GetName()));
+ }
+ 
+ void setNameWithField(jl_codegen_params_t &params, Value *V, std::function<StringRef()> GetObjName, jl_datatype_t *jt, unsigned idx, const Twine &suffix)
+ {
+     assert((isa<Constant>(V) || isa<Instruction>(V)) && "Should only set names on instructions!");
+-    if (!params.getContext().shouldDiscardValueNames() && !isa<Constant>(V)) {
++    bool shouldDiscardValueNames = withJLContextDo(params.tsctx, [&](llvm::LLVMContext *ctx) {
++        return ctx->shouldDiscardValueNames();
++    });
++    if (!shouldDiscardValueNames && !isa<Constant>(V)) {
+         if (jl_is_tuple_type(jt)){
+             V->setName(Twine(GetObjName()) + "[" + Twine(idx + 1) + "]"+ suffix);
+             return;
+@@ -625,13 +631,19 @@
+ static FunctionType *get_func2_sig(LLVMContext &C) { return JuliaType::get_jlfunc2_ty(C); }
+ static FunctionType *get_func3_sig(LLVMContext &C) { return JuliaType::get_jlfunc3_ty(C); }
+ 
++#if JL_LLVM_VERSION >= 210000
++#define NOCAPTURE_ATTRIBUTE Attribute::Captures
++#else
++#define NOCAPTURE_ATTRIBUTE Attribute::NoCapture
++#endif
++
+ static AttributeList get_func_attrs(LLVMContext &C)
+ {
+     return AttributeList::get(C,
+             AttributeSet(),
+             Attributes(C, {Attribute::NonNull}),
+             {AttributeSet(),
+-             Attributes(C, {Attribute::NoAlias, Attribute::ReadOnly, Attribute::NoCapture, Attribute::NoUndef})});
++             Attributes(C, {Attribute::NoAlias, Attribute::ReadOnly, NOCAPTURE_ATTRIBUTE, Attribute::NoUndef})});
+ }
+ 
+ static AttributeList get_attrs_noreturn(LLVMContext &C)
+@@ -1021,7 +1033,7 @@
+     [](LLVMContext &C) { return AttributeList::get(C,
+             AttributeSet(),
+             AttributeSet(),
+-            {Attributes(C, {Attribute::NoCapture})}); },
++            {Attributes(C, {NOCAPTURE_ATTRIBUTE})}); },
+ };
+ static const auto jlunlockvalue_func = new JuliaFunction<>{
+     XSTR(jl_unlock_value),
+@@ -1030,7 +1042,7 @@
+     [](LLVMContext &C) { return AttributeList::get(C,
+             AttributeSet(),
+             AttributeSet(),
+-            {Attributes(C, {Attribute::NoCapture})}); },
++            {Attributes(C, {NOCAPTURE_ATTRIBUTE})}); },
+ };
+ static const auto jllockfield_func = new JuliaFunction<>{
+     XSTR(jl_lock_field),
+@@ -1039,7 +1051,7 @@
+     [](LLVMContext &C) { return AttributeList::get(C,
+             AttributeSet(),
+             AttributeSet(),
+-            {Attributes(C, {Attribute::NoCapture})}); },
++            {Attributes(C, {NOCAPTURE_ATTRIBUTE})}); },
+ };
+ static const auto jlunlockfield_func = new JuliaFunction<>{
+     XSTR(jl_unlock_field),
+@@ -1048,7 +1060,7 @@
+     [](LLVMContext &C) { return AttributeList::get(C,
+             AttributeSet(),
+             AttributeSet(),
+-            {Attributes(C, {Attribute::NoCapture})}); },
++            {Attributes(C, {NOCAPTURE_ATTRIBUTE})}); },
+ };
+ static const auto jlenter_func = new JuliaFunction<>{
+     XSTR(jl_enter_handler),
+@@ -1527,7 +1539,7 @@
+         RetAttrs.addAttribute(Attribute::NonNull);
+         RetAttrs.addAttribute(Attribute::NoUndef);
+         return AttributeList::get(C, AttributeSet::get(C,FnAttrs), AttributeSet::get(C,RetAttrs),
+-                { Attributes(C, {Attribute::NonNull, Attribute::NoUndef, Attribute::ReadNone, Attribute::NoCapture}),
++                { Attributes(C, {Attribute::NonNull, Attribute::NoUndef, Attribute::ReadNone, NOCAPTURE_ATTRIBUTE}),
+                   Attributes(C, {Attribute::NonNull, Attribute::NoUndef, Attribute::ReadNone}) });
+                   },
+ };
+@@ -1722,6 +1734,12 @@
+     // memory region non-aliasing. It should be deleted once the TBAA metadata
+     // is improved to encode only memory layout and *not* memory regions.
+     static jl_aliasinfo_t fromTBAA(jl_codectx_t &ctx, MDNode *tbaa);
++
++#if JL_LLVM_VERSION >= 210000
++    AAMDNodes toAAMDNodes() {
++        return AAMDNodes(this->tbaa, this->tbaa_struct, this->scope, this->noalias);
++    }
++#endif
+ };
+ 
+ // metadata tracking for a llvm Value* during codegen
+@@ -2718,7 +2736,11 @@
+         m->addModuleFlag(llvm::Module::Warning, "Debug Info Version",
+             llvm::DEBUG_METADATA_VERSION);
+     m->setDataLayout(DL);
++#if JL_LLVM_VERSION >= 210000
++    m->setTargetTriple(triple);
++#else
+     m->setTargetTriple(triple.str());
++#endif
+ 
+     if (triple.isOSWindows() && triple.getArch() == Triple::x86) {
+         // tell Win32 to assume the stack is always 16-byte aligned,
+@@ -7690,7 +7712,9 @@
+         crt = (jl_value_t*)jl_any_type;
+     }
+     bool toboxed;
+-    Type *lcrt = _julia_struct_to_llvm(&params, *params.tsctx.getContext(), crt, &toboxed);
++    Type *lcrt = withJLContextDo(params.tsctx, [&](llvm::LLVMContext *ctx) {
++        return _julia_struct_to_llvm(&params, *ctx, crt, &toboxed);
++    });
+     if (toboxed)
+         lcrt = JuliaType::get_prjlvalue_ty(lcrt->getContext());
+     size_t nargs = jl_nparams(sigt)-1;
+@@ -7864,7 +7888,11 @@
+         AttrBuilder param(M->getContext());
+         param.addStructRetAttr(srt);
+         param.addAttribute(Attribute::NoAlias);
++#if JL_LLVM_VERSION >= 210000
++        param.addCapturesAttr(llvm::CaptureInfo::none());
++#else
+         param.addAttribute(Attribute::NoCapture);
++#endif
+         param.addAttribute(Attribute::NoUndef);
+         attrs.push_back(AttributeSet::get(M->getContext(), param));
+         assert(fsig.size() == 1);
+@@ -7872,7 +7900,11 @@
+     if (props.cc == jl_returninfo_t::Union) {
+         AttrBuilder param(M->getContext());
+         param.addAttribute(Attribute::NoAlias);
++#if JL_LLVM_VERSION >= 210000
++        param.addCapturesAttr(llvm::CaptureInfo::none());
++#else
+         param.addAttribute(Attribute::NoCapture);
++#endif
+         param.addAttribute(Attribute::NoUndef);
+         attrs.push_back(AttributeSet::get(M->getContext(), param));
+         assert(fsig.size() == 1);
+@@ -7881,7 +7913,11 @@
+     if (props.return_roots) {
+         AttrBuilder param(M->getContext());
+         param.addAttribute(Attribute::NoAlias);
++#if JL_LLVM_VERSION >= 210000
++        param.addCapturesAttr(llvm::CaptureInfo::none());
++#else
+         param.addAttribute(Attribute::NoCapture);
++#endif
+         param.addAttribute(Attribute::NoUndef);
+         attrs.push_back(AttributeSet::get(M->getContext(), param));
+         fsig.push_back(getPointerTy(M->getContext()));
+@@ -7914,7 +7950,11 @@
+         AttrBuilder param(M->getContext());
+         Type *ty = et;
+         if (et == nullptr || et->isAggregateType()) { // aggregate types are passed by pointer
++#if JL_LLVM_VERSION >= 210000
++            param.addCapturesAttr(llvm::CaptureInfo::none());
++#else
+             param.addAttribute(Attribute::NoCapture);
++#endif
+             param.addAttribute(Attribute::ReadOnly);
+             ty = PointerType::get(M->getContext(), AddressSpace::Derived);
+         }
+@@ -8030,10 +8070,10 @@
+     return (jl_datatype_t*)typ;
+ }
+ 
+-// Compile to LLVM IR, using a specialized signature if applicable.
+ static jl_llvm_functions_t
+     emit_function(
+         orc::ThreadSafeModule &TSM,
++        llvm::LLVMContext *llvmctx,
+         jl_method_instance_t *lam,
+         jl_code_info_t *src,
+         jl_value_t *abi,
+@@ -8045,7 +8085,7 @@
+     size_t min_world = src->min_world;
+     size_t max_world = src->max_world;
+     jl_llvm_functions_t declarations;
+-    jl_codectx_t ctx(*params.tsctx.getContext(), params, min_world, max_world);
++    jl_codectx_t ctx(*llvmctx, params, min_world, max_world);
+     jl_datatype_t *vatyp = NULL;
+     JL_GC_PUSH2(&ctx.code, &vatyp);
+     ctx.code = src->code;
+@@ -8299,7 +8339,7 @@
+         declarations.functionObject = needsparams ? "jl_fptr_sparam" : "jl_fptr_args";
+     }
+ 
+-    if (!params.getContext().shouldDiscardValueNames() && ctx.emission_context.params->debug_info_level >= 2 && lam->def.method && jl_is_method(lam->def.method) && lam->specTypes != (jl_value_t*)jl_emptytuple_type) {
++    if (!llvmctx->shouldDiscardValueNames() && ctx.emission_context.params->debug_info_level >= 2 && lam->def.method && jl_is_method(lam->def.method) && lam->specTypes != (jl_value_t*)jl_emptytuple_type) {
+         ios_t sigbuf;
+         ios_mem(&sigbuf, 0);
+         jl_static_show_func_sig((JL_STREAM*) &sigbuf, (jl_value_t*)abi);
+@@ -9649,6 +9689,21 @@
+     return declarations;
+ }
+ 
++// Compile to LLVM IR, using a specialized signature if applicable.
++static jl_llvm_functions_t
++    emit_function(
++        orc::ThreadSafeModule &TSM,
++        jl_method_instance_t *lam,
++        jl_code_info_t *src,
++        jl_value_t *abi,
++        jl_value_t *jlrettype,
++        jl_codegen_params_t &params)
++{
++    return withJLContextDo(params.tsctx, [&](llvm::LLVMContext *ctx) {
++        return emit_function(TSM, ctx, lam, src, abi, jlrettype, params);
++    });
++}
++
+ // --- entry point ---
+ 
+ jl_llvm_functions_t jl_emit_codedecls(
+--- a/src/debuginfo.cpp	2025-07-20 16:55:36.515872261 +0200
++++ b/src/debuginfo.cpp	2025-07-20 16:53:20.537730658 +0200
+@@ -493,7 +493,11 @@
+         else {
+             int havelock = jl_lock_profile_wr();
+             assert(havelock); (void)havelock;
++#if JL_LLVM_VERSION >= 210000
++            info = context->getLineInfoForAddress(makeAddress(Section, pointer + slide), infoSpec).value_or(DILineInfo());
++#else
+             info = context->getLineInfoForAddress(makeAddress(Section, pointer + slide), infoSpec);
++#endif
+             jl_unlock_profile_wr();
+         }
+ 
+--- a/src/disasm.cpp	2025-07-20 16:55:36.603871091 +0200
++++ b/src/disasm.cpp	2025-07-20 16:53:20.537730658 +0200
+@@ -504,12 +504,6 @@
+     if (dump->F) {
+         //RAII will release the module
+         auto TSM = std::unique_ptr<orc::ThreadSafeModule>(unwrap(dump->TSM));
+-        //If TSM is not passed in, then the context MUST be locked externally.
+-        //RAII will release the lock
+-        std::optional<orc::ThreadSafeContext::Lock> lock;
+-        if (TSM) {
+-            lock.emplace(TSM->getContext().getLock());
+-        }
+         Function *llvmf = cast<Function>(unwrap(dump->F));
+         if (!llvmf || (!llvmf->isDeclaration() && !llvmf->getParent()))
+             jl_error("jl_dump_function_ir: Expected Function* in a temporary Module");
+@@ -521,21 +515,24 @@
+             delete llvmf;
+         }
+         else {
+-            assert(TSM && TSM->getModuleUnlocked() == llvmf->getParent() && "Passed module was not the same as function parent!");
+-            auto m = TSM->getModuleUnlocked();
+-            if (strip_ir_metadata) {
+-                std::string llvmfn(llvmf->getName());
+-                jl_strip_llvm_addrspaces(m);
+-                jl_strip_llvm_debug(m, true, &AAW);
+-                // rewriting the function type creates a new function, so look it up again
+-                llvmf = m->getFunction(llvmfn);
+-            }
+-            if (dump_module) {
+-                m->print(stream, &AAW);
+-            }
+-            else {
+-                llvmf->print(stream, &AAW);
+-            }
++            // If TSM is not passed in, then the context MUST be locked externally.
++            // RAII will release the lock
++            TSM->withModuleDo([&](llvm::Module &M) {
++                assert(M == llvmf->getParent() && "Passed module was not the same as function parent!");
++                if (strip_ir_metadata) {
++                    std::string llvmfn(llvmf->getName());
++                    jl_strip_llvm_addrspaces(&M);
++                    jl_strip_llvm_debug(&M, true, &AAW);
++                    // rewriting the function type creates a new function, so look it up again
++                    llvmf = M.getFunction(llvmfn);
++                }
++                if (dump_module) {
++                    M.print(stream, &AAW);
++                }
++                else {
++                    llvmf->print(stream, &AAW);
++                }
++            });
+         }
+     }
+ 
+@@ -924,9 +921,11 @@
+     // LLVM will destroy the formatted stream, and we keep the raw stream.
+     std::unique_ptr<formatted_raw_ostream> ustream(new formatted_raw_ostream(rstream));
+     std::unique_ptr<MCStreamer> Streamer(
+-#if JL_LLVM_VERSION >= 190000
++#if JL_LLVM_VERSION >= 210000
++        TheTarget->createAsmStreamer(Ctx, std::move(ustream),
++                                     std::move(IP), std::move(CE), std::move(MAB))
++#elif JL_LLVM_VERSION >= 190000
+         TheTarget->createAsmStreamer(Ctx, std::move(ustream),
+-
+                                      IP.release(), std::move(CE), std::move(MAB))
+ #else
+         TheTarget->createAsmStreamer(Ctx, std::move(ustream), /*asmverbose*/ true,
+@@ -1268,8 +1267,13 @@
+                 OutputAsmDialect = 0;
+             if (!strcmp(asm_variant, "intel"))
+                 OutputAsmDialect = 1;
++#if JL_LLVM_VERSION >= 210000
++            std::unique_ptr<MCInstPrinter> InstPrinter(TM->getTarget().createMCInstPrinter(
++                jl_ExecutionEngine->getTargetTriple(), OutputAsmDialect, MAI, MII, MRI));
++#else
+             MCInstPrinter *InstPrinter = TM->getTarget().createMCInstPrinter(
+                 jl_ExecutionEngine->getTargetTriple(), OutputAsmDialect, MAI, MII, MRI);
++#endif
+             std::unique_ptr<MCAsmBackend> MAB(TM->getTarget().createMCAsmBackend(
+                 STI, MRI, Options));
+             std::unique_ptr<MCCodeEmitter> MCE;
+@@ -1278,7 +1282,9 @@
+             }
+             auto FOut = std::make_unique<formatted_raw_ostream>(asmfile);
+             std::unique_ptr<MCStreamer> S(TM->getTarget().createAsmStreamer(
+-#if JL_LLVM_VERSION >= 190000
++#if JL_LLVM_VERSION >= 210000
++                *Context, std::move(FOut), std::move(InstPrinter), std::move(MCE), std::move(MAB)
++#elif JL_LLVM_VERSION >= 190000
+                 *Context, std::move(FOut), InstPrinter, std::move(MCE), std::move(MAB)
+ #else
+                 *Context, std::move(FOut), true, true, InstPrinter, std::move(MCE),
+--- a/src/jitlayers.cpp	2025-07-20 16:55:36.607871038 +0200
++++ b/src/jitlayers.cpp	2025-07-20 16:53:20.537730658 +0200
+@@ -28,6 +28,9 @@
+ #include <llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderVTune.h>
+ #endif
+ #include <llvm/ExecutionEngine/Orc/ExecutorProcessControl.h>
++#if JL_LLVM_VERSION >= 210000
++#include <llvm/ExecutionEngine/Orc/SelfExecutorProcessControl.h>
++#endif
+ #include <llvm/IR/Verifier.h>
+ #include <llvm/Support/DynamicLibrary.h>
+ #include <llvm/Support/FormattedStream.h>
+@@ -266,7 +269,9 @@
+     std::string gf_thunk_name;
+     {
+         jl_codegen_params_t params(std::make_unique<LLVMContext>(), jl_ExecutionEngine->getDataLayout(), jl_ExecutionEngine->getTargetTriple()); // Locks the context
+-        params.getContext().setDiscardValueNames(true);
++        withJLContextDo(params.tsctx, [&](llvm::LLVMContext *ctx) {
++            ctx->setDiscardValueNames(true);
++        });
+         params.cache = true;
+         params.imaging_mode = 0;
+         result_m = jl_create_ts_module("gfthunk", params.tsctx, params.DL, params.TargetTriple);
+@@ -548,7 +553,6 @@
+             assert(waiting == std::get<1>(it->second));
+             std::get<1>(it->second) = 0;
+             auto &params = std::get<0>(it->second);
+-            params.tsctx_lock = params.tsctx.getLock();
+             waiting = jl_analyze_workqueue(codeinst, params, true); // may safepoint
+             assert(!waiting); (void)waiting;
+             Module *M = emittedmodules[codeinst].getModuleUnlocked();
+@@ -579,7 +583,6 @@
+         assert(it != incompletemodules.end());
+         if (--std::get<1>(it->second) == 0) {
+             auto &params = std::get<0>(it->second);
+-            params.tsctx_lock = params.tsctx.getLock();
+             assert(callee == it->first);
+             int waiting = jl_analyze_workqueue(callee, params); // may safepoint
+             assert(!waiting); (void)waiting;
+@@ -604,10 +607,9 @@
+         if (!sharedmodules.empty()) {
+             auto TSM = sharedmodules.pop_back_val();
+             lock.native.unlock();
+-            {
+-                auto Lock = TSM.getContext().getLock();
+-                jl_ExecutionEngine->optimizeDLSyms(*TSM.getModuleUnlocked()); // may safepoint
+-            }
++            TSM.withModuleDo([&](Module &M) {
++                jl_ExecutionEngine->optimizeDLSyms(M); // may safepoint
++            });
+             jl_ExecutionEngine->addModule(std::move(TSM));
+             lock.native.lock();
+         }
+@@ -623,10 +625,9 @@
+             emittedmodules.erase(TSMref);
+             lock.native.unlock();
+             uint64_t start_time = jl_hrtime();
+-            {
+-                auto Lock = TSM.getContext().getLock();
+-                jl_ExecutionEngine->optimizeDLSyms(*TSM.getModuleUnlocked()); // may safepoint
+-            }
++            TSM.withModuleDo([&](Module &M) {
++                jl_ExecutionEngine->optimizeDLSyms(M); // may safepoint
++            });
+             jl_ExecutionEngine->addModule(std::move(TSM)); // may safepoint
+             // If logging of the compilation stream is enabled,
+             // then dump the method-instance specialization type to the stream
+@@ -764,7 +765,9 @@
+     JL_TIMING(CODEINST_COMPILE, CODEINST_COMPILE);
+     // emit the code in LLVM IR form to the new context
+     jl_codegen_params_t params(std::make_unique<LLVMContext>(), jl_ExecutionEngine->getDataLayout(), jl_ExecutionEngine->getTargetTriple()); // Locks the context
+-    params.getContext().setDiscardValueNames(true);
++    withJLContextDo(params.tsctx, [&](llvm::LLVMContext *ctx) {
++        ctx->setDiscardValueNames(true);
++    });
+     params.cache = true;
+     params.imaging_mode = 0;
+     orc::ThreadSafeModule result_m =
+@@ -780,9 +783,6 @@
+     params.temporary_roots = nullptr;
+     params.temporary_roots_set.clear();
+     JL_GC_POP();
+-    { // drop lock before acquiring engine_lock
+-        auto release = std::move(params.tsctx_lock);
+-    }
+     jl_unique_gcsafe_lock lock(engine_lock);
+     if (invokenames.count(codeinst) || jl_is_compiled_codeinst(codeinst))
+         return; // destroy everything
+@@ -806,10 +806,8 @@
+     jl_atomic_cmpswap_relaxed(&codeinst->invoke, &expected, jl_fptr_wait_for_compiled_addr);
+     invokenames[codeinst] = std::move(decls);
+     complete_emit(codeinst);
+-    params.tsctx_lock = params.tsctx.getLock(); // re-acquire lock
+     int waiting = jl_analyze_workqueue(codeinst, params);
+     if (waiting) {
+-        auto release = std::move(params.tsctx_lock); // unlock again before moving from it
+         incompletemodules.try_emplace(codeinst, std::move(params), waiting);
+     }
+     else {
+@@ -1175,6 +1173,7 @@
+ #endif
+ }
+ 
++#if JL_LLVM_VERSION < 210000
+ class JLEHFrameRegistrar final : public jitlink::EHFrameRegistrar {
+ public:
+     Error registerEHFrames(orc::ExecutorAddrRange EHFrameSection) override {
+@@ -1187,6 +1186,7 @@
+         return Error::success();
+     }
+ };
++#endif
+ 
+ RTDyldMemoryManager *createRTDyldMemoryManager(void) JL_NOTSAFEPOINT;
+ 
+@@ -1872,6 +1872,23 @@
+     OptSelLayer(ES, OptimizeLayer, static_cast<orc::ThreadSafeModule (*)(orc::ThreadSafeModule, orc::MaterializationResponsibility&)>(selectOptLevel))
+ {
+ #ifdef JL_USE_JITLINK
++#if JL_LLVM_VERSION >= 210000
++# if defined(LLVM_SHLIB)
++    // When dynamically linking against LLVM, use our custom EH frame registration code
++    // also used with RTDyld to inform both our and the libc copy of libunwind.
++    auto EHFRP = std::make_unique<EHFrameRegistrationPlugin>(ExecutorAddr::fromPtr(&register_eh_frames), ExecutorAddr::fromPtr(&deregister_eh_frames));
++# else
++    auto EHFRP = EHFrameRegistrationPlugin::Create(ES);
++# endif
++    if (!EHFRP) {
++#ifndef __clang_analyzer__ // reportError calls an arbitrary function, which the static analyzer thinks might be a safepoint
++        ES.reportError(EHFRP.takeError());
++#endif
++        errs() << "Failed to register EHFrameRegistrationPlugin: to JIT!\n";
++        abort();
++    }
++    ObjectLayer.addPlugin(std::move(*EHFRP));
++#else
+ # if defined(LLVM_SHLIB)
+     // When dynamically linking against LLVM, use our custom EH frame registration code
+     // also used with RTDyld to inform both our and the libc copy of libunwind.
+@@ -1881,6 +1898,7 @@
+ # endif
+     ObjectLayer.addPlugin(std::make_unique<EHFrameRegistrationPlugin>(
+         ES, std::move(ehRegistrar)));
++#endif
+ 
+     ObjectLayer.addPlugin(std::make_unique<JLDebuginfoPlugin>());
+     ObjectLayer.addPlugin(std::make_unique<JLMemoryUsagePlugin>(&jit_bytes_size));
+@@ -2034,35 +2052,34 @@
+     TSM = selectOptLevel(std::move(TSM));
+     TSM = (*Optimizers)(std::move(TSM));
+     TSM = (*JITPointers)(std::move(TSM));
+-    auto Lock = TSM.getContext().getLock();
+-    Module &M = *TSM.getModuleUnlocked();
+ 
+-    for (auto &f : M) {
+-        if (!f.isDeclaration()){
+-            jl_timing_puts(JL_TIMING_DEFAULT_BLOCK, f.getName().str().c_str());
++    TSM.withModuleDo([&](Module &M) {
++        for (auto &f : M) {
++            if (!f.isDeclaration()){
++                jl_timing_puts(JL_TIMING_DEFAULT_BLOCK, f.getName().str().c_str());
++            }
+         }
+-    }
+ 
+-    // Treat this as if one of the passes might contain a safepoint
+-    // even though that shouldn't be the case and might be unwise
+-    Expected<std::unique_ptr<MemoryBuffer>> Obj = CompileLayer.getCompiler()(M);
+-    if (!Obj) {
++        // Treat this as if one of the passes might contain a safepoint
++        // even though that shouldn't be the case and might be unwise
++        Expected<std::unique_ptr<MemoryBuffer>> Obj = CompileLayer.getCompiler()(M);
++        if (!Obj) {
+ #ifndef __clang_analyzer__ // reportError calls an arbitrary function, which the static analyzer thinks might be a safepoint
+-        ES.reportError(Obj.takeError());
++            ES.reportError(Obj.takeError());
+ #endif
+-        errs() << "Failed to add module to JIT!\n";
+-        errs() << "Dumping failing module\n" << M << "\n";
+-        return;
+-    }
+-    { auto release = std::move(Lock); }
+-    auto Err = JuliaOJIT::addObjectFile(JD, std::move(*Obj));
+-    if (Err) {
++            errs() << "Failed to add module to JIT!\n";
++            errs() << "Dumping failing module\n" << M << "\n";
++            return;
++        }
++        auto Err = JuliaOJIT::addObjectFile(JD, std::move(*Obj));
++        if (Err) {
+ #ifndef __clang_analyzer__ // reportError calls an arbitrary function, which the static analyzer thinks might be a safepoint
+-        ES.reportError(std::move(Err));
++            ES.reportError(std::move(Err));
+ #endif
+-        errs() << "Failed to add objectfile to JIT!\n";
+-        abort();
+-    }
++            errs() << "Failed to add objectfile to JIT!\n";
++            abort();
++        }
++    });
+ }
+ 
+ Error JuliaOJIT::addExternalModule(orc::JITDylib &JD, orc::ThreadSafeModule TSM, bool ShouldOptimize)
+--- a/src/jitlayers.h	2025-07-12 22:11:51.000000000 +0200
++++ b/src/jitlayers.h	2025-07-20 16:53:20.537730658 +0200
+@@ -228,13 +228,9 @@
+ typedef std::list<std::tuple<std::string, std::string, unsigned int>> CallFrames;
+ struct jl_codegen_params_t {
+     orc::ThreadSafeContext tsctx;
+-    orc::ThreadSafeContext::Lock tsctx_lock;
+     DataLayout DL;
+     Triple TargetTriple;
+ 
+-    inline LLVMContext &getContext() {
+-        return *tsctx.getContext();
+-    }
+     typedef StringMap<GlobalVariable*> SymMapGV;
+     // outputs
+     jl_workqueue_t workqueue;
+@@ -273,7 +269,6 @@
+     bool use_swiftcc = true;
+     jl_codegen_params_t(orc::ThreadSafeContext ctx, DataLayout DL, Triple triple) JL_NOTSAFEPOINT  JL_NOTSAFEPOINT_ENTER
+       : tsctx(std::move(ctx)),
+-        tsctx_lock(tsctx.getLock()),
+         DL(std::move(DL)),
+         TargetTriple(std::move(triple)),
+         imaging_mode(1)
+@@ -353,6 +348,16 @@
+     return jl_is_method(li->def.method) ? jl_symbol_name(li->def.method->name) : "top-level scope";
+ }
+ 
++
++template <typename Func> decltype(auto) withJLContextDo(orc::ThreadSafeContext tsctx, Func &&F) {
++#if JL_LLVM_VERSION >= 210000
++    return tsctx.withContextDo(F);
++#else
++    auto lock = tsctx.getLock();
++    return F(tsctx.getContext());
++#endif
++}
++
+ template <size_t offset = 0>
+ class MaxAlignedAllocImpl
+     : public AllocatorBase<MaxAlignedAllocImpl<offset>> {
+@@ -663,14 +668,19 @@
+ };
+ extern JuliaOJIT *jl_ExecutionEngine;
+ std::unique_ptr<Module> jl_create_llvm_module(StringRef name, LLVMContext &ctx, const DataLayout &DL = jl_ExecutionEngine->getDataLayout(), const Triple &triple = jl_ExecutionEngine->getTargetTriple()) JL_NOTSAFEPOINT;
+-inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext ctx, const DataLayout &DL = jl_ExecutionEngine->getDataLayout(), const Triple &triple = jl_ExecutionEngine->getTargetTriple()) JL_NOTSAFEPOINT {
+-    auto lock = ctx.getLock();
+-    return orc::ThreadSafeModule(jl_create_llvm_module(name, *ctx.getContext(), DL, triple), ctx);
++inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext tsctx, const DataLayout &DL = jl_ExecutionEngine->getDataLayout(), const Triple &triple = jl_ExecutionEngine->getTargetTriple()) JL_NOTSAFEPOINT {
++    auto llvm_module = withJLContextDo(tsctx, [&](llvm::LLVMContext *ctx) {
++        return jl_create_llvm_module(name, *ctx, DL, triple);
++    });
++
++    return orc::ThreadSafeModule(std::move(llvm_module), tsctx);
+ }
+ 
+ Module &jl_codegen_params_t::shared_module() JL_NOTSAFEPOINT {
+     if (!_shared_module) {
+-        _shared_module = jl_create_llvm_module("globals", getContext(), DL, TargetTriple);
++        _shared_module = withJLContextDo(tsctx, [&](llvm::LLVMContext *ctx) {
++            return jl_create_llvm_module("globals", *ctx, DL, TargetTriple);
++        });
+     }
+     return *_shared_module;
+ }

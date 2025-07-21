@@ -3,7 +3,7 @@
 
 EAPI=8
 
-LLVM_COMPAT=( 19 20 )
+LLVM_COMPAT=( 19 20 21 )
 MY_PV="${PV/_/-}"
 
 inherit llvm-r1 pax-utils optfeature toolchain-funcs
@@ -105,6 +105,7 @@ PATCHES=(
 	"${FILESDIR}"/dont-link-atomic.patch
 	# llvm 20: https://github.com/JuliaLang/julia/pull/57352
 	"${FILESDIR}"/llvm-20.patch
+	"${FILESDIR}"/llvm-21.patch
 )
 
 pkg_setup() {
@@ -218,7 +219,7 @@ src_install() {
 
 	# Prevent compiled modules from being stripped,
 	# as it changes their checksum so Julia refuses to load them
-	dostrip -x /usr/share/${PN}/compiled/v${MY_PV}/*/*.so
+	dostrip -x /usr/share/julia/compiled/v$(ver_cut 1-2)/*/*.so
 
 	# Link ca-certificates.crt, bug: https://bugs.gentoo.org/888978
 	dosym -r /etc/ssl/certs/ca-certificates.crt /usr/share/julia/cert.pem
