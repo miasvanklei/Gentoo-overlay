@@ -139,7 +139,7 @@ microsoft.sqlserver.dacfx@170.0.64-preview
 microsoft.sqlserver.dacfx@170.1.31-preview
 microsoft.sqlserver.management.smometadataprovider@170.18.0
 microsoft.sqlserver.management.sqlparser@160.22523.0
-microsoft.sqlserver.management.sqlparser@172.18.0
+microsoft.sqlserver.management.sqlparser@172.20.0
 microsoft.sqlserver.migration.sqltargetprovisioning@1.0.20241022.2
 microsoft.sqlserver.migration.tde@1.0.0-preview.1.0.20230914.107
 microsoft.sqlserver.server@1.0.0
