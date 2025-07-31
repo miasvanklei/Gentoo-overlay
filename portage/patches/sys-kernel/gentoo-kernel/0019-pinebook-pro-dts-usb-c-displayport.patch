@@ -1,0 +1,100 @@
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+index 9d5f5b083e3c..edeb177bc433 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
++++ b/arch/arm64/boot/dts/rockchip/rk3399-base.dtsi
+@@ -618,7 +618,11 @@  cdn_dp: dp@fec00000 {
+ 		status = "disabled";
+ 
+ 		ports {
+-			dp_in: port {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			dp_in: port@0 {
++				reg = <0>;
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+ 
+@@ -632,6 +636,12 @@  dp_in_vopl: endpoint@1 {
+ 					remote-endpoint = <&vopl_out_dp>;
+ 				};
+ 			};
++
++			dp_out: port@1 {
++				reg = <1>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++			};
+ 		};
+ 	};
+diff --git a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
+index 5473070..9c26cf5 100644
+--- a/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
++++ b/arch/arm64/boot/dts/rockchip/rk3399-pinebook-pro.dts
+@@ -375,6 +375,11 @@
+ 	};
+ };
+ 
++&cdn_dp {
++	phys = <&tcphy0_dp>;
++	status = "okay";
++};
++
+ &cpu_b0 {
+ 	cpu-supply = <&vdd_cpu_b>;
+ };
+@@ -419,6 +424,12 @@
+ 	};
+ };
+ 
++&dp_out {
++	dp_controller_output: endpoint {
++		remote-endpoint = <&dp_phy_in>;
++	};
++};
++
+ &emmc_phy {
+ 	status = "okay";
+ };
+@@ -705,6 +716,13 @@
+ 				<PDO_FIXED(5000, 1400, PDO_FIXED_USB_COMM)>;
+ 			try-power-role = "sink";
+ 
++			altmodes {
++				displayport {
++					svid = /bits/ 16 <0xff01>;
++					vdo = <0x00001c46>;
++				};
++			};
++
+ 			ports {
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
+@@ -974,14 +992,26 @@
+ };
+ 
+ &tcphy0_dp {
++	mode-switch;
++
+ 	port {
+-		tcphy0_typec_dp: endpoint {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		tcphy0_typec_dp: endpoint@0 {
+ 			remote-endpoint = <&usbc_dp>;
+ 		};
++
++		dp_phy_in: endpoint@1 {
++			reg = <1>;
++			remote-endpoint = <&dp_controller_output>;
++		};
+ 	};
+ };
+ 
+ &tcphy0_usb3 {
++	orientation-switch;
++
+ 	port {
+ 		tcphy0_typec_ss: endpoint {
+ 			remote-endpoint = <&usbc_ss>;
