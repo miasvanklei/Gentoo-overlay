@@ -28,7 +28,7 @@ DEPEND="
 	media-libs/gst-plugins-base:1.0
 	media-libs/gstreamer:1.0
 	>=media-libs/phonon-4.11.0[qt6(+)]
-	media-plugins/gst-plugins-meta:1.0[alsa?,ogg,vorbis]
+	media-plugins/gst-plugins-meta:1.0[alsa?]
 	virtual/opengl
 "
 RDEPEND="${DEPEND}
