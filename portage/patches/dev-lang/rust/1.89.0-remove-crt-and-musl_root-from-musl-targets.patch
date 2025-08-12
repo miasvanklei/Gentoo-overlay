@@ -44,32 +44,14 @@
          ..base::linux::opts()
      }
  }
---- a/src/bootstrap/src/core/config/config.rs	2025-03-31 23:37:24.000000000 +0200
-+++ b/src/bootstrap/src/core/config/config.rs	2025-04-14 19:10:47.295277885 +0200
-@@ -576,7 +576,7 @@
+--- a/src/bootstrap/src/core/config/target_selection.rs	2025-08-09 10:52:57.423193421 +0200
++++ b/src/bootstrap/src/core/config/target_selection.rs	2025-08-09 10:53:40.186580248 +0200
+@@ -93,7 +93,7 @@
      }
-
+ 
      pub fn needs_crt_begin_end(&self) -> bool {
 -        self.contains("musl") && !self.contains("unikraft")
 +        false
      }
-
-     /// Path to the file defining the custom target, if any.
---- a/src/bootstrap/src/core/build_steps/compile.rs	2020-08-27 22:57:42.818176881 +0200
-+++ b/src/bootstrap/src/core/build_steps/compile.rs	2020-08-27 23:00:19.487625539 +0200
-@@ -390,15 +357,6 @@
-             .arg("--manifest-path")
-             .arg(builder.src.join("library/sysroot/Cargo.toml"));
  
--        // Help the libc crate compile by assisting it in finding various
--        // sysroot native libraries.
--        if target.contains("musl") {
--            if let Some(p) = builder.musl_libdir(target) {
--                let root = format!("native={}", p.to_str().unwrap());
--                cargo.rustflag("-L").rustflag(&root);
--            }
--        }
--
-         if target.contains("-wasi") {
-             if let Some(p) = builder.wasi_root(target) {
-                 let root = format!(
+     /// Path to the file defining the custom target, if any.
