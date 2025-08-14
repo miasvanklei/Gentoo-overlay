@@ -1,0 +1,31 @@
+--- a/gui/covers.cpp	2025-04-25 06:56:55.000000000 +0000
++++ b/gui/covers.cpp	2025-08-10 16:09:20.116209064 +0000
+@@ -257,7 +257,7 @@
+ static inline QString songKey(const Song& s)
+ {
+ 	return s.isArtistImageRequest() ? artistKey(s) : s.isComposerImageRequest() ? composerKey(s)
+-																				: albumKey(s);
++		: albumKey(s) + "{" + s.title + "}";
+ }
+ 
+ static inline QString cacheKey(const Song& song, int size)
+@@ -1656,7 +1656,7 @@
+ 				if (!song.isCdda() && !song.isArtistImageRequest()) {
+ 					QString dir = Utils::cacheDir(Covers::constCoverDir + Covers::encodeName(song.albumArtist()), true);
+ 					if (!dir.isEmpty()) {
+-						QString fileName = dir + Covers::encodeName(song.album) + ".jpg";
++						QString fileName = dir + Covers::encodeName(song.album) + Covers::encodeName(song.title) + ".jpg";
+ 						if (img.save(fileName)) {
+ 							return Covers::Image(img, fileName);
+ 						}
+--- a/gui/currentcover.cpp	2025-04-25 06:56:55.000000000 +0000
++++ b/gui/currentcover.cpp	2025-08-10 16:24:22.535415436 +0000
+@@ -209,7 +209,7 @@
+ 		return;
+ 	}
+ 
+-	if (s.albumArtist() != current.albumArtist() || s.album != current.album || s.isStream() != current.isStream() || s.onlineService() != current.onlineService()) {
++	if (s.albumArtist() != current.albumArtist() || s.album != current.album || s.title != current.title || s.isStream() != current.isStream() || s.onlineService() != current.onlineService()) {
+ 		current = s;
+ 		if (timer) {
+ 			timer->stop();
