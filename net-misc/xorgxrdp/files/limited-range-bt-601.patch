@@ -1,0 +1,150 @@
+--- a/module/rdpCapture.c	2025-03-30 16:35:35.000000000 +0200
++++ b/module/rdpCapture.c	2025-07-30 17:35:09.680603038 +0200
+@@ -650,6 +650,104 @@
+     return 0;
+ }
+ 
++int
++a8r8g8b8_to_nv12_601lr_box(const uint8_t *s8, int src_stride,
++                           uint8_t *d8_y, int dst_stride_y,
++                           uint8_t *d8_uv, int dst_stride_uv,
++                           int width, int height)
++{
++    int index;
++    int jndex;
++    int R;
++    int G;
++    int B;
++    int Y;
++    int U;
++    int V;
++    int U_sum;
++    int V_sum;
++    int pixel;
++    const uint32_t *s32a;
++    const uint32_t *s32b;
++    uint8_t *d8ya;
++    uint8_t *d8yb;
++    uint8_t *d8uv;
++
++    for (jndex = 0; jndex < height; jndex += 2)
++    {
++        s32a = (const uint32_t *) (s8 + src_stride * jndex);
++        s32b = (const uint32_t *) (s8 + src_stride * (jndex + 1));
++        d8ya = d8_y + dst_stride_y * jndex;
++        d8yb = d8_y + dst_stride_y * (jndex + 1);
++        d8uv = d8_uv + dst_stride_uv * (jndex / 2);
++
++        for (index = 0; index < width; index += 2)
++        {
++            U_sum = 0;
++            V_sum = 0;
++
++            pixel = s32a[0];
++            s32a++;
++            R = (pixel >> 16) & 0xff;
++            G = (pixel >> 8) & 0xff;
++            B = (pixel >> 0) & 0xff;
++            Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
++            U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
++            V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
++            d8ya[0] = RDPCLAMP(Y, 16, 235);
++            d8ya++;
++            U_sum += RDPCLAMP(U, 16, 240);
++            V_sum += RDPCLAMP(V, 16, 240);
++
++            pixel = s32a[0];
++            s32a++;
++            R = (pixel >> 16) & 0xff;
++            G = (pixel >> 8) & 0xff;
++            B = (pixel >> 0) & 0xff;
++            Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
++            U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
++            V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
++            d8ya[0] = RDPCLAMP(Y, 16, 235);
++            d8ya++;
++            U_sum += RDPCLAMP(U, 16, 240);
++            V_sum += RDPCLAMP(V, 16, 240);
++
++            pixel = s32b[0];
++            s32b++;
++            R = (pixel >> 16) & 0xff;
++            G = (pixel >> 8) & 0xff;
++            B = (pixel >> 0) & 0xff;
++            Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
++            U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
++            V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
++            d8yb[0] = RDPCLAMP(Y, 16, 235);
++            d8yb++;
++            U_sum += RDPCLAMP(U, 16, 240);
++            V_sum += RDPCLAMP(V, 16, 240);
++
++            pixel = s32b[0];
++            s32b++;
++            R = (pixel >> 16) & 0xff;
++            G = (pixel >> 8) & 0xff;
++            B = (pixel >> 0) & 0xff;
++            Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
++            U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
++            V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
++            d8yb[0] = RDPCLAMP(Y, 16, 235);
++            d8yb++;
++            U_sum += RDPCLAMP(U, 16, 240);
++            V_sum += RDPCLAMP(V, 16, 240);
++
++            d8uv[0] = (U_sum + 2) / 4;
++            d8uv++;
++            d8uv[0] = (V_sum + 2) / 4;
++            d8uv++;
++        }
++    }
++
++    return 0;
++}
++
+ /******************************************************************************/
+ /* copy rects with no error checking */
+ static int
+--- a/module/rdpCapture.h	2025-03-30 16:35:35.000000000 +0200
++++ b/module/rdpCapture.h	2025-07-30 17:35:09.688603488 +0200
+@@ -54,6 +54,11 @@
+                            uint8_t *d8_uv, int dst_stride_uv,
+                            int width, int height);
+ extern _X_EXPORT int
++a8r8g8b8_to_nv12_601lr_box(const uint8_t *s8, int src_stride,
++                           uint8_t *d8_y, int dst_stride_y,
++                           uint8_t *d8_uv, int dst_stride_uv,
++                           int width, int height);
++extern _X_EXPORT int
+ a8r8g8b8_to_yuvalp_box(const uint8_t *s8, int src_stride,
+                        uint8_t *d8, int dst_stride,
+                        int width, int height);
+--- a/module/rdpSimd.c	2025-03-30 16:35:35.000000000 +0200
++++ b/module/rdpSimd.c	2025-07-30 17:37:11.827245097 +0200
+@@ -135,7 +135,7 @@
+         }
+         if (left_over_width > 0)
+         {
+-            error = a8r8g8b8_to_nv12_709fr_box(s8 + aligned_width * 4,
++            error = a8r8g8b8_to_nv12_601lr_box(s8 + aligned_width * 4,
+                                                src_stride,
+                                                d8_y + aligned_width,
+                                                dst_stride_y,
+@@ -260,7 +260,7 @@
+         }
+         if (left_over_width > 0)
+         {
+-            error = a8r8g8b8_to_nv12_709fr_box(s8 + aligned_width * 4,
++            error = a8r8g8b8_to_nv12_601lr_box(s8 + aligned_width * 4,
+                                                src_stride,
+                                                d8_y + aligned_width,
+                                                dst_stride_y,
+@@ -332,7 +332,7 @@
+     dev->uyvy_to_rgb32 = UYVY_to_RGB32;
+     dev->a8r8g8b8_to_a8b8g8r8_box = a8r8g8b8_to_a8b8g8r8_box;
+     dev->a8r8g8b8_to_nv12_box = a8r8g8b8_to_nv12_box;
+-    dev->a8r8g8b8_to_nv12_709fr_box = a8r8g8b8_to_nv12_709fr_box;
++    dev->a8r8g8b8_to_nv12_709fr_box = a8r8g8b8_to_nv12_601lr_box;
+     dev->a8r8g8b8_to_yuvalp_box = a8r8g8b8_to_yuvalp_box;
+ #if SIMD_USE_ACCEL
+     if (g_simd_use_accel)
