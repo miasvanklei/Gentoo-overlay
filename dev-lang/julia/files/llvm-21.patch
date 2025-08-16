@@ -42,6 +42,18 @@
  
      output_timer.startTimer();
  
+@@ -2041,7 +2041,11 @@
+         LLVMContext Context;
+         Context.setDiscardValueNames(true);
+         Module sysimgM("sysimg", Context);
++#if JL_LLVM_VERSION >= 210000
++        sysimgM.setTargetTriple(TheTriple);
++#else
+         sysimgM.setTargetTriple(TheTriple.str());
++#endif
+         sysimgM.setDataLayout(DL);
+         sysimgM.setStackProtectorGuard(StackProtectorGuard);
+         sysimgM.setOverrideStackAlignment(OverrideStackAlignment);
 @@ -2064,7 +2069,7 @@
          // Note that we don't set z to null, this allows the check in WRITE_ARCHIVE
          // to function as expected
@@ -84,6 +96,18 @@
  
      if (params->emit_metadata) {
          JL_TIMING(NATIVE_AOT, NATIVE_Metadata);
+@@ -2182,7 +2186,11 @@
+         LLVMContext Context;
+         Context.setDiscardValueNames(true);
+         Module metadataM("metadata", Context);
++#if JL_LLVM_VERSION >= 210000
++        metadataM.setTargetTriple(TheTriple);
++#else
+         metadataM.setTargetTriple(TheTriple.str());
++#endif
+         metadataM.setDataLayout(DL);
+         metadataM.setStackProtectorGuard(StackProtectorGuard);
+         metadataM.setOverrideStackAlignment(OverrideStackAlignment);
 @@ -2261,7 +2264,7 @@
          }
  
@@ -581,38 +605,37 @@
  
  RTDyldMemoryManager *createRTDyldMemoryManager(void) JL_NOTSAFEPOINT;
  
-@@ -1872,6 +1872,23 @@
+@ -1868,15 +1872,27 @@
      OptSelLayer(ES, OptimizeLayer, static_cast<orc::ThreadSafeModule (*)(orc::ThreadSafeModule, orc::MaterializationResponsibility&)>(selectOptLevel))
  {
  #ifdef JL_USE_JITLINK
-+#if JL_LLVM_VERSION >= 210000
-+# if defined(LLVM_SHLIB)
-+    // When dynamically linking against LLVM, use our custom EH frame registration code
-+    // also used with RTDyld to inform both our and the libc copy of libunwind.
-+    auto EHFRP = std::make_unique<EHFrameRegistrationPlugin>(ExecutorAddr::fromPtr(&register_eh_frames), ExecutorAddr::fromPtr(&deregister_eh_frames));
-+# else
+-# if defined(LLVM_SHLIB)
++# if JL_LLVM_VERSION >= 210000
 +    auto EHFRP = EHFrameRegistrationPlugin::Create(ES);
-+# endif
 +    if (!EHFRP) {
-+#ifndef __clang_analyzer__ // reportError calls an arbitrary function, which the static analyzer thinks might be a safepoint
++#  ifndef __clang_analyzer__ // reportError calls an arbitrary function, which the static analyzer thinks might be a safepoint
 +        ES.reportError(EHFRP.takeError());
-+#endif
++#  endif
 +        errs() << "Failed to register EHFrameRegistrationPlugin: to JIT!\n";
 +        abort();
 +    }
 +    ObjectLayer.addPlugin(std::move(*EHFRP));
-+#else
- # if defined(LLVM_SHLIB)
++# else
++#  if defined(LLVM_SHLIB)
      // When dynamically linking against LLVM, use our custom EH frame registration code
      // also used with RTDyld to inform both our and the libc copy of libunwind.
-@@ -1881,6 +1898,7 @@
- # endif
+     auto ehRegistrar = std::make_unique<JLEHFrameRegistrar>();
+-# else
++#  else
+     auto ehRegistrar = std::make_unique<jitlink::InProcessEHFrameRegistrar>();
+-# endif
++#  endif
      ObjectLayer.addPlugin(std::make_unique<EHFrameRegistrationPlugin>(
          ES, std::move(ehRegistrar)));
-+#endif
++# endif
  
      ObjectLayer.addPlugin(std::make_unique<JLDebuginfoPlugin>());
-     ObjectLayer.addPlugin(std::make_unique<JLMemoryUsagePlugin>(&jit_bytes_size));
+     ObjectLayer.addPlugin(std::make_unique<JLMemoryUsagePlugin>(jit_bytes_size));
 @@ -2034,35 +2052,34 @@
      TSM = selectOptLevel(std::move(TSM));
      TSM = (*Optimizers)(std::move(TSM));
