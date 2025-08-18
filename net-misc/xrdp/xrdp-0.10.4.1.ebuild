@@ -15,6 +15,8 @@ KEYWORDS="~amd64 ~arm64"
 IUSE="+aac debug fuse kerberos +jpeg lame openh264 opus +pam +pixman pipewire +x264"
 
 RDEPEND="
+	acct-group/xrdp
+	acct-user/xrdp
 	dev-libs/openssl:0=
 	x11-libs/libX11:0=
 	x11-libs/libXfixes:0=
