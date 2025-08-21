@@ -9,7 +9,7 @@ HOMEPAGE="https://apps.kde.org/categories/multimedia/"
 LICENSE="metapackage"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64 ~ppc64 ~riscv ~x86"
-IUSE="+audio +cdrom +ffmpeg gstreamer video"
+IUSE="+audio cdrom +ffmpeg video"
 
 RDEPEND="
 	>=kde-apps/dragon-${PV}:*
