@@ -1,0 +1,48 @@
+--- a/src/fileopen.cpp	2025-08-21 21:30:50.162503887 +0200
++++ b/src/fileopen.cpp	2025-08-21 21:31:28.525191890 +0200
+@@ -9,25 +9,31 @@
+ #include <QDBusPendingCallWatcher>
+ #include <QDBusPendingReply>
+ #include <QWindow>
++#include <KWindowSystem>
+ 
+ using namespace Qt::StringLiterals;
+ 
+ void FileOpen::open(QWindow *window)
+ {
+-    auto wayland = KWaylandExtras::self();
+-    connect(
+-        wayland,
+-        &KWaylandExtras::windowExported,
+-        this,
+-        [this, window](QWindow *exportedWindow, const QString &handle) {
+-            if (exportedWindow != window) {
+-                // not our event
+-                return;
+-            }
+-            openInternal(handle);
+-        },
+-        Qt::SingleShotConnection);
+-    wayland->exportWindow(window);
++    if (KWindowSystem::isPlatformWayland()) {
++        KWaylandExtras::exportWindow(window);
++        auto wayland = KWaylandExtras::self();
++        connect(
++            wayland,
++            &KWaylandExtras::windowExported,
++            this,
++            [this, window](QWindow *exportedWindow, const QString &handle) {
++                if (exportedWindow != window) {
++                    // not our event
++                    return;
++                }
++                openInternal(handle);
++            },
++            Qt::SingleShotConnection);
++    }
++    else {
++        openInternal(QString::number(window->winId()));
++    }
+ }
+ 
+ void FileOpen::gotResponse(uint response, const QVariantMap &results)
