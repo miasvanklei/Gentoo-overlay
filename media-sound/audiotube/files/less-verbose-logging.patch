@@ -1,0 +1,12 @@
+--- a/src/ytmusic.cpp	2025-08-06 04:48:14.000000000 +0200
++++ b/src/ytmusic.cpp	2025-08-22 15:34:32.481371424 +0200
+@@ -60,7 +60,8 @@
+     py::object get_ytdl() {
+         // lazy initialization
+         if (ytdl.is_none()) {
+-             ytdl = py::module::import("yt_dlp").attr("YoutubeDL")(py::dict());
++             py::dict ytdl_options("quiet"_a=true, "no_warnings"_a=true, "verbose"_a=false);
++             ytdl = py::module::import("yt_dlp").attr("YoutubeDL")(ytdl_options);
+         }
+ 
+         return ytdl;

@@ -15,7 +15,7 @@ HOMEPAGE="https://apps.kde.org/audiotube/"
 
 LICENSE="LGPL-3+"
 SLOT="6"
-KEYWORDS="~amd64"
+KEYWORDS="~amd64 ~arm64"
 IUSE=""
 
 RESTRICT="test"
@@ -28,7 +28,7 @@ DEPEND="
 	dev-python/ytmusicapi
 	>=dev-qt/qtbase-${QTMIN}:6[concurrent,dbus,gui,sql,widgets]
 	>=dev-qt/qtdeclarative-${QTMIN}:6
-	>=dev-qt/qtmultimedia-${QTMIN}:6[gstreamer]
+	>=dev-qt/qtmultimedia-${QTMIN}:6
 	>=dev-qt/qtsvg-${QTMIN}:6
 	>=kde-frameworks/kcoreaddons-${KFMIN}:6
 	>=kde-frameworks/kcrash-${KFMIN}:6
@@ -40,3 +40,8 @@ DEPEND="
 
 RDEPEND="${DEPEND}
 "
+
+PATCHES=(
+	"${FILESDIR}"/less-verbose-logging.patch
+	"${FILESDIR}"/remove-forced-qtmultimedia-gstreamer.patch
+)
