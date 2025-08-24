@@ -15,7 +15,7 @@ RESTRICT="bindist mirror strip"
 SLOT="0"
 
 BDEPEND="
-	sys-fs/squashfs-tools
+	sys-fs/squashfs-tools[zstd]
 "
 
 RDEPEND="
