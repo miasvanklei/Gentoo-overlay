@@ -6,7 +6,10 @@ EAPI=8
 DESCRIPTION="Binary plugins from Google Chrome for use in Firefox"
 HOMEPAGE="https://www.google.com/chrome/"
 
-SRC_URI="https://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/chromeos-lacros-arm64-squash-zstd-${PV} -> chrome-os-${PV}.squashfs"
+SRC_URI="
+	https://commondatastorage.googleapis.com/chromeos-localmirror/distfiles/chromeos-lacros-arm64-squash-zstd-${PV} -> chrome-os-${PV}.squashfs
+	https://raw.githubusercontent.com/AsahiLinux/widevine-installer/8fa12dd2d81c4b5d2a713e169cac70898512322e/widevine_fixup.py
+"
 S="${WORKDIR}"
 
 LICENSE="google-chrome"
@@ -16,6 +19,7 @@ SLOT="0"
 
 BDEPEND="
 	sys-fs/squashfs-tools[zstd]
+	dev-lang/python
 "
 
 RDEPEND="
@@ -29,13 +33,15 @@ QA_PREBUILT="*"
 
 src_unpack() {
 	einfo "Unpacking WidevineCdm"
-	unsquashfs -q "${DISTDIR}/chrome-os-${PV}.squashfs" -d "${WORKDIR}" 'WidevineCdm/*' >/dev/null
+	unsquashfs -q "${DISTDIR}/chrome-os-${PV}.squashfs" -d "${WORKDIR}" 'WidevineCdm/*' >/dev/null || die
+	local basedir="squashfs-root/WidevineCdm"
+	python "${DISTDIR}"/widevine_fixup.py ${basedir}/_platform_specific/cros_arm64/libwidevinecdm.so ${basedir}/libwidevinecdm.so || die
 }
 
 src_install() {
 	local basedir="squashfs-root/WidevineCdm"
 	insinto "/var/lib/widevine"
-	doins ${basedir}/_platform_specific/cros_arm64/libwidevinecdm.so
+	doins ${basedir}/libwidevinecdm.so
 	doins ${basedir}/manifest.json
 
 	insinto "/var/lib/widevine/gmp-widevinecdm/system-installed"
