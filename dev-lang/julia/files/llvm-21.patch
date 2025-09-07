@@ -75,25 +75,30 @@
          dataM.setDataLayout(DL);
          dataM.setPICLevel(PICLevel::BigPIC);
          auto &Context = dataM.getContext();
-@@ -2163,16 +2172,10 @@
+@@ -2176,21 +2176,10 @@
          has_veccall = !!dataM.getModuleFlag("julia.mv.veccall");
      });
- 
+
 -    {
 -        // Don't use withModuleDo here since we delete the TSM midway through
 -        auto TSCtx = data->M.getContext();
 -        auto lock = TSCtx.getLock();
 -        auto dataM = data->M.getModuleUnlocked();
 -
--        // Delete data when add_output thinks it's done with it
--        // Saves memory for use when multithreading
--        data_outputs = compile(*dataM, "text", threads, [data](Module &) { delete data; });
+-        data_outputs = compile(*dataM, "text", threads, [data, &lock, &TSCtx](Module &) {
+-            // Delete data when add_output thinks it's done with it
+-            // Saves memory for use when multithreading
+-            auto lock2 = std::move(lock);
+-            delete data;
+-            // Drop last reference to shared LLVM::Context
+-            auto TSCtx2 = std::move(TSCtx);
+-        });
 -    }
 +    data_outputs = data->M.consumingModuleDo([&](std::unique_ptr<Module> M) {
 +        Module *dataM = M.release();
 +        return compile(*dataM, "text", threads, [dataM]() { delete dataM; });
 +    });
- 
+
      if (params->emit_metadata) {
          JL_TIMING(NATIVE_AOT, NATIVE_Metadata);
 @@ -2182,7 +2186,11 @@
