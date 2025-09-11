@@ -11,6 +11,7 @@ DOTNET_TARGETS=(
 	'dlls/mscordbi/libmscordbi.so'
 	'dlls/mscoree/coreclr/libcoreclr.so'
 	'gc/libclrgc.so'
+	'gc/libclrgcexp.so'
 	'jit/libclrjit.so'
 	'pal/src/eventprovider/lttngprovider/libcoreclrtraceptprovider.so'
 )
@@ -41,12 +42,13 @@ RDEPEND="
 	=dev-dotnet/dotnet-apphost-pack-${PV}"
 
 src_prepare() {
-	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
-	eapply "${FILESDIR}"/cmake-no-absolute-paths-8.0.patch
+	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize-9.0.patch
+	eapply "${FILESDIR}"/cmake-no-absolute-paths-9.0.patch
+	eapply "${FILESDIR}"/fix-missing-invalid-state.patch
 
-	pushd "${S}/../native/libs" >/dev/null
+	pushd "${S}/../native/libs" >/dev/null || die
 	eapply "${FILESDIR}"/remove-build-type-logic.patch
-	popd >/dev/null
+	popd >/dev/null || die
 
 	dotnet-runtime_src_prepare
 }
