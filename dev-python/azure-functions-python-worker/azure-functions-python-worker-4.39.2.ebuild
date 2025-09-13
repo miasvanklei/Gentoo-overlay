@@ -24,10 +24,15 @@ BDEPEND="
 "
 
 RDEPEND="
+	dev-python/azure-functions-runtime[${PYTHON_USEDEP}]
+	dev-python/azure-functions-runtime-v1[${PYTHON_USEDEP}]
 	dev-python/azure-functions-extensions-base[${PYTHON_USEDEP}]
 	dev-python/azure-functions[${PYTHON_USEDEP}]
-	dev-python/protobuf[${PYTHON_USEDEP}]
 	dev-python/grpcio[${PYTHON_USEDEP}]
+	dev-python/grpcio-tools[${PYTHON_USEDEP}]
+	dev-python/python-dateutil[${PYTHON_USEDEP}]
+	dev-python/protobuf[${PYTHON_USEDEP}]
+	dev-python/uvloop[${PYTHON_USEDEP}]
 "
 
 PATCHES=(
@@ -35,6 +40,8 @@ PATCHES=(
 	"${FILESDIR}/support-python-3.13.patch"
 	"${FILESDIR}/remove-invoke.patch"
 )
+
+S="${WORKDIR}/${P}/workers"
 
 python_prepare_all() {
 	dos2unix tests/test_setup.py
