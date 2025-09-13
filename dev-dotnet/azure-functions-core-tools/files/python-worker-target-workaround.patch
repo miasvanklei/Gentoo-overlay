@@ -1,0 +1,21 @@
+--- a/src/Cli/func/Directory.Build.targets	2025-08-28 20:08:13.000000000 +0200
++++ b/src/Cli/func/Directory.Build.targets	2025-09-13 21:28:12.913165378 +0200
+@@ -6,6 +6,6 @@
+   <Import Project="$(EngBuildRoot)Templates.targets" Condition="'$(SkipTemplates)' != 'true'" />
+ 
+   <Import Project="$(EngBuildRoot)Workers.Powershell.targets" />
+-  <Import Project="$(EngBuildRoot)Workers.Python.Workaround.targets" Condition="'$(RuntimeIdentifier)' == 'win-arm64'" />
++  <Import Project="$(EngBuildRoot)Workers.Python.Workaround.targets" Condition="'$(RuntimeIdentifier)' == 'win-arm64' Or '$(RuntimeIdentifier)' == 'linux-musl-arm64'" />
+ 
+ </Project>
+--- b/eng/build/Workers.Python.Workaround.targets	2025-08-28 20:08:13.000000000 +0200
++++ a/eng/build/Workers.Python.Workaround.targets	2025-09-13 21:28:59.392671733 +0200
+@@ -6,7 +6,7 @@
+   <Target Name="_GetFunctionsPythonWorkerFilesForRuntime"></Target>
+   <Target Name="_GetFunctionsPythonWorkerFiles"></Target>
+ 
+-  <Target Name="_IncorrectWorkaroundImport" BeforeTargets="Build" Condition="'$(RuntimeIdentifier)' != 'win-arm64'">
++  <Target Name="_IncorrectWorkaroundImport" BeforeTargets="Build" Condition="'$(RuntimeIdentifier)' != 'win-arm64' And '$(RuntimeIdentifier)' != 'linux-musl-arm64'">
+     <Error Text="File '$(MSBuildThisFile)' must only be imported for runtime identifier 'win-arm64'. Actual runtime: '$(RuntimeIdentifier)'" />
+   </Target>
+ 

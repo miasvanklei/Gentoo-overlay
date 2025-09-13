@@ -3,7 +3,7 @@
 
 EAPI=8
 
-DOTNET_PKG_COMPAT=9.0
+DOTNET_PKG_COMPAT=8.0
 NUGET_APIS=(
 	"https://api.nuget.org/v3-flatcontainer"
 	"https://azfunc.pkgs.visualstudio.com/e6a70c92-4128-439f-8012-382fe78d6396/_packaging/Microsoft.Azure.Functions.PowerShellWorker/nuget/v3/flat2"
@@ -11,36 +11,28 @@ NUGET_APIS=(
 	"https://azfunc.pkgs.visualstudio.com/e6a70c92-4128-439f-8012-382fe78d6396/_packaging/AzureFunctionsRelease/nuget/v3/flat2"
 	"https://azfunc.pkgs.visualstudio.com/e6a70c92-4128-439f-8012-382fe78d6396/_packaging/AzureFunctionsPreRelease/nuget/v3/flat2"
 	"https://azfunc.pkgs.visualstudio.com/e6a70c92-4128-439f-8012-382fe78d6396/_packaging/AzureFunctionsTempStaging/nuget/v3/flat2"
+	"https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-libraries/nuget/v3/flat2"
 )
 NUGETS="
 accentedcommandlineparser@2.0.0
 autofac@4.6.2
 azure.core@1.35.0
-azure.core@1.36.0
-azure.core@1.37.0
 azure.core@1.38.0
 azure.core@1.41.0
 azure.core@1.44.1
-azure.data.tables@12.8.3
+azure.core@1.45.0
 azure.data.tables@12.9.0
-azure.identity@1.10.2
-azure.identity@1.10.3
 azure.identity@1.11.4
 azure.monitor.opentelemetry.aspnetcore@1.2.0-beta.2
 azure.monitor.opentelemetry.exporter@1.3.0-beta.1
 azure.monitor.opentelemetry.livemetrics@1.0.0-beta.3
-azure.security.keyvault.secrets@4.6.0
 azure.security.keyvault.secrets@4.7.0
-azure.storage.blobs@12.19.1
 azure.storage.blobs@12.21.2
-azure.storage.blobs@12.9.0
-azure.storage.common@12.18.1
 azure.storage.common@12.20.1
 azure.storage.queues@12.19.1
 castle.core@4.2.0
 castle.core@4.2.1
 colors.net@1.1.0
-dotnetzip@1.16.0
 dynamitey@2.0.9.136
 fluentassertions@5.2.0
 fsharp.core@3.1.2.5
@@ -58,22 +50,15 @@ grpc.net.common@2.52.0
 grpc.net.common@2.55.0
 grpc.tools@2.55.1
 impromptuinterface@7.0.1
-microsoft.applicationinsights.aspnetcore@2.21.0
 microsoft.applicationinsights.aspnetcore@2.22.0
-microsoft.applicationinsights.dependencycollector@2.21.0
 microsoft.applicationinsights.dependencycollector@2.22.0
 microsoft.applicationinsights.eventcountercollector@2.22.0
 microsoft.applicationinsights.perfcountercollector@2.21.0
 microsoft.applicationinsights.perfcountercollector@2.22.0
 microsoft.applicationinsights.snapshotcollector@1.4.4
-microsoft.applicationinsights.windowsserver.telemetrychannel@2.21.0
 microsoft.applicationinsights.windowsserver.telemetrychannel@2.22.0
-microsoft.applicationinsights.windowsserver@2.21.0
 microsoft.applicationinsights.windowsserver@2.22.0
-microsoft.applicationinsights@2.15.0
-microsoft.applicationinsights@2.21.0
 microsoft.applicationinsights@2.22.0
-microsoft.aspnet.webapi.client@5.2.6
 microsoft.aspnet.webapi.client@5.2.8
 microsoft.aspnetcore.antiforgery@2.2.0
 microsoft.aspnetcore.authentication.abstractions@2.2.0
@@ -84,11 +69,11 @@ microsoft.aspnetcore.authorization@2.2.0
 microsoft.aspnetcore.cors@2.2.0
 microsoft.aspnetcore.cryptography.internal@2.2.0
 microsoft.aspnetcore.dataprotection.abstractions@2.2.0
-microsoft.aspnetcore.dataprotection@2.0.0
 microsoft.aspnetcore.dataprotection@2.2.0
 microsoft.aspnetcore.diagnostics.abstractions@2.2.0
 microsoft.aspnetcore.hosting.abstractions@2.1.1
 microsoft.aspnetcore.hosting.abstractions@2.2.0
+microsoft.aspnetcore.hosting.server.abstractions@2.1.1
 microsoft.aspnetcore.hosting.server.abstractions@2.2.0
 microsoft.aspnetcore.hosting@2.1.1
 microsoft.aspnetcore.html.abstractions@2.2.0
@@ -96,8 +81,8 @@ microsoft.aspnetcore.http.abstractions@2.1.1
 microsoft.aspnetcore.http.abstractions@2.2.0
 microsoft.aspnetcore.http.extensions@2.1.1
 microsoft.aspnetcore.http.extensions@2.2.0
+microsoft.aspnetcore.http.features@2.1.1
 microsoft.aspnetcore.http.features@2.2.0
-microsoft.aspnetcore.http@2.1.1
 microsoft.aspnetcore.http@2.1.22
 microsoft.aspnetcore.http@2.2.0
 microsoft.aspnetcore.http@2.2.2
@@ -130,49 +115,49 @@ microsoft.aspnetcore.routing@2.2.0
 microsoft.aspnetcore.routing@2.2.2
 microsoft.aspnetcore.webutilities@2.1.1
 microsoft.aspnetcore.webutilities@2.2.0
-microsoft.azure.appservice.middleware.functions@1.5.4
-microsoft.azure.appservice.middleware.modules@1.5.4
-microsoft.azure.appservice.middleware.netcore@1.5.4
-microsoft.azure.appservice.middleware@1.5.4
+microsoft.azure.appservice.middleware.functions@1.5.5
+microsoft.azure.appservice.middleware.modules@1.5.5
+microsoft.azure.appservice.middleware.netcore@1.5.5
+microsoft.azure.appservice.middleware@1.5.5
 microsoft.azure.appservice.proxy.client@2.3.20240307.67
 microsoft.azure.appservice.proxy.common@2.3.20240307.67
 microsoft.azure.appservice.proxy.runtime@2.3.20240307.67
-microsoft.azure.cosmos.table@1.0.8
-microsoft.azure.documentdb.core@2.11.2
 microsoft.azure.durabletask.azurestorage.internal@1.4.0
 microsoft.azure.durabletask.core.internal@2.0.11
-microsoft.azure.functions.dotnetisolatednativehost@1.0.11
-microsoft.azure.functions.javaworker@2.16.0
-microsoft.azure.functions.nodejsworker@3.10.0
+microsoft.azure.functions.dotnetisolatednativehost@1.0.12
+microsoft.azure.functions.javaworker@2.19.2
+microsoft.azure.functions.nodejsworker@3.10.1
+microsoft.azure.functions.platform.metrics.linuxconsumption@1.0.5
 microsoft.azure.functions.powershellworker.ps7.0@4.0.3148
-microsoft.azure.functions.powershellworker.ps7.2@4.0.4020
-microsoft.azure.functions.powershellworker.ps7.4@4.0.4021
-microsoft.azure.functions.pythonworker@4.31.0
+microsoft.azure.functions.powershellworker.ps7.2@4.0.4025
+microsoft.azure.functions.powershellworker.ps7.4@4.0.4206
+microsoft.azure.functions.pythonworker@4.38.0
+microsoft.azure.functions.worker.itemtemplates@4.0.5212
+microsoft.azure.functions.worker.projecttemplates@4.0.5212
 microsoft.azure.keyvault.core@2.0.4
 microsoft.azure.storage.common@11.1.7
 microsoft.azure.storage.file@11.1.7
 microsoft.azure.webjobs.core@3.0.41
 microsoft.azure.webjobs.extensions.http@3.2.0
 microsoft.azure.webjobs.extensions.timers.storage@1.0.0-beta.1
-microsoft.azure.webjobs.extensions@5.0.0-beta.1
-microsoft.azure.webjobs.extensions@5.0.0-beta.2-10879
-microsoft.azure.webjobs.host.storage@5.0.0-beta.1
+microsoft.azure.webjobs.extensions@5.2.0-12287
 microsoft.azure.webjobs.host.storage@5.0.1
-microsoft.azure.webjobs.logging.applicationinsights@3.0.41-11331
+microsoft.azure.webjobs.itemtemplates@4.0.5212
+microsoft.azure.webjobs.logging.applicationinsights@3.0.42-12121
+microsoft.azure.webjobs.projecttemplates@4.0.5212
 microsoft.azure.webjobs.rpc.core@3.0.37
 microsoft.azure.webjobs.script.abstractions@1.0.4-preview
-microsoft.azure.webjobs.script.grpc@4.1036.1
-microsoft.azure.webjobs.script.webhost@4.1036.1
-microsoft.azure.webjobs.script@4.1036.1
-microsoft.azure.webjobs@3.0.32
-microsoft.azure.webjobs@3.0.33
-microsoft.azure.webjobs@3.0.37
+microsoft.azure.webjobs.script.grpc@4.1041.200
+microsoft.azure.webjobs.script.webhost@4.1041.200
+microsoft.azure.webjobs.script@4.1041.200
 microsoft.azure.webjobs@3.0.41
 microsoft.azure.websites.dataprotection@2.1.91-alpha
 microsoft.bcl.asyncinterfaces@1.1.1
 microsoft.bcl.asyncinterfaces@6.0.0
 microsoft.build.framework@17.0.0
+microsoft.build.notargets@3.7.56
 microsoft.build@17.0.0
+microsoft.codeanalysis.analyzers@1.1.0
 microsoft.codeanalysis.analyzers@2.9.4
 microsoft.codeanalysis.common@2.8.0
 microsoft.codeanalysis.common@3.3.1
@@ -190,19 +175,27 @@ microsoft.dotnet.platformabstractions@1.0.3
 microsoft.dotnet.platformabstractions@2.1.0
 microsoft.extensions.azure@1.7.1
 microsoft.extensions.caching.abstractions@1.0.0
+microsoft.extensions.caching.abstractions@2.2.0
 microsoft.extensions.caching.abstractions@5.0.0
 microsoft.extensions.caching.memory@1.0.0
 microsoft.extensions.caching.memory@2.2.0
 microsoft.extensions.caching.memory@5.0.0
+microsoft.extensions.configuration.abstractions@2.0.0
 microsoft.extensions.configuration.abstractions@2.1.0
 microsoft.extensions.configuration.abstractions@2.1.1
 microsoft.extensions.configuration.abstractions@2.2.0
+microsoft.extensions.configuration.abstractions@3.0.3
+microsoft.extensions.configuration.abstractions@3.1.0
+microsoft.extensions.configuration.abstractions@5.0.0
 microsoft.extensions.configuration.abstractions@8.0.0
 microsoft.extensions.configuration.binder@2.1.0
 microsoft.extensions.configuration.binder@2.1.1
+microsoft.extensions.configuration.binder@3.0.3
 microsoft.extensions.configuration.binder@8.0.0
+microsoft.extensions.configuration.binder@8.0.1
 microsoft.extensions.configuration.environmentvariables@2.1.0
 microsoft.extensions.configuration.environmentvariables@2.1.1
+microsoft.extensions.configuration.fileextensions@2.1.0
 microsoft.extensions.configuration.fileextensions@2.1.1
 microsoft.extensions.configuration.fileextensions@3.1.0
 microsoft.extensions.configuration.json@2.1.0
@@ -210,6 +203,7 @@ microsoft.extensions.configuration.json@3.1.0
 microsoft.extensions.configuration@2.0.0
 microsoft.extensions.configuration@2.1.0
 microsoft.extensions.configuration@2.1.1
+microsoft.extensions.configuration@3.0.3
 microsoft.extensions.configuration@3.1.0
 microsoft.extensions.configuration@5.0.0
 microsoft.extensions.configuration@8.0.0
@@ -220,12 +214,10 @@ microsoft.extensions.dependencyinjection.abstractions@2.1.1
 microsoft.extensions.dependencyinjection.abstractions@2.2.0
 microsoft.extensions.dependencyinjection.abstractions@3.0.3
 microsoft.extensions.dependencyinjection.abstractions@5.0.0
+microsoft.extensions.dependencyinjection.abstractions@6.0.0
 microsoft.extensions.dependencyinjection.abstractions@8.0.0
-microsoft.extensions.dependencyinjection@2.0.0
-microsoft.extensions.dependencyinjection@2.1.0
-microsoft.extensions.dependencyinjection@2.1.1
-microsoft.extensions.dependencyinjection@2.2.0
-microsoft.extensions.dependencyinjection@8.0.0
+microsoft.extensions.dependencyinjection.abstractions@9.0.2
+microsoft.extensions.dependencyinjection@9.0.2
 microsoft.extensions.dependencymodel@1.0.3
 microsoft.extensions.dependencymodel@2.1.0
 microsoft.extensions.diagnostics.abstractions@8.0.0
@@ -250,70 +242,77 @@ microsoft.extensions.hosting@2.1.0
 microsoft.extensions.http@3.0.3
 microsoft.extensions.localization.abstractions@2.2.0
 microsoft.extensions.localization@2.2.0
+microsoft.extensions.logging.abstractions@2.0.0
 microsoft.extensions.logging.abstractions@2.1.0
 microsoft.extensions.logging.abstractions@2.1.1
 microsoft.extensions.logging.abstractions@2.2.0
 microsoft.extensions.logging.abstractions@3.0.3
 microsoft.extensions.logging.abstractions@5.0.0
+microsoft.extensions.logging.abstractions@6.0.0
 microsoft.extensions.logging.abstractions@8.0.0
 microsoft.extensions.logging.applicationinsights@2.22.0
 microsoft.extensions.logging.configuration@2.1.0
 microsoft.extensions.logging.configuration@8.0.0
 microsoft.extensions.logging.console@2.0.0
 microsoft.extensions.logging.console@8.0.0
-microsoft.extensions.logging@2.1.0
+microsoft.extensions.logging@2.0.0
 microsoft.extensions.logging@2.1.1
 microsoft.extensions.logging@3.0.3
 microsoft.extensions.logging@5.0.0
+microsoft.extensions.logging@6.0.0
 microsoft.extensions.logging@8.0.0
 microsoft.extensions.objectpool@2.1.1
 microsoft.extensions.objectpool@2.2.0
 microsoft.extensions.options.configurationextensions@2.1.0
 microsoft.extensions.options.configurationextensions@8.0.0
 microsoft.extensions.options@1.0.0
+microsoft.extensions.options@2.0.0
 microsoft.extensions.options@2.1.0
 microsoft.extensions.options@2.1.1
 microsoft.extensions.options@2.2.0
 microsoft.extensions.options@3.0.3
 microsoft.extensions.options@5.0.0
+microsoft.extensions.options@6.0.0
 microsoft.extensions.options@8.0.0
+microsoft.extensions.primitives@1.0.0
+microsoft.extensions.primitives@2.0.0
 microsoft.extensions.primitives@2.1.0
 microsoft.extensions.primitives@2.1.1
 microsoft.extensions.primitives@2.2.0
+microsoft.extensions.primitives@3.0.3
+microsoft.extensions.primitives@3.1.0
 microsoft.extensions.primitives@5.0.0
+microsoft.extensions.primitives@6.0.0
 microsoft.extensions.primitives@8.0.0
 microsoft.extensions.webencoders@2.2.0
 microsoft.identity.client.extensions.msal@4.61.3
 microsoft.identity.client@4.61.3
+microsoft.identitymodel.abstractions@6.32.0
 microsoft.identitymodel.abstractions@6.35.0
 microsoft.identitymodel.jsonwebtokens@6.35.0
+microsoft.identitymodel.logging@6.32.0
 microsoft.identitymodel.logging@6.35.0
-microsoft.identitymodel.protocols.openidconnect@6.10.0
-microsoft.identitymodel.protocols.openidconnect@6.32.0
 microsoft.identitymodel.protocols.openidconnect@6.35.0
 microsoft.identitymodel.protocols@6.32.0
 microsoft.identitymodel.protocols@6.35.0
-microsoft.identitymodel.tokens@6.32.0
 microsoft.identitymodel.tokens@6.35.0
 microsoft.identitymodel.validators@6.32.0
 microsoft.net.http.headers@2.1.1
 microsoft.net.http.headers@2.2.0
 microsoft.net.stringtools@1.0.0
 microsoft.net.test.sdk@15.6.2
+microsoft.netcore.dotnetapphost@8.0.8
 microsoft.netcore.platforms@1.0.1
 microsoft.netcore.platforms@1.1.0
 microsoft.netcore.platforms@1.1.1
 microsoft.netcore.platforms@2.0.0
+microsoft.netcore.platforms@2.1.2
 microsoft.netcore.platforms@3.1.0
-microsoft.netcore.platforms@3.1.1
 microsoft.netcore.platforms@5.0.0
 microsoft.netcore.targets@1.0.1
 microsoft.netcore.targets@1.1.0
 microsoft.netcore.targets@1.1.3
-microsoft.odata.core@7.6.4
-microsoft.odata.edm@7.6.4
 microsoft.security.utilities@1.3.0
-microsoft.spatial@7.6.4
 microsoft.testplatform.objectmodel@15.6.2
 microsoft.testplatform.testhost@15.6.2
 microsoft.win32.primitives@4.0.1
@@ -321,10 +320,13 @@ microsoft.win32.primitives@4.3.0
 microsoft.win32.registry@4.0.0
 microsoft.win32.registry@4.3.0
 microsoft.win32.registry@4.5.0
+microsoft.win32.registry@4.7.0
+microsoft.win32.systemevents@4.7.0
+microsoft.win32.systemevents@6.0.0
 microsoft.win32.systemevents@8.0.0
 mono.posix.netstandard@1.0.0
 moq@4.8.2
-ncrontab.signed@3.3.2
+ncrontab.signed@3.3.3
 netstandard.library@1.6.0
 netstandard.library@1.6.1
 netstandard.library@2.0.1
@@ -342,21 +344,21 @@ nuget.projectmodel@5.11.6
 nuget.protocol@5.11.6
 nuget.versioning@5.11.6
 octokit@0.29.0
-opentelemetry.api.providerbuilderextensions@1.8.0
-opentelemetry.api@1.8.0
+opentelemetry.api.providerbuilderextensions@1.7.0
+opentelemetry.api.providerbuilderextensions@1.9.0
+opentelemetry.api@1.7.0
+opentelemetry.api@1.9.0
 opentelemetry.exporter.console@1.6.0
-opentelemetry.exporter.opentelemetryprotocol@1.8.0
-opentelemetry.extensions.hosting@1.7.0
-opentelemetry.extensions.hosting@1.8.0
-opentelemetry.instrumentation.aspnetcore@1.7.0
-opentelemetry.instrumentation.aspnetcore@1.8.1
-opentelemetry.instrumentation.http@1.7.0
-opentelemetry.instrumentation.http@1.8.1
+opentelemetry.exporter.opentelemetryprotocol@1.9.0
+opentelemetry.extensions.hosting@1.9.0
+opentelemetry.instrumentation.aspnetcore@1.9.0
+opentelemetry.instrumentation.http@1.9.0
+opentelemetry.instrumentation.process@0.5.0-beta.7
+opentelemetry.instrumentation.runtime@1.9.0
 opentelemetry.persistentstorage.abstractions@1.0.0
 opentelemetry.persistentstorage.filesystem@1.0.0
-opentelemetry@1.6.0
 opentelemetry@1.7.0
-opentelemetry@1.8.0
+opentelemetry@1.9.0
 protobuf-net@2.3.3
 richardszalay.mockhttp@5.0.0
 runtime.any.system.collections@4.3.0
@@ -382,11 +384,16 @@ runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl@4.3.0
 runtime.fedora.23-x64.runtime.native.system.security.cryptography.openssl@4.3.2
 runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl@4.3.0
 runtime.fedora.24-x64.runtime.native.system.security.cryptography.openssl@4.3.2
+runtime.linux-arm.microsoft.netcore.dotnetapphost@8.0.8
+runtime.linux-arm64.microsoft.netcore.dotnetapphost@8.0.8
+runtime.linux-musl-arm.microsoft.netcore.dotnetapphost@8.0.8
+runtime.linux-musl-arm64.microsoft.netcore.dotnetapphost@8.0.8
+runtime.linux-musl-x64.microsoft.netcore.dotnetapphost@8.0.8
+runtime.linux-x64.microsoft.netcore.dotnetapphost@8.0.8
 runtime.native.system.io.compression@4.1.0
 runtime.native.system.io.compression@4.3.0
 runtime.native.system.net.http@4.0.1
 runtime.native.system.net.http@4.3.0
-runtime.native.system.net.security@4.3.0
 runtime.native.system.security.cryptography.apple@4.3.0
 runtime.native.system.security.cryptography.openssl@4.3.0
 runtime.native.system.security.cryptography.openssl@4.3.2
@@ -416,6 +423,8 @@ runtime.unix.system.net.primitives@4.3.0
 runtime.unix.system.net.sockets@4.3.0
 runtime.unix.system.private.uri@4.3.0
 runtime.unix.system.runtime.extensions@4.3.0
+stylecop.analyzers.unstable@1.2.0.556
+stylecop.analyzers@1.2.0-beta.556
 suave@1.1.3
 suaveserverwrapper@0.0.3
 system.appcontext@4.1.0
@@ -425,9 +434,11 @@ system.buffers@4.3.0
 system.buffers@4.5.0
 system.clientmodel@1.0.0
 system.clientmodel@1.1.0
+system.clientmodel@1.2.1
 system.collections.concurrent@4.0.12
 system.collections.concurrent@4.3.0
-system.collections.immutable@1.3.0
+system.collections.immutable@1.2.0
+system.collections.immutable@1.3.1
 system.collections.immutable@1.5.0
 system.collections.immutable@5.0.0
 system.collections.nongeneric@4.0.1
@@ -436,9 +447,11 @@ system.collections.specialized@4.0.1
 system.collections.specialized@4.3.0
 system.collections@4.0.11
 system.collections@4.3.0
+system.commandline@2.0.0-beta5.25306.101
 system.componentmodel.annotations@4.4.0
 system.componentmodel.annotations@4.5.0
 system.componentmodel.eventbasedasync@4.0.11
+system.componentmodel.primitives@4.1.0
 system.componentmodel.primitives@4.3.0
 system.componentmodel.typeconverter@4.1.0
 system.componentmodel.typeconverter@4.3.0
@@ -450,17 +463,22 @@ system.configuration.configurationmanager@4.7.0
 system.configuration.configurationmanager@6.0.0
 system.console@4.0.0
 system.console@4.3.0
+system.diagnostics.contracts@4.0.1
 system.diagnostics.debug@4.0.11
 system.diagnostics.debug@4.3.0
 system.diagnostics.diagnosticsource@4.0.0
 system.diagnostics.diagnosticsource@4.3.0
 system.diagnostics.diagnosticsource@4.5.0
 system.diagnostics.diagnosticsource@5.0.0
+system.diagnostics.diagnosticsource@6.0.0
 system.diagnostics.diagnosticsource@6.0.1
 system.diagnostics.diagnosticsource@8.0.0
+system.diagnostics.fileversioninfo@4.3.0
 system.diagnostics.performancecounter@4.5.0
+system.diagnostics.performancecounter@4.7.0
 system.diagnostics.performancecounter@6.0.0
 system.diagnostics.process@4.1.0
+system.diagnostics.stacktrace@4.3.0
 system.diagnostics.textwritertracelistener@4.0.0
 system.diagnostics.tools@4.0.1
 system.diagnostics.tools@4.3.0
@@ -473,7 +491,6 @@ system.drawing.common@6.0.0
 system.drawing.common@8.0.0
 system.dynamic.runtime@4.0.11
 system.dynamic.runtime@4.3.0
-system.formats.asn1@5.0.0
 system.formats.asn1@6.0.1
 system.globalization.calendars@4.0.1
 system.globalization.calendars@4.3.0
@@ -481,16 +498,12 @@ system.globalization.extensions@4.0.1
 system.globalization.extensions@4.3.0
 system.globalization@4.0.11
 system.globalization@4.3.0
-system.identitymodel.tokens.jwt@5.1.4
-system.identitymodel.tokens.jwt@6.32.0
 system.identitymodel.tokens.jwt@6.35.0
 system.io.abstractions@2.1.0.227
 system.io.compression.zipfile@4.0.1
 system.io.compression.zipfile@4.3.0
 system.io.compression@4.1.0
 system.io.compression@4.3.0
-system.io.filesystem.accesscontrol@4.5.0
-system.io.filesystem.accesscontrol@4.7.0
 system.io.filesystem.accesscontrol@5.0.0
 system.io.filesystem.primitives@4.0.1
 system.io.filesystem.primitives@4.3.0
@@ -502,13 +515,13 @@ system.io@4.1.0
 system.io@4.3.0
 system.linq.expressions@4.1.0
 system.linq.expressions@4.3.0
-system.linq.queryable@4.0.1
 system.linq.queryable@4.3.0
 system.linq@4.1.0
 system.linq@4.3.0
-system.memory.data@1.0.1
 system.memory.data@1.0.2
 system.memory.data@6.0.0
+system.memory.data@8.0.1
+system.memory@4.5.0
 system.memory@4.5.1
 system.memory@4.5.3
 system.memory@4.5.4
@@ -516,23 +529,20 @@ system.memory@4.5.5
 system.net.http@4.1.0
 system.net.http@4.3.0
 system.net.http@4.3.4
-system.net.nameresolution@4.0.0
 system.net.nameresolution@4.3.0
-system.net.networkinformation@4.1.0
 system.net.primitives@4.0.11
 system.net.primitives@4.3.0
-system.net.requests@4.0.11
-system.net.security@4.3.2
 system.net.sockets@4.1.0
 system.net.sockets@4.3.0
-system.net.webheadercollection@4.0.1
 system.numerics.vectors@4.5.0
 system.objectmodel@4.0.12
 system.objectmodel@4.3.0
 system.private.datacontractserialization@4.1.1
 system.private.uri@4.3.0
 system.private.uri@4.3.2
+system.reactive.core@3.1.1
 system.reactive.core@5.0.0
+system.reactive.interfaces@3.1.1
 system.reactive.linq@3.1.1
 system.reactive.linq@5.0.0
 system.reactive@5.0.0
@@ -545,6 +555,7 @@ system.reflection.emit@4.3.0
 system.reflection.extensions@4.0.1
 system.reflection.extensions@4.3.0
 system.reflection.metadata@1.3.0
+system.reflection.metadata@1.4.2
 system.reflection.metadata@1.6.0
 system.reflection.primitives@4.0.1
 system.reflection.primitives@4.3.0
@@ -554,6 +565,8 @@ system.reflection@4.1.0
 system.reflection@4.3.0
 system.resources.resourcemanager@4.0.1
 system.resources.resourcemanager@4.3.0
+system.runtime.compilerservices.unsafe@4.4.0
+system.runtime.compilerservices.unsafe@4.5.0
 system.runtime.compilerservices.unsafe@4.5.1
 system.runtime.compilerservices.unsafe@4.5.2
 system.runtime.compilerservices.unsafe@5.0.0
@@ -564,6 +577,7 @@ system.runtime.handles@4.0.1
 system.runtime.handles@4.3.0
 system.runtime.interopservices.runtimeinformation@4.0.0
 system.runtime.interopservices.runtimeinformation@4.3.0
+system.runtime.interopservices.windowsruntime@4.0.1
 system.runtime.interopservices@4.1.0
 system.runtime.interopservices@4.3.0
 system.runtime.loader@4.0.0
@@ -586,6 +600,7 @@ system.security.cryptography.algorithms@4.3.0
 system.security.cryptography.cng@4.2.0
 system.security.cryptography.cng@4.3.0
 system.security.cryptography.cng@4.5.0
+system.security.cryptography.cng@4.7.0
 system.security.cryptography.cng@5.0.0
 system.security.cryptography.csp@4.0.0
 system.security.cryptography.csp@4.3.0
@@ -610,16 +625,14 @@ system.security.cryptography.xml@4.7.1
 system.security.permissions@4.5.0
 system.security.permissions@4.7.0
 system.security.permissions@6.0.0
-system.security.principal.windows@4.0.0
 system.security.principal.windows@4.3.0
 system.security.principal.windows@4.5.0
 system.security.principal.windows@4.7.0
 system.security.principal.windows@5.0.0
 system.security.principal@4.3.0
-system.security.securestring@4.0.0
 system.text.encoding.codepages@4.0.1
+system.text.encoding.codepages@4.3.0
 system.text.encoding.codepages@4.5.1
-system.text.encoding.codepages@4.7.1
 system.text.encoding.extensions@4.0.11
 system.text.encoding.extensions@4.3.0
 system.text.encoding@4.0.11
@@ -627,20 +640,12 @@ system.text.encoding@4.3.0
 system.text.encodings.web@4.5.0
 system.text.encodings.web@4.7.2
 system.text.encodings.web@6.0.0
-system.text.json@4.6.0
-system.text.json@4.7.2
-system.text.json@5.0.2
-system.text.json@6.0.0
-system.text.json@6.0.10
-system.text.json@6.0.9
-system.text.json@8.0.0
-system.text.json@8.0.4
+system.text.encodings.web@8.0.0
 system.text.json@8.0.5
 system.text.regularexpressions@4.1.0
 system.text.regularexpressions@4.3.0
 system.text.regularexpressions@4.3.1
 system.threading.channels@8.0.0
-system.threading.overlapped@4.0.1
 system.threading.tasks.dataflow@4.8.0
 system.threading.tasks.dataflow@4.9.0
 system.threading.tasks.extensions@4.0.0
@@ -648,6 +653,7 @@ system.threading.tasks.extensions@4.3.0
 system.threading.tasks.extensions@4.5.1
 system.threading.tasks.extensions@4.5.3
 system.threading.tasks.extensions@4.5.4
+system.threading.tasks.parallel@4.3.0
 system.threading.tasks@4.0.11
 system.threading.tasks@4.3.0
 system.threading.thread@4.0.0
@@ -658,6 +664,7 @@ system.threading.timer@4.0.1
 system.threading.timer@4.3.0
 system.threading@4.0.11
 system.threading@4.3.0
+system.valuetuple@4.3.0
 system.valuetuple@4.4.0
 system.windows.extensions@4.7.0
 system.windows.extensions@6.0.0
@@ -669,11 +676,13 @@ system.xml.xmldocument@4.0.1
 system.xml.xmldocument@4.3.0
 system.xml.xmlserializer@4.0.11
 system.xml.xmlserializer@4.3.0
+system.xml.xpath.xdocument@4.3.0
 system.xml.xpath.xmldocument@4.0.1
 system.xml.xpath@4.0.1
+system.xml.xpath@4.3.0
 validation@2.4.15
-windowsazure.storage@8.6.0
 windowsazure.storage@9.3.1
+xunit.abstractions@2.0.1
 xunit.abstractions@2.0.2
 xunit.analyzers@0.10.0
 xunit.assert@2.4.0
@@ -689,6 +698,8 @@ yamldotnet@6.0.0
 yarp.reverseproxy@2.0.1
 "
 
+TEMPLATES_JSON_VERSION="3.1.1648"
+
 inherit dotnet-pkg
 
 DESCRIPTION="Command line tools for Azure Functions"
@@ -696,6 +707,7 @@ HOMEPAGE="https://github.com/Azure/azure-functions-core-tools"
 
 SRC_URI="
 	https://github.com/Azure/${PN}/archive/refs/tags/${PV}.tar.gz -> ${P}.tar.gz
+	https://cdn.functions.azure.com/public/TemplatesApi/${TEMPLATES_JSON_VERSION}.zip -> dotnet-templates-${TEMPLATES_JSON_VERSION}.zip
 	${NUGET_URIS}
 "
 
@@ -706,7 +718,6 @@ IUSE="+python"
 
 BDEPEND="${BDEPEND}
 	dev-lang/go"
-RDEPEND="app-misc/azure-functions-templates"
 DEPEND="${RDEPEND}"
 PDEPEND="python? (
 		dev-python/azure-functions-python-worker
@@ -714,7 +725,16 @@ PDEPEND="python? (
 "
 
 DOTNET_PKG_PROJECTS=(
-	src/Azure.Functions.Cli/Azure.Functions.Cli.csproj
+	src/Cli/func/Azure.Functions.Cli.csproj
+	src/GoZipTool/GoZipTool.csproj
+)
+
+DOTNET_PKG_BAD_PROJECTS=(
+	src/CoreToolsHost/CoreToolsHost.csproj
+)
+
+DOTNET_PKG_BUILD_EXTRA_ARGS=(
+	-p:NoWorkers="true"
 )
 
 pkg_setup() {
@@ -728,14 +748,19 @@ src_prepare() {
                 || die
         find "${S}" -type f -iname "NuGet.config" -exec rm -v {} + || die
 
-	eapply "${FILESDIR}"/support-python3.13.patch
+	dos2unix src/GoZipTool/GoZipTool.csproj || die
+	eapply "${FILESDIR}/goziptool-add-linux-arm64.patch"
+	eapply "${FILESDIR}/python-worker-target-workaround.patch"
+
+	# copy templates
+	mkdir -p out/obj/Azure.Functions.Cli/templates-staging
+	cp "${DISTDIR}"/dotnet-templates-${TEMPLATES_JSON_VERSION}.zip ${S}/out/obj/Azure.Functions.Cli/templates-staging/templates.zip || die
 
 	dotnet-pkg_src_prepare
 }
 
 src_compile() {
 	dotnet-pkg_src_compile
-	go build -o gozip tools/go/gozip/main.go
 }
 
 src_install() {
@@ -743,9 +768,6 @@ src_install() {
 
 	dotnet-pkg-base_install "${dest_root}"
 	dotnet-pkg-base_dolauncher "${dest_root}/func" func
-
-	into "${dest_root}/"
-	dobin gozip
 
 	rm -r "${D}/${dest_root}"/workers/*
 	rm "${D}/${dest_root}"/libMonoPosixHelper.so
