@@ -42,12 +42,16 @@ RDEPEND="
 
 src_prepare() {
 	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
-	eapply "${FILESDIR}"/cmake-no-absolute-paths-8.0.patch
 	eapply "${FILESDIR}"/fix-missing-invalid-state.patch
+	eapply "${FILESDIR}"/disable-optimization-gc.patch
 
-	pushd "${S}/../native/libs" >/dev/null
-	eapply "${FILESDIR}"/remove-build-type-logic.patch
-	popd >/dev/null
+	pushd "${S}/../native/libs" >/dev/null || die
+	eapply "${FILESDIR}"/remove-native-build-type-logic.patch
+	popd >/dev/null || die
+
+	pushd "${S}/../../" >/dev/null || die
+	eapply "${FILESDIR}"/remove-coreclr-build-type-logic-8.0.patch
+	popd >/dev/null || die
 
 	dotnet-runtime_src_prepare
 }
