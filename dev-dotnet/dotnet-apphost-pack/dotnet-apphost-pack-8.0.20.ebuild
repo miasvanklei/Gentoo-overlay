@@ -4,7 +4,6 @@
 EAPI=8
 
 DOTNET_COMMIT="eba546b0f0d448e0176a2222548fd7a2fbf464c0"
-DOTNET_RUNTIME_PV="${PV}"
 DOTNET_SRC_DIR="src/native/corehost"
 DOTNET_TARGETS=(
 	'libhostpolicy.so'
@@ -13,7 +12,7 @@ DOTNET_TARGETS=(
 	'libhostfxr.so'
 )
 
-inherit dotnet-utils dotnet-runtime
+inherit dotnet-runtime
 
 DESCRIPTION="The .NET Core apphost pack"
 HOMEPAGE="https://www.microsoft.com/net/core"

@@ -3,7 +3,6 @@
 
 EAPI=8
 
-DOTNET_RUNTIME_PV="${PV}"
 TARGETING_PACK="Microsoft.NETCore.App.Ref"
 NUGETS=(
 	"microsoft.netcore.app.ref"

@@ -3,7 +3,6 @@
 
 EAPI=8
 
-DOTNET_RUNTIME_PV="${PV}"
 RUNTIME_PACK="Microsoft.AspNetCore.App"
 NUGETS=(
 	"microsoft.aspnetcore.app.runtime.linux-musl-arm64 arm64"
