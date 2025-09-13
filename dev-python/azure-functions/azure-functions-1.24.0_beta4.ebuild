@@ -15,10 +15,6 @@ LICENSE="MIT"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 
-PATCHES=(
-	"${FILESDIR}/dont-install-tests.patch"
-)
-
 RDEPEND="
         dev-python/werkzeug[${PYTHON_USEDEP}]
 "
