@@ -7,18 +7,7 @@
 -        "defaultExecutablePath":"python",
 -        "defaultWorkerPath":"%FUNCTIONS_WORKER_RUNTIME_VERSION%/{os}/{architecture}/worker.py",
 +        "defaultExecutablePath":"python%FUNCTIONS_WORKER_RUNTIME_VERSION%",
-+        "defaultWorkerPath":"/usr/lib/python%FUNCTIONS_WORKER_RUNTIME_VERSION%/site-packages/python/prodV4/worker.py",
++        "defaultWorkerPath":"%FUNCTIONS_WORKER_RUNTIME_VERSION%/worker.py",
          "workerIndexing": "true",
          "arguments": ["-X no_debug_ranges"]
      },
---- a/python/prodV4/worker.py	2025-02-18 12:53:43.108193438 +0100
-+++ b/python/prodV4/worker.py	2025-02-18 12:53:52.360095217 +0100
-@@ -35,7 +35,7 @@
-     """
-     minor_version = sys.version_info[1]
- 
--    if not (7 <= minor_version <= 12):
-+    if not (7 <= minor_version <= 13):
-         raise RuntimeError(f'Unsupported Python version: 3.{minor_version}')
- 
-     usr_packages_path = [os.path.join(PKGS_PATH, PKGS)]

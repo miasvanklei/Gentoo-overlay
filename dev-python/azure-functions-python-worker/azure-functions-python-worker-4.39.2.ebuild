@@ -36,9 +36,8 @@ RDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}/fix-install-sources.patch"
-	"${FILESDIR}/support-python-3.13.patch"
 	"${FILESDIR}/remove-invoke.patch"
+	"${FILESDIR}/fix-worker_py-path.patch"
 )
 
 S="${WORKDIR}/${P}/workers"
@@ -46,17 +45,31 @@ S="${WORKDIR}/${P}/workers"
 python_prepare_all() {
 	dos2unix tests/test_setup.py
 	distutils-r1_python_prepare_all
+}
+
+python_compile() {
+	distutils-r1_python_compile
 
 	# generate protos
 	pushd tests >/dev/null
-	python -c 'import test_setup; test_setup.gen_grpc()' || die
+	"${EPYTHON}" -c 'import test_setup; test_setup.gen_grpc()' || die
 	popd >/dev/null
 }
 
+python_install() {
+	local pyversion="${MULTIBUILD_VARIANT/python/}"
+	pyversion="${pyversion/_/.}"
 
-python_install_all() {
-	distutils-r1_python_install_all
-
+	# install config
 	insinto /usr/lib/azure-functions-core-tools-4/workers/python
 	doins python/prodV4/worker.config.json
+
+	# install worker
+	local worker=$(if [[ ${pyversion} < "3.13" ]]; then echo "azure_functions_worker"; else echo "proxy_worker"; fi)
+
+	python_moduleinto /usr/lib/azure-functions-core-tools-4/workers/python/${pyversion}/
+	python_domodule python/proxyV4/*
+
+	python_moduleinto /usr/lib/azure-functions-core-tools-4/workers/python/${pyversion}/
+	python_domodule ${worker}
 }
