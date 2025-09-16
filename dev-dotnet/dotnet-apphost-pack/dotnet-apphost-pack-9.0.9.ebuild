@@ -4,7 +4,6 @@
 EAPI=8
 
 DOTNET_COMMIT="80aa709f5d919c6814726788dc6dabe23e79e672"
-DOTNET_RUNTIME_PV="${PV}"
 DOTNET_SRC_DIR="src/native/corehost"
 DOTNET_TARGETS=(
 	'libhostpolicy.so'
