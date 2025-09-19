@@ -74,18 +74,24 @@ RDEPEND+="
 	dev-util/patchelf
 	net-misc/curl[http2,ssh]
 	sci-libs/fftw:3.0=[threads]
-	sci-libs/openblas:0
-	sci-libs/openlibm:0
+	sci-libs/openlibm:0=
 	>=sci-libs/suitesparse-7.10.0
 	>=sci-mathematics/dsfmt-2.2.4
-	llvm-core/llvm:=
 	sys-libs/zlib:0=
+	virtual/blas
+	virtual/lapack
 	|| (
 		llvm-runtimes/libgcc
 		sys-devel/gcc
 	)
-	amd64? ( sci-libs/openblas[index-64bit] )
-	arm64? ( sci-libs/openblas[index-64bit] )
+	amd64? (
+		virtual/blas[index64]
+		virtual/lapack[index64]
+	)
+	arm64? (
+		virtual/blas[index64]
+		virtual/lapack[index64]
+	)
 "
 
 DEPEND="${RDEPEND}
