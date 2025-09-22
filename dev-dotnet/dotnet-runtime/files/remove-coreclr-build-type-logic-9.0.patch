@@ -1,0 +1,27 @@
+--- a/eng/native/configureoptimization.cmake	2025-07-15 19:12:24.000000000 +0200
++++ b/eng/native/configureoptimization.cmake	2025-09-13 10:45:37.706477600 +0200
+@@ -9,14 +9,4 @@
+     endif()
+     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:Release>>:/Ox>)
+     add_compile_options($<$<AND:$<COMPILE_LANGUAGE:C,CXX>,$<CONFIG:RelWithDebInfo>>:/O2>)
+-elseif(CLR_CMAKE_HOST_UNIX)
+-    add_compile_options($<$<CONFIG:Debug>:-O0>)
+-    add_compile_options($<$<CONFIG:Checked>:-O2>)
+-    if(CLR_CMAKE_TARGET_ANDROID)
+-        # -O2 optimization generates faster/smaller code on Android
+-        add_compile_options($<$<CONFIG:Release>:-O2>)
+-    else()
+-        add_compile_options($<$<CONFIG:Release>:-O3>)
+-    endif()
+-    add_compile_options($<$<CONFIG:RelWithDebInfo>:-O2>)
+ endif()
+--- a/eng/native/configurecompiler.cmake	2025-08-21 17:38:47.000000000 +0200
++++ b/eng/native/configurecompiler.cmake	2025-09-13 17:04:39.136009841 +0200
+@@ -28,7 +28,6 @@
+     add_compile_options(-Wall)
+     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+         add_compile_options(-Wno-null-conversion)
+-        add_compile_options(-glldb)
+     else()
+         add_compile_options(-g)
+     endif()
