@@ -42,7 +42,6 @@ RDEPEND="
 src_prepare() {
 	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
 	eapply "${FILESDIR}"/fix-missing-invalid-state.patch
-	eapply "${FILESDIR}"/disable-optimization-gc.patch
 
 	pushd "${S}/../native/libs" >/dev/null || die
 	eapply "${FILESDIR}"/remove-native-build-type-logic.patch
