@@ -1,0 +1,30 @@
+--- a/include/stdio.h
++++ b/include/stdio.h
+@@ -158,6 +158,13 @@ char *ctermid(char *);
+ #define L_ctermid 20
+ #endif
+ 
++#if defined(_GNU_SOURCE)
++#define RENAME_NOREPLACE (1 << 0)
++#define RENAME_EXCHANGE  (1 << 1)
++#define RENAME_WHITEOUT  (1 << 2)
++
++int renameat2(int, const char *, int, const char *, unsigned);
++#endif
+ 
+ #if defined(_XOPEN_SOURCE) || defined(_GNU_SOURCE) \
+  || defined(_BSD_SOURCE)
+--- /dev/null
++++ b/src/linux/renameat2.c
+@@ -0,0 +1,11 @@
++#define _GNU_SOURCE
++#include <stdio.h>
++#include "syscall.h"
++
++int renameat2(int oldfd, const char *old, int newfd, const char *new, unsigned flags)
++{
++#ifdef SYS_renameat
++	if (!flags) return syscall(SYS_renameat, oldfd, old, newfd, new);
++#endif
++	return syscall(SYS_renameat2, oldfd, old, newfd, new, flags);
++}
