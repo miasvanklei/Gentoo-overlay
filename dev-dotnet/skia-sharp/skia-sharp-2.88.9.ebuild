@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit ninja-utils
+inherit git-r3 ninja-utils
 
 DESCRIPTION="The Skia 2D Graphics library from Google exposed to .NET languages and runtimes across the board"
 HOMEPAGE="https://github.com/mono/SkiaSharp"
@@ -11,25 +11,12 @@ HOMEPAGE="https://github.com/mono/SkiaSharp"
 SKIA_COMMIT="4bed689c9c9eb77a120c6a9d54af6a572c85d1c2"
 
 THIRD_PARTY_DEPS=(
-	"zlib https://chromium.googlesource.com/chromium/src/third_party 3ca9f16f02950edffa391ec19cea856090158e9e"
+	"zlib https://android.googlesource.com/platform/external 3ca9f16f02950edffa391ec19cea856090158e9e"
 	"dng_sdk https://android.googlesource.com/platform/external c8d0c9b1d16bfda56f15165d39e0ffa360a11123"
 	"piex https://android.googlesource.com/platform/external bb217acdca1cc0c16b704669dd6f91a1b509c406"
 )
 
 SRC_URI="https://github.com/mono/skia/archive/${SKIA_COMMIT}.tar.gz -> ${PN}-${SKIA_COMMIT}.tar.gz"
-
-update_SRC_URI() {
-	local uri dep commit
-
-        for p in "${THIRD_PARTY_DEPS[@]}"; do
-		set -- $p
-		dep=$1 uri=$2 commit=$3
-
-                SRC_URI+=" ${uri}/${dep}.git/+archive/${commit}.tar.gz -> ${PN}-${dep}-${commit}.tar.gz"
-        done
-}
-
-update_SRC_URI
 
 S="${WORKDIR}/${PN}-${SKIA_COMMIT}"
 
@@ -58,20 +45,19 @@ PATCHES=(
 	"${FILESDIR}/cxx17-deprecated-result_of.patch"
 )
 
-src_unpack() {
-        local dep commit
+S="${WORKDIR}/skia-${SKIA_COMMIT}"
 
-	mkdir "${S}"
-	tar -C "${S}" -x -o --strip-components 1 -f "${DISTDIR}/${PN}-${SKIA_COMMIT}.tar.gz" || die
+src_unpack() {
+	if [[ -n ${A} ]]; then
+		unpack ${A}
+	fi
 
         for p in "${THIRD_PARTY_DEPS[@]}"; do
 		set -- $p
-		dep=$1 commit=$3
+		dep=$1 uri=$2 commit=$3
 
-		local destdir="${S}/third_party/externals/${dep}/"
-		mkdir -p "${destdir}" || die
-		tar -C "${destdir}" -x -o -f "${DISTDIR}/${PN}-${dep}-${commit}.tar.gz" || die
-		cp "${S}/third_party/${dep}/"* "${destdir}"
+		git-r3_fetch $uri/$dep $commit
+		git-r3_checkout $uri/$dep "${S}/third_party/externals/${dep}"
 	done
 }
 
