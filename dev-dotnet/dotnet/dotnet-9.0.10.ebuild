@@ -3,7 +3,6 @@
 
 EAPI=8
 
-DOTNET_RUNTIME_PV="${PV}"
 DOTNET_SRC_DIR="src/native/corehost"
 DOTNET_TARGETS=(
 	'dotnet'
