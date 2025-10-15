@@ -6,9 +6,11 @@ EAPI=8
 # tarball generated using "gh workflow -R ${repo}/gentoo-deps run generator.yml -f REPO=vadimcn/codelldb -f TAG=v${PV} -f P=codelldb-${PV} -f LANG=rust -f WORKDIR=adapter/codelldb"
 
 declare -A GIT_CRATES=(
-	[weaklink]='https://github.com/vadimcn/weaklink;e11a77c73534b18c354ee98765dd20354ec45258;weaklink-%commit%/weaklink'
-	[weaklink_build]='https://github.com/vadimcn/weaklink;e11a77c73534b18c354ee98765dd20354ec45258;weaklink-%commit%/weaklink_build'
+	[weaklink]='https://github.com/vadimcn/weaklink;a97ecc2e6467ae6316e14f2d8855275b7983b5a7;weaklink-%commit%/weaklink'
+	[weaklink_build]='https://github.com/vadimcn/weaklink;a97ecc2e6467ae6316e14f2d8855275b7983b5a7;weaklink-%commit%/weaklink_build'
 )
+
+RUST_MIN_VER="1.88.0"
 
 inherit cargo
 
@@ -30,11 +32,6 @@ KEYWORDS="~amd64 ~arm64"
 
 RDEPEND="llvm-core/lldb:="
 
-PATCHES=(
-	"${FILESDIR}/fix-compile-on-musl.patch"
-	"${FILESDIR}/fix-libcxx-20.patch"
-)
-
 # rust does not use *FLAGS from make.conf, silence portage warning
 # update with proper path to binaries this crate installs, omit leading /
 QA_FLAGS_IGNORED="usr/bin/${PN}"
@@ -47,15 +44,27 @@ src_prepare() {
 		LLDB_DYLIB = "/usr/lib/liblldb.so"
 	_EOF_
 
+	eapply "${FILESDIR}/fix-compile-on-musl.patch"
+	eapply "${FILESDIR}/fix-libcxx-20.patch"
+
+	pushd "${WORKDIR}" >/dev/null
+	eapply "${FILESDIR}/fix-alignment.patch"
+	popd >/dev/null
+
 	default
 }
 
 src_compile() {
+        cargo_src_compile -p codelldb-launch
         cargo_src_compile -p codelldb
 }
 
 src_install() {
-        pushd adapter/codelldb >/dev/null
+        pushd src/codelldb-launch >/dev/null
+        cargo_src_install
+        popd >/dev/null
+
+        pushd src/codelldb >/dev/null
         cargo_src_install
         popd >/dev/null
 
@@ -70,4 +79,5 @@ src_install() {
 	done
 
 	mv ${D}/usr/bin/codelldb ${D}/usr/lib/codelldb
+	mv ${D}/usr/bin/codelldb-launch ${D}/usr/lib/codelldb
 }
