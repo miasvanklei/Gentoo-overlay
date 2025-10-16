@@ -17,6 +17,16 @@ esac
 if [[ -z ${_DOTNET_PACK_ECLASS} ]]; then
 _DOTNET_PACK_ECLASS=1
 
+if [[ -z ${DOTNET_RUNTIME_PV} ]]; then
+	DOTNET_PV="$(ver_cut 1-3)"
+	DOTNET_PV_SUFFIX="$(ver_cut 4-)"
+	if [[ -n $DOTNET_PV_SUFFIX ]]; then
+		DOTNET_RUNTIME_PV="${DOTNET_PV}-rc.${DOTNET_PV_SUFFIX:2:1}.${DOTNET_PV_SUFFIX:3:5}.${DOTNET_PV_SUFFIX:8:3}"
+	else
+		DOTNET_RUNTIME_PV="${DOTNET_PV}"
+	fi
+fi
+
 inherit dotnet-utils
 
 S="${WORKDIR}"

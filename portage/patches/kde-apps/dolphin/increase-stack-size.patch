@@ -1,0 +1,13 @@
+--- a/src/CMakeLists.txt	2025-08-30 16:37:45.682421478 +0200
++++ b/src/CMakeLists.txt	2025-08-30 16:37:38.262421102 +0200
+@@ -538,6 +538,10 @@
+     KF6::Crash
+ )
+ 
++# Musl has a stacksize of 128kb, this is not enough for certain operations.
++# Increase it to 256kb
++target_link_options(dolphin PRIVATE "-Wl,-z,stack-size=0x262144")
++
+ if (HAVE_X11)
+     target_link_libraries(dolphin PRIVATE Qt::GuiPrivate)
+ endif()

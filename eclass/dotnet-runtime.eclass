@@ -14,8 +14,6 @@ case ${EAPI} in
 	*) die "${ECLASS}: EAPI ${EAPI:-0} not supported" ;;
 esac
 
-inherit cmake dotnet-utils
-
 if [[ -z ${_DOTNET_RUNTIME_ECLASS} ]]; then
 _DOTNET_RUNTIME_ECLASS=1
 
@@ -24,9 +22,19 @@ if [[ -z ${DOTNET_SRC_DIR} ]] ; then
 	die "${ECLASS}: DOTNET_SRC_DIR not set"
 fi
 
+DOTNET_PV="$(ver_cut 1-3)"
+DOTNET_PV_SUFFIX="$(ver_cut 4-)"
+if [[ -n $DOTNET_PV_SUFFIX ]]; then
+        DOTNET_RUNTIME_PV="${DOTNET_PV}-rc.${DOTNET_PV_SUFFIX:2:1}.${DOTNET_PV_SUFFIX:3:5}.${DOTNET_PV_SUFFIX:8:3}"
+else
+        DOTNET_RUNTIME_PV="${DOTNET_PV}"
+fi
+
+inherit cmake dotnet-utils
+
 DOTNET_ROOT_DIR="${WORKDIR}/runtime-${DOTNET_RUNTIME_PV}"
 S="${DOTNET_ROOT_DIR}/${DOTNET_SRC_DIR}"
-SRC_URI+=" https://github.com/dotnet/runtime/archive/refs/tags/v${DOTNET_RUNTIME_PV}.tar.gz -> dotnet-runtime-${PV}.tar.gz"
+SRC_URI+=" https://github.com/dotnet/runtime/archive/refs/tags/v${DOTNET_RUNTIME_PV}.tar.gz -> dotnet-runtime-${DOTNET_RUNTIME_PV}.tar.gz"
 
 # @FUNCTION: dotnet-pkg_src_unpack
 # @DESCRIPTION:
