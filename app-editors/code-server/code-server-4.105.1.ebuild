@@ -21,7 +21,7 @@ NAN_V=2.22.2
 
 NODE_ADDON_API_V=8.4.0
 NATIVE_WATCHDOG_V=1.4.1
-NODE_PTY_V=1.1.0-beta33
+NODE_PTY_V=1.1.0-beta35
 VSCODE_SPDLOG_V=0.15.2
 ARGON2_V=0.31.1
 PARCEL_WATCHER_V=2.5.1
@@ -248,8 +248,6 @@ cleanup_binmods() {
 	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg || die "failed to remove bundled ripgrep"
 
 	# remove argon2 && watcher
-	rm -r "$(get_binmod_loc @parcel/watcher-linux-x64-glibc)" || die
-	rm -r "$(get_binmod_loc @parcel/watcher-linux-x64-musl)" || die
 	rm -r "$(get_binmod_loc @parcel/watcher/build/Release/obj.target)" || die
 	rm -r "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node" || die
 	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
