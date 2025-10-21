@@ -27,7 +27,7 @@ STDLIBS=(
 	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
 	"JuliaLang LinearAlgebra.jl 24f5e21cf3a560ca560c5a1759ff21ba68382ebd"
 	"JuliaLang NetworkOptions.jl 532992fcc0f1d02df48374969cbae37e34c01360"
-	"JuliaLang Pkg.jl 69926e385c878253d62e2588a19b252277196ebf"
+	"JuliaLang Pkg.jl f571edda902c848382517503665fea6aa275ceb9"
 	"JuliaCrypto SHA.jl 4451e1362e425bcbc1652ecf55fc0e525b18fb63"
 	"JuliaSparse SparseArrays.jl 5d674dc7bd90156cf8ecea4e143b69b5a5b7640d"
 	"JuliaStats Statistics.jl 77bd5707f143eb624721a7df28ddef470e70ecef"
@@ -42,7 +42,7 @@ BUNDLED_DEPS=(
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
-	"JuliaLinearAlgebra libblastrampoline f26278e83ddc9035ae7695da597f1a5b26a4c62b"
+	"JuliaLinearAlgebra libblastrampoline 072b5f67895bec0b92f8c83194567c1c48e9833d"
 )
 
 update_SRC_URI() {
