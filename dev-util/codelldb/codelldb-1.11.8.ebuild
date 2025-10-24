@@ -17,7 +17,7 @@ inherit cargo
 DESCRIPTION="A native debugger extension for VSCode based on LLDB"
 HOMEPAGE="https://github.com/vadimcn/codelldb"
 SRC_URI="https://github.com/vadimcn/codelldb/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz
-	https://github.com/miasvanklei/gentoo-deps/releases/download/${PN}-1.11.6/${PN}-1.11.6-crates.tar.xz
+	https://github.com/miasvanklei/gentoo-deps/releases/download/${P}/${P}-crates.tar.xz
 	${CARGO_CRATE_URIS}"
 
 LICENSE=""
