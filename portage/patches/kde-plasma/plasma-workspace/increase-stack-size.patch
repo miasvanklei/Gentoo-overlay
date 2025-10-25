@@ -1,0 +1,26 @@
+--- a/shell/CMakeLists.txt	2025-10-25 14:09:53.844684719 +0200
++++ b/shell/CMakeLists.txt	2025-10-25 14:16:07.592683752 +0200
+@@ -142,6 +142,10 @@
+     target_link_libraries(plasmashell PRIVATE KF6::KIOGui)
+ endif()
+ 
++# Musl has a stacksize of 128kb, this is not enough for certain operations.
++# Increase it to 256kb
++target_link_options(plasmashell PRIVATE "-Wl,-z,stack-size=0x262144")
++
+ configure_file(org.kde.plasmashell.desktop.cmake ${CMAKE_CURRENT_BINARY_DIR}/org.kde.plasmashell.desktop @ONLY)
+ 
+ install(TARGETS plasmashell ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+--- a/krunner/CMakeLists.txt	2025-10-25 14:09:53.636684706 +0200
++++ b/krunner/CMakeLists.txt	2025-10-25 14:16:46.120683659 +0200
+@@ -31,6 +31,10 @@
+ )
+ target_compile_definitions(krunner PRIVATE -DPROJECT_VERSION="${PROJECT_VERSION}")
+ 
++# Musl has a stacksize of 128kb, this is not enough for certain operations.
++# Increase it to 256kb
++target_link_options(krunner PRIVATE "-Wl,-z,stack-size=0x262144")
++
+ install(TARGETS krunner ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+ install(FILES ${krunner_dbusAppXML} DESTINATION ${KDE_INSTALL_DBUSINTERFACEDIR} )
+ 
