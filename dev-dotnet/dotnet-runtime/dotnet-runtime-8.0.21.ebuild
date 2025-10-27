@@ -43,7 +43,7 @@ RDEPEND="
 
 PATCHES=(
 	"${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
-	"${FILESDIR}"/fix-missing-invalid-state.patch
+	"${FILESDIR}"/clang-21-build-fixes.patch
 	"${FILESDIR}"/remove-native-build-type-logic.patch
 	"${FILESDIR}"/remove-coreclr-build-type-logic-8.0.patch
 )
