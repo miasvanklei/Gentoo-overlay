@@ -1,0 +1,146 @@
+diff --git a/drivers/gpu/drm/panthor/panthor_drv.c b/drivers/gpu/drm/panthor/panthor_drv.c
+index 1116f2d2826ee..775a66c394544 100644
+--- a/drivers/gpu/drm/panthor/panthor_drv.c
++++ b/drivers/gpu/drm/panthor/panthor_drv.c
+@@ -1400,14 +1400,9 @@ panthor_open(struct drm_device *ddev, struct drm_file *file)
+ 	struct panthor_file *pfile;
+ 	int ret;
+ 
+-	if (!try_module_get(THIS_MODULE))
+-		return -EINVAL;
+-
+ 	pfile = kzalloc(sizeof(*pfile), GFP_KERNEL);
+-	if (!pfile) {
+-		ret = -ENOMEM;
+-		goto err_put_mod;
+-	}
++	if (!pfile)
++		return -ENOMEM;
+ 
+ 	pfile->ptdev = ptdev;
+ 	pfile->user_mmio.offset = DRM_PANTHOR_USER_MMIO_OFFSET;
+@@ -1439,9 +1434,6 @@ panthor_open(struct drm_device *ddev, struct drm_file *file)
+ 
+ err_free_file:
+ 	kfree(pfile);
+-
+-err_put_mod:
+-	module_put(THIS_MODULE);
+ 	return ret;
+ }
+ 
+@@ -1454,7 +1446,6 @@ panthor_postclose(struct drm_device *ddev, struct drm_file *file)
+ 	panthor_vm_pool_destroy(pfile);
+ 
+ 	kfree(pfile);
+-	module_put(THIS_MODULE);
+ }
+ 
+ static const struct drm_ioctl_desc panthor_drm_driver_ioctls[] = {
+@@ -1555,6 +1546,7 @@ static void panthor_show_fdinfo(struct drm_printer *p, struct drm_file *file)
+ }
+ 
+ static const struct file_operations panthor_drm_driver_fops = {
++	.owner = THIS_MODULE,
+ 	.open = drm_open,
+ 	.release = drm_release,
+ 	.unlocked_ioctl = drm_ioctl,
+diff --git a/drivers/gpu/drm/panthor/panthor_sched.c b/drivers/gpu/drm/panthor/panthor_sched.c
+index a2248f692a030..823b0fe678ba6 100644
+--- a/drivers/gpu/drm/panthor/panthor_sched.c
++++ b/drivers/gpu/drm/panthor/panthor_sched.c
+@@ -641,6 +641,15 @@ struct panthor_group {
+ 		size_t kbo_sizes;
+ 	} fdinfo;
+ 
++	/** @task_info: Info of current->group_leader that created the group. */
++	struct {
++		/** @pid: pid of current->group_leader */
++		pid_t pid;
++
++		/** @comm: comm of current->group_leader */
++		char comm[TASK_COMM_LEN];
++	} task_info;
++
+ 	/** @state: Group state. */
+ 	enum panthor_group_state state;
+ 
+@@ -1364,8 +1364,12 @@ cs_slot_process_fatal_event_locked(struct panthor_device *ptdev,
+ 	fatal = cs_iface->output->fatal;
+ 	info = cs_iface->output->fatal_info;
+ 
+-	if (group)
++	if (group) {
++		drm_warn(&ptdev->base, "CS_FATAL: pid=%d, comm=%s\n",
++			 group->task_info.pid, group->task_info.comm);
++
+ 		group->fatal_queues |= BIT(cs_id);
++	}
+ 
+ 	if (CS_EXCEPTION_TYPE(fatal) == DRM_PANTHOR_EXCEPTION_CS_UNRECOVERABLE) {
+ 		/* If this exception is unrecoverable, queue a reset, and make
+@@ -1425,6 +1429,11 @@ cs_slot_process_fault_event_locked(struct panthor_device *ptdev,
+ 		spin_unlock(&queue->fence_ctx.lock);
+ 	}
+ 
++	if (group) {
++		drm_warn(&ptdev->base, "CS_FAULT: pid=%d, comm=%s\n",
++			 group->task_info.pid, group->task_info.comm);
++	}
++
+ 	drm_warn(&ptdev->base,
+ 		 "CSG slot %d CS slot: %d\n"
+ 		 "CS_FAULT.EXCEPTION_TYPE: 0x%x (%s)\n"
+@@ -1641,11 +1650,15 @@ csg_slot_process_progress_timer_event_locked(struct panthor_device *ptdev, u32 c
+ 
+ 	lockdep_assert_held(&sched->lock);
+ 
+-	drm_warn(&ptdev->base, "CSG slot %d progress timeout\n", csg_id);
+-
+ 	group = csg_slot->group;
+-	if (!drm_WARN_ON(&ptdev->base, !group))
++	if (!drm_WARN_ON(&ptdev->base, !group)) {
++		drm_warn(&ptdev->base, "CSG_PROGRESS_TIMER_EVENT: pid=%d, comm=%s\n",
++			 group->task_info.pid, group->task_info.comm);
++
+ 		group->timedout = true;
++	}
++
++	drm_warn(&ptdev->base, "CSG slot %d progress timeout\n", csg_id);
+ 
+ 	sched_queue_delayed_work(sched, tick, 0);
+ }
+@@ -3227,7 +3240,8 @@ queue_timedout_job(struct drm_sched_job *sched_job)
+ 	struct panthor_scheduler *sched = ptdev->scheduler;
+ 	struct panthor_queue *queue = group->queues[job->queue_idx];
+ 
+-	drm_warn(&ptdev->base, "job timeout\n");
++	drm_warn(&ptdev->base, "job timeout: pid=%d, comm=%s, seqno=%llu\n",
++		 group->task_info.pid, group->task_info.comm, job->done_fence->seqno);
+ 
+ 	drm_WARN_ON(&ptdev->base, atomic_read(&sched->reset.in_progress));
+ 
+@@ -3389,6 +3398,14 @@ group_create_queue(struct panthor_group *group,
+ 	return ERR_PTR(ret);
+ }
+ 
++static void group_init_task_info(struct panthor_group *group)
++{
++	struct task_struct *task = current->group_leader;
++
++	group->task_info.pid = task->pid;
++	get_task_comm(group->task_info.comm, task);
++}
++
+ static void add_group_kbo_sizes(struct panthor_device *ptdev,
+ 				struct panthor_group *group)
+ {
+@@ -3540,6 +3557,8 @@ int panthor_group_create(struct panthor_file *pfile,
+ 	add_group_kbo_sizes(group->ptdev, group);
+ 	spin_lock_init(&group->fdinfo.lock);
+ 
++	group_init_task_info(group);
++
+ 	return gid;
+ 
+ err_put_group:
