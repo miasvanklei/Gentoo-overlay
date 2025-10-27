@@ -33,27 +33,21 @@ BDEPEND="
         >=dev-libs/openssl-1.0.2h-r2
         >=dev-libs/icu-57.1
         >=dev-util/lttng-ust-2.8.1
-	>=sys-devel/gettext-0.19.7"
+	>=sys-devel/gettext-0.19.7
+"
 
 RDEPEND="
 	${BDEPEND}
 	=dev-dotnet/dotnet-native-libs-${PV}
-	=dev-dotnet/dotnet-apphost-pack-${PV}"
+	=dev-dotnet/dotnet-apphost-pack-${PV}
+"
 
-src_prepare() {
-	eapply "${FILESDIR}"/fix-and-cleanup-set-stacksize-9.0.patch
-	eapply "${FILESDIR}"/fix-missing-invalid-state.patch
-
-	pushd "${S}/../native/libs" >/dev/null || die
-	eapply "${FILESDIR}"/remove-native-build-type-logic.patch
-	popd >/dev/null || die
-
-	pushd "${S}/../../" >/dev/null || die
-	eapply "${FILESDIR}"/remove-coreclr-build-type-logic-9.0.patch
-	popd >/dev/null || die
-
-	dotnet-runtime_src_prepare
-}
+PATCHES=(
+	"${FILESDIR}"/fix-and-cleanup-set-stacksize-9.0.patch
+	"${FILESDIR}"/clang-21-build-fixes.patch
+	"${FILESDIR}"/remove-native-build-type-logic.patch
+	"${FILESDIR}"/remove-coreclr-build-type-logic-9.0.patch
+)
 
 src_configure() {
 	local mycmakeargs=(

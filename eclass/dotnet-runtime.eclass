@@ -33,7 +33,8 @@ fi
 inherit cmake dotnet-utils
 
 DOTNET_ROOT_DIR="${WORKDIR}/runtime-${DOTNET_RUNTIME_PV}"
-S="${DOTNET_ROOT_DIR}/${DOTNET_SRC_DIR}"
+CMAKE_USE_DIR="${DOTNET_ROOT_DIR}/${DOTNET_SRC_DIR}"
+S="${DOTNET_ROOT_DIR}"
 SRC_URI+=" https://github.com/dotnet/runtime/archive/refs/tags/v${DOTNET_RUNTIME_PV}.tar.gz -> dotnet-runtime-${DOTNET_RUNTIME_PV}.tar.gz"
 
 # @FUNCTION: dotnet-pkg_src_unpack
