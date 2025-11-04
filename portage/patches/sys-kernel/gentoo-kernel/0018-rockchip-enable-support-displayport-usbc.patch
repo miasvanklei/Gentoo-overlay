@@ -1,26 +1,728 @@
-diff --git a/drivers/phy/rockchip/phy-rockchip-typec.c b/drivers/phy/rockchip/phy-rockchip-typec.c
-index d9701b6106d5..6334953a225e 100644
---- a/drivers/phy/rockchip/phy-rockchip-typec.c
-+++ b/drivers/phy/rockchip/phy-rockchip-typec.c
-@@ -47,6 +47,7 @@ 
- #include <linux/mutex.h>
- #include <linux/of.h>
- #include <linux/of_address.h>
-+#include <linux/of_graph.h>
- #include <linux/of_platform.h>
- #include <linux/platform_device.h>
- #include <linux/regmap.h>
-@@ -54,6 +55,9 @@ 
+--- a/drivers/gpu/drm/bridge/Kconfig	2025-10-27 15:23:26.890330273 +0100
++++ b/drivers/gpu/drm/bridge/Kconfig	2025-10-27 15:23:46.778137290 +0100
+@@ -33,6 +33,17 @@
+ menu "Display Interface Bridges"
+ 	depends on DRM && DRM_BRIDGE
+ 
++config DRM_AUX_TYPEC_DP_HPD_BRIDGE
++	tristate "TypeC DP HPD bridge"
++	depends on DRM_BRIDGE && OF && TYPEC
++	select DRM_AUX_HPD_BRIDGE
++	help
++	  Simple USB Type-C DP bridge that terminates the bridge chain and
++	  provides HPD support.
++
++	  If the USB-C controller driver has not implemented this and you need
++	  the DP HPD support, say "Y" or "m" here.
++
+ config DRM_CHIPONE_ICN6211
+ 	tristate "Chipone ICN6211 MIPI-DSI/RGB Converter bridge"
+ 	depends on OF
+--- a/drivers/gpu/drm/bridge/Makefile	2025-10-27 15:23:26.890330273 +0100
++++ b/drivers/gpu/drm/bridge/Makefile	2025-10-27 15:23:46.778137290 +0100
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ obj-$(CONFIG_DRM_AUX_BRIDGE) += aux-bridge.o
+ obj-$(CONFIG_DRM_AUX_HPD_BRIDGE) += aux-hpd-bridge.o
++obj-$(CONFIG_DRM_AUX_TYPEC_DP_HPD_BRIDGE) += aux-hpd-typec-dp-bridge.o
+ obj-$(CONFIG_DRM_CHIPONE_ICN6211) += chipone-icn6211.o
+ obj-$(CONFIG_DRM_CHRONTEL_CH7033) += chrontel-ch7033.o
+ obj-$(CONFIG_DRM_CROS_EC_ANX7688) += cros-ec-anx7688.o
+--- a/drivers/gpu/drm/bridge/aux-hpd-typec-dp-bridge.c	1970-01-01 01:00:00.000000000 +0100
++++ b/drivers/gpu/drm/bridge/aux-hpd-typec-dp-bridge.c	2025-10-27 15:23:46.782137251 +0100
+@@ -0,0 +1,51 @@
++// SPDX-License-Identifier: GPL-2.0+
++#include <linux/of.h>
++#include <linux/usb/typec_altmode.h>
++#include <linux/usb/typec_dp.h>
++#include <linux/usb/typec_notify.h>
++
++#include <drm/bridge/aux-bridge.h>
++
++static int drm_typec_bus_event(struct notifier_block *nb,
++			       unsigned long action, void *data)
++{
++	struct typec_altmode *alt = (struct typec_altmode *)data;
++
++	if (action != TYPEC_ALTMODE_REGISTERED)
++		goto done;
++
++	if (alt->svid != USB_TYPEC_DP_SID)
++		goto done;
++
++	/*
++	 * alt->dev.parent->parent : USB-C controller device
++	 * alt->dev.parent         : USB-C connector device
++	 */
++	drm_dp_hpd_bridge_register(alt->dev.parent->parent,
++				   to_of_node(alt->dev.parent->fwnode));
++
++done:
++	return NOTIFY_OK;
++}
++
++static struct notifier_block drm_typec_event_nb = {
++	.notifier_call = drm_typec_bus_event,
++};
++
++static void drm_aux_hpd_typec_dp_bridge_module_exit(void)
++{
++	typec_unregister_notify(&drm_typec_event_nb);
++}
++
++static int __init drm_aux_hpd_typec_dp_bridge_module_init(void)
++{
++	typec_register_notify(&drm_typec_event_nb);
++
++	return 0;
++}
++
++module_init(drm_aux_hpd_typec_dp_bridge_module_init);
++module_exit(drm_aux_hpd_typec_dp_bridge_module_exit);
++
++MODULE_DESCRIPTION("DRM TYPEC DP HPD BRIDGE");
++MODULE_LICENSE("GPL");
+--- a/drivers/gpu/drm/rockchip/cdn-dp-core.c	2025-10-27 15:23:27.034328876 +0100
++++ b/drivers/gpu/drm/rockchip/cdn-dp-core.c	2025-10-27 15:23:46.786137212 +0100
+@@ -27,16 +27,17 @@
+ #include "cdn-dp-core.h"
+ #include "cdn-dp-reg.h"
+ 
+-static inline struct cdn_dp_device *bridge_to_dp(struct drm_bridge *bridge)
++static int cdn_dp_switch_port(struct cdn_dp_device *dp, struct cdn_dp_port *prev_port,
++			      struct cdn_dp_port *port);
++
++static inline struct cdn_dp_bridge *bridge_to_dp_bridge(struct drm_bridge *bridge)
+ {
+-	return container_of(bridge, struct cdn_dp_device, bridge);
++	return container_of(bridge, struct cdn_dp_bridge, bridge);
+ }
+ 
+-static inline struct cdn_dp_device *encoder_to_dp(struct drm_encoder *encoder)
++static inline struct cdn_dp_device *bridge_to_dp(struct drm_bridge *bridge)
+ {
+-	struct rockchip_encoder *rkencoder = to_rockchip_encoder(encoder);
+-
+-	return container_of(rkencoder, struct cdn_dp_device, encoder);
++	return bridge_to_dp_bridge(bridge)->parent;
+ }
+ 
+ #define GRF_SOC_CON9		0x6224
+@@ -156,6 +157,9 @@
+ 	int dptx;
+ 	u8 lanes;
+ 
++	if (!edev)
++		return phy_get_bus_width(port->phy);
++
+ 	dptx = extcon_get_state(edev, EXTCON_DISP_DP);
+ 	if (dptx > 0) {
+ 		extcon_get_property(edev, EXTCON_DISP_DP,
+@@ -188,14 +192,27 @@
+ static struct cdn_dp_port *cdn_dp_connected_port(struct cdn_dp_device *dp)
+ {
+ 	struct cdn_dp_port *port;
+-	int i, lanes;
++	int i, lanes[MAX_PHY];
+ 
+ 	for (i = 0; i < dp->ports; i++) {
+ 		port = dp->port[i];
+-		lanes = cdn_dp_get_port_lanes(port);
+-		if (lanes)
++		lanes[i] = cdn_dp_get_port_lanes(port);
++		if (!dp->next_bridge_valid)
+ 			return port;
+ 	}
++
++	if (dp->next_bridge_valid) {
++		/* If more than one port is available, pick the last active port */
++		if (dp->active_port > 0 && lanes[dp->active_port])
++			return dp->port[dp->active_port];
++
++		/* If the last active port is not available, pick an available port in order */
++		for (i = 0; i < dp->bridge_count; i++) {
++			if (lanes[i])
++				return dp->port[i];
++		}
++	}
++
+ 	return NULL;
+ }
+ 
+@@ -219,7 +236,7 @@
+ 	 * some docks need more time to power up.
+ 	 */
+ 	while (time_before(jiffies, timeout)) {
+-		if (!extcon_get_state(port->extcon, EXTCON_DISP_DP))
++		if (port->extcon && !extcon_get_state(port->extcon, EXTCON_DISP_DP))
+ 			return false;
+ 
+ 		if (!cdn_dp_get_sink_count(dp, &sink_count))
+@@ -250,12 +267,45 @@
+ cdn_dp_bridge_edid_read(struct drm_bridge *bridge, struct drm_connector *connector)
+ {
+ 	struct cdn_dp_device *dp = bridge_to_dp(bridge);
+-	const struct drm_edid *drm_edid;
++	struct cdn_dp_bridge *dp_bridge = bridge_to_dp_bridge(bridge);
++	struct cdn_dp_port *port = dp->port[dp_bridge->id];
++	struct cdn_dp_port *prev_port;
++	const struct drm_edid *drm_edid = NULL;
++	int i, ret;
+ 
+ 	mutex_lock(&dp->lock);
++
++	/* More than one port is available */
++	if (dp->bridge_count > 1 && !port->phy_enabled) {
++		for (i = 0; i < dp->bridge_count; i++) {
++			/* Another port already enable */
++			if (dp->bridge_list[i] != dp_bridge && dp->bridge_list[i]->enabled)
++				goto get_cache;
++			/* Find already enabled port */
++			if (dp->port[i]->phy_enabled)
++				prev_port = dp->port[i];
++		}
++
++		/* Switch to current port */
++		if (prev_port) {
++			ret = cdn_dp_switch_port(dp, prev_port, port);
++			if (ret)
++				goto get_cache;
++		}
++	}
++
+ 	drm_edid = drm_edid_read_custom(connector, cdn_dp_get_edid_block, dp);
++	/* replace edid cache */
++	if (dp->edid_cache[dp_bridge->id])
++		drm_edid_free(dp->edid_cache[dp_bridge->id]);
++	dp->edid_cache[dp_bridge->id] = drm_edid_dup(drm_edid);
++
+ 	mutex_unlock(&dp->lock);
++	return drm_edid;
+ 
++get_cache:
++	drm_edid = drm_edid_dup(dp->edid_cache[dp_bridge->id]);
++	mutex_unlock(&dp->lock);
+ 	return drm_edid;
+ }
+ 
+@@ -264,12 +314,13 @@
+ 			 const struct drm_display_info *display_info,
+ 			 const struct drm_display_mode *mode)
+ {
++	struct cdn_dp_bridge *dp_bridge = bridge_to_dp_bridge(bridge);
+ 	struct cdn_dp_device *dp = bridge_to_dp(bridge);
+ 	u32 requested, actual, rate, sink_max, source_max = 0;
+ 	u8 lanes, bpc;
+ 
+ 	/* If DP is disconnected, every mode is invalid */
+-	if (!dp->connected)
++	if (!dp_bridge->connected || !dp->connected)
+ 		return MODE_BAD;
+ 
+ 	switch (display_info->bpc) {
+@@ -385,11 +436,14 @@
+ 		goto err_power_on;
+ 	}
+ 
+-	ret = extcon_get_property(port->extcon, EXTCON_DISP_DP,
+-				  EXTCON_PROP_USB_TYPEC_POLARITY, &property);
+-	if (ret) {
+-		DRM_DEV_ERROR(dp->dev, "get property failed\n");
+-		goto err_power_on;
++	property.intval = 0;
++	if (port->extcon) {
++		ret = extcon_get_property(port->extcon, EXTCON_DISP_DP,
++					  EXTCON_PROP_USB_TYPEC_POLARITY, &property);
++		if (ret) {
++			DRM_DEV_ERROR(dp->dev, "get property failed\n");
++			goto err_power_on;
++		}
+ 	}
+ 
+ 	port->lanes = cdn_dp_get_port_lanes(port);
+@@ -544,6 +598,54 @@
+ 	return drm_dp_channel_eq_ok(link_status, min(port->lanes, sink_lanes));
+ }
+ 
++static int cdn_dp_switch_port(struct cdn_dp_device *dp, struct cdn_dp_port *prev_port,
++			      struct cdn_dp_port *port)
++{
++	int ret;
++
++	if (dp->active)
++		return 0;
++
++	ret = cdn_dp_disable_phy(dp, prev_port);
++	if (ret)
++		goto out;
++	ret = cdn_dp_enable_phy(dp, port);
++	if (ret)
++		goto out;
++
++	ret = cdn_dp_get_sink_capability(dp);
++	if (ret) {
++		cdn_dp_disable_phy(dp, port);
++		goto out;
++	}
++
++	dp->active = true;
++	dp->lanes = port->lanes;
++
++	if (!cdn_dp_check_link_status(dp)) {
++		dev_info(dp->dev, "Connected with sink; re-train link\n");
++
++		ret = cdn_dp_train_link(dp);
++		if (ret) {
++			dev_err(dp->dev, "Training link failed: %d\n", ret);
++			goto out;
++		}
++
++		ret = cdn_dp_set_video_status(dp, CONTROL_VIDEO_IDLE);
++		if (ret) {
++			dev_err(dp->dev, "Failed to idle video %d\n", ret);
++			goto out;
++		}
++
++		ret = cdn_dp_config_video(dp);
++		if (ret)
++			dev_err(dp->dev, "Failed to configure video: %d\n", ret);
++	}
++
++out:
++	return ret;
++}
++
+ static void cdn_dp_display_info_update(struct cdn_dp_device *dp,
+ 				       struct drm_display_info *display_info)
+ {
+@@ -565,6 +667,7 @@
+ static void cdn_dp_bridge_atomic_enable(struct drm_bridge *bridge, struct drm_atomic_state *state)
+ {
+ 	struct cdn_dp_device *dp = bridge_to_dp(bridge);
++	struct cdn_dp_bridge *dp_bridge = bridge_to_dp_bridge(bridge);
+ 	struct drm_connector *connector;
+ 	int ret, val;
+ 
+@@ -574,7 +677,7 @@
+ 
+ 	cdn_dp_display_info_update(dp, &connector->display_info);
+ 
+-	ret = drm_of_encoder_active_endpoint_id(dp->dev->of_node, &dp->encoder.encoder);
++	ret = drm_of_encoder_active_endpoint_id(dp->dev->of_node, &dp_bridge->encoder.encoder);
+ 	if (ret < 0) {
+ 		DRM_DEV_ERROR(dp->dev, "Could not get vop id, %d", ret);
+ 		return;
+@@ -593,6 +696,9 @@
+ 
+ 	mutex_lock(&dp->lock);
+ 
++	if (dp->next_bridge_valid)
++		dp->active_port = dp_bridge->id;
++
+ 	ret = cdn_dp_enable(dp);
+ 	if (ret) {
+ 		DRM_DEV_ERROR(dp->dev, "Failed to enable bridge %d\n",
+@@ -625,6 +731,7 @@
+ 		goto out;
+ 	}
+ 
++	dp_bridge->enabled = true;
+ out:
+ 	mutex_unlock(&dp->lock);
+ }
+@@ -632,9 +739,11 @@
+ static void cdn_dp_bridge_atomic_disable(struct drm_bridge *bridge, struct drm_atomic_state *state)
+ {
+ 	struct cdn_dp_device *dp = bridge_to_dp(bridge);
++	struct cdn_dp_bridge *dp_bridge = bridge_to_dp_bridge(bridge);
+ 	int ret;
+ 
+ 	mutex_lock(&dp->lock);
++	dp_bridge->enabled = false;
+ 
+ 	if (dp->active) {
+ 		ret = cdn_dp_disable(dp);
+@@ -821,6 +930,16 @@
+ 	return ret;
+ }
+ 
++static void cdn_dp_bridge_hpd_notify(struct drm_bridge *bridge,
++			   enum drm_connector_status status)
++{
++	struct cdn_dp_bridge *dp_bridge = bridge_to_dp_bridge(bridge);
++	struct cdn_dp_device *dp = bridge_to_dp(bridge);
++
++	dp->bridge_list[dp_bridge->id]->connected = status == connector_status_connected;
++	schedule_work(&dp->event_work);
++}
++
+ static const struct drm_bridge_funcs cdn_dp_bridge_funcs = {
+ 	.atomic_duplicate_state = drm_atomic_helper_bridge_duplicate_state,
+ 	.atomic_destroy_state = drm_atomic_helper_bridge_destroy_state,
+@@ -831,6 +950,7 @@
+ 	.atomic_disable = cdn_dp_bridge_atomic_disable,
+ 	.mode_valid = cdn_dp_bridge_mode_valid,
+ 	.mode_set = cdn_dp_bridge_mode_set,
++	.hpd_notify = cdn_dp_bridge_hpd_notify,
+ 
+ 	.dp_audio_prepare = cdn_dp_audio_prepare,
+ 	.dp_audio_mute_stream = cdn_dp_audio_mute_stream,
+@@ -879,7 +999,8 @@
+ {
+ 	struct cdn_dp_device *dp = container_of(work, struct cdn_dp_device,
+ 						event_work);
+-	int ret;
++	bool connected;
++	int i, ret;
+ 
+ 	mutex_lock(&dp->lock);
+ 
+@@ -938,9 +1059,12 @@
+ 
+ out:
+ 	mutex_unlock(&dp->lock);
+-	drm_bridge_hpd_notify(&dp->bridge,
+-			      dp->connected ? connector_status_connected
+-					    : connector_status_disconnected);
++	for (i = 0; i < dp->bridge_count; i++) {
++		connected = dp->connected && dp->bridge_list[i]->connected;
++		drm_bridge_hpd_notify(&dp->bridge_list[i]->bridge,
++				      connected ? connector_status_connected
++						: connector_status_disconnected);
++	}
+ }
+ 
+ static int cdn_dp_pd_event(struct notifier_block *nb,
+@@ -960,28 +1084,16 @@
+ 	return NOTIFY_DONE;
+ }
+ 
+-static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
++static int cdn_bridge_add(struct device *dev,
++			  struct drm_bridge *bridge,
++			  struct drm_bridge *next_bridge,
++			  struct drm_encoder *encoder)
+ {
+ 	struct cdn_dp_device *dp = dev_get_drvdata(dev);
+-	struct drm_encoder *encoder;
++	struct drm_device *drm_dev = dp->drm_dev;
++	struct drm_bridge *last_bridge = NULL;
+ 	struct drm_connector *connector;
+-	struct cdn_dp_port *port;
+-	struct drm_device *drm_dev = data;
+-	int ret, i;
+-
+-	ret = cdn_dp_parse_dt(dp);
+-	if (ret < 0)
+-		return ret;
+-
+-	dp->drm_dev = drm_dev;
+-	dp->connected = false;
+-	dp->active = false;
+-	dp->active_port = -1;
+-	dp->fw_loaded = false;
+-
+-	INIT_WORK(&dp->event_work, cdn_dp_pd_event_work);
+-
+-	encoder = &dp->encoder.encoder;
++	int ret;
+ 
+ 	encoder->possible_crtcs = drm_of_find_possible_crtcs(drm_dev,
+ 							     dev->of_node);
+@@ -996,26 +1108,38 @@
+ 
+ 	drm_encoder_helper_add(encoder, &cdn_dp_encoder_helper_funcs);
+ 
+-	dp->bridge.ops =
+-			DRM_BRIDGE_OP_DETECT |
+-			DRM_BRIDGE_OP_EDID |
+-			DRM_BRIDGE_OP_HPD |
+-			DRM_BRIDGE_OP_DP_AUDIO;
+-	dp->bridge.of_node = dp->dev->of_node;
+-	dp->bridge.type = DRM_MODE_CONNECTOR_DisplayPort;
+-	dp->bridge.hdmi_audio_dev = dp->dev;
+-	dp->bridge.hdmi_audio_max_i2s_playback_channels = 8;
+-	dp->bridge.hdmi_audio_spdif_playback = 1;
+-	dp->bridge.hdmi_audio_dai_port = -1;
+ 
+-	ret = devm_drm_bridge_add(dev, &dp->bridge);
++	bridge->ops =
++		DRM_BRIDGE_OP_DETECT |
++		DRM_BRIDGE_OP_EDID |
++		DRM_BRIDGE_OP_HPD |
++		DRM_BRIDGE_OP_DP_AUDIO;
++	bridge->of_node = dp->dev->of_node;
++	bridge->type = DRM_MODE_CONNECTOR_DisplayPort;
++	bridge->hdmi_audio_dev = dp->dev;
++	bridge->hdmi_audio_max_i2s_playback_channels = 8;
++	bridge->hdmi_audio_spdif_playback = 1;
++	bridge->hdmi_audio_dai_port = -1;
++
++	ret = devm_drm_bridge_add(dev, bridge);
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = drm_bridge_attach(encoder, &dp->bridge, NULL, DRM_BRIDGE_ATTACH_NO_CONNECTOR);
++	ret = drm_bridge_attach(encoder, bridge, NULL, DRM_BRIDGE_ATTACH_NO_CONNECTOR);
+ 	if (ret)
+ 		return ret;
+ 
++	if (next_bridge) {
++		ret = drm_bridge_attach(encoder, next_bridge, bridge,
++					DRM_BRIDGE_ATTACH_NO_CONNECTOR);
++		if (ret)
++			return ret;
++
++		last_bridge = next_bridge;
++		while (drm_bridge_get_next_bridge(last_bridge))
++			last_bridge = drm_bridge_get_next_bridge(last_bridge);
++	}
++
+ 	connector = drm_bridge_connector_init(drm_dev, encoder);
+ 	if (IS_ERR(connector)) {
+ 		ret = PTR_ERR(connector);
+@@ -1023,11 +1147,108 @@
+ 		return ret;
+ 	}
+ 
++	if (last_bridge)
++		connector->fwnode = fwnode_handle_get(of_fwnode_handle(last_bridge->of_node));
++
+ 	drm_connector_attach_encoder(connector, encoder);
+ 
++	return 0;
++}
++
++static int cdn_dp_parse_next_bridge_dt(struct cdn_dp_device *dp)
++{
++	struct device_node *np = dp->dev->of_node;
++	struct device_node *port __free(device_node) = of_graph_get_port_by_id(np, 1);
++	struct drm_bridge *bridge;
++	int count = 0;
++	int ret = 0;
++	int i;
++
++	/* If device use extcon, do not use hpd bridge */
++	for (i = 0; i < dp->ports; i++) {
++		if (dp->port[i]->extcon) {
++			dp->bridge_count = 1;
++			return 0;
++		}
++	}
++
++
++	/* One endpoint may correspond to one next bridge. */
++	for_each_of_graph_port_endpoint(port, dp_ep) {
++		struct device_node *next_bridge_node __free(device_node) =
++			of_graph_get_remote_port_parent(dp_ep);
++
++		bridge = of_drm_find_bridge(next_bridge_node);
++		if (!bridge) {
++			ret = -EPROBE_DEFER;
++			goto out;
++		}
++
++		dp->next_bridge_valid = true;
++		dp->next_bridge_list[count].bridge = bridge;
++		dp->next_bridge_list[count].parent = dp;
++		dp->next_bridge_list[count].id = count;
++		count++;
++	}
++
++out:
++	dp->bridge_count = count ? count : 1;
++	return ret;
++}
++
++static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
++{
++	struct cdn_dp_device *dp = dev_get_drvdata(dev);
++	struct drm_bridge *bridge, *next_bridge;
++	struct drm_encoder *encoder;
++	struct cdn_dp_port *port;
++	struct drm_device *drm_dev = data;
++	struct cdn_dp_bridge *dp_bridge;
++	int ret, i;
++
++	ret = cdn_dp_parse_dt(dp);
++	if (ret < 0)
++		return ret;
++
++	ret = cdn_dp_parse_next_bridge_dt(dp);
++	if (ret)
++		return ret;
++
++	dp->drm_dev = drm_dev;
++	dp->connected = false;
++	dp->active = false;
++	dp->active_port = -1;
++	dp->fw_loaded = false;
++
++	for (i = 0; i < dp->bridge_count; i++) {
++		dp_bridge = devm_drm_bridge_alloc(dev, struct cdn_dp_bridge, bridge,
++						    &cdn_dp_bridge_funcs);
++		if (IS_ERR(dp_bridge))
++			return PTR_ERR(dp_bridge);
++		dp_bridge->id = i;
++		dp_bridge->parent = dp;
++		if (!dp->next_bridge_valid)
++			dp_bridge->connected = true;
++		dp->bridge_list[i] = dp_bridge;
++	}
++
++	for (i = 0; i < dp->bridge_count; i++) {
++		encoder = &dp->bridge_list[i]->encoder.encoder;
++		bridge = &dp->bridge_list[i]->bridge;
++		next_bridge = dp->next_bridge_list[i].bridge;
++		ret = cdn_bridge_add(dev, bridge, next_bridge, encoder);
++		if (ret)
++			return ret;
++	}
++
++	INIT_WORK(&dp->event_work, cdn_dp_pd_event_work);
++
+ 	for (i = 0; i < dp->ports; i++) {
+ 		port = dp->port[i];
+ 
++		if (!port->extcon)
++			continue;
++
+ 		port->event_nb.notifier_call = cdn_dp_pd_event;
+ 		ret = devm_extcon_register_notifier(dp->dev, port->extcon,
+ 						    EXTCON_DISP_DP,
+@@ -1049,10 +1270,17 @@
+ static void cdn_dp_unbind(struct device *dev, struct device *master, void *data)
+ {
+ 	struct cdn_dp_device *dp = dev_get_drvdata(dev);
+-	struct drm_encoder *encoder = &dp->encoder.encoder;
++	struct drm_encoder *encoder;
++	int i;
+ 
+ 	cancel_work_sync(&dp->event_work);
+-	encoder->funcs->destroy(encoder);
++	for (i = 0; i < dp->bridge_count; i++) {
++		encoder = &dp->bridge_list[i]->encoder.encoder;
++		encoder->funcs->destroy(encoder);
++	}
++
++	for (i = 0; i < MAX_PHY; i++)
++		drm_edid_free(dp->edid_cache[i]);
+ 
+ 	pm_runtime_disable(dev);
+ 	if (dp->fw_loaded)
+@@ -1103,10 +1331,10 @@
+ 	int ret;
+ 	int i;
+ 
+-	dp = devm_drm_bridge_alloc(dev, struct cdn_dp_device, bridge,
+-				   &cdn_dp_bridge_funcs);
+-	if (IS_ERR(dp))
+-		return PTR_ERR(dp);
++	dp = devm_kzalloc(dev, sizeof(*dp), GFP_KERNEL);
++	if (!dp)
++		return -ENOMEM;
++
+ 	dp->dev = dev;
+ 
+ 	match = of_match_node(cdn_dp_dt_ids, pdev->dev.of_node);
+@@ -1120,14 +1348,14 @@
+ 		    PTR_ERR(phy) == -EPROBE_DEFER)
+ 			return -EPROBE_DEFER;
+ 
+-		if (IS_ERR(extcon) || IS_ERR(phy))
++		if (IS_ERR(phy) || PTR_ERR(extcon) != -ENODEV)
+ 			continue;
+ 
+ 		port = devm_kzalloc(dev, sizeof(*port), GFP_KERNEL);
+ 		if (!port)
+ 			return -ENOMEM;
+ 
+-		port->extcon = extcon;
++		port->extcon = IS_ERR(extcon) ? NULL : extcon;
+ 		port->phy = phy;
+ 		port->dp = dp;
+ 		port->id = i;
+--- a/drivers/gpu/drm/rockchip/cdn-dp-core.h	2025-10-27 15:23:27.034328876 +0100
++++ b/drivers/gpu/drm/rockchip/cdn-dp-core.h	2025-10-27 15:23:46.786137212 +0100
+@@ -38,6 +38,8 @@
+ 	Y_ONLY = 0x10,
+ };
+ 
++struct cdn_dp_device;
++
+ struct video_info {
+ 	bool h_sync_polarity;
+ 	bool v_sync_polarity;
+@@ -63,16 +65,34 @@
+ 	u8 id;
+ };
+ 
++struct cdn_dp_bridge {
++	struct cdn_dp_device *parent;
++	struct drm_bridge bridge;
++	struct rockchip_encoder encoder;
++	bool connected;
++	bool enabled;
++	int id;
++};
++
++struct cdn_dp_next_bridge {
++	struct cdn_dp_device *parent;
++	struct drm_bridge *bridge;
++	int id;
++};
++
+ struct cdn_dp_device {
+ 	struct device *dev;
+ 	struct drm_device *drm_dev;
+-	struct drm_bridge bridge;
+-	struct rockchip_encoder encoder;
++	int bridge_count;
++	struct cdn_dp_bridge *bridge_list[MAX_PHY];
++	struct cdn_dp_next_bridge next_bridge_list[MAX_PHY];
++	const struct drm_edid *edid_cache[MAX_PHY];
+ 	struct drm_display_mode mode;
+ 	struct platform_device *audio_pdev;
+ 	struct work_struct event_work;
+ 
+ 	struct mutex lock;
++	bool next_bridge_valid;
+ 	bool connected;
+ 	bool active;
+ 	bool suspended;
+--- a/drivers/phy/rockchip/Kconfig	2025-10-27 15:23:27.834321118 +0100
++++ b/drivers/phy/rockchip/Kconfig	2025-10-27 15:23:46.782137251 +0100
+@@ -119,6 +119,9 @@
+ config PHY_ROCKCHIP_TYPEC
+ 	tristate "Rockchip TYPEC PHY Driver"
+ 	depends on OF && (ARCH_ROCKCHIP || COMPILE_TEST)
++	depends on TYPEC || TYPEC=n
++	depends on DRM || DRM=n
++	select DRM_AUX_BRIDGE if DRM_BRIDGE
+ 	select EXTCON
+ 	select GENERIC_PHY
+ 	select RESET_CONTROLLER
+--- a/drivers/phy/rockchip/phy-rockchip-typec.c	2025-10-27 15:23:27.834321118 +0100
++++ b/drivers/phy/rockchip/phy-rockchip-typec.c	2025-10-27 15:23:46.782137251 +0100
+@@ -36,6 +36,7 @@
+  * orientation, false is normal orientation.
+  */
+ 
++#include <linux/auxiliary_bus.h>
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
+ #include <linux/delay.h>
+@@ -54,6 +55,9 @@
  
  #include <linux/mfd/syscon.h>
  #include <linux/phy/phy.h>
 +#include <linux/usb/typec_dp.h>
 +#include <linux/usb/typec_mux.h>
-+#include <drm/drm_connector.h>
++#include <drm/bridge/aux-bridge.h>
  
  #define CMN_SSM_BANDGAP			(0x21 << 2)
  #define CMN_SSM_BIAS			(0x22 << 2)
-@@ -286,12 +290,23 @@ 
+@@ -286,12 +290,23 @@
  #define RX_DIAG_SC2C_DELAY		(0x81e1 << 2)
  
  #define PMA_LANE_CFG			(0xc000 << 2)
@@ -44,7 +746,7 @@ index d9701b6106d5..6334953a225e 100644
  #define DP_CLK_CTL			(0xc009 << 2)
  #define STS				(0xc00F << 2)
  #define PHY_ISO_CMN_CTRL		(0xc010 << 2)
-@@ -327,8 +342,15 @@ 
+@@ -327,8 +342,15 @@
  
  #define DP_MODE_A0			BIT(4)
  #define DP_MODE_A2			BIT(6)
@@ -62,7 +764,7 @@ index d9701b6106d5..6334953a225e 100644
  
  #define PHY_MODE_SET_TIMEOUT		100000
  
-@@ -340,6 +362,31 @@ 
+@@ -340,6 +362,31 @@
  #define MODE_DFP_USB			BIT(1)
  #define MODE_DFP_DP			BIT(2)
  
@@ -94,11 +796,13 @@ index d9701b6106d5..6334953a225e 100644
  struct usb3phy_reg {
  	u32 offset;
  	u32 enable_bit;
-@@ -372,18 +419,23 @@  struct rockchip_typec_phy {
+@@ -370,20 +417,25 @@
+ 
+ struct rockchip_typec_phy {
  	struct device *dev;
++	struct auxiliary_device dp_port_dev;
  	void __iomem *base;
  	struct extcon_dev *extcon;
-+	struct fwnode_handle *connector_fwnode;
 +	struct typec_mux_dev *mux;
 +	struct typec_switch_dev *sw;
  	struct regmap *grf_regs;
@@ -118,7 +822,7 @@ index d9701b6106d5..6334953a225e 100644
  };
  
  struct phy_reg {
-@@ -454,6 +506,99 @@  static const struct rockchip_usb3phy_port_cfg rk3399_usb3phy_port_cfgs[] = {
+@@ -454,6 +506,99 @@
  	{ /* sentinel */ }
  };
  
@@ -218,7 +922,7 @@ index d9701b6106d5..6334953a225e 100644
  static void tcphy_cfg_24m(struct rockchip_typec_phy *tcphy)
  {
  	u32 i, rdata;
-@@ -743,8 +888,10 @@  static int tcphy_phy_init(struct rockchip_typec_phy *tcphy, u8 mode)
+@@ -743,8 +888,10 @@
  	tcphy_dp_aux_set_flip(tcphy);
  
  	tcphy_cfg_24m(tcphy);
@@ -229,7 +933,7 @@ index d9701b6106d5..6334953a225e 100644
  		tcphy_cfg_dp_pll(tcphy);
  		for (i = 0; i < 4; i++)
  			tcphy_dp_cfg_lane(tcphy, i);
-@@ -768,7 +915,10 @@  static int tcphy_phy_init(struct rockchip_typec_phy *tcphy, u8 mode)
+@@ -768,7 +915,10 @@
  		writel(PIN_ASSIGN_D_F, tcphy->base + PMA_LANE_CFG);
  	}
  
@@ -241,7 +945,7 @@ index d9701b6106d5..6334953a225e 100644
  
  	reset_control_deassert(tcphy->uphy_rst);
  
-@@ -811,8 +961,9 @@  static int tcphy_get_mode(struct rockchip_typec_phy *tcphy)
+@@ -811,8 +961,9 @@
  	u8 mode;
  	int ret, ufp, dp;
  
@@ -252,7 +956,7 @@ index d9701b6106d5..6334953a225e 100644
  
  	ufp = extcon_get_state(edev, EXTCON_USB);
  	dp = extcon_get_state(edev, EXTCON_DISP_DP);
-@@ -850,6 +1001,72 @@  static int tcphy_get_mode(struct rockchip_typec_phy *tcphy)
+@@ -850,6 +1001,71 @@
  	return mode;
  }
  
@@ -270,7 +974,6 @@ index d9701b6106d5..6334953a225e 100644
 +	}
 +
 +	tcphy->flip = (orien == TYPEC_ORIENTATION_REVERSE) ? true : false;
-+	tcphy->new_mode = MODE_DFP_USB;
 +
 +unlock_ret:
 +	mutex_unlock(&tcphy->lock);
@@ -325,7 +1028,7 @@ index d9701b6106d5..6334953a225e 100644
  static int tcphy_cfg_usb3_to_usb2_only(struct rockchip_typec_phy *tcphy,
  				       bool value)
  {
-@@ -989,14 +1206,9 @@  static int rockchip_dp_phy_power_on(struct phy *phy)
+@@ -989,14 +1205,9 @@
  
  	tcphy_dp_aux_calibration(tcphy);
  
@@ -343,7 +1046,7 @@ index d9701b6106d5..6334953a225e 100644
  		goto power_on_finish;
  	}
  
-@@ -1013,6 +1225,7 @@  static int rockchip_dp_phy_power_on(struct phy *phy)
+@@ -1013,6 +1224,7 @@
  static int rockchip_dp_phy_power_off(struct phy *phy)
  {
  	struct rockchip_typec_phy *tcphy = phy_get_drvdata(phy);
@@ -351,7 +1054,7 @@ index d9701b6106d5..6334953a225e 100644
  
  	mutex_lock(&tcphy->lock);
  
-@@ -1021,7 +1234,11 @@  static int rockchip_dp_phy_power_off(struct phy *phy)
+@@ -1021,7 +1233,11 @@
  
  	tcphy->mode &= ~MODE_DFP_DP;
  
@@ -364,7 +1067,7 @@ index d9701b6106d5..6334953a225e 100644
  
  	if (tcphy->mode == MODE_DISCONNECT)
  		tcphy_phy_deinit(tcphy);
-@@ -1037,6 +1254,94 @@  static const struct phy_ops rockchip_dp_phy_ops = {
+@@ -1037,6 +1253,142 @@
  	.owner		= THIS_MODULE,
  };
  
@@ -386,12 +1089,16 @@ index d9701b6106d5..6334953a225e 100644
 +		break;
 +	case TYPEC_DP_STATE_C:
 +	case TYPEC_DP_STATE_E:
++		if (state->alt->svid != USB_TYPEC_DP_SID)
++			break;
 +		tcphy->new_mode = MODE_DFP_DP;
 +		data = state->data;
 +		hpd = !!(data->status & DP_STATUS_HPD_STATE);
 +		phy_set_bus_width(tcphy->phys[TYPEC_PHY_DP], hpd ? 4 : 0);
 +		break;
 +	case TYPEC_DP_STATE_D:
++		if (state->alt->svid != USB_TYPEC_DP_SID)
++			break;
 +		tcphy->new_mode = MODE_DFP_DP | MODE_DFP_USB;
 +		data = state->data;
 +		hpd = !!(data->status & DP_STATUS_HPD_STATE);
@@ -403,11 +1110,6 @@ index d9701b6106d5..6334953a225e 100644
 +
 +	mutex_unlock(&tcphy->lock);
 +
-+	if (state->alt && state->alt->svid == USB_TYPEC_DP_SID)
-+		drm_connector_oob_hotplug_event(tcphy->connector_fwnode,
-+						hpd ? connector_status_connected :
-+						      connector_status_disconnected);
-+
 +	return 0;
 +}
 +
@@ -416,6 +1118,51 @@ index d9701b6106d5..6334953a225e 100644
 +	struct rockchip_typec_phy *tcphy = data;
 +
 +	typec_mux_unregister(tcphy->mux);
++}
++
++static void tcphy_dp_port_dev_release(struct device *dev)
++{
++	struct auxiliary_device *adev = to_auxiliary_dev(dev);
++
++	of_node_put(adev->dev.of_node);
++}
++
++static void tcphy_dp_port_unregister_adev(void *_adev)
++{
++	struct auxiliary_device *adev = _adev;
++
++	auxiliary_device_delete(adev);
++	auxiliary_device_uninit(adev);
++}
++
++static int tcphy_aux_bridge_register(struct rockchip_typec_phy *tcphy, struct device_node *np)
++{
++	struct auxiliary_device *adev = &tcphy->dp_port_dev;
++	int ret;
++
++	adev->name = "dp_port";
++	adev->dev.parent = tcphy->dev;
++	adev->dev.of_node = of_node_get(np);
++	adev->dev.release = tcphy_dp_port_dev_release;
++
++	ret = auxiliary_device_init(adev);
++
++	if (ret) {
++		of_node_put(adev->dev.of_node);
++		return ret;
++	}
++
++	ret = auxiliary_device_add(adev);
++	if (ret) {
++		auxiliary_device_uninit(adev);
++		return ret;
++	}
++
++	devm_add_action_or_reset(tcphy->dev, tcphy_dp_port_unregister_adev, adev);
++
++	ret = drm_aux_bridge_register(&adev->dev);
++
++	return 0;
 +}
 +
 +static int tcphy_setup_typec_mux(struct rockchip_typec_phy *tcphy)
@@ -429,6 +1176,10 @@ index d9701b6106d5..6334953a225e 100644
 +		return 0;
 +
 +	if (!of_property_read_bool(np, "mode-switch"))
++		goto put_np;
++
++	ret = tcphy_aux_bridge_register(tcphy, np);
++	if (ret)
 +		goto put_np;
 +
 +	mux_desc.drvdata = tcphy;
@@ -459,7 +1210,7 @@ index d9701b6106d5..6334953a225e 100644
  static int tcphy_parse_dt(struct rockchip_typec_phy *tcphy,
  			  struct device *dev)
  {
-@@ -1095,6 +1400,53 @@  static void typec_phy_pre_init(struct rockchip_typec_phy *tcphy)
+@@ -1095,6 +1447,25 @@
  	tcphy->mode = MODE_DISCONNECT;
  }
  
@@ -482,38 +1233,10 @@ index d9701b6106d5..6334953a225e 100644
 +	return dp_lanes;
 +}
 +
-+static void rockchip_dp_connector_fwnode_get(struct rockchip_typec_phy *tcphy)
-+{
-+	struct device *dev = tcphy->dev;
-+	struct device_node *np = dev->of_node;
-+	struct device_node *dp_port;
-+	struct device_node *ep;
-+	struct device_node *remote;
-+
-+	dp_port = of_get_child_by_name(np, "dp-port");
-+	if (!dp_port)
-+		return;
-+
-+	ep = of_graph_get_endpoint_by_regs(dp_port, -1, 1); /* endpoint@1 */
-+	if (!ep)
-+		goto put_dp_port;
-+
-+	remote = of_graph_get_remote_port_parent(ep);
-+	if (!remote)
-+		goto put_ep;
-+
-+	tcphy->connector_fwnode = fwnode_handle_get(of_fwnode_handle(remote));
-+
-+put_ep:
-+	of_node_put(ep);
-+put_dp_port:
-+	of_node_put(dp_port);
-+}
-+
  static int rockchip_typec_phy_probe(struct platform_device *pdev)
  {
  	struct device *dev = &pdev->dev;
-@@ -1142,6 +1494,7 @@  static int rockchip_typec_phy_probe(struct platform_device *pdev)
+@@ -1142,6 +1513,7 @@
  		return ret;
  
  	tcphy->dev = dev;
@@ -521,7 +1244,7 @@ index d9701b6106d5..6334953a225e 100644
  	platform_set_drvdata(pdev, tcphy);
  	mutex_init(&tcphy->lock);
  
-@@ -1151,6 +1504,7 @@  static int rockchip_typec_phy_probe(struct platform_device *pdev)
+@@ -1151,6 +1523,7 @@
  	if (IS_ERR(tcphy->extcon)) {
  		if (PTR_ERR(tcphy->extcon) == -ENODEV) {
  			tcphy->extcon = NULL;
@@ -529,7 +1252,7 @@ index d9701b6106d5..6334953a225e 100644
  		} else {
  			if (PTR_ERR(tcphy->extcon) != -EPROBE_DEFER)
  				dev_err(dev, "Invalid or missing extcon\n");
-@@ -1158,19 +1512,36 @@  static int rockchip_typec_phy_probe(struct platform_device *pdev)
+@@ -1158,19 +1531,34 @@
  		}
  	}
  
@@ -540,8 +1263,6 @@ index d9701b6106d5..6334953a225e 100644
 +	ret = tcphy_setup_typec_mux(tcphy);
 +	if (ret)
 +		return ret;
-+
-+	rockchip_dp_connector_fwnode_get(tcphy);
 +
  	pm_runtime_enable(dev);
  
@@ -569,99 +1290,77 @@ index d9701b6106d5..6334953a225e 100644
  
  		if (IS_ERR(phy)) {
  			dev_err(dev, "failed to create phy: %pOFn\n",
-diff --git a/drivers/gpu/drm/rockchip/cdn-dp-core.c b/drivers/gpu/drm/rockchip/cdn-dp-core.c
-index 24f6b3879f4b..b574b059b58d 100644
---- a/drivers/gpu/drm/rockchip/cdn-dp-core.c
-+++ b/drivers/gpu/drm/rockchip/cdn-dp-core.c
-@@ -156,6 +156,9 @@  static int cdn_dp_get_port_lanes(struct cdn_dp_port *port)
- 	int dptx;
- 	u8 lanes;
+--- a/drivers/usb/typec/Makefile	2025-10-27 15:23:28.126318286 +0100
++++ b/drivers/usb/typec/Makefile	2025-10-27 15:23:46.774137328 +0100
+@@ -1,6 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
+ obj-$(CONFIG_TYPEC)		+= typec.o
+-typec-y				:= class.o mux.o bus.o pd.o retimer.o
++typec-y				:= class.o mux.o notify.o bus.o pd.o retimer.o
+ typec-$(CONFIG_ACPI)		+= port-mapper.o
+ obj-$(CONFIG_TYPEC)		+= altmodes/
+ obj-$(CONFIG_TYPEC_TCPM)	+= tcpm/
+--- a/drivers/usb/typec/class.c	2025-10-27 15:23:28.130318248 +0100
++++ b/drivers/usb/typec/class.c	2025-10-27 15:23:46.778137290 +0100
+@@ -13,6 +13,7 @@
+ #include <linux/string_choices.h>
+ #include <linux/usb/pd_vdo.h>
+ #include <linux/usb/typec_mux.h>
++#include <linux/usb/typec_notify.h>
+ #include <linux/usb/typec_retimer.h>
+ #include <linux/usb.h>
  
-+	if (!edev)
-+		return phy_get_bus_width(port->phy);
+@@ -600,6 +601,8 @@
+ 		return ERR_PTR(ret);
+ 	}
+ 
++	typec_notify_event(TYPEC_ALTMODE_REGISTERED, &alt->adev);
 +
- 	dptx = extcon_get_state(edev, EXTCON_DISP_DP);
- 	if (dptx > 0) {
- 		extcon_get_property(edev, EXTCON_DISP_DP,
-@@ -219,7 +222,7 @@  static bool cdn_dp_check_sink_connection(struct cdn_dp_device *dp)
- 	 * some docks need more time to power up.
- 	 */
- 	while (time_before(jiffies, timeout)) {
--		if (!extcon_get_state(port->extcon, EXTCON_DISP_DP))
-+		if (port->extcon && !extcon_get_state(port->extcon, EXTCON_DISP_DP))
- 			return false;
- 
- 		if (!cdn_dp_get_sink_count(dp, &sink_count))
-@@ -385,11 +388,14 @@  static int cdn_dp_enable_phy(struct cdn_dp_device *dp, struct cdn_dp_port *port)
- 		goto err_power_on;
- 	}
- 
--	ret = extcon_get_property(port->extcon, EXTCON_DISP_DP,
--				  EXTCON_PROP_USB_TYPEC_POLARITY, &property);
--	if (ret) {
--		DRM_DEV_ERROR(dp->dev, "get property failed\n");
--		goto err_power_on;
-+	property.intval = 0;
-+	if (port->extcon) {
-+		ret = extcon_get_property(port->extcon, EXTCON_DISP_DP,
-+					  EXTCON_PROP_USB_TYPEC_POLARITY, &property);
-+		if (ret) {
-+			DRM_DEV_ERROR(dp->dev, "get property failed\n");
-+			goto err_power_on;
-+		}
- 	}
- 
- 	port->lanes = cdn_dp_get_port_lanes(port);
-@@ -821,6 +827,17 @@  static int cdn_dp_audio_mute_stream(struct drm_connector *connector,
- 	return ret;
+ 	return &alt->adev;
  }
  
-+static void cdn_dp_hpd_notify(struct drm_bridge *bridge,
-+			      enum drm_connector_status status)
+--- a/drivers/usb/typec/notify.c	1970-01-01 01:00:00.000000000 +0100
++++ b/drivers/usb/typec/notify.c	2025-10-27 15:23:46.778137290 +0100
+@@ -0,0 +1,22 @@
++// SPDX-License-Identifier: GPL-2.0
++#include <linux/notifier.h>
++#include <linux/usb/typec_notify.h>
++
++static BLOCKING_NOTIFIER_HEAD(typec_notifier_list);
++
++int typec_register_notify(struct notifier_block *nb)
 +{
-+	struct cdn_dp_device *dp = bridge_to_dp(bridge);
-+	enum drm_connector_status last_status =
-+		dp->connected ? connector_status_connected : connector_status_disconnected;
-+
-+	if (last_status != status)
-+		schedule_work(&dp->event_work);
++	return blocking_notifier_chain_register(&typec_notifier_list, nb);
 +}
++EXPORT_SYMBOL_GPL(typec_register_notify);
 +
- static const struct drm_bridge_funcs cdn_dp_bridge_funcs = {
- 	.atomic_duplicate_state = drm_atomic_helper_bridge_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_bridge_destroy_state,
-@@ -831,6 +848,7 @@  static const struct drm_bridge_funcs cdn_dp_bridge_funcs = {
- 	.atomic_disable = cdn_dp_bridge_atomic_disable,
- 	.mode_valid = cdn_dp_bridge_mode_valid,
- 	.mode_set = cdn_dp_bridge_mode_set,
-+	.hpd_notify = cdn_dp_hpd_notify,
- 
- 	.dp_audio_prepare = cdn_dp_audio_prepare,
- 	.dp_audio_mute_stream = cdn_dp_audio_mute_stream,
-@@ -1028,6 +1046,9 @@  static int cdn_dp_bind(struct device *dev, struct device *master, void *data)
- 	for (i = 0; i < dp->ports; i++) {
- 		port = dp->port[i];
- 
-+		if (!port->extcon)
-+			continue;
++int typec_unregister_notify(struct notifier_block *nb)
++{
++	return blocking_notifier_chain_unregister(&typec_notifier_list, nb);
++}
++EXPORT_SYMBOL_GPL(typec_unregister_notify);
 +
- 		port->event_nb.notifier_call = cdn_dp_pd_event;
- 		ret = devm_extcon_register_notifier(dp->dev, port->extcon,
- 						    EXTCON_DISP_DP,
-@@ -1120,14 +1141,14 @@  static int cdn_dp_probe(struct platform_device *pdev)
- 		    PTR_ERR(phy) == -EPROBE_DEFER)
- 			return -EPROBE_DEFER;
- 
--		if (IS_ERR(extcon) || IS_ERR(phy))
-+		if (IS_ERR(phy) || PTR_ERR(extcon) != -ENODEV)
- 			continue;
- 
- 		port = devm_kzalloc(dev, sizeof(*port), GFP_KERNEL);
- 		if (!port)
- 			return -ENOMEM;
- 
--		port->extcon = extcon;
-+		port->extcon = IS_ERR(extcon) ? NULL : extcon;
- 		port->phy = phy;
- 		port->dp = dp;
- 		port->id = i;
++void typec_notify_event(unsigned long event, void *data)
++{
++	blocking_notifier_call_chain(&typec_notifier_list, event, data);
++}
+--- a/include/linux/usb/typec_notify.h	1970-01-01 01:00:00.000000000 +0100
++++ b/include/linux/usb/typec_notify.h	2025-10-27 15:23:46.778137290 +0100
+@@ -0,0 +1,17 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++
++#ifndef __USB_TYPEC_NOTIFY
++#define __USB_TYPEC_NOTIFY
++
++#include <linux/notifier.h>
++
++enum usb_typec_event {
++	TYPEC_ALTMODE_REGISTERED
++};
++
++int typec_register_notify(struct notifier_block *nb);
++int typec_unregister_notify(struct notifier_block *nb);
++
++void typec_notify_event(unsigned long event, void *data);
++
++#endif /* __USB_TYPEC_NOTIFY */
