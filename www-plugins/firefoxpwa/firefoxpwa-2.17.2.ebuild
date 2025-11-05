@@ -6,9 +6,9 @@ EAPI=8
 # tarball generated using "gh workflow -R ${repo}/gentoo-deps run generator.yml -f REPO=filips123/PWAsForFirefox -f TAG=v${PV} -f P=firefoxpwa-${PV} -f LANG=rust -f WORKDIR=native"
 
 declare -A GIT_CRATES=(
-	[mime-parse]='https://github.com/filips123/mime;57416f447a10c3343df7fe80deb0ae8a7c77cf0a;mime-%commit%/mime-parse'
-	[mime]='https://github.com/filips123/mime;57416f447a10c3343df7fe80deb0ae8a7c77cf0a;mime-%commit%'
-	[web_app_manifest]='https://github.com/filips123/WebAppManifestRS;477c5bbc7406eec01aea40e18338dafcec78c917;WebAppManifestRS-%commit%'
+	[mime-parse]='https://github.com/filips123/mime;e3e2e55459d2989a3f4699566ff8f203a8720add;mime-%commit%/mime-parse'
+	[mime]='https://github.com/filips123/mime;e3e2e55459d2989a3f4699566ff8f203a8720add;mime-%commit%'
+	[web_app_manifest]='https://github.com/filips123/WebAppManifestRS;c3329f3378a0039c96bd2b3f32529ea6b438c350;WebAppManifestRS-%commit%'
 )
 
 inherit cargo desktop flag-o-matic shell-completion toolchain-funcs xdg
