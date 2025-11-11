@@ -4,16 +4,24 @@
 EAPI=8
 
 # keep in sync with dotnet-runtime
-DOTNET_RUNTIME_PV="9.0.9"
-SDK="${PN}-${PV}-linux-musl"
+SDK_PV="$(ver_cut 1-3)"
+SDK_PV_SUFFIX="$(ver_cut 4-)"
+if [[ -n $SDK_PV_SUFFIX ]]; then
+        SDK_FULL_PV="${SDK_PV}-rc.${SDK_PV_SUFFIX:2:1}.${SDK_PV_SUFFIX:3:5}.${SDK_PV_SUFFIX:8:3}"
+else
+	SDK_FULL_PV="${SDK_PV}"
+fi
+
+DOTNET_RUNTIME_PV="${PV/.100/.0}"
+SDK="${PN}-${SDK_FULL_PV}-linux-musl"
 
 inherit dotnet-utils
 
 DESCRIPTION="The .NET Core SDK"
 HOMEPAGE="https://www.microsoft.com/net/core"
 SRC_URI="
-	amd64? ( "https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-x64.tar.gz" )
-	arm64? ( "https://dotnetcli.azureedge.net/dotnet/Sdk/${PV}/${SDK}-arm64.tar.gz" )
+	amd64? ( "https://builds.dotnet.microsoft.com/dotnet/Sdk/${SDK_FULL_PV}/${SDK}-x64.tar.gz" )
+	arm64? ( "https://builds.dotnet.microsoft.com/dotnet/Sdk/${SDK_FULL_PV}/${SDK}-arm64.tar.gz" )
 "
 
 S="${WORKDIR}"
@@ -33,10 +41,15 @@ RDEPEND="
 
 PDEPEND="virtual/dotnet-sdk:$(ver_cut 1-2)"
 
+replace_bin()  {
+	echo -e '#!/bin/bash\ndotnet $0.dll "$@"' > $1
+	chmod +x $1
+}
+
 src_install() {
 	local dest="/usr/lib/${PN}"
 	local target=$(dotnet-utils_get_pkg_rid 1)
-	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${DOTNET_RUNTIME_PV}/runtimes/${target}/native"
+	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${SDK_FULL_PV/.100/.0}/runtimes/${target}/native"
 
 	insinto "${dest}"
 	doins -r "${S}"/sdk "${S}"/sdk-manifests "${S}"/templates
@@ -48,5 +61,11 @@ src_install() {
 	mkdir -p "${D}/${dest}/${workloads}" || die
 	touch "${D}/${dest}/${workloads}/userlocal" || die
 
-	cp "${dest_apphost_pack}/apphost"  "${D}/${dest}/sdk/${PV}/AppHostTemplate/apphost" || die
+	cp "${dest_apphost_pack}/apphost"  "${D}/${dest}/sdk/${SDK_FULL_PV}/AppHostTemplate/apphost" || die
+
+	pushd "${D}/${dest}/sdk/${SDK_FULL_PV}/Roslyn/bincore" >/dev/null || die
+	replace_bin csc
+	replace_bin vbc
+	replace_bin VBCSCompiler
+	popd >/dev/null || die
 }
