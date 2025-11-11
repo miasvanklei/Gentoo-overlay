@@ -1,0 +1,26 @@
+--- a/src/debugger/evalstackmachine.cpp	2024-11-02 09:59:41.000000000 +0100
++++ b/src/debugger/evalstackmachine.cpp	2025-11-11 19:08:43.811196813 +0100
+@@ -2096,12 +2096,12 @@
+ 
+     mdTypeDef typeDef = mdTypeDefNil;
+     static const WCHAR strTypeDefDecimal[] = W("System.Decimal");
+-    IfFailRet(pMD->FindTypeDefByName(strTypeDefDecimal, (mdToken)NULL, &typeDef));
++    IfFailRet(pMD->FindTypeDefByName(strTypeDefDecimal, mdTokenNil, &typeDef));
+     IfFailRet(pModule->GetClassFromToken(typeDef, &m_evalData.iCorDecimalClass));
+ 
+     typeDef = mdTypeDefNil;
+     static const WCHAR strTypeDefVoid[] = W("System.Void");
+-    IfFailRet(pMD->FindTypeDefByName(strTypeDefVoid, (mdToken)NULL, &typeDef));
++    IfFailRet(pMD->FindTypeDefByName(strTypeDefVoid, mdTokenNil, &typeDef));
+     IfFailRet(pModule->GetClassFromToken(typeDef, &m_evalData.iCorVoidClass));
+ 
+     static const std::vector<std::pair<CorElementType, const WCHAR*>> corElementToValueNameMap{
+@@ -2122,7 +2122,7 @@
+     for (auto &entry : corElementToValueNameMap)
+     {
+         typeDef = mdTypeDefNil;
+-        IfFailRet(pMD->FindTypeDefByName(entry.second, (mdToken)NULL, &typeDef));
++        IfFailRet(pMD->FindTypeDefByName(entry.second, mdTokenNil, &typeDef));
+         IfFailRet(pModule->GetClassFromToken(typeDef, &m_evalData.corElementToValueClassMap[entry.first]));
+     }
+ 

@@ -4,10 +4,12 @@
 EAPI=8
 
 MY_PV="$(ver_cut 1-3)-$(ver_cut 4)"
-DOTNET_RUNTIME_V="9.0.8"
+DOTNET_RUNTIME_V="10.0.0"
 
 CMAKE_IN_SOURCE_BUILD="ON"
-DOTNET_PKG_COMPAT="9.0"
+CMAKE_MAKEFILE_GENERATOR="emake"
+
+DOTNET_PKG_COMPAT="8.0"
 NUGETS="
 microsoft.codeanalysis.analyzers@1.1.0
 microsoft.codeanalysis.common@2.3.0
@@ -137,6 +139,7 @@ SRC_URI+="
 	https://github.com/dotnet/runtime/archive/refs/tags/v${DOTNET_RUNTIME_V}.tar.gz
 		-> dotnet-runtime-${DOTNET_RUNTIME_V}.tar.gz
 "
+
 CORECLR_S="${WORKDIR}/runtime-${DOTNET_RUNTIME_V}/src/coreclr"
 
 SRC_URI+="
@@ -157,9 +160,6 @@ CHECKREQS_DISK_BUILD="1400M"
 DOTNET_PKG_PROJECTS=(
 	src/managed/ManagedPart.csproj   # Restore but do not build those projects.
 )
-PATCHES=(
-	"${FILESDIR}/${PN}-3.0.0.1012-compileoptions.patch"
-)
 
 DOCS=( README.md docs/{interop,stepping}.md )
 
@@ -177,6 +177,14 @@ src_unpack() {
 }
 
 src_prepare() {
+	pushd ${WORKDIR}/runtime-${DOTNET_RUNTIME_V} >/dev/null
+	eapply "${FILESDIR}"/fix-undefined-symbol-minipal.patch
+	popd >/dev/null
+
+	eapply "${FILESDIR}"/compileoptions.patch
+	eapply "${FILESDIR}"/fix-build-error.patch
+	eapply "${FILESDIR}"/fix-define-strerror.patch
+
 	cmake_src_prepare
 
 	nuget_writeconfig "$(pwd)/"

@@ -1,0 +1,11 @@
+--- a/src/utils/err_utils.cpp	2025-11-11 18:55:22.551392288 +0100
++++ b/src/utils/err_utils.cpp	2025-11-11 18:54:40.395827068 +0100
+@@ -16,7 +16,7 @@
+     return haveErrorStr ? buf : errStr;
+ #else
+ 
+-#ifdef _GNU_SOURCE
++#if defined(__GLIBC__)
+     return strerror_r(err_code, buf, buf_size);
+ #else
+     static const char errStr[] = "Unknown error";

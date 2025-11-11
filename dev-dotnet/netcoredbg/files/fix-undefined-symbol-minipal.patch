@@ -1,0 +1,29 @@
+--- a/src/native/minipal/guid.c	2025-10-22 03:58:18.000000000 +0200
++++ b/src/native/minipal/guid.c	2025-11-11 21:51:01.753124086 +0100
+@@ -59,11 +59,6 @@
+ #endif
+ }
+ 
+-bool minipal_guid_equals(GUID const* g1, GUID const* g2)
+-{
+-    return memcmp(g1, g2, sizeof(GUID)) == 0;
+-}
+-
+ void minipal_guid_as_string(GUID guid, char* guidString, uint32_t len)
+ {
+     assert(len >= MINIPAL_GUID_BUFFER_LEN);
+--- a/src/native/minipal/guid.h	2025-10-22 03:58:18.000000000 +0200
++++ b/src/native/minipal/guid.h	2025-11-11 21:51:19.228938989 +0100
+@@ -62,6 +62,12 @@
+ #ifdef __cplusplus
+     }
+ 
++static inline bool minipal_guid_equals(GUID const* g1, GUID const* g2)
++{
++    return memcmp(g1, g2, sizeof(GUID)) == 0;
++}
++
++
+ #ifndef _WIN32
+ inline bool operator==(GUID const& a, GUID const& b)
+ {
