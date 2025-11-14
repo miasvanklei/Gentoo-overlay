@@ -9,7 +9,6 @@ LICENSE="public-domain"
 SLOT=0
 KEYWORDS="~arm64"
 SRC_URI="https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/plain/ath11k/WCN6855/hw2.0/board-2.bin?h=${PV} -> qca-ath11k-board-2-${PV}.bin
-	https://github.com/ironrobin/x13s-alarm/raw/refs/heads/trunk/x13s-firmware/a690_gmu.bin -> sc820xp-a690_gmu.bin
 	https://raw.githubusercontent.com/qca/qca-swiss-army-knife/refs/heads/master/tools/scripts/ath11k/ath11k-bdencoder"
 
 BDEPEND="
@@ -57,7 +56,4 @@ src_install() {
 	mkdir -p "${D}"/lib/firmware/ath11k/WCN6855/hw2.1
 	cd "${D}"/lib/firmware/ath11k/WCN6855/hw2.1
 	ln -s ../hw2.0/board-2.bin board-2.bin
-
-	insinto /lib/firmware/qcom
-	newins "${DISTDIR}"/sc820xp-a690_gmu.bin a690_gmu.bin
 }
