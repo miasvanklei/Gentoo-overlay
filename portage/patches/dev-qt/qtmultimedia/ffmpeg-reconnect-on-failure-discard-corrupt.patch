@@ -1,12 +1,13 @@
---- a/src/plugins/multimedia/ffmpeg/playbackengine/qffmpegmediadataholder.cpp	2025-05-04 15:16:35.000000000 +0200
-+++ b/src/plugins/multimedia/ffmpeg/playbackengine/qffmpegmediadataholder.cpp	2025-08-21 17:21:19.754345439 +0200
-@@ -215,6 +215,9 @@
-     AVDictionaryHolder dict;
-     constexpr auto NetworkTimeoutUs = "5000000";
-     av_dict_set(dict, "timeout", NetworkTimeoutUs, 0);
-+    av_dict_set(dict, "fflags", "discardcorrupt", 0 );
-+    av_dict_set(dict, "reconnect_on_network_error", "1", 0);
-+    av_dict_set(dict, "reconnect", "1", 0);
+--- a/src/plugins/multimedia/ffmpeg/playbackengine/qffmpegmediadataholder.cpp	2025-11-22 17:31:49.016845638 +0100
++++ b/src/plugins/multimedia/ffmpeg/playbackengine/qffmpegmediadataholder.cpp	2025-11-22 17:33:26.315407926 +0100
+@@ -225,6 +225,10 @@
+     {
+         const milliseconds timeout = playbackOptions.networkTimeout();
+         av_dict_set_int(dict, "timeout", duration_cast<microseconds>(timeout).count(), 0);
++        av_dict_set(dict, "fflags", "discardcorrupt", 0 );
++        av_dict_set(dict, "reconnect_on_network_error", "1", 0);
++        av_dict_set(dict, "reconnect", "1", 0);
++
+         qCDebug(qLcMediaDataHolder) << "Using custom network timeout:" << timeout;
+     }
  
-     const QByteArray protocolWhitelist = qgetenv("QT_FFMPEG_PROTOCOL_WHITELIST");
-     if (!protocolWhitelist.isNull())
