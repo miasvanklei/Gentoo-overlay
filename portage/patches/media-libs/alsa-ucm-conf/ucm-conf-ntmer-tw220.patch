@@ -1,0 +1,120 @@
+diff --git a/ucm2/Qualcomm/sc8280xp/HiFi.conf b/ucm2/Qualcomm/sc8280xp/LENOVO-X13s-HiFi.conf
+similarity index 100%
+rename from ucm2/Qualcomm/sc8280xp/HiFi.conf
+rename to ucm2/Qualcomm/sc8280xp/LENOVO-X13s-HiFi.conf
+diff --git a/ucm2/Qualcomm/sc8280xp/LENOVO-X13s.conf b/ucm2/Qualcomm/sc8280xp/LENOVO-X13s.conf
+index de6d9c6..1ab15a9 100644
+--- a/ucm2/Qualcomm/sc8280xp/LENOVO-X13s.conf
++++ b/ucm2/Qualcomm/sc8280xp/LENOVO-X13s.conf
+@@ -1,7 +1,7 @@
+ Syntax 4
+ 
+ SectionUseCase."HiFi" {
+-	File "/Qualcomm/sc8280xp/HiFi.conf"
++	File "/Qualcomm/sc8280xp/LENOVO-X13s-HiFi.conf"
+ 	Comment "HiFi quality Music."
+ }
+ 
+diff --git a/ucm2/Qualcomm/sc8280xp/NTMER-TW220-HiFi.conf b/ucm2/Qualcomm/sc8280xp/NTMER-TW220-HiFi.conf
+new file mode 100644
+index 0000000..48b76de
+--- /dev/null
++++ b/ucm2/Qualcomm/sc8280xp/NTMER-TW220-HiFi.conf
+@@ -0,0 +1,46 @@
++# Use case configuration for LenovoX13s.
++# Author: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
++
++SectionVerb {
++	EnableSequence [
++		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1' 1"
++		cset "name='MultiMedia2 Mixer VA_CODEC_DMA_TX_0' 1"
++	]
++
++	Include.wsae.File "/codecs/wsa883x/DefaultEnableSeq.conf"
++
++	Value {
++		TQ "HiFi"
++	}
++}
++
++SectionDevice."Speaker" {
++	Comment "Speaker playback"
++
++	Include.wsamspke.File "/codecs/qcom-lpass/wsa-macro/SpeakerEnableSeq.conf"
++	Include.wsamspkd.File "/codecs/qcom-lpass/wsa-macro/SpeakerDisableSeq.conf"
++	Include.wsaspke.File "/codecs/wsa883x/SpeakerEnableSeq.conf"
++	Include.wsaspkd.File "/codecs/wsa883x/SpeakerDisableSeq.conf"
++
++	Value {
++		PlaybackPriority 100
++		PlaybackPCM "hw:${CardId},0"
++		PlaybackMixer "default:${CardId}"
++		PlaybackMixerElem "Speakers"
++	}
++}
++
++SectionDevice."Mic" {
++	Comment "Internal microphones"
++
++	Include.vadm0e.File "/codecs/qcom-lpass/va-macro/DMIC0EnableSeq.conf"
++	Include.vadm0d.File "/codecs/qcom-lpass/va-macro/DMIC0DisableSeq.conf"
++	Include.vadm1e.File "/codecs/qcom-lpass/va-macro/DMIC1EnableSeq.conf"
++	Include.vadm1d.File "/codecs/qcom-lpass/va-macro/DMIC1DisableSeq.conf"
++
++
++	Value {
++		CapturePriority 100
++		CapturePCM "hw:${CardId},1"
++	}
++}
+diff --git a/ucm2/Qualcomm/sc8280xp/NTMER-TW220.conf b/ucm2/Qualcomm/sc8280xp/NTMER-TW220.conf
+new file mode 100644
+index 0000000..9726055
+--- /dev/null
++++ b/ucm2/Qualcomm/sc8280xp/NTMER-TW220.conf
+@@ -0,0 +1,16 @@
++Syntax 4
++
++SectionUseCase."HiFi" {
++	File "/Qualcomm/sc8280xp/NTMER-TW220-HiFi.conf"
++	Comment "HiFi quality Music."
++}
++
++BootSequence [
++	cset "name='SpkrLeft PA Volume' 12"
++	cset "name='SpkrRight PA Volume' 12"
++]
++
++Include.card-init.File "/lib/card-init.conf"
++Include.ctl-remap.File "/lib/ctl-remap.conf"
++Include.wsa-init.File "/codecs/wsa883x/init.conf"
++Include.wsam-init.File "/codecs/qcom-lpass/wsa-macro/init.conf"
+diff --git a/ucm2/Qualcomm/sc8280xp/sc8280xp.conf b/ucm2/Qualcomm/sc8280xp/sc8280xp.conf
+index cb37c58..6be5002 100644
+--- a/ucm2/Qualcomm/sc8280xp/sc8280xp.conf
++++ b/ucm2/Qualcomm/sc8280xp/sc8280xp.conf
+@@ -1,11 +1,22 @@
+ Syntax 4
+ 
++Define.DMI_info "${sys:devices/virtual/dmi/id/board_vendor}-${sys:devices/virtual/dmi/id/product_family}-${sys:devices/virtual/dmi/id/board_name}"
++
+ If.LENOVOX13s {
+ 	Condition {
+ 		Type RegexMatch
+-		String "${sys:devices/virtual/dmi/id/board_vendor}-${sys:devices/virtual/dmi/id/product_family}"
++		String "${var:DMI_info}"
+ 		Regex "LENOVO.*ThinkPad X13s.*"
+ 	}
+ 	True.Include.x13s.File "/Qualcomm/sc8280xp/LENOVO-X13s.conf"
+-	False.Error "SC8280XP - ${sys:devices/virtual/dmi/id/board_vendor}-${sys:devices/virtual/dmi/id/product_family} model not supported"
++}
++
++If.NTMERTW220 {
++	Condition {
++		Type RegexMatch
++		String "${var:DMI_info}"
++		Regex "Ntmer.*Robo.*"
++	}
++	True.Include.x13s.File "/Qualcomm/sc8280xp/NTMER-TW220.conf"
++	False.Error "SC8280XP - ${var:DMI_info}  model not supported"
+ }
