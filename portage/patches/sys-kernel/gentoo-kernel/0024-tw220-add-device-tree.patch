@@ -1,5 +1,3 @@
-diff --git a/arch/arm64/boot/dts/qcom/Makefile b/arch/arm64/boot/dts/qcom/Makefile
-index 669b888b2..8fdb16971 100644
 --- a/arch/arm64/boot/dts/qcom/Makefile
 +++ b/arch/arm64/boot/dts/qcom/Makefile
 @@ -217,6 +217,7 @@
@@ -10,12 +8,9 @@ index 669b888b2..8fdb16971 100644
  dtb-$(CONFIG_ARCH_QCOM)	+= sda660-inforce-ifc6560.dtb
  dtb-$(CONFIG_ARCH_QCOM)	+= sdm450-lenovo-tbx605f.dtb
  dtb-$(CONFIG_ARCH_QCOM)	+= sdm450-motorola-ali.dtb
-diff --git a/arch/arm64/boot/dts/qcom/sc8280xp-ntmer-tw220.dts b/arch/arm64/boot/dts/qcom/sc8280xp-ntmer-tw220.dts
-new file mode 100644
-index 000000000..61ac51da9
 --- /dev/null
 +++ b/arch/arm64/boot/dts/qcom/sc8280xp-ntmer-tw220.dts
-@@ -0,0 +1,1619 @@
+@@ -0,0 +1,1458 @@
 +// SPDX-License-Identifier: BSD-3-Clause
 +/*
 + * Copyright (c) 2021, The Linux Foundation. All rights reserved.
@@ -60,7 +55,6 @@ index 000000000..61ac51da9
 +			height = <1600>;
 +			stride = <(2560 * 4)>;
 +			format = "a8r8g8b8";
-+			//clocks = <&dispcc0 DISP_CC_MDSS_MDP_CLK>;
 +		};
 +	};
 +
@@ -310,44 +304,6 @@ index 000000000..61ac51da9
 +		};
 +	};
 +
-+	sound {
-+		compatible = "qcom,sc8280xp-sndcard";
-+		model = "SC8280XP-NTMER-TW220";
-+		audio-routing = "SpkrLeft IN", "WSA_SPK1 OUT",
-+				"SpkrRight IN", "WSA_SPK2 OUT";
-+
-+		wsa-dai-link {
-+			link-name = "WSA Playback";
-+
-+			cpu {
-+				sound-dai = <&q6apmbedai WSA_CODEC_DMA_RX_0>;
-+			};
-+
-+			codec {
-+				sound-dai = <&left_spkr>, <&right_spkr>, <&swr0 0>, <&wsamacro 0>;
-+			};
-+
-+			platform {
-+				sound-dai = <&q6apm>;
-+			};
-+		};
-+
-+		va-dai-link {
-+			link-name = "VA Capture";
-+			cpu {
-+				sound-dai = <&q6apmbedai VA_CODEC_DMA_TX_0>;
-+			};
-+
-+			codec {
-+				sound-dai = <&vamacro 0>;
-+			};
-+
-+			platform {
-+				sound-dai = <&q6apm>;
-+			};
-+		};
-+	};
-+
 +	thermal-zones {
 +		pm8008-thermal {
 +			polling-delay-passive = <100>;
@@ -399,17 +355,17 @@ index 000000000..61ac51da9
 +				map0 {
 +					trip = <&skin_temp_alert0>;
 +					cooling-device = <&cpu4 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-+					<&cpu5 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-+					<&cpu6 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-+					<&cpu7 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++							 <&cpu5 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
++							 <&cpu6 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
++							 <&cpu7 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
 +				};
 +
 +				map1 {
 +					trip = <&skin_temp_alert1>;
 +					cooling-device = <&cpu4 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-+					<&cpu5 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-+					<&cpu6 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
-+					<&cpu7 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++							 <&cpu5 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
++							 <&cpu6 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>,
++							 <&cpu7 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
 +				};
 +			};
 +		};
@@ -518,9 +474,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <912000>;
 +			regulator-max-microvolt = <912000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+			RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l3b: ldo3 {
@@ -536,17 +489,16 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <912000>;
 +			regulator-max-microvolt = <912000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+			RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
++		// always-on because of dsi
 +		vreg_l6b: ldo6 {
 +			regulator-name = "vreg_l6b";
 +			regulator-min-microvolt = <880000>;
 +			regulator-max-microvolt = <880000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 +			regulator-boot-on;
++			regulator-always-on;
 +		};
 +	};
 +
@@ -574,9 +526,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <1800000>;
 +			regulator-max-microvolt = <1800000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l2c: ldo2 {
@@ -584,8 +533,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <1800000>;
 +			regulator-max-microvolt = <1800000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_HPM>;
 +			regulator-always-on;
 +			regulator-boot-on;
 +		};
@@ -595,9 +542,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <1800000>;
 +			regulator-max-microvolt = <1800000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l12c: ldo12 {
@@ -612,9 +556,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <3072000>;
 +			regulator-max-microvolt = <3072000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_bob: bob {
@@ -641,9 +582,13 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <3072000>;
 +			regulator-max-microvolt = <3072000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l3d: ldo3 {
++			regulator-name = "vreg_l3d";
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1200000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l4d: ldo4 {
@@ -651,9 +596,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <1200000>;
 +			regulator-max-microvolt = <1200000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l6d: ldo6 {
@@ -661,9 +603,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <880000>;
 +			regulator-max-microvolt = <880000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l7d: ldo7 {
@@ -671,9 +610,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <3072000>;
 +			regulator-max-microvolt = <3072000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l8d: ldo8 {
@@ -681,9 +617,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <912000>;
 +			regulator-max-microvolt = <912000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l9d: ldo9 {
@@ -691,9 +624,6 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <912000>;
 +			regulator-max-microvolt = <912000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
 +		vreg_l10d: ldo10 {
@@ -701,69 +631,8 @@ index 000000000..61ac51da9
 +			regulator-min-microvolt = <912000>;
 +			regulator-max-microvolt = <912000>;
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
-+			regulator-allow-set-load;
-+			regulator-boot-on;
-+			regulator-always-on;
-+			regulator-allowed-modes = <RPMH_REGULATOR_MODE_LPM
-+						   RPMH_REGULATOR_MODE_HPM>;
 +		};
 +	};
-+};
-+
-+/*
-+ * cci0_i2c1
-+ * sda: gpio115, scl: gpio116
-+ *
-+ * CAMI ov9234 @36 @48
-+ *
-+ * power on sequence
-+ * gpio7 out low
-+ * l3q 1p8
-+ * l6q 2p8
-+ * l2q 1p2
-+ * gpio7 out high
-+ * msleep 5
-+ * cam_cc_mclk4_clk 2.4MHz (gpio6)
-+ */
-+
-+/*
-+ * cci2_i2c1
-+ * sda: gpio12, scl: gpio13
-+ *
-+ * CAMF gc5035 @37
-+ *
-+ * power on sequence
-+ * gpio15 out low
-+ * l3q 1p8
-+ * msleep 1
-+ * l2q 1p2
-+ * msleep 1
-+ * l5q 2p8
-+ * gpio15 out high
-+ * gpio67 out high
-+ * msleep 10
-+ * cam_cc_mclk3_clk 2.4MHz (gpio17)
-+ */
-+
-+/*
-+ * cci1_i2c0
-+ * sda: gpio10, scl: gpio11
-+ *
-+ * CAMR ov13b10 @0c
-+ *
-+ * power on sequence
-+ * gpio66 out low
-+ * l1q 1p2
-+ * l7q 2p8
-+ * l3q 1p8
-+ * gpio59 out high
-+ * gpio66 out high
-+ * msleep 5
-+ * cam_cc_mclk2_clk 2.4MHz (gpio16/gpio119/gpio120?)
-+ */
-+
-+&dispcc0 {
-+	status = "disabled";
 +};
 +
 +&gpi_dma0 {
@@ -785,20 +654,6 @@ index 000000000..61ac51da9
 +		memory-region = <&gpu_mem>;
 +		firmware-name = "qcom/sc8280xp/Ntmer/tw220/qcdxkmsuc8280.mbn";
 +	};
-+};
-+
-+&i2c1 {
-+	clock-frequency = <400000>;
-+
-+	pinctrl-0 = <&i2c1_default>;
-+	pinctrl-names = "default";
-+
-+	status = "okay";
-+
-+	/*
-+	 * cps4035 @30 @31
-+	 * gpio73, 87, 154
-+	 */
 +};
 +
 +&i2c11 {
@@ -849,20 +704,20 @@ index 000000000..61ac51da9
 +
 +			vreg_l3q: ldo3 {
 +				regulator-name = "vreg_l3q";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
++				regulator-min-microvolt = <2800000>;
++				regulator-max-microvolt = <2800000>;
 +			};
 +
 +			vreg_l4q: ldo4 {
 +				regulator-name = "vreg_l4q";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <1800000>;
++				regulator-min-microvolt = <2800000>;
++				regulator-max-microvolt = <2800000>;
 +			};
 +
 +			vreg_l5q: ldo5 {
 +				regulator-name = "vreg_l5q";
-+				regulator-min-microvolt = <2800000>;
-+				regulator-max-microvolt = <2800000>;
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <1800000>;
 +			};
 +
 +			vreg_l6q: ldo6 {
@@ -886,21 +741,6 @@ index 000000000..61ac51da9
 +	pinctrl-names = "default";
 +
 +	touchscreen@0 {
-+		/*
-+		 * The ACPI device ID is GXTS7986, its exact suffix is unknown.
-+		 * The Windows driver suggests it is a GTBerlinB variant and
-+		 * communicates via HID over SPI, which aligns with the Linux
-+		 * driver `drivers/hid/hid-goodix-spi.c`.
-+		 *
-+		 * However, the HID descriptor read from the device appears
-+		 * garbled, preventing proper probe with the HID driver. In
-+		 * contrast, the driver at
-+		 * `drivers/input/touchscreen/goodix_berlin_spi.c` shares many
-+		 * similarities and functions correctly with this hardware.
-+		 *
-+		 * Therefore, we choose to use the goodix_berlin_spi driver
-+		 * instead.
-+		 */
 +		compatible = "goodix,gt9916";
 +		reg = <0>;
 +
@@ -918,46 +758,6 @@ index 000000000..61ac51da9
 +		pinctrl-names = "default";
 +	};
 +};
-+
-+/*
-+ * mdss0_dsi display:
-+ *
-+ * reset gpio109
-+ *
-+ * power on seq:
-+ * ldo 3b: 1.2v dsi
-+ * ldo 6b: 0.88v dsi_phy
-+ *
-+ * panel:
-+ * ldo 2b: 1.8v vddio
-+ * gpio55 out high
-+ * msleep 15
-+ * gpio25 out high
-+ * msleep 5
-+ *
-+ * backlight:
-+ * dsi_bl_reg_en: gpio9
-+ * msleep 5
-+ * dsi_bl_en: gpio8
-+ *
-+ * power off sequence
-+ * dis_off:
-+ * ldo 3b
-+ * ldo 6b
-+ * ldo 2b
-+ *
-+ * bl_off:
-+ * dsi_bl_en: gpio8
-+ * msleep 5
-+ * dsi_bl_reg_en: gpio9
-+ * msleep 5
-+ *
-+ * panel_off:
-+ * gpio25: out low
-+ * msleep 5
-+ * gpio55: out low
-+ * msleep 5
-+ */
 +
 +&pcie2a {
 +	perst-gpios = <&tlmm 143 GPIO_ACTIVE_LOW>;
@@ -1188,6 +988,45 @@ index 000000000..61ac51da9
 +	status = "okay";
 +};
 +
++
++&sound {
++	compatible = "qcom,sc8280xp-sndcard";
++	model = "SC8280XP-NTMER-TW220";
++	audio-routing = "SpkrLeft IN", "WSA_SPK1 OUT",
++			"SpkrRight IN", "WSA_SPK2 OUT";
++
++	wsa-dai-link {
++		link-name = "WSA Playback";
++
++		cpu {
++			sound-dai = <&q6apmbedai WSA_CODEC_DMA_RX_0>;
++		};
++
++		codec {
++			sound-dai = <&left_spkr>, <&right_spkr>, <&swr0 0>, <&wsamacro 0>;
++		};
++
++		platform {
++			sound-dai = <&q6apm>;
++		};
++	};
++
++	va-dai-link {
++		link-name = "VA Capture";
++		cpu {
++			sound-dai = <&q6apmbedai VA_CODEC_DMA_TX_0>;
++		};
++
++		codec {
++			sound-dai = <&vamacro 0>;
++		};
++
++		platform {
++			sound-dai = <&q6apm>;
++		};
++	};
++};
++
 +&swr0 {
 +	status = "okay";
 +
@@ -1252,7 +1091,7 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_0_hsphy {
-+	vdda-pll-supply = <&vreg_l6d>;
++	vdda-pll-supply = <&vreg_l9d>;
 +	vdda18-supply = <&vreg_l1c>;
 +	vdda33-supply = <&vreg_l7d>;
 +
@@ -1260,8 +1099,8 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_0_qmpphy {
-+	vdda-phy-supply = <&vreg_l4d>;
-+	vdda-pll-supply = <&vreg_l9d>;
++	vdda-phy-supply = <&vreg_l9d>;
++	vdda-pll-supply = <&vreg_l4d>;
 +
 +	orientation-switch;
 +
@@ -1285,7 +1124,7 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_1_hsphy {
-+	vdda-pll-supply = <&vreg_l6b>;
++	vdda-pll-supply = <&vreg_l4b>;
 +	vdda18-supply = <&vreg_l1c>;
 +	vdda33-supply = <&vreg_l13c>;
 +
@@ -1293,8 +1132,8 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_1_qmpphy {
-+	vdda-phy-supply = <&vreg_l3b>;
-+	vdda-pll-supply = <&vreg_l4b>;
++	vdda-phy-supply = <&vreg_l4b>;
++	vdda-pll-supply = <&vreg_l3b>;
 +
 +	orientation-switch;
 +
@@ -1310,7 +1149,7 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_2_hsphy0 {
-+	vdda-pll-supply = <&vreg_l6d>;
++	vdda-pll-supply = <&vreg_l1b>;
 +	vdda18-supply = <&vreg_l1c>;
 +	vdda33-supply = <&vreg_l7d>;
 +
@@ -1318,7 +1157,7 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_2_hsphy1 {
-+	vdda-pll-supply = <&vreg_l6d>;
++	vdda-pll-supply = <&vreg_l8d>;
 +	vdda18-supply = <&vreg_l1c>;
 +	vdda33-supply = <&vreg_l7d>;
 +
@@ -1326,7 +1165,7 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_2_hsphy2 {
-+	vdda-pll-supply = <&vreg_l6d>;
++	vdda-pll-supply = <&vreg_l10d>;
 +	vdda18-supply = <&vreg_l8c>;
 +	vdda33-supply = <&vreg_l2d>;
 +
@@ -1334,7 +1173,7 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_2_hsphy3 {
-+	vdda-pll-supply = <&vreg_l6d>;
++	vdda-pll-supply = <&vreg_l10d>;
 +	vdda18-supply = <&vreg_l8c>;
 +	vdda33-supply = <&vreg_l2d>;
 +
@@ -1342,15 +1181,15 @@ index 000000000..61ac51da9
 +};
 +
 +&usb_2_qmpphy0 {
-+	vdda-phy-supply = <&vreg_l4d>;
-+	vdda-pll-supply = <&vreg_l1b>;
++	vdda-phy-supply = <&vreg_l1b>;
++	vdda-pll-supply = <&vreg_l4d>;
 +
 +	status = "okay";
 +};
 +
 +&usb_2_qmpphy1 {
-+	vdda-phy-supply = <&vreg_l4d>;
-+	vdda-pll-supply = <&vreg_l8d>;
++	vdda-phy-supply = <&vreg_l8d>;
++	vdda-pll-supply = <&vreg_l4d>;
 +
 +	status = "okay";
 +};
@@ -1364,6 +1203,11 @@ index 000000000..61ac51da9
 +	qcom,dmic-sample-rate = <4800000>;
 +
 +	status = "okay";
++};
++
++&venus {
++        firmware-name = "qcom/sc8280xp/Ntmer/tw220/qcvss8280.mbn";
++        status = "okay";
 +};
 +
 +&wsamacro {
@@ -1386,16 +1230,6 @@ index 000000000..61ac51da9
 +		function = "normal";
 +	};
 +
-+	dsi_bl_en: dsi-bl-en-state {
-+		pins = "gpio8";
-+		function = "normal";
-+	};
-+
-+	dsi_bl_reg_en: dsi-bl-reg-en-state {
-+		pins = "gpio9";
-+		function = "normal";
-+	};
-+
 +	vol_down_n: vol-up-n-state {
 +		pins = "gpio6";
 +		function = "normal";
@@ -1413,7 +1247,7 @@ index 000000000..61ac51da9
 +};
 +
 +&tlmm {
-+	gpio-reserved-ranges = <70 2>, <74 6>, <125 2>, <128 2>;
++	gpio-reserved-ranges = <70 2>, <74 6>, <125 2>, <128 2>, <154 4>;
 +
 +	bt_default: bt-default-state {
 +		hstp-bt-en-pins {
@@ -1635,5 +1469,3 @@ index 000000000..61ac51da9
 +		bias-pull-down;
 +	};
 +};
--- 
-2.49.0
