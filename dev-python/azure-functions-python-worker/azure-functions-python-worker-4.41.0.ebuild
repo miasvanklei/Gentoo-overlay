@@ -38,6 +38,8 @@ RDEPEND="
 PATCHES=(
 	"${FILESDIR}/remove-invoke.patch"
 	"${FILESDIR}/fix-worker_py-path.patch"
+	"${FILESDIR}/dont-install-tests.patch"
+	"${FILESDIR}/fix-grpc-invocation.patch"
 )
 
 S="${WORKDIR}/${P}/workers"
