@@ -23,7 +23,7 @@ RESTRICT="!test? ( test )"
 
 # we need to depend on blas as the cmake file looks for it.
 # It is also a runtime dependency as it has headers to link with blas
-DEPEND="virtual/blas"
+DEPEND="sci-libs/flexiblas"
 RDEPEND="
 	${DEPEND}
 	supernodal? ( virtual/lapack )
@@ -32,6 +32,10 @@ RDEPEND="
 		x11-drivers/nvidia-drivers
 	)
 "
+
+PATCHES=(
+	"${FILESDIR}/use-flexiblas.patch"
+)
 
 pkg_pretend() {
 	[[ ${MERGE_TYPE} != binary ]] && use openmp && tc-check-openmp
@@ -51,6 +55,7 @@ src_configure() {
 		-DSUITESPARSE_DEMOS=$(usex test)
 		-DSUITESPARSE_HAS_FORTRAN=$(usex fortran)
 		-DSUITESPARSE_USE_OPENMP=$(usex openmp ON OFF)
+		-DSUITESPARSE_USE_64BIT_BLAS=ON
 	)
 	cmake_src_configure
 }
