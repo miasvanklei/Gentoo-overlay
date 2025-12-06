@@ -184,6 +184,7 @@ src_prepare() {
 	eapply "${FILESDIR}"/compileoptions.patch
 	eapply "${FILESDIR}"/fix-build-error.patch
 	eapply "${FILESDIR}"/fix-define-strerror.patch
+	eapply "${FILESDIR}"/cmake_minimum_required.patch
 
 	cmake_src_prepare
 
