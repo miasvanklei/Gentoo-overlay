@@ -1,0 +1,1709 @@
+From 69071bac808a72a577419d860983a4275e194f42 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Fri, 25 Jul 2025 13:07:37 +0200
+Subject: [PATCH 096/124] soc: qcom: smp2p: Kick after requesting interrupt
+
+There is a small chance that an already running remoteproc does not take
+kicking it lightly and kicks us back immediately after. If this happens
+during probe() there is an even smaller chance that we might miss the
+incoming interrupt, because it is not registered yet.
+
+Avoid this race condition by kicking the outgoing edge only after we
+started listening for incoming interrupts.
+
+Fixes: 50e99641413e ("soc: qcom: smp2p: Qualcomm Shared Memory Point to Point")
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/soc/qcom/smp2p.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/soc/qcom/smp2p.c b/drivers/soc/qcom/smp2p.c
+index cb515c2340c107..1ea4d35c6d8bc6 100644
+--- a/drivers/soc/qcom/smp2p.c
++++ b/drivers/soc/qcom/smp2p.c
+@@ -618,9 +618,6 @@ static int qcom_smp2p_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	/* Kick the outgoing edge after allocating entries */
+-	qcom_smp2p_kick(smp2p);
+-
+ 	ret = devm_request_threaded_irq(&pdev->dev, irq,
+ 					NULL, qcom_smp2p_intr,
+ 					IRQF_ONESHOT,
+@@ -630,6 +627,9 @@ static int qcom_smp2p_probe(struct platform_device *pdev)
+ 		goto unwind_interfaces;
+ 	}
+ 
++	/* Kick the outgoing edge after allocating entries */
++	qcom_smp2p_kick(smp2p);
++
+ 	/*
+ 	 * Treat smp2p interrupt as wakeup source, but keep it disabled
+ 	 * by default. User space can decide enabling it depending on its
+
+From eb5b48b27f67e1782011ffaaa40e2b176ec81c09 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Fri, 25 Jul 2025 11:42:34 +0200
+Subject: [PATCH 097/124] soc: qcom: smp2p: Ensure there is enough space for
+ outbound entries
+
+The SMP2P SMEM item has limited space for outbound entries, but the DT can
+specify any number of entries. Add a check to prevent out of bounds writes
+when an invalid DT specifies more entries than expected.
+
+Fixes: 50e99641413e ("soc: qcom: smp2p: Qualcomm Shared Memory Point to Point")
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/soc/qcom/smp2p.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/soc/qcom/smp2p.c b/drivers/soc/qcom/smp2p.c
+index 1ea4d35c6d8bc6..876648d0b58e09 100644
+--- a/drivers/soc/qcom/smp2p.c
++++ b/drivers/soc/qcom/smp2p.c
+@@ -441,6 +441,9 @@ static int qcom_smp2p_outbound_entry(struct qcom_smp2p *smp2p,
+ 	struct smp2p_smem_item *out = smp2p->out;
+ 	char buf[SMP2P_MAX_ENTRY_NAME] = {};
+ 
++	if (out->valid_entries == out->total_entries)
++		return -ENOMEM;
++
+ 	/* Allocate an entry from the smem item */
+ 	strscpy(buf, entry->name, SMP2P_MAX_ENTRY_NAME);
+ 	memcpy(out->entries[out->valid_entries].name, buf, SMP2P_MAX_ENTRY_NAME);
+
+From 29a9e0f5ab7b2e57ecdd3d9b156c0bcea5cf8945 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Fri, 25 Jul 2025 12:21:04 +0200
+Subject: [PATCH 098/124] soc: qcom: smp2p: Use length limited strncmp() for
+ comparing entry names
+
+A rogue (or broken) remoteproc might not null-terminate its entry names.
+Use strncmp() instead of strcmp() to avoid making out of bounds accesses in
+that situation.
+
+Fixes: 50e99641413e ("soc: qcom: smp2p: Qualcomm Shared Memory Point to Point")
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/soc/qcom/smp2p.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/soc/qcom/smp2p.c b/drivers/soc/qcom/smp2p.c
+index 876648d0b58e09..dcf222b1907d21 100644
+--- a/drivers/soc/qcom/smp2p.c
++++ b/drivers/soc/qcom/smp2p.c
+@@ -238,7 +238,7 @@ static void qcom_smp2p_notify_in(struct qcom_smp2p *smp2p)
+ 	for (i = smp2p->valid_entries; i < in->valid_entries; i++) {
+ 		list_for_each_entry(entry, &smp2p->inbound, node) {
+ 			memcpy(buf, in->entries[i].name, sizeof(buf));
+-			if (!strcmp(buf, entry->name)) {
++			if (!strncmp(buf, entry->name, SMP2P_MAX_ENTRY_NAME)) {
+ 				entry->value = &in->entries[i].value;
+ 				break;
+ 			}
+
+From 683da62019c8f841b581b51a7a6fd450acea084f Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Fri, 25 Jul 2025 12:21:04 +0200
+Subject: [PATCH 099/124] soc: qcom: smp2p: Drop redundant stack copies of
+ entry names
+
+For the purposes of this driver, a char is always going to be the same size
+as an u8, so we can access the entry names directly instead of making a
+copy on the stack. Several other Qualcomm-related drivers use char directly
+in such binary structs as well (e.g. qcom_battmgr).
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/soc/qcom/smp2p.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/soc/qcom/smp2p.c b/drivers/soc/qcom/smp2p.c
+index dcf222b1907d21..176fce4cf339e7 100644
+--- a/drivers/soc/qcom/smp2p.c
++++ b/drivers/soc/qcom/smp2p.c
+@@ -73,7 +73,7 @@ struct smp2p_smem_item {
+ 	u32 flags;
+ 
+ 	struct {
+-		u8 name[SMP2P_MAX_ENTRY_NAME];
++		char name[SMP2P_MAX_ENTRY_NAME];
+ 		u32 value;
+ 	} entries[SMP2P_MAX_ENTRY];
+ } __packed;
+@@ -228,7 +228,6 @@ static void qcom_smp2p_notify_in(struct qcom_smp2p *smp2p)
+ 	struct smp2p_entry *entry;
+ 	int irq_pin;
+ 	u32 status;
+-	char buf[SMP2P_MAX_ENTRY_NAME];
+ 	u32 val;
+ 	int i;
+ 
+@@ -237,8 +236,7 @@ static void qcom_smp2p_notify_in(struct qcom_smp2p *smp2p)
+ 	/* Match newly created entries */
+ 	for (i = smp2p->valid_entries; i < in->valid_entries; i++) {
+ 		list_for_each_entry(entry, &smp2p->inbound, node) {
+-			memcpy(buf, in->entries[i].name, sizeof(buf));
+-			if (!strncmp(buf, entry->name, SMP2P_MAX_ENTRY_NAME)) {
++			if (!strncmp(in->entries[i].name, entry->name, SMP2P_MAX_ENTRY_NAME)) {
+ 				entry->value = &in->entries[i].value;
+ 				break;
+ 			}
+@@ -439,14 +437,12 @@ static int qcom_smp2p_outbound_entry(struct qcom_smp2p *smp2p,
+ 				     struct device_node *node)
+ {
+ 	struct smp2p_smem_item *out = smp2p->out;
+-	char buf[SMP2P_MAX_ENTRY_NAME] = {};
+ 
+ 	if (out->valid_entries == out->total_entries)
+ 		return -ENOMEM;
+ 
+ 	/* Allocate an entry from the smem item */
+-	strscpy(buf, entry->name, SMP2P_MAX_ENTRY_NAME);
+-	memcpy(out->entries[out->valid_entries].name, buf, SMP2P_MAX_ENTRY_NAME);
++	strscpy(out->entries[out->valid_entries].name, entry->name, SMP2P_MAX_ENTRY_NAME);
+ 
+ 	/* Make the logical entry reference the physical value */
+ 	entry->value = &out->entries[out->valid_entries].value;
+
+From 56b7335404369402f688ff985df3ab3abb2139f0 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Fri, 25 Jul 2025 12:39:16 +0200
+Subject: [PATCH 100/124] soc: qcom: smp2p: Take over outgoing SMEM items from
+ boot firmware
+
+On some platforms (e.g. X1E), the boot firmware already starts some of the
+remoteprocs with a "lite" firmware. This firmware is left running when
+Linux gets started. In this situation, the smp2p driver currently fully
+reinitializes the outgoing SMEM item and ignores the incoming SMEM state
+until the first incoming interrupt. This has worked fine so far, but has
+also has limitations:
+
+ - The initial state of the incoming SMEM item is not captured, so we
+   might miss falling edges reported by the first incoming interrupt.
+
+ - If the SMP2P driver of the remoteproc is implemented similar to the
+   Linux driver, it might cache addresses of the incoming SMP2P entries,
+   but there is no guarantee that we allocate them in the same order as the
+   boot firmware.
+
+ - We may inadvertently send an unexpected SSR ACK, if the boot firmware
+   had the restart ack bit set before.
+
+Implement a more smoother form of handover by reusing the existing outgoing
+SMP2P item if it matches our expectation. Reuse outgoing entries if they
+already exist. Read the initial incoming state and take over the SSR state.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/soc/qcom/smp2p.c | 92 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 69 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/soc/qcom/smp2p.c b/drivers/soc/qcom/smp2p.c
+index 176fce4cf339e7..775e5c310d2770 100644
+--- a/drivers/soc/qcom/smp2p.c
++++ b/drivers/soc/qcom/smp2p.c
+@@ -202,8 +202,6 @@ static void qcom_smp2p_do_ssr_ack(struct qcom_smp2p *smp2p)
+ 	if (smp2p->ssr_ack)
+ 		val |= BIT(SMP2P_FLAGS_RESTART_ACK_BIT);
+ 	out->flags = val;
+-
+-	qcom_smp2p_kick(smp2p);
+ }
+ 
+ static void qcom_smp2p_negotiate(struct qcom_smp2p *smp2p)
+@@ -214,8 +212,10 @@ static void qcom_smp2p_negotiate(struct qcom_smp2p *smp2p)
+ 	if (in->version == out->version) {
+ 		out->features &= in->features;
+ 
+-		if (out->features & SMP2P_FEATURE_SSR_ACK)
++		if (out->features & SMP2P_FEATURE_SSR_ACK) {
+ 			smp2p->ssr_ack_enabled = true;
++			smp2p->ssr_ack = !!(out->flags & BIT(SMP2P_FLAGS_RESTART_ACK_BIT));
++		}
+ 
+ 		smp2p->negotiation_done = true;
+ 		trace_smp2p_negotiate(smp2p->dev, out->features);
+@@ -274,6 +274,24 @@ static void qcom_smp2p_notify_in(struct qcom_smp2p *smp2p)
+ 	}
+ }
+ 
++static bool qcom_smp2p_scan(struct qcom_smp2p *smp2p)
++{
++	bool ack_restart = false;
++
++	if (!smp2p->negotiation_done)
++		qcom_smp2p_negotiate(smp2p);
++
++	if (smp2p->negotiation_done) {
++		ack_restart = qcom_smp2p_check_ssr(smp2p);
++		qcom_smp2p_notify_in(smp2p);
++
++		if (ack_restart)
++			qcom_smp2p_do_ssr_ack(smp2p);
++	}
++
++	return ack_restart;
++}
++
+ /**
+  * qcom_smp2p_intr() - interrupt handler for incoming notifications
+  * @irq:	unused
+@@ -290,7 +308,6 @@ static irqreturn_t qcom_smp2p_intr(int irq, void *data)
+ 	struct qcom_smp2p *smp2p = data;
+ 	unsigned int smem_id = smp2p->smem_items[SMP2P_INBOUND];
+ 	unsigned int pid = smp2p->remote_pid;
+-	bool ack_restart;
+ 	size_t size;
+ 
+ 	in = smp2p->in;
+@@ -307,16 +324,8 @@ static irqreturn_t qcom_smp2p_intr(int irq, void *data)
+ 		smp2p->in = in;
+ 	}
+ 
+-	if (!smp2p->negotiation_done)
+-		qcom_smp2p_negotiate(smp2p);
+-
+-	if (smp2p->negotiation_done) {
+-		ack_restart = qcom_smp2p_check_ssr(smp2p);
+-		qcom_smp2p_notify_in(smp2p);
+-
+-		if (ack_restart)
+-			qcom_smp2p_do_ssr_ack(smp2p);
+-	}
++	if (qcom_smp2p_scan(smp2p))
++		qcom_smp2p_kick(smp2p);
+ 
+ out:
+ 	return IRQ_HANDLED;
+@@ -437,17 +446,24 @@ static int qcom_smp2p_outbound_entry(struct qcom_smp2p *smp2p,
+ 				     struct device_node *node)
+ {
+ 	struct smp2p_smem_item *out = smp2p->out;
++	int i;
+ 
+-	if (out->valid_entries == out->total_entries)
+-		return -ENOMEM;
++	/* Check if we have an entry already (e.g. allocated by boot firmware) */
++	for (i = 0; i < out->valid_entries; i++)
++		if (!strncmp(out->entries[i].name, entry->name, SMP2P_MAX_ENTRY_NAME))
++			break;
+ 
+-	/* Allocate an entry from the smem item */
+-	strscpy(out->entries[out->valid_entries].name, entry->name, SMP2P_MAX_ENTRY_NAME);
++	if (i == out->valid_entries) {
++		/* Allocate an entry from the smem item */
++		if (i == out->total_entries)
++			return -ENOMEM;
+ 
+-	/* Make the logical entry reference the physical value */
+-	entry->value = &out->entries[out->valid_entries].value;
++		strscpy(out->entries[i].name, entry->name, SMP2P_MAX_ENTRY_NAME);
++		out->valid_entries++;
++	}
+ 
+-	out->valid_entries++;
++	/* Make the logical entry reference the physical value */
++	entry->value = &out->entries[i].value;
+ 
+ 	entry->state = qcom_smem_state_register(node, &smp2p_state_ops, entry);
+ 	if (IS_ERR(entry->state)) {
+@@ -476,6 +492,29 @@ static int qcom_smp2p_alloc_outbound_item(struct qcom_smp2p *smp2p)
+ 		return PTR_ERR(out);
+ 	}
+ 
++	smp2p->out = out;
++
++	if (ret == -EEXIST && smp2p->in) {
++		if (out->magic == SMP2P_MAGIC &&
++		    out->version == 1 &&
++		    out->local_pid == smp2p->local_pid &&
++		    out->remote_pid == smp2p->remote_pid &&
++		    out->total_entries >= SMP2P_MAX_ENTRY &&
++		    out->valid_entries <= out->total_entries) {
++			/*
++			 * Reuse existing smem item, but adjust features to
++			 * what we support. This will be updated later when we
++			 * negotiate with the features of the remote side.
++			 */
++			out->features = SMP2P_ALL_FEATURES;
++			return 0;
++		} else {
++			dev_warn(smp2p->dev, "Unexpected local smp2p item allocated by firmware, resetting. "
++				 "(magic: %#x, version: %d, local_pid: %d, remote_pid: %d, total_entries: %d, valid_entries: %d)\n",
++				 out->magic, out->version, out->local_pid, out->remote_pid, out->total_entries, out->valid_entries);
++		}
++	}
++
+ 	memset(out, 0, sizeof(*out));
+ 	out->magic = SMP2P_MAGIC;
+ 	out->local_pid = smp2p->local_pid;
+@@ -493,8 +532,6 @@ static int qcom_smp2p_alloc_outbound_item(struct qcom_smp2p *smp2p)
+ 
+ 	qcom_smp2p_kick(smp2p);
+ 
+-	smp2p->out = out;
+-
+ 	return 0;
+ }
+ 
+@@ -534,6 +571,7 @@ static int smp2p_parse_ipc(struct qcom_smp2p *smp2p)
+ 
+ static int qcom_smp2p_probe(struct platform_device *pdev)
+ {
++	struct smp2p_smem_item *in;
+ 	struct smp2p_entry *entry;
+ 	struct qcom_smp2p *smp2p;
+ 	const char *key;
+@@ -584,6 +622,10 @@ static int qcom_smp2p_probe(struct platform_device *pdev)
+ 			return ret;
+ 	}
+ 
++	in = qcom_smem_get(smp2p->remote_pid, smp2p->smem_items[SMP2P_INBOUND], NULL);
++	if (!IS_ERR(in))
++		smp2p->in = in;
++
+ 	ret = qcom_smp2p_alloc_outbound_item(smp2p);
+ 	if (ret < 0)
+ 		goto release_mbox;
+@@ -617,6 +659,10 @@ static int qcom_smp2p_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	if (smp2p->in)
++		/* Ignore return status since we kick unconditionally below */
++		qcom_smp2p_scan(smp2p);
++
+ 	ret = devm_request_threaded_irq(&pdev->dev, irq,
+ 					NULL, qcom_smp2p_intr,
+ 					IRQF_ONESHOT,
+
+From 252ab7fae35487b6e56b4a73765058d4d887d383 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Fri, 25 Jul 2025 13:22:21 +0200
+Subject: [PATCH 101/124] soc: qcom: smp2p: Add support for
+ irq_get_irqchip_state()
+
+Make it possible to read the current SMP2P interrupt state using
+irq_get_irqchip_state(). This can be used for example to check the status
+of the SMP2P interrupts during boot.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/soc/qcom/smp2p.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/soc/qcom/smp2p.c b/drivers/soc/qcom/smp2p.c
+index 775e5c310d2770..983bf72c5c0dea 100644
+--- a/drivers/soc/qcom/smp2p.c
++++ b/drivers/soc/qcom/smp2p.c
+@@ -375,12 +375,33 @@ static void smp2p_irq_print_chip(struct irq_data *irqd, struct seq_file *p)
+ 	seq_printf(p, "%8s", dev_name(entry->smp2p->dev));
+ }
+ 
++static int smp2p_get_irqchip_state(struct irq_data *irqd,
++				   enum irqchip_irq_state which, bool *state)
++{
++	struct smp2p_entry *entry = irq_data_get_irq_chip_data(irqd);
++	irq_hw_number_t irq = irqd_to_hwirq(irqd);
++	u32 val;
++
++	if (which != IRQCHIP_STATE_LINE_LEVEL)
++		return -EINVAL;
++
++	if (entry->value) {
++		val = readl(entry->value);
++		*state = !!(val & BIT(irq));
++	} else {
++		*state = 0;
++	}
++
++	return 0;
++}
++
+ static struct irq_chip smp2p_irq_chip = {
+ 	.name           = "smp2p",
+ 	.irq_mask       = smp2p_mask_irq,
+ 	.irq_unmask     = smp2p_unmask_irq,
+ 	.irq_set_type	= smp2p_set_irq_type,
+ 	.irq_print_chip = smp2p_irq_print_chip,
++	.irq_get_irqchip_state = smp2p_get_irqchip_state,
+ };
+ 
+ static int smp2p_irq_map(struct irq_domain *d,
+
+From 66b2f95f6e270ee51018cb020444f94fdf8a2d85 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Fri, 25 Jul 2025 15:21:40 +0200
+Subject: [PATCH 102/124] remoteproc: core: Allow restarting detached
+ remoteprocs with new firmware
+
+At the moment, the remoteproc core supports only one auto boot "strategy":
+A remoteproc that is already running during boot ("detached") is attached,
+a remoteproc that is offline is started after loading the firmware. This
+works if the firmware loaded during boot is the same that we would start
+later, but it could also be outdated or a reduced size version that is
+missing some functionality. In this case, the best option is to try
+restarting it with new firmware - assuming that it is available while
+booting.
+
+Add support for this alternative behavior by replacing the "auto_boot" bool
+with a more explicit enum rproc_auto_boot.
+
+For RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE, try requesting the firmware
+early and - if successful - perform a clean stop of the remoteproc so that
+it can be restarted with the new firmware afterwards. A remoteproc driver
+making use of this functionality must handle the stop() callback being
+called during the initial detached state.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/remoteproc/imx_dsp_rproc.c      |  2 +-
+ drivers/remoteproc/imx_rproc.c          |  8 +++--
+ drivers/remoteproc/ingenic_rproc.c      |  5 ++-
+ drivers/remoteproc/pru_rproc.c          |  2 +-
+ drivers/remoteproc/qcom_q6v5_adsp.c     |  5 ++-
+ drivers/remoteproc/qcom_q6v5_mss.c      |  2 +-
+ drivers/remoteproc/qcom_q6v5_pas.c      |  5 ++-
+ drivers/remoteproc/rcar_rproc.c         |  2 +-
+ drivers/remoteproc/remoteproc_core.c    | 47 ++++++++++++++++++-------
+ drivers/remoteproc/stm32_rproc.c        |  8 +++--
+ drivers/remoteproc/wkup_m3_rproc.c      |  2 +-
+ drivers/remoteproc/xlnx_r5_remoteproc.c |  2 +-
+ include/linux/remoteproc.h              | 23 +++++++++++-
+ 13 files changed, 86 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/remoteproc/imx_dsp_rproc.c b/drivers/remoteproc/imx_dsp_rproc.c
+index 6e78a01755c7bd..9ef174728d643f 100644
+--- a/drivers/remoteproc/imx_dsp_rproc.c
++++ b/drivers/remoteproc/imx_dsp_rproc.c
+@@ -1198,7 +1198,7 @@ static int imx_dsp_rproc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	init_completion(&priv->pm_comp);
+-	rproc->auto_boot = false;
++	rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 	ret = rproc_add(rproc);
+ 	if (ret) {
+ 		dev_err(dev, "rproc_add failed\n");
+diff --git a/drivers/remoteproc/imx_rproc.c b/drivers/remoteproc/imx_rproc.c
+index bb25221a4a8987..23520cec886e9a 100644
+--- a/drivers/remoteproc/imx_rproc.c
++++ b/drivers/remoteproc/imx_rproc.c
+@@ -1097,8 +1097,12 @@ static int imx_rproc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_put_scu;
+ 
+-	if (rproc->state != RPROC_DETACHED)
+-		rproc->auto_boot = of_property_read_bool(np, "fsl,auto-boot");
++	if (rproc->state != RPROC_DETACHED) {
++		if (of_property_read_bool(np, "fsl,auto-boot"))
++			rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
++		else
++			rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
++	}
+ 
+ 	if (dcfg->flags & IMX_RPROC_NEED_SYSTEM_OFF) {
+ 		/*
+diff --git a/drivers/remoteproc/ingenic_rproc.c b/drivers/remoteproc/ingenic_rproc.c
+index 1b78d8ddeacfd5..351b9529713790 100644
+--- a/drivers/remoteproc/ingenic_rproc.c
++++ b/drivers/remoteproc/ingenic_rproc.c
+@@ -177,7 +177,10 @@ static int ingenic_rproc_probe(struct platform_device *pdev)
+ 	if (!rproc)
+ 		return -ENOMEM;
+ 
+-	rproc->auto_boot = auto_boot;
++	if (auto_boot)
++		rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
++	else
++		rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 
+ 	vpu = rproc->priv;
+ 	vpu->dev = &pdev->dev;
+diff --git a/drivers/remoteproc/pru_rproc.c b/drivers/remoteproc/pru_rproc.c
+index 5e3eb7b86a0e34..2ac2d2d5d090e1 100644
+--- a/drivers/remoteproc/pru_rproc.c
++++ b/drivers/remoteproc/pru_rproc.c
+@@ -1031,7 +1031,7 @@ static int pru_rproc_probe(struct platform_device *pdev)
+ 	 * remote-processor as part of its state machine either through the
+ 	 * remoteproc sysfs interface or through the equivalent kernel API.
+ 	 */
+-	rproc->auto_boot = false;
++	rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 
+ 	pru = rproc->priv;
+ 	pru->dev = dev;
+diff --git a/drivers/remoteproc/qcom_q6v5_adsp.c b/drivers/remoteproc/qcom_q6v5_adsp.c
+index e98b7e03162c7a..18e8d03e0bea78 100644
+--- a/drivers/remoteproc/qcom_q6v5_adsp.c
++++ b/drivers/remoteproc/qcom_q6v5_adsp.c
+@@ -678,7 +678,10 @@ static int adsp_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	rproc->auto_boot = desc->auto_boot;
++	if (desc->auto_boot)
++		rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
++	else
++		rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 	rproc->has_iommu = desc->has_iommu;
+ 	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
+ 
+diff --git a/drivers/remoteproc/qcom_q6v5_mss.c b/drivers/remoteproc/qcom_q6v5_mss.c
+index 3087d895b87f44..47553acdadd2a5 100644
+--- a/drivers/remoteproc/qcom_q6v5_mss.c
++++ b/drivers/remoteproc/qcom_q6v5_mss.c
+@@ -2079,7 +2079,7 @@ static int q6v5_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	rproc->auto_boot = false;
++	rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
+ 
+ 	qproc = rproc->priv;
+diff --git a/drivers/remoteproc/qcom_q6v5_pas.c b/drivers/remoteproc/qcom_q6v5_pas.c
+index 158bcd6cc85c5d..672af7336a2341 100644
+--- a/drivers/remoteproc/qcom_q6v5_pas.c
++++ b/drivers/remoteproc/qcom_q6v5_pas.c
+@@ -716,7 +716,10 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	rproc->auto_boot = desc->auto_boot;
++	if (desc->auto_boot)
++		rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
++	else
++		rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
+ 
+ 	pas = rproc->priv;
+diff --git a/drivers/remoteproc/rcar_rproc.c b/drivers/remoteproc/rcar_rproc.c
+index 921d853594f42f..3ee6d754d605f5 100644
+--- a/drivers/remoteproc/rcar_rproc.c
++++ b/drivers/remoteproc/rcar_rproc.c
+@@ -182,7 +182,7 @@ static int rcar_rproc_probe(struct platform_device *pdev)
+ 	dev_set_drvdata(dev, rproc);
+ 
+ 	/* Manually start the rproc */
+-	rproc->auto_boot = false;
++	rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 
+ 	ret = devm_rproc_add(dev, rproc);
+ 	if (ret) {
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 82567210052893..f88a53d2b73d92 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -1688,7 +1688,8 @@ static int rproc_trigger_auto_boot(struct rproc *rproc)
+ 	 * for a firmware image to be loaded, we can simply initiate the process
+ 	 * of attaching to it immediately.
+ 	 */
+-	if (rproc->state == RPROC_DETACHED)
++	if (rproc->state == RPROC_DETACHED &&
++	    rproc->auto_boot != RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE)
+ 		return rproc_boot(rproc);
+ 
+ 	/*
+@@ -1713,8 +1714,9 @@ static int rproc_stop(struct rproc *rproc, bool crashed)
+ 	if (!rproc->ops->stop)
+ 		return -EINVAL;
+ 
+-	/* Stop any subdevices for the remote processor */
+-	rproc_stop_subdevices(rproc, crashed);
++	/* Stop any subdevices for the remote processor if it was attached */
++	if (rproc->state != RPROC_DETACHED)
++		rproc_stop_subdevices(rproc, crashed);
+ 
+ 	/* the installed resource table is no longer accessible */
+ 	ret = rproc_reset_rsc_table_on_stop(rproc);
+@@ -1731,7 +1733,8 @@ static int rproc_stop(struct rproc *rproc, bool crashed)
+ 		return ret;
+ 	}
+ 
+-	rproc_unprepare_subdevices(rproc);
++	if (rproc->state != RPROC_DETACHED)
++		rproc_unprepare_subdevices(rproc);
+ 
+ 	rproc->state = RPROC_OFFLINE;
+ 
+@@ -1908,9 +1911,9 @@ static void rproc_crash_handler_work(struct work_struct *work)
+  */
+ int rproc_boot(struct rproc *rproc)
+ {
+-	const struct firmware *firmware_p;
++	const struct firmware *firmware_p = NULL;
+ 	struct device *dev;
+-	int ret;
++	int ret, fw_ret = 1;
+ 
+ 	if (!rproc) {
+ 		pr_err("invalid rproc handle\n");
+@@ -1937,6 +1940,19 @@ int rproc_boot(struct rproc *rproc)
+ 		goto unlock_mutex;
+ 	}
+ 
++	/* Check early if we have firmware avilable if needed */
++	if (rproc->auto_boot == RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE &&
++	    rproc->state == RPROC_DETACHED) {
++		fw_ret = request_firmware(&firmware_p, rproc->firmware, dev);
++		if (fw_ret == 0) {
++			dev_info(dev, "restarting %s with new firmware\n", rproc->name);
++
++			ret = rproc_stop(rproc, false);
++			if (ret)
++				goto downref_rproc;
++		}
++	}
++
+ 	if (rproc->state == RPROC_DETACHED) {
+ 		dev_info(dev, "attaching to %s\n", rproc->name);
+ 
+@@ -1944,19 +1960,20 @@ int rproc_boot(struct rproc *rproc)
+ 	} else {
+ 		dev_info(dev, "powering up %s\n", rproc->name);
+ 
+-		/* load firmware */
+-		ret = request_firmware(&firmware_p, rproc->firmware, dev);
+-		if (ret < 0) {
+-			dev_err(dev, "request_firmware failed: %d\n", ret);
++		/* load firmware (if not already happened above) */
++		if (fw_ret == 1)
++			fw_ret = request_firmware(&firmware_p, rproc->firmware, dev);
++		if (fw_ret < 0) {
++			dev_err(dev, "request_firmware failed: %d\n", fw_ret);
++			ret = fw_ret;
+ 			goto downref_rproc;
+ 		}
+ 
+ 		ret = rproc_fw_boot(rproc, firmware_p);
+-
+-		release_firmware(firmware_p);
+ 	}
+ 
+ downref_rproc:
++	release_firmware(firmware_p);
+ 	if (ret)
+ 		atomic_dec(&rproc->power);
+ unlock_mutex:
+@@ -2264,6 +2281,10 @@ static int rproc_validate(struct rproc *rproc)
+ 		return -EINVAL;
+ 	}
+ 
++	if (rproc->auto_boot == RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE &&
++	    (!rproc->ops->stop || !rproc->ops->start || !rproc->ops->attach))
++		return -EINVAL;
++
+ 	return 0;
+ }
+ 
+@@ -2475,7 +2496,7 @@ struct rproc *rproc_alloc(struct device *dev, const char *name,
+ 		return NULL;
+ 
+ 	rproc->priv = &rproc[1];
+-	rproc->auto_boot = true;
++	rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
+ 	rproc->elf_class = ELFCLASSNONE;
+ 	rproc->elf_machine = EM_NONE;
+ 
+diff --git a/drivers/remoteproc/stm32_rproc.c b/drivers/remoteproc/stm32_rproc.c
+index 431648607d53ae..6384f2fbd62e7c 100644
+--- a/drivers/remoteproc/stm32_rproc.c
++++ b/drivers/remoteproc/stm32_rproc.c
+@@ -704,7 +704,8 @@ static int stm32_rproc_get_syscon(struct device_node *np, const char *prop,
+ }
+ 
+ static int stm32_rproc_parse_dt(struct platform_device *pdev,
+-				struct stm32_rproc *ddata, bool *auto_boot)
++				struct stm32_rproc *ddata,
++				enum rproc_auto_boot *auto_boot)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct device_node *np = dev->of_node;
+@@ -785,7 +786,10 @@ static int stm32_rproc_parse_dt(struct platform_device *pdev,
+ 	if (err)
+ 		dev_info(dev, "failed to get pdds\n");
+ 
+-	*auto_boot = of_property_read_bool(np, "st,auto-boot");
++	if (of_property_read_bool(np, "st,auto-boot"))
++		*auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
++	else
++		*auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 
+ 	/*
+ 	 * See if we can check the M4 status, i.e if it was started
+diff --git a/drivers/remoteproc/wkup_m3_rproc.c b/drivers/remoteproc/wkup_m3_rproc.c
+index 2d5bfbefcacc5b..8815648295c892 100644
+--- a/drivers/remoteproc/wkup_m3_rproc.c
++++ b/drivers/remoteproc/wkup_m3_rproc.c
+@@ -170,7 +170,7 @@ static int wkup_m3_rproc_probe(struct platform_device *pdev)
+ 	if (!rproc)
+ 		return -ENOMEM;
+ 
+-	rproc->auto_boot = false;
++	rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 	rproc->sysfs_read_only = true;
+ 
+ 	wkupm3 = rproc->priv;
+diff --git a/drivers/remoteproc/xlnx_r5_remoteproc.c b/drivers/remoteproc/xlnx_r5_remoteproc.c
+index 0b7b173d0d260a..cc6fad782cd5a7 100644
+--- a/drivers/remoteproc/xlnx_r5_remoteproc.c
++++ b/drivers/remoteproc/xlnx_r5_remoteproc.c
+@@ -940,7 +940,7 @@ static struct zynqmp_r5_core *zynqmp_r5_add_rproc_core(struct device *cdev)
+ 
+ 	r5_rproc->recovery_disabled = true;
+ 	r5_rproc->has_iommu = false;
+-	r5_rproc->auto_boot = false;
++	r5_rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 	r5_core = r5_rproc->priv;
+ 	r5_core->dev = cdev;
+ 	r5_core->np = dev_of_node(cdev);
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index b4795698d8c2a4..c40b18d120ab46 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -503,6 +503,27 @@ enum rproc_features {
+ 	RPROC_MAX_FEATURES,
+ };
+ 
++/**
++ * enum rproc_auto_boot - auto boot strategy for remoteproc during initial boot
++ *
++ * @RPROC_AUTO_BOOT_DISABLED: The remoteproc will be left offline (or detached).
++ * @RPROC_AUTO_BOOT_ATTACH_OR_START: The remoteproc will be attached (if it is
++ *				     already running). Otherwise, it will be
++ *				     started with new loaded firmware.
++ * @RPROC_FEAT_REBOOT_IF_FW_AVAILABLE: The remoteproc will be restarted if
++ *				       requesting new firmware succeeds. If
++ *				       the firmware is missing and the
++ *				       remoteproc is already running, it will
++ *				       be attached instead. A remoteproc
++ *				       implementing this must handle stop()
++ *				       being called in detached state.
++ */
++enum rproc_auto_boot {
++	RPROC_AUTO_BOOT_DISABLED,
++	RPROC_AUTO_BOOT_ATTACH_OR_START,
++	RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE,
++};
++
+ /**
+  * struct rproc - represents a physical remote processor device
+  * @node: list node of this rproc object
+@@ -577,7 +598,7 @@ struct rproc {
+ 	struct resource_table *cached_table;
+ 	size_t table_sz;
+ 	bool has_iommu;
+-	bool auto_boot;
++	enum rproc_auto_boot auto_boot;
+ 	bool sysfs_read_only;
+ 	struct list_head dump_segments;
+ 	int nb_vdev;
+
+From 24a5f178f90029348cbe4b8d96997a1e10555382 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Tue, 5 Aug 2025 17:44:32 +0200
+Subject: [PATCH 103/124] remoteproc: qcom_q6v5: Allow detecting detached state
+ during boot
+
+A remoteproc might be already running during boot, e.g. because it was
+already started by the boot firmware. This should be reflected in the
+initial remoteproc state if the remoteproc driver implements the attach()
+callback.
+
+Add a function that allows checking the initial state of the of the
+remoteproc during boot by reading the state of the SMP2P interrupts. If it
+is running, handover already happened, it was not stopped and did not
+crash, then it is likely in a state where we can attach to it and continue
+using its services.
+
+Note that there is a small chance for false-positives when the remoteproc
+was not shutdown cleanly using the SMP2P signals. There is no firmware that
+does that at the moment. If there is in the future, it should provide a
+more reliable way to check if a remoteproc is already running during boot.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/remoteproc/qcom_q6v5.c | 29 +++++++++++++++++++++++++++++
+ drivers/remoteproc/qcom_q6v5.h |  2 ++
+ 2 files changed, 31 insertions(+)
+
+diff --git a/drivers/remoteproc/qcom_q6v5.c b/drivers/remoteproc/qcom_q6v5.c
+index 58d5b85e58cdad..d4d978cca4bab9 100644
+--- a/drivers/remoteproc/qcom_q6v5.c
++++ b/drivers/remoteproc/qcom_q6v5.c
+@@ -234,6 +234,35 @@ unsigned long qcom_q6v5_panic(struct qcom_q6v5 *q6v5)
+ }
+ EXPORT_SYMBOL_GPL(qcom_q6v5_panic);
+ 
++/**
++ * qcom_q6v5_read_smp2p_state() - check the initial state during boot using SMP2P
++ * @q6v5:	reference to qcom_q6v5 context
++ *
++ * Read the current state of the SMP2P interrupts and attempt to determine if
++ * the remoteproc is already running. If yes, the remoteproc state is set to
++ * RPROC_DETACHED. Drivers can use this to add support for attaching to
++ * remoteprocs during boot.
++ *
++ * There is a small chance for false-positives, so drivers should combine this
++ * with device-specific status information if possible.
++ */
++void qcom_q6v5_read_smp2p_state(struct qcom_q6v5 *q6v5)
++{
++	bool handover = false;
++	bool ready = false;
++	bool fatal = false;
++	bool stop = false;
++
++	irq_get_irqchip_state(q6v5->handover_irq, IRQCHIP_STATE_LINE_LEVEL, &handover);
++	irq_get_irqchip_state(q6v5->ready_irq, IRQCHIP_STATE_LINE_LEVEL, &ready);
++	irq_get_irqchip_state(q6v5->fatal_irq, IRQCHIP_STATE_LINE_LEVEL, &fatal);
++	irq_get_irqchip_state(q6v5->stop_irq, IRQCHIP_STATE_LINE_LEVEL, &stop);
++
++	if (ready && handover && !stop && !fatal)
++		q6v5->rproc->state = RPROC_DETACHED;
++}
++EXPORT_SYMBOL_GPL(qcom_q6v5_read_smp2p_state);
++
+ /**
+  * qcom_q6v5_init() - initializer of the q6v5 common struct
+  * @q6v5:	handle to be initialized
+diff --git a/drivers/remoteproc/qcom_q6v5.h b/drivers/remoteproc/qcom_q6v5.h
+index 5a859c41896e99..59970adb04b14f 100644
+--- a/drivers/remoteproc/qcom_q6v5.h
++++ b/drivers/remoteproc/qcom_q6v5.h
+@@ -47,6 +47,8 @@ int qcom_q6v5_init(struct qcom_q6v5 *q6v5, struct platform_device *pdev,
+ 		   void (*handover)(struct qcom_q6v5 *q6v5));
+ void qcom_q6v5_deinit(struct qcom_q6v5 *q6v5);
+ 
++void qcom_q6v5_read_smp2p_state(struct qcom_q6v5 *q6v5);
++
+ int qcom_q6v5_prepare(struct qcom_q6v5 *q6v5);
+ int qcom_q6v5_unprepare(struct qcom_q6v5 *q6v5);
+ int qcom_q6v5_request_stop(struct qcom_q6v5 *q6v5, struct qcom_sysmon *sysmon);
+
+From 7713cb36870f1586bee9ce20c62c78550f3e9c8b Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Tue, 5 Aug 2025 17:44:32 +0200
+Subject: [PATCH 104/124] remoteproc: qcom_q6v5: Add qcom_q6v5_attach()
+
+Implement qcom_q6v5_attach(), which can be used by q6v5 remoteproc drivers
+to attach to a remoteproc that is already running during boot. It is
+essentially the same as qcom_q6v5_prepare(), except that we skip setting up
+the proxy votes, since we expect that handover has already happened.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/remoteproc/qcom_q6v5.c | 44 ++++++++++++++++++++++++++++------
+ drivers/remoteproc/qcom_q6v5.h |  1 +
+ 2 files changed, 38 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/remoteproc/qcom_q6v5.c b/drivers/remoteproc/qcom_q6v5.c
+index d4d978cca4bab9..94c75d9cca55df 100644
+--- a/drivers/remoteproc/qcom_q6v5.c
++++ b/drivers/remoteproc/qcom_q6v5.c
+@@ -36,6 +36,25 @@ static int q6v5_load_state_toggle(struct qcom_q6v5 *q6v5, bool enable)
+ 	return ret;
+ }
+ 
++static int q6v5_init(struct qcom_q6v5 *q6v5, bool handover_issued)
++{
++	int ret;
++
++	/* Always send correct load state in case it was not done before */
++	ret = q6v5_load_state_toggle(q6v5, true);
++	if (ret)
++		return ret;
++
++	reinit_completion(&q6v5->start_done);
++	reinit_completion(&q6v5->stop_done);
++
++	q6v5->running = true;
++	q6v5->handover_issued = handover_issued;
++
++	enable_irq(q6v5->handover_irq);
++	return 0;
++}
++
+ /**
+  * qcom_q6v5_prepare() - reinitialize the qcom_q6v5 context before start
+  * @q6v5:	reference to qcom_q6v5 context to be reinitialized
+@@ -52,23 +71,34 @@ int qcom_q6v5_prepare(struct qcom_q6v5 *q6v5)
+ 		return ret;
+ 	}
+ 
+-	ret = q6v5_load_state_toggle(q6v5, true);
++	ret = q6v5_init(q6v5, false);
+ 	if (ret) {
+ 		icc_set_bw(q6v5->path, 0, 0);
+ 		return ret;
+ 	}
+ 
+-	reinit_completion(&q6v5->start_done);
+-	reinit_completion(&q6v5->stop_done);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(qcom_q6v5_prepare);
+ 
+-	q6v5->running = true;
+-	q6v5->handover_issued = false;
++/**
++ * qcom_q6v5_attach() - attach to already running qcom_q6v5 remoteproc
++ * @q6v5:	reference to qcom_q6v5 context to be attached
++ *
++ * Return: 0 on success, negative errno on failure
++ */
++int qcom_q6v5_attach(struct qcom_q6v5 *q6v5)
++{
++	int ret;
+ 
+-	enable_irq(q6v5->handover_irq);
++	ret = q6v5_init(q6v5, true);
++	if (ret)
++		return ret;
+ 
++	complete(&q6v5->start_done);
+ 	return 0;
+ }
+-EXPORT_SYMBOL_GPL(qcom_q6v5_prepare);
++EXPORT_SYMBOL_GPL(qcom_q6v5_attach);
+ 
+ /**
+  * qcom_q6v5_unprepare() - unprepare the qcom_q6v5 context after stop
+diff --git a/drivers/remoteproc/qcom_q6v5.h b/drivers/remoteproc/qcom_q6v5.h
+index 59970adb04b14f..f034bb6286055a 100644
+--- a/drivers/remoteproc/qcom_q6v5.h
++++ b/drivers/remoteproc/qcom_q6v5.h
+@@ -50,6 +50,7 @@ void qcom_q6v5_deinit(struct qcom_q6v5 *q6v5);
+ void qcom_q6v5_read_smp2p_state(struct qcom_q6v5 *q6v5);
+ 
+ int qcom_q6v5_prepare(struct qcom_q6v5 *q6v5);
++int qcom_q6v5_attach(struct qcom_q6v5 *q6v5);
+ int qcom_q6v5_unprepare(struct qcom_q6v5 *q6v5);
+ int qcom_q6v5_request_stop(struct qcom_q6v5 *q6v5, struct qcom_sysmon *sysmon);
+ int qcom_q6v5_wait_for_start(struct qcom_q6v5 *q6v5, int timeout);
+
+From ea74d61069b3bd256a40fb619de9e5133dafc435 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Tue, 5 Aug 2025 17:44:32 +0200
+Subject: [PATCH 105/124] remoteproc: qcom_q6v5: Send SMP2P stop signal in
+ attached/detached state
+
+If we stop the q6v5 remoteproc while it is in RPROC_ATTACHED or
+RPROC_DETACHED state, we still want to send the stop signal to shut it down
+cleanly.
+
+The main goal of the check in qcom_q6v5_request_stop() is to avoid sending
+duplicate shutdown/stop signals during crash or shutdown via sysmon, so
+check for RPROC_CRASHED to handle all of RPROC_RUNNING, RPROC_ATTACHED and
+RPROC_DETACHED. It does not make sense to call the function while in
+RPROC_OFFLINE state.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/remoteproc/qcom_q6v5.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/remoteproc/qcom_q6v5.c b/drivers/remoteproc/qcom_q6v5.c
+index 94c75d9cca55df..ed1b578a831dd1 100644
+--- a/drivers/remoteproc/qcom_q6v5.c
++++ b/drivers/remoteproc/qcom_q6v5.c
+@@ -231,8 +231,8 @@ int qcom_q6v5_request_stop(struct qcom_q6v5 *q6v5, struct qcom_sysmon *sysmon)
+ 
+ 	q6v5->running = false;
+ 
+-	/* Don't perform SMP2P dance if remote isn't running */
+-	if (q6v5->rproc->state != RPROC_RUNNING || qcom_sysmon_shutdown_acked(sysmon))
++	/* Don't perform SMP2P dance if remote crashed or already stopped */
++	if (q6v5->rproc->state == RPROC_CRASHED || qcom_sysmon_shutdown_acked(sysmon))
+ 		return 0;
+ 
+ 	qcom_smem_state_update_bits(q6v5->state,
+
+From f31b422af588e34752d1c88f100169c2956df28a Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Tue, 5 Aug 2025 17:44:32 +0200
+Subject: [PATCH 106/124] remoteproc: qcom_q6v5_pas: Attach running remoteproc
+ if firmware is missing
+
+A remoteproc might be already running during boot, e.g. because it was
+already started by the boot firmware. This is the case for example on X1E,
+where the boot firmware starts a "lite" ADSP firmware that supports
+charging and USB-CC detection, but is missing audio functionality. This
+firmware uses the same interfaces as the full firmware and can be reused in
+case the device-specific firmware is missing (e.g. in generic distro
+installers).
+
+The running remoteproc is currently not modelled at all - it is just killed
+through qcom_scm_pas_shutdown() without even using the SMP2P stop signal
+beforehand.
+
+Model this properly by marking the remoteproc as RPROC_DETACHED based on
+the SMP2P state and use the new RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE
+feature to implement equivalent behavior as before. If the firmware is
+present the "lite" firmware is now stopped more gracefully with the SMP2P
+stop signal. If the firmware is missing, we attach to it and can provide
+battery status and USB-C detection until the full ADSP firmware is copied.
+
+Note that the exact same approach does not just work for the "lite" ADSP
+firmware. Any of the remoteprocs (ADSP, CDSP, SLPI, ...) can be already
+started during boot and attached (or restarted) later.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/remoteproc/qcom_q6v5_pas.c | 64 +++++++++++++++++++++++++-----
+ 1 file changed, 54 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/remoteproc/qcom_q6v5_pas.c b/drivers/remoteproc/qcom_q6v5_pas.c
+index 672af7336a2341..3cf24f2023e5a8 100644
+--- a/drivers/remoteproc/qcom_q6v5_pas.c
++++ b/drivers/remoteproc/qcom_q6v5_pas.c
+@@ -226,10 +226,13 @@ static int qcom_pas_load(struct rproc *rproc, const struct firmware *fw)
+ 	/* Store firmware handle to be used in qcom_pas_start() */
+ 	pas->firmware = fw;
+ 
+-	if (pas->lite_pas_id)
+-		qcom_scm_pas_shutdown(pas->lite_pas_id);
+-	if (pas->lite_dtb_pas_id)
+-		qcom_scm_pas_shutdown(pas->lite_dtb_pas_id);
++	/*
++	 * We don't support loading the "lite" firmware, so we don't need to
++	 * keep trying to shut it down. If it was running, it should have
++	 * already been stopped by adsp_stop().
++	 */
++	pas->lite_pas_id = 0;
++	pas->lite_dtb_pas_id = 0;
+ 
+ 	if (pas->dtb_pas_id) {
+ 		ret = request_firmware(&pas->dtb_firmware, pas->dtb_firmware_name, pas->dev);
+@@ -379,6 +382,28 @@ static void qcom_pas_handover(struct qcom_q6v5 *q6v5)
+ 	qcom_pas_pds_disable(pas, pas->proxy_pds, pas->proxy_pd_count);
+ }
+ 
++static int qcom_pas_shutdown(int pas_id, int lite_pas_id)
++{
++	int ret, lite_ret = -ENODEV;
++
++	/*
++	 * We don't know if the boot firmware started the "full" or "lite"
++	 * firmware, so we don't know if we need to shutdown the lite_pas_id or
++	 * the normal pas_id. Unfortunately, the return codes of the SCM calls
++	 * are also not helpful to figure that out. Since shutting down a
++	 * stopped remoteproc is a no-op, we just shutdown both and if one of
++	 * the calls succeeds, we assume it's okay.
++	 */
++	if (lite_pas_id)
++		lite_ret = qcom_scm_pas_shutdown(lite_pas_id);
++
++	ret = qcom_scm_pas_shutdown(pas_id);
++	if (ret && lite_ret)
++		return ret;
++
++	return 0;
++}
++
+ static int qcom_pas_stop(struct rproc *rproc)
+ {
+ 	struct qcom_pas *pas = rproc->priv;
+@@ -389,7 +414,7 @@ static int qcom_pas_stop(struct rproc *rproc)
+ 	if (ret == -ETIMEDOUT)
+ 		dev_err(pas->dev, "timed out on wait\n");
+ 
+-	ret = qcom_scm_pas_shutdown(pas->pas_id);
++	ret = qcom_pas_shutdown(pas->pas_id, pas->lite_pas_id);
+ 	if (ret && pas->decrypt_shutdown)
+ 		ret = qcom_pas_shutdown_poll_decrypt(pas);
+ 
+@@ -397,14 +422,16 @@ static int qcom_pas_stop(struct rproc *rproc)
+ 		dev_err(pas->dev, "failed to shutdown: %d\n", ret);
+ 
+ 	if (pas->dtb_pas_id) {
+-		ret = qcom_scm_pas_shutdown(pas->dtb_pas_id);
++		ret = qcom_pas_shutdown(pas->dtb_pas_id, pas->lite_dtb_pas_id);
+ 		if (ret)
+ 			dev_err(pas->dev, "failed to shutdown dtb: %d\n", ret);
+ 	}
+ 
+-	handover = qcom_q6v5_unprepare(&pas->q6v5);
+-	if (handover)
+-		qcom_pas_handover(&pas->q6v5);
++	if (rproc->state != RPROC_DETACHED) {
++		handover = qcom_q6v5_unprepare(&pas->q6v5);
++		if (handover)
++			qcom_pas_handover(&pas->q6v5);
++	}
+ 
+ 	if (pas->smem_host_id)
+ 		ret = qcom_smem_bust_hwspin_lock_by_host(pas->smem_host_id);
+@@ -412,6 +439,13 @@ static int qcom_pas_stop(struct rproc *rproc)
+ 	return ret;
+ }
+ 
++static int qcom_pas_attach(struct rproc *rproc)
++{
++	struct qcom_pas *pas = rproc->priv;
++
++	return qcom_q6v5_attach(&pas->q6v5);
++}
++
+ static void *qcom_pas_da_to_va(struct rproc *rproc, u64 da, size_t len, bool *is_iomem)
+ {
+ 	struct qcom_pas *pas = rproc->priv;
+@@ -438,6 +472,7 @@ static const struct rproc_ops qcom_pas_ops = {
+ 	.unprepare = qcom_pas_unprepare,
+ 	.start = qcom_pas_start,
+ 	.stop = qcom_pas_stop,
++	.attach = qcom_pas_attach,
+ 	.da_to_va = qcom_pas_da_to_va,
+ 	.parse_fw = qcom_register_dump_segments,
+ 	.load = qcom_pas_load,
+@@ -448,6 +483,7 @@ static const struct rproc_ops qcom_pas_minidump_ops = {
+ 	.unprepare = qcom_pas_unprepare,
+ 	.start = qcom_pas_start,
+ 	.stop = qcom_pas_stop,
++	.attach = qcom_pas_attach,
+ 	.da_to_va = qcom_pas_da_to_va,
+ 	.parse_fw = qcom_register_dump_segments,
+ 	.load = qcom_pas_load,
+@@ -717,7 +753,7 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	if (desc->auto_boot)
+-		rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
++		rproc->auto_boot = RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE;
+ 	else
+ 		rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
+ 	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
+@@ -772,6 +808,14 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto detach_proxy_pds;
+ 
++	/*
++	 * Unfortunately, the PAS interface does not provide a reliable way to
++	 * check if a certain pas_id is currently running. Reading the smp2p
++	 * state is the best we can do to check if the remoteproc is already
++	 * running during boot.
++	 */
++	qcom_q6v5_read_smp2p_state(&pas->q6v5);
++
+ 	qcom_add_glink_subdev(rproc, &pas->glink_subdev, desc->ssr_name);
+ 	qcom_add_smd_subdev(rproc, &pas->smd_subdev);
+ 	qcom_add_pdm_subdev(rproc, &pas->pdm_subdev);
+
+From 62c9c308a66e524b2b26c73b3ffd27ae5d3ac5a6 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Thu, 21 Aug 2025 10:33:53 +0200
+Subject: [PATCH 107/124] iommu/arm-smmu-qcom: Enable use of all SMR groups
+ when running bare-metal
+
+Some platforms (e.g. SC8280XP and X1E) support more than 128 stream
+matching groups. This is more than what is defined as maximum by the ARM
+SMMU architecture specification. Commit 122611347326 ("iommu/arm-smmu-qcom:
+Limit the SMR groups to 128") disabled use of the additional groups because
+they don't exhibit the same behavior as the architecture supported ones.
+
+It seems like this is just another quirk of the hypervisor: When running
+bare-metal without the hypervisor, the additional groups appear to behave
+just like all others. The boot firmware uses some of the additional groups,
+so ignoring them in this situation leads to stream match conflicts whenever
+we allocate a new SMR group for the same SID.
+
+The workaround exists primarily because the bypass quirk detection fails
+when using a S2CR register from the additional matching groups, so let's
+perform the test with the last reliable S2CR (127) and then limit the
+number of SMR groups only if we detect that we are running below the
+hypervisor (because of the bypass quirk).
+
+Fixes: 122611347326 ("iommu/arm-smmu-qcom: Limit the SMR groups to 128")
+Link: https://lore.kernel.org/r/20250821-arm-smmu-qcom-all-smr-v1-1-7f5cbbceac3e@linaro.org
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c | 27 ++++++++++++++--------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c b/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c
+index 57c097e8761308..c939d0856b719c 100644
+--- a/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c
++++ b/drivers/iommu/arm/arm-smmu/arm-smmu-qcom.c
+@@ -431,17 +431,19 @@ static int qcom_smmu_cfg_probe(struct arm_smmu_device *smmu)
+ 
+ 	/*
+ 	 * Some platforms support more than the Arm SMMU architected maximum of
+-	 * 128 stream matching groups. For unknown reasons, the additional
+-	 * groups don't exhibit the same behavior as the architected registers,
+-	 * so limit the groups to 128 until the behavior is fixed for the other
+-	 * groups.
++	 * 128 stream matching groups. The additional registers appear to have
++	 * the same behavior as the architected registers in the hardware.
++	 * However, on some firmware versions, the hypervisor does not
++	 * correctly trap and emulate accesses to the additional registers,
++	 * resulting in unexpected behavior.
++	 *
++	 * If there are more than 128 groups, use the last reliable group to
++	 * detect if we need to apply the bypass quirk.
+ 	 */
+-	if (smmu->num_mapping_groups > 128) {
+-		dev_notice(smmu->dev, "\tLimiting the stream matching groups to 128\n");
+-		smmu->num_mapping_groups = 128;
+-	}
+-
+-	last_s2cr = ARM_SMMU_GR0_S2CR(smmu->num_mapping_groups - 1);
++	if (smmu->num_mapping_groups > 128)
++		last_s2cr = ARM_SMMU_GR0_S2CR(127);
++	else
++		last_s2cr = ARM_SMMU_GR0_S2CR(smmu->num_mapping_groups - 1);
+ 
+ 	/*
+ 	 * With some firmware versions writes to S2CR of type FAULT are
+@@ -464,6 +466,11 @@ static int qcom_smmu_cfg_probe(struct arm_smmu_device *smmu)
+ 
+ 		reg = FIELD_PREP(ARM_SMMU_CBAR_TYPE, CBAR_TYPE_S1_TRANS_S2_BYPASS);
+ 		arm_smmu_gr1_write(smmu, ARM_SMMU_GR1_CBAR(qsmmu->bypass_cbndx), reg);
++
++		if (smmu->num_mapping_groups > 128) {
++			dev_notice(smmu->dev, "\tLimiting the stream matching groups to 128\n");
++			smmu->num_mapping_groups = 128;
++		}
+ 	}
+ 
+ 	for (i = 0; i < smmu->num_mapping_groups; i++) {
+
+From 0d22c401301ea4c2aa61e80ef6444f78bdacf1a9 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan@gerhold.net>
+Date: Sun, 26 Oct 2025 14:50:30 +0100
+Subject: [PATCH 108/124] dt-bindings: firmware: qcom,scm: Add
+ qcom,shm-bridge-vmid
+
+Signed-off-by: Stephan Gerhold <stephan@gerhold.net>
+---
+ Documentation/devicetree/bindings/firmware/qcom,scm.yaml | 8 ++++++++
+ include/dt-bindings/firmware/qcom,scm.h                  | 3 +++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/firmware/qcom,scm.yaml b/Documentation/devicetree/bindings/firmware/qcom,scm.yaml
+index ef97faac7e47c1..889fba1330d8b5 100644
+--- a/Documentation/devicetree/bindings/firmware/qcom,scm.yaml
++++ b/Documentation/devicetree/bindings/firmware/qcom,scm.yaml
+@@ -106,6 +106,14 @@ properties:
+       Phandle to the memory region reserved for the shared memory bridge to TZ.
+     maxItems: 1
+ 
++  qcom,shm-bridge-vmid:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    description:
++      VMID to use as owner of shared memory bridge allocations for TZ.
++      QCOM_SCM_VMID_SELF_OWNER may be used to indicate that the allocations
++      should be self-owned rather than being assigned to a specific VMID.
++      Defaults to QCOM_SCM_VMID_HLOS if not specified.
++
+   qcom,sdi-enabled:
+     description:
+       Indicates that the SDI (Secure Debug Image) has been enabled by TZ
+diff --git a/include/dt-bindings/firmware/qcom,scm.h b/include/dt-bindings/firmware/qcom,scm.h
+index 6de8b08e1e799b..1e0a477f0db9b2 100644
+--- a/include/dt-bindings/firmware/qcom,scm.h
++++ b/include/dt-bindings/firmware/qcom,scm.h
+@@ -36,4 +36,7 @@
+ #define QCOM_SCM_VMID_TVM		0x2D
+ #define QCOM_SCM_VMID_OEMVM		0x31
+ 
++/* Special value intended for qcom,shm-bridge-vmid */
++#define QCOM_SCM_VMID_SELF_OWNER	0xffffffff
++
+ #endif
+
+From cfd6acc32f48f7d7edef7d1b0a2760fea2ccdfcf Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Sun, 20 Jul 2025 16:15:54 +0200
+Subject: [PATCH 109/124] wip: firmware: qcom: tzmem: Use "self owner" bits
+ when running in EL2
+
+It seems like the SHM bridge needs to use a different set of bits (the
+"self owner" bits) when running as the hypervisor in EL2.
+
+Make the SHM bridge (and SCM calls in general) work properly in EL2 by
+porting a similar change from the msm-5.4 vendor kernel:
+git.codelinaro.org/clo/la/kernel/msm-5.4/-/commit/9cb1271ce620ab7cdd53f00c9d951004c9713254
+
+TODO: This should be likely changed to a DT property, since usage of
+is_hyp_mode_available() is discouraged in drivers.
+
+Add qcom,shm-bridge-vmid property instead of checking explicitly for
+running in EL2.
+
+Signed-off-by: Stephan Gerhold <stephan@gerhold.net>
+---
+ drivers/firmware/qcom/qcom_tzmem.c | 26 +++++++++++++++++++++-----
+ 1 file changed, 21 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/firmware/qcom/qcom_tzmem.c b/drivers/firmware/qcom/qcom_tzmem.c
+index 9f232e53115ea1..2de11f591c6b8e 100644
+--- a/drivers/firmware/qcom/qcom_tzmem.c
++++ b/drivers/firmware/qcom/qcom_tzmem.c
+@@ -71,9 +71,12 @@ static void qcom_tzmem_cleanup_area(struct qcom_tzmem_area *area)
+ #include <linux/firmware/qcom/qcom_scm.h>
+ #include <linux/of.h>
+ 
++#define QCOM_SHM_BRIDGE_SELF_OWNER BIT(1)
++#define QCOM_SHM_BRIDGE_SELF_OWNER_PERM_SHIFT 2
+ #define QCOM_SHM_BRIDGE_NUM_VM_SHIFT 9
+ 
+ static bool qcom_tzmem_using_shm_bridge;
++static u32 qcom_tzmem_vmid = QCOM_SCM_VMID_HLOS;
+ 
+ /* List of machines that are known to not support SHM bridge correctly. */
+ static const char *const qcom_tzmem_blacklist[] = {
+@@ -91,9 +94,15 @@ static int qcom_tzmem_init(void)
+ 	const char *const *platform;
+ 	int ret;
+ 
+-	for (platform = qcom_tzmem_blacklist; *platform; platform++) {
+-		if (of_machine_is_compatible(*platform))
+-			goto notsupp;
++	device_property_read_u32(qcom_tzmem_dev, "qcom,shm-bridge-vmid",
++				 &qcom_tzmem_vmid);
++
++	/* Skip blocklist if self owner is requested */
++	if (qcom_tzmem_vmid != QCOM_SCM_VMID_SELF_OWNER) {
++		for (platform = qcom_tzmem_blacklist; *platform; platform++) {
++			if (of_machine_is_compatible(*platform))
++				goto notsupp;
++		}
+ 	}
+ 
+ 	ret = qcom_scm_shm_bridge_enable(qcom_tzmem_dev);
+@@ -125,6 +134,7 @@ static int qcom_tzmem_init(void)
+ int qcom_tzmem_shm_bridge_create(phys_addr_t paddr, size_t size, u64 *handle)
+ {
+ 	u64 pfn_and_ns_perm, ipfn_and_s_perm, size_and_flags;
++	u64 ns_vmids = qcom_tzmem_vmid;
+ 	int ret;
+ 
+ 	if (!qcom_tzmem_using_shm_bridge)
+@@ -134,9 +144,15 @@ int qcom_tzmem_shm_bridge_create(phys_addr_t paddr, size_t size, u64 *handle)
+ 	ipfn_and_s_perm = paddr | QCOM_SCM_PERM_RW;
+ 	size_and_flags = size | (1 << QCOM_SHM_BRIDGE_NUM_VM_SHIFT);
+ 
++	if (qcom_tzmem_vmid == QCOM_SCM_VMID_SELF_OWNER) {
++		size_and_flags = size | QCOM_SHM_BRIDGE_SELF_OWNER |
++				 (QCOM_SCM_PERM_RW << QCOM_SHM_BRIDGE_SELF_OWNER_PERM_SHIFT);
++		ns_vmids = 0;
++	}
++
++
+ 	ret = qcom_scm_shm_bridge_create(pfn_and_ns_perm, ipfn_and_s_perm,
+-					 size_and_flags, QCOM_SCM_VMID_HLOS,
+-					 handle);
++					 size_and_flags, ns_vmids, handle);
+ 	if (ret) {
+ 		dev_err(qcom_tzmem_dev,
+ 			"SHM Bridge failed: ret %d paddr 0x%pa, size %zu\n",
+
+From ba171afcccf22d5255397a59459947a373adc93b Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan@gerhold.net>
+Date: Sun, 26 Oct 2025 14:52:44 +0100
+Subject: [PATCH 111/124] arm64: dts: qcom: sc8280xp-el2: Set correct owner for
+ SCM SHM bridge
+
+Signed-off-by: Stephan Gerhold <stephan@gerhold.net>
+---
+ arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso b/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso
+index 25d1fa4bc2055e..37d1bb079f7879 100644
+--- a/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso
++++ b/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso
+@@ -1,4 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
++#include <dt-bindings/firmware/qcom,scm.h>
+ 
+ /*
+  * sc8280xp specific modifications required to boot in EL2.
+@@ -42,3 +43,7 @@
+ &pcie_smmu {
+ 	status = "okay";
+ };
++
++&scm {
++	qcom,shm-bridge-vmid = <QCOM_SCM_VMID_SELF_OWNER>;
++};
+
+From 7ef001d1ab77c3c5894d2c70d0cd14ea5cf21d39 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan@gerhold.net>
+Date: Sun, 26 Oct 2025 14:52:44 +0100
+Subject: [PATCH] arm64: dts: qcom: x1-el2: Set correct owner for SCM SHM
+ bridge
+
+Signed-off-by: Stephan Gerhold <stephan@gerhold.net>
+---
+ arch/arm64/boot/dts/qcom/x1-el2.dtso | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/x1-el2.dtso b/arch/arm64/boot/dts/qcom/x1-el2.dtso
+index 2d1c9151cf1b4a..c99499eccca24a 100644
+--- a/arch/arm64/boot/dts/qcom/x1-el2.dtso
++++ b/arch/arm64/boot/dts/qcom/x1-el2.dtso
+@@ -1,4 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
++#include <dt-bindings/firmware/qcom,scm.h>
+ 
+ /*
+  * x1 specific modifications required to boot in EL2.
+@@ -55,3 +56,7 @@
+ &sbsa_watchdog {
+ 	status = "disabled";
+ };
++
++&scm {
++	qcom,shm-bridge-vmid = <QCOM_SCM_VMID_SELF_OWNER>;
++};
+
+From db3c5463c5469a6cc69d536e3daa2de6c228dfaf Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan@gerhold.net>
+Date: Wed, 30 Jul 2025 16:35:46 +0200
+Subject: [PATCH 117/124] wip: remoteproc: qcom_q6v5_pas: Avoid using broken
+ reset when running bare-metal
+
+Some firmware versions have a split design where firmware authentication is
+implemented in the TZ firmware, but the remoteproc reset sequence appears
+to be triggered by the hypervisor firmware. When running bare-metal without
+the hypervisor only the firmware authentication functionality is present.
+Without knowledge of the exact hardware reset register sequence, we cannot
+(re)start the remoteproc from Linux.
+
+This does not make the qcom_q6v5_pas driver useless. In case the remoteproc
+is already running during boot, we can attach to it as usual and keep using
+it until it crashes or is manually stopped. Not being able to restart it is
+not ideal, but not a big loss: A remoteproc should rarely (if ever) crash
+during normal use. Also, currently most drivers upstream cannot properly
+handle a remoteproc crash anyway (without full system restart).
+
+Detecting this case automatically is tricky since all the PAS related calls
+still succeed, it will just not release the remoteproc from reset. Also, on
+SC7180, MPSS does always work correctly, only ADSP and CDSP are broken.
+Look for a new "qcom,broken-reset" property so we can check which of the
+remoteprocs are affected.
+
+Signed-off-by: Stephan Gerhold <stephan@gerhold.net>
+---
+ drivers/remoteproc/qcom_q6v5_pas.c | 32 +++++++++++++++++++++++++++---
+ 1 file changed, 29 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/remoteproc/qcom_q6v5_pas.c b/drivers/remoteproc/qcom_q6v5_pas.c
+index 3cf24f2023e5a8..c80af96543e4d1 100644
+--- a/drivers/remoteproc/qcom_q6v5_pas.c
++++ b/drivers/remoteproc/qcom_q6v5_pas.c
+@@ -491,6 +491,13 @@ static const struct rproc_ops qcom_pas_minidump_ops = {
+ 	.coredump = qcom_pas_minidump,
+ };
+ 
++static const struct rproc_ops qcom_pas_ops_no_reset = {
++	.attach = qcom_pas_attach,
++	.da_to_va = qcom_pas_da_to_va,
++	.stop = qcom_pas_stop,
++	.panic = qcom_pas_panic,
++};
++
+ static int qcom_pas_init_clock(struct qcom_pas *pas)
+ {
+ 	pas->xo = devm_clk_get(pas->dev, "xo");
+@@ -745,6 +752,9 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 	if (desc->minidump_id)
+ 		ops = &qcom_pas_minidump_ops;
+ 
++	if (device_property_read_bool(&pdev->dev, "qcom,broken-reset"))
++		ops = &qcom_pas_ops_no_reset;
++
+ 	rproc = devm_rproc_alloc(&pdev->dev, desc->sysmon_name, ops, fw_name, sizeof(*pas));
+ 
+ 	if (!rproc) {
+@@ -752,10 +762,14 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 	}
+ 
+-	if (desc->auto_boot)
+-		rproc->auto_boot = RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE;
+-	else
++	if (desc->auto_boot) {
++		if (ops->start)
++			rproc->auto_boot = RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE;
++		else
++			rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
++	} else {
+ 		rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
++	}
+ 	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
+ 
+ 	pas = rproc->priv;
+@@ -816,6 +830,13 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 	 */
+ 	qcom_q6v5_read_smp2p_state(&pas->q6v5);
+ 
++	if (rproc->state == RPROC_OFFLINE && !ops->start) {
++		dev_err(&pdev->dev, "reset broken and remoteproc not running during boot, exiting\n");
++		/* Release all resources, but return 0 so we don't block sync_state() */
++		ret = 0;
++		goto deinit_q6v5;
++	}
++
+ 	qcom_add_glink_subdev(rproc, &pas->glink_subdev, desc->ssr_name);
+ 	qcom_add_smd_subdev(rproc, &pas->smd_subdev);
+ 	qcom_add_pdm_subdev(rproc, &pas->pdm_subdev);
+@@ -839,6 +860,7 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 	qcom_remove_pdm_subdev(rproc, &pas->pdm_subdev);
+ 	qcom_remove_smd_subdev(rproc, &pas->smd_subdev);
+ 	qcom_remove_glink_subdev(rproc, &pas->glink_subdev);
++deinit_q6v5:
+ 	qcom_q6v5_deinit(&pas->q6v5);
+ detach_proxy_pds:
+ 	qcom_pas_pds_detach(pas, pas->proxy_pds, pas->proxy_pd_count);
+@@ -846,6 +868,7 @@ static int qcom_pas_probe(struct platform_device *pdev)
+ 	qcom_pas_unassign_memory_region(pas);
+ free_rproc:
+ 	device_init_wakeup(pas->dev, false);
++	pas->rproc = NULL;
+ 
+ 	return ret;
+ }
+@@ -854,6 +877,9 @@ static void qcom_pas_remove(struct platform_device *pdev)
+ {
+ 	struct qcom_pas *pas = platform_get_drvdata(pdev);
+ 
++	if (!pas->rproc)
++		return;
++
+ 	rproc_del(pas->rproc);
+ 
+ 	qcom_q6v5_deinit(&pas->q6v5);
+
+From c8897a36743a40845100bfddf9c5517c7f2119a5 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan@gerhold.net>
+Date: Wed, 30 Jul 2025 16:17:46 +0200
+Subject: [PATCH] arm64: dts: qcom: sc8280xp-el2: Add qcom,broken-reset for
+ remoteprocs
+
+The remoteproc PAS firmware interface does not work properly when running
+bare-metal without hypervisor in EL2. It's possible to authenticate and
+start new firmware, but the remoteproc is never actually brought out of
+reset. On SC8280XP this affects all remoteprocs: ADSP, both CDSP and SLPI.
+
+Mark all these with "qcom,broken-reset" to make the driver skip trying to
+reset the remoteproc. We can still attach to them if they are already
+running during boot.
+
+Signed-off-by: Stephan Gerhold <stephan@gerhold.net>
+---
+ arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso b/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso
+index c8abcb798a0365..71cf230d8bfa6d 100644
+--- a/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso
++++ b/arch/arm64/boot/dts/qcom/sc8280xp-el2.dtso
+@@ -44,6 +44,22 @@
+ 	status = "okay";
+ };
+ 
++&remoteproc_adsp {
++	qcom,broken-reset;
++};
++
++&remoteproc_slpi {
++	qcom,broken-reset;
++};
++
++&remoteproc_nsp0 {
++	qcom,broken-reset;
++};
++
++&remoteproc_nsp1 {
++	qcom,broken-reset;
++};
++
+ &scm {
+ 	qcom,shm-bridge-vmid = <QCOM_SCM_VMID_SELF_OWNER>;
+ };
+
+From fd10e1d6f9cd86ba3d949638d7bc07c2432c96e1 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan@gerhold.net>
+Date: Wed, 30 Jul 2025 16:17:46 +0200
+Subject: [PATCH] arm64: dts: qcom: x1-el2: Add qcom,broken-reset for
+ remoteprocs
+
+The remoteproc PAS firmware interface does not work properly when running
+bare-metal without hypervisor in EL2. It's possible to authenticate and
+start new firmware, but the remoteproc is never actually brought out of
+reset. On X1E this affects all remoteprocs: ADSP and CDSP.
+
+Mark both with "qcom,broken-reset" to make the driver skip trying to reset
+the remoteproc. We can still attach to them if they are already running
+during boot. On X1E, the "lite" ADSP firmware should be always running
+already during boot, and it provides at least battery status/charging as
+well as USB-C detection for external displays.
+
+Signed-off-by: Stephan Gerhold <stephan@gerhold.net>
+---
+ arch/arm64/boot/dts/qcom/x1-el2.dtso | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/x1-el2.dtso b/arch/arm64/boot/dts/qcom/x1-el2.dtso
+index 0cfee442162b0d..1a821f1de13e1f 100644
+--- a/arch/arm64/boot/dts/qcom/x1-el2.dtso
++++ b/arch/arm64/boot/dts/qcom/x1-el2.dtso
+@@ -54,6 +54,14 @@
+ 	status = "okay";
+ };
+ 
++&remoteproc_adsp {
++	qcom,broken-reset;
++};
++
++&remoteproc_cdsp {
++	qcom,broken-reset;
++};
++
+ /*
+  * The "SBSA watchdog" is implemented in software in Gunyah
+  * and can't be used when running in EL2.
+
+From 9feb5b10303582ad2c6082b729716b5d5b3f3668 Mon Sep 17 00:00:00 2001
+From: Stephan Gerhold <stephan.gerhold@linaro.org>
+Date: Tue, 22 Jul 2025 09:24:36 +0200
+Subject: [PATCH] arm64: dts: qcom: x1-el2: Add iris video-firmware node
+
+Add the video-firmware node with the IOMMU used for loading the Iris
+firmware to make video acceleration work when running in EL2.
+
+In EL2 we can load the generic firmware, so there is no need to keep Iris
+disabled by default. The generic firmware is used to validate the Iris
+driver and will often be more reliable, so override the firmware-name if
+needed to use that even if a device-specific firmware-name is defined.
+
+Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
+---
+ arch/arm64/boot/dts/qcom/x1-el2.dtso | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/qcom/x1-el2.dtso b/arch/arm64/boot/dts/qcom/x1-el2.dtso
+index c99499eccca24a..0cfee442162b0d 100644
+--- a/arch/arm64/boot/dts/qcom/x1-el2.dtso
++++ b/arch/arm64/boot/dts/qcom/x1-el2.dtso
+@@ -14,8 +14,13 @@
+ };
+ 
+ &iris {
+-	/* TODO: Add video-firmware iommus to start IRIS from EL2 */
+-	status = "disabled";
++	/* Use generic firmware in EL2 and enable it by default */
++	status = "okay";
++	firmware-name = "qcom/vpu/vpu30_p4.mbn";
++
++	video-firmware {
++		iommus = <&apps_smmu 0x1942 0x0>;
++	};
+ };
+ 
+ /*
