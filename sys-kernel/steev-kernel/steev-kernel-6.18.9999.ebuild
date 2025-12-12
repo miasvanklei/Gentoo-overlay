@@ -44,9 +44,6 @@ REQUIRED_USE="
 BDEPEND="
 	debug? ( dev-util/pahole )
 "
-PDEPEND="
-	>=virtual/dist-kernel-$(ver_cut 1-2)
-"
 
 QA_FLAGS_IGNORED="
 	usr/src/linux-.*/scripts/gcc-plugins/.*.so

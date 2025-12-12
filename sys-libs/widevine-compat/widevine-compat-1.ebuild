@@ -18,20 +18,10 @@ RDEPEND="
 	)
 "
 
-get_soname() {
-	if use arm64; then
-		echo "aarch64.so.1"
-	elif use amd64; then
-		echo "x86-64.so.2"
-	fi
-}
-
 src_compile() {
-	# widevine links uncessary to ld-linux-${arch}.so, reuse library to provide missing
-	# symbols which aren't available in musl libc
-	"${CC}" -shared "${FILESDIR}"/widevine-compat.c -o ld-linux-$(get_soname) || die
+	"${CC}" -Wl,-soname,libwidevine_compat.so.1 -shared "${FILESDIR}"/widevine-compat.c -o libwidevine_compat.so.1 || die
 }
 
 src_install() {
-	dolib.so ld-linux-$(get_soname)
+	dolib.so libwidevine_compat.so.1
 }
