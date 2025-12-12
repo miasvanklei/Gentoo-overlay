@@ -65,7 +65,7 @@ src_compile() {
 		# fix missing a missing symbol
 		python "${DISTDIR}"/widevine_fixup.py ${basedir}/_platform_specific/cros_arm64/libwidevinecdm.so "${S}"/libwidevinecdm.so || die
 	elif use amd64; then
-		cp ${basedir}/_platform_specific/cros_arm64/libwidevinecdm.so "${S}"/libwidevinecdm.so
+		cp ${basedir}/_platform_specific/cros_x64/libwidevinecdm.so "${S}"/libwidevinecdm.so || die
 	fi
 
 	# Fix some websites checking the platform_name
