@@ -11,7 +11,7 @@ SRC_URI="https://gitlab.gnome.org/GNOME/${PN}/-/archive/v${PV}/${PN}-v${PV}.tar.
 
 LICENSE="LGPL-2+"
 SLOT="0"
-KEYWORDS="~x86 ~amd64"
+KEYWORDS="~amd64 ~arm64"
 IUSE="+introspection"
 
 BDEPEND="

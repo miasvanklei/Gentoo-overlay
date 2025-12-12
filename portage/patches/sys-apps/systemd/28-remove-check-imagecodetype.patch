@@ -1,0 +1,13 @@
+--- a/src/boot/drivers.c	2025-11-07 13:43:07.000000000 +0100
++++ b/src/boot/drivers.c	2025-12-05 13:15:21.861109890 +0100
+@@ -33,10 +33,6 @@
+         if (err != EFI_SUCCESS)
+                 return log_error_status(err, "Failed to find protocol in driver image %ls: %m", fname);
+ 
+-        if (loaded_image->ImageCodeType != EfiBootServicesCode &&
+-            loaded_image->ImageCodeType != EfiRuntimeServicesCode)
+-                return log_error("Image %ls is not a driver, refusing.", fname);
+-
+         err = BS->StartImage(image, NULL, NULL);
+         if (err != EFI_SUCCESS) {
+                 /* EFI_ABORTED signals an initializing driver. It uses this error code on success
