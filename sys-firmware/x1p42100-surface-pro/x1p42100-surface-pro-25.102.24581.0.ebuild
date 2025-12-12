@@ -13,16 +13,16 @@ KEYWORDS="~arm64"
 IUSE=""
 RESTRICT="strip test"
 
-BDEPEND=""
+BDEPEND="app-arch/msitools"
 
 S="${WORKDIR}"
 
 QA_PREBUILT="*"
 
 src_install() {
-	msiextract "${DISTDIR}/${PN}-${PV}.msi" > /dev/null
+	msiextract "${DISTDIR}/${PN}-${PV}.msi" > /dev/null || die
 
-	cd SurfaceUpdate
+	cd SurfaceUpdate || die
 
 	insinto /lib/firmware/qcom/x1p42100/Microsoft/SurfacePro
 
