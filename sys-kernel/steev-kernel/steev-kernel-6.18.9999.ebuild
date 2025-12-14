@@ -63,7 +63,7 @@ src_prepare() {
 		eapply $j
 	done
 
-	for i in sc8280xp x1e80100 tw220 surface; do
+	for i in msm sc8280xp x1e80100 tw220 surface; do
 		for j in "${FILESDIR}"/$i/*.patch; do
 			eapply $j
 		done
