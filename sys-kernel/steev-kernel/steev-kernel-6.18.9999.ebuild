@@ -59,8 +59,14 @@ src_unpack() {
 src_prepare() {
 	default
 
-	for i in "${FILESDIR}"/*.patch; do
-		eapply $i
+	for j in "${FILESDIR}"/$i/*.patch; do
+		eapply $j
+	done
+
+	for i in sc8280xp x1e80100 tw220 surface; do
+		for j in "${FILESDIR}"/$i/*.patch; do
+			eapply $j
+		done
 	done
 
 	local biendian=false
