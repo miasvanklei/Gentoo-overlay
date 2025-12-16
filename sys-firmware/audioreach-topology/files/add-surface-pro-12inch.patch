@@ -1,23 +1,23 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 722e7e9..e2b24b7 100644
+index 69a734e..ecedbdc 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -31,6 +32,7 @@ set(TPLGS
- 	"X1E80100-LENOVO-Thinkpad-T14s\;X1E80100-LENOVO-ThinkBook-16\;qcom/x1e80100/LENOVO/21NH\;"
- 	"X1E80100-LENOVO-Thinkpad-T14s\;X1E80100-Romulus\;qcom/x1e80100\;"
- 	"X1E80100-LENOVO-Yoga-Slim7x\;X1E80100-LENOVO-Yoga-Slim7x\;qcom/x1e80100/LENOVO/83ED\;"
-+	"X1P42100-Microsoft-Surface-Pro-12in\;X1P42100-Microsoft-Surface-Pro-12in\;qcom/x1p842100/microsoft/sp12\;"
- 	"QCM6490-IDP\;QCM6490-IDP\;qcom/qcm6490\;"
- 	"QCS6490-Radxa-Dragon-Q6A\;QCS6490-Radxa-Dragon-Q6A\;qcom/qcs6490/radxa/dragon-q6a\;"
- 	"QCS6490-RB3Gen2\;QCS6490-RB3Gen2\;qcom/qcs6490\;"
+@@ -21,6 +21,7 @@ set(TPLGS
+ 	"X1E80100-Dell-Latitude-7455\;X1E80100-Dell-Inspiron-14p-7441\;qcom/x1e80100/dell/inspiron-14-plus-7441\;"
+ 	"X1E80100-Dell-Latitude-7455\;X1E80100-Dell-Latitude-7455\;qcom/x1e80100/dell/latitude-7455\;"
+ 	"X1E80100-Dell-XPS-13-9345\;X1E80100-Dell-XPS-13-9345\;qcom/x1e80100/dell/xps13-9345\;"
++	"X1P42100-Microsoft-Surface-Pro-12in\;X1P42100-Microsoft-Surface-Pro-12in\;qcom/x1e80100/\;"
+ 	"X1E80100-LENOVO-Thinkpad-T14s\;X1E80100-ASUS-Vivobook-S15\;qcom/x1e80100/ASUSTeK/vivobook-s15\;"
+ 	"X1E80100-LENOVO-Thinkpad-T14s\;X1E80100-ASUS-Zenbook-A14\;qcom/x1e80100/ASUSTeK/zenbook-a14\;"
+ 	"X1E80100-LENOVO-Thinkpad-T14s\;X1E80100-HP-OMNIBOOK-X14\;qcom/x1e80100/hp/omnibook-x14\;"
 diff --git a/X1P42100-Microsoft-Surface-Pro-12in.m4 b/X1P42100-Microsoft-Surface-Pro-12in.m4
 new file mode 100644
-index 0000000..708350f
+index 0000000..0b30033
 --- /dev/null
 +++ b/X1P42100-Microsoft-Surface-Pro-12in.m4
 @@ -0,0 +1,57 @@
-+# Copyright, Linaro Ltd, 2023
 +# SPDX-License-Identifier: BSD-3-Clause
++# Copyright, Linaro Ltd, 2023
 +include(`audioreach/audioreach.m4')
 +include(`audioreach/stream-subgraph.m4')
 +include(`audioreach/device-subgraph.m4')
@@ -32,12 +32,12 @@ index 0000000..708350f
 +# | [WR_SH] -> [PCM DEC] -> [PCM CONV] -> [LOG]  |- Kcontrol
 +# |______________________________________________|
 +#
-+dnl Playback MultiMedia1
-+STREAM_SG_PCM_ADD(audioreach/subgraph-stream-vol-playback.m4, FRONTEND_DAI_MULTIMEDIA1,
++dnl Playback MultiMedia2
++STREAM_SG_PCM_ADD(audioreach/subgraph-stream-vol-playback.m4, FRONTEND_DAI_MULTIMEDIA2,
 +	`S16_LE', 48000, 48000, 2, 2,
 +	0x00004002, 0x00004002, 0x00006010, `110000')
-+dnl Capture MultiMedia2
-+STREAM_SG_PCM_ADD(audioreach/subgraph-stream-capture.m4, FRONTEND_DAI_MULTIMEDIA2,
++dnl Capture MultiMedia4
++STREAM_SG_PCM_ADD(audioreach/subgraph-stream-capture.m4, FRONTEND_DAI_MULTIMEDIA4,
 +	`S16_LE', 48000, 48000, 1, 2,
 +	0x00004004, 0x00004004, 0x00006030, `110000')
 +#
@@ -65,11 +65,11 @@ index 0000000..708350f
 +	LPAIF_INTF_TYPE_VA, CODEC_INTF_IDX_TX0, 0, DATA_FORMAT_FIXED_POINT,
 +	0x00004008, 0x00004009, 0x00006090)
 +
-+STREAM_DEVICE_PLAYBACK_MIXER(WSA_CODEC_DMA_RX_0, ``WSA_CODEC_DMA_RX_0'', ``MultiMedia1'')
++STREAM_DEVICE_PLAYBACK_MIXER(WSA_CODEC_DMA_RX_0, ``WSA_CODEC_DMA_RX_0'', ``MultiMedia2'')
 +
-+STREAM_DEVICE_PLAYBACK_ROUTE(WSA_CODEC_DMA_RX_0, ``WSA_CODEC_DMA_RX_0 Audio Mixer'', ``MultiMedia1, stream1.logger1'')
++STREAM_DEVICE_PLAYBACK_ROUTE(WSA_CODEC_DMA_RX_0, ``WSA_CODEC_DMA_RX_0 Audio Mixer'', ``MultiMedia2, stream1.logger1'')
 +
 +dnl STREAM_DEVICE_CAPTURE_MIXER(stream-index, kcontro1, kcontrol2... kcontrolN)
-+STREAM_DEVICE_CAPTURE_MIXER(FRONTEND_DAI_MULTIMEDIA2, ``VA_CODEC_DMA_TX_0'' )
++STREAM_DEVICE_CAPTURE_MIXER(FRONTEND_DAI_MULTIMEDIA4, ``VA_CODEC_DMA_TX_0'' )
 +dnl STREAM_DEVICE_CAPTURE_ROUTE(stream-index, mixer-name, route1, route2.. routeN)
-+STREAM_DEVICE_CAPTURE_ROUTE(FRONTEND_DAI_MULTIMEDIA2, ``MultiMedia2 Mixer'', ``VA_CODEC_DMA_TX_0, device110.logger1'')
++STREAM_DEVICE_CAPTURE_ROUTE(FRONTEND_DAI_MULTIMEDIA4, ``MultiMedia4 Mixer'', ``VA_CODEC_DMA_TX_0, device110.logger1'')
