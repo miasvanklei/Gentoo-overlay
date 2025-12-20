@@ -9,9 +9,9 @@ DESCRIPTION="Audioreach Topology"
 HOMEPAGE="https://github.com/linux-msm/audioreach-topology"
 EGIT_REPO_URI="https://github.com/linux-msm/audioreach-topology.git"
 
-LICENSE="BSD-3"
+LICENSE="BSD"
 SLOT="0"
-KEYWORDS=""
+KEYWORDS="~arm64"
 
 REQUIRED_USE="${PYTHON_REQUIRED_USE}"
 RESTRICT="test"

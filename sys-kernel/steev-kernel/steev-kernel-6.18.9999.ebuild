@@ -35,6 +35,7 @@ EGIT_CLONE_TYPE="shallow"
 
 LICENSE="GPL-2"
 IUSE="debug hardened"
+KEYWORDS="~arm64"
 REQUIRED_USE="
 	arm? ( savedconfig )
 	hppa? ( savedconfig )
