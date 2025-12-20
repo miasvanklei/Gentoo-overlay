@@ -4,12 +4,12 @@
 EAPI=8
 
 MY_PV="$(ver_cut 1-3)-$(ver_cut 4)"
-DOTNET_RUNTIME_V="10.0.0"
+DOTNET_RUNTIME_V="10.0.1"
 
 CMAKE_IN_SOURCE_BUILD="ON"
 CMAKE_MAKEFILE_GENERATOR="emake"
 
-DOTNET_PKG_COMPAT="8.0"
+DOTNET_PKG_COMPAT="10.0"
 NUGETS="
 microsoft.codeanalysis.analyzers@1.1.0
 microsoft.codeanalysis.common@2.3.0
@@ -184,7 +184,6 @@ src_prepare() {
 	eapply "${FILESDIR}"/compileoptions.patch
 	eapply "${FILESDIR}"/fix-build-error.patch
 	eapply "${FILESDIR}"/fix-define-strerror.patch
-	eapply "${FILESDIR}"/cmake_minimum_required.patch
 
 	cmake_src_prepare
 
