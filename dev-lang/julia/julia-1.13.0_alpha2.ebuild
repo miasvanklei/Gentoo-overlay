@@ -16,32 +16,33 @@ SRC_URI="https://github.com/JuliaLang/julia/archive/refs/tags/v${MY_PV}.tar.gz -
 # correct versions for stdlibs are in stdlib/{package_name}.version
 # updated versions can be found by running find_dependencies.sh in ${FILES}
 # for everything else, run with network-sandbox and wait for the crash
+
 STDLIBS=(
 	# repo    package name    hash
-	"JuliaIO ArgTools.jl 1314758ad02ff5e9e5ca718920c6c633b467a84a"
-	"JuliaData DelimitedFiles.jl db79c842f95f55b1f8d8037c0d3363ab21cd3b90"
-	"JuliaLang Distributed.jl 3679026d7b510befdedfa8c6497e3cb032f9cea1"
-	"JuliaLang Downloads.jl e692e77fb5427bf3c6e81514b323c39a88217eec"
-	"julialang JuliaSyntaxHighlighting.jl b666d3c98cca30d20d1e6f98c0e12c9350ffbc4c"
+	"JuliaIO ArgTools.jl 89d19599208c02bfa9609d4578ab72eabe6e8eee"
+	"JuliaData DelimitedFiles.jl aac8c59e58cbf961fa15baf4d866901d9d1e6980"
+	"JuliaLang Distributed.jl 661112ef29b8d371b8612b94a629c0bbcf3d36f7"
+	"JuliaLang Downloads.jl 4e20d029c723199c0b8ea0e2418ff240d25ddaef"
+	"julialang JuliaSyntaxHighlighting.jl 2817dbaba2a4abaad91a5ad754558840d95ccf2e"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
-	"JuliaWeb LibCURL.jl a65b64f6eabc932f63c2c0a4a5fb5d75f3e688d0"
-	"JuliaLang LinearAlgebra.jl 24f5e21cf3a560ca560c5a1759ff21ba68382ebd"
-	"JuliaLang NetworkOptions.jl 532992fcc0f1d02df48374969cbae37e34c01360"
-	"JuliaLang Pkg.jl f571edda902c848382517503665fea6aa275ceb9"
-	"JuliaCrypto SHA.jl 4451e1362e425bcbc1652ecf55fc0e525b18fb63"
-	"JuliaSparse SparseArrays.jl 5d674dc7bd90156cf8ecea4e143b69b5a5b7640d"
-	"JuliaStats Statistics.jl 77bd5707f143eb624721a7df28ddef470e70ecef"
+	"JuliaWeb LibCURL.jl 9ea5c5d6f5b88615d9fe23379b7f951787b99fd3"
+	"JuliaLang LinearAlgebra.jl 7e11b5e1b474ff742fb55f420631964b60158fe6"
+	"JuliaLang NetworkOptions.jl 46e14ef20739c8011b105c339146062cd0e2938c"
+	"JuliaLang Pkg.jl 4f9884fdb867f2c928ba43dc41da5f150aaec4ab"
+	"JuliaCrypto SHA.jl 876bc0400f9a457eb2736388fc3d0fbe9460fc7d"
+	"JuliaSparse SparseArrays.jl 26c80c8b45dc2dca92788332a40a99b6c360d05a"
+	"JuliaStats Statistics.jl 22dee82f9824d6045e87aa4b97e1d64fe6f01d8d"
 	"JuliaLang StyledStrings.jl 68bf7b1f83f334391dc05fda34f48267e04e2bd0"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
-	"JuliaIO Tar.jl 1114260f5c7a7b59441acadca2411fa227bb8a3b"
+	"JuliaIO Tar.jl 9dd8ed1b5f8503804de49da9272150dcc18ca7c7"
 )
 
 # correct versions for deps are in deps/{package_name}.version
 BUNDLED_DEPS=(
-	"JuliaLang JuliaSyntax.jl 46723f071d5b2efcb21ca6757788028afb91cc13"
+	"JuliaLang JuliaSyntax.jl 99e975a726a82994de3f8e961e6fa8d39aed0d37"
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
-	"JuliaLang libuv af4172ec713ee986ba1a989b9e33993a07c60c9e"
+	"JuliaLang libuv b21d6d84e46f6c97ecbc8e4e8a8ea6ad98049ea8"
 	"JuliaLinearAlgebra libblastrampoline 072b5f67895bec0b92f8c83194567c1c48e9833d"
 )
 
@@ -100,19 +101,17 @@ DEPEND="${RDEPEND}
 	virtual/pkgconfig"
 
 PATCHES=(
-	"${FILESDIR}"/llvm-19-fixes.patch
-	"${FILESDIR}"/no_symlink_llvm.patch
-	"${FILESDIR}"/link-llvm-shared.patch
 	"${FILESDIR}"/dont-assume-gfortran.patch
 	"${FILESDIR}"/fix-hardcoded-libs.patch
 	"${FILESDIR}"/disable-install-docs.patch
 	"${FILESDIR}"/support-libcxx-libunwind.patch
 	"${FILESDIR}"/fix-textrel.patch
 	"${FILESDIR}"/dont-build-twice.patch
-	"${FILESDIR}"/dont-link-atomic.patch
-	# llvm 20: https://github.com/JuliaLang/julia/pull/57352
-	"${FILESDIR}"/llvm-20.patch
+	"${FILESDIR}"/link-llvm-shared.patch
 	"${FILESDIR}"/llvm-21.patch
+	"${FILESDIR}"/fix-private-libdir.patch
+	"${FILESDIR}"/fix-system-zstd.patch
+	"${FILESDIR}"/patchelf-system-llvm.patch
 )
 
 pkg_setup() {
@@ -202,6 +201,7 @@ src_configure() {
 		USE_SYSTEM_PATCHELF:=1
 		USE_SYSTEM_ZLIB:=1
 		USE_SYSTEM_P7ZIP:=1
+		USE_SYSTEM_ZSTD:=1
 		WITH_TERMINFO=0
 		VERBOSE:=1
 	EOF
@@ -226,7 +226,9 @@ src_install() {
 
 	# Prevent compiled modules from being stripped,
 	# as it changes their checksum so Julia refuses to load them
-	dostrip -x /usr/share/julia/compiled/v$(ver_cut 1-2)/*/*.so
+	for i in $(find usr/share/julia/compiled/v$(ver_cut 1-2) -name "*.so"); do
+		dostrip -x /$i
+	done
 
 	# Link ca-certificates.crt, bug: https://bugs.gentoo.org/888978
 	dosym -r /etc/ssl/certs/ca-certificates.crt /usr/share/julia/cert.pem

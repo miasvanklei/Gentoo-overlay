@@ -12,7 +12,7 @@ else
 	SDK_FULL_PV="${SDK_PV}"
 fi
 
-DOTNET_RUNTIME_PV="${PV/.100/.0}"
+DOTNET_RUNTIME_PV="${PV/.101/.1}"
 SDK="${PN}-${SDK_FULL_PV}-linux-musl"
 
 inherit dotnet-utils
@@ -49,7 +49,7 @@ replace_bin()  {
 src_install() {
 	local dest="/usr/lib/${PN}"
 	local target=$(dotnet-utils_get_pkg_rid 1)
-	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${SDK_FULL_PV/.100/.0}/runtimes/${target}/native"
+	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${DOTNET_RUNTIME_PV}/runtimes/${target}/native"
 
 	insinto "${dest}"
 	doins -r "${S}"/sdk "${S}"/sdk-manifests "${S}"/templates

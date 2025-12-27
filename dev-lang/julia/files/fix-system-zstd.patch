@@ -1,0 +1,41 @@
+--- a/base/Makefile	2025-11-26 19:42:38.192548047 +0100
++++ b/base/Makefile	2025-11-26 20:08:04.797480311 +0100
+@@ -190,11 +190,28 @@
+ 7Z_PATH := $(shell which 7z$(EXE))
+ endif
+ 
+-$(build_bindir)/7z$(EXE):
++$(build_private_libexecdir)/7z$(EXE):
+ 	[ -e "$(7Z_PATH)" ] && \
+ 	rm -f "$@" && \
+ 	ln -sf "$(7Z_PATH)" "$@"
+ 
++symlink_zstd: $(build_private_libexecdir)/zstd$(EXE) $(build_private_libexecdir)/zstdmt$(EXE)
++
++ifneq ($(USE_SYSTEM_ZSTD),0)
++SYMLINK_SYSTEM_LIBRARIES += symlink_zstd
++ZSTD_PATH := $(shell which zstd$(EXE))
++endif
++
++$(build_private_libexecdir)/zstd$(EXE):
++	[ -e "$(ZSTD_PATH)" ] && \
++	rm -f "$@" && \
++	ln -sf "$(ZSTD_PATH)" "$@"
++
++$(build_private_libexecdir)/zstdmt$(EXE):
++	[ -e "$(ZSTD_PATH)" ] && \
++	rm -f "$@" && \
++	ln -sf "$(ZSTD_PATH)" "$@"
++
+ symlink_llvm_utils: $(build_depsbindir)/lld$(EXE) $(build_depsbindir)/dsymutil$(EXE)
+ 
+ ifneq ($(USE_SYSTEM_LLD),0)
+@@ -264,6 +281,8 @@
+ $(eval $(call symlink_system_library,LIBSUITESPARSE,libumfpack,6))
+ $(eval $(call symlink_system_library,LIBSUITESPARSE,libspqr,4))
+ $(eval $(call symlink_system_library,LIBSUITESPARSE,libsuitesparseconfig,7))
++$(eval $(call symlink_system_library,LIBZ,libz,1))
++$(eval $(call symlink_system_library,LIBZSTD,libzstd,1))
+ # EXCLUDED LIBRARIES (installed/used, but not vendored for use with dlopen):
+ # libunwind
+ endif # WINNT

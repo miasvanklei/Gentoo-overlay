@@ -126,7 +126,7 @@
                      }
                      else {
                          auto p = literal_static_pointer_val(global.first, global.second->getValueType());
--                        Type *elty = PointerType::get(output.getContext(), 0);
+-                        Type *elty = PointerType::get(p->getContext(), 0);
 +                        Type *elty = withJLContextDo(output.tsctx, [&](llvm::LLVMContext *ctx) {
 +                            return PointerType::get(*ctx, 0);
 +                        });
@@ -497,7 +497,7 @@
                  *Context, std::move(FOut), true, true, InstPrinter, std::move(MCE),
 --- a/src/jitlayers.cpp	2025-07-20 16:55:36.607871038 +0200
 +++ b/src/jitlayers.cpp	2025-07-20 16:53:20.537730658 +0200
-@@ -28,6 +28,9 @@
+@@ -29,6 +29,9 @@
  #include <llvm/ExecutionEngine/Orc/TargetProcess/JITLoaderVTune.h>
  #endif
  #include <llvm/ExecutionEngine/Orc/ExecutorProcessControl.h>
@@ -507,7 +507,7 @@
  #include <llvm/IR/Verifier.h>
  #include <llvm/Support/DynamicLibrary.h>
  #include <llvm/Support/FormattedStream.h>
-@@ -266,7 +269,9 @@
+@@ -301,7 +304,9 @@
      std::string gf_thunk_name;
      {
          jl_codegen_params_t params(std::make_unique<LLVMContext>(), jl_ExecutionEngine->getDataLayout(), jl_ExecutionEngine->getTargetTriple()); // Locks the context
@@ -518,7 +518,7 @@
          params.cache = true;
          params.imaging_mode = 0;
          result_m = jl_create_ts_module("gfthunk", params.tsctx, params.DL, params.TargetTriple);
-@@ -548,7 +553,6 @@
+@@ -599,7 +604,6 @@
              assert(waiting == std::get<1>(it->second));
              std::get<1>(it->second) = 0;
              auto &params = std::get<0>(it->second);
@@ -526,15 +526,15 @@
              waiting = jl_analyze_workqueue(codeinst, params, true); // may safepoint
              assert(!waiting); (void)waiting;
              Module *M = emittedmodules[codeinst].getModuleUnlocked();
-@@ -579,7 +583,6 @@
+@@ -630,7 +634,6 @@
          assert(it != incompletemodules.end());
          if (--std::get<1>(it->second) == 0) {
              auto &params = std::get<0>(it->second);
 -            params.tsctx_lock = params.tsctx.getLock();
              assert(callee == it->first);
-             int waiting = jl_analyze_workqueue(callee, params); // may safepoint
-             assert(!waiting); (void)waiting;
-@@ -604,10 +607,9 @@
+             orc::ThreadSafeModule &M = emittedmodules[callee];
+             emit_always_inline(M, params); // may safepoint
+@@ -656,10 +659,9 @@
          if (!sharedmodules.empty()) {
              auto TSM = sharedmodules.pop_back_val();
              lock.native.unlock();
@@ -548,7 +548,7 @@
              jl_ExecutionEngine->addModule(std::move(TSM));
              lock.native.lock();
          }
-@@ -623,10 +625,9 @@
+@@ -675,10 +677,9 @@
              emittedmodules.erase(TSMref);
              lock.native.unlock();
              uint64_t start_time = jl_hrtime();
@@ -562,7 +562,7 @@
              jl_ExecutionEngine->addModule(std::move(TSM)); // may safepoint
              // If logging of the compilation stream is enabled,
              // then dump the method-instance specialization type to the stream
-@@ -764,7 +765,9 @@
+@@ -810,7 +811,9 @@
      JL_TIMING(CODEINST_COMPILE, CODEINST_COMPILE);
      // emit the code in LLVM IR form to the new context
      jl_codegen_params_t params(std::make_unique<LLVMContext>(), jl_ExecutionEngine->getDataLayout(), jl_ExecutionEngine->getTargetTriple()); // Locks the context
@@ -573,7 +573,7 @@
      params.cache = true;
      params.imaging_mode = 0;
      orc::ThreadSafeModule result_m =
-@@ -780,9 +783,6 @@
+@@ -826,9 +829,6 @@
      params.temporary_roots = nullptr;
      params.temporary_roots_set.clear();
      JL_GC_POP();
@@ -583,18 +583,19 @@
      jl_unique_gcsafe_lock lock(engine_lock);
      if (invokenames.count(codeinst) || jl_is_compiled_codeinst(codeinst))
          return; // destroy everything
-@@ -806,10 +806,8 @@
+@@ -852,11 +852,9 @@
      jl_atomic_cmpswap_relaxed(&codeinst->invoke, &expected, jl_fptr_wait_for_compiled_addr);
      invokenames[codeinst] = std::move(decls);
      complete_emit(codeinst);
 -    params.tsctx_lock = params.tsctx.getLock(); // re-acquire lock
+     emit_always_inline(result_m, params);
      int waiting = jl_analyze_workqueue(codeinst, params);
      if (waiting) {
 -        auto release = std::move(params.tsctx_lock); // unlock again before moving from it
          incompletemodules.try_emplace(codeinst, std::move(params), waiting);
      }
      else {
-@@ -1175,6 +1173,7 @@
+@@ -1223,6 +1221,7 @@
  #endif
  }
  
@@ -602,7 +603,7 @@
  class JLEHFrameRegistrar final : public jitlink::EHFrameRegistrar {
  public:
      Error registerEHFrames(orc::ExecutorAddrRange EHFrameSection) override {
-@@ -1187,6 +1186,7 @@
+@@ -1235,6 +1234,7 @@
          return Error::success();
      }
  };
@@ -610,7 +611,7 @@
  
  RTDyldMemoryManager *createRTDyldMemoryManager(void) JL_NOTSAFEPOINT;
  
-@@ -1868,15 +1872,27 @@
+@@ -1946,15 +1946,27 @@
      OptSelLayer(ES, OptimizeLayer, static_cast<orc::ThreadSafeModule (*)(orc::ThreadSafeModule, orc::MaterializationResponsibility&)>(selectOptLevel))
  {
  #ifdef JL_USE_JITLINK
@@ -640,8 +641,8 @@
 +# endif
  
      ObjectLayer.addPlugin(std::make_unique<JLDebuginfoPlugin>());
-     ObjectLayer.addPlugin(std::make_unique<JLMemoryUsagePlugin>(jit_bytes_size));
-@@ -2034,35 +2052,34 @@
+     ObjectLayer.addPlugin(std::make_unique<JLMemoryUsagePlugin>(&jit_bytes_size));
+@@ -2105,35 +2117,34 @@
      TSM = selectOptLevel(std::move(TSM));
      TSM = (*Optimizers)(std::move(TSM));
      TSM = (*JITPointers)(std::move(TSM));
@@ -708,7 +709,7 @@
      DataLayout DL;
      Triple TargetTriple;
  
--    inline LLVMContext &getContext() {
+-    inline LLVMContext &getContext() JL_NOTSAFEPOINT {
 -        return *tsctx.getContext();
 -    }
      typedef StringMap<GlobalVariable*> SymMapGV;
@@ -742,11 +743,11 @@
 @@ -663,14 +668,19 @@
  };
  extern JuliaOJIT *jl_ExecutionEngine;
- std::unique_ptr<Module> jl_create_llvm_module(StringRef name, LLVMContext &ctx, const DataLayout &DL = jl_ExecutionEngine->getDataLayout(), const Triple &triple = jl_ExecutionEngine->getTargetTriple()) JL_NOTSAFEPOINT;
--inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext ctx, const DataLayout &DL = jl_ExecutionEngine->getDataLayout(), const Triple &triple = jl_ExecutionEngine->getTargetTriple()) JL_NOTSAFEPOINT {
+ std::unique_ptr<Module> jl_create_llvm_module(StringRef name, LLVMContext &ctx, const DataLayout &DL, const Triple &triple) JL_NOTSAFEPOINT;
+-inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext ctx, const DataLayout &DL, const Triple &triple) JL_NOTSAFEPOINT {
 -    auto lock = ctx.getLock();
 -    return orc::ThreadSafeModule(jl_create_llvm_module(name, *ctx.getContext(), DL, triple), ctx);
-+inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext tsctx, const DataLayout &DL = jl_ExecutionEngine->getDataLayout(), const Triple &triple = jl_ExecutionEngine->getTargetTriple()) JL_NOTSAFEPOINT {
++inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext tsctx, const DataLayout &DL, const Triple &triple) JL_NOTSAFEPOINT {
 +    auto llvm_module = withJLContextDo(tsctx, [&](llvm::LLVMContext *ctx) {
 +        return jl_create_llvm_module(name, *ctx, DL, triple);
 +    });

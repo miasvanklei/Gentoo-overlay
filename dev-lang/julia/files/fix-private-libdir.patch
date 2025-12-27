@@ -1,0 +1,346 @@
+--- a/Make.inc	2025-11-26 19:37:04.119937912 +0100
++++ b/Make.inc	2025-11-26 19:35:58.784601067 +0100
+@@ -1501,9 +1501,9 @@
+   RPATH_ORIGIN := -Wl,-rpath,'@loader_path/'
+   RPATH_ESCAPED_ORIGIN := $(RPATH_ORIGIN)
+ else
+-  RPATH := -Wl,-rpath,'$$ORIGIN/$(build_libdir_rel)' -Wl,-rpath,'$$ORIGIN/$(build_private_libdir_rel)' -Wl,-rpath-link,$(build_shlibdir) -Wl,-z,origin -Wl,--enable-new-dtags
++  RPATH := -Wl,-rpath,'$$ORIGIN/$(build_private_libdir_rel)' -Wl,-rpath,'$$ORIGIN/$(build_libdir_rel)' -Wl,-rpath-link,$(build_private_shlibdir) -Wl,-z,origin -Wl,--enable-new-dtags
+   RPATH_ORIGIN := -Wl,-rpath,'$$ORIGIN' -Wl,-z,origin -Wl,--enable-new-dtags
+-  RPATH_ESCAPED_ORIGIN := -Wl,-rpath,'\$$\$$ORIGIN' -Wl,-z,origin -Wl,-rpath-link,$(build_shlibdir) -Wl,--enable-new-dtags
++  RPATH_ESCAPED_ORIGIN := -Wl,-rpath,'\$$\$$ORIGIN' -Wl,-z,origin -Wl,-rpath-link,$(build_private_shlibdir) -Wl,--enable-new-dtags
+ endif
+ RPATH_LIB := $(RPATH_ORIGIN)
+ 
+@@ -1788,16 +1788,16 @@
+ $(call normalize_path,$(shell $(PYTHON) $(call python_cygpath,$(JULIAHOME)/contrib/relative_path.py) $(1) $(2)))
+ endef
+ 
+-LIBJULIAINTERNAL_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_shlibdir)/libjulia-internal.$(JL_MAJOR_SHLIB_EXT))
++LIBJULIAINTERNAL_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_private_shlibdir)/libjulia-internal.$(JL_MAJOR_SHLIB_EXT))
+ LIBJULIAINTERNAL_INSTALL_DEPLIB := $(call dep_lib_path,$(shlibdir),$(private_shlibdir)/libjulia-internal.$(JL_MAJOR_SHLIB_EXT))
+ 
+-LIBJULIAINTERNAL_DEBUG_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT))
++LIBJULIAINTERNAL_DEBUG_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_private_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT))
+ LIBJULIAINTERNAL_DEBUG_INSTALL_DEPLIB := $(call dep_lib_path,$(shlibdir),$(private_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT))
+ 
+-LIBJULIACODEGEN_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_shlibdir)/libjulia-codegen.$(JL_MAJOR_SHLIB_EXT))
++LIBJULIACODEGEN_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_private_shlibdir)/libjulia-codegen.$(JL_MAJOR_SHLIB_EXT))
+ LIBJULIACODEGEN_INSTALL_DEPLIB := $(call dep_lib_path,$(shlibdir),$(private_shlibdir)/libjulia-codegen.$(JL_MAJOR_SHLIB_EXT))
+ 
+-LIBJULIACODEGEN_DEBUG_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT))
++LIBJULIACODEGEN_DEBUG_BUILD_DEPLIB := $(call dep_lib_path,$(build_shlibdir),$(build_private_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT))
+ LIBJULIACODEGEN_DEBUG_INSTALL_DEPLIB := $(call dep_lib_path,$(shlibdir),$(private_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT))
+ 
+ ifeq ($(OS),WINNT)
+--- a/Makefile	2025-11-26 19:37:04.051938602 +0100
++++ b/Makefile	2025-11-26 19:35:58.788601027 +0100
+@@ -387,7 +387,7 @@
+ endif
+ 
+ 	for suffix in $(JL_PRIVATE_LIBS-0) ; do \
+-		for lib in $(build_libdir)/$${suffix}.*$(SHLIB_EXT)*; do \
++		for lib in $(build_private_libdir)/$${suffix}.*$(SHLIB_EXT)*; do \
+ 			if [ "$${lib##*.}" != "dSYM" ]; then \
+ 				$(INSTALL_M) $$lib $(DESTDIR)$(private_libdir) || exit 1; \
+ 			fi \
+--- a/base/Makefile	2025-11-26 19:37:04.027938846 +0100
++++ b/base/Makefile	2025-11-26 19:42:38.192548047 +0100
+@@ -183,7 +183,7 @@
+ endef
+ 
+ # libexec executables
+-symlink_p7zip: $(build_bindir)/7z$(EXE)
++symlink_p7zip: $(build_private_libexecdir)/7z$(EXE)
+ 
+ ifneq ($(USE_SYSTEM_P7ZIP),0)
+ SYMLINK_SYSTEM_LIBRARIES += symlink_p7zip
+@@ -244,26 +244,26 @@
+ $(eval $(call symlink_system_library,PCRE,libpcre2-8,0))
+ $(eval $(call symlink_system_library,DSFMT,libdSFMT))
+ $(eval $(call symlink_system_library,LIBBLASTRAMPOLINE,libblastrampoline))
+-$(eval $(call symlink_system_library,BLAS,$(LIBBLASNAME)))
++$(eval $(call symlink_system_library,BLAS,$(LIBBLASNAME),3))
+ ifneq ($(LIBLAPACKNAME),$(LIBBLASNAME))
+-$(eval $(call symlink_system_library,LAPACK,$(LIBLAPACKNAME)))
++$(eval $(call symlink_system_library,LAPACK,$(LIBLAPACKNAME),3))
+ endif
+-$(eval $(call symlink_system_library,GMP,libgmp))
+-$(eval $(call symlink_system_library,MPFR,libmpfr))
+-$(eval $(call symlink_system_library,OPENSSL,libcrypto))
+-$(eval $(call symlink_system_library,OPENSSL,libssl))
+-$(eval $(call symlink_system_library,LIBSSH2,libssh2))
+-$(eval $(call symlink_system_library,NGHTTP2,libnghttp2))
+-$(eval $(call symlink_system_library,CURL,libcurl))
+-$(eval $(call symlink_system_library,LIBGIT2,libgit2))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libamd))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libcamd))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libccolamd))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libcholmod))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libcolamd))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libumfpack))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libspqr))
+-$(eval $(call symlink_system_library,LIBSUITESPARSE,libsuitesparseconfig))
++$(eval $(call symlink_system_library,GMP,libgmp,10))
++$(eval $(call symlink_system_library,MPFR,libmpfr,6))
++$(eval $(call symlink_system_library,OPENSSL,libcrypto,3))
++$(eval $(call symlink_system_library,OPENSSL,libssl,3))
++$(eval $(call symlink_system_library,LIBSSH2,libssh2,1))
++$(eval $(call symlink_system_library,NGHTTP2,libnghttp2,14))
++$(eval $(call symlink_system_library,CURL,libcurl,4))
++$(eval $(call symlink_system_library,LIBGIT2,libgit2,1.9))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libamd,3))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libcamd,3))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libccolamd,3))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libcholmod,5))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libcolamd,3))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libumfpack,6))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libspqr,4))
++$(eval $(call symlink_system_library,LIBSUITESPARSE,libsuitesparseconfig,7))
+ # EXCLUDED LIBRARIES (installed/used, but not vendored for use with dlopen):
+ # libunwind
+ endif # WINNT
+diff --color -ur a/deps/blastrampoline.mk b/deps/blastrampoline.mk
+--- a/deps/blastrampoline.mk	2025-11-21 12:09:37.000000000 +0100
++++ b/deps/blastrampoline.mk	2025-11-26 19:35:57.828610771 +0100
+@@ -30,7 +30,7 @@
+ 	blastrampoline,$(BLASTRAMPOLINE_SRC_DIR), \
+ 	BLASTRAMPOLINE_INSTALL,, \
+ 	$$(BLASTRAMPOLINE_OBJ_TARGET), \
+-	$$(INSTALL_NAME_CMD)libblastrampoline.$$(SHLIB_EXT) $$(build_shlibdir)/libblastrampoline.$$(SHLIB_EXT)))
++	$$(INSTALL_NAME_CMD)libblastrampoline.$$(SHLIB_EXT) $$(build_private_shlibdir)/libblastrampoline.$$(SHLIB_EXT)))
+ 
+ clean-blastrampoline:
+ 	-$(MAKE) -C $(BLASTRAMPOLINE_BUILD_ROOT) clean
+diff --color -ur a/deps/libuv.mk b/deps/libuv.mk
+--- a/deps/libuv.mk	2025-11-21 12:09:37.000000000 +0100
++++ b/deps/libuv.mk	2025-11-26 19:35:57.832610730 +0100
+@@ -56,7 +56,7 @@
+ $(eval $(call staged-install, \
+ 	libuv,$$(LIBUV_SRC_DIR), \
+ 	MAKE_INSTALL,,, \
+-	$$(INSTALL_NAME_CMD)libuv.$$(SHLIB_EXT) $$(build_shlibdir)/libuv.$$(SHLIB_EXT)))
++	$$(INSTALL_NAME_CMD)libuv.$$(SHLIB_EXT) $$(build_private_shlibdir)/libuv.$$(SHLIB_EXT)))
+ 
+ clean-libuv:
+ 	rm -rf $(LIBUV_BUILDDIR)/build-configured $(LIBUV_BUILDDIR)/build-compiled
+--- a/src/Makefile	2025-11-26 19:37:04.127937831 +0100
++++ b/src/Makefile	2025-11-26 19:35:57.912609918 +0100
+@@ -202,7 +202,7 @@
+ LIBJULIA_PATH_REL := libjulia
+ endif
+ 
+-COMMON_LIBPATHS := -L$(build_libdir) -L$(build_shlibdir)
++COMMON_LIBPATHS := -L$(build_libdir) -L$(build_private_shlibdir)
+ RT_LIBS := $(WHOLE_ARCHIVE) $(LIBUV) $(WHOLE_ARCHIVE) $(LIBUTF8PROC) $(NO_WHOLE_ARCHIVE) $(LIBUNWIND) $(RT_LLVMLINK) $(OSLIBS) $(LIBTRACYCLIENT) $(LIBITTAPI) -lzstd
+ # NB: CG needs uv_mutex_* symbols, but we expect to export them from libjulia-internal
+ CG_LIBS := $(LIBUNWIND) $(CG_LLVMLINK) $(OSLIBS) $(LIBTRACYCLIENT) $(LIBITTAPI)
+@@ -313,17 +313,17 @@
+ $(build_includedir)/julia/uv/*.h: $(LIBUV_INC)/uv/*.h | $(build_includedir)/julia/uv
+ 	$(INSTALL_F) $^ $(build_includedir)/julia/uv
+ 
+-libccalltest: $(build_shlibdir)/libccalltest.$(SHLIB_EXT)
+-libccalllazyfoo: $(build_shlibdir)/libccalllazyfoo.$(SHLIB_EXT)
+-libccalllazybar: $(build_shlibdir)/libccalllazybar.$(SHLIB_EXT)
+-libllvmcalltest: $(build_shlibdir)/libllvmcalltest.$(SHLIB_EXT)
++libccalltest: $(build_private_shlibdir)/libccalltest.$(SHLIB_EXT)
++libccalllazyfoo: $(build_private_shlibdir)/libccalllazyfoo.$(SHLIB_EXT)
++libccalllazybar: $(build_private_shlibdir)/libccalllazybar.$(SHLIB_EXT)
++libllvmcalltest: $(build_private_shlibdir)/libllvmcalltest.$(SHLIB_EXT)
+ 
+ ifeq ($(OS), Linux)
+ JULIA_SPLITDEBUG := 1
+ else
+ JULIA_SPLITDEBUG := 0
+ endif
+-$(build_shlibdir)/libccalltest.$(SHLIB_EXT): $(SRCDIR)/ccalltest.c
++$(build_private_shlibdir)/libccalltest.$(SHLIB_EXT): $(SRCDIR)/ccalltest.c
+ 	@$(call PRINT_CC, $(CC) $(JCFLAGS) $(JCPPFLAGS) $(FLAGS_COMMON) -O3 $< $(fPIC) -shared -o $@.tmp $(LDFLAGS))
+ 	$(INSTALL_NAME_CMD)libccalltest.$(SHLIB_EXT) $@.tmp
+ ifeq ($(JULIA_SPLITDEBUG),1)
+@@ -340,13 +340,13 @@
+ 	mv $@.tmp $@
+ 	$(INSTALL_NAME_CMD)libccalltest.$(SHLIB_EXT) $@
+ 
+-$(build_shlibdir)/libccalllazyfoo.$(SHLIB_EXT): $(SRCDIR)/ccalllazyfoo.c
++$(build_private_shlibdir)/libccalllazyfoo.$(SHLIB_EXT): $(SRCDIR)/ccalllazyfoo.c
+ 	@$(call PRINT_CC, $(CC) $(JCFLAGS) $(JCPPFLAGS) $(FLAGS_COMMON) -O3 $< $(fPIC) -shared -o $@ $(LDFLAGS) $(COMMON_LIBPATHS) $(call SONAME_FLAGS,libccalllazyfoo.$(SHLIB_EXT)))
+ 
+-$(build_shlibdir)/libccalllazybar.$(SHLIB_EXT): $(SRCDIR)/ccalllazybar.c $(build_shlibdir)/libccalllazyfoo.$(SHLIB_EXT)
++$(build_private_shlibdir)/libccalllazybar.$(SHLIB_EXT): $(SRCDIR)/ccalllazybar.c $(build_private_shlibdir)/libccalllazyfoo.$(SHLIB_EXT)
+ 	@$(call PRINT_CC, $(CC) $(JCFLAGS) $(JCPPFLAGS) $(FLAGS_COMMON) -O3 $< $(fPIC) -shared -o $@ $(LDFLAGS) $(COMMON_LIBPATHS) $(call SONAME_FLAGS,libccalllazybar.$(SHLIB_EXT)) -lccalllazyfoo)
+ 
+-$(build_shlibdir)/libllvmcalltest.$(SHLIB_EXT): $(SRCDIR)/llvmcalltest.cpp $(LLVM_CONFIG_ABSOLUTE)
++$(build_private_shlibdir)/libllvmcalltest.$(SHLIB_EXT): $(SRCDIR)/llvmcalltest.cpp $(LLVM_CONFIG_ABSOLUTE)
+ 	@$(call PRINT_CC, $(CXX) $(JCXXFLAGS) $(LLVM_CXXFLAGS) $(FLAGS_COMMON) $(CPPFLAGS) $(CXXFLAGS) -O3 $< $(fPIC) -shared -o $@ $(LDFLAGS) $(COMMON_LIBPATHS) $(NO_WHOLE_ARCHIVE) $(CG_LLVMLINK)) -lpthread
+ 
+ julia_flisp.boot.inc.phony: $(BUILDDIR)/julia_flisp.boot.inc
+@@ -382,7 +382,7 @@
+ $(BUILDDIR)/interpreter.o $(BUILDDIR)/interpreter.dbg.obj: $(SRCDIR)/builtin_proto.h
+ $(BUILDDIR)/jitlayers.o $(BUILDDIR)/jitlayers.dbg.obj: $(SRCDIR)/jitlayers.h $(SRCDIR)/llvm-codegen-shared.h $(SRCDIR)/llvm-julia-task-dispatcher.h
+ $(BUILDDIR)/jltypes.o $(BUILDDIR)/jltypes.dbg.obj: $(SRCDIR)/builtin_proto.h
+-$(build_shlibdir)/libllvmcalltest.$(SHLIB_EXT): $(SRCDIR)/llvm-codegen-shared.h $(BUILDDIR)/julia_version.h
++$(build_private_shlibdir)/libllvmcalltest.$(SHLIB_EXT): $(SRCDIR)/llvm-codegen-shared.h $(BUILDDIR)/julia_version.h
+ $(BUILDDIR)/llvm-alloc-helpers.o $(BUILDDIR)/llvm-alloc-helpers.dbg.obj: $(SRCDIR)/llvm-codegen-shared.h $(SRCDIR)/llvm-pass-helpers.h $(SRCDIR)/llvm-alloc-helpers.h
+ $(BUILDDIR)/llvm-alloc-opt.o $(BUILDDIR)/llvm-alloc-opt.dbg.obj: $(SRCDIR)/llvm-codegen-shared.h $(SRCDIR)/llvm-pass-helpers.h $(SRCDIR)/llvm-alloc-helpers.h
+ $(BUILDDIR)/llvm-cpufeatures.o $(BUILDDIR)/llvm-cpufeatures.dbg.obj: $(SRCDIR)/jitlayers.h
+@@ -445,58 +445,58 @@
+ 	sed <'$<' >'$@' -e "s/@JULIA_SHLIB_SYMBOL_VERSION@/JL_LIBJULIA_$(SOMAJOR)/" \
+ 		        -e "s/@LLVM_SHLIB_SYMBOL_VERSION@/$(LLVM_SHLIB_SYMBOL_VERSION)/"
+ 
+-$(build_shlibdir)/libjulia-internal.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(OBJS) $(BUILDDIR)/flisp/libflisp.a $(BUILDDIR)/support/libsupport.a $(LIBUV)
++$(build_private_shlibdir)/libjulia-internal.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(OBJS) $(BUILDDIR)/flisp/libflisp.a $(BUILDDIR)/support/libsupport.a $(LIBUV)
+ 	@$(call PRINT_LINK, $(CXXLD) $(call IMPLIB_FLAGS,$@) $(SHIPFLAGS) $(JCXXFLAGS) $(CXXLDFLAGS) $(OBJS) $(RPATH_LIB) -o $@ \
+ 		$(JLDFLAGS) $(BOLT_LDFLAGS) $(JLIBLDFLAGS) $(RT_RELEASE_LIBS) $(call SONAME_FLAGS,libjulia-internal.$(JL_MAJOR_SHLIB_EXT)))
+ 	@$(INSTALL_NAME_CMD)libjulia-internal.$(SHLIB_EXT) $@
+ 	$(DSYMUTIL) $@
+ 
+-$(build_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(DOBJS) $(BUILDDIR)/flisp/libflisp-debug.a $(BUILDDIR)/support/libsupport-debug.a $(LIBUV)
++$(build_private_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(DOBJS) $(BUILDDIR)/flisp/libflisp-debug.a $(BUILDDIR)/support/libsupport-debug.a $(LIBUV)
+ 	@$(call PRINT_LINK, $(CXXLD) $(call IMPLIB_FLAGS,$@) $(DEBUGFLAGS) $(JCXXFLAGS) $(CXXLDFLAGS) $(DOBJS) $(RPATH_LIB) -o $@ \
+ 		$(JLDFLAGS) $(JLIBLDFLAGS) $(RT_DEBUG_LIBS) $(call SONAME_FLAGS,libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT)))
+ 	@$(INSTALL_NAME_CMD)libjulia-internal-debug.$(SHLIB_EXT) $@
+ 	$(DSYMUTIL) $@
+ 
+ ifneq ($(OS), WINNT)
+-$(build_shlibdir)/libjulia-internal.$(JL_MAJOR_SHLIB_EXT) $(build_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT): $(build_shlibdir)/libjulia-internal%.$(JL_MAJOR_SHLIB_EXT): \
+-		$(build_shlibdir)/libjulia-internal%.$(JL_MAJOR_MINOR_SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-internal.$(JL_MAJOR_SHLIB_EXT) $(build_private_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT): $(build_private_shlibdir)/libjulia-internal%.$(JL_MAJOR_SHLIB_EXT): \
++		$(build_private_shlibdir)/libjulia-internal%.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ 	@$(call PRINT_LINK, ln -sf $(notdir $<) $@)
+-$(build_shlibdir)/libjulia-internal.$(SHLIB_EXT) $(build_shlibdir)/libjulia-internal-debug.$(SHLIB_EXT): $(build_shlibdir)/libjulia-internal%.$(SHLIB_EXT): \
+-		$(build_shlibdir)/libjulia-internal%.$(JL_MAJOR_MINOR_SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-internal.$(SHLIB_EXT) $(build_private_shlibdir)/libjulia-internal-debug.$(SHLIB_EXT): $(build_private_shlibdir)/libjulia-internal%.$(SHLIB_EXT): \
++		$(build_private_shlibdir)/libjulia-internal%.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ 	@$(call PRINT_LINK, ln -sf $(notdir $<) $@)
+-$(build_shlibdir)/libjulia-codegen.$(JL_MAJOR_MINOR_SHLIB_EXT): $(build_shlibdir)/libjulia-internal.$(SHLIB_EXT)
+-$(build_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_MINOR_SHLIB_EXT): $(build_shlibdir)/libjulia-internal-debug.$(SHLIB_EXT)
+-libjulia-internal-release: $(build_shlibdir)/libjulia-internal.$(JL_MAJOR_SHLIB_EXT) $(build_shlibdir)/libjulia-internal.$(SHLIB_EXT)
+-libjulia-internal-debug: $(build_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT) $(build_shlibdir)/libjulia-internal-debug.$(SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-codegen.$(JL_MAJOR_MINOR_SHLIB_EXT): $(build_private_shlibdir)/libjulia-internal.$(SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_MINOR_SHLIB_EXT): $(build_private_shlibdir)/libjulia-internal-debug.$(SHLIB_EXT)
++libjulia-internal-release: $(build_private_shlibdir)/libjulia-internal.$(JL_MAJOR_SHLIB_EXT) $(build_private_shlibdir)/libjulia-internal.$(SHLIB_EXT)
++libjulia-internal-debug: $(build_private_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_SHLIB_EXT) $(build_private_shlibdir)/libjulia-internal-debug.$(SHLIB_EXT)
+ endif
+-libjulia-internal-release: $(build_shlibdir)/libjulia-internal.$(JL_MAJOR_MINOR_SHLIB_EXT)
+-libjulia-internal-debug: $(build_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_MINOR_SHLIB_EXT)
++libjulia-internal-release: $(build_private_shlibdir)/libjulia-internal.$(JL_MAJOR_MINOR_SHLIB_EXT)
++libjulia-internal-debug: $(build_private_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ libjulia-internal-debug libjulia-internal-release: $(PUBLIC_HEADER_TARGETS)
+ 
+-$(build_shlibdir)/libjulia-codegen.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(CODEGEN_OBJS) $(BUILDDIR)/support/libsupport.a $(build_shlibdir)/libjulia-internal.$(JL_MAJOR_MINOR_SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-codegen.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(CODEGEN_OBJS) $(BUILDDIR)/support/libsupport.a $(build_private_shlibdir)/libjulia-internal.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ 	@$(call PRINT_LINK, $(CXXLD) $(call IMPLIB_FLAGS,$@) $(SHIPFLAGS) $(JCXXFLAGS) $(CXXLDFLAGS) $(CODEGEN_OBJS) $(RPATH_LIB) -o $@ \
+ 		$(JLDFLAGS) $(BOLT_LDFLAGS) $(JLIBLDFLAGS) $(CG_RELEASE_LIBS) $(call SONAME_FLAGS,libjulia-codegen.$(JL_MAJOR_SHLIB_EXT)))
+ 	@$(INSTALL_NAME_CMD)libjulia-codegen.$(SHLIB_EXT) $@
+ 	$(DSYMUTIL) $@
+ 
+-$(build_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(CODEGEN_DOBJS) $(BUILDDIR)/support/libsupport-debug.a $(build_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_MINOR_SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_MINOR_SHLIB_EXT): $(BUILDDIR)/julia.expmap $(CODEGEN_DOBJS) $(BUILDDIR)/support/libsupport-debug.a $(build_private_shlibdir)/libjulia-internal-debug.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ 	@$(call PRINT_LINK, $(CXXLD) $(call IMPLIB_FLAGS,$@) $(DEBUGFLAGS) $(JCXXFLAGS) $(CXXLDFLAGS) $(CODEGEN_DOBJS) $(RPATH_LIB) -o $@ \
+ 		$(JLDFLAGS) $(JLIBLDFLAGS) $(CG_DEBUG_LIBS) $(call SONAME_FLAGS,libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT)))
+ 	@$(INSTALL_NAME_CMD)libjulia-codegen-debug.$(SHLIB_EXT) $@
+ 	$(DSYMUTIL) $@
+ 
+ ifneq ($(OS), WINNT)
+-$(build_shlibdir)/libjulia-codegen.$(JL_MAJOR_SHLIB_EXT) $(build_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT): $(build_shlibdir)/libjulia-codegen%.$(JL_MAJOR_SHLIB_EXT): \
+-		$(build_shlibdir)/libjulia-codegen%.$(JL_MAJOR_MINOR_SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-codegen.$(JL_MAJOR_SHLIB_EXT) $(build_private_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT): $(build_private_shlibdir)/libjulia-codegen%.$(JL_MAJOR_SHLIB_EXT): \
++		$(build_private_shlibdir)/libjulia-codegen%.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ 	@$(call PRINT_LINK, ln -sf $(notdir $<) $@)
+-$(build_shlibdir)/libjulia-codegen.$(SHLIB_EXT) $(build_shlibdir)/libjulia-codegen-debug.$(SHLIB_EXT): $(build_shlibdir)/libjulia-codegen%.$(SHLIB_EXT): \
+-		$(build_shlibdir)/libjulia-codegen%.$(JL_MAJOR_MINOR_SHLIB_EXT)
++$(build_private_shlibdir)/libjulia-codegen.$(SHLIB_EXT) $(build_private_shlibdir)/libjulia-codegen-debug.$(SHLIB_EXT): $(build_private_shlibdir)/libjulia-codegen%.$(SHLIB_EXT): \
++		$(build_private_shlibdir)/libjulia-codegen%.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ 	@$(call PRINT_LINK, ln -sf $(notdir $<) $@)
+-libjulia-codegen-release: $(build_shlibdir)/libjulia-codegen.$(JL_MAJOR_SHLIB_EXT) $(build_shlibdir)/libjulia-codegen.$(SHLIB_EXT)
+-libjulia-codegen-debug: $(build_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT) $(build_shlibdir)/libjulia-codegen-debug.$(SHLIB_EXT)
++libjulia-codegen-release: $(build_private_shlibdir)/libjulia-codegen.$(JL_MAJOR_SHLIB_EXT) $(build_private_shlibdir)/libjulia-codegen.$(SHLIB_EXT)
++libjulia-codegen-debug: $(build_private_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_SHLIB_EXT) $(build_private_shlibdir)/libjulia-codegen-debug.$(SHLIB_EXT)
+ endif
+-libjulia-codegen-release: $(build_shlibdir)/libjulia-codegen.$(JL_MAJOR_MINOR_SHLIB_EXT)
+-libjulia-codegen-debug: $(build_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_MINOR_SHLIB_EXT)
++libjulia-codegen-release: $(build_private_shlibdir)/libjulia-codegen.$(JL_MAJOR_MINOR_SHLIB_EXT)
++libjulia-codegen-debug: $(build_private_shlibdir)/libjulia-codegen-debug.$(JL_MAJOR_MINOR_SHLIB_EXT)
+ libjulia-codegen-debug libjulia-codegen-release: $(PUBLIC_HEADER_TARGETS)
+ 
+ # set the exports for the source files based on where they are getting linked
+@@ -552,8 +552,8 @@
+ 	processor.cpp:processor_fallback.cpp
+ 
+ clean:
+-	-rm -fr $(build_shlibdir)/libjulia-internal* $(build_shlibdir)/libjulia-codegen*
+-	-rm -rf $(build_shlibdir)/libccalltest* $(build_shlibdir)/libllvmcalltest* $(build_shlibdir)/libccalllazyfoo* $(build_shlibdir)/libccalllazybar*
++	-rm -fr $(build_private_shlibdir)/libjulia-internal* $(build_private_shlibdir)/libjulia-codegen*
++	-rm -rf $(build_private_shlibdir)/libccalltest* $(build_private_shlibdir)/libllvmcalltest* $(build_private_shlibdir)/libccalllazyfoo* $(build_private_shlibdir)/libccalllazybar*
+ 	-rm -f $(BUILDDIR)/julia_flisp.boot $(BUILDDIR)/julia_flisp.boot.inc $(BUILDDIR)/jl_internal_funcs.inc $(BUILDDIR)/jl_data_globals_defs.inc
+ 	-rm -f $(BUILDDIR)/*.dbg.obj $(BUILDDIR)/*.o $(BUILDDIR)/*.dwo $(BUILDDIR)/*.$(SHLIB_EXT) $(BUILDDIR)/*.a $(BUILDDIR)/*.h.gen
+ 	-rm -f $(BUILDDIR)/julia.expmap
+@@ -568,7 +568,7 @@
+ 
+ cleanall: clean clean-flisp clean-support clean-analyzegc
+ 
+-$(build_shlibdir)/lib%Plugin.$(SHLIB_EXT): $(SRCDIR)/clangsa/%.cpp $(LLVM_CONFIG_ABSOLUTE)
++$(build_private_shlibdir)/lib%Plugin.$(SHLIB_EXT): $(SRCDIR)/clangsa/%.cpp $(LLVM_CONFIG_ABSOLUTE)
+ 	@$(call PRINT_CC, $(CXX) -g $(fPIC) -shared -o $@ -DCLANG_PLUGIN -I$(build_includedir) -L$(build_libdir) \
+ 		$(LLVM_CXXFLAGS) $(CLANG_LDFLAGS) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) $(CXXLDFLAGS) $<)
+ 
+@@ -595,8 +595,8 @@
+ endif
+ endif
+ 
+-clangsa: $(build_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT)
+-clangsa: $(build_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT)
++clangsa: $(build_private_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT)
++clangsa: $(build_private_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT)
+ 
+ # optarg is a required_argument for these
+ SA_EXCEPTIONS-jloptions.c                   := -Xanalyzer -analyzer-config -Xanalyzer silence-checkers="core.NonNullParamChecker;unix.cstring.NullArg"
+@@ -608,14 +608,14 @@
+ 
+ # make sure LLVM's invariant information is not discarded with -DNDEBUG
+ clang-sagc-%: JCXXFLAGS_COMMON += -UNDEBUG
+-clang-sagc-%: $(SRCDIR)/%.c $(build_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
++clang-sagc-%: $(SRCDIR)/%.c $(build_private_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
+ 	@$(call PRINT_ANALYZE, $(build_depsbindir)/clang -D__clang_gcanalyzer__ --analyze -Xanalyzer -analyzer-werror -Xanalyzer -analyzer-output=text --analyzer-no-default-checks \
+-		-Xclang -load -Xclang $(build_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) -Xclang -analyzer-checker=core$(COMMA)julia.GCChecker \
++		-Xclang -load -Xclang $(build_private_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) -Xclang -analyzer-checker=core$(COMMA)julia.GCChecker \
+ 		$(SA_EXCEPTIONS-$(notdir $<)) \
+ 		$(CLANG_TOOLING_C_FLAGS) -fcolor-diagnostics -x c $<)
+-clang-sagc-%: $(SRCDIR)/%.cpp $(build_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
++clang-sagc-%: $(SRCDIR)/%.cpp $(build_private_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
+ 	@$(call PRINT_ANALYZE, $(build_depsbindir)/clang -D__clang_gcanalyzer__ --analyze -Xanalyzer -analyzer-werror -Xanalyzer -analyzer-output=text --analyzer-no-default-checks \
+-		-Xclang -load -Xclang $(build_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) -Xclang -analyzer-checker=core$(COMMA)julia.GCChecker \
++		-Xclang -load -Xclang $(build_private_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT) -Xclang -analyzer-checker=core$(COMMA)julia.GCChecker \
+ 		$(SA_EXCEPTIONS-$(notdir $<)) \
+ 		$(CLANG_TOOLING_CXX_FLAGS) -fcolor-diagnostics -x c++ $<)
+ 
+@@ -631,13 +631,13 @@
+ 		$(SA_EXCEPTIONS-$(notdir $<)) \
+ 		$(CLANG_TOOLING_CXX_FLAGS) -fcolor-diagnostics -Werror -x c++ $<)
+ 
+-clang-tidy-%: $(SRCDIR)/%.c $(build_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
++clang-tidy-%: $(SRCDIR)/%.c $(build_private_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
+ 	@$(call PRINT_ANALYZE, $(build_depsbindir)/clang-tidy $< -header-filter='.*' --quiet \
+-		-load $(build_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) --checks='-clang-analyzer-*$(COMMA)-clang-diagnostic-*$(COMMA)concurrency-implicit-atomics' --warnings-as-errors='*' \
++		-load $(build_private_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) --checks='-clang-analyzer-*$(COMMA)-clang-diagnostic-*$(COMMA)concurrency-implicit-atomics' --warnings-as-errors='*' \
+ 		-- $(CLANG_TOOLING_C_FLAGS) -fcolor-diagnostics -fno-caret-diagnostics -x c)
+-clang-tidy-%: $(SRCDIR)/%.cpp $(build_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
++clang-tidy-%: $(SRCDIR)/%.cpp $(build_private_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) .FORCE | analyzegc-deps-check
+ 	@$(call PRINT_ANALYZE, $(build_depsbindir)/clang-tidy $< -header-filter='.*' --quiet \
+-		-load $(build_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) --checks='-clang-analyzer-*$(COMMA)-clang-diagnostic-*$(COMMA)concurrency-implicit-atomics' --warnings-as-errors='*' \
++		-load $(build_private_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT) --checks='-clang-analyzer-*$(COMMA)-clang-diagnostic-*$(COMMA)concurrency-implicit-atomics' --warnings-as-errors='*' \
+ 		-- $(CLANG_TOOLING_CXX_FLAGS) -fcolor-diagnostics --system-header-prefix=llvm -Wno-deprecated-declarations -fno-caret-diagnostics -x c++)
+ 
+ # Add C files as a target of `analyzesrc` and `analyzegc` and `tidysrc`
+@@ -651,8 +651,8 @@
+ $(addprefix analyze-,$(filter-out $(basename $(SKIP_GC_CHECK)),$(CODEGEN_SRCS) $(SRCS))) : analyze-% : clang-sagc-%
+ 
+ clean-analyzegc:
+-	rm -f $(build_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT)
+-	rm -f $(build_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT)
++	rm -f $(build_private_shlibdir)/libGCCheckerPlugin.$(SHLIB_EXT)
++	rm -f $(build_private_shlibdir)/libImplicitAtomicsPlugin.$(SHLIB_EXT)
+ 
+ # Compilation database generation using existing clang infrastructure
+ .PHONY: regenerate-compile_commands

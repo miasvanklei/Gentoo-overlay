@@ -1,0 +1,13 @@
+--- a/Makefile	2025-12-01 14:46:47.670620549 +0100
++++ b/Makefile	2025-12-01 16:57:59.745919232 +0100
+@@ -535,8 +535,10 @@
+ 
+ 	# Fix rpaths for dependencies. This should be fixed in BinaryBuilder later.
+ ifeq ($(OS), Linux)
++ifeq ($(USE_SYSTEM_LLVM),0)
+ 	$(PATCHELF) $(PATCHELF_SET_RPATH_ARG) '$$ORIGIN' $(DESTDIR)$(private_shlibdir)/libLLVM.$(SHLIB_EXT)
+ endif
++endif
+ ifneq ($(LOADER_BUILD_DEP_LIBS),$(LOADER_INSTALL_DEP_LIBS))
+ 	# Next, overwrite relative path to libjulia-internal in our loader if $$(LOADER_BUILD_DEP_LIBS) != $$(LOADER_INSTALL_DEP_LIBS)
+ ifeq ($(JULIA_BUILD_MODE),release)
