@@ -8,7 +8,7 @@
 +dtb-$(CONFIG_ARCH_QCOM)	+= x1p42100-microsoft-sp12.dtb x1p42100-microsoft-sp12-el2.dtb
 --- /dev/null	2025-12-16 22:01:38.357812290 +0100
 +++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2025-12-16 21:53:33.172178915 +0100
-@@ -0,0 +1,1195 @@
+@@ -0,0 +1,1212 @@
 +// SPDX-License-Identifier: BSD-3-Clause
 +/*
 + * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
@@ -21,6 +21,7 @@
 +#include <dt-bindings/gpio/gpio.h>
 +#include <dt-bindings/input/gpio-keys.h>
 +#include <dt-bindings/input/input.h>
++#include <dt-bindings/leds/common.h>
 +#include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
 +#include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 +#include <dt-bindings/clock/qcom,x1e80100-tcsr.h>
@@ -37,8 +38,8 @@
 +	chassis-type = "tablet";
 +
 +	aliases {
-+		serial0 = "/soc@0/geniqup@bc0000/serial@b88000";
-+		serial1 = "/soc@0/geniqup@ac0000/serial@a98000";
++		serial0 = &uart2;
++		serial1 = &uart14;
 +	};
 +
 +	backlight: backlight {
@@ -77,6 +78,24 @@
 +			linux,code = <SW_LID>;
 +			wakeup-source;
 +			wakeup-event-action = <EV_ACT_DEASSERTED>;
++		};
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&cam_indicator_en>;
++
++		led-camera-indicator {
++			label = "white:camera-indicator";
++			function = LED_FUNCTION_INDICATOR;
++			color = <LED_COLOR_ID_WHITE>;
++			gpios = <&tlmm 225 GPIO_ACTIVE_HIGH>;
++			linux,default-trigger = "none";
++			default-state = "off";
++			/* Reuse as a panic indicator until we get a "camera on" trigger */
++			panic-indicator;
 +		};
 +	};
 +
@@ -175,12 +194,13 @@
 +		wsa-dai-link {
 +			link-name = "WSA Playback";
 +
-+			cpu {
-+				sound-dai = <&q6apmbedai WSA_CODEC_DMA_RX_0>;
++			codec {
++				sound-dai = <&left_spkr>, <&right_spkr>,
++					    <&swr0 0>, <&lpass_wsamacro 0>;
 +			};
 +
-+			codec {
-+				sound-dai = <&left_spkr>, <&right_spkr>, <&swr0 0>, <&lpass_wsamacro 0>;
++			cpu {
++				sound-dai = <&q6apmbedai WSA_CODEC_DMA_RX_0>;
 +			};
 +
 +			platform {
@@ -191,19 +211,18 @@
 +		va-dai-link {
 +			link-name = "VA Capture";
 +
-+			cpu {
-+				sound-dai = <&q6apmbedai VA_CODEC_DMA_TX_0>;
-+			};
-+
 +			codec {
 +				sound-dai = <&lpass_vamacro 0>;
++			};
++
++			cpu {
++				sound-dai = <&q6apmbedai VA_CODEC_DMA_TX_0>;
 +			};
 +
 +			platform {
 +				sound-dai = <&q6apm>;
 +			};
 +		};
-+
 +	};
 +
 +	usb-1-ss0-sbu-mux {
@@ -762,15 +781,6 @@
 +		function = "gpio";
 +		drive-strength = <16>;
 +		bias-disable;
-+		output-low;
-+	};
-+
-+	spkr_23_sd_n_active: spkr-23-sd-n-active-state {
-+		pins = "gpio13";
-+		function = "gpio";
-+		drive-strength = <16>;
-+		bias-disable;
-+		output-low;
 +	};
 +};
 +
@@ -802,13 +812,6 @@
 +	link-frequencies = /bits/ 64 <1620000000 2700000000 5400000000 8100000000>;
 +};
 +
-+&mdss_dp3_phy {
-+	vdda-phy-supply = <&vreg_l3j_0p8>;
-+	vdda-pll-supply = <&vreg_l2j_1p2>;
-+
-+	status = "okay";
-+};
-+
 +&mdss_dp3 {
 +	/delete-property/ #sound-dai-cells;
 +
@@ -820,9 +823,7 @@
 +	aux-bus {
 +		panel {
 +			compatible = "edp-panel";
-+
 +			backlight = <&backlight>;
-+
 +			power-supply = <&vreg_edp_3p3>;
 +
 +			port {
@@ -845,6 +846,13 @@
 +			};
 +		};
 +	};
++};
++
++&mdss_dp3_phy {
++	vdda-phy-supply = <&vreg_l3j_0p8>;
++	vdda-pll-supply = <&vreg_l2j_1p2>;
++
++	status = "okay";
 +};
 +
 +&pcie4 {
@@ -937,13 +945,15 @@
 +};
 +
 +&remoteproc_adsp {
-+	firmware-name = "qcom/x1p42100/Microsoft/SurfacePro/qcadsp8380.mbn", "qcom/x1p42100/Microsoft/SurfacePro/adsp_dtbs.elf";
++	firmware-name = "qcom/x1p42100/Microsoft/SurfacePro/qcadsp8380.mbn",
++			"qcom/x1p42100/Microsoft/SurfacePro/adsp_dtbs.elf";
 +
 +	status = "okay";
 +};
 +
 +&remoteproc_cdsp {
-+	firmware-name = "qcom/x1p42100/Microsoft/SurfacePro/qccdsp8380.mbn", "qcom/x1p42100/Microsoft/SurfacePro/cdsp_dtbs.elf";
++	firmware-name = "qcom/x1p42100/Microsoft/SurfacePro/qccdsp8380.mbn",
++			"qcom/x1p42100/Microsoft/SurfacePro/cdsp_dtbs.elf";
 +
 +	status = "okay";
 +};
@@ -1015,26 +1025,6 @@
 +		output-low;
 +	};
 +
-+	wcn_sw_en: wcn-sw-en-state {
-+		pins = "gpio214";
-+		function = "gpio";
-+		drive-strength = <2>;
-+		bias-disable;
-+	};
-+
-+	wcn_wlan_bt_en: wcn-wlan-bt-en-state {
-+		pins = "gpio116", "gpio117";
-+		function = "gpio";
-+		drive-strength = <2>;
-+		bias-disable;
-+	};
-+
-+	ssam_state: ssam-state-state {
-+		pins = "gpio91";
-+		function = "gpio";
-+		bias-disable;
-+	};
-+
 +	ts0_default: ts0-default-state {
 +		int-n-pins {
 +			pins = "gpio51";
@@ -1048,6 +1038,27 @@
 +			output-high;
 +			drive-strength = <16>;
 +		};
++	};
++
++	edp_reg_en: edp-reg-en-state {
++		pins = "gpio70";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++		output-high;
++	};
++
++	ssam_state: ssam-state-state {
++		pins = "gpio91";
++		function = "gpio";
++		bias-disable;
++	};
++
++	wcn_wlan_bt_en: wcn-wlan-bt-en-state {
++		pins = "gpio116", "gpio117";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
 +	};
 +
 +	usb_1_ss0_sbu_default: usb-1-ss0-sbu-state {
@@ -1083,12 +1094,50 @@
 +		};
 +	};
 +
-+	edp_reg_en: edp-reg-en-state {
-+		pins = "gpio70";
++	wcn_sw_en: wcn-sw-en-state {
++		pins = "gpio214";
 +		function = "gpio";
 +		drive-strength = <2>;
 +		bias-disable;
-+		output-high;
++	};
++
++	cam_indicator_en: cam-indicator-en-state {
++		pins = "gpio225";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++};
++
++&uart2 {
++	status = "okay";
++
++	embedded-controller {
++		compatible = "microsoft,surface-sam";
++
++		interrupts-extended = <&tlmm 91 IRQ_TYPE_EDGE_RISING>;
++
++		current-speed = <4000000>;
++
++		pinctrl-0 = <&ssam_state>;
++		pinctrl-names = "default";
++	};
++};
++
++&uart14 {
++	status = "okay";
++
++	bluetooth {
++		compatible = "qcom,wcn7850-bt";
++		max-speed = <3200000>;
++
++		vddaon-supply = <&vreg_pmu_aon_0p59>;
++		vddwlcx-supply = <&vreg_pmu_wlcx_0p8>;
++		vddwlmx-supply = <&vreg_pmu_wlmx_0p85>;
++		vddrfacmn-supply = <&vreg_pmu_rfa_cmn>;
++		vddrfa0p8-supply = <&vreg_pmu_rfa_0p8>;
++		vddrfa1p2-supply = <&vreg_pmu_rfa_1p2>;
++		vddrfa1p8-supply = <&vreg_pmu_rfa_1p8>;
 +	};
 +};
 +
@@ -1171,36 +1220,4 @@
 +
 +&usb_1_ss1_qmpphy_out {
 +	remote-endpoint = <&pmic_glink_ss1_ss_in>;
-+};
-+
-+&uart2 {
-+	status = "okay";
-+
-+	embedded-controller {
-+		compatible = "microsoft,surface-sam";
-+
-+		interrupts-extended = <&tlmm 91 IRQ_TYPE_EDGE_RISING>;
-+
-+		current-speed = <4000000>;
-+
-+		pinctrl-0 = <&ssam_state>;
-+		pinctrl-names = "default";
-+	};
-+};
-+
-+&uart14 {
-+	status = "okay";
-+
-+	bluetooth {
-+		compatible = "qcom,wcn7850-bt";
-+		max-speed = <3200000>;
-+
-+		vddaon-supply = <&vreg_pmu_aon_0p59>;
-+		vddwlcx-supply = <&vreg_pmu_wlcx_0p8>;
-+		vddwlmx-supply = <&vreg_pmu_wlmx_0p85>;
-+		vddrfacmn-supply = <&vreg_pmu_rfa_cmn>;
-+		vddrfa0p8-supply = <&vreg_pmu_rfa_0p8>;
-+		vddrfa1p2-supply = <&vreg_pmu_rfa_1p2>;
-+		vddrfa1p8-supply = <&vreg_pmu_rfa_1p8>;
-+	};
 +};
