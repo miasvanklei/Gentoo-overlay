@@ -21,6 +21,9 @@ HOMEPAGE="
 SRC_URI+="
 	https://github.com/projg2/gentoo-kernel-config/archive/${GENTOO_CONFIG_VER}.tar.gz
 		-> gentoo-kernel-config-${GENTOO_CONFIG_VER}.tar.gz
+	https://cdn.kernel.org/pub/linux/kernel/v6.x/incr/patch-6.18.2-3.xz
+	https://cdn.kernel.org/pub/linux/kernel/v6.x/incr/patch-6.18.3-4.xz
+	https://cdn.kernel.org/pub/linux/kernel/v6.x/incr/patch-6.18.4-5.xz
 	arm64? (
 		https://raw.githubusercontent.com/projg2/fedora-kernel-config-for-gentoo/${CONFIG_VER}/kernel-aarch64-fedora.config
 			-> kernel-aarch64-fedora.config.${CONFIG_VER}
@@ -60,11 +63,15 @@ src_unpack() {
 src_prepare() {
 	default
 
-	for j in "${FILESDIR}"/$i/*.patch; do
+	eapply "${WORKDIR}"/patch-6.18.2-3
+	eapply "${WORKDIR}"/patch-6.18.3-4
+	eapply "${WORKDIR}"/patch-6.18.4-5
+
+	for j in "${FILESDIR}"/*.patch; do
 		eapply $j
 	done
 
-	for i in msm x1e80100 tw220 surface; do
+	for i in tw220 x1e80100 surface; do
 		for j in "${FILESDIR}"/$i/*.patch; do
 			eapply $j
 		done
