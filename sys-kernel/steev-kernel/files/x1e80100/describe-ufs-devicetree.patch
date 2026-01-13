@@ -1,52 +1,210 @@
---- a/arch/arm64/boot/dts/qcom/x1e80100.dtsi	2025-11-30 23:42:10.000000000 +0100
-+++ b/arch/arm64/boot/dts/qcom/x1e80100.dtsi	2025-12-11 19:19:34.762495982 +0100
-@@ -2820,6 +2820,121 @@
- 			#thermal-sensor-cells = <1>;
+--- a/include/dt-bindings/clock/qcom,x1e80100-gcc.h	2026-01-14 00:00:37.466865547 +0100
++++ b/include/dt-bindings/clock/qcom,x1e80100-gcc.h	2026-01-14 00:00:40.946875622 +0100
+@@ -363,6 +363,9 @@
+ #define GCC_USB3_PRIM_PHY_PIPE_CLK_SRC				353
+ #define GCC_USB3_SEC_PHY_PIPE_CLK_SRC				354
+ #define GCC_USB3_TERT_PHY_PIPE_CLK_SRC				355
++#define GCC_UFS_PHY_RX_SYMBOL_0_CLK_SRC				356
++#define GCC_UFS_PHY_RX_SYMBOL_1_CLK_SRC				357
++#define GCC_UFS_PHY_TX_SYMBOL_0_CLK_SRC				358
+ 
+ /* GCC power domains */
+ #define GCC_PCIE_0_TUNNEL_GDSC					0
+--- a/drivers/clk/qcom/gcc-x1e80100.c	2026-01-14 00:00:24.334827264 +0100
++++ b/drivers/clk/qcom/gcc-x1e80100.c	2026-01-14 00:00:40.946875622 +0100
+@@ -32,6 +32,9 @@
+ 	DT_USB3_PHY_0_WRAPPER_GCC_USB30_PIPE,
+ 	DT_USB3_PHY_1_WRAPPER_GCC_USB30_PIPE,
+ 	DT_USB3_PHY_2_WRAPPER_GCC_USB30_PIPE,
++	DT_UFS_PHY_RX_SYMBOL_0_CLK,
++	DT_UFS_PHY_RX_SYMBOL_1_CLK,
++	DT_UFS_PHY_TX_SYMBOL_0_CLK,
+ };
+ 
+ enum {
+@@ -46,6 +49,9 @@
+ 	P_USB3_PHY_0_WRAPPER_GCC_USB30_PIPE_CLK,
+ 	P_USB3_PHY_1_WRAPPER_GCC_USB30_PIPE_CLK,
+ 	P_USB3_PHY_2_WRAPPER_GCC_USB30_PIPE_CLK,
++	P_UFS_PHY_RX_SYMBOL_0_CLK,
++	P_UFS_PHY_RX_SYMBOL_1_CLK,
++	P_UFS_PHY_TX_SYMBOL_0_CLK,
+ };
+ 
+ static struct clk_alpha_pll gcc_gpll0 = {
+@@ -320,6 +326,48 @@
+ 	{ }
+ };
+ 
++static struct clk_regmap_phy_mux gcc_ufs_phy_rx_symbol_0_clk_src = {
++	.reg = 0x77064,
++	.clkr = {
++		.hw.init = &(const struct clk_init_data) {
++			.name = "gcc_ufs_phy_rx_symbol_0_clk_src",
++			.parent_data = &(const struct clk_parent_data) {
++				.index = DT_UFS_PHY_RX_SYMBOL_0_CLK,
++			},
++			.num_parents = 1,
++			.ops = &clk_regmap_phy_mux_ops,
++		},
++	},
++};
++
++static struct clk_regmap_phy_mux gcc_ufs_phy_rx_symbol_1_clk_src = {
++	.reg = 0x770e0,
++	.clkr = {
++		.hw.init = &(const struct clk_init_data) {
++			.name = "gcc_ufs_phy_rx_symbol_1_clk_src",
++			.parent_data = &(const struct clk_parent_data) {
++				.index = DT_UFS_PHY_RX_SYMBOL_1_CLK,
++			},
++			.num_parents = 1,
++			.ops = &clk_regmap_phy_mux_ops,
++		},
++	},
++};
++
++static struct clk_regmap_phy_mux gcc_ufs_phy_tx_symbol_0_clk_src = {
++	.reg = 0x77054,
++	.clkr = {
++		.hw.init = &(const struct clk_init_data) {
++			.name = "gcc_ufs_phy_tx_symbol_0_clk_src",
++			.parent_data = &(const struct clk_parent_data) {
++				.index = DT_UFS_PHY_TX_SYMBOL_0_CLK,
++			},
++			.num_parents = 1,
++			.ops = &clk_regmap_phy_mux_ops,
++		},
++	},
++};
++
+ static struct clk_rcg2 gcc_gp1_clk_src = {
+ 	.cmd_rcgr = 0x64004,
+ 	.mnd_width = 16,
+@@ -4741,12 +4789,17 @@
+ 
+ static struct clk_branch gcc_ufs_phy_rx_symbol_0_clk = {
+ 	.halt_reg = 0x7702c,
+-	.halt_check = BRANCH_HALT,
++	.halt_check = BRANCH_HALT_DELAY,
+ 	.clkr = {
+ 		.enable_reg = 0x7702c,
+ 		.enable_mask = BIT(0),
+ 		.hw.init = &(const struct clk_init_data) {
+ 			.name = "gcc_ufs_phy_rx_symbol_0_clk",
++			.parent_hws = (const struct clk_hw*[]) {
++				&gcc_ufs_phy_rx_symbol_0_clk_src.clkr.hw,
++			},
++			.num_parents = 1,
++			.flags = CLK_SET_RATE_PARENT,
+ 			.ops = &clk_branch2_ops,
+ 		},
+ 	},
+@@ -4754,12 +4807,17 @@
+ 
+ static struct clk_branch gcc_ufs_phy_rx_symbol_1_clk = {
+ 	.halt_reg = 0x770cc,
+-	.halt_check = BRANCH_HALT,
++	.halt_check = BRANCH_HALT_DELAY,
+ 	.clkr = {
+ 		.enable_reg = 0x770cc,
+ 		.enable_mask = BIT(0),
+ 		.hw.init = &(const struct clk_init_data) {
+ 			.name = "gcc_ufs_phy_rx_symbol_1_clk",
++			.parent_hws = (const struct clk_hw*[]) {
++				&gcc_ufs_phy_rx_symbol_1_clk_src.clkr.hw,
++			},
++			.num_parents = 1,
++			.flags = CLK_SET_RATE_PARENT,
+ 			.ops = &clk_branch2_ops,
+ 		},
+ 	},
+@@ -4767,12 +4825,17 @@
+ 
+ static struct clk_branch gcc_ufs_phy_tx_symbol_0_clk = {
+ 	.halt_reg = 0x77028,
+-	.halt_check = BRANCH_HALT,
++	.halt_check = BRANCH_HALT_DELAY,
+ 	.clkr = {
+ 		.enable_reg = 0x77028,
+ 		.enable_mask = BIT(0),
+ 		.hw.init = &(const struct clk_init_data) {
+ 			.name = "gcc_ufs_phy_tx_symbol_0_clk",
++			.parent_hws = (const struct clk_hw*[]) {
++				&gcc_ufs_phy_tx_symbol_0_clk_src.clkr.hw,
++			},
++			.num_parents = 1,
++			.flags = CLK_SET_RATE_PARENT,
+ 			.ops = &clk_branch2_ops,
+ 		},
+ 	},
+@@ -6553,6 +6616,9 @@
+ 	[GCC_USB4_2_TMU_CLK_SRC] = &gcc_usb4_2_tmu_clk_src.clkr,
+ 	[GCC_VIDEO_AXI0_CLK] = &gcc_video_axi0_clk.clkr,
+ 	[GCC_VIDEO_AXI1_CLK] = &gcc_video_axi1_clk.clkr,
++	[GCC_UFS_PHY_RX_SYMBOL_0_CLK_SRC] = &gcc_ufs_phy_rx_symbol_0_clk_src.clkr,
++	[GCC_UFS_PHY_RX_SYMBOL_1_CLK_SRC] = &gcc_ufs_phy_rx_symbol_1_clk_src.clkr,
++	[GCC_UFS_PHY_TX_SYMBOL_0_CLK_SRC] = &gcc_ufs_phy_tx_symbol_0_clk_src.clkr,
+ };
+ 
+ static struct gdsc *gcc_x1e80100_gdscs[] = {
+--- a/arch/arm64/boot/dts/qcom/x1e80100.dtsi	2026-01-14 00:00:12.514792440 +0100
++++ b/arch/arm64/boot/dts/qcom/x1e80100.dtsi	2026-01-14 00:00:40.950875634 +0100
+@@ -808,7 +808,10 @@
+ 				 <0>,
+ 				 <&usb_1_ss0_qmpphy QMP_USB43DP_USB3_PIPE_CLK>,
+ 				 <&usb_1_ss1_qmpphy QMP_USB43DP_USB3_PIPE_CLK>,
+-				 <&usb_1_ss2_qmpphy QMP_USB43DP_USB3_PIPE_CLK>;
++				 <&usb_1_ss2_qmpphy QMP_USB43DP_USB3_PIPE_CLK>,
++				 <&ufs_mem_phy 0>,
++				 <&ufs_mem_phy 1>,
++				 <&ufs_mem_phy 2>;
+ 
+ 			power-domains = <&rpmhpd RPMHPD_CX>;
+ 			#clock-cells = <1>;
+@@ -3761,6 +3764,122 @@
+ 			status = "disabled";
  		};
  
 +		ufs_mem_phy: phy@1d80000 {
-+			compatible = "qcom,x1e80100-qmp-ufs-phy", "qcom,sm8550-qmp-ufs-phy";
-+			reg = <0 0x01d80000 0 0x2000>;
++			compatible = "qcom,x1e80100-qmp-ufs-phy",
++				     "qcom,sm8550-qmp-ufs-phy";
++			reg = <0x0 0x01d80000 0x0 0x2000>;
 +
 +			clocks = <&rpmhcc RPMH_CXO_CLK>,
-+				 <&gcc GCC_UFS_PHY_PHY_AUX_CLK>;
++				 <&gcc GCC_UFS_PHY_PHY_AUX_CLK>,
++				 <&tcsr TCSR_UFS_PHY_CLKREF_EN>;
++
 +			clock-names = "ref",
 +				      "ref_aux",
 +				      "qref";
-+
-+			power-domains = <&gcc GCC_UFS_PHY_GDSC>;
-+
 +			resets = <&ufs_mem_hc 0>;
 +			reset-names = "ufsphy";
++
++			power-domains = <&gcc GCC_UFS_MEM_PHY_GDSC>;
++
++			#clock-cells = <1>;
 +			#phy-cells = <0>;
++
 +			status = "disabled";
 +		};
 +
 +		ufs_mem_hc: ufshc@1d84000 {
-+			compatible = "qcom,x1e80100-ufshc", "qcom,sm8550-ufshc", "qcom,ufshc",
-+				     "jedec,ufs-2.0";
++			compatible = "qcom,x1e80100-ufshc",
++				     "qcom,sm8550-ufshc",
++				     "qcom,ufshc";
 +			reg = <0x0 0x01d84000 0x0 0x3000>;
++
 +			interrupts = <GIC_SPI 265 IRQ_TYPE_LEVEL_HIGH>;
-+			phys = <&ufs_mem_phy>;
-+			phy-names = "ufsphy";
-+			lanes-per-direction = <2>;
-+			#reset-cells = <1>;
-+			resets = <&gcc GCC_UFS_PHY_BCR>;
-+			reset-gpios = <&tlmm 238 1>;
-+			reset-names = "rst";
 +
-+			power-domains = <&gcc GCC_UFS_PHY_GDSC>;
-+			required-opps = <&rpmhpd_opp_nom>;
-+
-+			iommus = <&apps_smmu 0x1a0 0x0>;
-+			dma-coherent;
-+
-+			interconnects = <&aggre1_noc MASTER_UFS_MEM QCOM_ICC_TAG_ALWAYS
-+					 &mc_virt SLAVE_EBI1 QCOM_ICC_TAG_ALWAYS>,
-+					<&gem_noc MASTER_APPSS_PROC QCOM_ICC_TAG_ACTIVE_ONLY
-+					 &config_noc SLAVE_UFS_MEM_CFG QCOM_ICC_TAG_ACTIVE_ONLY>;
-+
-+			interconnect-names = "ufs-ddr", "cpu-ufs";
++			clocks = <&gcc GCC_UFS_PHY_AXI_CLK>,
++				 <&gcc GCC_AGGRE_UFS_PHY_AXI_CLK>,
++				 <&gcc GCC_UFS_PHY_AHB_CLK>,
++				 <&gcc GCC_UFS_PHY_UNIPRO_CORE_CLK>,
++				 <&rpmhcc RPMH_LN_BB_CLK3>,
++				 <&gcc GCC_UFS_PHY_TX_SYMBOL_0_CLK>,
++				 <&gcc GCC_UFS_PHY_RX_SYMBOL_0_CLK>,
++				 <&gcc GCC_UFS_PHY_RX_SYMBOL_1_CLK>;
 +			clock-names = "core_clk",
 +				      "bus_aggr_clk",
 +				      "iface_clk",
@@ -55,19 +213,33 @@
 +				      "tx_lane0_sync_clk",
 +				      "rx_lane0_sync_clk",
 +				      "rx_lane1_sync_clk";
-+			clocks = <&gcc GCC_UFS_PHY_AXI_CLK>,
-+				 <&gcc GCC_AGGRE_UFS_PHY_AXI_CLK>,
-+				 <&gcc GCC_UFS_PHY_AHB_CLK>,
-+				 <&gcc GCC_UFS_PHY_UNIPRO_CORE_CLK>,
-+				 <&rpmhcc RPMH_CXO_CLK>,
-+				 <&gcc GCC_UFS_PHY_TX_SYMBOL_0_CLK>,
-+				 <&gcc GCC_UFS_PHY_RX_SYMBOL_0_CLK>,
-+				 <&gcc GCC_UFS_PHY_RX_SYMBOL_1_CLK>;
-+			qcom,ice = <&ice>;
-+
-+			status = "disabled";
 +
 +			operating-points-v2 = <&ufs_opp_table>;
++
++			resets = <&gcc GCC_UFS_PHY_BCR>;
++			reset-names = "rst";
++
++			interconnects = <&aggre1_noc MASTER_UFS_MEM QCOM_ICC_TAG_ALWAYS
++					 &mc_virt SLAVE_EBI1 QCOM_ICC_TAG_ALWAYS>,
++					<&gem_noc MASTER_APPSS_PROC QCOM_ICC_TAG_ACTIVE_ONLY
++					 &config_noc SLAVE_UFS_MEM_CFG QCOM_ICC_TAG_ACTIVE_ONLY>;
++			interconnect-names = "ufs-ddr",
++					     "cpu-ufs";
++
++			power-domains = <&gcc GCC_UFS_PHY_GDSC>;
++			required-opps = <&rpmhpd_opp_nom>;
++
++			iommus = <&apps_smmu 0x1a0 0>;
++			dma-coherent;
++
++			lanes-per-direction = <2>;
++
++			phys = <&ufs_mem_phy>;
++			phy-names = "ufsphy";
++
++			#reset-cells = <1>;
++
++			status = "disabled";
 +
 +			ufs_opp_table: opp-table {
 +				compatible = "operating-points-v2";
@@ -77,7 +249,7 @@
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <75000000>,
-+						 /bits/ 64 <75000000>,
++						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>;
@@ -89,19 +261,19 @@
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <150000000>,
-+						 /bits/ 64 <150000000>,
++						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>;
 +					required-opps = <&rpmhpd_opp_svs>;
 +				};
 +
-+				opp-403000000 {
-+					opp-hz = /bits/ 64 <403000000>,
++				opp-300000000 {
++					opp-hz = /bits/ 64 <300000000>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
-+						 /bits/ 64 <403000000>,
-+						 /bits/ 64 <403000000>,
++						 /bits/ 64 <300000000>,
++						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>,
 +						 /bits/ 64 <0>;
@@ -110,15 +282,6 @@
 +			};
 +		};
 +
-+
-+		ice: crypto@1d88000 {
-+			compatible = "qcom,x1e80100-inline-crypto-engine",
-+				     "qcom,inline-crypto-engine";
-+			reg = <0 0x01d88000 0 0x8000>;
-+
-+			clocks = <&gcc GCC_UFS_PHY_ICE_CORE_CLK>;
-+		};
-+
- 		usb_1_ss0_hsphy: phy@fd3000 {
- 			compatible = "qcom,x1e80100-snps-eusb2-phy",
- 				     "qcom,sm8550-snps-eusb2-phy";
+ 		tcsr_mutex: hwlock@1f40000 {
+ 			compatible = "qcom,tcsr-mutex";
+ 			reg = <0 0x01f40000 0 0x20000>;
