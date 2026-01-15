@@ -1,3 +1,23 @@
+--- a/cli/loader_lib.c	2026-01-12 14:00:50.000000000 +0100
++++ b/cli/loader_lib.c	2026-01-13 13:49:45.147219385 +0100
+@@ -213,7 +213,7 @@
+ // As a fix, on linux we probe the system libstdc++ to see if it is newer, and then load it if it is.
+ // Otherwise, we load the bundled one. This improves compatibility with third party dynamic libs that
+ // may depend on symbols exported by the system libstdxc++.
+-#ifdef _OS_LINUX_
++#ifdef __GLIBC__
+ #ifndef GLIBCXX_LEAST_VERSION_SYMBOL
+ #warning GLIBCXX_LEAST_VERSION_SYMBOL should always be defined in the makefile.
+ #define GLIBCXX_LEAST_VERSION_SYMBOL "GLIBCXX_a.b.c" /* Appease the linter */
+@@ -318,7 +318,7 @@
+ 
+             // First special library to be loaded is `libstdc++`; perform probing here.
+             if (special_idx == 0) {
+-#if defined(_OS_LINUX_)
++#if defined(__GLIBC__)
+                 int do_probe = 1;
+                 int probe_successful = 0;
+ 
 --- a/Make.inc	2021-11-14 16:03:00.095635920 +0100
 +++ b/Make.inc	2021-11-14 15:58:27.921347799 +0100
 @@ -42,6 +42,7 @@
@@ -232,17 +252,6 @@
  $(eval $(call symlink_system_library,DSFMT,libdSFMT))
  $(eval $(call symlink_system_library,LIBBLASTRAMPOLINE,libblastrampoline))
  $(eval $(call symlink_system_library,BLAS,$(LIBBLASNAME))) 
---- a/cli/loader_lib.c	2023-02-15 22:08:35.587726405 +0100
-+++ b/cli/loader_lib.c	2023-02-15 22:08:51.777909633 +0100
-@@ -257,7 +257,7 @@
-         // The star is there to prevent the compiler from merging constants
-         // with "\0*libstdc++.so.6", which we string replace inside the .so during
-         // make install.
--        void *handle = dlopen("libstdc++.so.6\0*", RTLD_LAZY);
-+        void *handle = dlopen("libc++.so.1\0*", RTLD_LAZY);
-         if (!handle) {
-             _exit(0);
-         }
 --- a/Makefile	2023-02-17 15:31:46.628667916 +0100
 +++ b/Makefile	2023-02-17 15:32:40.746240004 +0100
 @@ -210,7 +210,7 @@
