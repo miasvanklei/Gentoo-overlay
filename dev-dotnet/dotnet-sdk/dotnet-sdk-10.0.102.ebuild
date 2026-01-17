@@ -12,7 +12,7 @@ else
 	SDK_FULL_PV="${SDK_PV}"
 fi
 
-DOTNET_RUNTIME_PV="${PV/.101/.1}"
+DOTNET_RUNTIME_PV="${PV/.10/.}"
 SDK="${PN}-${SDK_FULL_PV}-linux-musl"
 
 inherit dotnet-utils

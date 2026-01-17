@@ -44,7 +44,6 @@ RDEPEND="
 
 PATCHES=(
 	"${FILESDIR}"/fix-and-cleanup-set-stacksize-9.0.patch
-	"${FILESDIR}"/clang-21-build-fixes.patch
 	"${FILESDIR}"/remove-native-build-type-logic.patch
 	"${FILESDIR}"/remove-coreclr-build-type-logic-9.0.patch
 )
