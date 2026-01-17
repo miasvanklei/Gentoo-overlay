@@ -6,9 +6,9 @@
  dtb-$(CONFIG_ARCH_QCOM)	+= x1p42100-lenovo-thinkbook-16.dtb x1p42100-lenovo-thinkbook-16-el2.dtb
 +x1p42100-microsoft-sp12-el2-dtbs	:= x1p42100-microsoft-sp12.dtb x1-el2.dtbo
 +dtb-$(CONFIG_ARCH_QCOM)	+= x1p42100-microsoft-sp12.dtb x1p42100-microsoft-sp12-el2.dtb
---- /dev/null	2025-12-16 22:01:38.357812290 +0100
-+++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2025-12-16 21:53:33.172178915 +0100
-@@ -0,0 +1,1214 @@
+--- /dev/null	2026-01-14 22:39:26.195668953 +0100
++++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-01-17 16:52:26.429504116 +0100
+@@ -0,0 +1,1345 @@
 +// SPDX-License-Identifier: BSD-3-Clause
 +/*
 + * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
@@ -22,6 +22,7 @@
 +#include <dt-bindings/input/gpio-keys.h>
 +#include <dt-bindings/input/input.h>
 +#include <dt-bindings/leds/common.h>
++#include <dt-bindings/phy/phy.h>
 +#include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
 +#include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 +#include <dt-bindings/clock/qcom,x1e80100-tcsr.h>
@@ -87,14 +88,11 @@
 +		pinctrl-names = "default";
 +		pinctrl-0 = <&cam_indicator_en>;
 +
-+		led-camera-indicator {
-+			label = "white:camera-indicator";
++		privacy_led: privacy-led {
 +			function = LED_FUNCTION_INDICATOR;
 +			color = <LED_COLOR_ID_WHITE>;
 +			gpios = <&tlmm 225 GPIO_ACTIVE_HIGH>;
-+			linux,default-trigger = "none";
 +			default-state = "off";
-+			/* Reuse as a panic indicator until we get a "camera on" trigger */
 +			panic-indicator;
 +		};
 +	};
@@ -745,6 +743,123 @@
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 +		};
 +	};
++
++	regulators-8 {
++		compatible = "qcom,pm8010-rpmh-regulators";
++		qcom,pmic-id = "m";
++
++		vdd-l1-l2-supply = <&vreg_s5j_1p2>;
++		vdd-l3-l4-supply = <&vreg_s4c_1p8>;
++		vdd-l7-supply = <&vreg_bob1>;
++
++		vreg_l1m_1p2: ldo1 {
++			regulator-name = "vreg_l1m_1p2";
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1260000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l2m_1p2: ldo2 {
++			regulator-name = "vreg_l2m_1p2";
++			regulator-min-microvolt = <1200000>;
++			regulator-max-microvolt = <1260000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l3m_1p8: ldo3 {
++			regulator-name = "vreg_l3m_1p8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1900000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l4m_1p8: ldo4 {
++			regulator-name = "vreg_l4m_1p8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1900000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l5m_2p8: ldo5 {
++			regulator-name = "vreg_l5m_2p9";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <3072000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
++		vreg_l7m_2p8: ldo7 {
++			regulator-name = "vreg_l7m_2p9";
++			regulator-min-microvolt = <2800000>;
++			regulator-max-microvolt = <3072000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++	};
++};
++
++&camss {
++	status = "okay";
++
++	ports {
++		/*
++		 * port0 => csiphy0
++		 * port1 => csiphy1
++		 * port2 => csiphy2
++		 * port3 => csiphy4
++		 */
++		port@3 {
++			csiphy4_ep: endpoint@4 {
++				reg = <4>;
++				clock-lanes = <7>;
++				data-lanes = <0 1>;
++				remote-endpoint = <&ov02c10_ep>;
++			};
++		};
++	};
++};
++
++&cci1 {
++	status = "okay";
++};
++
++&cci1_i2c1 {
++	camera@36 {
++		compatible = "ovti,ov02c10";
++		reg = <0x36>;
++
++		reset-gpios = <&tlmm 237 GPIO_ACTIVE_LOW>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&cam_rgb_default>;
++
++		leds = <&privacy_led>;
++		led-names = "privacy";
++
++		clocks = <&camcc CAM_CC_MCLK4_CLK>;
++		assigned-clocks = <&camcc CAM_CC_MCLK4_CLK>;
++		assigned-clock-rates = <12000000>;
++
++		orientation = <0>; /* front facing */
++		rotation = <180>;
++
++		avdd-supply = <&vreg_l7b_2p8>;
++		dvdd-supply = <&vreg_l7b_2p8>;
++		dovdd-supply = <&vreg_l3m_1p8>;
++
++		port {
++			ov02c10_ep: endpoint {
++				data-lanes = <1 2>;
++				link-frequencies = /bits/ 64 <400000000>;
++				remote-endpoint = <&csiphy4_ep>;
++			};
++		};
++	};
++};
++
++&csiphy4 {
++	vdda-0p8-supply = <&vreg_l2c_0p8>;
++	vdda-1p2-supply = <&vreg_l1c_1p2>;
++	phy-type = <PHY_TYPE_DPHY>;
++
++	status = "okay";
 +};
 +
 +&gpu {
@@ -1052,6 +1167,22 @@
 +		pins = "gpio91";
 +		function = "gpio";
 +		bias-disable;
++	};
++
++	cam_rgb_default: cam-rgb-default-state {
++		mclk-pins {
++			pins = "gpio100";
++			function = "cam_aon";
++			drive-strength = <16>;
++			bias-disable;
++		};
++
++		reset-n-pins {
++			pins = "gpio237";
++			function = "gpio";
++			drive-strength = <2>;
++			bias-disable;
++		};
 +	};
 +
 +	wcn_wlan_bt_en: wcn-wlan-bt-en-state {
