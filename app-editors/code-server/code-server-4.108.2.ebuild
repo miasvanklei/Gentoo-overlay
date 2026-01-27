@@ -22,24 +22,16 @@ SRC_URI="
 	https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-amd64.tar.gz
 "
 
-REBUILD_VSCODE_BINMODS=(
+COMPILE_VSCODE_BINMODS=(
 	native-watchdog
 	node-pty
 	@vscode/spdlog
-)
-
-COMPILE_VSCODE_BINMODS=(
-	"${REBUILD_VSCODE_BINMODS[@]}"
 	@vscode/watcher
-)
-
-ASSEMBLE_VSCODE_BINMODS=(
-	"${COMPILE_VSCODE_BINMODS[@]}"
 	argon2
 )
 
 CLEANUP_VSCODE_BINMODS=(
-	"${REBUILD_VSCODE_BINMODS[@]}"
+	"${COMPILE_VSCODE_BINMODS[@]}"
 	@vscode/deviceid
 	@vscode/windows-process-tree
 	@vscode/windows-registry
@@ -68,24 +60,16 @@ src_prepare() {
 	# remove binaries from modules
 	cleanup_binmods
 
-	# copy modules
+	# prepare vscode modules for building
 	for binmod in "${COMPILE_VSCODE_BINMODS[@]}"; do
 		pkgdir="${WORKDIR}/$(package_dir ${binmod})"
 		cp -r "$(get_binmod_loc ${binmod})" "${pkgdir}" || die
-	done
-
-	cp -r "${S}/node_modules/argon2" "${WORKDIR}/argon2"
-
-	# prepare vscode modules for building
-	for binmod in "${ASSEMBLE_VSCODE_BINMODS[@]}"; do
-		pkgdir="${WORKDIR}/$(package_dir ${binmod})"
 		mkdir -p "${pkgdir}/node_modules" || die
 		ln -s "$(get_binmod_loc node-addon-api)" \
 			"${pkgdir}/node_modules/node-addon-api" || die
 		ln -s "${WORKDIR}/nan-${NAN_V}" \
 			"${pkgdir}/node_modules/nan" || die
 	done
-
 
 	# not needed
 	rm "${S}"/postinstall.sh || die
@@ -123,12 +107,6 @@ src_compile() {
 		cp "${WORKDIR}/$(package_dir ${binmod})/build/Release/"*.node ${install_path} || die
 	done
 
-	# argon2
-	einfo "rebuilding argon2..."
-	enodepregyp rebuild -C "${WORKDIR}/$(package_dir argon2)"
-	cp "${WORKDIR}/$(package_dir argon2)/lib/binding/napi-v3/argon2.node" \
-	"${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node"
-
 	increase_reconnection_grace_time
 }
 
@@ -164,10 +142,6 @@ increase_reconnection_grace_time() {
 	done
 }
 
-enodepregyp() {
-	"${S}"/node_modules/.bin/node-pre-gyp --nodedir="${BROOT}/usr/include/node" "${@}" || die
-}
-
 enodegyp() {
 	local npmdir="${BROOT}/usr/lib/node_modules/npm"
 	local nodegyp="${npmdir}/node_modules/node-gyp/bin/node-gyp.js"
@@ -185,7 +159,11 @@ package_dir() {
 
 # Some binmods have path that is different than usual
 get_binmod_loc() {
-	echo "${S}/lib/vscode/node_modules/${1}"
+	local binmod_path="${S}/lib/vscode/node_modules"
+	if [[ "$1" == "argon2" ]]; then
+		binmod_path="${S}/node_modules"
+	fi
+	echo "${binmod_path}/${1}"
 }
 
 # return and create binmod release path
@@ -206,10 +184,8 @@ cleanup_binmods() {
 
 	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg || die "failed to remove bundled ripgrep"
 
-	# remove argon2 && watcher
-	rm -r "$(get_binmod_loc @vscode/watcher/build/Release/obj.target)" || die
-	rm -r "${S}/node_modules/argon2/lib/binding/napi-v3/argon2.node" || die
-	rm -r "${S}/node_modules/argon2/build-tmp-napi-v3" || die
+	# argon2 has prebuilds
+	rm -r "${S}/node_modules/argon2/prebuilds" || die
 
 	# remove microsoft authentication: not opensource, depends on webkitgtk, only available for x86_64
 	local extensiondistdir="${S}/lib/vscode/extensions/microsoft-authentication/dist"
