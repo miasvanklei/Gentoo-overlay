@@ -12,7 +12,6 @@ DESCRIPTION="High-performance programming language for technical computing"
 HOMEPAGE="https://julialang.org/"
 SRC_URI="https://github.com/JuliaLang/julia/archive/refs/tags/v${MY_PV}.tar.gz -> ${P}.tar.gz"
 
-
 # correct versions for stdlibs are in stdlib/{package_name}.version
 # updated versions can be found by running find_dependencies.sh in ${FILES}
 # for everything else, run with network-sandbox and wait for the crash
@@ -22,7 +21,7 @@ STDLIBS=(
 	"JuliaIO ArgTools.jl 89d19599208c02bfa9609d4578ab72eabe6e8eee"
 	"JuliaData DelimitedFiles.jl aac8c59e58cbf961fa15baf4d866901d9d1e6980"
 	"JuliaLang Distributed.jl 661112ef29b8d371b8612b94a629c0bbcf3d36f7"
-	"JuliaLang Downloads.jl 4e20d029c723199c0b8ea0e2418ff240d25ddaef"
+	"JuliaLang Downloads.jl f72cd4d87b424fc48e1137c1fd1fbcec18f49371"
 	"julialang JuliaSyntaxHighlighting.jl 2817dbaba2a4abaad91a5ad754558840d95ccf2e"
 	"JuliaPackaging LazyArtifacts.jl e4cfc39598c238f75bdfdbdb3f82c9329a5af59c"
 	"JuliaWeb LibCURL.jl 9ea5c5d6f5b88615d9fe23379b7f951787b99fd3"
@@ -30,11 +29,11 @@ STDLIBS=(
 	"JuliaLang NetworkOptions.jl 46e14ef20739c8011b105c339146062cd0e2938c"
 	"JuliaLang Pkg.jl 4f9884fdb867f2c928ba43dc41da5f150aaec4ab"
 	"JuliaCrypto SHA.jl 876bc0400f9a457eb2736388fc3d0fbe9460fc7d"
-	"JuliaSparse SparseArrays.jl 26c80c8b45dc2dca92788332a40a99b6c360d05a"
+	"JuliaSparse SparseArrays.jl 6b7e9ef30624f25d97bce047ad781a25bebe5551"
 	"JuliaStats Statistics.jl 22dee82f9824d6045e87aa4b97e1d64fe6f01d8d"
-	"JuliaLang StyledStrings.jl 68bf7b1f83f334391dc05fda34f48267e04e2bd0"
+	"JuliaLang StyledStrings.jl 24cd74a309a29dd0a240884c1ced9fef7f06ba64"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
-	"JuliaIO Tar.jl 9dd8ed1b5f8503804de49da9272150dcc18ca7c7"
+	"JuliaIO Tar.jl 10e4e964e372dc644c375e99c43d907067c45190"
 )
 
 # correct versions for deps are in deps/{package_name}.version
