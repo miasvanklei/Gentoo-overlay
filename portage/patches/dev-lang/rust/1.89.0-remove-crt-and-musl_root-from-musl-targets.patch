@@ -32,12 +32,12 @@
 --- a/compiler/rustc_target/src/spec/base/linux_musl.rs	2020-12-31 19:07:19.216270236 +0100
 +++ b/compiler/rustc_target/src/spec/base/linux_musl.rs	2020-12-31 19:07:53.639438587 +0100
 @@ -1,11 +1,8 @@
--use crate::spec::{LinkSelfContainedDefault, TargetOptions, base, crt_objects};
-+use crate::spec::{TargetOptions, base};
+-use crate::spec::{Env, LinkSelfContainedDefault, TargetOptions, base, crt_objects};
++use crate::spec::{Env, TargetOptions, base};
 
  pub(crate) fn opts() -> TargetOptions {
      TargetOptions {
-         env: "musl".into(),
+         env: Env::Musl,
 -        pre_link_objects_self_contained: crt_objects::pre_musl_self_contained(),
 -        post_link_objects_self_contained: crt_objects::post_musl_self_contained(),
 -        link_self_contained: LinkSelfContainedDefault::InferredForMusl,
