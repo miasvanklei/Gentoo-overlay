@@ -3,7 +3,7 @@
 
 EAPI=8
 
-LLVM_COMPAT=( 19 20 21 )
+LLVM_COMPAT=( 20 21 22 )
 MY_PV="${PV/_/-}"
 
 inherit llvm-r1 pax-utils optfeature toolchain-funcs
@@ -107,10 +107,10 @@ PATCHES=(
 	"${FILESDIR}"/fix-textrel.patch
 	"${FILESDIR}"/dont-build-twice.patch
 	"${FILESDIR}"/link-llvm-shared.patch
-	"${FILESDIR}"/llvm-21.patch
 	"${FILESDIR}"/fix-private-libdir.patch
 	"${FILESDIR}"/fix-system-zstd.patch
 	"${FILESDIR}"/patchelf-system-llvm.patch
+	"${FILESDIR}"/llvm-21_22.patch
 )
 
 pkg_setup() {
