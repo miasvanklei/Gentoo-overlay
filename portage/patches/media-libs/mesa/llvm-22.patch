@@ -1,0 +1,118 @@
+diff --git a/src/compiler/clc/clc.h b/src/compiler/clc/clc.h
+index 73588a31ad54854afc84a9cd2b8738d39326fb1a..69fb02b34103a5b9f5db073d73244a252cddddb2 100644
+--- a/src/compiler/clc/clc.h
++++ b/src/compiler/clc/clc.h
+@@ -50,9 +50,12 @@ enum clc_spirv_version {
+ };
+ 
+ struct clc_optional_features {
++   bool atomic_order_seq_cst;
++   bool atomic_scope_device;
+    bool extended_bit_ops;
+    bool fp16;
+    bool fp64;
++   bool generic_address_space;
+    bool int64;
+    bool images;
+    bool images_depth;
+diff --git a/src/compiler/clc/clc_helpers.cpp b/src/compiler/clc/clc_helpers.cpp
+index 9912f9b02566743f8c3bb7a88c9e3fc37aee116b..22528a8710df22b5e7dcde252452ed6e5e891ea8 100644
+--- a/src/compiler/clc/clc_helpers.cpp
++++ b/src/compiler/clc/clc_helpers.cpp
+@@ -28,8 +28,6 @@
+ #include <sstream>
+ #include <mutex>
+ 
+-#include "util/ralloc.h"
+-#include "util/set.h"
+ #include <llvm/ADT/ArrayRef.h>
+ #include <llvm/IR/DiagnosticPrinter.h>
+ #include <llvm/IR/DiagnosticInfo.h>
+@@ -68,7 +66,17 @@
+ #include <llvm/Support/VirtualFileSystem.h>
+ #endif
+ 
++#if LLVM_VERSION_MAJOR >= 22
++#include <clang/Options/OptionUtils.h>
++#endif
++
++/* We have to include our own headers after LLVM/clang as they seem to use
++ * `UNUSED` within enum definitions:
++ * https://github.com/llvm/llvm-project/blob/ea443eeb2ab8ed49ffb783c2025fed6629a36f10/clang/include/clang/Basic/OffloadArch.h#L19
++ */
+ #include "util/macros.h"
++#include "util/ralloc.h"
++#include "util/set.h"
+ #include "util/u_dl.h"
+ #include "glsl_types.h"
+ 
+@@ -915,7 +923,9 @@ clc_compile_to_llvm_module(LLVMContext &llvm_ctx,
+    // GetResourcePath is a way to retrieve the actual libclang resource dir based on a given binary
+    // or library.
+    auto tmp_res_path =
+-#if LLVM_VERSION_MAJOR >= 20
++#if LLVM_VERSION_MAJOR >= 22
++      clang::GetResourcesPath(std::string(clang_path));
++#elif LLVM_VERSION_MAJOR >= 20
+       Driver::GetResourcesPath(std::string(clang_path));
+ #else
+       Driver::GetResourcesPath(std::string(clang_path), CLANG_RESOURCE_DIR);
+@@ -959,6 +969,12 @@ clc_compile_to_llvm_module(LLVMContext &llvm_ctx,
+    c->getPreprocessorOpts().addMacroDef("cl_khr_expect_assume=1");
+ 
+    bool needs_opencl_c_h = false;
++   if (args->features.atomic_order_seq_cst) {
++      c->getTargetOpts().OpenCLExtensionsAsWritten.push_back("+__opencl_c_atomic_order_seq_cst");
++   }
++   if (args->features.atomic_scope_device) {
++      c->getTargetOpts().OpenCLExtensionsAsWritten.push_back("+__opencl_c_atomic_scope_device");
++   }
+    if (args->features.extended_bit_ops) {
+       c->getPreprocessorOpts().addMacroDef("cl_khr_extended_bit_ops=1");
+    }
+@@ -969,6 +985,9 @@ clc_compile_to_llvm_module(LLVMContext &llvm_ctx,
+       c->getTargetOpts().OpenCLExtensionsAsWritten.push_back("+cl_khr_fp64");
+       c->getTargetOpts().OpenCLExtensionsAsWritten.push_back("+__opencl_c_fp64");
+    }
++   if (args->features.generic_address_space) {
++      c->getTargetOpts().OpenCLExtensionsAsWritten.push_back("+__opencl_c_generic_address_space");
++   }
+    if (args->features.int64) {
+       c->getTargetOpts().OpenCLExtensionsAsWritten.push_back("+cles_khr_int64");
+       c->getTargetOpts().OpenCLExtensionsAsWritten.push_back("+__opencl_c_int64");
+diff --git a/src/compiler/clc/mesa_clc.c b/src/compiler/clc/mesa_clc.c
+index 3e6bc2808dab6645f4ea6495c98d25e9970d4efd..9bf507f26a0ef07f5cae420cc2a355ebbc250962 100644
+--- a/src/compiler/clc/mesa_clc.c
++++ b/src/compiler/clc/mesa_clc.c
+@@ -134,6 +134,11 @@ main(int argc, char **argv)
+          .args = util_dynarray_begin(&clang_args),
+          .num_args = util_dynarray_num_elements(&clang_args, char *),
+          .c_compatible = true,
++         .features = {
++            .atomic_order_seq_cst = true,
++            .atomic_scope_device = true,
++            .generic_address_space = true,
++         },
+       };
+ 
+       /* Enable all features, we don't know the target here and it is the
+diff --git a/src/compiler/nir/nir_fixup_is_exported.c b/src/compiler/nir/nir_fixup_is_exported.c
+index ed21b88481cd28b2f348797ed1301ae6ccfc0324..8d61b2e9b5935859a7850c9ce66c5958cd6a30bc 100644
+--- a/src/compiler/nir/nir_fixup_is_exported.c
++++ b/src/compiler/nir/nir_fixup_is_exported.c
+@@ -48,6 +48,15 @@ nir_fixup_is_exported(nir_shader *nir)
+    nir_foreach_function(func, nir) {
+       if (_mesa_set_search(shadowed, func->name)) {
+          func->is_exported = func->is_entrypoint;
++      } else {
++         /* Starting with LLVM-22 we don't see the wrappers anymore, so we
++          * can simply export every entrypoint.
++          *
++          * We could do an LLVM version check here, but that's going to be a
++          * mess making nir depending on LLVM in any way and this seems to work
++          * for both situations.
++          */
++         func->is_exported |= func->is_entrypoint;
+       }
+ 
+       if (func->name[0] == '_') {
