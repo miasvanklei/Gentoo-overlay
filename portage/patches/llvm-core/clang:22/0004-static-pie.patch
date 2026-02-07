@@ -1,0 +1,12 @@
+--- a/clang/lib/Driver/ToolChains/CommonArgs.cpp	2019-09-24 14:37:45.061304034 +0200
++++ b/clang/lib/Driver/ToolChains/CommonArgs.cpp	2019-09-24 14:42:05.684508084 +0200
+@@ -323,7 +323,9 @@
+ 
+ bool tools::getStaticPIE(const ArgList &Args, const ToolChain &TC) {
+-  bool HasStaticPIE = Args.hasArg(options::OPT_static_pie);
++  bool HasStaticPIE = Args.hasArg(options::OPT_static_pie) ||
++                      (Args.hasArg(options::OPT_static) &&
++                      Args.hasArg(options::OPT_pie));
+   if (HasStaticPIE && Args.hasArg(options::OPT_no_pie)) {
+     const Driver &D = TC.getDriver();
+     const llvm::opt::OptTable &Opts = D.getOpts();
