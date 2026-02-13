@@ -23,10 +23,10 @@ SRC_URI="
 "
 
 COMPILE_VSCODE_BINMODS=(
-	native-watchdog
+	@vscode/native-watchdog
 	node-pty
 	@vscode/spdlog
-	@vscode/watcher
+	@parcel/watcher
 	argon2
 )
 
@@ -186,6 +186,10 @@ cleanup_binmods() {
 
 	# argon2 has prebuilds
 	rm -r "${S}/node_modules/argon2/prebuilds" || die
+
+	# remove watcher prebuilds
+	rm -r $(get_binmod_loc @parcel/watcher-linux-x64-glibc) || die
+	rm -r $(get_binmod_loc @parcel/watcher-linux-x64-musl) || die
 
 	# remove microsoft authentication: not opensource, depends on webkitgtk, only available for x86_64
 	local extensiondistdir="${S}/lib/vscode/extensions/microsoft-authentication/dist"
