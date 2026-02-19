@@ -97,13 +97,15 @@ src_compile() {
 
 src_install() {
 	local basedir="squashfs-root/WidevineCdm"
-	insinto "/var/lib/widevine"
-	doins "${S}"/libwidevinecdm.so
-	doins ${basedir}/manifest.json
+	local widevinedir="/var/lib/widevine"
 
-	insinto "/var/lib/widevine/gmp-widevinecdm/system-installed"
-	dosym "../../manifest.json" /var/lib/widevine/gmp-widevinecdm/system-installed/manifest.json
-	dosym "../../libwidevinecdm.so" /var/lib/widevine/gmp-widevinecdm/system-installed/libwidevinecdm.so
+	insinto "${widevinedir}"
+	doins "${S}"/libwidevinecdm.so
+	doins "${basedir}"/manifest.json
+
+	insinto "${widevinedir}/gmp-widevinecdm/system-installed"
+	dosym "../../manifest.json" "${widevinedir}/gmp-widevinecdm/system-installed/manifest.json"
+	dosym "../../libwidevinecdm.so" "${widevinedir}/gmp-widevinecdm/system-installed/libwidevinecdm.so"
 
 	insinto "/usr/lib/environment.d"
 	doins "${FILESDIR}/gmpwidevine.conf"
