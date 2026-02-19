@@ -1,0 +1,49 @@
+On X1P42100 the Iris block has an extra BSE clock. Wire this clock into
+the power on/off sequence.
+
+The BSE clock is used to drive the Bin Stream Engine, which is a sub-block
+of the video codec hardware responsible for bitstream-level processing. It
+is required to be enabled separately from the core clock to ensure proper
+codec operation.
+
+Signed-off-by: Wangao Wang <wangao.wang@oss.qualcomm.com>
+---
+ drivers/media/platform/qcom/iris/iris_vpu_common.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/qcom/iris/iris_vpu_common.c b/drivers/media/platform/qcom/iris/iris_vpu_common.c
+index 548e5f1727fdb7543f76a1871f17257fa2360733..8f5cfad87b42f52e49fc25bc0b43c7e1a0ccc5e1 100644
+--- a/drivers/media/platform/qcom/iris/iris_vpu_common.c
++++ b/drivers/media/platform/qcom/iris/iris_vpu_common.c
+@@ -226,6 +226,7 @@ void iris_vpu_power_off_hw(struct iris_core *core)
+ 	iris_disable_power_domains(core, core->pmdomain_tbl->pd_devs[IRIS_HW_POWER_DOMAIN]);
+ 	iris_disable_unprepare_clock(core, IRIS_HW_AHB_CLK);
+ 	iris_disable_unprepare_clock(core, IRIS_HW_CLK);
++	iris_disable_unprepare_clock(core, IRIS_BSE_HW_CLK);
+ }
+ 
+ void iris_vpu_power_off(struct iris_core *core)
+@@ -284,9 +285,13 @@ int iris_vpu_power_on_hw(struct iris_core *core)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = iris_prepare_enable_clock(core, IRIS_BSE_HW_CLK);
++	if (ret && ret != -ENOENT)
++		goto err_disable_power;
++
+ 	ret = iris_prepare_enable_clock(core, IRIS_HW_CLK);
+ 	if (ret)
+-		goto err_disable_power;
++		goto err_disable_bse_hw_clock;
+ 
+ 	ret = iris_prepare_enable_clock(core, IRIS_HW_AHB_CLK);
+ 	if (ret && ret != -ENOENT)
+@@ -302,6 +307,8 @@ int iris_vpu_power_on_hw(struct iris_core *core)
+ 	iris_disable_unprepare_clock(core, IRIS_HW_AHB_CLK);
+ err_disable_hw_clock:
+ 	iris_disable_unprepare_clock(core, IRIS_HW_CLK);
++err_disable_bse_hw_clock:
++	iris_disable_unprepare_clock(core, IRIS_BSE_HW_CLK);
+ err_disable_power:
+ 	iris_disable_power_domains(core, core->pmdomain_tbl->pd_devs[IRIS_HW_POWER_DOMAIN]);
+ 

@@ -1,0 +1,42 @@
+According to 4.5.1.5 of the M2M stateful decoder UAPI documentation,
+providing the width and the height to S_FMT is "required only if it
+cannot be parsed from the stream", otherwise they can be left as 0
+and the S_FMT implementation is expected to return a valid placeholder
+resolution that would let REQBUFS succeed.
+
+iris was missing the fallback, so clients like rpi-ffmpeg wouldn't work.
+Fix by adding an explicit fallback to defaults.
+
+Fixes: b530b95de22c ("media: iris: implement s_fmt, g_fmt and try_fmt ioctls")
+Link: https://github.com/jc-kynesim/rpi-ffmpeg/issues/103
+Reviewed-by: Dikshita Agarwal <dikshita.agarwal@oss.qualcomm.com>
+Signed-off-by: Val Packett <val@packett.cool>
+---
+v2:
+  - Added small comment as requested
+  - Pulled an R-b (that depended on the comment)
+  - Slightly reworded commit message
+v1: https://lore.kernel.org/all/20251012235330.20897-1-val@packett.cool/
+
+ drivers/media/platform/qcom/iris/iris_vdec.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/media/platform/qcom/iris/iris_vdec.c b/drivers/media/platform/qcom/iris/iris_vdec.c
+index 69ffe52590d3..227e4e5a326f 100644
+--- a/drivers/media/platform/qcom/iris/iris_vdec.c
++++ b/drivers/media/platform/qcom/iris/iris_vdec.c
+@@ -231,6 +231,14 @@ int iris_vdec_s_fmt(struct iris_inst *inst, struct v4l2_format *f)
+ 	if (vb2_is_busy(q))
+ 		return -EBUSY;
+ 
++	/* Width and height are optional, so fall back to a valid placeholder
++	 * resolution until the real one is decoded from the bitstream.
++	 */
++	if (f->fmt.pix_mp.width == 0 && f->fmt.pix_mp.height == 0) {
++		f->fmt.pix_mp.width = DEFAULT_WIDTH;
++		f->fmt.pix_mp.height = DEFAULT_HEIGHT;
++	}
++
+ 	iris_vdec_try_fmt(inst, f);
+ 
+ 	switch (f->type) {

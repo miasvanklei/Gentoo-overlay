@@ -1,0 +1,59 @@
+X1P42100 video clock controller has most clocks same as SM8650,
+but it also has few additional clocks and resets. Add device
+tree bindings for the video clock controller on Qualcomm
+X1P42100 platform by defining these additional clocks and resets
+on top of SM8650.
+
+Signed-off-by: Jagadeesh Kona <jagadeesh.kona@oss.qualcomm.com>
+---
+ .../bindings/clock/qcom,sm8450-videocc.yaml         |  2 ++
+ include/dt-bindings/clock/qcom,x1p42100-videocc.h   | 21 +++++++++++++++++++++
+ 2 files changed, 23 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml b/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml
+index e6beebd6a36ee1ce213a816f60df8a76fa5c44d6..e8bf3fcad3fabc4f3b7e8e692c6c634d1aed9605 100644
+--- a/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml
++++ b/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml
+@@ -30,6 +30,7 @@ properties:
+       - qcom,sm8650-videocc
+       - qcom,sm8750-videocc
+       - qcom,x1e80100-videocc
++      - qcom,x1p42100-videocc
+ 
+   clocks:
+     items:
+@@ -67,6 +68,7 @@ allOf:
+               - qcom,sm8450-videocc
+               - qcom,sm8550-videocc
+               - qcom,sm8750-videocc
++              - qcom,x1p42100-videocc
+     then:
+       required:
+         - required-opps
+diff --git a/include/dt-bindings/clock/qcom,x1p42100-videocc.h b/include/dt-bindings/clock/qcom,x1p42100-videocc.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..eb6c9b7264f8cbced7cfa0001903238ffa168431
+--- /dev/null
++++ b/include/dt-bindings/clock/qcom,x1p42100-videocc.h
+@@ -0,0 +1,21 @@
++/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
++/*
++ * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
++ */
++
++#ifndef _DT_BINDINGS_CLK_QCOM_VIDEO_CC_X1P42100_H
++#define _DT_BINDINGS_CLK_QCOM_VIDEO_CC_X1P42100_H
++
++#include "qcom,sm8650-videocc.h"
++
++/* X1P42100 introduces below new clocks and resets compared to SM8650 */
++
++/* VIDEO_CC clocks */
++#define VIDEO_CC_MVS0_BSE_CLK					17
++#define VIDEO_CC_MVS0_BSE_CLK_SRC				18
++#define VIDEO_CC_MVS0_BSE_DIV4_DIV_CLK_SRC			19
++
++/* VIDEO_CC resets */
++#define VIDEO_CC_MVS0_BSE_BCR					8
++
++#endif

@@ -1,0 +1,179 @@
+vpu4 needs an additional configuration with respect to CP regions. Make
+the CP configuration as array such that the multiple configuration can be
+managed per platform.
+
+Reviewed-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
+Reviewed-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
+Co-developed-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
+Signed-off-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
+Signed-off-by: Vikash Garodia <vikash.garodia@oss.qualcomm.com>
+Reviewed-by: Dikshita Agarwal <dikshita.agarwal@oss.qualcomm.com>
+---
+ drivers/media/platform/qcom/iris/iris_firmware.c   | 23 ++++++++++++---------
+ .../platform/qcom/iris/iris_platform_common.h      |  3 ++-
+ .../media/platform/qcom/iris/iris_platform_gen1.c  | 18 +++++++++-------
+ .../media/platform/qcom/iris/iris_platform_gen2.c  | 24 ++++++++++++++--------
+ 4 files changed, 41 insertions(+), 27 deletions(-)
+
+diff --git a/drivers/media/platform/qcom/iris/iris_firmware.c b/drivers/media/platform/qcom/iris/iris_firmware.c
+index 679444327ed73a40c5cacd36f4156fc94c9ca45f..5f408024e967fd21ade66cc3fa377d8507f9002e 100644
+--- a/drivers/media/platform/qcom/iris/iris_firmware.c
++++ b/drivers/media/platform/qcom/iris/iris_firmware.c
+@@ -64,9 +64,9 @@ static int iris_load_fw_to_memory(struct iris_core *core, const char *fw_name)
+ 
+ int iris_fw_load(struct iris_core *core)
+ {
+-	struct tz_cp_config *cp_config = core->iris_platform_data->tz_cp_config_data;
++	const struct tz_cp_config *cp_config;
+ 	const char *fwpath = NULL;
+-	int ret;
++	int i, ret;
+ 
+ 	ret = of_property_read_string_index(core->dev->of_node, "firmware-name", 0,
+ 					    &fwpath);
+@@ -85,14 +85,17 @@ int iris_fw_load(struct iris_core *core)
+ 		return ret;
+ 	}
+ 
+-	ret = qcom_scm_mem_protect_video_var(cp_config->cp_start,
+-					     cp_config->cp_size,
+-					     cp_config->cp_nonpixel_start,
+-					     cp_config->cp_nonpixel_size);
+-	if (ret) {
+-		dev_err(core->dev, "protect memory failed\n");
+-		qcom_scm_pas_shutdown(core->iris_platform_data->pas_id);
+-		return ret;
++	for (i = 0; i < core->iris_platform_data->tz_cp_config_data_size; i++) {
++		cp_config = &core->iris_platform_data->tz_cp_config_data[i];
++		ret = qcom_scm_mem_protect_video_var(cp_config->cp_start,
++						     cp_config->cp_size,
++						     cp_config->cp_nonpixel_start,
++						     cp_config->cp_nonpixel_size);
++		if (ret) {
++			dev_err(core->dev, "qcom_scm_mem_protect_video_var failed: %d\n", ret);
++			qcom_scm_pas_shutdown(core->iris_platform_data->pas_id);
++			return ret;
++		}
+ 	}
+ 
+ 	return ret;
+diff --git a/drivers/media/platform/qcom/iris/iris_platform_common.h b/drivers/media/platform/qcom/iris/iris_platform_common.h
+index f63fb58b2fa87d31407be0f14524c963edd85d68..29900c3ea9b9ebbab614c804a249b08ba6001494 100644
+--- a/drivers/media/platform/qcom/iris/iris_platform_common.h
++++ b/drivers/media/platform/qcom/iris/iris_platform_common.h
+@@ -223,7 +223,8 @@ struct iris_platform_data {
+ 	u32 inst_fw_caps_dec_size;
+ 	const struct platform_inst_fw_cap *inst_fw_caps_enc;
+ 	u32 inst_fw_caps_enc_size;
+-	struct tz_cp_config *tz_cp_config_data;
++	const struct tz_cp_config *tz_cp_config_data;
++	u32 tz_cp_config_data_size;
+ 	u32 core_arch;
+ 	u32 hw_response_timeout;
+ 	struct ubwc_config_data *ubwc_config;
+diff --git a/drivers/media/platform/qcom/iris/iris_platform_gen1.c b/drivers/media/platform/qcom/iris/iris_platform_gen1.c
+index 6092667687bfe34a52f3ec4865f99eddeea435a8..d1dda98271fb7ecdc396fe1a2dfda1b73720dec8 100644
+--- a/drivers/media/platform/qcom/iris/iris_platform_gen1.c
++++ b/drivers/media/platform/qcom/iris/iris_platform_gen1.c
+@@ -278,11 +278,13 @@ static const char * const sm8250_opp_clk_table[] = {
+ 	NULL,
+ };
+ 
+-static struct tz_cp_config tz_cp_config_sm8250 = {
+-	.cp_start = 0,
+-	.cp_size = 0x25800000,
+-	.cp_nonpixel_start = 0x01000000,
+-	.cp_nonpixel_size = 0x24800000,
++static const struct tz_cp_config tz_cp_config_sm8250[] = {
++	{
++		.cp_start = 0,
++		.cp_size = 0x25800000,
++		.cp_nonpixel_start = 0x01000000,
++		.cp_nonpixel_size = 0x24800000,
++	},
+ };
+ 
+ static const u32 sm8250_vdec_input_config_param_default[] = {
+@@ -348,7 +350,8 @@ const struct iris_platform_data sm8250_data = {
+ 	.inst_fw_caps_dec_size = ARRAY_SIZE(inst_fw_cap_sm8250_dec),
+ 	.inst_fw_caps_enc = inst_fw_cap_sm8250_enc,
+ 	.inst_fw_caps_enc_size = ARRAY_SIZE(inst_fw_cap_sm8250_enc),
+-	.tz_cp_config_data = &tz_cp_config_sm8250,
++	.tz_cp_config_data = tz_cp_config_sm8250,
++	.tz_cp_config_data_size = ARRAY_SIZE(tz_cp_config_sm8250),
+ 	.hw_response_timeout = HW_RESPONSE_TIMEOUT_VALUE,
+ 	.num_vpp_pipe = 4,
+ 	.max_session_count = 16,
+@@ -398,7 +401,8 @@ const struct iris_platform_data sc7280_data = {
+ 	.inst_fw_caps_dec_size = ARRAY_SIZE(inst_fw_cap_sm8250_dec),
+ 	.inst_fw_caps_enc = inst_fw_cap_sm8250_enc,
+ 	.inst_fw_caps_enc_size = ARRAY_SIZE(inst_fw_cap_sm8250_enc),
+-	.tz_cp_config_data = &tz_cp_config_sm8250,
++	.tz_cp_config_data = tz_cp_config_sm8250,
++	.tz_cp_config_data_size = ARRAY_SIZE(tz_cp_config_sm8250),
+ 	.hw_response_timeout = HW_RESPONSE_TIMEOUT_VALUE,
+ 	.num_vpp_pipe = 1,
+ 	.no_aon = true,
+diff --git a/drivers/media/platform/qcom/iris/iris_platform_gen2.c b/drivers/media/platform/qcom/iris/iris_platform_gen2.c
+index 65860e3f43700ddb70eba617d78971c47945d008..38734293d811cd5a12244797dd0cfcd95e3fb311 100644
+--- a/drivers/media/platform/qcom/iris/iris_platform_gen2.c
++++ b/drivers/media/platform/qcom/iris/iris_platform_gen2.c
+@@ -646,11 +646,13 @@ static struct ubwc_config_data ubwc_config_sm8550 = {
+ 	.bank_spreading = 1,
+ };
+ 
+-static struct tz_cp_config tz_cp_config_sm8550 = {
+-	.cp_start = 0,
+-	.cp_size = 0x25800000,
+-	.cp_nonpixel_start = 0x01000000,
+-	.cp_nonpixel_size = 0x24800000,
++static const struct tz_cp_config tz_cp_config_sm8550[] = {
++	{
++		.cp_start = 0,
++		.cp_size = 0x25800000,
++		.cp_nonpixel_start = 0x01000000,
++		.cp_nonpixel_size = 0x24800000,
++	},
+ };
+ 
+ static const u32 sm8550_vdec_input_config_params_default[] = {
+@@ -770,7 +772,8 @@ const struct iris_platform_data sm8550_data = {
+ 	.inst_fw_caps_dec_size = ARRAY_SIZE(inst_fw_cap_sm8550_dec),
+ 	.inst_fw_caps_enc = inst_fw_cap_sm8550_enc,
+ 	.inst_fw_caps_enc_size = ARRAY_SIZE(inst_fw_cap_sm8550_enc),
+-	.tz_cp_config_data = &tz_cp_config_sm8550,
++	.tz_cp_config_data = tz_cp_config_sm8550,
++	.tz_cp_config_data_size = ARRAY_SIZE(tz_cp_config_sm8550),
+ 	.core_arch = VIDEO_ARCH_LX,
+ 	.hw_response_timeout = HW_RESPONSE_TIMEOUT_VALUE,
+ 	.ubwc_config = &ubwc_config_sm8550,
+@@ -863,7 +866,8 @@ const struct iris_platform_data sm8650_data = {
+ 	.inst_fw_caps_dec_size = ARRAY_SIZE(inst_fw_cap_sm8550_dec),
+ 	.inst_fw_caps_enc = inst_fw_cap_sm8550_enc,
+ 	.inst_fw_caps_enc_size = ARRAY_SIZE(inst_fw_cap_sm8550_enc),
+-	.tz_cp_config_data = &tz_cp_config_sm8550,
++	.tz_cp_config_data = tz_cp_config_sm8550,
++	.tz_cp_config_data_size = ARRAY_SIZE(tz_cp_config_sm8550),
+ 	.core_arch = VIDEO_ARCH_LX,
+ 	.hw_response_timeout = HW_RESPONSE_TIMEOUT_VALUE,
+ 	.ubwc_config = &ubwc_config_sm8550,
+@@ -946,7 +950,8 @@ const struct iris_platform_data sm8750_data = {
+ 	.inst_fw_caps_dec_size = ARRAY_SIZE(inst_fw_cap_sm8550_dec),
+ 	.inst_fw_caps_enc = inst_fw_cap_sm8550_enc,
+ 	.inst_fw_caps_enc_size = ARRAY_SIZE(inst_fw_cap_sm8550_enc),
+-	.tz_cp_config_data = &tz_cp_config_sm8550,
++	.tz_cp_config_data = tz_cp_config_sm8550,
++	.tz_cp_config_data_size = ARRAY_SIZE(tz_cp_config_sm8550),
+ 	.core_arch = VIDEO_ARCH_LX,
+ 	.hw_response_timeout = HW_RESPONSE_TIMEOUT_VALUE,
+ 	.ubwc_config = &ubwc_config_sm8550,
+@@ -1033,7 +1038,8 @@ const struct iris_platform_data qcs8300_data = {
+ 	.inst_fw_caps_dec_size = ARRAY_SIZE(inst_fw_cap_sm8550_dec),
+ 	.inst_fw_caps_enc = inst_fw_cap_sm8550_enc,
+ 	.inst_fw_caps_enc_size = ARRAY_SIZE(inst_fw_cap_sm8550_enc),
+-	.tz_cp_config_data = &tz_cp_config_sm8550,
++	.tz_cp_config_data = tz_cp_config_sm8550,
++	.tz_cp_config_data_size = ARRAY_SIZE(tz_cp_config_sm8550),
+ 	.core_arch = VIDEO_ARCH_LX,
+ 	.hw_response_timeout = HW_RESPONSE_TIMEOUT_VALUE,
+ 	.ubwc_config = &ubwc_config_sm8550,

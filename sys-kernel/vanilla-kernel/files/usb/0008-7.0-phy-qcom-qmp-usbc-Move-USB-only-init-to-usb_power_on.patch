@@ -1,0 +1,73 @@
+From 94bc826ea9b0b8299dfd10cf85c516a934ad8e88 Mon Sep 17 00:00:00 2001
+From: Xiangxu Yin <xiangxu.yin@oss.qualcomm.com>
+Date: Fri, 19 Sep 2025 22:24:24 +0800
+Subject: [PATCH 135/150] phy: qcom: qmp-usbc: Move USB-only init to
+ usb_power_on
+
+Move USB-only register setup from com_init to qmp_usbc_usb_power_on,
+so it runs only for USB mode.
+
+Signed-off-by: Xiangxu Yin <xiangxu.yin@oss.qualcomm.com>
+Reviewed-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Link: https://lore.kernel.org/r/20250919-add-displayport-support-for-qcs615-platform-v5-7-eae6681f4002@oss.qualcomm.com
+---
+ drivers/phy/qualcomm/phy-qcom-qmp-usbc.c | 22 ++++++++++------------
+ 1 file changed, 10 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/phy/qualcomm/phy-qcom-qmp-usbc.c b/drivers/phy/qualcomm/phy-qcom-qmp-usbc.c
+index bfb94fa1a..d570ce486 100644
+--- a/drivers/phy/qualcomm/phy-qcom-qmp-usbc.c
++++ b/drivers/phy/qualcomm/phy-qcom-qmp-usbc.c
+@@ -30,6 +30,8 @@
+ #include "phy-qcom-qmp-pcs-misc-v3.h"
+ 
+ #define PHY_INIT_COMPLETE_TIMEOUT		10000
++#define SW_PORTSELECT_VAL			BIT(0)
++#define SW_PORTSELECT_MUX			BIT(1)
+ 
+ /* set of registers with offsets different per-PHY */
+ enum qphy_reg_layout {
+@@ -535,8 +537,6 @@ static int qmp_usbc_com_init(struct phy *phy)
+ {
+ 	struct qmp_usbc *qmp = phy_get_drvdata(phy);
+ 	const struct qmp_phy_cfg *cfg = qmp->cfg;
+-	void __iomem *pcs = qmp->pcs;
+-	u32 val = 0;
+ 	int ret;
+ 
+ 	ret = regulator_bulk_enable(cfg->num_vregs, qmp->vregs);
+@@ -561,16 +561,6 @@ static int qmp_usbc_com_init(struct phy *phy)
+ 	if (ret)
+ 		goto err_assert_reset;
+ 
+-	qphy_setbits(pcs, cfg->regs[QPHY_PCS_POWER_DOWN_CONTROL], SW_PWRDN);
+-
+-#define SW_PORTSELECT_VAL			BIT(0)
+-#define SW_PORTSELECT_MUX			BIT(1)
+-	/* Use software based port select and switch on typec orientation */
+-	val = SW_PORTSELECT_MUX;
+-	if (qmp->orientation == TYPEC_ORIENTATION_REVERSE)
+-		val |= SW_PORTSELECT_VAL;
+-	writel(val, qmp->pcs_misc);
+-
+ 	return 0;
+ 
+ err_assert_reset:
+@@ -603,6 +593,14 @@ static int qmp_usbc_usb_power_on(struct phy *phy)
+ 	unsigned int val;
+ 	int ret;
+ 
++	qphy_setbits(qmp->pcs, cfg->regs[QPHY_PCS_POWER_DOWN_CONTROL], SW_PWRDN);
++
++	/* Use software based port select and switch on typec orientation */
++	val = SW_PORTSELECT_MUX;
++	if (qmp->orientation == TYPEC_ORIENTATION_REVERSE)
++		val |= SW_PORTSELECT_VAL;
++	writel(val, qmp->pcs_misc);
++
+ 	qmp_configure(qmp->dev, qmp->serdes, cfg->serdes_tbl,
+ 		      cfg->serdes_tbl_num);
+ 
+-- 
+2.52.0
+

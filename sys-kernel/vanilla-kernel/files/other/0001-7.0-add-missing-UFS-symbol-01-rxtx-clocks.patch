@@ -1,0 +1,230 @@
+Add some of the UFS symbol rx/tx muxes were not initially described.
+
+Signed-off-by: Taniya Das <taniya.das@oss.qualcomm.com>
+Reviewed-by: Krzysztof Kozlowski <krzysztof.kozlowski@oss.qualcomm.com>
+---
+ Documentation/devicetree/bindings/clock/qcom,x1e80100-gcc.yaml | 8 +++++++-
+ include/dt-bindings/clock/qcom,x1e80100-gcc.h                  | 3 +++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/clock/qcom,x1e80100-gcc.yaml b/Documentation/devicetree/bindings/clock/qcom,x1e80100-gcc.yaml
+index 1b15b507095455c93b1ba39404cafbb6f96be5a9..881a5dd8d06f924a4627db5f8d17ad147a1011dd 100644
+--- a/Documentation/devicetree/bindings/clock/qcom,x1e80100-gcc.yaml
++++ b/Documentation/devicetree/bindings/clock/qcom,x1e80100-gcc.yaml
+@@ -62,6 +62,9 @@ properties:
+       - description: USB4_1 PHY max PIPE clock source
+       - description: USB4_2 PHY PCIE PIPE clock source
+       - description: USB4_2 PHY max PIPE clock source
++      - description: UFS PHY RX Symbol 0 clock source
++      - description: UFS PHY RX Symbol 1 clock source
++      - description: UFS PHY TX Symbol 0 clock source
+ 
+   power-domains:
+     description:
+@@ -121,7 +124,10 @@ examples:
+                <&usb4_1_phy_pcie_pipe_clk>,
+                <&usb4_1_phy_max_pipe_clk>,
+                <&usb4_2_phy_pcie_pipe_clk>,
+-               <&usb4_2_phy_max_pipe_clk>;
++               <&usb4_2_phy_max_pipe_clk>,
++               <&ufs_phy_rx_symbol_0>,
++               <&ufs_phy_rx_symbol_1>,
++               <&ufs_phy_tx_symbol_0>;
+       power-domains = <&rpmhpd RPMHPD_CX>;
+       #clock-cells = <1>;
+       #reset-cells = <1>;
+diff --git a/include/dt-bindings/clock/qcom,x1e80100-gcc.h b/include/dt-bindings/clock/qcom,x1e80100-gcc.h
+index 62aa1242559270dd3bd31cd10322ee265468b8e4..d905804e64654dc8d01ab20eb1106cebf6e54b0e 100644
+--- a/include/dt-bindings/clock/qcom,x1e80100-gcc.h
++++ b/include/dt-bindings/clock/qcom,x1e80100-gcc.h
+@@ -387,6 +387,9 @@
+ #define GCC_USB4_2_PHY_RX0_CLK_SRC				377
+ #define GCC_USB4_2_PHY_RX1_CLK_SRC				378
+ #define GCC_USB4_2_PHY_SYS_CLK_SRC				379
++#define GCC_UFS_PHY_RX_SYMBOL_0_CLK_SRC				380
++#define GCC_UFS_PHY_RX_SYMBOL_1_CLK_SRC				381
++#define GCC_UFS_PHY_TX_SYMBOL_0_CLK_SRC				382
+ 
+ /* GCC power domains */
+ #define GCC_PCIE_0_TUNNEL_GDSC					0
+
+The UFS symbol RX/TX mux clocks were not defined previously.
+Add these mux clocks so that clock rate propagation reaches
+the muxes correctly.
+
+Fixes: 161b7c401f4b ("clk: qcom: Add Global Clock controller (GCC) driver for X1E80100")
+Reviewed-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
+Signed-off-by: Taniya Das <taniya.das@oss.qualcomm.com>
+Reviewed-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+---
+ drivers/clk/qcom/gcc-x1e80100.c | 72 +++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 69 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clk/qcom/gcc-x1e80100.c b/drivers/clk/qcom/gcc-x1e80100.c
+index e46e65e631513e315de2f663f3dab73e1eb70604..74afd12c158c01c121d9aecd56e65c0c302d7cd0 100644
+--- a/drivers/clk/qcom/gcc-x1e80100.c
++++ b/drivers/clk/qcom/gcc-x1e80100.c
+@@ -59,6 +59,9 @@ enum {
+ 	DT_USB4_1_PHY_GCC_USB4RTR_MAX_PIPE_CLK,
+ 	DT_USB4_2_PHY_GCC_USB4_PCIE_PIPE_CLK,
+ 	DT_USB4_2_PHY_GCC_USB4RTR_MAX_PIPE_CLK,
++	DT_UFS_PHY_RX_SYMBOL_0_CLK,
++	DT_UFS_PHY_RX_SYMBOL_1_CLK,
++	DT_UFS_PHY_TX_SYMBOL_0_CLK,
+ };
+ 
+ enum {
+@@ -103,6 +106,9 @@ enum {
+ 	P_USB4_1_PHY_GCC_USB4RTR_MAX_PIPE_CLK,
+ 	P_USB4_2_PHY_GCC_USB4_PCIE_PIPE_CLK,
+ 	P_USB4_2_PHY_GCC_USB4RTR_MAX_PIPE_CLK,
++	P_UFS_PHY_RX_SYMBOL_0_CLK,
++	P_UFS_PHY_RX_SYMBOL_1_CLK,
++	P_UFS_PHY_TX_SYMBOL_0_CLK,
+ };
+ 
+ static struct clk_alpha_pll gcc_gpll0 = {
+@@ -482,6 +488,48 @@ static const struct clk_parent_data gcc_parent_data_33[] = {
+ 	{ .index = DT_USB4_2_PHY_GCC_USB4_PCIE_PIPE_CLK },
+ };
+ 
++static struct clk_regmap_phy_mux gcc_ufs_phy_rx_symbol_0_clk_src = {
++	.reg = 0x77064,
++	.clkr = {
++		.hw.init = &(const struct clk_init_data) {
++			.name = "gcc_ufs_phy_rx_symbol_0_clk_src",
++			.parent_data = &(const struct clk_parent_data) {
++				.index = DT_UFS_PHY_RX_SYMBOL_0_CLK,
++			},
++			.num_parents = 1,
++			.ops = &clk_regmap_phy_mux_ops,
++		},
++	},
++};
++
++static struct clk_regmap_phy_mux gcc_ufs_phy_rx_symbol_1_clk_src = {
++	.reg = 0x770e0,
++	.clkr = {
++		.hw.init = &(const struct clk_init_data) {
++			.name = "gcc_ufs_phy_rx_symbol_1_clk_src",
++			.parent_data = &(const struct clk_parent_data) {
++				.index = DT_UFS_PHY_RX_SYMBOL_1_CLK,
++			},
++			.num_parents = 1,
++			.ops = &clk_regmap_phy_mux_ops,
++		},
++	},
++};
++
++static struct clk_regmap_phy_mux gcc_ufs_phy_tx_symbol_0_clk_src = {
++	.reg = 0x77054,
++	.clkr = {
++		.hw.init = &(const struct clk_init_data) {
++			.name = "gcc_ufs_phy_tx_symbol_0_clk_src",
++			.parent_data = &(const struct clk_parent_data) {
++				.index = DT_UFS_PHY_TX_SYMBOL_0_CLK,
++			},
++			.num_parents = 1,
++			.ops = &clk_regmap_phy_mux_ops,
++		},
++	},
++};
++
+ static struct clk_regmap_phy_mux gcc_usb4_0_phy_dp0_clk_src = {
+ 	.reg = 0x9f06c,
+ 	.clkr = {
+@@ -5148,12 +5196,17 @@ static struct clk_branch gcc_ufs_phy_phy_aux_clk = {
+ 
+ static struct clk_branch gcc_ufs_phy_rx_symbol_0_clk = {
+ 	.halt_reg = 0x7702c,
+-	.halt_check = BRANCH_HALT,
++	.halt_check = BRANCH_HALT_DELAY,
+ 	.clkr = {
+ 		.enable_reg = 0x7702c,
+ 		.enable_mask = BIT(0),
+ 		.hw.init = &(const struct clk_init_data) {
+ 			.name = "gcc_ufs_phy_rx_symbol_0_clk",
++			.parent_hws = (const struct clk_hw*[]) {
++				&gcc_ufs_phy_rx_symbol_0_clk_src.clkr.hw,
++			},
++			.num_parents = 1,
++			.flags = CLK_SET_RATE_PARENT,
+ 			.ops = &clk_branch2_ops,
+ 		},
+ 	},
+@@ -5161,12 +5214,17 @@ static struct clk_branch gcc_ufs_phy_rx_symbol_0_clk = {
+ 
+ static struct clk_branch gcc_ufs_phy_rx_symbol_1_clk = {
+ 	.halt_reg = 0x770cc,
+-	.halt_check = BRANCH_HALT,
++	.halt_check = BRANCH_HALT_DELAY,
+ 	.clkr = {
+ 		.enable_reg = 0x770cc,
+ 		.enable_mask = BIT(0),
+ 		.hw.init = &(const struct clk_init_data) {
+ 			.name = "gcc_ufs_phy_rx_symbol_1_clk",
++			.parent_hws = (const struct clk_hw*[]) {
++				&gcc_ufs_phy_rx_symbol_1_clk_src.clkr.hw,
++			},
++			.num_parents = 1,
++			.flags = CLK_SET_RATE_PARENT,
+ 			.ops = &clk_branch2_ops,
+ 		},
+ 	},
+@@ -5174,12 +5232,17 @@ static struct clk_branch gcc_ufs_phy_rx_symbol_1_clk = {
+ 
+ static struct clk_branch gcc_ufs_phy_tx_symbol_0_clk = {
+ 	.halt_reg = 0x77028,
+-	.halt_check = BRANCH_HALT,
++	.halt_check = BRANCH_HALT_DELAY,
+ 	.clkr = {
+ 		.enable_reg = 0x77028,
+ 		.enable_mask = BIT(0),
+ 		.hw.init = &(const struct clk_init_data) {
+ 			.name = "gcc_ufs_phy_tx_symbol_0_clk",
++			.parent_hws = (const struct clk_hw*[]) {
++				&gcc_ufs_phy_tx_symbol_0_clk_src.clkr.hw,
++			},
++			.num_parents = 1,
++			.flags = CLK_SET_RATE_PARENT,
+ 			.ops = &clk_branch2_ops,
+ 		},
+ 	},
+@@ -7180,6 +7243,9 @@ static struct clk_regmap *gcc_x1e80100_clocks[] = {
+ 	[GCC_USB4_2_TMU_CLK_SRC] = &gcc_usb4_2_tmu_clk_src.clkr,
+ 	[GCC_VIDEO_AXI0_CLK] = &gcc_video_axi0_clk.clkr,
+ 	[GCC_VIDEO_AXI1_CLK] = &gcc_video_axi1_clk.clkr,
++	[GCC_UFS_PHY_RX_SYMBOL_0_CLK_SRC] = &gcc_ufs_phy_rx_symbol_0_clk_src.clkr,
++	[GCC_UFS_PHY_RX_SYMBOL_1_CLK_SRC] = &gcc_ufs_phy_rx_symbol_1_clk_src.clkr,
++	[GCC_UFS_PHY_TX_SYMBOL_0_CLK_SRC] = &gcc_ufs_phy_tx_symbol_0_clk_src.clkr,
+ };
+ 
+ static struct gdsc *gcc_x1e80100_gdscs[] = {
+
+The recent dt-bindings were updated for the missing RX/TX symbol clocks
+for UFS.
+
+Extend the existing list to make sure the DT contains the expected
+amount of 'clocks' entries.
+
+Reviewed-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+Reviewed-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
+Signed-off-by: Taniya Das <taniya.das@oss.qualcomm.com>
+---
+ arch/arm64/boot/dts/qcom/hamoa.dtsi | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+index bb7c14d473c9c523e1501f9379ee7049c6287e96..21ab6ef61520695d977f9d741ce633cf537171ac 100644
+--- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
++++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+@@ -834,6 +834,9 @@ gcc: clock-controller@100000 {
+ 				 <0>,
+ 				 <0>,
+ 				 <0>,
++				 <0>,
++				 <0>,
++				 <0>,
+ 				 <0>;
+ 
+ 			power-domains = <&rpmhpd RPMHPD_CX>;

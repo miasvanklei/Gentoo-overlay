@@ -1,0 +1,79 @@
+The Iris block on X1P differs from SM8550/X1E in its clock configuration
+and requires a dedicated OPP table. The node inherited from the X1E cannot
+be reused directly, and the fallback compatible "qcom,sm8550-iris" cannot
+be applied.
+
+Override the inherited clocks, clock-names, and operating points, and
+replaces them with the X1P42100-specific definitions. A new OPP table
+is provided to support the correct performance levels on this platform.
+
+Signed-off-by: Wangao Wang <wangao.wang@oss.qualcomm.com>
+Reviewed-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
+---
+ arch/arm64/boot/dts/qcom/purwa.dtsi | 53 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/purwa.dtsi b/arch/arm64/boot/dts/qcom/purwa.dtsi
+index 63599ba0a4f488d8f40f3e4d849645a8fa9ebf59..e97a78d71659c809830a0d515af9b0a6781ce0e8 100644
+--- a/arch/arm64/boot/dts/qcom/purwa.dtsi
++++ b/arch/arm64/boot/dts/qcom/purwa.dtsi
+@@ -153,6 +153,59 @@ &gpucc {
+ 	compatible = "qcom,x1p42100-gpucc";
+ };
+ 
++&iris {
++	/delete-node/ opp-table;
++};
++
++&iris {
++	compatible = "qcom,x1p42100-iris";
++
++	clocks = <&gcc GCC_VIDEO_AXI0_CLK>,
++		 <&videocc VIDEO_CC_MVS0C_CLK>,
++		 <&videocc VIDEO_CC_MVS0_CLK>,
++		 <&videocc VIDEO_CC_MVS0_BSE_CLK>;
++	clock-names = "iface",
++		      "core",
++		      "vcodec0_core",
++		      "vcodec0_bse";
++
++	operating-points-v2 = <&iris_opp_table_x1p42100>;
++
++	iris_opp_table_x1p42100: opp-table {
++		compatible = "operating-points-v2";
++
++		opp-210000000 {
++			opp-hz = /bits/ 64 <210000000 105000000>;
++			required-opps = <&rpmhpd_opp_low_svs>,
++					<&rpmhpd_opp_low_svs>;
++		};
++
++		opp-300000000 {
++			opp-hz = /bits/ 64 <300000000 150000000>;
++			required-opps = <&rpmhpd_opp_svs>,
++					<&rpmhpd_opp_svs>;
++		};
++
++		opp-335000000 {
++			opp-hz = /bits/ 64 <335000000 167500000>;
++			required-opps = <&rpmhpd_opp_svs_l1>,
++					<&rpmhpd_opp_svs_l1>;
++		};
++
++		opp-424000000 {
++			opp-hz = /bits/ 64 <424000000 212000000>;
++			required-opps = <&rpmhpd_opp_nom>,
++					<&rpmhpd_opp_nom>;
++		};
++
++		opp-500000000 {
++			opp-hz = /bits/ 64 <500000000 250000000>;
++			required-opps = <&rpmhpd_opp_turbo>,
++					<&rpmhpd_opp_turbo>;
++		};
++	};
++};
++
+ /* PCIe3 has half the lanes compared to X1E80100 */
+ &pcie3 {
+ 	num-lanes = <4>;

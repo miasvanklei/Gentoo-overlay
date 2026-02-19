@@ -1,0 +1,74 @@
+--- a/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c	2026-01-30 16:24:51.655160724 +0100
++++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c	2026-01-30 16:27:05.779581514 +0100
+@@ -462,6 +462,20 @@
+ 	.num_freq = 2,
+ };
+ 
++const struct mipi_csi2phy_clk_freq dphy_4nm_x1p_csiphy = {
++	.freq = {
++		400000000, 480000000
++	},
++	.num_freq = 2,
++};
++
++const struct mipi_csi2phy_clk_freq dphy_4nm_x1p_csiphy_timer = {
++	.freq = {
++		400000000
++	},
++	.num_freq = 1,
++};
++
+ const struct mipi_csi2phy_soc_cfg mipi_csi2_dphy_4nm_x1e = {
+ 	.ops = &phy_qcom_mipi_csi2_ops_3ph_1_0,
+ 	.reg_info = {
+@@ -489,3 +503,31 @@
+ 		dphy_4nm_x1e_csiphy_timer,
+ 	},
+ };
++
++const struct mipi_csi2phy_soc_cfg mipi_csi2_dphy_4nm_x1p = {
++	.ops = &phy_qcom_mipi_csi2_ops_3ph_1_0,
++	.reg_info = {
++		.init_seq = lane_regs_x1e80100,
++		.lane_array_size = ARRAY_SIZE(lane_regs_x1e80100),
++		.offset = 0x1000,
++		.generation = GEN2,
++	},
++	.supply_names = (const char *[]){
++		"vdda-0p8",
++		"vdda-1p2"
++	},
++	.num_supplies = 2,
++	.clk_names = (const char *[]) {
++		"camnoc_axi",
++		"cpas_ahb",
++		"csiphy",
++		"csiphy_timer"
++	},
++	.num_clk = 4,
++	.clk_freq = {
++		zero,
++		zero,
++		dphy_4nm_x1p_csiphy,
++		dphy_4nm_x1p_csiphy_timer,
++	},
++};
+--- a/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h	2026-01-30 16:28:03.407756475 +0100
++++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h	2026-01-30 16:28:21.999812270 +0100
+@@ -97,5 +97,6 @@
+ };
+ 
+ extern const struct mipi_csi2phy_soc_cfg mipi_csi2_dphy_4nm_x1e;
++extern const struct mipi_csi2phy_soc_cfg mipi_csi2_dphy_4nm_x1p;
+ 
+ #endif /* __PHY_QCOM_MIPI_CSI2_H__ */
+--- a/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c	2026-01-30 16:24:40.939126170 +0100
++++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c	2026-01-30 16:27:38.803682160 +0100
+@@ -262,6 +262,7 @@
+ 
+ static const struct of_device_id phy_qcom_mipi_csi2_of_match_table[] = {
+ 	{ .compatible	= "qcom,x1e80100-mipi-csi2-combo-phy", .data = &mipi_csi2_dphy_4nm_x1e },
++	{ .compatible	= "qcom,x1p42100-mipi-csi2-combo-phy", .data = &mipi_csi2_dphy_4nm_x1p },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, phy_qcom_mipi_csi2_of_match_table);
