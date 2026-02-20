@@ -1,0 +1,22 @@
+--- a/GraphBLAS/Source/extract/GB_I_inverse.c	2026-02-20 23:06:35.971030665 +0100
++++ b/GraphBLAS/Source/extract/GB_I_inverse.c	2026-02-20 23:07:03.558746791 +0100
+@@ -120,7 +120,7 @@
+         // J_input
+         I,                  // row indices are in I [0..nI-1]
+         // S_input
+-        S_input,            // values of R (iso-valued)
++        (void*)S_input,            // values of R (iso-valued)
+         // S_iso
+         true,               // R is iso-valued
+         // nvals
+--- a/GraphBLAS/Source/get_set/GrB_Type_set.c	2026-02-20 23:06:01.115389745 +0100
++++ b/GraphBLAS/Source/get_set/GrB_Type_set.c	2026-02-20 23:07:19.086587134 +0100
+@@ -99,7 +99,7 @@
+     if (field == GxB_PRINT_FUNCTION && type->code == GB_UDT_code &&
+         size == sizeof (GxB_print_function))
+     { 
+-        type->print_function = (GxB_print_function *) value ;
++        type->print_function = *(GxB_print_function *) value ;
+         return (GrB_SUCCESS) ;
+     }
+ 

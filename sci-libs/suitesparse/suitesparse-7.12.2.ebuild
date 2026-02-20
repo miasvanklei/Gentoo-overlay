@@ -34,7 +34,7 @@ RDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}/use-flexiblas.patch"
+	"${FILESDIR}"/incompatible-pointer-types.patch
 )
 
 pkg_pretend() {
