@@ -62,7 +62,7 @@ IUSE=""
 
 BDEPEND="
 	dev-go/protobuf-go
-	dev-go/protobuf-go-grpc
+	dev-go/protoc-gen-go-grpc
 "
 
 RDEPEND="
