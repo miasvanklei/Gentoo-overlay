@@ -30,16 +30,13 @@ index 6ae6189e9b8a9021c99ece17504834650debd86b..713aa64553bfc988717cab2936935bb4
  #include "../../pci.h"
  #include "pcie-designware.h"
  
-@@ -1218,18 +1220,13 @@ static int dw_pcie_pme_turn_off(struct dw_pcie *pci)
+@@ -1157,15 +1157,10 @@  static int dw_pcie_pme_turn_off(struct dw_pcie *pci)
  
  int dw_pcie_suspend_noirq(struct dw_pcie *pci)
  {
 -	u8 offset = dw_pcie_find_capability(pci, PCI_CAP_ID_EXP);
- 	int ret = 0;
  	u32 val;
- 
- 	if (!dw_pcie_link_up(pci))
- 		goto stop_link;
+ 	int ret;
  
 -	/*
 -	 * If L1SS is supported, then do not put the link into L2 as some
