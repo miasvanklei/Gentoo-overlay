@@ -1,0 +1,39 @@
+PCIe spec r7.0, sec 5.3.3.2.1, recommends proceeding with L2/L3 sequence
+even if one or devices do not respond with PME_TO_Ack message after 10ms
+timeout.
+
+So just print a warning if the timeout happens and proceed with the system
+suspend.
+
+Reported-by: Neil Armstrong <neil.armstrong@linaro.org>
+Signed-off-by: Manivannan Sadhasivam <manivannan.sadhasivam@oss.qualcomm.com>
+---
+
+Changes in v2:
+
+* Added 'ret = 0' to avoid failing callers
+
+ drivers/pci/controller/dwc/pcie-designware-host.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/pci/controller/dwc/pcie-designware-host.c b/drivers/pci/controller/dwc/pcie-designware-host.c
+index 6ae6189e9b8a..ba183fc3e77c 100644
+--- a/drivers/pci/controller/dwc/pcie-designware-host.c
++++ b/drivers/pci/controller/dwc/pcie-designware-host.c
+@@ -1256,9 +1256,13 @@ int dw_pcie_suspend_noirq(struct dw_pcie *pci)
+ 				PCIE_PME_TO_L2_TIMEOUT_US/10,
+ 				PCIE_PME_TO_L2_TIMEOUT_US, false, pci);
+ 	if (ret) {
+-		/* Only log message when LTSSM isn't in DETECT or POLL */
+-		dev_err(pci->dev, "Timeout waiting for L2 entry! LTSSM: 0x%x\n", val);
+-		return ret;
++		/*
++		 * Failure is non-fatal since spec r7.0, sec 5.3.3.2.1,
++		 * recommends proceeding with L2/L3 sequence even if one or more
++		 * devices do not respond with PME_TO_Ack after 10ms timeout.
++		 */
++		dev_warn(pci->dev, "Timeout waiting for L2 entry! LTSSM: 0x%x\n", val);
++		ret = 0;
+ 	}
+ 
+ 	/*
