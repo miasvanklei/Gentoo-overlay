@@ -1,0 +1,118 @@
+--- a/net/netfilter/nf_flow_table_ip.c	2026-02-22 21:06:32.433024808 +0100
++++ b/net/netfilter/nf_flow_table_ip.c	2026-02-22 21:14:20.973281470 +0100
+@@ -473,44 +473,6 @@
+ 	return 1;
+ }
+ 
+-static int nf_flow_pppoe_push(struct sk_buff *skb, u16 id)
+-{
+-	int data_len = skb->len + sizeof(__be16);
+-	struct ppp_hdr {
+-		struct pppoe_hdr hdr;
+-		__be16 proto;
+-	} *ph;
+-	__be16 proto;
+-
+-	if (skb_cow_head(skb, PPPOE_SES_HLEN))
+-		return -1;
+-
+-	switch (skb->protocol) {
+-	case htons(ETH_P_IP):
+-		proto = htons(PPP_IP);
+-		break;
+-	case htons(ETH_P_IPV6):
+-		proto = htons(PPP_IPV6);
+-		break;
+-	default:
+-		return -1;
+-	}
+-
+-	__skb_push(skb, PPPOE_SES_HLEN);
+-	skb_reset_network_header(skb);
+-
+-	ph = (struct ppp_hdr *)(skb->data);
+-	ph->hdr.ver	= 1;
+-	ph->hdr.type	= 1;
+-	ph->hdr.code	= 0;
+-	ph->hdr.sid	= htons(id);
+-	ph->hdr.length	= htons(data_len);
+-	ph->proto	= proto;
+-	skb->protocol	= htons(ETH_P_PPP_SES);
+-
+-	return 0;
+-}
+-
+ static int nf_flow_tunnel_ipip_push(struct net *net, struct sk_buff *skb,
+ 				    struct flow_offload_tuple *tuple,
+ 				    __be32 *ip_daddr)
+@@ -567,29 +529,6 @@
+ 	return 0;
+ }
+ 
+-static int nf_flow_encap_push(struct sk_buff *skb,
+-			      struct flow_offload_tuple *tuple)
+-{
+-	int i;
+-
+-	for (i = 0; i < tuple->encap_num; i++) {
+-		switch (tuple->encap[i].proto) {
+-		case htons(ETH_P_8021Q):
+-		case htons(ETH_P_8021AD):
+-			if (skb_vlan_push(skb, tuple->encap[i].proto,
+-					  tuple->encap[i].id) < 0)
+-				return -1;
+-			break;
+-		case htons(ETH_P_PPP_SES):
+-			if (nf_flow_pppoe_push(skb, tuple->encap[i].id) < 0)
+-				return -1;
+-			break;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+ unsigned int
+ nf_flow_offload_ip_hook(void *priv, struct sk_buff *skb,
+ 			const struct nf_hook_state *state)
+@@ -634,9 +573,6 @@
+ 	if (nf_flow_tunnel_v4_push(state->net, skb, other_tuple, &ip_daddr) < 0)
+ 		return NF_DROP;
+ 
+-	if (nf_flow_encap_push(skb, other_tuple) < 0)
+-		return NF_DROP;
+-
+ 	switch (tuplehash->tuple.xmit_type) {
+ 	case FLOW_OFFLOAD_XMIT_NEIGH:
+ 		rt = dst_rtable(tuplehash->tuple.dst_cache);
+@@ -945,9 +881,6 @@
+ 	other_tuple = &flow->tuplehash[!dir].tuple;
+ 	ip6_daddr = &other_tuple->src_v6;
+ 
+-	if (nf_flow_encap_push(skb, other_tuple) < 0)
+-		return NF_DROP;
+-
+ 	switch (tuplehash->tuple.xmit_type) {
+ 	case FLOW_OFFLOAD_XMIT_NEIGH:
+ 		rt = dst_rt6_info(tuplehash->tuple.dst_cache);
+--- a/net/netfilter/nf_flow_table_path.c	2026-02-22 21:07:32.876462444 +0100
++++ b/net/netfilter/nf_flow_table_path.c	2026-02-22 21:13:49.085508312 +0100
+@@ -131,6 +131,8 @@
+ 					info->indev = NULL;
+ 					break;
+ 				}
++				if (!info->outdev)
++					info->outdev = path->dev;
+ 				info->encap[info->num_encaps].id =
+ 					path->encap.id;
+ 				info->encap[info->num_encaps].proto =
+@@ -173,7 +175,8 @@
+ 			break;
+ 		}
+ 	}
+-	info->outdev = info->indev;
++	if (!info->outdev)
++		info->outdev = info->indev;
+ 
+ 	if (nf_flowtable_hw_offload(flowtable) &&
+ 	    nft_is_valid_ether_device(info->indev))

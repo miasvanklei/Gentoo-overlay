@@ -113,7 +113,7 @@ src_prepare() {
 	fi
 
 
-	for i in other audio camera display gpu pci remoteproc usb video wifi el2 rockchip surface; do
+	for i in other audio camera display gpu pci remoteproc usb video wifi el2 rockchip surface netfilter; do
 		for j in "${FILESDIR}"/$i/*.patch; do
 			eapply $j
 		done
