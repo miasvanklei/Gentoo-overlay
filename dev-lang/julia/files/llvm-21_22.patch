@@ -1190,7 +1190,7 @@
  }
  
  Error JuliaOJIT::addExternalModule(orc::JITDylib &JD, orc::ThreadSafeModule TSM, bool ShouldOptimize)
-@@ -2259,16 +2279,26 @@
+@@ -2279,9 +2279,13 @@
  {
      orc::SymbolMap GDBFunctions;
      addAbsoluteToMap(GDBFunctions,llvm_orc_registerJITLoaderGDBAllocAction);
@@ -1201,11 +1201,12 @@
      cantFail(JD.define(orc::absoluteSymbols(GDBFunctions)));
      (void)registerJITLoaderGDBWrapper;
 +#endif
-     if (TM->getTargetTriple().isOSBinFormatMachO())
-         ObjectLayer.addPlugin(cantFail(orc::GDBJITDebugInfoRegistrationPlugin::Create(ES, JD, TM->getTargetTriple())));
+     if (TM->getTargetTriple().isOSBinFormatMachO()) {
+         auto RegisterSym = cantFail(
+             safelookup(ES, {&JD}, ES.intern("_llvm_orc_registerJITLoaderGDBAllocAction")));
+@@ -2291,7 +2295,12 @@
  #ifndef _COMPILER_ASAN_ENABLED_ // TODO: Fix duplicated sections spam #51794
--    else if (TM->getTargetTriple().isOSBinFormatELF())
-+    else if (TM->getTargetTriple().isOSBinFormatELF()) {
+     else if (TM->getTargetTriple().isOSBinFormatELF()) {
          //EPCDebugObjectRegistrar doesn't take a JITDylib, so we have to directly provide the call address
 +#if JL_LLVM_VERSION >= 220000
 +        Error TargetSymErr = Error::success();
@@ -1213,11 +1214,9 @@
 +#else
          ObjectLayer.addPlugin(std::make_unique<orc::DebugObjectManagerPlugin>(ES, std::make_unique<orc::EPCDebugObjectRegistrar>(ES, registerJITLoaderGDBWrapper)));
 +#endif
+     }
  #endif
-+    }
  }
- 
- void JuliaOJIT::enableIntelJITEventListener()
 @@ -2388,7 +2417,11 @@
  {
      auto NewTM = std::unique_ptr<TargetMachine>(getTarget()
@@ -1283,14 +1282,18 @@
  template <size_t offset = 0>
  class MaxAlignedAllocImpl
      : public AllocatorBase<MaxAlignedAllocImpl<offset>> {
-@@ -668,14 +677,19 @@
- };
- extern JuliaOJIT *jl_ExecutionEngine;
- std::unique_ptr<Module> jl_create_llvm_module(StringRef name, LLVMContext &ctx, const DataLayout &DL, const Triple &triple) JL_NOTSAFEPOINT;
--inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext ctx, const DataLayout &DL, const Triple &triple) JL_NOTSAFEPOINT {
+@@ -679,18 +679,22 @@
+ std::unique_ptr<Module> jl_create_llvm_module(StringRef name, LLVMContext &ctx,
+                                               const DataLayout &DL, const Triple &triple,
+                                               Module *source = nullptr) JL_NOTSAFEPOINT;
+-inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext ctx,
++inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext tsctx,
+                                                  const DataLayout &DL, const Triple &triple,
+                                                  Module *source = nullptr) JL_NOTSAFEPOINT
+ {
 -    auto lock = ctx.getLock();
--    return orc::ThreadSafeModule(jl_create_llvm_module(name, *ctx.getContext(), DL, triple), ctx);
-+inline orc::ThreadSafeModule jl_create_ts_module(StringRef name, orc::ThreadSafeContext tsctx, const DataLayout &DL, const Triple &triple) JL_NOTSAFEPOINT {
+-    return orc::ThreadSafeModule(
+-        jl_create_llvm_module(name, *ctx.getContext(), DL, triple, source), ctx);
 +    auto llvm_module = withJLContextDo(tsctx, [&](llvm::LLVMContext *ctx) {
 +        return jl_create_llvm_module(name, *ctx, DL, triple);
 +    });

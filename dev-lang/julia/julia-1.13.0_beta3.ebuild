@@ -27,7 +27,7 @@ STDLIBS=(
 	"JuliaWeb LibCURL.jl 9ea5c5d6f5b88615d9fe23379b7f951787b99fd3"
 	"JuliaLang LinearAlgebra.jl 47864521739992c57be3138128458ecf7d339567"
 	"JuliaLang NetworkOptions.jl 46e14ef20739c8011b105c339146062cd0e2938c"
-	"JuliaLang Pkg.jl 4f9884fdb867f2c928ba43dc41da5f150aaec4ab"
+	"JuliaLang Pkg.jl 5189ac693ce94be61feb3489763d78fea967c65c"
 	"JuliaCrypto SHA.jl 876bc0400f9a457eb2736388fc3d0fbe9460fc7d"
 	"JuliaSparse SparseArrays.jl 6b7e9ef30624f25d97bce047ad781a25bebe5551"
 	"JuliaStats Statistics.jl 22dee82f9824d6045e87aa4b97e1d64fe6f01d8d"
@@ -38,7 +38,7 @@ STDLIBS=(
 
 # correct versions for deps are in deps/{package_name}.version
 BUNDLED_DEPS=(
-	"JuliaLang JuliaSyntax.jl 99e975a726a82994de3f8e961e6fa8d39aed0d37"
+	"JuliaLang JuliaSyntax.jl 24fc593c88a6b707858f72396bb33099a1843bc5"
 	"intel ittapi 0014aec56fea2f30c1374f40861e1bccdd53d0cb"
 	"vtjnash libwhich 99a0ea12689e41164456dba03e93bc40924de880"
 	"JuliaLang libuv b21d6d84e46f6c97ecbc8e4e8a8ea6ad98049ea8"
