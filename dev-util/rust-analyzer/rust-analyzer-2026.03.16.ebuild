@@ -35,6 +35,14 @@ KEYWORDS="~amd64 ~arm64"
 BDEPEND="dev-lang/rust"
 RDEPEND="!dev-lang/rust[rust-analyzer]"
 
+src_prepare() {
+	dos2unix crates/proc-macro-srv/src/bridge.rs || die
+	dos2unix crates/proc-macro-srv/src/token_stream.rs || die
+	eapply "${FILESDIR}"/revert-rust-update-changes.patch
+
+	default
+}
+
 src_compile() {
 	export CFG_RELEASE=nightly
 	export RUSTC_BOOTSTRAP=1
