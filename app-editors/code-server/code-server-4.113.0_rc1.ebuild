@@ -19,7 +19,8 @@ NAN_V=2.22.2
 
 SRC_URI="
 	https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
-	https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-amd64.tar.gz
+	amd64? ( https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-amd64.tar.gz )
+	arm64? ( https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-arm64.tar.gz )
 "
 
 COMPILE_VSCODE_BINMODS=(
@@ -38,7 +39,7 @@ CLEANUP_VSCODE_BINMODS=(
 	kerberos
 )
 
-S="${WORKDIR}/${PN}-${MY_PV}-linux-amd64"
+S="${WORKDIR}/${PN}-${MY_PV}-linux-$(tc-arch)"
 
 LICENSE="MIT"
 SLOT="0"
@@ -106,8 +107,6 @@ src_compile() {
 		local install_path=$(get_binmod_loc_release ${binmod})
 		cp "${WORKDIR}/$(package_dir ${binmod})/build/Release/"*.node ${install_path} || die
 	done
-
-	increase_reconnection_grace_time
 }
 
 src_install() {
@@ -126,20 +125,6 @@ src_install() {
 pkg_postinst() {
 	elog "When using code-server systemd service run it as a user"
 	elog "For example: 'systemctl --user enable --now code-server'"
-}
-
-# Increase ReconnectionGraceTime from 3h to 24h
-increase_reconnection_grace_time() {
-	local vscode_out_dir="/lib/vscode/out"
-	local files=(
-		"/vs/workbench/api/node/extensionHostProcess.js"
-		"/vs/code/browser/workbench/workbench.js"
-		"/server-main.js"
-	)
-
-	for file in "${files[@]}"; do
-		sed -i -e "s|108e5|864e5|g" "${S}${vscode_out_dir}${file}" || die
-	done
 }
 
 enodegyp() {
@@ -195,4 +180,8 @@ cleanup_binmods() {
 	local extensiondistdir="${S}/lib/vscode/extensions/microsoft-authentication/dist"
 	rm -r "${extensiondistdir}/libmsalruntime.so" || die
 	rm -r "${extensiondistdir}/msal-node-runtime.node" || die
+
+	# remove copilot
+	rm -r lib/vscode/node_modules/@github/copilot* || die
+	rm lib/vscode/node_modules/.bin/copilot || die
 }
