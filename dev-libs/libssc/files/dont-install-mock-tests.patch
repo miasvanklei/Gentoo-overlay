@@ -1,0 +1,59 @@
+--- a/data/meson.build	2026-03-01 19:19:53.000000000 +0100
++++ b/data/meson.build	2026-03-19 19:06:56.853867085 +0100
+@@ -48,16 +48,18 @@
+   headers_gen += protobuf_c_gen[1]
+ 
+   # Python
+-  python_name = 'ssc_' + m.replace('-', '_')
+-  protobuf_python_gen = custom_target (
+-    python_name + '_py',
+-    input: name + '.proto',
+-    output: [python_name + '_pb2.py'],
+-    command: [protoc_tool, '-I=@CURRENT_SOURCE_DIR@', '--python_out=@OUTDIR@', '@INPUT@'],
+-    install: true,
+-    install_dir: [libssc_mocking_dir]
+-  )
+-  python_gen += protobuf_python_gen[0]
++  if get_option('mocking')
++    python_name = 'ssc_' + m.replace('-', '_')
++    protobuf_python_gen = custom_target (
++      python_name + '_py',
++      input: name + '.proto',
++      output: [python_name + '_pb2.py'],
++      command: [protoc_tool, '-I=@CURRENT_SOURCE_DIR@', '--python_out=@OUTDIR@', '@INPUT@'],
++      install: true,
++      install_dir: [libssc_mocking_dir]
++    )
++    python_gen += protobuf_python_gen[0]
++  endif
+ endforeach
+ 
+ generated_dep = declare_dependency(
+--- a/meson.build	2026-03-01 19:19:53.000000000 +0100
++++ b/meson.build	2026-03-19 19:07:33.254647008 +0100
+@@ -99,5 +99,11 @@
+ 
+ subdir('data')
+ subdir('src')
+-subdir('mocking')
+-subdir('tests')
++
++if get_option('mocking')
++  subdir('mocking')
++endif
++
++if get_option('tests')
++  subdir('tests')
++endif
+--- /dev/null	2026-03-15 22:23:50.023999997 +0100
++++ b/meson_options.txt	2026-03-19 19:08:16.291445693 +0100
+@@ -0,0 +1,9 @@
++option('tests',
++       description: 'Whether to build tests',
++       type: 'boolean',
++       value: false)
++
++option('mocking',
++       description: 'Whether to build mock-server',
++       type: 'boolean',
++       value: false)

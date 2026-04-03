@@ -1,0 +1,88 @@
+--- a/src/libssc-sensor.c	2026-03-01 19:19:53.000000000 +0100
++++ b/src/libssc-sensor.c	2026-03-19 18:43:53.307446287 +0100
+@@ -269,6 +269,22 @@
+ /*****************************************************************************/
+ 
+ static void
++report_received_context_free (gpointer data, GClosure *closure)
++{
++    ReportReceivedContext *ctx = data;
++
++    if (!ctx)
++        return;
++
++    if (ctx->task)
++        g_object_unref (ctx->task);
++
++    /* Do NOT unref ctx->sensor (not owned) */
++
++    g_slice_free (ReportReceivedContext, ctx);
++}
++
++static void
+ report_received (SSCClient *self, guint32 msg_id, guint64 uid_high, guint64 uid_low, GArray *buf, gpointer user_data)
+ {
+ 	SscSuidResponse *suid_msg = NULL;
+@@ -317,8 +333,6 @@
+ 					     "Sensor service unavailable");
+ 				g_warning ("'registry' sensor unavailable, is hexagonrpcd running?");
+ 				g_task_return_error (ctx->task, error);
+-				g_clear_object (&ctx->task);
+-				g_slice_free (ReportReceivedContext, ctx);
+ 				return;
+ 			}
+ 
+@@ -355,8 +369,6 @@
+ 			priv->report_id = 0;
+ 
+ 			g_task_return_boolean (ctx->task, FALSE);
+-			g_clear_object (&ctx->task);
+-			g_slice_free (ReportReceivedContext, ctx);
+ 
+ 			return;
+ 		}
+@@ -443,8 +455,7 @@
+ 			g_signal_handler_disconnect (self, priv->report_id);
+ 			priv->report_id = 0;
+ 			g_task_return_boolean (ctx->task, attributes_populated);
+-			g_clear_object (&ctx->task);
+-			g_slice_free (ReportReceivedContext, ctx);
++			ctx->task = NULL;
+ 		}
+ 
+ 		ssc_attr_response__free_unpacked (attr_msg, NULL);
+@@ -471,8 +482,7 @@
+ 			g_signal_handler_disconnect (self, priv->report_id);
+ 			priv->report_id = 0;
+ 			g_task_return_boolean (ctx->task, TRUE);
+-			g_clear_object (&ctx->task);
+-			g_slice_free (ReportReceivedContext, ctx);
++			ctx->task = NULL;
+ 		}
+ 
+ 		ssc_config_response__free_unpacked (config_msg, NULL);
+@@ -490,8 +500,7 @@
+ 			g_signal_handler_disconnect (self, priv->report_id);
+ 			priv->report_id = 0;
+ 			g_task_return_boolean (ctx->task, TRUE);
+-			g_clear_object (&ctx->task);
+-			g_slice_free (ReportReceivedContext, ctx);
++			ctx->task = NULL;
+ 		}
+ 	}
+ }
+@@ -675,10 +684,12 @@
+ 	ctx->sensor = self;
+ 
+ 	/* Start listening for report signals */
+-	priv->report_id = g_signal_connect (priv->client,
++	priv->report_id = g_signal_connect_data (priv->client,
+ 			"report",
+ 			G_CALLBACK (report_received),
+-			ctx);
++			ctx,
++			report_received_context_free,
++			0);
+ 
+ 	/* Wait for sensor service before discovering sensor */
+ 	priv->service_available = FALSE;
