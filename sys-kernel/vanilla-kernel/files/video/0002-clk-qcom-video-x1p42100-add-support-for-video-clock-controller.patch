@@ -1,8 +1,14 @@
 Add support for the video clock controller for video clients to be
-able to request for videocc clocks on X1P42100 platform.
+able to request for videocc clocks on X1P42100 platform. Although
+X1P42100 is derived from X1E80100, the video clock controller differs
+significantly. The BSE clocks are newly added, several cdiv clocks have
+been removed, and most RCG frequency tables have been updated. Initial
+PLL configurations also require changes, hence introduce a separate
+videocc driver for X1P42100 platform.
 
-Signed-off-by: Jagadeesh Kona <jagadeesh.kona@oss.qualcomm.com>
 Reviewed-by: Taniya Das <taniya.das@oss.qualcomm.com>
+Reviewed-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
+Signed-off-by: Jagadeesh Kona <jagadeesh.kona@oss.qualcomm.com>
 ---
  drivers/clk/qcom/Kconfig            |  10 +
  drivers/clk/qcom/Makefile           |   1 +
@@ -10,10 +16,10 @@ Reviewed-by: Taniya Das <taniya.das@oss.qualcomm.com>
  3 files changed, 596 insertions(+)
 
 diff --git a/drivers/clk/qcom/Kconfig b/drivers/clk/qcom/Kconfig
-index a8a86ea6bb7445e396048a5bba23fce8d719281f..b1b1ed70871c1b348985d6f5149152e57637d904 100644
+index 8f55f10261ec2dd4add61101c5619cc4516f7d66..920d5e78e57d1ac62b59eb1c39d1f79c0718abb8 100644
 --- a/drivers/clk/qcom/Kconfig
 +++ b/drivers/clk/qcom/Kconfig
-@@ -155,6 +155,16 @@ config CLK_X1P42100_GPUCC
+@@ -199,6 +199,16 @@ config CLK_X1P42100_GPUCC
  	  Say Y if you want to support graphics controller devices and
  	  functionality such as 3D graphics.
  
@@ -31,10 +37,10 @@ index a8a86ea6bb7445e396048a5bba23fce8d719281f..b1b1ed70871c1b348985d6f5149152e5
  	tristate "QCM2290 Graphics Clock Controller"
  	depends on ARM64 || COMPILE_TEST
 diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
-index 6b0ad8832b55f1914079f15323b8cdd1608ad4c0..b746e5046774259cebe3da8dad1f226561268a8b 100644
+index 103d6c4b860ccbc6b4ad552e9e6af43298a4474d..ae1f3207a20be4c9163a6f7ce9f309f36e80fc6f 100644
 --- a/drivers/clk/qcom/Makefile
 +++ b/drivers/clk/qcom/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_CLK_X1E80100_GCC) += gcc-x1e80100.o
+@@ -41,6 +41,7 @@ obj-$(CONFIG_CLK_X1E80100_GCC) += gcc-x1e80100.o
  obj-$(CONFIG_CLK_X1E80100_GPUCC) += gpucc-x1e80100.o
  obj-$(CONFIG_CLK_X1E80100_TCSRCC) += tcsrcc-x1e80100.o
  obj-$(CONFIG_CLK_X1P42100_GPUCC) += gpucc-x1p42100.o
@@ -633,3 +639,6 @@ index 0000000000000000000000000000000000000000..2bb40ac6fcc57e817ce8f0b6727a571c
 +
 +MODULE_DESCRIPTION("QTI VIDEOCC X1P42100 Driver");
 +MODULE_LICENSE("GPL");
+
+-- 
+2.34.1

@@ -4,10 +4,10 @@ different clock configuration and a dedicated OPP setup.
 Signed-off-by: Wangao Wang <wangao.wang@oss.qualcomm.com>
 ---
  .../platform/qcom/iris/iris_platform_common.h      |  1 +
- .../media/platform/qcom/iris/iris_platform_gen2.c  | 86 ++++++++++++++++++++++
- .../platform/qcom/iris/iris_platform_x1p42100.h    | 22 ++++++
+ .../media/platform/qcom/iris/iris_platform_gen2.c  | 97 ++++++++++++++++++++++
+ .../platform/qcom/iris/iris_platform_x1p42100.h    | 22 +++++
  drivers/media/platform/qcom/iris/iris_probe.c      |  4 +
- 4 files changed, 113 insertions(+)
+ 4 files changed, 124 insertions(+)
 
 diff --git a/drivers/media/platform/qcom/iris/iris_platform_common.h b/drivers/media/platform/qcom/iris/iris_platform_common.h
 index 5a489917580eb10022fdcb52f7321a915e8b239d..2e97360ddcd56a4b61fb296782b0c914b6154784 100644
@@ -22,7 +22,7 @@ index 5a489917580eb10022fdcb52f7321a915e8b239d..2e97360ddcd56a4b61fb296782b0c914
  enum platform_clk_type {
  	IRIS_AXI_CLK, /* AXI0 in case of platforms with multiple AXI clocks */
 diff --git a/drivers/media/platform/qcom/iris/iris_platform_gen2.c b/drivers/media/platform/qcom/iris/iris_platform_gen2.c
-index 5da90d47f9c6eab4a7e6b17841fdc0e599397bf7..a9389f1b3ac5862f7bd4f4cb165648b5c6feb459 100644
+index 5da90d47f9c6eab4a7e6b17841fdc0e599397bf7..aac72900c0292040500ec4dcde9bd6e7da225fd4 100644
 --- a/drivers/media/platform/qcom/iris/iris_platform_gen2.c
 +++ b/drivers/media/platform/qcom/iris/iris_platform_gen2.c
 @@ -15,6 +15,7 @@
@@ -43,7 +43,7 @@ index 5da90d47f9c6eab4a7e6b17841fdc0e599397bf7..a9389f1b3ac5862f7bd4f4cb165648b5
 +	.init_hfi_command_ops = iris_hfi_gen2_command_ops_init,
 +	.init_hfi_response_ops = iris_hfi_gen2_response_ops_init,
 +	.get_vpu_buffer_size = iris_vpu_buf_size,
-+	.vpu_ops = &iris_vpu3_ops,
++	.vpu_ops = &iris_vpu3_purwa_ops,
 +	.set_preset_registers = iris_set_sm8550_preset_registers,
 +	.icc_tbl = sm8550_icc_table,
 +	.icc_tbl_size = ARRAY_SIZE(sm8550_icc_table),
@@ -72,7 +72,7 @@ index 5da90d47f9c6eab4a7e6b17841fdc0e599397bf7..a9389f1b3ac5862f7bd4f4cb165648b5
 +	.core_arch = VIDEO_ARCH_LX,
 +	.hw_response_timeout = HW_RESPONSE_TIMEOUT_VALUE,
 +	.ubwc_config = &ubwc_config_sm8550,
-+	.num_vpp_pipe = 4,
++	.num_vpp_pipe = 1,
 +	.max_session_count = 16,
 +	.max_core_mbpf = NUM_MBS_8K * 2,
 +	.max_core_mbps = ((7680 * 4320) / 256) * 60,
@@ -165,3 +165,6 @@ index ddaacda523ecb9990af0dd0640196223fbcc2cab..287f615dfa6479964ed68649f2829b5b
  	{ },
  };
  MODULE_DEVICE_TABLE(of, iris_dt_match);
+
+-- 
+2.43.0

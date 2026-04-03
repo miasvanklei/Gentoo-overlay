@@ -1,20 +1,25 @@
-X1P42100 video clock controller has most clocks same as SM8650,
-but it also has few additional clocks and resets. Add device
-tree bindings for the video clock controller on Qualcomm
-X1P42100 platform by defining these additional clocks and resets
-on top of SM8650.
+Add device tree bindings for the video clock controller on Qualcomm
+X1P42100 (Purwa) SoC.
 
 Signed-off-by: Jagadeesh Kona <jagadeesh.kona@oss.qualcomm.com>
 ---
- .../bindings/clock/qcom,sm8450-videocc.yaml         |  2 ++
- include/dt-bindings/clock/qcom,x1p42100-videocc.h   | 21 +++++++++++++++++++++
- 2 files changed, 23 insertions(+)
+ .../bindings/clock/qcom,sm8450-videocc.yaml        |  3 ++
+ include/dt-bindings/clock/qcom,x1p42100-videocc.h  | 48 ++++++++++++++++++++++
+ 2 files changed, 51 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml b/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml
-index e6beebd6a36ee1ce213a816f60df8a76fa5c44d6..e8bf3fcad3fabc4f3b7e8e692c6c634d1aed9605 100644
+index 7bbf120d928cc506a4f7aaeaa1c24e5da760e450..5d77029bfaf8830e2bc0c3b8f323c818ee48dba2 100644
 --- a/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml
 +++ b/Documentation/devicetree/bindings/clock/qcom,sm8450-videocc.yaml
-@@ -30,6 +30,7 @@ properties:
+@@ -20,6 +20,7 @@ description: |
+     include/dt-bindings/clock/qcom,sm8450-videocc.h
+     include/dt-bindings/clock/qcom,sm8650-videocc.h
+     include/dt-bindings/clock/qcom,sm8750-videocc.h
++    include/dt-bindings/clock/qcom,x1p42100-videocc.h
+ 
+ properties:
+   compatible:
+@@ -32,6 +33,7 @@ properties:
        - qcom,sm8650-videocc
        - qcom,sm8750-videocc
        - qcom,x1e80100-videocc
@@ -22,7 +27,7 @@ index e6beebd6a36ee1ce213a816f60df8a76fa5c44d6..e8bf3fcad3fabc4f3b7e8e692c6c634d
  
    clocks:
      items:
-@@ -67,6 +68,7 @@ allOf:
+@@ -70,6 +72,7 @@ allOf:
                - qcom,sm8450-videocc
                - qcom,sm8550-videocc
                - qcom,sm8750-videocc
@@ -32,10 +37,10 @@ index e6beebd6a36ee1ce213a816f60df8a76fa5c44d6..e8bf3fcad3fabc4f3b7e8e692c6c634d
          - required-opps
 diff --git a/include/dt-bindings/clock/qcom,x1p42100-videocc.h b/include/dt-bindings/clock/qcom,x1p42100-videocc.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..eb6c9b7264f8cbced7cfa0001903238ffa168431
+index 0000000000000000000000000000000000000000..996408d1a0c32e175e5d4dd65c09bdc8dd47dacf
 --- /dev/null
 +++ b/include/dt-bindings/clock/qcom,x1p42100-videocc.h
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,48 @@
 +/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
 +/*
 + * Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
@@ -44,16 +49,46 @@ index 0000000000000000000000000000000000000000..eb6c9b7264f8cbced7cfa0001903238f
 +#ifndef _DT_BINDINGS_CLK_QCOM_VIDEO_CC_X1P42100_H
 +#define _DT_BINDINGS_CLK_QCOM_VIDEO_CC_X1P42100_H
 +
-+#include "qcom,sm8650-videocc.h"
-+
-+/* X1P42100 introduces below new clocks and resets compared to SM8650 */
-+
 +/* VIDEO_CC clocks */
++#define VIDEO_CC_MVS0_CLK					0
++#define VIDEO_CC_MVS0_CLK_SRC					1
++#define VIDEO_CC_MVS0_DIV_CLK_SRC				2
++#define VIDEO_CC_MVS0C_CLK					3
++#define VIDEO_CC_MVS0C_DIV2_DIV_CLK_SRC				4
++#define VIDEO_CC_MVS1_CLK					5
++#define VIDEO_CC_MVS1_CLK_SRC					6
++#define VIDEO_CC_MVS1_DIV_CLK_SRC				7
++#define VIDEO_CC_MVS1C_CLK					8
++#define VIDEO_CC_MVS1C_DIV2_DIV_CLK_SRC				9
++#define VIDEO_CC_PLL0						10
++#define VIDEO_CC_PLL1						11
++#define VIDEO_CC_MVS0_SHIFT_CLK					12
++#define VIDEO_CC_MVS0C_SHIFT_CLK				13
++#define VIDEO_CC_MVS1_SHIFT_CLK					14
++#define VIDEO_CC_MVS1C_SHIFT_CLK				15
++#define VIDEO_CC_XO_CLK_SRC					16
 +#define VIDEO_CC_MVS0_BSE_CLK					17
 +#define VIDEO_CC_MVS0_BSE_CLK_SRC				18
 +#define VIDEO_CC_MVS0_BSE_DIV4_DIV_CLK_SRC			19
 +
++/* VIDEO_CC power domains */
++#define VIDEO_CC_MVS0C_GDSC					0
++#define VIDEO_CC_MVS0_GDSC					1
++#define VIDEO_CC_MVS1C_GDSC					2
++#define VIDEO_CC_MVS1_GDSC					3
++
 +/* VIDEO_CC resets */
++#define CVP_VIDEO_CC_INTERFACE_BCR				0
++#define CVP_VIDEO_CC_MVS0_BCR					1
++#define CVP_VIDEO_CC_MVS0C_BCR					2
++#define CVP_VIDEO_CC_MVS1_BCR					3
++#define CVP_VIDEO_CC_MVS1C_BCR					4
++#define VIDEO_CC_MVS0C_CLK_ARES					5
++#define VIDEO_CC_MVS1C_CLK_ARES					6
++#define VIDEO_CC_XO_CLK_ARES					7
 +#define VIDEO_CC_MVS0_BSE_BCR					8
 +
 +#endif
+
+-- 
+2.34.1
