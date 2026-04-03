@@ -1,9 +1,14 @@
 Add support for the camera clock controller for camera clients to
-be able to request for camcc clocks on X1P42100 platform.
+be able to request for camcc clocks on X1P42100 platform. Although
+X1P42100 is derived from X1E80100, the camera clock controller driver
+differs significantly. Few PLLs, clocks and GDSC's are removed, there
+is delta in frequency tables for most RCG's and parent data structures
+also changed for few RCG's. Hence introduce a separate camcc driver
+for X1P42100 platform.
 
-Signed-off-by: Jagadeesh Kona <jagadeesh.kona@oss.qualcomm.com>
-Reviewed-by: Taniya Das <taniya.das@oss.qualcomm.com>
 Reviewed-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
+Reviewed-by: Taniya Das <taniya.das@oss.qualcomm.com>
+Signed-off-by: Jagadeesh Kona <jagadeesh.kona@oss.qualcomm.com>
 ---
  drivers/clk/qcom/Kconfig          |   10 +
  drivers/clk/qcom/Makefile         |    1 +
@@ -11,10 +16,10 @@ Reviewed-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
  3 files changed, 2234 insertions(+)
 
 diff --git a/drivers/clk/qcom/Kconfig b/drivers/clk/qcom/Kconfig
-index b1b1ed70871c1b348985d6f5149152e57637d904..0fe2e690a104095adc3f218d67852aaaedd852a7 100644
+index 920d5e78e57d1ac62b59eb1c39d1f79c0718abb8..01778a82ffa294fe3f3e2d0a8101a4af04a355f0 100644
 --- a/drivers/clk/qcom/Kconfig
 +++ b/drivers/clk/qcom/Kconfig
-@@ -146,6 +146,16 @@ config CLK_X1E80100_TCSRCC
+@@ -190,6 +190,16 @@ config CLK_X1E80100_TCSRCC
  	  Support for the TCSR clock controller on X1E80100 devices.
  	  Say Y if you want to use peripheral devices such as SD/UFS.
  
@@ -32,10 +37,10 @@ index b1b1ed70871c1b348985d6f5149152e57637d904..0fe2e690a104095adc3f218d67852aaa
  	tristate "X1P42100 Graphics Clock Controller"
  	depends on ARM64 || COMPILE_TEST
 diff --git a/drivers/clk/qcom/Makefile b/drivers/clk/qcom/Makefile
-index b746e5046774259cebe3da8dad1f226561268a8b..2735036df906cd8192fe20bb2a026fca3a457bf9 100644
+index ae1f3207a20be4c9163a6f7ce9f309f36e80fc6f..93a617580b10d6314f34d54d08ae107c1437d973 100644
 --- a/drivers/clk/qcom/Makefile
 +++ b/drivers/clk/qcom/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_CLK_X1E80100_DISPCC) += dispcc-x1e80100.o
+@@ -40,6 +40,7 @@ obj-$(CONFIG_CLK_X1E80100_DISPCC) += dispcc-x1e80100.o
  obj-$(CONFIG_CLK_X1E80100_GCC) += gcc-x1e80100.o
  obj-$(CONFIG_CLK_X1E80100_GPUCC) += gpucc-x1e80100.o
  obj-$(CONFIG_CLK_X1E80100_TCSRCC) += tcsrcc-x1e80100.o
@@ -2272,3 +2277,6 @@ index 0000000000000000000000000000000000000000..c1a61c267919976d2d869fef4cd36594
 +
 +MODULE_DESCRIPTION("QTI CAMCC X1P42100 Driver");
 +MODULE_LICENSE("GPL");
+
+-- 
+2.34.1

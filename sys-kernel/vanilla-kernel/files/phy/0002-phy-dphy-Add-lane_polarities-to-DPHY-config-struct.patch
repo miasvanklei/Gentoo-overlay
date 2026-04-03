@@ -1,0 +1,30 @@
+Pass an array of data-lane polarities from controller to PHY. A true value
+means the lane polarity is inverted.
+
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
+---
+ include/linux/phy/phy-mipi-dphy.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/include/linux/phy/phy-mipi-dphy.h b/include/linux/phy/phy-mipi-dphy.h
+index c7eb11c41d7ec..3e0333b5a1a71 100644
+--- a/include/linux/phy/phy-mipi-dphy.h
++++ b/include/linux/phy/phy-mipi-dphy.h
+@@ -284,6 +284,14 @@ struct phy_configure_opts_mipi_dphy {
+ 	 * Indexed by logical lane number.
+ 	 */
+ 	unsigned char		lane_positions[PHY_MIPI_DPHY_MAX_DATA_LANES];
++
++	/**
++	 * @lane_polarities:
++	 *
++	 * Array representing data-lane polarities. True means inverted.
++	 * Indexed by logical lane number.
++	 */
++	bool			lane_polarities[PHY_MIPI_DPHY_MAX_DATA_LANES];
+ };
+ 
+ int phy_mipi_dphy_get_default_config(unsigned long pixel_clock,
+
+-- 
+2.52.0

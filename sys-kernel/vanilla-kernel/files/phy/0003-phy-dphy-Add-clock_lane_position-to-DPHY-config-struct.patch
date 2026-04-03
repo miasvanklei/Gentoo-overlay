@@ -1,0 +1,30 @@
+We need to identify which lane is the clock-lane as many different PHYs
+allow for a range of lanes, potentially any of the lanes to be the clock
+input lane on a PHY.
+
+Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
+---
+ include/linux/phy/phy-mipi-dphy.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/include/linux/phy/phy-mipi-dphy.h b/include/linux/phy/phy-mipi-dphy.h
+index 3e0333b5a1a71..76d41580e225a 100644
+--- a/include/linux/phy/phy-mipi-dphy.h
++++ b/include/linux/phy/phy-mipi-dphy.h
+@@ -292,6 +292,13 @@ struct phy_configure_opts_mipi_dphy {
+ 	 * Indexed by logical lane number.
+ 	 */
+ 	bool			lane_polarities[PHY_MIPI_DPHY_MAX_DATA_LANES];
++
++	/**
++	 * @clock_lane_position:
++	 *
++	 * Physical lane number used as the clock lane.
++	 */
++	unsigned char		clock_lane_position;
+ };
+ 
+ int phy_mipi_dphy_get_default_config(unsigned long pixel_clock,
+
+-- 
+2.52.0
