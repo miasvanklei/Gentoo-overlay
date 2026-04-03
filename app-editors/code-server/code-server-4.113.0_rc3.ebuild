@@ -16,11 +16,23 @@ fi
 
 # All binary packages depend on this
 NAN_V=2.22.2
+NODE_ADDON_API_V=8.4.0
+VSCODE_NATIVE_WATCHDOG_V=1.4.6
+NODE_PTY_V=1.2.0-beta.12
+VSCODE_SPDLOG_V=0.15.7
+ARGON2_V=0.44.0
+PARCEL_WATCHER_V=2.5.6
 
 SRC_URI="
 	https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
 	amd64? ( https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-amd64.tar.gz )
 	arm64? ( https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-arm64.tar.gz )
+	https://registry.npmjs.org/@vscode/native-watchdog/-/native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tgz -> vscodedep-vscode-native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tar.gz
+	https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
+	https://registry.npmjs.org/@vscode/spdlog/-/spdlog-${VSCODE_SPDLOG_V}.tgz -> vscodedep-vscode-spdlog-${VSCODE_SPDLOG_V}.tar.gz
+	https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
+	https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
+	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
 "
 
 COMPILE_VSCODE_BINMODS=(
@@ -34,10 +46,9 @@ COMPILE_VSCODE_BINMODS=(
 CLEANUP_VSCODE_BINMODS=(
 	"${COMPILE_VSCODE_BINMODS[@]}"
 	@vscode/deviceid
-	@vscode/windows-process-tree
-	@vscode/windows-registry
 	kerberos
 )
+
 
 S="${WORKDIR}/${PN}-${MY_PV}-linux-$(tc-arch)"
 
@@ -57,6 +68,35 @@ RDEPEND="
 
 DOCS=( "README.md" "ThirdPartyNotices.txt" )
 
+src_unpack() {
+	local a
+
+	for a in ${A} ; do
+		case "${a}" in
+			*code-server*)
+				unpack "${a}"
+			;;
+
+			*.tar|*.tar.gz|*.tar.bz2|*.tar.xz)
+				# Tarballs on registry.npmjs.org are wildly inconsistent,
+				# and violate the convention of having ${P} as the top
+				# directory name, so we strip the first component and
+				# unpack into a correct directory explicitly.
+				local basename=${a%.tar.*}
+				local destdir=${WORKDIR}/${basename#vscodedep-}
+				mkdir "${destdir}" || die
+				tar -C "${destdir}" -x -o --strip-components 1 \
+					-f "${DISTDIR}/${a}" || die
+				;;
+
+			*)
+				# Fallback to the default unpacker.
+				unpack "${a}"
+				;;
+		esac
+	done
+}
+
 src_prepare() {
 	# remove binaries from modules
 	cleanup_binmods
@@ -64,11 +104,10 @@ src_prepare() {
 	# prepare vscode modules for building
 	for binmod in "${COMPILE_VSCODE_BINMODS[@]}"; do
 		pkgdir="${WORKDIR}/$(package_dir ${binmod})"
-		cp -r "$(get_binmod_loc ${binmod})" "${pkgdir}" || die
 		mkdir -p "${pkgdir}/node_modules" || die
-		ln -s "$(get_binmod_loc node-addon-api)" \
+		ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
 			"${pkgdir}/node_modules/node-addon-api" || die
-		ln -s "${WORKDIR}/nan-${NAN_V}" \
+		ln -s "${WORKDIR}/nodejs-nan-${NAN_V}" \
 			"${pkgdir}/node_modules/nan" || die
 	done
 
@@ -138,8 +177,13 @@ enodegyp() {
 package_dir() {
 	local binmod_n="${1//\//-}"
 	binmod_n="${binmod_n//@/}"
+	binmod="${binmod_n//-/_}"
+	local binmod_v="${binmod^^}_V"
+	if [[ -z "${binmod_v}" ]]; then
+		die "${binmod_v} is not set."
+	fi
 
-	echo ${binmod_n}
+	echo ${binmod_n}-${!binmod_v}
 }
 
 # Some binmods have path that is different than usual
@@ -172,16 +216,6 @@ cleanup_binmods() {
 	# argon2 has prebuilds
 	rm -r "${S}/node_modules/argon2/prebuilds" || die
 
-	# remove watcher prebuilds
-	rm -r $(get_binmod_loc @parcel/watcher-linux-x64-glibc) || die
-	rm -r $(get_binmod_loc @parcel/watcher-linux-x64-musl) || die
-
-	# remove microsoft authentication: not opensource, depends on webkitgtk, only available for x86_64
-	local extensiondistdir="${S}/lib/vscode/extensions/microsoft-authentication/dist"
-	rm -r "${extensiondistdir}/libmsalruntime.so" || die
-	rm -r "${extensiondistdir}/msal-node-runtime.node" || die
-
 	# remove copilot
 	rm -r lib/vscode/node_modules/@github/copilot* || die
-	rm lib/vscode/node_modules/.bin/copilot || die
 }
