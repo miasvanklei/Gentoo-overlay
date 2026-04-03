@@ -8,7 +8,7 @@
 +dtb-$(CONFIG_ARCH_QCOM)	+= x1p42100-microsoft-sp12.dtb x1p42100-microsoft-sp12-el2.dtb
 --- /dev/null	2026-01-14 22:39:26.195668953 +0100
 +++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-01-17 16:52:26.429504116 +0100
-@@ -0,0 +1,1348 @@
+@@ -0,0 +1,1409 @@
 +// SPDX-License-Identifier: BSD-3-Clause
 +/*
 + * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
@@ -189,6 +189,38 @@
 +				"VA DMIC0", "vdd-micb",
 +				"VA DMIC1", "vdd-micb";
 +
++		displayport-0-dai-link {
++			link-name = "DisplayPort0 Playback";
++
++			cpu {
++				sound-dai = <&q6apmbedai DISPLAY_PORT_RX_0>;
++			};
++
++			codec {
++				sound-dai = <&mdss_dp0>;
++			};
++
++			platform {
++				sound-dai = <&q6apm>;
++			};
++		};
++
++		displayport-1-dai-link {
++			link-name = "DisplayPort1 Playback";
++
++			cpu {
++				sound-dai = <&q6apmbedai DISPLAY_PORT_RX_1>;
++			};
++
++			codec {
++				sound-dai = <&mdss_dp1>;
++			};
++
++			platform {
++				sound-dai = <&q6apm>;
++			};
++		};
++
 +		wsa-dai-link {
 +			link-name = "WSA Playback";
 +
@@ -273,6 +305,23 @@
 +
 +		pinctrl-0 = <&edp_reg_en>;
 +		pinctrl-names = "default";
++	};
++
++	vreg_misc_3p3: regulator-misc-3p3 {
++		compatible = "regulator-fixed";
++
++		regulator-name = "VREG_MISC_3P3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++
++		gpio = <&pm8550ve_8_gpios 6 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&misc_3p3_reg_en>;
++
++		regulator-boot-on;
++		regulator-always-on;
 +	};
 +
 +	vreg_edp_bl: regulator-edp-bl {
@@ -807,8 +856,7 @@
 +		 * port3 => csiphy4
 +		 */
 +		port@3 {
-+			csiphy4_ep: endpoint@4 {
-+				reg = <4>;
++			camss_csiphy4_inep0: endpoint@0 {
 +				clock-lanes = <7>;
 +				data-lanes = <0 1>;
 +				remote-endpoint = <&ov02c10_ep>;
@@ -847,16 +895,15 @@
 +			ov02c10_ep: endpoint {
 +				data-lanes = <1 2>;
 +				link-frequencies = /bits/ 64 <400000000>;
-+				remote-endpoint = <&csiphy4_ep>;
++				remote-endpoint = <&camss_csiphy4_inep0>;
 +			};
 +		};
 +	};
 +};
 +
 +&csiphy4 {
-+	vdda-0p8-supply = <&vreg_l2c_0p8>;
++	vdda-0p9-supply = <&vreg_l2c_0p8>;
 +	vdda-1p2-supply = <&vreg_l1c_1p2>;
-+	phy-type = <PHY_TYPE_DPHY>;
 +
 +	status = "okay";
 +};
@@ -870,7 +917,7 @@
 +};
 +
 +&i2c8 {
-+	clock-frequency = <400000>;
++	clock-frequency = <100000>;
 +
 +	status = "okay";
 +
@@ -881,6 +928,7 @@
 +		hid-descr-addr = <0x1>;
 +		interrupts-extended = <&tlmm 51 IRQ_TYPE_LEVEL_LOW>;
 +
++		vdd-supply = <&vreg_misc_3p3>;
 +		vddl-supply = <&vreg_l15b_1p8>;
 +
 +		pinctrl-0 = <&ts0_default>;
@@ -907,7 +955,7 @@
 +
 +&iris {
 +	firmware-name = "qcom/x1p42100/Microsoft/sp12/qcvss8380_pa.mbn";
-+	status = "okay";
++	status = "disabled";
 +};
 +
 +&mdss {
@@ -1021,6 +1069,19 @@
 +		power-source = <1>; /* 1.8 V */
 +		bias-pull-up;
 +		input-enable;
++	};
++};
++
++&pm8550ve_8_gpios {
++	misc_3p3_reg_en: misc-3p3-reg-en-state {
++		pins = "gpio6";
++		function = "normal";
++		bias-disable;
++		input-disable;
++		output-enable;
++		drive-push-pull;
++		power-source = <1>; /* 1.8 V */
++		qcom,drive-strength = <PMIC_GPIO_STRENGTH_LOW>;
 +	};
 +};
 +
@@ -1151,10 +1212,10 @@
 +		};
 +
 +		reset-n-pins {
-+			pins = "gpio52";
++			pins = "gpio48";
 +			function = "gpio";
-+			output-high;
 +			drive-strength = <16>;
++			bias-disable;
 +		};
 +	};
 +
