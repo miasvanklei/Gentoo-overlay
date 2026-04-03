@@ -12,7 +12,7 @@ SRC_URI="https://gitlab.freedesktop.org/hadess/iio-sensor-proxy/-/archive/${PV}/
 LICENSE="GPL-3"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
-IUSE=""
+IUSE="+ssc"
 
 RDEPEND="
 	dev-libs/glib:*
@@ -20,6 +20,10 @@ RDEPEND="
 	>=dev-libs/libgudev-237
 	sys-apps/systemd
 	virtual/udev
+	ssc? (
+		dev-libs/libssc
+		dev-util/fastrpc
+	)
 "
 
 DEPEND="
@@ -27,6 +31,14 @@ DEPEND="
 	dev-build/gtk-doc-am
 	virtual/pkgconfig
 "
+
+src_configure() {
+	local emesonargs=(
+		$(meson_feature ssc ssc-support)
+	)
+
+	meson_src_configure
+}
 
 src_install() {
 	meson_src_install
@@ -41,4 +53,5 @@ pkg_postinst() {
 pkg_postrm() {
 	xdg_pkg_postrm
 	gnome2_schemas_update
+	udev_reload
 }
