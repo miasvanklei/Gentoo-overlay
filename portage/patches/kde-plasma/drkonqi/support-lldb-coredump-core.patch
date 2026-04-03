@@ -19,3 +19,16 @@
      }
  
      return result;
+--- a/src/backtracegenerator.cpp	2026-03-17 12:01:21.000000000 +0100
++++ b/src/backtracegenerator.cpp	2026-03-19 12:45:58.951623678 +0100
+@@ -389,7 +389,9 @@
+ 
+     *m_proc << KShell::splitArgs(str);
+ 
+-    memoryConstrainProc();
++    if (debuggerIsGDB()) {
++        memoryConstrainProc();
++    }
+ 
+     m_proc->setOutputChannelMode(KProcess::MergedChannels);
+     m_proc->setNextOpenMode(QIODevice::ReadWrite | QIODevice::Text);
