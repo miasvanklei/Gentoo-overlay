@@ -11,9 +11,10 @@
  ACTION=="add", SUBSYSTEM=="misc", KERNEL=="fastrpc-cdsp", OWNER="fastrpc", GROUP="fastrpc", MODE="0640", TAG+="systemd", ENV{SYSTEMD_WANTS}+="cdsprpcd.service"
 --- /dev/null	2026-03-09 20:19:38.421380375 +0100
 +++ b/files/adsprpcd_sensorspd.service	2026-03-09 21:46:33.672736013 +0100
-@@ -0,0 +1,11 @@
+@@ -0,0 +1,12 @@
 +[Unit]
 +Description=sensorspd aDSP RPC daemon
++Before=iio-sensor-proxy.service
 +After=dev-fastrpc-adsp.device dev-fastrpc-adsp-secure.device
 +ConditionPathExists=|/dev/fastrpc-adsp
 +ConditionPathExists=|/dev/fastrpc-adsp-secure
