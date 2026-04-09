@@ -19,7 +19,7 @@ NAN_V=2.22.2
 NODE_ADDON_API_V=8.4.0
 VSCODE_NATIVE_WATCHDOG_V=1.4.6
 NODE_PTY_V=1.2.0-beta.12
-VSCODE_SPDLOG_V=0.15.7
+VSCODE_SPDLOG_V=0.15.8
 ARGON2_V=0.44.0
 PARCEL_WATCHER_V=2.5.6
 
@@ -212,9 +212,6 @@ cleanup_binmods() {
 	done
 
 	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg || die "failed to remove bundled ripgrep"
-
-	# argon2 has prebuilds
-	rm -r "${S}/node_modules/argon2/prebuilds" || die
 
 	# remove copilot
 	rm -r lib/vscode/node_modules/@github/copilot* || die
