@@ -1,14 +1,16 @@
---- a/arch/arm64/boot/dts/qcom/Makefile	2025-12-11 19:47:17.525110500 +0100
-+++ b/arch/arm64/boot/dts/qcom/Makefile	2025-12-11 19:46:58.941305243 +0100
-@@ -350,3 +350,5 @@
+--- a/arch/arm64/boot/dts/qcom/Makefile	2026-04-06 00:26:23.000000000 +0200
++++ b/arch/arm64/boot/dts/qcom/Makefile	2026-04-06 12:55:47.486045286 +0200
+@@ -390,5 +390,7 @@
  dtb-$(CONFIG_ARCH_QCOM)	+= x1p42100-hp-omnibook-x14.dtb x1p42100-hp-omnibook-x14-el2.dtb
  x1p42100-lenovo-thinkbook-16-el2-dtbs	:= x1p42100-lenovo-thinkbook-16.dtb x1-el2.dtbo
  dtb-$(CONFIG_ARCH_QCOM)	+= x1p42100-lenovo-thinkbook-16.dtb x1p42100-lenovo-thinkbook-16-el2.dtb
 +x1p42100-microsoft-sp12-el2-dtbs	:= x1p42100-microsoft-sp12.dtb x1-el2.dtbo
 +dtb-$(CONFIG_ARCH_QCOM)	+= x1p42100-microsoft-sp12.dtb x1p42100-microsoft-sp12-el2.dtb
---- /dev/null	2026-01-14 22:39:26.195668953 +0100
-+++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-01-17 16:52:26.429504116 +0100
-@@ -0,0 +1,1409 @@
+ x1p64100-microsoft-denali-el2-dtbs	:= x1p64100-microsoft-denali.dtb x1-el2.dtbo
+ dtb-$(CONFIG_ARCH_QCOM)	+= x1p64100-microsoft-denali.dtb x1p64100-microsoft-denali-el2.dtb
+--- /dev/null	2026-04-09 10:36:12.255999997 +0200
++++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-04-10 17:31:57.516378528 +0200
+@@ -0,0 +1,1354 @@
 +// SPDX-License-Identifier: BSD-3-Clause
 +/*
 + * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
@@ -836,6 +838,13 @@
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 +		};
 +
++		vreg_l6m_1p8: ldo6 {
++			regulator-name = "vreg_l6m_1p8";
++			regulator-min-microvolt = <1800000>;
++			regulator-max-microvolt = <1800000>;
++			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
++		};
++
 +		vreg_l7m_2p8: ldo7 {
 +			regulator-name = "vreg_l7m_2p9";
 +			regulator-min-microvolt = <2800000>;
@@ -843,69 +852,6 @@
 +			regulator-initial-mode = <RPMH_REGULATOR_MODE_HPM>;
 +		};
 +	};
-+};
-+
-+&camss {
-+	status = "okay";
-+
-+	ports {
-+		/*
-+		 * port0 => csiphy0
-+		 * port1 => csiphy1
-+		 * port2 => csiphy2
-+		 * port3 => csiphy4
-+		 */
-+		port@3 {
-+			camss_csiphy4_inep0: endpoint@0 {
-+				clock-lanes = <7>;
-+				data-lanes = <0 1>;
-+				remote-endpoint = <&ov02c10_ep>;
-+			};
-+		};
-+	};
-+};
-+
-+&cci1 {
-+	status = "okay";
-+};
-+
-+&cci1_i2c1 {
-+	camera@36 {
-+		compatible = "ovti,ov02c10";
-+		reg = <0x36>;
-+
-+		reset-gpios = <&tlmm 237 GPIO_ACTIVE_LOW>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&cam_rgb_default>;
-+
-+		leds = <&privacy_led>;
-+		led-names = "privacy";
-+
-+		clocks = <&camcc CAM_CC_MCLK4_CLK>;
-+		assigned-clocks = <&camcc CAM_CC_MCLK4_CLK>;
-+		assigned-clock-rates = <12000000>;
-+
-+		orientation = <0>; /* front facing */
-+
-+		avdd-supply = <&vreg_l7b_2p8>;
-+		dvdd-supply = <&vreg_l7b_2p8>;
-+		dovdd-supply = <&vreg_l3m_1p8>;
-+
-+		port {
-+			ov02c10_ep: endpoint {
-+				data-lanes = <1 2>;
-+				link-frequencies = /bits/ 64 <400000000>;
-+				remote-endpoint = <&camss_csiphy4_inep0>;
-+			};
-+		};
-+	};
-+};
-+
-+&csiphy4 {
-+	vdda-0p9-supply = <&vreg_l2c_0p8>;
-+	vdda-1p2-supply = <&vreg_l1c_1p2>;
-+
-+	status = "okay";
 +};
 +
 +&gpu {
@@ -954,8 +900,7 @@
 +};
 +
 +&iris {
-+	firmware-name = "qcom/x1p42100/Microsoft/sp12/qcvss8380_pa.mbn";
-+	status = "disabled";
++	status = "okay";
 +};
 +
 +&mdss {
@@ -1022,8 +967,8 @@
 +};
 +
 +&pcie4 {
-+	perst-gpios = <&tlmm 146 GPIO_ACTIVE_LOW>;
-+	wake-gpios = <&tlmm 148 GPIO_ACTIVE_LOW>;
++	pinctrl-0 = <&pcie4_default>;
++	pinctrl-names = "default";
 +
 +	status = "okay";
 +};
@@ -1036,6 +981,9 @@
 +};
 +
 +&pcie4_port0 {
++	reset-gpios = <&tlmm 146 GPIO_ACTIVE_LOW>;
++	wake-gpios = <&tlmm 148 GPIO_ACTIVE_LOW>;
++
 +	wifi@0 {
 +		compatible = "pci17cb,1107";
 +		reg = <0x10000 0x0 0x0 0x0 0x0>;
@@ -1190,18 +1138,54 @@
 +	gpio-reserved-ranges = <34 2>, /* Unused */
 +			       <44 4>; /* SPI (TPM) */
 +
++	cam_indicator_en: cam-indicator-en-state {
++		pins = "gpio225";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++	};
++
++	edp_reg_en: edp-reg-en-state {
++		pins = "gpio70";
++		function = "gpio";
++		drive-strength = <2>;
++		bias-disable;
++		output-high;
++	};
++
 +	hall_int_n_default: hall-int-n-state {
 +		pins = "gpio2";
 +		function = "gpio";
 +		bias-disable;
 +	};
 +
-+	panel_pins: panel-pins {
-+		pins = "gpio29";
++	pcie4_default: pcie4-default-state {
++		clkreq-n-pins {
++			pins = "gpio147";
++			function = "pcie4_clk";
++			drive-strength = <2>;
++			bias-pull-up;
++		};
++
++		perst-n-pins {
++			pins = "gpio146";
++			function = "gpio";
++			drive-strength = <2>;
++			bias-disable;
++		};
++
++		wake-n-pins {
++			pins = "gpio148";
++			function = "gpio";
++			drive-strength = <2>;
++			bias-pull-up;
++		};
++	};
++
++	ssam_state: ssam-state-state {
++		pins = "gpio91";
 +		function = "gpio";
-+		drive-strength = <2>;
 +		bias-disable;
-+		output-low;
 +	};
 +
 +	ts0_default: ts0-default-state {
@@ -1217,43 +1201,6 @@
 +			drive-strength = <16>;
 +			bias-disable;
 +		};
-+	};
-+
-+	edp_reg_en: edp-reg-en-state {
-+		pins = "gpio70";
-+		function = "gpio";
-+		drive-strength = <2>;
-+		bias-disable;
-+		output-high;
-+	};
-+
-+	ssam_state: ssam-state-state {
-+		pins = "gpio91";
-+		function = "gpio";
-+		bias-disable;
-+	};
-+
-+	cam_rgb_default: cam-rgb-default-state {
-+		mclk-pins {
-+			pins = "gpio100";
-+			function = "cam_aon";
-+			drive-strength = <16>;
-+			bias-disable;
-+		};
-+
-+		reset-n-pins {
-+			pins = "gpio237";
-+			function = "gpio";
-+			drive-strength = <2>;
-+			bias-disable;
-+		};
-+	};
-+
-+	wcn_wlan_bt_en: wcn-wlan-bt-en-state {
-+		pins = "gpio116", "gpio117";
-+		function = "gpio";
-+		drive-strength = <2>;
-+		bias-disable;
 +	};
 +
 +	usb_1_ss0_sbu_default: usb-1-ss0-sbu-state {
@@ -1296,8 +1243,8 @@
 +		bias-disable;
 +	};
 +
-+	cam_indicator_en: cam-indicator-en-state {
-+		pins = "gpio225";
++	wcn_wlan_bt_en: wcn-wlan-bt-en-state {
++		pins = "gpio116", "gpio117";
 +		function = "gpio";
 +		drive-strength = <2>;
 +		bias-disable;
