@@ -5,7 +5,7 @@ EAPI=8
 
 KERNEL_IUSE_GENERIC_UKI=1
 
-inherit kernel-build toolchain-funcs verify-sig
+inherit kernel-build toolchain-funcs
 
 if [[ ${PV} == *"_rc"* ]]; then
 	BASE_P=linux-${PV/_/-}
@@ -43,10 +43,6 @@ fi
 SRC_URI+="
 	https://github.com/projg2/gentoo-kernel-config/archive/${GENTOO_CONFIG_VER}.tar.gz
 		-> gentoo-kernel-config-${GENTOO_CONFIG_VER}.tar.gz
-	verify-sig? (
-		https://cdn.kernel.org/pub/linux/kernel/v$(ver_cut 1).x/sha256sums.asc
-			-> linux-$(ver_cut 1).x-sha256sums-${SHA256SUM_DATE}.asc
-	)
 	amd64? (
 		https://raw.githubusercontent.com/projg2/fedora-kernel-config-for-gentoo/${CONFIG_VER}/kernel-x86_64-fedora.config
 			-> kernel-x86_64-fedora.config.${CONFIG_VER}
@@ -81,13 +77,10 @@ REQUIRED_USE="
 
 BDEPEND="
 	debug? ( dev-util/pahole )
-	verify-sig? ( >=sec-keys/openpgp-keys-kernel-20250702 )
 "
 PDEPEND="
 	>=virtual/dist-kernel-${PV}
 "
-
-VERIFY_SIG_OPENPGP_KEY_PATH=/usr/share/openpgp-keys/kernel.org.asc
 
 QA_FLAGS_IGNORED="
 	usr/src/linux-.*/scripts/gcc-plugins/.*.so
@@ -95,25 +88,13 @@ QA_FLAGS_IGNORED="
 	usr/src/linux-.*/arch/powerpc/kernel/vdso.*/vdso.*.so.dbg
 "
 
-src_unpack() {
-	if use verify-sig; then
-		cd "${DISTDIR}" || die
-		verify-sig_verify_signed_checksums \
-			"linux-$(ver_cut 1).x-sha256sums-${SHA256SUM_DATE}.asc" \
-			sha256 "${BASE_P}.tar.xz patch-${PV}.xz"
-		cd "${WORKDIR}" || die
-	fi
-
-	default
-}
-
 src_prepare() {
 	if [[ -n $(ver_cut 3) && $(ver_cut 3) != "rc" ]]; then
 		eapply "${WORKDIR}/patch-${PV}"
 	fi
 
 
-	for i in other audio phy camera gpu pci remoteproc usb video wifi input el2 rockchip surface; do
+	for i in other audio phy pci remoteproc usb video wifi input el2 rockchip surface; do
 		for j in "${FILESDIR}"/$i/*.patch; do
 			eapply $j
 		done

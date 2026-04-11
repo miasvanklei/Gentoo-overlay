@@ -135,9 +135,9 @@ index 158bcd6cc..672af7336 100644
 --- a/drivers/remoteproc/qcom_q6v5_pas.c
 +++ b/drivers/remoteproc/qcom_q6v5_pas.c
 @@ -716,7 +716,10 @@ static int qcom_pas_probe(struct platform_device *pdev)
- 		return -ENOMEM;
  	}
  
+ 	rproc->has_iommu = of_property_present(pdev->dev.of_node, "iommus");
 -	rproc->auto_boot = desc->auto_boot;
 +	if (desc->auto_boot)
 +		rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;

@@ -37,7 +37,7 @@ diff --git a/drivers/remoteproc/qcom_q6v5_pas.c b/drivers/remoteproc/qcom_q6v5_p
 index 672af7336..3cf24f202 100644
 --- a/drivers/remoteproc/qcom_q6v5_pas.c
 +++ b/drivers/remoteproc/qcom_q6v5_pas.c
-@@ -226,10 +226,13 @@ static int qcom_pas_load(struct rproc *rproc, const struct firmware *fw)
+@@ -227,10 +227,13 @@
  	/* Store firmware handle to be used in qcom_pas_start() */
  	pas->firmware = fw;
  
@@ -55,7 +55,7 @@ index 672af7336..3cf24f202 100644
  
  	if (pas->dtb_pas_id) {
  		ret = request_firmware(&pas->dtb_firmware, pas->dtb_firmware_name, pas->dev);
-@@ -379,6 +382,28 @@ static void qcom_pas_handover(struct qcom_q6v5 *q6v5)
+@@ -396,6 +399,28 @@
  	qcom_pas_pds_disable(pas, pas->proxy_pds, pas->proxy_pd_count);
  }
  
@@ -84,7 +84,7 @@ index 672af7336..3cf24f202 100644
  static int qcom_pas_stop(struct rproc *rproc)
  {
  	struct qcom_pas *pas = rproc->priv;
-@@ -389,7 +414,7 @@ static int qcom_pas_stop(struct rproc *rproc)
+@@ -406,7 +431,7 @@
  	if (ret == -ETIMEDOUT)
  		dev_err(pas->dev, "timed out on wait\n");
  
@@ -93,7 +93,7 @@ index 672af7336..3cf24f202 100644
  	if (ret && pas->decrypt_shutdown)
  		ret = qcom_pas_shutdown_poll_decrypt(pas);
  
-@@ -397,14 +422,16 @@ static int qcom_pas_stop(struct rproc *rproc)
+@@ -414,7 +439,7 @@
  		dev_err(pas->dev, "failed to shutdown: %d\n", ret);
  
  	if (pas->dtb_pas_id) {
@@ -101,7 +101,10 @@ index 672af7336..3cf24f202 100644
 +		ret = qcom_pas_shutdown(pas->dtb_pas_id, pas->lite_dtb_pas_id);
  		if (ret)
  			dev_err(pas->dev, "failed to shutdown dtb: %d\n", ret);
- 	}
+ 
+@@ -423,9 +448,11 @@
+ 
+ 	qcom_pas_unmap_carveout(rproc, pas->mem_phys, pas->mem_size);
  
 -	handover = qcom_q6v5_unprepare(&pas->q6v5);
 -	if (handover)
@@ -114,7 +117,7 @@ index 672af7336..3cf24f202 100644
  
  	if (pas->smem_host_id)
  		ret = qcom_smem_bust_hwspin_lock_by_host(pas->smem_host_id);
-@@ -412,6 +439,13 @@ static int qcom_pas_stop(struct rproc *rproc)
+@@ -433,6 +460,13 @@
  	return ret;
  }
  
@@ -128,32 +131,32 @@ index 672af7336..3cf24f202 100644
  static void *qcom_pas_da_to_va(struct rproc *rproc, u64 da, size_t len, bool *is_iomem)
  {
  	struct qcom_pas *pas = rproc->priv;
-@@ -438,6 +472,7 @@ static const struct rproc_ops qcom_pas_ops = {
+@@ -514,6 +548,7 @@
  	.unprepare = qcom_pas_unprepare,
  	.start = qcom_pas_start,
  	.stop = qcom_pas_stop,
 +	.attach = qcom_pas_attach,
  	.da_to_va = qcom_pas_da_to_va,
- 	.parse_fw = qcom_register_dump_segments,
+ 	.parse_fw = qcom_pas_parse_firmware,
  	.load = qcom_pas_load,
-@@ -448,6 +483,7 @@ static const struct rproc_ops qcom_pas_minidump_ops = {
+@@ -524,6 +559,7 @@
  	.unprepare = qcom_pas_unprepare,
  	.start = qcom_pas_start,
  	.stop = qcom_pas_stop,
 +	.attach = qcom_pas_attach,
  	.da_to_va = qcom_pas_da_to_va,
- 	.parse_fw = qcom_register_dump_segments,
+ 	.parse_fw = qcom_pas_parse_firmware,
  	.load = qcom_pas_load,
-@@ -717,7 +753,7 @@ static int qcom_pas_probe(struct platform_device *pdev)
- 	}
+@@ -775,7 +811,7 @@
  
+ 	rproc->has_iommu = of_property_present(pdev->dev.of_node, "iommus");
  	if (desc->auto_boot)
 -		rproc->auto_boot = RPROC_AUTO_BOOT_ATTACH_OR_START;
 +		rproc->auto_boot = RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE;
  	else
  		rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
  	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
-@@ -772,6 +808,14 @@ static int qcom_pas_probe(struct platform_device *pdev)
+@@ -830,6 +866,14 @@
  	if (ret)
  		goto detach_proxy_pds;
  
@@ -170,4 +173,3 @@ index 672af7336..3cf24f202 100644
  	qcom_add_pdm_subdev(rproc, &pas->pdm_subdev);
 -- 
 2.52.0
-
