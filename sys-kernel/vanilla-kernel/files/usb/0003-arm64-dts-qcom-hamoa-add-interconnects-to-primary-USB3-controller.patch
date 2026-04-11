@@ -1,0 +1,30 @@
+Add the interconnect paths to enable drivers to vote on them, ensuring
+the necessary NoC bandwidth is available.
+
+This hasn't been done before, as prior to commit 05566ebcc0cd
+("clk: qcom: gcc-x1e80100: Keep GCC USB QTB clock always ON"), this
+would cause an inexplicable crash upon resume from system suspend.
+
+Signed-off-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
+---
+ arch/arm64/boot/dts/qcom/hamoa.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+index 051dee076416..233c7ab4c52c 100644
+--- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
++++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+@@ -5318,6 +5318,13 @@ usb_1_ss0: usb@a600000 {
+ 
+ 			resets = <&gcc GCC_USB30_PRIM_BCR>;
+ 
++			interconnects = <&usb_south_anoc MASTER_USB3_0 QCOM_ICC_TAG_ALWAYS
++					 &mc_virt SLAVE_EBI1 QCOM_ICC_TAG_ALWAYS>,
++					<&gem_noc MASTER_APPSS_PROC QCOM_ICC_TAG_ACTIVE_ONLY
++					 &config_noc SLAVE_USB3_0 QCOM_ICC_TAG_ACTIVE_ONLY>;
++			interconnect-names = "usb-ddr",
++					     "apps-usb";
++
+ 			wakeup-source;
+ 
+ 			iommus = <&apps_smmu 0x1420 0x0>;
