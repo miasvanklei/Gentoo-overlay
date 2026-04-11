@@ -1,9 +1,74 @@
---- a/drivers/media/platform/qcom/camss/camss.c	2026-01-30 14:38:22.654534277 +0100
-+++ b/drivers/media/platform/qcom/camss/camss.c	2026-01-30 14:56:59.914098027 +0100
-@@ -3343,6 +3343,185 @@
+--- a/drivers/media/platform/qcom/camss/camss-csiphy-3ph-1-0.c
++++ b/drivers/media/platform/qcom/camss/camss-csiphy-3ph-1-0.c
+@@ -1020,6 +1020,7 @@ static bool csiphy_is_gen2(u32 version)
+ 	case CAMSS_8650:
+ 	case CAMSS_8775P:
+ 	case CAMSS_X1E80100:
++	case CAMSS_X1P42100:
+ 		ret = true;
+ 		break;
+ 	}
+@@ -1115,6 +1116,7 @@ static int csiphy_init(struct csiphy_device *csiphy)
+ 		regs->lane_array_size = ARRAY_SIZE(lane_regs_sc8280xp);
+ 		break;
+ 	case CAMSS_X1E80100:
++	case CAMSS_X1P42100:
+ 		regs->lane_regs = &lane_regs_x1e80100[0];
+ 		regs->lane_array_size = ARRAY_SIZE(lane_regs_x1e80100);
+ 		regs->offset = 0x1000;
+--- a/drivers/media/platform/qcom/camss/camss-vfe.c
++++ b/drivers/media/platform/qcom/camss/camss-vfe.c
+@@ -353,6 +353,7 @@ static u32 vfe_src_pad_code(struct vfe_line *line, u32 sink_code,
+ 	case CAMSS_8650:
+ 	case CAMSS_8775P:
+ 	case CAMSS_X1E80100:
++	case CAMSS_X1P42100:
+ 		switch (sink_code) {
+ 		case MEDIA_BUS_FMT_YUYV8_1X16:
+ 		{
+@@ -2012,6 +2013,7 @@ static int vfe_bpl_align(struct vfe_device *vfe)
+ 	case CAMSS_8650:
+ 	case CAMSS_8775P:
+ 	case CAMSS_X1E80100:
++	case CAMSS_X1P42100:
+ 		ret = 16;
+ 		break;
+ 	default:
+--- a/drivers/media/platform/qcom/camss/camss.h
++++ b/drivers/media/platform/qcom/camss/camss.h
+@@ -94,6 +94,7 @@ enum camss_version {
+ 	CAMSS_8650,
+ 	CAMSS_8775P,
+ 	CAMSS_X1E80100,
++	CAMSS_X1P42100,
+ };
+ 
+ enum icc_count {
+--- a/drivers/media/platform/qcom/camss/camss.c
++++ b/drivers/media/platform/qcom/camss/camss.c
+@@ -4193,6 +4193,204 @@
  	.reg = "csid_wrapper",
  };
  
++static const struct camss_subdev_resources csiphy_res_x1p42100[] = {
++	/* CSIPHY0 */
++	{
++		.csiphy = {
++			.id = 0,
++			.hw_ops = &csiphy_ops_3ph_1_0,
++			.formats = &csiphy_formats_sdm845
++		},
++	},
++	/* CSIPHY4 */
++	{
++		.csiphy = {
++			.id = 4,
++			.hw_ops = &csiphy_ops_3ph_1_0,
++			.formats = &csiphy_formats_sdm845
++		},
++	},
++};
++
 +static const struct camss_subdev_resources csid_res_x1p42100[] = {
 +	/* CSID0 */
 +	{
@@ -186,30 +251,30 @@
  /*
   * camss_add_clock_margin - Add margin to clock frequency rate
   * @rate: Clock frequency rate
-@@ -4488,6 +4667,20 @@
+@@ -5315,6 +5513,20 @@
  	.vfe_num = ARRAY_SIZE(vfe_res_x1e80100),
  };
  
 +static const struct camss_resources x1p42100_resources = {
-+	.version = CAMSS_X1E80100,
++	.version = CAMSS_X1P42100,
 +	.pd_name = "top",
-+	.csiphy_res = csiphy_res_x1e80100,
++	.csiphy_res = csiphy_res_x1p42100,
 +	.csid_res = csid_res_x1p42100,
 +	.vfe_res = vfe_res_x1p42100,
 +	.csid_wrapper_res = &csid_wrapper_res_x1e80100,
 +	.icc_res = icc_res_x1e80100,
 +	.icc_path_num = ARRAY_SIZE(icc_res_x1e80100),
-+	.csiphy_num = ARRAY_SIZE(csiphy_res_x1e80100),
++	.csiphy_num = ARRAY_SIZE(csiphy_res_x1p42100),
 +	.csid_num = ARRAY_SIZE(csid_res_x1p42100),
 +	.vfe_num = ARRAY_SIZE(vfe_res_x1p42100),
 +};
 +
  static const struct of_device_id camss_dt_match[] = {
  	{ .compatible = "qcom,msm8916-camss", .data = &msm8916_resources },
- 	{ .compatible = "qcom,msm8953-camss", .data = &msm8953_resources },
-@@ -4503,6 +4696,7 @@
- 	{ .compatible = "qcom,sm8250-camss", .data = &sm8250_resources },
+ 	{ .compatible = "qcom,msm8939-camss", .data = &msm8939_resources },
+@@ -5333,6 +5545,7 @@
  	{ .compatible = "qcom,sm8550-camss", .data = &sm8550_resources },
+ 	{ .compatible = "qcom,sm8650-camss", .data = &sm8650_resources },
  	{ .compatible = "qcom,x1e80100-camss", .data = &x1e80100_resources },
 +	{ .compatible = "qcom,x1p42100-camss", .data = &x1p42100_resources },
  	{ }
