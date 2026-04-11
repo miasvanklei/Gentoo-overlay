@@ -1,0 +1,309 @@
+--- a/drivers/media/i2c/ov13858.c	2026-04-10 20:56:58.882078293 +0200
++++ b/drivers/media/i2c/ov13858.c	2026-04-10 20:57:06.010093990 +0200
+@@ -5,6 +5,7 @@
+ #include <linux/clk.h>
+ #include <linux/i2c.h>
+ #include <linux/module.h>
++#include <linux/of.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
+ #include <media/v4l2-cci.h>
+@@ -1006,9 +1007,15 @@
+ 	}
+ };
+ 
++static const char * const ov13858_supply_names[] = {
++	"afvdd",        /* Autofocus power */
++	"dovdd",        /* Digital I/O power */
++	"avdd",         /* Analog power */
++	"dvdd",         /* Digital core power */
++};
++
+ struct ov13858 {
+ 	struct device *dev;
+-	struct clk *clk;
+ 
+ 	struct v4l2_subdev sd;
+ 	struct media_pad pad;
+@@ -1023,8 +1030,13 @@
+ 	struct v4l2_ctrl *hblank;
+ 	struct v4l2_ctrl *exposure;
+ 
++	struct clk *img_clk;
++	struct gpio_desc *reset;
++	struct regulator_bulk_data supplies[ARRAY_SIZE(ov13858_supply_names)];
++
+ 	/* Current mode */
+ 	const struct ov13858_mode *cur_mode;
++	u32 hw_link_freq_index;
+ };
+ 
+ #define to_ov13858(_sd)	container_of(_sd, struct ov13858, sd)
+@@ -1306,6 +1318,68 @@
+ 	return 0;
+ }
+ 
++/* This function tries to get power control resources */
++static int ov13858_get_pm_resources(struct device *dev)
++{
++	struct v4l2_subdev *sd = dev_get_drvdata(dev);
++	struct ov13858 *ov13858 = to_ov13858(sd);
++	int i;
++
++	ov13858->reset = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_HIGH);
++	if (IS_ERR(ov13858->reset))
++		return dev_err_probe(dev, PTR_ERR(ov13858->reset),
++				     "failed to get reset gpio\n");
++
++	for (i = 0; i < ARRAY_SIZE(ov13858_supply_names); i++)
++		ov13858->supplies[i].supply = ov13858_supply_names[i];
++
++	return devm_regulator_bulk_get(dev, ARRAY_SIZE(ov13858_supply_names),
++				       ov13858->supplies);
++}
++
++static int ov13858_power_off(struct device *dev)
++{
++	struct v4l2_subdev *sd = dev_get_drvdata(dev);
++	struct ov13858 *ov13858 = to_ov13858(sd);
++
++	gpiod_set_value_cansleep(ov13858->reset, 1);
++
++	regulator_bulk_disable(ARRAY_SIZE(ov13858_supply_names),
++			       ov13858->supplies);
++
++	clk_disable_unprepare(ov13858->img_clk);
++
++	return 0;
++}
++
++static int ov13858_power_on(struct device *dev)
++{
++	struct v4l2_subdev *sd = dev_get_drvdata(dev);
++	struct ov13858 *ov13858 = to_ov13858(sd);
++	int ret;
++
++	ret = clk_prepare_enable(ov13858->img_clk);
++	if (ret)
++		dev_err(dev, "failed to enable imaging clock: %d\n", ret);
++
++	ret = regulator_bulk_enable(ARRAY_SIZE(ov13858_supply_names),
++				    ov13858->supplies);
++	if (ret < 0) {
++		dev_err(dev, "failed to enable regulators: %d", ret);
++		clk_disable_unprepare(ov13858->img_clk);
++		return ret;
++	}
++
++	if (ov13858->reset) {
++		/* Assert reset for at least 2ms on back to back off-on */
++		usleep_range(2000, 2200);
++		gpiod_set_value_cansleep(ov13858->reset, 0);
++		usleep_range(5000, 5100);
++	}
++
++	return ret;
++}
++
+ static int
+ ov13858_set_format(struct v4l2_subdev *sd,
+ 		       struct v4l2_subdev_state *sd_state,
+@@ -1465,22 +1539,72 @@
+ 	return 0;
+ }
+ 
++static int ov13858_check_hwcfg(struct ov13858 *ov13858)
++{
++	struct v4l2_fwnode_endpoint bus_cfg = {
++		.bus_type = V4L2_MBUS_CSI2_DPHY,
++	};
++	struct fwnode_handle *ep;
++	unsigned long link_freq_bitmap;
++	int ret;
++
++	ep = fwnode_graph_get_endpoint_by_id(dev_fwnode(ov13858->dev),
++					     0, 0, 0);
++	if (!ep)
++		return dev_err_probe(ov13858->dev, -EPROBE_DEFER,
++				     "waiting for fwnode graph endpoint\n");
++
++	ret = v4l2_fwnode_endpoint_alloc_parse(ep, &bus_cfg);
++	fwnode_handle_put(ep);
++	if (ret)
++		return dev_err_probe(ov13858->dev, ret,
++				     "parsing endpoint failed\n");
++
++	ret = v4l2_link_freq_to_bitmap(ov13858->dev,
++				       bus_cfg.link_frequencies,
++				       bus_cfg.nr_of_link_frequencies,
++				       link_freq_menu_items,
++				       ARRAY_SIZE(link_freq_menu_items),
++				       &link_freq_bitmap);
++	if (ret)
++		goto out;
++
++	ov13858->hw_link_freq_index = ffs(link_freq_bitmap) - 1;
++
++	if (bus_cfg.bus.mipi_csi2.num_data_lanes != 4) {
++		ret = dev_err_probe(ov13858->dev, -EINVAL,
++				    "number of CSI2 data lanes %u is not supported\n",
++				    bus_cfg.bus.mipi_csi2.num_data_lanes);
++		goto out;
++	}
++
++out:
++	v4l2_fwnode_endpoint_free(&bus_cfg);
++	return ret;
++}
++
+ static void ov13858_remove(struct i2c_client *client)
+ {
+ 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
+ 	struct ov13858 *ov13858 = to_ov13858(sd);
+ 
+ 	v4l2_async_unregister_subdev(sd);
++	v4l2_subdev_cleanup(sd);
+ 	media_entity_cleanup(&sd->entity);
+ 	v4l2_ctrl_handler_free(sd->ctrl_handler);
+ 
+ 	pm_runtime_disable(ov13858->dev);
++	if (!pm_runtime_status_suspended(ov13858->dev)) {
++		ov13858_power_off(ov13858->dev);
++		pm_runtime_set_suspended(ov13858->dev);
++	}
+ }
+ 
+ static int ov13858_probe(struct i2c_client *client)
+ {
+ 	struct ov13858 *ov13858;
+-	unsigned long freq;
++	const struct ov13858_mode *mode;
++	u32 i;
+ 	int ret;
+ 
+ 	ov13858 = devm_kzalloc(&client->dev, sizeof(*ov13858), GFP_KERNEL);
+@@ -1489,37 +1613,47 @@
+ 
+ 	ov13858->dev = &client->dev;
+ 
+-	ov13858->clk = devm_v4l2_sensor_clk_get(ov13858->dev, NULL);
+-	if (IS_ERR(ov13858->clk))
+-		return dev_err_probe(ov13858->dev, PTR_ERR(ov13858->clk),
++	ov13858->img_clk = devm_v4l2_sensor_clk_get(ov13858->dev, NULL);
++	if (IS_ERR(ov13858->img_clk))
++		return dev_err_probe(ov13858->dev, PTR_ERR(ov13858->img_clk),
+ 				     "failed to get clock\n");
+ 
+-	freq = clk_get_rate(ov13858->clk);
+-	if (freq != 19200000)
+-		return dev_err_probe(ov13858->dev, -EINVAL,
+-				     "external clock %lu is not supported\n",
+-				     freq);
+-
+ 	/* Initialize subdev */
+ 	v4l2_i2c_subdev_init(&ov13858->sd, client, &ov13858_subdev_ops);
+ 
++	ret = ov13858_check_hwcfg(ov13858);
++	if (ret)
++		return ret;
++
+ 	ov13858->regmap = devm_cci_regmap_init_i2c(client, 16);
+ 	if (IS_ERR(ov13858->regmap))
+ 		return PTR_ERR(ov13858->regmap);
+ 
++	ret = ov13858_power_on(ov13858->dev);
++	if (ret)
++		return dev_err_probe(ov13858->dev, ret, "failed to power on\n");
++
+ 	/* Check module identity */
+ 	ret = ov13858_identify_module(ov13858);
+ 	if (ret) {
+ 		dev_err(ov13858->dev, "failed to find sensor: %d\n", ret);
+-		return ret;
++		goto error_power_off;
+ 	}
+ 
+-	/* Set default mode to max resolution */
+-	ov13858->cur_mode = &supported_modes[0];
++	/* Prefer mode matching firmware link-freq, fallback to max resolution. */
++	mode = &supported_modes[0];
++	for (i = 0; i < ARRAY_SIZE(supported_modes); i++) {
++		if (supported_modes[i].link_freq_index ==
++			ov13858->hw_link_freq_index) {
++			mode = &supported_modes[i];
++			break;
++		}
++	}
++	ov13858->cur_mode = mode;
+ 
+ 	ret = ov13858_init_controls(ov13858);
+ 	if (ret)
+-		return ret;
++		goto error_power_off;
+ 
+ 	/* Initialize subdev */
+ 	ov13858->sd.internal_ops = &ov13858_internal_ops;
+@@ -1536,25 +1670,35 @@
+ 		goto error_handler_free;
+ 	}
+ 
+-	ret = v4l2_async_register_subdev_sensor(&ov13858->sd);
+-	if (ret < 0)
++	ov13858->sd.state_lock = ov13858->ctrl_handler.lock;
++	ret = v4l2_subdev_init_finalize(&ov13858->sd);
++	if (ret) {
++		dev_err(ov13858->dev, "failed to init subdev: %d\n", ret);
+ 		goto error_media_entity;
++	}
+ 
+-	/*
+-	 * Device is already turned on by i2c-core with ACPI domain PM.
+-	 * Enable runtime PM and turn off the device.
+-	 */
+ 	pm_runtime_set_active(ov13858->dev);
+ 	pm_runtime_enable(ov13858->dev);
++
++	ret = v4l2_async_register_subdev_sensor(&ov13858->sd);
++	if (ret < 0)
++		goto error_subdev_cleanup;
++
+ 	pm_runtime_idle(ov13858->dev);
+ 
+ 	return 0;
+ 
++error_subdev_cleanup:
++	v4l2_subdev_cleanup(&ov13858->sd);
++
+ error_media_entity:
+ 	media_entity_cleanup(&ov13858->sd.entity);
+ 
+ error_handler_free:
+ 	v4l2_ctrl_handler_free(ov13858->sd.ctrl_handler);
++
++error_power_off:
++	ov13858_power_off(ov13858->dev);
+ 	dev_err(ov13858->dev, "%s failed:%d\n", __func__, ret);
+ 
+ 	return ret;
+@@ -1576,10 +1720,21 @@
+ MODULE_DEVICE_TABLE(acpi, ov13858_acpi_ids);
+ #endif
+ 
++static const struct of_device_id ov13858_of_match[] = {
++	{ .compatible = "ovti,ov13858" },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, ov13858_of_match);
++
++static DEFINE_RUNTIME_DEV_PM_OPS(ov13858_pm_ops, ov13858_power_off,
++				 ov13858_power_on, NULL);
++
+ static struct i2c_driver ov13858_i2c_driver = {
+ 	.driver = {
+ 		.name = "ov13858",
++		.pm = pm_sleep_ptr(&ov13858_pm_ops),
+ 		.acpi_match_table = ACPI_PTR(ov13858_acpi_ids),
++		.of_match_table = ov13858_of_match,
+ 	},
+ 	.probe = ov13858_probe,
+ 	.remove = ov13858_remove,
