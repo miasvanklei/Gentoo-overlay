@@ -1,0 +1,24 @@
+diff --git a/src/error/mod.rs b/src/error/mod.rs
+index 5a290cec3..087ce9e25 100644
+--- a/src/error/mod.rs
++++ b/src/error/mod.rs
+@@ -159,7 +159,18 @@ impl fmt::Display for NetavarkError {
+                     Ok(())
+                 }
+             }
+-            NetavarkError::Nftables(e) => write!(f, "nftables error: {e}"),
++            NetavarkError::Nftables(e) => match e {
++                nftables::helper::NftablesError::NftFailed {
++                    program,
++                    hint,
++                    stdout: _,
++                    stderr,
++                } => write!(
++                    f,
++                    "nftables error: {program:?} did not return successfully while {hint}: {stderr}",
++                ),
++                _ => write!(f, "nftables error: {e}"),
++            },
+             NetavarkError::SubnetParse(e) => write!(f, "parsing IP subnet error: {e}"),
+             NetavarkError::AddrParse(e) => write!(f, "parsing IP address error: {e}"),
+         }
