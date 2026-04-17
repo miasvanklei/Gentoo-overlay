@@ -1,0 +1,39 @@
+--- a/applets/systemtray/qml/main.qml	2026-03-17 12:07:59.000000000 +0100
++++ b/applets/systemtray/qml/main.qml	2026-03-27 16:23:40.659173106 +0100
+@@ -184,9 +184,7 @@
+                 // The icon size to display when not using the auto-scaling setting
+                 readonly property int smallIconSize: Kirigami.Units.iconSizes.smallMedium
+ 
+-                // Automatically use autoSize setting when in tablet mode, if it's
+-                // not already being used
+-                readonly property bool autoSize: Plasmoid.configuration.scaleIconsToFit || Kirigami.Settings.tabletMode
++                readonly property bool autoSize: Plasmoid.configuration.scaleIconsToFit
+ 
+                 readonly property int gridThickness: root.vertical ? root.width : root.height
+                 // Should change to 2 rows/columns on a 56px panel (in standard DPI)
+--- a/applets/systemtray/qml/ConfigGeneral.qml	2026-03-17 12:07:59.000000000 +0100
++++ b/applets/systemtray/qml/ConfigGeneral.qml	2026-03-27 16:25:08.087532089 +0100
+@@ -224,10 +224,6 @@
+                 enabled: !Kirigami.Settings.tabletMode
+ 
+                 currentIndex: {
+-                    if (Kirigami.Settings.tabletMode) {
+-                        return 1; // scale to fit
+-                    }
+-
+                     if (iconsPage.cfg_scaleIconsToFit) {
+                         return 1 // scale to fit
+                     } else {
+@@ -239,12 +235,6 @@
+                     iconsPage.cfg_scaleIconsToFit = model[currentIndex]["size"] == "scale";
+                 }
+             }
+-            QQC2.Label {
+-                visible: Kirigami.Settings.tabletMode
+-                text: i18n("Automatically enabled when in Touch Mode")
+-                textFormat: Text.PlainText
+-                font: Kirigami.Theme.smallFont
+-            }
+ 
+             QQC2.ComboBox {
+                 id: spacingChooser
