@@ -18,29 +18,22 @@
 -		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia2' 1"
 -		cset "name='MultiMedia4 Mixer VA_CODEC_DMA_TX_0' 1"
 +		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1' 1"
-+		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia1' 0"
-+		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia1' 0"
++		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia3' 0"
++		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia4' 0"
 +		cset "name='MultiMedia2 Mixer VA_CODEC_DMA_TX_0' 1"
  	]
  
  	Include.wsae.File "/codecs/wsa884x/two-speakers/DefaultEnableSeq.conf"
-@@ -22,15 +24,80 @@
+@@ -22,15 +24,59 @@
  	Include.wsmspk1d.File "/codecs/qcom-lpass/wsa-macro/Wsa1SpeakerDisableSeq.conf"
  	Include.wsaspk.File "/codecs/wsa884x/two-speakers/SpeakerSeq.conf"
  
 +	EnableSequence [
-+		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia1' 0"
-+		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia1' 0"
 +		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1' 1"
 +	]
 +
 +	DisableSequence [
 +		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1' 0"
-+	]
-+
-+	ConflictingDevice [
-+		"HDMI0"
-+		"HDMI1"
 +	]
 +
  	Value {
@@ -57,23 +50,16 @@
 +	Comment "USB/DisplayPort 0 playback"
 +
 +	EnableSequence [
-+		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1' 0"
-+		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia1' 0"
-+		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia1' 1"
++		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia3' 1"
 +	]
 +
 +	DisableSequence [
-+		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia1' 0"
-+	]
-+
-+	ConflictingDevice [
-+		"Speaker"
-+		"HDMI1"
++		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia3' 0"
 +	]
 +
 +	Value {
-+		PlaybackPriority 200
-+		PlaybackPCM "hw:${CardId},0"
++		PlaybackPriority 50
++		PlaybackPCM "hw:${CardId},2"
 +		JackControl "DP0 Jack"
 +	}
 +}
@@ -81,24 +67,17 @@
 +SectionDevice."HDMI1" {
 +	Comment "USB/DisplayPort 1 playback"
 +
-+	ConflictingDevice [
-+		"Speaker"
-+		"HDMI0"
-+	]
-+
 +	EnableSequence [
-+		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1' 0"
-+		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia1' 0"
-+		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia1' 1"
++		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia4' 1"
 +	]
 +
 +	DisableSequence [
-+		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia1' 0"
++		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia4' 0"
 +	]
 +
 +	Value {
-+		PlaybackPriority 200
-+		PlaybackPCM "hw:${CardId},0"
++		PlaybackPriority 50
++		PlaybackPCM "hw:${CardId},3"
 +		JackControl "DP1 Jack"
 +	}
 +}
