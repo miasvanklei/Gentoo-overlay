@@ -1,0 +1,46 @@
+--- a/src/kwindowsystem.cpp	2026-04-03 19:12:12.000000000 +0200
++++ b/src/kwindowsystem.cpp	2026-04-18 12:16:14.232587129 +0200
+@@ -52,6 +52,18 @@
+ {
+ }
+ 
++KWindowSystemPrivateV2::~KWindowSystemPrivateV2()
++{
++}
++
++KWindowSystemPrivateV3::~KWindowSystemPrivateV3()
++{
++}
++
++KWindowSystemPrivateV4::~KWindowSystemPrivateV4()
++{
++}
++
+ void KWindowSystemPrivateDummy::activateWindow(QWindow *win, long time)
+ {
+     Q_UNUSED(win)
+--- a/src/kwindowsystem_p.h	2026-04-03 19:12:12.000000000 +0200
++++ b/src/kwindowsystem_p.h	2026-04-18 12:12:38.499511340 +0200
+@@ -27,6 +27,7 @@
+ class KWINDOWSYSTEM_EXPORT KWindowSystemPrivateV2 : public KWindowSystemPrivate
+ {
+ public:
++    virtual ~KWindowSystemPrivateV2();
+ #if KWINDOWSYSTEM_BUILD_DEPRECATED_SINCE(6, 19)
+     virtual void requestToken(QWindow *win, uint32_t serial, const QString &app_id) = 0;
+ #endif
+@@ -40,12 +41,14 @@
+ class KWINDOWSYSTEM_EXPORT KWindowSystemPrivateV3 : public KWindowSystemPrivateV2
+ {
+ public:
++    virtual ~KWindowSystemPrivateV3();
+     virtual QFuture<QString> xdgActivationToken(QWindow *window, uint32_t serial, const QString &appId) = 0;
+ };
+ 
+ class KWINDOWSYSTEM_EXPORT KWindowSystemPrivateV4 : public KWindowSystemPrivateV3
+ {
+ public:
++    virtual ~KWindowSystemPrivateV4();
+     virtual void setXdgToplevelTag(QWindow *window, const QString &tag) = 0;
+     virtual void setXdgToplevelDescription(QWindow *window, const QString &description) = 0;
+ };
