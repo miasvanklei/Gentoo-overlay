@@ -20,6 +20,7 @@ NODE_ADDON_API_V=8.4.0
 VSCODE_NATIVE_WATCHDOG_V=1.4.6
 NODE_PTY_V=1.2.0-beta.12
 VSCODE_SPDLOG_V=0.15.8
+VSCODE_SQLITE3_V=5.1.12-vscode
 ARGON2_V=0.44.0
 PARCEL_WATCHER_V=2.5.6
 
@@ -30,6 +31,7 @@ SRC_URI="
 	https://registry.npmjs.org/@vscode/native-watchdog/-/native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tgz -> vscodedep-vscode-native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tar.gz
 	https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
 	https://registry.npmjs.org/@vscode/spdlog/-/spdlog-${VSCODE_SPDLOG_V}.tgz -> vscodedep-vscode-spdlog-${VSCODE_SPDLOG_V}.tar.gz
+	https://registry.npmjs.org/@vscode/sqlite3/-/sqlite3-${VSCODE_SQLITE3_V}.tgz -> vscodedep-vscode-sqlite3-${VSCODE_SQLITE3_V}.tar.gz
 	https://registry.npmjs.org/@parcel/watcher/-/watcher-${PARCEL_WATCHER_V}.tgz -> vscodedep-parcel-watcher-${PARCEL_WATCHER_V}.tar.gz
 	https://registry.npmjs.org/node-addon-api/-/node-addon-api-${NODE_ADDON_API_V}.tgz -> vscodedep-node-addon-api-${NODE_ADDON_API_V}.tar.gz
 	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
@@ -37,6 +39,7 @@ SRC_URI="
 
 COMPILE_VSCODE_BINMODS=(
 	@vscode/native-watchdog
+	@vscode/sqlite3
 	node-pty
 	@vscode/spdlog
 	@parcel/watcher
@@ -158,12 +161,38 @@ src_install() {
 
 	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
 
+	setup_copilot_antrophic
+
 	systemd_newunit "${FILESDIR}/${PN}.service" "${PN}@.service"
 }
 
 pkg_postinst() {
 	elog "When using code-server systemd service run it as a user"
 	elog "For example: 'systemctl --user enable --now code-server'"
+}
+
+setup_copilot_anthropic() {
+	local sdk_dir="/usr/lib/code-server/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
+	local anthropic_dir="/usr/lib/code-server/lib/vscode/node_modules/@anthropic-ai/sandbox-runtime"
+	local ai_arch=""
+
+	if use arm64; then
+		ai_arch="arm64"
+	elif use amd64; then
+		ai_arch="linux-x64"
+	fi
+
+	local sdk_arch_dir="linux-${ai_arch}"
+
+	rm -r "${D}/${anthropic_dir}/vendor/seccomp/${ai_arch}" || die
+	rm -r "${D}/${anthropic_dir}/dist/vendor/seccomp/${ai_arch}" || die
+	rm -r "${D}/${sdk_dir}/prebuilds" || die
+	rm -r "${D}/${sdk_dir}/ripgrep/bin" || die
+
+	dodir "${sdk_dir}/prebuilds/${sdk_arch_dir}"
+	dodir "${sdk_dir}/ripgrep/bin/${sdk_arch_dir}"
+	dosym "/usr/bin/rg" "${EPREFIX}/${sdk_dir}/ripgrep/bin/${sdk_arch_dir}/rg"
+	dosym "/usr/lib/code-server/lib/vscode/node_modules/node-pty/build/Release/pty.node" "${sdk_dir}/prebuilds/${sdk_arch_dir}/pty.node"
 }
 
 enodegyp() {
