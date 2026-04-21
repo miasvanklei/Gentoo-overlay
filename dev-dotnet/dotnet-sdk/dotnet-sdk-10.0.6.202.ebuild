@@ -4,15 +4,15 @@
 EAPI=8
 
 # keep in sync with dotnet-runtime
-SDK_PV="$(ver_cut 1-3)"
-SDK_PV_SUFFIX="$(ver_cut 4-)"
+SDK_PV="$(ver_cut 1-2).$(ver_cut 4)"
+SDK_PV_SUFFIX="$(ver_cut 5-)"
 if [[ -n $SDK_PV_SUFFIX ]]; then
         SDK_FULL_PV="${SDK_PV}-rc.${SDK_PV_SUFFIX:2:1}.${SDK_PV_SUFFIX:3:5}.${SDK_PV_SUFFIX:8:3}"
 else
 	SDK_FULL_PV="${SDK_PV}"
 fi
 
-DOTNET_RUNTIME_PV="$(ver_cut 1-2).4"
+DOTNET_RUNTIME_PV="$(ver_cut 1-3)"
 SDK="${PN}-${SDK_FULL_PV}-linux-musl"
 
 inherit dotnet-utils
