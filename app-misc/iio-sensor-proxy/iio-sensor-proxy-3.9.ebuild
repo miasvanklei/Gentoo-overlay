@@ -32,6 +32,10 @@ DEPEND="
 	virtual/pkgconfig
 "
 
+PATCHES=(
+	"${FILESDIR}"/fix-deadlock.patch
+)
+
 src_configure() {
 	local emesonargs=(
 		$(meson_feature ssc ssc-support)

@@ -1,0 +1,69 @@
+diff --git a/src/iio-sensor-proxy.c b/src/iio-sensor-proxy.c
+index 9c7e8cdeb6c22a662f6b2540f6040ddcefcc4e7c..85a34168f491ebf3c1f432255b91d0305360eaf4 100644
+--- a/src/iio-sensor-proxy.c
++++ b/src/iio-sensor-proxy.c
+@@ -40,6 +40,7 @@ typedef struct {
+ 	GDBusNodeInfo *introspection_data;
+ 	GDBusConnection *connection;
+ 	guint name_id;
++	gulong handler_id;
+ 	int ret;
+ 
+ 	PolkitAuthority *auth;
+@@ -721,8 +722,6 @@ bus_acquired_handler (GDBusConnection *connection,
+ #endif
+ 		NULL
+     };
+-	guint i;
+-
+ 	g_dbus_connection_register_object (connection,
+ 					   SENSOR_PROXY_DBUS_PATH,
+ 					   data->introspection_data->interfaces[0],
+@@ -759,8 +758,8 @@ name_acquired_handler (GDBusConnection *connection,
+ 	if (!find_sensors (data->client, data))
+ 		goto bail;
+ 
+-	g_signal_connect (G_OBJECT (data->client), "uevent",
+-			  G_CALLBACK (sensor_changes), data);
++	data->handler_id = g_signal_connect (G_OBJECT (data->client), "uevent",
++					     G_CALLBACK (sensor_changes), data);
+ 
+ 	for (i = 0; i < NUM_SENSOR_TYPES; i++) {
+ 		SensorDevice *sensor_device;
+@@ -790,6 +789,10 @@ name_acquired_handler (GDBusConnection *connection,
+ 
+ bail:
+ 	data->ret = 0;
++	if (data->handler_id > 0) {
++		g_signal_handler_disconnect (G_OBJECT (data->client), data->handler_id);
++		data->handler_id = 0;
++	}
+ 	g_message ("No sensors or missing kernel drivers for the sensors. Exiting");
+ 	g_main_loop_quit (data->loop);
+ }
+@@ -1075,8 +1078,13 @@ sensor_changes (GUdevClient *client,
+ 			}
+ 		}
+ 
+-		if (!any_sensors_left (data))
++		if (!any_sensors_left (data)) {
++			if (data->handler_id > 0) {
++				g_signal_handler_disconnect (G_OBJECT (data->client), data->handler_id);
++				data->handler_id = 0;
++			}
+ 			g_main_loop_quit (data->loop);
++		}
+ 	} else if (g_strcmp0 (action, "add") == 0) {
+ 		for (i = 0; i < G_N_ELEMENTS(drivers); i++) {
+ 			SensorDriver *driver = (SensorDriver *) drivers[i];
+@@ -1128,6 +1136,10 @@ termination_signal_handler (gpointer user_data)
+ 	SensorData *data = user_data;
+ 
+ 	g_debug ("Shutting down");
++	if (data->handler_id > 0) {
++		g_signal_handler_disconnect (G_OBJECT (data->client), data->handler_id);
++		data->handler_id = 0;
++	}
+ 	g_main_loop_quit (data->loop);
+ 
+ 	return G_SOURCE_REMOVE;
