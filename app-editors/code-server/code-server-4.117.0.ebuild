@@ -37,9 +37,13 @@ SRC_URI="
 	https://registry.npmjs.org/argon2/-/argon2-${ARGON2_V}.tgz -> vscodedep-argon2-${ARGON2_V}.tar.gz
 "
 
-COMPILE_VSCODE_BINMODS=(
-	@vscode/native-watchdog
+PATCH_VSCODE_BINMODS=(
 	@vscode/sqlite3
+)
+
+COMPILE_VSCODE_BINMODS=(
+	"${PATCH_VSCODE_BINMODS[@]}"
+	@vscode/native-watchdog
 	node-pty
 	@vscode/spdlog
 	@parcel/watcher
@@ -106,12 +110,20 @@ src_prepare() {
 
 	# prepare vscode modules for building
 	for binmod in "${COMPILE_VSCODE_BINMODS[@]}"; do
-		pkgdir="${WORKDIR}/$(package_dir ${binmod})"
+		pkgdir="$(package_dir ${binmod})"
 		mkdir -p "${pkgdir}/node_modules" || die
 		ln -s "${WORKDIR}/node-addon-api-${NODE_ADDON_API_V}" \
 			"${pkgdir}/node_modules/node-addon-api" || die
 		ln -s "${WORKDIR}/nodejs-nan-${NAN_V}" \
 			"${pkgdir}/node_modules/nan" || die
+	done
+
+	for binmod in "${PATCH_VSCODE_BINMODS[@]}"; do
+		pushd "$(package_dir ${binmod})" >/dev/null || die
+		for i in ${FILESDIR}/"$(get_pkg_name ${binmod})"*.patch; do
+			eapply $i
+		done
+		popd >/dev/null
 	done
 
 	# not needed
@@ -131,7 +143,7 @@ src_configure() {
 	local binmod
 	for binmod in "${COMPILE_VSCODE_BINMODS[@]}"; do
 		einfo "Configuring ${binmod}..."
-		cd "${WORKDIR}/$(package_dir ${binmod})" || die
+		cd "$(package_dir ${binmod})" || die
 
 		enodegyp configure
 	done
@@ -144,10 +156,10 @@ src_compile() {
 
 	for binmod in "${COMPILE_VSCODE_BINMODS[@]}"; do
 		einfo "Building ${binmod}..."
-		cd "${WORKDIR}/$(package_dir ${binmod})" || die
+		cd "$(package_dir ${binmod})" || die
 		enodegyp --verbose --jobs="$(makeopts_jobs)" build
 		local install_path=$(get_binmod_loc_release ${binmod})
-		cp "${WORKDIR}/$(package_dir ${binmod})/build/Release/"*.node ${install_path} || die
+		cp "$(package_dir ${binmod})/build/Release/"*.node ${install_path} || die
 	done
 }
 
@@ -161,7 +173,7 @@ src_install() {
 
 	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
 
-	setup_copilot_antrophic
+	setup_copilot_anthropic
 
 	systemd_newunit "${FILESDIR}/${PN}.service" "${PN}@.service"
 }
@@ -202,17 +214,23 @@ enodegyp() {
 	node "${nodegyp}" --nodedir="${BROOT}/usr/include/node" "${@}" || die
 }
 
-# Return a $WORKDIR directory for a given package name.
-package_dir() {
+get_pkg_name() {
 	local binmod_n="${1//\//-}"
 	binmod_n="${binmod_n//@/}"
+
+	echo ${binmod_n}
+}
+
+# Return a $WORKDIR directory for a given package name.
+package_dir() {
+	local binmod_n="$(get_pkg_name ${1})"
 	binmod="${binmod_n//-/_}"
 	local binmod_v="${binmod^^}_V"
 	if [[ -z "${binmod_v}" ]]; then
 		die "${binmod_v} is not set."
 	fi
 
-	echo ${binmod_n}-${!binmod_v}
+	echo "${WORKDIR}/${binmod_n}-${!binmod_v}"
 }
 
 # Some binmods have path that is different than usual

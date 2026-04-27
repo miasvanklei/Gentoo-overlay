@@ -55,7 +55,7 @@ src_install() {
 	doins -r "${S}"/sdk "${S}"/sdk-manifests "${S}"/templates
 
 	# Create a magic workloads file, bug #841896
-	local featureband="$(( $(ver_cut 3) / 100 * 100 ))"
+	local featureband="$(( $(ver_cut 4) / 100 * 100 ))"
 	local workloads="metadata/workloads/$(ver_cut 1-2).${featureband}"
 
 	mkdir -p "${D}/${dest}/${workloads}" || die
