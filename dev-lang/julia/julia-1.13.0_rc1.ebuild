@@ -29,7 +29,7 @@ STDLIBS=(
 	"JuliaLang NetworkOptions.jl 46e14ef20739c8011b105c339146062cd0e2938c"
 	"JuliaLang Pkg.jl 5189ac693ce94be61feb3489763d78fea967c65c"
 	"JuliaCrypto SHA.jl 876bc0400f9a457eb2736388fc3d0fbe9460fc7d"
-	"JuliaSparse SparseArrays.jl 6b7e9ef30624f25d97bce047ad781a25bebe5551"
+	"JuliaSparse SparseArrays.jl 9d08bb372c35fee079a8bda57c106376dd14544a"
 	"JuliaStats Statistics.jl 22dee82f9824d6045e87aa4b97e1d64fe6f01d8d"
 	"JuliaLang StyledStrings.jl 24cd74a309a29dd0a240884c1ced9fef7f06ba64"
 	"JuliaSparse SuiteSparse.jl e8285dd13a6d5b5cf52d8124793fc4d622d07554"
