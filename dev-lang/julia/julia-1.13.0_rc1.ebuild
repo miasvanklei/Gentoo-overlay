@@ -74,10 +74,15 @@ RDEPEND+="
 	dev-libs/openssl
 	dev-util/patchelf
 	net-misc/curl[http2,ssh]
+	sci-libs/amd:0/3
+	sci-libs/camd:0/3
+	sci-libs/cholmod:0/5
+	sci-libs/colamd:0/3
 	sci-libs/fftw:3.0=[threads]
 	sci-libs/openlibm:0=
 	sci-libs/openblas:0=
-	>=sci-libs/suitesparse-7.10.0
+	sci-libs/spqr:0/4
+	sci-libs/umfpack:0/6
 	sys-libs/zlib:0=
 	>=sci-mathematics/dsfmt-2.2.4
 	virtual/lapack
