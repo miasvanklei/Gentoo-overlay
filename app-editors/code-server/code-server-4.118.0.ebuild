@@ -168,12 +168,13 @@ src_install() {
 
 	insinto "/usr/lib/${PN}"
 	doins -r .
+
+	setup_anthropic
+	setup_ripgrep
+
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
 	dosym "../../usr/lib/${PN}/bin/${PN}" "${EPREFIX}/usr/bin/${PN}"
 
-	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
-
-	setup_copilot_anthropic
 
 	systemd_newunit "${FILESDIR}/${PN}.service" "${PN}@.service"
 }
@@ -183,28 +184,47 @@ pkg_postinst() {
 	elog "For example: 'systemctl --user enable --now code-server'"
 }
 
-setup_copilot_anthropic() {
-	local sdk_dir="/usr/lib/code-server/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
+setup_anthropic() {
 	local anthropic_dir="/usr/lib/code-server/lib/vscode/node_modules/@anthropic-ai/sandbox-runtime"
 	local ai_arch=""
 
 	if use arm64; then
 		ai_arch="arm64"
 	elif use amd64; then
-		ai_arch="linux-x64"
+		ai_arch="x64"
 	fi
 
 	local sdk_arch_dir="linux-${ai_arch}"
 
-	rm -r "${D}/${anthropic_dir}/vendor/seccomp/${ai_arch}" || die
-	rm -r "${D}/${anthropic_dir}/dist/vendor/seccomp/${ai_arch}" || die
-	rm -r "${D}/${sdk_dir}/prebuilds" || die
-	rm -r "${D}/${sdk_dir}/ripgrep/bin" || die
+	mv "${D}/${anthropic_dir}/vendor/seccomp" "${D}/${anthropic_dir}/vendor/seccomp_bak"
+	mv "${D}/${anthropic_dir}/dist/vendor/seccomp" "${D}/${anthropic_dir}/dist/vendor/seccomp_bak"
+	dodir "${anthropic_dir}/vendor/seccomp"
+	dodir "${anthropic_dir}/dist/vendor/seccomp"
+	mv "${D}/${anthropic_dir}/vendor/seccomp_bak/${ai_arch}" "${D}/${anthropic_dir}/vendor/seccomp/"
+	mv "${D}/${anthropic_dir}/dist/vendor/seccomp_bak/${ai_arch}" "${D}/${anthropic_dir}/dist/vendor/seccomp/"
 
-	dodir "${sdk_dir}/prebuilds/${sdk_arch_dir}"
+	rm -r "${D}/${anthropic_dir}/vendor/seccomp_bak" || die
+	rm -r "${D}/${anthropic_dir}/dist/vendor/seccomp_bak" || die
+}
+
+setup_ripgrep() {
+	local sdk_dir="/usr/lib/code-server/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
+	local node_modules_dir="/usr/lib/code-server/lib/vscode/node_modules"
+	if use arm64; then
+		ai_arch="arm64"
+	elif use amd64; then
+		ai_arch="x64"
+	fi
+
+	local sdk_arch_dir="linux-${ai_arch}"
+
+	rm -r "${D}/${sdk_dir}/ripgrep/bin" || die
+	rm "${D}/${node_modules_dir}/@vscode/ripgrep/bin/rg" || die "failed to remove bundled ripgrep"
+
+
 	dodir "${sdk_dir}/ripgrep/bin/${sdk_arch_dir}"
 	dosym "/usr/bin/rg" "${EPREFIX}/${sdk_dir}/ripgrep/bin/${sdk_arch_dir}/rg"
-	dosym "/usr/lib/code-server/lib/vscode/node_modules/node-pty/build/Release/pty.node" "${sdk_dir}/prebuilds/${sdk_arch_dir}/pty.node"
+	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
 }
 
 enodegyp() {
@@ -257,9 +277,4 @@ cleanup_binmods() {
 	for binmod in "${CLEANUP_VSCODE_BINMODS[@]}"; do
 		rm -r "$(get_binmod_loc ${binmod})/build" || die
 	done
-
-	rm lib/vscode/node_modules/@vscode/ripgrep/bin/rg || die "failed to remove bundled ripgrep"
-
-	# remove copilot
-	rm -r lib/vscode/node_modules/@github/copilot* || die
 }
