@@ -8,14 +8,14 @@ Reviewed-by: Christopher Obbard <christopher.obbard@linaro.org>
 Tested-by: Christopher Obbard <christopher.obbard@linaro.org>
 Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
 ---
- drivers/media/platform/qcom/camss/Kconfig        |   1 +
- drivers/media/platform/qcom/camss/camss-csiphy.c | 189 +++++++++++++++++++++--
- drivers/media/platform/qcom/camss/camss-csiphy.h |   7 +
- drivers/media/platform/qcom/camss/camss.c        |  72 +++++++--
+ drivers/media/platform/qcom/camss/Kconfig     |   1 +
+ .../media/platform/qcom/camss/camss-csiphy.c  | 189 ++++++++++++++++--
+ .../media/platform/qcom/camss/camss-csiphy.h  |   7 +
+ drivers/media/platform/qcom/camss/camss.c     |  72 +++++--
  4 files changed, 239 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/media/platform/qcom/camss/Kconfig b/drivers/media/platform/qcom/camss/Kconfig
-index 4eda48cb1adf0..1edc5e5a1829e 100644
+index 4eda48cb1adf04..1edc5e5a1829e0 100644
 --- a/drivers/media/platform/qcom/camss/Kconfig
 +++ b/drivers/media/platform/qcom/camss/Kconfig
 @@ -7,3 +7,4 @@ config VIDEO_QCOM_CAMSS
@@ -24,7 +24,7 @@ index 4eda48cb1adf0..1edc5e5a1829e 100644
  	select V4L2_FWNODE
 +	select PHY_QCOM_MIPI_CSI2
 diff --git a/drivers/media/platform/qcom/camss/camss-csiphy.c b/drivers/media/platform/qcom/camss/camss-csiphy.c
-index 62623393f4144..478938165dd7b 100644
+index 539ac4888b608b..57bc0eda43a18d 100644
 --- a/drivers/media/platform/qcom/camss/camss-csiphy.c
 +++ b/drivers/media/platform/qcom/camss/camss-csiphy.c
 @@ -7,12 +7,14 @@
@@ -192,7 +192,7 @@ index 62623393f4144..478938165dd7b 100644
  
  /*
   * csiphy_set_stream - Enable/disable streaming on CSIPHY module
-@@ -568,16 +658,16 @@ static bool csiphy_match_clock_name(const char *clock_name, const char *format,
+@@ -572,16 +662,16 @@ csiphy_match_clock_name(const char *clock_name, const char *format, ...)
  }
  
  /*
@@ -213,7 +213,7 @@ index 62623393f4144..478938165dd7b 100644
  {
  	struct device *dev = camss->dev;
  	struct platform_device *pdev = to_platform_device(dev);
-@@ -705,6 +795,60 @@ int msm_csiphy_subdev_init(struct camss *camss,
+@@ -709,6 +799,60 @@ int msm_csiphy_subdev_init(struct camss *camss,
  	return ret;
  }
  
@@ -274,7 +274,7 @@ index 62623393f4144..478938165dd7b 100644
  /*
   * csiphy_link_setup - Setup CSIPHY connections
   * @entity: Pointer to media entity structure
-@@ -739,8 +883,12 @@ static int csiphy_link_setup(struct media_entity *entity,
+@@ -743,8 +887,12 @@ static int csiphy_link_setup(struct media_entity *entity,
  	return 0;
  }
  
@@ -289,7 +289,7 @@ index 62623393f4144..478938165dd7b 100644
  };
  
  static const struct v4l2_subdev_video_ops csiphy_video_ops = {
-@@ -754,8 +902,13 @@ static const struct v4l2_subdev_pad_ops csiphy_pad_ops = {
+@@ -758,8 +906,13 @@ static const struct v4l2_subdev_pad_ops csiphy_pad_ops = {
  	.set_fmt = csiphy_set_format,
  };
  
@@ -304,7 +304,7 @@ index 62623393f4144..478938165dd7b 100644
  	.video = &csiphy_video_ops,
  	.pad = &csiphy_pad_ops,
  };
-@@ -784,7 +937,11 @@ int msm_csiphy_register_entity(struct csiphy_device *csiphy,
+@@ -788,7 +941,11 @@ int msm_csiphy_register_entity(struct csiphy_device *csiphy,
  	struct device *dev = csiphy->camss->dev;
  	int ret;
  
@@ -317,7 +317,7 @@ index 62623393f4144..478938165dd7b 100644
  	sd->internal_ops = &csiphy_v4l2_internal_ops;
  	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
  	snprintf(sd->name, ARRAY_SIZE(sd->name), "%s%d",
-@@ -823,6 +980,8 @@ int msm_csiphy_register_entity(struct csiphy_device *csiphy,
+@@ -828,6 +985,8 @@ int msm_csiphy_register_entity(struct csiphy_device *csiphy,
   */
  void msm_csiphy_unregister_entity(struct csiphy_device *csiphy)
  {
@@ -327,7 +327,7 @@ index 62623393f4144..478938165dd7b 100644
  	media_entity_cleanup(&csiphy->subdev.entity);
  }
 diff --git a/drivers/media/platform/qcom/camss/camss-csiphy.h b/drivers/media/platform/qcom/camss/camss-csiphy.h
-index 2d5054819df7f..25b803c06e8bf 100644
+index 9d9657b82f748d..1879826034aac7 100644
 --- a/drivers/media/platform/qcom/camss/camss-csiphy.h
 +++ b/drivers/media/platform/qcom/camss/camss-csiphy.h
 @@ -12,6 +12,7 @@
@@ -338,7 +338,7 @@ index 2d5054819df7f..25b803c06e8bf 100644
  #include <media/media-entity.h>
  #include <media/v4l2-device.h>
  #include <media/v4l2-mediabus.h>
-@@ -95,6 +96,7 @@ struct csiphy_device_regs {
+@@ -97,6 +98,7 @@ struct csiphy_device_regs {
  
  struct csiphy_device {
  	struct camss *camss;
@@ -346,7 +346,7 @@ index 2d5054819df7f..25b803c06e8bf 100644
  	u8 id;
  	struct v4l2_subdev subdev;
  	struct media_pad pads[MSM_CSIPHY_PADS_NUM];
-@@ -102,6 +104,7 @@ struct csiphy_device {
+@@ -104,6 +106,7 @@ struct csiphy_device {
  	void __iomem *base_clk_mux;
  	u32 irq;
  	char irq_name[30];
@@ -354,7 +354,7 @@ index 2d5054819df7f..25b803c06e8bf 100644
  	struct camss_clock *clock;
  	bool *rate_set;
  	int nclocks;
-@@ -116,6 +119,10 @@ struct csiphy_device {
+@@ -118,6 +121,10 @@ struct csiphy_device {
  
  struct camss_subdev_resources;
  
@@ -366,10 +366,10 @@ index 2d5054819df7f..25b803c06e8bf 100644
  			   struct csiphy_device *csiphy,
  			   const struct camss_subdev_resources *res, u8 id);
 diff --git a/drivers/media/platform/qcom/camss/camss.c b/drivers/media/platform/qcom/camss/camss.c
-index 2749895152e32..224b5472d7771 100644
+index d7961045f5d0e4..02fd32797fbe95 100644
 --- a/drivers/media/platform/qcom/camss/camss.c
 +++ b/drivers/media/platform/qcom/camss/camss.c
-@@ -4451,14 +4451,35 @@ static int camss_parse_endpoint_node(struct device *dev,
+@@ -4547,14 +4547,35 @@ static int camss_parse_endpoint_node(struct device *dev,
  static int camss_parse_ports(struct camss *camss)
  {
  	struct device *dev = camss->dev;
@@ -407,7 +407,7 @@ index 2749895152e32..224b5472d7771 100644
  		if (IS_ERR(csd)) {
  			ret = PTR_ERR(csd);
  			goto err_cleanup;
-@@ -4490,15 +4511,26 @@ static int camss_init_subdevices(struct camss *camss)
+@@ -4586,15 +4607,26 @@ static int camss_init_subdevices(struct camss *camss)
  	unsigned int i;
  	int ret;
  
@@ -443,7 +443,7 @@ index 2749895152e32..224b5472d7771 100644
  		}
  	}
  
-@@ -4575,6 +4607,9 @@ static int camss_link_entities(struct camss *camss)
+@@ -4684,6 +4716,9 @@ static int camss_link_entities(struct camss *camss)
  
  	for (i = 0; i < camss->res->csiphy_num; i++) {
  		for (j = 0; j < camss->res->csid_num; j++) {
@@ -453,7 +453,7 @@ index 2749895152e32..224b5472d7771 100644
  			ret = media_create_pad_link(&camss->csiphy[i].subdev.entity,
  						    MSM_CSIPHY_PAD_SRC,
  						    &camss->csid[j].subdev.entity,
-@@ -4684,6 +4719,9 @@ static int camss_register_entities(struct camss *camss)
+@@ -4810,6 +4845,9 @@ static int camss_register_entities(struct camss *camss)
  	int ret;
  
  	for (i = 0; i < camss->res->csiphy_num; i++) {
@@ -463,7 +463,7 @@ index 2749895152e32..224b5472d7771 100644
  		ret = msm_csiphy_register_entity(&camss->csiphy[i],
  						 &camss->v4l2_dev);
  		if (ret < 0) {
-@@ -4739,8 +4777,10 @@ static int camss_register_entities(struct camss *camss)
+@@ -4885,8 +4923,10 @@ static int camss_register_entities(struct camss *camss)
  
  	i = camss->res->csiphy_num;
  err_reg_csiphy:
@@ -476,7 +476,7 @@ index 2749895152e32..224b5472d7771 100644
  
  	return ret;
  }
-@@ -4755,8 +4795,10 @@ static void camss_unregister_entities(struct camss *camss)
+@@ -4901,8 +4941,10 @@ static void camss_unregister_entities(struct camss *camss)
  {
  	unsigned int i;
  
@@ -489,6 +489,3 @@ index 2749895152e32..224b5472d7771 100644
  
  	for (i = 0; i < camss->res->csid_num; i++)
  		msm_csid_unregister_entity(&camss->csid[i]);
-
--- 
-2.52.0
