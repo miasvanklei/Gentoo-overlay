@@ -1,0 +1,32 @@
+--- a/CMakeLists.txt	2026-05-09 13:42:58.744029374 +0200
++++ b/CMakeLists.txt	2026-05-09 13:43:19.132131301 +0200
+@@ -42,6 +42,7 @@
+ 
+ find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core Gui Qml QuickControls2 Svg Sql Widgets Multimedia Concurrent DBus)
+ find_package(KF6 REQUIRED COMPONENTS Kirigami I18n CoreAddons Crash WindowSystem IconThemes Config)
++find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+ set(PYBIND11_FINDPYTHON ON)
+ find_package(pybind11 REQUIRED)
+ find_package(Ytdlp REQUIRED RUNTIME)
+--- a/cmake/FindYTMusicAPI.cmake	2026-05-09 13:42:26.859870274 +0200
++++ b/cmake/FindYTMusicAPI.cmake	2026-05-09 13:42:33.827905012 +0200
+@@ -2,8 +2,6 @@
+ #
+ # SPDX-License-Identifier: BSD-2-Clause
+ 
+-find_package(Python3 REQUIRED COMPONENTS Interpreter)
+-
+ execute_process(COMMAND ${Python3_EXECUTABLE} -c "import ytmusicapi; print(ytmusicapi.__version__)" RESULT_VARIABLE YTMUSICAPI_CHECK_RESULT OUTPUT_VARIABLE YTMusicAPI_VERSION)
+ 
+ string(STRIP ${YTMusicAPI_VERSION} YTMusicAPI_VERSION)
+--- a/cmake/FindYtdlp.cmake	2026-05-09 13:42:26.859870274 +0200
++++ b/cmake/FindYtdlp.cmake	2026-05-09 13:42:43.427952901 +0200
+@@ -2,8 +2,6 @@
+ #
+ # SPDX-License-Identifier: BSD-2-Clause
+ 
+-find_package(Python3 REQUIRED COMPONENTS Interpreter)
+-
+ execute_process(COMMAND ${Python3_EXECUTABLE} -c "import yt_dlp" RESULT_VARIABLE YTDLP_CHECK_RESULT)
+ 
+ if (${YTDLP_CHECK_RESULT} EQUAL 0)

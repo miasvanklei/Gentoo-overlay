@@ -8,7 +8,8 @@ ECM_TEST="forceoptional"
 
 KFMIN=6.5.0
 QTMIN=6.4.0
-inherit ecm gear.kde.org
+PYTHON_COMPAT=( python3_{11..14} )
+inherit ecm gear.kde.org python-any-r1
 
 DESCRIPTION="Client for YouTube Music"
 HOMEPAGE="https://apps.kde.org/audiotube/"
@@ -42,6 +43,11 @@ RDEPEND="${DEPEND}
 "
 
 PATCHES=(
+	"${FILESDIR}"/fix-find-python.patch
 	"${FILESDIR}"/less-verbose-logging.patch
 	"${FILESDIR}"/remove-forced-qtmultimedia-gstreamer.patch
 )
+
+pkg_setup() {
+       python-any-r1_pkg_setup
+}
