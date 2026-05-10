@@ -1,5 +1,5 @@
---- a/drivers/media/i2c/ov13858.c	2026-04-10 20:54:37.649764391 +0200
-+++ b/drivers/media/i2c/ov13858.c	2026-04-10 20:54:40.145769991 +0200
+--- a/drivers/media/i2c/ov13858.c	2026-05-09 15:02:40.947467498 +0200
++++ b/drivers/media/i2c/ov13858.c	2026-05-09 15:03:04.523404405 +0200
 @@ -1025,9 +1025,6 @@
  
  	/* Current mode */
@@ -291,21 +291,57 @@
  /* Verify chip ID */
  static int ov13858_identify_module(struct ov13858 *ov13858)
  {
-@@ -1545,7 +1472,7 @@
+@@ -1544,8 +1471,9 @@
+ 	struct ov13858 *ov13858 = to_ov13858(sd);
  
  	v4l2_async_unregister_subdev(sd);
++	v4l2_subdev_cleanup(sd);
  	media_entity_cleanup(&sd->entity);
 -	ov13858_free_controls(ov13858);
 +	v4l2_ctrl_handler_free(sd->ctrl_handler);
  
  	pm_runtime_disable(ov13858->dev);
  }
-@@ -1627,7 +1554,7 @@
+@@ -1609,9 +1537,12 @@
+ 		goto error_handler_free;
+ 	}
+ 
+-	ret = v4l2_async_register_subdev_sensor(&ov13858->sd);
+-	if (ret < 0)
++	ov13858->sd.state_lock = ov13858->ctrl_handler.lock;
++	ret = v4l2_subdev_init_finalize(&ov13858->sd);
++	if (ret < 0) {
++		dev_err(ov13858->dev, "failed to init subdev: %d", ret);
+ 		goto error_media_entity;
++	}
+ 
+ 	/*
+ 	 * Device is already turned on by i2c-core with ACPI domain PM.
+@@ -1619,16 +1550,25 @@
+ 	 */
+ 	pm_runtime_set_active(ov13858->dev);
+ 	pm_runtime_enable(ov13858->dev);
++
++	ret = v4l2_async_register_subdev_sensor(&ov13858->sd);
++	if (ret < 0)
++		goto error_v4l2_subdev;
++
+ 	pm_runtime_idle(ov13858->dev);
+ 
+ 	return 0;
+ 
++error_v4l2_subdev:
++	pm_runtime_disable(ov13858->dev);
++	pm_runtime_set_suspended(ov13858->dev);
++	v4l2_subdev_cleanup(&ov13858->sd);
++
+ error_media_entity:
  	media_entity_cleanup(&ov13858->sd.entity);
  
  error_handler_free:
 -	ov13858_free_controls(ov13858);
+-	dev_err(ov13858->dev, "%s failed:%d\n", __func__, ret);
 +	v4l2_ctrl_handler_free(ov13858->sd.ctrl_handler);
- 	dev_err(ov13858->dev, "%s failed:%d\n", __func__, ret);
  
  	return ret;
+ }
