@@ -1,6 +1,6 @@
 --- a/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-04-11 12:31:40.515236972 +0200
 +++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-04-11 12:54:06.119566740 +0200
-@@ -841,6 +841,152 @@
+@@ -841,6 +841,158 @@
  	};
  };
  
@@ -9,31 +9,34 @@
 +
 +	ports {
 +		/*
-+		* port0 => csiphy0
-+		* port3 => csiphy4
-+		*/
++		 * port0 => csiphy0
++		 * port1 => csiphy4
++		 */
 +		port@0 {
-+			camss_csiphy0_inep0: endpoint@0 {
++			csiphy0_ep: endpoint@0 {
++				reg = <0>;
 +				clock-lanes = <7>;
 +				data-lanes = <0 1 2 3>;
 +				remote-endpoint = <&ov13858_ep>;
 +			};
 +		};
 +
-+		port@3 {
-+			camss_csiphy4_inep0: endpoint@0 {
++		port@1 {
++			csiphy4_ep0: endpoint@4 {
++				reg = <4>;
 +				clock-lanes = <7>;
 +				data-lanes = <0 1>;
 +				remote-endpoint = <&ov02c10_ep>;
 +			};
++		};
 +
-+			/*
-+			* This not supported yet. clock/data-lanes have not been verified
-+			camss_csiphy4_inep1: endpoint@1 {
++		port@2 {
++			csiphy4_ep1: endpoint@4 {
++				reg = <4>;
 +				clock-lanes = <7>;
 +				data-lanes = <2>;
 +				remote-endpoint = <&vd55g1_ep>;
-+			}; */
++			};
 +		};
 +	};
 +};
@@ -59,6 +62,9 @@
 +		assigned-clocks = <&camcc CAM_CC_MCLK1_CLK>;
 +		assigned-clock-rates = <19200000>;
 +
++		rotation = <180>;
++		orientation = <1>;
++
 +		afvdd-supply = <&vreg_l16b_2p9>;
 +		avdd-supply = <&vreg_l5m_2p8>;
 +		dvdd-supply = <&vreg_l1m_1p2>;
@@ -66,19 +72,18 @@
 +
 +		port {
 +			ov13858_ep: endpoint {
-+				data-lanes = <0 1 2 3>;
-+				link-frequencies = /bits/ 64 <540000000>;
-+				remote-endpoint = <&camss_csiphy0_inep0>;
++				data-lanes = <1 2 3 4>;
++				link-frequencies = /bits/ 64 <540000000 270000000>;
++				remote-endpoint = <&csiphy0_ep>;
 +			};
 +		};
 +	};
 +};
 +
-+/*
 +&cci0_i2c0 {
-+	camera@60 {
++	camera@10 {
 +		compatible = "st,vd55g1";
-+		reg = <0x60>;
++		reg = <0x10>;
 +
 +		reset-gpios = <&tlmm 109 GPIO_ACTIVE_LOW>;
 +		pinctrl-names = "default";
@@ -99,12 +104,11 @@
 +			vd55g1_ep: endpoint {
 +				data-lanes = <1>;
 +				link-frequencies = /bits/ 64 <600000000>;
-+				remote-endpoint = <&camss_csiphy4_inep1>;
++				remote-endpoint = <&csiphy4_ep1>;
 +			};
 +		};
 +	};
-+}
-+*/
++};
 +
 +&cci1_i2c1 {
 +	camera@36 {
@@ -122,7 +126,7 @@
 +		assigned-clocks = <&camcc CAM_CC_MCLK4_CLK>;
 +		assigned-clock-rates = <12000000>;
 +
-+		orientation = <0>; /* front facing */
++		orientation = <0>;
 +
 +		avdd-supply = <&vreg_l7b_2p8>;
 +		dvdd-supply = <&vreg_l7b_2p8>;
@@ -132,7 +136,7 @@
 +			ov02c10_ep: endpoint {
 +				data-lanes = <1 2>;
 +				link-frequencies = /bits/ 64 <400000000>;
-+				remote-endpoint = <&camss_csiphy4_inep0>;
++				remote-endpoint = <&csiphy4_ep0>;
 +			};
 +		};
 +	};
@@ -179,11 +183,11 @@
 +		mclk-pins {
 +			pins = "gpio97";
 +			function = "cam_mclk";
-+			drive-strength = <2>;
++			drive-strength = <16>;
 +			bias-disable;
 +		};
 +
-+		rst-pins {
++		reset-n-pins {
 +			pins = "gpio110";
 +			function = "gpio";
 +			drive-strength = <2>;
