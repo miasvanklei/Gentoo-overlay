@@ -1,6 +1,6 @@
 --- a/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-04-11 12:31:40.515236972 +0200
 +++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12.dts	2026-04-11 12:54:06.119566740 +0200
-@@ -841,6 +841,158 @@
+@@ -841,6 +841,157 @@
  	};
  };
  
@@ -28,15 +28,14 @@
 +				data-lanes = <0 1>;
 +				remote-endpoint = <&ov02c10_ep>;
 +			};
-+		};
 +
-+		port@2 {
-+			csiphy4_ep1: endpoint@4 {
++			// Only 1 of the 2 cameras (front or ir) can currently be enabled.
++			/*csiphy4_ep1: endpoint@4 {
 +				reg = <4>;
 +				clock-lanes = <7>;
 +				data-lanes = <2>;
 +				remote-endpoint = <&vd55g1_ep>;
-+			};
++			};*/
 +		};
 +	};
 +};
@@ -80,7 +79,7 @@
 +	};
 +};
 +
-+&cci0_i2c0 {
++/*&cci0_i2c0 {
 +	camera@10 {
 +		compatible = "st,vd55g1";
 +		reg = <0x10>;
@@ -108,7 +107,7 @@
 +			};
 +		};
 +	};
-+};
++};*/
 +
 +&cci1_i2c1 {
 +	camera@36 {
@@ -197,13 +196,13 @@
 +
 +	cam_ir_default: cam-ir-default-state {
 +		mclk-pins {
-+			pins = "gpio66";
++			pins = "gpio96";
 +			function = "cam_mclk";
-+			drive-strength = <2>;
++			drive-strength = <16>;
 +			bias-disable;
 +		};
 +
-+		rst-pins {
++		reset-n-pins {
 +			pins = "gpio109";
 +			function = "gpio";
 +			drive-strength = <2>;
