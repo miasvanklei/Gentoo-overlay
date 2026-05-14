@@ -1,0 +1,38 @@
+--- a/ucm2/Qualcomm/x1e80100/Surface12in-HiFi.conf	2026-05-14 13:56:24.002066145 +0200
++++ b/ucm2/Qualcomm/x1e80100/Surface12in-HiFi.conf	2026-05-14 13:56:08.717989754 +0200
+@@ -5,6 +5,8 @@
+ 	EnableSequence [
+ 		cset "name='WSA_CODEC_DMA_RX_0 Audio Mixer MultiMedia1' 1"
+ 		cset "name='MultiMedia2 Mixer VA_CODEC_DMA_TX_0' 1"
++		cset "name='DISPLAY_PORT_RX_0 Audio Mixer MultiMedia3' 1"
++		cset "name='DISPLAY_PORT_RX_1 Audio Mixer MultiMedia4' 1"
+ 	]
+ 
+ 	Include.wsae.File "/codecs/wsa884x/two-speakers/DefaultEnableSeq.conf"
+@@ -31,6 +33,26 @@
+ 	}
+ }
+ 
++SectionDevice."HDMI0" {
++	Comment "USB/DisplayPort 0 playback"
++
++	Value {
++		PlaybackPriority 50
++		PlaybackPCM "hw:${CardId},2"
++		JackControl "DP0 Jack"
++	}
++}
++
++SectionDevice."HDMI1" {
++	Comment "USB/DisplayPort 1 playback"
++
++	Value {
++		PlaybackPriority 50
++		PlaybackPCM "hw:${CardId},3"
++		JackControl "DP1 Jack"
++	}
++}
++
+ SectionDevice."Mic" {
+ 	Comment "Internal microphones"
+ 
