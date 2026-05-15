@@ -1,0 +1,56 @@
+From d20cbc1667b75384c10ca07de6d140e8a11529a0 Mon Sep 17 00:00:00 2001
+From: Sam James <sam@gentoo.org>
+Date: Sun, 3 May 2026 08:20:43 +0100
+Subject: [PATCH] lib: use 'fork' multiprocessing start method if 'forkserver'
+ is in effect
+
+If PORTAGE_MULTIPROCESSING_START_METHOD is set, change the multiprocessing
+start method to its value.
+
+If it is not set, check if the current start method is forkserver. If it is,
+change to fork. We can't do that unconditionally as not all platforms
+defaulted to fork before Python 3.14.
+
+This is needed because of a few CPython bugs we've hit. It also avoids
+a serious performance regression with Python 3.14:
+
+> $ ( cd lib; python3.13 -m timeit -n 25 'import portage.process; portage.process.spawn("true")' )
+> 25 loops, best of 5: 7.19 msec per loop
+> $ ( cd lib; python3.14 -m timeit -n 25 'import portage.process; portage.process.spawn("true")' )
+> 25 loops, best of 5: 58.4 msec per loop
+
+(from https://bugs.gentoo.org/973042#c2)
+
+Bug: https://bugs.gentoo.org/958635
+Bug: https://bugs.gentoo.org/973042
+Bug: https://bugs.gentoo.org/973043
+Signed-off-by: Sam James <sam@gentoo.org>
+---
+ lib/portage/__init__.py | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/lib/portage/__init__.py b/lib/portage/__init__.py
+index 831eebf91b..40b08855ea 100644
+--- a/lib/portage/__init__.py
++++ b/lib/portage/__init__.py
+@@ -409,6 +409,20 @@ def __getattribute__(self, attr):
+ 
+ _sync_mode = False
+ 
++import multiprocessing
++
++# Prefer the environment variable if set. Otherwise, change away from
++# forkserver if in use.
++_multiprocessing_method = os.environ.get("PORTAGE_MULTIPROCESSING_START_METHOD")
++if not _multiprocessing_method:
++    _multiprocessing_method = multiprocessing.get_start_method(allow_none=False)
++    if _multiprocessing_method == "forkserver":
++        # Undo the Python 3.14 default change on Linux from fork->forkserver
++        # because of various problems (bug #973043, bug #973571).
++        _multiprocessing_method = "fork"
++if _multiprocessing_method:
++    multiprocessing.set_start_method(_multiprocessing_method, force=True)
++
+ 
+ class _ForkWatcher:
+     @staticmethod
