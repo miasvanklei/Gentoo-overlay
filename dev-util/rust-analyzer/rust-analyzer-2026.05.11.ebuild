@@ -5,7 +5,7 @@
 
 EAPI=8
 
-RUST_MIN_VER="1.93.0"
+RUST_MIN_VER="1.95.0"
 
 inherit cargo
 
@@ -34,6 +34,10 @@ KEYWORDS="~amd64 ~arm64"
 
 BDEPEND="dev-lang/rust"
 RDEPEND="!dev-lang/rust[rust-analyzer]"
+
+PATCHES=(
+	"${FILESDIR}/revert-use-into-string.patch"
+)
 
 src_compile() {
 	export CFG_RELEASE=nightly
