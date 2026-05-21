@@ -169,7 +169,6 @@ src_install() {
 	insinto "/usr/lib/${PN}"
 	doins -r .
 
-	setup_anthropic
 	setup_ripgrep
 
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
@@ -182,29 +181,6 @@ src_install() {
 pkg_postinst() {
 	elog "When using code-server systemd service run it as a user"
 	elog "For example: 'systemctl --user enable --now code-server'"
-}
-
-setup_anthropic() {
-	local anthropic_dir="/usr/lib/code-server/lib/vscode/node_modules/@anthropic-ai/sandbox-runtime"
-	local ai_arch=""
-
-	if use arm64; then
-		ai_arch="arm64"
-	elif use amd64; then
-		ai_arch="x64"
-	fi
-
-	local sdk_arch_dir="linux-${ai_arch}"
-
-	mv "${D}/${anthropic_dir}/vendor/seccomp" "${D}/${anthropic_dir}/vendor/seccomp_bak"
-	mv "${D}/${anthropic_dir}/dist/vendor/seccomp" "${D}/${anthropic_dir}/dist/vendor/seccomp_bak"
-	dodir "${anthropic_dir}/vendor/seccomp"
-	dodir "${anthropic_dir}/dist/vendor/seccomp"
-	mv "${D}/${anthropic_dir}/vendor/seccomp_bak/${ai_arch}" "${D}/${anthropic_dir}/vendor/seccomp/"
-	mv "${D}/${anthropic_dir}/dist/vendor/seccomp_bak/${ai_arch}" "${D}/${anthropic_dir}/dist/vendor/seccomp/"
-
-	rm -r "${D}/${anthropic_dir}/vendor/seccomp_bak" || die
-	rm -r "${D}/${anthropic_dir}/dist/vendor/seccomp_bak" || die
 }
 
 setup_ripgrep() {
