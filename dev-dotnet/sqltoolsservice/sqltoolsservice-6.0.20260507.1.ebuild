@@ -439,9 +439,8 @@ PATCHES=(
 )
 
 DOTNET_PKG_PROJECTS=(
-	src/Microsoft.SqlTools.ServiceLayer/Microsoft.SqlTools.ServiceLayer.csproj
 	src/Microsoft.SqlTools.ResourceProvider/Microsoft.SqlTools.ResourceProvider.csproj
-	src/Microsoft.SqlTools.Migration/Microsoft.SqlTools.Migration.csproj
+	src/Microsoft.SqlTools.ServiceLayer/Microsoft.SqlTools.ServiceLayer.csproj
 )
 
 pkg_setup() {
@@ -484,7 +483,6 @@ src_install() {
 	# restore executabe bit for executables
 	pushd "${ED}/${dest_root}" >/dev/null || die
 	chmod +x MicrosoftSqlToolsServiceLayer || die
-	chmod +x MicrosoftSqlToolsMigration || die
 	chmod +x MicrosoftSqlToolsCredentials || die
 	chmod +x SqlToolsResourceProviderService || die
 	popd >/dev/null
