@@ -36,6 +36,7 @@ RDEPEND="
 	elibc_musl? (
 		sys-libs/widevine-compat
 	)
+	!media-libs/openh264[plugin]
 "
 
 QA_PREBUILT="*"
@@ -107,8 +108,7 @@ src_install() {
 	dosym "../../manifest.json" "${widevinedir}/gmp-widevinecdm/system-installed/manifest.json"
 	dosym "../../libwidevinecdm.so" "${widevinedir}/gmp-widevinecdm/system-installed/libwidevinecdm.so"
 
-	insinto "/usr/lib/environment.d"
-	doins "${FILESDIR}/gmpwidevine.conf"
+	doenvd "${FILESDIR}/99-gmpwidevine.conf"
 
 	insinto "/usr/lib/firefox/defaults/pref"
 	doins "${FILESDIR}/gmpwidevine.js"
