@@ -10,7 +10,7 @@
  dtb-$(CONFIG_ARCH_QCOM)	+= x1p64100-microsoft-denali.dtb x1p64100-microsoft-denali-el2.dtb
 --- /dev/null	2026-04-09 10:36:12.255999997 +0200
 +++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-venezia.dts	2026-04-10 17:31:57.516378528 +0200
-@@ -0,0 +1,1360 @@
+@@ -0,0 +1,1361 @@
 +// SPDX-License-Identifier: BSD-3-Clause
 +/*
 + * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
@@ -47,9 +47,10 @@
 +
 +	backlight: backlight {
 +		compatible = "pwm-backlight";
-+		pwms = <&pmk8550_pwm 0 4266537>;
++
 +		enable-gpios = <&pmc8380_3_gpios 4 GPIO_ACTIVE_HIGH>;
 +		power-supply = <&vreg_edp_bl>;
++		pwms = <&pmk8550_pwm 0 4266537>;
 +
 +		pinctrl-0 = <&edp_bl_en>, <&edp_bl_pwm>;
 +		pinctrl-names = "default";
@@ -58,7 +59,7 @@
 +	gpio-keys {
 +		compatible = "gpio-keys";
 +
-+		pinctrl-0 = <&hall_int_n_default>, <&kypd_vol_up_n>, <&kypd_vol_down_n>;
++		pinctrl-0 = <&hall_int_n_default>, <&vol_up_n_default>, <&vol_down_n_default>;
 +		pinctrl-names = "default";
 +
 +		key-vol-up {
@@ -87,8 +88,8 @@
 +	leds {
 +		compatible = "gpio-leds";
 +
-+		pinctrl-names = "default";
 +		pinctrl-0 = <&cam_indicator_en>;
++		pinctrl-names = "default";
 +
 +		privacy_led: privacy-led {
 +			function = LED_FUNCTION_INDICATOR;
@@ -316,6 +317,22 @@
 +		pinctrl-names = "default";
 +	};
 +
++	vreg_edp_bl: regulator-edp-bl {
++		compatible = "regulator-fixed";
++
++		regulator-name = "VREG_EDP_BL";
++		regulator-min-microvolt = <3600000>;
++		regulator-max-microvolt = <3600000>;
++
++		gpio = <&pmc8380_3_gpios 10 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++
++		pinctrl-0 = <&edp_bl_reg_en>;
++		pinctrl-names = "default";
++
++		regulator-boot-on;
++	};
++
 +	vreg_misc_3p3: regulator-misc-3p3 {
 +		compatible = "regulator-fixed";
 +
@@ -326,33 +343,17 @@
 +		gpio = <&pm8550ve_8_gpios 6 GPIO_ACTIVE_HIGH>;
 +		enable-active-high;
 +
-+		pinctrl-names = "default";
 +		pinctrl-0 = <&misc_3p3_reg_en>;
++		pinctrl-names = "default";
 +
 +		regulator-boot-on;
 +		regulator-always-on;
 +	};
 +
-+	vreg_edp_bl: regulator-edp-bl {
-+		compatible = "regulator-fixed";
-+
-+		regulator-name = "VBL9";
-+		regulator-min-microvolt = <3600000>;
-+		regulator-max-microvolt = <3600000>;
-+
-+		gpio = <&pmc8380_3_gpios 10 GPIO_ACTIVE_HIGH>;
-+		enable-active-high;
-+
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&edp_bl_reg_en>;
-+
-+		regulator-boot-on;
-+	};
-+
 +	vreg_vph_pwr: regulator-vph-pwr {
 +		compatible = "regulator-fixed";
 +
-+		regulator-name = "vph_pwr";
++		regulator-name = "VREG_VPH_PWR";
 +		regulator-min-microvolt = <3700000>;
 +		regulator-max-microvolt = <3700000>;
 +	};
@@ -899,7 +900,7 @@
 +};
 +
 +&lpass_vamacro {
-+	pinctrl-0 = <&dmic01_default>, <&dmic23_default>;
++	pinctrl-0 = <&dmic01_default>;
 +	pinctrl-names = "default";
 +
 +	vdd-micb-supply = <&vreg_l1b_1p8>;
@@ -933,8 +934,8 @@
 +&mdss_dp3 {
 +	/delete-property/ #sound-dai-cells;
 +
-+	pinctrl-names = "default";
 +	pinctrl-0 = <&edp0_hpd_default>;
++	pinctrl-names = "default";
 +
 +	status = "okay";
 +
@@ -1010,7 +1011,7 @@
 +};
 +
 +&pm8550_gpios {
-+	kypd_vol_down_n: kypd-down-up-n-state {
++	vol_down_n_default: vol-down-n-state {
 +		pins = "gpio8";
 +		function = "normal";
 +		power-source = <1>; /* 1.8 V */
@@ -1018,7 +1019,7 @@
 +		input-enable;
 +	};
 +
-+	kypd_vol_up_n: kypd-vol-up-n-state {
++	vol_up_n_default: vol-up-n-state {
 +		pins = "gpio6";
 +		function = "normal";
 +		power-source = <1>; /* 1.8 V */
@@ -1211,14 +1212,14 @@
 +
 +	usb_1_ss0_sbu_default: usb-1-ss0-sbu-state {
 +		oe-n-pins {
-+			pins = "gpio167";
++			pins = "gpio168";
 +			function = "gpio";
 +			bias-pull-up;
 +			drive-strength = <2>;
 +		};
 +
 +		sel-pins {
-+			pins = "gpio168";
++			pins = "gpio167";
 +			function = "gpio";
 +			bias-pull-up;
 +			drive-strength = <2>;
@@ -1228,14 +1229,14 @@
 +
 +	usb_1_ss1_sbu_default: usb-1-ss1-sbu-state {
 +		oe-n-pins {
-+			pins = "gpio178";
++			pins = "gpio179";
 +			function = "gpio";
 +			bias-pull-up;
 +			drive-strength = <2>;
 +		};
 +
 +		sel-pins {
-+			pins = "gpio179";
++			pins = "gpio178";
 +			function = "gpio";
 +			bias-pull-up;
 +			drive-strength = <2>;
@@ -1318,7 +1319,7 @@
 +};
 +
 +&usb_1_ss0_qmpphy {
-+	vdda-phy-supply = <&vreg_l3e_1p2>;
++	vdda-phy-supply = <&vreg_l2j_1p2>;
 +	vdda-pll-supply = <&vreg_l1j_0p8>;
 +
 +	status = "okay";
@@ -1330,6 +1331,14 @@
 +
 +&usb_1_ss0_dwc3 {
 +	dr_mode = "host";
++};
++
++&usb_1_ss0_dwc3_hs {
++	remote-endpoint = <&pmic_glink_ss0_hs_in>;
++};
++
++&usb_1_ss0_qmpphy_out {
++	remote-endpoint = <&pmic_glink_ss0_ss_in>;
 +};
 +
 +&usb_1_ss1_hsphy {
@@ -1354,14 +1363,6 @@
 +
 +&usb_1_ss1_dwc3 {
 +	dr_mode = "host";
-+};
-+
-+&usb_1_ss0_dwc3_hs {
-+	remote-endpoint = <&pmic_glink_ss0_hs_in>;
-+};
-+
-+&usb_1_ss0_qmpphy_out {
-+	remote-endpoint = <&pmic_glink_ss0_ss_in>;
 +};
 +
 +&usb_1_ss1_dwc3_hs {
