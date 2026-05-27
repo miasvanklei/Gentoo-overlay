@@ -31,8 +31,8 @@ src_prepare() {
 }
 
 src_install() {
-	local firmwaredir="lib/firmware/qcom/x1p42100/Microsoft/sp12"
-	local fastrpcdir="usr/share/qcom/x1p42100/Microsoft/sp12"
+	local firmwaredir="lib/firmware/qcom/x1p42100/Microsoft/Venezia"
+	local fastrpcdir="usr/share/qcom/x1p42100/Microsoft/Venezia"
 
 	cd SurfaceUpdate || die
 
@@ -47,7 +47,6 @@ src_install() {
 	doins qcnspmcdmextcdsp8380/cdsp_dtbs.elf
 
 	# GPU
-	doins qcdx8380/qcdxkmsuc8380.mbn
 	doins qcdx8380/qcdxkmsucpurwa.mbn
 
 	# Venus/Iris
@@ -57,7 +56,7 @@ src_install() {
 
 	# fastroc
 	insinto /usr/share/qcom/conf.d
-	doins ${FILESDIR}/sp12.yml
+	doins ${FILESDIR}/microsoft-venezia.yml
 
 	# ssc
 	udev_dorules ${FILESDIR}/81-libssc-surfacepro12.rules

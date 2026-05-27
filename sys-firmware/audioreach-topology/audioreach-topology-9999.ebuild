@@ -25,7 +25,7 @@ DEPEND="${RDEPEND}"
 
 PATCHES=(
 	"${FILESDIR}"/add-ntmer-tw220.patch
-	"${FILESDIR}"/add-surface-pro-12inch.patch
+	"${FILESDIR}"/add-surface-pro-12inch-1st-edition.patch
 )
 
 src_install() {
