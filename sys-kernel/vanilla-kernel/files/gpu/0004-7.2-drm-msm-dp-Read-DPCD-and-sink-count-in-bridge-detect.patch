@@ -1,0 +1,132 @@
+Instead of relying on the link_ready flag to specify if DP is connected,
+read the DPCD bits and get the sink count to accurately detect if DP is
+connected.
+
+Signed-off-by: Jessica Zhang <jessica.zhang@oss.qualcomm.com>
+Tested-by: Val Packett <val@packett.cool> # x1e80100-dell-latitude-7455
+Tested-by: Yongxing Mou <yongxing.mou@oss.qualcomm.com> # Hamoa IOT EVK, QCS8300 Ride
+Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
+---
+ drivers/gpu/drm/msm/dp/dp_display.c | 63 +++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/msm/dp/dp_drm.c     | 20 ------------
+ drivers/gpu/drm/msm/dp/dp_drm.h     |  2 ++
+ 3 files changed, 65 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/gpu/drm/msm/dp/dp_display.c b/drivers/gpu/drm/msm/dp/dp_display.c
+index 1dd168acbbc3..97c4752005c0 100644
+--- a/drivers/gpu/drm/msm/dp/dp_display.c
++++ b/drivers/gpu/drm/msm/dp/dp_display.c
+@@ -1152,6 +1152,69 @@ static int msm_dp_hpd_event_thread_start(struct msm_dp_display_private *msm_dp_p
+ 	return 0;
+ }
+ 
++/**
++ * msm_dp_bridge_detect - callback to determine if connector is connected
++ *
++ * @bridge: Pointer to drm bridge structure
++ * @connector: Pointer to drm connector structure
++ *
++ * Returns: where there is a display connected to the DPTX (returning
++ * disconnected for branch devices without DP Sinks being connected).
++ */
++enum drm_connector_status msm_dp_bridge_detect(struct drm_bridge *bridge,
++					       struct drm_connector *connector)
++{
++	struct msm_dp_bridge *msm_dp_bridge = to_dp_bridge(bridge);
++	struct msm_dp *dp = msm_dp_bridge->msm_dp_display;
++	int status = connector_status_disconnected;
++	struct msm_dp_display_private *priv;
++	u8 dpcd[DP_RECEIVER_CAP_SIZE];
++	struct drm_dp_desc desc;
++	int ret;
++
++	dp = to_dp_bridge(bridge)->msm_dp_display;
++
++	priv = container_of(dp, struct msm_dp_display_private, msm_dp_display);
++
++	if (!dp->link_ready)
++		return status;
++
++	msm_dp_aux_enable_xfers(priv->aux, true);
++
++	ret = pm_runtime_resume_and_get(&dp->pdev->dev);
++	if (ret) {
++		DRM_ERROR("failed to pm_runtime_resume\n");
++		msm_dp_aux_enable_xfers(priv->aux, false);
++		return status;
++	}
++
++	ret = msm_dp_aux_is_link_connected(priv->aux);
++	if (dp->internal_hpd && !ret)
++		goto end;
++
++	ret = drm_dp_read_dpcd_caps(priv->aux, dpcd);
++	if (ret)
++		goto end;
++
++	ret = drm_dp_read_desc(priv->aux, &desc, drm_dp_is_branch(dpcd));
++	if (ret)
++		goto end;
++
++	status = connector_status_connected;
++	if (drm_dp_read_sink_count_cap(connector, dpcd, &desc)) {
++		int sink_count = drm_dp_read_sink_count(priv->aux);
++
++		drm_dbg_dp(dp->drm_dev, "sink_count = %d\n", sink_count);
++
++		if (sink_count <= 0)
++			status = connector_status_disconnected;
++	}
++
++end:
++	pm_runtime_put_sync(&dp->pdev->dev);
++	return status;
++}
++
+ static irqreturn_t msm_dp_display_irq_handler(int irq, void *dev_id)
+ {
+ 	struct msm_dp_display_private *dp = dev_id;
+diff --git a/drivers/gpu/drm/msm/dp/dp_drm.c b/drivers/gpu/drm/msm/dp/dp_drm.c
+index 349175457566..991a3ca1e6bd 100644
+--- a/drivers/gpu/drm/msm/dp/dp_drm.c
++++ b/drivers/gpu/drm/msm/dp/dp_drm.c
+@@ -15,26 +15,6 @@
+ #include "dp_audio.h"
+ #include "dp_drm.h"
+ 
+-/**
+- * msm_dp_bridge_detect - callback to determine if connector is connected
+- * @bridge: Pointer to drm bridge structure
+- * @connector: Pointer to drm connector structure
+- * Returns: Bridge's 'is connected' status
+- */
+-static enum drm_connector_status
+-msm_dp_bridge_detect(struct drm_bridge *bridge, struct drm_connector *connector)
+-{
+-	struct msm_dp *dp;
+-
+-	dp = to_dp_bridge(bridge)->msm_dp_display;
+-
+-	drm_dbg_dp(dp->drm_dev, "link_ready = %s\n",
+-		str_true_false(dp->link_ready));
+-
+-	return (dp->link_ready) ? connector_status_connected :
+-					connector_status_disconnected;
+-}
+-
+ static int msm_dp_bridge_atomic_check(struct drm_bridge *bridge,
+ 			    struct drm_bridge_state *bridge_state,
+ 			    struct drm_crtc_state *crtc_state,
+diff --git a/drivers/gpu/drm/msm/dp/dp_drm.h b/drivers/gpu/drm/msm/dp/dp_drm.h
+index ec76448e71ae..041aa026ae2e 100644
+--- a/drivers/gpu/drm/msm/dp/dp_drm.h
++++ b/drivers/gpu/drm/msm/dp/dp_drm.h
+@@ -25,6 +25,8 @@ int msm_dp_bridge_init(struct msm_dp *msm_dp_display, struct drm_device *dev,
+ 		   struct drm_encoder *encoder,
+ 		   bool yuv_supported);
+ 
++enum drm_connector_status msm_dp_bridge_detect(struct drm_bridge *bridge,
++					       struct drm_connector *connector);
+ void msm_dp_bridge_atomic_enable(struct drm_bridge *drm_bridge,
+ 				 struct drm_atomic_commit *state);
+ void msm_dp_bridge_atomic_disable(struct drm_bridge *drm_bridge,
