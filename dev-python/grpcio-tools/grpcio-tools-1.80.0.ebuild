@@ -35,32 +35,15 @@ python_prepare_all() {
 	sed -r -i \
 		-e '/^CC_FILES=\[/,/\]/{/^CC_FILES=\[/n;/\]/!d;}' \
 		-e '/^CC_INCLUDES=\[/,/\]/{/^CC_INCLUDES=\[/n;/\]/!d;}' \
-		-e "s@^(PROTO_INCLUDE=')[^']+'@\1/usr/include'@" \
 		-e '/^PROTOBUF_SUBMODULE_VERSION=/d' \
 		protoc_lib_deps.py
-
-	# fix the include path
-	ln -s ../../../.. grpc_root
 }
 
 src_configure() {
-        export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS="$(makeopts_jobs)"
-        # system abseil-cpp crashes with USE=-debug, sigh
-        # https://bugs.gentoo.org/942021
-        #export GRPC_PYTHON_BUILD_SYSTEM_ABSL=1
-        export GRPC_PYTHON_BUILD_SYSTEM_CARES=1
-        export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1
-        # re2 needs to be built against the same abseil-cpp version
-        #export GRPC_PYTHON_BUILD_SYSTEM_RE2=1
-        export GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1
-        export GRPC_PYTHON_BUILD_WITH_CYTHON=1
+	export GRPC_PYTHON_BUILD_EXT_COMPILER_JOBS="$(makeopts_jobs)"
 
-        # copied from setup.py, except for removed -std= that does not apply
-        # to C code and causes warnings
-        export GRPC_PYTHON_CFLAGS="-fvisibility=hidden -fno-wrapv"
+	export GRPC_PYTHON_CFLAGS="-std=c++20"
 
 	# fix underlinking
 	export GRPC_PYTHON_LDFLAGS="-lprotoc"
-        # silence a lot of harmless noise from bad quality code
-        append-cxxflags -Wno-attributes
 }
