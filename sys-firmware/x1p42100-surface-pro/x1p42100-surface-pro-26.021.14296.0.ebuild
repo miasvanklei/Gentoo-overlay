@@ -7,7 +7,9 @@ inherit edos2unix udev
 
 DESCRIPTION="firmware files for the surface pro 12-inch"
 HOMEPAGE=""
-SRC_URI="https://download.microsoft.com/download/3f42130f-64d6-4a85-8a18-ec1b70f5ef82/SurfacePro_12in_1st_Edition_Win11_26100_${PV}.msi -> ${PN}-${PV}.msi"
+SRC_URI="
+	https://download.microsoft.com/download/3f42130f-64d6-4a85-8a18-ec1b70f5ef82/SurfacePro_12in_1st_Edition_Win11_26100_${PV}.msi -> ${PN}-${PV}.msi
+	https://git.codelinaro.org/clo/linux-kernel/linux-firmware/-/raw/060aa3afb83c5f8c8e1f30ad0d9f8a2088718754/qcom/vpu/vpu30_p1_s7.mbn"
 
 LICENSE=""
 SLOT="0"
@@ -31,12 +33,17 @@ src_prepare() {
 }
 
 src_install() {
-	local firmwaredir="lib/firmware/qcom/x1p42100/Microsoft/Venezia"
-	local fastrpcdir="usr/share/qcom/x1p42100/Microsoft/Venezia"
+	local firmwaredir="/lib/firmware/qcom/x1p42100/Microsoft/Venezia"
+	local fastrpcdir="/usr/share/qcom/x1p42100/Microsoft/Venezia"
+
+	insinto /lib/firmware/qcom/vpu
+
+	# Generic Iris firmware
+	doins ${DISTDIR}/vpu30_p1_s7.mbn
 
 	cd SurfaceUpdate || die
 
-	insinto /${firmwaredir}
+	insinto ${firmwaredir}
 
 	# ADSP
 	doins proextadsp8380/qcadsp8380.mbn
@@ -54,7 +61,7 @@ src_install() {
 	doins qcdx8380/qcvss8380_pa.mbn
 	doins qcdx8380/qcvss8380.mbn
 
-	# fastroc
+	# fastrpc
 	insinto /usr/share/qcom/conf.d
 	doins ${FILESDIR}/microsoft-venezia.yml
 
@@ -62,17 +69,17 @@ src_install() {
 	udev_dorules ${FILESDIR}/81-libssc-surfacepro12.rules
 
 	# sensordata
-	insinto /${fastrpcdir}/vendor/etc/sensors/
+	insinto ${fastrpcdir}/vendor/etc/sensors/
 	sed -i \
 		-e "s|file=output=/persist|file=output=/${fastrpcdir}/persist|g" \
 		-e "s|file=config=/vendor|file=config=/${fastrpcdir}/vendor|g" surfaceprosnscfgcrd8380/sns_reg_config || die
 	doins surfaceprosnscfgcrd8380/sns_reg_config
 
-	insinto /${fastrpcdir}/vendor/etc/sensors/config
+	insinto ${fastrpcdir}/vendor/etc/sensors/config
 	doins surfaceprosnscfgcrd8380/json.lst
 	doins surfaceprosnscfgcrd8380/*.json
 
-	keepdir /${fastrpcdir}/persist/sensors/registry/registry
+	keepdir ${fastrpcdir}/persist/sensors/registry/registry
 }
 
 pkg_postinst() {
