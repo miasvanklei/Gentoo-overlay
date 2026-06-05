@@ -1,9 +1,3 @@
-From 5a93ec70d73ead5d2a2a473f8c13976a53b4fc59 Mon Sep 17 00:00:00 2001
-From: Stephan Gerhold <stephan.gerhold@linaro.org>
-Date: Sat, 1 Nov 2025 18:32:25 +0100
-Subject: [PATCH 104/150] rpmsg: core: Call announce_destroy() only after
- announce_create()
-
 rpmsg_dev_probe() calls rpdev->ops->announce_create() only when the driver
 specifies a callback and an endpoint was opened, but rpmsg_dev_remove()
 calls announce_destroy() unconditionally. Fix this by adding the missing
@@ -30,6 +24,3 @@ index 5d661681a..fb444dc2f 100644
  		rpdev->ops->announce_destroy(rpdev);
  
  	if (rpdrv->remove)
--- 
-2.52.0
-

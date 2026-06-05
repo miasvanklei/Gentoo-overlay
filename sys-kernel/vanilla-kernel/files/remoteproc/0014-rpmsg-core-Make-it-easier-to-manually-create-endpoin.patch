@@ -1,9 +1,3 @@
-From b564fdd243204542bf63ff644847aae15f004600 Mon Sep 17 00:00:00 2001
-From: Stephan Gerhold <stephan.gerhold@linaro.org>
-Date: Sat, 1 Nov 2025 18:33:26 +0100
-Subject: [PATCH 105/150] rpmsg: core: Make it easier to manually create
- endpoint during probe()
-
 Currently, the rpmsg core automatically creates an endpoint for rpmsg
 drivers that specify a receive callback. This works "somewhat" in most
 simple cases, but it is often prone to race conditions: The receive
@@ -40,7 +34,7 @@ Signed-off-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
  2 files changed, 49 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/rpmsg/rpmsg_core.c b/drivers/rpmsg/rpmsg_core.c
-index fb444dc2f..223e63c76 100644
+index 6783d04b591dd1..896fb8a3a4f5f4 100644
 --- a/drivers/rpmsg/rpmsg_core.c
 +++ b/drivers/rpmsg/rpmsg_core.c
 @@ -95,6 +95,14 @@ EXPORT_SYMBOL(rpmsg_release_channel);
@@ -58,7 +52,7 @@ index fb444dc2f..223e63c76 100644
   * That said, more complicated drivers might need to allocate
   * additional rpmsg addresses, and bind them to different rx callbacks.
   * To accomplish that, those drivers need to call this function.
-@@ -463,6 +471,32 @@ static int rpmsg_uevent(const struct device *dev, struct kobj_uevent_env *env)
+@@ -451,6 +459,32 @@ static int rpmsg_uevent(const struct device *dev, struct kobj_uevent_env *env)
  					rpdev->id.name);
  }
  
@@ -91,7 +85,7 @@ index fb444dc2f..223e63c76 100644
  /*
   * when an rpmsg driver is probed with a channel, we seamlessly create
   * it an endpoint, binding its rx callback to a unique local rpmsg
-@@ -475,7 +509,6 @@ static int rpmsg_dev_probe(struct device *dev)
+@@ -463,7 +497,6 @@ static int rpmsg_dev_probe(struct device *dev)
  {
  	struct rpmsg_device *rpdev = to_rpmsg_device(dev);
  	struct rpmsg_driver *rpdrv = to_rpmsg_driver(rpdev->dev.driver);
@@ -99,7 +93,7 @@ index fb444dc2f..223e63c76 100644
  	struct rpmsg_endpoint *ept = NULL;
  	int err;
  
-@@ -485,21 +518,11 @@ static int rpmsg_dev_probe(struct device *dev)
+@@ -473,21 +506,11 @@ static int rpmsg_dev_probe(struct device *dev)
  		goto out;
  
  	if (rpdrv->callback) {
@@ -122,7 +116,7 @@ index fb444dc2f..223e63c76 100644
  	}
  
  	err = rpdrv->probe(rpdev);
-@@ -508,7 +531,7 @@ static int rpmsg_dev_probe(struct device *dev)
+@@ -496,7 +519,7 @@ static int rpmsg_dev_probe(struct device *dev)
  		goto destroy_ept;
  	}
  
@@ -131,7 +125,7 @@ index fb444dc2f..223e63c76 100644
  		err = rpdev->ops->announce_create(rpdev);
  		if (err) {
  			dev_err(dev, "failed to announce creation\n");
-@@ -539,7 +562,7 @@ static void rpmsg_dev_remove(struct device *dev)
+@@ -527,7 +550,7 @@ static void rpmsg_dev_remove(struct device *dev)
  	if (rpdrv->remove)
  		rpdrv->remove(rpdev);
  
@@ -141,7 +135,7 @@ index fb444dc2f..223e63c76 100644
  }
  
 diff --git a/include/linux/rpmsg.h b/include/linux/rpmsg.h
-index fb7ab9165..8cf3fa83f 100644
+index 83266ce1464204..c3719703553c0a 100644
 --- a/include/linux/rpmsg.h
 +++ b/include/linux/rpmsg.h
 @@ -181,6 +181,8 @@ void rpmsg_destroy_ept(struct rpmsg_endpoint *);
@@ -151,8 +145,8 @@ index fb7ab9165..8cf3fa83f 100644
 +struct rpmsg_endpoint *rpmsg_dev_open_ept(struct rpmsg_device *rpdev,
 +					  rpmsg_rx_cb_t cb, void *priv);
  
- int rpmsg_send(struct rpmsg_endpoint *ept, void *data, int len);
- int rpmsg_sendto(struct rpmsg_endpoint *ept, void *data, int len, u32 dst);
+ int rpmsg_send(struct rpmsg_endpoint *ept, const void *data, int len);
+ int rpmsg_sendto(struct rpmsg_endpoint *ept, const void *data, int len, u32 dst);
 @@ -249,6 +251,16 @@ static inline struct rpmsg_endpoint *rpmsg_create_ept(struct rpmsg_device *rpdev
  	return NULL;
  }
@@ -167,9 +161,6 @@ index fb7ab9165..8cf3fa83f 100644
 +	return NULL;
 +}
 +
- static inline int rpmsg_send(struct rpmsg_endpoint *ept, void *data, int len)
+ static inline int rpmsg_send(struct rpmsg_endpoint *ept, const void *data, int len)
  {
  	/* This shouldn't be possible */
--- 
-2.52.0
-

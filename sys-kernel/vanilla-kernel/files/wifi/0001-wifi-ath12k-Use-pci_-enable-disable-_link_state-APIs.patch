@@ -1,9 +1,3 @@
-From 61c68deccc541460c9f35ad51f839492747bceee Mon Sep 17 00:00:00 2001
-From: Manivannan Sadhasivam <manivannan.sadhasivam@oss.qualcomm.com>
-Date: Mon, 25 Aug 2025 23:14:41 +0530
-Subject: [PATCH 006/150] wifi: ath12k: Use pci_{enable/disable}_link_state()
- APIs to enable/disable ASPM states
-
 It is not recommended to enable/disable the ASPM states on the back of the
 PCI core directly using the LNKCTL register. It will break the PCI core's
 knowledge about the device ASPM states. So use the APIs exposed by the PCI
@@ -31,9 +25,9 @@ index 1ea1af1b8..789276e1e 100644
  	tristate "Qualcomm Technologies Wi-Fi 7 support (ath12k)"
 -	depends on MAC80211 && HAS_DMA && PCI
 +	depends on MAC80211 && HAS_DMA && PCI && PCIEASPM
- 	select CRYPTO_MICHAEL_MIC
  	select QCOM_QMI_HELPERS
  	select MHI_BUS
+ 	select QRTR
 diff --git a/drivers/net/wireless/ath/ath12k/pci.c b/drivers/net/wireless/ath/ath12k/pci.c
 index 60b8f7361..49caa8cda 100644
 --- a/drivers/net/wireless/ath/ath12k/pci.c
@@ -87,6 +81,3 @@ index d1ec8aad7..f3e4e5932 100644
  	unsigned long irq_flags;
  	const struct ath12k_pci_ops *pci_ops;
  	u32 qmi_instance;
--- 
-2.52.0
-

@@ -27,7 +27,7 @@ HOMEPAGE="
 
 if [[ ${PV} == *"_rc"* ]]; then
 	SRC_URI+="
-		https://git.kernel.org/torvalds/t/linux-${PV/_/-}.tar.gz
+		https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-${PV/_/-}.tar.gz
 	"
 elif [[ -n $(ver_cut 3) ]]; then
 	SRC_URI+="
@@ -94,7 +94,7 @@ src_prepare() {
 	fi
 
 
-	for i in other irq audio phy pci remoteproc gpu usb video wifi input el2 rockchip surface camera; do
+	for i in other audio phy pci remoteproc gpu usb video wifi input el2 rockchip surface camera; do
 		for j in "${FILESDIR}"/$i/*.patch; do
 			eapply $j
 		done
