@@ -1,3 +1,13 @@
+Keep the USB pipe clock working when the phy is in DP-only mode, because
+the dwc controller still needs it for USB 2.0 over the same Type-C port.
+
+Tested with the BenQ RD280UA monitor which has a downstream-facing port
+for data passthrough that's manually switchable between USB 2 and 3,
+corresponding to 4-lane and 2-lane DP respectively.
+
+Note: the suspend/resume callbacks were already gating the enable/disable
+of this clock only on init_count and not usb_init_count!
+
 diff --git a/drivers/phy/qualcomm/phy-qcom-qmp-combo.c b/drivers/phy/qualcomm/phy-qcom-qmp-combo.c
 index 0bfe7d93cdeea3..05641817dee6a5 100644
 --- a/drivers/phy/qualcomm/phy-qcom-qmp-combo.c
