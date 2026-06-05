@@ -33,7 +33,7 @@ DEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}"/fix-deadlock.patch
+	"${FILESDIR}"/udev-rule-add-scc-accel.patch
 )
 
 src_configure() {
