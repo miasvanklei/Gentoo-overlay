@@ -15,19 +15,36 @@ else
 fi
 
 # All binary packages depend on this
-NAN_V=2.22.2
-NODE_ADDON_API_V=8.4.0
+NAN_V=2.27.0
+NODE_ADDON_API_V=8.8.0
 VSCODE_NATIVE_WATCHDOG_V=1.4.6
-NODE_PTY_V=1.2.0-beta.12
+NODE_PTY_V=1.2.0-beta.13
 VSCODE_SPDLOG_V=0.15.8
 VSCODE_SQLITE3_V=5.1.12-vscode
 ARGON2_V=0.44.0
 PARCEL_WATCHER_V=2.5.6
+COPILOT_VERSION=1.0.49
 
 SRC_URI="
 	https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
-	amd64? ( https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-amd64.tar.gz )
-	arm64? ( https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-arm64.tar.gz )
+	amd64? (
+		https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-amd64.tar.gz
+		elibc_musl? (
+			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linuxmusl-x64.tgz ->  github-copilot-linuxmusl-x64-${COPILOT_VERSION}.tgz
+		)
+		elibc_glibc? (
+			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linux-x64.tgz ->  github-copilot-linux-x64-${COPILOT_VERSION}.tgz
+		)
+	)
+	arm64? (
+		https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-arm64.tar.gz
+		elibc_musl? (
+			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linuxmusl-arm64.tgz ->  github-copilot-linuxmusl-arm64-${COPILOT_VERSION}.tgz
+		)
+		elibc_glibc? (
+			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linux-arm64.tgz ->  github-copilot-linux-arm64-${COPILOT_VERSION}.tgz
+		)
+	)
 	https://registry.npmjs.org/@vscode/native-watchdog/-/native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tgz -> vscodedep-vscode-native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tar.gz
 	https://registry.npmjs.org/node-pty/-/node-pty-${NODE_PTY_V}.tgz -> vscodedep-node-pty-${NODE_PTY_V}.tar.gz
 	https://registry.npmjs.org/@vscode/spdlog/-/spdlog-${VSCODE_SPDLOG_V}.tgz -> vscodedep-vscode-spdlog-${VSCODE_SPDLOG_V}.tar.gz
@@ -69,7 +86,7 @@ BDEPEND="
 "
 RDEPEND="
 	${DEPEND}
-	net-libs/nodejs:0/22[npm,ssl]
+	net-libs/nodejs:0/24[npm,ssl]
 	sys-apps/ripgrep
 "
 
@@ -80,7 +97,7 @@ src_unpack() {
 
 	for a in ${A} ; do
 		case "${a}" in
-			*code-server*)
+			*code-server*|*copilot*)
 				unpack "${a}"
 			;;
 
@@ -170,6 +187,7 @@ src_install() {
 	doins -r .
 
 	setup_ripgrep
+	setup_copilot
 
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
 	dosym "../../usr/lib/${PN}/bin/${PN}" "${EPREFIX}/usr/bin/${PN}"
@@ -183,24 +201,39 @@ pkg_postinst() {
 	elog "For example: 'systemctl --user enable --now code-server'"
 }
 
-setup_ripgrep() {
-	local sdk_dir="/usr/lib/code-server/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
-	local node_modules_dir="/usr/lib/code-server/lib/vscode/node_modules"
+setup_copilot() {
+	if use elibc_musl; then
+		copilot_libc="musl"
+	fi
 	if use arm64; then
-		ai_arch="arm64"
+		copilot_arch="arm64"
 	elif use amd64; then
-		ai_arch="x64"
+		copilot_arch="x64"
 	fi
 
-	local sdk_arch_dir="linux-${ai_arch}"
+	local copilot_dir="${D}/usr/lib/code-server/lib/vscode/node_modules/@github/copilot"
+	local copilot_bin_dir="linux${copilot_libc}-${copilot_arch}"
 
-	rm -r "${D}/${sdk_dir}/ripgrep/bin" || die
-	rm "${D}/${node_modules_dir}/@vscode/ripgrep/bin/rg" || die "failed to remove bundled ripgrep"
+	rm -r "${copilot_dir}/prebuilds" || die
+	mkdir -p "${copilot_dir}/prebuilds/${copilot_bin_dir}" || die
+	cp "${WORKDIR}/package/prebuilds/${copilot_bin_dir}/runtime.node" "${copilot_dir}/prebuilds/${copilot_bin_dir}/runtime.node" || die
+}
 
+setup_ripgrep() {
+	if use arm64; then
+		rg_arch="arm64"
+	elif use amd64; then
+		rg_arch="x64"
+	fi
 
-	dodir "${sdk_dir}/ripgrep/bin/${sdk_arch_dir}"
-	dosym "/usr/bin/rg" "${EPREFIX}/${sdk_dir}/ripgrep/bin/${sdk_arch_dir}/rg"
-	dosym "/usr/bin/rg" "${EPREFIX}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep/bin/rg"
+	local sdk_rg_dir="/usr/lib/${PN}/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
+	rm -r "${D}/${sdk_rg_dir}/ripgrep/bin" || die
+	dodir "${sdk_rg_dir}/ripgrep/bin/linux-${rg_arch}"
+	dosym "/usr/bin/rg" "${EPREFIX}/${sdk_rg_dir}/ripgrep/bin/linux-${rg_arch}/rg"
+
+	local rg_dir="/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep-universal/bin/linux-${rg_arch}"
+	rm "${D}/${rg_dir}/rg" || die "failed to remove bundled ripgrep"
+	dosym "/usr/bin/rg" "${EPREFIX}/${rg_dir}/rg"
 }
 
 enodegyp() {
@@ -249,6 +282,8 @@ get_binmod_loc_release() {
 cleanup_binmods() {
 	# use system node
 	rm ./lib/node || die "failed to remove bundled nodejs"
+
+	rm -r "${S}/lib/vscode/node_modules/@microsoft/mxc-sdk" || die
 
 	for binmod in "${CLEANUP_VSCODE_BINMODS[@]}"; do
 		rm -r "$(get_binmod_loc ${binmod})/build" || die
