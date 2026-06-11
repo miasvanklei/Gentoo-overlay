@@ -73,7 +73,7 @@ microsoft.data.sqlclient@5.1.5
 microsoft.data.sqlclient@5.1.6
 microsoft.data.sqlclient@5.2.0
 microsoft.data.sqlclient@6.1.3
-microsoft.data.sqlclient@6.1.4
+microsoft.data.sqlclient@6.1.5
 microsoft.extensions.ai.abstractions@10.0.1
 microsoft.extensions.ai.abstractions@10.2.0
 microsoft.extensions.ai.abstractions@9.5.0
@@ -159,6 +159,7 @@ microsoft.sqlserver.dacfx.projects@0.6.3-preview
 microsoft.sqlserver.dacfx@162.3.563
 microsoft.sqlserver.dacfx@170.2.70
 microsoft.sqlserver.dacfx@170.4.63-preview
+microsoft.sqlserver.dacfx@170.4.80-preview
 microsoft.sqlserver.management.smometadataprovider@181.15.0
 microsoft.sqlserver.management.sqlparser@173.0.0
 microsoft.sqlserver.management.sqlparser@173.8.0
@@ -169,7 +170,7 @@ microsoft.sqlserver.sqlmanagementobjects@170.18.0
 microsoft.sqlserver.sqlmanagementobjects@181.15.0
 microsoft.sqlserver.transactsql.scriptdom@161.9118.2
 microsoft.sqlserver.transactsql.scriptdom@170.128.0
-microsoft.sqlserver.transactsql.scriptdom@180.6.0
+microsoft.sqlserver.transactsql.scriptdom@180.18.1
 microsoft.sqlserver.types@160.1000.6
 microsoft.sqlserver.types@170.1000.7
 microsoft.sqlserver.xevent.xelite@2023.1.30.3
