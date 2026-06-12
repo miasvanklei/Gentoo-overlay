@@ -89,15 +89,13 @@ QA_FLAGS_IGNORED="
 "
 
 src_prepare() {
+	PATCHES=()
 	if [[ -n $(ver_cut 3) && $(ver_cut 3) != "rc" ]]; then
-		eapply "${WORKDIR}/patch-${PV}"
+		PATCHES+=( "${WORKDIR}/patch-${PV}" )
 	fi
 
-
 	for i in other audio phy pci remoteproc gpu usb video wifi input el2 rockchip surface camera; do
-		for j in "${FILESDIR}"/$i/*.patch; do
-			eapply $j
-		done
+		PATCHES+=( "${FILESDIR}/$i" )
 	done
 
 	default
