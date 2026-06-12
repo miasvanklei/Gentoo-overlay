@@ -28,19 +28,19 @@ the repetitive per-lane pattern into a loop.
 
 Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
 ---
- MAINTAINERS                                        |  11 +
- drivers/phy/qualcomm/Kconfig                       |  13 +
+ MAINTAINERS                                        |  10 +
+ drivers/phy/qualcomm/Kconfig                       |  14 +
  drivers/phy/qualcomm/Makefile                      |   5 +
- drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c | 361 +++++++++++++++++++++
- drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c     | 298 +++++++++++++++++
- drivers/phy/qualcomm/phy-qcom-mipi-csi2.h          |  95 ++++++
- 6 files changed, 783 insertions(+)
+ drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c | 376 +++++++++++++++++++
+ drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c     | 402 +++++++++++++++++++++
+ drivers/phy/qualcomm/phy-qcom-mipi-csi2.h          |  95 +++++
+ 6 files changed, 902 insertions(+)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 62ccdc72384d4..fe19722355d94 100644
+index 63389fea5d150..3b5da8a40383f 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -21542,6 +21542,17 @@ S:	Maintained
+@@ -22018,6 +22018,16 @@ S:	Maintained
  F:	Documentation/devicetree/bindings/media/qcom,*-iris.yaml
  F:	drivers/media/platform/qcom/iris/
  
@@ -49,20 +49,19 @@ index 62ccdc72384d4..fe19722355d94 100644
 +L:	linux-phy@lists.infradead.org
 +L:	linux-media@vger.kernel.org
 +L:	linux-arm-msm@vger.kernel.org
-+S:	Supported
++S:	Maintained
 +F:	Documentation/devicetree/bindings/phy/qcom,*-csi2-phy.yaml
 +F:	drivers/phy/qualcomm/phy-qcom-mipi-csi2*.c
 +F:	drivers/phy/qualcomm/phy-qcom-mipi-csi2*.h
-+F:	include/dt-bindings/phy/phy-qcom-mipi-csi2*
 +
  QUALCOMM NAND CONTROLLER DRIVER
  M:	Manivannan Sadhasivam <mani@kernel.org>
  L:	linux-mtd@lists.infradead.org
 diff --git a/drivers/phy/qualcomm/Kconfig b/drivers/phy/qualcomm/Kconfig
-index 60a0ead127fa9..ea33025a40fd0 100644
+index 60a0ead127fa9..779a3511ba852 100644
 --- a/drivers/phy/qualcomm/Kconfig
 +++ b/drivers/phy/qualcomm/Kconfig
-@@ -28,6 +28,19 @@ config PHY_QCOM_EDP
+@@ -28,6 +28,20 @@ config PHY_QCOM_EDP
  	  Enable this driver to support the Qualcomm eDP PHY found in various
  	  Qualcomm chipsets.
  
@@ -70,6 +69,7 @@ index 60a0ead127fa9..ea33025a40fd0 100644
 +	tristate "Qualcomm MIPI CSI2 PHY driver"
 +	depends on ARCH_QCOM || COMPILE_TEST
 +	depends on OF
++	depends on PM
 +	depends on COMMON_CLK
 +	select GENERIC_PHY
 +	select GENERIC_PHY_MIPI_DPHY
@@ -100,10 +100,10 @@ index b71a6a0bed3f1..382cb594b06b6 100644
  obj-$(CONFIG_PHY_QCOM_QMP_COMBO)	+= phy-qcom-qmp-combo.o phy-qcom-qmp-usbc.o
 diff --git a/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c
 new file mode 100644
-index 0000000000000..b1eb2b28b2da2
+index 0000000000000..86ec405820e62
 --- /dev/null
 +++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c
-@@ -0,0 +1,361 @@
+@@ -0,0 +1,376 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Qualcomm MSM Camera Subsystem - CSIPHY Module 3phase v1.0
@@ -126,6 +126,8 @@ index 0000000000000..b1eb2b28b2da2
 +#define CSIPHY_3PH_CMN_CSI_COMMON_CTRL6_SHOW_REV_ID	BIT(1)
 +#define CSIPHY_3PH_CMN_CSI_COMMON_CTRL10_IRQ_CLEAR_CMD	BIT(0)
 +#define CSIPHY_3PH_CMN_CSI_COMMON_STATUSn(offset, n)	((offset) + 0xb0 + 0x4 * (n))
++
++#define CSIPHY_2PH_LN_CSI_2PHASE_CTRL9n(n)		((0x200 * (n)) + 0x24)
 +
 +/*
 + * 3 phase CSI has 19 common status regs with only 0-10 being used
@@ -384,12 +386,25 @@ index 0000000000000..b1eb2b28b2da2
 +
 +	settle_cnt = phy_qcom_mipi_csi2_settle_cnt_calc(cfg->link_freq, csi2phy->timer_clk_rate);
 +
-+	val = CSIPHY_3PH_CMN_CSI_COMMON_CTRL5_CLK_ENABLE;
++	/* Lane position enable in common reg offset */
++	val = BIT(lane_cfg->clk.pos);
 +	for (i = 0; i < cfg->num_data_lanes; i++)
-+		val |= BIT(lane_cfg->data[i].pos * 2);
++		val |= BIT(lane_cfg->data[i].pos);
 +
 +	writel(val, csi2phy->base +
 +	       CSIPHY_3PH_CMN_CSI_COMMON_CTRLn(regs->common_regs_offset, 5));
++
++	/* Lane configuration for polarity @ CSIPHY-base + CTRL9 */
++	for (i = 0; i < cfg->num_data_lanes; i++) {
++		if (lane_cfg->data[i].pol) {
++			u8 pos = lane_cfg->data[i].pos;
++
++			writel(BIT(2), csi2phy->base + CSIPHY_2PH_LN_CSI_2PHASE_CTRL9n(pos));
++		}
++	}
++
++	if (lane_cfg->clk.pol)
++		writel(BIT(2), csi2phy->base + CSIPHY_2PH_LN_CSI_2PHASE_CTRL9n(lane_cfg->clk.pos));
 +
 +	val = CSIPHY_3PH_CMN_CSI_COMMON_CTRL6_COMMON_PWRDN_B;
 +	writel(val, csi2phy->base +
@@ -445,8 +460,8 @@ index 0000000000000..b1eb2b28b2da2
 +};
 +
 +static const char * const x1e_genpd_names[] = {
-+	"mx",
 +	"mmcx",
++	"mx",
 +};
 +
 +const struct mipi_csi2phy_soc_cfg mipi_csi2_dphy_4nm_x1e = {
@@ -467,14 +482,15 @@ index 0000000000000..b1eb2b28b2da2
 +};
 diff --git a/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c
 new file mode 100644
-index 0000000000000..47acf0d586a15
+index 0000000000000..dfeff863a406f
 --- /dev/null
 +++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c
-@@ -0,0 +1,298 @@
+@@ -0,0 +1,402 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (c) 2025, Linaro Ltd.
 + */
++#include <dt-bindings/phy/phy.h>
 +#include <linux/clk.h>
 +#include <linux/delay.h>
 +#include <linux/err.h>
@@ -493,8 +509,6 @@ index 0000000000000..47acf0d586a15
 +#include <linux/reset.h>
 +#include <linux/slab.h>
 +
-+#include <dt-bindings/phy/phy-qcom-mipi-csi2.h>
-+
 +#include "phy-qcom-mipi-csi2.h"
 +
 +static int
@@ -505,7 +519,7 @@ index 0000000000000..47acf0d586a15
 +	unsigned long opp_rate = link_freq / 4;
 +	struct dev_pm_opp *opp;
 +	long timer_rate;
-+	int ret;
++	int i, ret;
 +
 +	opp = dev_pm_opp_find_freq_ceil(dev, &opp_rate);
 +	if (IS_ERR(opp)) {
@@ -514,15 +528,15 @@ index 0000000000000..47acf0d586a15
 +		return PTR_ERR(opp);
 +	}
 +
-+	for (int i = 0; i < csi2phy->num_pds; i++) {
++	for (i = 0; i < csi2phy->pd_list->num_pds; i++) {
 +		unsigned int perf = dev_pm_opp_get_required_pstate(opp, i);
 +
-+		ret = dev_pm_genpd_set_performance_state(csi2phy->pds[i], perf);
++		ret = dev_pm_genpd_set_performance_state(csi2phy->pd_list->pd_devs[i], perf);
 +		if (ret) {
 +			dev_err(csi2phy->dev, "Couldn't set perf state %u\n",
 +				perf);
 +			dev_pm_opp_put(opp);
-+			return ret;
++			goto unset_pstate;
 +		}
 +	}
 +	dev_pm_opp_put(opp);
@@ -530,20 +544,31 @@ index 0000000000000..47acf0d586a15
 +	ret = dev_pm_opp_set_rate(dev, opp_rate);
 +	if (ret) {
 +		dev_err(csi2phy->dev, "dev_pm_opp_set_rate() fail\n");
-+		return ret;
++		goto unset_opp_rate;
 +	}
 +
 +	timer_rate = clk_round_rate(csi2phy->timer_clk, link_freq / 4);
-+	if (timer_rate < 0)
-+		return timer_rate;
++	if (timer_rate <= 0) {
++		ret = -ENODEV;
++		goto unset_opp_rate;
++	}
 +
 +	ret = clk_set_rate(csi2phy->timer_clk, timer_rate);
 +	if (ret)
-+		return ret;
++		goto unset_opp_rate;
 +
 +	csi2phy->timer_clk_rate = timer_rate;
 +
 +	return 0;
++
++unset_opp_rate:
++	dev_pm_opp_set_rate(dev, 0);
++
++unset_pstate:
++	while (i--)
++		dev_pm_genpd_set_performance_state(csi2phy->pd_list->pd_devs[i], 0);
++
++	return ret;
 +}
 +
 +static int phy_qcom_mipi_csi2_configure(struct phy *phy,
@@ -553,7 +578,6 @@ index 0000000000000..47acf0d586a15
 +	struct phy_configure_opts_mipi_dphy *dphy_cfg = &opts->mipi_dphy;
 +	struct mipi_csi2phy_stream_cfg *stream_cfg = &csi2phy->stream_cfg;
 +	int ret;
-+	int i;
 +
 +	ret = phy_mipi_dphy_config_validate(dphy_cfg);
 +	if (ret)
@@ -563,15 +587,6 @@ index 0000000000000..47acf0d586a15
 +		return -EINVAL;
 +
 +	stream_cfg->link_freq = dphy_cfg->hs_clk_rate;
-+	stream_cfg->num_data_lanes = dphy_cfg->lanes;
-+
-+	for (i = 0; i < stream_cfg->num_data_lanes; i++) {
-+		stream_cfg->lane_cfg.data[i].pol = dphy_cfg->lane_polarities[i];
-+		stream_cfg->lane_cfg.data[i].pos = dphy_cfg->lane_positions[i];
-+	}
-+
-+	stream_cfg->lane_cfg.clk.pol = dphy_cfg->clock_lane_polarity;
-+	stream_cfg->lane_cfg.clk.pos = dphy_cfg->clock_lane_position;
 +
 +	return 0;
 +}
@@ -581,12 +596,16 @@ index 0000000000000..47acf0d586a15
 +	struct mipi_csi2phy_device *csi2phy = phy_get_drvdata(phy);
 +	const struct mipi_csi2phy_hw_ops *ops = csi2phy->soc_cfg->ops;
 +	struct device *dev = &phy->dev;
-+	int ret;
++	int i, ret;
 +
 +	ret = regulator_bulk_enable(csi2phy->soc_cfg->num_supplies,
 +				    csi2phy->supplies);
 +	if (ret)
 +		return ret;
++
++	ret = pm_runtime_resume_and_get(csi2phy->dev);
++	if (ret < 0)
++		goto disable_regulators;
 +
 +	ret = phy_qcom_mipi_csi2_set_clock_rates(csi2phy, csi2phy->stream_cfg.link_freq);
 +	if (ret)
@@ -596,7 +615,7 @@ index 0000000000000..47acf0d586a15
 +				      csi2phy->clks);
 +	if (ret) {
 +		dev_err(dev, "failed to enable clocks, %d\n", ret);
-+		goto poweroff_phy;
++		goto unset_rate;
 +	}
 +
 +	ops->reset(csi2phy);
@@ -605,7 +624,16 @@ index 0000000000000..47acf0d586a15
 +
 +	return ops->lanes_enable(csi2phy, &csi2phy->stream_cfg);
 +
++unset_rate:
++	for (i = 0; i < csi2phy->pd_list->num_pds; i++)
++		dev_pm_genpd_set_performance_state(csi2phy->pd_list->pd_devs[i], 0);
++
++	dev_pm_opp_set_rate(csi2phy->dev, 0);
++
 +poweroff_phy:
++	pm_runtime_put_sync(csi2phy->dev);
++
++disable_regulators:
 +	regulator_bulk_disable(csi2phy->soc_cfg->num_supplies,
 +			       csi2phy->supplies);
 +
@@ -615,13 +643,21 @@ index 0000000000000..47acf0d586a15
 +static int phy_qcom_mipi_csi2_power_off(struct phy *phy)
 +{
 +	struct mipi_csi2phy_device *csi2phy = phy_get_drvdata(phy);
++	const struct mipi_csi2phy_hw_ops *ops = csi2phy->soc_cfg->ops;
 +	int i;
 +
-+	for (i = 0; i < csi2phy->num_pds; i++)
-+		dev_pm_genpd_set_performance_state(csi2phy->pds[i], 0);
++	ops->lanes_disable(csi2phy, &csi2phy->stream_cfg);
 +
 +	clk_bulk_disable_unprepare(csi2phy->soc_cfg->num_clk,
 +				   csi2phy->clks);
++
++	for (i = 0; i < csi2phy->pd_list->num_pds; i++)
++		dev_pm_genpd_set_performance_state(csi2phy->pd_list->pd_devs[i], 0);
++
++	dev_pm_opp_set_rate(csi2phy->dev, 0);
++
++	pm_runtime_put_sync(csi2phy->dev);
++
 +	regulator_bulk_disable(csi2phy->soc_cfg->num_supplies,
 +			       csi2phy->supplies);
 +
@@ -640,7 +676,7 @@ index 0000000000000..47acf0d586a15
 +{
 +	struct mipi_csi2phy_device *csi2phy = dev_get_drvdata(dev);
 +
-+	if (args->args[0] != PHY_QCOM_CSI2_MODE_DPHY) {
++	if (args->args[0] != PHY_TYPE_DPHY) {
 +		dev_err(csi2phy->dev, "mode %d -EOPNOTSUPP\n", args->args[0]);
 +		return ERR_PTR(-EOPNOTSUPP);
 +	}
@@ -650,9 +686,101 @@ index 0000000000000..47acf0d586a15
 +	return csi2phy->phy;
 +}
 +
++static int phy_qcom_mipi_csi2_attach_pm_domains(struct mipi_csi2phy_device *csi2phy)
++{
++	const struct dev_pm_domain_attach_data pd_data = {
++		.pd_names = csi2phy->soc_cfg->genpd_names,
++		.num_pd_names = csi2phy->soc_cfg->num_genpd_names,
++	};
++
++	return devm_pm_domain_attach_list(csi2phy->dev, &pd_data, &csi2phy->pd_list);
++}
++
++static int phy_qcom_mipi_csi2_parse_routing(struct mipi_csi2phy_device *csi2phy)
++{
++	struct mipi_csi2phy_stream_cfg *stream_cfg = &csi2phy->stream_cfg;
++	u32 lane_polarities[CSI2_MAX_DATA_LANES + 1];
++	u32 data_lanes[CSI2_MAX_DATA_LANES];
++	struct device *dev = csi2phy->dev;
++	struct fwnode_handle *ep;
++	int num_polarities;
++	int num_data_lanes;
++	u32 clock_lane;
++	int i, ret;
++
++	ep = fwnode_graph_get_endpoint_by_id(dev_fwnode(dev), 1, 0,
++					     FWNODE_GRAPH_ENDPOINT_NEXT);
++	if (ep) {
++		fwnode_handle_put(ep);
++		dev_err(dev, "DPHY split mode is not supported\n");
++		return -EOPNOTSUPP;
++	}
++
++	ep = fwnode_graph_get_endpoint_by_id(dev_fwnode(dev), 0, 0, 0);
++	if (!ep) {
++		dev_err(dev, "Missing port@0\n");
++		return -ENODEV;
++	}
++
++	num_data_lanes = fwnode_property_count_u32(ep, "data-lanes");
++	if (num_data_lanes < 1 || num_data_lanes > CSI2_MAX_DATA_LANES) {
++		ret = -EINVAL;
++		dev_err(dev, "Invalid data-lanes count: %d\n", num_data_lanes);
++		goto out_put;
++	}
++	stream_cfg->num_data_lanes = num_data_lanes;
++
++	ret = fwnode_property_read_u32_array(ep, "data-lanes", data_lanes,
++					     stream_cfg->num_data_lanes);
++	if (ret) {
++		dev_err(dev, "Failed to read data-lanes: %d\n", ret);
++		goto out_put;
++	}
++
++	ret = fwnode_property_read_u32(ep, "clock-lanes", &clock_lane);
++	if (ret) {
++		clock_lane = CSI2_DEFAULT_CLK_LN;
++		dev_info(dev, "Using default clock-lane %d\n",
++			 CSI2_DEFAULT_CLK_LN);
++	}
++
++	/* lane-polarities: optional, up to num_data_lanes + 1 entries */
++	memset(lane_polarities, 0x00, sizeof(lane_polarities));
++	num_polarities = fwnode_property_count_u32(ep, "lane-polarities");
++	if (num_polarities > 0) {
++		if (num_polarities != stream_cfg->num_data_lanes + 1) {
++			ret = -EINVAL;
++			dev_err(dev, "clock+data-lane %d/polarities %d mismatch\n",
++				stream_cfg->num_data_lanes + 1, num_polarities);
++			goto out_put;
++		}
++
++		ret = fwnode_property_read_u32_array(ep, "lane-polarities", lane_polarities,
++						     num_polarities);
++		if (ret) {
++			dev_err(dev, "Failed to read lane-polarities: %d\n", ret);
++			goto out_put;
++		}
++	}
++
++	for (i = 0; i < csi2phy->stream_cfg.num_data_lanes; i++) {
++		csi2phy->stream_cfg.lane_cfg.data[i].pos = data_lanes[i];
++		csi2phy->stream_cfg.lane_cfg.data[i].pol = lane_polarities[i + 1];
++	}
++	csi2phy->stream_cfg.lane_cfg.clk.pos = clock_lane;
++	csi2phy->stream_cfg.lane_cfg.clk.pol = lane_polarities[0];
++
++	ret = 0;
++
++out_put:
++	fwnode_handle_put(ep);
++
++	return ret;
++}
++
 +static int phy_qcom_mipi_csi2_probe(struct platform_device *pdev)
 +{
-+	unsigned int i, num_clk, num_supplies, num_pds;
++	unsigned int i, num_clk, num_supplies;
 +	struct mipi_csi2phy_device *csi2phy;
 +	struct phy_provider *phy_provider;
 +	struct device *dev = &pdev->dev;
@@ -676,24 +804,15 @@ index 0000000000000..47acf0d586a15
 +	if (!csi2phy->clks)
 +		return -ENOMEM;
 +
-+	num_pds = csi2phy->soc_cfg->num_genpd_names;
-+	if (!num_pds)
-+		return -EINVAL;
++	ret = phy_qcom_mipi_csi2_parse_routing(csi2phy);
++	if (ret)
++		return ret;
 +
-+	csi2phy->pds = devm_kzalloc(dev, sizeof(*csi2phy->pds) * num_pds, GFP_KERNEL);
-+	if (!csi2phy->pds)
-+		return -ENOMEM;
++	ret = phy_qcom_mipi_csi2_attach_pm_domains(csi2phy);
++	if (ret < 0)
++		return dev_err_probe(dev, ret, "Failed to attach power-domain list\n");
 +
-+	for (i = 0; i < num_pds; i++) {
-+		csi2phy->pds[i] = dev_pm_domain_attach_by_name(dev,
-+							       csi2phy->soc_cfg->genpd_names[i]);
-+		if (IS_ERR(csi2phy->pds[i])) {
-+			return dev_err_probe(dev, PTR_ERR(csi2phy->pds[i]),
-+					     "Failed to attach %s\n",
-+					     csi2phy->soc_cfg->genpd_names[i]);
-+		}
-+	}
-+	csi2phy->num_pds = num_pds;
++	devm_pm_runtime_enable(dev);
 +
 +	for (i = 0; i < num_clk; i++)
 +		csi2phy->clks[i].id = csi2phy->soc_cfg->clk_names[i];
@@ -771,7 +890,7 @@ index 0000000000000..47acf0d586a15
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h b/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h
 new file mode 100644
-index 0000000000000..27607dea412f1
+index 0000000000000..e7c1ce00916e3
 --- /dev/null
 +++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h
 @@ -0,0 +1,95 @@
@@ -788,6 +907,7 @@ index 0000000000000..27607dea412f1
 +#include <linux/phy/phy.h>
 +
 +#define CSI2_MAX_DATA_LANES 4
++#define CSI2_DEFAULT_CLK_LN 7
 +
 +struct mipi_csi2phy_lane {
 +	u8 pos;
@@ -858,8 +978,7 @@ index 0000000000000..27607dea412f1
 +	u32 timer_clk_rate;
 +
 +	struct regulator_bulk_data *supplies;
-+	struct device **pds;
-+	unsigned int num_pds;
++	struct dev_pm_domain_list *pd_list;
 +
 +	const struct mipi_csi2phy_soc_cfg *soc_cfg;
 +	struct mipi_csi2phy_stream_cfg stream_cfg;
@@ -870,6 +989,3 @@ index 0000000000000..27607dea412f1
 +extern const struct mipi_csi2phy_soc_cfg mipi_csi2_dphy_4nm_x1e;
 +
 +#endif /* __PHY_QCOM_MIPI_CSI2_H__ */
-
--- 
-2.52.0

@@ -1,6 +1,6 @@
 --- a/arch/arm64/boot/dts/qcom/x1p42100-microsoft-venezia.dts	2026-04-11 12:31:40.515236972 +0200
 +++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-venezia.dts	2026-04-11 12:54:06.119566740 +0200
-@@ -841,6 +841,157 @@
+@@ -841,6 +841,197 @@
  	};
  };
  
@@ -13,29 +13,19 @@
 +		 * port1 => csiphy4
 +		 */
 +		port@0 {
-+			csiphy0_ep: endpoint@0 {
++			camss_in0_ep: endpoint@0 {
 +				reg = <0>;
-+				clock-lanes = <7>;
 +				data-lanes = <0 1 2 3>;
-+				remote-endpoint = <&ov13858_ep>;
++				remote-endpoint = <&csiphy0_out_ep>;
 +			};
 +		};
 +
 +		port@1 {
-+			csiphy4_ep0: endpoint@4 {
-+				reg = <4>;
-+				clock-lanes = <7>;
++			camss_in1_ep: endpoint@0 {
++				reg = <0>;
 +				data-lanes = <0 1>;
-+				remote-endpoint = <&ov02c10_ep>;
++				remote-endpoint = <&csiphy4_out_ep>;
 +			};
-+
-+			// Only 1 of the 2 cameras (front or ir) can currently be enabled.
-+			/*csiphy4_ep1: endpoint@4 {
-+				reg = <4>;
-+				clock-lanes = <7>;
-+				data-lanes = <2>;
-+				remote-endpoint = <&vd55g1_ep>;
-+			};*/
 +		};
 +	};
 +};
@@ -73,7 +63,7 @@
 +			ov13858_ep: endpoint {
 +				data-lanes = <1 2 3 4>;
 +				link-frequencies = /bits/ 64 <540000000 270000000>;
-+				remote-endpoint = <&csiphy0_ep>;
++				remote-endpoint = <&csiphy0_in_ep>;
 +			};
 +		};
 +	};
@@ -103,7 +93,7 @@
 +			vd55g1_ep: endpoint {
 +				data-lanes = <1>;
 +				link-frequencies = /bits/ 64 <600000000>;
-+				remote-endpoint = <&csiphy4_ep1>;
++				remote-endpoint = <&csiphy4_in_ep1>;
 +			};
 +		};
 +	};
@@ -135,7 +125,7 @@
 +			ov02c10_ep: endpoint {
 +				data-lanes = <1 2>;
 +				link-frequencies = /bits/ 64 <400000000>;
-+				remote-endpoint = <&csiphy4_ep0>;
++				remote-endpoint = <&csiphy4_in_ep0>;
 +			};
 +		};
 +	};
@@ -146,6 +136,27 @@
 +	vdda-1p2-supply = <&vreg_l1c_1p2>;
 +
 +	status = "okay";
++
++
++	ports {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		port@0 {
++			reg = <0>;
++			csiphy0_in_ep: endpoint {
++				data-lanes = <0 1 2 3>;
++				remote-endpoint = <&ov13858_ep>;
++			};
++		};
++
++		port@2 {
++			reg = <2>;
++			csiphy0_out_ep: endpoint {
++				remote-endpoint = <&camss_in0_ep>;
++			};
++		};
++	};
 +};
 +
 +&csiphy4 {
@@ -153,6 +164,35 @@
 +	vdda-1p2-supply = <&vreg_l1c_1p2>;
 +
 +	status = "okay";
++
++	ports {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		port@0 {
++			reg = <0>;
++			csiphy4_in_ep0: endpoint {
++				data-lanes = <0 1>;
++				remote-endpoint = <&ov02c10_ep>;
++			};
++		};
++
++		/*port@1 {
++			reg = <1>;
++			csiphy4_in_ep1: endpoint {
++				data-lanes = <2>;
++				clock-lanes = <4 or 5 or 6 or 7>;
++				remote-endpoint = <&vd55g1_ep>;
++			};
++		};*/
++
++		port@2 {
++			reg = <2>;
++			csiphy4_out_ep: endpoint {
++				remote-endpoint = <&camss_in1_ep>;
++			};
++		};
++	};
 +};
 +
  &gpu {

@@ -16,12 +16,11 @@ diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamo
 index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 --- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
 +++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
-@@ -16,6 +16,8 @@
+@@ -16,6 +16,7 @@
  #include <dt-bindings/interconnect/qcom,x1e80100-rpmh.h>
  #include <dt-bindings/interrupt-controller/arm-gic.h>
  #include <dt-bindings/mailbox/qcom-ipcc.h>
 +#include <dt-bindings/phy/phy.h>
-+#include <dt-bindings/phy/phy-qcom-mipi-csi2.h>
  #include <dt-bindings/phy/phy-qcom-qmp.h>
  #include <dt-bindings/power/qcom,rpmhpd.h>
  #include <dt-bindings/power/qcom-rpmpd.h>
@@ -179,10 +178,10 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +			#size-cells = <2>;
 +			ranges;
 +
-+			phys = <&csiphy0 PHY_QCOM_CSI2_MODE_DPHY>,
-+			       <&csiphy1 PHY_QCOM_CSI2_MODE_DPHY>,
-+			       <&csiphy2 PHY_QCOM_CSI2_MODE_DPHY>,
-+			       <&csiphy4 PHY_QCOM_CSI2_MODE_DPHY>;
++			phys = <&csiphy0 PHY_TYPE_DPHY>,
++			       <&csiphy1 PHY_TYPE_DPHY>,
++			       <&csiphy2 PHY_TYPE_DPHY>,
++			       <&csiphy4 PHY_TYPE_DPHY>;
 +			phy-names = "csiphy0",
 +				    "csiphy1",
 +				    "csiphy2",
@@ -205,7 +204,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <0>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_csiphy0_inep0: endpoint@0 {
++					camss_in0_ep: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
@@ -214,7 +213,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <1>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_csiphy1_inep0: endpoint@0 {
++					camss_in1_ep: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
@@ -223,7 +222,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <2>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_csiphy2_inep0: endpoint@0 {
++					camss_in2_ep: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
@@ -232,7 +231,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <3>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_csiphy4_inep0: endpoint@0 {
++					camss_in4_ep: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
