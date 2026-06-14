@@ -1,0 +1,90 @@
+For some chipsets, firmware can report HTT_T2H_MSG_TYPE_PEER_MAP2 with
+peer_id 0 as a valid value for mapping ath12k_dp_link_peer to
+ath12k_dp_peer.
+
+ath12k_dp_peer_find_by_peerid() currently treats peer_id 0 as invalid.
+When firmware assigns peer_id 0, peer lookup fails. As a result,
+DHCP OFFER packets are dropped in __ieee80211_rx_handle_packet()
+because pubsta is NULL.
+
+ath12k_dp_rx_deliver_msdu() <- rx_info->peer_id 0
+  ath12k_dp_peer_find_by_peerid -> peer NULL
+  ieee80211_rx_napi <- pubsta NULL
+    ieee80211_rx_list
+      __ieee80211_rx_handle_packet <- pubsta NULL, skb undelivered
+
+The following error in the TX completion path is caused by the same issue:
+
+ath12k_wifi7_pci 0000:04:00.0: dp_tx: failed to find the peer with peer_id 0
+
+The error message is triggered by:
+ath12k_wifi7_dp_tx_complete_msdu
+  ath12k_dp_link_peer_find_by_peerid <- ts->peer_id 0
+    ath12k_dp_peer_find_by_peerid -> peer NULL
+
+ath12k_dp_tx_htt_tx_complete_buf
+  ath12k_dp_link_peer_find_by_peerid <- peer_id 0
+    ath12k_dp_peer_find_by_peerid -> peer NULL
+
+Fix this by allowing peer_id 0 in ath12k_dp_peer_find_by_peerid() and
+rejecting only values >= ATH12K_DP_PEER_ID_INVALID.
+
+Also update peer_id 0 handling in monitor path:
+Always call ath12k_dp_link_peer_find_by_peerid() in
+ath12k_dp_rx_h_find_link_peer() to fetch the peer, including when
+peer_id is 0.
+Always store peer_id in ppdu_info->peer_id in
+ath12k_wifi7_dp_mon_rx_parse_status_tlv(), including peer_id 0.
+
+Tested-on: QCC2072 hw1.0 PCI WLAN.COL.1.0.c2-00074-QCACOLSWPL_V1_TO_SILICONZ-1
+Tested-on: WCN7850 hw2.0 PCI WLAN.HMT.1.1.c7-00108-QCAHMTSWPL_V1.0_V2.0_SILICONZ_UPSTREAM-3
+Tested-on: QCN9274 hw2.0 PCI WLAN.WBE.1.6-01243-QCAHKSWPL_SILICONZ-1
+
+Signed-off-by: Hangtian Zhu <hangtian.zhu@oss.qualcomm.com>
+---
+ drivers/net/wireless/ath/ath12k/dp_peer.c      | 2 +-
+ drivers/net/wireless/ath/ath12k/dp_rx.c        | 3 +--
+ drivers/net/wireless/ath/ath12k/wifi7/dp_mon.c | 3 +--
+ 3 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath12k/dp_peer.c b/drivers/net/wireless/ath/ath12k/dp_peer.c
+index a1100782d45e..47d009a0d61f 100644
+--- a/drivers/net/wireless/ath/ath12k/dp_peer.c
++++ b/drivers/net/wireless/ath/ath12k/dp_peer.c
+@@ -419,7 +419,7 @@ struct ath12k_dp_peer *ath12k_dp_peer_find_by_peerid(struct ath12k_pdev_dp *dp_p
+ 	RCU_LOCKDEP_WARN(!rcu_read_lock_held(),
+ 			 "ath12k dp peer find by peerid index called without rcu lock");
+ 
+-	if (!peer_id || peer_id >= ATH12K_DP_PEER_ID_INVALID)
++	if (peer_id >= ATH12K_DP_PEER_ID_INVALID)
+ 		return NULL;
+ 
+ 	index = ath12k_dp_peer_get_peerid_index(dp, peer_id);
+diff --git a/drivers/net/wireless/ath/ath12k/dp_rx.c b/drivers/net/wireless/ath/ath12k/dp_rx.c
+index cae00e0539df..bc7889826e50 100644
+--- a/drivers/net/wireless/ath/ath12k/dp_rx.c
++++ b/drivers/net/wireless/ath/ath12k/dp_rx.c
+@@ -1194,8 +1194,7 @@ ath12k_dp_rx_h_find_link_peer(struct ath12k_pdev_dp *dp_pdev, struct sk_buff *ms
+ 
+ 	lockdep_assert_held(&dp->dp_lock);
+ 
+-	if (rxcb->peer_id)
+-		peer = ath12k_dp_link_peer_find_by_peerid(dp_pdev, rxcb->peer_id);
++	peer = ath12k_dp_link_peer_find_by_peerid(dp_pdev, rxcb->peer_id);
+ 
+ 	if (peer)
+ 		return peer;
+diff --git a/drivers/net/wireless/ath/ath12k/wifi7/dp_mon.c b/drivers/net/wireless/ath/ath12k/wifi7/dp_mon.c
+index 77f5d23be78d..7dd4a49d64d5 100644
+--- a/drivers/net/wireless/ath/ath12k/wifi7/dp_mon.c
++++ b/drivers/net/wireless/ath/ath12k/wifi7/dp_mon.c
+@@ -1779,8 +1779,7 @@ ath12k_wifi7_dp_mon_rx_parse_status_tlv(struct ath12k_pdev_dp *dp_pdev,
+ 
+ 		info[1] = __le32_to_cpu(mpdu_start->info1);
+ 		peer_id = u32_get_bits(info[1], HAL_RX_MPDU_START_INFO1_PEERID);
+-		if (peer_id)
+-			ppdu_info->peer_id = peer_id;
++		ppdu_info->peer_id = peer_id;
+ 
+ 		ppdu_info->mpdu_len += u32_get_bits(info[1],
+ 						    HAL_RX_MPDU_START_INFO2_MPDU_LEN);
