@@ -4,9 +4,9 @@ domains can be useful in case irqchip want to differentiate both of them.
 Since commit unified both the domains there is no way to differentiate.
 
 In preparation to add the second level interrupt controller support where
-GPIO interrupts get lateched at PDC (but not direct SPIs) there is a need
-to differentiate between SPIs and GPIOs as SPIs. Reverting above commit do
-not seem a good option either which leads to waste of resources.
+GPIO interrupts get latched at PDC (but not direct SPIs) there is a need to
+differentiate between SPIs and GPIOs as SPIs. Reverting above commit do not
+seem a good option either which leads to waste of resources.
 
 PDC HW have the IRQ_PARAM register telling number of direct SPIs and number
 of GPIOs as SPIs. Further PDC allocates direct SPIs at the beginning and
@@ -22,7 +22,7 @@ Signed-off-by: Maulik Shah <maulik.shah@oss.qualcomm.com>
  1 file changed, 19 insertions(+)
 
 diff --git a/drivers/irqchip/qcom-pdc.c b/drivers/irqchip/qcom-pdc.c
-index db76737646e1..86379dddc5be 100644
+index 6c556464d37c..1aa6be42307c 100644
 --- a/drivers/irqchip/qcom-pdc.c
 +++ b/drivers/irqchip/qcom-pdc.c
 @@ -61,6 +61,11 @@
@@ -50,7 +50,7 @@ index db76737646e1..86379dddc5be 100644
  };
  
  /**
-@@ -92,6 +99,8 @@ struct pdc_cfg {
+@@ -92,6 +99,8 @@ struct pdc_irq_cfg {
   * @base:           PDC base register for DRV2 / HLOS
   * @prev_base:      PDC DRV1 base, applicable only for x1e RTL bug.
   * @version:        PDC version
@@ -60,47 +60,47 @@ index db76737646e1..86379dddc5be 100644
   * @region_cnt:     Total PDC ranges
   * @x1e_quirk:      x1e H/W Bug handling
 @@ -104,6 +113,8 @@ struct pdc_desc {
- 	void __iomem *base;
- 	void __iomem *prev_base;
- 	u32 version;
-+	u32 num_spis;
-+	u32 num_gpios;
+ 	void __iomem			*base;
+ 	void __iomem			*prev_base;
+ 	u32				version;
++	u32				num_spis;
++	u32				num_gpios;
  
- 	struct pdc_pin_region *region;
- 	int region_cnt;
+ 	struct pdc_pin_region		*region;
+ 	int				region_cnt;
 @@ -120,6 +131,7 @@ struct pdc_desc {
  
  static const struct pdc_regs pdc_v3_2 = {
- 	.irq_cfg_reg = 0x110,
-+	.irq_param_reg = 0x100c,
+ 	.irq_cfg_reg	= 0x110,
++	.irq_param_reg	= 0x100c,
  };
  
- static const struct pdc_cfg pdc_cfg_v3_2 = {
-@@ -130,6 +142,7 @@ static const struct pdc_cfg pdc_cfg_v3_2 = {
+ static const struct pdc_irq_cfg pdc_cfg_v3_2 = {
+@@ -130,6 +142,7 @@ static const struct pdc_irq_cfg pdc_cfg_v3_2 = {
  static const struct pdc_regs pdc_v3_0 = {
- 	.irq_en_reg = 0x10,
- 	.irq_cfg_reg = 0x110,
-+	.irq_param_reg = 0x100c,
+ 	.irq_en_reg	= 0x10,
+ 	.irq_cfg_reg	= 0x110,
++	.irq_param_reg	= 0x100c,
  };
  
- static const struct pdc_cfg pdc_cfg_v3_0 = {
-@@ -139,6 +152,7 @@ static const struct pdc_cfg pdc_cfg_v3_0 = {
+ static const struct pdc_irq_cfg pdc_cfg_v3_0 = {
+@@ -139,6 +152,7 @@ static const struct pdc_irq_cfg pdc_cfg_v3_0 = {
  static const struct pdc_regs pdc_v2_7 = {
- 	.irq_en_reg = 0x10,
- 	.irq_cfg_reg = 0x110,
-+	.irq_param_reg = 0x100c,
+ 	.irq_en_reg	= 0x10,
+ 	.irq_cfg_reg	= 0x110,
++	.irq_param_reg	= 0x100c,
  };
  
- static const struct pdc_cfg pdc_cfg_v2_7 = {
-@@ -457,6 +471,7 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
- 	struct device_node *node = pdev->dev.of_node;
+ static const struct pdc_irq_cfg pdc_cfg_v2_7 = {
+@@ -449,6 +463,7 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
+ 	struct device *dev = &pdev->dev;
  	resource_size_t res_size;
  	struct resource res;
 +	u32 irq_param;
  	int ret;
  
  	/* compat with old sm8150 DT which had very small region for PDC */
-@@ -515,6 +530,10 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
+@@ -505,6 +520,10 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
  		pdc->x1e_quirk = true;
  	}
  

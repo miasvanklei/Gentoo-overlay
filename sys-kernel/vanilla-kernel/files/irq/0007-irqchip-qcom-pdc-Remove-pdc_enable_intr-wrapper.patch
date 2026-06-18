@@ -10,48 +10,31 @@ locking accordingly.
 
 Signed-off-by: Maulik Shah <maulik.shah@oss.qualcomm.com>
 ---
- drivers/irqchip/qcom-pdc.c | 18 +++++++-----------
- 1 file changed, 7 insertions(+), 11 deletions(-)
+ drivers/irqchip/qcom-pdc.c | 13 ++++---------
+ 1 file changed, 4 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/irqchip/qcom-pdc.c b/drivers/irqchip/qcom-pdc.c
-index 8f7802139e4e..db76737646e1 100644
+index b9acb0f25c9c..6c556464d37c 100644
 --- a/drivers/irqchip/qcom-pdc.c
 +++ b/drivers/irqchip/qcom-pdc.c
-@@ -201,11 +201,14 @@ static void pdc_x1e_irq_enable_write(u32 bank, u32 enable)
- static void pdc_enable_intr_bank(int pin_out, bool on)
- {
- 	unsigned long enable;
-+	unsigned long flags;
- 	u32 index, mask;
+@@ -206,6 +206,8 @@ static void pdc_enable_intr_bank(int pin_out, bool on)
+ 	index = FIELD_GET(IRQ_ENABLE_BANK_INDEX_MASK, pin_out);
+ 	mask = FIELD_GET(IRQ_ENABLE_BANK_BIT_MASK, pin_out);
  
- 	index = FIELD_GET(GENMASK(31, 5), pin_out);
- 	mask = FIELD_GET(GENMASK(4, 0), pin_out);
- 
-+	raw_spin_lock_irqsave(&pdc->lock, flags);
++	guard(raw_spinlock)(&pdc->lock);
 +
  	enable = pdc_reg_read(pdc->regs->irq_en_reg, index);
  	__assign_bit(mask, &enable, on);
  
-@@ -213,6 +216,8 @@ static void pdc_enable_intr_bank(int pin_out, bool on)
- 		pdc_x1e_irq_enable_write(index, enable);
- 	else
- 		pdc_reg_write(pdc->regs->irq_en_reg, index, enable);
-+
-+	raw_spin_unlock_irqrestore(&pdc->lock, flags);
- }
- 
- static void pdc_enable_intr_cfg(int pin_out, bool on)
-@@ -227,24 +232,15 @@ static void pdc_enable_intr_cfg(int pin_out, bool on)
+@@ -223,22 +225,15 @@ static void pdc_enable_intr_cfg(int pin_out, bool on)
  	pdc_reg_write(pdc->regs->irq_cfg_reg, pin_out, enable);
  }
  
 -static void pdc_enable_intr(struct irq_data *d, bool on)
 -{
--	unsigned long flags;
+-	guard(raw_spinlock)(&pdc->lock);
 -
--	raw_spin_lock_irqsave(&pdc->lock, flags);
 -	pdc->enable_intr(d->hwirq, on);
--	raw_spin_unlock_irqrestore(&pdc->lock, flags);
 -}
 -
  static void qcom_pdc_gic_disable(struct irq_data *d)
