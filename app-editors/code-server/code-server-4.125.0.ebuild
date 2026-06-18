@@ -240,7 +240,7 @@ enodegyp() {
 	local npmdir="${BROOT}/usr/lib/node_modules/npm"
 	local nodegyp="${npmdir}/node_modules/node-gyp/bin/node-gyp.js"
 
-	node "${nodegyp}" --nodedir="${BROOT}/usr/include/node" "${@}" || die
+	node "${nodegyp}" --nodedir="${BROOT}/usr" "${@}" || die
 }
 
 get_pkg_name() {
