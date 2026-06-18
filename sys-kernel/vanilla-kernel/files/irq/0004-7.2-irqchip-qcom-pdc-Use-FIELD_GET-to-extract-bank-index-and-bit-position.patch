@@ -6,23 +6,33 @@ Replace the open-coded division and modulo with FIELD_GET() and GENMASK()
 to make the bit extraction self-documenting and consistent with the
 FIELD_PREP() style already used in the PDC_VERSION() macro.
 
+Reviewed-by: Konrad Dybcio <konrad.dybcio@oss.qualcomm.com>
 Signed-off-by: Mukesh Ojha <mukesh.ojha@oss.qualcomm.com>
 ---
- drivers/irqchip/qcom-pdc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/irqchip/qcom-pdc.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/irqchip/qcom-pdc.c b/drivers/irqchip/qcom-pdc.c
-index 5e1553334103..638b5d89a141 100644
+index 9ad2c22342e1..17ca26d66fea 100644
 --- a/drivers/irqchip/qcom-pdc.c
 +++ b/drivers/irqchip/qcom-pdc.c
-@@ -110,8 +110,8 @@ static void pdc_enable_intr_bank(int pin_out, bool on)
+@@ -27,6 +27,8 @@
+ /* Valid only on HW version < 3.2 */
+ #define IRQ_ENABLE_BANK		0x10
+ #define IRQ_ENABLE_BANK_MAX	(IRQ_ENABLE_BANK + BITS_TO_BYTES(PDC_MAX_GPIO_IRQS))
++#define IRQ_ENABLE_BANK_INDEX_MASK	GENMASK(31, 5)
++#define IRQ_ENABLE_BANK_BIT_MASK	GENMASK(4, 0)
+ #define IRQ_i_CFG		0x110
+ 
+ /* Valid only on HW version >= 3.2 */
+@@ -110,8 +112,8 @@ static void pdc_enable_intr_bank(int pin_out, bool on)
  	unsigned long enable;
  	u32 index, mask;
  
 -	index = pin_out / 32;
 -	mask = pin_out % 32;
-+	index = FIELD_GET(GENMASK(31, 5), pin_out);
-+	mask = FIELD_GET(GENMASK(4, 0), pin_out);
++	index = FIELD_GET(IRQ_ENABLE_BANK_INDEX_MASK, pin_out);
++	mask = FIELD_GET(IRQ_ENABLE_BANK_BIT_MASK, pin_out);
  
  	enable = pdc_reg_read(IRQ_ENABLE_BANK, index);
  	__assign_bit(mask, &enable, on);

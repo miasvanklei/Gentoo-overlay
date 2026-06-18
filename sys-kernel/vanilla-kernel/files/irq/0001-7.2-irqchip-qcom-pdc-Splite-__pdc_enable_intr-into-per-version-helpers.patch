@@ -16,7 +16,7 @@ diff --git a/drivers/irqchip/qcom-pdc.c b/drivers/irqchip/qcom-pdc.c
 index 32b77fa93f73..a72e32896e64 100644
 --- a/drivers/irqchip/qcom-pdc.c
 +++ b/drivers/irqchip/qcom-pdc.c
-@@ -97,28 +97,38 @@ static void pdc_x1e_irq_enable_write(u32 bank, u32 enable)
+@@ -97,28 +97,37 @@ static void pdc_x1e_irq_enable_write(u32 bank, u32 enable)
  	pdc_base_reg_write(base, IRQ_ENABLE_BANK, bank, enable);
  }
  
@@ -55,9 +55,8 @@ index 32b77fa93f73..a72e32896e64 100644
 -	}
 +static void pdc_enable_intr_cfg(int pin_out, bool on)
 +{
-+	unsigned long enable;
++	unsigned long enable = pdc_reg_read(IRQ_i_CFG, pin_out);
 +
-+	enable = pdc_reg_read(IRQ_i_CFG, pin_out);
 +	__assign_bit(IRQ_i_CFG_IRQ_ENABLE, &enable, on);
 +	pdc_reg_write(IRQ_i_CFG, pin_out, enable);
 +}
