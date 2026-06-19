@@ -94,7 +94,7 @@ src_prepare() {
 		PATCHES+=( "${WORKDIR}/patch-${PV}" )
 	fi
 
-	for i in other audio clk pci remoteproc gpu usb video wifi input el2 rockchip camera surface; do
+	for i in other audio clk pci remoteproc gpu usb video wifi input el2 rockchip camera irq surface; do
 		PATCHES+=( "${FILESDIR}/$i" )
 	done
 
