@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..14} )
+PYTHON_COMPAT=( python3_14 )
 PYPI_PN="azurefunctions-extensions-base"
 DISTUTILS_USE_PEP517=setuptools
 
