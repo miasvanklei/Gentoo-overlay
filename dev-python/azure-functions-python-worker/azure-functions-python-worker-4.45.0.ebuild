@@ -3,7 +3,7 @@
 
 EAPI=8
 
-PYTHON_COMPAT=( python3_{11..14} )
+PYTHON_COMPAT=( python3_14 )
 DISTUTILS_USE_PEP517=setuptools
 PYPI_NO_NORMALIZE=true
 
@@ -24,11 +24,10 @@ BDEPEND="
 "
 
 RDEPEND="
-	dev-python/azure-functions-runtime[${PYTHON_USEDEP}]
-	dev-python/azure-functions-runtime-v1[${PYTHON_USEDEP}]
-	dev-python/azure-functions-extensions-base[${PYTHON_USEDEP}]
-	dev-python/azure-functions[${PYTHON_USEDEP}]
-	dev-python/grpcio[${PYTHON_USEDEP}]
+	=dev-python/azure-functions-runtime-1.1.1[${PYTHON_USEDEP}]
+	=dev-python/azure-functions-runtime-v1-1.1.0[${PYTHON_USEDEP}]
+	>=dev-python/azure-functions-extensions-base-1.2.0[${PYTHON_USEDEP}]
+	=dev-python/azure-functions-2.2.0_beta5[${PYTHON_USEDEP}]
 	dev-python/grpcio-tools[${PYTHON_USEDEP}]
 	dev-python/python-dateutil[${PYTHON_USEDEP}]
 	dev-python/protobuf[${PYTHON_USEDEP}]
