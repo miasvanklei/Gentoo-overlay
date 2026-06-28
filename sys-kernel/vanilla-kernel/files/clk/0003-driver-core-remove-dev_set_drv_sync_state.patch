@@ -1,0 +1,32 @@
+dev_set_drv_sync_state() is no longer used since all users have been
+migrated to dev_add_sync_state(), so let's go ahead and remove it.
+
+Signed-off-by: Brian Masney <bmasney@redhat.com>
+Assisted-by: Claude:claude-opus-4-6
+---
+ include/linux/device.h | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/include/linux/device.h b/include/linux/device.h
+index b7a3dd4b56ed..7f71217ecd48 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -1079,18 +1079,6 @@
+ 	return false;
+ }
+ 
+-static inline int dev_set_drv_sync_state(struct device *dev,
+-					 void (*fn)(struct device *dev))
+-{
+-	if (!dev || !dev->driver)
+-		return 0;
+-	if (dev->driver->sync_state && dev->driver->sync_state != fn)
+-		return -EBUSY;
+-	if (!dev->driver->sync_state)
+-		dev->driver->sync_state = fn;
+-	return 0;
+-}
+-
+ struct sync_state_entry {
+ 	struct list_head	node;
+ 	void			(*fn)(struct device *dev);

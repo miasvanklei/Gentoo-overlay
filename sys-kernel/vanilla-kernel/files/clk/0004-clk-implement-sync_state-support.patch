@@ -31,34 +31,41 @@ that are linked below.
 
 This change was tested on a Thinkpad x13s laptop.
 
-    [    0.308051] clk: Disabling unused clocks not associated with a device
-    [    6.541069] qcom_aoss_qmp c300000.power-management: clk: Disabling unused clocks
-    [    6.843310] qcom-qmp-pcie-phy 1c24000.phy: clk: Disabling unused clocks
-    [    7.604556] qcom-qmp-pcie-phy 1c14000.phy: clk: Disabling unused clocks
-    [    8.446161] qcom-qmp-usb-phy 88f1000.phy: clk: Disabling unused clocks
-    [    8.446293] qcom-qmp-usb-phy 88ef000.phy: clk: Disabling unused clocks
-    [    8.546067] qcom-qmp-combo-phy 88eb000.phy: clk: Disabling unused clocks
-    [    8.546203] qcom-qmp-combo-phy 8903000.phy: clk: Disabling unused clocks
-    [    8.546254] qcom-edp-phy aec5a00.phy: clk: Disabling unused clocks
-    [   15.436834] qcom-cpufreq-hw 18591000.cpufreq: clk: Disabling unused clocks
-    [   15.436953] clk-rpmh 18200000.rsc:clock-controller: clk: Disabling unused clocks
-    [   15.723348] qcom-qmp-pcie-phy 1c06000.phy: clk: Disabling unused clocks
-    [   21.063241] q6prm-lpass-clock 3000000.remoteproc:glink-edge:gpr:service@2:clock-controller: clk: Disabling unused clocks
-    [   21.081996] va_macro 3370000.codec: clk: Disabling unused clocks
-    [   21.092740] rx_macro 3200000.rxmacro: clk: Disabling unused clocks
-    [   21.118261] wsa_macro 3240000.codec: clk: Disabling unused clocks
-    [   21.128758] tx_macro 3220000.txmacro: clk: Disabling unused clocks
+    [    0.366737] clk: Disabling unused clocks not associated with a device
+    [    0.367232] PM: genpd: Disabling unused power domains
+    [    7.791413] qcom-qmp-pcie-phy 1c24000.phy: clk: Disabling unused clocks
+    [    7.799702] qcom_aoss_qmp c300000.power-management: clk: Disabling unused clocks
+    [    8.548820] qcom-qmp-pcie-phy 1c14000.phy: clk: Disabling unused clocks
+    [    9.121849] qcom-qmp-usb-phy 88f1000.phy: clk: Disabling unused clocks
+    [    9.121985] qcom-qmp-usb-phy 88ef000.phy: clk: Disabling unused clocks
+    [    9.122691] qcom-edp-phy aec5a00.phy: clk: Disabling unused clocks
+    [    9.122760] disp_cc-sc8280xp af00000.clock-controller: clk: Disabling unused clocks
+    [    9.142121] qcom-qmp-combo-phy 88eb000.phy: clk: Disabling unused clocks
+    [    9.169149] qcom-qmp-combo-phy 8903000.phy: clk: Disabling unused clocks
+    [   16.057997] qcom-cpufreq-hw 18591000.cpufreq: clk: Disabling unused clocks
+    [   16.058149] clk-rpmh 18200000.rsc:clock-controller: clk: Disabling unused clocks
+    [   16.334879] qcom-qmp-pcie-phy 1c06000.phy: clk: Disabling unused clocks
+    [   16.706113] camcc-sc8280xp ad00000.clock-controller: clk: Disabling unused clocks
+    [   21.565731] q6prm-lpass-clock 3000000.remoteproc:glink-edge:gpr:service@2:clock-controller: clk: Disabling unused clocks
+    [   21.597069] va_macro 3370000.codec: clk: Disabling unused clocks
+    [   21.605039] rx_macro 3200000.rxmacro: clk: Disabling unused clocks
+    [   21.630313] wsa_macro 3240000.codec: clk: Disabling unused clocks
+    [   21.635069] tx_macro 3220000.txmacro: clk: Disabling unused clocks
 
+Tested-by: Jens Glathe <jens.glathe@oldschoolsolutions.biz>
+Tested-by: Neil Armstrong <neil.armstrong@linaro.org> # on AML-S905X-CC, AML-S805X-CC, BPI-M2S, BPI-M5
+Tested-by: Xuyang Dong <dongxuyang@eswincomputing.com> # hfp550
 Signed-off-by: Brian Masney <bmasney@redhat.com>
 Link: https://www.youtube.com/watch?v=tXYzM8yLIQA
 Link: https://lore.kernel.org/all/20210407034456.516204-1-saravanak@google.com/
 Link: https://lore.kernel.org/all/20221227204528.1899863-1-abel.vesa@linaro.org/
 ---
- drivers/clk/clk.c | 71 +++++++++++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 58 insertions(+), 13 deletions(-)
+ drivers/clk/clk.c   | 78 ++++++++++++++++++++++++++++++++++++++++++++---------
+ include/linux/clk.h | 14 ++++++++++
+ 2 files changed, 79 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 9cb2b42d1be4..ab3f8becda0c 100644
+index 048adfa86a5d..2b6fae54702a 100644
 --- a/drivers/clk/clk.c
 +++ b/drivers/clk/clk.c
 @@ -1442,14 +1442,39 @@ static void clk_core_disable_unprepare(struct clk_core *core)
@@ -134,7 +141,7 @@ index 9cb2b42d1be4..ab3f8becda0c 100644
  static int __init clk_ignore_unused_setup(char *__unused)
  {
  	clk_ignore_unused = true;
-@@ -1516,7 +1545,7 @@ static int __init clk_ignore_unused_setup(char *__unused)
+@@ -1516,17 +1545,27 @@ static int __init clk_ignore_unused_setup(char *__unused)
  }
  __setup("clk_ignore_unused", clk_ignore_unused_setup);
  
@@ -143,7 +150,17 @@ index 9cb2b42d1be4..ab3f8becda0c 100644
  {
  	struct clk_core *core;
  	int ret;
-@@ -1526,7 +1555,10 @@ static int __init clk_disable_unused(void)
+ 
+ 	if (clk_ignore_unused) {
+-		pr_warn("clk: Not disabling unused clocks\n");
++		/*
++		 * Only show this message once for the providers that are not
++		 * associated with a device, which is the first pass of
++		 * disabling unused clocks. Otherwise it'll show up for each
++		 * clk provider as well.
++		 */
++		if (!dev)
++			pr_warn("clk: Not disabling unused clocks\n");
  		return 0;
  	}
  
@@ -155,7 +172,7 @@ index 9cb2b42d1be4..ab3f8becda0c 100644
  
  	ret = clk_pm_runtime_get_all();
  	if (ret)
-@@ -1538,16 +1570,16 @@ static int __init clk_disable_unused(void)
+@@ -1538,16 +1577,16 @@ static int __init clk_disable_unused(void)
  	clk_prepare_lock();
  
  	hlist_for_each_entry(core, &clk_root_list, child_node)
@@ -176,7 +193,7 @@ index 9cb2b42d1be4..ab3f8becda0c 100644
  
  	clk_prepare_unlock();
  
-@@ -1555,11 +1587,16 @@ static int __init clk_disable_unused(void)
+@@ -1555,8 +1594,19 @@ static int __init clk_disable_unused(void)
  
  	return 0;
  }
@@ -187,28 +204,49 @@ index 9cb2b42d1be4..ab3f8becda0c 100644
 +}
  late_initcall_sync(clk_disable_unused);
  
- void clk_sync_state(struct device *dev)
- {
--	/* Will fill in */
++void clk_sync_state(struct device *dev)
++{
 +	__clk_disable_unused(dev);
- }
- EXPORT_SYMBOL_GPL(clk_sync_state);
- 
-@@ -4345,8 +4382,16 @@ __clk_register(struct device *dev, struct device_node *np, struct clk_hw *hw)
++}
++EXPORT_SYMBOL_GPL(clk_sync_state);
++
+ static int clk_core_determine_round_nolock(struct clk_core *core,
+ 					   struct clk_rate_request *req)
+ {
+@@ -4339,8 +4389,10 @@ __clk_register(struct device *dev, struct device_node *np, struct clk_hw *hw)
  	core->dev = dev;
  	clk_pm_runtime_init(core);
  	core->of_node = np;
 -	if (dev && dev->driver)
 +	if (dev && dev->driver) {
  		core->owner = dev->driver->owner;
-+
-+		/*
-+		 * If a clk provider sets their own sync_state, then it needs to
-+		 * also call clk_sync_state(). dev_set_drv_sync_state() won't
-+		 * overwrite the sync_state callback.
-+		 */
-+		dev_set_drv_sync_state(dev, clk_sync_state);
++		dev_add_sync_state(dev, clk_sync_state);
 +	}
  	core->hw = hw;
  	core->flags = init->flags;
  	core->num_parents = init->num_parents;
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 998ba3f261da..31a0c9224c46 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -846,6 +846,20 @@ void devm_clk_put(struct device *dev, struct clk *clk);
+  */
+ 
+ 
++/*
++ * clk_sync_state - sync_state callback to disable unused clocks
++ * @dev: the clock provider device whose unused clocks should be disabled
++ *
++ * It is called by the driver core once all consumers of @dev have probed,
++ * and disables any clocks belonging to @dev that are unused at that point.
++ *
++ * If a clock provider doesn't have a sync_state callback, then the framework
++ * will set up clk_sync_state() on your drivers behalf. If your driver needs
++ * a sync_state callback, then that callback also needs to call
++ * clk_sync_state().
++ */
++void clk_sync_state(struct device *dev);
++
+ /**
+  * clk_round_rate - adjust a rate to the exact rate a clock can provide
+  * @clk: clock source
