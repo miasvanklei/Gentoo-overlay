@@ -43,7 +43,6 @@ RDEPEND="${DEPEND}
 "
 
 PATCHES=(
-	"${FILESDIR}"/fix-find-python.patch
 	"${FILESDIR}"/less-verbose-logging.patch
 	"${FILESDIR}"/remove-forced-qtmultimedia-gstreamer.patch
 )
