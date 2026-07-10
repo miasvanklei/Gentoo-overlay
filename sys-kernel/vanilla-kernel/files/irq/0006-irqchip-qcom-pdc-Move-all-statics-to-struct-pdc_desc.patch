@@ -1,15 +1,26 @@
-There are multiple statics used. Move all to struct pdc_desc to better
+here are multiple statics used. Move all to struct pdc_desc to better
 align with versioning support. Document them.
+
+Add pdc->enable_intr() function to point to respective version specific
+enable function. Remove pdc_enable_intr() and __pdc_enable_intr() and
+invoke pdc->enable_intr() from caller.
+
+Locking in pdc_enable_intr() applies lock to all version specific
+pdc->enable_intr() however lock is needed only for pdc_enable_intr_bank()
+which uses a shared bank across on PDC v2.7 and PDC v3.0.
+
+pdc_enable_intr_cfg() do not require locking as IRQ_CFG registers are one
+per interrupt. Move the locking to only pdc_enable_intr_bank().
 
 No functional impact.
 
 Signed-off-by: Maulik Shah <maulik.shah@oss.qualcomm.com>
 ---
- drivers/irqchip/qcom-pdc.c | 77 ++++++++++++++++++++++++----------------------
- 1 file changed, 40 insertions(+), 37 deletions(-)
+ drivers/irqchip/qcom-pdc.c | 84 ++++++++++++++++++++++------------------------
+ 1 file changed, 41 insertions(+), 43 deletions(-)
 
 diff --git a/drivers/irqchip/qcom-pdc.c b/drivers/irqchip/qcom-pdc.c
-index 23276325211d..b9acb0f25c9c 100644
+index a77d1d334062..764f7965cfb8 100644
 --- a/drivers/irqchip/qcom-pdc.c
 +++ b/drivers/irqchip/qcom-pdc.c
 @@ -92,15 +92,30 @@ struct pdc_irq_cfg {
@@ -55,7 +66,12 @@ index 23276325211d..b9acb0f25c9c 100644
  static struct pdc_desc *pdc;
  
  static void pdc_base_reg_write(void __iomem *base, int reg, u32 i, u32 val)
-@@ -199,7 +209,7 @@ static void pdc_enable_intr_bank(int pin_out, bool on)
+@@ -196,10 +206,12 @@ static void pdc_enable_intr_bank(int pin_out, bool on)
+ 	index = FIELD_GET(IRQ_ENABLE_BANK_INDEX_MASK, pin_out);
+ 	mask = FIELD_GET(IRQ_ENABLE_BANK_BIT_MASK, pin_out);
+ 
++	guard(raw_spinlock_irqsave)(&pdc->lock);
++
  	enable = pdc_reg_read(pdc->regs->irq_en_reg, index);
  	__assign_bit(mask, &enable, on);
  
@@ -64,7 +80,7 @@ index 23276325211d..b9acb0f25c9c 100644
  		pdc_x1e_irq_enable_write(index, enable);
  	else
  		pdc_reg_write(pdc->regs->irq_en_reg, index, enable);
-@@ -213,21 +223,11 @@ static void pdc_enable_intr_cfg(int pin_out, bool on)
+@@ -213,32 +225,15 @@ static void pdc_enable_intr_cfg(int pin_out, bool on)
  	pdc_reg_write(pdc->regs->irq_cfg_reg, pin_out, enable);
  }
  
@@ -76,19 +92,30 @@ index 23276325211d..b9acb0f25c9c 100644
 -		pdc_enable_intr_cfg(pin_out, on);
 -}
 -
- static void pdc_enable_intr(struct irq_data *d, bool on)
- {
+-static void pdc_enable_intr(struct irq_data *d, bool on)
+-{
 -	unsigned long flags;
-+	guard(raw_spinlock)(&pdc->lock);
- 
+-
 -	raw_spin_lock_irqsave(&pdc_lock, flags);
 -	__pdc_enable_intr(d->hwirq, on);
 -	raw_spin_unlock_irqrestore(&pdc_lock, flags);
-+	pdc->enable_intr(d->hwirq, on);
+-}
+-
+ static void qcom_pdc_gic_disable(struct irq_data *d)
+ {
+-	pdc_enable_intr(d, false);
++	pdc->enable_intr(d->hwirq, false);
+ 	irq_chip_disable_parent(d);
  }
  
- static void qcom_pdc_gic_disable(struct irq_data *d)
-@@ -350,12 +350,10 @@ static struct irq_chip qcom_pdc_gic_chip = {
+ static void qcom_pdc_gic_enable(struct irq_data *d)
+ {
+-	pdc_enable_intr(d, true);
++	pdc->enable_intr(d->hwirq, true);
+ 	irq_chip_enable_parent(d);
+ }
+ 
+@@ -350,12 +345,10 @@ static struct irq_chip qcom_pdc_gic_chip = {
  
  static struct pdc_pin_region *get_pin_region(int pin)
  {
@@ -105,10 +132,10 @@ index 23276325211d..b9acb0f25c9c 100644
  	}
  
  	return NULL;
-@@ -411,39 +409,39 @@ static const struct irq_domain_ops qcom_pdc_ops = {
- 
- static int pdc_setup_pin_mapping(struct device *dev, struct device_node *np)
+@@ -411,35 +404,35 @@ static const struct irq_domain_ops qcom_pdc_ops = {
+ static int pdc_setup_pin_mapping(struct device *dev)
  {
+ 	struct device_node *np = dev->of_node;
 -	int ret, n, i;
 +	int ret, n;
  
@@ -117,13 +144,11 @@ index 23276325211d..b9acb0f25c9c 100644
  		return -EINVAL;
  
 -	pdc_region_cnt = n / 3;
--	pdc_region = devm_kcalloc(dev, pdc_region_cnt, sizeof(*pdc_region),
--				  GFP_KERNEL);
+-	pdc_region = devm_kcalloc(dev, pdc_region_cnt, sizeof(*pdc_region), GFP_KERNEL);
 -	if (!pdc_region) {
 -		pdc_region_cnt = 0;
 +	pdc->region_cnt = n / 3;
-+	pdc->region = devm_kcalloc(dev, pdc->region_cnt, sizeof(*pdc->region),
-+				   GFP_KERNEL);
++	pdc->region = devm_kcalloc(dev, pdc->region_cnt, sizeof(*pdc->region), GFP_KERNEL);
 +	if (!pdc->region) {
 +		pdc->region_cnt = 0;
  		return -ENOMEM;
@@ -131,20 +156,17 @@ index 23276325211d..b9acb0f25c9c 100644
  
 -	for (n = 0; n < pdc_region_cnt; n++) {
 +	for (n = 0; n < pdc->region_cnt; n++) {
- 		ret = of_property_read_u32_index(np, "qcom,pdc-ranges",
- 						 n * 3 + 0,
+ 		ret = of_property_read_u32_index(np, "qcom,pdc-ranges", n * 3 + 0,
 -						 &pdc_region[n].pin_base);
 +						 &pdc->region[n].pin_base);
  		if (ret)
  			return ret;
- 		ret = of_property_read_u32_index(np, "qcom,pdc-ranges",
- 						 n * 3 + 1,
+ 		ret = of_property_read_u32_index(np, "qcom,pdc-ranges", n * 3 + 1,
 -						 &pdc_region[n].parent_base);
 +						 &pdc->region[n].parent_base);
  		if (ret)
  			return ret;
- 		ret = of_property_read_u32_index(np, "qcom,pdc-ranges",
- 						 n * 3 + 2,
+ 		ret = of_property_read_u32_index(np, "qcom,pdc-ranges", n * 3 + 2,
 -						 &pdc_region[n].cnt);
 +						 &pdc->region[n].cnt);
  		if (ret)
@@ -157,7 +179,7 @@ index 23276325211d..b9acb0f25c9c 100644
  	}
  
  	return 0;
-@@ -481,13 +479,16 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
+@@ -477,13 +470,16 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
  	if (pdc->version >= PDC_VERSION_3_2) {
  		pdc->cfg_fields = &pdc_cfg_v3_2;
  		pdc->regs = &pdc_v3_2;
@@ -174,7 +196,7 @@ index 23276325211d..b9acb0f25c9c 100644
  	}
  
  	/*
-@@ -506,7 +507,7 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
+@@ -502,7 +498,7 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
  			return -ENXIO;
  		}
  
@@ -183,12 +205,12 @@ index 23276325211d..b9acb0f25c9c 100644
  	}
  
  	parent_domain = irq_find_host(parent);
-@@ -521,6 +522,8 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
- 		return ret;
+@@ -511,6 +507,8 @@ static int qcom_pdc_probe(struct platform_device *pdev, struct device_node *pare
+ 		return -ENXIO;
  	}
  
 +	raw_spin_lock_init(&pdc->lock);
 +
- 	pdc_domain = irq_domain_create_hierarchy(parent_domain,
- 						 IRQ_DOMAIN_FLAG_QCOM_PDC_WAKEUP,
- 						 PDC_MAX_IRQS,
+ 	ret = pdc_setup_pin_mapping(dev);
+ 	if (ret) {
+ 		pr_err("%pOF: failed to init PDC pin-hwirq mapping\n", node);
