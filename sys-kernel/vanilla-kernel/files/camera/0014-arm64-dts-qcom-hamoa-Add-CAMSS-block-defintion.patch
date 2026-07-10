@@ -9,11 +9,11 @@ Add dtsi to describe the xe180100 CAMSS block
 
 Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
 ---
- arch/arm64/boot/dts/qcom/hamoa.dtsi | 348 ++++++++++++++++++++++++++++
- 1 file changed, 348 insertions(+)
+ arch/arm64/boot/dts/qcom/hamoa.dtsi | 363 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 363 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/qcom/hamoa.dtsi b/arch/arm64/boot/dts/qcom/hamoa.dtsi
-index 6a14d7c9a7ec4d..6bd92b698f412f 100644
+index 9a854da9550c3..19990964c0c46 100644
 --- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
 +++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
 @@ -16,6 +16,7 @@
@@ -24,7 +24,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
  #include <dt-bindings/phy/phy-qcom-qmp.h>
  #include <dt-bindings/power/qcom,rpmhpd.h>
  #include <dt-bindings/power/qcom-rpmpd.h>
-@@ -5629,6 +5631,352 @@
+@@ -5629,6 +5630,368 @@ cci1_i2c1: i2c-bus@1 {
  			};
  		};
  
@@ -204,7 +204,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <0>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_in0_ep: endpoint@0 {
++					camss_csiphy0_inep0: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
@@ -213,7 +213,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <1>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_in1_ep: endpoint@0 {
++					camss_csiphy1_inep0: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
@@ -222,7 +222,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <2>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_in2_ep: endpoint@0 {
++					camss_csiphy2_inep0: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
@@ -231,7 +231,7 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +					reg = <3>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
-+					camss_in4_ep: endpoint@0 {
++					camss_csiphy4_inep0: endpoint@0 {
 +						reg = <0>;
 +					};
 +				};
@@ -242,18 +242,22 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +				reg = <0 0x0ace4000 0 0x2000>;
 +
 +				clocks = <&camcc CAM_CC_CSIPHY0_CLK>,
-+					 <&camcc CAM_CC_CSI0PHYTIMER_CLK>;
++					 <&camcc CAM_CC_CSI0PHYTIMER_CLK>,
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
 +				clock-names = "core",
-+					      "timer";
++					      "timer",
++					      "ahb";
 +
 +				operating-points-v2 = <&csiphy_mxc_opp_table>;
 +
 +				interrupts = <GIC_SPI 477 IRQ_TYPE_EDGE_RISING>;
 +
-+				power-domains = <&rpmhpd RPMHPD_MXC>,
-+						<&rpmhpd RPMHPD_MMCX>;
-+				power-domain-names = "mx",
-+						     "mmcx";
++				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
++				power-domain-names = "top",
++						     "mmcx",
++						     "mx";
 +
 +				#phy-cells = <1>;
 +
@@ -265,18 +269,22 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +				reg = <0 0x0ace6000 0 0x2000>;
 +
 +				clocks = <&camcc CAM_CC_CSIPHY1_CLK>,
-+					 <&camcc CAM_CC_CSI1PHYTIMER_CLK>;
++					 <&camcc CAM_CC_CSI1PHYTIMER_CLK>,
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
 +				clock-names = "core",
-+					      "timer";
++					      "timer",
++					      "ahb";
 +
 +				operating-points-v2 = <&csiphy_mxc_opp_table>;
 +
 +				interrupts = <GIC_SPI 478 IRQ_TYPE_EDGE_RISING>;
 +
-+				power-domains = <&rpmhpd RPMHPD_MXC>,
-+						<&rpmhpd RPMHPD_MMCX>;
-+				power-domain-names = "mx",
-+						     "mmcx";
++				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
++				power-domain-names = "top",
++						     "mmcx",
++						     "mx";
 +
 +				#phy-cells = <1>;
 +
@@ -288,18 +296,22 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +				reg = <0 0x0ace8000 0 0x2000>;
 +
 +				clocks = <&camcc CAM_CC_CSIPHY2_CLK>,
-+					 <&camcc CAM_CC_CSI2PHYTIMER_CLK>;
++					 <&camcc CAM_CC_CSI2PHYTIMER_CLK>,
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
 +				clock-names = "core",
-+					      "timer";
++					      "timer",
++					      "ahb";
 +
 +				operating-points-v2 = <&csiphy_mxc_opp_table>;
 +
 +				interrupts = <GIC_SPI 479 IRQ_TYPE_EDGE_RISING>;
 +
-+				power-domains = <&rpmhpd RPMHPD_MXC>,
-+						<&rpmhpd RPMHPD_MMCX>;
-+				power-domain-names = "mx",
-+						     "mmcx";
++				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
++				power-domain-names = "top",
++						     "mmcx",
++						     "mx";
 +
 +				#phy-cells = <1>;
 +
@@ -311,18 +323,22 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +				reg = <0 0x0acec000 0 0x2000>;
 +
 +				clocks = <&camcc CAM_CC_CSIPHY4_CLK>,
-+					 <&camcc CAM_CC_CSI4PHYTIMER_CLK>;
++					 <&camcc CAM_CC_CSI4PHYTIMER_CLK>,
++					 <&camcc CAM_CC_CORE_AHB_CLK>;
 +				clock-names = "core",
-+					      "timer";
++					      "timer",
++					      "ahb";
 +
 +				operating-points-v2 = <&csiphy_mxa_opp_table>;
 +
 +				interrupts = <GIC_SPI 122 IRQ_TYPE_EDGE_RISING>;
 +
-+				power-domains = <&rpmhpd RPMHPD_MX>,
-+						<&rpmhpd RPMHPD_MMCX>;
-+				power-domain-names = "mx",
-+						     "mmcx";
++				power-domains = <&camcc CAM_CC_TITAN_TOP_GDSC>,
++						<&rpmhpd RPMHPD_MMCX>,
++						<&rpmhpd RPMHPD_MXC>;
++				power-domain-names = "top",
++						     "mmcx",
++						     "mx";
 +
 +				#phy-cells = <1>;
 +
@@ -363,13 +379,13 @@ index 6a14d7c9a7ec4d..6bd92b698f412f 100644
 +				opp-400000000 {
 +					opp-hz = /bits/ 64 <400000000>;
 +					required-opps = <&rpmhpd_opp_low_svs>,
-+							<&rpmhpd_opp_low_svs>;
++							<&rpmhpd_opp_low_svs_d1>;
 +				};
 +
 +				opp-480000000 {
 +					opp-hz = /bits/ 64 <480000000>;
 +					required-opps = <&rpmhpd_opp_low_svs>,
-+							<&rpmhpd_opp_low_svs>;
++							<&rpmhpd_opp_low_svs_d1>;
 +				};
 +			};
 +		};
