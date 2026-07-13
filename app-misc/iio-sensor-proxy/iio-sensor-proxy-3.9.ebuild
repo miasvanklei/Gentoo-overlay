@@ -22,7 +22,7 @@ RDEPEND="
 	virtual/udev
 	ssc? (
 		dev-libs/libssc
-		dev-util/fastrpc
+		dev-util/hexagonrpc
 	)
 "
 
