@@ -1,0 +1,30 @@
+diff --git a/src/widgets/tools/texttool.cpp b/src/widgets/tools/texttool.cpp
+index 0c6824af44dc4008437d220c5607cbfe4bab02e7..bb2bb557b744e2dd844b09ed79861f9675b2a47f 100644
+--- a/src/widgets/tools/texttool.cpp
++++ b/src/widgets/tools/texttool.cpp
+@@ -95,6 +95,8 @@ void TextTool::mousePressed(ApplicationContext *context)
+         uiContext->keybindManager()->setEnabled(false);
+         context->selectionContext()->setShouldRenderHandles(false);
+ 
++        QGuiApplication::inputMethod()->show();
++
+         renderingContext->markForRender();
+         renderingContext->markForUpdate();
+     }
+@@ -216,6 +218,8 @@ void TextTool::keyPressed(ApplicationContext *context)
+         context->uiContext()->toolBar()->changeTool(Tool::Type::Selection);
+         m_curItem = nullptr;
+ 
++        QGuiApplication::inputMethod()->hide();
++
+         context->renderingContext()->cacheGrid().markAllDirty();
+         context->renderingContext()->markForRender();
+         context->renderingContext()->markForUpdate();
+@@ -395,6 +399,7 @@ void TextTool::keyReleased([[maybe_unused]] ApplicationContext *context)
+ 
+ void TextTool::cleanup()
+ {
++    QGuiApplication::inputMethod()->hide();
+     if (!m_curItem) {
+         return;
+     }
