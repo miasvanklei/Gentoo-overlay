@@ -1,0 +1,426 @@
+From 86f491622900b183c6c58b9823cd2eda5676441d Mon Sep 17 00:00:00 2001
+From: Luca Weiss <luca.weiss@fairphone.com>
+Date: Tue, 10 Mar 2026 12:09:00 +0100
+Subject: [PATCH 3/9] hexagonrpcd/rpcd_builder: Add mapping for sns_reg_version
+
+Signed-off-by: Luca Weiss <luca.weiss@fairphone.com>
+---
+ hexagonrpcd/rpcd_builder.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/hexagonrpcd/rpcd_builder.c b/hexagonrpcd/rpcd_builder.c
+index d374958..44ee71d 100644
+--- a/hexagonrpcd/rpcd_builder.c
++++ b/hexagonrpcd/rpcd_builder.c
+@@ -30,6 +30,7 @@
+ #define DSP_LIBS		"/dsp/"
+ #define SENSORS_CONFIG		"/sensors/config/"
+ #define SENSORS_REGISTRY	"/sensors/registry/"
++#define SNS_REG_VERSION		"/sensors/sns_reg_version"
+ #define SNS_REG_CONFIG		"/sensors/sns_reg.conf"
+ #define SYSFS_SOCINFO		"/socinfo/"
+ 
+@@ -111,7 +112,7 @@ static struct hexagonfs_dirent *hfs_map_or_empty(const char *name, const char *p
+  */
+ struct hexagonfs_dirent *construct_root_dir(const char *prefix, const char *dsp)
+ {
+-	char *acdbdata, *dsp_libs, *sns_cfg, *sns_reg, *sns_reg_config, *socinfo;
++	char *acdbdata, *dsp_libs, *sns_cfg, *sns_reg, *sns_reg_version, *sns_reg_config, *socinfo;
+ 	size_t n_prefix;
+ 	struct hexagonfs_dirent *persist_dir, *vendor_dir;
+ 
+@@ -120,6 +121,7 @@ struct hexagonfs_dirent *construct_root_dir(const char *prefix, const char *dsp)
+ 	acdbdata = malloc(n_prefix + strlen(ACDBDATA) + 1);
+ 	sns_cfg = malloc(n_prefix + strlen(SENSORS_CONFIG) + 1);
+ 	sns_reg = malloc(n_prefix + strlen(SENSORS_REGISTRY) + 1);
++	sns_reg_version = malloc(n_prefix + strlen(SNS_REG_VERSION) + 1);
+ 	sns_reg_config = malloc(n_prefix + strlen(SNS_REG_CONFIG) + 1);
+ 	socinfo = malloc(n_prefix + strlen(SYSFS_SOCINFO) + 1);
+ 
+@@ -140,6 +142,11 @@ struct hexagonfs_dirent *construct_root_dir(const char *prefix, const char *dsp)
+ 		strcat(sns_reg, SENSORS_REGISTRY);
+ 	}
+ 
++	if (sns_reg_version != NULL) {
++		strcpy(sns_reg_version, prefix);
++		strcat(sns_reg_version, SNS_REG_CONFIG);
++	}
++
+ 	if (sns_reg_config != NULL) {
+ 		strcpy(sns_reg_config, prefix);
+ 		strcat(sns_reg_config, SNS_REG_CONFIG);
+@@ -162,8 +169,9 @@ struct hexagonfs_dirent *construct_root_dir(const char *prefix, const char *dsp)
+ 	 */
+ 	persist_dir = hfs_mkdir("persist", 1,
+ 				hfs_mkdir("sensors", 1,
+-					hfs_mkdir("registry", 1,
+-						hfs_map("registry", sns_reg)
++					hfs_mkdir("registry", 2,
++						hfs_map("registry", sns_reg),
++						hfs_map("sns_reg_version", sns_reg_version)
+ 					)
+ 				)
+ 		      );
+
+From 1b1c2ec438d62d9d545a1671aa2f3ed470844628 Mon Sep 17 00:00:00 2001
+From: Luca Weiss <luca.weiss@fairphone.com>
+Date: Fri, 6 Mar 2026 17:03:00 +0100
+Subject: [PATCH 5/9] WIP Initial implementation for fwrite
+
+Signed-off-by: Luca Weiss <luca.weiss@fairphone.com>
+---
+ hexagonrpcd/apps_std.c              | 53 +++++++++++++++++++++++++++--
+ hexagonrpcd/interfaces/apps_std.def |  1 +
+ 2 files changed, 51 insertions(+), 3 deletions(-)
+
+diff --git a/hexagonrpcd/apps_std.c b/hexagonrpcd/apps_std.c
+index ff4d5a7..4da6ea3 100644
+--- a/hexagonrpcd/apps_std.c
++++ b/hexagonrpcd/apps_std.c
+@@ -120,6 +120,50 @@ static uint32_t apps_std_fread(void *data,
+ 	return 0;
+ }
+ 
++static uint32_t apps_std_fwrite(void *data,
++			        const struct fastrpc_io_buffer *inbufs,
++			        struct fastrpc_io_buffer *outbufs)
++{
++	// struct apps_std_ctx *ctx = data;
++	const struct {
++		uint32_t fd;
++		uint32_t buf_size;
++	} *first_in = inbufs[0].p;
++	const uint8_t *buf = inbufs[1].p;
++	struct {
++		uint32_t written;
++		uint32_t is_eof;
++	} *first_out = outbufs[0].p;
++	ssize_t ret;
++
++	ret = 0;
++#ifdef HEXAGONRPC_VERBOSE
++	printf("write(%u, %u) -> %ld\n", first_in->fd,
++					 first_in->buf_size,
++					 ret);
++
++	printf("write() data:");
++	for (unsigned int i = 0; i < first_in->buf_size; i++)
++		printf(" 0x%x", buf[i]);
++	printf("\n");
++#endif
++
++	const uint8_t fake_buf_dir[] = {0x44, 0x49, 0x52}; // "DIR"
++	const uint8_t fake_buf_version3[] = {0x76, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x3d, 0x33}; // "version=3"
++	if ((first_in->buf_size == 3 && memcmp(buf, fake_buf_dir, 3) == 0) ||
++		(first_in->buf_size == 9 && memcmp(buf, fake_buf_version3, 9) == 0)) {
++
++		first_out->written = first_in->buf_size;
++		first_out->is_eof = 0;
++
++		printf("WARNING: Faking successful fwrite call for \"%s\"!\n", buf);
++
++		return 0;
++	}
++
++	return AEE_EFAILED;
++}
++
+ static uint32_t apps_std_fseek(void *data,
+ 			       const struct fastrpc_io_buffer *inbufs,
+ 			       struct fastrpc_io_buffer *outbufs)
+@@ -167,9 +211,9 @@ static uint32_t apps_std_fopen_with_env(void *data,
+ 
+ 	rw_mode = ((const char *) inbufs[4].p)[0];
+ 	if (rw_mode == 'w' || rw_mode == 'a') {
+-		fprintf(stderr, "Tried to open %s for writing\n",
++		fprintf(stderr, "(IGNORE LIMITATION) Tried to open %s for writing\n",
+ 				(const char *) inbufs[3].p);
+-		return AEE_EUNSUPPORTED;
++		//return AEE_EUNSUPPORTED;
+ 	}
+ 
+ 	if (!strcmp(inbufs[1].p, "ADSP_LIBRARY_PATH")) {
+@@ -420,7 +464,10 @@ static const struct fastrpc_function_impl apps_std_procs[] = {
+ 		.def = &apps_std_fread_def,
+ 		.impl = apps_std_fread,
+ 	},
+-	{ .def = NULL, .impl = NULL, },
++	{
++		.def = &apps_std_fwrite_def,
++		.impl = apps_std_fwrite,
++	},
+ 	{ .def = NULL, .impl = NULL, },
+ 	{ .def = NULL, .impl = NULL, },
+ 	{ .def = NULL, .impl = NULL, },
+diff --git a/hexagonrpcd/interfaces/apps_std.def b/hexagonrpcd/interfaces/apps_std.def
+index 2fbbdb1..35441e1 100644
+--- a/hexagonrpcd/interfaces/apps_std.def
++++ b/hexagonrpcd/interfaces/apps_std.def
+@@ -28,6 +28,7 @@ HEXAGONRPC_DEFINE_REMOTE_METHOD(1, apps_std_freopen, 1, 0, 1, 1)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(2, apps_std_fflush, 8, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(3, apps_std_fclose, 1, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(4, apps_std_fread, 1, 0, 2, 1)
++HEXAGONRPC_DEFINE_REMOTE_METHOD(5, apps_std_fwrite, 1, 1, 2, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(9, apps_std_fseek, 3, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(19, apps_std_fopen_with_env, 0, 4, 1, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(26, apps_std_opendir, 0, 1, 2, 0)
+
+From 9bae0204f62ca84999efc7d09e5e1332441b603a Mon Sep 17 00:00:00 2001
+From: Luca Weiss <luca.weiss@fairphone.com>
+Date: Fri, 20 Mar 2026 11:15:44 +0100
+Subject: [PATCH 6/9] WIP Initial implementation for fremove
+
+Signed-off-by: Luca Weiss <luca.weiss@fairphone.com>
+---
+ hexagonrpcd/apps_std.c              | 32 ++++++++++++++++++++++++++++-
+ hexagonrpcd/interfaces/apps_std.def |  1 +
+ 2 files changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/hexagonrpcd/apps_std.c b/hexagonrpcd/apps_std.c
+index 4da6ea3..3aed5c6 100644
+--- a/hexagonrpcd/apps_std.c
++++ b/hexagonrpcd/apps_std.c
+@@ -252,6 +252,33 @@ static uint32_t apps_std_fopen_with_env(void *data,
+ 	return 0;
+ }
+ 
++static uint32_t apps_std_fremove(void *data,
++				 const struct fastrpc_io_buffer *inbufs,
++				 struct fastrpc_io_buffer *outbufs)
++{
++	// struct apps_std_ctx *ctx = data;
++	int ret;
++
++	// The name must be NULL-terminated
++	if (((const char *) inbufs[1].p)[inbufs[1].s - 1] != 0)
++		return AEE_EBADPARM;
++
++	ret = 0;
++	printf("WARNING: Mocking successful fremove!\n");
++	if (ret < 0) {
++		fprintf(stderr, "Could not remove %s: %s\n",
++				(const char *) inbufs[1].p,
++				strerror(-ret));
++		return AEE_EFAILED;
++	}
++
++#ifdef HEXAGONRPC_VERBOSE
++	printf("fremove(%s) -> %d\n", (const char *) inbufs[1].p, ret);
++#endif
++
++	return 0;
++}
++
+ static uint32_t apps_std_opendir(void *data,
+ 				 const struct fastrpc_io_buffer *inbufs,
+ 				 struct fastrpc_io_buffer *outbufs)
+@@ -492,7 +519,10 @@ static const struct fastrpc_function_impl apps_std_procs[] = {
+ 	{ .def = NULL, .impl = NULL, },
+ 	{ .def = NULL, .impl = NULL, },
+ 	{ .def = NULL, .impl = NULL, },
+-	{ .def = NULL, .impl = NULL, },
++	{
++		.def = &apps_std_fremove_def,
++		.impl = apps_std_fremove,
++	},
+ 	{ .def = NULL, .impl = NULL, },
+ 	{
+ 		.def = &apps_std_opendir_def,
+diff --git a/hexagonrpcd/interfaces/apps_std.def b/hexagonrpcd/interfaces/apps_std.def
+index 35441e1..b37e749 100644
+--- a/hexagonrpcd/interfaces/apps_std.def
++++ b/hexagonrpcd/interfaces/apps_std.def
+@@ -31,6 +31,7 @@ HEXAGONRPC_DEFINE_REMOTE_METHOD(4, apps_std_fread, 1, 0, 2, 1)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(5, apps_std_fwrite, 1, 1, 2, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(9, apps_std_fseek, 3, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(19, apps_std_fopen_with_env, 0, 4, 1, 0)
++HEXAGONRPC_DEFINE_REMOTE_METHOD(24, apps_std_fremove, 0, 1, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(26, apps_std_opendir, 0, 1, 2, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(27, apps_std_closedir, 2, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(28, apps_std_readdir, 2, 0, 66, 0)
+
+From 8fd3b22937ec738bdcd6e9e47292122d89974263 Mon Sep 17 00:00:00 2001
+From: Luca Weiss <luca.weiss@fairphone.com>
+Date: Fri, 20 Mar 2026 13:54:47 +0100
+Subject: [PATCH 7/9] WIP Initial handling for methods > 31
+
+Signed-off-by: Luca Weiss <luca.weiss@fairphone.com>
+---
+ hexagonrpcd/listener.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/hexagonrpcd/listener.c b/hexagonrpcd/listener.c
+index 734c85d..12dc617 100644
+--- a/hexagonrpcd/listener.c
++++ b/hexagonrpcd/listener.c
+@@ -233,6 +233,22 @@ static int invoke_requested_procedure(size_t n_ifaces,
+ 		return 1;
+ 	}
+ 
++	/*
++	 * Methods >= 31 are specified with method == 31 and have the actual
++	 * method in the first uint32_t parameter.
++	 */
++	if (method == 31) { // "mid" handling
++		const struct fastrpc_io_buffer *inbufs = decoded;
++		if (REMOTE_SCALARS_INBUFS(sc) < 1 || inbufs[0].s < 4) { // TODO: Is this sufficient?
++			fprintf(stderr, "Got invalid inbufs in 'mid' handling\n");
++			*result = AEE_EBADPARM;
++			return 1;
++		}
++		uint32_t *mid = inbufs[0].p;
++		printf("mid=%u\n", *mid);
++		method = *mid;
++	}
++
+ 	if (method >= ifaces[handle]->n_procs) {
+ 		fprintf(stderr, "Unsupported method: %u (%08x)\n", method, sc);
+ 		*result = AEE_EUNSUPPORTED;
+
+From c7a1029cdaddae15a9529a5550dd516b9379f9a9 Mon Sep 17 00:00:00 2001
+From: Luca Weiss <luca.weiss@fairphone.com>
+Date: Fri, 20 Mar 2026 15:21:52 +0100
+Subject: [PATCH 8/9] WIP Initial implementation for fopen_with_env_fd
+
+Signed-off-by: Luca Weiss <luca.weiss@fairphone.com>
+---
+ hexagonrpcd/apps_std.c              | 38 ++++++++++++++++++++++++++++-
+ hexagonrpcd/interfaces/apps_std.def |  1 +
+ 2 files changed, 38 insertions(+), 1 deletion(-)
+
+diff --git a/hexagonrpcd/apps_std.c b/hexagonrpcd/apps_std.c
+index 3aed5c6..d1145c0 100644
+--- a/hexagonrpcd/apps_std.c
++++ b/hexagonrpcd/apps_std.c
+@@ -422,6 +422,34 @@ static uint32_t apps_std_stat(void *data,
+ 	return 0;
+ }
+ 
++static uint32_t apps_std_fopen_with_env_fd(void *data,
++					   const struct fastrpc_io_buffer *inbufs,
++					   struct fastrpc_io_buffer *outbufs)
++{
++	//struct apps_std_ctx *ctx = data;
++	struct {
++		uint32_t fd;
++		uint32_t len;
++	} *first_out = outbufs[0].p;
++	//uint32_t *mid = inbufs[0].p;
++
++	// The name and environment variable must also be NULL-terminated
++	if (((const char *) inbufs[1].p)[inbufs[1].s - 1] != 0
++	 || ((const char *) inbufs[2].p)[inbufs[2].s - 1] != 0
++	 || ((const char *) inbufs[3].p)[inbufs[3].s - 1] != 0
++	 || ((const char *) inbufs[4].p)[inbufs[4].s - 1] != 0)
++		return AEE_EBADPARM;
++
++	printf("fopen_with_env_fd envvarname=%s delim=%s name=%s mode=%s\n", (const char *) inbufs[1].p, (const char *) inbufs[2].p, (const char *) inbufs[3].p, (const char *) inbufs[4].p);
++
++	// FIXME
++	printf("WARNING: fopen_with_env_fd stub!\n");
++	first_out->fd = 99;
++	first_out->len = 42;
++
++	return 0;
++}
++
+ struct fastrpc_interface *fastrpc_apps_std_init(struct hexagonfs_dirent *root)
+ {
+ 	struct fastrpc_interface *iface;
+@@ -542,10 +570,18 @@ static const struct fastrpc_function_impl apps_std_procs[] = {
+ 		.def = &apps_std_stat_def,
+ 		.impl = apps_std_stat,
+ 	},
++	{ .def = NULL, .impl = NULL, },
++	{ .def = NULL, .impl = NULL, },
++	{ .def = NULL, .impl = NULL, },
++	{ .def = NULL, .impl = NULL, },
++	{
++		.def = &apps_std_fopen_with_env_fd_def,
++		.impl = apps_std_fopen_with_env_fd,
++	},
+ };
+ 
+ const struct fastrpc_interface apps_std_interface = {
+ 	.name = "apps_std",
+-	.n_procs = 32,
++	.n_procs = 37,
+ 	.procs = apps_std_procs,
+ };
+diff --git a/hexagonrpcd/interfaces/apps_std.def b/hexagonrpcd/interfaces/apps_std.def
+index b37e749..08a8c02 100644
+--- a/hexagonrpcd/interfaces/apps_std.def
++++ b/hexagonrpcd/interfaces/apps_std.def
+@@ -36,5 +36,6 @@ HEXAGONRPC_DEFINE_REMOTE_METHOD(26, apps_std_opendir, 0, 1, 2, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(27, apps_std_closedir, 2, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(28, apps_std_readdir, 2, 0, 66, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(31, apps_std_stat, 1, 1, 24, 0)
++HEXAGONRPC_DEFINE_REMOTE_METHOD(36, apps_std_fopen_with_env_fd, 1, 4, 2, 0)
+ 
+ #endif /* INTERFACE_APPS_STD_DEF */
+
+From 9f987970f9bc3e72081b7966a1f4e766ce6af6f7 Mon Sep 17 00:00:00 2001
+From: Luca Weiss <luca.weiss@fairphone.com>
+Date: Fri, 20 Mar 2026 16:05:41 +0100
+Subject: [PATCH 9/9] WIP Initial implementation for fclose_fd
+
+Signed-off-by: Luca Weiss <luca.weiss@fairphone.com>
+---
+ hexagonrpcd/apps_std.c              | 24 +++++++++++++++++++++++-
+ hexagonrpcd/interfaces/apps_std.def |  1 +
+ 2 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/hexagonrpcd/apps_std.c b/hexagonrpcd/apps_std.c
+index d1145c0..7fb0e04 100644
+--- a/hexagonrpcd/apps_std.c
++++ b/hexagonrpcd/apps_std.c
+@@ -422,6 +422,25 @@ static uint32_t apps_std_stat(void *data,
+ 	return 0;
+ }
+ 
++static uint32_t apps_std_fclose_fd(void *data,
++				   const struct fastrpc_io_buffer *inbufs,
++				   struct fastrpc_io_buffer *outbufs)
++{
++	//struct apps_std_ctx *ctx = data;
++	const struct {
++		uint32_t mid;
++		uint32_t fd;
++	} *first_in = inbufs[0].p;
++
++#ifdef HEXAGONRPC_VERBOSE
++	printf("close_fd(%u)\n", first_in->fd);
++#endif
++
++	// FIXME
++
++	return 0;
++}
++
+ static uint32_t apps_std_fopen_with_env_fd(void *data,
+ 					   const struct fastrpc_io_buffer *inbufs,
+ 					   struct fastrpc_io_buffer *outbufs)
+@@ -573,7 +592,10 @@ static const struct fastrpc_function_impl apps_std_procs[] = {
+ 	{ .def = NULL, .impl = NULL, },
+ 	{ .def = NULL, .impl = NULL, },
+ 	{ .def = NULL, .impl = NULL, },
+-	{ .def = NULL, .impl = NULL, },
++	{
++		.def = &apps_std_fclose_fd_def,
++		.impl = apps_std_fclose_fd,
++	},
+ 	{
+ 		.def = &apps_std_fopen_with_env_fd_def,
+ 		.impl = apps_std_fopen_with_env_fd,
+diff --git a/hexagonrpcd/interfaces/apps_std.def b/hexagonrpcd/interfaces/apps_std.def
+index 08a8c02..26986fa 100644
+--- a/hexagonrpcd/interfaces/apps_std.def
++++ b/hexagonrpcd/interfaces/apps_std.def
+@@ -36,6 +36,7 @@ HEXAGONRPC_DEFINE_REMOTE_METHOD(26, apps_std_opendir, 0, 1, 2, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(27, apps_std_closedir, 2, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(28, apps_std_readdir, 2, 0, 66, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(31, apps_std_stat, 1, 1, 24, 0)
++HEXAGONRPC_DEFINE_REMOTE_METHOD(35, apps_std_fclose_fd, 2, 0, 0, 0)
+ HEXAGONRPC_DEFINE_REMOTE_METHOD(36, apps_std_fopen_with_env_fd, 1, 4, 2, 0)
+ 
+ #endif /* INTERFACE_APPS_STD_DEF */
