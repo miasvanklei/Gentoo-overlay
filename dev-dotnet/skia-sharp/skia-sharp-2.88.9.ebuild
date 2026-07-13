@@ -3,7 +3,7 @@
 
 EAPI=8
 
-inherit git-r3 ninja-utils
+inherit ninja-utils
 
 DESCRIPTION="The Skia 2D Graphics library from Google exposed to .NET languages and runtimes across the board"
 HOMEPAGE="https://github.com/mono/SkiaSharp"
@@ -11,12 +11,20 @@ HOMEPAGE="https://github.com/mono/SkiaSharp"
 SKIA_COMMIT="4bed689c9c9eb77a120c6a9d54af6a572c85d1c2"
 
 THIRD_PARTY_DEPS=(
-	"zlib https://android.googlesource.com/platform/external 3ca9f16f02950edffa391ec19cea856090158e9e"
-	"dng_sdk https://android.googlesource.com/platform/external c8d0c9b1d16bfda56f15165d39e0ffa360a11123"
-	"piex https://android.googlesource.com/platform/external bb217acdca1cc0c16b704669dd6f91a1b509c406"
+	"zlib 3ca9f16f02950edffa391ec19cea856090158e9e"
+	"dng_sdk c8d0c9b1d16bfda56f15165d39e0ffa360a11123"
+	"piex bb217acdca1cc0c16b704669dd6f91a1b509c406"
 )
 
 SRC_URI="https://github.com/mono/skia/archive/${SKIA_COMMIT}.tar.gz -> ${PN}-${SKIA_COMMIT}.tar.gz"
+
+for p in "${THIRD_PARTY_DEPS[@]}"; do
+	set -- $p
+	dep=$1 commit=$2
+
+	SRC_URI+=" https://github.com/aosp-mirror-neo/platform_external_$dep/archive/$commit.tar.gz -> $dep-$commit.tar.gz"
+done
+
 
 S="${WORKDIR}/${PN}-${SKIA_COMMIT}"
 
@@ -48,16 +56,15 @@ PATCHES=(
 S="${WORKDIR}/skia-${SKIA_COMMIT}"
 
 src_unpack() {
-	if [[ -n ${A} ]]; then
-		unpack ${A}
-	fi
+	unpack ${PN}-${SKIA_COMMIT}.tar.gz
 
         for p in "${THIRD_PARTY_DEPS[@]}"; do
 		set -- $p
-		dep=$1 uri=$2 commit=$3
+		dep=$1 commit=$2
 
-		git-r3_fetch $uri/$dep $commit
-		git-r3_checkout $uri/$dep "${S}/third_party/externals/${dep}"
+		mkdir -p "${S}/third_party/externals/${dep}"
+		cd "${S}/third_party/externals/${dep}"
+		unpack $dep-$commit.tar.gz
 	done
 }
 
