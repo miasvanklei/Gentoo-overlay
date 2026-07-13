@@ -25,6 +25,8 @@ DEPEND="${RDEPEND}
 S="${WORKDIR}/${PN}"
 
 PATCHES=(
+	"${FILESDIR}"/client-close-QMI-client.patch
+	"${FILESDIR}"/client-dont-leak-bus.patch
+	"${FILESDIR}"/client-dont-leak-context.patch
 	"${FILESDIR}"/dont-install-mock-tests.patch
-	"${FILESDIR}"/fix-use-after-free.patch
 )
