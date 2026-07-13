@@ -34,7 +34,7 @@ src_prepare() {
 
 src_install() {
 	local firmwaredir="/lib/firmware/qcom/x1p42100/Microsoft/Venezia"
-	local fastrpcdir="/usr/share/qcom/x1p42100/Microsoft/Venezia"
+	local hexagonrpcdir="/usr/share/qcom/sensors"
 
 	insinto /lib/firmware/qcom/vpu
 
@@ -61,25 +61,21 @@ src_install() {
 	doins qcdx8380/qcvss8380_pa.mbn
 	doins qcdx8380/qcvss8380.mbn
 
-	# fastrpc
-	insinto /usr/share/qcom/conf.d
-	doins ${FILESDIR}/microsoft-venezia.yml
-
 	# ssc
 	udev_dorules ${FILESDIR}/81-libssc-surfacepro12.rules
 
 	# sensordata
-	insinto ${fastrpcdir}/vendor/etc/sensors/
-	sed -i \
-		-e "s|file=output=/persist|file=output=/${fastrpcdir}/persist|g" \
-		-e "s|file=config=/vendor|file=config=/${fastrpcdir}/vendor|g" surfaceprosnscfgcrd8380/sns_reg_config || die
-	doins surfaceprosnscfgcrd8380/sns_reg_config
+	insinto ${hexagonrpcdir}
+	newins surfaceprosnscfgcrd8380/sns_reg_config sns_reg.conf
 
-	insinto ${fastrpcdir}/vendor/etc/sensors/config
+	insinto ${hexagonrpcdir}/config
 	doins surfaceprosnscfgcrd8380/json.lst
 	doins surfaceprosnscfgcrd8380/*.json
 
-	keepdir ${fastrpcdir}/persist/sensors/registry/registry
+	dodir ${hexagonrpcdir}/registry
+	echo -n "DIR" > ${D}/${hexagonrpcdir}/registry/DIR || die
+
+	echo -n "version=1" > ${D}/${hexagonrpcdir}/sns_reg_version || die
 }
 
 pkg_postinst() {
