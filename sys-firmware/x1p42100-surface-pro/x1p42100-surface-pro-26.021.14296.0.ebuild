@@ -33,7 +33,7 @@ src_prepare() {
 }
 
 src_install() {
-	local firmwaredir="/lib/firmware/qcom/x1p42100/Microsoft/Venezia"
+	local firmwaredir="/lib/firmware/qcom/x1p42100/Microsoft/Surface12"
 	local hexagonrpcdir="/usr/share/qcom/sensors"
 
 	insinto /lib/firmware/qcom/vpu
