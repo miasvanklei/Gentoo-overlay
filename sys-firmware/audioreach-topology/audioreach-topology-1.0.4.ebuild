@@ -3,11 +3,11 @@
 
 EAPI=8
 
-inherit cmake git-r3
+inherit cmake
 
 DESCRIPTION="Audioreach Topology"
 HOMEPAGE="https://github.com/linux-msm/audioreach-topology"
-EGIT_REPO_URI="https://github.com/linux-msm/audioreach-topology.git"
+SRC_URI="https://github.com/linux-msm/audioreach-topology/archive/refs/tags/v${PV}.tar.gz -> ${P}.tar.gz"
 
 LICENSE="BSD"
 SLOT="0"
@@ -24,8 +24,9 @@ RDEPEND=""
 DEPEND="${RDEPEND}"
 
 PATCHES=(
-	"${FILESDIR}"/add-ntmer-tw220.patch
-	"${FILESDIR}"/add-surface-pro-12inch-1st-edition.patch
+	"${FILESDIR}"/0001-surfacepro12-add-displayport.patch
+	"${FILESDIR}"/0002-add-ntmer-tw220.patch
+
 )
 
 src_install() {
