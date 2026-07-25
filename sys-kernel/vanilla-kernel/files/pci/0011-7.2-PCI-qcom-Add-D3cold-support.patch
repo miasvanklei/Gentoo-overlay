@@ -209,14 +209,16 @@ index 9dd808e85409..94403be5a05e 100644
  	}
  	return ret;
  }
-@@ -2162,25 +2176,46 @@ static int qcom_pcie_resume_noirq(struct device *dev)
+@@ -2164,7 +2178,7 @@ static int qcom_pcie_resume_noirq(struct device *dev)
  	if (!pcie)
  		return 0;
  
 -	if (pm_suspend_target_state != PM_SUSPEND_MEM) {
 +	if (pcie->pci->suspended) {
- 		ret = icc_enable(pcie->icc_cpu);
- 		if (ret) {
+ 		if (pcie->use_pm_opp) {
+ 			ret = qcom_pcie_set_max_opp(dev);
+ 			if (ret) {
+@@ -2178,19 +2192,48 @@ static int qcom_pcie_resume_noirq(struct device *dev)
  			dev_err(dev, "Failed to enable CPU-PCIe interconnect path: %d\n", ret);
  			return ret;
  		}
@@ -231,17 +233,25 @@ index 9dd808e85409..94403be5a05e 100644
 +			dev_err(dev, "Failed to enable PCIe-MEM interconnect path: %d\n", ret);
 +			goto disable_icc_cpu;
 +		}
- 
--		pcie->suspended = false;
++
 +		/*
-+		 * Ignore -ENODEV & -EIO here since it is expected when no endpoint is
-+		 * connected to the PCIe link.
++		 * Ignore -ENODEV & -EIO here since it is expected when no
++		 * endpoint is connected to the PCIe link.
 +		 */
 +		ret = dw_pcie_resume_noirq(pcie->pci);
 +		if (ret && ret != -ENODEV && ret != -EIO)
 +			goto disable_icc_mem;
 +	} else {
 +		if (pm_suspend_target_state != PM_SUSPEND_MEM) {
++			if (pcie->use_pm_opp) {
++				ret = qcom_pcie_set_max_opp(dev);
++				if (ret) {
++					dev_err(dev, "Failed to set max OPP: %d\n", ret);
++					return ret;
++				}
++			}
+ 
+-		pcie->suspended = false;
 +			ret = icc_enable(pcie->icc_cpu);
 +			if (ret) {
 +				dev_err(dev, "Failed to enable CPU-PCIe interconnect path: %d\n",

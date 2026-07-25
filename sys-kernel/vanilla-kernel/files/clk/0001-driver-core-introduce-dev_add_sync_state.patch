@@ -132,9 +132,9 @@ index 7b2baffdd2f5..b7a3dd4b56ed 100644
  		return false;
 +	if (!list_empty(&dev->sync_state_list))
 +		return true;
- 	if (dev->driver && dev->driver->sync_state)
+ 	drv = READ_ONCE(dev->driver);
+ 	if (drv && drv->sync_state)
  		return true;
- 	if (dev->bus && dev->bus->sync_state)
 @@ -1137,6 +1140,14 @@ static inline int dev_set_drv_sync_state(struct device *dev,
  	return 0;
  }
