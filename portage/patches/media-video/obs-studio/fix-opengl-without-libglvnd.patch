@@ -1,0 +1,47 @@
+--- a/libobs-opengl/CMakeLists.txt	2026-04-21 21:00:34.000000000 +0200
++++ b/libobs-opengl/CMakeLists.txt	2026-07-04 11:06:34.862933799 +0200
+@@ -14,7 +14,7 @@
+   find_package(X11_XCB REQUIRED)
+ 
+   if(ENABLE_WAYLAND)
+-    find_package(OpenGL REQUIRED EGL)
++    find_package(OpenGL REQUIRED)
+     find_package(Wayland REQUIRED)
+   endif()
+ endif()
+@@ -58,7 +58,7 @@
+     $<$<PLATFORM_ID:Linux,FreeBSD,OpenBSD>:Libdrm::Libdrm>
+     $<$<PLATFORM_ID:Linux,FreeBSD,OpenBSD>:XCB::XCB>
+     $<$<PLATFORM_ID:Linux,FreeBSD,OpenBSD>:X11::XCB>
+-    $<$<AND:$<PLATFORM_ID:Linux,FreeBSD,OpenBSD>,$<BOOL:${ENABLE_WAYLAND}>>:OpenGL::EGL>
++    $<$<AND:$<PLATFORM_ID:Linux,FreeBSD,OpenBSD>,$<BOOL:${ENABLE_WAYLAND}>>:OpenGL::GL>
+     $<$<AND:$<PLATFORM_ID:Linux,FreeBSD,OpenBSD>,$<BOOL:${ENABLE_WAYLAND}>>:Wayland::Egl>
+ )
+ 
+--- a/deps/glad/CMakeLists.txt	2026-07-04 11:44:15.780912852 +0200
++++ b/deps/glad/CMakeLists.txt	2026-07-04 11:44:45.457699048 +0200
+@@ -10,12 +10,12 @@
+   PRIVATE
+     src/glad.c
+     $<$<PLATFORM_ID:Windows>:src/glad_wgl.c>
+-    $<$<TARGET_EXISTS:OpenGL::EGL>:src/glad_egl.c>
+-    $<$<TARGET_EXISTS:OpenGL::EGL>:include/EGL/eglplatform.h>
++    $<$<TARGET_EXISTS:OpenGL::GL>:src/glad_egl.c>
++    $<$<TARGET_EXISTS:OpenGL::GL>:include/EGL/eglplatform.h>
+   PUBLIC
+     include/glad/glad.h
+     "$<$<PLATFORM_ID:Windows>:${CMAKE_CURRENT_SOURCE_DIR}/include/glad/glad_wgl.h>"
+-    "$<$<TARGET_EXISTS:OpenGL::EGL>:${CMAKE_CURRENT_SOURCE_DIR}/include/glad/glad_egl.h>"
++    "$<$<TARGET_EXISTS:OpenGL::GL>:${CMAKE_CURRENT_SOURCE_DIR}/include/glad/glad_egl.h>"
+ )
+ 
+ target_compile_options(obsglad PRIVATE $<$<COMPILE_LANG_AND_ID:C,AppleClang,Clang>:-Wno-strict-prototypes>)
+@@ -25,7 +25,7 @@
+ target_link_libraries(
+   obsglad
+   PRIVATE $<$<NOT:$<PLATFORM_ID:Windows,Darwin>>:${CMAKE_DL_LIBS}>
+-  PUBLIC OpenGL::GL $<$<TARGET_EXISTS:OpenGL::EGL>:OpenGL::EGL>
++  PUBLIC OpenGL::GL $<$<TARGET_EXISTS:OpenGL::GL>:OpenGL::GL>
+ )
+ 
+ set_target_properties(obsglad PROPERTIES FOLDER deps POSITION_INDEPENDENT_CODE TRUE)
