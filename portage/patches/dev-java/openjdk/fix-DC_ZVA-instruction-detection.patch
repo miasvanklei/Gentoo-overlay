@@ -1,0 +1,28 @@
+diff --git a/src/hotspot/cpu/aarch64/vm_version_aarch64.cpp b/src/hotspot/cpu/aarch64/vm_version_aarch64.cpp
+index b678921dd97db..9b85733ed086a 100644
+--- a/src/hotspot/cpu/aarch64/vm_version_aarch64.cpp
++++ b/src/hotspot/cpu/aarch64/vm_version_aarch64.cpp
+@@ -446,7 +446,9 @@ void VM_Version::initialize() {
+       FLAG_SET_DEFAULT(BlockZeroingLowLimit, 4 * VM_Version::zva_length());
+     }
+   } else if (UseBlockZeroing) {
+-    warning("DC ZVA is not available on this CPU");
++    if (!FLAG_IS_DEFAULT(UseBlockZeroing)) {
++      warning("DC ZVA is not available on this CPU");
++    }
+     FLAG_SET_DEFAULT(UseBlockZeroing, false);
+   }
+ 
+diff --git a/src/hotspot/cpu/aarch64/vm_version_aarch64.hpp b/src/hotspot/cpu/aarch64/vm_version_aarch64.hpp
+index 07f6c09e18f31..0213872852b16 100644
+--- a/src/hotspot/cpu/aarch64/vm_version_aarch64.hpp
++++ b/src/hotspot/cpu/aarch64/vm_version_aarch64.hpp
+@@ -207,7 +207,7 @@ class VM_Version : public Abstract_VM_Version {
+     return false;
+   }
+ 
+-  static bool is_zva_enabled() { return 0 <= _zva_length; }
++  static bool is_zva_enabled() { return 0 < _zva_length; }
+   static int zva_length() {
+     assert(is_zva_enabled(), "ZVA not available");
+     return _zva_length;
