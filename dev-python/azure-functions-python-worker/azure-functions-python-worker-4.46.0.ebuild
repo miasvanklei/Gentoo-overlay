@@ -24,7 +24,7 @@ BDEPEND="
 "
 
 RDEPEND="
-	=dev-python/azure-functions-runtime-1.1.1[${PYTHON_USEDEP}]
+	=dev-python/azure-functions-runtime-1.2.1[${PYTHON_USEDEP}]
 	=dev-python/azure-functions-runtime-v1-1.1.0[${PYTHON_USEDEP}]
 	>=dev-python/azure-functions-extensions-base-1.2.0[${PYTHON_USEDEP}]
 	=dev-python/azure-functions-2.2.0_beta5[${PYTHON_USEDEP}]
