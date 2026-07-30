@@ -1,0 +1,28 @@
+--- a/winpr/libwinpr/utils/CMakeLists.txt	2026-07-16 09:15:05.000000000 +0200
++++ b/winpr/libwinpr/utils/CMakeLists.txt	2026-07-25 13:48:53.861958746 +0200
+@@ -198,18 +198,18 @@
+ endif()
+ 
+ if(NOT WITH_JSON_DISABLED)
+-  if(jansson_FOUND)
+-    winpr_library_add_private(jansson::jansson)
+-    winpr_pc_add_requires_private("jansson")
+-    winpr_definition_add(WITH_JANSSON)
+-    winpr_module_add(json/jansson.c)
+-    set(WITH_WINPR_JSON ON CACHE INTERNAL "internal")
+-  elseif(json-c_FOUND)
++  if(json-c_FOUND)
+     winpr_library_add_private(json-c::json-c)
+     winpr_pc_add_requires_private("json-c")
+     winpr_definition_add(WITH_JSONC)
+     winpr_module_add(json/json-c.c)
+     set(WITH_WINPR_JSON ON CACHE INTERNAL "internal")
++  elseif(jansson_FOUND)
++    winpr_library_add_private(jansson::jansson)
++    winpr_pc_add_requires_private("jansson")
++    winpr_definition_add(WITH_JANSSON)
++    winpr_module_add(json/jansson.c)
++    set(WITH_WINPR_JSON ON CACHE INTERNAL "internal")
+   elseif(cJSON_FOUND)
+     winpr_library_add_private(cjson)
+     winpr_pc_add_requires_private("libcjson")
