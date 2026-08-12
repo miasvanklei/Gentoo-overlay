@@ -1,0 +1,103 @@
+--- a/src/coreclr/pal/inc/rt/palrt.h	2026-07-17 23:05:32.000000000 +0200
++++ b/src/coreclr/pal/inc/rt/palrt.h	2026-08-12 17:04:26.509217157 +0200
+@@ -712,17 +712,6 @@
+ 
+ /******************* misc ***************************************/
+ 
+-#ifdef __cplusplus
+-namespace std
+-{
+-    typedef decltype(nullptr) nullptr_t;
+-}
+-
+-extern "C++"
+-template< class T >
+-typename std::remove_reference<T>::type&& move( T&& t );
+-#endif // __cplusplus
+-
+ #define __RPC__out
+ #define __RPC__in
+ #define __RPC__deref_out_opt
+--- a/src/coreclr/pal/inc/rt/cpp/stddef.h	2026-07-17 23:05:32.000000000 +0200
++++ b/src/coreclr/pal/inc/rt/cpp/stddef.h	2026-08-12 17:04:49.733349152 +0200
+@@ -10,3 +10,11 @@
+ // dummy stddef.h for PAL
+ 
+ #include "palrt.h"
++
++#ifdef __cplusplus
++typedef decltype(nullptr) nullptr_t;
++
++extern "C++"
++template< class T >
++typename std::remove_reference<T>::type&& move( T&& t );
++#endif // __cplusplus
+--- a/src/coreclr/inc/utilcode.h	2026-07-17 23:05:32.000000000 +0200
++++ b/src/coreclr/inc/utilcode.h	2026-08-12 17:05:05.461438529 +0200
+@@ -3953,7 +3953,7 @@
+ template <typename T>
+ inline T* InterlockedExchangeT(
+     T* volatile *  target,
+-    std::nullptr_t value) // When nullptr is provided as argument.
++    nullptr_t value) // When nullptr is provided as argument.
+ {
+     //STATIC_ASSERT(value == 0);
+     return InterlockedExchangeT(target, static_cast<T*>(value));
+@@ -3962,7 +3962,7 @@
+ template <typename T>
+ inline T* InterlockedCompareExchangeT(
+     T* volatile *  destination,
+-    std::nullptr_t exchange,  // When nullptr is provided as argument.
++    nullptr_t exchange,  // When nullptr is provided as argument.
+     T*             comparand)
+ {
+     //STATIC_ASSERT(exchange == 0);
+@@ -3973,7 +3973,7 @@
+ inline T* InterlockedCompareExchangeT(
+     T* volatile *  destination,
+     T*             exchange,
+-    std::nullptr_t comparand) // When nullptr is provided as argument.
++    nullptr_t comparand) // When nullptr is provided as argument.
+ {
+     //STATIC_ASSERT(comparand == 0);
+     return InterlockedCompareExchangeT(destination, exchange, static_cast<T*>(comparand));
+--- a/src/coreclr/gc/env/gcenv.interlocked.h	2026-07-17 23:05:32.000000000 +0200
++++ b/src/coreclr/gc/env/gcenv.interlocked.h	2026-08-12 17:05:22.453535077 +0200
+@@ -66,7 +66,7 @@
+     static T ExchangePointer(T volatile * destination, T value);
+ 
+     template <typename T>
+-    static T ExchangePointer(T volatile * destination, std::nullptr_t value);
++    static T ExchangePointer(T volatile * destination, nullptr_t value);
+ 
+     // Perform an atomic addition of two 32-bit values and return the original value of the addend.
+     // Parameters:
+@@ -106,7 +106,7 @@
+     static T CompareExchangePointer(T volatile *destination, T exchange, T comparand);
+ 
+     template <typename T>
+-    static T CompareExchangePointer(T volatile *destination, T exchange, std::nullptr_t comparand);
++    static T CompareExchangePointer(T volatile *destination, T exchange, nullptr_t comparand);
+ };
+ 
+ #endif // __GCENV_INTERLOCKED_H__
+--- a/src/coreclr/gc/env/gcenv.interlocked.inl	2026-07-17 23:05:32.000000000 +0200
++++ b/src/coreclr/gc/env/gcenv.interlocked.inl	2026-08-12 17:05:42.729650268 +0200
+@@ -201,7 +201,7 @@
+ }
+ 
+ template <typename T>
+-__forceinline T Interlocked::ExchangePointer(T volatile * destination, std::nullptr_t value)
++__forceinline T Interlocked::ExchangePointer(T volatile * destination, nullptr_t value)
+ {
+ #ifdef _MSC_VER
+ #ifdef HOST_64BIT
+@@ -241,7 +241,7 @@
+ }
+ 
+ template <typename T>
+-__forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T exchange, std::nullptr_t comparand)
++__forceinline T Interlocked::CompareExchangePointer(T volatile *destination, T exchange, nullptr_t comparand)
+ {
+ #ifdef _MSC_VER
+ #ifdef HOST_64BIT
