@@ -1,0 +1,30 @@
+--- a/clang/lib/Driver/ToolChains/Flang.cpp	2026-08-12 06:58:33.000000000 +0200
++++ b/clang/lib/Driver/ToolChains/Flang.cpp	2026-08-13 20:30:47.951332061 +0200
+@@ -1207,10 +1207,12 @@
+   // Default intrinsic module dirs must be added after any user-provided dirs in
+   // -fintrinsic-modules-path since the default dirs have lower precedence than
+   // user-provided dirs
+-  if (std::optional<std::string> IntrModPath =
+-          TC.getDefaultIntrinsicModuleDir()) {
+-    CmdArgs.push_back("-fintrinsic-modules-path");
+-    CmdArgs.push_back(Args.MakeArgString(*IntrModPath));
++  if (!Args.hasArg(options::OPT_nobuiltininc)) {
++    if (std::optional<std::string> IntrModPath =
++            TC.getDefaultIntrinsicModuleDir()) {
++      CmdArgs.push_back("-fintrinsic-modules-path");
++      CmdArgs.push_back(Args.MakeArgString(*IntrModPath));
++    }
+   }
+ 
+   // Ideally, every target triple has its own set of builtin modules since they
+--- a/clang/include/clang/Options/Options.td	2026-08-13 19:59:11.582184952 +0200
++++ b/clang/include/clang/Options/Options.td	2026-08-13 20:27:59.938606734 +0200
+@@ -6441,7 +6441,7 @@
+ def no_pedantic : Flag<["-", "--"], "no-pedantic">, Group<pedantic_Group>;
+ def no__dead__strip__inits__and__terms : Flag<["-"], "no_dead_strip_inits_and_terms">;
+ def nobuiltininc : Flag<["-"], "nobuiltininc">,
+-  Visibility<[ClangOption, CC1Option, CLOption, DXCOption]>,
++  Visibility<[ClangOption, CC1Option, CLOption, DXCOption, FlangOption]>,
+   Group<IncludePath_Group>,
+   HelpText<"Disable builtin #include directories only">,
+   MarshallingInfoNegativeFlag<HeaderSearchOpts<"UseBuiltinIncludes">>;
