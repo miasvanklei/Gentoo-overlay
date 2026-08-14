@@ -1,0 +1,192 @@
+--- a/basic/source/comp/buffer.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/basic/source/comp/buffer.cxx	2026-08-14 14:26:23.792941482 +0200
+@@ -17,6 +17,8 @@
+  *   the License at http://www.apache.org/licenses/LICENSE-2.0 .
+  */
+ 
++#include <iterator>
++
+ #include <buffer.hxx>
+ #include <basic/sberrors.hxx>
+ 
+--- a/fpicker/source/office/contentenumeration.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/fpicker/source/office/contentenumeration.hxx	2026-08-14 14:26:22.991317162 +0200
+@@ -23,6 +23,7 @@
+ 
+ #include <memory>
+ #include <mutex>
++#include <vector>
+ 
+ #include <com/sun/star/ucb/XCommandEnvironment.hpp>
+ #include <salhelper/thread.hxx>
+--- a/i18npool/inc/calendar_gregorian.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/i18npool/inc/calendar_gregorian.hxx	2026-08-14 14:26:22.962521274 +0200
+@@ -20,6 +20,7 @@
+ 
+ #include "calendarImpl.hxx"
+ 
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/i18n/CalendarFieldIndex.hpp>
+ 
+ #include <unicode/calendar.h>
+--- a/include/com/sun/star/uno/Sequence.h	2026-07-21 23:07:02.000000000 +0200
++++ b/include/com/sun/star/uno/Sequence.h	2026-08-14 14:26:18.734890276 +0200
+@@ -29,6 +29,8 @@
+ #include "rtl/alloc.h"
+ 
+ #include <new>
++#include <vector>
++#include <iterator>
+ 
+ #if defined LIBO_INTERNAL_ONLY
+ #include <cassert>
+--- a/include/comphelper/sequence.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/include/comphelper/sequence.hxx	2026-08-14 14:26:18.728351490 +0200
+@@ -24,6 +24,7 @@
+ #include <osl/diagnose.h>
+ 
+ #include <vector>
++#include <iterator>
+ 
+ namespace comphelper
+ {
+--- a/include/editeng/editview.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/include/editeng/editview.hxx	2026-08-14 14:26:18.710911863 +0200
+@@ -21,6 +21,7 @@
+ #define INCLUDED_EDITENG_EDITVIEW_HXX
+ 
+ #include <memory>
++#include <vector>
+ #include <com/sun/star/i18n/WordType.hpp>
+ 
+ #include <i18nlangtag/lang.h>
+--- a/include/svl/itemset.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/include/svl/itemset.hxx	2026-08-14 14:26:18.683862338 +0200
+@@ -23,6 +23,7 @@
+ #include <cassert>
+ #include <memory>
+ #include <unordered_map>
++#include <vector>
+ 
+ #include <svl/svldllapi.h>
+ #include <svl/poolitem.hxx>
+--- a/include/xmloff/GradientStyle.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/include/xmloff/GradientStyle.hxx	2026-08-14 14:26:18.627124525 +0200
+@@ -20,6 +20,8 @@
+ #ifndef INCLUDED_XMLOFF_GRADIENTSTYLE_HXX
+ #define INCLUDED_XMLOFF_GRADIENTSTYLE_HXX
+ 
++#include <vector>
++
+ #include <sal/config.h>
+ #include <xmloff/dllapi.h>
+ #include <rtl/ustring.hxx>
+--- a/package/inc/ZipFile.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/package/inc/ZipFile.hxx	2026-08-14 14:26:18.269352549 +0200
+@@ -33,6 +33,7 @@
+ #include <optional>
+ #include <span>
+ #include <unordered_set>
++#include <vector>
+ 
+ class MemoryByteGrabber;
+ namespace com::sun::star {
+--- a/sc/inc/broadcast.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/sc/inc/broadcast.hxx	2026-08-14 14:26:18.089709786 +0200
+@@ -14,6 +14,7 @@
+ #include <map>
+ #include <variant>
+ #include <ostream>
++#include <vector>
+ 
+ class ScFormulaCell;
+ class SvtListener;
+--- a/sc/source/core/data/dptabsrc.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/sc/source/core/data/dptabsrc.cxx	2026-08-14 14:26:17.951346834 +0200
+@@ -53,6 +53,8 @@
+ #include <com/sun/star/sheet/TableFilterField.hpp>
+ 
+ #include <unotools/calendarwrapper.hxx>
++
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/i18n/CalendarDisplayIndex.hpp>
+ 
+ using namespace com::sun::star;
+--- a/sc/source/core/data/dputil.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/sc/source/core/data/dputil.cxx	2026-08-14 14:26:17.951346834 +0200
+@@ -23,6 +23,7 @@
+ #include <o3tl/string_view.hxx>
+ #include <osl/diagnose.h>
+ 
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/sheet/DataPilotFieldGroupBy.hpp>
+ #include <com/sun/star/i18n/CalendarDisplayIndex.hpp>
+ 
+--- a/sc/source/ui/docshell/impex.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/sc/source/ui/docshell/impex.cxx	2026-08-14 14:26:17.920236246 +0200
+@@ -22,7 +22,10 @@
+ #include <i18nutil/unicode.hxx>
+ #include <sot/formats.hxx>
+ #include <sfx2/mieclip.hxx>
++
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/i18n/CalendarFieldIndex.hpp>
++
+ #include <sal/log.hxx>
+ #include <unotools/charclass.hxx>
+ #include <osl/module.hxx>
+--- a/svl/source/numbers/zforfind.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/svl/source/numbers/zforfind.cxx	2026-08-14 14:26:17.642677629 +0200
+@@ -29,8 +29,11 @@
+ #include <unotools/charclass.hxx>
+ #include <unotools/calendarwrapper.hxx>
+ #include <unotools/localedatawrapper.hxx>
++
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/i18n/CalendarFieldIndex.hpp>
+ #include <com/sun/star/i18n/LocaleCalendar2.hpp>
++
+ #include <unotools/digitgroupingiterator.hxx>
+ #include <comphelper/sequence.hxx>
+ 
+--- a/svl/source/numbers/zformat.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/svl/source/numbers/zformat.cxx	2026-08-14 14:26:17.642677629 +0200
+@@ -32,6 +32,8 @@
+ #include <unotools/charclass.hxx>
+ #include <unotools/calendarwrapper.hxx>
+ #include <unotools/nativenumberwrapper.hxx>
++
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/i18n/CalendarFieldIndex.hpp>
+ #include <com/sun/star/i18n/CalendarDisplayIndex.hpp>
+ #include <com/sun/star/i18n/CalendarDisplayCode.hpp>
+--- a/vcl/source/control/calendar.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/vcl/source/control/calendar.cxx	2026-08-14 14:26:16.975726080 +0200
+@@ -25,6 +25,7 @@
+ #include <vcl/dockwin.hxx>
+ #include <unotools/localedatawrapper.hxx>
+ 
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/i18n/Weekdays.hpp>
+ #include <com/sun/star/i18n/CalendarDisplayIndex.hpp>
+ #include <com/sun/star/i18n/CalendarFieldIndex.hpp>
+--- a/vcl/source/control/field2.cxx	2026-07-21 23:07:02.000000000 +0200
++++ b/vcl/source/control/field2.cxx	2026-08-14 14:26:16.975726080 +0200
+@@ -36,6 +36,7 @@
+ 
+ #include <svdata.hxx>
+ 
++#undef ERA // defined in langinfo.h
+ #include <com/sun/star/i18n/XCharacterClassification.hpp>
+ #include <com/sun/star/i18n/CalendarFieldIndex.hdl>
+ 
+--- a/xmloff/source/chart/SchXMLParagraphContext.hxx	2026-07-21 23:07:02.000000000 +0200
++++ b/xmloff/source/chart/SchXMLParagraphContext.hxx	2026-08-14 14:26:16.890422015 +0200
+@@ -21,6 +21,7 @@
+ #include <xmloff/xmlictxt.hxx>
+ #include <rtl/ustring.hxx>
+ #include <rtl/ustrbuf.hxx>
++#include <vector>
+ 
+ class SchXMLParagraphContext : public SvXMLImportContext
+ {
