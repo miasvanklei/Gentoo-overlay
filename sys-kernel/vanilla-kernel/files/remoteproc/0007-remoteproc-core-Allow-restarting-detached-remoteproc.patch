@@ -303,9 +303,9 @@ index 50a9974f3202e6..4e230838a24abd 100644
  	r5_rproc->has_iommu = false;
 -	r5_rproc->auto_boot = false;
 +	r5_rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
- 	r5_core = r5_rproc->priv;
- 	r5_core->dev = cdev;
- 	r5_core->np = dev_of_node(cdev);
+ 
+ 	/* attempt to boot automatically if the firmware-name is provided */
+ 	if (fw_name)
 diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
 index b4795698d8c2a4..c40b18d120ab46 100644
 --- a/include/linux/remoteproc.h

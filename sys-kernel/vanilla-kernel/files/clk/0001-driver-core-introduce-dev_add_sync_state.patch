@@ -19,15 +19,24 @@ Link: https://lore.kernel.org/linux-clk/CAPx+jO9JiV16ePLk59hTQzEMnA96Va6Ns4jqJbw
 Signed-off-by: Brian Masney <bmasney@redhat.com>
 Assisted-by: Claude:claude-opus-4-6
 ---
- drivers/base/base.h    |  5 +++++
+ drivers/base/base.h    |  7 +++++
  drivers/base/core.c    | 29 +++++++++++++++++++++++++++++
- include/linux/device.h | 13 +++++++++++
+ include/linux/device.h | 11 +++++++++++
  4 files changed, 47 insertions(+)
 
 diff --git a/drivers/base/base.h b/drivers/base/base.h
 index a5b7abc10ff0..339db4afbeb4 100644
 --- a/drivers/base/base.h
 +++ b/drivers/base/base.h
+@@ -178,6 +178,8 @@  static inline bool dev_has_sync_state(struct device *dev)
+ 
+ 	if (!dev)
+ 		return false;
++	if (!list_empty(&dev->sync_state_list))
++		return true;
+ 	drv = READ_ONCE(dev->driver);
+ 	if (drv && drv->sync_state)
+ 		return true;
 @@ -188,10 +190,15 @@ static inline bool dev_sync_state(struct device *dev)
  
  static inline void dev_sync_state(struct device *dev)
@@ -126,15 +135,6 @@ index 7b2baffdd2f5..b7a3dd4b56ed 100644
  	struct dev_pm_info	power;
  	struct dev_pm_domain	*pm_domain;
  
-@@ -1070,6 +1070,8 @@ static inline bool dev_has_sync_state(struct device *dev)
- {
- 	if (!dev)
- 		return false;
-+	if (!list_empty(&dev->sync_state_list))
-+		return true;
- 	drv = READ_ONCE(dev->driver);
- 	if (drv && drv->sync_state)
- 		return true;
 @@ -1137,6 +1140,14 @@ static inline int dev_set_drv_sync_state(struct device *dev,
  	return 0;
  }
