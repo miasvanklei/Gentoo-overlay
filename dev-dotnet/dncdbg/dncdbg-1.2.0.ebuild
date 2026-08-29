@@ -24,6 +24,11 @@ SLOT="0"
 
 DOCS=( README.md )
 
+PATCHES=(
+	"${FILESDIR}/missing-includes.patch"
+	"${FILESDIR}/template-linkage.patch"
+)
+
 src_configure() {
 	INSTALL_PREFIX="/usr/$(get_libdir)/${PN}"
 
