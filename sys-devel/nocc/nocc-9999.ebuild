@@ -5,56 +5,8 @@ EAPI=8
 
 inherit go-module git-r3 systemd
 
-EGO_SUM=(
-	"github.com/BurntSushi/toml v1.6.0"
-	"github.com/BurntSushi/toml v1.6.0/go.mod"
-	"github.com/cespare/xxhash/v2 v2.3.0"
-	"github.com/cespare/xxhash/v2 v2.3.0/go.mod"
-	"github.com/coreos/go-systemd/v22 v22.7.0"
-	"github.com/coreos/go-systemd/v22 v22.7.0/go.mod"
-	"github.com/go-logr/logr v1.4.3"
-	"github.com/go-logr/logr v1.4.3/go.mod"
-	"github.com/go-logr/stdr v1.2.2"
-	"github.com/go-logr/stdr v1.2.2/go.mod"
-	"github.com/golang/protobuf v1.5.4"
-	"github.com/golang/protobuf v1.5.4/go.mod"
-	"github.com/google/go-cmp v0.7.0"
-	"github.com/google/go-cmp v0.7.0/go.mod"
-	"github.com/google/uuid v1.6.0"
-	"github.com/google/uuid v1.6.0/go.mod"
-	"go.opentelemetry.io/auto/sdk v1.2.1"
-	"go.opentelemetry.io/auto/sdk v1.2.1/go.mod"
-	"go.opentelemetry.io/otel v1.43.0"
-	"go.opentelemetry.io/otel v1.43.0/go.mod"
-	"go.opentelemetry.io/otel/metric v1.43.0"
-	"go.opentelemetry.io/otel/metric v1.43.0/go.mod"
-	"go.opentelemetry.io/otel/sdk v1.43.0"
-	"go.opentelemetry.io/otel/sdk v1.43.0/go.mod"
-	"go.opentelemetry.io/otel/sdk/metric v1.43.0"
-	"go.opentelemetry.io/otel/sdk/metric v1.43.0/go.mod"
-	"go.opentelemetry.io/otel/trace v1.43.0"
-	"go.opentelemetry.io/otel/trace v1.43.0/go.mod"
-	"golang.org/x/net v0.55.0"
-	"golang.org/x/net v0.55.0/go.mod"
-	"golang.org/x/sys v0.45.0"
-	"golang.org/x/sys v0.45.0/go.mod"
-	"golang.org/x/text v0.37.0"
-	"golang.org/x/text v0.37.0/go.mod"
-	"gonum.org/v1/gonum v0.17.0"
-	"gonum.org/v1/gonum v0.17.0/go.mod"
-	"google.golang.org/genproto/googleapis/rpc v0.0.0-20260523011958-0a33c5d7ca68"
-	"google.golang.org/genproto/googleapis/rpc v0.0.0-20260523011958-0a33c5d7ca68/go.mod"
-	"google.golang.org/grpc v1.81.1"
-	"google.golang.org/grpc v1.81.1/go.mod"
-	"google.golang.org/protobuf v1.36.11"
-	"google.golang.org/protobuf v1.36.11/go.mod"
-)
-
-go-module_set_globals
-
 DESCRIPTION="A distributed C++ compiler: like distcc, but faster"
 HOMEPAGE="https://github.com/miasvanklei/nocc"
-SRC_URI="${EGO_SUM_SRC_URI}"
 EGIT_REPO_URI="https://github.com/miasvanklei/nocc.git"
 
 LICENSE="MIT"
@@ -75,8 +27,7 @@ RDEPEND="
 
 src_unpack() {
 	git-r3_src_unpack
-
-	go-module_setup_proxy
+	go-module_live_vendor
 }
 
 src_compile() {
