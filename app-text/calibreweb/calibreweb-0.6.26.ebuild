@@ -45,7 +45,6 @@ RDEPEND="
 	dev-python/wand[${PYTHON_USEDEP}]
 	metadata? (
 		dev-python/beautifulsoup4[${PYTHON_USEDEP}]
-		dev-python/faust-cchardet[${PYTHON_USEDEP}]
 		dev-python/html2text[${PYTHON_USEDEP}]
 		dev-python/markdown2[${PYTHON_USEDEP}]
 		dev-python/python-dateutil[${PYTHON_USEDEP}]
