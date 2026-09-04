@@ -1,9 +1,14 @@
-Add node for the X1P42100 camera subsystem.
+Add dtsi to describe the x1p42100 CAMSS block
 
-Signed-off-by: Wenmeng Liu <wenmeng.liu@oss.qualcomm.com>
+2 x CSIPHY
+3 x TPG
+2 x CSID
+2 x CSID Lite
+1 x IFE
+2 x IFE Lite
 ---
- arch/arm64/boot/dts/qcom/purwa.dtsi | 158 ++++++++++++++++++++++++++++
- 1 file changed, 158 insertions(+)
+ arch/arm64/boot/dts/qcom/purwa.dtsi | 143 ++++++++++++++++++++++++++++
+ 1 file changed, 143 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/qcom/purwa.dtsi b/arch/arm64/boot/dts/qcom/purwa.dtsi
 index ea65b8448836ea..ff7b0dd781e9fd 100644
@@ -18,7 +23,7 @@ index ea65b8448836ea..ff7b0dd781e9fd 100644
  /delete-node/ &gpu_opp_table;
  /delete-node/ &gpu_speed_bin;
  /delete-node/ &pcie3_phy;
-@@ -38,6 +40,162 @@
+@@ -38,6 +40,147 @@
  /delete-node/ &thermal_gpuss_6;
  /delete-node/ &thermal_gpuss_7;
  
@@ -54,28 +59,6 @@ index ea65b8448836ea..ff7b0dd781e9fd 100644
 +		    "vfe0",
 +		    "vfe_lite0",
 +		    "vfe_lite1";
-+
-+	interrupts = <GIC_SPI 464 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 466 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 431 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 468 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 359 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 477 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 122 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 465 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 469 IRQ_TYPE_EDGE_RISING>,
-+		     <GIC_SPI 360 IRQ_TYPE_EDGE_RISING>;
-+
-+	interrupt-names = "csid0",
-+			  "csid1",
-+			  "csid2",
-+			  "csid_lite0",
-+			  "csid_lite1",
-+			  "csiphy0",
-+			  "csiphy4",
-+			  "vfe0",
-+			  "vfe_lite0",
-+			  "vfe_lite1";
 +
 +	clocks = <&camcc CAM_CC_CAMNOC_AXI_NRT_CLK>,
 +		 <&camcc CAM_CC_CAMNOC_AXI_RT_CLK>,
@@ -123,6 +106,28 @@ index ea65b8448836ea..ff7b0dd781e9fd 100644
 +		      "vfe_lite_cphy_rx",
 +		      "vfe_lite_csid";
 +
++	interrupts = <GIC_SPI 464 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 466 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 431 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 468 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 359 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 477 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 122 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 465 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 469 IRQ_TYPE_EDGE_RISING>,
++		     <GIC_SPI 360 IRQ_TYPE_EDGE_RISING>;
++
++	interrupt-names = "csid0",
++			  "csid1",
++			  "csid2",
++			  "csid_lite0",
++			  "csid_lite1",
++			  "csiphy0",
++			  "csiphy4",
++			  "vfe0",
++			  "vfe_lite0",
++			  "vfe_lite1";
++
 +	interconnects = <&gem_noc MASTER_APPSS_PROC QCOM_ICC_TAG_ACTIVE_ONLY
 +			 &config_noc SLAVE_CAMERA_CFG QCOM_ICC_TAG_ACTIVE_ONLY>,
 +			<&mmss_noc MASTER_CAMNOC_HF QCOM_ICC_TAG_ALWAYS
@@ -147,11 +152,6 @@ index ea65b8448836ea..ff7b0dd781e9fd 100644
 +	power-domain-names = "ife0",
 +			     "top";
 +
-+	phys = <&csiphy0 PHY_TYPE_DPHY>,
-+	       <&csiphy4 PHY_TYPE_DPHY>;
-+	phy-names = "csiphy0",
-+		    "csiphy4";
-+
 +	status = "disabled";
 +
 +	ports {
@@ -160,20 +160,10 @@ index ea65b8448836ea..ff7b0dd781e9fd 100644
 +
 +		port@0 {
 +			reg = <0>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			camss_in0_ep: endpoint@0 {
-+				reg = <0>;
-+			};
 +		};
 +
 +		port@1 {
 +			reg = <1>;
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			camss_in1_ep: endpoint@0 {
-+				reg = <0>;
-+			};
 +		};
 +	};
 +};

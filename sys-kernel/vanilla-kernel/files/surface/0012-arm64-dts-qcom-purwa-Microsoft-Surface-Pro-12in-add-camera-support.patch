@@ -1,10 +1,11 @@
 --- a/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12in.dts	2026-07-11 11:10:01.167182037 +0200
 +++ b/arch/arm64/boot/dts/qcom/x1p42100-microsoft-sp12in.dts	2026-07-11 11:19:46.177436750 +0200
-@@ -11,6 +11,7 @@
+@@ -11,6 +11,8 @@
  #include <dt-bindings/gpio/gpio.h>
  #include <dt-bindings/input/gpio-keys.h>
  #include <dt-bindings/input/input.h>
 +#include <dt-bindings/leds/common.h>
++#include <dt-bindings/media/video-interfaces.h>
  #include <dt-bindings/pinctrl/qcom,pmic-gpio.h>
  #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
  #include <dt-bindings/clock/qcom,x1e80100-tcsr.h>
@@ -30,7 +31,7 @@
  	pmic-glink {
  		compatible = "qcom,x1e80100-pmic-glink",
  			     "qcom,sm8550-pmic-glink",
-@@ -753,6 +768,255 @@
+@@ -753,6 +768,260 @@
  						   RPMH_REGULATOR_MODE_HPM>;
  		};
  	};
@@ -103,7 +104,7 @@
 +		 * port1 => csiphy4
 +		 */
 +		port@0 {
-+			camss_in0_ep: endpoint@0 {
++			camss_csiphy0_inep: endpoint@0 {
 +				reg = <0>;
 +				data-lanes = <0 1 2 3>;
 +				remote-endpoint = <&csiphy0_out_ep>;
@@ -111,7 +112,7 @@
 +		};
 +
 +		port@1 {
-+			camss_in1_ep: endpoint@0 {
++			camss_csiphy4_inep: endpoint@0 {
 +				reg = <0>;
 +				data-lanes = <0 1>;
 +				remote-endpoint = <&csiphy4_out_ep>;
@@ -234,16 +235,20 @@
 +
 +		port@0 {
 +			reg = <0>;
++
 +			csiphy0_in_ep: endpoint {
-+				data-lanes = <0 1 2 3>;
++				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
++				clock-lanes = <0>;
++				data-lanes = <1 2 3 4>;
 +				remote-endpoint = <&ov13858_ep>;
 +			};
 +		};
 +
-+		port@2 {
-+			reg = <2>;
++		port@1 {
++			reg = <1>;
++
 +			csiphy0_out_ep: endpoint {
-+				remote-endpoint = <&camss_in0_ep>;
++				remote-endpoint = <&camss_csiphy0_inep>;
 +			};
 +		};
 +	};
@@ -261,25 +266,26 @@
 +
 +		port@0 {
 +			reg = <0>;
++
 +			csiphy4_in_ep0: endpoint {
-+				data-lanes = <0 1>;
++				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
++				clock-lanes = <0>;
++				data-lanes = <1 2>;
 +				remote-endpoint = <&ov02c10_ep>;
 +			};
++
++			/*csiphy4_in_ep1: endpoint@1 {
++				data-lanes = <1>;
++				clock-lanes = <3>;
++				remote-endpoint = <&vd55g1_ep>;
++			};*/
 +		};
 +
-+		/*port@1 {
++		port@1 {
 +			reg = <1>;
-+			csiphy4_in_ep1: endpoint {
-+				data-lanes = <2>;
-+				clock-lanes = <4 or 5 or 6 or 7>;
-+				remote-endpoint = <&vd55g1_ep>;
-+			};
-+		};*/
 +
-+		port@2 {
-+			reg = <2>;
 +			csiphy4_out_ep: endpoint {
-+				remote-endpoint = <&camss_in1_ep>;
++				remote-endpoint = <&camss_csiphy4_inep>;
 +			};
 +		};
 +	};
