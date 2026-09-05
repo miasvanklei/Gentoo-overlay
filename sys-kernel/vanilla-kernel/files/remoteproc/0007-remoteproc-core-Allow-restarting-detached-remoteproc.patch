@@ -144,15 +144,15 @@ index b087ed21858a8c..ec75659957033b 100644
 --- a/drivers/remoteproc/remoteproc_core.c
 +++ b/drivers/remoteproc/remoteproc_core.c
 @@ -1683,7 +1683,8 @@ static int rproc_trigger_auto_boot(struct rproc *rproc)
- 	 * for a firmware image to be loaded, we can simply initiate the process
- 	 * of attaching to it immediately.
- 	 */
--	if (rproc->state == RPROC_DETACHED)
-+	if (rproc->state == RPROC_DETACHED &&
-+	    rproc->auto_boot != RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE)
- 		return rproc_boot(rproc);
+ {
+ 	int ret;
  
- 	/*
+-	if (rproc->state == RPROC_DETACHED) {
++	if (rproc->state == RPROC_DETACHED &&
++	    rproc->auto_boot != RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE) {
+ 		schedule_work(&rproc->attach_work);
+ 		return 0;
+ 	}
 @@ -1708,8 +1709,9 @@ static int rproc_stop(struct rproc *rproc, bool crashed)
  	if (!rproc->ops->stop)
  		return -EINVAL;

@@ -1,0 +1,20 @@
+Enable runtime PM for the controller, allowing CX to be powered down
+once all GCC consumers have released their clocks and GDSCs.
+
+Signed-off-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
+---
+ drivers/clk/qcom/gcc-x1e80100.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/clk/qcom/gcc-x1e80100.c b/drivers/clk/qcom/gcc-x1e80100.c
+index 8c146d62c077..832633a85f1a 100644
+--- a/drivers/clk/qcom/gcc-x1e80100.c
++++ b/drivers/clk/qcom/gcc-x1e80100.c
+@@ -7449,6 +7449,7 @@ static const struct qcom_cc_desc gcc_x1e80100_desc = {
+ 	.num_resets = ARRAY_SIZE(gcc_x1e80100_resets),
+ 	.gdscs = gcc_x1e80100_gdscs,
+ 	.num_gdscs = ARRAY_SIZE(gcc_x1e80100_gdscs),
++	.use_rpm = true,
+ };
+ 
+ static const struct of_device_id gcc_x1e80100_match_table[] = {

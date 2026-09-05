@@ -65,8 +65,8 @@ index 9ab499fad..f458d34fa 100644
  #include <linux/soc/qcom/mdt_loader.h>
  
 @@ -14,6 +16,45 @@
- 
- #define MAX_FIRMWARE_NAME_SIZE	128
+ 	return firmware;
+ }
  
 +#define WRAPPER_TZ_BASE_OFFS		0x000C0000
 +
@@ -107,9 +107,9 @@ index 9ab499fad..f458d34fa 100644
 +	return 0;
 +}
 +
- static int iris_load_fw_to_memory(struct iris_core *core, const char *fw_name)
+ static int iris_load_fw_to_memory(struct iris_core *core)
  {
- 	u32 pas_id = core->iris_platform_data->pas_id;
+ 	const struct firmware *firmware = NULL;
 @@ -52,10 +93,29 @@
  		goto err_release_fw;
  	}
@@ -146,7 +146,7 @@ index 9ab499fad..f458d34fa 100644
  		return -ENOMEM;
  	}
  
--	ret = qcom_scm_pas_auth_and_reset(IRIS_PAS_ID);
+-	ret = qcom_pas_auth_and_reset(IRIS_PAS_ID);
 -	if (ret)  {
 -		dev_err(core->dev, "auth and reset failed: %d\n", ret);
 -		return ret;
@@ -160,9 +160,9 @@ index 9ab499fad..f458d34fa 100644
 -						     cp_config->cp_nonpixel_size);
 -		if (ret) {
 -			dev_err(core->dev, "qcom_scm_mem_protect_video_var failed: %d\n", ret);
--			qcom_scm_pas_shutdown(IRIS_PAS_ID);
+-			qcom_pas_shutdown(IRIS_PAS_ID);
 +	if (core->use_tz) {
-+		ret = qcom_scm_pas_auth_and_reset(IRIS_PAS_ID);
++		ret = qcom_pas_auth_and_reset(IRIS_PAS_ID);
 +		if (ret)  {
 +			dev_err(core->dev, "auth and reset failed: %d\n", ret);
  			return ret;
@@ -176,7 +176,7 @@ index 9ab499fad..f458d34fa 100644
 +							     cp_config->cp_nonpixel_size);
 +			if (ret) {
 +				dev_err(core->dev, "qcom_scm_mem_protect_video_var failed: %d\n", ret);
-+				qcom_scm_pas_shutdown(IRIS_PAS_ID);
++				qcom_pas_shutdown(IRIS_PAS_ID);
 +				return ret;
 +			}
 +		}
@@ -189,11 +189,11 @@ index 9ab499fad..f458d34fa 100644
  
  int iris_fw_unload(struct iris_core *core)
  {
--	return qcom_scm_pas_shutdown(IRIS_PAS_ID);
+-	return qcom_pas_shutdown(IRIS_PAS_ID);
 +	int ret;
 +
 +	if (core->use_tz)
-+		ret = qcom_scm_pas_shutdown(IRIS_PAS_ID);
++		ret = qcom_pas_shutdown(IRIS_PAS_ID);
 +	else
 +		ret = iris_set_hw_state_no_tz(core, false);
 +
@@ -212,9 +212,9 @@ index 9ab499fad..f458d34fa 100644
  
  int iris_set_hw_state(struct iris_core *core, bool resume)
  {
--	return qcom_scm_set_remote_state(resume, 0);
+-	return qcom_pas_set_remote_state(resume, 0);
 +	if (core->use_tz)
-+		return qcom_scm_set_remote_state(resume, 0);
++		return qcom_pas_set_remote_state(resume, 0);
 +	else
 +		return iris_set_hw_state_no_tz(core, resume);
 +}
@@ -327,8 +327,6 @@ index 00e99be16..19784d03b 100644
 +	if (ret)
 +		return ret;
 +
- 	iris_session_init_caps(core);
- 
  	ret = v4l2_device_register(dev, &core->v4l2_dev);
--- 
-2.52.0
+ 	if (ret)
+ 		return ret;
