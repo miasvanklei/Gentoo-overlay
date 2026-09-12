@@ -81,28 +81,6 @@ index 3cf24f202..c80af9654 100644
  	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
  
  	pas = rproc->priv;
-@@ -816,6 +830,13 @@ static int qcom_pas_probe(struct platform_device *pdev)
- 	 */
- 	qcom_q6v5_read_smp2p_state(&pas->q6v5);
- 
-+	if (rproc->state == RPROC_OFFLINE && !ops->start) {
-+		dev_err(&pdev->dev, "reset broken and remoteproc not running during boot, exiting\n");
-+		/* Release all resources, but return 0 so we don't block sync_state() */
-+		ret = 0;
-+		goto deinit_q6v5;
-+	}
-+
- 	qcom_add_glink_subdev(rproc, &pas->glink_subdev, desc->ssr_name);
- 	qcom_add_smd_subdev(rproc, &pas->smd_subdev);
- 	qcom_add_pdm_subdev(rproc, &pas->pdm_subdev);
-@@ -839,6 +860,7 @@ static int qcom_pas_probe(struct platform_device *pdev)
- 	qcom_remove_pdm_subdev(rproc, &pas->pdm_subdev);
- 	qcom_remove_smd_subdev(rproc, &pas->smd_subdev);
- 	qcom_remove_glink_subdev(rproc, &pas->glink_subdev);
-+deinit_q6v5:
- 	qcom_q6v5_deinit(&pas->q6v5);
- detach_proxy_pds:
- 	qcom_pas_pds_detach(pas, pas->proxy_pds, pas->proxy_pd_count);
 @@ -846,6 +868,7 @@ static int qcom_pas_probe(struct platform_device *pdev)
  	qcom_pas_unassign_memory_region(pas);
  free_rproc:

@@ -7,38 +7,14 @@ case the device-specific firmware is missing (e.g. in generic distro
 installers).
 
 The running remoteproc is currently not modelled at all - it is just killed
-through qcom_scm_pas_shutdown() without even using the SMP2P stop signal
-beforehand.
-
-Model this properly by marking the remoteproc as RPROC_DETACHED based on
-the SMP2P state and use the new RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE
-feature to implement equivalent behavior as before. If the firmware is
-present the "lite" firmware is now stopped more gracefully with the SMP2P
-stop signal. If the firmware is missing, we attach to it and can provide
-battery status and USB-C detection until the full ADSP firmware is copied.
-
-Note that the exact same approach does not just work for the "lite" ADSP
-firmware. Any of the remoteprocs (ADSP, CDSP, SLPI, ...) can be already
-started during boot and attached (or restarted) later.
-
-Signed-off-by: Stephan Gerhold <stephan.gerhold@linaro.org>
-Signed-off-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
----
- drivers/remoteproc/qcom_q6v5_pas.c | 64 +++++++++++++++++++++++++-----
- 1 file changed, 54 insertions(+), 10 deletions(-)
+through qcom_pas_shutdown() without even using the SMP2P stop signal
+beforehand. If the firmware is present the "lite" firmware is now stopped more
+gracefully with the SMP2P stop signal.
 
 diff --git a/drivers/remoteproc/qcom_q6v5_pas.c b/drivers/remoteproc/qcom_q6v5_pas.c
 index 672af7336..3cf24f202 100644
 --- a/drivers/remoteproc/qcom_q6v5_pas.c
 +++ b/drivers/remoteproc/qcom_q6v5_pas.c
-@@ -91,6 +91,7 @@
- 	int crash_reason_smem;
- 	unsigned int smem_host_id;
- 	bool decrypt_shutdown;
-+	bool early_boot;
- 	const char *info_name;
- 
- 	const struct firmware *firmware;
 @@ -236,10 +237,13 @@
  	/* Store firmware handle to be used in qcom_pas_start() */
  	pas->firmware = fw;
@@ -119,16 +95,6 @@ index 672af7336..3cf24f202 100644
  
  	if (pas->smem_host_id)
  		ret = qcom_smem_bust_hwspin_lock_by_host(pas->smem_host_id);
-@@ -523,6 +551,9 @@
- 	bool stop_state;
- 	int ret;
- 
-+	if (!pas->early_boot)
-+		return qcom_q6v5_attach(&pas->q6v5);
-+
- 	pas->q6v5.handover_issued = true;
- 	enable_irq(pas->q6v5.handover_irq);
- 
 @@ -859,7 +890,7 @@
  
  	rproc->has_iommu = of_property_present(pdev->dev.of_node, "iommus");
@@ -138,26 +104,3 @@ index 672af7336..3cf24f202 100644
  	else
  		rproc->auto_boot = RPROC_AUTO_BOOT_DISABLED;
  	rproc_coredump_set_elf_info(rproc, ELFCLASS32, EM_NONE);
-@@ -914,6 +945,14 @@
- 	if (ret)
- 		goto detach_proxy_pds;
- 
-+	/*
-+	 * Unfortunately, the PAS interface does not provide a reliable way to
-+	 * check if a certain pas_id is currently running. Reading the smp2p
-+	 * state is the best we can do to check if the remoteproc is already
-+	 * running during boot.
-+	 */
-+	qcom_q6v5_read_smp2p_state(&pas->q6v5);
-+
- 	qcom_add_glink_subdev(rproc, &pas->glink_subdev, desc->ssr_name);
- 	qcom_add_smd_subdev(rproc, &pas->smd_subdev);
- 	qcom_add_pdm_subdev(rproc, &pas->pdm_subdev);
-@@ -930,6 +969,7 @@
- 		pas->dtb_pas_ctx->use_tzmem = desc->needs_tzmem || rproc->has_iommu;
- 
- 	if (desc->early_boot)
-+		pas->early_boot = desc->early_boot;
- 		pas->rproc->state = RPROC_DETACHED;
- 
- 	ret = rproc_add(rproc);
