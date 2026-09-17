@@ -14,11 +14,24 @@ Existing bindings are not affected.
 
 Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
 ---
- drivers/media/platform/qcom/camss/camss.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/media/platform/qcom/camss/camss-csiphy.h |  1 +
+ drivers/media/platform/qcom/camss/camss.c        | 15 ++++++++++++---
+ 2 files changed, 13 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/media/platform/qcom/camss/camss-csiphy.h b/drivers/media/platform/qcom/camss/camss-csiphy.h
+index 7a357044b9fdb..8c3319f2ca1cf 100644
+--- a/drivers/media/platform/qcom/camss/camss-csiphy.h
++++ b/drivers/media/platform/qcom/camss/camss-csiphy.h
+@@ -21,6 +21,7 @@
+ #define MSM_CSIPHY_PAD_SINK 0
+ #define MSM_CSIPHY_PAD_SRC 1
+ #define MSM_CSIPHY_PADS_NUM 2
++#define MSM_CSIPHY_MAX_DATA_LANE 4
+ 
+ #define CSIPHY_GRP_ID 1
+ 
 diff --git a/drivers/media/platform/qcom/camss/camss.c b/drivers/media/platform/qcom/camss/camss.c
-index 84097d82d99c9..07b3cddca5840 100644
+index 84097d82d99c9..6f58e729eaceb 100644
 --- a/drivers/media/platform/qcom/camss/camss.c
 +++ b/drivers/media/platform/qcom/camss/camss.c
 @@ -4742,7 +4742,8 @@ static const struct parent_dev_ops vfe_parent_dev_ops = {
@@ -38,7 +51,7 @@ index 84097d82d99c9..07b3cddca5840 100644
 -		lncfg->data[i].pos = mipi_csi2->data_lanes[i];
 +		u8 lane = mipi_csi2->data_lanes[i];
 +
-+		if (lane < lane_base || lane - lane_base >= lncfg->num_data) {
++		if (lane < lane_base || lane - lane_base >= MSM_CSIPHY_MAX_DATA_LANE) {
 +			dev_err(dev, "invalid data-lane %u\n", lane);
 +			return -EINVAL;
 +		}
