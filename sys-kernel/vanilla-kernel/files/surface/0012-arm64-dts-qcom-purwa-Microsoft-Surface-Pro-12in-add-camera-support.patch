@@ -97,27 +97,19 @@
 +
 +&camss {
 +	status = "okay";
++};
 +
-+	ports {
-+		/*
-+		 * port0 => csiphy0
-+		 * port1 => csiphy4
-+		 */
-+		port@0 {
-+			camss_csiphy0_inep: endpoint@0 {
-+				reg = <0>;
-+				data-lanes = <1 2 3 4>;
-+				remote-endpoint = <&csiphy0_out_ep>;
-+			};
-+		};
++&camss_csiphy0_in_port {
++	camss_csiphy0_inep: endpoint {
++		data-lanes = <1 2 3 4>;
++		remote-endpoint = <&csiphy0_out_ep>;
++	};
++};
 +
-+		port@1 {
-+			camss_csiphy4_inep: endpoint@0 {
-+				reg = <0>;
-+				data-lanes = <1 2>;
-+				remote-endpoint = <&csiphy4_out_ep>;
-+			};
-+		};
++&camss_csiphy4_in_port {
++	camss_csiphy4_inep: endpoint {
++		data-lanes = <1 2>;
++		remote-endpoint = <&csiphy4_out_ep>;
 +	};
 +};
 +
@@ -143,7 +135,7 @@
 +		assigned-clock-rates = <19200000>;
 +
 +		rotation = <180>;
-+		orientation = <1>;
++		orientation = <MEDIA_ORIENTATION_BACK>;
 +
 +		afvdd-supply = <&vreg_l16b_2p9>;
 +		avdd-supply = <&vreg_l5m_2p8>;
@@ -206,7 +198,7 @@
 +		assigned-clocks = <&camcc CAM_CC_MCLK4_CLK>;
 +		assigned-clock-rates = <12000000>;
 +
-+		orientation = <0>;
++		orientation = <MEDIA_ORIENTATION_FRONT>;
 +
 +		avdd-supply = <&vreg_l7b_2p8>;
 +		dvdd-supply = <&vreg_l7b_2p8>;
@@ -227,30 +219,19 @@
 +	vdda-1p2-supply = <&vreg_l1c_1p2>;
 +
 +	status = "okay";
++};
 +
++&csiphy0_in_port {
++	csiphy0_in_ep: endpoint {
++		bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
++		data-lanes = <1 2 3 4>;
++		remote-endpoint = <&ov13858_ep>;
++	};
++};
 +
-+	ports {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		port@0 {
-+			reg = <0>;
-+
-+			csiphy0_in_ep: endpoint {
-+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
-+				clock-lanes = <0>;
-+				data-lanes = <1 2 3 4>;
-+				remote-endpoint = <&ov13858_ep>;
-+			};
-+		};
-+
-+		port@1 {
-+			reg = <1>;
-+
-+			csiphy0_out_ep: endpoint {
-+				remote-endpoint = <&camss_csiphy0_inep>;
-+			};
-+		};
++&csiphy0_out_port {
++	csiphy0_out_ep: endpoint {
++		remote-endpoint = <&camss_csiphy0_inep>;
 +	};
 +};
 +
@@ -259,36 +240,27 @@
 +	vdda-1p2-supply = <&vreg_l1c_1p2>;
 +
 +	status = "okay";
++};
 +
-+	ports {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		port@0 {
-+			reg = <0>;
-+
-+			csiphy4_in_ep0: endpoint {
-+				bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
-+				clock-lanes = <0>;
-+				data-lanes = <1 2>;
-+				remote-endpoint = <&ov02c10_ep>;
-+			};
-+
-+			/*csiphy4_in_ep1: endpoint@1 {
-+				data-lanes = <1>;
-+				clock-lanes = <3>;
-+				remote-endpoint = <&vd55g1_ep>;
-+			};*/
-+		};
-+
-+		port@1 {
-+			reg = <1>;
-+
-+			csiphy4_out_ep: endpoint {
-+				remote-endpoint = <&camss_csiphy4_inep>;
-+			};
-+		};
++&csiphy4_in_port {
++	csiphy4_in_ep0: endpoint {
++		bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
++		data-lanes = <1 2>;
++		remote-endpoint = <&ov02c10_ep>;
 +	};
++
++	/*csiphy4_in_ep1: endpoint@1 {
++		bus-type = <MEDIA_BUS_TYPE_CSI2_DPHY>;
++		data-lanes = <1>;
++		remote-endpoint = <&vd55g1_ep>;
++	};*/
++};
++
++&csiphy4_out_port {
++	csiphy4_out_ep: endpoint {
++		remote-endpoint = <&camss_csiphy4_inep>;
++	};
++
  };
  
  &gpu {
