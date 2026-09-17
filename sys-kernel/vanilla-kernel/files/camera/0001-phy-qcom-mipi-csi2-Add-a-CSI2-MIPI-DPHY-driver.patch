@@ -26,22 +26,21 @@ The register init sequence table is imported verbatim from the existing
 CAMSS csiphy driver. A follow-up series will rework the table to extract
 the repetitive per-lane pattern into a loop.
 
-Reviewed-by: Neil Armstrong <neil.armstrong@linaro.org>
 Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
 ---
  MAINTAINERS                                        |  10 +
  drivers/phy/qualcomm/Kconfig                       |  15 +
  drivers/phy/qualcomm/Makefile                      |   5 +
  drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c | 385 +++++++++++++++++
- drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c     | 460 +++++++++++++++++++++
+ drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c     | 463 +++++++++++++++++++++
  drivers/phy/qualcomm/phy-qcom-mipi-csi2.h          |  97 +++++
- 6 files changed, 972 insertions(+)
+ 6 files changed, 975 insertions(+)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 15011f5752a99..a203b41475ea4 100644
+index 4cc4a2dc6d302..f5eff489a8d56 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -22296,6 +22296,16 @@ S:	Maintained
+@@ -22588,6 +22588,16 @@ S:	Maintained
  F:	Documentation/devicetree/bindings/media/qcom,*-iris.yaml
  F:	drivers/media/platform/qcom/iris/
  
@@ -59,7 +58,7 @@ index 15011f5752a99..a203b41475ea4 100644
  M:	Manivannan Sadhasivam <mani@kernel.org>
  L:	linux-mtd@lists.infradead.org
 diff --git a/drivers/phy/qualcomm/Kconfig b/drivers/phy/qualcomm/Kconfig
-index 60a0ead127fa9..cd6959e69bef7 100644
+index d910a5d1a1ac3..d802e63ad74ae 100644
 --- a/drivers/phy/qualcomm/Kconfig
 +++ b/drivers/phy/qualcomm/Kconfig
 @@ -28,6 +28,21 @@ config PHY_QCOM_EDP
@@ -85,7 +84,7 @@ index 60a0ead127fa9..cd6959e69bef7 100644
  	tristate "Qualcomm IPQ4019 USB PHY driver"
  	depends on OF && (ARCH_QCOM || COMPILE_TEST)
 diff --git a/drivers/phy/qualcomm/Makefile b/drivers/phy/qualcomm/Makefile
-index b71a6a0bed3f1..382cb594b06b6 100644
+index 8bf887d58ee4a..4b5e6640a6faa 100644
 --- a/drivers/phy/qualcomm/Makefile
 +++ b/drivers/phy/qualcomm/Makefile
 @@ -6,6 +6,11 @@ obj-$(CONFIG_PHY_QCOM_IPQ4019_USB)	+= phy-qcom-ipq4019-usb.o
@@ -493,10 +492,10 @@ index 0000000000000..966d79c98f9b2
 +};
 diff --git a/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c
 new file mode 100644
-index 0000000000000..4227f29ad1f66
+index 0000000000000..c0a4fa20eaf0c
 --- /dev/null
 +++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c
-@@ -0,0 +1,460 @@
+@@ -0,0 +1,463 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (c) 2026, Linaro Ltd.
@@ -608,6 +607,9 @@ index 0000000000000..4227f29ad1f66
 +		return ret;
 +
 +	if (dphy_cfg->lanes < 1 || dphy_cfg->lanes > CSI2_MAX_DATA_LANES)
++		return -EINVAL;
++
++	if (dphy_cfg->lanes != stream_cfg->num_data_lanes)
 +		return -EINVAL;
 +
 +	stream_cfg->link_freq = dphy_cfg->hs_clk_rate;
