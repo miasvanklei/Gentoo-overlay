@@ -33,6 +33,7 @@ DEPEND="
 "
 
 PATCHES=(
+	"${FILESDIR}"/fix-broken-sensor-after-restart.patch
 	"${FILESDIR}"/udev-rule-add-scc-accel.patch
 )
 

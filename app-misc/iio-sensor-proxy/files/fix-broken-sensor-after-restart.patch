@@ -1,0 +1,21 @@
+--- a/src/iio-sensor-proxy.c
++++ b/src/iio-sensor-proxy.c
+@@ -778,6 +778,18 @@ name_acquired_handler (GDBusConnection *connection,
+ 		}
+ 
+ 		DEVICE_FOR_TYPE(i) = sensor_device;
++
++		/* A client can Claim between bus-name acquisition and this
++		 * coldplug loop opening the device; without this check that
++		 * claim is stranded and polling never starts (GSD claims the
++		 * SSC accelerometer this early on every boot). Mirrors the
++		 * hotplug path below. */
++		if (g_hash_table_size (data->clients[i]) > 0) {
++			g_message ("%s claimed before coldplug finished — starting polling",
++				   driver_type_to_str (i));
++			data->sensor_startup_dbus_event_delayed[i] = TRUE;
++			driver_set_polling (sensor_device, TRUE);
++		}
+ 	}
+ 
+ 	if (!any_sensors_left (data))
