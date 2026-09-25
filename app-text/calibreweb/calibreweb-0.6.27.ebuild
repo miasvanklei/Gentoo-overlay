@@ -21,7 +21,6 @@ RDEPEND="
 	acct-group/calibreweb
 	dev-python/apscheduler[${PYTHON_USEDEP}]
 	dev-python/babel[${PYTHON_USEDEP}]
-	dev-python/bleach[${PYTHON_USEDEP}]
 	dev-python/chardet[${PYTHON_USEDEP}]
 	dev-python/cryptography[${PYTHON_USEDEP}]
 	dev-python/flask[${PYTHON_USEDEP}]
@@ -33,6 +32,7 @@ RDEPEND="
 	dev-python/pycountry[${PYTHON_USEDEP}]
 	dev-python/lxml[${PYTHON_USEDEP}]
 	dev-python/netifaces[${PYTHON_USEDEP}]
+	dev-python/nh3[${PYTHON_USEDEP}]
 	dev-python/pypdf[${PYTHON_USEDEP}]
 	dev-python/python-magic[${PYTHON_USEDEP}]
 	dev-python/pytz[${PYTHON_USEDEP}]
