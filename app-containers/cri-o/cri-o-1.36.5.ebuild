@@ -3,7 +3,7 @@
 
 EAPI=9
 
-EGIT_COMMIT=75a79851f912e67647903fddddcb65ae1bfdabeb
+EGIT_COMMIT=dcd680fd83e792a9b625d38cc03c609722bd0baf
 
 inherit go-module
 
@@ -19,6 +19,7 @@ IUSE="btrfs +device-mapper iptables +nftables selinux systemd"
 DEPEND="
 	app-crypt/gpgme:=
 	app-containers/conmon
+	>=app-containers/container-libs-0.68.0
 	app-containers/crun
 	dev-libs/glib:=
 	dev-libs/libassuan:=
@@ -41,7 +42,7 @@ RDEPEND="${DEPEND}
 "
 BDEPEND="
 	dev-go/go-md2man
-	>=dev-lang/go-1.26.3
+	>=dev-lang/go-1.26.4
 	sys-apps/which
 "
 
