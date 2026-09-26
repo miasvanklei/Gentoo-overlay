@@ -23,26 +23,31 @@ VSCODE_SPDLOG_V=0.15.8
 VSCODE_SQLITE3_V=5.1.12-vscode
 ARGON2_V=0.44.0
 PARCEL_WATCHER_V=2.5.6
-COPILOT_VERSION=1.0.65
+COPILOT_SDK_VERSION=1.0.15-unstable.35393089353.gfc44743
+COPILOT_VERSION=1.0.73
 
 SRC_URI="
 	https://github.com/nodejs/nan/archive/v${NAN_V}.tar.gz -> nodejs-nan-${NAN_V}.tar.gz
 	amd64? (
 		https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-amd64.tar.gz
 		elibc_musl? (
+			https://registry.npmjs.org/@github/copilot-sdk-linuxmusl-x64/-/copilot-sdk-linuxmusl-x64-${COPILOT_SDK_VERSION}.tgz -> github-copilot-sdk-linuxmusl-x64-${COPILOT_SDK_VERSION}.tar.gz
 			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linuxmusl-x64.tgz ->  github-copilot-linuxmusl-x64-${COPILOT_VERSION}.tar.gz
 		)
 		elibc_glibc? (
+			https://registry.npmjs.org/@github/copilot-sdk-linux-x64/-/copilot-sdk-linux-x64-${COPILOT_SDK_VERSION}.tgz -> github-copilot-sdk-linux-x64-${COPILOT_SDK_VERSION}.tar.gz
 			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linux-x64.tgz ->  github-copilot-linux-x64-${COPILOT_VERSION}.tar.gz
 		)
 	)
 	arm64? (
 		https://github.com/cdr/${PN}/releases/download/v${MY_PV}/${PN}-${MY_PV}-linux-arm64.tar.gz
 		elibc_musl? (
-			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linuxmusl-arm64.tgz ->  github-copilot-linuxmusl-arm64-${COPILOT_VERSION}.tar.gz
+			https://registry.npmjs.org/@github/copilot-sdk-linuxmusl-arm64/-/copilot-sdk-linuxmusl-arm64-${COPILOT_SDK_VERSION}.tgz -> github-copilot-sdk-linuxmusl-arm64-${COPILOT_SDK_VERSION}.tar.gz
+			 https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linuxmusl-arm64.tgz ->  github-copilot-linuxmusl-arm64-${COPILOT_VERSION}.tar.gz
 		)
 		elibc_glibc? (
-			https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linux-arm64.tgz ->  github-copilot-linux-arm64-${COPILOT_VERSION}.tar.gz
+			https://registry.npmjs.org/@github/copilot-sdk-linux-arm64/-/copilot-sdk-linux-arm64-${COPILOT_SDK_VERSION}.tgz -> github-copilot-sdk-linux-arm64-${COPILOT_SDK_VERSION}.tar.gz
+			 https://github.com/github/copilot-cli/releases/download/v${COPILOT_VERSION}/github-copilot-${COPILOT_VERSION}-linux-arm64.tgz ->  github-copilot-linux-arm64-${COPILOT_VERSION}.tar.gz
 		)
 	)
 	https://registry.npmjs.org/@vscode/native-watchdog/-/native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tgz -> vscodedep-vscode-native-watchdog-${VSCODE_NATIVE_WATCHDOG_V}.tar.gz
@@ -87,7 +92,6 @@ BDEPEND="
 RDEPEND="
 	${DEPEND}
 	net-libs/nodejs:0/24[npm,ssl]
-	sys-apps/ripgrep
 "
 
 DOCS=( "README.md" "ThirdPartyNotices.txt" )
@@ -186,7 +190,6 @@ src_install() {
 	insinto "/usr/lib/${PN}"
 	doins -r .
 
-	setup_ripgrep
 	setup_copilot
 
 	fperms +x "/usr/lib/${PN}/bin/${PN}"
@@ -207,38 +210,24 @@ setup_copilot() {
 	fi
 	if use arm64; then
 		copilot_arch="arm64"
+		rg_delete_arch="x64"
 	elif use amd64; then
 		copilot_arch="x64"
+		rg_delete_arch="arm64"
 	fi
 
-	local copilot_dir="${D}/usr/lib/code-server/lib/vscode/node_modules/@github/copilot-linux"
-	local copilot_sdk_dir="${D}/usr/lib/code-server/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk/prebuilds/linux"
-	local copilot_bin_dir="linux${copilot_libc}-${copilot_arch}"
+	local github_dir="${D}/usr/lib/${PN}/lib/vscode/node_modules/@github"
+	local extension_copilot_sdk_dir="${D}/usr/lib/${PN}/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
+	local copilot_sdk_dir="${github_dir}/copilot-sdk-linux${copilot_libc}-${copilot_arch}"
 
-	rm -r "${copilot_dir}-${copilot_arch}" || die
-	cp -r "${WORKDIR}/github-copilot-linuxmusl-arm64-${COPILOT_VERSION}" "${copilot_dir}${copilot_libc}-${copilot_arch}" || die
+	rm -r "${github_dir}/copilot-sdk-linux-${copilot_arch}" || die
+	cp -r "${WORKDIR}/github-copilot-sdk-linux${copilot_libc}-${copilot_arch}-${COPILOT_SDK_VERSION}" "${copilot_sdk_dir}" || die
+	rm -r "${copilot_sdk_dir}/ripgrep/bin/linux-${rg_delete_arch}" || die
+	rm -r "${copilot_sdk_dir}/tgrep/bin/linux-${rg_delete_arch}" || die
 
-
-	rm -r "${copilot_sdk_dir}-${copilot_arch}" || die
-	mkdir -p "${copilot_sdk_dir}${copilot_libc}-${copilot_arch}" || die
-	cp "${copilot_dir}${copilot_libc}-${copilot_arch}/prebuilds/linux${copilot_libc}-${copilot_arch}/runtime.node" "${copilot_sdk_dir}${copilot_libc}-${copilot_arch}" || die
-}
-
-setup_ripgrep() {
-	if use arm64; then
-		rg_arch="arm64"
-	elif use amd64; then
-		rg_arch="x64"
-	fi
-
-	local sdk_rg_dir="/usr/lib/${PN}/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
-	rm -r "${D}/${sdk_rg_dir}/ripgrep/bin" || die
-	dodir "${sdk_rg_dir}/ripgrep/bin/linux-${rg_arch}"
-	dosym "/usr/bin/rg" "${EPREFIX}/${sdk_rg_dir}/ripgrep/bin/linux-${rg_arch}/rg"
-
-	local rg_dir="/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep-universal/bin/linux-${rg_arch}"
-	rm "${D}/${rg_dir}/rg" || die "failed to remove bundled ripgrep"
-	dosym "/usr/bin/rg" "${EPREFIX}/${rg_dir}/rg"
+	rm -r "${extension_copilot_sdk_dir}/prebuilds" || die
+	cp -r "${WORKDIR}/github-copilot-linux${copilot_libc}-${copilot_arch}-${COPILOT_VERSION}/prebuilds" "${extension_copilot_sdk_dir}/prebuilds" || die
+	rm -r "${extension_copilot_sdk_dir}/ripgrep/bin/linux-${rg_delete_arch}"
 }
 
 enodegyp() {
