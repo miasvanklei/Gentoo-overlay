@@ -8,8 +8,7 @@ inherit edos2unix udev
 DESCRIPTION="firmware files for the surface pro 12-inch"
 HOMEPAGE=""
 SRC_URI="
-	https://download.microsoft.com/download/3f42130f-64d6-4a85-8a18-ec1b70f5ef82/SurfacePro_12in_1st_Edition_Win11_26100_${PV}.msi -> ${PN}-${PV}.msi
-	https://git.codelinaro.org/clo/linux-kernel/linux-firmware/-/raw/060aa3afb83c5f8c8e1f30ad0d9f8a2088718754/qcom/vpu/vpu30_p1_s7.mbn"
+	https://download.microsoft.com/download/3f42130f-64d6-4a85-8a18-ec1b70f5ef82/SurfacePro_12in_1st_Edition_Win11_26100_${PV}.msi -> ${PN}-${PV}.msi"
 
 LICENSE=""
 SLOT="0"
@@ -35,11 +34,6 @@ src_prepare() {
 src_install() {
 	local firmwaredir="/lib/firmware/qcom/x1p42100/Microsoft/Surface12"
 	local hexagonrpcdir="/usr/share/qcom/sensors"
-
-	insinto /lib/firmware/qcom/vpu
-
-	# Generic Iris firmware
-	doins ${DISTDIR}/vpu30_p1_s7.mbn
 
 	cd SurfaceUpdate || die
 
