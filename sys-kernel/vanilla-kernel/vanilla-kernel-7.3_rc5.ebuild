@@ -27,7 +27,7 @@ HOMEPAGE="
 
 if [[ ${PV} == *"_rc"* ]]; then
 	SRC_URI+="
-		https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/snapshot/linux-${PV/_/-}.tar.gz
+		https://git.kernel.org/torvalds/t/linux-${PV/_/-}.tar.gz
 	"
 elif [[ -n $(ver_cut 3) ]]; then
 	SRC_URI+="
@@ -67,7 +67,6 @@ SRC_URI+="
 
 S=${WORKDIR}/${BASE_P}
 
-KEYWORDS="~amd64 ~arm ~arm64 ~hppa ~loong ~ppc ~ppc64 ~riscv ~sparc ~x86"
 IUSE="debug hardened"
 REQUIRED_USE="
 	arm? ( savedconfig )
@@ -94,7 +93,7 @@ src_prepare() {
 		PATCHES+=( "${WORKDIR}/patch-${PV}" )
 	fi
 
-	for i in other audio clk icc pci remoteproc gpu video wifi input el2 rockchip phy camera irq surface; do
+	for i in other audio clk icc pci remoteproc usb video wifi input el2 phy camera irq surface; do
 		PATCHES+=( "${FILESDIR}/$i" )
 	done
 
