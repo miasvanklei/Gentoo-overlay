@@ -2,17 +2,21 @@ Add a devm variant of phy_get_by_of_node() to allow for the familiar
 pattern of having devres automatically release resources on the driver's
 exit path.
 
+Reviewed-by: Manivannan Sadhasivam <manivannan.sadhasivam@oss.qualcomm.com>
 Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
+Reviewed-by: Neil Armstrong <neil.armstrong@linaro.org>
+Link: https://patch.msgid.link/20260918-b4-linux-next-25-03-13-dtsi-x1e80100-camss-v20-3-dc244e124e71@linaro.org
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
 ---
  drivers/phy/phy-core.c  | 34 ++++++++++++++++++++++++++++++++++
  include/linux/phy/phy.h |  7 +++++++
  2 files changed, 41 insertions(+)
 
 diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 490a7cde6d40a..2e3581ecb42ee 100644
+index 42c27a2b451597..f0d2b50d1c76b9 100644
 --- a/drivers/phy/phy-core.c
 +++ b/drivers/phy/phy-core.c
-@@ -1050,6 +1050,40 @@ struct phy *phy_get_by_of_node(struct device_node *np)
+@@ -1048,6 +1048,40 @@ out_unlock:
  }
  EXPORT_SYMBOL_GPL(phy_get_by_of_node);
  
@@ -21,7 +25,7 @@ index 490a7cde6d40a..2e3581ecb42ee 100644
 + * @dev: device requesting the PHY
 + * @np: device_node of the PHY provider
 + *
-+ * Returns phy associated with the device_node or ERR_PTR. devres manages
++ * Returns: phy associated with the device_node or ERR_PTR. devres manages
 + * releasing resources.
 + */
 +struct phy *devm_phy_get_by_of_node(struct device *dev, struct device_node *np)
@@ -54,7 +58,7 @@ index 490a7cde6d40a..2e3581ecb42ee 100644
   * phy_create() - create a new phy
   * @dev: device that is creating the new phy
 diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index 71c2e16397130..14b924a88411f 100644
+index 71c2e16397130b..14b924a88411fe 100644
 --- a/include/linux/phy/phy.h
 +++ b/include/linux/phy/phy.h
 @@ -285,6 +285,7 @@ struct phy *devm_of_phy_optional_get(struct device *dev, struct device_node *np,

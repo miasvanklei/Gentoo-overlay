@@ -27,6 +27,10 @@ CAMSS csiphy driver. A follow-up series will rework the table to extract
 the repetitive per-lane pattern into a loop.
 
 Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
+Reviewed-by: Manivannan Sadhasivam <manivannan.sadhasivam@oss.qualcomm.com>
+Reviewed-by: Neil Armstrong <neil.armstrong@linaro.org>
+Link: https://patch.msgid.link/20260917-x1e-csi2-phy-v18-2-6515b5255fa9@linaro.org
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
 ---
  MAINTAINERS                                        |  10 +
  drivers/phy/qualcomm/Kconfig                       |  15 +
@@ -35,12 +39,15 @@ Signed-off-by: Bryan O'Donoghue <bryan.odonoghue@linaro.org>
  drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c     | 463 +++++++++++++++++++++
  drivers/phy/qualcomm/phy-qcom-mipi-csi2.h          |  97 +++++
  6 files changed, 975 insertions(+)
+ create mode 100644 drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c
+ create mode 100644 drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c
+ create mode 100644 drivers/phy/qualcomm/phy-qcom-mipi-csi2.h
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 4cc4a2dc6d302..f5eff489a8d56 100644
+index 3a19da74d00c9d..881b4e92bb1843 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -22588,6 +22588,16 @@ S:	Maintained
+@@ -22542,6 +22542,16 @@ S:	Maintained
  F:	Documentation/devicetree/bindings/media/qcom,*-iris.yaml
  F:	drivers/media/platform/qcom/iris/
  
@@ -58,7 +65,7 @@ index 4cc4a2dc6d302..f5eff489a8d56 100644
  M:	Manivannan Sadhasivam <mani@kernel.org>
  L:	linux-mtd@lists.infradead.org
 diff --git a/drivers/phy/qualcomm/Kconfig b/drivers/phy/qualcomm/Kconfig
-index d910a5d1a1ac3..d802e63ad74ae 100644
+index d910a5d1a1ac3a..d802e63ad74ae9 100644
 --- a/drivers/phy/qualcomm/Kconfig
 +++ b/drivers/phy/qualcomm/Kconfig
 @@ -28,6 +28,21 @@ config PHY_QCOM_EDP
@@ -84,7 +91,7 @@ index d910a5d1a1ac3..d802e63ad74ae 100644
  	tristate "Qualcomm IPQ4019 USB PHY driver"
  	depends on OF && (ARCH_QCOM || COMPILE_TEST)
 diff --git a/drivers/phy/qualcomm/Makefile b/drivers/phy/qualcomm/Makefile
-index 8bf887d58ee4a..4b5e6640a6faa 100644
+index 8bf887d58ee4a6..4b5e6640a6faa0 100644
 --- a/drivers/phy/qualcomm/Makefile
 +++ b/drivers/phy/qualcomm/Makefile
 @@ -6,6 +6,11 @@ obj-$(CONFIG_PHY_QCOM_IPQ4019_USB)	+= phy-qcom-ipq4019-usb.o
@@ -101,7 +108,7 @@ index 8bf887d58ee4a..4b5e6640a6faa 100644
  obj-$(CONFIG_PHY_QCOM_QMP_COMBO)	+= phy-qcom-qmp-combo.o phy-qcom-qmp-usbc.o
 diff --git a/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c
 new file mode 100644
-index 0000000000000..966d79c98f9b2
+index 00000000000000..966d79c98f9b21
 --- /dev/null
 +++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-3ph-dphy.c
 @@ -0,0 +1,385 @@
@@ -492,7 +499,7 @@ index 0000000000000..966d79c98f9b2
 +};
 diff --git a/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c
 new file mode 100644
-index 0000000000000..c0a4fa20eaf0c
+index 00000000000000..c0a4fa20eaf0c8
 --- /dev/null
 +++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2-core.c
 @@ -0,0 +1,463 @@
@@ -961,7 +968,7 @@ index 0000000000000..c0a4fa20eaf0c
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h b/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h
 new file mode 100644
-index 0000000000000..7e55ae0073704
+index 00000000000000..7e55ae00737047
 --- /dev/null
 +++ b/drivers/phy/qualcomm/phy-qcom-mipi-csi2.h
 @@ -0,0 +1,97 @@
