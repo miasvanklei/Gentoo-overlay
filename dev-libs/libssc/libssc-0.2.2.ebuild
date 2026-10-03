@@ -3,13 +3,13 @@
 
 EAPI=8
 
-inherit git-r3 meson
+inherit meson
 
 DESCRIPTION="Library for exposing Qualcomm Sensor Core sensors to Linux"
-HOMEPAGE="https://libssc.dylanvanassche.be/"
-EGIT_REPO_URI="https://codeberg.org/DylanVanAssche/libssc.git"
+HOMEPAGE="https://https://libssc.dylanvanassche.be/"
+SRC_URI="https://codeberg.org/DylanVanAssche/libssc/archive/v${PV}.tar.gz -> ${P}.tar.gz"
 
-LICENSE="GPL-3"
+LICENSE="LGPL-2+"
 SLOT="0"
 KEYWORDS="~amd64 ~arm64"
 IUSE="+introspection"
@@ -22,6 +22,11 @@ DEPEND="${RDEPEND}
 	net-libs/libqmi[introspection]
 "
 
+S="${WORKDIR}/${PN}"
+
 PATCHES=(
+	"${FILESDIR}"/client-close-QMI-client.patch
+	"${FILESDIR}"/client-dont-leak-bus.patch
+	"${FILESDIR}"/client-dont-leak-context.patch
 	"${FILESDIR}"/dont-install-mock-tests.patch
 )
