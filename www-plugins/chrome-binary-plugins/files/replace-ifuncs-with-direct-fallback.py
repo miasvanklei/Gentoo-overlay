@@ -19,20 +19,20 @@ def main():
     # Info field for R_AARCH64_RELATIVE (1027) is 0x403
     patches = {
         # Relocation 1
-        struct.pack("<QQQ", 0x12F9BB8, 0x408, 0x11F5AA4): struct.pack(
-            "<QQQ", 0x12F9BB8, 0x403, 0xE4FC30
+        struct.pack("<QQQ", 0x132BF30, 0x408, 0x11F0EC0): struct.pack(
+            "<QQQ", 0x132BF30, 0x403, 0xE56F5C
         ),
         # Relocation 2
-        struct.pack("<QQQ", 0x12F9BC0, 0x408, 0x11F5A40): struct.pack(
-            "<QQQ", 0x12F9BC0, 0x403, 0xE4FC30
+        struct.pack("<QQQ", 0x132BF38, 0x408, 0x11F0E5C): struct.pack(
+            "<QQQ", 0x132BF38, 0x403, 0xE56F5C
         ),
         # Relocation 3
-        struct.pack("<QQQ", 0x12F9BC8, 0x408, 0x11F59DC): struct.pack(
-            "<QQQ", 0x12F9BC8, 0x403, 0xE4FC30
+        struct.pack("<QQQ", 0x132BF40, 0x408, 0x11F0DF8): struct.pack(
+            "<QQQ", 0x132BF40, 0x403, 0xE56F5C
         ),
         # Relocation 4
-        struct.pack("<QQQ", 0x12F9BD0, 0x408, 0x11F7010): struct.pack(
-            "<QQQ", 0x12F9BD0, 0x403, 0x11F7094
+        struct.pack("<QQQ", 0x132BF48, 0x408, 0x11F2ACC): struct.pack(
+            "<QQQ", 0x132BF48, 0x403, 0x11F2B50
         ),
     }
 
