@@ -15,24 +15,16 @@ resources other than the lane format are needed.
 
 Signed-off-by: Wenmeng Liu <wenmeng.liu@oss.qualcomm.com>
 ---
- drivers/media/platform/qcom/camss/camss-vfe.c |   2 +
- drivers/media/platform/qcom/camss/camss.c     | 216 ++++++++++++++++++++++++++
+ drivers/media/platform/qcom/camss/camss-vfe.c |   1 +
+ drivers/media/platform/qcom/camss/camss.c     | 215 ++++++++++++++++++++++++++
  drivers/media/platform/qcom/camss/camss.h     |   1 +
- 3 files changed, 219 insertions(+)
+ 3 files changed, 217 insertions(+)
 
 diff --git a/drivers/media/platform/qcom/camss/camss-vfe.c b/drivers/media/platform/qcom/camss/camss-vfe.c
-index 2680a9914765fa2c8f3c2b38a5f4f0e0bcf4d873..c401d4d2367022022ab4159d5a08806c27990f00 100644
+index b1d9fe0010e119059c539c20c238c3e050ff7036..81cb4377586994727006d0ec83e53ac57233f765 100644
 --- a/drivers/media/platform/qcom/camss/camss-vfe.c
 +++ b/drivers/media/platform/qcom/camss/camss-vfe.c
-@@ -354,6 +354,7 @@ static u32 vfe_src_pad_code(struct vfe_line *line, u32 sink_code,
- 	case CAMSS_8650:
- 	case CAMSS_8775P:
- 	case CAMSS_X1E80100:
-+	case CAMSS_X1P42100:
- 		switch (sink_code) {
- 		case MEDIA_BUS_FMT_YUYV8_1X16:
- 		{
-@@ -2014,6 +2015,7 @@ static int vfe_bpl_align_rdi(struct vfe_device *vfe)
+@@ -1997,6 +1997,7 @@ static int vfe_bpl_align_rdi(struct vfe_device *vfe)
  	case CAMSS_8650:
  	case CAMSS_8775P:
  	case CAMSS_X1E80100:
@@ -41,29 +33,35 @@ index 2680a9914765fa2c8f3c2b38a5f4f0e0bcf4d873..c401d4d2367022022ab4159d5a08806c
  		break;
  	default:
 diff --git a/drivers/media/platform/qcom/camss/camss.c b/drivers/media/platform/qcom/camss/camss.c
-index c54185c93a8a98fc6a20fdb8e0f9f8e61bc41058..7bc6b2e61438da9ce0c100fcaf8f669410a6839e 100644
+index c54185c93a8a98fc6a20fdb8e0f9f8e61bc41058..5f0e5cadc06d51e16668d23ef9a3d8f13be81724 100644
 --- a/drivers/media/platform/qcom/camss/camss.c
 +++ b/drivers/media/platform/qcom/camss/camss.c
-@@ -4452,6 +4452,205 @@ static const struct resources_wrapper csid_wrapper_res_x1e80100 = {
+@@ -36,6 +36,13 @@
+ /* Top-level CAMSS version register */
+ #define CAMSS_HW_VERSION		0x0
+ 
++/* CSIPHY resources for PHY API devices, only id and formats are needed */
++#define CAMSS_CSIPHY_RES_PHY_API(_id, _formats)		\
++	.csiphy = {					\
++		.id = (_id),				\
++		.formats = (_formats),			\
++	}
++
+ static const struct parent_dev_ops vfe_parent_dev_ops;
+ 
+ static const struct camss_subdev_resources csiphy_res_8x16[] = {
+@@ -4452,6 +4459,197 @@ static const struct resources_wrapper csid_wrapper_res_x1e80100 = {
  	.reg = "csid_wrapper",
  };
  
 +static const struct camss_subdev_resources csiphy_res_x1p42100[] = {
 +	/* CSIPHY0 */
 +	{
-+		.csiphy = {
-+			.id = 0,
-+			.hw_ops = &csiphy_ops_3ph_1_0,
-+			.formats = &csiphy_formats_sdm845
-+		},
++		CAMSS_CSIPHY_RES_PHY_API(0, &csiphy_formats_sdm845),
 +	},
 +	/* CSIPHY4 */
 +	{
-+		.csiphy = {
-+			.id = 4,
-+			.hw_ops = &csiphy_ops_3ph_1_0,
-+			.formats = &csiphy_formats_sdm845
-+		},
++		CAMSS_CSIPHY_RES_PHY_API(4, &csiphy_formats_sdm845),
 +	},
 +};
 +
@@ -183,7 +181,7 @@ index c54185c93a8a98fc6a20fdb8e0f9f8e61bc41058..7bc6b2e61438da9ce0c100fcaf8f6694
 +		.reg = { "vfe0" },
 +		.interrupt = { "vfe0" },
 +		.vfe = {
-+			.line_num = 4,
++			.line_num = 3,
 +			.pd_name = "ife0",
 +			.hw_ops = &vfe_ops_680,
 +			.formats_rdi = &vfe_formats_rdi_845,
@@ -250,7 +248,7 @@ index c54185c93a8a98fc6a20fdb8e0f9f8e61bc41058..7bc6b2e61438da9ce0c100fcaf8f6694
  /*
   * camss_add_clock_margin - Add margin to clock frequency rate
   * @rate: Clock frequency rate
-@@ -5809,6 +6008,22 @@ static const struct camss_resources x1e80100_resources = {
+@@ -5809,6 +6007,22 @@ static const struct camss_resources x1e80100_resources = {
  	.vfe_num = ARRAY_SIZE(vfe_res_x1e80100),
  };
  
@@ -273,14 +271,14 @@ index c54185c93a8a98fc6a20fdb8e0f9f8e61bc41058..7bc6b2e61438da9ce0c100fcaf8f6694
  static const struct of_device_id camss_dt_match[] = {
  	{ .compatible = "qcom,msm8916-camss", .data = &msm8916_resources },
  	{ .compatible = "qcom,msm8939-camss", .data = &msm8939_resources },
-@@ -5828,6 +6043,7 @@ static const struct of_device_id camss_dt_match[] = {
+@@ -5828,6 +6042,7 @@ static const struct of_device_id camss_dt_match[] = {
  	{ .compatible = "qcom,sm8550-camss", .data = &sm8550_resources },
  	{ .compatible = "qcom,sm8650-camss", .data = &sm8650_resources },
  	{ .compatible = "qcom,x1e80100-camss", .data = &x1e80100_resources },
 +	{ .compatible = "qcom,x1p42100-camss", .data = &x1p42100_resources },
+ 	{ .compatible = "qcom,glymur-camss", .data = &x1e80100_resources },
  	{ }
- };
- 
+ }; 
 diff --git a/drivers/media/platform/qcom/camss/camss.h b/drivers/media/platform/qcom/camss/camss.h
 index 7dc2fd9f03e0dc2ded8e4a603d6cfec4d8e6a62b..523050295209d84e7f72f54bce9a96ed9df442aa 100644
 --- a/drivers/media/platform/qcom/camss/camss.h
@@ -293,6 +291,3 @@ index 7dc2fd9f03e0dc2ded8e4a603d6cfec4d8e6a62b..523050295209d84e7f72f54bce9a96ed
  };
  
  enum icc_count {
-
--- 
-2.34.1
