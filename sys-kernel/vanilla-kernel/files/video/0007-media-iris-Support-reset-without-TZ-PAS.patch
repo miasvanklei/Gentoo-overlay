@@ -1,0 +1,220 @@
+On Qualcomm compute platforms such as X1E, there is community-maintained
+support for running without the Qualcomm hypervisor (QHEE/Gunyah) in EL2.
+This is enabled by applying the -el2.dtso (here: x1-el2.dtso).
+
+As shown by Mukesh, the reset and IOMMU management for remoteprocs like
+Iris is implemented in the hypervisor for older targets such as X1E [1],
+so this functionality is missing when running in EL2.
+
+To avoid introducing kernel errors for this configuration when adding Iris
+support for X1E, we need to add support for starting Iris without the
+firmware PAS service in the TZ or hypervisor firmware. All the necessary
+code for this already exists in venus/firmware.c.
+
+Port the necessary code for this from venus/firmware.c, but exclude the
+A9SS sequence. Support for letting Linux manage IOMMU directly has already
+been added in [2]. Add a device property 'qcom-no-tz' that, if present,
+states that TZ does not support reset.
+
+[1]: https://resources.linaro.org/en/resource/sF8jXifdb9V1mUefdbfafa
+[2]: https://lore.kernel.org/linux-arm-msm/20260917-glymur-v11-2-e0c8bc914742@oss.qualcomm.com
+
+--- a/drivers/media/platform/qcom/iris/iris_core.h
++++ b/drivers/media/platform/qcom/iris/iris_core.h
+@@ -131,6 +131,7 @@
+ 	/* encoder and decoder have overlapping caps, so two different arrays are required */
+ 	struct platform_inst_fw_cap		inst_fw_caps_dec[INST_FW_CAP_MAX];
+ 	struct platform_inst_fw_cap		inst_fw_caps_enc[INST_FW_CAP_MAX];
++	bool					no_tz;
+ };
+ 
+ int iris_core_init(struct iris_core *core);
+--- a/drivers/media/platform/qcom/iris/iris_probe.c
++++ b/drivers/media/platform/qcom/iris/iris_probe.c
+@@ -327,6 +327,10 @@
+ 
+ 	core->iris_platform_data = of_device_get_match_data(core->dev);
+ 
++	if (device_property_read_bool(&pdev->dev, "qcom,no-tz")) {
++		core->no_tz = true;
++	}
++
+ 	core->ubwc_cfg = qcom_ubwc_config_get_data();
+ 	if (IS_ERR(core->ubwc_cfg))
+ 		return PTR_ERR(core->ubwc_cfg);
+--- a/drivers/media/platform/qcom/iris/iris_firmware.c
++++ b/drivers/media/platform/qcom/iris/iris_firmware.c
+@@ -8,6 +8,7 @@
+ #include <linux/firmware/qcom/qcom_scm.h>
+ #include <linux/iommu.h>
+ #include <linux/of_address.h>
++#include <linux/of_device.h>
+ #include <linux/of_reserved_mem.h>
+ #include <linux/soc/qcom/mdt_loader.h>
+ 
+@@ -186,6 +187,43 @@
+ 	return 0;
+ }
+ 
++#define WRAPPER_TZ_BASE_OFFS		0x000C0000
++
++#define WRAPPER_TZ_XTSS_SW_RESET	(WRAPPER_TZ_BASE_OFFS + 0x1000)
++#define WRAPPER_XTSS_SW_RESET_BIT	BIT(0)
++
++#define WRAPPER_CPA_START_ADDR		(WRAPPER_TZ_BASE_OFFS + 0x1020)
++#define WRAPPER_CPA_END_ADDR		(WRAPPER_TZ_BASE_OFFS + 0x1024)
++#define WRAPPER_FW_START_ADDR		(WRAPPER_TZ_BASE_OFFS + 0x1028)
++#define WRAPPER_FW_END_ADDR		(WRAPPER_TZ_BASE_OFFS + 0x102C)
++#define WRAPPER_NONPIX_START_ADDR	(WRAPPER_TZ_BASE_OFFS + 0x1030)
++#define WRAPPER_NONPIX_END_ADDR		(WRAPPER_TZ_BASE_OFFS + 0x1034)
++
++static void iris_reset_cpu_no_tz(struct iris_core *core)
++{
++	u32 fw_size = core->pas_ctx->mem_size;
++
++	writel(0, core->reg_base + WRAPPER_FW_START_ADDR);
++	writel(fw_size, core->reg_base + WRAPPER_FW_END_ADDR);
++	writel(0, core->reg_base + WRAPPER_CPA_START_ADDR);
++	writel(fw_size, core->reg_base + WRAPPER_CPA_END_ADDR);
++	writel(fw_size, core->reg_base + WRAPPER_NONPIX_START_ADDR);
++	writel(fw_size, core->reg_base + WRAPPER_NONPIX_END_ADDR);
++
++	/* Bring XTSS out of reset */
++	writel(0, core->reg_base + WRAPPER_TZ_XTSS_SW_RESET);
++}
++
++static int iris_set_hw_state_no_tz(struct iris_core *core, bool resume)
++{
++	if (resume)
++		iris_reset_cpu_no_tz(core);
++	else
++		writel(WRAPPER_XTSS_SW_RESET_BIT, core->reg_base + WRAPPER_TZ_XTSS_SW_RESET);
++
++	return 0;
++}
++
+ static int iris_load_fw_to_memory(struct iris_core *core)
+ {
+ 	const struct iris_firmware_desc *desc = NULL;
+@@ -225,7 +263,10 @@
+ 	}
+ 
+ 	core->pas_ctx->use_tzmem = !!core->fw_dev;
+-	ret = qcom_mdt_pas_load(core->pas_ctx, firmware, fw_name, NULL);
++	if (core->no_tz)
++		ret = qcom_mdt_pas_load_no_init(core->pas_ctx, firmware, fw_name, NULL);
++	else
++		ret = qcom_mdt_pas_load(core->pas_ctx, firmware, fw_name, NULL);
+ 	if (ret)
+ 		goto err_release_fw;
+ 
+@@ -272,6 +313,11 @@
+ 		return ret;
+ 	}
+ 
++	if (core->no_tz) {
++		iris_reset_cpu_no_tz(core);
++		return 0;
++	}
++
+ 	ret = qcom_pas_prepare_and_auth_reset(core->pas_ctx);
+ 	if (ret) {
+ 		dev_err(core->dev, "auth and reset failed: %d\n", ret);
+@@ -304,7 +350,11 @@
+ {
+ 	int ret;
+ 
+-	ret = qcom_pas_shutdown(IRIS_PAS_ID);
++	if (core->no_tz)
++		ret = iris_set_hw_state_no_tz(core, false);
++	else
++		ret = qcom_pas_shutdown(IRIS_PAS_ID);
++
+ 	iris_fw_iommu_unmap(core);
+ 
+ 	return ret;
+@@ -312,5 +362,8 @@
+ 
+ int iris_set_hw_state(struct iris_core *core, bool resume)
+ {
++	if (core->no_tz)
++		return iris_set_hw_state_no_tz(core, resume);
++
+ 	return qcom_pas_set_remote_state(resume, 0);
+ }
+--- a/drivers/soc/qcom/mdt_loader.c
++++ b/drivers/soc/qcom/mdt_loader.c
+@@ -486,13 +486,35 @@
+ int qcom_mdt_pas_load(struct qcom_pas_context *ctx, const struct firmware *fw,
+ 		      const char *firmware, phys_addr_t *reloc_base)
+ {
+-	void __iomem *mem_region;
+ 	int ret;
+ 
+ 	ret = __qcom_mdt_pas_init(ctx->dev, fw, firmware, ctx->pas_id, ctx->mem_phys, ctx);
+ 	if (ret)
+ 		return ret;
+ 
++	return qcom_mdt_pas_load_no_init(ctx, fw, firmware, reloc_base);
++}
++EXPORT_SYMBOL_GPL(qcom_mdt_pas_load);
++
++/**
++ * qcom_mdt_pas_load_no_init - Loads the actual firmware segments (e.g., .bXX files).
++ *
++ * The PAS context must be initialized using devm_qcom_pas_context_alloc()
++ * prior to invoking this function.
++ *
++ * @ctx:        Pointer to the PAS (Peripheral Authentication Service) context
++ * @fw:         Firmware object representing the .mdt file
++ * @firmware:   Name of the firmware used to construct segment file names
++ * @reloc_base: Physical address adjusted after relocation
++ *
++ * Return: 0 on success or a negative error code on failure.
++ */
++int qcom_mdt_pas_load_no_init(struct qcom_pas_context *ctx, const struct firmware *fw,
++		      const char *firmware, phys_addr_t *reloc_base)
++{
++	void __iomem *mem_region;
++	int ret;
++
+ 	mem_region = qcom_pas_ctx_map(ctx);
+ 	if (!mem_region)
+ 		return -ENOMEM;
+@@ -502,7 +524,7 @@
+ 	iounmap(mem_region);
+ 	return ret;
+ }
+-EXPORT_SYMBOL_GPL(qcom_mdt_pas_load);
++EXPORT_SYMBOL_GPL(qcom_mdt_pas_load_no_init);
+ 
+ MODULE_DESCRIPTION("Firmware parser for Qualcomm MDT format");
+ MODULE_LICENSE("GPL v2");
+--- a/include/linux/soc/qcom/mdt_loader.h
++++ b/include/linux/soc/qcom/mdt_loader.h
+@@ -23,6 +23,9 @@
+ int qcom_mdt_pas_load(struct qcom_pas_context *ctx, const struct firmware *fw,
+ 		      const char *firmware, phys_addr_t *reloc_base);
+ 
++int qcom_mdt_pas_load_no_init(struct qcom_pas_context *ctx, const struct firmware *fw,
++			      const char *firmware, phys_addr_t *reloc_base);
++
+ int qcom_mdt_load_no_init(struct device *dev, const struct firmware *fw,
+ 			  const char *fw_name, void *mem_region,
+ 			  phys_addr_t mem_phys, size_t mem_size,
+@@ -51,6 +54,13 @@
+ {
+ 	return -ENODEV;
+ }
++
++static inline int qcom_mdt_pas_load_no_init(struct qcom_pas_context *ctx,
++					    const struct firmware *fw, const char *firmware,
++					    phys_addr_t *reloc_base)
++{
++	return -ENODEV;
++}
+ 
+ static inline int qcom_mdt_load_no_init(struct device *dev,
+ 					const struct firmware *fw,
+--- drivers/media/platform/qcom/iris/iris_firmware.c.bak	2026-11-02 14:07:46.009015661 +0100
++++ drivers/media/platform/qcom/iris/iris_firmware.c	2026-11-02 14:08:30.849130982 +0100
