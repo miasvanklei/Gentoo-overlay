@@ -1,0 +1,33 @@
+--- a/CMakeLists.txt	2026-10-17 17:27:18.576264126 +0200
++++ b/CMakeLists.txt	2026-10-17 17:27:30.516382042 +0200
+@@ -146,14 +146,6 @@
+     TYPE REQUIRED
+ )
+ 
+-if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+-    find_package(Libcap)
+-    set_package_properties(Libcap PROPERTIES
+-        PURPOSE "Needed for setting CAP_SYS_NICE on kwin_wayland."
+-        TYPE REQUIRED
+-    )
+-endif()
+-
+ # optional frameworks
+ find_package(PlasmaActivities ${PROJECT_DEP_VERSION} CONFIG)
+ set_package_properties(PlasmaActivities PROPERTIES
+--- a/src/CMakeLists.txt	2026-10-17 17:27:07.236150803 +0200
++++ b/src/CMakeLists.txt	2026-10-17 17:27:30.518550136 +0200
+@@ -699,13 +699,4 @@
+     DESTINATION ${KDE_INSTALL_INCLUDEDIR}/kwin/vulkan COMPONENT Devel
+ )
+ 
+-if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+-    install(
+-        CODE "execute_process(
+-        COMMAND ${SETCAP_EXECUTABLE}
+-        CAP_SYS_NICE=+ep
+-        \$ENV{DESTDIR}${CMAKE_INSTALL_FULL_BINDIR}/kwin_wayland)"
+-    )
+-endif()
+-
+ ecm_generate_qdoc(kwin kwin.qdocconf)
