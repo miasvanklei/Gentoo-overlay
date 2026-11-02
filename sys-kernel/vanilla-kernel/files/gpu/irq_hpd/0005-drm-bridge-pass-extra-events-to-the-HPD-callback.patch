@@ -12,13 +12,14 @@ Reviewed-by: Pengyu Luo <mitltlatltl@gmail.com>
 Acked-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 Signed-off-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
 ---
- drivers/gpu/drm/bridge/chrontel-ch7033.c       | 3 ++-
- drivers/gpu/drm/bridge/lontium-lt8912b.c       | 3 ++-
- drivers/gpu/drm/bridge/ti-tfp410.c             | 3 ++-
- drivers/gpu/drm/display/drm_bridge_connector.c | 5 +++--
- drivers/gpu/drm/drm_bridge.c                   | 5 +++--
- include/drm/drm_bridge.h                       | 6 ++++--
- 6 files changed, 16 insertions(+), 9 deletions(-)
+ drivers/gpu/drm/bridge/chrontel-ch7033.c       |  3 ++-
+ drivers/gpu/drm/bridge/lontium-lt8912b.c       |  3 ++-
+ drivers/gpu/drm/bridge/ti-tfp410.c             |  3 ++-
+ drivers/gpu/drm/display/drm_bridge_connector.c |  5 +++--
+ drivers/gpu/drm/drm_bridge.c                   | 20 ++++++++++--------
+ drivers/gpu/drm/omapdrm/dss/hdmi5.c            |  3 ++-
+ include/drm/drm_bridge.h                       | 28 ++++++++++++++++++++++----
+ 7 files changed, 47 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/gpu/drm/bridge/chrontel-ch7033.c b/drivers/gpu/drm/bridge/chrontel-ch7033.c
 index 4bc64b2885f7..deb5d510a616 100644
@@ -63,10 +64,10 @@ index 629ff7095e87..03dbb449e0a7 100644
  	struct tfp410 *dvi = arg;
  
 diff --git a/drivers/gpu/drm/display/drm_bridge_connector.c b/drivers/gpu/drm/display/drm_bridge_connector.c
-index a51567d19550..f8aa2dd1cde7 100644
+index 1b0a1a00d8eb..4ade63306653 100644
 --- a/drivers/gpu/drm/display/drm_bridge_connector.c
 +++ b/drivers/gpu/drm/display/drm_bridge_connector.c
-@@ -171,9 +171,10 @@ static void drm_bridge_connector_handle_hpd(struct drm_bridge_connector *drm_bri
+@@ -172,9 +172,10 @@ static void drm_bridge_connector_handle_hpd(struct drm_bridge_connector *drm_bri
  }
  
  static void drm_bridge_connector_hpd_cb(void *cb_data,
@@ -80,10 +81,10 @@ index a51567d19550..f8aa2dd1cde7 100644
  
  static void drm_bridge_connector_oob_hotplug_event(struct drm_connector *connector,
 diff --git a/drivers/gpu/drm/drm_bridge.c b/drivers/gpu/drm/drm_bridge.c
-index 58927e0d0191..34871e5b0328 100644
+index e7f9e6d58927..2bc54131e58b 100644
 --- a/drivers/gpu/drm/drm_bridge.c
 +++ b/drivers/gpu/drm/drm_bridge.c
-@@ -1549,7 +1549,8 @@ EXPORT_SYMBOL_GPL(drm_bridge_edid_read);
+@@ -1553,7 +1553,8 @@ EXPORT_SYMBOL_GPL(drm_bridge_edid_read);
   */
  void drm_bridge_hpd_enable(struct drm_bridge *bridge,
  			   void (*cb)(void *data,
@@ -93,7 +94,30 @@ index 58927e0d0191..34871e5b0328 100644
  			   void *data)
  {
  	if (!(bridge->ops & DRM_BRIDGE_OP_HPD))
-@@ -1625,7 +1626,7 @@ void drm_bridge_hpd_notify_extra(struct drm_bridge *bridge,
+@@ -1611,25 +1612,28 @@ void drm_bridge_hpd_disable(struct drm_bridge *bridge)
+ EXPORT_SYMBOL_GPL(drm_bridge_hpd_disable);
+ 
+ /**
+- * drm_bridge_hpd_notify - notify hot plug detection events
++ * drm_bridge_hpd_notify_extra - notify hot plug detection and sink IRQ events
+  * @bridge: bridge control structure
+  * @status: output connection status
++ * @event: additional status recorded by the sink
+  *
+  * Bridge drivers shall call this function to report hot plug events when they
+- * detect a change in the output status, when hot plug detection has been
+- * enabled by drm_bridge_hpd_enable().
++ * detect a change in the output status or when the sink has reported extra HPD
++ * status events (like the IRQ_HPD in case of the DisplayPort), when hot plug
++ * detection has been enabled by drm_bridge_hpd_enable().
+  *
+  * This function shall be called in a context that can sleep.
+  */
+-void drm_bridge_hpd_notify(struct drm_bridge *bridge,
+-			   enum drm_connector_status status)
++void drm_bridge_hpd_notify_extra(struct drm_bridge *bridge,
++				 enum drm_connector_status status,
++				 enum drm_connector_dp_event event)
  {
  	mutex_lock(&bridge->hpd_mutex);
  	if (bridge->hpd_cb)
@@ -101,12 +125,16 @@ index 58927e0d0191..34871e5b0328 100644
 +		bridge->hpd_cb(bridge->hpd_data, status, event);
  	mutex_unlock(&bridge->hpd_mutex);
  }
- EXPORT_SYMBOL_GPL(drm_bridge_hpd_notify_extra);
+-EXPORT_SYMBOL_GPL(drm_bridge_hpd_notify);
++EXPORT_SYMBOL_GPL(drm_bridge_hpd_notify_extra);
+ 
+ #ifdef CONFIG_OF
+ /**
 diff --git a/include/drm/drm_bridge.h b/include/drm/drm_bridge.h
-index d64a0ab02c90..ed9f77a2597a 100644
+index 6382ef5f1ea2..c839a6993a83 100644
 --- a/include/drm/drm_bridge.h
 +++ b/include/drm/drm_bridge.h
-@@ -1158,7 +1158,8 @@ struct drm_bridge {
+@@ -1208,7 +1208,8 @@ struct drm_bridge {
  	 * @hpd_cb: Hot plug detection callback, registered with
  	 * drm_bridge_hpd_enable().
  	 */
@@ -116,7 +144,7 @@ index d64a0ab02c90..ed9f77a2597a 100644
  	/**
  	 * @hpd_data: Private data passed to the Hot plug detection callback
  	 * @hpd_cb.
-@@ -1467,7 +1468,8 @@ const struct drm_edid *drm_bridge_edid_read(struct drm_bridge *bridge,
+@@ -1517,11 +1518,30 @@ const struct drm_edid *drm_bridge_edid_read(struct drm_bridge *bridge,
  					    struct drm_connector *connector);
  void drm_bridge_hpd_enable(struct drm_bridge *bridge,
  			   void (*cb)(void *data,
@@ -125,9 +153,28 @@ index d64a0ab02c90..ed9f77a2597a 100644
 +				      enum drm_connector_dp_event event),
  			   void *data);
  void drm_bridge_hpd_disable(struct drm_bridge *bridge);
- void drm_bridge_hpd_notify_extra(struct drm_bridge *bridge,
-
--- 
-2.47.3
-
-
+-void drm_bridge_hpd_notify(struct drm_bridge *bridge,
+-			   enum drm_connector_status status);
++void drm_bridge_hpd_notify_extra(struct drm_bridge *bridge,
++				 enum drm_connector_status status,
++				 enum drm_connector_dp_event event);
++
++/**
++ * drm_bridge_hpd_notify - notify hot plug detection events
++ * @bridge: bridge control structure
++ * @status: output connection status
++ *
++ * Bridge drivers shall call this function to report hot plug events when they
++ * detect a change in the output status, when hot plug detection has been
++ * enabled by drm_bridge_hpd_enable().
++ *
++ * This function shall be called in a context that can sleep.
++ */
++static inline void drm_bridge_hpd_notify(struct drm_bridge *bridge,
++					 enum drm_connector_status status)
++{
++	drm_bridge_hpd_notify_extra(bridge, status, DRM_CONNECTOR_NO_EXTRA_STATUS);
++}
+ 
+ void drm_bridge_debugfs_params(struct dentry *root);
+ void drm_bridge_debugfs_encoder_params(struct dentry *root, struct drm_encoder *encoder);
