@@ -143,16 +143,6 @@ diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remotepro
 index b087ed21858a8c..ec75659957033b 100644
 --- a/drivers/remoteproc/remoteproc_core.c
 +++ b/drivers/remoteproc/remoteproc_core.c
-@@ -1683,7 +1683,8 @@ static int rproc_trigger_auto_boot(struct rproc *rproc)
- {
- 	int ret;
- 
--	if (rproc->state == RPROC_DETACHED) {
-+	if (rproc->state == RPROC_DETACHED &&
-+	    rproc->auto_boot != RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE) {
- 		schedule_work(&rproc->attach_work);
- 		return 0;
- 	}
 @@ -1708,8 +1709,9 @@ static int rproc_stop(struct rproc *rproc, bool crashed)
  	if (!rproc->ops->stop)
  		return -EINVAL;
@@ -244,7 +234,16 @@ index b087ed21858a8c..ec75659957033b 100644
 +
  	return 0;
  }
+
+@@ -2340,7 +2340,7 @@
+ 	rproc_create_debug_dir(rproc);
  
+ 	/* if rproc is marked always-on, request it to boot */
+-	if (rproc->auto_boot)
++	if (rproc->auto_boot && rproc->auto_boot != RPROC_AUTO_BOOT_RESTART_IF_FW_AVAILABLE)
+ 		schedule_work(&rproc->boot_work);
+ 
+ 	/* expose to rproc_get_by_phandle users */ 
 @@ -2470,7 +2491,7 @@ struct rproc *rproc_alloc(struct device *dev, const char *name,
  		return NULL;
  

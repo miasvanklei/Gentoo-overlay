@@ -1,5 +1,5 @@
 Since the cxpd virtual device is a driverless device, it has no real
-struct device_driver bound it the way a normal platform device does. So,
+struct device_driver bound to it the way a normal platform device does. So,
 the managed lifecycle doesn't map cleanly onto it. Since the lifecycle of
 this device_link is managed by the msm driver, pass DL_FLAG_STATELESS
 together with the existing DL_FLAG_PM_RUNTIME flag.
@@ -51,15 +51,16 @@ the GMU:
 
 Fixes: ead5d3e5eb37 ("drm/msm/a6xx: Vote for cx gdsc from gpu driver")
 Signed-off-by: Akhil P Oommen <akhilpo@oss.qualcomm.com>
+Reviewed-by: Dmitry Baryshkov <dmitry.baryshkov@oss.qualcomm.com>
 ---
  drivers/gpu/drm/msm/adreno/a6xx_gmu.c | 6 ++++--
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpu/drm/msm/adreno/a6xx_gmu.c b/drivers/gpu/drm/msm/adreno/a6xx_gmu.c
-index 1b44b9e21ad8..ec13b27feee7 100644
+index 662f09bec9d5..5d96b55a624a 100644
 --- a/drivers/gpu/drm/msm/adreno/a6xx_gmu.c
 +++ b/drivers/gpu/drm/msm/adreno/a6xx_gmu.c
-@@ -2196,7 +2196,8 @@ int a6xx_gmu_wrapper_init(struct a6xx_gpu *a6xx_gpu, struct device_node *node)
+@@ -2291,7 +2291,8 @@ int a6xx_gmu_wrapper_init(struct a6xx_gpu *a6xx_gpu, struct device_node *node)
  		goto err_mmio;
  	}
  
@@ -69,13 +70,13 @@ index 1b44b9e21ad8..ec13b27feee7 100644
  		ret = -ENODEV;
  		goto detach_cxpd;
  	}
-@@ -2377,7 +2378,8 @@ int a6xx_gmu_init(struct a6xx_gpu *a6xx_gpu, struct device_node *node)
+@@ -2478,7 +2479,8 @@ int a6xx_gmu_init(struct a6xx_gpu *a6xx_gpu, struct device_node *node)
  		goto err_mmio;
  	}
  
--	link = device_link_add(gmu->dev, gmu->cxpd, DL_FLAG_PM_RUNTIME);
-+	link = device_link_add(gmu->dev, gmu->cxpd,
-+			       DL_FLAG_PM_RUNTIME | DL_FLAG_STATELESS);
- 	if (!link) {
+-	cx_link = device_link_add(gmu->dev, gmu->cxpd, DL_FLAG_PM_RUNTIME);
++	cx_link = device_link_add(gmu->dev, gmu->cxpd,
++				  DL_FLAG_PM_RUNTIME | DL_FLAG_STATELESS);
+ 	if (!cx_link) {
  		ret = -ENODEV;
  		goto detach_cxpd;

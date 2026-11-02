@@ -37,7 +37,7 @@ index dcf222b19..176fce4cf 100644
 -			memcpy(buf, in->entries[i].name, sizeof(buf));
 -			if (!strncmp(buf, entry->name, SMP2P_MAX_ENTRY_NAME)) {
 +			if (!strncmp(in->entries[i].name, entry->name, SMP2P_MAX_ENTRY_NAME)) {
- 				entry->value = &in->entries[i].value;
+ 				entry->value = (u32 __iomem *)&in->entries[i].value;
  				break;
  			}
 @@ -439,14 +437,12 @@ static int qcom_smp2p_outbound_entry(struct qcom_smp2p *smp2p,

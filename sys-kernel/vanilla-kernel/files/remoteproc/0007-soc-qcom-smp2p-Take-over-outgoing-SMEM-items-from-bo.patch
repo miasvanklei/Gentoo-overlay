@@ -127,14 +127,14 @@ index 9b1074c8c8065c..e94388f7aded6b 100644
 +			return -ENOMEM;
  
 -	/* Make the logical entry reference the physical value */
--	entry->value = &out->entries[out->valid_entries].value;
+-	entry->value = (u32 __iomem *)&out->entries[out->valid_entries].value;
 +		strscpy(out->entries[i].name, entry->name, SMP2P_MAX_ENTRY_NAME);
 +		out->valid_entries++;
 +	}
  
 -	out->valid_entries++;
 +	/* Make the logical entry reference the physical value */
-+	entry->value = &out->entries[i].value;
++	entry->value = (u32 __iomem *)&out->entries[i].value;
  
  	entry->state = qcom_smem_state_register(node, &smp2p_state_ops, entry);
  	if (IS_ERR(entry->state)) {
