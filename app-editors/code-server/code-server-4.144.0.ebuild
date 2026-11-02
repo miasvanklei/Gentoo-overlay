@@ -277,8 +277,6 @@ cleanup_binmods() {
 	# use system node
 	rm ./lib/node || die "failed to remove bundled nodejs"
 
-	rm -r "${S}/lib/vscode/node_modules/@microsoft/mxc-sdk" || die
-
 	for binmod in "${CLEANUP_VSCODE_BINMODS[@]}"; do
 		rm -r "$(get_binmod_loc ${binmod})/build" || die
 	done
