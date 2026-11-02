@@ -103,8 +103,8 @@ src_prepare() {
 		"${FILESDIR}"/rockchip/0006-orangepi-5-plus-dts-fix-led.patch
 		"${FILESDIR}"/rockchip/0008-orangepi-5-plus-dts-dwc3-reset-quirk.patch
 		"${FILESDIR}"/rockchip/0011-revert-add-npu-orangepi-5.patch
-		"${FILESDIR}"/input/0003-hid-surfacego2-fix-touchcover.patch
-		"${FILESDIR}"/camera/0017-surfacego2-camera.patch
+		"${FILESDIR}"/surfacego/0001-hid-surfacego2-fix-touchcover.patch
+		"${FILESDIR}"/surfacego/0002-camera.patch
 	)
 
 	default
