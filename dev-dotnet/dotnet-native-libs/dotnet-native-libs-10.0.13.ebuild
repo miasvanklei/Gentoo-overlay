@@ -15,6 +15,7 @@ SLOT="$(ver_cut 1-2)"
 KEYWORDS="~amd64 ~arm64"
 
 RDEPEND="
+	>=app-arch/brotli-1.1.1
 	>=app-crypt/mit-krb5-1.14.2
 	>=dev-libs/openssl-1.0.2h-r2
 	>=dev-libs/icu-57.1
@@ -39,6 +40,9 @@ src_configure() {
 		-DFEATURE_DISTRO_AGNOSTIC_SSL=1
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true
 		-DCMAKE_INSTALL_PREFIX="${dest}"
+		-DCLR_CMAKE_USE_SYSTEM_ZSTD=true
+		-DCLR_CMAKE_USE_SYSTEM_ZLIB=true
+		-DCLR_CMAKE_USE_SYSTEM_BROTLI=true
 	)
 
 	cmake_src_configure

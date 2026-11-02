@@ -38,6 +38,7 @@ src_configure() {
 		-DFEATURE_DISTRO_AGNOSTIC_SSL=1
 		-DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true
 		-DCMAKE_INSTALL_PREFIX="${dest}"
+		-DCLR_CMAKE_USE_SYSTEM_BROTLI=true
 	)
 
 	cmake_src_configure
