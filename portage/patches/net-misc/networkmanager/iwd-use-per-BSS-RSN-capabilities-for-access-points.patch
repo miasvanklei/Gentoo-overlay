@@ -1,0 +1,144 @@
+diff --git a/src/core/devices/wifi/nm-device-iwd.c b/src/core/devices/wifi/nm-device-iwd.c
+index 94b9a7d7031610f9e51468c698037a33ec570819..f6c6e0e82a098346cce3d9214de6efc8f4f483c4 100644
+--- a/src/core/devices/wifi/nm-device-iwd.c
++++ b/src/core/devices/wifi/nm-device-iwd.c
+@@ -230,6 +230,38 @@ ap_security_flags_from_network_type(const char *type)
+     return flags;
+ }
+ 
++static NM80211ApSecurityFlags
++ap_security_flags_from_network(NMDeviceIwd *self, GDBusProxy *network, const char *type)
++{
++    NMDeviceIwdPrivate        *priv  = NM_DEVICE_IWD_GET_PRIVATE(self);
++    NM80211ApSecurityFlags     flags = NM_802_11_AP_SEC_NONE;
++    gs_unref_variant GVariant *ess   = NULL;
++    GVariantIter               iter;
++    const char                *bss_path;
++
++    ess = g_dbus_proxy_get_cached_property(network, "ExtendedServiceSet");
++    if (!nm_g_variant_is_of_type(ess, G_VARIANT_TYPE("ao")))
++        return ap_security_flags_from_network_type(type);
++
++    g_variant_iter_init(&iter, ess);
++    while (g_variant_iter_next(&iter, "&o", &bss_path)) {
++        gs_unref_object GDBusProxy *bss = NULL;
++        gs_unref_variant GVariant  *rsn = NULL;
++
++        bss = nm_iwd_manager_get_dbus_interface(priv->manager, bss_path, NM_IWD_BSS_INTERFACE);
++        if (!bss)
++            continue;
++
++        rsn = g_dbus_proxy_get_cached_property(bss, "RSN");
++        if (!nm_g_variant_is_of_type(rsn, G_VARIANT_TYPE_VARDICT))
++            continue;
++
++        flags |= nm_supplicant_bss_security_from_variant(rsn);
++    }
++
++    return flags != NM_802_11_AP_SEC_NONE ? flags : ap_security_flags_from_network_type(type);
++}
++
+ static NMWifiAP *
+ ap_from_network(NMDeviceIwd *self,
+                 GDBusProxy  *network,
+@@ -280,7 +312,7 @@ ap_from_network(NMDeviceIwd *self,
+         .last_seen_msec = last_seen_msec,
+         .bssid_valid    = TRUE,
+         .mode           = _NM_802_11_MODE_INFRA,
+-        .rsn_flags      = ap_security_flags_from_network_type(type),
++        .rsn_flags      = ap_security_flags_from_network(self, network, type),
+         .ssid           = ssid,
+         .signal_percent = nm_wifi_utils_level_to_quality(signal / 100),
+         .frequency      = 2417,
+@@ -376,6 +408,10 @@ get_ordered_networks_cb(GObject *source, GAsyncResult *res, gpointer user_data)
+                 _ap_dump(self, LOGL_TRACE, ap, "updated");
+                 changed = TRUE;
+             }
++            if (nm_wifi_ap_set_rsn_flags(ap, nm_wifi_ap_get_rsn_flags(new_ap))) {
++                _ap_dump(self, LOGL_TRACE, ap, "security updated");
++                changed = TRUE;
++            }
+             g_hash_table_remove(new_aps, nm_wifi_ap_get_supplicant_path(ap));
+             continue;
+         }
+diff --git a/src/core/devices/wifi/nm-iwd-manager.h b/src/core/devices/wifi/nm-iwd-manager.h
+index 80123c9a810b6614b1ee05b223b35391b5c2b91d..62f71076eea3a58813b5ec7635670d6a2fb91896 100644
+--- a/src/core/devices/wifi/nm-iwd-manager.h
++++ b/src/core/devices/wifi/nm-iwd-manager.h
+@@ -18,6 +18,7 @@
+ #define NM_IWD_WIPHY_INTERFACE               "net.connman.iwd.Adapter"
+ #define NM_IWD_DEVICE_INTERFACE              "net.connman.iwd.Device"
+ #define NM_IWD_NETWORK_INTERFACE             "net.connman.iwd.Network"
++#define NM_IWD_BSS_INTERFACE                 "net.connman.iwd.BasicServiceSet"
+ #define NM_IWD_AGENT_INTERFACE               "net.connman.iwd.Agent"
+ #define NM_IWD_WSC_INTERFACE                 "net.connman.iwd.SimpleConfiguration"
+ #define NM_IWD_KNOWN_NETWORK_INTERFACE       "net.connman.iwd.KnownNetwork"
+diff --git a/src/core/devices/wifi/nm-wifi-ap.c b/src/core/devices/wifi/nm-wifi-ap.c
+index 30345375a065e68dea3f2cb5fccf11c511ecd611..45383276869625bfb222c0ecdfc8eb69d0709ab2 100644
+--- a/src/core/devices/wifi/nm-wifi-ap.c
++++ b/src/core/devices/wifi/nm-wifi-ap.c
+@@ -150,7 +150,7 @@ nm_wifi_ap_set_wpa_flags(NMWifiAP *ap, NM80211ApSecurityFlags flags)
+     return FALSE;
+ }
+ 
+-static gboolean
++gboolean
+ nm_wifi_ap_set_rsn_flags(NMWifiAP *ap, NM80211ApSecurityFlags flags)
+ {
+     NMWifiAPPrivate *priv = NM_WIFI_AP_GET_PRIVATE(ap);
+diff --git a/src/core/devices/wifi/nm-wifi-ap.h b/src/core/devices/wifi/nm-wifi-ap.h
+index 7265afd4f5d59e1304b38ef3b62fbd5f8d68e7d4..07d0849597f21b2f2686fb7589895c9b9213c938 100644
+--- a/src/core/devices/wifi/nm-wifi-ap.h
++++ b/src/core/devices/wifi/nm-wifi-ap.h
+@@ -88,6 +88,7 @@ NM80211ApFlags         nm_wifi_ap_get_flags(const NMWifiAP *self);
+ gboolean               nm_wifi_ap_get_metered(const NMWifiAP *self);
+ NM80211ApSecurityFlags nm_wifi_ap_get_wpa_flags(const NMWifiAP *self);
+ NM80211ApSecurityFlags nm_wifi_ap_get_rsn_flags(const NMWifiAP *self);
++gboolean               nm_wifi_ap_set_rsn_flags(NMWifiAP *ap, NM80211ApSecurityFlags flags);
+ 
+ const char *
+ nm_wifi_ap_to_string(const NMWifiAP *self, char *str_buf, gulong buf_len, gint64 now_msec);
+diff --git a/src/core/supplicant/nm-supplicant-interface.c b/src/core/supplicant/nm-supplicant-interface.c
+index 5a9bc4809933524ba0a71f6a304e039bc58e0b94..615d332637df2b4063e9c4edd7f4e6fc9a39e832 100644
+--- a/src/core/supplicant/nm-supplicant-interface.c
++++ b/src/core/supplicant/nm-supplicant-interface.c
+@@ -270,8 +270,8 @@ static NM_UTILS_STRING_TABLE_LOOKUP_DEFINE(
+ 
+ /*****************************************************************************/
+ 
+-static NM80211ApSecurityFlags
+-security_from_vardict(GVariant *security)
++NM80211ApSecurityFlags
++nm_supplicant_bss_security_from_variant(GVariant *security)
+ {
+     NM80211ApSecurityFlags flags = NM_802_11_AP_SEC_NONE;
+     const char           **array;
+@@ -753,13 +753,13 @@ _bss_info_properties_changed(NMSupplicantInterface *self,
+ 
+     v_v = nm_g_variant_lookup_value(properties, "WPA", G_VARIANT_TYPE_VARDICT);
+     if (v_v) {
+-        bss_info->wpa_flags = security_from_vardict(v_v);
++        bss_info->wpa_flags = nm_supplicant_bss_security_from_variant(v_v);
+         g_variant_unref(v_v);
+     }
+ 
+     v_v = nm_g_variant_lookup_value(properties, "RSN", G_VARIANT_TYPE_VARDICT);
+     if (v_v) {
+-        bss_info->rsn_flags = security_from_vardict(v_v);
++        bss_info->rsn_flags = nm_supplicant_bss_security_from_variant(v_v);
+         g_variant_unref(v_v);
+     }
+ 
+diff --git a/src/core/supplicant/nm-supplicant-types.h b/src/core/supplicant/nm-supplicant-types.h
+index 54a5abf9d7be6768e7f4ea661af18f6ce651ba5c..f49b12c01ccb69a0dc204ff64414d7a375300359 100644
+--- a/src/core/supplicant/nm-supplicant-types.h
++++ b/src/core/supplicant/nm-supplicant-types.h
+@@ -161,6 +161,8 @@ const char *nm_supplicant_driver_to_string(NMSupplicantDriver driver);
+ #define NM_SUPPLICANT_ERROR (nm_supplicant_error_quark())
+ GQuark nm_supplicant_error_quark(void);
+ 
++NM80211ApSecurityFlags nm_supplicant_bss_security_from_variant(GVariant *security);
++
+ typedef struct _NMSupplicantBssInfo {
+     NMRefString *bss_path;
+ 
