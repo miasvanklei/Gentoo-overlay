@@ -1,0 +1,128 @@
+Under Gunyah (EL1), the hypervisor populates x7 with the caller's SCM
+VMID (QCOM_SCM_VMID_HLOS = 3) on SMC64 QSEE calls. When booted natively
+at EL2 without Gunyah, x7 defaults to 0 and QSEE rejects trusted-app and
+trusted-OS calls with -EINVAL.
+
+Read an optional qcom,qseecom-client-id property on the SCM node at
+probe time (defaulting to 0 when absent), pass it in x7 for SMC64
+ARM_SMCCC_OWNER_TRUSTED_APP and ARM_SMCCC_OWNER_TRUSTED_OS QSEECOM calls,
+and preserve x7 across QCOM_SCM_WAITQ_SLEEP resume. SIP calls, SMC32
+calls, and platforms that omit the property are unchanged.
+
+Signed-off-by: Michael Burch <me@michaelburch.net>
+---
+ .../devicetree/bindings/firmware/qcom,scm.yaml   |  9 +++++++++
+ drivers/firmware/qcom/qcom_scm-smc.c             |  3 +++
+ drivers/firmware/qcom/qcom_scm.c                 | 16 +++++++++++++++-
+ drivers/firmware/qcom/qcom_scm.h                 |  2 ++
+ 4 files changed, 31 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/firmware/qcom,scm.yaml b/Documentation/devicetree/bindings/firmware/qcom,scm.yaml
+index 9595585ca160..ca0e2855d38e 100644
+--- a/Documentation/devicetree/bindings/firmware/qcom,scm.yaml
++++ b/Documentation/devicetree/bindings/firmware/qcom,scm.yaml
+@@ -123,6 +123,15 @@ properties:
+       should be self-owned rather than being assigned to a specific VMID.
+       Defaults to QCOM_SCM_VMID_HLOS if not specified.
+ 
++  qcom,qseecom-client-id:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    default: 0
++    description:
++      Caller identity passed in register x7 for SMC64 QSEECOM calls to
++      trusted applications and the trusted OS. Omit when a hypervisor
++      supplies the identity; the driver then passes zero. Native boot
++      firmware may require an explicit identity, such as QCOM_SCM_VMID_HLOS.
++
+   qcom,sdi-enabled:
+     description:
+       Indicates that the SDI (Secure Debug Image) has been enabled by TZ
+diff --git a/drivers/firmware/qcom/qcom_scm-smc.c b/drivers/firmware/qcom/qcom_scm-smc.c
+index 127365ab11fc..eedb7eb6b733 100644
+--- a/drivers/firmware/qcom/qcom_scm-smc.c
++++ b/drivers/firmware/qcom/qcom_scm-smc.c
+@@ -117,6 +117,7 @@ static int __scm_smc_do_quirk_handle_waitq(struct device *dev, struct arm_smccc_
+ 
+ 			trace_scm_waitq_resume(smc_call_ctx);
+ 			fill_wq_resume_args(&resume, smc_call_ctx);
++			resume.args[7] = waitq->args[7];
+ 			smc = &resume;
+ 		}
+ 	} while (res->a0 == QCOM_SCM_WAITQ_SLEEP);
+@@ -175,6 +176,8 @@ int __scm_smc_call(struct device *dev, const struct qcom_scm_desc *desc,
+ 		desc->owner,
+ 		SCM_SMC_FNID(desc->svc, desc->cmd));
+ 	smc.args[1] = desc->arginfo;
++	if (qcom_smccc_convention == ARM_SMCCC_SMC_64)
++		smc.args[7] = desc->client_id;
+ 	for (i = 0; i < SCM_SMC_N_REG_ARGS; i++)
+ 		smc.args[i + SCM_SMC_FIRST_REG_IDX] = desc->args[i];
+ 
+diff --git a/drivers/firmware/qcom/qcom_scm.c b/drivers/firmware/qcom/qcom_scm.c
+index 3eaa4c9ccf3c..0ced60c347cd 100644
+--- a/drivers/firmware/qcom/qcom_scm.c
++++ b/drivers/firmware/qcom/qcom_scm.c
+@@ -63,6 +63,7 @@ struct qcom_scm {
+ 
+ 	struct qcom_tzmem_pool *mempool;
+ 	unsigned int wq_cnt;
++	u32 qseecom_client_id;
+ };
+ 
+ struct qcom_scm_current_perm_info {
+@@ -2087,6 +2088,7 @@ static DEFINE_MUTEX(qcom_scm_qseecom_call_lock);
+ static int __qcom_scm_qseecom_call(const struct qcom_scm_desc *desc,
+ 				   struct qcom_scm_qseecom_resp *res)
+ {
++	struct qcom_scm_desc request = *desc;
+ 	struct qcom_scm_res scm_res = {};
+ 	int status;
+ 
+@@ -2096,7 +2098,11 @@ static int __qcom_scm_qseecom_call(const struct qcom_scm_desc *desc,
+ 	 */
+ 	lockdep_assert_held(&qcom_scm_qseecom_call_lock);
+ 
+-	status = qcom_scm_call(__scm->dev, desc, &scm_res);
++	if (request.owner == ARM_SMCCC_OWNER_TRUSTED_APP ||
++	    request.owner == ARM_SMCCC_OWNER_TRUSTED_OS)
++		request.client_id = __scm->qseecom_client_id;
++
++	status = qcom_scm_call(__scm->dev, &request, &scm_res);
+ 
+ 	res->result = scm_res.result[0];
+ 	res->resp_type = scm_res.result[1];
+@@ -2802,6 +2808,14 @@ static int qcom_scm_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	scm->dev = &pdev->dev;
++	if (of_property_present(pdev->dev.of_node, "qcom,qseecom-client-id")) {
++		ret = of_property_read_u32(pdev->dev.of_node, "qcom,qseecom-client-id",
++					   &scm->qseecom_client_id);
++		if (ret)
++			return dev_err_probe(&pdev->dev, ret,
++					     "Invalid QSEECOM client ID\n");
++	}
++
+ 	platform_set_drvdata(pdev, scm);
+ 	ret = qcom_scm_find_dload_address(&pdev->dev, &scm->dload_mode_addr);
+ 	if (ret < 0)
+diff --git a/drivers/firmware/qcom/qcom_scm.h b/drivers/firmware/qcom/qcom_scm.h
+index cf90a565fdfb..28aba685cd93 100644
+--- a/drivers/firmware/qcom/qcom_scm.h
++++ b/drivers/firmware/qcom/qcom_scm.h
+@@ -49,6 +49,7 @@ enum qcom_scm_arg_types {
+  * @arginfo:	Metadata describing the arguments in args[]
+  * @args:	The array of arguments for the secure syscall
+  * @owner: Owner identifier
++ * @client_id: QSEE caller identity for the SMC64 x7 register
+  */
+ struct qcom_scm_desc {
+ 	u32 svc;
+@@ -56,6 +57,7 @@ struct qcom_scm_desc {
+ 	u32 arginfo;
+ 	u64 args[MAX_QCOM_SCM_ARGS];
+ 	u32 owner;
++	u32 client_id;
+ };
+ 
+ /**

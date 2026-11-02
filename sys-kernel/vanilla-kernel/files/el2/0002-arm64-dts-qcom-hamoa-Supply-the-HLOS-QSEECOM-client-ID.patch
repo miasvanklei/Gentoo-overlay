@@ -1,0 +1,18 @@
+Under Gunyah, the hypervisor provides the caller's SCM identity for QSEE
+trusted-app and trusted-OS SMC64 calls. Booted at EL2 without Gunyah,
+x7 is 0 unless qcom,qseecom-client-id provides it.
+
+Set qcom,qseecom-client-id to QCOM_SCM_VMID_HLOS on the hamoa SCM node,
+so EL1 and EL2 device trees carry the same value
+
+--- a/arch/arm64/boot/dts/qcom/hamoa.dtsi
++++ b/arch/arm64/boot/dts/qcom/hamoa.dtsi
+@@ -333,6 +333,8 @@
+ 			interconnects = <&aggre2_noc MASTER_CRYPTO QCOM_ICC_TAG_ALWAYS
+ 					 &mc_virt SLAVE_EBI1 QCOM_ICC_TAG_ALWAYS>;
+ 			qcom,dload-mode = <&tcsr 0x19000>;
++			/* QSEE caller (x7); required at EL2, where no hypervisor sets it */
++			qcom,qseecom-client-id = <QCOM_SCM_VMID_HLOS>;
+ 		};
+ 
+ 		scmi {
