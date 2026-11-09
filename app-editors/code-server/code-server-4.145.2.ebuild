@@ -210,24 +210,33 @@ setup_copilot() {
 	fi
 	if use arm64; then
 		copilot_arch="arm64"
-		rg_delete_arch="x64"
 	elif use amd64; then
 		copilot_arch="x64"
-		rg_delete_arch="arm64"
 	fi
 
 	local github_dir="${D}/usr/lib/${PN}/lib/vscode/node_modules/@github"
+	local ripgrep_dir="${D}/usr/lib/${PN}/lib/vscode/node_modules/@vscode/ripgrep-universal/bin"
 	local extension_copilot_sdk_dir="${D}/usr/lib/${PN}/lib/vscode/extensions/copilot/node_modules/@github/copilot/sdk"
 	local copilot_sdk_dir="${github_dir}/copilot-sdk-linux${copilot_libc}-${copilot_arch}"
 
 	rm -r "${github_dir}/copilot-sdk-linux-${copilot_arch}" || die
 	cp -r "${WORKDIR}/github-copilot-sdk-linux${copilot_libc}-${copilot_arch}-${COPILOT_SDK_VERSION}" "${copilot_sdk_dir}" || die
-	rm -r "${copilot_sdk_dir}/ripgrep/bin/linux-${rg_delete_arch}" || die
-	rm -r "${copilot_sdk_dir}/tgrep/bin/linux-${rg_delete_arch}" || die
 
 	rm -r "${extension_copilot_sdk_dir}/prebuilds" || die
 	cp -r "${WORKDIR}/github-copilot-linux${copilot_libc}-${copilot_arch}-${COPILOT_VERSION}/prebuilds" "${extension_copilot_sdk_dir}/prebuilds" || die
-	rm -r "${extension_copilot_sdk_dir}/ripgrep/bin/linux-${rg_delete_arch}"
+
+	rm -r "${copilot_sdk_dir}/tgrep/bin" || die
+	rm -r "${copilot_sdk_dir}/ripgrep/bin" || die
+	rm -r "${extension_copilot_sdk_dir}/ripgrep/bin" || die
+	rm -r "${ripgrep_dir}" || die
+
+	mkdir -p "${copilot_sdk_dir}/ripgrep/bin/linux-${copilot_arch}" || die
+	mkdir -p "${extension_copilot_sdk_dir}/ripgrep/bin/linux-${copilot_arch}" || die
+	mkdir -p "${ripgrep_dir}/linux-${copilot_arch}"
+
+	ln -s /usr/bin/rg "${copilot_sdk_dir}/ripgrep/bin/linux-${copilot_arch}/rg" || die
+	ln -s /usr/bin/rg "${extension_copilot_sdk_dir}/ripgrep/bin/linux-${copilot_arch}/rg" || die
+	ln -s /usr/bin/rg "${ripgrep_dir}/linux-${copilot_arch}/rg" || die
 }
 
 enodegyp() {
