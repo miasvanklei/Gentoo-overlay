@@ -15,14 +15,34 @@ Co-developed-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
 Signed-off-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
 Signed-off-by: Vikash Garodia <vikash.garodia@oss.qualcomm.com>
 ---
- drivers/media/platform/qcom/iris/iris_probe.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/media/platform/qcom/iris/iris_probe.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/media/platform/qcom/iris/iris_probe.c b/drivers/media/platform/qcom/iris/iris_probe.c
-index debd1f0e57038d7abf463e82fd80f887b67750e8..4bdb078d83b5c331869dab2409bc4d10ab302737 100644
+index e659461716ba46c84d616b41f477b6250d46bd81..6d7147d73d40b08cbcd55ea5a19ec57d0738abf0 100644
 --- a/drivers/media/platform/qcom/iris/iris_probe.c
 +++ b/drivers/media/platform/qcom/iris/iris_probe.c
-@@ -352,9 +352,11 @@ static int iris_probe(struct platform_device *pdev)
+@@ -154,6 +154,9 @@ static void iris_unreserve_iova_region(struct device *dev, struct dma_iova_state
+ {
+ 	unsigned int i;
+ 
++	if (!device_iommu_mapped(dev))
++		return;
++
+ 	for (i = 0; dma_iova_size(&iova_state[i]); i++)
+ 		dma_iova_free(dev, &iova_state[i]);
+ }
+@@ -167,6 +170,9 @@ static int iris_reserve_iova_region(struct device *dev, struct dma_iova_state **
+ 	unsigned int count = 0;
+ 	int ret = -ENOMEM;
+ 
++	if (!device_iommu_mapped(dev))
++		return 0;
++
+ 	state = devm_kcalloc(dev, BITS_PER_TYPE(dma_addr_t) + 1, sizeof(*state), GFP_KERNEL);
+ 	if (!state)
+ 		return ret;
+@@ -433,9 +439,11 @@ static int iris_probe(struct platform_device *pdev)
  
  	dma_mask = core->iris_platform_data->dma_mask;
  
