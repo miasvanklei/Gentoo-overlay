@@ -1,0 +1,160 @@
+On 32-bit systems with LPAE, physical addresses are 64-bit. A reserved
+region can be larger than 4GiB, but its length is stored as size_t,
+which is only 32-bit there. The length gets truncated.
+Use resource_size_t for the length so it matches the width of
+phys_addr_t and holds the full size of the region.
+
+Fixes: 2b20cbba3390 ("iommu: iommu_alloc_resv_region")
+Reported-by: Sashiko <sashiko-bot@kernel.org>
+Closes: https://lore.kernel.org/all/d223ee9f-b262-408a-a201-8b16d310bbe0@oss.qualcomm.com
+Cc: stable@vger.kernel.org
+Co-developed-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
+Signed-off-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
+Signed-off-by: Vikash Garodia <vikash.garodia@oss.qualcomm.com>
+---
+ drivers/iommu/amd/iommu.c       | 2 +-
+ drivers/iommu/intel/iommu.c     | 2 +-
+ drivers/iommu/iommu.c           | 2 +-
+ drivers/iommu/of_iommu.c        | 4 ++--
+ drivers/iommu/virtio-iommu.c    | 2 +-
+ drivers/of/address.c            | 2 +-
+ drivers/vfio/vfio_iommu_type1.c | 2 +-
+ include/linux/iommu.h           | 4 ++--
+ include/linux/of_address.h      | 2 +-
+ 9 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/iommu/amd/iommu.c b/drivers/iommu/amd/iommu.c
+index 960e1dc05ec69b346d1af73241dfa51393b0851a..179e6c28afe6f86c233d9d7e64abb0870095e985 100644
+--- a/drivers/iommu/amd/iommu.c
++++ b/drivers/iommu/amd/iommu.c
+@@ -3327,7 +3327,7 @@ static void amd_iommu_get_resv_regions(struct device *dev,
+ 
+ 	list_for_each_entry(entry, &pci_seg->unity_map, list) {
+ 		int type, prot = 0;
+-		size_t length;
++		resource_size_t length;
+ 
+ 		if (devid < entry->devid_start || devid > entry->devid_end)
+ 			continue;
+diff --git a/drivers/iommu/intel/iommu.c b/drivers/iommu/intel/iommu.c
+index 5a2e705a2f2e025245d4b42c4a9f765c67d708d4..70e210ca085ff52519376358a3e3b7a01619d7a8 100644
+--- a/drivers/iommu/intel/iommu.c
++++ b/drivers/iommu/intel/iommu.c
+@@ -3535,7 +3535,7 @@ static void intel_iommu_get_resv_regions(struct device *device,
+ 					  i, i_dev) {
+ 			struct iommu_resv_region *resv;
+ 			enum iommu_resv_type type;
+-			size_t length;
++			resource_size_t length;
+ 
+ 			if (i_dev != device &&
+ 			    !is_downstream_to_pci_bridge(device, i_dev))
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index b486b8bbd1fcdc359d936234bb3f8631306c8786..18f3efb94043ace9f1f4abc7c6ac8974dc25b0c0 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -3010,7 +3010,7 @@ void iommu_put_resv_regions(struct device *dev, struct list_head *list)
+ EXPORT_SYMBOL(iommu_put_resv_regions);
+ 
+ struct iommu_resv_region *iommu_alloc_resv_region(phys_addr_t start,
+-						  size_t length, int prot,
++						  resource_size_t length, int prot,
+ 						  enum iommu_resv_type type,
+ 						  gfp_t gfp)
+ {
+diff --git a/drivers/iommu/of_iommu.c b/drivers/iommu/of_iommu.c
+index a18bb60f6f3dfdba853b6e16dd2a8616f6a731c7..5c266511db78910d6fd221af5437cecff4931c22 100644
+--- a/drivers/iommu/of_iommu.c
++++ b/drivers/iommu/of_iommu.c
+@@ -170,7 +170,7 @@ int of_iommu_configure(struct device *dev, struct device_node *master_np,
+ static enum iommu_resv_type __maybe_unused
+ iommu_resv_region_get_type(struct device *dev,
+ 			   struct resource *phys,
+-			   phys_addr_t start, size_t length)
++			   phys_addr_t start, resource_size_t length)
+ {
+ 	phys_addr_t end = start + length - 1;
+ 
+@@ -246,7 +246,7 @@ void of_iommu_get_resv_regions(struct device *dev, struct list_head *list)
+ 				struct iommu_resv_region *region;
+ 				enum iommu_resv_type type;
+ 				phys_addr_t iova;
+-				size_t length;
++				resource_size_t length;
+ 
+ 				if (of_dma_is_coherent(dev->of_node))
+ 					prot |= IOMMU_CACHE;
+diff --git a/drivers/iommu/virtio-iommu.c b/drivers/iommu/virtio-iommu.c
+index 587fc13197f12227e69aedbc721cfd49cebde2ef..a37e713b0678a516a777436d616f0d3df54eae38 100644
+--- a/drivers/iommu/virtio-iommu.c
++++ b/drivers/iommu/virtio-iommu.c
+@@ -483,7 +483,7 @@ static int viommu_add_resv_mem(struct viommu_endpoint *vdev,
+ 			       struct virtio_iommu_probe_resv_mem *mem,
+ 			       size_t len)
+ {
+-	size_t size;
++	resource_size_t size;
+ 	u64 start64, end64;
+ 	phys_addr_t start, end;
+ 	struct iommu_resv_region *region = NULL, *next;
+diff --git a/drivers/of/address.c b/drivers/of/address.c
+index 499d37ceae210ac844eef853aeecbfabaaa5e138..f665432638a6d1cc1ebfc0d2356b813c8c584910 100644
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -655,7 +655,7 @@ EXPORT_SYMBOL(of_translate_dma_address);
+  * Returns a pointer to the cell immediately following the translated DMA region.
+  */
+ const __be32 *of_translate_dma_region(struct device_node *dev, const __be32 *prop,
+-				      phys_addr_t *start, size_t *length)
++				      phys_addr_t *start, resource_size_t *length)
+ {
+ 	struct device_node *parent __free(device_node) = __of_get_dma_parent(dev);
+ 	u64 address, size;
+diff --git a/drivers/vfio/vfio_iommu_type1.c b/drivers/vfio/vfio_iommu_type1.c
+index f7addfbe1aab4f6fb662b8b2fa66bc02d98b5f03..9f508143505ad9e603af1730e811c30bd5edce16 100644
+--- a/drivers/vfio/vfio_iommu_type1.c
++++ b/drivers/vfio/vfio_iommu_type1.c
+@@ -164,7 +164,7 @@ vfio_iommu_find_iommu_group(struct vfio_iommu *iommu,
+  */
+ 
+ static struct vfio_dma *vfio_find_dma(struct vfio_iommu *iommu,
+-				      dma_addr_t start, size_t size)
++				      dma_addr_t start, resource_size_t size)
+ {
+ 	struct rb_node *node = iommu->dma_list.rb_node;
+ 
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index ef5043752a3651419679316c5a20cdf049efeaba..1d8f9381a358ec2309503bfe2866f08a1f236b2b 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -306,7 +306,7 @@ enum iommu_resv_type {
+ struct iommu_resv_region {
+ 	struct list_head	list;
+ 	phys_addr_t		start;
+-	size_t			length;
++	resource_size_t		length;
+ 	int			prot;
+ 	enum iommu_resv_type	type;
+ 	void (*free)(struct device *dev, struct iommu_resv_region *region);
+@@ -968,7 +968,7 @@ extern void iommu_set_default_passthrough(bool cmd_line);
+ extern void iommu_set_default_translated(bool cmd_line);
+ extern bool iommu_default_passthrough(void);
+ extern struct iommu_resv_region *
+-iommu_alloc_resv_region(phys_addr_t start, size_t length, int prot,
++iommu_alloc_resv_region(phys_addr_t start, resource_size_t length, int prot,
+ 			enum iommu_resv_type type, gfp_t gfp);
+ extern int iommu_get_group_resv_regions(struct iommu_group *group,
+ 					struct list_head *head);
+diff --git a/include/linux/of_address.h b/include/linux/of_address.h
+index 0cff9036539168b0cf2826ee34417738a4836ace..ae6d96c8c110adad966f2c1bad2cbefaf55e5c57 100644
+--- a/include/linux/of_address.h
++++ b/include/linux/of_address.h
+@@ -56,7 +56,7 @@ static inline int of_range_count(const struct of_range_parser *parser)
+ extern u64 of_translate_dma_address(struct device_node *dev,
+ 				    const __be32 *in_addr);
+ extern const __be32 *of_translate_dma_region(struct device_node *dev, const __be32 *addr,
+-					     phys_addr_t *start, size_t *length);
++					     phys_addr_t *start, resource_size_t *length);
+ 
+ #ifdef CONFIG_OF_ADDRESS
+ extern u64 of_translate_address(struct device_node *np, const __be32 *addr);
