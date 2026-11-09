@@ -7,8 +7,6 @@ Tested-on: WCN7850 hw2.0 PCI WLAN.HMT.1.0.c5-00481-QCAHMTSWPL_V1.0_V2.0_SILICONZ
 
 Reported-by: Qiang Yu <qiang.yu@oss.qualcomm.com>
 Signed-off-by: Manivannan Sadhasivam <manivannan.sadhasivam@oss.qualcomm.com>
-Link: https://patch.msgid.link/20250825-ath-aspm-fix-v2-6-61b2f2db7d89@oss.qualcomm.com
-Signed-off-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
 ---
  drivers/net/wireless/ath/ath12k/Kconfig |  2 +-
  drivers/net/wireless/ath/ath12k/pci.c   | 19 +++----------------
@@ -16,7 +14,7 @@ Signed-off-by: Abel Vesa <abel.vesa@oss.qualcomm.com>
  3 files changed, 7 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/net/wireless/ath/ath12k/Kconfig b/drivers/net/wireless/ath/ath12k/Kconfig
-index 1ea1af1b8..789276e1e 100644
+index 4a2b240f967a..7852ede3eaea 100644
 --- a/drivers/net/wireless/ath/ath12k/Kconfig
 +++ b/drivers/net/wireless/ath/ath12k/Kconfig
 @@ -1,7 +1,7 @@
@@ -29,10 +27,10 @@ index 1ea1af1b8..789276e1e 100644
  	select MHI_BUS
  	select QRTR
 diff --git a/drivers/net/wireless/ath/ath12k/pci.c b/drivers/net/wireless/ath/ath12k/pci.c
-index 60b8f7361..49caa8cda 100644
+index d9a22d6afbb0..6d48fb25690d 100644
 --- a/drivers/net/wireless/ath/ath12k/pci.c
 +++ b/drivers/net/wireless/ath/ath12k/pci.c
-@@ -935,19 +935,9 @@ static void ath12k_pci_free_region(struct ath12k_pci *ab_pci)
+@@ -884,19 +884,9 @@ static void ath12k_pci_free_region(struct ath12k_pci *ab_pci)
  
  static void ath12k_pci_aspm_disable(struct ath12k_pci *ab_pci)
  {
@@ -50,11 +48,11 @@ index 60b8f7361..49caa8cda 100644
 -	/* disable L0s and L1 */
 -	pcie_capability_clear_word(ab_pci->pdev, PCI_EXP_LNKCTL,
 -				   PCI_EXP_LNKCTL_ASPMC);
-+	pci_disable_link_state(ab_pci->pdev, PCIE_LINK_STATE_ALL);
++	pci_disable_link_state(ab_pci->pdev, PCIE_LINK_STATE_ASPM_ALL);
  
  	set_bit(ATH12K_PCI_ASPM_RESTORE, &ab_pci->flags);
  }
-@@ -976,10 +966,7 @@ static void ath12k_pci_aspm_restore(struct ath12k_pci *ab_pci)
+@@ -925,10 +915,7 @@ static void ath12k_pci_aspm_restore(struct ath12k_pci *ab_pci)
  {
  	if (ab_pci->ab->hw_params->supports_aspm &&
  	    test_and_clear_bit(ATH12K_PCI_ASPM_RESTORE, &ab_pci->flags))
@@ -62,15 +60,15 @@ index 60b8f7361..49caa8cda 100644
 -						   PCI_EXP_LNKCTL_ASPMC,
 -						   ab_pci->link_ctl &
 -						   PCI_EXP_LNKCTL_ASPMC);
-+		pci_enable_link_state(ab_pci->pdev, ab_pci->aspm_states);
++		pci_force_enable_link_state(ab_pci->pdev, ab_pci->aspm_states);
  }
  
  static void ath12k_pci_cancel_workqueue(struct ath12k_base *ab)
 diff --git a/drivers/net/wireless/ath/ath12k/pci.h b/drivers/net/wireless/ath/ath12k/pci.h
-index d1ec8aad7..f3e4e5932 100644
+index 0e0e2020c6ae..409ef063cd69 100644
 --- a/drivers/net/wireless/ath/ath12k/pci.h
 +++ b/drivers/net/wireless/ath/ath12k/pci.h
-@@ -114,7 +114,9 @@ struct ath12k_pci {
+@@ -128,7 +128,9 @@ struct ath12k_pci {
  
  	/* enum ath12k_pci_flags */
  	unsigned long flags;
