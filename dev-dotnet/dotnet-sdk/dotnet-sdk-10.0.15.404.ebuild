@@ -68,4 +68,8 @@ src_install() {
 	replace_bin vbc
 	replace_bin VBCSCompiler
 	popd >/dev/null || die
+
+	pushd "${D}/${dest}/sdk/${SDK_FULL_PV}" >/dev/null || die
+	replace_bin MSBuild
+	popd >/dev/null || die
 }
