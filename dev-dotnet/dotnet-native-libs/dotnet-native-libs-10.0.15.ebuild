@@ -27,8 +27,9 @@ BDEPEND="
 	>=sys-devel/gettext-0.19.7"
 
 PATCHES=(
+	"${FILESDIR}/remove-build-type-logic-10.0.patch"
 	"${FILESDIR}/remove-werror.patch"
-	"${FILESDIR}/remove-build-type-logic.patch"
+	"${FILESDIR}/openssl-4.1-10.patch"
 )
 
 src_configure() {
