@@ -10,6 +10,7 @@ DOTNET_TARGETS=(
 	'dlls/mscordbi/libmscordbi.so'
 	'dlls/mscoree/coreclr/libcoreclr.so'
 	'gc/libclrgc.so'
+	'gc/libclrgcexp.so'
 	'jit/libclrjit.so'
 	'pal/src/eventprovider/lttngprovider/libcoreclrtraceptprovider.so'
 )
@@ -42,10 +43,9 @@ RDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}"/fix-and-cleanup-set-stacksize-8.0.patch
-	"${FILESDIR}"/remove-native-build-type-logic.patch
-	"${FILESDIR}"/remove-coreclr-build-type-logic-8.0.patch
-	"${FILESDIR}"/fix-nullptr-usage-8.0.patch
+	"${FILESDIR}"/fix-and-cleanup-set-stacksize-10.0.patch
+	"${FILESDIR}"/remove-native-build-type-logic-10.0.patch
+	"${FILESDIR}"/remove-coreclr-build-type-logic-9.0.patch
 )
 
 src_configure() {
