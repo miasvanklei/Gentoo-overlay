@@ -39,7 +39,7 @@ index e659461716ba46c84d616b41f477b6250d46bd81..6d7147d73d40b08cbcd55ea5a19ec57d
 +	if (!device_iommu_mapped(dev))
 +		return 0;
 +
- 	state = devm_kcalloc(dev, BITS_PER_TYPE(dma_addr_t) + 1, sizeof(*state), GFP_KERNEL);
+ 	state = devm_kzalloc_objs(dev, *state, BITS_PER_TYPE(dma_addr_t) + 1);
  	if (!state)
  		return ret;
 @@ -433,9 +439,11 @@ static int iris_probe(struct platform_device *pdev)

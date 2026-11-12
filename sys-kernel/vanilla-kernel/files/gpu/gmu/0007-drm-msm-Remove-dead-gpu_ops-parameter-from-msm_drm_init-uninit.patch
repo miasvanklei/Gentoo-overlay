@@ -65,15 +65,18 @@ index 9ad2260f4971..c3b6a5f8f54e 100644
  	if (ret)
  		goto err_put_dev;
  
-@@ -276,7 +269,7 @@ static int msm_drm_init(struct device *dev, const struct drm_driver *drv,
- 	return 0;
- 
- err_msm_uninit:
--	msm_drm_uninit(dev, gpu_ops);
-+	msm_drm_uninit(dev);
- 
- 	return ret;
- 
+@@ -276,10 +269,7 @@ static int msm_drm_init(struct device *dev, const struct drm_driver *drv,
+ err_shrinker_cleanup:
+ 	msm_gem_shrinker_cleanup(ddev);
+ err_unbind:
+-	if (gpu_ops)
+-		gpu_ops->unbind(dev, dev, NULL);
+-	else
+-		component_unbind_all(dev, ddev);
++	component_unbind_all(dev, ddev);
+ err_put_dev:
+ 	ddev->dev_private = NULL;
+ 	drm_dev_put(ddev);
 @@ -1139,13 +1132,12 @@ static int msm_drm_bind(struct device *dev)
  	return msm_drm_init(dev,
  			    msm_separate_gpu_kms_components() ?

@@ -199,7 +199,7 @@ index 5e8f3ce26b32..e25ef578d2b3 100644
  	struct component_match *match = NULL;
  	int ret;
  
--	priv = devm_kzalloc(master_dev, sizeof(*priv), GFP_KERNEL);
+-	priv = devm_kzalloc_obj(master_dev, *priv);
 +	priv = devres_alloc(msm_drm_priv_release, sizeof(*priv), GFP_KERNEL);
  	if (!priv)
  		return -ENOMEM;
@@ -216,7 +216,7 @@ index 5e8f3ce26b32..e25ef578d2b3 100644
  	struct msm_drm_private *priv;
  	int ret;
  
--	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
+-	priv = devm_kzalloc_obj(&pdev->dev, *priv);
 +	priv = devres_alloc(msm_drm_priv_release, sizeof(*priv), GFP_KERNEL);
  	if (!priv)
  		return -ENOMEM;
