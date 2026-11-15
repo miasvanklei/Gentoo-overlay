@@ -19,9 +19,11 @@ _DOTNET_PACK_ECLASS=1
 
 if [[ -z ${DOTNET_RUNTIME_PV} ]]; then
 	DOTNET_PV="$(ver_cut 1-3)"
-	DOTNET_PV_SUFFIX="$(ver_cut 4-)"
-	if [[ -n $DOTNET_PV_SUFFIX ]]; then
-		DOTNET_RUNTIME_PV="${DOTNET_PV}-rc.${DOTNET_PV_SUFFIX:2:1}.${DOTNET_PV_SUFFIX:3:5}.${DOTNET_PV_SUFFIX:8:3}"
+	DOTNET_PV_RELEASE_SUFFIX="$(ver_cut 4)"
+	DOTNET_PV_SUFFIX="$(ver_cut 5-)"
+	if [[ -n $DOTNET_PV_RELEASE_SUFFIX ]]; then
+		fixed_suffix="${DOTNET_PV_RELEASE_SUFFIX//pre/preview}"
+		DOTNET_RUNTIME_PV="${DOTNET_PV}-${fixed_suffix}.${DOTNET_PV_SUFFIX:0:1}.${DOTNET_PV_SUFFIX:1:5}.${DOTNET_PV_SUFFIX:6:3}"
 	else
 		DOTNET_RUNTIME_PV="${DOTNET_PV}"
 	fi
