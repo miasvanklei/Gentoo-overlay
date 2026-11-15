@@ -17,7 +17,7 @@ KEYWORDS="~amd64 ~arm64"
 RDEPEND="
 	>=app-arch/brotli-1.1.1
 	>=app-crypt/mit-krb5-1.14.2
-	>=dev-libs/openssl-1.0.2h-r2
+	>=dev-libs/openssl-4.0
 	>=dev-libs/icu-57.1
 	>=dev-util/lttng-ust-2.8.1
 	>=net-misc/curl-7.49.0
@@ -27,7 +27,6 @@ BDEPEND="
 	>=sys-devel/gettext-0.19.7"
 
 PATCHES=(
-	"${FILESDIR}/remove-build-type-logic-10.0.patch"
 	"${FILESDIR}/remove-werror.patch"
 	"${FILESDIR}/openssl-4.1-10.patch"
 )
