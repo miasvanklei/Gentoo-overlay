@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+import argparse
+import os
+import shutil
+import stat
+import sys
+
+PLACEHOLDER = (
+    b"c3ab8ff13720e8ad9047dd39466b3c8974e592c2fa383d4a3960714caef0c4f2"
+)
+BUFFER_SIZE = 1024
+
+
+def patch_apphost(template_path: str, output_path: str, dll_name: str):
+    dll_bytes = dll_name.encode("utf-8")
+
+    if len(dll_bytes) >= BUFFER_SIZE:
+        raise ValueError(
+            f"DLL name is too long ({len(dll_bytes)} bytes). Max is {BUFFER_SIZE - 1} bytes."
+        )
+
+    shutil.copyfile(template_path, output_path)
+
+    with open(output_path, "r+b") as f:
+        data = f.read()
+        offset = data.find(PLACEHOLDER)
+        if offset == -1:
+            raise ValueError("Placeholder not found in template binary!")
+
+        # Overwrite placeholder and zero-pad the rest of the 1024-byte buffer
+        f.seek(offset)
+        f.write(dll_bytes.ljust(BUFFER_SIZE, b"\x00"))
+
+    # Make the output binary executable (chmod +x)
+    current_permissions = os.stat(output_path).st_mode
+    os.chmod(
+        output_path,
+        current_permissions | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH,
+    )
+    print(f"Created executable '{output_path}' pointing to '{dll_name}'")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Patch a .NET apphost binary to launch a specific DLL."
+    )
+    parser.add_argument(
+        "-t",
+        "--template",
+        required=True,
+        help="Path to the unpatched apphost template",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        required=True,
+        help="Path for the output native executable",
+    )
+    parser.add_argument(
+        "-d",
+        "--dll",
+        required=True,
+        help="Relative path/name of the target .dll (e.g., MyApp.dll)",
+    )
+
+    args = parser.parse_args()
+
+    try:
+        patch_apphost(args.template, args.output, args.dll)
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)

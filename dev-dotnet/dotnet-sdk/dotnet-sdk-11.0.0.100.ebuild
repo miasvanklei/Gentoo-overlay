@@ -4,15 +4,21 @@
 EAPI=8
 
 # keep in sync with dotnet-runtime
+DOTNET_PV="$(ver_cut 1-3)"
 SDK_PV="$(ver_cut 1-2).$(ver_cut 4)"
-SDK_PV_SUFFIX="$(ver_cut 5-)"
-if [[ -n $SDK_PV_SUFFIX ]]; then
-        SDK_FULL_PV="${SDK_PV}-rc.${SDK_PV_SUFFIX:2:1}.${SDK_PV_SUFFIX:3:5}.${SDK_PV_SUFFIX:8:3}"
+SDK_RELEASE_SUFFIX="$(ver_cut 5)"
+SDK_PV_SUFFIX="$(ver_cut 6-)"
+if [[ -n $SDK_RELEASE_SUFFIX ]]; then
+        fixed_suffix="${SDK_RELEASE_SUFFIX//pre/preview}"
+        SDK_FULL_PV="${SDK_PV}-${fixed_suffix}.${SDK_PV_SUFFIX:0:1}.${SDK_PV_SUFFIX:1:5}.${SDK_PV_SUFFIX:6:3}"
+	DOTNET_SDK_RUNTIME_PV="${DOTNET_PV}-${fixed_suffix}.${SDK_PV_SUFFIX:0:1}.${SDK_PV_SUFFIX:1:5}.${SDK_PV_SUFFIX:6:3}"
+        DOTNET_RUNTIME_PV="${DOTNET_PV}_${SDK_RELEASE_SUFFIX}${SDK_PV_SUFFIX}"
 else
 	SDK_FULL_PV="${SDK_PV}"
+        DOTNET_SDK_RUNTIME_PV="${DOTNET_PV}"
+        DOTNET_RUNTIME_PV="${DOTNET_PV}"
 fi
 
-DOTNET_RUNTIME_PV="$(ver_cut 1-3)"
 SDK="${PN}-${SDK_FULL_PV}-linux-musl"
 
 inherit dotnet-utils
@@ -41,15 +47,22 @@ RDEPEND="
 
 PDEPEND="virtual/dotnet-sdk:$(ver_cut 1-2)"
 
+QA_PRESTRIPPED="
+	/usr/lib/dotnet-sdk/sdk/${SDK_FULL_PV}/AppHostTemplate/apphost
+	/usr/lib/dotnet-sdk/sdk/${SDK_FULL_PV}/Roslyn/bincore/VBCSCompiler
+	/usr/lib/dotnet-sdk/sdk/${SDK_FULL_PV}/Roslyn/bincore/csc
+	/usr/lib/dotnet-sdk/sdk/${SDK_FULL_PV}/Roslyn/bincore/vbc
+	/usr/lib/dotnet-sdk/sdk/${SDK_FULL_PV}/MSBuild
+"
+
 replace_bin()  {
-	echo -e '#!/bin/bash\ndotnet $0.dll "$@"' > $1
-	chmod +x $1
+	${FILESDIR}/create-apphost -t $1 -d $2.dll -o $2
 }
 
 src_install() {
 	local dest="/usr/lib/${PN}"
 	local target=$(dotnet-utils_get_pkg_rid 1)
-	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${DOTNET_RUNTIME_PV}/runtimes/${target}/native"
+	local dest_apphost_pack="${dest}/packs/Microsoft.NETCore.App.Host.${target}/${DOTNET_SDK_RUNTIME_PV}/runtimes/${target}/native"
 
 	insinto "${dest}"
 	doins -r "${S}"/sdk "${S}"/sdk-manifests "${S}"/templates
@@ -64,12 +77,15 @@ src_install() {
 	cp "${dest_apphost_pack}/apphost"  "${D}/${dest}/sdk/${SDK_FULL_PV}/AppHostTemplate/apphost" || die
 
 	pushd "${D}/${dest}/sdk/${SDK_FULL_PV}/Roslyn/bincore" >/dev/null || die
-	replace_bin csc
-	replace_bin vbc
-	replace_bin VBCSCompiler
+	replace_bin "${dest_apphost_pack}/apphost" csc
+	replace_bin "${dest_apphost_pack}/apphost" vbc
+	replace_bin "${dest_apphost_pack}/apphost" VBCSCompiler
 	popd >/dev/null || die
 
 	pushd "${D}/${dest}/sdk/${SDK_FULL_PV}" >/dev/null || die
-	replace_bin MSBuild
+	replace_bin "${dest_apphost_pack}/apphost" MSBuild
 	popd >/dev/null || die
+
+	# dev-dotnet/aspnetcoretools
+	rm -r "${D}/${dest}/sdk/${SDK_FULL_PV}/DotnetTools/aspnetcoretools" || die
 }
