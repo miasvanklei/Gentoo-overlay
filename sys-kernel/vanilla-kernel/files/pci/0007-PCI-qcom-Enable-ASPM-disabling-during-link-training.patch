@@ -1,0 +1,26 @@
+Some Qualcomm PCIe controllers require ASPM to be disabled while the link
+is being retrained, otherwise the link state transitions during bandwidth
+scaling can fail. This is a controller requirement, not a device quirk.
+
+Set the disable_aspm_for_retrain flag in qcom_pcie_host_init() so that
+the PCI core disables ASPM around link retraining. Future targets fix
+this in hardware and will not set the flag.
+
+Signed-off-by: Krishna Chaitanya Chundru <krishna.chundru@oss.qualcomm.com>
+---
+ drivers/pci/controller/dwc/pcie-qcom.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/pci/controller/dwc/pcie-qcom.c b/drivers/pci/controller/dwc/pcie-qcom.c
+index 9b113536a82b..473f2fce258a 100644
+--- a/drivers/pci/controller/dwc/pcie-qcom.c
++++ b/drivers/pci/controller/dwc/pcie-qcom.c
+@@ -1514,6 +1514,8 @@ static int qcom_pcie_host_init(struct dw_pcie_rp *pp)
+ 
+ 	qcom_pcie_perst_deassert(pcie);
+ 
++	pp->bridge->disable_aspm_for_retrain = true;
++
+ 	if (pcie->cfg->ops->config_sid) {
+ 		ret = pcie->cfg->ops->config_sid(pcie);
+ 		if (ret)

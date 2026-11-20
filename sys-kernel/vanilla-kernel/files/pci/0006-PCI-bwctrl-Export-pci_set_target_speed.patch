@@ -1,0 +1,22 @@
+Export pci_set_target_speed() so that other kernel drivers can use it
+to change the PCIe data rate.
+
+Acked-by: Ilpo Järvinen <ilpo.jarvinen@linux.intel.com>
+Acked-by: Manivannan Sadhasivam <manivannan.sadhasivam@oss.qualcomm.com>
+Signed-off-by: Krishna Chaitanya Chundru <krishna.chundru@oss.qualcomm.com>
+---
+ drivers/pci/pcie/bwctrl.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/pci/pcie/bwctrl.c b/drivers/pci/pcie/bwctrl.c
+index c1e749df5bbe..0512ec62dd5b 100644
+--- a/drivers/pci/pcie/bwctrl.c
++++ b/drivers/pci/pcie/bwctrl.c
+@@ -219,6 +219,7 @@ int pcie_set_target_speed(struct pci_dev *port, enum pci_bus_speed speed_req,
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(pcie_set_target_speed);
+ 
+ static void pcie_bwnotif_enable(struct pcie_device *srv)
+ {
