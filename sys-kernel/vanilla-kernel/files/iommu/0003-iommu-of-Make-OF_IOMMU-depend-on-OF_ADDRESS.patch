@@ -1,15 +1,18 @@
-The OF_IOMMU code relies on OF address parsing helpers, but the
-dependency on OF_ADDRESS is not expressed in Kconfig. As a result,
-of_iommu.c contains CONFIG_OF_ADDRESS guards and a __maybe_unused
-annotation to handle configurations where OF_ADDRESS is disabled.
-
-Make OF_IOMMU depend on OF_ADDRESS and remove the now unnecessary
-preprocessor guards and __maybe_unused annotation.
+Currently, the OF_IOMMU code is built when OF and IOMMU_API are enabled.
+However, the code also uses OF address parsing helpers, which are only
+available when OF_ADDRESS is enabled. Since this dependency is not
+expressed in Kconfig, when OF_ADDRESS is disabled the code relies on
+CONFIG_OF_ADDRESS guards and a __maybe_unused annotation to avoid
+compilation issues.
 
 The only architecture supporting OF without OF_ADDRESS is SPARC, which
-does not use OF_IOMMU, so no functional change is intended.
+does not use OF_IOMMU. Therefore, make the OF_IOMMU code depend on
+OF_ADDRESS so that it is built only when the required address parsing
+support is available, avoiding the CONFIG_OF_ADDRESS guards and
+__maybe_unused annotation in the code. No functional change is intended.
 
 Suggested-by: Rob Herring <robh@kernel.org>
+Reviewed-by: Krzysztof Kozlowski <krzk@kernel.org>
 Co-developed-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
 Signed-off-by: Vishnu Reddy <busanna.reddy@oss.qualcomm.com>
 Signed-off-by: Vikash Garodia <vikash.garodia@oss.qualcomm.com>
